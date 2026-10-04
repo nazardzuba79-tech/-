@@ -1,6 +1,7 @@
 import { BadgeCheck, HelpCircle, KeyRound, ShieldCheck, UserRound, Users, type LucideIcon } from 'lucide-react';
 import { useLanguage } from '../../lib/i18n';
 import type { Tab } from './types';
+import { VoltexCardShortcut } from './VoltexCardShortcut';
 
 // Ported from the archive's components/voltex/profile-sidebar.tsx — same
 // desktop rail + mobile horizontal selector structure and classNames.
@@ -52,6 +53,9 @@ export function ProfileSidebar({ active, onSelect }: { active: Tab; onSelect: (i
             );
           })}
         </ul>
+        {/* A link to /card, not a Settings tab: set apart under a hairline. */}
+        <div aria-hidden="true" className="my-4 h-px bg-border" />
+        <VoltexCardShortcut />
       </nav>
 
       <div className="lg:hidden">
@@ -73,6 +77,8 @@ export function ProfileSidebar({ active, onSelect }: { active: Tab; onSelect: (i
             );
           })}
         </div>
+        {/* Its own row under the tabs, not one more chip in the carousel. */}
+        <VoltexCardShortcut className="mt-3" />
       </div>
 
       <div className="mt-12 flex items-start gap-2.5 border-t border-border pt-4 text-muted-foreground">

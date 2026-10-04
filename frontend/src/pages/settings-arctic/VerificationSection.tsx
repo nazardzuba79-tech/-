@@ -1,49 +1,97 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { BadgeCheck, CheckCircle2, FileText, MapPin, UserRound, type LucideIcon } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { BadgeCheck, CalendarDays, Check, ChevronDown, CircleAlert, Clock3, LoaderCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
 import { CountrySelect } from '../../components/CountrySelect';
+import { getCountryName } from '../../lib/countries';
+import { KycUpload } from './KycUpload';
 import { Panel, PanelHeader } from './Panel';
 import { StatusBadge } from './StatusBadge';
 import { customerErrorText } from '../../lib/customerError';
 import {
-  KYC_ERROR_KEYS, KycFileError, clearKycReceipt, formatKycBytes, newKycRequestId, prepareKycDocument, readKycReceipt,
+  KYC_ERROR_KEYS, KycFileError, clearKycReceipt, newKycRequestId, prepareKycDocument, readKycReceipt,
   retryKycReceipt, submitKycToEdge, type PreparedKycDocument,
 } from '../../lib/kycEdge';
+import { kycStepStates, type KycStepState as StepState } from '../../lib/kycSteps';
 
-const inputClass =
-  'h-11 rounded-xl border border-border bg-card px-3.5 text-[13.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-brand focus:ring-2 focus:ring-brand/20';
+// One control system for every KYC field — text, date, select and the
+// country picker share height, radius, border, fill and focus ring, so the
+// browser's own date/select chrome no longer sits beside a different-looking
+// text box. 48 px: inside the 46–50 px desktop band and above the 44 px
+// touch minimum on phones. `border-solid` is spelled out: Settings runs
+// Tailwind without preflight, so `border` alone leaves inputs and buttons on
+// the browser's inset/outset border (the dark edge in the owner's screenshot).
+// For the same reason (no base layer, so no --tw-* defaults) nothing here
+// leans on Tailwind's transform or ring utilities: icons are centred with
+// flex, focus is a plain box-shadow.
+const fieldClass =
+  'h-12 w-full min-w-0 rounded-xl border border-solid border-border bg-card px-3.5 text-[14px] text-foreground outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-muted-foreground hover:border-[oklch(0.86_0.006_258)] focus:border-brand focus:shadow-[0_0_0_4px_var(--accent-dim)] disabled:cursor-not-allowed disabled:bg-secondary disabled:opacity-70';
+const labelClass = 'text-[13px] font-medium text-[var(--text-secondary)]';
 
-function kycProgressPct(status: string): number {
-  if (status === 'APPROVED') return 100;
-  if (status === 'PENDING') return 60;
-  if (status === 'REJECTED') return 20;
-  return 8;
+/** The three stages from `lib/kycSteps.ts`, drawn as segments with a numbered dot each. */
+function KycSteps({ steps }: { steps: { label: string; caption: string; state: StepState }[] }) {
+  const bar: Record<StepState, string> = { done: 'bg-success', current: 'bg-brand', failed: 'bg-danger', todo: 'bg-border' };
+  const dot: Record<StepState, string> = {
+    done: 'bg-success-soft text-[oklch(0.5_0.13_155)] border-[oklch(0.72_0.14_155/0.3)]',
+    current: 'bg-brand text-primary-foreground border-transparent',
+    failed: 'bg-danger-soft text-danger border-[oklch(0.577_0.245_27.325/0.25)]',
+    todo: 'bg-card text-muted-foreground border-[oklch(0.86_0.006_258)]',
+  };
+  const caption: Record<StepState, string> = {
+    done: 'text-[oklch(0.5_0.13_155)]',
+    current: 'text-brand',
+    failed: 'text-danger',
+    todo: 'text-muted-foreground',
+  };
+  return (
+    <ol data-kyc-steps className="grid grid-cols-3 gap-2 sm:gap-4">
+      {steps.map((step, index) => (
+        <li key={step.label} data-state={step.state} aria-current={step.state === 'current' ? 'step' : undefined} className="min-w-0">
+          <span aria-hidden="true" className={`block h-1 rounded-full ${bar[step.state]}`} />
+          <div className="mt-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2.5">
+            <span className={`flex size-7 shrink-0 items-center justify-center rounded-full border border-solid text-[12px] font-semibold tabular-nums ${dot[step.state]}`}>
+              {step.state === 'done' ? <Check className="size-3.5" strokeWidth={2.6} aria-hidden="true" /> : step.state === 'failed' ? <X className="size-3.5" strokeWidth={2.6} aria-hidden="true" /> : index + 1}
+            </span>
+            <div className="min-w-0">
+              <p className="break-words text-[13px] font-medium leading-snug text-foreground">{step.label}</p>
+              <p className={`mt-0.5 break-words text-[12px] leading-snug ${caption[step.state]}`}>{step.caption}</p>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 // Ported from the archive's components/voltex/verification-section.tsx —
 // the archive's version is a static "100%, all verified" mock; this one
-// computes the progress bar and per-step state from the user's actual
-// latest KYC submission, and still includes the real submission form when
-// one is needed (the archive has no equivalent, since its mock account is
-// always already verified).
+// shows the stages and state from the user's actual latest KYC submission,
+// and still includes the real submission form when one is needed (the
+// archive has no equivalent, since its mock account is always already
+// verified).
 export function VerificationSection() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [status, setStatus] = useState<Awaited<ReturnType<typeof api.getMyKyc>> | null>(null);
   const [country, setCountry] = useState('RU');
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [documentType, setDocumentType] = useState<'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE'>('PASSPORT');
   const [document, setDocument] = useState<PreparedKycDocument | null>(null);
+  // The name the user picked, for the selected-file card only. A prepared
+  // photo is renamed document.jpg, and neither name is ever sent.
+  const [fileName, setFileName] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A file problem is shown on the upload zone; anything else above the button.
+  const [fileError, setFileError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // Delivered to the admin mailbox, metadata call still owed (see kycEdge.ts).
   const [awaitingRecord, setAwaitingRecord] = useState(() => !!readKycReceipt());
   // One id per attempt: a retry of the same attempt can never email twice.
   const requestIdRef = useRef<string | null>(null);
   const submittingRef = useRef(false);
+  const ids = { country: useId(), countryLabel: useId(), fullName: useId(), dateOfBirth: useId(), documentType: useId() };
 
   function reload() {
     api.getMyKyc().then((next) => {
@@ -84,14 +132,17 @@ export function VerificationSection() {
 
   async function handleFile(file: File | null) {
     setError(null);
+    setFileError(null);
     setDocument(null);
+    setFileName(file?.name ?? null);
     resetAttempt();
     if (!file) return;
     setPreparing(true);
     try {
       setDocument(await prepareKycDocument(file));
     } catch (err) {
-      setError(t(err instanceof KycFileError && err.code === 'kyc_file_too_large' ? 'settings.kycFileTooLarge' : 'settings.kycFileType'));
+      setFileName(null);
+      setFileError(t(err instanceof KycFileError && err.code === 'kyc_file_too_large' ? 'settings.kycFileTooLarge' : 'settings.kycFileType'));
     } finally {
       setPreparing(false);
     }
@@ -102,7 +153,7 @@ export function VerificationSection() {
     setError(null);
     if (submittingRef.current) return;
     if (!document) {
-      setError(t('settings.addDocumentPhoto'));
+      setFileError(t('settings.addDocumentPhoto'));
       return;
     }
     submittingRef.current = true;
@@ -114,6 +165,7 @@ export function VerificationSection() {
       setFullName('');
       setDateOfBirth('');
       setDocument(null);
+      setFileName(null);
       if (!result.confirmed) setAwaitingRecord(true);
       toast.success(t('settings.sendForReview'));
       reload();
@@ -144,126 +196,193 @@ export function VerificationSection() {
   const kycStatus = awaitingRecord && status.kycStatus !== 'APPROVED' ? 'PENDING' : status.kycStatus;
   const badge = STATUS_LABEL[kycStatus] ?? STATUS_LABEL.NOT_STARTED;
   const approved = kycStatus === 'APPROVED';
-  const canSubmit = kycStatus === 'NOT_STARTED' || kycStatus === 'REJECTED';
-  const progressPct = kycProgressPct(kycStatus);
+  const pending = kycStatus === 'PENDING';
+  const rejected = kycStatus === 'REJECTED';
+  const canSubmit = kycStatus === 'NOT_STARTED' || rejected;
   const sub = status.latestSubmission;
   const DOC_LABEL: Record<string, string> = {
     PASSPORT: t('settings.doc.PASSPORT'),
     ID_CARD: t('settings.doc.ID_CARD'),
     DRIVERS_LICENSE: t('settings.doc.DRIVERS_LICENSE'),
   };
-  const subtitle = approved ? t('settings.alreadyVerified') : kycStatus === 'PENDING' ? t('settings.pendingReview') : t('settings.verifyStartPrompt');
 
-  const STEPS: { icon: LucideIcon; label: string; value: string | null }[] = [
-    { icon: UserRound, label: t('settings.verifyStepPersonal'), value: sub?.fullName ?? null },
-    { icon: FileText, label: t('settings.verifyStepDocument'), value: sub ? DOC_LABEL[sub.documentType] ?? sub.documentType : null },
-    { icon: MapPin, label: t('settings.country'), value: sub?.country ?? null },
+  const stage = kycStepStates(kycStatus, {
+    personalFilled: !!country && fullName.trim() !== '' && dateOfBirth !== '',
+    documentAdded: !!document,
+  });
+  const steps: { label: string; caption: string; state: StepState }[] = [
+    { label: t('settings.verifyStepPersonal'), caption: t(stage.personal === 'done' ? 'settings.kycStepFilled' : 'settings.kycStepNotFilled'), state: stage.personal },
+    { label: t('settings.kycStepDocumentShort'), caption: t(stage.document === 'done' ? 'settings.kycStepAdded' : 'settings.kycStepNotAdded'), state: stage.document },
+    { label: t('settings.kycStepReview'), caption: kycStatus === 'NOT_STARTED' ? t('settings.kycStepNotSent') : badge.text, state: stage.review },
+  ];
+
+  const summary = sub && [
+    { label: t('settings.fullNameLabel'), value: sub.fullName },
+    { label: t('settings.documentType'), value: DOC_LABEL[sub.documentType] ?? sub.documentType },
+    { label: t('settings.country'), value: sub.country ? getCountryName(sub.country, lang) : t('settings.notSpecified') },
   ];
 
   return (
     <Panel>
       <PanelHeader
         title={t('settings.tab.verification')}
-        subtitle={subtitle}
+        subtitle={canSubmit ? t('settings.verifyStartPrompt') : undefined}
         action={
           <StatusBadge tone={badge.tone} icon={approved ? <BadgeCheck className="size-3.5" /> : undefined}>
             {badge.text}
           </StatusBadge>
         }
       />
-      <div className="p-5 sm:p-6">
-        <div className="mb-6">
-          <div className="mb-2 flex items-baseline justify-between">
-            <span className="text-[13px] font-medium text-foreground">{t('settings.verificationLevel')}</span>
-            <span className="text-[13px] font-semibold tabular-nums text-[oklch(0.5_0.13_155)]">{progressPct}%</span>
-          </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-            <div className="h-full rounded-full bg-success transition-all duration-300" style={{ width: `${progressPct}%` }} />
-          </div>
-        </div>
+      <div data-kyc-state={kycStatus} className="flex flex-col gap-6 p-5 sm:p-6">
+        <KycSteps steps={steps} />
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {STEPS.map((step) => (
-            <div key={step.label} className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3.5">
-              <span className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${approved ? 'bg-success-soft text-[oklch(0.5_0.13_155)]' : 'bg-secondary text-muted-foreground'}`}>
-                <step.icon className="size-[18px]" />
+        {approved && (
+          <StateNote tone="success" icon={<BadgeCheck className="size-5" aria-hidden="true" />} title={badge.text}>
+            {t('settings.alreadyVerified')}
+          </StateNote>
+        )}
+        {pending && (
+          <StateNote tone="warning" icon={<Clock3 className="size-5" aria-hidden="true" />} title={badge.text}>
+            {t('settings.pendingReview')} {t('settings.kycPendingNoReupload')}
+          </StateNote>
+        )}
+        {rejected && (
+          <StateNote tone="danger" icon={<CircleAlert className="size-5" aria-hidden="true" />} title={badge.text}>
+            {status.latestSubmission?.status === 'REJECTED' && status.latestSubmission.rejectionReason && (
+              <span data-kyc-rejection className="block font-medium text-foreground">
+                {t('settings.rejectionReason', { reason: status.latestSubmission.rejectionReason })}
               </span>
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-foreground">{step.label}</p>
-                {step.value ? (
-                  <p className={`mt-0.5 flex items-center gap-1 truncate text-[12px] ${approved ? 'text-[oklch(0.5_0.13_155)]' : 'text-muted-foreground'}`}>
-                    {approved && <CheckCircle2 className="size-3.5 shrink-0" />}
-                    {step.value}
-                  </p>
-                ) : (
-                  <p className="mt-0.5 text-[12px] text-muted-foreground">{t('settings.notSpecified')}</p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+            )}
+            <span className="block">{t('settings.kycRejectedHint')}</span>
+          </StateNote>
+        )}
 
-        {status.latestSubmission?.status === 'REJECTED' && status.latestSubmission.rejectionReason && (
-          <div className="mt-5 rounded-xl bg-danger-soft px-3.5 py-2.5 text-[12.5px] text-danger">
-            {t('settings.rejectionReason', { reason: status.latestSubmission.rejectionReason })}
-          </div>
+        {summary && (
+          // Hairlines from a 1px grid gap over the border colour: one-sided
+          // borders need a border-style, which without preflight would give
+          // the other sides the browser's 3px default.
+          <section aria-label={t('settings.kycSubmittedData')} className="grid gap-px overflow-hidden rounded-xl border border-solid border-border bg-border">
+            <h3 className="bg-secondary px-4 py-2.5 text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{t('settings.kycSubmittedData')}</h3>
+            <dl className="m-0 grid grid-cols-1 gap-px sm:grid-cols-3">
+              {summary.map((row) => (
+                <div key={row.label} className="min-w-0 bg-card px-4 py-3">
+                  <dt className="text-[12px] text-muted-foreground">{row.label}</dt>
+                  <dd className="m-0 mt-0.5 truncate text-[13.5px] font-medium text-foreground" title={row.value}>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
         )}
 
         {canSubmit && (
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4 border-t border-border pt-6">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <span className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{t('settings.country')}</span>
-                <CountrySelect value={country} onChange={setCountry} placeholder={t('settings.notSpecified')} />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+              <div className="grid min-w-0 gap-2">
+                <span id={ids.countryLabel} className={labelClass}>{t('settings.country')}</span>
+                <CountrySelect
+                  id={ids.country}
+                  labelledBy={ids.countryLabel}
+                  value={country}
+                  onChange={setCountry}
+                  placeholder={t('settings.notSpecified')}
+                  triggerClassName={`${fieldClass} text-left`}
+                />
               </div>
-              <div className="grid gap-1.5">
-                <label className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{t('settings.fullName')}</label>
-                <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
+              <div className="grid min-w-0 gap-2">
+                <label htmlFor={ids.fullName} className={labelClass}>{t('settings.fullName')}</label>
+                <input
+                  id={ids.fullName}
+                  type="text"
+                  required
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className={fieldClass}
+                />
               </div>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <label className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{t('settings.dateOfBirth')}</label>
-                <input type="date" required value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className={inputClass} />
+              <div className="grid min-w-0 gap-2">
+                <label htmlFor={ids.dateOfBirth} className={labelClass}>{t('settings.dateOfBirth')}</label>
+                {/* The native date input stays (keyboard entry, the phone's own
+                    picker); only its chrome is restyled. Chromium's picker
+                    button is stretched, invisible, over the calendar icon. */}
+                <div className="relative min-w-0">
+                  <input
+                    id={ids.dateOfBirth}
+                    type="date"
+                    required
+                    autoComplete="bday"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    className={`${fieldClass} relative block pr-11 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-y-0 [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-11 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-date-and-time-value]:text-left ${dateOfBirth ? '' : 'text-muted-foreground'}`}
+                  />
+                  <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-muted-foreground supports-[-moz-appearance:none]:hidden">
+                    <CalendarDays className="size-[18px]" />
+                  </span>
+                </div>
               </div>
-              <div className="grid gap-1.5">
-                <label className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{t('settings.documentType')}</label>
-                <select value={documentType} onChange={(e) => setDocumentType(e.target.value as typeof documentType)} className={inputClass}>
-                  <option value="PASSPORT">{DOC_LABEL.PASSPORT}</option>
-                  <option value="ID_CARD">{DOC_LABEL.ID_CARD}</option>
-                  <option value="DRIVERS_LICENSE">{DOC_LABEL.DRIVERS_LICENSE}</option>
-                </select>
+              <div className="grid min-w-0 gap-2">
+                <label htmlFor={ids.documentType} className={labelClass}>{t('settings.documentType')}</label>
+                <div className="relative min-w-0">
+                  <select
+                    id={ids.documentType}
+                    value={documentType}
+                    onChange={(e) => setDocumentType(e.target.value as typeof documentType)}
+                    // index.css draws its own !important chevron on every
+                    // <select>; this one matches the country picker instead.
+                    className={`${fieldClass} block cursor-pointer appearance-none truncate !bg-none !pr-10`}
+                  >
+                    <option value="PASSPORT">{DOC_LABEL.PASSPORT}</option>
+                    <option value="ID_CARD">{DOC_LABEL.ID_CARD}</option>
+                    <option value="DRIVERS_LICENSE">{DOC_LABEL.DRIVERS_LICENSE}</option>
+                  </select>
+                  <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-muted-foreground">
+                    <ChevronDown className="size-4" />
+                  </span>
+                </div>
               </div>
-            </div>
-            {/* grid-cols-1 + min-w-0: a selected file's name must not widen the form past a 320 px screen. */}
-            <div className="grid min-w-0 grid-cols-1 gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{t('settings.documentPhoto')}</label>
-              <input
-                type="file"
-                required
-                accept="image/jpeg,image/png,application/pdf"
-                onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-                className="w-full min-w-0 rounded-xl border border-border bg-card px-3.5 py-2.5 text-[12.5px] text-foreground"
-              />
-              {(preparing || document) && (
-                <span data-kyc-file-size className="text-[12px] text-muted-foreground">
-                  {preparing ? t('settings.kycPreparingFile') : t('settings.kycFileReady', { size: formatKycBytes(document!.file.size) })}
-                </span>
-              )}
             </div>
 
-            {error && <div className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-[12.5px] text-danger">{error}</div>}
+            <KycUpload
+              label={t('settings.verifyStepDocument')}
+              document={document}
+              fileName={fileName}
+              preparing={preparing}
+              error={fileError}
+              disabled={submitting}
+              onFile={handleFile}
+            />
+
+            {error && <div role="alert" className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-[12.5px] text-danger">{error}</div>}
 
             <button
               type="submit"
               disabled={submitting || preparing}
-              className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-foreground px-5 py-2.5 text-[13px] font-medium text-primary-foreground transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              aria-busy={submitting || undefined}
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-6 text-[14px] font-semibold text-primary-foreground shadow-premium transition-[background-color,opacity] duration-150 hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_var(--accent-dim)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-[240px] sm:self-start"
             >
+              {submitting && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
               {submitting ? t('settings.sending') : t('settings.sendForReview')}
             </button>
           </form>
         )}
       </div>
     </Panel>
+  );
+}
+
+function StateNote({ tone, icon, title, children }: { tone: 'success' | 'warning' | 'danger'; icon: ReactNode; title: string; children: ReactNode }) {
+  const tones = {
+    success: 'border-[oklch(0.72_0.14_155/0.3)] bg-success-soft text-[oklch(0.5_0.13_155)]',
+    warning: 'border-[oklch(0.79_0.13_78/0.35)] bg-warning-soft text-[oklch(0.55_0.12_70)]',
+    danger: 'border-[oklch(0.577_0.245_27.325/0.25)] bg-danger-soft text-danger',
+  };
+  return (
+    <div role="status" className={`flex items-start gap-3 rounded-xl border border-solid px-4 py-3.5 ${tones[tone]}`}>
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[14px] font-semibold">{title}</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-[var(--text-secondary)]">{children}</p>
+      </div>
+    </div>
   );
 }
