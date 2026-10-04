@@ -347,6 +347,9 @@ export interface StoredDrawing {
   style?: DrawingStyle;
   /** This one object is locked: it can be selected, not moved, edited or erased. */
   locked?: boolean;
+  /** A ruler whose end is the latest candle, re-measured as the price moves
+   *  (owner, 2026-10-04: «лінійка сама … розгортається до поточної ціни»). */
+  followLast?: true;
 }
 
 export interface StoredDrawingState {
@@ -426,6 +429,7 @@ export function parseStoredDrawings(raw: string | null): StoredDrawingState {
     const style = sanitizeDrawingStyle(d.style);
     if (style) drawing.style = style;
     if (d.locked === true) drawing.locked = true;
+    if (d.followLast === true && LIVE_END_KINDS.includes(kind)) drawing.followLast = true;
     drawings.push(drawing);
     if (drawings.length >= MAX_STORED_DRAWINGS) break;
   }
@@ -445,6 +449,51 @@ export function serializeDrawings(state: Omit<StoredDrawingState, 'version'>): s
     locked: state.locked,
   });
 }
+
+// ── Exact prices and a live end, for the ruler ──────────────────────
+
+/** Kinds whose end can be the latest price. */
+export const LIVE_END_KINDS: readonly DrawingKind[] = ['ruler'];
+
+/** The points a drawing is painted and measured with: a live-ended ruler ends at the latest candle. */
+export function livePoints(drawing: Pick<StoredDrawing, 'points' | 'followLast'>, live: DrawingPoint | null | undefined): DrawingPoint[] {
+  return drawing.followLast && live ? [drawing.points[0], live] : drawing.points;
+}
+
+/** The drawing with its live end written down as a fixed point — where a manual edit of that end starts. */
+export function settleLiveEnd<T extends StoredDrawing>(drawing: T, live: DrawingPoint | null | undefined): T {
+  if (!drawing.followLast) return drawing;
+  const { followLast: _following, ...rest } = drawing;
+  return { ...rest, points: livePoints(drawing, live).map((p) => ({ ...p })) } as T;
+}
+
+/** A price the trader typed: digits with one dot or comma, above zero. «0,81» and «0.81» both read 0.81. */
+export function parseDrawingPrice(text: string): number | null {
+  const s = text.trim().replace(',', '.');
+  if (!/^(\d+(\.\d+)?|\.\d+)$/.test(s)) return null;
+  const value = Number(s);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/** A price as the settings field shows it: exact, without float noise or grouping. */
+export function drawingPriceInput(price: number): string {
+  return Number.isFinite(price) ? String(Number(price.toPrecision(12))) : '';
+}
+
+/**
+ * The ruler's exact prices from its settings: the start price, and either a
+ * fixed end price or the latest price. Times stay where the trader put them;
+ * a live end sits on the latest candle.
+ */
+export function applyRulerPrices<T extends StoredDrawing>(drawing: T, prices: { from: number; to: number; followLast: boolean }, live: DrawingPoint | null | undefined): T {
+  const settled = settleLiveEnd(drawing, live);
+  const start = { ...settled.points[0], price: prices.from };
+  if (prices.followLast) return { ...settled, points: [start, settled.points[1]], followLast: true };
+  return { ...settled, points: [start, { ...settled.points[1], price: prices.to }] };
+}
+
+/** Pixels within which a dragged ruler edge lands exactly on the latest price. */
+export const LIVE_SNAP_PX = 6;
 
 // ── Hit testing, for the per-drawing eraser ─────────────────────────
 

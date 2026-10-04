@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from 'react';
 import {
-  DRAWING_PALETTE, DRAWING_POINTS, DRAWING_TEXT_KINDS, DRAWING_WIDTHS, FREEHAND_KINDS,
-  drawingStyle, trackDrawingGesture,
+  DRAWING_PALETTE, DRAWING_POINTS, DRAWING_TEXT_KINDS, DRAWING_WIDTHS, FREEHAND_KINDS, LIVE_END_KINDS, LIVE_SNAP_PX,
+  applyRulerPrices, drawingPriceInput, drawingStyle, livePoints, parseDrawingPrice, readableTextOn, settleLiveEnd, trackDrawingGesture,
   type DrawingDash, type DrawingKind, type DrawingPoint, type DrawingStyle, type StoredDrawing,
 } from '../lib/chartDrawings';
 import { anchorAt, drawingGeometry, geometryDistance, labelBox, moveAnchor, HIT_RADIUS, type DrawingAnchor, type DrawingGeometry, type DrawingView, type Primitive } from '../lib/drawingGeometry';
@@ -68,6 +68,17 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
   drawingsRef.current = drawings;
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
+  // The ruler under the pointer shows its handles before it is selected, so
+  // there is something to grab (owner, 2026-10-04: «тут немає за що тягнути»).
+  const [hoverRuler, setHoverRuler] = useState<number | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverRulerOn = (id: number) => { if (hoverTimer.current) clearTimeout(hoverTimer.current); setHoverRuler(id); };
+  // Leaving the body for a handle is not leaving the ruler: let the handle claim it first.
+  const hoverRulerOff = () => { if (hoverTimer.current) clearTimeout(hoverTimer.current); hoverTimer.current = setTimeout(() => setHoverRuler(null), 250); };
+  useEffect(() => () => { if (hoverTimer.current) clearTimeout(hoverTimer.current); }, []);
+  // While a ruler edge is dragged: its price across the whole plot, its label
+  // out of the way, so the line it is being lined up with stays visible.
+  const [guide, setGuide] = useState<{ id: number; price: number; snapped: boolean } | null>(null);
 
   const drawingTool = !CURSOR_TOOLS.includes(tool);
   const capture = drawingTool && !blocked;
@@ -240,6 +251,8 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
         const dx = now.x - origin.x, dy = now.y - origin.y;
         const points: DrawingPoint[] = [];
         for (let i = 0; i < screen.length; i++) {
+          // A live end stays on the latest price; only the start moves.
+          if (drawing.followLast && i === 1) { points.push(drawing.points[1]); continue; }
           const moved = pointAt((screen[i].x as number) + dx, (screen[i].y as number) + dy);
           if (!moved) return;
           points.push(drawing.kind === 'horizontal' ? { time: 0, price: moved.price } : drawing.kind === 'vertical' ? { time: moved.time, price: 0 } : moved);
@@ -256,21 +269,37 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
     if (event.button !== 0 || blocked) return;
     event.stopPropagation();
     event.preventDefault();
+    if (selectedId !== drawing.id) onSelect(drawing.id);
     if (lockedRef.current || drawing.locked) return;
+    const ruler = drawing.kind === 'ruler';
+    // Grabbing a live end by hand fixes it where it is now.
+    const endAnchor = anchor.id === 1 || anchor.id === 'edge1';
+    const live = view?.live;
     cancelRef.current = trackDrawingGesture(window, {
       move: (ev) => {
         const now = local(ev.clientX, ev.clientY);
-        const to = now && pointAt(now.x, now.y);
+        let to = now && pointAt(now.x, now.y);
         if (!to) return;
-        setDrawings((previous) => previous.map((d) => (d.id === drawing.id ? { ...moveAnchor(d, anchor.id, to), id: d.id } : d)));
+        let snapped = false;
+        if (ruler && live && view) {
+          // Near the latest price, land exactly on it.
+          const liveY = view.y(live.price), toY = view.y(to.price);
+          if (liveY !== null && toY !== null && Math.abs(liveY - toY) <= LIVE_SNAP_PX) { to = { ...to, price: live.price }; snapped = true; }
+        }
+        const target = to;
+        if (ruler) setGuide({ id: drawing.id, price: target.price, snapped });
+        setDrawings((previous) => previous.map((d) => (d.id === drawing.id
+          ? { ...moveAnchor(endAnchor ? settleLiveEnd(d, live) : d, anchor.id, target), id: d.id } : d)));
       },
-      finish: () => {},
-      cancel: () => setDrawings((previous) => previous.map((d) => (d.id === drawing.id ? drawing : d))),
+      finish: () => setGuide(null),
+      cancel: () => { setGuide(null); setDrawings((previous) => previous.map((d) => (d.id === drawing.id ? drawing : d))); },
     }, true);
   };
 
   const selected = selectedId === null ? null : drawings.find((d) => d.id === selectedId) ?? null;
-  const selectedGeometry = selected ? geometries.get(selected.id) : undefined;
+  // Handles: the selection's, or a hovered ruler's before it is selected.
+  const handled = selected ?? (hoverRuler === null ? null : drawings.find((d) => d.id === hoverRuler) ?? null);
+  const handledGeometry = handled ? geometries.get(handled.id) : undefined;
 
   // The shape being placed, previewed against the pointer.
   const preview = (() => {
@@ -297,8 +326,10 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
         {drawings.map((d) => {
           const g = geometries.get(d.id);
           if (!g) return null;
-          return <g key={d.id} data-drawing-kind={d.kind} data-drawing-selected={d.id === selectedId || undefined}>
-            <Primitives prims={g.prims} />
+          const guided = guide?.id === d.id;
+          return <g key={d.id} data-drawing-kind={d.kind} data-drawing-selected={d.id === selectedId || undefined} data-drawing-live={d.followLast || undefined}
+            onPointerEnter={d.kind === 'ruler' ? () => hoverRulerOn(d.id) : undefined} onPointerLeave={d.kind === 'ruler' ? hoverRulerOff : undefined}>
+            <Primitives prims={guided ? g.prims.filter((p) => p.t !== 'label') : g.prims} />
             {!capture && !blocked && <HitTargets geometry={g} onPointerDown={(e) => startMove(e, d)} />}
           </g>;
         })}
@@ -308,11 +339,18 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
           <line x1={0} y1={hover.y} x2="100%" y2={hover.y} stroke="#9598a1" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
         </g>}
         {tool === 'dot' && hover && !capture && <circle cx={hover.x} cy={hover.y} r={3} fill="#d1d4dc" pointerEvents="none" />}
-        {selected && selectedGeometry && !capture && selectedGeometry.anchors.map((a) => (
-          <circle key={String(a.id)} data-drawing-anchor={String(a.id)} cx={a.x} cy={a.y} r={5} fill="#131722" stroke={drawingStyle(selected).color} strokeWidth={2}
-            style={{ pointerEvents: blocked ? 'none' : 'all', cursor: a.id === 'width' ? 'ew-resize' : a.id === 'target' || a.id === 'stop' ? 'ns-resize' : 'grab' }}
-            onPointerDown={(e) => startAnchor(e, selected, a)} />
+        {handled && handledGeometry && !capture && handledGeometry.anchors.map((a) => (
+          <g key={String(a.id)} data-drawing-anchor={String(a.id)} opacity={handled === selected ? 1 : 0.85}
+            style={{ pointerEvents: blocked ? 'none' : 'all', cursor: a.id === 'width' ? 'ew-resize' : a.id === 'target' || a.id === 'stop' || a.id === 'edge0' || a.id === 'edge1' ? 'ns-resize' : 'grab' }}
+            onPointerEnter={handled.kind === 'ruler' ? () => hoverRulerOn(handled.id) : undefined} onPointerLeave={handled.kind === 'ruler' ? hoverRulerOff : undefined}
+            onPointerDown={(e) => startAnchor(e, handled, a)}>
+            {/* A larger invisible ring around the visible handle: easy to catch on a busy chart. */}
+            <circle cx={a.x} cy={a.y} r={11} fill="transparent" />
+            <circle cx={a.x} cy={a.y} r={5} fill="#131722" stroke={drawingStyle(handled).color} strokeWidth={2} />
+          </g>
         ))}
+        {guide && view && <DragGuide view={view} price={guide.price} snapped={guide.snapped}
+          color={drawingStyle(drawings.find((d) => d.id === guide.id) ?? { kind: 'ruler' }).color} t={t} />}
       </g>
     </svg>
     {selected && !blocked && <DrawingObjectToolbar key={selected.id} drawing={selected} locked={locked} t={t}
@@ -325,8 +363,37 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
       }}
       onDelete={() => { setDrawings((previous) => previous.filter((d) => d.id !== selected.id)); onSelect(null); }}
       onEditText={DRAWING_TEXT_KINDS.includes(selected.kind) ? () => props.onRequestText({ edit: selected }) : undefined}
+      measure={LIVE_END_KINDS.includes(selected.kind) ? {
+        from: selected.points[0].price,
+        to: livePoints(selected, view?.live)[1].price,
+        followLast: !!selected.followLast,
+        live: view?.live ?? null,
+      } : undefined}
+      onMeasure={(prices) => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...applyRulerPrices(d, prices, view?.live), id: d.id } : d)))}
       onClose={() => onSelect(null)} />}
   </>;
+}
+
+/**
+ * While a ruler edge is dragged: a thin line at its price across the whole
+ * plot and the exact price in a tag at the right edge — «Текущая цена» when
+ * it has landed on the latest price. The ruler's own label is hidden
+ * meanwhile, so it never covers the line being lined up with.
+ */
+function DragGuide({ view, price, snapped, color, t }: { view: DrawingView; price: number; snapped: boolean; color: string; t: (key: any) => string }) {
+  const y = view.y(price);
+  if (y === null || !Number.isFinite(y)) return null;
+  const tone = snapped ? '#f0b90b' : color;
+  const value = view.formatPrice ? view.formatPrice(price) : String(price);
+  const text = snapped ? `${t('draw.currentPrice')} ${value}` : value;
+  const w = text.length * 7 + 14, h = 20;
+  const x = Math.max(0, view.width - w - 2);
+  const top = Math.max(0, Math.min(view.height - h, y - h / 2));
+  return <g pointerEvents="none" data-drawing-guide data-guide-snapped={snapped || undefined}>
+    <line x1={0} y1={y} x2={view.width} y2={y} stroke={tone} strokeWidth={1} strokeDasharray="4 3" />
+    <rect x={x} y={top} width={w} height={h} rx={3} fill={tone} />
+    <text x={x + w / 2} y={top + 14} fill={readableTextOn(tone)} fontSize={12} textAnchor="middle" style={{ userSelect: 'none' }}>{text}</text>
+  </g>;
 }
 
 /** Paint primitives. Labels carry their own box, placed by `labelBox`. */
@@ -371,12 +438,18 @@ function HitTargets({ geometry, onPointerDown }: { geometry: DrawingGeometry; on
  * colour, fill, width, line style, the object's own lock, clone and
  * delete, plus text for the kinds that carry words.
  */
-export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock, onClone, onDelete, onEditText, onClose }: {
+export interface RulerPrices { from: number; to: number; followLast: boolean }
+
+export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock, onClone, onDelete, onEditText, measure, onMeasure, onClose }: {
   drawing: ChartDrawing; locked: boolean; t: (key: any) => string;
   onStyle: (style: DrawingStyle) => void; onToggleLock: () => void; onClone: () => void; onDelete: () => void;
-  onEditText?: () => void; onClose: () => void;
+  onEditText?: () => void;
+  /** A ruler's exact prices: shown in its settings, applied by `onMeasure`. */
+  measure?: RulerPrices & { live: DrawingPoint | null };
+  onMeasure?: (prices: RulerPrices) => void;
+  onClose: () => void;
 }) {
-  const [menu, setMenu] = useState<null | 'color' | 'fill' | 'width' | 'dash'>(null);
+  const [menu, setMenu] = useState<null | 'color' | 'fill' | 'width' | 'dash' | 'measure'>(null);
   // TradingView's toolbar is moved by its grip; the offset lives as long as the selection.
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const style = drawingStyle(drawing);
@@ -416,6 +489,9 @@ export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock
     <button type="button" data-object-action="dash" title={t('draw.lineStyle')} aria-label={t('draw.lineStyle')} disabled={frozen} aria-expanded={menu === 'dash'} onClick={() => setMenu(menu === 'dash' ? null : 'dash')}>
       <svg width="22" height="18" viewBox="0 0 24 18" aria-hidden="true"><line x1="2" y1="9" x2="22" y2="9" stroke="currentColor" strokeWidth="2" strokeDasharray={style.dash === 'dashed' ? '5 3' : style.dash === 'dotted' ? '1 3' : undefined} strokeLinecap="round" /></svg>
     </button>
+    {measure && onMeasure && <button type="button" data-object-action="measure" title={t('draw.measureSettings')} aria-label={t('draw.measureSettings')} disabled={frozen} aria-expanded={menu === 'measure'} onClick={() => setMenu(menu === 'measure' ? null : 'measure')}>
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.7" /><circle cx="8" cy="17" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.7" /></svg>
+    </button>}
     {onEditText && <button type="button" data-object-action="text" title={t('draw.editText')} aria-label={t('draw.editText')} disabled={frozen} onClick={onEditText}>
       <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6V4h14v2M12 4v16M9 20h6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
     </button>}
@@ -429,7 +505,9 @@ export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock
     <button type="button" data-object-action="delete" title={t('draw.deleteObject')} aria-label={t('draw.deleteObject')} disabled={frozen} onClick={onDelete}>
       <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></svg>
     </button>
-    {menu && <div className="drawing-object-menu" role="menu" data-object-menu={menu}>
+    {menu === 'measure' && measure && onMeasure && <RulerPricesForm measure={measure} t={t}
+      onApply={(prices) => { onMeasure(prices); setMenu(null); }} />}
+    {menu && menu !== 'measure' && <div className="drawing-object-menu" role="menu" data-object-menu={menu}>
       {(menu === 'color' || menu === 'fill') && <div className="drawing-object-palette">
         {DRAWING_PALETTE.map((c) => <button key={c} type="button" role="menuitemradio" aria-checked={(menu === 'color' ? style.color : style.fill) === c} aria-label={c} title={c}
           style={{ background: c }} onClick={() => set(menu === 'color' ? { color: c } : { fill: c })} />)}
@@ -443,6 +521,48 @@ export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock
       </button>)}
     </div>}
   </div>;
+}
+
+/**
+ * A ruler's exact prices (owner, 2026-10-04: «вписую ціну 0.81 … і ленійка
+ * сама розгортається до поточної ціни»): the start price, and an end price
+ * typed in or the latest price, followed as it moves.
+ */
+function RulerPricesForm({ measure, t, onApply }: { measure: RulerPrices & { live: DrawingPoint | null }; t: (key: any) => string; onApply: (prices: RulerPrices) => void }) {
+  const [from, setFrom] = useState(() => drawingPriceInput(measure.from));
+  const [to, setTo] = useState(() => drawingPriceInput(measure.to));
+  const [followLast, setFollowLast] = useState(measure.followLast);
+  const [error, setError] = useState(false);
+  const fromRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { fromRef.current?.focus(); fromRef.current?.select(); }, []);
+  const liveText = measure.live ? drawingPriceInput(measure.live.price) : '';
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const start = parseDrawingPrice(from);
+    const end = followLast ? (measure.live?.price ?? measure.to) : parseDrawingPrice(to);
+    if (start === null || end === null) { setError(true); return; }
+    onApply({ from: start, to: end, followLast });
+  };
+  return <form className="drawing-object-menu drawing-measure-form" data-object-menu="measure" onSubmit={submit} noValidate>
+    <label className="drawing-measure-field">
+      <span>{t('draw.priceFrom')}</span>
+      <input ref={fromRef} name="from" inputMode="decimal" autoComplete="off" value={from} aria-invalid={error && parseDrawingPrice(from) === null}
+        onChange={(e) => { setFrom(e.target.value); setError(false); }} />
+    </label>
+    <label className="drawing-measure-field">
+      <span>{t('draw.priceTo')}</span>
+      <input name="to" inputMode="decimal" autoComplete="off" value={followLast ? liveText : to} disabled={followLast}
+        aria-invalid={!followLast && error && parseDrawingPrice(to) === null}
+        onChange={(e) => { setTo(e.target.value); setError(false); }} />
+    </label>
+    <label className="drawing-measure-check">
+      <input type="checkbox" name="followLast" checked={followLast} disabled={!measure.live && !measure.followLast}
+        onChange={(e) => { setFollowLast(e.target.checked); setError(false); }} />
+      <span>{t('draw.toCurrentPrice')}</span>
+    </label>
+    {error && <p className="drawing-measure-error" role="alert">{t('draw.priceInvalid')}</p>}
+    <button type="submit" className="drawing-measure-apply">{t('draw.apply')}</button>
+  </form>;
 }
 
 /** The hit-testing a click-to-erase and a click-to-select both use. */
