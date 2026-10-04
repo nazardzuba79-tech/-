@@ -65,7 +65,8 @@ function fakeCharts(chartOptions: any[], harness: any) {
     coordinateToLogical: () => 0, logicalToCoordinate: () => 100, width: () => 1000 };
   const chart = { addSeries: () => series(), priceScale: () => ({ applyOptions: () => {} }), timeScale: () => timeScale,
     subscribeClick: () => {}, unsubscribeClick: () => {}, subscribeCrosshairMove: () => {}, unsubscribeCrosshairMove: () => {},
-    resize: () => {}, remove: () => {}, applyOptions: () => {}, paneSize: () => ({ width: 1100, height: 600 }) };
+    resize: () => {}, remove: () => {}, applyOptions: () => {}, paneSize: () => ({ width: 1100, height: 600 }),
+    panes: () => [{ attachPrimitive: () => {}, detachPrimitive: () => {} }] };
   return { createChart: (_h: unknown, o: unknown) => { chartOptions.push(o); return chart; },
     createSeriesMarkers: (_s: unknown, m: unknown[]) => { harness.markers = m; return { setMarkers: (n: unknown[]) => { harness.markers = n; }, detach: () => {} }; },
     ColorType: { Solid: 'solid' }, LineStyle: { Solid: 0, Dotted: 1, Dashed: 2, LargeDashed: 3, SparseDotted: 4 },
