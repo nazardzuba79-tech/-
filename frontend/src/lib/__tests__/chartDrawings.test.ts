@@ -289,26 +289,39 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(callbacks.onToggleLock).not.toHaveBeenCalled();
     expect(callbacks.onSelect).not.toHaveBeenCalled();
   });
-  test('the measure label is the move in percent — no raw price difference, no tick count (owner, 2026-09-26)', () => {
+  test('the measure label reads as on TradingView: price move (percent), bars and time, volume — no tick count', () => {
     const candles = [{ time: 0, volume: 1500 }, { time: 300, volume: 2500 }, { time: 600, volume: 1000 }, { time: 900, volume: 5 }];
     const range = drawings.drawingRange({ time: 0, price: 0.000001 }, { time: 900, price: 0.0000008 }, candles, 300, 0.0000001);
     const lines = drawings.drawingRangeLines(range, 'en');
-    // A tiny negative move still reads as negative.
-    expect(lines[0]).toBe('-20.00%');
+    // A tiny negative move still reads as negative; no tick count after it.
+    expect(lines[0]).toBe('-0.0000002 (-20.00%)');
     const up = drawings.drawingRange({ time: 0, price: 100 }, { time: 900, price: 117.44 }, candles, 300, 0.01);
-    expect(drawings.drawingRangeLines(up, 'ru')[0]).toBe('+17,44%');
+    expect(drawings.drawingRangeLines(up, 'ru')[0]).toBe('+17,44 (+17,44%)');
     expect(lines[1]).toBe('3 bars, 15m');
     // Volume of the bars inside the span only; the closing bar is not in it.
     expect(lines[2]).toBe('Vol 5.00K');
     expect(lines.join(' ')).not.toContain('Infinity');
-    expect(drawings.drawingRangeLines(range, 'ru')[1]).toBe('3 столбцы, 15мин');
+    expect(drawings.drawingRangeLines(range, 'ru')[1]).toBe('3 бара, 15мин');
+    expect(drawings.drawingRangeLines(range, 'ru')[2]).toBe('Объём 5.00K');
     expect(drawings.drawingRangeLines(range, 'en', { price: true, date: false })).toHaveLength(1);
+  });
+  test('bars are counted in Russian as TradingView does, and time is whole bars', () => {
+    expect(['1', '2', '4', '5', '11', '12', '21', '22', '25', '111'].map((n) => drawings.drawingBarsText(Number(n), 'ru')))
+      .toEqual(['1 бар', '2 бара', '4 бара', '5 баров', '11 баров', '12 баров', '21 бар', '22 бара', '25 баров', '111 баров']);
+    expect(drawings.drawingBarsText(1, 'en')).toBe('1 bar');
+    // Owner's NRX screenshot: a daily ruler from a click on listing day to today's
+    // candle read «1 столбцы, 17ч». One daily bar is one day.
+    const day = 86400;
+    const candles = [{ time: 0, volume: 10 }, { time: day, volume: 20 }];
+    const range = drawings.drawingRange({ time: 7 * 3600, price: 0.81 }, { time: day, price: 46.54 }, candles, day);
+    expect(drawings.drawingRangeLines(range, 'ru')[1]).toBe('1 бар, 1д');
+    expect(drawings.drawingRangeLines(range, 'ru')[0]).toBe('+45,73 (+5\u00a0645,68%)');
   });
   test('large measurement percentages group thousands without changing the measured return', () => {
     const range = drawings.drawingRange({ time: 0, price: 1 }, { time: 3600, price: 194.2766 }, [], 3600);
     expect(range.pct).toBeCloseTo(19327.66, 8);
-    expect(drawings.drawingRangeLines(range, 'ru')[0]).toBe('+19\u00a0327,66%');
-    expect(drawings.drawingRangeLines(range, 'en')[0]).toBe('+19,327.66%');
+    expect(drawings.drawingRangeLines(range, 'ru')[0]).toBe('+193,28 (+19\u00a0327,66%)');
+    expect(drawings.drawingRangeLines(range, 'en')[0]).toBe('+193.28 (+19,327.66%)');
     expect(drawings.drawingRangeLines({ ...range, pct: null }, 'ru')[0]).toBe('—');
     expect(drawings.drawingRangeLines({ ...range, pct: Infinity }, 'ru')[0]).toBe('—');
   });
@@ -770,7 +783,7 @@ describe('every drawing kind paints and can be picked', () => {
   test('the ruler label reads the move in percent, then bars and time', () => {
     const g = geometry.drawingGeometry({ kind: 'ruler', points: [{ time: 0, price: 100 }, { time: 900, price: 110 }] }, linearView())!;
     const label = g.prims.find((p) => p.t === 'label') as Extract<geometry.Primitive, { t: 'label' }>;
-    expect(label.lines[0]).toBe('+10.00%');
+    expect(label.lines[0]).toBe('+10.00 (+10.00%)');
     expect(label.lines[1]).toBe('3 bars, 15m');
     expect(label.size).toBe(14);
     const box = geometry.labelBox(label);

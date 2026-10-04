@@ -74,7 +74,12 @@ const waitForServer = () => new Promise((resolve, reject) => {
   attempt();
 });
 
-const pct = (from, to) => `${to >= from ? '+' : ''}${(((to - from) / from) * 100).toLocaleString('ru', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+// The label's first line, as TradingView prints it: price move, then percent.
+const pct = (from, to) => {
+  const diff = to - from;
+  const move = `${diff > 0 ? '+' : diff < 0 ? '-' : ''}${Math.abs(diff).toLocaleString('ru', { minimumFractionDigits: 2, maximumFractionDigits: Math.abs(diff) >= 100 ? 2 : 4 })}`;
+  return `${move} (${to >= from ? '+' : ''}${((diff / from) * 100).toLocaleString('ru', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)`;
+};
 /** The ruler's label lines as painted, or [] when hidden. */
 const rulerLabel = (page) => page.evaluate(() => [...document.querySelectorAll('g[data-drawing-kind="ruler"] text')].map((t) => t.textContent));
 /** Centre of a ruler handle on the page. */
