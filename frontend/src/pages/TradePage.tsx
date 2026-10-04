@@ -43,6 +43,7 @@ import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/TerminalMobileParity.css';
 import './trade-terminal/TerminalPreviewPolish.css';
 import './trade-terminal/SpotCfdGraphite.css';
+import './trade-terminal/SpotMobileCompact.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
 import { isEdgeMarketPair } from '../lib/nrxMarket';
@@ -83,9 +84,8 @@ export function TradePage() {
   // the URL itself changes, so picking a pair in the sidebar — which
   // doesn't touch the URL — is never clobbered by it.
   useEffect(() => {
-    const next = searchParams.get('pair');
-    if (next && PAIR_PATTERN.test(next)) setPair(next);
-  }, [searchParams]);
+    if (requestedPair && PAIR_PATTERN.test(requestedPair)) setPair(requestedPair);
+  }, [requestedPair]);
   const [book, setBook] = useState<{ pair: string; bids: any[]; asks: any[]; asOf?: number | null }>({ pair, bids: [], asks: [] });
   const [bookFeed, setBookFeed] = useState({ pair, healthy: false });
   // Effects run after render: never expose the previous instrument's depth
@@ -107,7 +107,7 @@ export function TradePage() {
   const pairResolving = !isTestMarketPair(pair) && !managedCatalogue.loaded && !venueSnapshot.tickers.has(pair.toUpperCase());
   const testMarket = useTestMarket(testPair && searchParams.get('market') !== 'cfd' ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
-  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart');
+  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>(searchParams.get('market') === 'cfd' ? 'chart' : 'trade');
   const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart');
   const mobileTabsRef = useRef<HTMLDivElement>(null);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
@@ -139,12 +139,13 @@ export function TradePage() {
   // useState initializer alone only ever fires once; without this effect,
   // switching "CFD" -> "Спот" from the nav updates the URL but leaves
   // marketType — and the whole page — stuck on whatever it started as.
-  const [marketType, setMarketType] = useState<MarketType>(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
+  const requestedMarketType: MarketType = searchParams.get('market') === 'cfd' ? 'cfd' : 'spot';
+  const [marketType, setMarketType] = useState<MarketType>(requestedMarketType);
   useEffect(() => {
-    setMarketType(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
-    setMobileTab('chart');
+    setMarketType(requestedMarketType);
+    setMobileTab(requestedMarketType === 'spot' ? 'trade' : 'chart');
     setMobilePane('chart');
-  }, [searchParams]);
+  }, [requestedMarketType]);
   // Landing here is the signal that spot is this user's current trading
   // mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('spot'), []);
@@ -282,6 +283,22 @@ export function TradePage() {
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }, [accountPanel]);
 
+  const selectSpotPair = useCallback((nextPair: string) => {
+    setPair(nextPair);
+    setSearchParams(current => {
+      const params = new URLSearchParams(current);
+      params.delete('market');
+      params.delete('symbol');
+      params.set('pair', nextPair);
+      return params;
+    }, { replace: true });
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      setMobilePane('chart');
+      setMobileTab('trade');
+      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    }
+  }, [setSearchParams]);
+
   function openPairSearch() {
     setMarketPanelCollapsed(false);
     if (window.matchMedia('(max-width: 900px)').matches) {
@@ -345,7 +362,7 @@ export function TradePage() {
   const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />;
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
-      <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
+      <Nav active="/trade" onTickerSelect={selectSpotPair} staticTicker tickerFitToWidth />
       {/* Each terminal reports its actual public feed, not an unused venue socket. */}
       <ConnectionBanner key={pair} connected={testPair ? testMarket.loaded && !testMarket.error && !!testMarket.asset : bookFeed.pair === pair && bookFeed.healthy} />
 
@@ -375,7 +392,7 @@ export function TradePage() {
             <PairListSidebar
               ref={pairListRef}
               pair={pair}
-              onChange={setPair}
+              onChange={selectSpotPair}
               onCollapse={() => setMarketPanelCollapsed(true)}
               onResizeStart={handleMarketResizeStart}
               onResizeBy={(delta) => setMarketPanelWidth(width => Math.min(340, Math.max(240, width + delta)))}
