@@ -750,6 +750,7 @@ export const ES: Record<Key, string> = {
   'markets.price': 'Precio',
   'markets.change24h': '% 24h',
   'markets.change7d': '% 7d',
+  'markets.new': 'Nuevos',
   'trade.sort7dGainers': 'Subidas, 7 días',
   'trade.sort7dLosers': 'Bajadas, 7 días',
   'markets.change30d': '% 30d',
