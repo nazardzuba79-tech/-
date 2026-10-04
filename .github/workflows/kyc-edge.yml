@@ -22,6 +22,8 @@ on:
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/lib/__tests__/kycEdgeClient.test.ts'
       - 'frontend/src/pages/settings-arctic/VerificationSection.tsx'
+      - 'frontend/src/pages/settings-arctic/KycUpload.tsx'
+      - 'frontend/src/components/CountrySelect.tsx'
       - 'frontend/src/pages/admin/KycSubmissionReview.tsx'
       - 'frontend/src/pages/admin/AdminKycPage.tsx'
       - 'frontend/src/lib/i18n/locales/**'
