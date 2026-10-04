@@ -7,6 +7,7 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
 import { VtaDemoSales, VtaDemoError } from '../../services/testMarkets/VtaDemoSales';
+import { nrxDemoRouter } from './nrxDemo';
 
 const priceString = z.string().refine((v) => new BigNumber(v).isGreaterThan(0), 'must be > 0');
 
@@ -29,6 +30,8 @@ const placeOrderSchema = z
  */
 export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTradingService, vtaDemo = new VtaDemoSales(prisma)): Router {
   const router = Router();
+  // vtaDemo.sell is wrapped by AccountDeletionGate in production index.ts.
+  router.use(nrxDemoRouter(prisma, undefined, params => vtaDemo.sell({ ...params, simulation: 'NRX' })));
 
   router.get('/demo/vta', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res, next) => {
     try { res.json(await vtaDemo.snapshot(req.userId!)); } catch (error) {
@@ -67,20 +70,12 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
 
     try {
       const result = await demoTrading.placeOrder({
-        userId: req.userId!,
-        pair,
-        side,
-        type,
-        price: price ? new BigNumber(price) : undefined,
-        quantity: new BigNumber(quantity),
+        userId: req.userId!, pair, side, type,
+        price: price ? new BigNumber(price) : undefined, quantity: new BigNumber(quantity),
       });
       res.status(201).json({
-        order: {
-          ...result.order,
-          price: result.order.price?.toString() ?? null,
-          originalQuantity: result.order.originalQuantity.toString(),
-          remainingQuantity: result.order.remainingQuantity.toString(),
-        },
+        order: { ...result.order, price: result.order.price?.toString() ?? null,
+          originalQuantity: result.order.originalQuantity.toString(), remainingQuantity: result.order.remainingQuantity.toString() },
         trades: result.trades.map((t) => ({ ...t, price: t.price.toString(), quantity: t.quantity.toString() })),
       });
     } catch (err) {
@@ -91,19 +86,11 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
 
   router.get('/demo/orders/open', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const orders = await demoTrading.getOpenOrders(req.userId!);
-    res.json(
-      orders.map((o) => ({
-        id: o.id,
-        pair: o.pair,
-        side: o.side,
-        type: o.type,
-        price: o.price?.toString() ?? null,
-        originalQuantity: o.originalQuantity.toString(),
-        remainingQuantity: o.remainingQuantity.toString(),
-        status: o.status,
-        createdAt: o.createdAt,
-      }))
-    );
+    res.json(orders.map((o) => ({
+      id: o.id, pair: o.pair, side: o.side, type: o.type, price: o.price?.toString() ?? null,
+      originalQuantity: o.originalQuantity.toString(), remainingQuantity: o.remainingQuantity.toString(),
+      status: o.status, createdAt: o.createdAt,
+    })));
   }));
 
   router.delete('/demo/orders/:orderId', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
@@ -114,8 +101,7 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
 
   router.get('/demo/orderbook/:pair', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const snapshot = demoTrading.getOrderBook(req.params.pair.toUpperCase());
-    res.json({
-      pair: snapshot.pair,
+    res.json({ pair: snapshot.pair,
       bids: snapshot.bids.map((l) => ({ price: l.price.toString(), quantity: l.quantity.toString(), orders: l.orderCount })),
       asks: snapshot.asks.map((l) => ({ price: l.price.toString(), quantity: l.quantity.toString(), orders: l.orderCount })),
       timestamp: snapshot.timestamp,

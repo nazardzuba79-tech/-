@@ -1,0 +1,51 @@
+name: NRX private simulation isolation
+on:
+  pull_request:
+    paths:
+      - 'src/services/testMarkets/**'
+      - 'src/api/routes/demoTrading.ts'
+      - 'src/api/routes/nrxDemo.ts'
+      - 'src/api/routes/__tests__/nrxDemo.test.ts'
+      - 'frontend/src/components/OrderForm.tsx'
+      - 'frontend/src/lib/useVtaSpotAccount.ts'
+      - 'frontend/src/lib/nrxDemoApi.ts'
+      - '.github/workflows/nrx-demo-isolation.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nrx-demo-isolation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fixture
+          POSTGRES_PASSWORD: fixture_only
+          POSTGRES_DB: voltex_nrx_demo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fixture -d voltex_nrx_demo_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://fixture:fixture_only@127.0.0.1:5432/voltex_nrx_demo_test
+      DIRECT_URL: postgresql://fixture:fixture_only@127.0.0.1:5432/voltex_nrx_demo_test
+      NRX_DEMO_TEST_DATABASE_URL: postgresql://fixture:fixture_only@127.0.0.1:5432/voltex_nrx_demo_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy
+      - name: Real PostgreSQL isolation, retries, concurrency, rollback and routes
+        run: npx jest --runInBand --runTestsByPath src/services/testMarkets/__tests__/nrxDemoSales.pg.test.ts src/api/routes/__tests__/nrxDemo.test.ts src/api/routes/__tests__/demoTrading.test.ts
+      - name: Backend and frontend compile
+        run: npm run build && npm run build --prefix frontend

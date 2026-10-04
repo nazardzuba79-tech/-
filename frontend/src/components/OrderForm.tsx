@@ -4,6 +4,7 @@ import { api, ApiError, getToken, onSessionChange } from '../lib/api';
 import { onSpendableBalancesChanged } from '../lib/balanceInvalidation';
 import { readVtaIntent, prepareVtaIntent, clearVtaIntent, withVtaSaleLock } from '../lib/vtaSaleIntent';
 import { useVtaSpotAccount } from '../lib/useVtaSpotAccount';
+import { NrxDemoApiError } from '../lib/nrxDemoApi';
 import { useMarketTicker } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
@@ -15,13 +16,8 @@ import { spotOrderFeedback, type SpotOrderFeedback } from '../lib/spotOrderFeedb
 import { customerErrorText } from '../lib/customerError';
 import { isManagedTradablePair, isTestMarketPair } from '../lib/testMarkets';
 
-// The exchange charges no trading fee anywhere in this codebase (see the
-// "0% fee" claim already on the registration page) — shown here as an
-// honest 0.00, not a fabricated rate.
-
 type OrderFamily = 'LIMIT' | 'MARKET' | 'STOP' | 'TAKE_PROFIT' | 'OCO';
 type Execution = 'LIMIT' | 'MARKET';
-
 export interface PickedPrice {
   value: string;
   pair?: string;
@@ -43,8 +39,11 @@ export function OrderForm({
   const { t } = useLanguage();
   const toast = useToast();
   const [baseAsset, quoteAsset] = pair.split('/');
-  const privateVta = pair.toUpperCase() === 'VTA/USDT';
-  const vta = useVtaSpotAccount(privateVta);
+  const privateNrx = pair.toUpperCase() === 'NRX/USDT';
+  // Both built-in private simulations use DemoBalance, never ordinary funds.
+  const privateVta = pair.toUpperCase() === 'VTA/USDT' || privateNrx;
+  const vta = useVtaSpotAccount(privateVta, pair);
+  const intentAccountId = vta.snapshot?.account.id ? (privateNrx ? `${vta.snapshot.account.id}:NRX` : vta.snapshot.account.id) : undefined;
   const vtaPending = useRef<{ requestId: string; quantity: string } | null>(null);
   const [vtaUnconfirmed, setVtaUnconfirmed] = useState(false);
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
@@ -59,9 +58,6 @@ export function OrderForm({
   const [percent, setPercent] = useState(0);
   const [available, setAvailable] = useState<{ base: number; quote: number }>({ base: 0, quote: 0 });
   const [marketPrice, setMarketPrice] = useState<number | null>(null);
-  // Everything the new market-info block below the CTA shows — same ticker
-  // poll that already drove marketPrice, just keeping the rest of the
-  // payload instead of discarding it. No extra request.
   const [marketStats, setMarketStats] = useState<{
     changePercent24h: number;
     high24h: number;
@@ -81,10 +77,8 @@ export function OrderForm({
     setBalanceReady(false);
     setBalanceVersion(version => version + 1);
   }), [privateVta]);
-  // An upcoming listing (VOLTORA) shows the whole form, like any pair, but
-  // trading has not opened: a Buy/Sell answers with that and sends nothing.
-  // The server refuses the pair on its own as well (OrderService).
-  // NRX and a tradable managed listing use the ordinary Spot order path (the server refuses them before listing).
+  // Managed listings keep their existing path; NRX now takes the private
+  // simulation branch below, with no fallback to api.placeOrder.
   const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !isManagedTradablePair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;
   const vtaLocked = privateVta && (submitting || vtaUnconfirmed);
   useEffect(() => onSessionChange(() => {
@@ -92,7 +86,7 @@ export function OrderForm({
     vtaPending.current = null; setVtaUnconfirmed(false); setQuantity(''); setError(null);
   }), [privateVta]);
   useEffect(() => {
-    const accountId = vta.snapshot?.account.id;
+    const accountId = intentAccountId;
     if (!privateVta || !accountId) return;
     const token = getToken(); let disposed = false;
     const current = () => !disposed && getToken() === token;
@@ -104,7 +98,7 @@ export function OrderForm({
         if (!pending) return;
         setSide('SELL'); setFamily('MARKET'); setQuantity(pending.quantity); setError(t('trade.orderStatusUnconfirmed'));
         // Recovery is a GET only. Missing/failed lookup keeps the same intent.
-        const result = await api.getVtaSale(pending.requestId);
+        const result = privateNrx ? await vta.getSale(pending.requestId) : await api.getVtaSale(pending.requestId);
         if (!current() || vtaPending.current?.requestId !== pending.requestId) return;
         if (result.receipt) {
           clearVtaIntent(accountId, pending.requestId);
@@ -120,15 +114,15 @@ export function OrderForm({
     };
     window.addEventListener('storage', changed);
     return () => { disposed = true; window.removeEventListener('storage', changed); };
-  }, [privateVta, vta.snapshot?.account.id]);
+  }, [privateVta, privateNrx, intentAccountId]);
   useEffect(() => {
     if (!privateVta) return;
     setAvailable({
-      base: Number(vta.snapshot?.balances.find(b => b.asset === 'VTA')?.available ?? 0),
+      base: Number(vta.snapshot?.balances.find(b => b.asset === baseAsset)?.available ?? 0),
       quote: Number(vta.snapshot?.balances.find(b => b.asset === 'USDT')?.available ?? 0),
     });
     setBalanceReady(!!vta.snapshot); setBalanceError(vta.failed); setBalanceLoading(vta.loading);
-  }, [privateVta, vta.snapshot, vta.failed, vta.loading]);
+  }, [privateVta, baseAsset, vta.snapshot, vta.failed, vta.loading]);
 
   const isConditional = family === 'STOP' || family === 'TAKE_PROFIT';
   const type: 'LIMIT' | 'MARKET' | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET' =
@@ -144,10 +138,6 @@ export function OrderForm({
       ? 'TAKE_PROFIT_LIMIT'
       : 'TAKE_PROFIT_MARKET';
 
-  // Clicking a level in the order book fills the price here — the reason
-  // the reference gives every `.ob-row` a pointer cursor. A picked price is
-  // a limit price, so the form switches to LIMIT rather than silently
-  // setting a field the active order type would ignore.
   useEffect(() => {
     if (!pickedPrice || (pickedPrice.pair && pickedPrice.pair !== pair)) return;
     setPrice(pickedPrice.value);
@@ -182,19 +172,6 @@ export function OrderForm({
   }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion, privateVta]);
 
   const { ticker: referenceTicker } = useMarketTicker(pair, 5000);
-
-  // A live reference price is needed for more than just MARKET orders now:
-  // the % slider/total estimate for conditional orders, and the inline
-  // "must be above/below current price" hint that mirrors the server's
-  // own trigger-direction validation.
-  //
-  // Same 5s cadence, same figures, now from the shared market-data store
-  // rather than this form's own per-pair poll — the ticker bar directly
-  // above it was already fetching the identical data.
-  //
-  // This is REFERENCE price only: it drives estimates and the client-side
-  // hint. Order placement, validation and execution are unchanged, and the
-  // server re-validates every trigger direction against its own book.
   useEffect(() => {
     if (!referenceTicker) { if (privateVta) { setMarketPrice(null); setMarketStats(null); } return; }
     setMarketPrice(positiveOrderNumber(referenceTicker.lastPrice));
@@ -213,9 +190,6 @@ export function OrderForm({
     family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? positiveOrderNumber(price) ?? 0 : marketPrice ?? 0;
   const total = effectivePrice && quantity ? (effectivePrice * parseFloat(quantity)).toFixed(2) : '0.00';
 
-  // % slider / drag both spend a share of whichever balance funds this
-  // side of the trade — quote balance (e.g. USDT) for a buy, base balance
-  // (e.g. BTC) for a sell — driven by real balances, not a fake number.
   function applyPercent(pct: number) {
     if (!balanceReady || balanceError || vtaLocked) return;
     setPercent(pct);
@@ -224,15 +198,13 @@ export function OrderForm({
       setQuantity(balancePercentageQuantity(available.quote, pct, funding));
     } else {
       if (privateVta && pct === 100) {
-        setQuantity(vta.snapshot?.balances.find(b => b.asset === 'VTA')?.available ?? '0');
+        setQuantity(vta.snapshot?.balances.find(b => b.asset === baseAsset)?.available ?? '0');
       } else {
         setQuantity(balancePercentageQuantity(available.base, pct));
       }
     }
   }
 
-  // Same direction rule the backend enforces (OrderService.validateTriggerDirection):
-  // a SELL stop/BUY take-profit must sit below the current price, the reverse above.
   function triggerHint(kind: 'STOP' | 'TAKE_PROFIT'): string | null {
     if (!marketPrice) return null;
     const mustBeBelow = (kind === 'STOP' && side === 'SELL') || (kind === 'TAKE_PROFIT' && side === 'BUY');
@@ -259,6 +231,9 @@ export function OrderForm({
       const message = t(side === 'BUY' ? 'trade.assetPurchaseUnavailable' : 'trade.assetOrderTypeUnavailable');
       setError(message); toast.error(message); return;
     }
+    if (privateNrx && !vta.snapshot) {
+      const message = t('trade.loadAssetsError'); setError(message); toast.error(message); return;
+    }
     if (notTradingYet) {
       const message = t('trade.assetNotTradingYet');
       setError(message);
@@ -280,7 +255,7 @@ export function OrderForm({
       let feedback: SpotOrderFeedback = { kind: 'placed' };
       if (privateVta) {
         if (side !== 'SELL' || family !== 'MARKET' || (!vta.snapshot && !vtaPending.current)) return;
-        const accountId = vta.snapshot?.account.id;
+        const accountId = intentAccountId;
         if (!accountId) return;
         await withVtaSaleLock(accountId, async () => {
           if (getToken() !== session) return;
@@ -288,14 +263,16 @@ export function OrderForm({
           const pending = prepareVtaIntent(accountId, quantity);
           vtaPending.current = pending; setVtaUnconfirmed(true); setQuantity(pending.quantity);
           try {
-            await api.sellVtaDemo(pending.requestId, pending.quantity);
+            if (privateNrx) await vta.sell(pending.requestId, pending.quantity);
+            else await api.sellVtaDemo(pending.requestId, pending.quantity);
             if (getToken() !== session) return;
             clearVtaIntent(accountId, pending.requestId);
             vtaPending.current = null; setVtaUnconfirmed(false);
           } catch (error) {
-            // Only an explicit first-attempt server rejection can discard an
-            // intent. 429, timeout, conflict or any earlier ambiguity retain it.
-            if (getToken() === session && !existed && error instanceof ApiError && error.body.vtaOutcome === 'REJECTED') {
+            // Only a definitive first-attempt refusal may discard the intent.
+            const rejected = privateNrx ? error instanceof NrxDemoApiError && error.rejected
+              : error instanceof ApiError && error.body.vtaOutcome === 'REJECTED';
+            if (getToken() === session && !existed && rejected) {
               clearVtaIntent(accountId, pending.requestId); vtaPending.current = null;
             }
             throw error;
@@ -344,7 +321,7 @@ export function OrderForm({
         if (getToken() !== session) return;
         setVtaUnconfirmed(vtaPending.current !== null);
       }
-      const message = customerErrorText(err, t, t('trade.placeOrderError'));
+      const message = err instanceof NrxDemoApiError ? err.message : customerErrorText(err, t, t('trade.placeOrderError'));
       setError(message);
       toast.error(message);
     } finally {
@@ -353,8 +330,6 @@ export function OrderForm({
     }
   }
 
-  // Keep every order family reachable. The compact reference geometry
-  // below fits all five real order modes without replacing OCO with a mock.
   const FAMILY_TABS: { id: OrderFamily; label: string }[] = [
     { id: 'LIMIT', label: t('trade.limitOrder') },
     { id: 'MARKET', label: t('trade.marketOrder') },
@@ -362,91 +337,45 @@ export function OrderForm({
     { id: 'TAKE_PROFIT', label: t('trade.takeProfitOrder') },
     { id: 'OCO', label: t('trade.ocoOrder') },
   ];
-
   const lastPriceLabel = t('trade.lastPriceBtn');
   const sideClass = side === 'BUY' ? 'buy' : 'sell';
-
-  // The reference's Total field is editable and back-computes Amount from
-  // it. Our Total was previously read-only; making it writable here is the
-  // designed control, driven by the same price/quantity state the rest of
-  // the form already uses — no new order concept.
   function applyTotal(value: string) {
     const totalValue = parseFloat(value) || 0;
     if (!effectivePrice || effectivePrice <= 0) return;
     setQuantity(balancePercentageQuantity(totalValue, 100, effectivePrice));
     setPercent(0);
   }
-
-  // The reference's slider is five discrete steps, filled up to the one
-  // clicked. Same percentages the previous drag slider offered.
   const SLIDER_STEPS = [0, 25, 50, 75, 100];
 
   return (
     <>
+      {privateNrx && <div className="terminal-account-state" data-account-scope="SIMULATION_SPOT">
+        <span>NRX · DEMO</span>
+        <span>{vta.snapshot?.balances.find(b => b.asset === 'USDT')?.available ?? '—'} USDT · DEMO</span>
+      </div>}
       <div className="order-form-tabs">
-        <button
-          type="button"
-          className={`order-form-tab buy ${side === 'BUY' ? 'active' : ''}`}
-          aria-pressed={side === 'BUY'}
-          onClick={() => { setSide('BUY'); setPercent(0); setError(null); }}
-        >
-          {/* Spot says «Купить» / «Продать», never «Купить BTC». The ticker
-              is already on the pair header, the quantity field's suffix and
-              the balance line; repeating it inside the action turned a
-              two-word button into a wrapping one on long symbols. Futures
-              keeps its own position wording — see FuturesOrderForm. */}
+        <button type="button" className={`order-form-tab buy ${side === 'BUY' ? 'active' : ''}`} aria-pressed={side === 'BUY'}
+          onClick={() => { setSide('BUY'); setPercent(0); setError(null); }}>
           {t('trade.buy')}
         </button>
-        <button
-          type="button"
-          className={`order-form-tab sell ${side === 'SELL' ? 'active' : ''}`}
-          aria-pressed={side === 'SELL'}
-          onClick={() => { setSide('SELL'); setPercent(0); setError(null); }}
-        >
+        <button type="button" className={`order-form-tab sell ${side === 'SELL' ? 'active' : ''}`} aria-pressed={side === 'SELL'}
+          onClick={() => { setSide('SELL'); setPercent(0); setError(null); }}>
           {t('trade.sell')}
         </button>
       </div>
-
       <div className="order-type-tabs">
         {FAMILY_TABS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            className={`order-type-tab ${family === f.id ? 'active' : ''}`}
-            aria-pressed={family === f.id}
-            onClick={() => { setFamily(f.id); setPercent(0); setError(null); }}
-          >
-            {f.label}
-          </button>
+          <button key={f.id} type="button" className={`order-type-tab ${family === f.id ? 'active' : ''}`} aria-pressed={family === f.id}
+            onClick={() => { setFamily(f.id); setPercent(0); setError(null); }}>{f.label}</button>
         ))}
       </div>
-
       <form onSubmit={handleSubmit} className="order-form-content" noValidate={notTradingYet || privateVta}>
-        {/* Stop and take-profit orders can execute as either a limit or a
-            market order — the reference has no equivalent control because
-            it has no conditional orders, so this reuses its order-type tab
-            styling rather than introducing a third look. */}
         {isConditional && (
           <div className="order-type-tabs" style={{ padding: 0 }}>
-            <button
-              type="button"
-              className={`order-type-tab ${execution === 'LIMIT' ? 'active' : ''}`}
-              aria-pressed={execution === 'LIMIT'}
-              onClick={() => setExecution('LIMIT')}
-            >
-              {t('trade.limitOrder')}
-            </button>
-            <button
-              type="button"
-              className={`order-type-tab ${execution === 'MARKET' ? 'active' : ''}`}
-              aria-pressed={execution === 'MARKET'}
-              onClick={() => setExecution('MARKET')}
-            >
-              {t('trade.marketOrder')}
-            </button>
+            <button type="button" className={`order-type-tab ${execution === 'LIMIT' ? 'active' : ''}`} aria-pressed={execution === 'LIMIT'} onClick={() => setExecution('LIMIT')}>{t('trade.limitOrder')}</button>
+            <button type="button" className={`order-type-tab ${execution === 'MARKET' ? 'active' : ''}`} aria-pressed={execution === 'MARKET'} onClick={() => setExecution('MARKET')}>{t('trade.marketOrder')}</button>
           </div>
         )}
-
         {family === 'OCO' && (
           <>
             <div className="form-group">
@@ -458,9 +387,9 @@ export function OrderForm({
               {triggerHint('TAKE_PROFIT') && <div className="form-label"><span>{triggerHint('TAKE_PROFIT')}</span></div>}
             </div>
             <div className="form-group">
-              <div className="form-label"><span>{t('trade.stopTriggerPrice')}</span></div>
+              <div className="form-label"><span>{t('trade.triggerPrice')}</span></div>
               <div className="input-group">
-                <input aria-label={t('trade.stopTriggerPrice')} type="number" step="any" required value={ocoStopTriggerPrice} onChange={(e) => setOcoStopTriggerPrice(e.target.value)} placeholder="0.00" />
+                <input aria-label={t('trade.triggerPrice')} type="number" step="any" required value={ocoStopTriggerPrice} onChange={(e) => setOcoStopTriggerPrice(e.target.value)} placeholder="0.00" />
                 <span className="input-suffix">{quoteAsset}</span>
               </div>
               {triggerHint('STOP') && <div className="form-label"><span>{triggerHint('STOP')}</span></div>}
@@ -474,7 +403,6 @@ export function OrderForm({
             </div>
           </>
         )}
-
         {family !== 'OCO' && (
           <>
             {isConditional && (
@@ -489,15 +417,12 @@ export function OrderForm({
                 )}
               </div>
             )}
-
             {(family === 'LIMIT' || (isConditional && execution === 'LIMIT')) && (
               <div className="form-group">
                 <div className="form-label">
                   <span>{t('trade.price')}</span>
                   {marketPrice !== null && (
-                    <button type="button" className="max-btn" onClick={() => setPrice(String(marketPrice))}>
-                      {lastPriceLabel}
-                    </button>
+                    <button type="button" className="max-btn" onClick={() => setPrice(String(marketPrice))}>{lastPriceLabel}</button>
                   )}
                 </div>
                 <div className="input-group">
@@ -506,7 +431,6 @@ export function OrderForm({
                 </div>
               </div>
             )}
-
             {(family === 'MARKET' || (isConditional && execution === 'MARKET')) && (
               <div className="form-group">
                 <div className="form-label"><span>{t('trade.price')}</span></div>
@@ -518,27 +442,14 @@ export function OrderForm({
             )}
           </>
         )}
-
         <div className="form-group">
           <div className="form-label"><span>{t('trade.quantity')}</span></div>
           <div className="input-group">
-            <input
-              aria-label={t('trade.quantity')}
-              type="number"
-              step="any"
-              required
-              disabled={vtaLocked}
-              value={quantity}
-              onChange={(e) => {
-                setQuantity(e.target.value);
-                setPercent(0);
-              }}
-              placeholder="0.00"
-            />
+            <input aria-label={t('trade.quantity')} type="number" step="any" required disabled={vtaLocked} value={quantity}
+              onChange={(e) => { setQuantity(e.target.value); setPercent(0); }} placeholder="0.00" />
             <span className="input-suffix">{baseAsset}</span>
           </div>
         </div>
-
         <div className="form-group">
           <div className="form-label"><span>{t('trade.total')}</span></div>
           <div className="input-group">
@@ -546,116 +457,60 @@ export function OrderForm({
             <span className="input-suffix">{quoteAsset}</span>
           </div>
         </div>
-
         <div className="slider-container">
           <input className="terminal-size-range" type="range" min="0" max="100" step="25" aria-label={t('trade.quantity')} value={percent} disabled={!balanceReady || balanceError || vtaLocked} onChange={event => applyPercent(Number(event.target.value))} />
           <div className="slider-track">
             {SLIDER_STEPS.map((step, idx) => (
-              <button
-                key={step}
-                type="button"
-                data-label={`${step}%`}
-                aria-label={`${step}%`}
-                aria-pressed={percent === step}
-                disabled={!balanceReady || balanceError || vtaLocked}
-                className={`slider-step ${percent >= step ? 'active' : ''} ${sideClass}`}
-                onClick={() => applyPercent(SLIDER_STEPS[idx])}
-              />
+              <button key={step} type="button" data-label={`${step}%`} aria-label={`${step}%`} aria-pressed={percent === step}
+                disabled={!balanceReady || balanceError || vtaLocked} className={`slider-step ${percent >= step ? 'active' : ''} ${sideClass}`}
+                onClick={() => applyPercent(SLIDER_STEPS[idx])} />
             ))}
           </div>
-          <div className="slider-labels">
-            {SLIDER_STEPS.map((step) => (
-              <span key={step}>{step}%</span>
-            ))}
-          </div>
+          <div className="slider-labels">{SLIDER_STEPS.map((step) => (<span key={step}>{step}%</span>))}</div>
         </div>
-
         <div className="order-summary" data-initial-loading={balanceLoading && !balanceReady && !balanceError || undefined} aria-busy={balanceLoading && !balanceReady && !balanceError}>
           <div className="available-balance">
-            <span>{t('trade.available')}</span>
+            <span>{privateNrx ? `DEMO · ${t('trade.available')}` : t('trade.available')}</span>
             <span className="amount">
               {balanceReady && !balanceError ? (side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : privateVta ? 8 : 6) : '—'}{' '}
               {side === 'BUY' ? quoteAsset : baseAsset}
             </span>
           </div>
-
         </div>
-
         {balanceError && <div className="terminal-account-state" role="alert" aria-busy={balanceLoading}>
           <span>{t('trade.loadAssetsError')}</span>
           <button type="button" className="terminal-account-retry" disabled={balanceLoading} onClick={() => privateVta ? void vta.refresh() : setBalanceVersion(version => version + 1)}>{t('trade.retry')}</button>
         </div>}
         {error && (
-          <div role="alert" className="available-balance" style={{ color: 'var(--color-sell)' }}>
-            <span style={{ color: 'inherit' }}>{error}</span>
-          </div>
+          <div role="alert" className="available-balance" style={{ color: 'var(--color-sell)' }}><span style={{ color: 'inherit' }}>{error}</span></div>
         )}
-
         <button type="submit" disabled={submitting} className={`submit-btn ${sideClass}`}>
           {submitting ? t('auth.wait') : side === 'BUY' ? t('trade.buy') : t('trade.sell')}
         </button>
-
-        {/* Fills the space that used to sit empty below the CTA — the same
-            ticker poll driving marketPrice above, plus the same balances
-            call from the effect near the top of this component. Nothing
-            here is fetched or computed just for this block, and nothing
-            futures-only (funding rate, mark/index price, open interest)
-            is shown, since this is a spot pair and doesn't have any of
-            those. */}
+        {privateNrx && vta.snapshot && <details data-account-scope="SIMULATION_SPOT">
+          <summary>{t('trade.tabOrderHistory')} · DEMO</summary>
+          {vta.snapshot.sales.map(sale => <div key={sale.id} className="info-row">
+            <span>{sale.quantity} NRX × {sale.price}</span><span>{sale.proceeds} USDT</span>
+          </div>)}
+        </details>}
         <div className="info-section">
           <div className="info-heading">{t('trade.marketInfo')}</div>
-          <div className="info-row">
-            <span className="info-label">{t('trade.lastPrice')}</span>
-            <span className="info-value">
-              {marketPrice !== null ? formatSpotBookNumber(marketPrice) : '—'}
-            </span>
-          </div>
+          <div className="info-row"><span className="info-label">{t('trade.lastPrice')}</span><span className="info-value">{marketPrice !== null ? formatSpotBookNumber(marketPrice) : '—'}</span></div>
           <div className="info-row">
             <span className="info-label">{t('markets.change24h')}</span>
             <span className={`info-value ${marketStats ? (marketStats.changePercent24h >= 0 ? 'up' : 'down') : ''}`}>
-              {marketStats
-                ? `${marketStats.changePercent24h >= 0 ? '+' : ''}${marketStats.changePercent24h.toFixed(2)}%`
-                : '—'}
+              {marketStats ? `${marketStats.changePercent24h >= 0 ? '+' : ''}${marketStats.changePercent24h.toFixed(2)}%` : '—'}
             </span>
           </div>
-          <div className="info-row">
-            <span className="info-label">{t('trade.high24h')}</span>
-            <span className="info-value">
-              {marketStats ? formatSpotBookNumber(marketStats.high24h) : '—'}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">{t('trade.low24h')}</span>
-            <span className="info-value">
-              {marketStats ? formatSpotBookNumber(marketStats.low24h) : '—'}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">{`${t('trade.volume24h')} (${baseAsset})`}</span>
-            <span className="info-value">
-              {marketStats ? formatAmount(marketStats.volume24h) : '—'}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">{`${t('trade.volume24h')} (${quoteAsset})`}</span>
-            <span className="info-value">
-              {marketStats
-                ? formatCompact(marketStats.quoteVolume24h)
-                : '—'}
-            </span>
-          </div>
+          <div className="info-row"><span className="info-label">{t('trade.high24h')}</span><span className="info-value">{marketStats ? formatSpotBookNumber(marketStats.high24h) : '—'}</span></div>
+          <div className="info-row"><span className="info-label">{t('trade.low24h')}</span><span className="info-value">{marketStats ? formatSpotBookNumber(marketStats.low24h) : '—'}</span></div>
+          <div className="info-row"><span className="info-label">{`${t('trade.volume24h')} (${baseAsset})`}</span><span className="info-value">{marketStats ? formatAmount(marketStats.volume24h) : '—'}</span></div>
+          <div className="info-row"><span className="info-label">{`${t('trade.volume24h')} (${quoteAsset})`}</span><span className="info-value">{marketStats ? formatCompact(marketStats.quoteVolume24h) : '—'}</span></div>
         </div>
-
         <div className="info-section">
           <div className="info-heading">{t('trade.accountInfo')}</div>
-          <div className="info-row">
-            <span className="info-label">{`${t('trade.available')} ${baseAsset}`}</span>
-            <span className="info-value">{balanceReady && !balanceError ? formatPrice(available.base) : '—'}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">{`${t('trade.available')} ${quoteAsset}`}</span>
-            <span className="info-value">{balanceReady && !balanceError ? formatAmount(available.quote) : '—'}</span>
-          </div>
+          <div className="info-row"><span className="info-label">{`${t('trade.available')} ${baseAsset}`}</span><span className="info-value">{balanceReady && !balanceError ? formatPrice(available.base) : '—'}</span></div>
+          <div className="info-row"><span className="info-label">{`${t('trade.available')} ${quoteAsset}`}</span><span className="info-value">{balanceReady && !balanceError ? formatAmount(available.quote) : '—'}</span></div>
         </div>
       </form>
     </>

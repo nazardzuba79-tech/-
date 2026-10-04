@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js';
 import { v5 as uuidv5 } from 'uuid';
 import { VOLTORA } from './testAssetConfig';
 import { publicTestAsset } from './testMarketService';
+import { NrxDemoSales } from './NrxDemoSales';
 
 export class VtaDemoError extends Error {
   constructor(message: string, public status = 400) { super(message); }
@@ -60,7 +61,11 @@ export class VtaDemoSales {
     return { receipt: order ? { ...receipt(order), createdAt: order.createdAt } : null };
   }
 
-  async sell(params: { userId: string; requestId: string; quantity: string }) {
+  async sell(params: { userId: string; requestId: string; quantity: string; simulation?: 'NRX' }) {
+    // Internal dispatcher only: HTTP schemas never accept a simulation field.
+    // This stays inside the existing AccountDeletionGate wrapper of `sell`,
+    // so the new NRX mutation participates in the same deletion drain.
+    if (params.simulation === 'NRX') return new NrxDemoSales(this.prisma, this.clock).sell(params);
     const quantity = new BigNumber(params.quantity);
     if (!quantity.isFinite() || quantity.lte(0) || quantity.decimalPlaces()! > 8 || quantity.gte('1000000000000000000')) {
       throw new VtaDemoError('Количество должно быть положительным числом, не более 8 знаков после запятой.');
