@@ -92,6 +92,19 @@ const INTERVAL_SECONDS: Record<Interval, number> = {
   '1w': 604800,
 };
 
+/**
+ * Where the chart currently puts one price, its double and the first two
+ * bars. Drawings are projected through exactly these scales, so two equal
+ * keys paint every drawing in the same place; a key that differs means the
+ * chart has rescaled since the overlay was painted.
+ */
+function projectionKey(chart: IChartApi, series: ISeriesApi<'Candlestick'>, price: number): string {
+  const scale = chart.timeScale();
+  return [series.priceToCoordinate(price), series.priceToCoordinate(price * 2),
+    scale.logicalToCoordinate(0 as never), scale.logicalToCoordinate(1 as never), scale.width()]
+    .map((value) => (value === null ? '-' : Math.round(value * 4) / 4)).join('|');
+}
+
 /** Every tool the rail can select — the cursors, the eraser and each drawing kind. */
 type Tool = DrawingTool;
 type Point = DrawingPoint;
@@ -311,6 +324,13 @@ export function PriceChart({
   // Bumped on every pan/zoom/resize to force the SVG overlay to recompute
   // screen coordinates from the stored (time, price) points.
   const [, forceRedraw] = useState(0);
+  // The projection the overlay was last painted from. The chart also moves
+  // its scales on its own paint, where React never hears of it: dragging or
+  // double-clicking the price axis, autoscale after new bars. The ruler and
+  // every other drawing then stayed where the old scale had put them, off
+  // their candles (owner, 2026-10-04). A watcher on the chart's paint
+  // compares this key and repaints the overlay only when the scales moved.
+  const paintedProjectionRef = useRef<{ price: number; key: string } | null>(null);
 
   // Pending SL/TP orders for this pair, drawn as draggable horizontal
   // lines — real orders, not decoration: dragging one calls
@@ -502,6 +522,19 @@ export function PriceChart({
 
     const redraw = () => forceRedraw((n) => n + 1);
     chart.timeScale().subscribeVisibleTimeRangeChange(redraw);
+    // A pane primitive with no views of its own: the chart calls
+    // `updateAllViews` on every paint that moved a scale, after the price
+    // range is recalculated, so the comparison sees the scales on screen.
+    const projectionWatch = {
+      updateAllViews() {
+        const painted = paintedProjectionRef.current;
+        if (!painted || projectionKey(chart, series, painted.price) === painted.key) return;
+        // Once per change: the next overlay paint records the new key.
+        paintedProjectionRef.current = null;
+        redraw();
+      },
+    };
+    chart.panes()[0]?.attachPrimitive(projectionWatch);
     // Native click is also emitted after some touch/pan gestures. Keep a separate
     // gesture guard; pointer movement never triggers network requests or selection.
     const host = containerRef.current;
@@ -570,6 +603,8 @@ export function PriceChart({
       host.removeEventListener('pointermove', pointerMove, true);
       host.removeEventListener('pointercancel', pointerCancel, true);
       chart.unsubscribeClick(handleClick);
+      chart.panes()[0]?.detachPrimitive(projectionWatch);
+      paintedProjectionRef.current = null;
       privateMarkersRef.current?.detach();
       privateMarkersRef.current = null;
       privateLinesRef.current = [];
@@ -1388,6 +1423,8 @@ export function PriceChart({
     const container = containerRef.current;
     if (!chart || !series || !container || !chartReady) return null;
     const minMove = (series.options().priceFormat as { minMove?: number }).minMove;
+    const price = candlesRef.current[candlesRef.current.length - 1]?.close || 1;
+    paintedProjectionRef.current = { price, key: projectionKey(chart, series, price) };
     return {
       x: (time) => {
         const logical = timeToLogical(time);

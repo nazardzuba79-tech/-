@@ -58,7 +58,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
   let effects: (() => void)[] = [];
   const cleanups: (() => void)[] = [];
   const chartOptions: any[] = [];
-  const chartHarness: any = { series: [], hostEvents: new Map(), markers: [], priceLines: [], ranges: [] };
+  const chartHarness: any = { series: [], hostEvents: new Map(), markers: [], priceLines: [], ranges: [], primitives: [], priceShift: 0, writes: 0 };
 
   const getMyOrders = overrides.getMyOrders ?? jest.fn().mockResolvedValue(ORDER);
   const updateOrderTrigger = overrides.updateOrderTrigger ?? jest.fn().mockResolvedValue({});
@@ -69,7 +69,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     useState(initial: any) {
       const i = index++;
       if (!(i in hooks)) hooks[i] = typeof initial === 'function' ? initial() : initial;
-      return [hooks[i], (next: any) => { hooks[i] = typeof next === 'function' ? next(hooks[i]) : next; }];
+      return [hooks[i], (next: any) => { chartHarness.writes += 1; hooks[i] = typeof next === 'function' ? next(hooks[i]) : next; }];
     },
     useRef(initial: any) {
       const i = index++;
@@ -149,9 +149,10 @@ function fakeCharts(chartOptions: any[] = [], harness: any) {
     options: () => ({ priceFormat: { type: 'price', precision: 2, minMove: 0.01 } }),
     setData: jest.fn(),
     priceScale: () => ({ applyOptions: () => {} }),
-    // A linear, invertible mapping is all the overlay needs.
-    priceToCoordinate: (price: number) => 500 - price / 1000,
-    coordinateToPrice: (y: number) => (500 - y) * 1000,
+    // A linear, invertible mapping is all the overlay needs. `priceShift`
+    // stands for the chart rescaling on its own (axis drag, autoscale).
+    priceToCoordinate: (price: number) => 500 + (harness.priceShift ?? 0) - price / 1000,
+    coordinateToPrice: (y: number) => (500 + (harness.priceShift ?? 0) - y) * 1000,
     createPriceLine: (options: unknown) => { const line = { options, applyOptions: () => {} }; harness.priceLines.push(line); return line; },
     removePriceLine: (line: unknown) => { harness.priceLines = harness.priceLines.filter((item: unknown) => item !== line); },
   }; harness.series.push(result); return result; };
@@ -184,6 +185,11 @@ function fakeCharts(chartOptions: any[] = [], harness: any) {
     remove: () => {},
     applyOptions: () => {},
     paneSize: () => ({ width: 1100, height: 600 }),
+    // The chart calls a pane primitive's `updateAllViews` on its own paints.
+    panes: () => [{
+      attachPrimitive: (primitive: unknown) => { harness.primitives.push(primitive); },
+      detachPrimitive: (primitive: unknown) => { harness.primitives = harness.primitives.filter((item: unknown) => item !== primitive); },
+    }],
   };
   return {
     createChart: (_host: unknown, options: unknown) => { chartOptions.push(options); return chart; },
@@ -366,6 +372,40 @@ afterEach(() => {
     if (value === undefined) delete (globalThis as any)[key];
     else (globalThis as any)[key] = value;
   }
+});
+
+describe('drawings follow the chart when it rescales on its own (owner, 2026-10-04)', () => {
+  test('a chart paint that moved the price scale repaints the overlay once; an unmoved paint does not', async () => {
+    const chart = mount(SPOT);
+    chart.render();
+    await flush();
+    expect(conditionalLines(chart.render())[0].props.y1).toBe(401);
+    const [watch] = chart.chartHarness.primitives;
+    expect(typeof watch?.updateAllViews).toBe('function');
+
+    // The chart paints a crosshair move: nothing moved, nothing renders.
+    let writes = chart.chartHarness.writes;
+    watch.updateAllViews();
+    expect(chart.chartHarness.writes).toBe(writes);
+
+    // The price axis is dragged: the chart rescales without React hearing of it.
+    chart.chartHarness.priceShift = 80;
+    writes = chart.chartHarness.writes;
+    watch.updateAllViews();
+    expect(chart.chartHarness.writes).toBe(writes + 1);
+    // Further paints of the same change ask once, not once per frame.
+    watch.updateAllViews();
+    expect(chart.chartHarness.writes).toBe(writes + 1);
+
+    // The repaint uses the new scale, and that scale is now the settled one.
+    expect(conditionalLines(chart.render())[0].props.y1).toBe(481);
+    writes = chart.chartHarness.writes;
+    watch.updateAllViews();
+    expect(chart.chartHarness.writes).toBe(writes);
+
+    chart.unmount();
+    expect(chart.chartHarness.primitives).toEqual([]);
+  });
 });
 
 // ── Futures: no spot conditional-order traffic at all ────────────────
