@@ -1,21 +1,20 @@
-# Spot market list «Цена · 24ч % · 7д %».
+# Spot terminal compact market rail: Price · 24h · New.
 #
-# The jest suite pins the 7d source (the same verified catalogue field the
-# Futures list reads), «—» for an unknown week, ascending/descending sort and
-# 24h/7d independence. The browser run measures the real bundle at 1920, 1440
-# and 1366 with the panel at 240, 250, 258, 300 and 340px: no clipped figure,
-# headers over their columns, no horizontal overflow.
-name: Spot market 7d column
+# 7d performance stays on the full Markets page. This workflow protects the
+# narrow rail's ticker/logo readability, newest-listing discovery, sorting,
+# resize range and no-overflow browser geometry.
+name: Spot compact market rail
 
 on:
   pull_request:
     paths:
       - 'frontend/src/components/PairListSidebar.tsx'
       - 'frontend/src/components/SpotMarketControls.css'
-      - 'frontend/src/lib/change7d.ts'
-      - 'frontend/src/lib/useChange7d.ts'
+      - 'frontend/src/lib/testMarketStore.ts'
+      - 'frontend/src/lib/testMarkets.ts'
       - 'frontend/src/lib/pairList.ts'
       - 'frontend/src/lib/marketColumnSort.ts'
+      - 'frontend/src/lib/i18n/locales/**'
       - 'frontend/src/pages/trade-terminal/MarketReferenceTerminal.css'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/lib/__tests__/spotPairList7d.test.ts'
@@ -45,7 +44,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
-      - name: Spot list guards
+      - name: Spot compact-list guards
         run: npx jest frontend/src/lib/__tests__/spotPairList7d.test.ts frontend/src/lib/__tests__/spotPairList.test.ts frontend/src/lib/__tests__/cryptoCatalogue.test.ts frontend/src/lib/__tests__/marketColumnSort.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
@@ -53,7 +52,7 @@ jobs:
         run: |
           npm install --prefix /tmp/spot-7d-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/spot-7d-browser/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Spot list at 1920, 1440, 1366 and panel widths 240–340
+      - name: Spot compact rail at 1920, 1440, 1366 and panel widths 240–340
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/spot-7d-browser/node_modules/playwright
           QA_OUT: docs/qa/spot-market-7d/ci
@@ -61,7 +60,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: spot-market-7d-${{ github.sha }}
+          name: spot-compact-rail-${{ github.sha }}
           path: docs/qa/spot-market-7d/ci
           if-no-files-found: warn
           retention-days: 7
