@@ -168,15 +168,22 @@
     min-height:0;
     padding:6px 10px;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .available-balance {
-    gap:6px;
+  /* «Доступно» over the amount: in the narrow column the row keeps one
+     height whatever the balance's length (a long 8-decimal VTA balance
+     wrapped beside the label and moved the whole ticket down). */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .available-balance {
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:flex-start;
+    gap:2px;
     font-size:12px;
     line-height:16px;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .available-balance .amount {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .available-balance .amount {
     min-width:0;
+    max-width:100%;
     overflow-wrap:anywhere;
-    text-align:right;
+    text-align:left;
   }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-group { gap:3px; }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-label {
