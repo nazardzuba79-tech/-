@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
 import { assertSpotListingReady, spotPriceSource } from './testMarkets/nrxSpot';
-import { NEURIX } from './testMarkets/neurix';
 import { mutateSpotBalance } from './WalletMutation';
 import { SpotBookTransaction } from './SpotBookTransaction';
 
@@ -72,25 +71,8 @@ export class OrderService {
     quantity: BigNumber;
     ocoGroupId?: string; // internal — set by placeOcoOrder, not exposed on the public route
   }) {
-    // Listing gates remain authoritative for every path, including the
-    // owner's NRX simulation sale below.
+    // A test asset is shown, never traded: it never reaches the engine.
     await assertSpotListingReady(params.pair);
-
-    // NRX is a simulated listing. The owner/admin's MARKET SELL follows the
-    // original VTA simulation contract: execute against an explicit synthetic
-    // counterparty at the canonical server simulation price instead of
-    // pretending the display book is executable liquidity. Ordinary users,
-    // BUY orders and every non-market order keep the normal Spot matcher.
-    if (params.pair === NEURIX.pair && params.side === 'SELL' && params.type === 'MARKET') {
-      const user = await this.prisma.user.findUnique({
-        where: { id: params.userId },
-        select: { role: true, blockedAt: true },
-      });
-      if (user?.role === 'ADMIN' && !user.blockedAt) {
-        return this.sellNrxSimulation(params.userId, params.quantity);
-      }
-    }
-
     const [base, quote] = params.pair.split('/'); // e.g. BTC/USDT
     const conditional = isConditionalType(params.type);
     const effType = effectiveOrderType(params.type);
@@ -204,119 +186,6 @@ export class OrderService {
     // is readable would query, find nothing and go back to sleep.
     if (conditional) this.onConditionalOrderCommitted();
     return placed;
-  }
-
-  /**
-   * Owner-only NRX simulated liquidation.
-   *
-   * This deliberately does NOT touch MatchingEngine depth: NRX public depth is
-   * generated display data, so requiring a real maker makes a simulated market
-   * fail with "insufficient liquidity". The synthetic maker is explicit in the
-   * Trade/audit record. The owner's ordinary Spot balance remains the source of
-   * truth, matching the existing NRX allocation and the Spot "Доступно" line.
-   *
-   * Scope is intentionally narrow: ADMIN + NRX/USDT + MARKET SELL only.
-   * Normal customers and every ordinary pair still require real counterparties.
-   */
-  private async sellNrxSimulation(userId: string, quantity: BigNumber) {
-    if (!quantity.isFinite() || quantity.lte(0)) throw new Error('Quantity must be greater than zero');
-
-    const ticker = await spotPriceSource(this.priceSource).getTicker(NEURIX.pair);
-    const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
-    if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
-    const proceeds = price.times(quantity);
-    if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
-
-    const now = Date.now();
-    const orderId = uuidv4();
-    const tradeId = uuidv4();
-    const syntheticMaker = 'simulation:NRX';
-
-    return this.prisma.$transaction(async tx => {
-      // Re-check inside the financial transaction: role/block state changing
-      // between the preflight read and settlement must fail closed.
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { role: true, blockedAt: true },
-      });
-      if (user?.role !== 'ADMIN' || user.blockedAt) throw new Error('NRX simulation sale is not available for this account');
-
-      await mutateSpotBalance(tx, userId, 'NRX', { available: quantity.negated() });
-      await mutateSpotBalance(tx, userId, 'USDT', { available: proceeds });
-
-      await tx.order.create({
-        data: {
-          id: orderId,
-          userId,
-          pair: NEURIX.pair,
-          side: 'SELL',
-          type: 'MARKET',
-          price: null,
-          originalQuantity: quantity.toFixed(),
-          remainingQuantity: '0',
-          status: 'FILLED',
-          createdAt: new Date(now),
-        },
-      });
-      await tx.trade.create({
-        data: {
-          id: tradeId,
-          pair: NEURIX.pair,
-          takerOrderId: orderId,
-          makerOrderId: syntheticMaker,
-          takerUserId: userId,
-          makerUserId: syntheticMaker,
-          price: price.toFixed(),
-          quantity: quantity.toFixed(),
-          side: 'SELL',
-          executedAt: new Date(now),
-        },
-      });
-      await tx.auditLog.create({
-        data: {
-          userId,
-          action: 'NRX_SIMULATION_SOLD',
-          metadata: {
-            pair: NEURIX.pair,
-            orderId,
-            tradeId,
-            quantity: quantity.toFixed(),
-            price: price.toFixed(),
-            proceeds: proceeds.toFixed(),
-            counterparty: syntheticMaker,
-            source: 'NEURIX canonical simulation',
-          },
-        },
-      });
-
-      return {
-        order: {
-          id: orderId,
-          userId,
-          pair: NEURIX.pair,
-          side: 'SELL' as const,
-          type: 'MARKET' as const,
-          price: null,
-          originalQuantity: quantity,
-          remainingQuantity: new BigNumber(0),
-          status: 'FILLED' as const,
-          createdAt: now,
-          updatedAt: now,
-        },
-        trades: [{
-          id: tradeId,
-          pair: NEURIX.pair,
-          takerOrderId: orderId,
-          makerOrderId: syntheticMaker,
-          takerUserId: userId,
-          makerUserId: syntheticMaker,
-          price,
-          quantity,
-          side: 'SELL' as const,
-          executedAt: now,
-        }],
-      };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   /**
