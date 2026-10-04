@@ -142,6 +142,13 @@
     font-size:12px;
   }
 
+  /* Anything scrolled into view on a terminal phone — a focused field, a
+     CTA, a picked level — stops above the fixed bottom bar, never under it
+     (the trade buttons are in the page flow now, no longer sticky). */
+  html:has(:is(#archive-terminal-preview,.trade-terminal)) {
+    scroll-padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
   /* «{pair} нет на споте / среди фьючерсов» above the market chooser (id
      weight: the terminals' blanket padding reset would otherwise win). */
   :is(#archive-terminal-preview,.trade-terminal) .terminal-switch-note {

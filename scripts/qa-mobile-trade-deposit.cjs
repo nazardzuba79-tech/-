@@ -152,6 +152,13 @@ async function reachable(page, locator) {
   });
 }
 
+/** The same, starting with the control just peeking above the fold: the
+ *  minimal scroll must stop above the fixed bottom bar, not under it. */
+async function reachableFromBelow(page, locator) {
+  await locator.first().evaluate(el => { const r = el.getBoundingClientRect(); scrollBy(0, r.top - (innerHeight - 20)); });
+  return reachable(page, locator);
+}
+
 async function phoneWorkspace(browser, fx, [width, height], name, url) {
   scope = `${name} ${width}×${height}`;
   const { context, page, errors } = await open(browser, fx, url, { width, height });
@@ -176,6 +183,8 @@ async function phoneWorkspace(browser, fx, [width, height], name, url) {
   for (const [index, cta] of m.ctas.entries()) {
     const hit = await reachable(page, page.locator('.order-form-area .submit-btn').nth(index));
     check(hit.ok, `«${cta.text}» is reachable and not covered`, hit.why);
+    const fromBelow = await reachableFromBelow(page, page.locator('.order-form-area .submit-btn').nth(index));
+    check(fromBelow.ok, `«${cta.text}» scrolled up from below the fold stops above the bottom bar`, fromBelow.why);
   }
   const last = m.ctas.at(-1)?.box;
   check(m.positions && last && m.positions.y >= last.bottom - 1, 'positions / orders follow the CTAs', { positions: m.positions, cta: last });

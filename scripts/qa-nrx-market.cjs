@@ -105,6 +105,8 @@ async function screenshot(page, name) {
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.locator('.chart-area canvas').first().waitFor({ state: 'attached' });
       await page.waitForFunction(() => Number(document.querySelector('.ticker-bar .value.price')?.textContent?.replace(/,/g, '')) > .8, undefined, { timeout: 15000 });
+      // owner, 2026-10-04: phone opens on Trade once the market is live — bring the chart forward first.
+      if (width <= 900) await page.locator('#mobile-trade-chart').click();
       await Promise.all([
         page.waitForResponse(response => response.url().includes('NRX-USDT/candles?interval=5m')),
         page.locator('.chart-area').getByRole('button', { name: '5m', exact: true }).click(),
