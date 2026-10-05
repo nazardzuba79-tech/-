@@ -44,7 +44,7 @@ const get = path => worker.fetch(new Request('https://market.voltextech.net' + p
   assert.equal((await (await get('/market/nrx')).json()).assets[0].state.lastPrice, anchor, '48h balance returns to activation anchor');
   now = Date.parse('2026-10-08T02:00:00Z');
   const terminal = (await (await get('/market/nrx')).json()).assets[0].state.lastPrice;
-  assert.ok(Math.abs(terminal - anchor * .4) <= Math.max(1e-8, anchor * 1e-8), 'six-hour selloff ends exactly 60% below anchor');
+  assert.ok(Math.abs(terminal - anchor * .4) <= Math.max(1e-8, anchor * 1e-7), 'six-hour selloff ends at the canonical 8-significant-digit -60% target');
   now += 24 * 60 * 60 * 1000;
   const balanced = (await (await get('/market/nrx')).json()).assets[0].state.lastPrice;
   assert.ok(balanced > terminal * .5 && balanced < terminal * 1.6, 'post-selloff market remains balanced');
