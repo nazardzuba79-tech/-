@@ -1,5 +1,5 @@
 import type { TestAssetConfig } from './testAssetConfig';
-import type { ScheduledScenarioConfig } from './simulationSchedule';
+import type { GrowthScheduledScenarioConfig, ScheduledScenarioConfig } from './simulationSchedule';
 
 /** Shared configuration only: no environment, network, database or clock reads. */
 const NRX_LISTING_AT = Date.parse('2026-10-03T13:00:00Z');
@@ -14,7 +14,7 @@ const NRX_LISTING_AT = Date.parse('2026-10-03T13:00:00Z');
  * and attaching it now would price API sales away from that chart. Kept as the
  * reviewed plan; re-attach only with a future activation through the gate.
  */
-export const NRX_TWO_WEEK_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.freeze({
+export const NRX_TWO_WEEK_SCENARIO: Readonly<GrowthScheduledScenarioConfig> = Object.freeze({
   version: 3,
   // Owner update 2026-10-03: first impulse begins this evening. All targets
   // remain listing-relative to 0.80 USDT; already shown history stays intact.
