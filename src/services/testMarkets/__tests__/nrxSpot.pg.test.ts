@@ -62,6 +62,63 @@ pg('NRX normal Spot ledger on disposable PostgreSQL', () => {
     expect(await db.order.count({ where: { userId: other } })).toBe(0);
     expect(await db.balance.count({ where: { userId: other } })).toBe(0);
   });
+  test('owner MARKET SELL executes immediately against the explicit NRX simulation counterparty', async () => {
+    await allocateNrxOwner(db, owner);
+    const beforeUsdt = new BigNumber((await balance(owner, 'USDT'))!.available.toString());
+    const expectedPrice = new BigNumber(simulationFor(NEURIX).priceAt(Date.now())!);
+    const result = await place('SELL', owner, 'MARKET');
+    expect(result.order.status).toBe('FILLED');
+    expect(result.order.remainingQuantity.toString()).toBe('0');
+    expect(result.trades).toHaveLength(1);
+    expect(result.trades[0]).toMatchObject({ pair: NEURIX.pair, takerUserId: owner, makerUserId: 'simulation:NRX', side: 'SELL' });
+    expect(result.trades[0].price.eq(expectedPrice)).toBe(true);
+    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('6249');
+    expect(new BigNumber((await balance(owner, 'USDT'))!.available.toString()).eq(beforeUsdt.plus(expectedPrice))).toBe(true);
+    expect(await db.trade.count({ where: { takerUserId: owner, makerUserId: 'simulation:NRX' } })).toBe(1);
+    expect(await db.auditLog.count({ where: { userId: owner, action: 'NRX_SIMULATION_SOLD' } })).toBe(1);
+    expect(await balance(other, 'NRX')).toBeNull();
+  });
+  test('ordinary users do not receive synthetic NRX liquidity', async () => {
+    await db.balance.create({ data: { userId: other, asset: 'NRX', available: '1' } });
+    const result = await place('SELL', other, 'MARKET');
+    expect(result.trades).toHaveLength(0);
+    expect(result.order.status).toBe('CANCELLED');
+    expect((await balance(other, 'NRX'))!.available.toString()).toBe('1');
+    expect(await db.trade.count({ where: { makerUserId: 'simulation:NRX', takerUserId: other } })).toBe(0);
+  });
+  test('existing 31,250 fixture inventory sells half and then the remainder after service restart without demo allocation', async () => {
+    // This is disposable fixture inventory, not a production allocation command.
+    await db.balance.create({ data: { userId: owner, asset: 'NRX', available: '31250' } });
+    const price = new BigNumber(simulationFor(NEURIX).priceAt(Date.now())!);
+    const sellHalf = () => service.placeOrder({ userId: owner, pair: NEURIX.pair, side: 'SELL', type: 'MARKET', quantity: new BigNumber('15625') });
+    const first = await sellHalf();
+    expect(first.order.status).toBe('FILLED');
+    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('15625');
+    expect(new BigNumber((await balance(owner, 'USDT'))!.available.toString()).eq(price.times('15625').plus('1000'))).toBe(true);
+    service = new OrderService(db, new MatchingEngine(), source);
+    const second = await sellHalf();
+    expect(second.order.status).toBe('FILLED');
+    expect(second.order.id).not.toBe(first.order.id);
+    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('0');
+    expect((await balance(owner, 'NRX'))!.locked.toString()).toBe('0');
+    expect(new BigNumber((await balance(owner, 'USDT'))!.available.toString()).eq(price.times('31250').plus('1000'))).toBe(true);
+    expect(await db.order.count({ where: { userId: owner, status: 'FILLED' } })).toBe(2);
+    expect(await db.trade.count({ where: { takerUserId: owner, makerUserId: 'simulation:NRX' } })).toBe(2);
+    expect(await db.auditLog.count({ where: { userId: owner, action: 'NRX_SIMULATION_SOLD' } })).toBe(2);
+    expect(await db.demoBalance.count()).toBe(0);
+    expect(source.getTicker).not.toHaveBeenCalled();
+  });
+  test('owner sale cannot spend locked NRX or create USDT on an insufficient available balance', async () => {
+    await db.balance.create({ data: { userId: owner, asset: 'NRX', available: '2', locked: '3' } });
+    const nrx = await balance(owner, 'NRX');
+    const usdt = await balance(owner, 'USDT');
+    await expect(service.placeOrder({ userId: owner, pair: NEURIX.pair, side: 'SELL', type: 'MARKET', quantity: new BigNumber('3') })).rejects.toThrow('Insufficient NRX balance');
+    expect(await balance(owner, 'NRX')).toEqual(nrx);
+    expect(await balance(owner, 'USDT')).toEqual(usdt);
+    expect(await db.order.count({ where: { userId: owner } })).toBe(0);
+    expect(await db.trade.count({ where: { takerUserId: owner } })).toBe(0);
+    expect(await db.auditLog.count({ where: { userId: owner, action: 'NRX_SIMULATION_SOLD' } })).toBe(0);
+  });
   test('standard SELL rests, ordinary BUY fills real counterparties; display depth adds no trades', async () => {
     await allocateNrxOwner(db, owner);
     await place('SELL');
