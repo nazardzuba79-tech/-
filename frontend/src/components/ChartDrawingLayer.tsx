@@ -4,7 +4,7 @@ import {
   applyRulerPrices, drawingPriceInput, drawingStyle, livePoints, parseDrawingPrice, readableTextOn, settleLiveEnd, trackDrawingGesture,
   type DrawingDash, type DrawingKind, type DrawingPoint, type DrawingStyle, type StoredDrawing,
 } from '../lib/chartDrawings';
-import { anchorAt, drawingGeometry, geometryDistance, labelBox, moveAnchor, HIT_RADIUS, type DrawingAnchor, type DrawingGeometry, type DrawingView, type Primitive } from '../lib/drawingGeometry';
+import { anchorAt, drawingGeometry, geometryDistance, labelBox, moveAnchor, rulerToolbarTop, HIT_RADIUS, type DrawingAnchor, type DrawingGeometry, type DrawingView, type Primitive } from '../lib/drawingGeometry';
 
 /** A drawing on the chart: the stored form plus a session id. */
 export type ChartDrawing = StoredDrawing & { id: number };
@@ -354,6 +354,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
       </g>
     </svg>
     {selected && !blocked && <DrawingObjectToolbar key={selected.id} drawing={selected} locked={locked} t={t}
+      top={selected.kind === 'ruler' ? rulerToolbarTop(geometries.get(selected.id)) : undefined}
       onStyle={(style) => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...d, style } : d)))}
       onToggleLock={() => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...d, locked: !d.locked || undefined } : d)))}
       onClone={() => {
@@ -414,6 +415,20 @@ function Primitives({ prims }: { prims: Primitive[] }) {
       case 'label': {
         const box = labelBox(p);
         const size = p.size ?? 11;
+        if (p.variant === 'measurement') {
+          return <g key={i} data-ruler-label style={{ userSelect: 'none', fontVariantNumeric: 'tabular-nums' }}>
+            <title>{p.lines.join('\n')}</title>
+            <rect x={box.x} y={box.y} width={box.w} height={box.h} rx={6} fill={p.bg} stroke={p.accent} strokeOpacity={0.65} strokeWidth={1} />
+            {p.lines.map((line, n) => {
+              const fontSize = n === 0 ? size : size - 1;
+              const available = Math.max(1, box.w - 24);
+              const fits = line.length * 6.4 * (fontSize / 11) <= available;
+              return <text key={n} x={box.x + box.w / 2} y={box.y + 8 + n * 18 + 12}
+                fill={n === 0 ? p.color : '#bac6d8'} fontSize={fontSize} fontWeight={n === 0 ? 600 : 400}
+                textAnchor="middle" {...(!fits ? { textLength: available, lengthAdjust: 'spacingAndGlyphs' as const } : {})}>{line}</text>;
+            })}
+          </g>;
+        }
         return <g key={i} style={{ userSelect: 'none' }}>
           <rect x={box.x} y={box.y} width={box.w} height={box.h} rx={3} fill={p.bg} />
           {p.lines.map((line, n) => <text key={n} x={box.x + box.w / 2} y={box.y + 4 + (n + 1) * 15 * (size / 11) - 4} fill={p.color} fontSize={size} textAnchor="middle">{line}</text>)}
@@ -440,7 +455,7 @@ function HitTargets({ geometry, onPointerDown }: { geometry: DrawingGeometry; on
  */
 export interface RulerPrices { from: number; to: number; followLast: boolean }
 
-export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock, onClone, onDelete, onEditText, measure, onMeasure, onClose }: {
+export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock, onClone, onDelete, onEditText, measure, onMeasure, onClose, top }: {
   drawing: ChartDrawing; locked: boolean; t: (key: any) => string;
   onStyle: (style: DrawingStyle) => void; onToggleLock: () => void; onClone: () => void; onDelete: () => void;
   onEditText?: () => void;
@@ -448,6 +463,7 @@ export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock
   measure?: RulerPrices & { live: DrawingPoint | null };
   onMeasure?: (prices: RulerPrices) => void;
   onClose: () => void;
+  top?: number;
 }) {
   const [menu, setMenu] = useState<null | 'color' | 'fill' | 'width' | 'dash' | 'measure'>(null);
   // TradingView's toolbar is moved by its grip; the offset lives as long as the selection.
@@ -466,7 +482,7 @@ export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock
   const set = (patch: Partial<DrawingStyle>) => { onStyle({ ...style, ...patch }); setMenu(null); };
   const canFill = style.fill !== undefined;
   return <div className="drawing-object-toolbar" role="toolbar" aria-label={t('draw.objectToolbar')} data-drawing-object-toolbar
-    style={offset.x || offset.y ? { transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)` } : undefined}
+    style={{ top, ...(offset.x || offset.y ? { transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)` } : {}) }}
     onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); if (menu) setMenu(null); else onClose(); } }}>
     <span className="drawing-object-grip" data-object-action="drag" aria-hidden="true" onPointerDown={startDrag}>
       <svg width="8" height="16" viewBox="0 0 8 16"><g fill="currentColor"><circle cx="2" cy="3" r="1.2" /><circle cx="6" cy="3" r="1.2" /><circle cx="2" cy="8" r="1.2" /><circle cx="6" cy="8" r="1.2" /><circle cx="2" cy="13" r="1.2" /><circle cx="6" cy="13" r="1.2" /></g></svg>

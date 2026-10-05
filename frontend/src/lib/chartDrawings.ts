@@ -324,7 +324,9 @@ export function drawingRangeLines(range: DrawingRange, lang = 'en', parts: { pri
     const percent = range.pct;
     const pctText = percent === null || !Number.isFinite(percent) ? '—'
       : `${percent > 0 ? '+' : ''}${percent.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}%`;
-    lines.push(Number.isFinite(range.priceDiff) && pctText !== '—' ? `${formatDrawingPriceDiff(range.priceDiff, lang)} (${pctText})` : pctText);
+    // A zero/negative starting price has no percentage, but its finite price
+    // move is still measurable. Keep that value and mark only the % unavailable.
+    lines.push(Number.isFinite(range.priceDiff) ? `${formatDrawingPriceDiff(range.priceDiff, lang)} (${pctText === '—' ? '—%' : pctText})` : pctText);
   }
   if (parts.date !== false) {
     lines.push(`${drawingBarsText(range.bars, lang)}, ${formatDrawingDuration(range.seconds, lang)}`);
