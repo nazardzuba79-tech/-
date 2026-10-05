@@ -170,7 +170,7 @@ export const RU = {
   'auth.twoFaCode': 'Код подтверждения',
   'auth.confirm': 'Подтвердить',
   'auth.backToLogin': '← Назад ко входу',
-  'authShell.hero.line1': 'Копируйте',
+  'authShell.hero.line1': 'Копируйте сделки',
   'authShell.hero.line2': 'лучших трейдеров',
   'authShell.hero.line3': 'мира.',
   'authShell.lead': 'Следуйте стратегиям сильнейших трейдеров мира, и превращайте рыночные возможности в капитал.',

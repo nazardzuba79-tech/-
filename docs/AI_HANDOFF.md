@@ -5677,3 +5677,11 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - The regenerated v5 portrait was rejected and is not included. The approved revision 6 original is the visual source of truth.
 - Validation: frontend production build; focused auth behavior/card-contract tests and network-isolated browser checks; full frontend exact-head CI required before merge. Browser evidence and release status are recorded in the PR.
 - Unresolved: no external social login or email verification was introduced; current production auth contract remains unchanged.
+
+## 2026-10-05 — Codex — auth headline wording follow-up
+
+- Base: main ef7225afdd59a5bf4990b7060ee813eb66f20e75. Commit: this handoff's commit; exact SHA is recorded in the PR.
+- Changed only the Russian hero headline to the owner's exact wording: «Копируйте сделки лучших трейдеров мира.» Updated its existing copy expectation.
+- Preserved the approved original portrait, layout, all other copy/locales and real authentication behavior.
+- Validation: 47 existing auth/i18n tests passed; frontend TypeScript/production build passed. Responsive browser evidence and exact-head CI/release status are recorded in the PR.
+- Unresolved: none in this wording change.
