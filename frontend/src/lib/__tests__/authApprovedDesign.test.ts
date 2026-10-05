@@ -235,5 +235,5 @@ test('approved Russian copy and all newly introduced keys exist in every support
   expect(dictionaries.ru['authShell.communityCount']).toBe('1,2+ млн инвесторов');
   expect(dictionaries.ru['authShell.hero.line1']).toBe('Копируйте сделки');
   expect(dictionaries.ru['authShell.hero.line2']).toBe('лучших трейдеров');
-  expect(dictionaries.ru['authShell.hero.line3']).toBe('мира.');
+  expect(dictionaries.ru['authShell.hero.line3']).toBe('мира');
 });
