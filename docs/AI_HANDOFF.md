@@ -5640,3 +5640,20 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Change: `frontend/src/pages/admin/adminPracticality.css` — `.admin-user-actions .admin-delete-button` `margin-left` 24px → 64px. The matching guard in `adminUsersActivity.test.ts` was updated. Nothing else touched.
 - Checks run locally: admin users suites (55 tests) pass; frontend build; `scripts/qa-admin-gate.cjs` ALL PASS (26) with screenshots in scratch (1440: no overflow, wider gap).
 - Not merged, not deployed.
+
+## Claude — 2026-10-04 — Ruler label as on TradingView / Bybit
+
+- Owner (screenshot, NRX/USDT 1d): «що це таке з лінійкою, зроби її нормальною як у байбіт і трейдінгвю». The label read «+5 645,70% / 1 столбцы, 17ч».
+- Branch `claude/ecstatic-brahmagupta-cwkvt5-ruler` from main `469e050d`. It builds on the other session's ruler work (#424, f445fafd: exact prices, live end, handles); none of that changed.
+- `frontend/src/lib/chartDrawings.ts`:
+  - Line 1 is again `price move (percent)`, e.g. «+45,73 (+5 645,68%)», as TradingView/Bybit print it. The tick count stays off (owner 2026-09-26).
+  - Bars use TradingView's Russian wording with plurals: «1 бар / 3 бара / 12 баров» (en «1 bar / 3 bars»), not «столбцы».
+  - Duration is whole bars × timeframe, so 1 daily bar reads «1д», not the 17h between a click and the candle's open.
+  - «Объем» → «Объём».
+  - New exports `drawingBarsText`, `formatDrawingPriceDiff`.
+- Tests:
+  - `chartDrawings.test.ts`: expectations updated, plus a new case reproducing the owner's NRX screenshot.
+  - `rulerMeasure.test.ts`: label expectation.
+  - `scripts/qa-chart-ruler-measure.cjs`: expected first line now includes the price move.
+- Checks run locally: full frontend Jest 223 suites / 3832 tests pass; Vite build; `qa-chart-ruler-measure.cjs` passes at 1440 and 1366 (label «+4,9928 (+5,36%) / 35 баров, 1д 11ч / Объём 43.77K»). Fixtures only.
+- Not merged, not deployed.

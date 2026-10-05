@@ -42,7 +42,7 @@ describe('a live end follows the latest candle', () => {
     expect(g.anchors.find((a) => a.id === 1)).toEqual({ id: 1, x: 30, y: 400 - 215.3 });
     // The label measures to the latest price: (21.53 − 0.81) / 0.81.
     const label = g.prims.find((p) => p.t === 'label') as { lines: string[] };
-    expect(label.lines[0]).toBe('+2,558.02%');
+    expect(label.lines[0]).toBe('+20.72 (+2,558.02%)');
     // A later candle moves it without any edit.
     const moved = drawingGeometry(d, view({ time: 31 * HOUR, price: 30 }))!;
     expect(moved.anchors.find((a) => a.id === 1)).toEqual({ id: 1, x: 31, y: 100 });

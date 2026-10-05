@@ -268,8 +268,30 @@ export function formatDrawingVolume(value: number): string {
   return value.toFixed(abs >= 100 ? 0 : 2);
 }
 
-const BAR_WORD: Record<string, string> = { ru: 'столбцы', en: 'bars', es: 'barras', zh: '根K线', ja: '本', ko: '봉', hi: 'बार' };
-const VOLUME_WORD: Record<string, string> = { ru: 'Объем', en: 'Vol', es: 'Vol', zh: '成交量', ja: '出来高', ko: '거래량', hi: 'वॉल्यूम' };
+const BAR_WORD: Record<string, string> = { es: 'barras', zh: '根K线', ja: '本', ko: '봉', hi: 'बार' };
+const VOLUME_WORD: Record<string, string> = { ru: 'Объём', en: 'Vol', es: 'Vol', zh: '成交量', ja: '出来高', ko: '거래량', hi: 'वॉल्यूम' };
+
+/** «1 бар», «3 бара», «12 баров»; «1 bar», «3 bars» — TradingView's wording. */
+export function drawingBarsText(bars: number, lang = 'en'): string {
+  const n = Math.abs(Math.trunc(bars));
+  if (lang === 'ru') {
+    const mod10 = n % 10, mod100 = n % 100;
+    const word = mod10 === 1 && mod100 !== 11 ? 'бар' : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'бара' : 'баров';
+    return `${bars} ${word}`;
+  }
+  if (lang === 'en') return `${bars} ${n === 1 ? 'bar' : 'bars'}`;
+  return `${bars} ${BAR_WORD[lang] ?? (n === 1 ? 'bar' : 'bars')}`;
+}
+
+/** The raw price move, signed, as TradingView prints it before the percent. */
+export function formatDrawingPriceDiff(value: number, lang = 'en'): string {
+  if (!Number.isFinite(value)) return '—';
+  const abs = Math.abs(value);
+  const text = abs >= 1
+    ? abs.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { minimumFractionDigits: 2, maximumFractionDigits: abs >= 100 ? 2 : 4, useGrouping: true })
+    : abs.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { maximumSignificantDigits: 4, useGrouping: false });
+  return `${value > 0 ? '+' : value < 0 ? '-' : ''}${text}`;
+}
 
 export interface DrawingRange {
   priceDiff: number; pct: number | null; ticks: number | null;
@@ -283,24 +305,29 @@ export function drawingRange(a: DrawingPoint, b: DrawingPoint, candles: readonly
   const inRange = candles.filter((c) => c.time >= lo && c.time < hi && Number.isFinite(c.volume));
   const volume = inRange.length ? inRange.reduce((sum, c) => sum + (c.volume ?? 0), 0) : null;
   const ticks = minMove && minMove > 0 && Number.isFinite(measured.priceDiff) ? Math.round(measured.priceDiff / minMove) : null;
-  return { priceDiff: measured.priceDiff, pct: measured.pct, ticks, bars: measured.bars, seconds: hi - lo, volume };
+  // TradingView measures time in whole bars: anchors sit on bars, so «1 bar» on
+  // a daily chart is 1d, never the 17h between a click and a candle's open.
+  const seconds = intervalSeconds > 0 ? measured.bars * intervalSeconds : hi - lo;
+  return { priceDiff: measured.priceDiff, pct: measured.pct, ticks, bars: measured.bars, seconds, volume };
 }
 
 /**
- * The label lines: «+7.91%» / «6 столбцы, 6ч 45мин» / «Объем 435.06M».
- * TradingView also prints the raw price difference and the tick count
- * («0.08128 (7.91%) 8,128»); the owner took both off (2026-09-26: «ці дані
- * лишні … значення цих цифр не знає») — the move reads as a percentage.
+ * The label lines, as TradingView and Bybit print them:
+ * «+0.08128 (+7,91%)» / «6 баров, 6ч» / «Объём 435.06M».
+ * The price move is back beside the percent (owner, 2026-10-04: «зроби її
+ * нормальною як у байбіт і трейдінгвю»); the tick count stays off
+ * (owner, 2026-09-26: «значення цих цифр не знає»).
  */
 export function drawingRangeLines(range: DrawingRange, lang = 'en', parts: { price?: boolean; date?: boolean } = { price: true, date: true }): string[] {
   const lines: string[] = [];
   if (parts.price !== false) {
     const percent = range.pct;
-    lines.push(percent === null || !Number.isFinite(percent) ? '—'
-      : `${percent > 0 ? '+' : ''}${percent.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}%`);
+    const pctText = percent === null || !Number.isFinite(percent) ? '—'
+      : `${percent > 0 ? '+' : ''}${percent.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}%`;
+    lines.push(Number.isFinite(range.priceDiff) && pctText !== '—' ? `${formatDrawingPriceDiff(range.priceDiff, lang)} (${pctText})` : pctText);
   }
   if (parts.date !== false) {
-    lines.push(`${range.bars} ${BAR_WORD[lang] ?? BAR_WORD.en}, ${formatDrawingDuration(range.seconds, lang)}`);
+    lines.push(`${drawingBarsText(range.bars, lang)}, ${formatDrawingDuration(range.seconds, lang)}`);
     if (range.volume !== null) lines.push(`${VOLUME_WORD[lang] ?? VOLUME_WORD.en} ${formatDrawingVolume(range.volume)}`);
   }
   return lines;
