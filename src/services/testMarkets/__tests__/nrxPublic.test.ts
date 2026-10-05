@@ -114,7 +114,7 @@ test('NRX preserves live history, then runs balance → -60% selloff → balance
   const anchor = baseline.priceAt(from)!;
   expect(sim.priceAt(from)).toBe(anchor);
   expect(sim.priceAt(NRX_BALANCE_SELLOFF_SCENARIO.rangeEndAt)).toBeCloseTo(anchor, 8);
-  const terminal = anchor * (1 - NRX_BALANCE_SELLOFF_SCENARIO.selloffFraction);
+  const terminal = Number((anchor * (1 - NRX_BALANCE_SELLOFF_SCENARIO.selloffFraction)).toPrecision(8));
   expect(sim.priceAt(NRX_BALANCE_SELLOFF_SCENARIO.selloffEndAt)).toBeCloseTo(terminal, 8);
   const later = sim.priceAt(NRX_BALANCE_SELLOFF_SCENARIO.selloffEndAt + 24 * HOUR_MS)!;
   expect(later).toBeGreaterThan(terminal * .5);
