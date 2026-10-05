@@ -78,6 +78,8 @@ jobs:
         run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/terminalDesignSystem.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/referenceBook.test.ts frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts frontend/src/lib/__tests__/futuresProTerminal.test.ts frontend/src/lib/__tests__/mobileTradeDeposit.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
+      - name: Ruler math, presentation and trading preservation
+        run: npx jest --runInBand frontend/src/lib/__tests__/chartDrawings.test.ts frontend/src/lib/__tests__/rulerMeasure.test.ts frontend/src/lib/__tests__/rulerLabel.test.ts frontend/src/lib/__tests__/rulerPresentation.test.ts frontend/src/lib/__tests__/tradingViewRulerLayer.test.ts frontend/src/lib/__tests__/chartTrading.test.ts frontend/src/lib/__tests__/spotChartPriceFormat.test.ts
       - name: Disposable browser tooling
         run: |
           npm install --prefix /tmp/visual-polish-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0

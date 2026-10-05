@@ -96,6 +96,14 @@ function verify(m, expected, context) {
     assert.ok(text.box.left >= m.card.left + 3 && text.box.right <= m.card.right - 3
       && text.box.top >= m.card.top && text.box.bottom <= m.card.bottom,
     `${context}: text must not clip its card: ${JSON.stringify(text)}`);
+    for (const handle of m.handles) {
+      const x = handle.box.x + handle.box.width / 2, y = handle.box.y + handle.box.height / 2;
+      const nearX = Math.max(text.box.left, Math.min(x, text.box.right));
+      const nearY = Math.max(text.box.top, Math.min(y, text.box.bottom));
+      const radius = handle.box.width / 2 + 1; // Include the visible handle stroke.
+      assert.ok((x - nearX) ** 2 + (y - nearY) ** 2 >= radius ** 2,
+        `${context}: handle ${handle.id} must not obscure text ${JSON.stringify(text.text)}`);
+    }
   }
   if (m.selected && m.toolbar) {
     const overlapWidth = Math.min(m.card.right, m.toolbar.right) - Math.max(m.card.left, m.toolbar.left);
@@ -144,6 +152,8 @@ function verify(m, expected, context) {
         page = await context.newPage();
         page.on('pageerror', e => view.errors.push(e.message));
         await page.goto(origin + '/trade?pair=NRX%2FUSDT', { waitUntil: 'domcontentloaded' });
+        // Tradable Spot opens on the mobile trading tab; explicitly open its chart.
+        if (width < 600) await page.locator('#mobile-trade-chart').click();
         await page.locator('g[data-drawing-kind="ruler"] text').first().waitFor({ timeout: 20000 });
         await page.waitForTimeout(500);
         await page.locator('.chart-view').first().scrollIntoViewIfNeeded();

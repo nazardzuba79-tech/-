@@ -344,6 +344,15 @@ export function drawingGeometry(stored: StoredDrawing, view: DrawingView): Drawi
       // Keep the larger card inside a small plot when its measurement is visible.
       // Shift only the label; price/time anchors and the measured range stay intact.
       if (x2 >= 0 && x1 <= view.width && y2 >= 0 && y1 <= view.height) {
+        // Prefer the other side of an edge over clamping across its handle.
+        // Otherwise a top-edge ruler's endpoint/price line obscures its own text.
+        if (compact) {
+          const preferred = labelBox(rangeLabel);
+          if (rangeLabel.place === 'above' && preferred.y < 4
+            && rangeLabel.y + 6 + preferred.h <= view.height - 4) rangeLabel.place = 'below';
+          else if (rangeLabel.place === 'below' && preferred.y + preferred.h > view.height - 4
+            && rangeLabel.y - 6 - preferred.h >= 4) rangeLabel.place = 'above';
+        }
         const box = labelBox(rangeLabel);
         rangeLabel.x += Math.max(4, Math.min(box.x, view.width - box.w - 4)) - box.x;
         rangeLabel.y += Math.max(4, Math.min(box.y, view.height - box.h - 4)) - box.y;

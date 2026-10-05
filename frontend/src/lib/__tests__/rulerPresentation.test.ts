@@ -29,7 +29,9 @@ describe('compact ruler card', () => {
       expect(JSON.stringify(drawing)).toBe(before);
       expect(geometry.anchors[0]).toEqual({ id: 0, x, y: 299.19 });
       expect(geometryDistance(geometry, { x: bounds.x + bounds.w - 1, y: bounds.y + 1 })).toBe(0);
-      expect(rulerToolbarTop(geometry)).toBeGreaterThanOrEqual(bounds.y + bounds.h + 8);
+      const toolbarTop = rulerToolbarTop(geometry);
+      expect(toolbarTop >= bounds.y + bounds.h + 8 || toolbarTop + 38 <= bounds.y - 8).toBe(true);
+      expect(bounds.y).toBeGreaterThan(geometry.anchors[1].y + 5);
     }
   });
 
@@ -48,6 +50,7 @@ describe('compact ruler card', () => {
     expect(label.lines[0]).toContain('-246,77');
     expect(label.accent).toBe('#f23645');
     expect(rulerToolbarTop(geometry)).toBe(8);
+    expect(labelBox(label).y + labelBox(label).h).toBeLessThan(geometry.anchors[1].y - 5);
     expect(geometry.anchors.map(p => p.id)).toEqual([0, 1, 'edge0', 'edge1']);
     expect(geometry.prims.find(p => p.t === 'poly' && p.fill)).toMatchObject({ fillOpacity: 0.12 });
   });
