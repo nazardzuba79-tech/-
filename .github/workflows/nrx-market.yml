@@ -41,6 +41,7 @@ jobs:
       - run: >-
           npx jest --runInBand --silent --runTestsByPath
           src/services/testMarkets/__tests__/nrxPublic.test.ts
+          src/services/testMarkets/__tests__/simulationWaves.test.ts
           src/services/testMarkets/__tests__/nrxSpot.pg.test.ts
           src/services/testMarkets/__tests__/testMarketSimulation.test.ts
           src/services/testMarkets/__tests__/testMarketDepth.test.ts

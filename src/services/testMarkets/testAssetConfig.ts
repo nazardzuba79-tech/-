@@ -14,6 +14,7 @@ import type { SimulationProfile } from './simulationRealism';
 import type { CyclicImpulseConfig } from './simulationCycles';
 import type { NaturalWickConfig } from './simulationNaturalWicks';
 import type { AccumulationPhaseConfig } from './simulationAccumulation';
+import type { MarketStructureConfig } from './simulationWaves';
 
 export interface TestAssetConfig {
   /** Base asset ticker, e.g. VTA. */
@@ -55,6 +56,12 @@ export interface TestAssetConfig {
   naturalWicks?: NaturalWickConfig;
   /** Forward-only final flush -> accumulation -> rebased final-growth lifecycle. */
   accumulationPhase?: AccumulationPhaseConfig;
+  /**
+   * Post-listing wave structure (simulationWaves.ts): re-arranges the hours
+   * inside each block into launch, impulse, correction and accumulation
+   * phases with the SAME block totals. Hours before `from` keep the base path.
+   */
+  marketStructure?: MarketStructureConfig;
 }
 
 export const VOLTORA: TestAssetConfig = {
