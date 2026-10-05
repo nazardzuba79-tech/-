@@ -76,13 +76,12 @@ test('product hero feathers only the backdrop and preserves skin/nail landmarks'
   expect(scoped).toContain('--card-hero-bleed');
 });
 
-test.each([228, 320])('Homepage/auth %spx renders the real approved master with automatic height', width => {
+test.each([228, 320])('shared Homepage card at %spx renders the real approved master with automatic height', width => {
   const html = renderToStaticMarkup(React.createElement(home.HomeCryptoCard, { width }));
   expect(html).toContain(master.CARD_MASTER.black);
   expect(html).toContain('alt="VOLTEX Black Signature"');
   expect(html).toContain('width:100%;height:auto;object-fit:contain');
   expect(html).not.toMatch(/voltex-card-dark|voltex-cards-phone/);
-  expect(read('src/pages/auth-shell/AuthShell.tsx')).toContain('<HomeCryptoCard width={228}');
 });
 
 test('hero uses the reference wrist artwork without distorting its watch or circular badges', () => {
@@ -300,59 +299,40 @@ test.each(['world', 'apple', 'ai', 'atm', 'privacy'])('%s uses one consistent de
   expect(html.replace(/<title>.*?<\/title>/g, '').replace(/<[^>]+>/g, '')).toBe('');
 });
 
-test('registration alone renders two intact approved masters and the recovered expense phone', () => {
+test('retained registration card artwork still renders its intact masters and expense phone', () => {
   const registration = evaluate('src/pages/auth-shell/RegistrationCardVisual.tsx', {
     '../crypto-card-final/components/VoltexCard': master,
   });
-  const shell = evaluate('src/pages/auth-shell/AuthShell.tsx', {
-    './auth-shell.css': {}, './RegistrationCardVisual': registration,
-    '../home/HomeCryptoCard': home,
-    '../../components/Logo': { Logo: () => null },
-    '../../components/LanguageSwitcher': { LanguageSwitcher: () => null },
-    '../../lib/i18n': { useLanguage: () => ({ t: (key: string) => key }) },
-    'react-router-dom': { Link: ({ children, to }: any) => React.createElement('a', { href: to }, children) },
-  });
-  const props = { switchPrompt: 'prompt', switchLabel: 'label', switchTo: '/login', children: 'FORM' };
-  const login = renderToStaticMarkup(React.createElement(shell.AuthShell, props));
-  expect(login).not.toContain('two-cards-phone');
-  expect(login).not.toContain(master.CARD_MASTER.titanium);
-  expect(login).toContain(master.CARD_MASTER.black);
-  const html = renderToStaticMarkup(React.createElement(shell.AuthShell, { ...props, cardVisual: 'registration' }));
+  // The approved aircraft auth design no longer uses this composition. Keep
+  // protecting the retained artwork itself instead of pinning auth to it.
+  const html = renderToStaticMarkup(React.createElement(registration.RegistrationCardVisual));
   expect(html.match(/data-registration-card-composition="two-cards-phone"/g)).toHaveLength(1);
   expect(html.match(/data-product="smartphone"/g)).toHaveLength(1);
   for (const path of Object.values(master.CARD_MASTER) as string[]) expect(html.split(path)).toHaveLength(2);
   expect(html.match(/data-phone-expense=/g)).toHaveLength(3);
-  expect(html).toContain('FORM');
   expect(html).not.toContain('preserveAspectRatio="none"');
-  expect(read('src/pages/register/RegisterPage.tsx')).toContain('cardVisual="registration"');
 });
 
-test('registration visual opt-in leaves Login, auth forms, routes and default shell byte-exact', () => {
-  const hash = (value: string) => createHash('sha256').update(value.replace(/\r\n/g, '\n')).digest('hex');
-  const shell = read('src/pages/auth-shell/AuthShell.tsx').replace(/\r\n/g, '\n')
-    .replace("import { RegistrationCardVisual } from './RegistrationCardVisual';\n", '')
-    .replace("  cardVisual?: 'single' | 'registration';\n", '')
-    .replace(", children, cardVisual = 'single'", ', children')
-    .replace("className={cardVisual === 'registration' ? 'vx-auth-card vx-auth-card-registration' : 'vx-auth-card'}", 'className="vx-auth-card"')
-    .replace("{cardVisual === 'registration' ? <RegistrationCardVisual /> : <HomeCryptoCard width={228} />}", '<HomeCryptoCard width={228} />');
-  expect(hash(shell)).toBe('80868fe97ddced590f9523c3ae041030898119d469c083aa33c06cdc87742bb0');
-  expect(hash(read('src/pages/register/RegisterPage.tsx').replace(/      cardVisual="registration"\r?\n/, '')))
-    .toBe('f7a7a607c68e5cdab4493a138e141449e43e3ded5cf0ffbc7ee3cc70fe98d503');
-  // Both re-taken for issue #144, and for nothing else. AuthPage's two
-  // failure lines and RegisterPanel's one now go through
-  // `customerErrorText` instead of rendering `ApiError.message`, and
-  // RegisterPanel's local `useServerErrorLocalizer` — which translated
-  // three registration sentences and passed everything else through
-  // verbatim — is gone, its three mappings absorbed into the shared table
-  // with the same `register.error.*` wording. No field, validation rule,
-  // password requirement, referral handling, route, layout, class name or
-  // card visual in either file changed.
-  // The short-lived login checkbox (2026-10-03) is gone again — devices are
-  // remembered for the admin role on the server — so the form is byte-exact.
-  expect(hash(read('src/pages/AuthPage.tsx'))).toBe('f50f721e6dc4198b5bb0e61f937ec7de661471c5741a74ec021ad80a4c1e6e2c');
-  expect(hash(read('src/pages/register/RegisterPanel.tsx'))).toBe('246293253242a8072affe8805d0ee44ecd9d4976e1f4cc25d5a702910af4c7df');
-  const css = read('src/pages/auth-shell/auth-shell.css').replace(/\r\n/g, '\n')
-    .replace(/\/\* Registration alone[\s\S]*?(?=\.vx-auth-card-kicker)/, '')
-    .replace('  .vx-auth-card-registration .vx-auth-card-art { margin-left: 0; }\n', '');
-  expect(hash(css)).toBe('dce75cb0add4577d9bc93477f7c4f9a54a524ceb5e2b316cf6e08709b678c3b2');
+test('the approved aircraft auth shell hosts real route forms and shared support/legal controls', () => {
+  const shell = evaluate('src/pages/auth-shell/AuthShell.tsx', {
+    './auth-shell.css': {},
+    '../../components/Logo': { Logo: () => null, LogoMark: () => null },
+    '../../components/LanguageSwitcher': { LanguageSwitcher: () => React.createElement('button', null, 'LANGUAGE') },
+    '../../lib/i18n': { useLanguage: () => ({ t: (key: string) => key }) },
+    '../../lib/supportWidget': { openSupportWidget: jest.fn() },
+    'react-router-dom': { Link: ({ children, to, ...rest }: any) => React.createElement('a', { href: to, ...rest }, children) },
+  });
+  const html = renderToStaticMarkup(React.createElement(shell.AuthShell, { children: 'REAL_ROUTE_FORM' }));
+  expect(html).toContain('src="/auth/aircraft-v6.webp"');
+  expect(html).toContain('alt=""');
+  expect(html).toContain('width="1122" height="1402"');
+  expect(html).toContain('REAL_ROUTE_FORM');
+  expect(html).toContain('LANGUAGE');
+  expect(html).toContain('href="/legal/privacy"');
+  expect(html).toContain('href="/legal/terms"');
+  expect(html).toContain('authShell.communityCount');
+  expect(html).not.toContain('two-cards-phone');
+  expect(html).not.toContain('authShell.benefit.');
+  expect(read('src/pages/register/RegisterPage.tsx')).toContain('<RegisterPanel />');
+  expect(read('src/pages/AuthPage.tsx')).toContain('<AuthShell>');
 });

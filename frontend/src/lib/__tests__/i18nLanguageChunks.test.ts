@@ -56,12 +56,34 @@ const KYC_PROFILE_CARD_KEYS = ['kycStepDocumentShort', 'kycStepReview', 'kycStep
   'kycStepNotSent', 'kycUploadTitle', 'kycUploadHint', 'kycChooseFile', 'kycReplaceFile', 'kycRemoveFile', 'kycPendingNoReupload',
   'kycRejectedHint', 'kycSubmittedData', 'kycStartCta', 'kycResubmitCta', 'kycOpenStatus', 'cardShortcutTitle'].map(key => `settings.${key}`);
 const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 'Faq', 'Glossary'].map(name => `nav.menu${name}Desc`);
+// Aircraft authentication design approved 2026-10-05: eleven existing labels
+// change and nine presentation labels are added. Name only those exact keys;
+// password rules, errors, 2FA, legal and all other auth copy remain frozen.
+const APPROVED_AUTH_DESIGN_KEYS = [
+  'auth.email', 'auth.signIn', 'register.email',
+  'authShell.hero.line1', 'authShell.hero.line2', 'authShell.hero.line3', 'authShell.lead',
+  'authShell.overline.register', 'authShell.overline.login', 'auth.loginTitle', 'auth.loginSubtitle',
+  'authShell.registerTitle', 'authShell.registerSubtitle', 'authShell.context',
+  'authShell.communityCount', 'authShell.communityText', 'authShell.communityBadge',
+  'authShell.cardCaption', 'authShell.supportHint', 'authShell.supportLink',
+];
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
   it('provides every shared menu description in all seven languages', () => {
     for (const code of LOCALES) for (const key of menuDescriptionKeys) expect(dicts[code][key]?.trim()).toBeTruthy();
+  });
+  it('provides the approved auth design labels without removing validation, 2FA or legal copy', () => {
+    for (const code of LOCALES) for (const key of APPROVED_AUTH_DESIGN_KEYS) expect(dicts[code][key]?.trim()).toBeTruthy();
+    expect(dicts.ru['auth.email']).toBe('Электронная почта');
+    expect(dicts.ru['register.email']).toBe('Электронная почта');
+    expect(dicts.ru['auth.signIn']).toBe('Войти в аккаунт');
+    // The unchanged auth constraints remain covered by the historical byte
+    // digest below, rather than being exempted with a broad auth.* filter.
+    expect(APPROVED_AUTH_DESIGN_KEYS).not.toContain('auth.twoFaHint');
+    expect(APPROVED_AUTH_DESIGN_KEYS).not.toContain('register.legal.terms');
+    expect(APPROVED_AUTH_DESIGN_KEYS).not.toContain('register.req.length');
   });
   it('localizes each decimal refusal in all seven languages', () => {
     for (const code of LOCALES) {
@@ -164,13 +186,16 @@ describe('translation integrity', () => {
       // --numstat` over the locales directory reports `5 0` for every
       // language — additions only, not one deletion, so no existing string
       // was retyped.
-      "ru": "70f5b20a531b31fa",
-      "en": "f817d8dc7e0e9de1",
-      "zh": "9b8a64f07b8782a3",
-      "es": "4c1795cbfe0fa10c",
-      "hi": "28856d15d5bc8944",
-      "ja": "9af89252233dbf08",
-      "ko": "b9720e7a2161a1e4"
+      // Auth-only exclusions above applied to trusted pre-redesign main
+      // c08127baa837b5288bd0febc1ce2dc20212044aa using the same historical
+      // normalization below. These are NOT fingerprints of the edited files.
+      "ru": "4f4c8215ab910a41",
+      "en": "34a0c9bee48a1a29",
+      "zh": "24a649501eda9363",
+      "es": "e3f86ceba8afd235",
+      "hi": "c316b12cb92fa851",
+      "ja": "6c8ed7766ec7c998",
+      "ko": "7b25cde326cbbdbb"
 };
     // 2026-09-26, the TradingView-style drawing panel: its tool, group,
     // section and object-toolbar names. `git diff --numstat` over the
@@ -234,6 +259,7 @@ describe('translation integrity', () => {
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
+        if (key && APPROVED_AUTH_DESIGN_KEYS.includes(key)) return false;
         // Keys ADDED since the digests were taken are excluded by name
         // rather than by re-taking seven digests — that is what keeps the
         // guard meaningful: every OTHER byte of every dictionary still has

@@ -5668,3 +5668,12 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Added `scripts/qa-chart-ruler-label.cjs` and visual CI hook: built NRX fixtures, actual candle-pane bounds, zero/negative/positive start, live-end updates, typed end, handles, drag guide/snap and toolbar/card non-overlap at 1440/1366/390. All external HTTP/WebSocket traffic and writes are denied; failure screenshots and stack traces are retained. Local screenshots/results live in ignored `output/chart-ruler-label` and are uploaded by CI.
 - Review branch only: no merge, deployment, production access or real order. Exact-head CI is reported on the PR, not inferred from an earlier run.
 - Rebased onto fresh main `9e381609` (#434 mobile trade/deposit); preserved that work. Repeated 186/186 tests, TypeScript and build PASS. Built NRX browser regression 12/12 PASS at 1440/1366/390, including live refresh, exact-price editing and dragging, zero writes/runtime errors and zero toolbar/handle obstruction. Near a plot edge the card now switches sides before clamping, so endpoint handles do not cover text. Independent code review found no actionable regression. Mobile's inherited initial compressed time scale remains outside this ruler-only change.
+
+## 2026-10-05 — Codex — approved login/registration design
+
+- Base: main c08127baa837b5288bd0febc1ce2dc20212044aa. Commit: the commit containing this handoff (exact release SHA is recorded in the PR).
+- Updated the shared authentication presentation, login/register headings and route tabs, and seven locale dictionaries. Added the owner-approved original aircraft portrait (lossless conversion) and decorative avatar strip.
+- Preserved api.login/api.loginWith2FA/api.register handlers, validation, support chat, referral consumption, token handling and safe next redirects. No backend, database, financial or infrastructure changes.
+- The regenerated v5 portrait was rejected and is not included. The approved revision 6 original is the visual source of truth.
+- Validation: frontend production build; focused auth behavior/card-contract tests and network-isolated browser checks; full frontend exact-head CI required before merge. Browser evidence and release status are recorded in the PR.
+- Unresolved: no external social login or email verification was introduced; current production auth contract remains unchanged.
