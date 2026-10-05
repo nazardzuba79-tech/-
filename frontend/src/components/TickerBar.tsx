@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { useMarketTicker } from '../lib/useMarketData';
 import { parseChangePercent } from '../lib/priceChange';
@@ -42,6 +43,10 @@ export function TickerBar({ pair, onSelectPair, spotPrecision = false }: { pair:
   // fastest cadence any live subscriber asks for, so this stays as fresh
   // as before while costing the tab nothing extra.
   const { ticker } = useMarketTicker(pair, 3000);
+  // Phones show pair, change and price; the four 24h figures fold behind
+  // «24h +» (the same disclosure the Futures header uses) instead of
+  // wrapping into a wall of numbers above the order form.
+  const [mobileDetails, setMobileDetails] = useState(false);
 
   // A pair the snapshot does not carry stays null and renders as a dash.
   // It is never coerced to a zero price, and a failed poll keeps the last
@@ -68,7 +73,7 @@ export function TickerBar({ pair, onSelectPair, spotPrecision = false }: { pair:
     stats !== null ? stats.lastPrice - stats.lastPrice / (1 + stats.changePercent / 100) : null;
 
   return (
-    <div className="ticker-bar">
+    <div className="ticker-bar" data-mobile-details={mobileDetails}>
       <div className="pair-cluster">
         {onSelectPair && (
           <button type="button" className="pair-markets-btn" aria-label={t('nav.markets')} title={t('nav.markets')} onClick={onSelectPair}>
@@ -129,6 +134,8 @@ export function TickerBar({ pair, onSelectPair, spotPrecision = false }: { pair:
         <span className="label">{`${t('trade.volume24h')} (${quoteAsset})`}</span>
         <span className="value">{stats ? formatCompact(stats.quoteVolume24h) : '—'}</span>
       </div>
+      <button type="button" className="spot-mobile-stats-toggle" aria-expanded={mobileDetails} aria-label={t('trade.marketInfo')}
+        onClick={() => setMobileDetails(value => !value)}>24h <span aria-hidden="true">{mobileDetails ? '−' : '+'}</span></button>
 
     </div>
   );

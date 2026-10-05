@@ -34,6 +34,8 @@ export const ZH: Record<Key, string> = {
   'deposit.ui.memo': "备注 / 标签",
   'deposit.ui.memoCopied': "备注已复制",
   'deposit.ui.copyMemo': "复制备注",
+  'deposit.ui.memoRequired': "必填",
+  'deposit.ui.memoHint': "转账时请与地址一同填写。",
   'deposit.ui.asset': "资产",
   'deposit.ui.minimumLabel': "最低充值金额",
   'deposit.ui.minimumOtherValue': "{amount} USDT 或等值的 {asset}",
@@ -1850,4 +1852,8 @@ export const ZH: Record<Key, string> = {
   'help.status.note': '此检查仅显示交易所服务器和市场数据是否有响应，并不确认每项操作（交易、充值、提现或登录）都能成功。“无法检查”可能是网络或浏览器问题，而非平台故障。',
   'help.status.incidents': '故障通告',
   'help.status.noIncidents': '暂无已发布的故障通告',
+  'terminal.marketSwitch': "现货或合约",
+  'terminal.noFuturesContract': "{pair} 没有合约。请选择可用的合约。",
+  'terminal.noSpotPair': "{pair} 未在现货上线。请选择可用的交易对。",
+  'trade.orderType': "订单类型",
 };

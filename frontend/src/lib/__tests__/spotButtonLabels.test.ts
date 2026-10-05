@@ -54,6 +54,8 @@ const stubs = (lang: (typeof LOCALES)[number]) => ({
   '../lib/spotOrderEntry': { positiveOrderNumber: () => null, orderFundingPrice: () => null, balancePercentageQuantity: () => '' },
   '../lib/spotOrderFeedback': { spotOrderFeedback: () => null },
   '../lib/testMarkets': { isTestMarketPair, isManagedTradablePair },
+  // Desktop width: the order families stay the tab strip this suite reads.
+  '../lib/useMediaQuery': { MOBILE_TERMINAL_QUERY: '(max-width: 900px)', useMediaQuery: () => false },
 });
 
 function renderSpotForm(pair: string, lang: (typeof LOCALES)[number] = 'ru') {

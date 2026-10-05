@@ -34,6 +34,8 @@ export const ES: Record<Key, string> = {
   'deposit.ui.memo': "Memo / Etiqueta",
   'deposit.ui.memoCopied': "Memo copiado",
   'deposit.ui.copyMemo': "Copiar memo",
+  'deposit.ui.memoRequired': "Obligatorio",
+  'deposit.ui.memoHint': "Indícalo en la transferencia junto con la dirección.",
   'deposit.ui.asset': "Activo",
   'deposit.ui.minimumLabel': "Importe mínimo de depósito",
   'deposit.ui.minimumOtherValue': "{amount} USDT o su equivalente en {asset}",
@@ -1827,4 +1829,8 @@ export const ES: Record<Key, string> = {
   'help.status.note': 'Solo muestra si el servidor del exchange y los datos de mercado responden. No confirma que cada operación (trading, depósitos, retiros o inicio de sesión) funcione. «No se pudo comprobar» puede deberse a la red o al navegador, no a una caída de la plataforma.',
   'help.status.incidents': 'Avisos de incidencias',
   'help.status.noIncidents': 'No hay avisos de incidencias publicados',
+  'terminal.marketSwitch': "Spot o futuros",
+  'terminal.noFuturesContract': "{pair} no tiene contrato de futuros. Elige uno disponible.",
+  'terminal.noSpotPair': "{pair} no está en spot. Elige un par disponible.",
+  'trade.orderType': "Tipo de orden",
 };

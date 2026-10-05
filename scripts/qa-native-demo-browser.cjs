@@ -85,6 +85,8 @@ async function session(width, configure) {
   });
   const s = { context, page, token, initial, realRequests, drafts };
   if (configure) await configure(s);
+  // owner, 2026-10-04: phone opens on Trade — bring the chart forward first, where the phone used to open.
+  if (width <= 900) { await page.goto(origin + '/futures'); await page.locator('#mobile-futures-chart').click(); await page.locator('.chart-surface').waitFor(); return s; }
   await page.goto(origin + '/futures'); await page.locator('.chart-surface').waitFor();
   return s;
 }
@@ -102,6 +104,8 @@ async function ready(s) {
   // what tells us the terminal has composed. A blank order is deliberately
   // NOT actionable now, so readiness is the authoritative account plus the
   // auto-seeded LIMIT price — not an enabled submit button with no size.
+  // owner, 2026-10-04: phone opens on Trade — there the composed terminal is the trade workspace.
+  if (s.page.viewportSize().width <= 900) { await workspace(s.page, 'trade'); await s.page.locator('#mobile-futures-panel-trade').waitFor(); } else
   await s.page.locator('.chart-surface').waitFor();
   await s.page.waitForFunction(() => {
     const balance = document.querySelector('.futures-account-balance .mono')?.textContent?.trim();
@@ -151,6 +155,9 @@ async function armChartPicker(p) {
 }
 async function family(page, type) {
   await workspace(page, 'trade');
+  // owner, 2026-10-04: order type is one select on a phone — the same family, by the same position as its tab.
+  const select = page.locator('.fo-panel .order-family-select select');
+  if (page.viewportSize().width <= 900) await select.selectOption(await select.locator('option').nth(type === 'MARKET' ? 1 : 0).getAttribute('value')); else
   await page.locator('.fo-panel .order-family-tabs [role=tab]').nth(type === 'MARKET' ? 1 : 0).click();
   await page.locator(type === 'MARKET' ? '.fo-markPrice' : '.fo-priceInputRow input').waitFor();
 }
@@ -610,7 +617,10 @@ async function mobileTicketLayout(width, height) {
   try {
     await p.setViewportSize({ width, height });
     await ready(s); await family(p, 'LIMIT');
-    const g = await p.evaluate(() => {
+    // owner, 2026-10-04: order type is one select on a phone, and the Calculator is the instrument row's key (no heading over the narrow ticket).
+    const sel = width <= 900 ? { tabs: '.order-family-select', heading: '.ticker-bar', launcher: '.ticker-bar [data-open-calculator]', entries: '[data-open-calculator]:visible' }
+      : { tabs: '.order-family-tabs', heading: '.archive-trading-heading', launcher: '.archive-trading-heading .archive-calculator-trigger', entries: '.archive-calculator-trigger' };
+    const g = await p.evaluate((sel) => {
       const rect = selector => {
         const r = document.querySelector(selector).getBoundingClientRect();
         return { left:r.left, right:r.right, top:r.top, bottom:r.bottom };
@@ -618,13 +628,13 @@ async function mobileTicketLayout(width, height) {
       return {
         page:document.documentElement.clientWidth, scroll:document.documentElement.scrollWidth,
         brand:rect('.header-brand'), deposit:rect('.header-actions .deposit-button'),
-        margin:rect('.fo-mlWrap'), tabs:rect('.order-family-tabs'), price:rect('.fo-priceField'),
-        info:rect('.fo-infoBox'), submit:rect('.fo-submitPair'), heading:rect('.archive-trading-heading'),
-        launcher:rect('.archive-trading-heading .archive-calculator-trigger'),
+        margin:rect('.fo-mlWrap'), tabs:rect(sel.tabs), price:rect('.fo-priceField'),
+        info:rect('.fo-infoBox'), submit:rect('.fo-submitPair'), heading:rect(sel.heading),
+        launcher:rect(sel.launcher),
         summaryBeforeSubmit:!!(document.querySelector('.fo-infoBox').compareDocumentPosition(document.querySelector('.fo-submitPair')) & Node.DOCUMENT_POSITION_FOLLOWING),
         submitPosition:getComputedStyle(document.querySelector('.fo-submitPair')).position,
       };
-    });
+    }, sel);
     assert(g.scroll <= g.page + 1, 'Mobile ticket creates page-level horizontal overflow');
     assert(g.brand.right <= g.deposit.left, 'Deposit obscures the brand');
     assert(g.margin.bottom <= g.tabs.top && g.tabs.bottom <= g.price.top, 'Margin/tabs overlap the price input');
@@ -637,8 +647,8 @@ async function mobileTicketLayout(width, height) {
     assert(g.launcher.left >= g.heading.left && g.launcher.right <= g.heading.right &&
       g.launcher.top >= g.heading.top && g.launcher.bottom <= g.heading.bottom, 'Calculator launcher leaves the heading');
     assert(g.launcher.left >= 0 && g.launcher.right <= g.page, 'Calculator launcher leaves viewport');
-    const launcher = p.locator('.archive-trading-heading .archive-calculator-trigger');
-    assert.equal(await p.locator('.archive-calculator-trigger').count(), 1, 'Calculator must have one entry point');
+    const launcher = p.locator(sel.launcher);
+    assert.equal(await p.locator(sel.entries).count(), 1, 'Calculator must have one entry point');
     assert(await launcher.getAttribute('title'), 'Calculator tooltip is missing');
     assert(await launcher.getAttribute('aria-label'), 'Calculator accessible name is missing');
     for (const side of ['buy', 'sell']) {

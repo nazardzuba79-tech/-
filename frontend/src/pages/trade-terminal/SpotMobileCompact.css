@@ -1,47 +1,70 @@
-/* Compact mobile Spot workspace.
+/* Compact mobile Spot workspace (owner reference, 2026-10-04).
  *
- * On phones the market picker is a launcher, not a destination: selecting a
- * pair returns to the trading workspace. The trading workspace keeps the real
- * OrderForm and OrderBookPanel mounted once, side-by-side like the supplied
- * mobile reference. Desktop is deliberately unreachable from this sheet.
+ * The phone opens on trading: the real OrderBookPanel on the left (~40%) and
+ * the real OrderForm on the right (~60%), both mounted once, then the open
+ * orders. The chart and the market list are their own workspaces one tab
+ * away. Desktop is unreachable from this sheet: every rule is <=900px.
  */
 @media (max-width:900px) {
-  /* One compact instrument line: pair | 24h change | last price. The older
-     mobile sheet puts the change on a second row, which needlessly consumes
-     the same vertical space as an order-entry control. */
+  /* Instrument row: pair (with its name) | price over 24h change | «24h +».
+     The four other 24h figures fold behind the disclosure. */
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar {
-    grid-template-columns:minmax(0,1fr) auto auto;
-    grid-template-rows:44px;
+    grid-template-columns:minmax(0,1fr) auto 44px;
+    grid-template-rows:auto auto;
+    align-items:center;
     column-gap:8px !important;
     row-gap:0 !important;
-    padding:4px 8px !important;
+    min-height:52px !important;
+    padding:4px 10px !important;
   }
-  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-selector {
-    grid-column:1;
-    grid-row:1;
-  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-cluster { grid-column:1; grid-row:1 / 3; min-width:0; }
+  /* The pair itself opens the market list; its separate list key only
+     returns where there is room (id-weighted :is() outranks the design
+     system's stacked-class rule; Spot has no element with that id). */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .ticker-bar .pair-markets-btn { display:none; }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-selector { grid-column:1; grid-row:1 / 3; }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-identity { min-width:0; }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-name { font-size:16px; line-height:20px; white-space:nowrap; }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-asset { font-size:11px; line-height:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(2) {
-    grid-column:3;
-    grid-row:1;
-  }
-  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(3) {
     grid-column:2;
     grid-row:1;
     align-items:flex-end;
+    text-align:right;
   }
-  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(3) .label {
-    display:none;
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(3) {
+    grid-column:2;
+    grid-row:2;
+    align-items:flex-end;
+    text-align:right;
   }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(-n+3) .label { display:none; }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.price { font-size:17px; line-height:22px; white-space:nowrap; }
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(3) .value {
-    font-size:12px;
-    line-height:18px;
+    font-size:11px;
+    line-height:15px;
     white-space:nowrap;
   }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .spot-mobile-stats-toggle { grid-column:3; grid-row:1 / 3; }
+  /* Expanded: the four secondary figures in two columns under the row. */
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar[data-mobile-details=true] .ticker-item:nth-of-type(n+4) {
+    display:flex !important;
+    flex-direction:column;
+    gap:2px;
+    grid-row:auto;
+    grid-column:span 1;
+    padding:6px 0 2px;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar[data-mobile-details=true] {
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar[data-mobile-details=true] .ticker-item:nth-of-type(n+4) .label { font-size:11px; }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar[data-mobile-details=true] .ticker-item:nth-of-type(n+4) .value { font-size:12px; }
 
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .main-grid {
     display:grid;
-    grid-template-columns:minmax(0,1.28fr) minmax(138px,.92fr);
-    align-items:start;
+    grid-template-columns:minmax(0,40fr) minmax(0,60fr);
+    align-items:stretch;
     gap:1px;
     width:100%;
     min-height:0;
@@ -53,104 +76,162 @@
     display:none;
   }
 
-  /* Match the old .main-grid > :not(.order-form-area) specificity.
-     Without the grid parent the earlier mobile rule hides the book.
-     Pin the shared row: DOM order is book first, form second. */
+  /* Book left, form right, one explicit row. Equal specificity to every
+     earlier mobile rule that names these panels, and later in the cascade. */
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .main-grid > .order-form-area,
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .main-grid > .orderbook-area {
     display:flex;
     grid-row:1;
     min-width:0;
     min-height:0;
-    height:clamp(500px,64dvh,600px);
-    overflow:hidden;
+    height:auto;
     border:0;
     border-radius:0;
   }
 
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-area {
-    grid-column:1;
-    border-right:1px solid var(--border);
-  }
-
+  /* The ticket sets the row's height; the book fills it without adding its
+     own (contain:size), so the ladder shows as many levels as fit beside the
+     form instead of pushing the open orders off the first screen. */
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-area {
+    grid-column:1;
+    flex-direction:column;
+    contain:size;
+    overflow:hidden;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-area {
     grid-column:2;
     flex-direction:column;
+    overflow:visible;
   }
 
-  /* Keep all five real order families, but make them a compact horizontal
-     strip rather than compressing five labels into one narrow row. */
+  /* Buy / Sell: one 44px segmented control. */
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-tabs {
     min-height:44px;
-    margin:6px 7px 2px;
+    margin:8px 8px 0;
     padding:2px;
     gap:2px;
   }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-tab {
-    min-height:44px;
+    min-height:40px;
     padding:6px 2px;
-    font-size:12px;
+    font-size:14px;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-type-tabs {
-    height:44px;
-    min-height:44px;
-    justify-content:flex-start;
-    align-items:center;
-    gap:2px;
-    padding:2px 7px;
-    overflow-x:auto;
-    scrollbar-width:none;
+  /* The five order families as one native select (OrderForm renders it on
+     phones instead of the tab strip). */
+  .trade-terminal.vx-terminal.spot-terminal .order-type-select {
+    display:block;
+    margin:8px 8px 0;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-type-tabs::-webkit-scrollbar { display:none; }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-type-tab {
-    flex:0 0 auto;
-    min-width:62px;
-    min-height:44px;
-    height:44px;
-    padding:5px 6px;
-    font-size:10px;
+  .trade-terminal.vx-terminal.spot-terminal .order-type-select-label {
+    position:absolute;
+    width:1px;
+    height:1px;
+    overflow:hidden;
+    clip:rect(0 0 0 0);
     white-space:nowrap;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .order-type-select select {
+    width:100%;
+    min-height:44px;
+    padding:0 32px 0 12px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel-alt) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa1ad' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+    color:var(--text-primary);
+    font-size:16px;
+    font-weight:600;
+    appearance:none;
+  }
+  /* Stop / take-profit still offer their Limit / Market execution pair. */
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .order-type-tabs {
+    height:44px;
+    min-height:44px;
+    gap:2px;
+    padding:0;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .order-type-tabs .order-type-tab {
+    flex:1;
+    min-height:44px;
+    font-size:13px;
   }
 
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content {
     gap:8px;
-    padding:7px 8px 10px;
-    overflow-y:auto;
-    overscroll-behavior:contain;
+    padding:8px 8px 10px;
+    overflow:visible;
+  }
+  /* «Доступно» leads the ticket, as on the reference. */
+  /* (The id inside :is() only lifts this above the preview sheet's
+     id-weighted padding rule; Spot has no element with that id.) */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content > .order-summary {
+    order:-1;
+    min-height:0;
+    padding:6px 10px;
+  }
+  /* «Доступно» over the amount: in the narrow column the row keeps one
+     height whatever the balance's length (a long 8-decimal VTA balance
+     wrapped beside the label and moved the whole ticket down). */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .available-balance {
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:flex-start;
+    gap:2px;
+    font-size:12px;
+    line-height:16px;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .available-balance .amount {
+    min-width:0;
+    max-width:100%;
+    overflow-wrap:anywhere;
+    text-align:left;
   }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-group { gap:3px; }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-label {
-    font-size:10px;
+    font-size:11px;
     line-height:14px;
+  }
+  /* The price field keeps its «Посл. цена» key beside the input, 44px tall,
+     instead of a 44px-tall label row above it. */
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-group:has(> .form-label .max-btn) {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    column-gap:6px;
+    row-gap:3px;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-group:has(> .form-label .max-btn) > .form-label { display:contents; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-group:has(> .form-label .max-btn) > .form-label > span { grid-column:1 / -1; grid-row:1; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-group:has(> .form-label .max-btn) > .input-group { grid-column:1; grid-row:2; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-group > .form-label .max-btn {
+    grid-column:2;
+    grid-row:2;
+    min-height:44px;
+    max-width:64px;
+    padding:0 6px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel-alt);
+    font-size:11px;
+    line-height:13px;
+    white-space:normal;
+    text-align:center;
   }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .input-group input {
     min-width:0;
-    padding:8px 7px;
+    min-height:44px;
+    padding:8px 8px;
   }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .input-suffix {
     max-width:58px;
     padding:0 6px;
-    font-size:10px;
+    font-size:11px;
     overflow:hidden;
     text-overflow:ellipsis;
   }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .slider-container {
-    padding:4px 2px 0;
+    padding:2px 2px 0;
   }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .slider-labels {
-    font-size:9px;
-  }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-summary {
-    padding:6px 7px;
-  }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .available-balance {
-    gap:5px;
     font-size:10px;
-  }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .available-balance .amount {
-    min-width:0;
-    overflow-wrap:anywhere;
-    text-align:right;
   }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .submit-btn {
     width:100%;
@@ -158,69 +239,86 @@
     margin-top:0;
   }
 
-  /* The reference keeps the first screen about execution. Market/account
-     statistics remain available elsewhere in VOLTEX; hiding these duplicate
-     blocks here removes the long vertical tail under the CTA. */
+  /* The ticket's market/account summaries repeat the instrument row and the
+     Assets tab; on a phone they are the long tail under the button. */
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .info-section {
     display:none;
   }
 
-  /* Narrow mobile book: Price + Quantity, matching the supplied reference.
-     Sum is presentation-only and remains unchanged on tablet/desktop. */
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-header {
+  /* Narrow book: Price + Quantity at a readable 12px; the cumulative column
+     stays on tablet/desktop. The book's desktop rules stack many classes
+     (TerminalStudio, ProfessionalTerminal), so these use the id-weighted
+     :is() prefix — Spot has no element with that id — instead of !important. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-header {
     min-height:44px;
-    padding:0 5px;
+    padding:0 4px 0 8px;
+    gap:4px;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-title {
-    font-size:10px;
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-title {
+    font-size:12px;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-collapse {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-collapse {
     display:none;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-group-select {
-    min-width:54px;
-    max-width:72px;
-    min-height:44px;
-    height:44px;
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-group-select {
+    min-width:52px;
+    max-width:76px;
+    min-height:36px;
+    height:36px;
     padding-inline:4px;
+    font-size:12px;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] :is(.orderbook-col-headers,.ob-row) {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    column-gap:6px;
+    padding:0 8px;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-col-headers {
+    min-height:20px;
     font-size:10px;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-col-headers {
-    padding:4px 5px;
-    font-size:9px;
-  }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-col-headers .ob-col:last-child,
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-row .cell:last-child {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-col-headers .ob-col:last-child,
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-row .cell:last-child {
     display:none;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-row {
-    height:22px;
-    padding:0 5px;
-    font-size:9px;
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-row {
+    height:24px;
+    min-height:24px;
+    flex-basis:24px;
+    line-height:24px;
+    font-size:12px;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-row .cell:nth-child(2) {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-row .cell:nth-child(2) {
     text-align:left;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-row .cell:nth-child(3) {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] :is(.ob-row .cell:nth-child(3),.orderbook-col-headers .ob-col:nth-child(2)) {
     text-align:right;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-spread {
-    padding:5px;
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-spread {
+    padding:6px 8px;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-spread-price {
-    font-size:13px;
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-spread-price {
+    font-size:15px;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] :is(.ob-spread-detail,.ob-spread-price .usd) {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] :is(.ob-spread-detail,.ob-spread-price .usd) {
     display:none;
   }
+
+  /* Open orders follow the ticket directly. */
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .bottom-panel {
+    min-height:0;
+    border-top:1px solid var(--border);
+  }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orders-resize-handle { display:none; }
 }
 
 @media (max-width:359px) {
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .main-grid {
-    grid-template-columns:minmax(0,1.22fr) minmax(126px,.9fr);
+    grid-template-columns:minmax(0,38fr) minmax(0,62fr);
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-type-tab {
-    min-width:58px;
-    padding-inline:4px;
-  }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-row { padding:0 5px; font-size:11px; }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-name { font-size:14px; }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.price { font-size:15px; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content { padding-inline:6px; }
 }

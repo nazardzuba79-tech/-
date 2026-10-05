@@ -37,7 +37,9 @@ async function scenario(width){
     await debug.send('Debugger.enable');await debug.send('Debugger.setPauseOnExceptions',{state:'all'});
     debug.on('Debugger.paused',event=>{const description=event.data?.description||JSON.stringify(event.data);if(!seen.has(description)){seen.add(description);console.log('QA exception',description);}void debug.send('Debugger.resume').catch(()=>{});});
   }
-  await page.goto(origin+'/futures');await page.locator('.chart-surface').waitFor();
+  // owner, 2026-10-04: phone opens on Trade — wait for the trade workspace it opens on.
+  if(width<=900){await page.goto(origin+'/futures');await page.locator('#mobile-futures-panel-trade').waitFor();}
+  else{await page.goto(origin+'/futures');await page.locator('.chart-surface').waitFor();}
   await page.waitForFunction(()=>document.querySelector('.fo-priceInputRow input')?.value && document.querySelector('.futures-account-balance .mono')?.textContent?.trim()!=='—');
   await page.locator('#budget-qa').evaluate(e=>e.style.display='none');
   const mobile=page.locator('#mobile-futures-trade');if(await mobile.isVisible())await mobile.click();
@@ -89,7 +91,9 @@ async function scenario(width){
   await page.locator('#futures-tab-positions').click();
   await page.waitForFunction(()=>document.querySelectorAll('.futures-positions-table tbody tr[data-side]').length===0);
   assert.equal((await api('state')).positions.length,0);
-  await page.reload();await page.locator('.chart-surface').waitFor();await page.waitForTimeout(500);
+  // owner, 2026-10-04: phone opens on Trade — after F5 wait for the trade workspace it opens on.
+  if(width<=900){await page.reload();await page.locator('#mobile-futures-panel-trade').waitFor();await page.waitForTimeout(500);}
+  else{await page.reload();await page.locator('.chart-surface').waitFor();await page.waitForTimeout(500);}
   await page.locator('#budget-qa').evaluate(e=>e.style.display='none');
   assert.equal((await api('state')).positions.length,0);assert.equal((await api('state')).orders.length,1);
   checks.push({width,name:'external close is not resurrected; F5 retains resting order',pass:true});

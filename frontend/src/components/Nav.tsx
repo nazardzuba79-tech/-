@@ -10,13 +10,20 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
 import { DepositModal } from './DepositModal';
 import { prefetchDepositConfig } from '../lib/useDepositOptions';
+import { onDepositRequest, type DepositRequest } from '../lib/depositRequest';
 import { TopGainersTicker } from './TopGainersTicker';
 import type { LiveQuote } from '../lib/liveMarketTypes';
 import { prefetchCopyMarketplace } from '../lib/useCopyMarketplace';
 
-export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideTicker,staticTicker,tickerSymbols,tickerFitToWidth,futuresReference,quoteAsset,readProfile=true}:{active:string;readProfile?:boolean;middle?:ReactNode;rightExtra?:ReactNode;onTickerSelect?:(pair:string)=>void;tickerHrefFor?:(pair:string)=>string;hideTicker?:boolean;staticTicker?:boolean;tickerSymbols?:string[];tickerFitToWidth?:boolean;futuresReference?:ReadonlyMap<string,LiveQuote>;quoteAsset?:string}) {
+export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideTicker,staticTicker,tickerSymbols,tickerFitToWidth,futuresReference,quoteAsset,terminalSwitch,readProfile=true}:{active:string;readProfile?:boolean;middle?:ReactNode;rightExtra?:ReactNode;onTickerSelect?:(pair:string)=>void;tickerHrefFor?:(pair:string)=>string;hideTicker?:boolean;staticTicker?:boolean;tickerSymbols?:string[];tickerFitToWidth?:boolean;futuresReference?:ReadonlyMap<string,LiveQuote>;quoteAsset?:string;
+  /** A trading terminal's «Спот / Фьючерсы» switch. Phones show it in the header (TerminalMobileHeader.css); desktop keeps the menu. */
+  terminalSwitch?:ReactNode}) {
   const navigate=useNavigate(),location=useLocation(),{t,lang}=useLanguage();
-  const[mobileOpen,setMobileOpen]=useState(false),[isAdmin,setIsAdmin]=useState(false),[avatarUrl,setAvatarUrl]=useState<string|null>(null),[showDeposit,setShowDeposit]=useState(false),[profileMenuOpen,setProfileMenuOpen]=useState(false);
+  const[mobileOpen,setMobileOpen]=useState(false),[isAdmin,setIsAdmin]=useState(false),[avatarUrl,setAvatarUrl]=useState<string|null>(null),[deposit,setDeposit]=useState<DepositRequest|null>(null),[profileMenuOpen,setProfileMenuOpen]=useState(false);
+  const setShowDeposit=(open:boolean)=>setDeposit(open?{}:null);
+  // Other buttons on this page («Депозит» in the Futures account block) open
+  // this same dialog rather than navigating away from the terminal.
+  useEffect(()=>onDepositRequest(request=>{setMobileOpen(false);setDeposit(request);}),[]);
   const profileMenuRef=useRef<HTMLDivElement>(null);
   const terminalCopy = active === '/trade' || active === '/futures';
   const terminalLabels = terminalNavCopy(lang);
@@ -49,10 +56,11 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
   // valid for weeks); the browser is signed out at once either way.
   function handleLogout(){if(getToken())api.logout().catch(()=>{});clearToken();navigate('/');}
   return <>
-    <header className="global-header top-nav-bar">
+    <header className="global-header top-nav-bar" data-terminal-header={terminalSwitch?'true':undefined}>
       <div className="header-left">
         <button className="mobile-menu nav-burger" onClick={()=>setMobileOpen(v=>!v)} aria-label={t('nav.menu')} aria-expanded={mobileOpen}>{mobileOpen?<X size={18}/>:<Menu size={18}/>}</button>
         <Link to="/trade" className="header-brand" style={styles.logo}><Logo/></Link><span className="brand-separator top-nav-divider" aria-hidden="true"/>
+        {terminalSwitch&&<div className="nav-terminal-switch">{terminalSwitch}</div>}
         <nav className="main-nav nav-desktop-links" aria-label={t('nav.menu')}>
           {DESKTOP_LINKS.map(l=>l.to==='/markets'?<HeaderDropdown key={l.to} to="/markets" label={l.label} links={MARKET_LINKS} className={`nav-item top-nav-link${marketSectionActive?' nav-active is-active':''}`}/>:l.to==='/trade'?<HeaderDropdown key={l.to} to="/trade" label={l.label} links={TRADING_LINKS} className={`nav-item top-nav-link${tradeSectionActive?' nav-active is-active':''}`}/>:<Link key={l.to} to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`}>{l.label}</Link>)}
           <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{t('nav.card')}</Link>
@@ -88,7 +96,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
         {rightExtra&&<div style={styles.mobileRightExtra}>{rightExtra}</div>}<div style={styles.mobileLangRow}><LanguageSwitcher/></div><button onClick={handleLogout} style={{...styles.logoutBtn,width:'100%'}}><LogOut size={14}/>{t('nav.logout')}</button>
       </div>
     </header>
-    {!hideTicker&&<TopGainersTicker onSelect={onTickerSelect} hrefFor={tickerHrefFor} staticStrip={staticTicker} symbols={tickerSymbols} fitToWidth={tickerFitToWidth} futuresReference={futuresReference}/>} {showDeposit&&<DepositModal onClose={()=>setShowDeposit(false)}/>}<BottomNav/>
+    {!hideTicker&&<TopGainersTicker onSelect={onTickerSelect} hrefFor={tickerHrefFor} staticStrip={staticTicker} symbols={tickerSymbols} fitToWidth={tickerFitToWidth} futuresReference={futuresReference}/>} {deposit&&<DepositModal onClose={()=>setShowDeposit(false)} initialAsset={deposit.asset} tone={terminalCopy?'terminal':'light'}/>}<BottomNav/>
   </>;
 }
 

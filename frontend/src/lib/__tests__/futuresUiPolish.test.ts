@@ -40,6 +40,12 @@ function semantic(source){
 
 const read = name => readFileSync(resolve(__dirname, '../..',name),'utf8');
 function restoreAccountActions(source) {
+ // 2026-10-04: «Депозит» asks the page's header for its deposit window
+ // (lib/depositRequest) and falls back to the Wallet route it used before.
+ // Reverse exactly that button and its import; every figure stays frozen.
+ source = source.replace(/\r\n/g,'\n')
+  .replace("import { requestDeposit } from '../lib/depositRequest';\n", '')
+  .replace("        {/* The page's own deposit window when there is one (the terminal\n            header's), so the trader stays on the contract; the Wallet\n            otherwise, exactly as before. */}\n        <button type=\"button\" onClick={() => { if (!requestDeposit({ asset: quoteAsset })) navigate('/wallet?action=deposit'); }} style={styles.actionBtn}>", "        <button type=\"button\" onClick={() => navigate('/wallet?action=deposit')} style={styles.actionBtn}>");
  // 2026-09-30: the account block gained «Вывести», a link to the Wallet's
  // withdraw panel. Remove exactly that button; the rest stays frozen.
  const added="        <button type=\"button\" onClick={() => navigate('/wallet?action=withdraw')} style={styles.actionBtn}>\n          {t('wallet.withdraw')}\n        </button>\n";
@@ -50,7 +56,14 @@ function restoreAccountActions(source) {
 function restoreFormPresentation(source) {
  // Reverse only the approved details wrapper and repeated price-pick signal.
  // The original complete order payload, calculations and controls remain frozen.
- const text = source.replace(/\r\n/g,'\n');
+ // 2026-10-04 phone ticket: `compact` turns the order families into one select
+ // and `accountSlot` portals the SAME account block under the positions.
+ // Reverse exactly those props, that attribute and that wrapper.
+ const text = source.replace(/\r\n/g,'\n')
+  .replace("import { createPortal } from 'react-dom';\n", '')
+  .replace("  lastPrice = null,\n  archive = false,\n  compact = false,\n  accountSlot = null,\n}: {\n  archive?: boolean;\n  /** A phone: the order families become one select (OrderFamilyTabs). */\n  compact?: boolean;\n  /**\n   * Where the account block and the leverage tiers render on a phone: under\n   * the positions, so the trade buttons are followed by the positions and\n   * not by a screen of account figures. The SAME elements, moved by a\n   * portal \u2014 never a second copy. Null renders them here, as on desktop.\n   */\n  accountSlot?: HTMLElement | null;\n", "  lastPrice = null,\n  archive = false,\n}: {\n  archive?: boolean;\n")
+  .replace('<OrderFamilyTabs value={family} archive={archive} compact={compact} onChange', '<OrderFamilyTabs value={family} archive={archive} onChange')
+  .replace("      {(() => {\n        const accountBlock = <>\n      <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />\n\n      {config && (\n        <details className=\"fo-tiersBox\">\n          <summary className=\"fo-tiersTitle\">{t('futures.leverageTiersTitle')}</summary>\n          <table className=\"fo-tiersTable\">\n            <thead>\n              <tr>\n                <th className=\"fo-tiersTh\">{t('futures.tierNotional')}</th>\n                <th className=\"fo-tiersTh\">{t('futures.tierMaxLeverage')}</th>\n                <th className=\"fo-tiersTh\">{t('futures.tierMmr')}</th>\n              </tr>\n            </thead>\n            <tbody>\n              {config.leverageTiers.map((tr, i) => (\n                <tr key={i} className={resultingTier === tr ? 'fo-tiersRowActive' : undefined}>\n                  <td className=\"fo-tiersTd mono\">\n                    {tr.notionalCap === null ? '\u221e' : tr.notionalCap.toLocaleString('en-US')}\n                  </td>\n                  <td className=\"fo-tiersTd mono\">\n                    {tr.maxLeverage}x\n                  </td>\n                  <td className=\"fo-tiersTd mono\">\n                    {(tr.maintenanceMarginRate * 100).toFixed(2)}%\n                  </td>\n                </tr>\n              ))}\n            </tbody>\n          </table>\n        </details>\n      )}\n        </>;\n        return accountSlot ? createPortal(<div className=\"fo-account-slot-content\">{accountBlock}</div>, accountSlot) : accountBlock;\n      })()}\n", "      <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />\n\n      {config && (\n        <details className=\"fo-tiersBox\">\n          <summary className=\"fo-tiersTitle\">{t('futures.leverageTiersTitle')}</summary>\n          <table className=\"fo-tiersTable\">\n            <thead>\n              <tr>\n                <th className=\"fo-tiersTh\">{t('futures.tierNotional')}</th>\n                <th className=\"fo-tiersTh\">{t('futures.tierMaxLeverage')}</th>\n                <th className=\"fo-tiersTh\">{t('futures.tierMmr')}</th>\n              </tr>\n            </thead>\n            <tbody>\n              {config.leverageTiers.map((tr, i) => (\n                <tr key={i} className={resultingTier === tr ? 'fo-tiersRowActive' : undefined}>\n                  <td className=\"fo-tiersTd mono\">\n                    {tr.notionalCap === null ? '\u221e' : tr.notionalCap.toLocaleString('en-US')}\n                  </td>\n                  <td className=\"fo-tiersTd mono\">\n                    {tr.maxLeverage}x\n                  </td>\n                  <td className=\"fo-tiersTd mono\">\n                    {(tr.maintenanceMarginRate * 100).toFixed(2)}%\n                  </td>\n                </tr>\n              ))}\n            </tbody>\n          </table>\n        </details>\n      )}\n");
  // 2026-10-03: remove the duplicate lower calculator entry, while the
  // page-owned, accessible header icon still opens the same calculator.
  // Restore ONLY the exact removed destructuring line and JSX block for
@@ -392,7 +405,22 @@ test.each([
     // 2026-10-01: ONE prop added — the positions panel gets `onShowHistory`,
     // so «История позиций →» on the «Позиция закрыта» card opens this page's
     // Position History tab. No order, execution, account or layout byte changed.
-    "72ba83a065c731db3ac225fbdda43d23c586d8c48d402c8c564ead6f02c8393d"
+    // Re-taken 2026-10-04 for the phone trading workspace. What differs:
+    //   * a phone opens on the Trade workspace (initial `mobileTab` 'trade');
+    //   * Nav receives the «Спот / Фьючерсы» switch, and `?from=PAIR` (a Spot
+    //     pair this browser could not vouch for) selects the pair through
+    //     `selectSymbol` once the venue lists it, or opens the chooser with
+    //     a note; `selectSymbol` also clears `from`, and the mount-time
+    //     address seed waits for that resolver while `from` is pending;
+    //   * on a phone (`useMediaQuery`) the ticket's heading row is not drawn,
+    //     the calculator key rides in the instrument row, the ticket gets
+    //     `compact` and an `accountSlot`, and the contract facts render once
+    //     under the positions instead of under the ticket;
+    //   * a book pick no longer resets the scroll; a chooser pick lands on Trade.
+    // Order placement, execution, account source, depth and reference reads
+    // are unchanged; futuresFinalPolish mounts the page and still proves one
+    // chart, book, ticket and calculator instance across every workspace.
+    "ab3a3ea7bd7fee5c37314a1c22e87700dc9fc45a609644d3b7ae5608b9bf7a9b"
   ],
   [
     "components/FuturesPairList.tsx",

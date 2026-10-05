@@ -198,6 +198,12 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === './SpotOrdersView') return { SpotAssetsView: () => null };
     if (name === '../lib/futuresDepth') return { setFuturesDepthFallbackBase: () => {}, subscribeFuturesDepth: (symbol: string, callback: any) => overrides.socket.subscribeBook(symbol, callback) };
     if (name === '../lib/tradingMode') return { rememberTradingMode: jest.fn() };
+    // Phone header switch and breakpoint (2026-10-04). The switch is a pure
+    // pair of links rendered through Nav (stubbed here); this harness drives
+    // the page at desktop width, so the breakpoint hook answers false.
+    if (name === '../components/TerminalMarketSwitch') return { TerminalMarketSwitch: () => null };
+    if (name === '../lib/terminalMarketSwitch') return jest.requireActual('../terminalMarketSwitch');
+    if (name === '../lib/useMediaQuery') return { MOBILE_TERMINAL_QUERY: '(max-width: 900px)', useMediaQuery: () => false };
     // The owner-only native demo is server-gated; an ordinary account keeps the public terminal.
     if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true, state: null, setHistoryDemand: () => {}, interaction: { selecting: null, onCancelSelection: overrides.cancelSelection ?? jest.fn() } }) };
     if (name === './private-trading/NativeDemoControls') {
@@ -618,8 +624,10 @@ describe('mobile Futures workspace handoffs', () => {
     let tree = page.render();
     const originals = ['TerminalChart', 'FuturesReferenceBook', 'FuturesOrderForm', 'FuturesCalculator']
       .map(name => ({ name, type: part(tree, name)?.type, key: part(tree, name)?.key }));
-    expect(active(tree)).toBe('chart');
-    for (const tab of ['trade', 'positions', 'chart']) {
+    // A phone opens on the trading workspace (owner, 2026-10-04); every
+    // other workspace is one tap away and keeps the same instances.
+    expect(active(tree)).toBe('trade');
+    for (const tab of ['chart', 'positions', 'trade']) {
       select(tree, tab); tree = page.render();
       expect(active(tree)).toBe(tab);
       for (const original of originals) {
@@ -670,9 +678,11 @@ describe('mobile Futures workspace handoffs', () => {
   test('each workspace restores its scroll, and desktop price picks do not scroll the page', () => {
     const scrollTo = jest.fn();
     const { page, select } = workspace({ scrollY: 250, scrollTo });
-    let tree = page.render(); select(tree, 'trade'); tree = page.render();
+    // Opens on Trade: leaving it remembers its 250px, the chart starts at 0,
+    // and coming back restores the trader's place in the ticket.
+    let tree = page.render(); select(tree, 'chart'); tree = page.render();
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
-    select(tree, 'chart');
+    select(tree, 'trade');
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 250, behavior: 'instant' });
     const desktop = workspace({ scrollTo, matchMedia: (query: string) => ({ matches: query.includes('min-width'), addEventListener() {}, removeEventListener() {} }) });
     const calls = scrollTo.mock.calls.length;

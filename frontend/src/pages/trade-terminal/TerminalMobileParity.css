@@ -163,8 +163,12 @@
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=account] .terminal-panel-restores {
     display:none;
   }
-  .trade-terminal.vx-terminal.spot-terminal .terminal:not([data-mobile-tab=account]) [data-mobile-account-panel] { display:none; }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .main-grid > :not(.order-form-area) { display:none; }
+  /* Open orders follow the trading workspace (owner, 2026-10-04): they are
+     hidden only behind the chart. The trade workspace hides exactly the two
+     panels it does not show — the earlier `> :not(.order-form-area)` hid
+     the order book too, which SpotMobileCompact.css then had to undo. */
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart] [data-mobile-account-panel] { display:none; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .main-grid > :is(.left-panel,.chart-area) { display:none; }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart] .order-form-area { display:none; }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=chart] .main-grid > :not(.chart-area) { display:none; }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=book] .main-grid > :not(.orderbook-area) { display:none; }

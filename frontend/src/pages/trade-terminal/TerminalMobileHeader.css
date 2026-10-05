@@ -1,0 +1,190 @@
+/* The trading terminals' phone header (owner, 2026-10-04).
+ *
+ * One 52px row: menu, «Спот / Фьючерсы», Wallet and a labelled gold
+ * «Депозит». The VOLTEX mark returns from 430px, where there is room; language and
+ * profile live in the menu, as they already do on every phone page. Desktop is
+ * untouched: the switch is hidden above 900px and nothing below that width
+ * reaches it.
+ *
+ * Specificity: `:is(#archive-terminal-preview,.trade-terminal)` counts as an
+ * id on both terminals, so these rules outrank the Futures sheet's own
+ * `#archive-terminal-preview .global-header …` header rules without a single
+ * !important.
+ */
+.nav-terminal-switch,
+.spot-mobile-stats-toggle { display:none; }
+
+@media (max-width:900px) {
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] {
+    gap:6px;
+    height:52px;
+    min-height:52px;
+    padding-inline:10px;
+  }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-left {
+    flex:1 1 auto;
+    min-width:0;
+    gap:6px;
+  }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .nav-mobile-menu { top:100%; }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .mobile-menu {
+    width:44px;
+    height:44px;
+    margin-right:0;
+    flex:none;
+  }
+  /* The mark alone: the wordmark gives its width to the switch. */
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-brand { flex:none; }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-brand > span > span { display:none; }
+  /* The switch keeps its whole width — its labels are never squeezed under
+     their neighbours; the row makes room by dropping the mark instead. */
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .nav-terminal-switch {
+    display:flex;
+    flex:none;
+  }
+
+  .terminal-market-switch {
+    display:inline-flex;
+    align-items:stretch;
+    min-width:0;
+    padding:0;
+    border-radius:10px;
+    background:var(--panel-alt, #1d2026);
+    box-shadow:inset 0 0 0 1px var(--border, #2b2f37);
+  }
+  .terminal-market-option {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    padding:0 9px;
+    border-radius:10px;
+    color:var(--text-secondary, #9aa1ad);
+    font-size:14px;
+    font-weight:600;
+    line-height:1;
+    white-space:nowrap;
+    text-decoration:none;
+  }
+  .terminal-market-option:focus-visible { outline:2px solid var(--accent, #f0c964); outline-offset:-2px; }
+  /* Selected: the terminal's quiet gold, not a second primary button. */
+  .terminal-market-option.is-active {
+    color:var(--accent, #f0c964);
+    background:rgba(240,196,63,.13);
+    box-shadow:inset 0 0 0 1px rgba(240,196,63,.42);
+  }
+
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions {
+    flex:0 0 auto;
+    gap:6px;
+  }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions :is(.language-control,.top-nav-profile-wrap,.header-extra-action) {
+    display:none;
+  }
+  /* Wallet: the calmer neighbour of «Депозит» — a bordered graphite key. */
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions > .nav-wallet-link {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    min-width:44px;
+    min-height:44px;
+    height:44px;
+    padding:0 10px;
+    border:1px solid var(--border, #2b2f37);
+    border-radius:10px;
+    background:var(--panel-alt, #1d2026);
+    box-shadow:none;
+    color:var(--text-primary, #f2f3f5);
+    font-size:13px;
+  }
+  /* The wallet glyph, drawn by CSS so the link's markup stays the desktop
+     one (its text is still its accessible name). */
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions > .nav-wallet-link > svg { display:none; }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions > .nav-wallet-link::before {
+    content:"";
+    flex:none;
+    width:18px;
+    height:18px;
+    background:currentColor;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3' y='4.5' width='18' height='15' rx='2.5'/%3E%3Cpath d='M3 10h18M7 15h2m3 0h1'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3' y='4.5' width='18' height='15' rx='2.5'/%3E%3Cpath d='M3 10h18M7 15h2m3 0h1'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions > .nav-wallet-link::after { display:none; }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .deposit-button {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    height:44px;
+    padding:0 13px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:0;
+    white-space:nowrap;
+  }
+
+  /* Instrument-row disclosure for the Spot 24h figures (TickerBar). Id
+     weight, so the terminal-wide 40px button floor does not cap it. */
+  :is(#archive-terminal-preview,.trade-terminal).spot-terminal .ticker-bar .spot-mobile-stats-toggle {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    min-width:44px;
+    min-height:44px;
+    padding:0 6px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel-alt);
+    color:var(--text-secondary);
+    font-size:12px;
+  }
+
+  /* Anything scrolled into view on a terminal phone — a focused field, a
+     CTA, a picked level — stops above the fixed bottom bar, never under it
+     (the trade buttons are in the page flow now, no longer sticky). */
+  html:has(:is(#archive-terminal-preview,.trade-terminal)) {
+    scroll-padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* «{pair} нет на споте / среди фьючерсов» above the market chooser (id
+     weight: the terminals' blanket padding reset would otherwise win). */
+  :is(#archive-terminal-preview,.trade-terminal) .terminal-switch-note {
+    margin:0;
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    color:var(--text-secondary);
+    font-size:13px;
+    line-height:1.45;
+  }
+}
+
+@media (max-width:600px) {
+  /* The label stays the link's accessible name; only its ink goes. */
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions > .nav-wallet-link { padding:0; width:44px; font-size:0; gap:0; }
+}
+/* Below 430px the mark goes too: at 390px the mark and the whole switch
+   need 244px where the row leaves 230px, so the switch, Wallet and «Депозит»
+   keep one row, uncut, down to 360px. (!important: the brand link carries an
+   inline display from Nav.) */
+@media (max-width:429px) {
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-brand { display:none !important; }
+}
+/* The narrowest phones: the switch takes a second header line of its own
+   rather than squeezing «Депозит» or cutting a label. */
+@media (max-width:359px) {
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] {
+    flex-wrap:wrap;
+    height:auto;
+    row-gap:0;
+    padding-inline:8px;
+  }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-left { display:contents; }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .mobile-menu { order:1; margin-block:4px; }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions { order:2; margin-left:auto; }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .nav-terminal-switch { order:3; flex:1 0 100%; padding-bottom:6px; }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .terminal-market-switch { flex:1; }
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .terminal-market-option { flex:1; }
+}

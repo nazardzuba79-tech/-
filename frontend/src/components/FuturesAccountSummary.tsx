@@ -4,6 +4,7 @@ import { useLanguage } from '../lib/i18n';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { getLeverageTier, LeverageTier } from '../lib/futuresMath';
+import { requestDeposit } from '../lib/depositRequest';
 
 type FuturesConfig = { leverageTiers: LeverageTier[] } | null;
 
@@ -261,7 +262,10 @@ export function FuturesAccountSummary({
       )}
 
       <div className="futures-account-actions" style={styles.actionsRow}>
-        <button type="button" onClick={() => navigate('/wallet?action=deposit')} style={styles.actionBtn}>
+        {/* The page's own deposit window when there is one (the terminal
+            header's), so the trader stays on the contract; the Wallet
+            otherwise, exactly as before. */}
+        <button type="button" onClick={() => { if (!requestDeposit({ asset: quoteAsset })) navigate('/wallet?action=deposit'); }} style={styles.actionBtn}>
           {t('futures.depositAction')}
         </button>
         <button type="button" onClick={() => navigate('/wallet?action=withdraw')} style={styles.actionBtn}>
