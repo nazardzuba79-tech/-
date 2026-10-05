@@ -8,6 +8,11 @@ const NRX_LISTING_AT = Date.parse('2026-10-03T13:00:00Z');
  * NOT a deploy-now configuration: run the release preflight before BOTH
  * backend and edge rollouts. An elapsed activation must be rescheduled, never
  * applied retroactively to displayed prices or executed orders.
+ *
+ * NOT attached to NEURIX (2026-10-05): its activation passed before any API or
+ * edge release carried it. The live chart (market-edge 8de23981) never ran it,
+ * and attaching it now would price API sales away from that chart. Kept as the
+ * reviewed plan; re-attach only with a future activation through the gate.
  */
 export const NRX_TWO_WEEK_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.freeze({
   version: 3,
@@ -40,7 +45,6 @@ export const NEURIX: TestAssetConfig = Object.freeze({
   // Release MUST be live (Hetzner API and the market-edge Worker) before this
   // instant; otherwise move it to the next full hour after the release.
   marketStructure: { from: NRX_LISTING_AT },
-  scheduledScenario: NRX_TWO_WEEK_SCENARIO,
 });
 
 export const NRX_OWNER_ALLOCATION = '6250';

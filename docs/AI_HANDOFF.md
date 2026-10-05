@@ -5657,3 +5657,22 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
   - `scripts/qa-chart-ruler-measure.cjs`: expected first line now includes the price move.
 - Checks run locally: full frontend Jest 223 suites / 3832 tests pass; Vite build; `qa-chart-ruler-measure.cjs` passes at 1440 and 1366 (label «+4,9928 (+5,36%) / 35 баров, 1д 11ч / Объём 43.77K»). Fixtures only.
 - Not merged, not deployed.
+
+## Claude — 2026-10-05 — NRX: release check for #432; detach the elapsed v3 plan
+
+- Task: finish the NRX demo restore (#432), with read-only Hetzner checks and a server update. Hetzner access is NOT available in this session (no ssh client, no keys, no access variables), so no database reads and no server change were made here. Owner: the access lives in another session; continue there.
+- Verified read-only from here (2026-10-05):
+  - `https://api.voltextech.net/health`: commit `7cb2ac05…`, started 2026-10-02T18:02:31Z. main `8f11f5ae` is 241 commits ahead, with one migration in between (`20261003090000_session_remembered`: one boolean, default false; `7cb2ac05` never reads it, so rolling back to `7cb2ac05` stays possible).
+  - market-edge: last production deploy is the `cloudflare-market-edge` push `8de23981` (2026-10-03 11:26Z). The live `/market/test-assets/NRX-USDT` state and the 15m/1h/4h candles (157/39/10 closed) are identical to `8de23981` code. The API redirects public NRX reads to the edge.
+  - main (and #432) attached `NRX_TWO_WEEK_SCENARIO` v3 (activation 2026-10-03T18:00Z), which was never installed on the API or the edge. At 2026-10-05T04:22:59Z the chart showed 241.09443, main/#432 computes 55.883058 and API `7cb2ac05` computes 212.76228. #432's `/demo/nrx/sell` prices from the API's own simulation, so main+#432 as it stood would sell about 4.3× below the chart. `check-nrx-scenario-release.cjs` on #432's head: BLOCKED.
+  - #432 head `04613ae1`: mergeable clean, CI 18 success / 1 skipped. Local merge main+#432: `tsc` PASS; testMarkets + `nrxDemo.test.ts` 12 suites / 181 tests PASS (PostgreSQL suites not run, no local DB).
+  - `NRX_OWNER_ALLOCATION`: `7cb2ac05` and the edge say 31250 (25000 USDT), main says 6250 (5000 USDT). `allocateNrxOwner` is a manual operation on the ordinary Balance; which amount, if any, was applied is only in the database. #432 sells `DemoBalance.NRX` only.
+- Change (owner approved "prepare PR"): `NEURIX` no longer carries `scheduledScenario`; `NRX_TWO_WEEK_SCENARIO` stays as the reviewed plan. The API/edge NRX path is then identical to the live chart `8de23981` (state every ~7 min from listing to +20 days and 1m–1d candles hash-equal); the release gate prints "no scheduled scenario" and exits 0.
+  - Tests: `simulationScheduleRelease` covers the plan explicitly; `simulationScheduleIntegration` parity no longer expects the v3 price; new golden test in `nrxPublic.test.ts` (values from `8de23981`); `scripts/test-nrx-edge.cjs` fixtures moved to the live-chart prices. Status note at the top of `docs/NRX_TWO_WEEK.md`.
+  - Checks run: `tsc` PASS; the `nrx-market.yml` Jest list without its PostgreSQL suite (17 suites / 235 tests) PASS; `test-nrx-edge.cjs` and `workers/market-edge/test.mjs` PASS. Not run locally: `nrxSpot.pg.test.ts`, `qa-nrx-market.cjs`, builds.
+- Preserved: Codex's schedule engine (`simulationSchedule.ts`, the `testMarketSimulation` hook), the plan constant and the release gate are unchanged; #432 is untouched.
+- Open, for the session with Hetzner access:
+  1. Read-only on Hetzner: serving process commit, database host (no secrets printed), the owner's `Balance` NRX and `DemoBalance` NRX/USDT, AuditLog `nrx-owner-allocation-v1`, NRX orders/trades. Any transfer of demo tokens needs the owner's approval with those sums.
+  2. After the owner merges this PR and #432: run the gate on the release SHA (expect "no scheduled scenario"), deploy the backend, check `/health` commit and the admin `GET /api/v1/demo/nrx`, then publish the frontend.
+  3. Owner decision: the live path keeps growing (13:00 UTC: about 6,406 on 6 Oct, 19.3 million on 13 Oct, 51.3 million on 17 Oct); v3 was meant to stop that. Any change must be a future activation installed on both tiers.
+  4. #432 and #434 both edit `frontend/src/components/OrderForm.tsx`; whichever merges second needs a manual merge.
