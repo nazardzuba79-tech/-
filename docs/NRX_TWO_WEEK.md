@@ -1,5 +1,13 @@
 # NRX two-week scenario — draft review only
 
+> **Status 2026-10-05: not attached to NEURIX.** Version 3 was never installed:
+> the Hetzner API (7cb2ac05) and market-edge (8de23981) both predate it, and its
+> 18:00 UTC activation on 3 October has passed. The live chart is the market-edge
+> 8de23981 path, which keeps growing (about 6,406 USDT on 6 Oct and 19.3 million
+> on 13 Oct at 13:00 UTC). `NRX_TWO_WEEK_SCENARIO` stays in `neurix.ts` as the
+> reviewed plan; changing the live path needs a new owner-approved activation in
+> the future, installed on BOTH tiers through the release gate below.
+
 **Not approved for production. No merge or deployment was performed for this review.**
 Owner updated the live review plan on 3 October. Version 3 activates at
 **3 October 2026 at 21:00 Europe/Kyiv (18:00 UTC)**. It must be installed on BOTH

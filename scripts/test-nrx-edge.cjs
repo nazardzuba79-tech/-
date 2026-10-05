@@ -23,13 +23,14 @@ const get = path => worker.fetch(new Request('https://market.voltextech.net' + p
   }
   assert.equal((await get('/market/display/futures-book/NRXUSDT')).status, 404);
   assert.equal((await (await get('/health')).json()).service, 'voltex-market-edge');
-  // Exercise the scheduled path in the actual browser-targeted Worker bundle.
+  // The live chart in the actual browser-targeted Worker bundle: the prices the
+  // deployed market-edge 8de23981 serves (no scheduled plan attached).
   // Fixed instants are fixtures; no query parameter can select a future price.
   for (const [at, price] of [
-    ['2026-10-03T21:00:00Z', 7.52],
-    ['2026-10-04T09:00:00Z', 14.76],
-    ['2026-10-04T13:00:00Z', 58.536],
-    ['2026-10-06T19:00:00Z', 23.4144],
+    ['2026-10-03T21:00:00Z', 2.7420778],
+    ['2026-10-04T09:00:00Z', 46.509268],
+    ['2026-10-04T13:00:00Z', 45.828573],
+    ['2026-10-06T19:00:00Z', 19415.611],
   ]) {
     now = Date.parse(at);
     const state = (await (await get('/market/nrx')).json()).assets[0].state;
@@ -40,5 +41,5 @@ const get = path => worker.fetch(new Request('https://market.voltextech.net' + p
     assert.equal(Number(trades.trades[0].price), price, 'trade tape contains the same terminal price');
   }
   assert.equal(external, 0);
-  console.log('Bundled NRX Worker: base routes and 3 scheduled target/tape checks PASS; zero IO; no Node runtime/DB dependency');
+  console.log('Bundled NRX Worker: base routes and 4 live-chart price/tape checks PASS; zero IO; no Node runtime/DB dependency');
 })().catch(error => { console.error(error); process.exitCode = 1; });

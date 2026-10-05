@@ -95,3 +95,21 @@ test('Spot conditional price uses canonical NRX only; ordinary venue prices and 
   expect(() => assertSpotListing('VTA/USDT', listing)).toThrow('not available');
   expect(isTestAssetPairOrSymbol('NRX')).toBe(true); // still excluded from withdrawals/Futures collateral
 });
+
+test('API and edge price NRX as the live chart: market-edge 8de23981, no scheduled scenario', () => {
+  // Values computed from the deployed market-edge release 8de23981; its live
+  // 15m/1h/4h history matched them on 2026-10-05. A sale prices from this
+  // same code on the API, so a drift here moves sales away from the chart.
+  expect(NEURIX.scheduledScenario).toBeUndefined();
+  const sim = simulationFor(NEURIX);
+  for (const [at, price] of [
+    ['2026-10-03T14:00:00Z', 1.4877408], ['2026-10-03T21:00:00Z', 2.7420778], ['2026-10-04T13:00:00Z', 45.828573],
+    ['2026-10-05T04:22:59.506Z', 241.09443], ['2026-10-06T19:00:00Z', 19415.611], ['2026-10-13T13:00:00Z', 19259688],
+  ] as const) expect(sim.priceAt(Date.parse(at))).toBe(price);
+  expect(publicTestAsset(NEURIX, Date.parse('2026-10-05T04:22:59.506Z')).state).toMatchObject({
+    lastPrice: 241.09443, openPrice24h: 7.7160454, high24h: 273.75376, low24h: 6.2710392,
+  });
+  expect(testMarketCandles(NEURIX, '4h', Date.parse('2026-10-05T04:22:59.506Z'), 12)[0]).toEqual({
+    time: 1791028800, open: .8, high: 2.1389475, low: .75115033, close: 1.9657949, volume: 2538378.4403,
+  });
+});
