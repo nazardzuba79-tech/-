@@ -27,10 +27,10 @@ export const NRX_TWO_WEEK_SCENARIO: Readonly<GrowthScheduledScenarioConfig> = Ob
  * already allocated production inventory. */
 export const NRX_BALANCE_SELLOFF_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.freeze({
   mode: 'range-selloff-range',
-  version: 4,
-  from: Date.parse('2026-10-05T10:00:00Z'), // 13:00 Kyiv
-  rangeEndAt: Date.parse('2026-10-07T10:00:00Z'), // 48h balance
-  selloffEndAt: Date.parse('2026-10-07T16:00:00Z'), // six-hour -60% selloff
+  version: 5,
+  from: Date.parse('2026-10-05T20:00:00Z'), // 23:00 Kyiv
+  rangeEndAt: Date.parse('2026-10-07T20:00:00Z'), // 48h balance
+  selloffEndAt: Date.parse('2026-10-08T02:00:00Z'), // six-hour -60% selloff
   rangeFraction: .20,
   selloffFraction: .60,
 });
