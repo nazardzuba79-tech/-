@@ -1,7 +1,7 @@
 const { fingerprintFor, TRAJECTORY_FILES } = require('../../../../scripts/check-nrx-scenario-release.cjs');
-import { NEURIX, NRX_TWO_WEEK_SCENARIO } from '../neurix';
+import { NEURIX, NRX_BALANCE_SELLOFF_SCENARIO, NRX_TWO_WEEK_SCENARIO } from '../neurix';
 
-// The reviewed plan is no longer attached to NEURIX; the gate must still cover it.
+// The old reviewed plan remains fingerprintable; NEURIX now carries the forward-only v4 terminal plan.
 const SCHEDULED = { ...NEURIX, scheduledScenario: NRX_TWO_WEEK_SCENARIO };
 
 test('release identity covers every scenario field and all legacy trajectory inputs', () => {
@@ -25,4 +25,15 @@ test('release identity covers every scenario field and all legacy trajectory inp
 test('release identity survives key ordering and Windows line endings', () => {
   const reversed = Object.fromEntries(Object.entries(NEURIX).reverse());
   expect(fingerprintFor(reversed, () => 'a\r\nb\r\n')).toBe(fingerprintFor(NEURIX, () => 'a\nb\n'));
+});
+
+
+test('attached v4 balance/selloff plan is release-fingerprinted field by field', () => {
+  const source = (file: string) => file + '\nsource\n';
+  expect(NEURIX.scheduledScenario).toEqual(NRX_BALANCE_SELLOFF_SCENARIO);
+  const baseline = fingerprintFor(NEURIX, source);
+  for (const [key, value] of Object.entries(NRX_BALANCE_SELLOFF_SCENARIO)) {
+    const changed = typeof value === 'number' ? value + 10 : 'growth-range-selloff-range';
+    expect(fingerprintFor({ ...NEURIX, scheduledScenario: { ...NRX_BALANCE_SELLOFF_SCENARIO, [key]: changed } }, source)).not.toBe(baseline);
+  }
 });
