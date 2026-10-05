@@ -1,8 +1,9 @@
 import { seededRandom } from './simulationRandom';
 import type { RealismTick } from './simulationRealism';
 
-/** Absolute instants shared by API and edge. Percent gains are from LISTING. */
-export interface ScheduledScenarioConfig {
+/** Legacy growth program. Percent gains are from LISTING. */
+export interface GrowthScheduledScenarioConfig {
+  readonly mode?: 'growth-range-selloff-range';
   readonly version: number;
   readonly from: number;
   readonly firstTargetAt: number;
@@ -20,6 +21,24 @@ export interface ScheduledScenarioConfig {
   readonly selloffFraction: number;
 }
 
+/** Forward-only terminal program: stop growth, range, sell off, range forever. */
+export interface RangeSelloffRangeScenarioConfig {
+  readonly mode: 'range-selloff-range';
+  readonly version: number;
+  readonly from: number;
+  readonly rangeEndAt: number;
+  readonly selloffEndAt: number;
+  /** Typical sideways amplitude, not a clipping boundary for candles/wicks. */
+  readonly rangeFraction: number;
+  readonly selloffFraction: number;
+}
+
+export type ScheduledScenarioConfig = GrowthScheduledScenarioConfig | RangeSelloffRangeScenarioConfig;
+
+function isRangeSelloffRangeScenario(c: ScheduledScenarioConfig): c is RangeSelloffRangeScenarioConfig {
+  return c.mode === 'range-selloff-range';
+}
+
 const TICK = 10_000;
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -32,14 +51,22 @@ interface Phase {
 interface Context { phases: Phase[]; terminal: number }
 
 export function validateScheduledScenario(c: ScheduledScenarioConfig, listingAt: number): void {
+  const commonInvalid = !Number.isSafeInteger(c.version) || c.version < 1 || !Number.isFinite(listingAt)
+    || !Number.isFinite(c.rangeFraction) || c.rangeFraction <= 0 || c.rangeFraction >= 1
+    || !Number.isFinite(c.selloffFraction) || c.selloffFraction <= 0 || c.selloffFraction >= 1;
+  if (isRangeSelloffRangeScenario(c)) {
+    const times = [c.from, c.rangeEndAt, c.selloffEndAt];
+    if (commonInvalid || times.some((t, i) => !Number.isSafeInteger(t) || t % TICK !== 0 || t < listingAt || (i > 0 && t <= times[i - 1]))) {
+      throw new RangeError('Invalid scheduled simulation configuration');
+    }
+    return;
+  }
   const times = [c.from, c.firstTargetAt, c.breakoutAt, c.secondTargetAt, c.thirdTargetAt, c.rangeEndAt, c.selloffEndAt, c.endAt];
-  if (!Number.isSafeInteger(c.version) || c.version < 1 || !Number.isFinite(listingAt)
+  if (commonInvalid
     || times.some((t, i) => !Number.isSafeInteger(t) || t % TICK !== 0 || t < listingAt || (i > 0 && t <= times[i - 1]))
     || !Number.isFinite(c.firstGainPercent) || c.firstGainPercent <= -100
     || !Number.isFinite(c.secondGainPercent) || c.secondGainPercent <= c.firstGainPercent
-    || !Number.isFinite(c.thirdGainPercent) || c.thirdGainPercent <= c.secondGainPercent
-    || !Number.isFinite(c.rangeFraction) || c.rangeFraction <= 0 || c.rangeFraction >= 1
-    || !Number.isFinite(c.selloffFraction) || c.selloffFraction <= 0 || c.selloffFraction >= 1) {
+    || !Number.isFinite(c.thirdGainPercent) || c.thirdGainPercent <= c.secondGainPercent) {
     throw new RangeError('Invalid scheduled simulation configuration');
   }
 }
@@ -60,23 +87,34 @@ function context(c: ScheduledScenarioConfig, seed: string, listingAt: number, li
   const key = JSON.stringify([c, seed, listingAt, listingPrice, anchor]);
   const cached = contexts.get(key);
   if (cached) return cached;
-  const first = listingPrice * (1 + c.firstGainPercent / 100);
-  const second = listingPrice * (1 + c.secondGainPercent / 100);
-  const third = listingPrice * (1 + c.thirdGainPercent / 100);
-  const terminal = third * (1 - c.selloffFraction);
-  if (![first, second, third, terminal].every(p => Number.isFinite(p) && p > 0)) throw new RangeError('Invalid scenario target');
-  const rows: Array<[string, number, number, number, number, Regime, boolean]> = [
-    ['first-rise', c.from, c.firstTargetAt, anchor, first, 'impulse', false],
-    ['first-range', c.firstTargetAt, c.breakoutAt, first, first, 'consolidation', true],
-    ['second-rise', c.breakoutAt, c.secondTargetAt, first, second, 'impulse', false],
-    ['third-rise', c.secondTargetAt, c.thirdTargetAt, second, third, 'impulse', false],
-    ['second-range', c.thirdTargetAt, c.rangeEndAt, third, third, 'consolidation', true],
-    ['selloff', c.rangeEndAt, c.selloffEndAt, third, terminal, 'pullback', false],
-    ['final-range', c.selloffEndAt, c.endAt, terminal, terminal, 'consolidation', true],
-    // The scheduled two-week program is complete; retain the terminal market's
-    // bounded range instead of resuming the old model or producing zero trades.
-    ['terminal-range', c.endAt, Infinity, terminal, terminal, 'consolidation', true],
-  ];
+  let terminal: number;
+  let rows: Array<[string, number, number, number, number, Regime, boolean]>;
+  if (isRangeSelloffRangeScenario(c)) {
+    terminal = anchor * (1 - c.selloffFraction);
+    if (!Number.isFinite(terminal) || terminal <= 0) throw new RangeError('Invalid scenario target');
+    rows = [
+      ['growth-stop-range', c.from, c.rangeEndAt, anchor, anchor, 'consolidation', true],
+      ['selloff', c.rangeEndAt, c.selloffEndAt, anchor, terminal, 'pullback', false],
+      // After the fall the market remains permanently balanced around the new level.
+      ['terminal-range', c.selloffEndAt, Infinity, terminal, terminal, 'consolidation', true],
+    ];
+  } else {
+    const first = listingPrice * (1 + c.firstGainPercent / 100);
+    const second = listingPrice * (1 + c.secondGainPercent / 100);
+    const third = listingPrice * (1 + c.thirdGainPercent / 100);
+    terminal = third * (1 - c.selloffFraction);
+    if (![first, second, third, terminal].every(p => Number.isFinite(p) && p > 0)) throw new RangeError('Invalid scenario target');
+    rows = [
+      ['first-rise', c.from, c.firstTargetAt, anchor, first, 'impulse', false],
+      ['first-range', c.firstTargetAt, c.breakoutAt, first, first, 'consolidation', true],
+      ['second-rise', c.breakoutAt, c.secondTargetAt, first, second, 'impulse', false],
+      ['third-rise', c.secondTargetAt, c.thirdTargetAt, second, third, 'impulse', false],
+      ['second-range', c.thirdTargetAt, c.rangeEndAt, third, third, 'consolidation', true],
+      ['selloff', c.rangeEndAt, c.selloffEndAt, third, terminal, 'pullback', false],
+      ['final-range', c.selloffEndAt, c.endAt, terminal, terminal, 'consolidation', true],
+      ['terminal-range', c.endAt, Infinity, terminal, terminal, 'consolidation', true],
+    ];
+  }
   const phases = rows.map(([name, from, to, open, close, regime, range]): Phase => {
     const vertices: Vertex[] = [{ at: from, price: open }];
     if (!range) {

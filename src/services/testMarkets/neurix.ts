@@ -33,6 +33,21 @@ export const NRX_TWO_WEEK_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.f
   selloffFraction: .60,
 });
 
+/** Owner update 2026-10-05: end the growth phase prospectively.
+ * 13:00 Kyiv activation -> 48h balance -> 6h -60% selloff -> balance forever.
+ * The simulator anchors this program to the exact canonical NRX tick at
+ * activation, so nothing already displayed or sold is rewritten.
+ */
+export const NRX_BALANCE_SELLOFF_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.freeze({
+  mode: 'range-selloff-range',
+  version: 4,
+  from: Date.parse('2026-10-05T10:00:00Z'), // 13:00 Kyiv
+  rangeEndAt: Date.parse('2026-10-07T10:00:00Z'), // 48h balance
+  selloffEndAt: Date.parse('2026-10-07T16:00:00Z'), // six-hour -60% selloff
+  rangeFraction: .20,
+  selloffFraction: .60,
+});
+
 export const NEURIX: TestAssetConfig = Object.freeze({
   symbol: 'NRX', name: 'NEURIX', quote: 'USDT', pair: 'NRX/USDT',
   isTestAsset: true, isTradable: true, listingArmed: true,
@@ -45,6 +60,7 @@ export const NEURIX: TestAssetConfig = Object.freeze({
   // Release MUST be live (Hetzner API and the market-edge Worker) before this
   // instant; otherwise move it to the next full hour after the release.
   marketStructure: { from: NRX_LISTING_AT },
+  scheduledScenario: NRX_BALANCE_SELLOFF_SCENARIO,
 });
 
 export const NRX_OWNER_ALLOCATION = '6250';

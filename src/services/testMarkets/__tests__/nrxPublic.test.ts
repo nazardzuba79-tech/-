@@ -1,4 +1,4 @@
-import { NEURIX } from '../neurix';
+import { NEURIX, NRX_BALANCE_SELLOFF_SCENARIO } from '../neurix';
 import { nrxPublicResponse } from '../nrxPublic';
 import { publicTestAsset, testMarketCandles } from '../testMarketService';
 import { simulationFor, TestMarketSimulation, HOUR_MS } from '../testMarketSimulation';
@@ -96,16 +96,30 @@ test('Spot conditional price uses canonical NRX only; ordinary venue prices and 
   expect(isTestAssetPairOrSymbol('NRX')).toBe(true); // still excluded from withdrawals/Futures collateral
 });
 
-test('API and edge price NRX as the live chart: market-edge 8de23981, no scheduled scenario', () => {
-  // Values computed from the deployed market-edge release 8de23981; its live
-  // 15m/1h/4h history matched them on 2026-10-05. A sale prices from this
-  // same code on the API, so a drift here moves sales away from the chart.
-  expect(NEURIX.scheduledScenario).toBeUndefined();
+test('NRX preserves live history, then runs balance → -60% selloff → balance', () => {
+  expect(NEURIX.scheduledScenario).toEqual(NRX_BALANCE_SELLOFF_SCENARIO);
   const sim = simulationFor(NEURIX);
+  const baseline = new TestMarketSimulation({ ...NEURIX, scheduledScenario: undefined });
   for (const [at, price] of [
-    ['2026-10-03T14:00:00Z', 1.4877408], ['2026-10-03T21:00:00Z', 2.7420778], ['2026-10-04T13:00:00Z', 45.828573],
-    ['2026-10-05T04:22:59.506Z', 241.09443], ['2026-10-06T19:00:00Z', 19415.611], ['2026-10-13T13:00:00Z', 19259688],
-  ] as const) expect(sim.priceAt(Date.parse(at))).toBe(price);
+    ['2026-10-03T14:00:00Z', 1.4877408],
+    ['2026-10-03T21:00:00Z', 2.7420778],
+    ['2026-10-04T13:00:00Z', 45.828573],
+    ['2026-10-05T04:22:59.506Z', 241.09443],
+  ] as const) {
+    expect(sim.priceAt(Date.parse(at))).toBe(price);
+    expect(sim.priceAt(Date.parse(at))).toBe(baseline.priceAt(Date.parse(at)));
+  }
+
+  const from = NRX_BALANCE_SELLOFF_SCENARIO.from;
+  const anchor = baseline.priceAt(from)!;
+  expect(sim.priceAt(from)).toBe(anchor);
+  expect(sim.priceAt(NRX_BALANCE_SELLOFF_SCENARIO.rangeEndAt)).toBeCloseTo(anchor, 8);
+  const terminal = anchor * (1 - NRX_BALANCE_SELLOFF_SCENARIO.selloffFraction);
+  expect(sim.priceAt(NRX_BALANCE_SELLOFF_SCENARIO.selloffEndAt)).toBeCloseTo(terminal, 8);
+  const later = sim.priceAt(NRX_BALANCE_SELLOFF_SCENARIO.selloffEndAt + 24 * HOUR_MS)!;
+  expect(later).toBeGreaterThan(terminal * .5);
+  expect(later).toBeLessThan(terminal * 1.6);
+
   expect(publicTestAsset(NEURIX, Date.parse('2026-10-05T04:22:59.506Z')).state).toMatchObject({
     lastPrice: 241.09443, openPrice24h: 7.7160454, high24h: 273.75376, low24h: 6.2710392,
   });

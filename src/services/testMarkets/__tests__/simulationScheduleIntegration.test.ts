@@ -18,6 +18,16 @@ const scenario = {
 };
 const asset = { ...NEURIX, scheduledScenario: scenario };
 const originalAsset = { ...NEURIX, scheduledScenario: undefined };
+const terminalScenario = {
+  mode: 'range-selloff-range' as const,
+  version: 4,
+  from: Date.parse('2026-10-05T10:00:00Z'),
+  rangeEndAt: Date.parse('2026-10-07T10:00:00Z'),
+  selloffEndAt: Date.parse('2026-10-07T16:00:00Z'),
+  rangeFraction: .20,
+  selloffFraction: .60,
+};
+const terminalAsset = { ...NEURIX, scheduledScenario: terminalScenario };
 const ohlc = (c: { openTime: number; open: number; high: number; low: number; close: number }) => [c.openTime, c.open, c.high, c.low, c.close];
 
 test('scheduled listing-relative targets replace future growth without moving listing or seed', () => {
@@ -129,13 +139,44 @@ test('far future remains finite in terminal range without computing obsolete leg
   } finally { spy.mockRestore(); }
 });
 
+test('range-selloff-range stops growth prospectively, falls 60%, then stays balanced', () => {
+  const baseline = new TestMarketSimulation(originalAsset), market = new TestMarketSimulation(terminalAsset);
+  const anchor = baseline.priceAt(terminalScenario.from)!;
+  for (const at of [terminalScenario.from - TICK_MS, terminalScenario.from]) {
+    expect(market.priceAt(at)).toBe(baseline.priceAt(at));
+    expect(market.candles5m(at)).toEqual(baseline.candles5m(at));
+    expect(market.recentTrades(at, 500)).toEqual(baseline.recentTrades(at, 500));
+  }
+  expect(market.priceAt(terminalScenario.rangeEndAt)).toBeCloseTo(anchor, 8);
+  const terminal = anchor * (1 - terminalScenario.selloffFraction);
+  expect(market.priceAt(terminalScenario.selloffEndAt)).toBeCloseTo(terminal, 8);
+  for (const at of [terminalScenario.selloffEndAt + HOUR_MS, terminalScenario.selloffEndAt + DAY_MS, terminalScenario.selloffEndAt + 30 * DAY_MS]) {
+    const price = market.priceAt(at)!;
+    expect(Number.isFinite(price)).toBe(true);
+    expect(price).toBeGreaterThan(terminal * .5);
+    expect(price).toBeLessThan(terminal * 1.6);
+    expect(Number(market.recentTrades(at, 1)[0].quantity)).toBeGreaterThan(0);
+  }
+});
+
+test('attached v4 terminal schedule keeps public edge and backend Spot price identical', async () => {
+  const at = terminalScenario.selloffEndAt + HOUR_MS, source = { getTicker: jest.fn() };
+  const request = async (path: string) => nrxPublicResponse(new Request(`https://market.voltextech.net${path}`), () => at)!.json();
+  const ticker = await request('/market/ticker/NRX-USDT');
+  const trades = await request('/market/external/trades/NRX-USDT');
+  expect(Number(ticker.ticker.lastPrice)).toBe(simulationFor(NEURIX).priceAt(at));
+  expect(Number(trades.trades[0].price)).toBe(Number(ticker.ticker.lastPrice));
+  expect((await spotPriceSource(source, () => at).getTicker(NEURIX.pair))?.lastPrice).toBe(ticker.ticker.lastPrice);
+  expect(source.getTicker).not.toHaveBeenCalled();
+});
+
 test('public edge ticker/trades/candles and backend Spot price use the same future NRX simulation', async () => {
   const at = scenario.thirdTargetAt, source = { getTicker: jest.fn() };
   const request = async (path: string) => nrxPublicResponse(new Request(`https://market.voltextech.net${path}`), () => at)!.json();
   const ticker = await request('/market/ticker/NRX-USDT');
   const trades = await request('/market/external/trades/NRX-USDT');
   const candles = await request('/market/test-assets/NRX-USDT/candles?interval=1m');
-  // NEURIX carries no scheduled plan since 2026-10-05; parity is with whatever it runs.
+  // The new v4 program activates later, so this historical point remains byte-identical.
   expect(Number(ticker.ticker.lastPrice)).toBe(simulationFor(NEURIX).priceAt(at));
   expect(Number(trades.trades[0].price)).toBe(Number(ticker.ticker.lastPrice));
   expect(candles.candles).toEqual(testMarketCandles(NEURIX, '1m', at));
