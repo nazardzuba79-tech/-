@@ -1,9 +1,27 @@
 import type { TestAssetConfig } from './testAssetConfig';
-import type { ScheduledScenarioConfig } from './simulationSchedule';
+import type { GrowthScheduledScenarioConfig, ScheduledScenarioConfig } from './simulationSchedule';
 
 /** Shared configuration only: no environment, network, database or clock reads. */
 const NRX_LISTING_AT = Date.parse('2026-10-03T13:00:00Z');
 
+
+/** Historical reviewed v3 plan retained only for release fingerprint/tests; not attached. */
+export const NRX_TWO_WEEK_SCENARIO: Readonly<GrowthScheduledScenarioConfig> = Object.freeze({
+  version: 3,
+  from: Date.parse('2026-10-03T18:00:00Z'),
+  firstTargetAt: Date.parse('2026-10-03T21:00:00Z'),
+  breakoutAt: Date.parse('2026-10-04T05:00:00Z'),
+  secondTargetAt: Date.parse('2026-10-04T09:00:00Z'),
+  thirdTargetAt: Date.parse('2026-10-04T13:00:00Z'),
+  rangeEndAt: Date.parse('2026-10-06T13:00:00Z'),
+  selloffEndAt: Date.parse('2026-10-06T19:00:00Z'),
+  endAt: Date.parse('2026-10-17T18:00:00Z'),
+  firstGainPercent: 840,
+  secondGainPercent: 1745,
+  thirdGainPercent: 7217,
+  rangeFraction: .20,
+  selloffFraction: .60,
+});
 
 /** Owner update 2026-10-05: end growth prospectively without changing the
  * already allocated production inventory. */
