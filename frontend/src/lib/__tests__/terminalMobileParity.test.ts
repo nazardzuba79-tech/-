@@ -21,7 +21,12 @@ describe('Spot/CFD mobile parity with Futures', () => {
 
   test('Spot has Futures-style Chart / Trade / Account workspaces without changing order logic', () => {
     const page = read('frontend/src/pages/TradePage.tsx');
-    expect(page).toContain("const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart')");
+    // A tradable pair opens on Trade (owner, 2026-10-04); an upcoming listing
+    // (countdown card), a display-only test market and CFD stay chart-first.
+    expect(page).toContain("const [mobileTabChoice, setMobileTab] = useState<'chart' | 'trade' | 'account' | null>(null)");
+    expect(page).toContain("const prelisting = testPair && testMarket.asset?.state.phase !== 'live';");
+    expect(page).toContain("const displayOnly = testPair && testMarket.asset?.isTradable === false;");
+    expect(page).toContain("const mobileTab = mobileTabChoice ?? (marketType === 'cfd' || prelisting || displayOnly ? 'chart' : 'trade');");
     expect(page).toContain("const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart')");
     expect(page).toContain('data-mobile-market="spot"');
     expect(page).toContain("setMobilePane('book')");
@@ -57,7 +62,8 @@ describe('Spot/CFD mobile parity with Futures', () => {
     const compact = read('frontend/src/pages/trade-terminal/SpotMobileCompact.css');
     expect(css).toContain('.terminal[data-mobile-tab=trade]');
     expect(compact).toContain('.terminal[data-mobile-tab=trade] .main-grid');
-    expect(compact).toContain('grid-template-columns:minmax(0,1.28fr) minmax(138px,.92fr)');
+    // Book left (~40%), ticket right (~60%), as on the owner's references.
+    expect(compact).toContain('grid-template-columns:minmax(0,40fr) minmax(0,60fr)');
     expect(compact).toContain('.orderbook-col-headers .ob-col:last-child');
     expect(compact).toContain('.info-section');
     expect(compact).toContain('display:none');

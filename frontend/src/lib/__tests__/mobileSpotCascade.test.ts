@@ -11,7 +11,11 @@ const prefix = '.trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-
 describe('compact Spot book survives the earlier mobile cascade', () => {
   test('form and book use equally specific direct grid children and the same explicit row', () => {
     const oldCss = read('frontend/src/pages/trade-terminal/TerminalMobileParity.css');
-    expect(oldCss).toContain(`${prefix} .main-grid > :not(.order-form-area)`);
+    // 2026-10-04: the broad `> :not(.order-form-area)` hide that kept
+    // re-hiding the book is gone; the trade workspace hides exactly the two
+    // panels it does not show.
+    expect(oldCss).not.toContain(`${prefix} .main-grid > :not(.order-form-area)`);
+    expect(oldCss).toContain(`${prefix} .main-grid > :is(.left-panel,.chart-area) { display:none; }`);
     const css = postcss.parse(read('frontend/src/pages/trade-terminal/SpotMobileCompact.css'));
     for (const panel of ['order-form-area', 'orderbook-area']) {
       const matches: any[] = [];
@@ -27,6 +31,16 @@ describe('compact Spot book survives the earlier mobile cascade', () => {
       expect(declarations.display).toBe('flex');
       expect(declarations['grid-row']).toBe('1');
     }
+    // And the columns: book first (left), ticket second (right).
+    const column = (panel: string) => {
+      let value = '';
+      css.walkRules((rule: any) => {
+        if (rule.selectors.includes(`${prefix} .${panel}`)) rule.walkDecls('grid-column', (decl: any) => { value = decl.value; });
+      });
+      return value;
+    };
+    expect(column('orderbook-area')).toBe('1');
+    expect(column('order-form-area')).toBe('2');
     const page = read('frontend/src/pages/TradePage.tsx');
     expect(page.indexOf("import './trade-terminal/SpotMobileCompact.css'")).toBeGreaterThan(page.indexOf("import './trade-terminal/TerminalMobileParity.css'"));
   });

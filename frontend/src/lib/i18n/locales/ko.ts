@@ -34,6 +34,8 @@ export const KO: Record<Key, string> = {
   'deposit.ui.memo': "메모 / 태그",
   'deposit.ui.memoCopied': "메모 복사됨",
   'deposit.ui.copyMemo': "메모 복사",
+  'deposit.ui.memoRequired': "필수",
+  'deposit.ui.memoHint': "송금 시 주소와 함께 입력하세요.",
   'deposit.ui.asset': "자산",
   'deposit.ui.minimumLabel': "최소 입금액",
   'deposit.ui.minimumOtherValue': "{amount} USDT 또는 이에 상응하는 {asset}",
@@ -1827,4 +1829,8 @@ export const KO: Record<Key, string> = {
   'help.status.note': '거래소 서버와 시장 데이터가 응답하는지만 보여 줍니다. 거래, 입금, 출금, 로그인 같은 각 작업이 성공하는지는 확인하지 않습니다. «확인할 수 없음»은 플랫폼 장애가 아니라 네트워크나 브라우저 문제일 수 있습니다.',
   'help.status.incidents': '장애 공지',
   'help.status.noIncidents': '게시된 장애 공지가 없습니다',
+  'terminal.marketSwitch': "현물 또는 선물",
+  'terminal.noFuturesContract': "{pair}에는 선물 계약이 없습니다. 이용 가능한 계약을 선택하세요.",
+  'terminal.noSpotPair': "{pair}은(는) 현물에 없습니다. 이용 가능한 페어를 선택하세요.",
+  'trade.orderType': "주문 유형",
 };

@@ -145,7 +145,10 @@ describe('2. the page keeps state, address and memory in step', () => {
     // Arriving from the header link restores the remembered contract into
     // state; writing it into the address is what makes the NEXT refresh
     // keep it too.
-    expect(PAGE_CODE).toContain("if (!searchParams.get('pair')) selectSymbol(symbol);");
+    // 2026-10-04: except while a «Фьючерсы» hand-over (`?from=`) is pending;
+    // its resolver writes the contract back once the venue's list answers.
+    expect(PAGE_CODE).toContain("if (!searchParams.get('pair') && !searchParams.has('from')) selectSymbol(symbol);");
+    expect(PAGE_CODE).toContain("if (!params.get('pair')) params.set('pair', symbolRef.current);");
   });
 
   it('corrects the address when the venue has dropped the restored contract', () => {

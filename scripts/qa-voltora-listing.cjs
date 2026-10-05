@@ -127,6 +127,11 @@ function testAssets(now) {
       await form.locator('.order-form-tab.sell').click();
       await form.locator('button[type="submit"]').click();
       await page.getByText('Этот тип ордера для данного актива недоступен.', { exact: true }).first().waitFor();
+      // owner, 2026-10-04: order type is one select on a phone — the same «Рынок» family, chosen through it.
+      if (mobile) {
+        await form.locator('.order-type-select select').selectOption('MARKET');
+        assert.equal((await form.locator('.order-type-select select option:checked').textContent()).trim(), 'Рынок', `market order type @${width}`);
+      } else
       await form.getByRole('button', { name: 'Рынок', exact: true }).click();
       await form.locator('button[type="submit"]').click();
       await page.getByText(REFUSAL, { exact: true }).first().waitFor();

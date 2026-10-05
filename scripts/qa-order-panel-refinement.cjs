@@ -41,6 +41,8 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
     const page = await context.newPage();
     page.on('pageerror', e => report.errors.push(e.message));
     await page.goto(origin + '/futures');
+    // owner, 2026-10-04: phone opens on Trade — wait for the trade workspace it opens on.
+    if (width <= 900) await page.locator('#mobile-futures-panel-trade').waitFor(); else
     await page.locator('.chart-surface').waitFor();
     if (width <= 900) await page.locator('#mobile-futures-trade').click();
     // TP/SL is a checkbox beside «Только уменьшение» (owner, 2026-09-29).
@@ -92,9 +94,13 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
     assert.equal(geometry.long.height, geometry.short.height);
     assert(geometry.long.height >= 50);
     assert(Math.abs(geometry.long.width - geometry.short.width) < 1);
+    // owner, 2026-10-04: order type is one select on a phone — the same «Рыночный» / «Лимитный», chosen through it.
+    const familySelect = page.locator('.order-family-select select');
+    if (width <= 900) { await familySelect.selectOption('MARKET'); assert.equal((await familySelect.locator('option:checked').textContent()).trim(), 'Рыночный'); } else
     await page.locator('.order-family-tabs').getByText('Рыночный', { exact: true }).click();
     const marketHeight = await page.locator('.fo-priceField').evaluate(e => e.getBoundingClientRect().height);
     assert.equal(marketHeight, fieldHeight, 'Market price field must match quantity height');
+    if (width <= 900) { await familySelect.selectOption('LIMIT'); assert.equal((await familySelect.locator('option:checked').textContent()).trim(), 'Лимитный'); } else
     await page.locator('.order-family-tabs').getByText('Лимитный', { exact: true }).click();
     for (const side of ['buy', 'sell']) {
       const button = page.locator('.fo-submitPair .' + side);

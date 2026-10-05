@@ -16,8 +16,8 @@ import type { DepositCopySource } from '../lib/depositCopyLog';
  * of them is what the user has to reach. Each card names the exact assets
  * that chain will credit, because the address alone does not say that.
  */
-export function DepositModal({ onClose, source = 'header' }: { onClose: () => void; source?: DepositCopySource }) {
-  return MANUAL_DEPOSIT_CATALOGUE ? <DepositCatalogueDialog onClose={onClose} source={source}/> : <LegacyDepositModal onClose={onClose}/>;
+export function DepositModal({ onClose, source = 'header', initialAsset, tone = 'light' }: { onClose: () => void; source?: DepositCopySource; initialAsset?: string; tone?: 'light' | 'terminal' }) {
+  return MANUAL_DEPOSIT_CATALOGUE ? <DepositCatalogueDialog onClose={onClose} source={source} initialAsset={initialAsset} tone={tone}/> : <LegacyDepositModal onClose={onClose}/>;
 }
 
 function LegacyDepositModal({ onClose }: { onClose: () => void }) {

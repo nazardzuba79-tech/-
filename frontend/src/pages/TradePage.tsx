@@ -44,12 +44,15 @@ import './trade-terminal/TerminalMobileParity.css';
 import './trade-terminal/TerminalPreviewPolish.css';
 import './trade-terminal/SpotCfdGraphite.css';
 import './trade-terminal/SpotMobileCompact.css';
+import './trade-terminal/TerminalMobileHeader.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
 import { isEdgeMarketPair } from '../lib/nrxMarket';
 import { useManagedListingDiscovery, useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
 import { useMarketData } from '../lib/useMarketData';
 import { TestMarketChart } from '../components/TestMarketTerminal';
+import { TerminalMarketSwitch } from '../components/TerminalMarketSwitch';
+import { resolveSwitchedPair, switchedFrom } from '../lib/terminalMarketSwitch';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -107,7 +110,12 @@ export function TradePage() {
   const pairResolving = !isTestMarketPair(pair) && !managedCatalogue.loaded && !venueSnapshot.tickers.has(pair.toUpperCase());
   const testMarket = useTestMarket(testPair && searchParams.get('market') !== 'cfd' ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
-  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart');
+  // A phone opens a tradable pair on the trading workspace — book beside
+  // the ticket, open orders underneath — not on a full-screen chart (owner,
+  // 2026-10-04). An upcoming listing still opens on its chart, where its
+  // countdown card lives; CFD keeps its chart-first workspace. `null` means
+  // "not chosen yet": the default follows the pair until the trader picks.
+  const [mobileTabChoice, setMobileTab] = useState<'chart' | 'trade' | 'account' | null>(null);
   const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart');
   const mobileTabsRef = useRef<HTMLDivElement>(null);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
@@ -143,9 +151,15 @@ export function TradePage() {
   const [marketType, setMarketType] = useState<MarketType>(requestedMarketType);
   useEffect(() => {
     setMarketType(requestedMarketType);
-    setMobileTab('chart');
+    setMobileTab(null);
     setMobilePane('chart');
   }, [requestedMarketType]);
+  // A phone opens on Trade where there is something to trade (owner,
+  // 2026-10-04). The chart stays first for CFD, for a listing still counting
+  // down, and for a display-only test market whose ticket only refuses.
+  const prelisting = testPair && testMarket.asset?.state.phase !== 'live';
+  const displayOnly = testPair && testMarket.asset?.isTradable === false;
+  const mobileTab = mobileTabChoice ?? (marketType === 'cfd' || prelisting || displayOnly ? 'chart' : 'trade');
   // Landing here is the signal that spot is this user's current trading
   // mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('spot'), []);
@@ -174,6 +188,28 @@ export function TradePage() {
       return params;
     }, { replace: true });
   };
+
+  /**
+   * «Спот» from a contract the shared snapshot did not list arrives as
+   * `?from=PAIR`: the pair on screen stays until the Spot snapshot and the
+   * listings catalogue answer, then the pair is selected, or the market list
+   * opens with a note. A perpetual-only contract never becomes an invented
+   * Spot pair. See lib/terminalMarketSwitch.
+   */
+  const switchedFromFutures = switchedFrom(searchParams.get('from'));
+  const [switchNote, setSwitchNote] = useState<string | null>(null);
+  useEffect(() => { setSwitchNote(null); }, [pair]);
+  useEffect(() => {
+    if (!switchedFromFutures || searchParams.get('market') === 'cfd') return;
+    const listed = { has: (candidate: string) => venueSnapshot.tickers.has(candidate) || isTestMarketPair(candidate) || (managedCatalogue.loaded && isManagedListingPair(candidate)) };
+    const verdict = resolveSwitchedPair(switchedFromFutures, listed, venueSnapshot.tickers.size > 0 && managedCatalogue.loaded);
+    if (verdict === 'wait') return;
+    if (verdict === 'select') { selectSpotPair(switchedFromFutures); return; }
+    setSearchParams(current => { const params = new URLSearchParams(current); params.delete('from'); return params; }, { replace: true });
+    setSwitchNote(switchedFromFutures);
+    openPairSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [switchedFromFutures, venueSnapshot.tickers, managedCatalogue.loaded]);
 
   // The visible order book mirrors Kraken's real depth for a live, populated
   // look — actual order matching always happens on our own internal book
@@ -289,6 +325,7 @@ export function TradePage() {
       const params = new URLSearchParams(current);
       params.delete('market');
       params.delete('symbol');
+      params.delete('from');
       params.set('pair', nextPair);
       return params;
     }, { replace: true });
@@ -362,7 +399,7 @@ export function TradePage() {
   const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />;
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
-      <Nav active="/trade" onTickerSelect={selectSpotPair} staticTicker tickerFitToWidth />
+      <Nav active="/trade" onTickerSelect={selectSpotPair} staticTicker tickerFitToWidth terminalSwitch={<TerminalMarketSwitch current="spot" pair={pair} />} />
       {/* Each terminal reports its actual public feed, not an unused venue socket. */}
       <ConnectionBanner key={pair} connected={testPair ? testMarket.loaded && !testMarket.error && !!testMarket.asset : bookFeed.pair === pair && bookFeed.healthy} />
 
@@ -389,6 +426,7 @@ export function TradePage() {
           style={{ '--market-panel-width': `${marketPanelWidth}px` } as React.CSSProperties}
         >
           <div className="left-panel">
+            {switchNote && <p className="terminal-switch-note" role="status">{t('terminal.noSpotPair', { pair: switchNote })}</p>}
             <PairListSidebar
               ref={pairListRef}
               pair={pair}

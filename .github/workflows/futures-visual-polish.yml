@@ -17,6 +17,13 @@ on:
       - 'frontend/src/pages/FuturesPage.tsx'
       - 'frontend/src/pages/trade-terminal/VoltexTerminalSystem.css'
       - 'frontend/src/pages/trade-terminal/TerminalMobileParity.css'
+      - 'frontend/src/pages/trade-terminal/TerminalMobileHeader.css'
+      - 'frontend/src/pages/trade-terminal/SpotMobileCompact.css'
+      - 'frontend/src/pages/trade-terminal/FuturesMobileCompact.css'
+      - 'frontend/src/components/TerminalMarketSwitch.tsx'
+      - 'frontend/src/lib/terminalMarketSwitch.ts'
+      - 'frontend/src/lib/useMediaQuery.ts'
+      - 'frontend/src/lib/__tests__/mobileTradeDeposit.test.ts'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/lib/__tests__/terminalMobileParity.test.ts'
       - 'frontend/src/components/CfdChart.tsx'
@@ -64,7 +71,7 @@ jobs:
       - name: Frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Brief guards
-        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/terminalDesignSystem.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/referenceBook.test.ts frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts frontend/src/lib/__tests__/futuresProTerminal.test.ts
+        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/terminalDesignSystem.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/referenceBook.test.ts frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts frontend/src/lib/__tests__/futuresProTerminal.test.ts frontend/src/lib/__tests__/mobileTradeDeposit.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
       - name: Disposable browser tooling

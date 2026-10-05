@@ -75,6 +75,9 @@ beforeEach(() => {
       if (name.endsWith('/useCompactAccountPanel')) return evaluate('lib/useCompactAccountPanel.ts');
       if (name.endsWith('/krakenSocket')) return { krakenSocket: { getStatus: () => 'disconnected', subscribeStatus: krakenSubscribe } };
       if (name === 'react-router-dom') return { useSearchParams: () => [query, () => {}] };
+      // Phone header switch (rendered through the stubbed Nav) and its pure helpers.
+      if (name === '../components/TerminalMarketSwitch') return { TerminalMarketSwitch: () => null };
+      if (name === '../lib/terminalMarketSwitch') return jest.requireActual('../terminalMarketSwitch');
       if (name.endsWith('/ConnectionBanner')) return evaluate('components/ConnectionBanner.tsx');
       if (name.endsWith('/OrderBookPanel')) return { OrderBookPanel: (props: any) => { renderedBook = props; return null; } };
       if (name.endsWith('/NrxBookTabs')) return { NrxBookTabs: ({ children }: any) => children };

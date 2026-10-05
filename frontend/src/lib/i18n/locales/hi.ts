@@ -34,6 +34,8 @@ export const HI: Record<Key, string> = {
   'deposit.ui.memo': "मेमो / टैग",
   'deposit.ui.memoCopied': "मेमो कॉपी हो गया",
   'deposit.ui.copyMemo': "मेमो कॉपी करें",
+  'deposit.ui.memoRequired': "आवश्यक",
+  'deposit.ui.memoHint': "ट्रांसफ़र करते समय इसे पते के साथ दर्ज करें।",
   'deposit.ui.asset': "एसेट",
   'deposit.ui.minimumLabel': "न्यूनतम जमा राशि",
   'deposit.ui.minimumOtherValue': "{amount} USDT या {asset} में इसके बराबर",
@@ -1827,4 +1829,8 @@ export const HI: Record<Key, string> = {
   'help.status.note': 'यह केवल दिखाता है कि एक्सचेंज सर्वर और बाज़ार डेटा जवाब दे रहे हैं या नहीं। यह पुष्टि नहीं करता कि हर ऑपरेशन — ट्रेडिंग, जमा, निकासी या लॉगिन — सफल होता है। «जाँच नहीं हो सकी» का अर्थ नेटवर्क या ब्राउज़र की समस्या हो सकता है, प्लेटफ़ॉर्म की खराबी नहीं।',
   'help.status.incidents': 'घटना सूचनाएँ',
   'help.status.noIncidents': 'कोई प्रकाशित घटना सूचना नहीं',
+  'terminal.marketSwitch': "स्पॉट या फ्यूचर्स",
+  'terminal.noFuturesContract': "{pair} का कोई फ्यूचर्स कॉन्ट्रैक्ट नहीं है। उपलब्ध कॉन्ट्रैक्ट चुनें।",
+  'terminal.noSpotPair': "{pair} स्पॉट पर उपलब्ध नहीं है। उपलब्ध जोड़ी चुनें।",
+  'trade.orderType': "ऑर्डर प्रकार",
 };

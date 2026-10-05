@@ -226,6 +226,13 @@ test.each([
   // still trips it.
   const normalized = path === 'frontend/src/components/TickerBar.tsx'
     ? read(path)
+      // 2026-10-04 phone instrument row: the four secondary 24h figures fold
+      // behind a «24h +» disclosure (display state only). Remove exactly that
+      // state, its attribute and its button; every read and handler stays pinned.
+      .replace("import { useState } from 'react';\n", '')
+      .replace("  // Phones show pair, change and price; the four 24h figures fold behind\n  // \u00ab24h +\u00bb (the same disclosure the Futures header uses) instead of\n  // wrapping into a wall of numbers above the order form.\n  const [mobileDetails, setMobileDetails] = useState(false);\n", '')
+      .replace('<div className="ticker-bar" data-mobile-details={mobileDetails}>', '<div className="ticker-bar">')
+      .replace("      <button type=\"button\" className=\"spot-mobile-stats-toggle\" aria-expanded={mobileDetails} aria-label={t('trade.marketInfo')}\n        onClick={() => setMobileDetails(value => !value)}>24h <span aria-hidden=\"true\">{mobileDetails ? '\u2212' : '+'}</span></button>\n", '')
       // 2026-09-26 terminal design parity: Spot intentionally received only
       // the final Futures HEADER PRESENTATION (market-list affordance, icon,
       // pair/name stack). Normalize those display-only additions back to the

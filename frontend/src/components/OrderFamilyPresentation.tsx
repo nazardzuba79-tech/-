@@ -7,12 +7,27 @@ const families = [
   ['STOP', 'trade.stopOrder'], ['TAKE_PROFIT', 'trade.takeProfitOrder'], ['OCO', 'trade.ocoOrder'],
 ] as const;
 
-export function OrderFamilyTabs({ value, onChange, archive = false }: { value: OrderFamily; onChange: (value: OrderFamily) => void; archive?: boolean }) {
+/**
+ * The order families, as tabs — or, on a phone (`compact`), as ONE native
+ * select with exactly the same options and the same `onChange`, so every
+ * supported type stays reachable without four or five cramped tabs. One or
+ * the other is rendered, never both.
+ */
+export function OrderFamilyTabs({ value, onChange, archive = false, compact = false }: { value: OrderFamily; onChange: (value: OrderFamily) => void; archive?: boolean; compact?: boolean }) {
   const { t } = useLanguage();
+  const options = families.filter(([family]) => !archive || family !== 'OCO').map(([family, label]) => ({ family,
+    text: archive ? family === 'TAKE_PROFIT' ? 'Take Profit' : family === 'LIMIT' ? t('futures.closeLimit') : family === 'MARKET' ? t('futures.closeMarket') : t(label) : t(label) }));
+  if (compact) return <label className="order-family-select">
+    <span className="order-family-select-label">{t('trade.orderType')}</span>
+    <select value={value} aria-label={t('trade.orderType')} onChange={event => {
+      const next = options.find(option => option.family === event.target.value);
+      if (next) onChange(next.family);
+    }}>{options.map(option => <option key={option.family} value={option.family}>{option.text}</option>)}</select>
+  </label>;
   return <div className="order-family-tabs" role="tablist" aria-label={t('nav.trade')}>
-    {families.filter(([family]) => !archive || family !== 'OCO').map(([family, label]) => <button key={family} type="button" role="tab"
+    {options.map(({ family, text }) => <button key={family} type="button" role="tab"
       aria-selected={value === family} className={value === family ? 'active' : ''}
-      onClick={() => onChange(family)}>{archive ? family === 'TAKE_PROFIT' ? 'Take Profit' : family === 'LIMIT' ? t('futures.closeLimit') : family === 'MARKET' ? t('futures.closeMarket') : t(label) : t(label)}</button>)}
+      onClick={() => onChange(family)}>{text}</button>)}
   </div>;
 }
 

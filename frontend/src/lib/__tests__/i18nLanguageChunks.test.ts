@@ -45,7 +45,11 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
   'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo',
   // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
   'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote',
-  'minimumLabel', 'minimumOtherValue'].map(key => `deposit.ui.${key}`);
+  'minimumLabel', 'minimumOtherValue',
+  // Mobile deposit sheet, 2026-10-04: a Memo / Tag is marked as required.
+  'memoRequired', 'memoHint'].map(key => `deposit.ui.${key}`);
+// Mobile terminal, 2026-10-04: «Спот / Фьючерсы» switch, its two notes and the compact order-type selector.
+const MOBILE_TERMINAL_KEYS = ['terminal.marketSwitch', 'terminal.noFuturesContract', 'terminal.noSpotPair', 'trade.orderType'];
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
 const shortCardLabels: Record<string, string> = { ru: 'Crypto-Card', en: 'Crypto-Card', zh: 'Crypto-Card', es: 'Crypto-Card', hi: 'Crypto-Card', ja: 'Crypto-Card', ko: 'Crypto-Card' };
 const KYC_PROFILE_CARD_KEYS = ['kycStepDocumentShort', 'kycStepReview', 'kycStepFilled', 'kycStepNotFilled', 'kycStepAdded', 'kycStepNotAdded',
@@ -264,7 +268,10 @@ describe('translation integrity', () => {
           // Verification form, Profile verification action and VOLTEX Card
           // shortcut (owner bundle, 2026-10-04): `git diff --numstat` over the
           // locales reports `19 0` per language, additions only.
-          ...KYC_PROFILE_CARD_KEYS];
+          ...KYC_PROFILE_CARD_KEYS,
+          // Mobile terminal (2026-10-04): `git diff --numstat` over the
+          // locales reports `6 0` per language, additions only.
+          ...MOBILE_TERMINAL_KEYS];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
