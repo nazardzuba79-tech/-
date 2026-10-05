@@ -33,17 +33,17 @@ export const NRX_TWO_WEEK_SCENARIO: Readonly<GrowthScheduledScenarioConfig> = Ob
   selloffFraction: .60,
 });
 
-/** Owner update 2026-10-05: end the growth phase prospectively.
- * 13:00 Kyiv activation -> 48h balance -> 6h -60% selloff -> balance forever.
+/** Owner correction 2026-10-05: the 13:00 Kyiv rollout was missed, so move the cutover forward without rewriting already displayed history.
+ * 23:00 Kyiv activation -> 48h balance -> 6h -60% selloff -> balance forever.
  * The simulator anchors this program to the exact canonical NRX tick at
  * activation, so nothing already displayed or sold is rewritten.
  */
 export const NRX_BALANCE_SELLOFF_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.freeze({
   mode: 'range-selloff-range',
-  version: 4,
-  from: Date.parse('2026-10-05T10:00:00Z'), // 13:00 Kyiv
-  rangeEndAt: Date.parse('2026-10-07T10:00:00Z'), // 48h balance
-  selloffEndAt: Date.parse('2026-10-07T16:00:00Z'), // six-hour -60% selloff
+  version: 5,
+  from: Date.parse('2026-10-05T20:00:00Z'), // 23:00 Kyiv
+  rangeEndAt: Date.parse('2026-10-07T20:00:00Z'), // 48h balance
+  selloffEndAt: Date.parse('2026-10-08T02:00:00Z'), // six-hour -60% selloff
   rangeFraction: .20,
   selloffFraction: .60,
 });
