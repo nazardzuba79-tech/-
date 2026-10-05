@@ -32,7 +32,7 @@ export type Primitive =
   | { t: 'poly'; points: ScreenPoint[]; closed: boolean; stroke?: string; fill?: string; fillOpacity?: number; width: number; dash?: string; opacity?: number }
   | { t: 'ellipse'; cx: number; cy: number; rx: number; ry: number; stroke: string; fill?: string; fillOpacity?: number; width: number; dash?: string }
   | { t: 'text'; x: number; y: number; text: string; color: string; size: number; anchor: 'start' | 'middle' | 'end'; weight?: number }
-  | { t: 'label'; x: number; y: number; lines: string[]; bg: string; color: string; place: 'above' | 'below' | 'center' | 'right' | 'left'; size?: number };
+  | { t: 'label'; x: number; y: number; lines: string[]; bg: string; color: string; place: 'above' | 'below' | 'center' | 'right' | 'left'; size?: number; variant?: 'measurement'; accent?: string; maxWidth?: number };
 
 /** `edge0` / `edge1`: a ruler's top and bottom edge, moving only that anchor's price. */
 export interface DrawingAnchor { id: number | 'target' | 'stop' | 'width' | 'edge0' | 'edge1'; x: number; y: number }
@@ -52,11 +52,21 @@ const LABEL_LINE = 15;
 /** The rectangle a boxed label occupies, for painting and hit-testing alike. */
 export function labelBox(p: Extract<Primitive, { t: 'label' }>) {
   const size = p.size ?? 11;
-  const w = Math.max(...p.lines.map((l) => l.length)) * LABEL_CHAR * (size / 11) + 16;
-  const h = p.lines.length * LABEL_LINE * (size / 11) + 8;
+  const measured = p.variant === 'measurement';
+  const naturalWidth = Math.max(...p.lines.map((l) => l.length)) * LABEL_CHAR * (size / 11) + (measured ? 24 : 16);
+  const w = measured && p.maxWidth !== undefined ? Math.min(naturalWidth, p.maxWidth) : naturalWidth;
+  const h = measured ? p.lines.length * 18 + 16 : p.lines.length * LABEL_LINE * (size / 11) + 8;
   const x = p.place === 'right' ? p.x + 8 : p.place === 'left' ? p.x - w - 8 : p.x - w / 2;
   const y = p.place === 'above' ? p.y - h - 6 : p.place === 'below' ? p.y + 6 : p.y - h / 2;
   return { x, y, w, h };
+}
+
+/** Dock the 38px object toolbar clear of the ruler result; never move its anchors. */
+export function rulerToolbarTop(geometry: DrawingGeometry | undefined): number {
+  const card = geometry?.prims.find((p) => p.t === 'label' && p.variant === 'measurement');
+  if (!card || card.t !== 'label') return 8;
+  const box = labelBox(card);
+  return box.y < 8 + 38 + 8 && box.y + box.h > 0 ? box.y + box.h + 8 : 8;
 }
 
 function extendLine(a: ScreenPoint, b: ScreenPoint, view: DrawingView, back: boolean, forward: boolean): [ScreenPoint, ScreenPoint] {
@@ -307,7 +317,7 @@ export function drawingGeometry(stored: StoredDrawing, view: DrawingView): Drawi
       const box = kind === 'pricerange' ? [{ x: x1, y: a.y }, { x: x2, y: a.y }, { x: x2, y: b.y }, { x: x1, y: b.y }]
         : kind === 'daterange' ? [{ x: a.x, y: y1 }, { x: b.x, y: y1 }, { x: b.x, y: y2 }, { x: a.x, y: y2 }]
         : [a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }];
-      polyArea(box, tone, 0.2);
+      polyArea(box, tone, kind === 'ruler' ? 0.12 : 0.2);
       const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
       if (kind !== 'daterange') {
         line({ x: cx, y: a.y }, { x: cx, y: b.y }, tone, 1);
@@ -318,9 +328,18 @@ export function drawingGeometry(stored: StoredDrawing, view: DrawingView): Drawi
         prims.push({ t: 'poly', points: arrowHead({ x: a.x, y: cy }, { x: b.x, y: cy }, 8), closed: false, stroke: tone, width: 1 });
       }
       const lines = drawingRangeLines(range, view.lang, { price: kind !== 'daterange', date: kind !== 'pricerange' });
+      // Split only the presentation when a long price/percentage pair cannot
+      // fit a phone plot. Keep every digit and both stored anchors unchanged.
+      const compact = kind === 'ruler';
+      const maxWidth = Math.max(24, view.width - 8);
+      if (compact && lines[0]?.length * LABEL_CHAR * (12 / 11) + 24 > maxWidth) {
+        const separator = lines[0].indexOf(' (');
+        if (separator > 0) lines.splice(0, 1, lines[0].slice(0, separator), lines[0].slice(separator + 1));
+      }
       const rangeLabel: Extract<Primitive, { t: 'label' }> = {
-        t: 'label', x: cx, y: down ? y2 : y1, lines, bg: tone,
-        color: readableTextOn(tone), size: 14, place: down ? 'below' : 'above',
+        t: 'label', x: cx, y: down ? y2 : y1, lines, bg: compact ? '#161e2c' : tone,
+        color: compact ? '#f1f5fb' : readableTextOn(tone), size: compact ? 12 : 14, place: down ? 'below' : 'above',
+        ...(compact ? { variant: 'measurement' as const, accent: tone, maxWidth } : {}),
       };
       // Keep the larger card inside a small plot when its measurement is visible.
       // Shift only the label; price/time anchors and the measured range stay intact.

@@ -42,6 +42,10 @@ on:
       - 'scripts/qa-futures-proportions.cjs'
       - 'scripts/qa-spot-cfd-terminal.cjs'
       - 'scripts/qa-vta-presentation.cjs'
+      - 'scripts/qa-chart-ruler-label.cjs'
+      - 'frontend/src/components/ChartDrawingLayer.tsx'
+      - 'frontend/src/lib/chartDrawings.ts'
+      - 'frontend/src/lib/drawingGeometry.ts'
       - 'frontend/src/pages/trade-terminal/TerminalPreviewPolish.css'
       - 'frontend/src/components/TickerBar.tsx'
       - 'frontend/src/components/CfdTickerBar.tsx'
@@ -94,6 +98,10 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
         run: node scripts/qa-vta-presentation.cjs
+      - name: NRX ruler labels, actual plot bounds, handles and live end
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-chart-ruler-label.cjs --label ci --widths 1440,1366,390
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -103,5 +111,6 @@ jobs:
             docs/qa/futures-proportions-ci/*
             docs/qa/spot-cfd-terminal/*
             output/vta-presentation/*
+            output/chart-ruler-label/*
           retention-days: 7
           if-no-files-found: warn

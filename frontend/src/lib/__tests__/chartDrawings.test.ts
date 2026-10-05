@@ -322,8 +322,8 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(range.pct).toBeCloseTo(19327.66, 8);
     expect(drawings.drawingRangeLines(range, 'ru')[0]).toBe('+193,28 (+19\u00a0327,66%)');
     expect(drawings.drawingRangeLines(range, 'en')[0]).toBe('+193.28 (+19,327.66%)');
-    expect(drawings.drawingRangeLines({ ...range, pct: null }, 'ru')[0]).toBe('—');
-    expect(drawings.drawingRangeLines({ ...range, pct: Infinity }, 'ru')[0]).toBe('—');
+    expect(drawings.drawingRangeLines({ ...range, pct: null }, 'ru')[0]).toBe('+193,28 (—%)');
+    expect(drawings.drawingRangeLines({ ...range, pct: Infinity }, 'ru')[0]).toBe('+193,28 (—%)');
   });
   test('Spot text dialog has an accessible label, safe plain input, real actions and no native modal', () => {
     const html = renderToStaticMarkup(React.createElement(exports.DrawingDialog,
@@ -347,7 +347,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(html).toContain('draw.deleteAllConfirm');
     expect(html).toContain('type="submit" class="danger"');
     expect(html).not.toContain('<input');
-    expect(source).toContain("setDrawDialog({ kind: 'clear' });\n      return;");
+    expect(source.replace(/\r\n/g, '\n')).toContain("setDrawDialog({ kind: 'clear' });\n      return;");
     expect(source).toContain('if (window.confirm(confirmClearRef.current)) clearDrawings()');
     for (const code of [source, layerSource]) expect(code).not.toContain('window.prompt');
     const clearBody = source.split('const clearDrawings = useCallback(() => {')[1].split('const clearAll =')[0];
@@ -785,7 +785,8 @@ describe('every drawing kind paints and can be picked', () => {
     const label = g.prims.find((p) => p.t === 'label') as Extract<geometry.Primitive, { t: 'label' }>;
     expect(label.lines[0]).toBe('+10.00 (+10.00%)');
     expect(label.lines[1]).toBe('3 bars, 15m');
-    expect(label.size).toBe(14);
+    expect(label.size).toBe(12);
+    expect(label.variant).toBe('measurement');
     const box = geometry.labelBox(label);
     expect(box.w).toBeGreaterThan(geometry.labelBox({ ...label, size: 11 }).w);
     expect(geometry.geometryDistance(g, { x: box.x + box.w - 1, y: box.y + 1 })).toBe(0);

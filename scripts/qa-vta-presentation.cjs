@@ -73,7 +73,7 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
         return { text: el.textContent, font: Number(el.getAttribute('font-size')), width: Number(rect.getAttribute('width')), textWidth: el.getBBox().width,
           inside: card.top >= plot.top && card.bottom <= plot.bottom && card.left >= plot.left && card.right <= plot.right };
       });
-      assert.equal(metrics.font, 14); assert.ok(metrics.width > metrics.textWidth + 10);
+      assert.equal(metrics.font, 12); assert.ok(metrics.width > metrics.textWidth + 10);
       assert.ok(metrics.inside, 'whole measurement card must stay inside the chart, including mobile');
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       await page.screenshot({ path: path.join(out, `vta-${width}.png`), fullPage: true });
@@ -109,7 +109,7 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
       }
       await page.screenshot({ path: path.join(out, `vta-sell-${width}.png`), fullPage: true });
       assert.deepEqual(writes, []); assert.deepEqual(errors, []);
-      console.log(`PASS ${width}px: healthy VTA + disconnected venue silent; own outage/recovery correct; grouped 14px label ${metrics.width.toFixed(1)}px; no writes/errors/overflow`);
+      console.log(`PASS ${width}px: healthy VTA + disconnected venue silent; own outage/recovery correct; compact 12px label ${metrics.width.toFixed(1)}px; no writes/errors/overflow`);
       await ctx.close();
     }
   } finally { await browser.close(); server.close(); }
