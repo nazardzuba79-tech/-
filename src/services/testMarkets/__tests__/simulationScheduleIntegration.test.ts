@@ -135,7 +135,8 @@ test('public edge ticker/trades/candles and backend Spot price use the same futu
   const ticker = await request('/market/ticker/NRX-USDT');
   const trades = await request('/market/external/trades/NRX-USDT');
   const candles = await request('/market/test-assets/NRX-USDT/candles?interval=1m');
-  expect(Number(ticker.ticker.lastPrice)).toBe(58.536);
+  // NEURIX carries no scheduled plan since 2026-10-05; parity is with whatever it runs.
+  expect(Number(ticker.ticker.lastPrice)).toBe(simulationFor(NEURIX).priceAt(at));
   expect(Number(trades.trades[0].price)).toBe(Number(ticker.ticker.lastPrice));
   expect(candles.candles).toEqual(testMarketCandles(NEURIX, '1m', at));
   expect((await spotPriceSource(source, () => at).getTicker(NEURIX.pair))?.lastPrice).toBe(ticker.ticker.lastPrice);
