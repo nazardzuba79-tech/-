@@ -172,7 +172,7 @@ export const RU = {
   'auth.backToLogin': '← Назад ко входу',
   'authShell.hero.line1': 'Копируйте сделки',
   'authShell.hero.line2': 'лучших трейдеров',
-  'authShell.hero.line3': 'мира.',
+  'authShell.hero.line3': 'мира',
   'authShell.lead': 'Следуйте стратегиям сильнейших трейдеров мира, и превращайте рыночные возможности в капитал.',
   'authShell.registerTitle': 'Начните с VOLTEX.',
   'authShell.registerSubtitle': 'Создайте аккаунт, чтобы следить за рынком и копировать стратегии трейдеров.',

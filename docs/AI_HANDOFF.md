@@ -5685,3 +5685,10 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Preserved the approved original portrait, layout, all other copy/locales and real authentication behavior.
 - Validation: 47 existing auth/i18n tests passed; frontend TypeScript/production build passed. Responsive browser evidence and exact-head CI/release status are recorded in the PR.
 - Unresolved: none in this wording change.
+
+## 2026-10-05 — Codex — remove auth headline punctuation
+
+- Base: main cf0f9820112ca90f9f4f7ddbdc13f2cc89284eb7. Commit: this handoff's commit; exact SHA is recorded in the PR.
+- Removed only the final period from the Russian auth headline at the owner's request, and updated its existing expectation.
+- Preserved «Копируйте сделки лучших трейдеров мира», approved photo, layout, supporting copy and authentication behavior.
+- Validation and release evidence are recorded in the PR. No unresolved design differences.
