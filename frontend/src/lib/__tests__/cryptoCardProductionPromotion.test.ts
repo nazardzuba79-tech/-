@@ -203,7 +203,7 @@ test('Card remains an authenticated standalone route, independent of Spot termin
 
 test('Card product branding stays unchanged while only seven navigation labels are shortened', () => {
   // The seven dictionaries in language order, exactly as they appeared in
-  // the single file before the split. The 196 entries stay in that order;
+  // the single file before the split. The 189 Card entries stay in that order;
   // only the approved short navigation labels are normalized below so the
   // unchanged digest still protects every other Card-related string.
   const text = readAllLocales();
@@ -212,14 +212,18 @@ test('Card product branding stays unchanged while only seven navigation labels a
   // seven dictionaries. The complete Card product dictionaries remain byte-exact
   // in approvedCardSources above. An unrelated Trade error label must not force
   // replacement of a whole-file i18n hash or invalidate these Card guarantees.
-  const entries = text.split('\n').filter(line => /^\s*'(?:nav\.card|authShell\.(?:lead|(?:benefit\.)?card\.[^']+)|home\.(?:card\.[^']+|cta\.getCard|faq\.[qa]6)|support\.subject\.CARD)':/.test(line)).map(line => line.trim());
-  expect(entries).toHaveLength(196);
+  // The separately approved aircraft auth design changes authShell.lead.
+  // Exclude those seven hero paragraphs, while protecting every Card string.
+  // This digest is computed from the same filtered entries of trusted main
+  // c08127baa837b5288bd0febc1ce2dc20212044aa, before the auth redesign.
+  const entries = text.split('\n').filter(line => /^\s*'(?:nav\.card|authShell\.(?:benefit\.)?card\.[^']+|home\.(?:card\.[^']+|cta\.getCard|faq\.[qa]6)|support\.subject\.CARD)':/.test(line)).map(line => line.trim());
+  expect(entries).toHaveLength(189);
   const shortLabels = Array(7).fill("'nav.card': 'Crypto-Card',");
   expect(entries.filter(line => line.startsWith("'nav.card':"))).toEqual(shortLabels);
   // Restore only the exact owner-approved navigation wording for the old digest;
   // all product, Home, Auth and support strings remain fully covered.
   const restored = entries.map(line => shortLabels.includes(line) ? "'nav.card': 'Crypto Card'," : line);
-  expect(digest(restored.join('\n'))).toBe('d691d191b62d83a8306b5c82132bde2f9833885d6bbb35a494bee2afc43876ce');
+  expect(digest(restored.join('\n'))).toBe('b6548330beff12ac62e78ca35c4742f55e2872ad9c3bde3b0ed9e5880f17a6a4');
 });
 
 test('Card application shows server-backed eligibility progress without changing eligibility decisions', () => {
