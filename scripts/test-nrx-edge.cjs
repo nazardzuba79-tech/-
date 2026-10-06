@@ -23,6 +23,34 @@ const get = path => worker.fetch(new Request('https://market.voltextech.net' + p
   }
   assert.equal((await get('/market/display/futures-book/NRXUSDT')).status, 404);
   assert.equal((await (await get('/health')).json()).service, 'voltex-market-edge');
+  // Historical fixtures stay byte-identical through the prospective v5 activation.
+  for (const [at, price] of [
+    ['2026-10-03T21:00:00Z', 2.7420778],
+    ['2026-10-04T09:00:00Z', 46.509268],
+    ['2026-10-04T13:00:00Z', 45.828573],
+  ]) {
+    now = Date.parse(at);
+    const state = (await (await get('/market/nrx')).json()).assets[0].state;
+    assert.equal(state.lastPrice, price, at);
+    const trades = await (await get('/market/external/trades/NRX-USDT')).json();
+    assert.equal(Number(trades.trades[0].price), price, 'trade tape contains the same historical price');
+  }
+
+  // v5: stop growth at the exact activation tick, balance 48h, sell off 60%
+  // over six hours, then remain in a bounded terminal balance forever.
+  now = Date.parse('2026-10-06T17:00:00Z');
+  const anchor = (await (await get('/market/nrx')).json()).assets[0].state.lastPrice;
+  now = Date.parse('2026-10-06T17:30:00Z');
+  assert.equal((await (await get('/market/nrx')).json()).assets[0].state.lastPrice, anchor, '30m pump exhaustion returns to activation anchor');
+  now = Date.parse('2026-10-06T23:30:00Z');
+  const terminal = (await (await get('/market/nrx')).json()).assets[0].state.lastPrice;
+  assert.ok(Math.abs(terminal - anchor * .4) <= Math.max(1e-8, anchor * 1e-8), 'six-hour selloff ends exactly 60% below anchor');
+  now += 24 * 60 * 60 * 1000;
+  const balanced = (await (await get('/market/nrx')).json()).assets[0].state.lastPrice;
+  assert.ok(balanced > terminal * .5 && balanced < terminal * 1.6, 'post-selloff market remains balanced');
+  const trades = await (await get('/market/external/trades/NRX-USDT')).json();
+  assert.equal(Number(trades.trades[0].price), balanced, 'trade tape follows the terminal balance');
+
   assert.equal(external, 0);
-  console.log('Bundled NRX Worker: 10 checks PASS; zero IO; no Node runtime/DB dependency');
+  console.log('Bundled NRX Worker: historical path + v5 balance/selloff/balance PASS; zero IO; no Node runtime/DB dependency');
 })().catch(error => { console.error(error); process.exitCode = 1; });
