@@ -4,6 +4,7 @@ import { useLanguage } from '../lib/i18n';
 import { LEGAL_CONTENT, LegalDoc } from '../lib/legalContent';
 import { Nav } from '../components/Nav';
 import { Logo } from '../components/Logo';
+import { AboutPage } from './about/AboutPage';
 
 const VALID_DOCS: LegalDoc[] = ['terms', 'privacy', 'risk', 'about', 'support'];
 
@@ -17,6 +18,8 @@ export function LegalPage() {
   const isValid = VALID_DOCS.includes(doc as LegalDoc);
   const content = isValid ? LEGAL_CONTENT[lang][doc as LegalDoc] : null;
   const loggedIn = !!getToken();
+
+  if (doc === 'about') return <AboutPage loggedIn={loggedIn} />;
 
   return (
     <div className="page-mesh" style={styles.page}>
