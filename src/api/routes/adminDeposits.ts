@@ -15,6 +15,7 @@ import { TreasuryWalletService } from '../../services/TreasuryWalletService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { KNOWN_CHAINS, TX_HASH_PATTERN, resolveChainConfig } from './deposits';
+import { hiddenAdminUserMap } from '../../services/AdminUserVisibility';
 
 /**
  * Admin deposit registry. Detection, attribution, the minimum and the credit
@@ -108,10 +109,12 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   router.get('/admin/user-activity', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     try {
+      const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
+      const visible = hiddenIds.length ? { id: { notIn: hiddenIds } } : {};
       const [totalUsers, newUsers24h, pendingKyc, q] = await Promise.all([
-        prisma.user.count({ where: { role: 'USER' } }),
-        prisma.user.count({ where: { role: 'USER', createdAt: { gte: since } } }),
-        prisma.user.count({ where: { role: 'USER', kycStatus: 'PENDING' } }),
+        prisma.user.count({ where: { role: 'USER', ...visible } }),
+        prisma.user.count({ where: { role: 'USER', ...visible, createdAt: { gte: since } } }),
+        prisma.user.count({ where: { role: 'USER', ...visible, kycStatus: 'PENDING' } }),
         queue.load({ customerActivityOnly: true }),
       ]);
       const unconfirmedByUser = new Map<string, number>();
