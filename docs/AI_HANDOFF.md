@@ -5466,3 +5466,9 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 - Denies configured addresses before any account/session creation or support delivery. Case/whitespace normalized; no domain-wide blocking. Email-only probes are non-mutating even without the policy.
 - Preserved existing login, financial logic, user records, rate limits and support delivery for other addresses. package.json, package-lock.json and prisma/schema.prisma unchanged; no migration.
 - Reproduced failures first; auth 40/40 and support 20/20 tests passed. Local full build is blocked by the pre-existing shared generated Prisma client mismatch; exact-image build/testing remains required before rollout.
+
+### 2026-10-06 — Codex — owner-requested managed spam list and authenticated support
+- Extends the narrow email-policy hotfix: admin-only reversible AuditLog policy, registration enforcement and authenticated support relay. No Prisma/dependency changes.
+- Support derives Reply-To email from the authenticated account, enforces policy before delivery, and the Worker accepts only a private API relay key. No messages are sent during live QA.
+- Three owner-designated addresses remain private runtime configuration, visible to administrators in the managed list. Unblock events override emergency seeds. Existing login/trading/balances are preserved.
+- Tests: auth 40, bcrypt 10, managed policy/relay 8, API failure containment 60 and Worker 21 passing; full exact-image build/testing required. Frontend controls are supplied separately on current main.

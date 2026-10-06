@@ -173,7 +173,7 @@ export function authRouter(
 
     // Check before payload validation so operators can verify the policy using
     // email-only probes that can never create an account or session.
-    if (isBlockedContactEmail(req.body?.email)) {
+    if (await isBlockedContactEmail(prisma, req.body?.email)) {
       return res.status(403).json({ error: 'Registration failed' });
     }
     const parsed = registerSchema.safeParse(req.body);

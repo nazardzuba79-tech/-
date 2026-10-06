@@ -1,7 +1,6 @@
 // Contract tests for voltex-support-edge. Run: node test.mjs
 // The Worker is plain JS with no Cloudflare-only imports, so it runs here
 // against a recorded email binding and a counting rate limiter.
-import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import worker, { LIMITS, MAX_BODY_BYTES, WINDOW_MAX, resetMemoryLimiter, composeText } from "./src/index.js";
@@ -16,6 +15,7 @@ function env(overrides = {}) {
   let limiterCalls = 0;
   const base = {
     SUPPORT_ADMIN_EMAIL: ADMIN,
+    SUPPORT_RELAY_KEY: "fixture-private-relay-key",
     SUPPORT_FROM_EMAIL: "support-form@voltextech.net",
     ALLOWED_ORIGINS: "https://voltextech.net,https://www.voltextech.net",
     SUPPORT_EMAIL: { send: async (message) => { sent.push(message); return { messageId: "m-1" }; } },
@@ -28,7 +28,7 @@ function env(overrides = {}) {
 const valid = { name: "VOLTEX Support QA", email: "qa-support@example.invalid", subject: "TECHNICAL", message: "Production support form test. No action required." };
 
 function post(body, { origin = ORIGIN, type = "application/json", ip = "203.0.113.7", raw } = {}) {
-  const headers = { "content-type": type, "cf-connecting-ip": ip };
+  const headers = { "content-type": type, "cf-connecting-ip": ip, "X-Voltex-Support-Key": "fixture-private-relay-key" };
   if (origin) headers.origin = origin;
   return new Request("https://support.voltextech.net/v1/support", { method: "POST", headers, body: raw ?? JSON.stringify(body) });
 }
@@ -254,20 +254,18 @@ test("source: no timers, no storage, no calls to Render or Neon", () => {
   assert.ok(!/\[triggers\]|crons/.test(toml));
 });
 
-test("configured emails blocked case-insensitively before sending, other emails unaffected", async () => {
-  const hashes = ['blocked@example.invalid', 'second@example.invalid'].map(v => createHash('sha256').update(v).digest('hex')).join(',');
-  for (const email of ['blocked@example.invalid', ' BLOCKED@EXAMPLE.INVALID ', 'second@example.invalid']) {
-    const t = env({ BLOCKED_CONTACT_EMAIL_SHA256: hashes });
-    for (const body of [{ email }, { ...valid, email }]) {
-      const r = await call(post(body), t.env);
-      assert.equal(r.status, 403);
-      assert.deepEqual(r.body, { ok: false, error: 'not_allowed' });
-    }
-    assert.equal(t.sent.length, 0);
-    const normal = await call(post(valid), t.env);
-    assert.equal(normal.status, 200);
-    assert.equal(t.sent.length, 1);
+test("direct guest and forged relay requests cannot send mail", async () => {
+  for (const key of [null, 'forged']) {
+    const t = env(); const req = post(valid);
+    if (key === null) req.headers.delete('X-Voltex-Support-Key'); else req.headers.set('X-Voltex-Support-Key', key);
+    const r = await call(req, t.env);
+    assert.equal(r.status, 401); assert.equal(t.sent.length, 0);
   }
+});
+test("missing relay configuration fails closed", async () => {
+  const t = env({ SUPPORT_RELAY_KEY: undefined });
+  assert.equal((await call(post(valid), t.env)).status, 401);
+  assert.equal(t.sent.length, 0);
 });
 
 let failed = 0;
