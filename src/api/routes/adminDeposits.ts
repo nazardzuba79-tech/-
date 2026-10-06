@@ -1,4 +1,5 @@
 import { asyncRoute } from '../asyncRoute';
+import { hiddenAdminUserMap } from '../../services/AdminUserVisibility';
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
@@ -44,14 +45,16 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   // to a navigation badge. Each unavailable source remains unknown, not zero.
   router.get('/admin/work-summary', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
     const since = new Date(Date.now() - 86_400_000);
+    const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
+    const visible = hiddenIds.length ? { id: { notIn: hiddenIds } } : {};
     const [packages, unlinked, withdrawals, kyc, otc, totalUsers, newUsers, cursors] = await Promise.allSettled([
       queue.load({ customerActivityOnly: true }),
       prisma.deposit.count({ where: { userId: null, deletedUserId: null, ignoredAt: null, status: { not: 'CREDITED' } } }),
       prisma.withdrawal.count({ where: { status: { in: ['PENDING', 'APPROVED'] } } }),
-      prisma.user.count({ where: { role: 'USER', kycStatus: 'PENDING' } }),
+      prisma.user.count({ where: { role: 'USER', ...visible, kycStatus: 'PENDING' } }),
       prisma.otcCashRequest.count({ where: { status: { in: ['RESERVED', 'OFFERED', 'ACCEPTED', 'PICKUP_READY', 'PAYOUT_IN_PROGRESS'] } } }),
-      prisma.user.count({ where: { role: 'USER' } }),
-      prisma.user.count({ where: { role: 'USER', createdAt: { gte: since } } }),
+      prisma.user.count({ where: { role: 'USER', ...visible } }),
+      prisma.user.count({ where: { role: 'USER', ...visible, createdAt: { gte: since } } }),
       Promise.all([
         prisma.deposit.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
         prisma.withdrawal.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
@@ -145,10 +148,12 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   router.get('/admin/user-activity', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     try {
+      const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
+      const visible = hiddenIds.length ? { id: { notIn: hiddenIds } } : {};
       const [totalUsers, newUsers24h, pendingKyc, q] = await Promise.all([
-        prisma.user.count({ where: { role: 'USER' } }),
-        prisma.user.count({ where: { role: 'USER', createdAt: { gte: since } } }),
-        prisma.user.count({ where: { role: 'USER', kycStatus: 'PENDING' } }),
+        prisma.user.count({ where: { role: 'USER', ...visible } }),
+        prisma.user.count({ where: { role: 'USER', ...visible, createdAt: { gte: since } } }),
+        prisma.user.count({ where: { role: 'USER', ...visible, kycStatus: 'PENDING' } }),
         queue.load({ customerActivityOnly: true }),
       ]);
       const unconfirmedByUser = new Map<string, number>();

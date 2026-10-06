@@ -6,7 +6,7 @@ import type { DepositCopyUserFields } from '../pages/admin/DepositCopyBell';
 export interface AdminReadCompatibility { mode: 'legacy'; complete: boolean; limit?: number; notice: string }
 export interface AdminPage<T> { items: T[]; total: number; page: number; pageSize: number; totalPages: number; asOf: string; compatibility?: AdminReadCompatibility;
   legacyStats?: { totalUsers: number; newUsers24h: number; pendingKyc: number } }
-export type AdminUser = Awaited<ReturnType<typeof api.getAdminUsers>>[number] & DepositCopyUserFields;
+export type AdminUser = Awaited<ReturnType<typeof api.getAdminUsers>>[number] & DepositCopyUserFields & { adminHidden?: boolean; hiddenAt?: string | null };
 export type AdminClient = Awaited<ReturnType<typeof api.getAllClients>>[number];
 export type AdminWithdrawal = Awaited<ReturnType<typeof api.getAdminWithdrawals>>[number];
 type Detail = Awaited<ReturnType<typeof api.getAdminUserDetail>>;
@@ -77,12 +77,18 @@ async function paged<T>(capability: string, path: string, legacy: (signal?: Abor
 }
 
 export const getAdminUsersPage = async (query: string, signal?: AbortSignal) => {
+  const parsed = queryParams(query), status = parsed.q.get('status') || 'all';
+  if (status === 'hidden') {
+    const hidden = userRows(await legacyRows<AdminUser>('/admin/users/hidden', signal));
+    const selected = hidden.filter(user => includes(parsed.search, user.id));
+    return legacyPage(sorted(selected, 'hiddenAt', 'desc'), query, hidden.length);
+  }
   const result = await paged<AdminUser>('users', `/admin/users/page?${query}`, async s => {
-  const all = userRows(await legacyRows<AdminUser>('/admin/users', s)), { q, search } = queryParams(query), status = q.get('status') || 'all';
-  const since = Date.now() - 86_400_000;
-  const selected = all.filter(u => includes(search, u.email, u.id) && (status === 'all' || status === 'blocked' && u.isBlocked === true || status === 'active' && u.isBlocked === false || status === 'kyc-pending' && u.kycStatus === 'PENDING' || status === 'new' && Date.parse(u.createdAt) >= since));
-  return { ...legacyPage(sorted(selected, ['email', 'lastLoginAt'].includes(q.get('sort') || '') ? q.get('sort')! : 'createdAt', q.get('direction') || 'desc'), query, all.length),
-    legacyStats: { totalUsers: all.length, newUsers24h: all.filter(u => Date.parse(u.createdAt) >= since).length, pendingKyc: all.filter(u => u.kycStatus === 'PENDING').length } };
+    const all = userRows(await legacyRows<AdminUser>('/admin/users', s)), { q, search } = queryParams(query), legacyStatus = q.get('status') || 'all';
+    const since = Date.now() - 86_400_000;
+    const selected = all.filter(u => includes(search, u.email, u.id) && (legacyStatus === 'all' || legacyStatus === 'blocked' && u.isBlocked === true || legacyStatus === 'active' && u.isBlocked === false || legacyStatus === 'kyc-pending' && u.kycStatus === 'PENDING' || legacyStatus === 'new' && Date.parse(u.createdAt) >= since));
+    return { ...legacyPage(sorted(selected, ['email', 'lastLoginAt'].includes(q.get('sort') || '') ? q.get('sort')! : 'createdAt', q.get('direction') || 'desc'), query, all.length),
+      legacyStats: { totalUsers: all.length, newUsers24h: all.filter(u => Date.parse(u.createdAt) >= since).length, pendingKyc: all.filter(u => u.kycStatus === 'PENDING').length } };
   }, signal);
   userRows(result.items);
   return result;

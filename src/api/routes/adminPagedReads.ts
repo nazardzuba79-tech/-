@@ -6,6 +6,7 @@ import { AuthedRequest, requireAuth } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { decryptAdminPassword } from '../../services/AdminPasswordVault';
 import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
+import { hiddenAdminUserMap, isAdminUserHidden } from '../../services/AdminUserVisibility';
 
 const paging = z.object({
   page: z.coerce.number().int().min(1).max(1_000_000).default(1),
@@ -13,7 +14,7 @@ const paging = z.object({
 });
 const userQuery = paging.extend({
   search: z.string().trim().max(200).default(''),
-  status: z.enum(['all', 'blocked', 'active', 'kyc-pending', 'new']).default('all'),
+  status: z.enum(['all', 'blocked', 'active', 'kyc-pending', 'new', 'hidden']).default('all'),
   sort: z.enum(['createdAt', 'email', 'lastLoginAt']).default('createdAt'),
   direction: z.enum(['asc', 'desc']).default('desc'),
 });
@@ -80,7 +81,28 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
     const parsed = userQuery.safeParse(req.query);
     if (!parsed.success) return res.status(400).json({ error: 'Недопустимые параметры списка' });
     const q = parsed.data, since = new Date(Date.now() - 86_400_000);
+    const hidden = await hiddenAdminUserMap(prisma);
+    const hiddenIds = [...hidden.keys()];
+    if (q.status === 'hidden') {
+      const existing = hiddenIds.length ? await prisma.user.findMany({
+        where: { role: 'USER', id: { in: hiddenIds } }, select: { id: true },
+      }) : [];
+      const existingIds = new Set(existing.map(u => u.id));
+      const entries = [...hidden.entries()]
+        .filter(([id]) => existingIds.has(id) && (!q.search || id.toLowerCase().includes(q.search.toLowerCase())))
+        .sort((a, b) => b[1].getTime() - a[1].getTime() || b[0].localeCompare(a[0]));
+      const slice = entries.slice((q.page - 1) * q.pageSize, q.page * q.pageSize);
+      const items = slice.map(([id, hiddenAt]) => ({
+        id, email: 'Скрытый аккаунт', password: null, role: 'USER' as const, isAdmin: false,
+        kycStatus: 'NOT_STARTED' as const, createdAt: hiddenAt, registrationIp: null, lastLoginAt: null,
+        lastDepositCopy: null, depositCopyLookupFailed: false, isBlocked: false, blockedAt: null,
+        blockedReason: null, balances: [], adminHidden: true, hiddenAt,
+      }));
+      res.set('Cache-Control', 'private, no-store').json(pageResult(items, entries.length, q));
+      return;
+    }
     const where: Prisma.UserWhereInput = { role: 'USER',
+      ...(hiddenIds.length ? { id: { notIn: hiddenIds } } : {}),
       ...(q.search ? { OR: [{ email: { contains: literalContains(q.search), mode: 'insensitive' } }, { id: { contains: literalContains(q.search), mode: 'insensitive' } }] } : {}),
       ...(q.status === 'blocked' ? { blockedAt: { not: null } } : q.status === 'active' ? { blockedAt: null }
         : q.status === 'kyc-pending' ? { kycStatus: 'PENDING' } : q.status === 'new' ? { createdAt: { gte: since } } : {}),
@@ -91,6 +113,7 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
       // Only the requested IDs cross the DB boundary. Sort SQL is selected from a fixed enum.
       const direction = q.direction === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
       const filters = [Prisma.sql`u."role" = 'USER'`];
+      if (hiddenIds.length) filters.push(Prisma.sql`u."id" NOT IN (${Prisma.join(hiddenIds)})`);
       if (q.search) filters.push(Prisma.sql`(strpos(lower(u."email"), lower(${q.search})) > 0 OR strpos(lower(u."id"), lower(${q.search})) > 0)`);
       if (q.status === 'blocked') filters.push(Prisma.sql`u."blockedAt" IS NOT NULL`);
       if (q.status === 'active') filters.push(Prisma.sql`u."blockedAt" IS NULL`);
@@ -128,6 +151,7 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
   }));
 
   router.get('/admin/users/:id/profile', ...gate, asyncRoute(async (req, res) => {
+    if (await isAdminUserHidden(prisma, req.params.id)) return res.status(404).json({ error: 'Пользователь скрыт' });
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
     const [lastLogin, balances, demoBalances] = await Promise.all([
@@ -162,6 +186,7 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
     const parsed = historyQuery.safeParse(req.query);
     if (!parsed.success) return res.status(400).json({ error: 'Недопустимый раздел истории' });
     const q = parsed.data;
+    if (await isAdminUserHidden(prisma, req.params.id)) return res.status(404).json({ error: 'Пользователь скрыт' });
     if (!await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true } })) return res.status(404).json({ error: 'Пользователь не найден' });
     const where = { userId: req.params.id }, args = { where, skip: (q.page - 1) * q.pageSize, take: q.pageSize, orderBy: stableOrder };
     let items: unknown[], total: number;
@@ -216,11 +241,14 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
     const parsed = kycQuery.safeParse(req.query);
     if (!parsed.success) return res.status(400).json({ error: 'Недопустимые параметры списка' });
     const q = parsed.data;
-    const where: Prisma.UserWhereInput = { ...(q.status !== 'all' ? { kycStatus: q.status } : {}),
+    const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
+    const where: Prisma.UserWhereInput = { ...(hiddenIds.length ? { id: { notIn: hiddenIds } } : {}),
+      ...(q.status !== 'all' ? { kycStatus: q.status } : {}),
       ...(q.search ? { OR: [{ email: { contains: literalContains(q.search), mode: 'insensitive' } }, { id: { contains: literalContains(q.search), mode: 'insensitive' } }] } : {}) };
     let rows: User[], total: number;
     if (q.from || q.to) {
       const filters = [Prisma.sql`true`];
+      if (hiddenIds.length) filters.push(Prisma.sql`u."id" NOT IN (${Prisma.join(hiddenIds)})`);
       if (q.status !== 'all') filters.push(Prisma.sql`u."kycStatus"::text = ${q.status}`);
       if (q.search) filters.push(Prisma.sql`(strpos(lower(u."email"), lower(${q.search})) > 0 OR strpos(lower(u."id"), lower(${q.search})) > 0)`);
       if (q.from) filters.push(Prisma.sql`latest."createdAt" >= ${new Date(q.from)}`);
