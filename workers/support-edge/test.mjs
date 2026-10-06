@@ -46,7 +46,7 @@ console.log = (...args) => { logs.push(args.join(" ")); };
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
 
-test("valid guest submission → 200, exactly one email", async () => {
+test("valid authenticated relay submission → 200, exactly one email", async () => {
   const t = env();
   const r = await call(post(valid), t.env);
   assert.equal(r.status, 200);
@@ -220,7 +220,13 @@ test("browser origins: allowed origin preflight 204; foreign or missing origin r
   assert.equal(t.sent.length, 0);
 });
 
-test("health says whether mail is configured, and nothing else", async () => {
+test("health reports unconfigured when the private relay key is absent", async () => {
+  const r = await call(new Request("https://support.voltextech.net/health"), env({ SUPPORT_RELAY_KEY: undefined }).env);
+  assert.equal(r.status, 200);
+  assert.equal(r.body.configured, false);
+});
+
+test("health says whether mail and relay are configured, and nothing else", async () => {
   const r = await call(new Request("https://support.voltextech.net/health"), env().env);
   assert.equal(r.status, 200);
   assert.deepEqual(Object.keys(r.body).sort(), ["configured", "ok", "service", "version"]);
@@ -264,7 +270,7 @@ test("direct guest and forged relay requests cannot send mail", async () => {
 });
 test("missing relay configuration fails closed", async () => {
   const t = env({ SUPPORT_RELAY_KEY: undefined });
-  assert.equal((await call(post(valid), t.env)).status, 401);
+  assert.equal((await call(post(valid), t.env)).status, 503);
   assert.equal(t.sent.length, 0);
 });
 

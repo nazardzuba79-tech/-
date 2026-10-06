@@ -10,6 +10,7 @@ const form = z.object({ name: z.string().trim().min(1).max(100), subject: z.enum
 const supportLimiter = rateLimit({ windowMs: 10 * 60_000, max: 5, standardHeaders: true, legacyHeaders: false, keyGenerator: (req: AuthedRequest) => req.userId! });
 export function supportRequestRouter(prisma: PrismaClient, send: typeof fetch = fetch) {
   const router = Router();
+  const supportLimiter = rateLimit({ windowMs: 10 * 60_000, max: 5, standardHeaders: true, legacyHeaders: false, keyGenerator: (req: AuthedRequest) => req.userId! });
   router.post('/support/request', requireAuth(prisma), supportLimiter, asyncRoute(async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId! }, select: { email: true, blockedAt: true } });
     if (!user) return res.status(401).json({ ok: false, error: 'unauthorized' });

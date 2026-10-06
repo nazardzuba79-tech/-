@@ -1,3 +1,4 @@
+import { isBlockedContactEmail, isRevokedContactToken } from '../../services/ContactEmailPolicy';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
@@ -36,7 +37,7 @@ export function requireAuth(prisma: PrismaClient) {
     if (!header?.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Missing bearer token' });
     }
-    let payload: { sub: string; sid?: string; purpose?: string };
+    let payload: { sub: string; sid?: string; purpose?: string; iat?: number };
     try {
       payload = jwt.verify(header.slice(7), JWT_SECRET!) as typeof payload;
     } catch {
@@ -54,11 +55,12 @@ export function requireAuth(prisma: PrismaClient) {
         // metadata that authorization never reads. No auth cache or TTL.
         const session = await prisma.session.findUnique({
           where: { id: payload.sid },
-          select: { id: true, userId: true, revokedAt: true, lastSeenAt: true },
+          select: { id: true, userId: true, revokedAt: true, lastSeenAt: true, user: { select: { email: true } } },
         });
         if (!session || session.userId !== payload.sub || session.revokedAt) {
           return res.status(401).json({ error: 'Session has been signed out' });
         }
+        if (await isBlockedContactEmail(prisma, session.user?.email)) return res.status(403).json({ error: 'Account access restricted' });
         req.sessionId = session.id;
         if (Date.now() - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_MS) {
           // Fire-and-forget — a missed "last seen" tick isn't worth failing
@@ -68,8 +70,10 @@ export function requireAuth(prisma: PrismaClient) {
       }
 
       if (!payload.sid) {
-        const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true } });
+        const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, email: true } });
         if (!user) return res.status(401).json({ error: 'Account no longer exists' });
+        if (await isBlockedContactEmail(prisma, user.email)) return res.status(403).json({ error: 'Account access restricted' });
+        if (await isRevokedContactToken(prisma, user.email, payload.iat)) return res.status(401).json({ error: 'Session has been signed out' });
       }
     } catch {
       return res.status(503).json({ error: 'Authentication temporarily unavailable' });

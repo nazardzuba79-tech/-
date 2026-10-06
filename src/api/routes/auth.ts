@@ -248,6 +248,9 @@ export function authRouter(
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    if (await isBlockedContactEmail(prisma, user.email)) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
     if (user.blockedAt) {
       return res.status(403).json({
         error: user.blockedReason ? `Аккаунт заблокирован: ${user.blockedReason}` : 'Аккаунт заблокирован',
@@ -288,6 +291,9 @@ export function authRouter(
       return res.status(401).json({ error: 'Login session expired, please sign in again' });
     }
 
+    if (await isBlockedContactEmail(prisma, user.email)) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
     if (user.blockedAt) {
       return res.status(403).json({
         error: user.blockedReason ? `Аккаунт заблокирован: ${user.blockedReason}` : 'Аккаунт заблокирован',

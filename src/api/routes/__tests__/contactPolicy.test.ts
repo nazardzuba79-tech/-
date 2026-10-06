@@ -11,13 +11,16 @@ function setup() {
   const events: any[] = [];
   const user = { id: 'user', email: 'member@example.invalid', role: 'USER', blockedAt: null };
   const db: any = {
-    user: { findUnique: jest.fn(async ({ where }) => where.id === 'admin' ? { ...user, id: 'admin', role: 'ADMIN' } : where.id === 'user' ? user : null) },
+    user: { findUnique: jest.fn(async ({ where }) => where.id === 'admin' ? { ...user, id: 'admin', email: 'admin@example.invalid', role: 'ADMIN' } : where.id === 'user' ? user : null) },
+    session: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
+    $executeRaw: jest.fn(),
     auditLog: {
       findFirst: jest.fn(async ({ where }) => [...events].reverse().find(e => e.metadata.emailHash === where.metadata.equals) ?? null),
       findMany: jest.fn(async () => [...events].reverse()),
       create: jest.fn(async ({ data }) => { events.push(data); return data; }),
     },
   };
+  db.$transaction = jest.fn(async (fn: any) => fn(db));
   const send = jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
   const app = express(); app.use(express.json());
   app.use('/api/v1', contactPolicyRouter(db)); app.use('/api/v1', supportRequestRouter(db, send));
@@ -44,19 +47,21 @@ test('admin block/unblock is normalized, persistent without an account, and chan
   const headers = { Authorization: 'Bearer ' + token('admin') };
   expect((await request(app).post('/api/v1/admin/spam-emails/block').set(headers).send({ email: ' SPAM@EXAMPLE.INVALID ' })).status).toBe(200);
   expect(await isBlockedContactEmail(db, 'SPAM@example.invalid')).toBe(true);
-  expect(await blockedContactEmails(db)).toEqual(['spam@example.invalid']);
-  expect(events[0]).toEqual({ userId: 'admin', action: CONTACT_EMAIL_BLOCKED, metadata: { email: 'spam@example.invalid', emailHash: contactEmailHash('spam@example.invalid') } });
+  expect((await blockedContactEmails(db)).map(row => row.email)).toEqual(['spam@example.invalid']);
+  expect(events[0]).toMatchObject({ userId: 'admin', action: CONTACT_EMAIL_BLOCKED, metadata: { email: 'spam@example.invalid', emailHash: contactEmailHash('spam@example.invalid'), actorEmail: 'admin@example.invalid' } });
+  expect(db.session.updateMany).toHaveBeenCalledTimes(1);
+  expect(db.session.updateMany.mock.calls[0][0].where).toEqual({ revokedAt: null, user: { email: { equals: 'spam@example.invalid', mode: 'insensitive' } } });
   expect((await request(app).post('/api/v1/admin/spam-emails/unblock').set(headers).send({ email: 'spam@example.invalid' })).status).toBe(200);
   expect(await isBlockedContactEmail(db, 'spam@example.invalid')).toBe(false);
   expect(await blockedContactEmails(db)).toEqual([]);
   expect(Object.keys(db.user)).toEqual(['findUnique']);
+  expect(db.session.updateMany).toHaveBeenCalledTimes(1); // Unspam never resurrects sessions.
 });
-test('explicit unblock overrides emergency configuration', async () => {
+test('unblock is persistent and overrides earlier block', async () => {
   const { db, events } = setup();
-  process.env.BLOCKED_CONTACT_EMAIL_SHA256 = contactEmailHash('spam@example.invalid');
-  process.env.BLOCKED_CONTACT_EMAILS = 'spam@example.invalid';
+  events.push({ action: CONTACT_EMAIL_BLOCKED, metadata: { email: 'spam@example.invalid', emailHash: contactEmailHash('spam@example.invalid') }, createdAt: new Date() });
   expect(await isBlockedContactEmail(db, 'spam@example.invalid')).toBe(true);
-  expect(await blockedContactEmails(db)).toEqual(['spam@example.invalid']);
+  expect((await blockedContactEmails(db)).map(row => row.email)).toEqual(['spam@example.invalid']);
   events.push({ action: CONTACT_EMAIL_UNBLOCKED, metadata: { email: 'spam@example.invalid', emailHash: contactEmailHash('spam@example.invalid') } });
   expect(await isBlockedContactEmail(db, 'spam@example.invalid')).toBe(false);
   expect(await blockedContactEmails(db)).toEqual([]);
@@ -89,4 +94,36 @@ test('delivery failure never reports success or retries', async () => {
   const { app, send } = setup(); send.mockRejectedValueOnce(new Error('timeout'));
   expect((await request(app).post('/api/v1/support/request').set('Authorization', 'Bearer ' + token('user')).send(body)).status).toBe(502);
   expect(send).toHaveBeenCalledTimes(1); expect((await request(app).get('/health')).status).toBe(200);
+});
+
+
+test('existing sid sessions and legacy tokens are refused while blocked; revoked sessions stay revoked after unspam', async () => {
+  const {app,db,events,send,user}=setup();
+  const session={id:'session',userId:'user',revokedAt:null as Date|null,lastSeenAt:new Date(),remembered:false,user:{email:user.email}};
+  db.session.findUnique=jest.fn(async()=>session);
+  const sid=jwt.sign({sub:'user',sid:'session'},process.env.JWT_SECRET!);
+  const auth={Authorization:'Bearer '+sid};
+  events.push({action:CONTACT_EMAIL_BLOCKED,metadata:{email:user.email,emailHash:contactEmailHash(user.email)}});
+  expect((await request(app).post('/api/v1/support/request').set(auth).send(body)).status).toBe(403);
+  expect(send).not.toHaveBeenCalled();
+  session.revokedAt=new Date();
+  events.push({action:CONTACT_EMAIL_UNBLOCKED,metadata:{email:user.email,emailHash:contactEmailHash(user.email)}});
+  expect((await request(app).post('/api/v1/support/request').set(auth).send(body)).status).toBe(401);
+  expect(send).not.toHaveBeenCalled();
+});
+
+test('normalization does not block aliases, other addresses, or whole domains', async()=>{
+  const {db,events}=setup();
+  events.push({action:CONTACT_EMAIL_BLOCKED,metadata:{email:'one@gmail.com',emailHash:contactEmailHash('one@gmail.com')}});
+  expect(await isBlockedContactEmail(db,' ONE@GMAIL.COM ')).toBe(true);
+  for(const email of ['one+alias@gmail.com','o.ne@gmail.com','two@gmail.com']) expect(await isBlockedContactEmail(db,email)).toBe(false);
+});
+
+test('session revoke failure is an HTTP error and the server remains available',async()=>{
+  const {app,db}=setup();
+  db.session.updateMany.mockRejectedValueOnce(new Error('revoke failed'));
+  const response=await request(app).post('/api/v1/admin/spam-emails/block').set('Authorization','Bearer '+token('admin')).send({email:'spam@example.invalid'});
+  expect(response.status).toBe(503);
+  expect(db.$transaction).toHaveBeenCalledTimes(1);
+  expect((await request(app).get('/health')).status).toBe(200);
 });
