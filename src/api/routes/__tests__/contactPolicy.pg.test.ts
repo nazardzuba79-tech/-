@@ -30,7 +30,7 @@ run('durable blacklist, session revocation, atomic rollback and financial preser
     await db.balance.create({ data: { userId: user.id, asset: 'USDT', available: '123.123456789012345678', locked: '7.25' } });
     await db.order.create({ data: { userId: user.id, pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '100', originalQuantity: '0.01', remainingQuantity: '0.01', status: 'OPEN' } });
     const history = await db.auditLog.create({ data: { userId: user.id, action: 'FIXTURE_HISTORY', metadata: { preserved: true } } });
-    const sessions = await Promise.all([false, true].map(remembered => db.session.create({ data: { userId: user.id, remembered } })));
+    const sessions = await Promise.all([0, 1].map(() => db.session.create({ data: { userId: user.id } })));
     const token = (sub: string, sid?: string) => 'Bearer ' + jwt.sign({ sub, ...(sid ? { sid } : {}) }, process.env.JWT_SECRET!);
     const app = appFor(db), headers = { Authorization: token(admin.id) };
     const snapshot = async () => JSON.stringify(await Promise.all([
