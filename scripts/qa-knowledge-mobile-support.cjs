@@ -54,7 +54,7 @@ async function main() {
             await page.locator('main.vx-kb').waitFor();
             const action = page.locator(inline);
             assert.equal(await action.isVisible(), mobile, `${pathname} inline at ${width}`);
-            assert.equal(await page.locator(launcher).isVisible(), !mobile, `${pathname} launcher at ${width}`);
+            assert.equal(await page.locator(launcher).isVisible(), signedIn && !mobile, `${pathname} launcher at ${width}`);
             assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${pathname} overflow at ${width}`);
             assert.equal(await page.locator('.vx-kb-page').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(247, 241, 232)');
             if (pathname !== '/help/status') assert.equal(requests.length, before, `${pathname}: no entry API requests`);
@@ -71,8 +71,14 @@ async function main() {
             }
             report.cases.push({ pathname, width, signedIn, mobile, entryApiRequests: requests.length - before });
           }
-          // Actual global widget, not a stub: open via the inline event, return focus.
-          if (mobile) {
+          if (mobile && !signedIn) {
+            await page.locator(inline).click();
+            await page.waitForURL('**/login');
+            assert.equal(await page.locator(panel).count(),0);
+            assert.ok(requests.every(r=>r.method==='GET'), 'guest cannot send Support');
+          }
+          // Actual global widget, not a stub: only signed-in users can open it.
+          if (mobile && signedIn) {
             await page.goto(origin + '/academy/futures/perpetual', { waitUntil: 'networkidle' });
             const action = page.locator(inline);
             const before = requests.length;
@@ -96,8 +102,8 @@ async function main() {
             const shot = `article-${width}-${signedIn ? 'account' : 'guest'}.png`;
             if ([320, 390, 768].includes(width)) await page.screenshot({ path: path.join(out, shot) });
             // CSS remains loaded across SPA navigation: hiding must stop on non-reading routes.
-            if (!signedIn && width === 390) {
-              await page.locator('.header-brand').click();
+            if (signedIn && width === 390) {
+              await page.locator('a[href="/legal/privacy"]').first().click();
               await page.locator('.vx-kb-page').waitFor({ state: 'detached' });
               assert.ok(await page.locator(launcher).isVisible(), 'launcher restored away from reading');
               await page.goBack();

@@ -56,8 +56,13 @@ run('durable blacklist, session revocation, atomic rollback and financial preser
     const newSession = await db.session.create({ data: { userId: user.id } });
     expect((await request(app).get('/private').set('Authorization', token(user.id, newSession.id))).status).toBe(200);
     // Force failure after audit insert. The real transaction must roll it back.
-    const broken = Object.create(db) as PrismaClient;
-    broken.$transaction = ((fn: any) => db.$transaction(tx => fn(new Proxy(tx, { get(target, prop) { return prop === 'session' ? { updateMany: async () => { throw new Error('fixture revoke failure'); } } : (target as any)[prop]; } })))) as any;
+    const broken = {
+      user: db.user, auditLog: db.auditLog, session: db.session,
+      $transaction: (fn: any) => db.$transaction(tx => fn({
+        auditLog: tx.auditLog, $executeRaw: tx.$executeRaw.bind(tx),
+        session: { updateMany: async () => { throw new Error('fixture revoke failure'); } },
+      })),
+    } as unknown as PrismaClient;
     const brokenApp = appFor(broken);
     expect((await request(brokenApp).post('/api/v1/admin/spam-emails/block').set(headers).send({ email })).status).toBe(503);
     expect(await isBlockedContactEmail(db, email)).toBe(false);

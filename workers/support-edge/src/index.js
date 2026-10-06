@@ -145,6 +145,7 @@ function log(event) {
 
 export function configured(env) {
   return Boolean(
+    typeof env.SUPPORT_RELAY_KEY === "string" && env.SUPPORT_RELAY_KEY.length > 0 &&
     env.SUPPORT_EMAIL && typeof env.SUPPORT_EMAIL.send === "function" &&
     typeof env.SUPPORT_ADMIN_EMAIL === "string" && EMAIL_RE.test(env.SUPPORT_ADMIN_EMAIL) &&
     typeof env.SUPPORT_FROM_EMAIL === "string" && EMAIL_RE.test(env.SUPPORT_FROM_EMAIL),
