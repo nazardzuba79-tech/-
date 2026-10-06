@@ -204,9 +204,14 @@ async function main() {
         }
         assert.equal((await measure(page)).overflow, false);
         for (const doc of ['terms', 'privacy', 'risk', 'support']) {
-          await page.goto(`${origin}/legal/${doc}`, { waitUntil: 'networkidle' });
+          if (doc === 'terms') {
+            await page.locator('footer a[href="/legal/terms"]').click();
+            await page.waitForURL(url => url.pathname === '/legal/terms');
+          } else await page.goto(`${origin}/legal/${doc}`, { waitUntil: 'networkidle' });
+          await page.waitForFunction(() => !document.querySelector('.about-page'));
           await page.locator('main h1').waitFor();
           assert.equal(await page.locator('.about-page').count(), 0, `preserve /legal/${doc}`);
+          assert.ok(await page.evaluate(() => [...document.styleSheets].filter(sheet => !sheet.href || new URL(sheet.href).origin === location.origin).some(sheet => [...sheet.cssRules].some(rule => rule.cssText.includes('.about-page')))), 'About CSS is still loaded during legal preservation checks');
           assert.equal(await page.locator('main h1').evaluate(node => parseFloat(getComputedStyle(node).fontSize)), 28, 'legacy legal heading styles preserved');
           assert.ok((await page.locator('main').innerText()).length > 150);
         }
