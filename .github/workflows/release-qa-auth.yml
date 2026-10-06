@@ -2,11 +2,11 @@ name: Release QA existing auth routing suite
 'on':
   push:
     branches:
-      - codex/release-qa-final-20261006
+      - codex/release-qa-validation-20261006
 permissions:
   contents: read
 concurrency:
-  group: release-qa-final-20261006-release-qa-auth.yml
+  group: release-qa-validation-20261006-release-qa-auth.yml
   cancel-in-progress: false
 jobs:
   existing-security-phase1:
@@ -21,14 +21,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+          ref: 9866714f1541bb878eb1aa01176d6ac97059b177
           persist-credentials: false
       - name: Verify frozen main source
         run: |-
-          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
-          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          test "$(git rev-parse HEAD)" = '9866714f1541bb878eb1aa01176d6ac97059b177'
+          echo 'RELEASE_QA_SOURCE_SHA=9866714f1541bb878eb1aa01176d6ac97059b177'
       - name: Verify frozen main
-        run: test "$(git rev-parse HEAD)" = ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+        run: test "$(git rev-parse HEAD)" = 9866714f1541bb878eb1aa01176d6ac97059b177
       - uses: actions/setup-node@v4
         with:
           node-version: 22
