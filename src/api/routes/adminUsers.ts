@@ -90,6 +90,24 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
     );
   }));
 
+  router.get('/admin/users/hidden', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
+    const hidden = await hiddenAdminUserMap(prisma);
+    const ids = [...hidden.keys()];
+    const existing = ids.length ? await prisma.user.findMany({
+      where: { role: 'USER', id: { in: ids } }, select: { id: true },
+    }) : [];
+    const existingIds = new Set(existing.map(user => user.id));
+    const rows = [...hidden.entries()].filter(([id]) => existingIds.has(id))
+      .sort((a, b) => b[1].getTime() - a[1].getTime() || b[0].localeCompare(a[0]))
+      .map(([id, hiddenAt]) => ({
+        id, email: 'Скрытый аккаунт', password: null, role: 'USER' as const, isAdmin: false,
+        kycStatus: 'NOT_STARTED' as const, createdAt: hiddenAt, registrationIp: null, lastLoginAt: null,
+        lastDepositCopy: null, depositCopyLookupFailed: false, isBlocked: false, blockedAt: null,
+        blockedReason: null, balances: [], adminHidden: true, hiddenAt,
+      }));
+    res.set('Cache-Control', 'private, no-store').json(rows);
+  }));
+
   router.post('/admin/users/:id/hide', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, role: true } });
     if (!user || user.role !== 'USER') return res.status(404).json({ error: 'User not found' });
