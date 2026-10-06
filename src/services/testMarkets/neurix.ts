@@ -1,5 +1,5 @@
 import type { TestAssetConfig } from './testAssetConfig';
-import type { GrowthScheduledScenarioConfig, ScheduledScenarioConfig } from './simulationSchedule';
+import type { GrowthScheduledScenarioConfig, RangeSelloffRangeScenarioConfig } from './simulationSchedule';
 
 /** Shared configuration only: no environment, network, database or clock reads. */
 const NRX_LISTING_AT = Date.parse('2026-10-03T13:00:00Z');
@@ -39,7 +39,7 @@ export const NRX_TWO_WEEK_SCENARIO: Readonly<GrowthScheduledScenarioConfig> = Ob
  * The simulator anchors this program to the exact canonical NRX tick at
  * activation, so nothing already displayed or sold is rewritten.
  */
-export const NRX_BALANCE_SELLOFF_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.freeze({
+export const NRX_BALANCE_SELLOFF_SCENARIO: Readonly<RangeSelloffRangeScenarioConfig> = Object.freeze({
   mode: 'range-selloff-range',
   version: 5,
   from: Date.parse('2026-10-06T17:00:00Z'), // 20:00 Kyiv; prospective release gate
