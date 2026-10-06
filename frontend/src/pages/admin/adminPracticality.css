@@ -42,6 +42,11 @@
 .admin-read-status [role=alert] { width: 100%; color: var(--sell); }
 .admin-users-filters { display: grid; grid-template-columns: minmax(180px,225px) repeat(2,minmax(150px,240px)); justify-content: start; gap: 8px; }
 .admin-users-filters input,.admin-users-filters select { width: 100%; min-width: 0; }
+.admin-users-filters .admin-user-filter-control { min-height: 42px; padding: 10px 12px; border: 1px solid #8492a6; border-radius: 8px; background-color: var(--panel); color: var(--text-primary); font: inherit; font-size: 13px; box-shadow: 0 1px 2px #1018280d; }
+.admin-users-filters .admin-user-filter-control::placeholder { color: #667085; opacity: 1; }
+.admin-users-filters select.admin-user-filter-control { padding-right: 38px !important; font-weight: 600; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%23475467' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important; background-size: 16px 16px; background-position: right 12px center; background-repeat: no-repeat; }
+.admin-users-filters .admin-user-filter-control:hover { border-color: #667085; }
+.admin-users-filters .admin-user-filter-control:focus-visible { border-color: var(--admin-brand); outline: 2px solid var(--admin-brand); outline-offset: 2px; }
 .admin-users-table,.admin-data-table { border-collapse: collapse; width: 100%; font-size: 13px; text-align: left; }
 .admin-users-table th,.admin-data-table th { color: var(--text-secondary); background: var(--panel-alt); font-size: 12px; font-weight: 600; }
 .admin-users-table td,.admin-users-table th,.admin-data-table td,.admin-data-table th { border-bottom: 1px solid var(--border); padding: 12px 10px; vertical-align: top; }

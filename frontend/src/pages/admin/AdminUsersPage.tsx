@@ -109,9 +109,9 @@ export function AdminUsersPage() {
     </section>
     <div className="admin-list-heading"><h2>Список пользователей</h2>{read.data && <AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={20} itemLabel="из" onPageChange={value => update({ page: value })} placement="top" />}</div>
     <div className="admin-toolbar admin-users-filters">
-      <input aria-label="Поиск пользователей" style={styles.input} placeholder="Email или ID пользователя" value={search} onChange={e => update({ search: e.target.value, page: 1 })} />
-      <select aria-label="Фильтр пользователей" style={styles.input} value={status} onChange={e => update({ status: e.target.value, page: 1 })}><option value="all">Все пользователи</option><option value="new">Новые за 24 часа</option><option value="kyc-pending">KYC на проверке</option><option value="hidden">Скрытые</option></select>
-      <select aria-label="Сортировка пользователей" style={styles.input} value={sort} onChange={e => update({ sort: e.target.value, page: 1 })}><option value="createdAt">По регистрации</option><option value="lastLoginAt">По последнему входу</option><option value="email">По email</option></select>
+      <input aria-label="Поиск пользователей" className="admin-user-filter-control" placeholder="Email или ID пользователя" value={search} onChange={e => update({ search: e.target.value, page: 1 })} />
+      <select aria-label="Фильтр пользователей" className="admin-user-filter-control" value={status} onChange={e => update({ status: e.target.value, page: 1 })}><option value="all">Все пользователи</option><option value="new">Новые за 24 часа</option><option value="kyc-pending">KYC на проверке</option><option value="hidden">Скрытые</option></select>
+      <select aria-label="Сортировка пользователей" className="admin-user-filter-control" value={sort} onChange={e => update({ sort: e.target.value, page: 1 })}><option value="createdAt">По регистрации</option><option value="lastLoginAt">По последнему входу</option><option value="email">По email</option></select>
     </div>{/* Owner (2026-10-03): no refresh line or result count above the list; a failed read still offers «Повторить». */}
     {read.error && <AdminReadStatus {...read} hasData={!!read.data} />}
     {notice && <p role="status">{notice}</p>}{!read.data && read.loading && <Skeleton height={240} />}
