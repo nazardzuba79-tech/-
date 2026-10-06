@@ -1,5 +1,6 @@
 import existingWorker from './index.js';
 import { nrxPublicResponse } from '../../../src/services/testMarkets/nrxPublic';
+import { NEURIX } from '../../../src/services/testMarkets/neurix';
 import { managedListingResponse, PUBLIC_CATALOGUE_PATH, listingForPath } from '../../../src/services/listings/listingPublic';
 import { authorizeListingsAdmin, listingsStub, publishedListings, ManagedListingsDO, type ListingsEnv } from './listingsStore';
 
@@ -18,6 +19,12 @@ const unavailable = () => new Response(JSON.stringify({ error: 'listings_unavail
  */
 export default {
   async fetch(request: Request, env: ListingsEnv = {}): Promise<Response> {
+    if (new URL(request.url).pathname === '/market/simulations/status' && ['GET', 'HEAD'].includes(request.method)) {
+      return new Response(request.method === 'HEAD' ? null : JSON.stringify({
+        source: 'simulation', nrx: { pair: NEURIX.pair, schedule: NEURIX.scheduledScenario ?? null },
+        boundedDemoProgram: 'capped-growth-range-v1',
+      }), { headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } });
+    }
     const nrx = nrxPublicResponse(request);
     if (nrx) return nrx;
     const url = new URL(request.url);
