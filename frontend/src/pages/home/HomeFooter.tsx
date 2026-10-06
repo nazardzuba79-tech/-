@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
-import { openSupportWidget } from '../../lib/supportWidget';
+
 import { Key, useLanguage } from '../../lib/i18n';
 
 /**
@@ -79,20 +79,6 @@ export function HomeFooter() {
                     </Link>
                   </li>
                 ))}
-                {/* Contact isn't a route — it opens the support chat that is
-                    already mounted on every page, for signed-out visitors
-                    too. A link would have had nowhere honest to point. */}
-                {col.titleKey === 'home.footer.support' && (
-                  <li>
-                    <button
-                      type="button"
-                      onClick={openSupportWidget}
-                      className="text-left text-[12px] text-home-muted transition-colors duration-150 hover:text-white"
-                    >
-                      {t('home.footer.contact')}
-                    </button>
-                  </li>
-                )}
               </ul>
             </div>
           ))}

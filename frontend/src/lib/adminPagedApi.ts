@@ -1,3 +1,4 @@
+import { getSpamEmails } from './adminSpamEmails';
 import { api } from './api';
 import { adminRead, AdminReadError } from './adminReadApi';
 import { compatibleAdminRead } from './adminReadCompatibility';
@@ -78,6 +79,12 @@ async function paged<T>(capability: string, path: string, legacy: (signal?: Abor
 
 export const getAdminUsersPage = async (query: string, signal?: AbortSignal) => {
   const parsed = queryParams(query), status = parsed.q.get('status') || 'all';
+  if (status === 'spam') {
+    const [policy, all] = await Promise.all([getSpamEmails(signal), legacyRows<AdminUser>('/admin/users', signal)]);
+    const blocked = new Set(policy.entries.map(row => row.email));
+    const selected = userRows(all).filter(user => blocked.has(user.email.trim().toLowerCase()) && includes(parsed.search, user.email, user.id));
+    return legacyPage(sorted(selected, ['email', 'lastLoginAt'].includes(parsed.q.get('sort') || '') ? parsed.q.get('sort')! : 'createdAt', parsed.q.get('direction') || 'desc'), query, all.length);
+  }
   if (status === 'hidden') {
     const hidden = userRows(await legacyRows<AdminUser>('/admin/users/hidden', signal));
     const selected = hidden.filter(user => includes(parsed.search, user.id));

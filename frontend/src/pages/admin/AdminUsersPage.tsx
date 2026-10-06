@@ -1,3 +1,5 @@
+import { getSpamEmails } from '../../lib/adminSpamEmails';
+import { SpamEmailManager, SpamEmailDialog } from './SpamEmailManager';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getAdminUsersPage, type AdminUser } from '../../lib/adminPagedApi';
@@ -60,6 +62,9 @@ export function AdminUsersPage() {
   useEffect(() => { if (read.data && query === requestedQuery) restoreScroll(); }, [read.data, query, requestedQuery, restoreScroll]);
   const summary = useAdminWorkSummary();
   const copies = useAdminRead('deposit-copy-signal', hasUnresolvedCopies);
+  const spam = useAdminRead('spam-emails', getSpamEmails);
+  const [spamTarget, setSpamTarget] = useState<{ email: string; blocked: boolean } | null>(null);
+  const spamSet = new Set(spam.data?.entries.map(row => row.email));
   const [deleting, setDeleting] = useState<AdminUser | null>(null);
   const [visibilityBusy, setVisibilityBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
@@ -85,6 +90,7 @@ export function AdminUsersPage() {
       <Link className="admin-open-button" to={open(user)}>Открыть</Link>
       <button type="button" className="admin-hide-button" disabled={visibilityBusy === user.id}
         aria-label="Скрыть аккаунт" onClick={() => void changeVisibility(user, true)}>Скрыть</button>
+      <button type="button" className="admin-spam-control" disabled={!spam.data || !!spam.error} onClick={() => setSpamTarget({ email: user.email, blocked: !spamSet.has(user.email.trim().toLowerCase()) })}>{spamSet.has(user.email.trim().toLowerCase()) ? 'Не спам' : 'Спам'}</button>
       {canDeleteUser(user) && <button type="button" className="admin-delete-button" style={styles.rejectBtn} aria-label="Удалить аккаунт"
         title={`Удалить аккаунт ${user.email}`} onClick={() => setDeleting(user)}>Удалить</button>}
     </>}
@@ -97,6 +103,8 @@ export function AdminUsersPage() {
   const balances = (user: AdminUser) => user.balances.length ? user.balances.map(b => <div key={b.asset} className="admin-user-balance"><span><strong>{b.asset}</strong> {compactAmount(b.available)}</span>{!/^0(?:\.0+)?$/.test(b.locked ?? '') && <small>В резерве: {compactAmount(b.locked)}</small>}</div>) : <span>—</span>;
   return <div className="admin-users-workspace">
     <h1 style={styles.title}>Пользователи</h1><p style={styles.subtitle}>Поиск аккаунтов, проверка данных и управление пользователями.</p>
+    <SpamEmailManager entries={spam.data?.entries ?? null} onSelect={(email, blocked) => setSpamTarget({ email, blocked })} />
+    {spam.error && <AdminReadStatus {...spam} hasData={!!spam.data} />}
     <section className="admin-users-kpis" aria-label="Показатели пользователей">
       {indicators.map(([key, label]) => {
         const widget = summary.data?.widgets[key];
@@ -110,7 +118,7 @@ export function AdminUsersPage() {
     <div className="admin-list-heading"><h2>Список пользователей</h2>{read.data && <AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={20} itemLabel="из" onPageChange={value => update({ page: value })} placement="top" />}</div>
     <div className="admin-toolbar admin-users-filters">
       <input aria-label="Поиск пользователей" className="admin-user-filter-control" placeholder="Email или ID пользователя" value={search} onChange={e => update({ search: e.target.value, page: 1 })} />
-      <select aria-label="Фильтр пользователей" className="admin-user-filter-control" value={status} onChange={e => update({ status: e.target.value, page: 1 })}><option value="all">Все пользователи</option><option value="new">Новые за 24 часа</option><option value="kyc-pending">KYC на проверке</option><option value="hidden">Скрытые</option></select>
+      <select aria-label="Фильтр пользователей" className="admin-user-filter-control" value={status} onChange={e => update({ status: e.target.value, page: 1 })}><option value="all">Все пользователи</option><option value="new">Новые за 24 часа</option><option value="kyc-pending">KYC на проверке</option><option value="hidden">Скрытые</option><option value="spam">Спам</option></select>
       <select aria-label="Сортировка пользователей" className="admin-user-filter-control" value={sort} onChange={e => update({ sort: e.target.value, page: 1 })}><option value="createdAt">По регистрации</option><option value="lastLoginAt">По последнему входу</option><option value="email">По email</option></select>
     </div>{/* Owner (2026-10-03): no refresh line or result count above the list; a failed read still offers «Повторить». */}
     {read.error && <AdminReadStatus {...read} hasData={!!read.data} />}
@@ -120,15 +128,16 @@ export function AdminUsersPage() {
       <td className="admin-user-email-cell"><span className="admin-hidden-account">Скрытый аккаунт</span><small className="admin-hidden-id">ID ·••••{user.id.slice(-6)}</small></td>
       <td>—</td><td>{user.hiddenAt ? `Скрыт ${adminDate(user.hiddenAt, true)}` : '—'}</td><td>—</td><td>—</td><td>—</td><td>{actions(user)}</td>
     </tr> : <tr key={user.id} data-user-row={user.id}>
-      <td className="admin-user-email-cell"><span className="admin-user-email">{user.email}</span>{newMark(user)}{signals(user)}</td>
+      <td className="admin-user-email-cell"><span className="admin-user-email">{user.email}</span>{newMark(user)}{spamSet.has(user.email.trim().toLowerCase()) && <span className="admin-spam-badge">Спам</span>}{signals(user)}</td>
       <td className="mono" data-user-password={user.id}>{user.password ?? '—'}</td><td>{adminDate(user.createdAt, true)}</td><td>{lastLogin(user.lastLoginAt)}</td><td>{kycCell(user.kycStatus)}</td><td>{balances(user)}</td><td>{actions(user)}</td>
     </tr>)}</tbody></table></div>}
     <div className="admin-table-mobile">{users.map(user => user.adminHidden ? <article key={user.id} data-user-card={user.id} data-hidden-account className="admin-user-mobile" style={styles.card}>
       <strong className="admin-hidden-account">Скрытый аккаунт</strong><small className="admin-hidden-id">ID ·••••{user.id.slice(-6)}</small>
       <p className="admin-muted">{user.hiddenAt ? `Скрыт ${adminDate(user.hiddenAt, true)}` : ''}</p>{actions(user)}
     </article> : <article key={user.id} data-user-card={user.id} className="admin-user-mobile" style={styles.card}>
-      <strong className="admin-user-email">{user.email}</strong>{newMark(user)}<dl><dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd><dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd><dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd><dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd><dt>Баланс</dt><dd>{balances(user)}</dd></dl>{signals(user)}{actions(user)}
+      <strong className="admin-user-email">{user.email}</strong>{newMark(user)}{spamSet.has(user.email.trim().toLowerCase()) && <span className="admin-spam-badge">Спам</span>}<dl><dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd><dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd><dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd><dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd><dt>Баланс</dt><dd>{balances(user)}</dd></dl>{signals(user)}{actions(user)}
     </article>)}</div>
+    {spamTarget && <SpamEmailDialog {...spamTarget} onClose={() => setSpamTarget(null)} onSaved={() => { setSpamTarget(null); spam.reload(); read.reload(); }} />}
     {deleting && <DeleteUserDialog user={deleting} onClose={() => setDeleting(null)} onDeleted={() => { setNotice('Аккаунт удалён.'); setDeleting(null); changed(); }} />}
   </div>;
 }

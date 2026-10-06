@@ -101,6 +101,7 @@ function memoryStore(state: MemoryState = { users: new Map(), sessions: new Map(
       },
     },
     auditLog: {
+      findFirst: async () => null,
       create: async ({ data }: { data: Pick<MemoryAudit, 'userId' | 'action' | 'metadata'> }) => {
         const entry = { id: `fixture-audit-${state.nextId++}`, createdAt: new Date(), ...data };
         state.audit.push(structuredClone(entry));

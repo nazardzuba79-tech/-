@@ -1,3 +1,5 @@
+import { contactPolicyRouter } from './api/routes/contactPolicy';
+import { supportRequestRouter } from './api/routes/supportRequest';
 import { AccountDeletionGate } from './services/AccountDeletionGate';
 import { AdminUserDeletionService } from './services/AdminUserDeletionService';
 import 'dotenv/config';
@@ -283,6 +285,8 @@ app.use('/api/v1', withdrawalsRouter(prisma, { tradingWallet: nativeWithdrawable
 app.use('/api/v1', otcCashRouter(prisma, marketDataService));
 app.use('/api/v1', adminWithdrawalsRouter(prisma));
 app.use('/api/v1', authRouter(prisma));
+app.use('/api/v1', contactPolicyRouter(prisma));
+app.use('/api/v1', supportRequestRouter(prisma));
 app.use('/api/v1', candlesRouter(prisma));
 app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));

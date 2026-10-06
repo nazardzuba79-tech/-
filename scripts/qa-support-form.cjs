@@ -1,23 +1,8 @@
 'use strict';
 
-/**
- * Support form → Worker → one email, end to end in a real browser.
- *
- * The production frontend bundle (built with VITE_SUPPORT_ENDPOINT pointing
- * here) posts to the REAL Worker code (workers/support-edge/src/index.js),
- * served by a tiny Node adapter, with the Email Routing binding replaced by a
- * recorder that can accept or refuse. Everything the pages themselves ask the
- * API for is a small read-only fixture; nothing here talks to Render or a DB.
- *
- * Checks: guest send (one POST on a double click, one email to the fixed
- * recipient with Reply-To = the typed address, success text, message
- * cleared), provider refusal (failure text, draft kept, no success), a
- * signed-in user's prefill, layout at 320/360/390/430/1440 (panel and
- * «Отправить» inside the viewport and above the tab bar, no page overflow,
- * scrolling textarea, a keyboard-sized viewport), no request of any kind
- * from the widget while idle, and no secret in the built bundle.
- *
- * Needs: VITE_SUPPORT_ENDPOINT=http://127.0.0.1:8799/v1/support npm run build --prefix frontend
+/** Authenticated Support -> API relay -> real Worker, with recorded email binding.
+ * All APIs are local fixtures; no production account, email or database writes.
+ * Build: npm run build --prefix frontend
  */
 
 const assert = require('node:assert/strict');
@@ -51,11 +36,11 @@ function walk(dir, files = []) {
 
   // ── 0. The bundle: the Worker endpoint is in it, no mail secret is ─────────
   const bundle = walk(dist).filter((f) => /\.(js|html|css)$/.test(f)).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
-  assert.ok(bundle.includes(`127.0.0.1:${WORKER_PORT}/v1/support`), 'bundle was not built with the QA Worker endpoint');
+  assert.ok(bundle.includes('/support/request'), 'authenticated Support endpoint missing');
   // The protected-owner identity in DeleteUserDialog.tsx is intentional.
   // supportForm.test.ts requires its exact source guard and rejects that
   // address elsewhere; this bundle scan still forbids every mail/token marker.
-  for (const secret of ['SMTP_PASS', 'SMTP_USER', 'SUPPORT_ADMIN_EMAIL', 'SUPPORT_FROM_EMAIL', 'CLOUDFLARE_API_TOKEN']) {
+  for (const secret of ['SMTP_PASS', 'SMTP_USER', 'SUPPORT_ADMIN_EMAIL', 'SUPPORT_FROM_EMAIL', 'CLOUDFLARE_API_TOKEN', 'SUPPORT_RELAY_KEY']) {
     assert.ok(!bundle.includes(secret), `bundle contains ${secret}`);
   }
   assert.ok(!/\/support\/conversations/.test(bundle), 'bundle still calls the old chat API');
@@ -68,6 +53,7 @@ function walk(dir, files = []) {
   let appOrigin = '';
   const workerEnv = () => ({
     SUPPORT_ADMIN_EMAIL: RECIPIENT,
+    SUPPORT_RELAY_KEY: 'fixture-relay-key',
     SUPPORT_FROM_EMAIL: 'support-form@voltextech.net',
     ALLOWED_ORIGINS: appOrigin,
     SUPPORT_EMAIL: {
@@ -97,8 +83,16 @@ function walk(dir, files = []) {
   // ── The site, with a read-only API fixture ────────────────────────────────
   const apiLog = [];
   const blockedOrigins = new Set();
-  const app = express();
+  const app = express(); app.use(express.json());
   app.use('/api/v1', (req, _res, next) => { apiLog.push({ method: req.method, path: req.path, at: Date.now() }); next(); });
+  app.post('/api/v1/support/request', async (req, res) => {
+    if (req.headers.authorization !== 'Bearer ' + MEMBER_TOKEN) return res.status(401).json({ok:false});
+    const upstream = await fetch('http://127.0.0.1:' + WORKER_PORT + '/v1/support', {
+      method:'POST', headers:{'Content-Type':'application/json', Origin:appOrigin, 'X-Voltex-Support-Key':'fixture-relay-key', 'X-Voltex-Support-User':'qa-member'},
+      body:JSON.stringify({...req.body, email:'member@example.com'})
+    });
+    res.status(upstream.status).json(await upstream.json());
+  });
   app.get('/api/v1/me', (req, res) => {
     if ((req.headers.authorization || '') !== `Bearer ${MEMBER_TOKEN}`) return res.status(401).json({ error: 'Missing bearer token' });
     return res.json({ id: 'qa-member', email: 'member@example.com', displayName: 'QA Member', isAdmin: false, kycStatus: 'NOT_STARTED' });
@@ -136,7 +130,7 @@ function walk(dir, files = []) {
     const panelOf = (page) => page.locator('.support-panel');
     async function fill(panel, v) {
       if (v.name !== undefined) await panel.getByLabel('Имя').fill(v.name);
-      if (v.email !== undefined) await panel.getByLabel('Email').fill(v.email);
+      await panel.page().waitForFunction(() => document.querySelector('.support-panel input[type="email"]')?.value === 'member@example.com');
       if (v.subject) await panel.locator(`input[name="support-subject"][value="${v.subject}"]`).check();
       if (v.message !== undefined) await panel.getByLabel('Сообщение').fill(v.message);
     }
@@ -192,10 +186,20 @@ function walk(dir, files = []) {
       await context.close();
     }
 
-    // ── 1. Guest, desktop: one click → one POST → one email ─────────────────
+    // Guests cannot open Support or relay a direct POST.
+    {
+      const {context,page}=await openPage(1440,null);
+      await page.goto(appOrigin+'/',{waitUntil:'networkidle'});
+      assert.equal(await page.locator('.support-launcher').count(),0);
+      assert.equal((await page.request.post(appOrigin+'/api/v1/support/request',{data:{message:'guest'}})).status(),401);
+      assert.equal(mail.sent.length,0);
+      await page.screenshot({path:path.join(out,'guest-home-1440.png')});
+      await context.close(); step('guest homepage hides Support; direct POST is 401 with no mail');
+    }
+    // Member desktop: one click -> one authenticated POST -> one recorded email.
     {
       workerModule.resetMemoryLimiter();
-      const { context, page, errors } = await openPage(1440, null);
+      const { context, page, errors } = await openPage(1440, MEMBER_TOKEN);
       await page.goto(`${appOrigin}/legal/terms`, { waitUntil: 'domcontentloaded' });
       await page.locator('.support-launcher').waitFor();
       const beforeOpen = workerLog.length;
@@ -204,7 +208,7 @@ function walk(dir, files = []) {
       await panel.waitFor();
       assert.equal(workerLog.length, beforeOpen, 'opening the form must not call anything');
       await panel.getByRole('button', { name: 'Специалист', exact: true }).click();
-      await fill(panel, { name: 'VOLTEX Support QA', email: 'qa-support@example.invalid', subject: 'TECHNICAL', message: 'Production support form test.\nNo action required.' });
+      await fill(panel, { name: 'VOLTEX Support QA', email: 'member@example.com', subject: 'TECHNICAL', message: 'Production support form test.\nNo action required.' });
       const before = supportPosts();
       await panel.getByRole('button', { name: 'Отправить специалисту', exact: true }).dblclick();
       await panel.getByText('Обращение отправлено').waitFor({ timeout: 8000 });
@@ -214,15 +218,15 @@ function walk(dir, files = []) {
       assert.equal(mail.sent.length, 1);
       const m = mail.sent[0];
       assert.equal(m.to, RECIPIENT);
-      assert.equal(m.replyTo, 'qa-support@example.invalid');
+      assert.equal(m.replyTo, 'member@example.com');
       assert.equal(m.html, undefined);
-      for (const part of ['VOLTEX Support', 'Имя:\nVOLTEX Support QA', 'Email:\nqa-support@example.invalid', 'Тема:\nТехническая проблема', 'Сообщение:\nProduction support form test.\nNo action required.', 'Дата:']) {
+      for (const part of ['VOLTEX Support', 'Имя:\nVOLTEX Support QA', 'Email:\nmember@example.com', 'Тема:\nТехническая проблема', 'Сообщение:\nProduction support form test.\nNo action required.', 'Дата:']) {
         assert.ok(m.text.includes(part), `mail body lacks ${JSON.stringify(part)}`);
       }
       assert.equal(await panel.getByLabel('Сообщение').inputValue(), '', 'the message must be cleared after success');
-      assert.equal(await panel.getByLabel('Email').inputValue(), 'qa-support@example.invalid');
-      await page.screenshot({ path: path.join(out, 'guest-sent-1440.png') });
-      step('guest: one POST on a double click, one email to the fixed recipient, Reply-To = typed address, success text, message cleared', { subject: m.subject });
+      assert.equal(await panel.getByLabel('Email').inputValue(), 'member@example.com');
+      await page.screenshot({ path: path.join(out, 'member-sent-1440.png') });
+      step('member: one POST on a double click, one email to the fixed recipient, Reply-To = account address, success text, message cleared', { subject: m.subject });
 
       // ── 2. Provider refuses: failure text, draft kept, never success ──────
       mail.refuse = true;
@@ -233,7 +237,7 @@ function walk(dir, files = []) {
       assert.equal(await panel.getByLabel('Сообщение').inputValue(), 'Second question.');
       assert.equal(mail.sent.length, 1);
       mail.refuse = false;
-      await page.screenshot({ path: path.join(out, 'guest-failed-1440.png') });
+      await page.screenshot({ path: path.join(out, 'member-failed-1440.png') });
       step('provider refusal: failure text, draft kept, no success shown');
 
       // ── 5. Idle: nothing from the widget, panel open, 25 s ────────────────
@@ -268,7 +272,7 @@ function walk(dir, files = []) {
       await panel.getByText('Обращение отправлено').waitFor({ timeout: 8000 });
       assert.equal(mail.sent.at(-1).replyTo, 'member@example.com');
       await page.screenshot({ path: path.join(out, 'member-prefilled-390.png') });
-      step('signed-in user: name and email prefilled, visible and editable; sent with Reply-To = profile email');
+      step('signed-in user: name and email prefilled, email read-only; sent with Reply-To = profile email');
       assert.deepEqual(errors, []);
       await context.close();
     }
@@ -332,7 +336,7 @@ function walk(dir, files = []) {
     step('layout: FAQ/form at 320/360/390/430/1366/1440/1920; keyboard-sized mobile viewport; textarea scrolls; no overflow');
 
     report.totals = { workerPosts: supportPosts(), emails: mail.sent.length, supportApiRequests: apiLog.filter((r) => /support/.test(r.path)).length };
-    assert.equal(report.totals.supportApiRequests, 0, 'something still called a /support API route');
+    assert.equal(report.totals.supportApiRequests, report.totals.workerPosts + 1, 'one authenticated relay per POST plus rejected guest');
     report.status = 'PASS';
   } catch (error) {
     report.status = 'FAIL';

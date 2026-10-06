@@ -5,7 +5,7 @@
 // validated address the user typed. Nothing is stored, nothing is polled,
 // no timers are armed; Render and Neon are never contacted.
 
-export const VERSION = "support-form-v1";
+export const VERSION = "support-form-v3-authenticated";
 export const MAX_BODY_BYTES = 16 * 1024;
 export const LIMITS = { name: 100, email: 254, message: 2000 };
 export const SUBJECTS = {
@@ -163,6 +163,18 @@ async function readBody(request) {
   }
 }
 
+// Only the authenticated API relay may deliver mail. Browser callers cannot
+// supply this private key; the API derives the sender email from the session.
+async function validRelay(request, env) {
+  const supplied = request.headers.get('X-Voltex-Support-Key');
+  if (!env.SUPPORT_RELAY_KEY || !supplied || supplied.length > 128) return false;
+  const hash = async value => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)));
+  const [a, b] = await Promise.all([hash(supplied), hash(env.SUPPORT_RELAY_KEY)]);
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 export async function handleSupport(request, env, now = Date.now()) {
   const origin = request.headers.get("origin") || "";
   const allowed = origin !== "" && allowedOrigins(env).includes(origin);
@@ -181,7 +193,9 @@ export async function handleSupport(request, env, now = Date.now()) {
     return json({ ok: false, error: "not_configured" }, 503, cors);
   }
 
-  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  if (!await validRelay(request, env)) return json({ ok: false, error: 'unauthorized' }, 401, cors);
+  // The signed-in user id is supplied only by the trusted API relay.
+  const ip = request.headers.get('X-Voltex-Support-User') || request.headers.get("cf-connecting-ip") || "unknown";
   if (await limited(env, ip, now)) {
     log({ result: "rate_limited" });
     return json({ ok: false, error: "rate_limited" }, 429, cors);
