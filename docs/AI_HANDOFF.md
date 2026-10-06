@@ -5692,3 +5692,10 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Removed only the final period from the Russian auth headline at the owner's request, and updated its existing expectation.
 - Preserved «Копируйте сделки лучших трейдеров мира», approved photo, layout, supporting copy and authentication behavior.
 - Validation and release evidence are recorded in the PR. No unresolved design differences.
+
+### 2026-10-06 — Codex — Admin Users delete button spacing
+- Code commit: 92e50e196405433ab17e9ab4b295716904069425.
+- Changed frontend/src/pages/admin/adminPracticality.css: desktop Delete is right-aligned with at least 48px separation from Hide; mobile action layout stays unchanged.
+- Preserved #450 hidden-account behavior, handlers, deletion confirmation, backend, data, and all financial logic.
+- Verified frontend build (existing large-chunk warning), fixture-only built-page browser QA at 1920/1440/1366/390, zero page errors or overflow. Screenshots in outputs/admin-delete-spacing-20261006 outside this checkout.
+- Narrow follow-up based on current main d5042587; PR review/merge and frontend publication remain pending. No production action was performed for this CSS follow-up.
