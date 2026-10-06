@@ -38,6 +38,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y nginx
+          sudo chown -R "$(id -u):$(id -g)" /var/log/nginx /var/lib/nginx
           npm install --prefix /tmp/release-auth --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/release-auth/node_modules/playwright/cli.js install --with-deps chromium
       - name: Run existing security auth routing suite
