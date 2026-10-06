@@ -16,7 +16,26 @@ import speakeasy from 'speakeasy';
 import { PrismaClient } from '@prisma/client';
 import { authRouter } from '../auth';
 import { accountRouter } from '../account';
+import { notifyUserRegistered } from '../../../services/TelegramNotifications';
 import legacyFixtures from '../../../services/__tests__/fixtures/bcrypt-5.1.1-compatibility.json';
+
+// Registration deliberately schedules delivery without awaiting it in production.
+// This suite tests real bcrypt/JWT/TOTP and routes, not the external delivery service.
+// Keep that boundary explicit: otherwise a network-disabled Alpine run leaves the
+// seven-second notification request alive after Jest has completed the test file.
+jest.mock('../../../services/TelegramNotifications', () => ({
+  notifyUserRegistered: jest.fn().mockResolvedValue(undefined),
+}));
+const notification = jest.mocked(notifyUserRegistered);
+let externalFetch: jest.SpyInstance;
+beforeEach(() => {
+  notification.mockClear();
+  externalFetch = jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('External HTTP forbidden in auth regression'));
+});
+afterEach(() => {
+  try { expect(externalFetch).not.toHaveBeenCalled(); }
+  finally { externalFetch.mockRestore(); }
+});
 
 jest.setTimeout(30_000);
 
@@ -144,6 +163,20 @@ function login(app: ReturnType<typeof buildApp>, suppliedPassword = password, su
 }
 
 describe('bcrypt real-route auth/security regression', () => {
+  it('isolates scheduled registration delivery without disabling the notification event', async () => {
+    const store = memoryStore();
+    const app = buildApp(store);
+    const token = await register(app);
+    const user = store.state.users.get(claims(token).sub!)!;
+    expect(notification).toHaveBeenCalledTimes(1);
+    expect(notification).toHaveBeenCalledWith({ id: user.id, email, role: 'USER', createdAt: user.createdAt });
+    await expect(notification.mock.results[0].value).resolves.toBeUndefined();
+    expect(externalFetch).not.toHaveBeenCalled();
+    const duplicate = await request(app).post('/api/v1/auth/register').send({ email, password });
+    expect(duplicate.status).toBe(400);
+    expect(notification).toHaveBeenCalledTimes(1);
+  });
+
   it('registers at unchanged cost 12 and issues a 12-hour persisted session accepted by protected /me', async () => {
     const store = memoryStore();
     const app = buildApp(store);

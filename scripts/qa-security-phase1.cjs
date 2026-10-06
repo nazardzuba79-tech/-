@@ -32,6 +32,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const { requireAuth } = require('../dist/api/middleware/auth');
+const { requireAdmin } = require('../dist/api/middleware/admin');
 const { copyPerformanceRouter } = require('../dist/api/routes/copyPerformance');
 const { CopyPerformanceService } = require('../dist/services/copyTrading/CopyPerformanceService');
 const futures = require('../dist/config/futuresConfig');
@@ -68,7 +69,7 @@ function localFixtures() {
   function account(admin = false) {
     const id = 'isolated-routing-user-' + users.size, sid = 'isolated-routing-session-' + users.size;
     users.set(id, { id, email: 'routing-fixture@example.invalid', displayName: 'Isolated Routing QA',
-      avatarUrl: null, isAdmin: admin, kycStatus: 'NOT_STARTED', twoFactorEnabled: false,
+      avatarUrl: null, isAdmin: admin, role: admin ? 'ADMIN' : 'USER', kycStatus: 'NOT_STARTED', twoFactorEnabled: false,
       createdAt: '2025-01-01T00:00:00Z' });
     sessions.set(sid, { id: sid, userId: id, revokedAt: null, lastSeenAt: new Date() });
     return { id, token: jwt.sign({ sub: id, sid }, process.env.JWT_SECRET, { expiresIn: '1h' }) };
@@ -108,6 +109,7 @@ function localFixtures() {
     res.json({ token: fixture.account().token });
   });
   const auth = requireAuth(fixture.db);
+  const admin = requireAdmin(fixture.db);
   app.get('/api/v1/me', auth, (req, res) => res.json(fixture.users.get(req.userId)));
   app.use('/api/v1', copyPerformanceRouter(fixture.db,
     new CopyPerformanceService(fixture.db, () => new Date('2026-09-06T12:00:00Z'))));
@@ -135,8 +137,29 @@ function localFixtures() {
     '/api/v1/futures/positions/history', '/api/v1/account/security-log', '/api/v1/me/sessions', '/api/v1/products'],
   auth, (_req, res) => res.json([]));
   app.get(['/api/v1/admin/users', '/api/v1/admin/deposits', '/api/v1/admin/withdrawals',
-    '/api/v1/admin/kyc', '/api/v1/admin/clients'], auth, (req, res) => fixture.users.get(req.userId).isAdmin
-    ? res.json([]) : res.status(403).json({ error: 'Forbidden by local role fixture' }));
+    '/api/v1/admin/kyc', '/api/v1/admin/clients'], auth, admin, (_req, res) => res.json([]));
+  app.get('/api/v1/admin/users/page', auth, admin, (_req, res) => res.json({
+    items: [], total: 0, page: 1, pageSize: 20, totalPages: 1, asOf: new Date().toISOString(),
+  }));
+  app.get('/api/v1/admin/work-summary', auth, admin, (_req, res) => res.json({
+    asOf: new Date().toISOString(), alerts: { depositId: null, withdrawalId: null, kycId: null }, widgets: {},
+  }));
+  app.get('/api/v1/admin/deposit-address-copies', auth, admin, (_req, res) => res.json({ asOf: new Date().toISOString(), items: [], nextCursor: null }));
+  app.get('/api/v1/admin/spam-emails', auth, admin, (_req, res) => res.json({ entries: [] }));
+  // A normal routing-test account has no native simulation entitlement. Match
+  // the API's explicit denial, never synthesize a successful empty native wallet.
+  app.get(['/api/v1/private-trading/access', '/api/v1/private-trading/native/wallet'], auth,
+    (_req, res) => res.status(403).json({ code: 'private_access_denied', error: 'Режим недоступен' }));
+  app.get('/api/v1/market/display', (_req, res) => res.json({ version: 1, type: 'snapshot', epoch: 'routing-qa', revision: 0, status: 'unavailable', rows: [] }));
+  app.get('/api/v1/market/display/spot-snapshot', (_req, res) => res.json({
+    tickers: { available: false, source: 'isolated-unavailable', value: [] }, overview: { available: false }, sentiment: { available: false },
+  }));
+  app.get('/api/v1/market/display/spot-book/:symbol', (_req, res) => res.json({ available: false, bids: [], asks: [], stale: true }));
+  app.get('/api/v1/market/test-assets', (_req, res) => res.json({ serverTime: Date.now(), assets: [] }));
+  app.get('/api/v1/market/assets/icons', (_req, res) => res.json({ icons: {} }));
+  app.get('/api/v1/market/universe', (_req, res) => res.json({ available: false, value: { instruments: [] } }));
+  app.get('/api/v1/market/derivatives/:asset', (_req, res) => res.json({ available: false, value: null }));
+  app.get('/api/v1/market/futures/candles/:symbol', (req, res) => res.json({ retCode: 0, result: { category: 'linear', symbol: req.params.symbol, list: [] } }));
   app.get('/api/v1/market/featured-trader', (_req, res) => res.json({ avatarUrl: null }));
   app.get('/api/v1/market/global', (_req, res) => res.json({ global: null, fearGreed: null }));
   app.get('/api/v1/market/external/rankings', (_req, res) => res.json({ source: 'isolated-unavailable', rankings: [] }));
@@ -179,12 +202,30 @@ function localFixtures() {
     installedRouter: JSON.parse(fs.readFileSync(path.join(root, 'frontend/node_modules/react-router/package.json'))).version,
     auth: 'Local response fixture; actual built UI and actual JWT/session middleware for protected reads',
     market: 'Explicitly empty/unavailable; no external HTTP or WebSocket connection permitted',
-    routes: [], flows: [], attacks: [], browserErrors: [], consoleErrors: [], blockedResources: [],
+    routes: [], flows: [], attacks: [], accessChecks: [], expectedDenials: [], browserErrors: [], consoleErrors: [], blockedResources: [],
     blockedWebSockets: [], externalNavigationAttempts: [], requests, unexpectedApi };
   let browser;
   const writeReport = () => fs.writeFileSync(path.join(output, 'browser-result.json'), JSON.stringify(report, null, 2));
   try {
     assert.equal(report.installedRouterDom, '7.18.3'); assert.equal(report.installedRouter, '7.18.3');
+    // Regression: the new admin fixture routes use the real role/session guards.
+    // Check permission revocation too, rather than trusting an isAdmin UI flag.
+    const member = fixture.account(), administrator = fixture.account(true);
+    const protectedPaths = ['/api/v1/me', '/api/v1/admin/users/page', '/api/v1/admin/work-summary',
+      '/api/v1/admin/deposit-address-copies', '/api/v1/admin/spam-emails'];
+    for (const endpoint of protectedPaths) {
+      for (const [role, token, expected] of [['guest', null, 401], ['member', member.token, endpoint.includes('/admin/') ? 403 : 200], ['admin', administrator.token, 200]]) {
+        const response = await fetch(apiOrigin + endpoint, { headers: token ? { authorization: 'Bearer ' + token } : {} });
+        assert.equal(response.status, expected, role + ' ' + endpoint);
+        report.accessChecks.push({ role, endpoint, status: response.status });
+      }
+    }
+    fixture.users.get(administrator.id).role = 'USER';
+    assert.equal((await fetch(apiOrigin + '/api/v1/admin/users/page', { headers: { authorization: 'Bearer ' + administrator.token } })).status, 403);
+    const session = [...fixture.sessions.values()].find(s => s.userId === member.id);
+    session.revokedAt = new Date();
+    assert.equal((await fetch(apiOrigin + '/api/v1/me', { headers: { authorization: 'Bearer ' + member.token } })).status, 401);
+    report.accessChecks.push({ role: 'demoted-admin', status: 403 }, { role: 'revoked-session', status: 401 });
     for (let attempt = 0; attempt < 100; attempt++) {
       try { if ((await fetch(origin, { signal: AbortSignal.timeout(1000) })).ok) break; } catch {}
       if (attempt === 99) throw new Error('Local nginx did not start');
@@ -227,6 +268,9 @@ function localFixtures() {
         // Only failed resources explicitly blocked by this context are excluded
         // from application errors; their URLs remain in the separate evidence.
         if (entry.text.includes('net::ERR_BLOCKED_BY_CLIENT') && report.blockedResources.some(item => entry.url.startsWith(item.url))) return;
+        if (entry.text.includes('403') && ['/api/v1/private-trading/access', '/api/v1/private-trading/native/wallet'].some(endpoint => entry.url === origin + endpoint)) {
+          report.expectedDenials.push(entry); return;
+        }
         report.consoleErrors.push(entry);
       });
       return { page, context };

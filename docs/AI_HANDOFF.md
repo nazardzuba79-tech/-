@@ -1,5 +1,13 @@
 # AI Handoff Log
 
+## Codex — 2026-10-06 — Release QA fixture repair (review only)
+- Base: exact main ca69d47eaccccf18a1bd7e45e34452fcd60e9e91. Source commit: the commit containing this entry; candidate evidence records its exact SHA outside Git.
+- Reproduced both failing release suites on unchanged main (GitHub runs 37506530205 and 37506530337, attempt 2). Security: all 40 assertions passed but real registration notification delivery logged after Jest completion. Auth routing: 14 current read endpoints were absent from the fixture.
+- Isolated only notification delivery in bcrypt route tests, with a regression asserting the event still occurs and no external fetch is attempted. Real bcrypt/JWT/TOTP/routes and production notification behavior remain unchanged.
+- Updated explicit empty auth fixture contracts; use the real admin-role middleware and test anonymous/member/admin access, immediate role removal and session revocation. Native simulation access remains denied for ordinary fixture accounts. Unknown API requests still fail.
+- Local security/service tests: 55/55 PASS. Full exact-candidate browser/CI rerun is recorded in output/release-qa/report.html; this entry does not claim those pending checks passed.
+- Preserved Admin Users menus, trading/financial logic, NRX/AITH history, application routes and all unrelated work. No merge, deploy or production writes.
+
 ## 2026-09-25 — Codex — remaining hidden-tab Render polling
 
 - Publication follow-up: owner explicitly authorized public GitHub publication, merge after green CI and automatic deployment. PR #257 initially exposed an expected order-form fingerprint mismatch and a wall-clock-dependent historical TEST fixture missing the 08:00 UTC funding event. Updated only the audited hash and test fixture: complete zero-rate boundary observations, fixed non-boundary/boundary advance cases, and isolated 08:00/16:00 fixture checks. Local form/fingerprint checks 80 PASS plus fixture checks 2 PASS; real PostgreSQL scenarios require CI. Runtime backend remains byte-unchanged. Published initial commit `927070fe56f6a553c5d9eeb401fffad3c7916880` is tree-identical to local `56ba9014`.
