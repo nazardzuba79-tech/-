@@ -139,7 +139,7 @@ function authFixture() {
   const reads=[],writes=[];
   const db={session:{async findUnique(args){reads.push(args);return session},async update(args){writes.push(args);return {id:'session-fixture'}}}};
   const {requireAuth}=compile('src/api/middleware/auth.ts',{
-    require(name){if(name==='jsonwebtoken')return {verify(){return {sub:'user-fixture',sid:'session-fixture'}}};throw Error(name)},
+    require(name){if(name==='../../services/ContactEmailPolicy')return {isBlockedContactEmail:async()=>false,isRevokedContactToken:async()=>false};if(name==='jsonwebtoken')return {verify(){return {sub:'user-fixture',sid:'session-fixture'}}};throw Error(name)},
     process:{env:{JWT_SECRET:'local-test-placeholder-not-a-production-secret'}},
   });
   return { reads,writes,db, setSession(next){session=next}, async call(){
@@ -147,9 +147,9 @@ function authFixture() {
     let accepted=false;await requireAuth(db)(req,res,()=>{accepted=true});return {req,res,accepted};
   }};
 }
-test('session authorization transfers only four used fields, and rechecks on every request', async()=>{
+test('session authorization transfers only identity, session validity and blacklist email, and rechecks on every request', async()=>{
   const a=authFixture();await a.call();await a.call();assert.equal(a.reads.length,2);
-  assert.deepEqual(JSON.parse(JSON.stringify(a.reads[0])),{where:{id:'session-fixture'},select:{id:true,userId:true,revokedAt:true,lastSeenAt:true}});
+  assert.deepEqual(JSON.parse(JSON.stringify(a.reads[0])),{where:{id:'session-fixture'},select:{id:true,userId:true,revokedAt:true,lastSeenAt:true,user:{select:{email:true}}}});
   assert.equal(a.writes.length,0);
 });
 test('revocation, deletion and mismatched session owner remain immediately rejected',async()=>{
