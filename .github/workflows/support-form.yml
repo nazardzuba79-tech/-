@@ -114,6 +114,7 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
+      DIRECT_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
       EMAIL_POLICY_TEST_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
     steps:
       - uses: actions/checkout@v4
