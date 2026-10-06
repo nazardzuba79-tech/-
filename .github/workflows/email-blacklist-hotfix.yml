@@ -1,0 +1,42 @@
+name: Email blacklist production-base QA
+on:
+  pull_request:
+    branches: ['prod/hetzner-live-2b7d2ea9-20261006']
+  push:
+    branches: ['codex/email-spam-block-hotfix-20261006']
+permissions:
+  contents: read
+jobs:
+  blacklist-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: voltex_email_policy_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
+      DIRECT_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
+      EMAIL_POLICY_TEST_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma db push --skip-generate
+      - run: npm run build
+      - run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/api/routes/__tests__/contactPolicy.pg.test.ts
+          src/api/routes/__tests__/contactPolicy.test.ts
+          src/api/routes/__tests__/auth.test.ts
+          src/api/middleware/__tests__/auth.test.ts
+          src/api/routes/__tests__/bcryptAuthRegression.test.ts
+      - run: node workers/support-edge/test.mjs

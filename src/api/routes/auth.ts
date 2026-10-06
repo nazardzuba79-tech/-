@@ -1,3 +1,4 @@
+import { isBlockedContactEmail } from '../../services/ContactEmailPolicy';
 import { asyncRoute } from '../asyncRoute';
 import { Router, Request, RequestHandler } from 'express';
 import { z } from 'zod';
@@ -170,6 +171,11 @@ export function authRouter(
       return res.status(403).json({ error: 'Registration is currently closed' });
     }
 
+    // Check before payload validation so operators can verify the policy using
+    // email-only probes that can never create an account or session.
+    if (await isBlockedContactEmail(prisma, req.body?.email)) {
+      return res.status(403).json({ error: 'Registration failed' });
+    }
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { email, password, ref } = parsed.data;
@@ -242,6 +248,9 @@ export function authRouter(
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    if (await isBlockedContactEmail(prisma, user.email)) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
     if (user.blockedAt) {
       return res.status(403).json({
         error: user.blockedReason ? `Аккаунт заблокирован: ${user.blockedReason}` : 'Аккаунт заблокирован',
@@ -282,6 +291,9 @@ export function authRouter(
       return res.status(401).json({ error: 'Login session expired, please sign in again' });
     }
 
+    if (await isBlockedContactEmail(prisma, user.email)) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
     if (user.blockedAt) {
       return res.status(403).json({
         error: user.blockedReason ? `Аккаунт заблокирован: ${user.blockedReason}` : 'Аккаунт заблокирован',

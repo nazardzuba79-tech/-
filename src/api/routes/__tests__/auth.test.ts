@@ -2,6 +2,7 @@ process.env.JWT_SECRET = 'test-secret-at-least-this-long';
 process.env.REGISTRATION_OPEN = 'true';
 process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
 
+import { createHash } from 'crypto';
 import request from 'supertest';
 import express from 'express';
 import bcrypt from 'bcrypt';
@@ -20,7 +21,7 @@ function makePrismaMock(overrides: Partial<any> = {}) {
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       ...overrides.user,
     },
-    auditLog: { create: jest.fn() },
+    auditLog: { create: jest.fn(), findFirst: jest.fn().mockResolvedValue(null) },
     session: {
       create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'session-1', ...data })),
       ...overrides.session,
@@ -65,6 +66,43 @@ describe('auth routes', () => {
   });
   afterAll(() => {
     process.env = OLD_ENV;
+  });
+
+  it.each(['blocked@example.invalid', ' BLOCKED@EXAMPLE.INVALID ', 'second@example.invalid'])('denies configured email %s before any account or session access', async (email) => {
+    const blockedHashes = ['blocked@example.invalid', 'second@example.invalid'].map(v => createHash('sha256').update(v).digest('hex'));
+    const prisma = makePrismaMock();
+    const app = buildApp(prisma);
+    prisma.auditLog.findFirst.mockImplementation(async ({ where }: any) => blockedHashes.includes(where.metadata.equals) ? { action: 'CONTACT_EMAIL_BLOCKED' } : null);
+    // An email-only request also permits safe production verification with no password.
+    for (const body of [{ email }, { email, password: 'Correcthorsebattery' }]) {
+      const res = await request(app).post('/api/v1/auth/register').send(body);
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ error: 'Registration failed' });
+    }
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.session.create).not.toHaveBeenCalled();
+    const normal = await request(app).post('/api/v1/auth/register').send({ email: 'other@example.invalid', password: 'Correcthorsebattery' });
+    expect(normal.status).toBe(201);
+  });
+
+
+  it('blocks correct-password login and a pending 2FA challenge, then permits new login after unspam', async () => {
+    const password='Correcthorsebattery';
+    const secret=speakeasy.generateSecret({length:20}).base32;
+    const user={id:'user-1',email:'blocked@example.invalid',passwordHash:await bcrypt.hash(password,4),role:'USER',twoFactorEnabled:false,twoFactorSecret:secret};
+    const prisma=makePrismaMock({user:{findUnique:jest.fn().mockResolvedValue(user)}});
+    prisma.auditLog.findFirst.mockResolvedValue({action:'CONTACT_EMAIL_BLOCKED'});
+    const app=buildApp(prisma);
+    expect((await request(app).post('/api/v1/auth/login').send({email:user.email,password})).status).toBe(403);
+    user.twoFactorEnabled=true;
+    const pendingToken=jwt.sign({sub:user.id,purpose:'pending_2fa'},process.env.JWT_SECRET!);
+    expect((await request(app).post('/api/v1/auth/login/2fa').send({pendingToken,code:speakeasy.totp({secret,encoding:'base32'})})).status).toBe(403);
+    expect(prisma.session.create).not.toHaveBeenCalled();
+    prisma.auditLog.findFirst.mockResolvedValue({action:'CONTACT_EMAIL_UNBLOCKED'});
+    user.twoFactorEnabled=false;
+    expect((await request(app).post('/api/v1/auth/login').send({email:user.email,password})).status).toBe(200);
+    expect(prisma.session.create).toHaveBeenCalledTimes(1);
   });
 
   it('registers a new user and returns a real session token straight away', async () => {

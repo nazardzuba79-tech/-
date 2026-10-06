@@ -738,7 +738,7 @@ test('the portfolio service values only the requested account balances and leave
 
 test('authenticated wallet access rechecks session revocation on each read and rejects a pending login', async () => {
   const verify = jest.fn((): any => ({ sub: 'fixture-owner', sid: 'fixture-session' }));
-  const { requireAuth } = evaluate('src/api/middleware/auth.ts', { jsonwebtoken: { default: { verify } } });
+  const { requireAuth } = evaluate('src/api/middleware/auth.ts', { jsonwebtoken: { default: { verify } }, '../../services/ContactEmailPolicy': { isBlockedContactEmail: async () => false, isRevokedContactToken: async () => false } });
   const findUnique = jest.fn(async (): Promise<any> => ({ id: 'fixture-session', userId: 'fixture-owner', revokedAt: null, lastSeenAt: new Date() }));
   const update = jest.fn();
   const gate = requireAuth({ session: { findUnique, update } });

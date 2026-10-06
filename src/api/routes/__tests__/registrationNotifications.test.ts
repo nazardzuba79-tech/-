@@ -17,7 +17,7 @@ function setup(role?: string) {
       updateMany: jest.fn(),
     },
     session: { create: jest.fn().mockResolvedValue({ id: 'synthetic-session' }) },
-    auditLog: { create: jest.fn(), findMany: jest.fn() },
+    auditLog: { findFirst: jest.fn(async () => null), create: jest.fn(), findMany: jest.fn() },
   };
   const router = authRouter(prisma, {
     limiters: { register: passThrough, login: passThrough },
