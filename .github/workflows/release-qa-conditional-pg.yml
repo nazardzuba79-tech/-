@@ -1,0 +1,73 @@
+name: Release QA previously conditional PostgreSQL suites
+on:
+  push:
+    branches: [codex/release-qa-validation-20261006]
+permissions:
+  contents: read
+concurrency:
+  group: release-qa-validation-conditional-pg
+  cancel-in-progress: false
+jobs:
+  conditional-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 9866714f1541bb878eb1aa01176d6ac97059b177
+          persist-credentials: false
+      - name: Verify exact candidate
+        run: test "$(git rev-parse HEAD)" = 9866714f1541bb878eb1aa01176d6ac97059b177
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Create and migrate only disposable databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p output/release-qa-conditional
+          for db in voltex_admin_password_test voltex_email_policy_test voltex_kyc_test voltex_book_lock_test; do
+            docker exec '${{ job.services.postgres.id }}' createdb -U postgres "$db"
+            url="postgresql://postgres@127.0.0.1:5432/$db"
+            echo "::add-mask::$url"
+            DATABASE_URL="$url" DIRECT_URL="$url" npx prisma migrate deploy > "output/release-qa-conditional/$db-migrate.log" 2>&1
+            case "$db" in
+              voltex_admin_password_test) key=ADMIN_PASSWORD_TEST_URL;;
+              voltex_email_policy_test) key=EMAIL_POLICY_TEST_URL;;
+              voltex_kyc_test) key=KYC_TEST_DATABASE_URL;;
+              voltex_book_lock_test) key=VOLTEX_PG_TEST_URL;;
+            esac
+            echo "$key=$url" >> "$GITHUB_ENV"
+          done
+      - name: Run all previously skipped existing tests
+        run: >-
+          node node_modules/jest/bin/jest.js --runInBand
+          --json --outputFile=output/release-qa-conditional/results.json
+          --runTestsByPath src/api/routes/__tests__/adminPasswordVault.pg.test.ts
+          src/api/routes/__tests__/contactPolicy.pg.test.ts
+          src/api/routes/__tests__/kycEdgePostgres.test.ts
+          src/futures/__tests__/futuresBookLock.pg.test.ts
+      - name: Delete disposable databases even after failure
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          for db in voltex_admin_password_test voltex_email_policy_test voltex_kyc_test voltex_book_lock_test; do
+            docker exec '${{ job.services.postgres.id }}' dropdb -U postgres --if-exists --force "$db"
+          done
+          mkdir -p output/release-qa-conditional
+          echo 'All four disposable databases deleted; service container removed by runner teardown.' > output/release-qa-conditional/cleanup.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-qa-conditional-postgres
+          path: output/release-qa-conditional/
