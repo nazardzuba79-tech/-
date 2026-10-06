@@ -69,6 +69,8 @@
 .admin-user-actions>div button { display: block; width: 100%; text-align: left; padding: 8px; background: transparent; border: 0; }
 .admin-open-button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: var(--panel); white-space: nowrap; }
 .admin-user-mobile { gap: 8px !important; margin-bottom: 10px; overflow-wrap: anywhere; }
+.admin-user-mobile .admin-user-actions { flex-wrap: wrap; gap: 8px; }
+.admin-user-mobile .admin-user-actions button { margin: 0; flex-shrink: 0; }
 .admin-user-mobile dl,.admin-key-values { display: grid; grid-template-columns: minmax(110px,1fr) minmax(0,2fr); gap: 9px 16px; margin: 8px 0; }
 .admin-user-mobile dt,.admin-key-values dt { color: var(--text-secondary); }
 .admin-user-mobile dd,.admin-key-values dd { margin: 0; overflow-wrap: anywhere; }

@@ -1,3 +1,4 @@
+jest.mock('../api', () => ({ getToken: jest.fn(() => 'fixture-session') }));
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { createRequire } from 'module';
@@ -123,6 +124,7 @@ interface Harness {
 }
 
 function mountWidget(opts: { token?: string | null; response?: { status: number; body: unknown }; me?: object } = {}): Harness {
+  require('../api').getToken.mockReturnValue(opts.token === undefined ? 'fixture-session' : opts.token);
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',
     { url: 'https://voltextech.net/markets', pretendToBeVisual: true });
   const g = global as any;

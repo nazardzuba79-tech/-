@@ -139,7 +139,7 @@ async function main(){
  await context.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());
  await context.routeWebSocket('**/*',s=>s.close());
  const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));
- for(const width of [1920,1440,1366,390]){
+ for(const width of [1920,1440,1366,390,360,320]){
   await page.setViewportSize({width,height:width<500?844:1000});
   await page.goto(origin+'/admin/users',{waitUntil:'networkidle'});
   const row=page.locator(width<500?'[data-user-card]':'[data-user-row]').first();
@@ -184,7 +184,7 @@ async function main(){
  }
  assert.deepEqual(report.errors,[]);
  assert.ok(state.writes.every(w=>/spam-emails/.test(w.path)),JSON.stringify(state.writes));
- report.status='PASS';console.log('ADMIN QA PASS 4 widths; row block/unblock, filter, manual absent address, attribution; no other mutations');
+ report.status='PASS';console.log('ADMIN QA PASS 6 widths; row block/unblock, filter, manual absent address, attribution; no other mutations');
  }catch(e){report.status='FAIL';report.error=String(e.stack||e);throw e;}
  finally{fs.writeFileSync(path.join(out,'admin-report.json'),JSON.stringify(report,null,2));await browser.close();server.closeAllConnections();server.close();}
 }
