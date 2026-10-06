@@ -132,7 +132,7 @@ app.get('*', (_, res) => res.type('html').send(fs.readFileSync(path.join(dist, '
 async function main(){
  const server=await new Promise(resolve=>{const v=app.listen(0,'127.0.0.1',()=>resolve(v));});
  const origin='http://127.0.0.1:'+server.address().port;
- const browser=await chromium.launch({headless:true});
+ const browser=await chromium.launch({headless:true,executablePath:process.env.QA_CHROME_EXECUTABLE || undefined});
  const report={widths:[],errors:[],writes:state.writes};
  try{
  const context=await browser.newContext();
@@ -145,18 +145,36 @@ async function main(){
   const row=page.locator(width<500?'[data-user-card]':'[data-user-row]').first();
   await row.waitFor({state:'visible'});
   const email=await row.locator('.admin-user-email').innerText();
-  await row.getByRole('button',{name:'Спам',exact:true}).click();
+  const trigger=row.getByRole('button',{name:/Действия с аккаунтом/});
+  const writesBefore=state.writes.length;
+  await trigger.click();
+  const menu=page.getByRole('menu');
+  assert.equal(state.writes.length,writesBefore,'Opening menu must not write');
+  assert.equal(await menu.locator('..').evaluate(el=>el.classList.contains('admin-page-grid')),true,'Menu escapes table clipping');
+  const menuBox=await menu.boundingBox();
+  assert.ok(menuBox.x>=0&&menuBox.y>=0&&menuBox.x+menuBox.width<=width&&menuBox.y+menuBox.height<=(width<500?844:1000));
+  await page.screenshot({path:path.join(out,'actions-menu-'+width+'.png')});
+  await page.keyboard.press('End');
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Удалить');
+  await page.keyboard.press('Escape');
+  assert.equal(await trigger.evaluate(el=>document.activeElement===el),true);
+  await trigger.click();
+  await page.getByRole('menuitem',{name:'Отметить как спам',exact:true}).click();
   const dialog=page.getByRole('dialog');await dialog.waitFor();
   await dialog.getByRole('button',{name:'Спам',exact:true}).click();
   await dialog.waitFor({state:'hidden'});
-  await row.getByRole('button',{name:'Не спам',exact:true}).waitFor();
+  await row.locator('.admin-spam-badge').waitFor();
+  await trigger.click();
+  await page.getByRole('menuitem',{name:'Убрать из спама',exact:true}).waitFor();
+  await page.keyboard.press('Escape');
   assert.ok(spam.has(email));
   await page.getByLabel('Фильтр пользователей',{exact:true}).selectOption('spam');
   await page.waitForLoadState('networkidle');
   await page.waitForFunction(selector=>document.querySelectorAll(selector).length===1,width<500?'[data-user-card]':'[data-user-row]');
   assert.equal(await page.locator(width<500?'[data-user-card]':'[data-user-row]').count(),1);
   await page.screenshot({path:path.join(out,'spam-filter-'+width+'.png')});
-  await page.getByRole('button',{name:/Спам-почты/}).click();
+  await page.getByRole('button',{name:'Ещё',exact:true}).click();
+  await page.getByRole('menuitem',{name:/Спам-почты/}).click();
   const manager=page.locator('.admin-spam-panel');
   await manager.getByText('owner@example.invalid',{exact:false}).waitFor();
   await page.screenshot({path:path.join(out,'spam-manager-'+width+'.png')});
@@ -170,7 +188,7 @@ async function main(){
   await manager.getByRole('button',{name:'Не спам',exact:true}).click();
   await dialog.getByRole('button',{name:'Не спам',exact:true}).click();await dialog.waitFor({state:'hidden'});
   await page.getByLabel('Фильтр пользователей',{exact:true}).selectOption('all');
-  await page.getByRole('button',{name:/Спам-почты/}).click();
+  await manager.getByRole('button',{name:'Закрыть',exact:true}).click();
   await page.waitForLoadState('networkidle');
   const metrics=await row.locator('.admin-user-actions').evaluate(el=>{
     const rects=[...el.children].map(c=>c.getBoundingClientRect());
@@ -181,6 +199,12 @@ async function main(){
   assert.equal(overflow,false,'document overflow @'+width);
   report.widths.push({width,metrics,overflow});
   await page.screenshot({path:path.join(out,'users-'+width+'.png')});
+  const lastRow=page.locator(width<500?'[data-user-card]':'[data-user-row]').last();
+  await lastRow.getByRole('button',{name:/Действия с аккаунтом/}).click();
+  const lastBox=await page.getByRole('menu').boundingBox();
+  assert.ok(lastBox.y>=0&&lastBox.y+lastBox.height<=(width<500?844:1000),'Last-row menu remains in viewport');
+  await page.screenshot({path:path.join(out,'last-row-menu-'+width+'.png')});
+  await page.keyboard.press('Escape');
  }
  assert.deepEqual(report.errors,[]);
  assert.ok(state.writes.every(w=>/spam-emails/.test(w.path)),JSON.stringify(state.writes));

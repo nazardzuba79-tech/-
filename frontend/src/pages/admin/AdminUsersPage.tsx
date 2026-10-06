@@ -1,5 +1,6 @@
 import { getSpamEmails } from '../../lib/adminSpamEmails';
 import { SpamEmailManager, SpamEmailDialog } from './SpamEmailManager';
+import { AdminActionMenu } from './AdminActionMenu';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getAdminUsersPage, type AdminUser } from '../../lib/adminPagedApi';
@@ -64,6 +65,7 @@ export function AdminUsersPage() {
   const copies = useAdminRead('deposit-copy-signal', hasUnresolvedCopies);
   const spam = useAdminRead('spam-emails', getSpamEmails);
   const [spamTarget, setSpamTarget] = useState<{ email: string; blocked: boolean } | null>(null);
+  const [spamManagerOpen, setSpamManagerOpen] = useState(false);
   const spamSet = new Set(spam.data?.entries.map(row => row.email));
   const [deleting, setDeleting] = useState<AdminUser | null>(null);
   const [visibilityBusy, setVisibilityBusy] = useState<string | null>(null);
@@ -85,15 +87,14 @@ export function AdminUsersPage() {
     } finally { setVisibilityBusy(null); }
   };
   const actions = (user: AdminUser) => <div className="admin-user-actions">
-    {user.adminHidden ? <button type="button" className="admin-unhide-button" disabled={visibilityBusy === user.id}
-      onClick={() => void changeVisibility(user, false)}>Показать снова</button> : <>
-      <Link className="admin-open-button" to={open(user)}>Открыть</Link>
-      <button type="button" className="admin-hide-button" disabled={visibilityBusy === user.id}
-        aria-label="Скрыть аккаунт" onClick={() => void changeVisibility(user, true)}>Скрыть</button>
-      <button type="button" className="admin-spam-control" disabled={!spam.data || !!spam.error} onClick={() => setSpamTarget({ email: user.email, blocked: !spamSet.has(user.email.trim().toLowerCase()) })}>{spamSet.has(user.email.trim().toLowerCase()) ? 'Не спам' : 'Спам'}</button>
-      {canDeleteUser(user) && <button type="button" className="admin-delete-button" style={styles.rejectBtn} aria-label="Удалить аккаунт"
-        title={`Удалить аккаунт ${user.email}`} onClick={() => setDeleting(user)}>Удалить</button>}
-    </>}
+    {!user.adminHidden && <Link className="admin-open-button" to={open(user)}>Открыть</Link>}
+    <AdminActionMenu label={user.adminHidden ? 'Действия со скрытым аккаунтом' : `Действия с аккаунтом ${user.email}`} items={[
+      { label: user.adminHidden ? 'Показать снова' : 'Скрыть', disabled: visibilityBusy === user.id, onSelect: () => void changeVisibility(user, !user.adminHidden) },
+      ...(!user.adminHidden ? [
+        { label: spamSet.has(user.email.trim().toLowerCase()) ? 'Убрать из спама' : 'Отметить как спам', disabled: !spam.data || !!spam.error, onSelect: () => setSpamTarget({ email: user.email, blocked: !spamSet.has(user.email.trim().toLowerCase()) }) },
+        ...(canDeleteUser(user) ? [{ label: 'Удалить', danger: true, onSelect: () => setDeleting(user) }] : []),
+      ] : []),
+    ]} />
   </div>;
   // Owner (2026-10-03): no «Статус» column and no blocked mark; only НОВЫЙ beside the email.
   // The email is plain, selectable text so it can be copied; «Открыть» opens the profile.
@@ -103,7 +104,6 @@ export function AdminUsersPage() {
   const balances = (user: AdminUser) => user.balances.length ? user.balances.map(b => <div key={b.asset} className="admin-user-balance"><span><strong>{b.asset}</strong> {compactAmount(b.available)}</span>{!/^0(?:\.0+)?$/.test(b.locked ?? '') && <small>В резерве: {compactAmount(b.locked)}</small>}</div>) : <span>—</span>;
   return <div className="admin-users-workspace">
     <h1 style={styles.title}>Пользователи</h1><p style={styles.subtitle}>Поиск аккаунтов, проверка данных и управление пользователями.</p>
-    <SpamEmailManager entries={spam.data?.entries ?? null} onSelect={(email, blocked) => setSpamTarget({ email, blocked })} />
     {spam.error && <AdminReadStatus {...spam} hasData={!!spam.data} />}
     <section className="admin-users-kpis" aria-label="Показатели пользователей">
       {indicators.map(([key, label]) => {
@@ -115,7 +115,11 @@ export function AdminUsersPage() {
       })}
       {summary.error && <div className="admin-kpi-note" role="status"><span>{summary.data ? 'Показатели могли устареть.' : 'Отдельные показатели пока недоступны.'}</span><button type="button" onClick={() => summary.reload()} disabled={summary.loading}>Обновить показатели</button></div>}
     </section>
-    <div className="admin-list-heading"><h2>Список пользователей</h2>{read.data && <AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={20} itemLabel="из" onPageChange={value => update({ page: value })} placement="top" />}</div>
+    <div className="admin-list-heading"><h2>Список пользователей</h2><div className="admin-users-heading-actions">
+      {read.data && <AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={20} itemLabel="из" onPageChange={value => update({ page: value })} placement="top" />}
+      <AdminActionMenu label="Ещё" text="Ещё" items={[{ label: 'Спам-почты', suffix: spam.data ? <span className="admin-action-count">{spam.data.entries.length}</span> : undefined, onSelect: () => setSpamManagerOpen(true) }]} />
+    </div></div>
+    {spamManagerOpen && <SpamEmailManager entries={spam.data?.entries ?? null} onSelect={(email, blocked) => setSpamTarget({ email, blocked })} onClose={() => setSpamManagerOpen(false)} />}
     <div className="admin-toolbar admin-users-filters">
       <input aria-label="Поиск пользователей" className="admin-user-filter-control" placeholder="Email или ID пользователя" value={search} onChange={e => update({ search: e.target.value, page: 1 })} />
       <select aria-label="Фильтр пользователей" className="admin-user-filter-control" value={status} onChange={e => update({ status: e.target.value, page: 1 })}><option value="all">Все пользователи</option><option value="new">Новые за 24 часа</option><option value="kyc-pending">KYC на проверке</option><option value="hidden">Скрытые</option><option value="spam">Спам</option></select>

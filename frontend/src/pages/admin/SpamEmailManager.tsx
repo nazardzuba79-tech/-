@@ -1,16 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { setSpamEmail, type SpamEmailEntry } from '../../lib/adminSpamEmails';
 import { adminDate } from './adminPresentation';
-export function SpamEmailManager({ entries, onSelect }: { entries: SpamEmailEntry[] | null; onSelect: (email: string, blocked: boolean) => void }) {
-  const [open, setOpen] = useState(false), [email, setEmail] = useState('');
+export function SpamEmailManager({ entries, onSelect, onClose }: { entries: SpamEmailEntry[] | null; onSelect: (email: string, blocked: boolean) => void; onClose: () => void }) {
+  const [email, setEmail] = useState('');
   return <section className="admin-spam-manager">
-    <button type="button" className="admin-spam-control" aria-expanded={open} onClick={() => setOpen(!open)}>Спам-почты{entries ? ` · ${entries.length}` : ''}</button>
-    {open && <div className="admin-spam-panel">
-      <h2>Заблокированные email</h2><p>Вход, повторная регистрация и поддержка запрещены. Аккаунты и финансовые данные сохраняются.</p>
+    <div className="admin-spam-panel">
+      <div className="admin-spam-panel-heading"><h2>Заблокированные email</h2><button type="button" className="admin-spam-control" onClick={onClose}>Закрыть</button></div><p>Вход, повторная регистрация и поддержка запрещены. Аккаунты и финансовые данные сохраняются.</p>
       <form onSubmit={e => { e.preventDefault(); onSelect(email, true); }}><label>Email<input type="email" value={email} onChange={e => setEmail(e.target.value)} required maxLength={254} placeholder="name@example.com" /></label><button className="admin-spam-control" disabled={!entries}>Добавить в спам</button></form>
       {entries?.length === 0 && <p>Список пуст.</p>}
       <ul>{entries?.map(entry => <li key={entry.email}><div><strong>{entry.email}</strong><small>Добавил: {entry.addedBy} · {adminDate(entry.addedAt)}</small></div><button type="button" className="admin-spam-control" onClick={() => onSelect(entry.email, false)}>Не спам</button></li>)}</ul>
-    </div>}
+    </div>
   </section>;
 }
 export function SpamEmailDialog({ email, blocked, onClose, onSaved }: { email: string; blocked: boolean; onClose: () => void; onSaved: () => void }) {

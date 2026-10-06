@@ -7,12 +7,8 @@
 .admin-users-kpi-link:hover { border-color: var(--admin-brand); }
 .admin-users-kpi-link[data-copy-signal] { border-color: rgba(183,121,31,.45); }
 .admin-user-new { margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
-/* Owner: reversible hiding sits between Open and Delete; Delete stays visually separated. */
-.admin-user-actions .admin-hide-button,.admin-user-actions .admin-unhide-button { padding: 7px 10px; font-size: 12px; white-space: nowrap; margin-left: 24px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text-primary); cursor: pointer; }
-.admin-user-actions .admin-delete-button { padding: 7px 10px; font-size: 12px; white-space: nowrap; margin-left: 20px; }
-.admin-users-table .admin-user-actions { justify-content: flex-start; flex-wrap: nowrap; gap: 32px; }
-.admin-users-table .admin-user-actions .admin-hide-button,
-.admin-users-table .admin-user-actions .admin-delete-button { margin: 0; flex-shrink: 0; }
+/* Primary navigation stays visible; secondary actions live in the portal menu. */
+.admin-users-table .admin-user-actions { justify-content: flex-start; flex-wrap: nowrap; gap: 8px; }
 .admin-user-actions button:disabled { opacity: .55; cursor: wait; }
 .admin-hidden-account { font-weight: 600; color: var(--text-secondary); }
 .admin-hidden-id { display: block; margin-top: 3px; color: var(--text-secondary); font-size: 11px; }

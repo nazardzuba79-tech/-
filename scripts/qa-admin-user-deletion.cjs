@@ -256,7 +256,8 @@ async function browserChecks(app, prisma, user, header) {
    },{width,id});
    await table().waitFor({state:'visible'});
    assert.equal(await page.getByRole('button',{name:/^(Заблокировать|Разблокировать)$/}).count(),0);
-   await table().getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
+   await table().getByRole('button',{name:/Действия с аккаунтом/}).click();
+   await page.getByRole('menuitem',{name:'Удалить',exact:true}).click();
    const dialog=page.getByRole('dialog');await dialog.waitFor({state:'visible'});
    assert.ok((await dialog.innerText()).includes(id+'@example.invalid'));
    const bounds=await dialog.boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width);
@@ -265,7 +266,8 @@ async function browserChecks(app, prisma, user, header) {
    assert.equal(observedDeletes,0,'opening and cancelling confirmation sends no DELETE');
    assert.ok(await prisma.user.findUnique({where:{id}}));
    await table().waitFor({state:'visible'});
-   await table().getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
+   await table().getByRole('button',{name:/Действия с аккаунтом/}).click();
+   await page.getByRole('menuitem',{name:'Удалить',exact:true}).click();
    let deleteRequests=0;
    await page.route('**/api/v1/admin/users/'+id,async route=>{
     if(route.request().method()!=='DELETE')return route.fallback();
