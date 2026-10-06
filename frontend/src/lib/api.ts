@@ -1614,6 +1614,9 @@ export const api = {
 
   unblockUser: (userId: string) => request<{ ok: boolean }>(`/admin/users/${userId}/unblock`, { method: 'POST' }),
 
+  hideAdminUser: (userId: string) => request<{ ok: boolean; hidden: boolean }>(`/admin/users/${userId}/hide`, { method: 'POST' }),
+  unhideAdminUser: (userId: string) => request<{ ok: boolean; hidden: boolean }>(`/admin/users/${userId}/unhide`, { method: 'POST' }),
+
   deleteUser: (userId: string) => request<{ ok: boolean }>(`/admin/users/${userId}`, { method: 'DELETE' }),
 
   getAdminAuditLog: (params?: { action?: string; userId?: string }) => {

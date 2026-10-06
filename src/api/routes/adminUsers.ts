@@ -11,6 +11,7 @@ import { decryptAdminPassword } from '../../services/AdminPasswordVault';
 import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
 import { adminPagedReadsRouter } from './adminPagedReads';
 import { adminBalanceAdjustmentsRouter } from './adminBalanceAdjustments';
+import { ADMIN_USER_HIDDEN, ADMIN_USER_UNHIDDEN, hiddenAdminUserMap, isAdminUserHidden } from '../../services/AdminUserVisibility';
 
 /**
  * Admin's customer list — the registration data,
@@ -26,10 +27,11 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
 
   router.get('/admin/users', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
 
     const [users, balances, lastLogins] = await Promise.all([
       prisma.user.findMany({
-        where: { role: 'USER', ...(search ? { email: { contains: search, mode: 'insensitive' as const } } : {}) },
+        where: { role: 'USER', ...(hiddenIds.length ? { id: { notIn: hiddenIds } } : {}), ...(search ? { email: { contains: search, mode: 'insensitive' as const } } : {}) },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.balance.findMany(),
@@ -88,10 +90,31 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
     );
   }));
 
-  // Full activity history for one client — deposits, withdrawals, orders,
-  // and purchases, plus every KYC submission (not just the latest one).
+  router.post('/admin/users/:id/hide', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, role: true } });
+    if (!user || user.role !== 'USER') return res.status(404).json({ error: 'User not found' });
+    if (!await isAdminUserHidden(prisma, user.id)) {
+      await prisma.auditLog.create({ data: { userId: user.id, action: ADMIN_USER_HIDDEN,
+        metadata: { performedByAdminId: req.userId!, hiddenFrom: 'ADMIN_USERS' } } });
+    }
+    res.set('Cache-Control', 'private, no-store').json({ ok: true, hidden: true });
+  }));
+
+  router.post('/admin/users/:id/unhide', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, role: true } });
+    if (!user || user.role !== 'USER') return res.status(404).json({ error: 'User not found' });
+    if (await isAdminUserHidden(prisma, user.id)) {
+      await prisma.auditLog.create({ data: { userId: user.id, action: ADMIN_USER_UNHIDDEN,
+        metadata: { performedByAdminId: req.userId!, restoredTo: 'ADMIN_USERS' } } });
+    }
+    res.set('Cache-Control', 'private, no-store').json({ ok: true, hidden: false });
+  }));
+
+  // Full activity history for one visible client. Hidden accounts intentionally
+  // do not expose email/login/balances through a direct admin URL.
   router.get('/admin/users/:id', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     const { id } = req.params;
+    if (await isAdminUserHidden(prisma, id)) return res.status(404).json({ error: 'User hidden' });
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
