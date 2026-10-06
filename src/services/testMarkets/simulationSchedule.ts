@@ -33,7 +33,18 @@ export interface RangeSelloffRangeScenarioConfig {
   readonly selloffFraction: number;
 }
 
-export type ScheduledScenarioConfig = GrowthScheduledScenarioConfig | RangeSelloffRangeScenarioConfig;
+/** Explicit bounded program for non-executable demo listings. */
+export interface CappedGrowthScenarioConfig {
+  readonly mode: 'capped-growth-range';
+  readonly version: number;
+  readonly from: number;
+  readonly firstTargetAt: number;
+  readonly peakAt: number;
+  readonly firstGainPercent: number;
+  readonly maxGainPercent: number;
+  readonly rangeFraction: number;
+}
+export type ScheduledScenarioConfig = GrowthScheduledScenarioConfig | RangeSelloffRangeScenarioConfig | CappedGrowthScenarioConfig;
 
 function isRangeSelloffRangeScenario(c: ScheduledScenarioConfig): c is RangeSelloffRangeScenarioConfig {
   return c.mode === 'range-selloff-range';
@@ -52,17 +63,28 @@ interface Context { phases: Phase[]; terminal: number }
 
 export function validateScheduledScenario(c: ScheduledScenarioConfig, listingAt: number): void {
   const commonInvalid = !Number.isSafeInteger(c.version) || c.version < 1 || !Number.isFinite(listingAt)
-    || !Number.isFinite(c.rangeFraction) || c.rangeFraction <= 0 || c.rangeFraction >= 1
-    || !Number.isFinite(c.selloffFraction) || c.selloffFraction <= 0 || c.selloffFraction >= 1;
+    || !Number.isFinite(c.rangeFraction) || c.rangeFraction <= 0 || c.rangeFraction >= 1;
+  if (c.mode === 'capped-growth-range') {
+    const times = [c.from, c.firstTargetAt, c.peakAt];
+    if (commonInvalid || c.from !== listingAt
+      || times.some((t, i) => !Number.isSafeInteger(t) || t % TICK !== 0 || (i > 0 && t <= times[i - 1]))
+      || c.firstTargetAt !== listingAt + 24 * HOUR || c.peakAt < c.firstTargetAt + 24 * HOUR
+      || !Number.isFinite(c.firstGainPercent) || c.firstGainPercent <= 0
+      || !Number.isFinite(c.maxGainPercent) || c.maxGainPercent <= c.firstGainPercent) {
+      throw new RangeError('Invalid bounded demo scenario');
+    }
+    return;
+  }
+  const selloffInvalid = !Number.isFinite(c.selloffFraction) || c.selloffFraction <= 0 || c.selloffFraction >= 1;
   if (isRangeSelloffRangeScenario(c)) {
     const times = [c.from, c.rangeEndAt, c.selloffEndAt];
-    if (commonInvalid || times.some((t, i) => !Number.isSafeInteger(t) || t % TICK !== 0 || t < listingAt || (i > 0 && t <= times[i - 1]))) {
+    if (commonInvalid || selloffInvalid || times.some((t, i) => !Number.isSafeInteger(t) || t % TICK !== 0 || t < listingAt || (i > 0 && t <= times[i - 1]))) {
       throw new RangeError('Invalid scheduled simulation configuration');
     }
     return;
   }
   const times = [c.from, c.firstTargetAt, c.breakoutAt, c.secondTargetAt, c.thirdTargetAt, c.rangeEndAt, c.selloffEndAt, c.endAt];
-  if (commonInvalid
+  if (commonInvalid || selloffInvalid
     || times.some((t, i) => !Number.isSafeInteger(t) || t % TICK !== 0 || t < listingAt || (i > 0 && t <= times[i - 1]))
     || !Number.isFinite(c.firstGainPercent) || c.firstGainPercent <= -100
     || !Number.isFinite(c.secondGainPercent) || c.secondGainPercent <= c.firstGainPercent
@@ -89,7 +111,17 @@ function context(c: ScheduledScenarioConfig, seed: string, listingAt: number, li
   if (cached) return cached;
   let terminal: number;
   let rows: Array<[string, number, number, number, number, Regime, boolean]>;
-  if (isRangeSelloffRangeScenario(c)) {
+  if (c.mode === 'capped-growth-range') {
+    const first = listingPrice * (1 + c.firstGainPercent / 100);
+    // Leave space below the absolute cap for natural excursions and shadows.
+    terminal = listingPrice * (1 + c.maxGainPercent / 100) * .94;
+    rows = [
+      ['launch', c.from, c.firstTargetAt, anchor, first, 'impulse', false],
+      ['discovery-range', c.firstTargetAt, c.firstTargetAt + 6 * HOUR, first, first, 'consolidation', true],
+      ['maturing-rise', c.firstTargetAt + 6 * HOUR, c.peakAt, first, terminal, 'impulse', false],
+      ['terminal-range', c.peakAt, Infinity, terminal, terminal, 'consolidation', true],
+    ];
+  } else if (isRangeSelloffRangeScenario(c)) {
     terminal = anchor * (1 - c.selloffFraction);
     if (!Number.isFinite(terminal) || terminal <= 0) throw new RangeError('Invalid scenario target');
     rows = [
@@ -219,13 +251,14 @@ export function scheduledScenarioHour(
   if (!Number.isSafeInteger(hour) || hour < 0 || original.length !== 360) throw new RangeError('A scenario needs one complete canonical hour');
   const ctx = context(c, seed, listingAt, initialPrice, anchorPrice);
   const start = listingAt + hour * HOUR;
-  const open = start <= c.from ? originalOpen : priceAt(c, seed, ctx, anchorPrice, start);
+  const cap = c.mode === 'capped-growth-range' ? initialPrice * (1 + c.maxGainPercent / 100) : Infinity;
+  const open = Math.min(cap, start <= c.from ? originalOpen : priceAt(c, seed, ctx, anchorPrice, start));
   const ticks: RealismTick[] = [];
   let previous = open;
   for (let i = 0; i < 360; i++) {
     const at = start + (i + 1) * TICK;
     if (at <= c.from) { ticks.push(original[i]); previous = original[i].price; continue; }
-    const price = priceAt(c, seed, ctx, anchorPrice, at);
+    const price = Math.min(cap, priceAt(c, seed, ctx, anchorPrice, at));
     const p = phaseAt(ctx, at - 1);
     const random = seededRandom(seed, 'scheduled-tick', c.version, at);
     const move = Math.abs(Math.log(price / previous));
@@ -234,6 +267,9 @@ export function scheduledScenarioHour(
     const longWick = random() < .035 ? .002 + random() * .01 : 0;
     let high = Math.max(previous, price) * (1 + (shadow * random() + longWick * random()) * endpointEnvelope);
     let low = Math.min(previous, price) * (1 - (shadow * random() + longWick * random()) * endpointEnvelope);
+    // Apply to the canonical high, not only displayed closes: every timeframe,
+    // ticker and tape is aggregated from the same bounded stream.
+    high = Math.min(cap, high);
     const activity = p?.range ? .68 : p?.regime === 'pullback' ? 1.45 : 1.15;
     const quoteVolume = (25 + random() * 190) * activity * (1 + Math.min(12, 140 * move));
     const volume = quoteVolume / ((previous + price) / 2);

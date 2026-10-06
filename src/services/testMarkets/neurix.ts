@@ -1,5 +1,5 @@
 import type { TestAssetConfig } from './testAssetConfig';
-import type { GrowthScheduledScenarioConfig, ScheduledScenarioConfig } from './simulationSchedule';
+import type { GrowthScheduledScenarioConfig, RangeSelloffRangeScenarioConfig } from './simulationSchedule';
 
 /** Shared configuration only: no environment, network, database or clock reads. */
 const NRX_LISTING_AT = Date.parse('2026-10-03T13:00:00Z');
@@ -34,16 +34,17 @@ export const NRX_TWO_WEEK_SCENARIO: Readonly<GrowthScheduledScenarioConfig> = Ob
 });
 
 /** Owner update 2026-10-05: end the growth phase prospectively.
- * 13:00 Kyiv activation -> 48h balance -> 6h -60% selloff -> balance forever.
+ * 2026-10-06 17:00 UTC activation -> 30m pump exhaustion -> 6h -60%
+ * correction -> balance forever. The expired v4 was never served.
  * The simulator anchors this program to the exact canonical NRX tick at
  * activation, so nothing already displayed or sold is rewritten.
  */
-export const NRX_BALANCE_SELLOFF_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.freeze({
+export const NRX_BALANCE_SELLOFF_SCENARIO: Readonly<RangeSelloffRangeScenarioConfig> = Object.freeze({
   mode: 'range-selloff-range',
-  version: 4,
-  from: Date.parse('2026-10-05T10:00:00Z'), // 13:00 Kyiv
-  rangeEndAt: Date.parse('2026-10-07T10:00:00Z'), // 48h balance
-  selloffEndAt: Date.parse('2026-10-07T16:00:00Z'), // six-hour -60% selloff
+  version: 5,
+  from: Date.parse('2026-10-06T17:00:00Z'), // 20:00 Kyiv; prospective release gate
+  rangeEndAt: Date.parse('2026-10-06T17:30:00Z'), // pump exhaustion, no growth trend
+  selloffEndAt: Date.parse('2026-10-06T23:30:00Z'), // six-hour -60% correction
   rangeFraction: .20,
   selloffFraction: .60,
 });
