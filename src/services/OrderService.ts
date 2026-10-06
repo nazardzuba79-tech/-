@@ -76,17 +76,17 @@ export class OrderService {
     // owner's NRX simulation sale below.
     await assertSpotListingReady(params.pair);
 
-    // NRX is a simulated listing. The owner/admin's MARKET SELL follows the
-    // original VTA simulation contract: execute against an explicit synthetic
-    // counterparty at the canonical server simulation price instead of
-    // pretending the display book is executable liquidity. Ordinary users,
-    // BUY orders and every non-market order keep the normal Spot matcher.
+    // NRX is a simulated listing. Any non-blocked account that actually owns
+    // NRX on the ordinary Spot ledger may MARKET SELL against the explicit
+    // synthetic simulation counterparty. This is deliberately scoped only to
+    // NRX/USDT SELL MARKET; BUY, LIMIT/conditional orders and every other pair
+    // continue through the ordinary matching engine.
     if (params.pair === NEURIX.pair && params.side === 'SELL' && params.type === 'MARKET') {
       const user = await this.prisma.user.findUnique({
         where: { id: params.userId },
-        select: { role: true, blockedAt: true },
+        select: { blockedAt: true },
       });
-      if (user?.role === 'ADMIN' && !user.blockedAt) {
+      if (user && !user.blockedAt) {
         return this.sellNrxSimulation(params.userId, params.quantity);
       }
     }
@@ -207,7 +207,7 @@ export class OrderService {
   }
 
   /**
-   * Owner-only NRX simulated liquidation.
+   * NRX simulated liquidation for an account that owns NRX on Spot.
    *
    * This deliberately does NOT touch MatchingEngine depth: NRX public depth is
    * generated display data, so requiring a real maker makes a simulated market
@@ -215,8 +215,10 @@ export class OrderService {
    * Trade/audit record. The owner's ordinary Spot balance remains the source of
    * truth, matching the existing NRX allocation and the Spot "Доступно" line.
    *
-   * Scope is intentionally narrow: ADMIN + NRX/USDT + MARKET SELL only.
-   * Normal customers and every ordinary pair still require real counterparties.
+   * Scope is intentionally narrow: NRX/USDT + MARKET SELL only.
+   * The transaction still debits the caller's real Spot NRX balance atomically,
+   * so an account cannot sell NRX it does not own. Every ordinary pair still
+   * requires real counterparties.
    */
   private async sellNrxSimulation(userId: string, quantity: BigNumber) {
     if (!quantity.isFinite() || quantity.lte(0)) throw new Error('Quantity must be greater than zero');
@@ -233,13 +235,13 @@ export class OrderService {
     const syntheticMaker = 'simulation:NRX';
 
     return this.prisma.$transaction(async tx => {
-      // Re-check inside the financial transaction: role/block state changing
-      // between the preflight read and settlement must fail closed.
+      // Re-check block state inside the financial transaction. Ownership itself
+      // is enforced atomically by mutateSpotBalance below.
       const user = await tx.user.findUnique({
         where: { id: userId },
-        select: { role: true, blockedAt: true },
+        select: { blockedAt: true },
       });
-      if (user?.role !== 'ADMIN' || user.blockedAt) throw new Error('NRX simulation sale is not available for this account');
+      if (!user || user.blockedAt) throw new Error('NRX simulation sale is not available for this account');
 
       await mutateSpotBalance(tx, userId, 'NRX', { available: quantity.negated() });
       await mutateSpotBalance(tx, userId, 'USDT', { available: proceeds });

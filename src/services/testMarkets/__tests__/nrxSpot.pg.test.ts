@@ -78,13 +78,15 @@ pg('NRX normal Spot ledger on disposable PostgreSQL', () => {
     expect(await db.auditLog.count({ where: { userId: owner, action: 'NRX_SIMULATION_SOLD' } })).toBe(1);
     expect(await balance(other, 'NRX')).toBeNull();
   });
-  test('ordinary users do not receive synthetic NRX liquidity', async () => {
+  test('a non-admin account that owns NRX can MARKET SELL against simulation liquidity', async () => {
     await db.balance.create({ data: { userId: other, asset: 'NRX', available: '1' } });
+    const beforeUsdt = new BigNumber((await balance(other, 'USDT'))?.available.toString() ?? '0');
     const result = await place('SELL', other, 'MARKET');
-    expect(result.trades).toHaveLength(0);
-    expect(result.order.status).toBe('CANCELLED');
-    expect((await balance(other, 'NRX'))!.available.toString()).toBe('1');
-    expect(await db.trade.count({ where: { makerUserId: 'simulation:NRX', takerUserId: other } })).toBe(0);
+    expect(result.order.status).toBe('FILLED');
+    expect(result.trades).toHaveLength(1);
+    expect(result.trades[0]).toMatchObject({ makerUserId: 'simulation:NRX', takerUserId: other, side: 'SELL' });
+    expect((await balance(other, 'NRX'))!.available.toString()).toBe('0');
+    expect(new BigNumber((await balance(other, 'USDT'))!.available.toString()).gt(beforeUsdt)).toBe(true);
   });
   test('existing 31,250 fixture inventory sells half and then the remainder after service restart without demo allocation', async () => {
     // This is disposable fixture inventory, not a production allocation command.
