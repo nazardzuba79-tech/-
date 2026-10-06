@@ -6,8 +6,7 @@ const root = resolve(__dirname, '../..');
 test('Users admin places reversible hide between Open and Delete and masks hidden identity', () => {
   const page = readFileSync(resolve(root, 'pages/admin/AdminUsersPage.tsx'), 'utf8');
   const css = readFileSync(resolve(root, 'pages/admin/adminPracticality.css'), 'utf8');
-  expect(page).toContain('api.hideAdminUser(user.id)');
-  expect(page).toContain('api.unhideAdminUser(user.id)');
+  expect(page).toContain('setAdminUserHidden(user.id, hidden)');
   expect(page).toContain('<option value="hidden">Скрытые</option>');
   expect(page).toContain('data-hidden-account');
   expect(page).toContain('Скрытый аккаунт');

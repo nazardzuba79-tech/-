@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getAdminUsersPage, type AdminUser } from '../../lib/adminPagedApi';
-import { api } from '../../lib/api';
+import { setAdminUserHidden } from '../../lib/adminUserVisibilityApi';
 import { styles } from './adminStyles';
 import { useAdminRead } from './useAdminRead';
 import { useAdminView } from './useAdminView';
@@ -72,7 +72,7 @@ export function AdminUsersPage() {
     if (visibilityBusy) return;
     setVisibilityBusy(user.id); setNotice('');
     try {
-      if (hidden) await api.hideAdminUser(user.id); else await api.unhideAdminUser(user.id);
+      await setAdminUserHidden(user.id, hidden);
       setNotice(hidden ? 'Аккаунт скрыт из админки.' : 'Аккаунт снова отображается.');
       changed();
     } catch (error) {

@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
+import { hiddenAdminUserMap } from '../../services/AdminUserVisibility';
 
 export function adminRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -13,9 +14,11 @@ export function adminRouter(prisma: PrismaClient): Router {
     const dayStart = new Date(now);
     dayStart.setUTCHours(0, 0, 0, 0);
     try {
+      const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
+      const visible = hiddenIds.length ? { id: { notIn: hiddenIds } } : {};
       const [totalUsers, pendingKyc, pendingWithdrawals, creditedDepositsToday] = await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { kycStatus: 'PENDING' } }),
+        prisma.user.count({ where: visible }),
+        prisma.user.count({ where: { ...visible, kycStatus: 'PENDING' } }),
         prisma.withdrawal.count({ where: { status: 'PENDING' } }),
         // Deposit.createdAt is not a credit timestamp. The credit audit event
         // is created in the credit transaction, including delayed credits.
@@ -58,8 +61,9 @@ export function adminRouter(prisma: PrismaClient): Router {
   // Admin-only: every client, with their latest KYC submission (if any) —
   // the full client list, not just the pending-review queue.
   router.get('/admin/clients', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
+    const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
     const [users, submissions] = await Promise.all([
-      prisma.user.findMany({ orderBy: { createdAt: 'desc' } }),
+      prisma.user.findMany({ where: hiddenIds.length ? { id: { notIn: hiddenIds } } : {}, orderBy: { createdAt: 'desc' } }),
       prisma.kycSubmission.findMany({ orderBy: { createdAt: 'desc' } }),
     ]);
 
