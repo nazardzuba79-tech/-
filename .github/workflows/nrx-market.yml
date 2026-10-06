@@ -40,6 +40,10 @@ jobs:
       - run: npx prisma generate && npx prisma migrate deploy
       - run: >-
           npx jest --runInBand --silent --runTestsByPath
+          src/services/testMarkets/__tests__/nrxServingRegression.test.ts
+          src/services/testMarkets/__tests__/simulationSchedule.test.ts
+          src/services/testMarkets/__tests__/simulationScheduleIntegration.test.ts
+          src/services/testMarkets/__tests__/simulationScheduleRelease.test.ts
           src/services/testMarkets/__tests__/nrxPublic.test.ts
           src/services/testMarkets/__tests__/simulationWaves.test.ts
           src/services/testMarkets/__tests__/nrxSpot.pg.test.ts

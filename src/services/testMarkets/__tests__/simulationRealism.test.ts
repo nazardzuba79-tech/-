@@ -115,7 +115,7 @@ describe('the original profile-only activation contract remains unchanged', () =
 });
 
 // NRX's base engine, without its post-listing wave structure (simulationWaves.test.ts).
-const { marketStructure: _nrxWaves, ...NRX_BASE } = NEURIX;
+const { marketStructure: _nrxWaves, scheduledScenario: _nrxSchedule, ...NRX_BASE } = NEURIX;
 
 describe('without a profile the simulation is byte-identical to main', () => {
   test.each([['VTA', BASE, MAIN.VTA], ['NRX', NRX_BASE, MAIN.NRX]] as const)('%s: candles, hour anchors and tape', (_name, asset, expected) => {
