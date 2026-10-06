@@ -190,12 +190,16 @@
   .about-page .about-phone { width: 224px; flex: none; transform: rotate(3deg); }
   .about-page .about-device-caption { bottom: 14px; right: auto; left: 0; width: 100%; text-align: center; }
 }
-@media (max-width: 359px) {
+/* Shared header labels vary slightly with the platform's font fallback.
+   Wrap before 390px rather than relying on a just-fitting 360px row. */
+@media (max-width: 389px) {
   .about-page .about-shared-chrome.vx-home > header > div:first-child { height: auto; flex-wrap: wrap; row-gap: 8px; padding-block: 10px; }
   .about-page .about-shared-chrome.vx-home > header > div:first-child > div:last-child { flex-basis: 100%; width: 100%; margin-left: 0; justify-content: flex-end; }
   .about-page .about-shared-chrome.vx-home > header > div:first-child > a,
   .about-page .about-shared-chrome.vx-home > header > div:first-child > div:last-child > a { display: inline-flex; align-items: center; min-height: 44px; }
   .about-page .about-shared-chrome.vx-home > header > div:first-child > div:last-child > button { min-height: 44px; min-width: 44px; }
+}
+@media (max-width: 359px) {
   .about-page .about-wrap { width: calc(100% - 32px); }
   .about-page .about-hero-content { width: calc(100% - 32px); }
   .about-page .about-hero h1 { font-size: 30px; }
