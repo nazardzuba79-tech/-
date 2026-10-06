@@ -14,8 +14,15 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
   const balances = new Map(Object.entries(seed));
   const orders = new Map<string, any>();
   const trades: any[] = [];
+  const audits: any[] = [];
 
   const tx = {
+    user: {
+      findUnique: jest.fn(async ({ where: { id } }: any) => ({ id, role: 'USER', blockedAt: null })),
+    },
+    auditLog: {
+      create: jest.fn(async ({ data }: any) => { audits.push(data); return data; }),
+    },
     $queryRaw: jest.fn(async () => [{ id: '1' }]),
     balance: walletDelegate(balances),
     order: {
@@ -50,7 +57,7 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
     },
   };
 
-  const prisma = { order: tx.order, $queryRaw: jest.fn(async () => [{ status: 'committed' }]), $transaction: jest.fn(async (fn: any) => {
+  const prisma = { order: tx.order, user: tx.user, auditLog: tx.auditLog, $queryRaw: jest.fn(async () => [{ status: 'committed' }]), $transaction: jest.fn(async (fn: any) => {
     const saved = [balances, orders].map(map => structuredClone([...map.entries()]));
     const tradeCount = trades.length;
     try { return await fn(tx); } catch (error) {
@@ -58,7 +65,7 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
       trades.length = tradeCount; throw error;
     }
   }) } as any;
-  return { prisma, balances, orders, trades };
+  return { prisma, balances, orders, trades, audits, users: tx.user };
 }
 
 function bal(balances: Map<string, { available: string; locked: string }>, userId: string, asset: string) {
@@ -164,6 +171,39 @@ describe('OrderService.placeOrder', () => {
     const takerBase = bal(balances, 'taker', 'BTC');
     expect(takerBase.locked.toString()).toBe('0');
     expect(takerBase.available.toString()).toBe('0.8'); // 1 - 0.2 filled, 0.8 unfillable and refunded
+  });
+
+  it('simulation-only team USER can MARKET SELL credited ETH at current price without book liquidity', async () => {
+    const saved = process.env.PRIVATE_TRADING_TEST_USER_IDS;
+    const tester = '11111111-1111-4111-8111-111111111111';
+    process.env.PRIVATE_TRADING_TEST_USER_IDS = tester;
+    try {
+      const engine = new MatchingEngine();
+      const { prisma, balances, trades, audits } = makeFakePrisma({
+        [tester + ':ETH']: { available: '2', locked: '0' },
+        [tester + ':USDT']: { available: '0', locked: '0' },
+      });
+      const service = new OrderService(prisma, engine, makePriceSource('2500'));
+
+      const result = await service.placeOrder({
+        userId: tester,
+        pair: 'ETH/USDT',
+        side: 'SELL',
+        type: 'MARKET',
+        quantity: new BigNumber('1.25'),
+      });
+
+      expect(result.order.status).toBe('FILLED');
+      expect(result.trades).toHaveLength(1);
+      expect(result.trades[0]).toMatchObject({ makerUserId: 'simulation:ETH', takerUserId: tester, pair: 'ETH/USDT' });
+      expect(bal(balances, tester, 'ETH').available.toString()).toBe('0.75');
+      expect(bal(balances, tester, 'USDT').available.toString()).toBe('3125');
+      expect(trades).toHaveLength(1);
+      expect(audits).toEqual([expect.objectContaining({ userId: tester, action: 'TEAM_SPOT_SIMULATION_SOLD' })]);
+    } finally {
+      if (saved === undefined) delete process.env.PRIVATE_TRADING_TEST_USER_IDS;
+      else process.env.PRIVATE_TRADING_TEST_USER_IDS = saved;
+    }
   });
 
   it('throws on insufficient balance and locks nothing', async () => {
