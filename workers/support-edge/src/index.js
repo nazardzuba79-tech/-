@@ -1,9 +1,8 @@
 // VOLTEX support form edge — Cloudflare Worker.
 //
-// Browser → POST /v1/support → env.SUPPORT_EMAIL.send() → the owner's inbox.
-// The owner answers from Gmail: Reply goes to the Reply-To, which is the
-// validated address the user typed. Nothing is stored, nothing is polled,
-// no timers are armed; Render and Neon are never contacted.
+// Authenticated API relay -> private Worker -> owner's inbox.
+// Sender email comes from the account; direct browser submissions are rejected.
+// No contact records are stored by the Worker.
 
 export const VERSION = "support-form-v3-authenticated";
 export const MAX_BODY_BYTES = 16 * 1024;
