@@ -5719,3 +5719,9 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - No User/balance/order/history deletion or financial changes; no Prisma/dependency changes. Block audit and session revoke are transactional. Production untouched; no merge/deploy before QA.
 - Local QA: backend build passed; auth/contact-policy/middleware/bcrypt 90 tests and frontend support/i18n/routes 169 passed; Worker 21 passed. Browser Support 320–1920 and Admin 390/1366/1440/1920 passed with local fixtures, recorded mail, external requests denied. Real PostgreSQL QA is in Support CI and must pass before release.
 
+
+## Codex — 2026-10-06 — NRX serving drift and AITH bounded demo
+- Fresh main 975ab064; production ead49070 was missing NRX scheduledScenario. Version 5 is a prospective terminal correction, retaining historical ticks.
+- AITH draft/logo, immutable persisted bounded program, canonical wick cap and demo-only trading guard; drafts do not start countdowns.
+- Existing profiles, allocation/financial records and auth preserved. Exact commit: this entry's commit. Paired API/edge activation required.
+
