@@ -1,47 +1,14 @@
+# Isolated release QA. Application checkout pinned to current main; no deployment jobs.
 name: Mobile clients isolated review
-on:
+'on':
   push:
-    branches: [main]
-    paths:
-      - 'frontend/src/**'
-      - 'frontend/mobile-review/**'
-      - 'frontend/mobile-review.html'
-      - 'frontend/vite*.ts'
-      - 'frontend/index.html'
-      - 'frontend/package*.json'
-      - 'frontend/tsconfig*.json'
-      - 'frontend/public/fonts/**'
-      - 'src/auth/telegramInitData.ts'
-      - 'src/auth/__tests__/telegramInitData.test.ts'
-      - 'scripts/*mobile*'
-      - 'package*.json'
-      - 'tsconfig*.json'
-      - 'jest.config.js'
-      - '.github/workflows/mobile-clients-review.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'frontend/src/**'
-      - 'frontend/mobile-review/**'
-      - 'frontend/mobile-review.html'
-      - 'frontend/vite*.ts'
-      - 'frontend/index.html'
-      - 'frontend/package*.json'
-      - 'frontend/tsconfig*.json'
-      - 'frontend/public/fonts/**'
-      - 'src/auth/telegramInitData.ts'
-      - 'src/auth/__tests__/telegramInitData.test.ts'
-      - 'scripts/*mobile*'
-      - 'package*.json'
-      - 'tsconfig*.json'
-      - 'jest.config.js'
-      - '.github/workflows/mobile-clients-review.yml'
-  workflow_dispatch: {}
+    branches:
+      - codex/release-qa-20261006
 permissions:
   contents: read
 concurrency:
-  group: mobile-review-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: release-qa-20261006-mobile-clients-review.yml
+  cancel-in-progress: false
 jobs:
   fixtures-only:
     runs-on: ubuntu-latest
@@ -50,6 +17,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+      - name: Verify frozen main input
+        run: |-
+          test "$(git rev-parse HEAD)" = '4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          echo 'RELEASE_QA_SOURCE_SHA=4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          git diff --exit-code
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -63,8 +36,10 @@ jobs:
         working-directory: frontend
         run: node node_modules/vite/bin/vite.js build --config vite.mobile-review.config.ts
       - name: Disposable browser tooling
-        run: |
-          npm install --prefix /tmp/mobile-review-tools --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+        run: >
+          npm install --prefix /tmp/mobile-review-tools --no-save --ignore-scripts --no-audit --no-fund
+          playwright@1.63.0
+
           node /tmp/mobile-review-tools/node_modules/playwright/cli.js install --with-deps chromium
       - name: Local browser fixtures and offline checks
         env:

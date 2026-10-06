@@ -1,41 +1,14 @@
+# Isolated release QA. Application checkout pinned to current main; no deployment jobs.
 name: Support form (Cloudflare Worker + widget)
-
-# Support sends through the authenticated API relay to the Worker,
-# which emails the owner through Cloudflare Email Routing. Verify the Worker
-# contract, the widget and the built bundle on every change; deploy the
-# Worker only from main (or an explicitly tagged push / manual run).
-on:
-  pull_request:
-    paths:
-      - 'src/services/ContactEmailPolicy.ts'
-      - 'src/api/routes/contactPolicy.ts'
-      - 'src/api/routes/supportRequest.ts'
-      - 'src/api/middleware/auth.ts'
-      - 'workers/support-edge/**'
-      - 'frontend/src/components/SupportWidget.tsx'
-      - 'frontend/src/components/SupportWidget.css'
-      - 'frontend/src/lib/supportForm.ts'
-      - 'frontend/src/lib/supportEndpoint.ts'
-      - 'frontend/src/lib/supportAssistant.ts'
-      - 'frontend/src/lib/i18n/locales/assistantRu.ts'
-      - 'frontend/src/lib/__tests__/supportAssistant.test.ts'
-      - 'frontend/src/lib/__tests__/supportForm.test.ts'
-      - 'scripts/qa-support-form.cjs'
-      - '.github/workflows/support-form.yml'
+'on':
   push:
-    branches: [main, claude/support-simple-form]
-    paths:
-      - 'workers/support-edge/**'
-      - '.github/workflows/support-form.yml'
-  workflow_dispatch:
-
+    branches:
+      - codex/release-qa-20261006
 permissions:
   contents: read
-
 concurrency:
-  group: support-form-${{ github.event.pull_request.number || github.ref }}
+  group: release-qa-20261006-support-form.yml
   cancel-in-progress: false
-
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -44,6 +17,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+      - name: Verify frozen main input
+        run: |-
+          test "$(git rev-parse HEAD)" = '4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          echo 'RELEASE_QA_SOURCE_SHA=4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          git diff --exit-code
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -57,23 +36,29 @@ jobs:
           npm ci --ignore-scripts --no-audit --no-fund
           npx prisma generate
           npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
-      - name: Widget, i18n and route tests
+      - name: 'Widget, i18n and route tests'
         run: >-
-          npm test -- --runInBand --runTestsByPath
-          frontend/src/lib/__tests__/supportForm.test.ts
-          frontend/src/lib/__tests__/supportAssistant.test.ts
-          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+          npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/supportForm.test.ts
+          frontend/src/lib/__tests__/supportAssistant.test.ts frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
           frontend/src/lib/__tests__/routeCodeSplitting.test.ts
       - name: Production build has no mail secret
-        run: |
+        run: >
           npm run build --prefix frontend
+
           # The exact protected-owner email comparison in
+
           # frontend/src/pages/admin/DeleteUserDialog.tsx is an intentional identity.
+
           # frontend/src/lib/__tests__/supportForm.test.ts permits only that guard
+
           # and rejects that address elsewhere; actual mail/token markers stay forbidden.
-          if grep -R -l -E "SMTP_PASS|SMTP_USER|SUPPORT_ADMIN_EMAIL|SUPPORT_FROM_EMAIL|SUPPORT_RELAY_KEY|CLOUDFLARE_API_TOKEN" frontend/dist; then
+
+          if grep -R -l -E
+          "SMTP_PASS|SMTP_USER|SUPPORT_ADMIN_EMAIL|SUPPORT_FROM_EMAIL|SUPPORT_RELAY_KEY|CLOUDFLARE_API_TOKEN"
+          frontend/dist; then
             echo "secret-like string in the bundle"; exit 1
           fi
+
           grep -R -q "/support/request" frontend/dist
       - name: QA bundle (endpoint = local Worker adapter)
         run: npm run build --prefix frontend
@@ -81,7 +66,7 @@ jobs:
         run: |
           npm install --prefix /tmp/support-form-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/support-form-qa/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Browser QA - form, one email, prefill, layout, idle
+      - name: 'Browser QA - form, one email, prefill, layout, idle'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/support-form-qa/node_modules/playwright
         run: node scripts/qa-support-form.cjs
@@ -94,30 +79,36 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: support-form-${{ github.sha }}
+          name: 'support-form-${{ github.sha }}'
           path: docs/qa/support-form/
           if-no-files-found: ignore
           retention-days: 7
-
   blacklist-postgres:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:16
+        image: 'postgres:16'
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
           POSTGRES_DB: voltex_email_policy_test
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s --health-timeout 5s --health-retries 10
+        ports:
+          - '5432:5432'
+        options: '--health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10'
     env:
-      DATABASE_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
-      DIRECT_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
-      EMAIL_POLICY_TEST_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
+      DATABASE_URL: 'postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test'
+      DIRECT_URL: 'postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test'
+      EMAIL_POLICY_TEST_URL: 'postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test'
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+          persist-credentials: false
+      - name: Verify frozen main input
+        run: |-
+          test "$(git rev-parse HEAD)" = '4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          echo 'RELEASE_QA_SOURCE_SHA=4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          git diff --exit-code
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -125,45 +116,6 @@ jobs:
       - run: npx prisma generate && npx prisma db push --skip-generate
       - run: npm run build
       - run: >-
-          npm test -- --runInBand --runTestsByPath
-          src/api/routes/__tests__/contactPolicy.pg.test.ts
-          src/api/routes/__tests__/contactPolicy.test.ts
-          src/api/routes/__tests__/auth.test.ts
-          src/api/middleware/__tests__/auth.test.ts
-          src/api/routes/__tests__/bcryptAuthRegression.test.ts
-
-  deploy:
-    needs: [verify, blacklist-postgres]
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[deploy-support-edge]')))
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: workers/support-edge
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Deploy Worker
-        run: npx --yes wrangler@4 deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
-      - name: Production identity and refusal smoke (sends no email)
-        run: |
-          ok=0
-          for attempt in $(seq 1 24); do
-            if health="$(curl --connect-timeout 5 --max-time 10 -fsS https://support.voltextech.net/health)" \
-              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log(JSON.stringify(j));if(j.ok!==true||j.service!=='voltex-support-edge'||j.version!=='support-form-v3-authenticated'||j.configured!==true)process.exit(1)})"; then
-              ok=1; break
-            fi
-            echo "waiting_for_worker attempt=$attempt"; sleep 5
-          done
-          test "$ok" = "1"
-          pre="$(curl -sS -o /dev/null -w '%{http_code}' -X OPTIONS -H 'Origin: https://voltextech.net' https://support.voltextech.net/v1/support)"
-          echo "preflight_allowed_origin=$pre"; test "$pre" = "204"
-          foreign="$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://evil.example' -H 'Content-Type: application/json' --data '{}' https://support.voltextech.net/v1/support)"
-          echo "foreign_origin_post=$foreign"; test "$foreign" = "403"
+          npm test -- --runInBand --runTestsByPath src/api/routes/__tests__/contactPolicy.pg.test.ts
+          src/api/routes/__tests__/contactPolicy.test.ts src/api/routes/__tests__/auth.test.ts
+          src/api/middleware/__tests__/auth.test.ts src/api/routes/__tests__/bcryptAuthRegression.test.ts

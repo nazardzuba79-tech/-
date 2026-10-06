@@ -1,205 +1,14 @@
+# Isolated release QA. Application checkout pinned to current main; no deployment jobs.
 name: Copy Trading card regression
-
-on:
-  pull_request:
-    paths:
-      - 'src/services/copyTrading/**'
-      - 'src/api/routes/copyPerformance.ts'
-      - 'src/api/routes/syntheticCopyTrading.ts'
-      - 'frontend/src/lib/copyMarketplace*.ts'
-      - 'frontend/src/lib/__tests__/copyMarketplace*.test.ts'
-      - 'frontend/src/lib/kseniaCopyTrading.ts'
-      - 'frontend/src/lib/syntheticCopyTrading.ts'
-      - 'frontend/src/lib/useCopyMarketplace.ts'
-      - 'frontend/src/pages/CopyTradingPage.tsx'
-      - 'frontend/src/pages/copy-trading-bolt/**'
-      # The browser QA below signs in, routes away and back, and signs out, so
-      # the route table and the nav that owns the sign-out button are as much
-      # its subject as the marketplace is. A change to either used to leave
-      # this workflow unrun; the logout assertion then went unchecked.
-      - 'frontend/src/App.tsx'
-      - 'frontend/src/components/Nav.tsx'
-      - 'frontend/src/components/HeaderDropdown.tsx'
-      - 'frontend/src/components/HeaderDropdown.css'
-      - 'frontend/src/components/TradingBotIcon.tsx'
-      - 'frontend/src/lib/__tests__/rootRoute*.test.ts'
-      - 'scripts/qa-copy-*.cjs'
-      # INVARIANT 12 — the rest of what the Copy Trading page actually renders
-      # and depends on, kept honest by
-      # frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts, which walks
-      # the real import graph and fails if anything in it is missing here.
-      # `api.ts` is the one that mattered: it owns getToken/clearToken and the
-      # onSessionChange broadcast every session invariant rests on, and a
-      # change to it used to run no Copy Trading test at all.
-      - 'frontend/src/lib/api.ts'
-      - 'frontend/src/lib/nrxMarket.ts'
-      - 'frontend/src/lib/marketEdge.ts'
-      - 'frontend/src/lib/browserActivity.ts'
-      - 'frontend/src/lib/displaySnapshotCache.ts'
-      - 'frontend/src/lib/sampledDisplayCopy.ts'
-      - 'src/api/middleware/auth.ts'
-      - 'src/services/ContactEmailPolicy.ts'
-      - 'src/buildCommit.ts'
-      - 'frontend/src/lib/copyTradingMoney.ts'
-      - 'frontend/src/lib/modeledCopyData.ts'
-      - 'frontend/src/lib/dailyReturnChart.ts'
-      - 'frontend/src/lib/monthlyCopyPerformance.ts'
-      - 'frontend/src/lib/depositMinimum.ts'
-      - 'frontend/src/lib/depositCopyLog.ts'
-      - 'frontend/src/lib/useDepositOptions.ts'
-      - 'frontend/src/lib/depositRequest.ts'
-      - 'frontend/src/lib/depositCatalogue.ts'
-      - 'frontend/src/lib/depositCatalogueEdge.ts'
-      - 'frontend/src/assets/neurix-logo.svg'
-      - 'frontend/src/assets/voltora-logo.svg'
-      - 'frontend/src/components/CryptoIcon.tsx'
-      - 'frontend/src/components/DepositCatalogueDialog.css'
-      - 'frontend/src/components/DepositCatalogueDialog.tsx'
-      - 'frontend/src/lib/assetMetadataStore.ts'
-      - 'frontend/src/lib/depositAssetMetadata.ts'
-      - 'frontend/src/lib/depositOrder.ts'
-      - 'frontend/src/lib/useAdminAlerts.ts'
-      - 'frontend/src/lib/adminAlertApi.ts'
-      # The strings both cards render, in every locale the switcher offers.
-      - 'frontend/src/lib/i18n.tsx'
-      - 'frontend/src/lib/i18n/**'
-      # Chrome the page mounts: the nav, the footer and everything they pull in.
-      - 'frontend/src/components/Footer.tsx'
-      - 'frontend/src/components/BottomNav.tsx'
-      - 'frontend/src/components/LanguageSwitcher.tsx'
-      - 'frontend/src/components/Logo.tsx'
-      - 'frontend/src/components/Skeleton.tsx'
-      - 'frontend/src/components/DepositModal.tsx'
-      - 'frontend/src/components/TopGainersTicker.tsx'
-      - 'frontend/src/components/CfdInstrumentList.tsx'
-      - 'frontend/src/components/CfdInstrumentIcon.tsx'
-      - 'frontend/src/components/CfdInstrumentIcon.css'
-      - 'frontend/src/components/PriceCell.tsx'
-      - 'frontend/src/lib/cfdDisplayCopy.ts'
-      - 'frontend/src/lib/cfdPresentation.ts'
-      - 'frontend/src/lib/cfdTickerFreshness.ts'
-      - 'frontend/src/lib/futuresDiscovery.ts'
-      - 'frontend/src/lib/liveMarketTypes.ts'
-      - 'frontend/src/lib/marketColumnSort.ts'
-      - 'frontend/src/lib/marketDataStore.ts'
-      - 'frontend/src/lib/priceChange.ts'
-      - 'frontend/src/lib/terminalWarmCache.ts'
-      - 'frontend/src/lib/testMarketStore.ts'
-      - 'frontend/src/lib/testMarkets.ts'
-      - 'frontend/src/lib/topCoins.ts'
-      - 'frontend/src/lib/useMarketData.ts'
-      - 'frontend/src/lib/usePriceFlash.ts'
-      - 'frontend/src/pages/crypto-card-final/cardApplicationState.ts'
-      - 'frontend/src/lib/__tests__/copyTrading*.test.ts'
-      - 'frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts'
-      - 'frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts'
-      - 'frontend/src/lib/__tests__/copyMonthlyPerformance*.test.ts'
-      - 'frontend/src/lib/__tests__/copyPerformancePeriods.test.ts'
-      - 'frontend/test-utils/languageStub.ts'
-      - '.github/workflows/copy-trading-card-regression.yml'
+'on':
   push:
-    branches: [main]
-    paths:
-      - 'src/services/copyTrading/**'
-      - 'src/api/routes/copyPerformance.ts'
-      - 'src/api/routes/syntheticCopyTrading.ts'
-      - 'frontend/src/lib/copyMarketplace*.ts'
-      - 'frontend/src/lib/__tests__/copyMarketplace*.test.ts'
-      - 'frontend/src/lib/kseniaCopyTrading.ts'
-      - 'frontend/src/lib/syntheticCopyTrading.ts'
-      - 'frontend/src/lib/useCopyMarketplace.ts'
-      - 'frontend/src/pages/CopyTradingPage.tsx'
-      - 'frontend/src/pages/copy-trading-bolt/**'
-      # The browser QA below signs in, routes away and back, and signs out, so
-      # the route table and the nav that owns the sign-out button are as much
-      # its subject as the marketplace is. A change to either used to leave
-      # this workflow unrun; the logout assertion then went unchecked.
-      - 'frontend/src/App.tsx'
-      - 'frontend/src/components/Nav.tsx'
-      - 'frontend/src/components/HeaderDropdown.tsx'
-      - 'frontend/src/components/HeaderDropdown.css'
-      - 'frontend/src/components/TradingBotIcon.tsx'
-      - 'frontend/src/lib/__tests__/rootRoute*.test.ts'
-      - 'scripts/qa-copy-*.cjs'
-      # INVARIANT 12 — the rest of what the Copy Trading page actually renders
-      # and depends on, kept honest by
-      # frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts, which walks
-      # the real import graph and fails if anything in it is missing here.
-      # `api.ts` is the one that mattered: it owns getToken/clearToken and the
-      # onSessionChange broadcast every session invariant rests on, and a
-      # change to it used to run no Copy Trading test at all.
-      - 'frontend/src/lib/api.ts'
-      - 'frontend/src/lib/nrxMarket.ts'
-      - 'frontend/src/lib/marketEdge.ts'
-      - 'frontend/src/lib/displaySnapshotCache.ts'
-      - 'frontend/src/lib/sampledDisplayCopy.ts'
-      - 'src/api/middleware/auth.ts'
-      - 'src/services/ContactEmailPolicy.ts'
-      - 'src/buildCommit.ts'
-      - 'frontend/src/lib/copyTradingMoney.ts'
-      - 'frontend/src/lib/modeledCopyData.ts'
-      - 'frontend/src/lib/dailyReturnChart.ts'
-      - 'frontend/src/lib/monthlyCopyPerformance.ts'
-      - 'frontend/src/lib/depositMinimum.ts'
-      - 'frontend/src/lib/depositCopyLog.ts'
-      - 'frontend/src/lib/useDepositOptions.ts'
-      - 'frontend/src/lib/depositRequest.ts'
-      - 'frontend/src/lib/depositCatalogue.ts'
-      - 'frontend/src/lib/depositCatalogueEdge.ts'
-      - 'frontend/src/assets/neurix-logo.svg'
-      - 'frontend/src/assets/voltora-logo.svg'
-      - 'frontend/src/components/CryptoIcon.tsx'
-      - 'frontend/src/components/DepositCatalogueDialog.css'
-      - 'frontend/src/components/DepositCatalogueDialog.tsx'
-      - 'frontend/src/lib/assetMetadataStore.ts'
-      - 'frontend/src/lib/depositAssetMetadata.ts'
-      - 'frontend/src/lib/depositOrder.ts'
-      - 'frontend/src/lib/useAdminAlerts.ts'
-      - 'frontend/src/lib/adminAlertApi.ts'
-      # The strings both cards render, in every locale the switcher offers.
-      - 'frontend/src/lib/i18n.tsx'
-      - 'frontend/src/lib/i18n/**'
-      # Chrome the page mounts: the nav, the footer and everything they pull in.
-      - 'frontend/src/components/Footer.tsx'
-      - 'frontend/src/components/BottomNav.tsx'
-      - 'frontend/src/components/LanguageSwitcher.tsx'
-      - 'frontend/src/components/Logo.tsx'
-      - 'frontend/src/components/Skeleton.tsx'
-      - 'frontend/src/components/DepositModal.tsx'
-      - 'frontend/src/components/TopGainersTicker.tsx'
-      - 'frontend/src/components/CfdInstrumentList.tsx'
-      - 'frontend/src/components/CfdInstrumentIcon.tsx'
-      - 'frontend/src/components/CfdInstrumentIcon.css'
-      - 'frontend/src/components/PriceCell.tsx'
-      - 'frontend/src/lib/cfdDisplayCopy.ts'
-      - 'frontend/src/lib/cfdPresentation.ts'
-      - 'frontend/src/lib/cfdTickerFreshness.ts'
-      - 'frontend/src/lib/futuresDiscovery.ts'
-      - 'frontend/src/lib/liveMarketTypes.ts'
-      - 'frontend/src/lib/marketColumnSort.ts'
-      - 'frontend/src/lib/marketDataStore.ts'
-      - 'frontend/src/lib/priceChange.ts'
-      - 'frontend/src/lib/terminalWarmCache.ts'
-      - 'frontend/src/lib/testMarketStore.ts'
-      - 'frontend/src/lib/testMarkets.ts'
-      - 'frontend/src/lib/topCoins.ts'
-      - 'frontend/src/lib/useMarketData.ts'
-      - 'frontend/src/lib/usePriceFlash.ts'
-      - 'frontend/src/pages/crypto-card-final/cardApplicationState.ts'
-      - 'frontend/src/lib/__tests__/copyTrading*.test.ts'
-      - 'frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts'
-      - 'frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts'
-      - 'frontend/src/lib/__tests__/copyMonthlyPerformance*.test.ts'
-      - 'frontend/src/lib/__tests__/copyPerformancePeriods.test.ts'
-      - 'frontend/test-utils/languageStub.ts'
-      - '.github/workflows/copy-trading-card-regression.yml'
-
+    branches:
+      - codex/release-qa-20261006
 permissions:
   contents: read
 concurrency:
-  group: copy-trading-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
+  group: release-qa-20261006-copy-trading-card-regression.yml
+  cancel-in-progress: false
 jobs:
   card-and-profile:
     runs-on: ubuntu-latest
@@ -208,6 +17,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+      - name: Verify frozen main input
+        run: |-
+          test "$(git rev-parse HEAD)" = '4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          echo 'RELEASE_QA_SOURCE_SHA=4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          git diff --exit-code
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -219,63 +34,33 @@ jobs:
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Ksenia daily-rollover regression
         run: npm test -- --runInBand --runTestsByPath src/services/copyTrading/__tests__/kseniaReportedTrade.test.ts
-      # THE GOLDEN SUITE. Short, stable and mandatory: the payload contract for
-      # both traders, the redacted-history policy, the owner-reported 61.9%
-      # and its single source, and every exit from the session state machine
-      # audited against one machine-enforced rule — a card may not sit in
-      # «Загрузка…» with nothing on the wire behind it.
       - name: Copy Trading critical path (Nazar + Ksenia)
         run: >-
-          npm test -- --runInBand --runTestsByPath
-          frontend/src/lib/__tests__/copyTradingCriticalPath.test.ts
+          npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/copyTradingCriticalPath.test.ts
           frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
           src/services/copyTrading/__tests__/copyMarketplaceEndpointContract.test.ts
-      # THE OWNER'S CADENCE. One new closed trade per strategy per UTC day,
-      # a same-day refresh that adds none, and a three-day gap that adds
-      # exactly three — read off the real service against a moving clock.
       - name: Daily progression (Nazar + Ksenia)
-        run: >-
-          npm test -- --runInBand --runTestsByPath
-          src/services/copyTrading/__tests__/dailyProgression.test.ts
-      # The «Сделки» tab is locked for both strategies in every viewer state,
-      # and no service vocabulary reaches a customer-facing surface.
+        run: npm test -- --runInBand --runTestsByPath src/services/copyTrading/__tests__/dailyProgression.test.ts
       - name: Hidden trade history and customer-facing wording
         run: >-
-          npm test -- --runInBand --runTestsByPath
-          frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts
+          npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts
           frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts
-      # «Статистика по месяцам»: the month table is derived in the browser
-      # from each strategy's own dailyResults. It must agree with the
-      # server's canonical monthly summary for BOTH traders over real HTTP,
-      # and opening it or moving between months and years must send nothing.
       - name: Monthly performance (Nazar + Ksenia)
         run: >-
-          npm test -- --runInBand --runTestsByPath
-          frontend/src/lib/__tests__/copyMonthlyPerformance.test.ts
+          npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/copyMonthlyPerformance.test.ts
           frontend/src/lib/__tests__/copyMonthlyPerformanceModal.test.ts
           src/services/copyTrading/__tests__/monthlyCopyPerformanceContract.test.ts
-      # The marketplace never waits for the day's append: a stale day is
-      # answered at once with its last confirmed section, a restarted process
-      # serves the published section without replaying history, and the
-      # refresh yields to other requests. Then one ledger across a real day
-      # boundary: every period re-derived, every surface in agreement.
       - name: Marketplace first paint and period progression (Nazar + Ksenia)
         run: >-
-          npm test -- --runInBand --runTestsByPath
-          src/services/copyTrading/__tests__/marketplaceSnapshot.test.ts
+          npm test -- --runInBand --runTestsByPath src/services/copyTrading/__tests__/marketplaceSnapshot.test.ts
           src/services/copyTrading/__tests__/copyPeriodProgression.test.ts
-      # «Эффективность»: the selected period's own figures, Russian labels
-      # with ROI / P&L / USDT kept, numbers unchanged by language, and a
-      # skeleton only while a request is really in flight.
       - name: Performance block periods and language
         run: >-
-          npm test -- --runInBand --runTestsByPath
-          frontend/src/lib/__tests__/copyPerformancePeriods.test.ts
+          npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/copyPerformancePeriods.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
-      - name: Copy privacy, retry and period regressions
+      - name: 'Copy privacy, retry and period regressions'
         run: >-
-          npm test -- --runInBand --runTestsByPath
-          src/services/copyTrading/__tests__/tradeHistoryVisibility.test.ts
+          npm test -- --runInBand --runTestsByPath src/services/copyTrading/__tests__/tradeHistoryVisibility.test.ts
           src/services/copyTrading/__tests__/kseniaReportedWeek.test.ts
           frontend/src/lib/__tests__/copyMarketplaceReview.test.ts
           frontend/src/lib/__tests__/copyMarketplaceRetry.test.ts
@@ -294,46 +79,27 @@ jobs:
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-last-good-browser.cjs
-      - name: Browser QA - cards, hidden trades and avatar ring
+      - name: 'Browser QA - cards, hidden trades and avatar ring'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-cards-trades-avatar.cjs
-      # The reported weekly figure is pinned until the owner changes it, so the
-      # case that matters most is a model date PAST the reported week: this
-      # harness stands up a second server with its own service clock and reads
-      # the card and the profile there. Nothing else in CI covers it.
       - name: Browser QA - the reported weekly result survives the week changing
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-loading-and-ksenia.cjs
-      # THE OWNER'S SYMPTOM, IN A BROWSER. Ten situations — cold load, hard
-      # reload, route return, focus, a late token, a FAILED prefetch, a
-      # timeout, a 500, offline→online, and another tab logging in — each
-      # judged on one rule: within the client's own fifteen-second abort, both
-      # cards must show real figures, last-good figures flagged stale, or an
-      # honest unavailable state. Never a skeleton with nothing on the wire.
       - name: Browser QA - Nazar and Ksenia never sit in «Загрузка…»
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-never-loading.cjs
-      # The cadence and the locked tab in a browser, at both widths the owner
-      # reviews on: one more trade a day, hidden trades, a 7D that moves.
-      - name: Browser QA - one trade a day, hidden trades, a 7D that moves
+      - name: 'Browser QA - one trade a day, hidden trades, a 7D that moves'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-daily-progression.cjs
-      # «Статистика по месяцам» at 1440 and 390 for both traders: each dialog
-      # prints its own trader's months (recomputed from the API's daily rows),
-      # and opening it or moving between months and years sends no request.
-      - name: Browser QA - monthly performance, no request on open or switch
+      - name: 'Browser QA - monthly performance, no request on open or switch'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-monthly-performance.cjs
-      # First paint on a new UTC day whose append is slower than the client's
-      # 15 s budget (production logged 42.29 s), «Эффективность» per period in
-      # Russian at 1440 and 390, and no skeleton once a 503 or a 15 s abort
-      # has ended the attempt.
-      - name: Browser QA - slow new day, period performance block, honest failure
+      - name: 'Browser QA - slow new day, period performance block, honest failure'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
           QA_SLOW_APPEND_MS: '20000'

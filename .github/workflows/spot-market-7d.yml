@@ -1,34 +1,14 @@
-# Spot terminal compact market rail: Price · 24h · New.
-#
-# 7d performance stays on the full Markets page. This workflow protects the
-# narrow rail's ticker/logo readability, newest-listing discovery, sorting,
-# resize range and no-overflow browser geometry.
+# Isolated release QA. Application checkout pinned to current main; no deployment jobs.
 name: Spot compact market rail
-
-on:
-  pull_request:
-    paths:
-      - 'frontend/src/components/PairListSidebar.tsx'
-      - 'frontend/src/components/SpotMarketControls.css'
-      - 'frontend/src/lib/testMarketStore.ts'
-      - 'frontend/src/lib/testMarkets.ts'
-      - 'frontend/src/lib/pairList.ts'
-      - 'frontend/src/lib/marketColumnSort.ts'
-      - 'frontend/src/lib/i18n/locales/**'
-      - 'frontend/src/pages/trade-terminal/MarketReferenceTerminal.css'
-      - 'frontend/src/pages/TradePage.tsx'
-      - 'frontend/src/lib/__tests__/spotPairList7d.test.ts'
-      - 'frontend/src/lib/__tests__/spotPairList.test.ts'
-      - 'scripts/qa-spot-market-7d.cjs'
-      - '.github/workflows/spot-market-7d.yml'
-
+'on':
+  push:
+    branches:
+      - codex/release-qa-20261006
 permissions:
   contents: read
-
 concurrency:
-  group: spot-market-7d-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
+  group: release-qa-20261006-spot-market-7d.yml
+  cancel-in-progress: false
 jobs:
   spot-7d:
     runs-on: ubuntu-latest
@@ -37,6 +17,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+      - name: Verify frozen main input
+        run: |-
+          test "$(git rev-parse HEAD)" = '4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          echo 'RELEASE_QA_SOURCE_SHA=4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          git diff --exit-code
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -45,14 +31,16 @@ jobs:
       - name: Frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Spot compact-list guards
-        run: npx jest frontend/src/lib/__tests__/spotPairList7d.test.ts frontend/src/lib/__tests__/spotPairList.test.ts frontend/src/lib/__tests__/cryptoCatalogue.test.ts frontend/src/lib/__tests__/marketColumnSort.test.ts
+        run: >-
+          npx jest frontend/src/lib/__tests__/spotPairList7d.test.ts frontend/src/lib/__tests__/spotPairList.test.ts
+          frontend/src/lib/__tests__/cryptoCatalogue.test.ts frontend/src/lib/__tests__/marketColumnSort.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
       - name: Disposable browser tooling
         run: |
           npm install --prefix /tmp/spot-7d-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/spot-7d-browser/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Spot compact rail at 1920, 1440, 1366 and panel widths 240–340
+      - name: 'Spot compact rail at 1920, 1440, 1366 and panel widths 240–340'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/spot-7d-browser/node_modules/playwright
           QA_OUT: docs/qa/spot-market-7d/ci
@@ -60,7 +48,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: spot-compact-rail-${{ github.sha }}
+          name: 'spot-compact-rail-${{ github.sha }}'
           path: docs/qa/spot-market-7d/ci
           if-no-files-found: warn
           retention-days: 7

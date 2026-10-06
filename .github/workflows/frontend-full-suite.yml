@@ -1,32 +1,31 @@
+# Isolated release QA. Application checkout pinned to current main; no deployment jobs.
 name: Full frontend regression
-on:
-  pull_request:
-    paths:
-      - 'frontend/**'
-      - 'src/**'
-      - 'package*.json'
-      - 'tsconfig*.json'
-      - 'jest.config.js'
-      - 'jest.setup.ts'
-      - '.github/workflows/frontend-full-suite.yml'
-  workflow_dispatch: {}
+'on':
+  push:
+    branches:
+      - codex/release-qa-20261006
 permissions:
   contents: read
 concurrency:
-  group: frontend-full-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: release-qa-20261006-frontend-full-suite.yml
+  cancel-in-progress: false
 jobs:
   complete-suite:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      # No production secret, database service or account is used by this job.
-      DATABASE_URL: postgresql://test:test@127.0.0.1:9/frontend_test_unused
-      DIRECT_URL: postgresql://test:test@127.0.0.1:9/frontend_test_unused
+      DATABASE_URL: 'postgresql://test:test@127.0.0.1:9/frontend_test_unused'
+      DIRECT_URL: 'postgresql://test:test@127.0.0.1:9/frontend_test_unused'
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+      - name: Verify frozen main input
+        run: |-
+          test "$(git rev-parse HEAD)" = '4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          echo 'RELEASE_QA_SOURCE_SHA=4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          git diff --exit-code
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -35,16 +34,16 @@ jobs:
       - run: npx prisma generate
       - name: Typecheck and build the current frontend before CSS artifact assertions
         run: npm run build --prefix frontend
-      - name: Every frontend suite, with no baseline-failure waiver
+      - name: 'Every frontend suite, with no baseline-failure waiver'
         run: |
           mkdir -p .ci-output
           node node_modules/jest/bin/jest.js frontend/src --runInBand --json --outputFile=.ci-output/frontend-full.json
       - name: Reject skipped or unfinished frontend checks
         run: >-
-          node -e "const r=require('./.ci-output/frontend-full.json');
-          if(r.numPendingTests || r.numTodoTests) throw new Error('Full frontend gate requires every check to run');
-          if(!r.numPassedTests || !r.success) throw new Error('Full frontend gate did not pass');
-          console.log(r.numPassedTests + ' frontend checks passed, none skipped');"
+          node -e "const r=require('./.ci-output/frontend-full.json'); if(r.numPendingTests || r.numTodoTests) throw new
+          Error('Full frontend gate requires every check to run'); if(!r.numPassedTests || !r.success) throw new
+          Error('Full frontend gate did not pass'); console.log(r.numPassedTests + ' frontend checks passed, none
+          skipped');"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,64 +1,14 @@
-# The Futures trading panel and order book, restyled from the owner's
-# reference pack — and held to the pack's own "do not copy" list.
-#
-# The jest guard pins what a later edit could quietly undo (the order types,
-# the Calculator as the heading's only control, no Bybit orange, geometry
-# kept off mobile). The browser run measures the rest at five widths:
-# clipping, overflow, column alignment, grouping, Стакан/Сделки, price
-# click, and an order POST from the ticket.
+# Isolated release QA. Application checkout pinned to current main; no deployment jobs.
 name: Futures trading panel and order book polish
-
-on:
-  pull_request:
-    paths:
-      - 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'
-      - 'frontend/src/pages/trade-terminal/FuturesOrderPanelRefinement.css'
-      - 'frontend/src/pages/trade-terminal/TerminalGraphite.css'
-      - 'frontend/src/pages/FuturesPage.tsx'
-      - 'frontend/src/pages/trade-terminal/VoltexTerminalSystem.css'
-      - 'frontend/src/pages/trade-terminal/TerminalMobileParity.css'
-      - 'frontend/src/pages/trade-terminal/TerminalMobileHeader.css'
-      - 'frontend/src/pages/trade-terminal/SpotMobileCompact.css'
-      - 'frontend/src/pages/trade-terminal/FuturesMobileCompact.css'
-      - 'frontend/src/components/TerminalMarketSwitch.tsx'
-      - 'frontend/src/lib/terminalMarketSwitch.ts'
-      - 'frontend/src/lib/useMediaQuery.ts'
-      - 'frontend/src/lib/__tests__/mobileTradeDeposit.test.ts'
-      - 'frontend/src/pages/TradePage.tsx'
-      - 'frontend/src/lib/__tests__/terminalMobileParity.test.ts'
-      - 'frontend/src/components/CfdChart.tsx'
-      - 'frontend/src/lib/__tests__/terminalDesignSystem.test.ts'
-      - 'frontend/src/components/FuturesOrderForm.tsx'
-      - 'frontend/src/components/FuturesPositionsPanel.tsx'
-      - 'frontend/src/lib/formatNumber.ts'
-      - 'frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts'
-      - 'frontend/src/lib/__tests__/futuresProTerminal.test.ts'
-      - 'frontend/src/components/FuturesReferenceBook.tsx'
-      - 'frontend/src/components/PercentSlider.tsx'
-      - 'frontend/src/components/OrderFamilyPresentation.tsx'
-      - 'frontend/src/lib/referenceBook.ts'
-      - 'frontend/src/lib/__tests__/futuresVisualPolish.test.ts'
-      - 'scripts/qa-futures-visual-polish.cjs'
-      - 'scripts/qa-futures-proportions.cjs'
-      - 'scripts/qa-spot-cfd-terminal.cjs'
-      - 'scripts/qa-vta-presentation.cjs'
-      - 'scripts/qa-chart-ruler-label.cjs'
-      - 'frontend/src/components/ChartDrawingLayer.tsx'
-      - 'frontend/src/lib/chartDrawings.ts'
-      - 'frontend/src/lib/drawingGeometry.ts'
-      - 'frontend/src/pages/trade-terminal/TerminalPreviewPolish.css'
-      - 'frontend/src/components/TickerBar.tsx'
-      - 'frontend/src/components/CfdTickerBar.tsx'
-      - 'frontend/src/components/CfdOrderForm.tsx'
-      - '.github/workflows/futures-visual-polish.yml'
-
+'on':
+  push:
+    branches:
+      - codex/release-qa-20261006
 permissions:
   contents: read
-
 concurrency:
-  group: futures-visual-polish-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
+  group: release-qa-20261006-futures-visual-polish.yml
+  cancel-in-progress: false
 jobs:
   visual-polish:
     runs-on: ubuntu-latest
@@ -67,6 +17,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+      - name: Verify frozen main input
+        run: |-
+          test "$(git rev-parse HEAD)" = '4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          echo 'RELEASE_QA_SOURCE_SHA=4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          git diff --exit-code
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -75,39 +31,56 @@ jobs:
       - name: Frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Brief guards
-        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/terminalDesignSystem.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/referenceBook.test.ts frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts frontend/src/lib/__tests__/futuresProTerminal.test.ts frontend/src/lib/__tests__/mobileTradeDeposit.test.ts
+        run: >-
+          npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts
+          frontend/src/lib/__tests__/terminalDesignSystem.test.ts
+          frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/referenceBook.test.ts
+          frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts
+          frontend/src/lib/__tests__/futuresProTerminal.test.ts frontend/src/lib/__tests__/mobileTradeDeposit.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
-      - name: Ruler math, presentation and trading preservation
-        run: npx jest --runInBand frontend/src/lib/__tests__/chartDrawings.test.ts frontend/src/lib/__tests__/rulerMeasure.test.ts frontend/src/lib/__tests__/rulerLabel.test.ts frontend/src/lib/__tests__/rulerPresentation.test.ts frontend/src/lib/__tests__/tradingViewRulerLayer.test.ts frontend/src/lib/__tests__/chartTrading.test.ts frontend/src/lib/__tests__/spotChartPriceFormat.test.ts
+      - name: 'Ruler math, presentation and trading preservation'
+        run: >-
+          npx jest --runInBand frontend/src/lib/__tests__/chartDrawings.test.ts
+          frontend/src/lib/__tests__/rulerMeasure.test.ts frontend/src/lib/__tests__/rulerLabel.test.ts
+          frontend/src/lib/__tests__/rulerPresentation.test.ts frontend/src/lib/__tests__/tradingViewRulerLayer.test.ts
+          frontend/src/lib/__tests__/chartTrading.test.ts frontend/src/lib/__tests__/spotChartPriceFormat.test.ts
       - name: Disposable browser tooling
-        run: |
-          npm install --prefix /tmp/visual-polish-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+        run: >
+          npm install --prefix /tmp/visual-polish-browser --no-save --ignore-scripts --no-audit --no-fund
+          playwright@1.63.0
+
           node /tmp/visual-polish-browser/node_modules/playwright/cli.js install --with-deps chromium
+
           # The original author harness uses this absolute module path.
+
           # Supply it only in the disposable runner; production is untouched.
+
           sudo mkdir -p /opt/node22/lib/node_modules
+
           sudo ln -s /tmp/visual-polish-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
-      - name: Futures browser QA at desktop and 320, 360, 390, 430 mobile widths
+      - name: 'Futures browser QA at desktop and 320, 360, 390, 430 mobile widths'
         run: node scripts/qa-futures-visual-polish.cjs --label ci
-      - name: Real Futures proportions, all desktop widths and mobile
+      - name: 'Real Futures proportions, all desktop widths and mobile'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
-        run: node scripts/qa-futures-proportions.cjs --phase after --widths 1920,1664,1600,1550,1531,1440,1366,390 --out docs/qa/futures-proportions-ci
-      - name: Spot and CFD mobile browser QA at 320, 360, 390, 430
+        run: >-
+          node scripts/qa-futures-proportions.cjs --phase after --widths 1920,1664,1600,1550,1531,1440,1366,390 --out
+          docs/qa/futures-proportions-ci
+      - name: 'Spot and CFD mobile browser QA at 320, 360, 390, 430'
         run: node scripts/qa-spot-cfd-terminal.cjs
       - name: VTA source-specific connection and readable measurement card
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
         run: node scripts/qa-vta-presentation.cjs
-      - name: NRX ruler labels, actual plot bounds, handles and live end
+      - name: 'NRX ruler labels, actual plot bounds, handles and live end'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
-        run: node scripts/qa-chart-ruler-label.cjs --label ci --widths 1440,1366,390
+        run: 'node scripts/qa-chart-ruler-label.cjs --label ci --widths 1440,1366,390'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: futures-visual-polish-${{ github.sha }}
+          name: 'futures-visual-polish-${{ github.sha }}'
           path: |
             docs/qa/futures-visual-polish/ci-*
             docs/qa/futures-proportions-ci/*

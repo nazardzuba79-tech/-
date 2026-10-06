@@ -1,14 +1,9 @@
+# Isolated release QA. Application checkout pinned to current main; no deployment jobs.
 name: Admin account deletion
-on:
-  pull_request:
-    paths:
-      - 'src/api/**'
-      - 'src/services/**'
-      - 'src/index.ts'
-      - 'prisma/**'
-      - 'frontend/src/pages/admin/**'
-      - 'scripts/qa-admin-user-deletion.cjs'
-      - '.github/workflows/admin-user-deletion.yml'
+'on':
+  push:
+    branches:
+      - codex/release-qa-20261006
 permissions:
   contents: read
 jobs:
@@ -19,6 +14,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+      - name: Verify frozen main input
+        run: |-
+          test "$(git rev-parse HEAD)" = '4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          echo 'RELEASE_QA_SOURCE_SHA=4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          git diff --exit-code
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -27,18 +28,18 @@ jobs:
       - run: npx prisma generate
       - run: npm run build
       - run: npm run build --prefix frontend
-      - name: Authentication, admin, retained transfers and trading regressions
+      - name: 'Authentication, admin, retained transfers and trading regressions'
         run: >-
-          npm test -- --runInBand
-          src/api src/services/deposits src/matching-engine src/futures
-          src/services/__tests__/AccountDeletionGate.test.ts
-          src/services/__tests__/OrderService.test.ts src/services/__tests__/DemoTradingService.test.ts
-          src/services/__tests__/DepositService.test.ts src/services/__tests__/WithdrawalService.test.ts
-          src/services/__tests__/TreasuryWalletService.test.ts
+          npm test -- --runInBand src/api src/services/deposits src/matching-engine src/futures
+          src/services/__tests__/AccountDeletionGate.test.ts src/services/__tests__/OrderService.test.ts
+          src/services/__tests__/DemoTradingService.test.ts src/services/__tests__/DepositService.test.ts
+          src/services/__tests__/WithdrawalService.test.ts src/services/__tests__/TreasuryWalletService.test.ts
           frontend/src/lib/__tests__/admin frontend/src/lib/__tests__/depositAllWallets
       - name: Install isolated disposable database and browser tools
-        run: npm install --prefix node_modules/.cache/admin-delete-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
-      - name: PostgreSQL rollback, retained history, authentication revocation and browser QA
+        run: >-
+          npm install --prefix node_modules/.cache/admin-delete-qa --no-save --ignore-scripts
+          @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - name: 'PostgreSQL rollback, retained history, authentication revocation and browser QA'
         run: |
           $env:ADMIN_DELETE_QA_DEPS = Join-Path (Get-Location) 'node_modules/.cache/admin-delete-qa/package.json'
           $env:PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/admin-delete-qa/node_modules/playwright).Path
@@ -50,3 +51,6 @@ jobs:
           name: admin-user-deletion-acceptance
           path: output/admin-user-deletion
           retention-days: 7
+concurrency:
+  group: release-qa-20261006-admin-user-deletion.yml
+  cancel-in-progress: false

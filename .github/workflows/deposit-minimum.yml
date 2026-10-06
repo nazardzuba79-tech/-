@@ -1,49 +1,9 @@
+# Isolated release QA. Application checkout pinned to current main; no deployment jobs.
 name: Deposit packages — manual approval only
-on:
-  pull_request:
-    paths:
-      - 'src/services/DepositService.ts'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'src/services/deposit-verifiers/**'
-      - 'src/services/__tests__/DepositService.test.ts'
-      - 'src/services/TreasuryWalletService.ts'
-      - 'src/services/deposits/**'
-      - 'src/api/routes/depositWatchInternal.ts'
-      - 'src/index.ts'
-      - 'src/services/__tests__/TreasuryWalletService.test.ts'
-      - 'src/api/routes/*Deposits*'
-      - 'src/api/routes/deposits.ts'
-      - 'src/api/routes/depositAddressCopies.ts'
-      - 'src/api/routes/__tests__/depositAddressCopies.test.ts'
-      - 'frontend/src/lib/depositCopyLog.ts'
-      - 'frontend/src/lib/__tests__/depositCopyLog.test.ts'
-      - 'frontend/src/components/DepositCatalogueDialog.tsx'
-      - 'frontend/src/pages/admin/DepositCopiesSection.tsx'
-      - 'frontend/src/pages/admin/depositCopies.css'
-      - 'frontend/src/lib/__tests__/adminDepositCopies.test.ts'
-      - 'frontend/src/lib/__tests__/creditDepositDrawerOutcome.test.ts'
-      - 'scripts/qa-deposit-copy-log.cjs'
-      - 'src/api/routes/__tests__/*eposits*'
-      - 'src/config/limits.ts'
-      - 'src/config/chains.ts'
-      - 'prisma/**'
-      - 'frontend/src/lib/api.ts'
-      - 'frontend/src/lib/useDepositOptions.ts'
-      - 'frontend/src/lib/__tests__/depositAllWallets.test.ts'
-      - 'frontend/src/lib/i18n/locales/ru.ts'
-      - 'frontend/src/pages/admin/AdminDepositsPage.tsx'
-      - 'frontend/src/pages/admin/AdminUsersPage.tsx'
-      - 'frontend/src/pages/admin/CreditDepositDrawer.tsx'
-      - 'frontend/src/pages/admin/adminDepositApi.ts'
-      - 'frontend/src/pages/admin/adminUserActivity.ts'
-      - 'frontend/src/lib/__tests__/adminUsersActivity.test.ts'
-      - 'frontend/src/lib/__tests__/renderBandwidthBudget.test.ts'
-      - 'frontend/src/lib/__tests__/adminConsoleInteractions.test.ts'
-      - 'frontend/src/lib/__tests__/adminDepositRails.test.ts'
-      - 'frontend/src/pages/wallet-v3/**'
-      - 'scripts/qa-deposit-packages.cjs'
-      - '.github/workflows/deposit-minimum.yml'
+'on':
+  push:
+    branches:
+      - codex/release-qa-20261006
 permissions:
   contents: read
 jobs:
@@ -54,6 +14,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+      - name: Verify frozen main input
+        run: |-
+          test "$(git rev-parse HEAD)" = '4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          echo 'RELEASE_QA_SOURCE_SHA=4daae9f3c2d42d5d9df6e8b061d77cc5331053b7'
+          git diff --exit-code
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -62,16 +28,12 @@ jobs:
       - run: npx prisma generate
       - run: npm run build
       - run: npm run build --prefix frontend
-      - name: Deposit, provider, auth and admin regression tests
+      - name: 'Deposit, provider, auth and admin regression tests'
         run: >-
-          npm test -- --runInBand --runTestsByPath
-          src/services/__tests__/DepositService.test.ts
-          src/api/routes/__tests__/adminDeposits.test.ts
-          src/api/routes/__tests__/deposits.test.ts
-          src/api/routes/__tests__/depositAddressCopies.test.ts
-          src/services/__tests__/TreasuryWalletService.test.ts
-          src/api/routes/__tests__/adminOverview.test.ts
-          src/config/__tests__/chains.test.ts
+          npm test -- --runInBand --runTestsByPath src/services/__tests__/DepositService.test.ts
+          src/api/routes/__tests__/adminDeposits.test.ts src/api/routes/__tests__/deposits.test.ts
+          src/api/routes/__tests__/depositAddressCopies.test.ts src/services/__tests__/TreasuryWalletService.test.ts
+          src/api/routes/__tests__/adminOverview.test.ts src/config/__tests__/chains.test.ts
           src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts
           src/services/deposit-verifiers/__tests__/EvmDepositVerifier.test.ts
           src/services/deposit-verifiers/__tests__/BitcoinDepositVerifier.test.ts
@@ -79,18 +41,17 @@ jobs:
           src/services/deposit-verifiers/__tests__/TonDepositVerifier.test.ts
           src/services/deposit-verifiers/__tests__/incomingBudget.test.ts
           src/services/deposits/__tests__/depositWatchSchedule.test.ts
-          frontend/src/lib/__tests__/depositAllWallets.test.ts
-          frontend/src/lib/__tests__/walletUnifiedAccount.test.ts
+          frontend/src/lib/__tests__/depositAllWallets.test.ts frontend/src/lib/__tests__/walletUnifiedAccount.test.ts
           frontend/src/lib/__tests__/adminDepositRails.test.ts
-          frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
-          frontend/src/lib/__tests__/depositCopyLog.test.ts
+          frontend/src/lib/__tests__/adminConsoleInteractions.test.ts frontend/src/lib/__tests__/depositCopyLog.test.ts
           frontend/src/lib/__tests__/adminDepositCopies.test.ts
           frontend/src/lib/__tests__/creditDepositDrawerOutcome.test.ts
-          frontend/src/lib/__tests__/adminUsersActivity.test.ts
-          frontend/src/lib/__tests__/renderBandwidthBudget.test.ts
+          frontend/src/lib/__tests__/adminUsersActivity.test.ts frontend/src/lib/__tests__/renderBandwidthBudget.test.ts
       - name: Install isolated PostgreSQL and browser tools
-        run: npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
-      - name: Real PostgreSQL packages, watcher recovery and production-bundle browser acceptance
+        run: >-
+          npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts
+          @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - name: 'Real PostgreSQL packages, watcher recovery and production-bundle browser acceptance'
         run: |
           $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path
           node scripts/qa-deposit-packages.cjs --browser
@@ -101,3 +62,6 @@ jobs:
           name: deposit-packages-acceptance
           path: output/deposit-packages
           retention-days: 7
+concurrency:
+  group: release-qa-20261006-deposit-minimum.yml
+  cancel-in-progress: false
