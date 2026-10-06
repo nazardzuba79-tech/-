@@ -1,24 +1,13 @@
 name: Native demo engine and browser
-on:
-  pull_request:
-    paths:
-      - 'src/private-trading/**'
-      - 'src/api/routes/**'
-      - 'frontend/src/**'
-      - 'prisma/**'
-      - 'scripts/*native-demo*'
-      - 'scripts/qa-large-numbers-browser.cjs'
-      - 'scripts/qa-limit-close.cjs'
-      - 'scripts/qa-pnl-card.cjs'
-      - 'scripts/qa-order-panel-refinement.cjs'
-      - 'scripts/qa-futures-tiny-price.cjs'
-      - 'jest.config.js'
-      - '.github/workflows/native-demo-qa.yml'
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
 concurrency:
-  group: native-demo-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: release-qa-final-20261006-native-demo-qa.yml
+  cancel-in-progress: false
 jobs:
   native:
     runs-on: ubuntu-latest
@@ -27,6 +16,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -40,11 +34,26 @@ jobs:
         env:
           VITE_API_URL: /api/v1
       - name: Native math and authorization tests
-        run: npm test -- --runInBand --json --outputFile=native-tests.json --runTestsByPath src/private-trading/__tests__/nativeDemoEngine.test.ts src/private-trading/__tests__/nativeDemoReplay.test.ts src/private-trading/__tests__/nativeDemoService.test.ts src/private-trading/__tests__/nativeReduceOnlyClose.test.ts src/private-trading/__tests__/crossDemo.test.ts src/api/routes/__tests__/nativeDemoAccess.test.ts frontend/src/lib/__tests__/nativeDemoFrontend.test.ts frontend/src/lib/__tests__/largeNumberPresentation.test.ts frontend/src/lib/__tests__/privateTradingFrontend.test.ts src/private-trading/__tests__/simulationOnlyIsolation.test.ts frontend/src/lib/__tests__/cardNumberFormat.test.ts frontend/src/lib/__tests__/privateTradingFrontend.test.ts frontend/src/lib/__tests__/largeNumberPresentation.test.ts
+        run: >-
+          npm test -- --runInBand --json --outputFile=native-tests.json --runTestsByPath
+          src/private-trading/__tests__/nativeDemoEngine.test.ts src/private-trading/__tests__/nativeDemoReplay.test.ts
+          src/private-trading/__tests__/nativeDemoService.test.ts
+          src/private-trading/__tests__/nativeReduceOnlyClose.test.ts src/private-trading/__tests__/crossDemo.test.ts
+          src/api/routes/__tests__/nativeDemoAccess.test.ts frontend/src/lib/__tests__/nativeDemoFrontend.test.ts
+          frontend/src/lib/__tests__/largeNumberPresentation.test.ts
+          frontend/src/lib/__tests__/privateTradingFrontend.test.ts
+          src/private-trading/__tests__/simulationOnlyIsolation.test.ts
+          frontend/src/lib/__tests__/cardNumberFormat.test.ts frontend/src/lib/__tests__/privateTradingFrontend.test.ts
+          frontend/src/lib/__tests__/largeNumberPresentation.test.ts
       - name: Positions P&L and ROI presentation tests
-        run: npx jest --runInBand frontend/src/lib/__tests__/futuresUnrealizedPnl.test.ts frontend/src/lib/__tests__/futuresReferenceRow.test.ts
+        run: >-
+          npx jest --runInBand frontend/src/lib/__tests__/futuresUnrealizedPnl.test.ts
+          frontend/src/lib/__tests__/futuresReferenceRow.test.ts
       - name: Compact ticket options and chart menus
-        run: npx jest --runInBand frontend/src/lib/__tests__/decimalInput.test.ts frontend/src/lib/__tests__/futuresCompactTicketOptions.test.ts frontend/src/lib/__tests__/priceChartMarketOrders.test.ts frontend/src/lib/__tests__/futuresUiPolish.test.ts
+        run: >-
+          npx jest --runInBand frontend/src/lib/__tests__/decimalInput.test.ts
+          frontend/src/lib/__tests__/futuresCompactTicketOptions.test.ts
+          frontend/src/lib/__tests__/priceChartMarketOrders.test.ts frontend/src/lib/__tests__/futuresUiPolish.test.ts
       - name: Disposable browser tooling
         id: browser-tooling
         run: |
@@ -55,33 +64,33 @@ jobs:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
         run: node scripts/qa-native-demo-browser.cjs
       - name: Tiny decimal inputs and accepted native orders
-        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+        if: '${{ !cancelled() && steps.browser-tooling.outcome == ''success'' }}'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/native-browser/node_modules/playwright
         run: node scripts/qa-futures-tiny-price.cjs
       - name: Positions P&L and ROI browser matrix at 320–1920px
-        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+        if: '${{ !cancelled() && steps.browser-tooling.outcome == ''success'' }}'
         env:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
           NATIVE_QA_PNL_ONLY: '1'
         run: node scripts/qa-native-demo-browser.cjs
       - name: P&L card opens promptly and shows real price precision
-        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+        if: '${{ !cancelled() && steps.browser-tooling.outcome == ''success'' }}'
         env:
           PNL_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
         run: node scripts/qa-pnl-card.cjs
-      - name: Order panel protection, limits and CTA layout at 320–1920px
-        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+      - name: 'Order panel protection, limits and CTA layout at 320–1920px'
+        if: '${{ !cancelled() && steps.browser-tooling.outcome == ''success'' }}'
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/native-browser/node_modules/playwright
         run: node scripts/qa-order-panel-refinement.cjs
       - name: Large financial values keep their layout (desktop and phone)
-        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+        if: '${{ !cancelled() && steps.browser-tooling.outcome == ''success'' }}'
         env:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
         run: node scripts/qa-large-numbers-browser.cjs
-      - name: Limit close — dialog, resting order, cancel, partial fill on a price move (desktop and phone)
-        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+      - name: 'Limit close — dialog, resting order, cancel, partial fill on a price move (desktop and phone)'
+        if: '${{ !cancelled() && steps.browser-tooling.outcome == ''success'' }}'
         env:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
           LIMIT_QA_WIDTHS: '1440,390'

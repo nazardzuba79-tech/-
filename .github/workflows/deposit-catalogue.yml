@@ -1,37 +1,8 @@
 name: Manual deposit catalogue
-on:
-  pull_request:
-    paths:
-      - 'src/services/depositCatalogue/**'
-      - 'src/api/routes/depositCatalogue.ts'
-      - 'src/index.ts'
-      - 'frontend/src/lib/depositCatalogue.ts'
-      - 'frontend/src/lib/depositCatalogueEdge.ts'
-      - 'frontend/src/lib/useDepositOptions.ts'
-      - 'frontend/src/lib/i18n/**'
-      - 'frontend/src/lib/__tests__/deposit*.test.ts'
-      - 'frontend/src/lib/__tests__/adminConsoleInteractions.test.ts'
-      - 'frontend/src/components/DepositModal.tsx'
-      - 'frontend/src/components/DepositCatalogueDialog*'
-      - 'frontend/src/lib/depositAssetMetadata.ts'
-      - 'frontend/src/lib/depositMinimum.ts'
-      - 'frontend/src/lib/depositOrder.ts'
-      - 'src/config/limits.ts'
-      - 'frontend/qa/deposit-preview*'
-      - 'frontend/package*.json'
-      - 'scripts/qa-deposit-ui.cjs'
-      - 'scripts/repro-deposit-picker.cjs'
-      - 'frontend/src/pages/wallet-v3/DepositModal.tsx'
-      - 'frontend/src/pages/admin/Admin*Catalogue*'
-      - 'frontend/src/pages/admin/AdminWalletsPage.tsx'
-      - 'frontend/src/pages/admin/depositCatalogue.css'
-      - 'scripts/qa-deposit-catalogue.cjs'
-      - 'scripts/qa-deposit-catalogue-edge.cjs'
-      - 'scripts/smoke-deposit-public.mjs'
-      - '.github/workflows/deploy-deposit-catalogue.yml'
-      - 'scripts/export-deposit-catalogue-baseline*'
-      - 'workers/deposit-catalogue/**'
-      - '.github/workflows/deposit-catalogue.yml'
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
 jobs:
@@ -40,37 +11,39 @@ jobs:
     timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
-        with: { persist-credentials: false, fetch-depth: 0 }
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
-        with: { node-version: '22' }
+        with:
+          node-version: '22'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate
       - name: Catalogue and existing deposit regressions (synthetic only)
         run: >-
-          npx jest --runInBand --runTestsByPath
-          src/services/depositCatalogue/__tests__/catalogue.test.ts
-          src/api/routes/__tests__/adminWallets.test.ts
-          src/api/routes/__tests__/deposits.test.ts
-          src/services/__tests__/TreasuryWalletService.test.ts
-          frontend/src/lib/__tests__/depositAllWallets.test.ts
-          frontend/src/lib/__tests__/depositMinimumRule.test.ts
-          frontend/src/lib/__tests__/depositOrder.test.ts
-          frontend/src/lib/__tests__/depositCatalogueEdge.test.ts
-          frontend/src/lib/__tests__/adminDepositRails.test.ts
+          npx jest --runInBand --runTestsByPath src/services/depositCatalogue/__tests__/catalogue.test.ts
+          src/api/routes/__tests__/adminWallets.test.ts src/api/routes/__tests__/deposits.test.ts
+          src/services/__tests__/TreasuryWalletService.test.ts frontend/src/lib/__tests__/depositAllWallets.test.ts
+          frontend/src/lib/__tests__/depositMinimumRule.test.ts frontend/src/lib/__tests__/depositOrder.test.ts
+          frontend/src/lib/__tests__/depositCatalogueEdge.test.ts frontend/src/lib/__tests__/adminDepositRails.test.ts
           frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
-          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
-          frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
       - run: npm run build
       - name: Read-only exporter regression (synthetic only)
         run: node --test scripts/export-deposit-catalogue-baseline.test.cjs
       - run: npm ci --prefix workers/deposit-catalogue --no-audit --no-fund
-      - name: Actual workerd / SQLite persistence, CAS and backend cache
+      - name: 'Actual workerd / SQLite persistence, CAS and backend cache'
         run: npm test --prefix workers/deposit-catalogue
       - name: Post-deploy smoke script against the real Worker bundle
-        run: npm run test:smoke --prefix workers/deposit-catalogue
+        run: 'npm run test:smoke --prefix workers/deposit-catalogue'
       - name: Validate Worker bundle and staging configuration without deploy
-        run: npm run build:check --prefix workers/deposit-catalogue
+        run: 'npm run build:check --prefix workers/deposit-catalogue'
       - run: npx tsc -b frontend
       - name: Build isolated catalogue preview
         working-directory: frontend
@@ -80,7 +53,7 @@ jobs:
         run: npx vite build --outDir ../output/deposit-catalogue-frontend
       - run: npm install --prefix output/qa-tools --no-save --package-lock=false playwright@1.58.2 jsqr@1.4.0 pngjs@7.0.0
       - run: node output/qa-tools/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Desktop, mobile and one-minute idle measurement
+      - name: 'Desktop, mobile and one-minute idle measurement'
         env:
           QA_PLAYWRIGHT_MODULE: ../output/qa-tools/node_modules/playwright
         run: node scripts/qa-deposit-catalogue.cjs
@@ -89,25 +62,32 @@ jobs:
         env:
           VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
           VITE_API_URL: /api/v1
-          VITE_DEPOSIT_CATALOGUE_URL: http://127.0.0.1:8791
+          VITE_DEPOSIT_CATALOGUE_URL: 'http://127.0.0.1:8791'
         run: npx vite build --outDir ../output/deposit-catalogue-edge-frontend
-      - name: Direct public read from the real Worker, one-minute idle, no Render fallback
+      - name: 'Direct public read from the real Worker, one-minute idle, no Render fallback'
         env:
           QA_PLAYWRIGHT_MODULE: ../output/qa-tools/node_modules/playwright
         run: node scripts/qa-deposit-catalogue-edge.cjs
-      - name: Mounted picker, clipboard, QR, responsive and idle regression
+      - name: 'Mounted picker, clipboard, QR, responsive and idle regression'
         env:
           VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
           VITE_API_URL: /api/v1
           QA_PLAYWRIGHT_MODULE: ../output/qa-tools/node_modules/playwright
           QA_JSQR_MODULE: ../output/qa-tools/node_modules/jsqr
           QA_PNGJS_MODULE: ../output/qa-tools/node_modules/pngjs
-        run: |
-          (cd frontend && node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4262 --strictPort) > output/deposit-preview.log 2>&1 &
+        run: >
+          (cd frontend && node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4262 --strictPort) >
+          output/deposit-preview.log 2>&1 &
+
           PREVIEW_PID=$!
+
           trap 'kill "$PREVIEW_PID" || true' EXIT
-          for attempt in {1..30}; do curl --fail --silent http://127.0.0.1:4262/qa/deposit-preview.html > /dev/null && break; sleep 1; done
+
+          for attempt in {1..30}; do curl --fail --silent http://127.0.0.1:4262/qa/deposit-preview.html > /dev/null &&
+          break; sleep 1; done
+
           node scripts/repro-deposit-picker.cjs
+
           node scripts/qa-deposit-ui.cjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -118,3 +98,6 @@ jobs:
             docs/qa/deposit-catalogue-edge
             docs/qa/deposit-ui
           retention-days: 7
+concurrency:
+  group: release-qa-final-20261006-deposit-catalogue.yml
+  cancel-in-progress: false

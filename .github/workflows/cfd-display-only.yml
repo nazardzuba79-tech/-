@@ -1,35 +1,13 @@
 name: CFD working terminal
-on:
-  pull_request:
-    paths:
-      - 'src/api/routes/cfd.ts'
-      - 'src/marketDataCollector.ts'
-      - 'src/services/marketData/bybit/**'
-      - 'src/services/marketData/cfd/**'
-      - 'src/services/marketData/live/**'
-      - 'src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts'
-      - 'src/cfd/__tests__/CfdDisplaySelfTest.test.ts'
-      - 'src/cfd/__tests__/CfdDerivRequestId.test.ts'
-      - 'src/cfd/__tests__/CfdDerivShutdown.test.ts'
-      - 'src/cfd/__tests__/CfdDisplayFeedLifecycle.test.ts'
-      - 'src/cfd/__tests__/CfdQuoteSafety.test.ts'
-      - 'src/cfd/__tests__/CfdQuoteRoutes.test.ts'
-      - 'frontend/src/components/Cfd*'
-      - 'frontend/src/lib/cfd*'
-      - 'frontend/src/lib/useCfdTickers.ts'
-      - 'frontend/src/lib/__tests__/cfdDisplayOnly.test.ts'
-      - 'frontend/src/lib/__tests__/cfdTerminal.test.ts'
-      - 'frontend/src/pages/home/**'
-      - 'frontend/src/pages/trade-terminal/CfdPractice.css'
-      - 'scripts/qa-cfd-display-browser.cjs'
-      - 'scripts/cfd-browser-readiness.cjs'
-      - 'scripts/test-cfd-browser-readiness.cjs'
-      - '.github/workflows/cfd-display-only.yml'
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
 concurrency:
-  group: cfd-working-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: release-qa-final-20261006-cfd-display-only.yml
+  cancel-in-progress: false
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -38,6 +16,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -53,7 +36,15 @@ jobs:
       - name: Market-data collector build
         run: npx tsc -p tsconfig.collector.json
       - name: Market-data and CFD regression tests
-        run: npm test -- --runInBand --silent --runTestsByPath src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts src/services/marketData/live/__tests__/CollectorDepthRouting.test.ts src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts src/cfd/__tests__/CfdDisplaySelfTest.test.ts src/cfd/__tests__/CfdDerivRequestId.test.ts src/cfd/__tests__/CfdDerivShutdown.test.ts src/cfd/__tests__/CfdDisplayFeedLifecycle.test.ts src/cfd/__tests__/CfdQuoteSafety.test.ts src/cfd/__tests__/CfdQuoteRoutes.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts
+        run: >-
+          npm test -- --runInBand --silent --runTestsByPath
+          src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts
+          src/services/marketData/live/__tests__/CollectorDepthRouting.test.ts
+          src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts src/cfd/__tests__/CfdDisplaySelfTest.test.ts
+          src/cfd/__tests__/CfdDerivRequestId.test.ts src/cfd/__tests__/CfdDerivShutdown.test.ts
+          src/cfd/__tests__/CfdDisplayFeedLifecycle.test.ts src/cfd/__tests__/CfdQuoteSafety.test.ts
+          src/cfd/__tests__/CfdQuoteRoutes.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts
+          frontend/src/lib/__tests__/cfdTerminal.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
@@ -62,10 +53,12 @@ jobs:
       - name: Bounded real-route readiness regression tests
         run: node --test scripts/test-cfd-browser-readiness.cjs
       - name: Install disposable browser QA tooling
-        run: |
-          npm install --prefix /tmp/voltex-cfd-display-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+        run: >
+          npm install --prefix /tmp/voltex-cfd-display-qa --no-save --ignore-scripts --no-audit --no-fund
+          playwright@1.63.0
+
           node /tmp/voltex-cfd-display-qa/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Browser QA — prices, owned chart and practice orders
+      - name: 'Browser QA — prices, owned chart and practice orders'
         env:
           CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-display-qa/node_modules/playwright
         run: node scripts/qa-cfd-display-browser.cjs
@@ -83,25 +76,62 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: BiQuote public batch has all canonical display identities
-        run: |
+        run: >
           node <<'NODE'
-          const map={XAUUSD:'XAUUSD',XAGUSD:'XAGUSD',XPTUSD:'XPTUSD',XPDUSD:'XPDUSD',WTIUSD:'USOIL',XBRUSD:'UKOIL',EURUSD:'EURUSD',GBPUSD:'GBPUSD',USDJPY:'USDJPY',AUDUSD:'AUDUSD',USDCAD:'USDCAD',USDCHF:'USDCHF',NZDUSD:'NZDUSD'};
-          (async()=>{const u=new URL('https://biquote.io/api/latest');for(const s of Object.values(map))u.searchParams.append('symbols',s);const r=await fetch(u,{signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});if(!r.ok)throw Error(`HTTP ${r.status}`);const body=await r.json();for(const [canonical,symbol] of Object.entries(map)){const q=body[symbol];if(!q||q.symbol!==symbol||!Number.isFinite(Number(q.mid))||Number(q.mid)<=0)throw Error(`missing/invalid ${canonical}/${symbol}`);}console.log(`BiQuote ${Object.keys(map).length}/13 identities OK`);})().catch(e=>{console.error(e);process.exit(1)});
+
+          const
+          map={XAUUSD:'XAUUSD',XAGUSD:'XAGUSD',XPTUSD:'XPTUSD',XPDUSD:'XPDUSD',WTIUSD:'USOIL',XBRUSD:'UKOIL',EURUSD:'EURUSD',GBPUSD:'GBPUSD',USDJPY:'USDJPY',AUDUSD:'AUDUSD',USDCAD:'USDCAD',USDCHF:'USDCHF',NZDUSD:'NZDUSD'};
+
+          (async()=>{const u=new URL('https://biquote.io/api/latest');for(const s of
+          Object.values(map))u.searchParams.append('symbols',s);const r=await
+          fetch(u,{signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});if(!r.ok)throw Error(`HTTP
+          ${r.status}`);const body=await r.json();for(const [canonical,symbol] of Object.entries(map)){const
+          q=body[symbol];if(!q||q.symbol!==symbol||!Number.isFinite(Number(q.mid))||Number(q.mid)<=0)throw
+          Error(`missing/invalid ${canonical}/${symbol}`);}console.log(`BiQuote ${Object.keys(map).length}/13 identities
+          OK`);})().catch(e=>{console.error(e);process.exit(1)});
+
           NODE
       - name: BiQuote OHLC supplies real chart bars
-        run: |
+        run: >
           node <<'NODE'
-          (async()=>{for(const symbol of ['XAUUSD','USOIL']){const u=`https://biquote.io/api/${symbol}/ohlc?interval=15m&limit=40`;const r=await fetch(u,{signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});if(!r.ok)throw Error(`${symbol} HTTP ${r.status}`);const b=await r.json();if(b.symbol!==symbol||b.interval!=='15m'||!Array.isArray(b.bars)||b.bars.length<2)throw Error(`${symbol} OHLC missing`);for(const x of b.bars.slice(-2))for(const k of ['open','high','low','close'])if(!Number.isFinite(Number(x[k]))||Number(x[k])<=0)throw Error(`${symbol} invalid ${k}`);}console.log('BiQuote OHLC XAUUSD + WTI OK');})().catch(e=>{console.error(e);process.exit(1)});
+
+          (async()=>{for(const symbol of ['XAUUSD','USOIL']){const
+          u=`https://biquote.io/api/${symbol}/ohlc?interval=15m&limit=40`;const r=await
+          fetch(u,{signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});if(!r.ok)throw
+          Error(`${symbol} HTTP ${r.status}`);const b=await
+          r.json();if(b.symbol!==symbol||b.interval!=='15m'||!Array.isArray(b.bars)||b.bars.length<2)throw
+          Error(`${symbol} OHLC missing`);for(const x of b.bars.slice(-2))for(const k of
+          ['open','high','low','close'])if(!Number.isFinite(Number(x[k]))||Number(x[k])<=0)throw Error(`${symbol}
+          invalid ${k}`);}console.log('BiQuote OHLC XAUUSD + WTI OK');})().catch(e=>{console.error(e);process.exit(1)});
+
           NODE
       - name: Deriv public discovery covers metals and FX reserve set
-        run: |
+        run: >
           node <<'NODE'
-          const WebSocket=require('ws');const expected=new Set(['frxXAUUSD','frxXAGUSD','frxXPTUSD','frxXPDUSD','frxEURUSD','frxGBPUSD','frxUSDJPY','frxAUDUSD','frxUSDCAD','frxUSDCHF','frxNZDUSD']);let done=false;
-          const ws=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public',{handshakeTimeout:8000});const finish=(ok,msg)=>{if(done)return;done=true;clearTimeout(timer);try{ws.close()}catch{};console.log(msg);if(!ok)process.exitCode=1};const timer=setTimeout(()=>finish(false,'Deriv timeout'),15000);
-          ws.on('open',()=>ws.send(JSON.stringify({active_symbols:'brief',req_id:1})));ws.on('error',()=>finish(false,'Deriv socket error'));ws.on('message',buf=>{let x;try{x=JSON.parse(buf.toString())}catch{return}if(x.msg_type!=='active_symbols')return;const ids=new Set((x.active_symbols||[]).map(r=>r.underlying_symbol||r.symbol));const missing=[...expected].filter(x=>!ids.has(x));finish(!missing.length,missing.length?`Deriv missing: ${missing.join(',')}`:'Deriv 11/11 reserve identities OK');});
+
+          const WebSocket=require('ws');const expected=new
+          Set(['frxXAUUSD','frxXAGUSD','frxXPTUSD','frxXPDUSD','frxEURUSD','frxGBPUSD','frxUSDJPY','frxAUDUSD','frxUSDCAD','frxUSDCHF','frxNZDUSD']);let
+          done=false;
+
+          const ws=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public',{handshakeTimeout:8000});const
+          finish=(ok,msg)=>{if(done)return;done=true;clearTimeout(timer);try{ws.close()}catch{};console.log(msg);if(!ok)process.exitCode=1};const
+          timer=setTimeout(()=>finish(false,'Deriv timeout'),15000);
+
+          ws.on('open',()=>ws.send(JSON.stringify({active_symbols:'brief',req_id:1})));ws.on('error',()=>finish(false,'Deriv
+          socket error'));ws.on('message',buf=>{let
+          x;try{x=JSON.parse(buf.toString())}catch{return}if(x.msg_type!=='active_symbols')return;const ids=new
+          Set((x.active_symbols||[]).map(r=>r.underlying_symbol||r.symbol));const
+          missing=[...expected].filter(x=>!ids.has(x));finish(!missing.length,missing.length?`Deriv missing:
+          ${missing.join(',')}`:'Deriv 11/11 reserve identities OK');});
+
           NODE

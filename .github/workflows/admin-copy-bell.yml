@@ -1,19 +1,13 @@
 name: Admin deposit-copy bell
-on:
-  pull_request:
-    paths:
-      - '.github/workflows/admin-copy-bell.yml'
-      - 'src/api/routes/adminUsers.ts'
-      - 'src/services/deposits/latestDepositCopiesForUsers.ts'
-      - 'src/api/routes/__tests__/adminDepositCopyBell.test.ts'
-      - 'frontend/src/pages/admin/AdminUsersPage.tsx'
-      - 'frontend/src/pages/admin/DepositCopyBell.tsx'
-      - 'frontend/src/lib/__tests__/adminDepositCopyBell.test.ts'
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
 concurrency:
-  group: admin-copy-bell-${{ github.ref }}
-  cancel-in-progress: true
+  group: release-qa-final-20261006-admin-copy-bell.yml
+  cancel-in-progress: false
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -22,19 +16,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate
-      - name: Copy bell, authorization and existing admin regressions (synthetic only)
+      - name: 'Copy bell, authorization and existing admin regressions (synthetic only)'
         run: >-
-          npx jest --runInBand --runTestsByPath
-          src/api/routes/__tests__/adminDepositCopyBell.test.ts
-          src/api/routes/__tests__/adminUsers.test.ts
-          src/api/routes/__tests__/adminCustomers.test.ts
-          frontend/src/lib/__tests__/adminDepositCopyBell.test.ts
-          frontend/src/lib/__tests__/adminUsersActivity.test.ts
+          npx jest --runInBand --runTestsByPath src/api/routes/__tests__/adminDepositCopyBell.test.ts
+          src/api/routes/__tests__/adminUsers.test.ts src/api/routes/__tests__/adminCustomers.test.ts
+          frontend/src/lib/__tests__/adminDepositCopyBell.test.ts frontend/src/lib/__tests__/adminUsersActivity.test.ts
       - run: npm run build
       - run: npx tsc -b frontend

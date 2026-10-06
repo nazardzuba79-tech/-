@@ -1,11 +1,8 @@
 name: Native test account access
-on:
-  pull_request:
-    paths:
-      - 'src/private-trading/**'
-      - 'src/api/routes/privateTrading.ts'
-      - '.github/workflows/native-test-accounts.yml'
-  workflow_dispatch:
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
 jobs:
@@ -14,6 +11,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+          persist-credentials: false
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -22,10 +26,16 @@ jobs:
       - run: npx prisma generate
       - name: Backend TypeScript
         run: npm run build
-      - name: Actual native tester access, ledger and isolation regressions
-        run: npm test -- --runInBand --json --outputFile=native-test-accounts.json --runTestsByPath src/private-trading/__tests__/nativeTestAccounts.test.ts src/api/routes/__tests__/nativeDemoAccess.test.ts src/private-trading/__tests__/simulationOnlyIsolation.test.ts
+      - name: 'Actual native tester access, ledger and isolation regressions'
+        run: >-
+          npm test -- --runInBand --json --outputFile=native-test-accounts.json --runTestsByPath
+          src/private-trading/__tests__/nativeTestAccounts.test.ts src/api/routes/__tests__/nativeDemoAccess.test.ts
+          src/private-trading/__tests__/simulationOnlyIsolation.test.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: native-test-account-results
           path: native-test-accounts.json
+concurrency:
+  group: release-qa-final-20261006-native-test-accounts.yml
+  cancel-in-progress: false

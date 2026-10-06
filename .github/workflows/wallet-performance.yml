@@ -1,12 +1,8 @@
 name: Wallet performance regression
-on:
-  pull_request:
-    paths:
-      - 'src/services/WalletPortfolioService.ts'
-      - 'src/services/PortfolioPerformanceEngine.ts'
-      - 'src/services/__tests__/WalletPortfolioService.test.ts'
-      - 'src/api/routes/portfolio.ts'
-      - '.github/workflows/wallet-performance.yml'
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
 jobs:
@@ -15,6 +11,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+          persist-credentials: false
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -24,9 +27,14 @@ jobs:
       - name: Backend TypeScript
         run: npm run build
       - name: Wallet performance tests
-        run: npm test -- --runInBand --json --outputFile=wallet-performance-tests.json --runTestsByPath src/services/__tests__/WalletPortfolioService.test.ts
+        run: >-
+          npm test -- --runInBand --json --outputFile=wallet-performance-tests.json --runTestsByPath
+          src/services/__tests__/WalletPortfolioService.test.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: wallet-performance-tests
           path: wallet-performance-tests.json
+concurrency:
+  group: release-qa-final-20261006-wallet-performance.yml
+  cancel-in-progress: false

@@ -1,43 +1,13 @@
-# A refresh keeps the contract, a position's name opens it, Админка lives in
-# the profile menu, and the header's 24h turnover and open interest read.
-#
-# The three claims are pinned twice on purpose: the jest suite states the
-# logic and the wiring, and the browser run presses F5 and presses the
-# button. Neither alone is enough — the unit test cannot prove the address
-# survives a reload, and the browser run cannot prove a query string that
-# is not a pair is refused.
 name: Futures pair persistence and header cluster
-
-on:
-  pull_request:
-    paths:
-      - 'frontend/src/pages/FuturesPage.tsx'
-      - 'frontend/src/lib/futuresPairRoute.ts'
-      - 'frontend/src/components/FuturesPositionsPanel.tsx'
-      - 'frontend/src/components/FuturesPositionParity.css'
-      - 'frontend/src/components/Nav.tsx'
-      - 'frontend/src/index.css'
-      - 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'
-      - 'frontend/src/pages/trade-terminal/FuturesMobile.css'
-      - 'frontend/src/lib/__tests__/futuresPairPersistence.test.ts'
-      - 'scripts/qa-futures-pair-persistence.cjs'
-      - 'frontend/src/components/FuturesTickerBar.tsx'
-      - 'frontend/src/components/FuturesTurnover.tsx'
-      - 'frontend/src/lib/terminalPresentation.ts'
-      - 'frontend/src/lib/__tests__/futuresTickerHeader.test.ts'
-      - 'frontend/src/lib/__tests__/futuresMarketStats.test.ts'
-      - 'frontend/src/lib/__tests__/terminalPresentation.test.ts'
-      - 'frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts'
-      - 'scripts/qa-futures-header-turnover.cjs'
-      - '.github/workflows/futures-pair-persistence.yml'
-
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
-
 concurrency:
-  group: futures-pair-persistence-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
+  group: release-qa-final-20261006-futures-pair-persistence.yml
+  cancel-in-progress: false
 jobs:
   pair-persistence:
     runs-on: ubuntu-latest
@@ -46,6 +16,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -55,34 +30,30 @@ jobs:
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Unit and source guards
         run: >-
-          npx jest
-          frontend/src/lib/__tests__/futuresPairPersistence.test.ts
-          frontend/src/lib/__tests__/futuresMarketSearch.test.ts
-          frontend/src/lib/__tests__/futuresFinalPolish.test.ts
-          frontend/src/lib/__tests__/futuresUiPolish.test.ts
-          frontend/src/lib/__tests__/orderPanelNavCleanup.test.ts
-          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
-          frontend/src/lib/__tests__/futuresTickerHeader.test.ts
-          frontend/src/lib/__tests__/futuresMarketStats.test.ts
-          frontend/src/lib/__tests__/terminalPresentation.test.ts
+          npx jest frontend/src/lib/__tests__/futuresPairPersistence.test.ts
+          frontend/src/lib/__tests__/futuresMarketSearch.test.ts frontend/src/lib/__tests__/futuresFinalPolish.test.ts
+          frontend/src/lib/__tests__/futuresUiPolish.test.ts frontend/src/lib/__tests__/orderPanelNavCleanup.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts frontend/src/lib/__tests__/futuresTickerHeader.test.ts
+          frontend/src/lib/__tests__/futuresMarketStats.test.ts frontend/src/lib/__tests__/terminalPresentation.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
       - name: Disposable browser tooling
-        run: |
-          npm install --prefix /tmp/pair-persistence-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+        run: >
+          npm install --prefix /tmp/pair-persistence-browser --no-save --ignore-scripts --no-audit --no-fund
+          playwright@1.63.0
+
           node /tmp/pair-persistence-browser/node_modules/playwright/cli.js install --with-deps chromium
+
           # The original author harness uses this absolute module path.
+
           # Supply it only in the disposable runner; production is untouched.
+
           sudo mkdir -p /opt/node22/lib/node_modules
+
           sudo ln -s /tmp/pair-persistence-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
-      - name: Refresh, ticker click and header cluster at 1440 and 390
+      - name: 'Refresh, ticker click and header cluster at 1440 and 390'
         run: node scripts/qa-futures-pair-persistence.cjs --label ci
-      # The production state of the header's market statistics: the server's
-      # cross-venue section carries a stale open interest and no turnover
-      # (Binance Futures refuses the backend's region). The turnover must come
-      # from the header's own Bybit reference row, the open interest must read
-      # at its neighbours' contrast, and «Админка» must sit in the profile menu.
-      - name: Header turnover, open-interest contrast and the profile menu at 1920 and 1440
+      - name: 'Header turnover, open-interest contrast and the profile menu at 1920 and 1440'
         env:
           QA_LABEL: after
           QA_OUT: docs/qa/futures-pair-persistence/ci-header-turnover
@@ -90,7 +61,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: futures-pair-persistence-${{ github.sha }}
+          name: 'futures-pair-persistence-${{ github.sha }}'
           path: docs/qa/futures-pair-persistence/ci-*
           retention-days: 7
           if-no-files-found: warn

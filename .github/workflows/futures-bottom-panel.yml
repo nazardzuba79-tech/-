@@ -1,21 +1,13 @@
 name: Futures bottom panel geometry
-
-on:
-  pull_request:
-    paths:
-      - 'frontend/src/pages/trade-terminal/**'
-      - 'frontend/src/components/FuturesPositionsPanel*'
-      - 'frontend/src/pages/FuturesPage.tsx'
-      - 'scripts/qa-futures-bottom-panel.cjs'
-      - '.github/workflows/futures-bottom-panel.yml'
-
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
-
 concurrency:
-  group: futures-bottom-panel-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
+  group: release-qa-final-20261006-futures-bottom-panel.yml
+  cancel-in-progress: false
 jobs:
   bottom-panel:
     runs-on: ubuntu-latest
@@ -24,6 +16,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -34,19 +31,25 @@ jobs:
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
       - name: Disposable browser tooling
-        run: |
-          npm install --prefix /tmp/bottom-panel-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+        run: >
+          npm install --prefix /tmp/bottom-panel-browser --no-save --ignore-scripts --no-audit --no-fund
+          playwright@1.63.0
+
           node /tmp/bottom-panel-browser/node_modules/playwright/cli.js install --with-deps chromium
+
           # The original author harness uses this absolute module path.
+
           # Supply it only in the disposable runner; production is untouched.
+
           sudo mkdir -p /opt/node22/lib/node_modules
+
           sudo ln -s /tmp/bottom-panel-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
-      - name: Empty and filled panel, all tabs, four desktop widths
+      - name: 'Empty and filled panel, all tabs, four desktop widths'
         run: node scripts/qa-futures-bottom-panel.cjs --label ci
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: futures-bottom-panel-integrated-${{ github.sha }}
+          name: 'futures-bottom-panel-integrated-${{ github.sha }}'
           path: docs/qa/futures-bottom-panel/ci-*
           retention-days: 7
           if-no-files-found: warn

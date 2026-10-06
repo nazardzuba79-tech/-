@@ -1,18 +1,10 @@
 name: Direct Spot public market data
-
-on:
-  pull_request:
-    paths:
-      - 'frontend/src/lib/spotPublicMarket.ts'
-      - 'frontend/src/lib/__tests__/spotPublicMarket.test.ts'
-      - 'frontend/src/pages/TradePage.tsx'
-      - 'frontend/src/components/TerminalChart.tsx'
-      - 'workers/market-edge/**'
-      - '.github/workflows/direct-spot-market.yml'
-
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
-
 jobs:
   direct-spot:
     runs-on: ubuntu-latest
@@ -21,6 +13,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -29,11 +26,12 @@ jobs:
       - run: npx prisma generate
       - name: Direct Spot parser and terminal regression tests
         run: >-
-          npx jest --runInBand --silent --runTestsByPath
-          frontend/src/lib/__tests__/spotPublicMarket.test.ts
-          frontend/src/lib/__tests__/spotOrderBook.test.ts
-          frontend/src/lib/__tests__/futuresUiPolish.test.ts
+          npx jest --runInBand --silent --runTestsByPath frontend/src/lib/__tests__/spotPublicMarket.test.ts
+          frontend/src/lib/__tests__/spotOrderBook.test.ts frontend/src/lib/__tests__/futuresUiPolish.test.ts
       - name: Production frontend build
         run: npm run build --prefix frontend
       - name: Worker public-market contract
         run: node --experimental-default-type=module workers/market-edge/test.mjs
+concurrency:
+  group: release-qa-final-20261006-direct-spot-market.yml
+  cancel-in-progress: false

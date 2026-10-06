@@ -1,25 +1,8 @@
 name: Browser read budget
-on:
-  pull_request:
-    paths:
-      - 'frontend/src/lib/futuresAccountStore.ts'
-      - 'frontend/src/lib/useFuturesAccount.ts'
-      - 'frontend/src/lib/visibleRead.ts'
-      - 'frontend/src/lib/useVisibleAccountRead.ts'
-      - 'frontend/src/lib/useFuturesMark.ts'
-      - 'frontend/src/lib/useAdminAlerts.ts'
-      - 'frontend/src/components/Futures*.tsx'
-      - 'frontend/src/components/ArchiveTopAssets.tsx'
-      - 'frontend/src/pages/FuturesPage.tsx'
-      - 'frontend/src/pages/WalletPage.tsx'
-      - 'frontend/src/pages/wallet-v3/**'
-      - 'frontend/src/pages/admin/**'
-      - 'frontend/src/pages/private-trading/useNativeDemo.tsx'
-      - 'frontend/src/lib/__tests__/**'
-      - 'frontend/test-utils/**'
-      - 'scripts/qa-browser-read-budget-fixture.js'
-      - 'scripts/qa-futures-account-harness.cjs'
-      - '.github/workflows/browser-read-budget.yml'
+'on':
+  push:
+    branches:
+      - codex/release-qa-final-20261006
 permissions:
   contents: read
 jobs:
@@ -30,6 +13,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ca69d47eaccccf18a1bd7e45e34452fcd60e9e91
+      - name: Verify frozen main source
+        run: |-
+          test "$(git rev-parse HEAD)" = 'ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
+          echo 'RELEASE_QA_SOURCE_SHA=ca69d47eaccccf18a1bd7e45e34452fcd60e9e91'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -38,7 +26,10 @@ jobs:
       - run: npx prisma generate
       - run: npm run build
       - run: npm run build --prefix frontend
-      - name: Real stores, mounted hooks, Futures and wallet preservation
+      - name: 'Real stores, mounted hooks, Futures and wallet preservation'
         run: >-
           npm test -- --runInBand --silent
           "--testPathPattern=frontend/src/lib/__tests__/(futures|accountReadLifecycle|adminConsoleInteractions|adminDepositRails|adminUsersActivity|renderBandwidthBudget|nativeLive|nativeTerminal|nativeFuturesTerminal|walletUnifiedAccount|browserReadBudget)"
+concurrency:
+  group: release-qa-final-20261006-browser-read-budget.yml
+  cancel-in-progress: false
