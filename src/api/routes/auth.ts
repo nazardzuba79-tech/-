@@ -1,3 +1,4 @@
+import { isBlockedContactEmail } from '../../services/ContactEmailPolicy';
 import { asyncRoute } from '../asyncRoute';
 import { Router, Request, RequestHandler } from 'express';
 import { z } from 'zod';
@@ -170,6 +171,11 @@ export function authRouter(
       return res.status(403).json({ error: 'Registration is currently closed' });
     }
 
+    // Check before payload validation so operators can verify the policy using
+    // email-only probes that can never create an account or session.
+    if (isBlockedContactEmail(req.body?.email)) {
+      return res.status(403).json({ error: 'Registration failed' });
+    }
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { email, password, ref } = parsed.data;

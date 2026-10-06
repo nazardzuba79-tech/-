@@ -5,7 +5,7 @@
 // validated address the user typed. Nothing is stored, nothing is polled,
 // no timers are armed; Render and Neon are never contacted.
 
-export const VERSION = "support-form-v1";
+export const VERSION = "support-form-v2-email-policy";
 export const MAX_BODY_BYTES = 16 * 1024;
 export const LIMITS = { name: 100, email: 254, message: 2000 };
 export const SUBJECTS = {
@@ -163,6 +163,14 @@ async function readBody(request) {
   }
 }
 
+// Same normalized SHA-256 policy as registration; configured independently here.
+async function isBlockedContactEmail(email, configured) {
+  if (typeof email !== 'string' || email.length > 320 || !configured) return false;
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(email.trim().toLowerCase()));
+  const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  return configured.split(',').some(value => value.trim().toLowerCase() === hash);
+}
+
 export async function handleSupport(request, env, now = Date.now()) {
   const origin = request.headers.get("origin") || "";
   const allowed = origin !== "" && allowedOrigins(env).includes(origin);
@@ -196,6 +204,11 @@ export async function handleSupport(request, env, now = Date.now()) {
     return json({ ok: false, error: "invalid", fields: [] }, 400, cors);
   }
 
+  // Runs before full form validation: email-only verification cannot send mail.
+  if (await isBlockedContactEmail(body.data.email, env.BLOCKED_CONTACT_EMAIL_SHA256)) {
+    log({ result: 'not_allowed' });
+    return json({ ok: false, error: 'not_allowed' }, 403, cors);
+  }
   const checked = validate(body.data);
   if (!checked.ok) return json({ ok: false, error: "invalid", fields: checked.fields }, 400, cors);
 

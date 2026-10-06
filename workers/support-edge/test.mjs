@@ -1,6 +1,7 @@
 // Contract tests for voltex-support-edge. Run: node test.mjs
 // The Worker is plain JS with no Cloudflare-only imports, so it runs here
 // against a recorded email binding and a counting rate limiter.
+import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import worker, { LIMITS, MAX_BODY_BYTES, WINDOW_MAX, resetMemoryLimiter, composeText } from "./src/index.js";
@@ -251,6 +252,22 @@ test("source: no timers, no storage, no calls to Render or Neon", () => {
   const toml = readFileSync(new URL("./wrangler.toml", import.meta.url), "utf8");
   assert.match(toml, /destination_address = "voltex\.crypto@gmail\.com"/);
   assert.ok(!/\[triggers\]|crons/.test(toml));
+});
+
+test("configured emails blocked case-insensitively before sending, other emails unaffected", async () => {
+  const hashes = ['blocked@example.invalid', 'second@example.invalid'].map(v => createHash('sha256').update(v).digest('hex')).join(',');
+  for (const email of ['blocked@example.invalid', ' BLOCKED@EXAMPLE.INVALID ', 'second@example.invalid']) {
+    const t = env({ BLOCKED_CONTACT_EMAIL_SHA256: hashes });
+    for (const body of [{ email }, { ...valid, email }]) {
+      const r = await call(post(body), t.env);
+      assert.equal(r.status, 403);
+      assert.deepEqual(r.body, { ok: false, error: 'not_allowed' });
+    }
+    assert.equal(t.sent.length, 0);
+    const normal = await call(post(valid), t.env);
+    assert.equal(normal.status, 200);
+    assert.equal(t.sent.length, 1);
+  }
 });
 
 let failed = 0;

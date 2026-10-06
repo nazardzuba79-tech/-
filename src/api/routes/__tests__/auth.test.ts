@@ -2,6 +2,7 @@ process.env.JWT_SECRET = 'test-secret-at-least-this-long';
 process.env.REGISTRATION_OPEN = 'true';
 process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
 
+import { createHash } from 'crypto';
 import request from 'supertest';
 import express from 'express';
 import bcrypt from 'bcrypt';
@@ -65,6 +66,23 @@ describe('auth routes', () => {
   });
   afterAll(() => {
     process.env = OLD_ENV;
+  });
+
+  it.each(['blocked@example.invalid', ' BLOCKED@EXAMPLE.INVALID ', 'second@example.invalid'])('denies configured email %s before any account or session access', async (email) => {
+    process.env.BLOCKED_CONTACT_EMAIL_SHA256 = ['blocked@example.invalid', 'second@example.invalid'].map(v => createHash('sha256').update(v).digest('hex')).join(',');
+    const prisma = makePrismaMock();
+    const app = buildApp(prisma);
+    // An email-only request also permits safe production verification with no password.
+    for (const body of [{ email }, { email, password: 'Correcthorsebattery' }]) {
+      const res = await request(app).post('/api/v1/auth/register').send(body);
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ error: 'Registration failed' });
+    }
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.session.create).not.toHaveBeenCalled();
+    const normal = await request(app).post('/api/v1/auth/register').send({ email: 'other@example.invalid', password: 'Correcthorsebattery' });
+    expect(normal.status).toBe(201);
   });
 
   it('registers a new user and returns a real session token straight away', async () => {
