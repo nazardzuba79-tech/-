@@ -9,7 +9,7 @@ export function SpamEmailManager({ entries, onSelect }: { entries: SpamEmailEntr
       <h2>Заблокированные email</h2><p>Вход, повторная регистрация и поддержка запрещены. Аккаунты и финансовые данные сохраняются.</p>
       <form onSubmit={e => { e.preventDefault(); onSelect(email, true); }}><label>Email<input type="email" value={email} onChange={e => setEmail(e.target.value)} required maxLength={254} placeholder="name@example.com" /></label><button className="admin-spam-control" disabled={!entries}>Добавить в спам</button></form>
       {entries?.length === 0 && <p>Список пуст.</p>}
-      <ul>{entries?.map(entry => <li key={entry.email}><div><strong>{entry.email}</strong><small>Добавил: {entry.addedBy} · {adminDate(entry.addedAt, true)}</small></div><button type="button" className="admin-spam-control" onClick={() => onSelect(entry.email, false)}>Не спам</button></li>)}</ul>
+      <ul>{entries?.map(entry => <li key={entry.email}><div><strong>{entry.email}</strong><small>Добавил: {entry.addedBy} · {adminDate(entry.addedAt)}</small></div><button type="button" className="admin-spam-control" onClick={() => onSelect(entry.email, false)}>Не спам</button></li>)}</ul>
     </div>}
   </section>;
 }
