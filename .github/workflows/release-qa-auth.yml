@@ -1,0 +1,50 @@
+name: Release QA existing auth routing suite
+on:
+  push:
+    branches: [codex/release-qa-auth-20261006]
+permissions:
+  contents: read
+concurrency:
+  group: release-qa-auth-20261006
+  cancel-in-progress: false
+jobs:
+  existing-security-phase1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://test:test@127.0.0.1:9/unused
+      DIRECT_URL: postgresql://test:test@127.0.0.1:9/unused
+      VITE_API_URL: /api/v1
+      QA_PLAYWRIGHT_MODULE: /tmp/release-auth/node_modules/playwright
+      QA_BROWSER_CHANNEL: chromium
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+          persist-credentials: false
+      - name: Verify frozen main
+        run: test "$(git rev-parse HEAD)" = 4daae9f3c2d42d5d9df6e8b061d77cc5331053b7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install and build unchanged application
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+          npm run build
+          npm run build --prefix frontend
+      - name: Install isolated browser and nginx
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y nginx
+          npm install --prefix /tmp/release-auth --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/release-auth/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Run existing security auth routing suite
+        run: node scripts/qa-security-phase1.cjs /usr/sbin/nginx /etc/nginx/mime.types /tmp/release-auth-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-auth-frozen-main
+          path: /tmp/release-auth-evidence/
+          retention-days: 7
