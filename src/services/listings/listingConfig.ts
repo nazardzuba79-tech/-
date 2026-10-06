@@ -56,9 +56,16 @@ export const listingConfigSchema = z.object({
     .refine((v) => Number(v) > 0 && Number(v) <= MAX_INITIAL_PRICE, `initial price must be > 0 and ≤ ${MAX_INITIAL_PRICE}`),
   /** UTC instant of the first simulated tick, ISO-8601 with an explicit `Z`. */
   listingAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?Z$/, 'listing time must be an ISO UTC instant')
-    .refine((v) => Number.isFinite(Date.parse(v)), 'invalid listing time'),
+    .refine((v) => {
+      const instant = Date.parse(v);
+      return Number.isFinite(instant) && new Date(instant).toISOString().slice(0, 16) === v.slice(0, 16);
+    }, 'invalid listing time'),
   /** How the admin saw and entered the time. Display only; `listingAt` is the instant. */
-  displayTimeZone: z.string().min(1).max(64).regex(/^[A-Za-z_]+(\/[A-Za-z0-9_+-]+){0,2}$|^UTC$/, 'invalid time zone'),
+  displayTimeZone: z.string().min(1).max(64).regex(/^[A-Za-z_]+(\/[A-Za-z0-9_+-]+){0,2}$|^UTC$/, 'invalid time zone')
+    .refine((timeZone) => {
+      try { new Intl.DateTimeFormat('en', { timeZone }).format(0); return true; }
+      catch { return false; }
+    }, 'invalid time zone'),
   /** Owner inventory to allocate LATER, in a separate audited step. Never credited by create/preview/publish. */
   ownerAllocation: z.string().regex(QUANTITY, 'owner allocation: a plain quantity with at most 8 decimals'),
   seedMode: z.enum(['auto', 'manual']),
@@ -73,6 +80,14 @@ export const listingConfigSchema = z.object({
   simulationProfile: z.enum(SIMULATION_PROFILES).optional(),
   /** Persisted range model assigned on new INSERT; absent means the original shadows. */
   wickModel: z.literal('NATURAL_V1').optional(),
+  /** Optional immutable bounded lifecycle; only non-executable demo listings. */
+  simulationProgram: z.object({
+    kind: z.literal('capped-growth-range-v1'),
+    first24hGainPercent: z.number().finite().positive().max(100000),
+    maxGainPercent: z.number().finite().positive().max(100000),
+    peakAfterHours: z.number().int().min(48).max(720),
+    rangeFraction: z.number().min(.02).max(.3),
+  }).strict().refine(p => p.maxGainPercent * .94 > p.first24hGainPercent, 'cap must exceed day-one target').optional(),
 }).strict();
 
 export type ListingConfig = z.infer<typeof listingConfigSchema>;
@@ -103,6 +118,7 @@ export function parseListingConfig(input: unknown): ListingConfig {
     throw new ListingValidationError('INVALID_CONFIG', `${issue.path.join('.') || 'config'}: ${issue.message}`);
   }
   const config = parsed.data;
+  if (config.simulationProgram && config.tradable) throw new ListingValidationError('DEMO_ONLY', 'Bounded scenarios require a non-tradable demo listing');
   if (RESERVED_LISTING_SYMBOLS.has(config.symbol)) throw new ListingValidationError('RESERVED_TICKER', `Ticker ${config.symbol} is reserved`);
   if (logoBytes(config.logo) > LOGO_MAX_BYTES) throw new ListingValidationError('LOGO_TOO_LARGE', `Logo must be at most ${LOGO_MAX_BYTES / 1024} KB`);
   return config;
@@ -135,12 +151,15 @@ export function withStableSeed(next: ListingConfig, previous: ListingConfig | nu
  * stored without either field keeps that absence and its original candles.
  */
 export function withStableProfile(next: ListingConfig, previous: ListingConfig | null, creationOrdinal: number | null): ListingConfig {
-  const { simulationProfile: _requested, wickModel: _requestedWicks, ...rest } = next;
+  const { simulationProfile: _requested, wickModel: _requestedWicks, simulationProgram: requestedProgram, ...rest } = next;
+  if (previous?.simulationProgram && next.tradable) throw new ListingValidationError('DEMO_ONLY', 'A bounded demo cannot enable real trading');
   if (previous) return { ...rest,
     ...(previous.simulationProfile ? { simulationProfile: previous.simulationProfile } : {}),
     ...(previous.wickModel ? { wickModel: previous.wickModel } : {}),
+    ...(previous.simulationProgram ? { simulationProgram: previous.simulationProgram } : {}),
   };
-  return creationOrdinal === null ? rest : { ...rest, simulationProfile: profileForOrdinal(creationOrdinal), wickModel: 'NATURAL_V1' };
+  const created = { ...rest, ...(requestedProgram ? { simulationProgram: requestedProgram } : {}) };
+  return creationOrdinal === null ? created : { ...created, simulationProfile: profileForOrdinal(creationOrdinal), wickModel: 'NATURAL_V1' };
 }
 
 /**
@@ -160,6 +179,7 @@ export function checkPublishable(next: ListingConfig, active: ListingConfig | nu
   if (next.initialPrice !== active.initialPrice) throw new ListingValidationError('HISTORY_LOCKED', 'The initial price of a published listing cannot change');
   if (next.simulationProfile !== active.simulationProfile) throw new ListingValidationError('HISTORY_LOCKED', 'The simulation profile of a published listing cannot change');
   if (next.wickModel !== active.wickModel) throw new ListingValidationError('HISTORY_LOCKED', 'The wick model of a published listing cannot change');
+  if (JSON.stringify(next.simulationProgram) !== JSON.stringify(active.simulationProgram)) throw new ListingValidationError('HISTORY_LOCKED', 'The bounded program of a published listing cannot change');
   if (next.listingAt !== active.listingAt) {
     const activeAt = Date.parse(active.listingAt);
     // Moving the date is a postponement or an earlier opening of a market that has not opened yet.
@@ -182,6 +202,15 @@ export function listingSimulationConfig(config: ListingConfig): TestAssetConfig 
     listingAt: Date.parse(config.listingAt),
     initialPrice: Number(config.initialPrice),
     seed: config.seed,
+    ...(config.simulationProgram ? { scheduledScenario: {
+      mode: 'capped-growth-range' as const, version: 1,
+      from: Date.parse(config.listingAt),
+      firstTargetAt: Date.parse(config.listingAt) + 24 * 3600000,
+      peakAt: Date.parse(config.listingAt) + config.simulationProgram.peakAfterHours * 3600000,
+      firstGainPercent: config.simulationProgram.first24hGainPercent,
+      maxGainPercent: config.simulationProgram.maxGainPercent,
+      rangeFraction: config.simulationProgram.rangeFraction,
+    } } : {}),
     ...(config.simulationProfile ? { simulationProfile: config.simulationProfile } : {}),
     ...(config.simulationProfile && config.wickModel === 'NATURAL_V1'
       ? { naturalWicks: { futureFrom: Date.parse(config.listingAt) } } : {}),

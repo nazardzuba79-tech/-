@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "symbol": "AITH",
+  "name": "Aitheron AI",
+  "logo": null,
+  "initialPrice": "0.80",
+  "listingAt": "2026-10-11T15:00:00Z",
+  "displayTimeZone": "UTC",
+  "ownerAllocation": "0",
+  "seedMode": "manual",
+  "seed": "aitheron-ai-20261011-v1",
+  "tradable": false,
+  "simulationProfile": "COMPRESSION_BREAKOUT",
+  "wickModel": "NATURAL_V1",
+  "simulationProgram": {
+    "kind": "capped-growth-range-v1",
+    "first24hGainPercent": 1725,
+    "maxGainPercent": 9247,
+    "peakAfterHours": 168,
+    "rangeFraction": 0.12
+  }
+}

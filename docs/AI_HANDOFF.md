@@ -5472,3 +5472,9 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 - Support derives Reply-To email from the authenticated account, enforces policy before delivery, and the Worker accepts only a private API relay key. No messages are sent during live QA.
 - Three owner-designated addresses remain private runtime configuration, visible to administrators in the managed list. Unblock events override emergency seeds. Existing login/trading/balances are preserved.
 - Tests: auth 40, bcrypt 10, managed policy/relay 8, API failure containment 60 and Worker 21 passing; full exact-image build/testing required. Frontend controls are supplied separately on current main.
+
+## Codex — 2026-10-06 — NRX prospective terminal hotfix
+- Base exact serving ead49070; restore the missing scheduled engine without importing unrelated main changes.
+- Changed simulation schedule/config and regression/release tests; preserved allocation, balances, orders, schema and dependencies.
+- Exact commit: see this entry's commit. API and edge must pass the future activation gate together.
+
