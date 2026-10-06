@@ -5699,3 +5699,9 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Preserved #450 hidden-account behavior, handlers, deletion confirmation, backend, data, and all financial logic.
 - Verified frontend build (existing large-chunk warning), fixture-only built-page browser QA at 1920/1440/1366/390, zero page errors or overflow. Screenshots in outputs/admin-delete-spacing-20261006 outside this checkout.
 - Narrow follow-up based on current main d5042587; PR review/merge and frontend publication remain pending. No production action was performed for this CSS follow-up.
+
+### 2026-10-06 — Codex — Equal Admin Users action gaps (supersedes right-edge alignment)
+- Code commit: 42407bb4921eba5f7763a5014c434c7753476fdf; base current main 1a71799e.
+- Only runtime change: frontend/src/pages/admin/adminPracticality.css. Table action flex row uses gap 32px and flex-start; Hide/Delete margins reset to zero, no auto margin. Mobile cards and all action logic preserved.
+- Built frontend passed (existing chunk-size warning). Fixture-only browser verified exact 32px/32px gaps and one-row alignment at 1920/1440/1366; mobile 390 also has no overflow; zero page errors. No real user action or production data access.
+- Screenshots: outputs/admin-users-equal-gap-20261006 outside checkout. PR review/merge/deploy pending; backend untouched.
