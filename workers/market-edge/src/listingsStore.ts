@@ -154,7 +154,12 @@ export class ManagedListingsDO {
       const active = row && row.active_version !== null ? JSON.parse(String(this.version(id, Number(row.active_version))!.config)) as ListingConfig : null;
       // A new listing takes the next profile in the rotation; an existing one keeps what it has.
       const ordinal = row ? null : this.profileOrdinal();
-      const next = withStableProfile(withStableSeed(config, previous), previous, ordinal);
+      let next: ListingConfig;
+      try {
+        next = withStableProfile(withStableSeed(config, previous), previous, ordinal);
+      } catch (error) {
+        return validationReply(error);
+      }
       if (active && (next.symbol !== active.symbol || next.seed !== active.seed || next.initialPrice !== active.initialPrice)) {
         return reply({ error: 'HISTORY_LOCKED', message: 'The ticker, seed and initial price of a published listing cannot change' }, 422);
       }

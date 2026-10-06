@@ -23,6 +23,10 @@ const get = path => worker.fetch(new Request('https://market.voltextech.net' + p
   }
   assert.equal((await get('/market/display/futures-book/NRXUSDT')).status, 404);
   assert.equal((await (await get('/health')).json()).service, 'voltex-market-edge');
+  const program = await (await get('/market/simulations/status')).json();
+  assert.equal(program.nrx.schedule.version, 5);
+  assert.equal(program.nrx.schedule.from, Date.parse('2026-10-06T17:00:00Z'));
+  assert.equal(program.boundedDemoProgram, 'capped-growth-range-v1');
   // Historical fixtures stay byte-identical through the prospective v5 activation.
   for (const [at, price] of [
     ['2026-10-03T21:00:00Z', 2.7420778],
