@@ -8,6 +8,8 @@ import { ListingStoreError, CloudflareListingStore, type ListingStore } from '..
 import type { ListingConfig } from '../../../services/listings/listingConfig';
 import { listingSimulationConfig } from '../../../services/listings/listingConfig';
 import { testMarketCandles } from '../../../services/testMarkets/testMarketService';
+import { defaultScenarioControls } from '../../../shared/listingScenarioControls';
+import * as previewService from '../../../services/listings/listingPreview';
 
 const auth = (userId: string) => `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
 const prismaFor = (role: 'ADMIN' | 'USER') => ({ user: { findUnique: jest.fn().mockResolvedValue({ role }) } });
@@ -131,6 +133,53 @@ describe('Admin → Listings routes', () => {
     const before = (await request(server).get(`/api/v1/admin/listings/${created.id}/preview?at=2026-10-01T11:00:00Z`).set('Authorization', auth('admin-1'))).body;
     expect(before.asset.state.phase).toBe('pre-listing');
     expect(before.candles).toEqual([]);
+  });
+
+  test('v2 form fields survive create, reload and edits; preview cache keys include saved revision and settings', async () => {
+    const { server, store, registry } = app();
+    const program = defaultScenarioControls('0.80', 'WAVES');
+    const body = form({ initialPrice: '0.80', tradable: false, ownerAllocation: '0', simulationProgram: program });
+    const created = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: body });
+    expect(created.status).toBe(201);
+    expect(created.body.draft.simulationProgram).toEqual(program);
+    const read = await request(server).get('/api/v1/admin/listings').set('Authorization', auth('admin-1'));
+    expect(read.body.listings[0].draft.simulationProgram).toEqual(program);
+    expect(read.body.listings[0].activeVersion).toBeNull();
+    const generate = jest.spyOn(previewService, 'listingScenarioPreview');
+    const url = `/api/v1/admin/listings/${created.body.id}/preview?horizon=first24h&interval=1h`;
+    const first = await request(server).get(url).set('Authorization', auth('admin-1'));
+    expect(first.status).toBe(200);
+    expect(first.body.scenarioSummary).toMatchObject({ first24hPrice: '14.6', maxPrice: '74.776' });
+    const repeat = await request(server).get(url).set('Authorization', auth('admin-1'));
+    expect(repeat.body.candles).toEqual(first.body.candles);
+    expect(generate).toHaveBeenCalledTimes(1);
+    const editedProgram = { ...program, scenario: 'LONG_WICKS' };
+    const edited = await request(server).put(`/api/v1/admin/listings/${created.body.id}/draft`).set('Authorization', auth('admin-1')).set('If-Match', '1')
+      .send({ config: { ...body, simulationProgram: editedProgram } });
+    expect(edited.status).toBe(200);
+    expect(edited.body.draft.simulationProgram).toEqual(editedProgram);
+    const refreshed = await request(server).get(url).set('Authorization', auth('admin-1'));
+    expect(refreshed.body.draftRevision).toBe(2);
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(refreshed.body.candles).not.toEqual(first.body.candles);
+    expect(store.calls.some(call => call.startsWith('publish:'))).toBe(false);
+    expect(registry.invalidate).not.toHaveBeenCalled();
+    generate.mockRestore();
+  });
+
+  test('invalid scenario targets are rejected before a store write; an excessive preview is a Russian 422', async () => {
+    const { server, store } = app();
+    const program = defaultScenarioControls('0.80');
+    const bad = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1'))
+      .send({ config: form({ initialPrice: '0.80', tradable: false, simulationProgram: { ...program, maxPrice: '10' } }) });
+    expect(bad.status).toBe(422);
+    expect(store.calls).toEqual([]);
+    const created = (await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1'))
+      .send({ config: form({ initialPrice: '0.80', tradable: false, simulationProgram: program }) })).body;
+    const preview = await request(server).get(`/api/v1/admin/listings/${created.id}/preview?horizon=growth&interval=1m`).set('Authorization', auth('admin-1'));
+    expect(preview.status).toBe(422);
+    expect(preview.body.error).toBe('PREVIEW_INTERVAL_TOO_FINE');
+    expect(preview.body.message).toContain('интервал свечей');
   });
 
   test('publish needs a key and a draft revision; success invalidates the trading registry', async () => {

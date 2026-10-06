@@ -60,7 +60,7 @@ export class CloudflareListingStore implements ListingStore {
     this.base = validStoreBase(base, production).toString().replace(/\/$/, '');
   }
 
-  private async call<T>(path: string, schema: z.ZodType<T>, init: { method?: string; body?: unknown; ifMatch?: number; actor?: string } = {}): Promise<T> {
+  private async call<T>(path: string, schema: z.ZodType<T, z.ZodTypeDef, unknown>, init: { method?: string; body?: unknown; ifMatch?: number; actor?: string } = {}): Promise<T> {
     let response: Response;
     try {
       response = await this.transport(`${this.base}/internal/listings${path}`, {

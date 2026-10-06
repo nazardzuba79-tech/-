@@ -223,9 +223,18 @@ async function run() {
     // Leave one complete discovery interval for the already-open, future-only
     // Markets tab below before this first listing switches to live.
     const listingAt = Math.ceil((Date.now() + 150_000) / 60_000) * 60_000;
+    // Existing executable listings retain their original controls/history.
+    // New UI drafts use the non-executable bounded program and are exercised
+    // end-to-end separately by qa-listing-controls.cjs. Seed this legacy
+    // fixture via the real API; do not weaken its Spot gate assertions below.
+    const legacyCreated = await render('/admin/listings', { method: 'POST', body: { config: {
+      symbol, name: 'QA Orbit', logo: null, initialPrice: '0.42', listingAt: new Date(listingAt).toISOString(),
+      displayTimeZone: 'UTC', ownerAllocation: '0', seedMode: 'auto', tradable: true,
+    } } });
+    assert.equal(legacyCreated.status, 201);
     const admin = await newPage('admin', 1440);
     await admin.goto(`${origin}/admin/listings`);
-    await admin.locator('[data-create-listing]').click();
+    await admin.locator(`[data-edit-listing="${symbol}"]`).click();
     await admin.fill('[data-field="name"]', 'QA Orbit');
     await admin.fill('[data-field="symbol"]', symbol);
     await admin.fill('[data-field="initialPrice"]', '0.42');
@@ -247,7 +256,7 @@ async function run() {
     assert.equal(listing.draft.tradable, true);
     const seed = listing.draft.seed;
     assert.match(seed, /^[a-z0-9-]{8,}$/);
-    check(`admin created ${symbol}/USDT from the form: Kyiv wall time stored as the UTC instant, logo kept, automatic seed ${seed}, not published`);
+    check(`legacy ${symbol}/USDT preserved by the form: Kyiv wall time stored as the UTC instant, logo kept, automatic seed ${seed}, not published; creation used the real API`);
 
     /* 3. The draft is invisible to everyone else, including by URL tricks. */
     assert.equal((await edgeJson('/market/listings')).body.assets.length, 0);

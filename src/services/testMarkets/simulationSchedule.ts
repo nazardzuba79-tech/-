@@ -1,5 +1,7 @@
 import { seededRandom } from './simulationRandom';
 import type { RealismTick } from './simulationRealism';
+import { controlledScenarioHour, type ControlledScenarioConfig } from './simulationScenarioControls';
+import { validateScenarioControls } from '../../shared/listingScenarioControls';
 
 /** Legacy growth program. Percent gains are from LISTING. */
 export interface GrowthScheduledScenarioConfig {
@@ -44,7 +46,8 @@ export interface CappedGrowthScenarioConfig {
   readonly maxGainPercent: number;
   readonly rangeFraction: number;
 }
-export type ScheduledScenarioConfig = GrowthScheduledScenarioConfig | RangeSelloffRangeScenarioConfig | CappedGrowthScenarioConfig;
+type LegacyScheduledScenarioConfig = GrowthScheduledScenarioConfig | RangeSelloffRangeScenarioConfig | CappedGrowthScenarioConfig;
+export type ScheduledScenarioConfig = LegacyScheduledScenarioConfig | ControlledScenarioConfig;
 
 function isRangeSelloffRangeScenario(c: ScheduledScenarioConfig): c is RangeSelloffRangeScenarioConfig {
   return c.mode === 'range-selloff-range';
@@ -62,6 +65,11 @@ interface Phase {
 interface Context { phases: Phase[]; terminal: number }
 
 export function validateScheduledScenario(c: ScheduledScenarioConfig, listingAt: number): void {
+  if (c.mode === 'scenario-controls-v2') {
+    if (c.version !== 2 || c.from !== listingAt || !Number.isSafeInteger(listingAt) || listingAt % TICK !== 0) throw new RangeError('Неверное время начала сценария');
+    validateScenarioControls(c.controls, c.initialPrice);
+    return;
+  }
   const commonInvalid = !Number.isSafeInteger(c.version) || c.version < 1 || !Number.isFinite(listingAt)
     || !Number.isFinite(c.rangeFraction) || c.rangeFraction <= 0 || c.rangeFraction >= 1;
   if (c.mode === 'capped-growth-range') {
@@ -103,7 +111,7 @@ export function assertScheduledScenarioRelease(c: ScheduledScenarioConfig, now: 
 // The bounded cache only avoids rebuilding deterministic vertices; it contains
 // no clock, cursor, mutable random stream, process state or financial data.
 const contexts = new Map<string, Context>();
-function context(c: ScheduledScenarioConfig, seed: string, listingAt: number, listingPrice: number, anchor: number): Context {
+function context(c: LegacyScheduledScenarioConfig, seed: string, listingAt: number, listingPrice: number, anchor: number): Context {
   validateScheduledScenario(c, listingAt);
   if (![listingPrice, anchor].every(p => Number.isFinite(p) && p > 0)) throw new RangeError('Invalid scenario price');
   const key = JSON.stringify([c, seed, listingAt, listingPrice, anchor]);
@@ -211,7 +219,7 @@ function phaseAt(ctx: Context, at: number): Phase | undefined {
   return ctx.phases.find(p => at >= p.from && at < p.to);
 }
 
-function priceAt(c: ScheduledScenarioConfig, seed: string, ctx: Context, anchor: number, at: number): number {
+function priceAt(c: LegacyScheduledScenarioConfig, seed: string, ctx: Context, anchor: number, at: number): number {
   if (at <= c.from) return anchor;
   const p = phaseAt(ctx, at)!;
   if (at === p.from) return p.open;
@@ -249,6 +257,10 @@ export function scheduledScenarioHour(
   hour: number, anchorPrice: number, originalOpen: number, original: readonly RealismTick[],
 ): { open: number; ticks: RealismTick[]; regime: Regime } {
   if (!Number.isSafeInteger(hour) || hour < 0 || original.length !== 360) throw new RangeError('A scenario needs one complete canonical hour');
+  if (c.mode === 'scenario-controls-v2') {
+    validateScheduledScenario(c, listingAt);
+    return controlledScenarioHour(c, seed, hour);
+  }
   const ctx = context(c, seed, listingAt, initialPrice, anchorPrice);
   const start = listingAt + hour * HOUR;
   const cap = c.mode === 'capped-growth-range' ? initialPrice * (1 + c.maxGainPercent / 100) : Infinity;

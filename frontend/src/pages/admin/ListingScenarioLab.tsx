@@ -143,7 +143,7 @@ export function ListingScenarioLab() {
   }), []);
   return <section className="listing-lab" aria-label="Лаборатория сценариев">
     <button type="button" className="listing-lab-toggle" aria-expanded={open} aria-controls="listing-scenario-workspace" onClick={() => setOpen(v => !v)} data-open-scenario-lab>
-      {open ? 'Скрыть лабораторию сценариев' : 'Лаборатория: 10 сценариев симуляции'}
+      {open ? 'Скрыть локальную лабораторию' : 'Локальная лаборатория: примеры без сохранения на сервере'}
     </button>
     {open && <div id="listing-scenario-workspace"><LabWorkspace key={epoch} /></div>}
   </section>;
