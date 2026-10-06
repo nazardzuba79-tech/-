@@ -35,6 +35,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
   const { t, lang } = useLanguage();
   const listingAt = asset ? Date.parse(asset.listingAt) : NaN;
   const preListing = !asset || asset.state.phase === 'pre-listing';
+  const displayOnlyLabel = asset?.managed && !asset.isTradable ? asset.status : null;
   const counting = preListing && asset?.listingArmed === true && Number.isFinite(listingAt);
   const now = useServerNow(clockOffsetMs, counting);
   const reachedRef = useRef(false);
@@ -51,8 +52,12 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
   }, [counting, left, pair]);
 
   if (asset && !preListing) {
-    return <TerminalChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
+    const chart = <TerminalChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
       tradingView={false} priceScaleMode="normal" priceFormatter={formatTestAxisPrice} />;
+    return displayOnlyLabel ? <div className="managed-demo-chart">
+      <div className="managed-demo-status">{displayOnlyLabel}</div>
+      {chart}
+    </div> : chart;
   }
 
   const parts = countdownParts(Number.isFinite(left) ? left : 0);
@@ -71,6 +76,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
         <div className="vta-prelisting-mark"><CryptoIcon symbol={pair.split('/')[0]} size={64} /></div>
         <h2 className="vta-prelisting-name">{name}</h2>
         <div className="vta-prelisting-pair">{pair}</div>
+        {displayOnlyLabel && <div className="managed-demo-status">{displayOnlyLabel}</div>}
         {asset ? (
           <>
             {counting && (
