@@ -5705,3 +5705,10 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Only runtime change: frontend/src/pages/admin/adminPracticality.css. Table action flex row uses gap 32px and flex-start; Hide/Delete margins reset to zero, no auto margin. Mobile cards and all action logic preserved.
 - Built frontend passed (existing chunk-size warning). Fixture-only browser verified exact 32px/32px gaps and one-row alignment at 1920/1440/1366; mobile 390 also has no overflow; zero page errors. No real user action or production data access.
 - Screenshots: outputs/admin-users-equal-gap-20261006 outside checkout. PR review/merge/deploy pending; backend untouched.
+
+### 2026-10-06 — Codex — Admin Users filter visibility
+- Code commit: 1df88c9ceae5a274261e912740acf5b93daf283e; base main b78bb4fa.
+- AdminUsersPage.tsx replaces inline presentation on three filter controls with a scoped class. adminPracticality.css adds 42px control height, white panel background, contrasting border, stronger dropdown chevrons, hover and keyboard focus styles.
+- Preserved search/filter/sort handlers, equal action gaps, mobile behavior, hide/delete logic, backend and all other pages.
+- Frontend build passed (existing chunk-size warning). Fixture-only built browser QA passed at 1920/1440/1366/390: computed styles, filter/sort selection, focus outline, no overflow/page errors. Screenshots in outputs/admin-users-filter-contrast-20261006 outside checkout.
+- PR review/merge/deploy pending; no production mutation.
