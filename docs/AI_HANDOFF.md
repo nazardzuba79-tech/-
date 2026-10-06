@@ -5725,3 +5725,10 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - AITH draft/logo, immutable persisted bounded program, canonical wick cap and demo-only trading guard; drafts do not start countdowns.
 - Existing profiles, allocation/financial records and auth preserved. Exact commit: this entry's commit. Paired API/edge activation required.
 
+
+## Codex — 2026-10-06 — Approved Admin Users action menus
+- Code commit: c37b5ee56ab563ccac63a347f33fac20c72b3855. Isolated review branch codex/admin-users-action-menu from current main 1238824932ba6290062c65db6c28f06da9d0c496; remote integration/claude-codex no longer exists.
+- AdminUsersPage / SpamEmailManager: retain Open, move Hide/Restore, Spam/Not spam and eligible Delete to an accessible overflow menu. Move the existing spam-email manager into More with its live count. AdminActionMenu and scoped CSS reuse the existing portal/viewport approach, including keyboard navigation and last-row scroll re-anchoring.
+- Preserved the latest Claude/Codex spam policy, confirmation dialogs, protected-account eligibility, hidden-identity masking, query/pagination/return navigation, financial values and all backend handlers. Old 32px action spacing is intentionally replaced by the owner's approved compact 8px pair.
+- Validation: frontend TypeScript + Vite build passed (existing large-chunk warning); 33 affected Jest tests passed; built UI passed fixture-only browser QA at 1920/1440/1366/390/360/320 including row block/unblock, list management, keyboard/Escape, last-row bounds, no page overflow or renderer errors. External HTTP/WebSocket denied. Updated compatibility/deletion browser selectors; full disposable-DB deletion suite not run locally.
+- Evidence: output/admin-practicality/after, excluded from Git. No production data accessed or changed. Review PR only; no merge or deployment.

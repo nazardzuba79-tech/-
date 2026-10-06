@@ -133,16 +133,16 @@ test('the email is plain selectable text; only «Открыть» opens the prof
   const css = readFileSync(resolve(frontend, 'src/pages/admin/adminPracticality.css'), 'utf8');
   expect(css).toMatch(/\.admin-users-table th:first-child,\.admin-users-table td:first-child \{ border-right: 1px solid var\(--border\)/);
   expect(css).toContain('grid-template-columns: minmax(180px,225px) repeat(2,minmax(150px,240px))');
-  expect(css).toMatch(/\.admin-user-actions \.admin-hide-button[^}]*margin-left: 24px;/);
-  expect(css).toMatch(/\.admin-user-actions \.admin-delete-button \{[^}]*margin-left: 20px;/);
 });
 test('the compact owner filter includes hidden and spam views', async () => {
   await f.mount();
   const options = Array.from(f.host.querySelectorAll('[aria-label="Фильтр пользователей"] option')).map(o => (o as HTMLOptionElement).value);
   expect(options).toEqual(['all', 'new', 'kyc-pending', 'hidden', 'spam']);
   expect(f.host.querySelector('details')).toBeNull();
-  expect(f.button('Скрыть')?.getAttribute('aria-label')).toBe('Скрыть аккаунт');
-  expect(f.button('Удалить')?.getAttribute('aria-label')).toBe('Удалить аккаунт');
+  expect(f.button('Скрыть')).toBeNull();
+  await f.click(f.host.querySelector('[data-user-row] .admin-action-trigger'));
+  expect(document.querySelector('[role="menu"]')?.textContent).toContain('Скрыть');
+  expect(document.querySelector('[role="menu"]')?.textContent).toContain('Удалить');
 });
 test('owner layout: НОВЫЙ beside the email for 24 hours, short dates, KYC pill or dash, no direction control', async () => {
   jest.useFakeTimers({ now: Date.parse('2026-10-03T16:00:00Z'), doNotFake: ['queueMicrotask'] });

@@ -35,6 +35,7 @@ export function createAdminWorkingFixture() {
   dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
   const host = document.getElementById('root')!, root = req('react-dom/client').createRoot(host);
   const api: any = { getAdminUsersPage: jest.fn().mockResolvedValue(page([user('payer')])), getAdminAuditPage: jest.fn().mockResolvedValue(page([])),
+    getSpamEmails: jest.fn().mockResolvedValue({ entries: [] }),
     getAdminUsers: jest.fn(() => { throw new Error('Unbounded users forbidden'); }), getAdminDeposits: jest.fn(() => { throw new Error('Deposit history forbidden'); }),
     creditDepositManually: jest.fn(() => { throw new Error('Closed manual credit forbidden'); }), adjustUserBalance: jest.fn(() => { throw new Error('Balance write forbidden'); }),
   };
@@ -47,7 +48,7 @@ export function createAdminWorkingFixture() {
     const code = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
     new Function('exports', 'require', code)(out, (name: string) => {
       if (name.endsWith('.css')) return {};
-      if (name.endsWith('/adminSpamEmails')) return { getSpamEmails: async () => ({ entries: [] }) };
+      if (name.endsWith('/adminSpamEmails')) return { getSpamEmails: (...args: any[]) => api.getSpamEmails(...args) };
       if (name.endsWith('/adminPagedApi')) return { getAdminUsersPage: (query: string, signal?: AbortSignal) => api.getAdminUsersPage(query, signal), getAdminAuditPage: (query: string, signal?: AbortSignal) => api.getAdminAuditPage(query, signal) };
       if (name.endsWith('/adminReadApi')) return { adminRead: async (path: string, signal?: AbortSignal) => {
         const own = token, response = await fetcher('/api/v1' + path, { signal, cache: 'no-store' });

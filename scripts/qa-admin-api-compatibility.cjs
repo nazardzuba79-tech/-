@@ -137,11 +137,13 @@ exports.run = async ({ origin, out, state, users, variant }) => {
 
     const beforeCancel = financialWrites(state).length;
     const row = rendered().first();
-    await row.getByRole('button', { name: 'Удалить аккаунт', exact: true }).click();
+    await row.getByRole('button', { name: /Действия с аккаунтом/ }).click();
+    await page.getByRole('menuitem', { name: 'Удалить', exact: true }).click();
     const dialog = page.getByRole('dialog'); await dialog.waitFor({ state: 'visible' });
     await dialog.getByRole('button', { name: 'Отмена', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
-    await row.getByRole('button', { name: 'Удалить аккаунт', exact: true }).click();
+    await row.getByRole('button', { name: /Действия с аккаунтом/ }).click();
+    await page.getByRole('menuitem', { name: 'Удалить', exact: true }).click();
     await dialog.waitFor({ state: 'visible' }); await page.keyboard.press('Escape');
     await dialog.waitFor({ state: 'hidden' });
     assert.equal(financialWrites(state).length, beforeCancel, 'Cancel and Escape cause zero mutation requests');
