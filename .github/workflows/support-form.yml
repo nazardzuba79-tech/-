@@ -1,12 +1,16 @@
 name: Support form (Cloudflare Worker + widget)
 
-# Support is a form: the widget posts once to the voltex-support-edge Worker,
+# Support sends through the authenticated API relay to the Worker,
 # which emails the owner through Cloudflare Email Routing. Verify the Worker
 # contract, the widget and the built bundle on every change; deploy the
 # Worker only from main (or an explicitly tagged push / manual run).
 on:
   pull_request:
     paths:
+      - 'src/services/ContactEmailPolicy.ts'
+      - 'src/api/routes/contactPolicy.ts'
+      - 'src/api/routes/supportRequest.ts'
+      - 'src/api/middleware/auth.ts'
       - 'workers/support-edge/**'
       - 'frontend/src/components/SupportWidget.tsx'
       - 'frontend/src/components/SupportWidget.css'
@@ -67,12 +71,12 @@ jobs:
           # frontend/src/pages/admin/DeleteUserDialog.tsx is an intentional identity.
           # frontend/src/lib/__tests__/supportForm.test.ts permits only that guard
           # and rejects that address elsewhere; actual mail/token markers stay forbidden.
-          if grep -R -l -E "SMTP_PASS|SMTP_USER|SUPPORT_ADMIN_EMAIL|SUPPORT_FROM_EMAIL|CLOUDFLARE_API_TOKEN" frontend/dist; then
+          if grep -R -l -E "SMTP_PASS|SMTP_USER|SUPPORT_ADMIN_EMAIL|SUPPORT_FROM_EMAIL|SUPPORT_RELAY_KEY|CLOUDFLARE_API_TOKEN" frontend/dist; then
             echo "secret-like string in the bundle"; exit 1
           fi
-          grep -R -q "support.voltextech.net/v1/support" frontend/dist
+          grep -R -q "/support/request" frontend/dist
       - name: QA bundle (endpoint = local Worker adapter)
-        run: VITE_SUPPORT_ENDPOINT=http://127.0.0.1:8799/v1/support npm run build --prefix frontend
+        run: npm run build --prefix frontend
       - name: Install disposable browser
         run: |
           npm install --prefix /tmp/support-form-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
@@ -81,6 +85,11 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/support-form-qa/node_modules/playwright
         run: node scripts/qa-support-form.cjs
+      - name: Admin spam browser QA
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/support-form-qa/node_modules/playwright
+          QA_OUT: docs/qa/support-form/admin
+        run: node scripts/qa-admin-spam.cjs
       - name: Preserve browser evidence
         if: success() || failure()
         uses: actions/upload-artifact@v4
@@ -90,8 +99,41 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  blacklist-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: voltex_email_policy_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
+      DIRECT_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
+      EMAIL_POLICY_TEST_URL: postgresql://postgres@127.0.0.1:5432/voltex_email_policy_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma db push --skip-generate
+      - run: npm run build
+      - run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/api/routes/__tests__/contactPolicy.pg.test.ts
+          src/api/routes/__tests__/contactPolicy.test.ts
+          src/api/routes/__tests__/auth.test.ts
+          src/api/middleware/__tests__/auth.test.ts
+          src/api/routes/__tests__/bcryptAuthRegression.test.ts
+
   deploy:
-    needs: verify
+    needs: [verify, blacklist-postgres]
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[deploy-support-edge]')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -115,7 +157,7 @@ jobs:
           ok=0
           for attempt in $(seq 1 24); do
             if health="$(curl --connect-timeout 5 --max-time 10 -fsS https://support.voltextech.net/health)" \
-              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log(JSON.stringify(j));if(j.ok!==true||j.service!=='voltex-support-edge'||j.version!=='support-form-v1'||j.configured!==true)process.exit(1)})"; then
+              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log(JSON.stringify(j));if(j.ok!==true||j.service!=='voltex-support-edge'||j.version!=='support-form-v3-authenticated'||j.configured!==true)process.exit(1)})"; then
               ok=1; break
             fi
             echo "waiting_for_worker attempt=$attempt"; sleep 5

@@ -47,6 +47,7 @@ export function createAdminWorkingFixture() {
     const code = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
     new Function('exports', 'require', code)(out, (name: string) => {
       if (name.endsWith('.css')) return {};
+      if (name.endsWith('/adminSpamEmails')) return { getSpamEmails: async () => ({ entries: [] }) };
       if (name.endsWith('/adminPagedApi')) return { getAdminUsersPage: (query: string, signal?: AbortSignal) => api.getAdminUsersPage(query, signal), getAdminAuditPage: (query: string, signal?: AbortSignal) => api.getAdminAuditPage(query, signal) };
       if (name.endsWith('/adminReadApi')) return { adminRead: async (path: string, signal?: AbortSignal) => {
         const own = token, response = await fetcher('/api/v1' + path, { signal, cache: 'no-store' });

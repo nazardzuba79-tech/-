@@ -18,7 +18,9 @@ const delta=(a,b)=>Object.fromEntries(Object.entries(b.hits).map(([k,v])=>[k,v-(
 async function adminFixture(route){
   const url=new URL(route.request().url()),asOf=new Date().toISOString();
   let json;
-  if(url.pathname==='/api/v1/admin/users/page'){
+  if(url.pathname==='/api/v1/admin/spam-emails'){
+    json={entries:[]};
+  }else if(url.pathname==='/api/v1/admin/users/page'){
     const items=[{id:'qa-customer',email:'customer@localhost.invalid',createdAt:asOf,isAdmin:false,isBlocked:false,kycStatus:'NOT_STARTED',balances:[]}];
     json={items,total:items.length,page:1,pageSize:20,totalPages:1,asOf};
   }else if(url.pathname==='/api/v1/admin/work-summary'){

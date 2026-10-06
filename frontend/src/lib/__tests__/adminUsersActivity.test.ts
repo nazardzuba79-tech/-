@@ -136,10 +136,10 @@ test('the email is plain selectable text; only «Открыть» opens the prof
   expect(css).toMatch(/\.admin-user-actions \.admin-hide-button[^}]*margin-left: 24px;/);
   expect(css).toMatch(/\.admin-user-actions \.admin-delete-button \{[^}]*margin-left: 20px;/);
 });
-test('the compact owner filter adds only the reversible hidden-accounts view', async () => {
+test('the compact owner filter includes hidden and spam views', async () => {
   await f.mount();
   const options = Array.from(f.host.querySelectorAll('[aria-label="Фильтр пользователей"] option')).map(o => (o as HTMLOptionElement).value);
-  expect(options).toEqual(['all', 'new', 'kyc-pending', 'hidden']);
+  expect(options).toEqual(['all', 'new', 'kyc-pending', 'hidden', 'spam']);
   expect(f.host.querySelector('details')).toBeNull();
   expect(f.button('Скрыть')?.getAttribute('aria-label')).toBe('Скрыть аккаунт');
   expect(f.button('Удалить')?.getAttribute('aria-label')).toBe('Удалить аккаунт');

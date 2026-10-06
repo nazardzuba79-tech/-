@@ -5,7 +5,7 @@ import { api, setToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { defaultTradingPath } from '../lib/tradingMode';
 import { readNext } from '../lib/returnTo';
-import { openSupportWidget } from '../lib/supportWidget';
+
 import { AuthShell, AuthFormIcon, AuthTabs, AuthSupport } from './auth-shell/AuthShell';
 import { AuthField, AuthPasswordField } from './auth-shell/AuthFields';
 import { customerErrorText } from '../lib/customerError';
@@ -153,11 +153,7 @@ export function AuthPage() {
                 autoComplete="current-password"
                 required
                 aside={
-                  // There is no self-service reset endpoint, so this opens
-                  // the real support chat (mounted globally, and usable
-                  // signed-out) rather than linking to a page that would
-                  // have to be invented.
-                  <button type="button" onClick={openSupportWidget} className="vx-auth-forgot">
+                  <button type="button" onClick={() => setError('Поддержка доступна только после входа в аккаунт.')} className="vx-auth-forgot">
                     {t('auth.forgotPassword')}
                   </button>
                 }

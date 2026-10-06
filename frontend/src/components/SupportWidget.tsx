@@ -15,7 +15,7 @@ import './SupportWidget.css';
 
 // Loaded only by the explicit deposit action, never by opening FAQ.
 const DepositModal = lazy(() => import('./DepositModal').then(m => ({ default: m.DepositModal })));
-type Phase = 'idle' | 'sending' | 'sent' | 'failed' | 'check' | 'sensitive' | 'context-too-long';
+type Phase = 'idle' | 'sending' | 'sent' | 'failed' | 'check' | 'sensitive' | 'context-too-long' | 'unauthorized' | 'blocked';
 type Mode = 'assistant' | 'specialist';
 
 /** One global widget. FAQ is local; only a confirmed specialist form posts to
@@ -133,20 +133,21 @@ export function SupportWidget() {
     if ([name, email, message].some(containsSensitiveData)) { setPhase('sensitive'); return; }
     if (invalidSupportFields(input).length) { setPhase('check'); return; }
     sendingRef.current = true; setPhase('sending');
-    const outcome = await sendSupportRequest(input, { endpoint: SUPPORT_ENDPOINT });
+    const outcome = await sendSupportRequest(input, { endpoint: SUPPORT_ENDPOINT, token: getToken() });
     sendingRef.current = false;
     if (!mountedRef.current) return;
     if (outcome.status === 'sent') { setMessage(''); setPhase('sent'); }
-    else setPhase('failed');
+    else setPhase(outcome.reason === 'unauthorized' || outcome.reason === 'blocked' ? outcome.reason : 'failed');
   }
   const sending = phase === 'sending';
-  const problem = phase === 'sensitive' ? copy.sensitive : phase === 'context-too-long' ? copy.contextTooLong
+  const problem = phase === 'unauthorized' ? 'Войдите в аккаунт, чтобы написать в поддержку.' : phase === 'blocked' ? 'Отправка обращений для этого аккаунта заблокирована.' : phase === 'sensitive' ? copy.sensitive : phase === 'context-too-long' ? copy.contextTooLong
     : phase === 'failed' ? RU['support.formFailed'] : phase === 'check' ? RU['support.formCheck'] : null;
   const hasContext = turns.some(turn => turn.intent !== null);
   const renderAction = (id: AssistantAction, intent: AssistantIntent, originalQuestion: string) => id === 'specialist' || id === 'deposit'
     ? <button type="button" key={id} onClick={() => action(id, intent, originalQuestion)}>{copy.actions[id]}<ChevronRight size={13} aria-hidden="true" /></button>
     : <a key={id} href={ASSISTANT_ROUTES[id]} onClick={close}>{copy.actions[id]}<ArrowUpRight size={13} aria-hidden="true" /></a>;
 
+  if (!getToken()) return null;
   return <>
     <button type="button" ref={launcherRef} onClick={() => open ? close() : show(mode)} className="support-launcher"
       style={launcherStyle} aria-label={open ? copy.close : RU['support.title']} aria-expanded={open} aria-controls="voltex-assistant-panel">
@@ -199,7 +200,7 @@ export function SupportWidget() {
           </div></fieldset>
           <div className="support-row">
             <label className="support-field"><span>{RU['support.formName']}</span><input autoComplete="name" value={name} onChange={event => { setName(event.target.value); edited(); }} maxLength={SUPPORT_LIMITS.name} required disabled={sending} /></label>
-            <label className="support-field"><span>{RU['support.formEmail']}</span><input type="email" autoComplete="email" value={email} onChange={event => { setEmail(event.target.value); edited(); }} maxLength={SUPPORT_LIMITS.email} required disabled={sending} /></label>
+            <label className="support-field"><span>{RU['support.formEmail']}</span><input type="email" autoComplete="email" value={email} readOnly maxLength={SUPPORT_LIMITS.email} required disabled={sending} /></label>
           </div>
           <small className="support-hint">{RU['support.formEmailHint']}</small>
           <label className="support-field"><span>{RU['support.formMessage']}</span><textarea value={message} onChange={event => { setMessage(event.target.value); edited(); }} rows={5} maxLength={SUPPORT_LIMITS.message} required disabled={sending} /></label>

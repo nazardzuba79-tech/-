@@ -30,6 +30,7 @@ export const ADMIN_ACTIONS: Record<string, string> = {
   USER_REGISTERED: 'Пользователь зарегистрирован', USER_BLOCKED: 'Пользователь заблокирован', USER_UNBLOCKED: 'Пользователь разблокирован', USER_DELETED: 'Пользователь удалён',
   DEPOSIT_CREDITED: 'Пополнение зачислено', DEPOSIT_PACKAGE_CREDITED: 'Пакет пополнений зачислен',
   DEPOSIT_COPY_IGNORED: 'Сигнал копирования просмотрен',
+  CONTACT_EMAIL_BLOCKED: 'Email добавлен в спам', CONTACT_EMAIL_UNBLOCKED: 'Email убран из спама',
 };
 export const adminAction = (value: string) => ADMIN_ACTIONS[value] ?? 'Действие администратора';
 export const adminStatus = (value: string) => ({

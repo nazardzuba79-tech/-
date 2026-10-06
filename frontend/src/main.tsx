@@ -30,7 +30,7 @@ startDepositCopyLog();
 
 function SessionContent() {
   const token = React.useSyncExternalStore(onSessionChange, getToken);
-  return <React.Fragment key={token ?? 'guest'}><App /><SupportWidget /></React.Fragment>;
+  return <React.Fragment key={token ?? 'guest'}><App />{token && <SupportWidget />}</React.Fragment>;
 }
 
 // Start authenticated direct-entry I/O alongside the lazy page chunk, before

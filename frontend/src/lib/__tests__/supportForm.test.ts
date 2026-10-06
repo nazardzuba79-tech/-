@@ -1,3 +1,4 @@
+jest.mock('../api', () => ({ getToken: jest.fn(() => 'fixture-session') }));
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { createRequire } from 'module';
@@ -61,12 +62,13 @@ function fakeFetch(status: number, body: unknown) {
 it('sends exactly the four fields (and the empty honeypot) to the configured endpoint, without cookies', async () => {
   const f = fakeFetch(200, { ok: true });
   const outcome = await sendSupportRequest({ ...valid, name: '  VOLTEX Support QA ', to: 'x@evil.test' } as never,
-    { endpoint: 'https://support.test/v1/support', fetchImpl: f.fn });
+    { endpoint: 'https://support.test/v1/support', token: 'fixture-session', fetchImpl: f.fn });
   expect(outcome).toEqual({ status: 'sent' });
   expect(f.calls).toHaveLength(1);
   expect(f.calls[0].url).toBe('https://support.test/v1/support');
   expect(f.calls[0].init.method).toBe('POST');
   expect(f.calls[0].init.credentials).toBe('omit');
+  expect(f.calls[0].init.headers).toMatchObject({ Authorization: 'Bearer fixture-session' });
   expect(JSON.parse(String(f.calls[0].init.body))).toEqual({
     name: 'VOLTEX Support QA', email: valid.email, subject: 'TECHNICAL', message: valid.message, website: '',
   });
@@ -74,6 +76,8 @@ it('sends exactly the four fields (and the empty honeypot) to the configured end
 
 it('reports success ONLY when the provider accepted the email', async () => {
   const cases: [number, unknown, string][] = [
+    [401, { ok: false }, 'unauthorized'],
+    [403, { ok: false }, 'blocked'],
     [502, { ok: false, error: 'delivery_failed' }, 'delivery_failed'],
     [503, { ok: false, error: 'not_configured' }, 'not_configured'],
     [429, { ok: false, error: 'rate_limited' }, 'rate_limited'],
@@ -84,11 +88,11 @@ it('reports success ONLY when the provider accepted the email', async () => {
   ];
   for (const [status, body, reason] of cases) {
     const f = fakeFetch(status, body);
-    expect(await sendSupportRequest(valid, { endpoint: 'https://support.test/v1/support', fetchImpl: f.fn }))
+    expect(await sendSupportRequest(valid, { endpoint: 'https://support.test/v1/support', token: 'fixture-session', fetchImpl: f.fn }))
       .toEqual({ status: 'failed', reason });
   }
   const offline = async () => { throw new TypeError('Failed to fetch'); };
-  expect(await sendSupportRequest(valid, { endpoint: 'https://support.test/v1/support', fetchImpl: offline }))
+  expect(await sendSupportRequest(valid, { endpoint: 'https://support.test/v1/support', token: 'fixture-session', fetchImpl: offline }))
     .toEqual({ status: 'failed', reason: 'network' });
 });
 
@@ -99,7 +103,7 @@ it('the existing POST deadline aborts once without retry or success', async () =
   const pending = jest.fn((_url: string, init: RequestInit) => new Promise<never>((_resolve, reject) => {
     init.signal!.addEventListener('abort', () => reject(new Error('synthetic timeout')), { once: true });
   }));
-  const result = sendSupportRequest(valid, { endpoint: 'https://support.test/v1/support', fetchImpl: pending });
+  const result = sendSupportRequest(valid, { endpoint: 'https://support.test/v1/support', token: 'fixture-session', fetchImpl: pending });
   jest.advanceTimersByTime(20_000);
   expect(await result).toEqual({ status: 'failed', reason: 'network' });
   expect(pending).toHaveBeenCalledTimes(1); expect(jest.getTimerCount()).toBe(0);
@@ -120,6 +124,7 @@ interface Harness {
 }
 
 function mountWidget(opts: { token?: string | null; response?: { status: number; body: unknown }; me?: object } = {}): Harness {
+  require('../api').getToken.mockReturnValue(opts.token === undefined ? 'fixture-session' : opts.token);
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',
     { url: 'https://voltextech.net/markets', pretendToBeVisual: true });
   const g = global as any;
@@ -136,7 +141,7 @@ function mountWidget(opts: { token?: string | null; response?: { status: number;
     fetches.push({ url, body: JSON.parse(String(init.body)) });
     return { ok: response.status >= 200 && response.status < 300, status: response.status, json: async () => response.body };
   };
-  const getMe = jest.fn(async () => opts.me ?? { email: 'member@example.com', displayName: 'Olena' });
+  const getMe = jest.fn(async () => opts.me ?? { email: valid.email, displayName: 'Olena' });
   const intervals = jest.spyOn(global, 'setInterval');
 
   const file = resolve(frontend, 'src/components/SupportWidget.tsx');
@@ -146,7 +151,7 @@ function mountWidget(opts: { token?: string | null; response?: { status: number;
   const module = { exports: {} as any };
   const localRequire = (id: string) => {
     if (id === 'react') return React;
-    if (id === '../lib/api') return { api: { getMe }, getToken: () => opts.token ?? null };
+    if (id === '../lib/api') return { api: { getMe }, getToken: () => opts.token === undefined ? 'fixture-session' : opts.token };
     if (id === '../lib/i18n') return { useLanguage: () => ({ t: (k: string) => k }) };
     if (id === '../lib/supportWidget') return require('../supportWidget');
     if (id === '../lib/supportEndpoint') return { SUPPORT_ENDPOINT: 'https://support.test/v1/support' };
@@ -200,38 +205,21 @@ async function open(h: Harness, specialist = true) {
 function fill(h: Harness, v: Partial<SupportFormInput> = {}) {
   const x = { ...valid, ...v };
   h.type('input[autocomplete="name"]', x.name);
-  h.type('input[type="email"]', x.email);
+
   h.type('textarea', x.message);
 }
 
-it('a guest: nothing is requested on mount or open; Send is one POST; success clears the message', async () => {
+it('guests have no support launcher or form and cannot send directly', async () => {
   const h = mountWidget({ token: null });
-  expect(h.fetches).toHaveLength(0);
-  await open(h);
-  expect(h.panel()).not.toBeNull();
-  expect(h.fetches).toHaveLength(0);
-  expect(h.getMe).not.toHaveBeenCalled();   // a guest has no profile to read
-  fill(h);
-  await h.submit();
-  expect(h.fetches).toHaveLength(1);
-  expect(h.fetches[0].url).toBe('https://support.test/v1/support');
-  expect(h.fetches[0].body).toMatchObject({ name: valid.name, email: valid.email, subject: 'TECHNICAL' });
-  const text = h.panel()!.textContent;
-  expect(text).toContain(copy.sent);
-  expect(text).toContain(copy.sentHint);
-  expect((h.host.querySelector('textarea') as HTMLTextAreaElement).value).toBe('');
-  // Name and email stay, so a second question is one field away.
-  expect((h.host.querySelector('input[type="email"]') as HTMLInputElement).value).toBe(valid.email);
-  // No chat opened and nothing polls afterwards.
-  expect(h.host.querySelector('.support-panel')!.querySelectorAll('[class*="bubble"]').length).toBe(0);
-  expect(h.intervals).not.toHaveBeenCalled();
-  await act(async () => { await new Promise(r => setTimeout(r, 50)); });
-  expect(h.fetches).toHaveLength(1);
-  h.cleanup();
+  expect(h.launcher()).toBeNull(); expect(h.panel()).toBeNull();
+  expect(h.fetches).toHaveLength(0); expect(h.getMe).not.toHaveBeenCalled();
+  const f = fakeFetch(200, { ok: true });
+  expect(await sendSupportRequest(valid, { endpoint: 'https://support.test/v1/support', fetchImpl: f.fn })).toEqual({ status: 'failed', reason: 'unauthorized' });
+  expect(f.calls).toHaveLength(0); h.cleanup();
 });
 
 it.each([400, 429, 502, 503, 500])('HTTP %s keeps the draft and never shows success', async status => {
-  const h = mountWidget({ token: null, response: { status, body: { ok: false } } });
+  const h = mountWidget({ token: 'fixture-session', response: { status, body: { ok: false } } });
   await open(h);
   fill(h);
   await h.submit();
@@ -249,7 +237,8 @@ it('a signed-in user gets name and email prefilled from one profile read, only w
   expect(h.getMe).toHaveBeenCalledTimes(1);
   expect((h.host.querySelector('input[type="email"]') as HTMLInputElement).value).toBe('member@example.com');
   expect((h.host.querySelector('input[autocomplete="name"]') as HTMLInputElement).value).toBe('Olena');
-  // The address stays visible and editable, with the hint that replies go there.
+  // The address is read-only and comes from the authenticated account.
+  expect((h.host.querySelector('input[type="email"]') as HTMLInputElement).readOnly).toBe(true);
   expect(h.panel()!.textContent).toContain(RU['support.formEmailHint']);
   // Closing and reopening does not read the profile again.
   await open(h); await open(h);
@@ -258,7 +247,7 @@ it('a signed-in user gets name and email prefilled from one profile read, only w
 });
 
 it('a double submit is one POST', async () => {
-  const h = mountWidget({ token: null });
+  const h = mountWidget({ token: 'fixture-session' });
   await open(h);
   fill(h);
   const form = h.host.querySelector('form')!;
@@ -272,7 +261,7 @@ it('a double submit is one POST', async () => {
 });
 
 it('a name of spaces is caught before any request', async () => {
-  const h = mountWidget({ token: null });
+  const h = mountWidget({ token: 'fixture-session' });
   await open(h);
   fill(h, { name: '   ' });
   await h.submit();
@@ -373,7 +362,7 @@ it('local chat has no polling, persisted thread or Render support endpoint', () 
   const api = readFileSync(resolve(frontend, 'src/lib/api.ts'), 'utf8');
   expect(api).not.toMatch(/\/support\//);
   const endpoint = readFileSync(resolve(frontend, 'src/lib/supportEndpoint.ts'), 'utf8');
-  expect(endpoint).toContain("'https://support.voltextech.net/v1/support'");
+  expect(endpoint).toContain("API_BASE + '/support/request'");
 });
 
 it('mail secrets, SMTP settings and support recipient configuration stay out of frontend code', () => {

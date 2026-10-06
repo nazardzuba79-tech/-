@@ -141,6 +141,12 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
       }
     }
     if (file === 'frontend/src/pages/home/HomeFooter.tsx') {
+      // Authenticated-only Support removes the public contact entry. Restore only
+      // that markup for the historical card-design fingerprint comparison.
+      text = text.replace("import { Logo } from '../../components/Logo';\n\n", "import { Logo } from '../../components/Logo';\nimport { openSupportWidget } from '../../lib/supportWidget';\n");
+      const closedLinks = '              </ul>';
+      expect(text.split(closedLinks)).toHaveLength(2);
+      text = text.replace(closedLinks, "                {/* Contact isn't a route — it opens the support chat that is\n                    already mounted on every page, for signed-out visitors\n                    too. A link would have had nowhere honest to point. */}\n                {col.titleKey === 'home.footer.support' && (\n                  <li>\n                    <button\n                      type=\"button\"\n                      onClick={openSupportWidget}\n                      className=\"text-left text-[12px] text-home-muted transition-colors duration-150 hover:text-white\"\n                    >\n                      {t('home.footer.contact')}\n                    </button>\n                  </li>\n                )}\n" + closedLinks);
       // Arbitrage moved under OTC. Restore the former product-link line only
       // for this historical card-design fingerprint comparison.
       const current = "      { labelKey: 'nav.copyTrading', to: '/copy-trading' },\n      { labelKey: 'nav.card', to: '/card' },";

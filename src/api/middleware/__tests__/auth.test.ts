@@ -15,7 +15,7 @@ function makePrismaMock(session: any = null, owner: any = { createdAt: new Date(
     user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1' }) },
     session: {
       // The first read is authorization; a remembered session's second read is its owner.
-      findUnique: jest.fn().mockImplementation(async ({ select }: any) => (select?.user ? owner : session)),
+      findUnique: jest.fn().mockImplementation(async ({ select }: any) => (select?.createdAt ? owner : session)),
       update: jest.fn().mockResolvedValue({}),
     },
   } as any;

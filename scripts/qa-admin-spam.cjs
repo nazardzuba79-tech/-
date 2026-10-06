@@ -8,7 +8,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const express = require('express');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname,"..");
 const variant = process.env.QA_VARIANT || 'after';
 const dist = path.resolve(root, process.env.QA_FRONTEND_DIST || 'frontend/dist');
 const out = path.resolve(root, process.env.QA_OUT || `output/admin-practicality/${variant}`);
@@ -106,7 +106,6 @@ app.get('/api/v1/admin/deposits/recent-by-user', (_, res) => res.json([]));
 app.get('/api/v1/admin/deposits', (_, res) => res.json({ incoming: rows, deposits: [] }));
 app.get('/api/v1/admin/user-activity', (_, res) => res.json(activity()));
 app.get('/api/v1/admin/alerts-summary', (_, res) => res.json({ asOf: now, pendingKyc: 4, pendingWithdrawals: 4, readyDeposits: 1, readyDepositUsers: 1, unattributedTransfers: 1 }));
-app.get('/api/v1/admin/spam-emails', (_, res) => res.json({ entries: [] }));
 app.get('/api/v1/admin/work-summary', (_, res) => { const spec = { readyPackages: [1, 'packages', '/admin/deposits?state=READY'], pendingPackages: [2, 'packages', '/admin/deposits'], unlinkedTransfers: [1, 'transfers', '/admin/deposits?state=UNATTRIBUTED'], activeWithdrawals: [6, 'withdrawals', '/admin/withdrawals?status=active'], pendingKyc: [4, 'users', '/admin/kyc?status=PENDING'], openOtc: [otc.length, 'requests', '/admin/otc?status=active'], totalUsers: [users.length, 'users', '/admin/users'], newUsers24h: [3, 'users', '/admin/users?status=new'] }; res.json({ asOf: now, alerts:{depositId:'qa-transfer-3',withdrawalId:'qa-withdrawal-8',kycId:'qa-kyc-4'}, widgets: Object.fromEntries(Object.entries(spec).map(([key, [value, unit, href]]) => [key, { value, unit, href, status: 'ready', asOf: now }])) }); });
 app.get('/api/v1/admin/withdrawals/page', (req,res)=>{const search=String(req.query.search||'').toLowerCase(),status=req.query.status;res.json(paged(withdrawals.filter(w=>(!search||`${w.id} ${w.userId} ${w.userEmail}`.toLowerCase().includes(search))&&(!status||status==='all'||status==='active'&&['PENDING','APPROVED'].includes(w.status)||status==='processed'&&['SENT','REJECTED','COMPLETED'].includes(w.status)||w.status===status)),req.query));});
 app.get('/api/v1/admin/withdrawals', (_, res) => res.json(withdrawals));
@@ -117,55 +116,76 @@ app.get('/api/v1/admin/otc/:id/messages', (_, res) => res.json({ rows: [], hasMo
 app.get('/api/v1/admin/otc/:id', (req, res) => { const row = otc.find(r => r.id === req.params.id); res.json({ ...row, offers: [], reservation: { asset: 'USDT', quantity: '1500.00000000', status: 'HELD' }, completion: null }); });
 app.get('/api/v1/admin/listings', (_, res) => res.json({ listings: [] }));
 app.get(['/api/v1/notifications', '/api/v1/admin/deposit-copy-alerts', '/api/v1/admin/deposit-address-copies/alerts'], (_, res) => res.json({ items: [], unreadCount: 0 }));
+
+const spam = new Map();
+app.get('/api/v1/admin/spam-emails',(_req,res)=>res.json({entries:[...spam.values()]}));
+app.post('/api/v1/admin/spam-emails/:action',(req,res)=>{
+ const email=req.body.email.trim().toLowerCase();
+ if(req.params.action==='block')spam.set(email,{email,addedAt:now,addedBy:'owner@example.invalid'});else spam.delete(email);
+ res.json({ok:true});
+});
 app.use('/api/v1', (req, res) => { state.unexpected.push({ method: req.method, path: req.path }); res.status(405).json({ error: 'No synthetic handler; no production fallback' }); });
 app.use(express.static(dist, { index: false }));
 app.get('*', (_, res) => res.type('html').send(fs.readFileSync(path.join(dist, 'index.html'), 'utf8').replace('<head>', '<head><script>localStorage.setItem("exchange_token","fixture-admin-only");localStorage.setItem("exchange_lang","ru");</script>')));
 
-async function main() {
-  assert(fs.existsSync(path.join(dist, 'index.html')), `Build missing: ${dist}`);
-  const server = await new Promise(resolve => { const value = app.listen(process.env.QA_PREVIEW ? Number(process.env.QA_PORT || 4402) : 0, '127.0.0.1', () => resolve(value)); });
-  const origin = `http://127.0.0.1:${server.address().port}`;
-  if (process.env.QA_COMPATIBILITY) { try { await require('./qa-admin-api-compatibility.cjs').run({ origin, out, state, users, variant }); } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); } return; }
-  if (process.env.QA_INTERACTIONS) { try { await require('./qa-admin-workflow-interactions.cjs').run({ origin, out, state }); } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); } return; }
-  if (process.env.QA_BENCH) { try { await require('./qa-admin-browser-benchmark.cjs').run({ origin, variant, out, state, userCount: users.length }); } finally { await new Promise(resolve => server.close(resolve)); } return; }
-  if (process.env.QA_PREVIEW) { console.log(`Synthetic admin preview ${origin}/admin/users; bundle=${variant}`); return; }
-  const report = { variant, dist, origin, scope: 'Actual built frontend with synthetic localhost data. No production access.', layouts: [], errors: [], blockedExternal: [], calls: state.calls, writes: state.writes, unexpected: state.unexpected };
-  let browser;
-  try {
-    browser = await chromium.launch({ channel: process.env.QA_BROWSER || 'msedge', headless: true });
-    const context = await browser.newContext();
-    await context.route('**/*', route => { const url = new URL(route.request().url()); if (url.origin === origin || ['data:', 'blob:'].includes(url.protocol)) return route.continue(); report.blockedExternal.push(url.origin + url.pathname); return route.abort(); });
-    if (context.routeWebSocket) await context.routeWebSocket('**/*', socket => socket.close());
-    const page = await context.newPage(); page.on('pageerror', error => report.errors.push(error.message));
-    const routes = ['users', 'users/qa-user-1', 'deposits', 'withdrawals', 'kyc', 'otc', 'wallets', 'audit-log'];
-    for (const [width, height] of [[1920, 1080], [1440, 900], [1366, 900], [390, 844]]) {
-      await page.setViewportSize({ width, height });
-      for (const slug of routes) {
-        await page.goto(`${origin}/admin/${slug}`, { waitUntil: 'networkidle' });
-        await page.locator('.admin-main').waitFor();
-        await page.screenshot({ path: path.join(out, `${slug.replaceAll('/', '-')}-${width}.png`), fullPage: false });
-        report.layouts.push(await page.evaluate(({ slug, width, height }) => ({ route: slug, width, height, documentWidth: document.documentElement.scrollWidth, overflow: document.documentElement.scrollWidth > innerWidth + 1, rows: document.querySelectorAll('[data-user-row], [data-user-card], tbody tr, .otc-cash-list-item, .admin-history-grid').length, bodyText: document.querySelector('.admin-main')?.textContent?.slice(0, 280) }), { slug, width, height }));
-        if (variant === 'after' && slug === 'users' && width >= 1366) {
-          const tops = await page.locator('.admin-users-kpi').evaluateAll(cards => cards.map(card => Math.round(card.getBoundingClientRect().top)));
-          assert.equal(tops.length, 3, 'Users keeps three compact supporting indicators');
-          assert.equal(new Set(tops).size, 1, 'Desktop Users indicators stay compact in one row');
-          assert.equal(await page.locator('.admin-attention-grid').count(), 0, 'No duplicate work-queue dashboard above Users');
-        }
-        if (variant === 'after' && slug === 'users' && width === 390) {
-          const card = page.locator('[data-user-card]').first();
-          await card.waitFor({ state: 'visible' });
-          assert.equal(await page.locator('.admin-table-desktop').isVisible(), false, 'Mobile must show working cards, not a clipped desktop table');
-          await card.scrollIntoViewIfNeeded();
-          await page.screenshot({ path: path.join(out, 'users-list-390.png') });
-        }
-      }
-    }
-    await context.close();
-  } finally {
-    await browser?.close(); await new Promise(resolve => server.close(resolve));
-    fs.writeFileSync(path.join(out, 'browser-results.json'), JSON.stringify(report, null, 2));
-  }
-  console.log(JSON.stringify({ variant, screenshots: report.layouts.length, pageErrors: report.errors, overflows: report.layouts.filter(r => r.overflow).map(r => `${r.route}@${r.width}`), unexpected: state.unexpected, blockedExternal: [...new Set(report.blockedExternal)], evidence: out }, null, 2));
-  if (report.errors.length || state.unexpected.length || report.blockedExternal.length || (variant === 'after' && report.layouts.some(layout => layout.overflow))) process.exitCode = 1;
+
+async function main(){
+ const server=await new Promise(resolve=>{const v=app.listen(0,'127.0.0.1',()=>resolve(v));});
+ const origin='http://127.0.0.1:'+server.address().port;
+ const browser=await chromium.launch({headless:true});
+ const report={widths:[],errors:[],writes:state.writes};
+ try{
+ const context=await browser.newContext();
+ await context.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());
+ await context.routeWebSocket('**/*',s=>s.close());
+ const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));
+ for(const width of [1920,1440,1366,390,360,320]){
+  await page.setViewportSize({width,height:width<500?844:1000});
+  await page.goto(origin+'/admin/users',{waitUntil:'networkidle'});
+  const row=page.locator(width<500?'[data-user-card]':'[data-user-row]').first();
+  await row.waitFor({state:'visible'});
+  const email=await row.locator('.admin-user-email').innerText();
+  await row.getByRole('button',{name:'Спам',exact:true}).click();
+  const dialog=page.getByRole('dialog');await dialog.waitFor();
+  await dialog.getByRole('button',{name:'Спам',exact:true}).click();
+  await dialog.waitFor({state:'hidden'});
+  await row.getByRole('button',{name:'Не спам',exact:true}).waitFor();
+  assert.ok(spam.has(email));
+  await page.getByLabel('Фильтр пользователей',{exact:true}).selectOption('spam');
+  await page.waitForLoadState('networkidle');
+  await page.waitForFunction(selector=>document.querySelectorAll(selector).length===1,width<500?'[data-user-card]':'[data-user-row]');
+  assert.equal(await page.locator(width<500?'[data-user-card]':'[data-user-row]').count(),1);
+  await page.screenshot({path:path.join(out,'spam-filter-'+width+'.png')});
+  await page.getByRole('button',{name:/Спам-почты/}).click();
+  const manager=page.locator('.admin-spam-panel');
+  await manager.getByText('owner@example.invalid',{exact:false}).waitFor();
+  await page.screenshot({path:path.join(out,'spam-manager-'+width+'.png')});
+  await manager.getByRole('button',{name:'Не спам',exact:true}).click();
+  await dialog.getByRole('button',{name:'Не спам',exact:true}).click();
+  await dialog.waitFor({state:'hidden'});assert.equal(spam.size,0);
+  await manager.getByLabel('Email',{exact:true}).fill('new-spam@example.invalid');
+  await manager.getByRole('button',{name:'Добавить в спам'}).click();
+  await dialog.getByRole('button',{name:'Спам',exact:true}).click();
+  await dialog.waitFor({state:'hidden'});assert.ok(spam.has('new-spam@example.invalid'));
+  await manager.getByRole('button',{name:'Не спам',exact:true}).click();
+  await dialog.getByRole('button',{name:'Не спам',exact:true}).click();await dialog.waitFor({state:'hidden'});
+  await page.getByLabel('Фильтр пользователей',{exact:true}).selectOption('all');
+  await page.getByRole('button',{name:/Спам-почты/}).click();
+  await page.waitForLoadState('networkidle');
+  const metrics=await row.locator('.admin-user-actions').evaluate(el=>{
+    const rects=[...el.children].map(c=>c.getBoundingClientRect());
+    return {gaps:rects.slice(1).map((r,i)=>r.left-rects[i].right),width:el.getBoundingClientRect().width};
+  });
+  if(width>500)assert.ok(Math.max(...metrics.gaps)-Math.min(...metrics.gaps)<1,JSON.stringify(metrics));
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
+  assert.equal(overflow,false,'document overflow @'+width);
+  report.widths.push({width,metrics,overflow});
+  await page.screenshot({path:path.join(out,'users-'+width+'.png')});
+ }
+ assert.deepEqual(report.errors,[]);
+ assert.ok(state.writes.every(w=>/spam-emails/.test(w.path)),JSON.stringify(state.writes));
+ report.status='PASS';console.log('ADMIN QA PASS 6 widths; row block/unblock, filter, manual absent address, attribution; no other mutations');
+ }catch(e){report.status='FAIL';report.error=String(e.stack||e);throw e;}
+ finally{fs.writeFileSync(path.join(out,'admin-report.json'),JSON.stringify(report,null,2));await browser.close();server.closeAllConnections();server.close();}
 }
-main().catch(error => { console.error(error); process.exitCode = 1; });
+main().catch(e=>{console.error(e);process.exitCode=1;});

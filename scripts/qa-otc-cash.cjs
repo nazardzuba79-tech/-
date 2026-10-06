@@ -1,4 +1,4 @@
-// Public OTC support enquiry. All requests terminate in loopback fixtures.
+// Authenticated OTC support enquiry. All requests terminate in loopback fixtures.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
@@ -21,8 +21,8 @@ const server = http.createServer(async (req, res) => {
     calls.push({method:req.method,path:url.pathname});
     if (req.method === 'GET' && url.pathname === '/api/v1/me') return json(res, {id:'fixture-user',email:'fixture@example.invalid',role:'USER',emailVerified:true});
     if (req.method === 'GET' && url.pathname === '/api/v1/market/display/spot-snapshot') return json(res, {_display:{mode:'snapshot',refreshMs:60000,capturedAt:Date.now()},tickers:{available:false},overview:{available:false}});
-    if (req.method === 'POST' && url.pathname === '/api/support') {
-      assert.equal(req.headers.authorization, undefined, 'support never carries session credentials');
+    if (req.method === 'POST' && url.pathname === '/api/v1/support/request') {
+      assert.equal(req.headers.authorization, 'Bearer '+token, 'only the authenticated API relay receives the session credential');
       assert.equal(req.headers.cookie, undefined);
       let raw=''; for await (const chunk of req) raw+=chunk;
       submissions.push(JSON.parse(raw));
@@ -98,14 +98,15 @@ async function main() {
       await cta.click(); await dialog.waitFor();
       const message='SYNTHETIC FIXTURE ONLY — страна: Украина; город: Киев; криптовалюта: USDT; сумма: 10000. Не выполнять обмен.';
       await dialog.getByLabel('Имя',{exact:true}).fill('Fixture Tester');
-      await dialog.getByLabel('Email',{exact:true}).fill('fixture@example.invalid');
+      assert.equal(await dialog.getByLabel('Email',{exact:true}).inputValue(),'fixture@example.invalid');
+      assert.equal(await dialog.getByLabel('Email',{exact:true}).evaluate(el=>el.readOnly),true,'account email cannot be forged in Support');
       await dialog.getByRole('radio',{name:'Другое',exact:true}).check();
       await dialog.getByLabel('Сообщение',{exact:true}).fill(message);
       assert.equal(submissions.length,initialSubmissions,'manual edits never send');
       assert.ok(await dialog.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}),`dialog overflow ${width}`);
       await page.screenshot({path:path.join(OUT,`manual-${width}.png`)});
       const submit=dialog.getByRole('button',{name:'Отправить специалисту',exact:true});
-      const sentRequest=page.waitForRequest(r=>r.url()===base+'/api/support'), ready=once(server,'support-ready',{signal:AbortSignal.timeout(5000)});
+      const sentRequest=page.waitForRequest(r=>r.url()===base+'/api/v1/support/request'), ready=once(server,'support-ready',{signal:AbortSignal.timeout(5000)});
       await submit.click(); await sentRequest;
       await page.keyboard.press('Enter');
       await page.getByRole('button',{name:'Отправка...',exact:true}).waitFor();
@@ -118,7 +119,7 @@ async function main() {
       assert.equal(await dialog.getByLabel('Сообщение',{exact:true}).inputValue(),'');
       await page.screenshot({path:path.join(OUT,`accepted-${width}.png`)});
       fail=true; await dialog.getByLabel('Сообщение',{exact:true}).fill(message);
-      const failedRequest=page.waitForRequest(r=>r.url()===base+'/api/support'), failureReady=once(server,'support-ready',{signal:AbortSignal.timeout(5000)});
+      const failedRequest=page.waitForRequest(r=>r.url()===base+'/api/v1/support/request'), failureReady=once(server,'support-ready',{signal:AbortSignal.timeout(5000)});
       await submit.click(); await failedRequest;
       await failureReady;reply();reply=undefined;
       await dialog.getByRole('alert').waitFor();
@@ -131,7 +132,7 @@ async function main() {
       await page.screenshot({path:path.join(OUT,`failed-${width}.png`)});
       await page.clock.fastForward(86400000);
       assert.equal(submissions.length,initialSubmissions+2,'idle day adds no retry or polling');
-      assert.deepEqual(calls.slice(initialCalls).filter(c=>!['/api/v1/me','/api/v1/market/display/spot-snapshot','/api/support'].includes(c.path)),[],'no OTC, balances, deposit or other financial requests');
+      assert.deepEqual(calls.slice(initialCalls).filter(c=>!['/api/v1/me','/api/v1/market/display/spot-snapshot','/api/v1/support/request'].includes(c.path)),[],'no OTC, balances, deposit or other financial requests');
       checks.push({width,guidedParameters:true,reviewBeforeSupport:true,manualSupport:true,focusReturn:true,fixturePosts:2,duplicatePosts:0,financialRequests:0,errorRetainsInput:true,idleSupportRequests:0});
       await context.close();
     }

@@ -22,7 +22,7 @@ function fixture() {
     futuresOrder: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
     futuresPosition: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
     cfdPosition: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
-    auditLog: { findMany: jest.fn(async () => []), count: jest.fn(async () => 201), create: jest.fn() },
+    auditLog: { findFirst: jest.fn(async () => null), findMany: jest.fn(async () => []), count: jest.fn(async () => 201), create: jest.fn() },
     $queryRaw: jest.fn(async () => [{ id: 'u21' }]),
   };
   const app = express(); app.use('/api/v1', adminUsersRouter(prisma, {} as any));
