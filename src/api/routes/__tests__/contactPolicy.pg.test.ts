@@ -32,6 +32,8 @@ run('durable blacklist, session revocation, atomic rollback and financial preser
     const history = await db.auditLog.create({ data: { userId: user.id, action: 'FIXTURE_HISTORY', metadata: { preserved: true } } });
     const sessions = await Promise.all([false, true].map(remembered => db.session.create({ data: { userId: user.id, remembered } })));
     const token = (sub: string, sid?: string) => 'Bearer ' + jwt.sign({ sub, ...(sid ? { sid } : {}) }, process.env.JWT_SECRET!);
+    // Reuse the token issued before blocking, including after unblocking.
+    const legacyToken = token(user.id);
     const app = appFor(db), headers = { Authorization: token(admin.id) };
     const snapshot = async () => JSON.stringify(await Promise.all([
       db.user.findUnique({ where: { id: user.id } }), db.balance.findMany({ where: { userId: user.id } }),
@@ -46,11 +48,11 @@ run('durable blacklist, session revocation, atomic rollback and financial preser
     const fresh = new PrismaClient({ datasources: { db: { url } } });
     try { expect(await isBlockedContactEmail(fresh, email)).toBe(true); } finally { await fresh.$disconnect(); }
     expect((await blockedContactEmails(db)).find(row => row.email === email)).toMatchObject({ addedBy: admin.email, addedAt: expect.any(Date) });
-    expect((await request(app).get('/private').set('Authorization', token(user.id))).status).toBe(403);
+    expect((await request(app).get('/private').set('Authorization', legacyToken)).status).toBe(403);
     for (const session of sessions) expect((await request(app).get('/private').set('Authorization', token(user.id, session.id))).status).toBe(401);
     expect((await request(app).post('/api/v1/admin/spam-emails/unblock').set(headers).send({ email })).status).toBe(200);
     expect(await isBlockedContactEmail(db, email)).toBe(false);
-    expect((await request(app).get('/private').set('Authorization', token(user.id))).status).toBe(401);
+    expect((await request(app).get('/private').set('Authorization', legacyToken)).status).toBe(401);
     expect(await db.session.count({ where: { userId: user.id, revokedAt: null } })).toBe(0);
     expect(await snapshot()).toBe(before);
     const newSession = await db.session.create({ data: { userId: user.id } });
