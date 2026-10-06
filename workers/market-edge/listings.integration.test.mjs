@@ -11,6 +11,13 @@ import { join } from 'node:path';
 const token = 'synthetic-local-only-listings-secret-0001';
 const base = 'https://market.local';
 let mf, options, outbound = 0;
+let sharedCoreBundle;
+const freshCore = () => {
+  const module = { exports: {} };
+  // A fresh module has a fresh simulation cache, as a restarted API would.
+  new Function('module', 'exports', sharedCoreBundle)(module, module.exports);
+  return module.exports;
+};
 
 const iso = (msFromNow) => new Date(Math.ceil((Date.now() + msFromNow) / 1000) * 1000).toISOString().replace('.000Z', 'Z');
 const config = (extra = {}) => ({
@@ -32,6 +39,14 @@ const catalogue = async () => (await pub('/market/listings')).json();
 before(async () => {
   const bundle = await build({ entryPoints: [new URL('./src/worker.ts', import.meta.url).pathname.replace(/^\/(\w:)/, '$1')],
     bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022', external: ['cloudflare:*'] });
+  const shared = await build({ stdin: {
+    contents: `export { defaultScenarioControls } from './src/shared/listingScenarioControls';
+      export { listingScenarioPreview } from './src/services/listings/listingPreview';
+      export { listingSimulationConfig } from './src/services/listings/listingConfig';
+      export { testMarketCandles } from './src/services/testMarkets/testMarketService';`,
+    resolveDir: new URL('../../', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'), loader: 'ts',
+  }, bundle: true, write: false, format: 'cjs', platform: 'browser', target: 'es2022' });
+  sharedCoreBundle = shared.outputFiles[0].text;
   const path = await mkdtemp(join(tmpdir(), 'voltex-listings-sqlite-'));
   options = { ...convertV4MiniflareOptions({ durableObjectsPersist: path, workers: [{ name: 'market-edge', modules: true,
     script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-01',
@@ -252,4 +267,111 @@ test('bounded AITH demo stays private until publish and its program survives DO 
   assert.equal(row.state.lastPrice,null);
   const registry=await (await admin('/internal/listings/published')).json();
   assert.deepEqual(registry.listings.find(l=>l.id==='aith-demo').config.simulationProgram,program);
+});
+
+test('v2 full persistence lifecycle: editable draft, actual preview, restart, publish and immutable canonical history', async () => {
+  const initialCore = freshCore();
+  const program = initialCore.defaultScenarioControls('0.80', 'WAVES');
+  const cfg = config({ symbol: 'QSC', name: 'Scenario QA', initialPrice: '0.80', tradable: false,
+    listingAt: new Date(Math.ceil((Date.now() + 3_600_000) / 60_000) * 60_000).toISOString(),
+    ownerAllocation: '0', simulationProgram: program });
+  const beforeOutbound = outbound;
+  let response = await saveDraft('qsc-scenario', cfg, 0);
+  assert.equal(response.status, 200, await response.clone().text());
+  let saved = await response.json();
+  assert.deepEqual(saved.draft.simulationProgram, program);
+  assert.equal((await saveDraft('qsc-scenario', cfg, 0)).status, 409, 'repeat create cannot duplicate');
+  assert.equal((await saveDraft('qsc-duplicate', cfg, 0)).status, 409, 'same ticker cannot duplicate');
+  assert.ok(!(await catalogue()).assets.some(a => a.symbol === 'QSC'), 'saving never arms a countdown');
+
+  const editedProgram = { ...program, scenario: 'LONG_WICKS',
+    pullbacks: { frequency: 'often', minDepthPercent: '4', maxDepthPercent: '12', durationMinutes: 90 },
+    wicks: { length: 'pronounced', longFrequency: 'often' },
+    candles: { intensity: 'high', diversity: .85, pauseFrequency: 'often' } };
+  response = await saveDraft('qsc-scenario', { ...cfg, simulationProgram: editedProgram }, saved.draftRevision);
+  assert.equal(response.status, 200);
+  saved = await response.json();
+  assert.deepEqual(saved.draft.simulationProgram, editedProgram, 'old profile pinning must not discard edited controls');
+  const preview = initialCore.listingScenarioPreview(saved.draft, '1h', 'growth');
+  assert.ok(preview.candles.length > 24 && preview.candles.length <= 360);
+  assert.ok(preview.candles.every(c => c.high <= 74.776));
+  assert.equal(preview.scenarioSummary.first24hPrice, '14.6');
+
+  await mf.dispose(); mf = new Miniflare(options);
+  let detail = (await (await admin('/internal/listings')).json()).listings.find(l => l.id === 'qsc-scenario');
+  assert.deepEqual(detail.draft.simulationProgram, editedProgram);
+  assert.equal(detail.activeVersion, null);
+  const restartedCore = freshCore();
+  assert.deepEqual(restartedCore.listingScenarioPreview(detail.draft, '1h', 'growth'), preview);
+  const invalid = { ...detail.draft, simulationProgram: { ...editedProgram,
+    pullbacks: { ...editedProgram.pullbacks, minDepthPercent: '20', maxDepthPercent: '10' } } };
+  response = await saveDraft('qsc-scenario', invalid, detail.draftRevision);
+  assert.equal(response.status, 422);
+  assert.equal((await (await admin('/internal/listings')).json()).listings.find(l => l.id === 'qsc-scenario').draftRevision, detail.draftRevision);
+  assert.equal((await saveDraft('qsc-scenario', { ...detail.draft, tradable: true }, detail.draftRevision)).status, 422);
+
+  const publication = await (await publish('qsc-scenario', detail.draftRevision, 'qsc-publish-fixture-0001')).json();
+  assert.equal(publication.version, 1);
+  const replay = await (await publish('qsc-scenario', detail.draftRevision, 'qsc-publish-fixture-0001')).json();
+  assert.equal(replay.version, 1); assert.equal(replay.replayed, true);
+  const published = (await (await admin('/internal/listings/published')).json()).listings.find(l => l.id === 'qsc-scenario');
+  assert.deepEqual(published.config.simulationProgram, editedProgram);
+  const asset = restartedCore.listingSimulationConfig(published.config);
+  assert.equal(asset.isTradable, false);
+  assert.deepEqual(restartedCore.testMarketCandles(asset, '1h', preview.scenarioSummary.to, preview.candles.length), preview.candles);
+  assert.equal((await catalogue()).assets.find(a => a.symbol === 'QSC').isTradable, false);
+
+  const forbiddenEdit = await saveDraft('qsc-scenario', { ...detail.draft,
+    simulationProgram: { ...editedProgram, scenario: 'CALM' } }, detail.draftRevision);
+  assert.equal(forbiddenEdit.status, 422);
+  assert.equal((await forbiddenEdit.json()).error, 'HISTORY_LOCKED');
+  detail = (await (await admin('/internal/listings')).json()).listings.find(l => l.id === 'qsc-scenario');
+  assert.deepEqual(detail.draft.simulationProgram, editedProgram);
+  assert.deepEqual(detail.active.simulationProgram, editedProgram);
+  assert.equal(detail.versions.length, 1);
+  assert.equal(outbound, beforeOutbound, 'no external/financial calls anywhere in lifecycle');
+});
+
+test('v2 automatic scenario is persisted once; missing controls cannot silently downgrade it; legacy history cannot upgrade', async () => {
+  const cfg = config({ symbol: 'QAU', name: 'Automatic QA', initialPrice: '0.80', tradable: false,
+    listingAt: new Date(Math.ceil((Date.now() + 3_600_000) / 60_000) * 60_000).toISOString(),
+    ownerAllocation: '0', simulationProgram: freshCore().defaultScenarioControls('0.80', 'AUTO') });
+  const created = await (await saveDraft('qau-scenario', cfg, 0)).json();
+  assert.notEqual(created.draft.simulationProgram.scenario, 'AUTO');
+  const repeated = await (await saveDraft('qau-scenario', cfg, created.draftRevision)).json();
+  assert.equal(repeated.draft.simulationProgram.scenario, created.draft.simulationProgram.scenario);
+  const { simulationProgram: omitted, ...without } = repeated.draft;
+  assert.equal((await saveDraft('qau-scenario', without, repeated.draftRevision)).status, 422);
+  const legacy = (await (await admin('/internal/listings')).json()).listings.find(l => l.id === 'qax');
+  const upgrade = await saveDraft('qax', { ...legacy.draft, tradable: false,
+    listingAt: new Date(Math.ceil(Date.parse(legacy.draft.listingAt) / 10_000) * 10_000).toISOString(),
+    simulationProgram: freshCore().defaultScenarioControls(legacy.draft.initialPrice) }, legacy.draftRevision);
+  assert.equal(upgrade.status, 422);
+  assert.equal((await upgrade.json()).error, 'HISTORY_LOCKED');
+  assert.equal((await (await admin('/internal/listings')).json()).listings.find(l => l.id === 'qax').draft.simulationProgram, undefined);
+});
+
+test('real public workerd candles match the saved private preview after publication and a whole-runtime restart', async () => {
+  const published = (await (await admin('/internal/listings/published')).json()).listings.find(l => l.id === 'qsc-scenario');
+  const preview = freshCore().listingScenarioPreview(published.config, '1h', 'afterGrowth');
+  const fixedNow = preview.scenarioSummary.to;
+  const outboundBefore = outbound;
+  await mf.dispose();
+  // Clock injection is limited to this disposable test bundle. No production
+  // preview flag, endpoint or clock override is added to the actual Worker.
+  const simulatedOptions = { ...options, workers: options.workers.map(worker => {
+    const manifest = worker.config.manifest;
+    const main = manifest.mainModule;
+    return { ...worker, config: { ...worker.config, manifest: { ...manifest, modules: {
+      ...manifest.modules, [main]: { ...manifest.modules[main],
+        contents: `Date.now = () => ${fixedNow};\n${manifest.modules[main].contents}` },
+    } } } };
+  }) };
+  mf = new Miniflare(simulatedOptions);
+  const response = await pub(`/market/test-assets/QSC-USDT/candles?interval=1h&limit=${preview.candles.length}`);
+  assert.equal(response.status, 200, await response.clone().text());
+  const served = await response.json();
+  assert.deepEqual(served.candles, preview.candles);
+  assert.ok(served.candles.every(candle => candle.high <= 74.776));
+  assert.equal(outbound, outboundBefore);
 });

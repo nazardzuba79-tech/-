@@ -24,6 +24,7 @@ import { managedListingRegistry, type ManagedListingRegistry } from '../../servi
 import { simulationFor } from '../../services/testMarkets/testMarketSimulation';
 import { testMarketDepth } from '../../services/testMarkets/testMarketDepth';
 import { publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../../services/testMarkets/testMarketService';
+import { listingScenarioPreview } from '../../services/listings/listingPreview';
 
 /** Venue spot pairs a managed ticker must not shadow (e.g. a real `QAX/USDT`). */
 export interface VenueSpotPairs { hasSpotPair(pair: string): boolean }
@@ -74,6 +75,10 @@ export function adminListingsRouter(
   const router = Router();
   const guard = [requireAuth(prisma), requireAdmin(prisma)];
   const noStore = (res: Response) => res.set('Cache-Control', 'no-store');
+  // A small per-router LRU, populated only by explicit admin preview requests.
+  // Revision AND complete configuration are in the key; editing a draft can
+  // never show a previously generated, incorrectly labelled history.
+  const previewCache = new Map<string, ReturnType<typeof listingScenarioPreview>>();
 
   router.get('/admin/listings', ...guard, async (_req, res) => {
     noStore(res);
@@ -115,14 +120,25 @@ export function adminListingsRouter(
       const listing = (await store.list()).listings.find((item) => item.id === req.params.id);
       if (!listing) return res.status(404).json({ error: 'not_found' });
       const asset = listingSimulationConfig(listing.draft);
+      const horizon = typeof req.query.horizon === 'string' ? req.query.horizon : null;
       const requested = typeof req.query.at === 'string' ? Date.parse(req.query.at) : NaN;
-      const at = Number.isFinite(requested) ? requested : Math.max(clock(), asset.listingAt + 2 * 60 * 60_000);
       const interval = typeof req.query.interval === 'string' ? req.query.interval : '5m';
+      let scenario: ReturnType<typeof listingScenarioPreview> | undefined;
+      if (horizon !== null) {
+        const key = JSON.stringify([listing.id, listing.draftRevision, listing.draft, horizon, interval]);
+        scenario = previewCache.get(key);
+        if (scenario) previewCache.delete(key);
+        else scenario = listingScenarioPreview(listing.draft, interval, horizon);
+        previewCache.set(key, scenario);
+        if (previewCache.size > 12) previewCache.delete(previewCache.keys().next().value!);
+      }
+      const at = scenario?.scenarioSummary.to ?? (Number.isFinite(requested) ? requested : Math.max(clock(), asset.listingAt + 2 * 60 * 60_000));
       const simulation = simulationFor(asset);
       res.json({
         listingId: listing.id, draftRevision: listing.draftRevision, previewAt: at, serverTime: clock(),
         asset: { ...publicTestAsset(asset, at), logo: listing.draft.logo, displayTimeZone: listing.draft.displayTimeZone },
-        candles: testMarketCandles(asset, interval, at, 200),
+        candles: scenario?.candles ?? testMarketCandles(asset, interval, at, 200),
+        ...(scenario ? { scenarioSummary: scenario.scenarioSummary } : {}),
         book: testMarketDepth(simulation, at),
         trades: simulation.recentTrades(at, 30).map((trade) => ({ ...trade, time: trade.timestamp })),
       });

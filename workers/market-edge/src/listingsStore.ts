@@ -160,6 +160,12 @@ export class ManagedListingsDO {
       } catch (error) {
         return validationReply(error);
       }
+      // Editable v2 programs are pinned only at publication, not at the first
+      // draft save. Reject a rewrite here as well as on publish: a draft must
+      // never pretend that an already-published history can be replaced.
+      if (active && (next.simulationProgram?.kind === 'scenario-controls-v2' || active.simulationProgram?.kind === 'scenario-controls-v2')) {
+        try { checkPublishable(next, active, now); } catch (error) { return validationReply(error); }
+      }
       if (active && (next.symbol !== active.symbol || next.seed !== active.seed || next.initialPrice !== active.initialPrice)) {
         return reply({ error: 'HISTORY_LOCKED', message: 'The ticker, seed and initial price of a published listing cannot change' }, 422);
       }

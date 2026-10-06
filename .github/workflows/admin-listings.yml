@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'src/services/listings/**'
+      - 'src/shared/listingScenarioControls.ts'
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
       - 'src/services/WalletPortfolioService.ts'
@@ -21,6 +22,8 @@ on:
       - 'frontend/src/components/CryptoIcon.tsx'
       - 'frontend/vite.config.ts'
       - 'scripts/qa-admin-listings.cjs'
+      - 'scripts/qa-listing-controls.cjs'
+      - 'frontend/src/lib/__tests__/listingMovement*.test.ts'
       - 'scripts/smoke-market-edge-listings.mjs'
       - 'render.yaml'
       - 'scripts/allocate-listing-owner.cjs'
@@ -69,6 +72,10 @@ jobs:
           frontend/src/lib/__tests__/testMarkets.test.ts
       - name: Durable Object store on real workerd (Miniflare)
         run: npm run test:listings --prefix workers/market-edge
+      - name: Saved scenario controls, bounds and legacy-history preservation
+        run: >-
+          npx jest --runInBand --silent
+          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing'
       - name: Post-deploy smoke script (configured / not configured / token mismatch) on real workerd
         run: npm run test:smoke --prefix workers/market-edge
       - name: Existing Worker contract
@@ -89,6 +96,12 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report
+      - name: Scenario controls desktop/mobile, saved preview and Worker restart
+        run: node scripts/qa-listing-controls.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report/scenario-controls
       - uses: actions/upload-artifact@v4
         if: always()
         with:

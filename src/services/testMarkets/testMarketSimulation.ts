@@ -241,7 +241,7 @@ function candleTicks(seed: string, hour: number, slot: number, regime: Regime, o
   return ticks;
 }
 
-function candleFromTicks(openTime: number, open: number, ticks: Tick[]): SimCandle {
+function candleFromTicks(openTime: number, open: number, ticks: Tick[], format = round): SimCandle {
   let high = open, low = open, volume = 0, quoteVolume = 0;
   for (const tick of ticks) {
     high = Math.max(high, tick.high);
@@ -252,10 +252,10 @@ function candleFromTicks(openTime: number, open: number, ticks: Tick[]): SimCand
   const close = ticks.length ? ticks[ticks.length - 1].price : open;
   return {
     openTime,
-    open: round(open),
-    high: round(Math.max(high, open, close)),
-    low: round(Math.min(low, open, close)),
-    close: round(close),
+    open: format(open),
+    high: format(Math.max(high, open, close)),
+    low: format(Math.min(low, open, close)),
+    close: format(close),
     volume: Number(volume.toFixed(4)),
     quoteVolume: Number(quoteVolume.toFixed(2)),
   };
@@ -512,7 +512,7 @@ export class TestMarketSimulation {
   }
 
   hourPlan(hour: number): HourPlan {
-    const scheduled = ((this.asset.symbol === 'NRX' && this.asset.pair === 'NRX/USDT') || (!this.asset.isTradable && this.asset.scheduledScenario?.mode === 'capped-growth-range')) ? this.asset.scheduledScenario : undefined;
+    const scheduled = ((this.asset.symbol === 'NRX' && this.asset.pair === 'NRX/USDT') || (!this.asset.isTradable && (this.asset.scheduledScenario?.mode === 'capped-growth-range' || this.asset.scheduledScenario?.mode === 'scenario-controls-v2'))) ? this.asset.scheduledScenario : undefined;
     if (scheduled && hour >= Math.max(0, Math.floor((scheduled.from - this.asset.listingAt) / HOUR_MS))) {
       return this.scheduledHourPlan(hour, scheduled);
     }
@@ -616,6 +616,14 @@ export class TestMarketSimulation {
     return this.boundTicks(plan, window.find((candle) => candle.index === index)!.ticks);
   }
 
+  private formatPrice = (price: number): number => {
+    const program = this.asset.scheduledScenario;
+    // The old eight-significant-figure formatter is frozen for historical
+    // markets. New controls retain asset precision and never round above cap.
+    return !this.asset.isTradable && program?.mode === 'scenario-controls-v2'
+      ? Math.min(Number(program.controls.maxPrice), Number(price.toFixed(10))) : round(price);
+  };
+
   /** Read-only tape of completed canonical ticks; never samples a future tick. */
   recentTrades(now: number, limit = 100) {
     const done = Math.max(0, Math.floor((now - this.asset.listingAt) / TICK_MS));
@@ -633,7 +641,7 @@ export class TestMarketSimulation {
       const offset = index % TICKS_PER_CANDLE, tick = ticks[offset];
       const previous = offset ? ticks[offset - 1].price : plan!.boundaries[slot];
       trades.push({ id: `${this.asset.symbol}:${index + 1}`, timestamp: this.asset.listingAt + (index + 1) * TICK_MS,
-        price: String(round(tick.price)), quantity: tick.volume.toFixed(8), quoteVolume: tick.quoteVolume.toFixed(8),
+        price: String(this.formatPrice(tick.price)), quantity: tick.volume.toFixed(8), quoteVolume: tick.quoteVolume.toFixed(8),
         side: tick.price >= previous ? 'BUY' : 'SELL' });
     }
     return trades;
@@ -660,7 +668,7 @@ export class TestMarketSimulation {
       if (!plan || plan.hour !== hour) plan = this.hourPlan(hour);
       const ticks = this.ticks(plan, slot);
       const done = closed ? TICKS_PER_CANDLE : Math.floor((now - openTime) / TICK_MS);
-      const candle = candleFromTicks(openTime, plan.boundaries[slot], ticks.slice(0, done));
+      const candle = candleFromTicks(openTime, plan.boundaries[slot], ticks.slice(0, done), this.formatPrice);
       if (closed) this.closedCandles.set(openTime, candle);
       out.push(candle);
     }
@@ -691,7 +699,7 @@ export class TestMarketSimulation {
       const first = ((openTime - listing - index * CANDLE_MS) / MINUTE_MS) * TICKS_PER_MINUTE;
       const done = Math.min(TICKS_PER_MINUTE, Math.max(0, Math.floor((now - openTime) / TICK_MS)));
       const open = first === 0 ? plan!.boundaries[slot] : ticks[first - 1].price;
-      out.push(candleFromTicks(openTime, open, ticks.slice(first, first + done)));
+      out.push(candleFromTicks(openTime, open, ticks.slice(first, first + done), this.formatPrice));
     }
     return out;
   }
@@ -821,7 +829,7 @@ export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
     ? `${accumulation.anchorAt}:${accumulation.flushFraction}:${accumulation.accumulationHours}:${accumulation.minBandFraction}:${accumulation.maxBandFraction}`
     : 'no-accumulation';
   const structureKey = asset.marketStructure ? `waves:${asset.marketStructure.from}` : 'no-waves';
-  const schedule = ((asset.symbol === 'NRX' && asset.pair === 'NRX/USDT') || (!asset.isTradable && asset.scheduledScenario?.mode === 'capped-growth-range')) ? asset.scheduledScenario : undefined;
+  const schedule = ((asset.symbol === 'NRX' && asset.pair === 'NRX/USDT') || (!asset.isTradable && (asset.scheduledScenario?.mode === 'capped-growth-range' || asset.scheduledScenario?.mode === 'scenario-controls-v2'))) ? asset.scheduledScenario : undefined;
   const scheduleKey = schedule
     ? JSON.stringify(Object.fromEntries(Object.entries(schedule).sort(([a], [b]) => a.localeCompare(b))))
     : 'no-schedule';

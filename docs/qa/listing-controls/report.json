@@ -1,0 +1,39 @@
+{
+  "scope": "Loopback production bundle + real router/workerd; fixture accounts; no database or financial writes",
+  "checks": [
+    "Incomplete/invalid duration input retains the form and is rejected without a request",
+    "All ten choices; exact decimal prices; form -> router -> durable draft; no publication or allocation",
+    "Three horizons rendered as actual server OHLC candles, at most 360; upper shadows below 74.776",
+    "Dirty settings invalidate preview/publication; persisted controls restored after page refresh",
+    "Save failure is Russian, sanitized, does not report success or alter the stored draft",
+    "1440 / 390 / 320 px: form and expanded controls fit without page overflow",
+    "Full workerd restart retains settings; all three preview histories repeat exactly",
+    "Explicit confirmation only; UTC/Kyiv shown; published generator equals preview; history rewrite rejected",
+    "No external calls, financial writes or page exceptions"
+  ],
+  "layouts": [
+    {
+      "width": 1440,
+      "documentOverflow": false
+    },
+    {
+      "width": 390,
+      "documentOverflow": false
+    },
+    {
+      "width": 320,
+      "documentOverflow": false
+    }
+  ],
+  "screenshots": [
+    "main-form-1440.png",
+    "scenarios-1440.png",
+    "advanced-1440.png",
+    "candle-preview-1440.png",
+    "form-390.png",
+    "form-320.png"
+  ],
+  "errors": [],
+  "outbound": 0,
+  "financialWrites": []
+}

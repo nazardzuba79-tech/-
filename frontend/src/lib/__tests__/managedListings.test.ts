@@ -8,6 +8,7 @@ import { isEdgeMarketPair, isEdgeMarketUrl, nrxPublicUrl } from '../nrxMarket';
 import * as nrxHelpers from '../nrxMarket';
 import { resolveMarketEdgeBase, MARKET_EDGE_BASE } from '../marketEdge';
 import { utcToZonedWallTime, zonedWallTimeToUtc, utcOffsetLabel } from '../../pages/admin/adminListingsTime';
+import { newListingMovement, movementPriceFromGain } from '../../pages/admin/listingMovementModel';
 
 const managed = (extra: Record<string, unknown> = {}) => ({
   pair: 'QAX/USDT', symbol: 'QAX', name: 'QA Example', quote: 'USDT', isTestAsset: true, isTradable: true, status: 'SPOT',
@@ -407,6 +408,41 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     expect(host.querySelector('[data-listing-preview]')).toBeNull();
     await click('[data-preview]');
     expect(calls('/preview?')).toHaveLength(2);
+  });
+
+  test.each(['-', 'Infinity', 'NaN'])('a transient invalid stage duration %s never crashes a dated movement form', async input => {
+    listing.draft.simulationProgram = newListingMovement(listing.draft.initialPrice);
+    await mount();
+    await change('stageDuration-0', input);
+    expect(host.querySelector('[data-listing-form]')).not.toBeNull();
+    expect(host.textContent).toContain('Проверьте длительность этапа');
+    await click('[data-save-draft]');
+    expect(host.querySelector('[data-listing-error]')?.textContent).toContain('Продолжительность');
+    expect(calls('/draft')).toHaveLength(0);
+  });
+
+  test('typing all initial-price digits uses an editing anchor and retains the exact day-one and maximum goals', async () => {
+    listing.draft.initialPrice = '1';
+    listing.draft.simulationProgram = newListingMovement('1');
+    await mount();
+    await act(async () => { Simulate.focus(host.querySelector('[data-field="initialPrice"]')); await flush(); });
+    const next = '0.8765432198';
+    for (let length = 1; length <= next.length; length++) await change('initialPrice', next.slice(0, length));
+    expect((host.querySelector('[data-field="stageTarget-0"]') as HTMLInputElement).value).toBe(movementPriceFromGain(next, '1725'));
+    expect((host.querySelector('[data-field="maxPrice"]') as HTMLInputElement).value).toBe(movementPriceFromGain(next, '9247'));
+    await click('[data-save-draft]');
+    expect(calls('/draft')).toHaveLength(1);
+    expect(host.querySelector('[data-listing-error]')).toBeNull();
+  });
+
+  test('successful publication immediately locks movement and history inputs without reopening the form', async () => {
+    listing.draft.simulationProgram = newListingMovement(listing.draft.initialPrice);
+    await mount();
+    expect((host.querySelector('[data-movement-editor]') as HTMLFieldSetElement).disabled).toBe(false);
+    await click('[data-publish]'); await click('[data-confirm-publish]');
+    expect((host.querySelector('[data-movement-editor]') as HTMLFieldSetElement).disabled).toBe(true);
+    expect((host.querySelector('[data-field="initialPrice"]') as HTMLInputElement).disabled).toBe(true);
+    expect((host.querySelector('[data-field="symbol"]') as HTMLInputElement).disabled).toBe(true);
   });
 
   test('saving enables the new revision; publish still confirms it and retries with the same key and CAS revision', async () => {

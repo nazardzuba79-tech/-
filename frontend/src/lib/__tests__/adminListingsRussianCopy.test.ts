@@ -18,11 +18,11 @@ describe('Listings: Russian presentation without changing stored values', () => 
 
   test.each(Object.keys(LISTING_PROFILE_LABELS))('profile %s has a Russian label', profile => {
     expect(listingProfileLabel(profile)).toMatch(/[А-Яа-яЁё]/);
-    expect(listingProfileLabel(profile)).not.toBe('Неизвестный профиль симуляции');
+    expect(listingProfileLabel(profile)).not.toBe('Неизвестный характер движения');
   });
 
   test('unsupported display values fail to neutral Russian labels', () => {
-    expect(listingProfileLabel('UNKNOWN_PROFILE')).toBe('Неизвестный профиль симуляции');
+    expect(listingProfileLabel('UNKNOWN_PROFILE')).toBe('Неизвестный характер движения');
     expect(listingTimeZoneLabel('Unknown/Zone')).toBe('Другой часовой пояс');
   });
 
@@ -42,7 +42,7 @@ describe('Listings: Russian presentation without changing stored values', () => 
     expect(page).not.toContain('Seed:');
     expect(page).not.toContain('Торговля на Spot');
     expect(page).toContain('Количество токенов для владельца,');
-    expect(page).toContain('<legend>Код генерации истории цены</legend>');
+    expect(page).toContain('<legend>Код варианта</legend>');
     expect(page).toContain('Спотовая торговля после листинга');
     expect(page).toContain('Сделки (симуляция)');
     expect(page).toContain('Это симуляция, а не реальные рыночные данные.');
