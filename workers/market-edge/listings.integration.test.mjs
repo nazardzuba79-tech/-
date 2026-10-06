@@ -229,3 +229,27 @@ test('Render registry route returns published configs with the seed only behind 
   assert.equal((await admin('/internal/listings/published', { headers: { Authorization: '' } })).status, 401);
   assert.ok(!JSON.stringify(await catalogue()).includes('qax-20261001-synthetic'));
 });
+
+test('bounded AITH demo stays private until publish and its program survives DO restart and UI saves', async () => {
+  const program={kind:'capped-growth-range-v1',first24hGainPercent:1725,maxGainPercent:9247,peakAfterHours:168,rangeFraction:.12};
+  const cfg=config({symbol:'AITH',name:'Aitheron AI',initialPrice:'0.80',tradable:false,ownerAllocation:'0',
+    listingAt:'2026-10-11T15:00:00Z',simulationProgram:program});
+  const saved=await saveDraft('aith-demo',cfg,0);
+  assert.equal(saved.status,200);
+  assert.ok(!(await catalogue()).assets.some(a=>a.symbol==='AITH'),'no draft countdown');
+  let detail=await saved.json();
+  assert.deepEqual(detail.draft.simulationProgram,program);
+  await mf.dispose(); mf=new Miniflare(options);
+  detail=(await (await admin('/internal/listings')).json()).listings.find(l=>l.id==='aith-demo');
+  assert.deepEqual(detail.draft.simulationProgram,program);
+  const {simulationProgram,...ui}=cfg;
+  assert.equal((await saveDraft('aith-demo',{...ui,tradable:true},detail.draftRevision)).status,422);
+  const revised=await (await saveDraft('aith-demo',ui,detail.draftRevision)).json();
+  assert.deepEqual(revised.draft.simulationProgram,program);
+  assert.equal((await publish('aith-demo',revised.draftRevision,'aith-demo-publish-test-0001')).status,200);
+  const row=(await catalogue()).assets.find(a=>a.symbol==='AITH');
+  assert.equal(row.listingArmed,true); assert.equal(row.isTradable,false);
+  assert.equal(row.state.lastPrice,null);
+  const registry=await (await admin('/internal/listings/published')).json();
+  assert.deepEqual(registry.listings.find(l=>l.id==='aith-demo').config.simulationProgram,program);
+});

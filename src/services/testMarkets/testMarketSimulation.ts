@@ -512,7 +512,7 @@ export class TestMarketSimulation {
   }
 
   hourPlan(hour: number): HourPlan {
-    const scheduled = this.asset.symbol === 'NRX' && this.asset.pair === 'NRX/USDT' ? this.asset.scheduledScenario : undefined;
+    const scheduled = ((this.asset.symbol === 'NRX' && this.asset.pair === 'NRX/USDT') || (!this.asset.isTradable && this.asset.scheduledScenario?.mode === 'capped-growth-range')) ? this.asset.scheduledScenario : undefined;
     if (scheduled && hour >= Math.max(0, Math.floor((scheduled.from - this.asset.listingAt) / HOUR_MS))) {
       return this.scheduledHourPlan(hour, scheduled);
     }
@@ -821,7 +821,7 @@ export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
     ? `${accumulation.anchorAt}:${accumulation.flushFraction}:${accumulation.accumulationHours}:${accumulation.minBandFraction}:${accumulation.maxBandFraction}`
     : 'no-accumulation';
   const structureKey = asset.marketStructure ? `waves:${asset.marketStructure.from}` : 'no-waves';
-  const schedule = asset.symbol === 'NRX' && asset.pair === 'NRX/USDT' ? asset.scheduledScenario : undefined;
+  const schedule = ((asset.symbol === 'NRX' && asset.pair === 'NRX/USDT') || (!asset.isTradable && asset.scheduledScenario?.mode === 'capped-growth-range')) ? asset.scheduledScenario : undefined;
   const scheduleKey = schedule
     ? JSON.stringify(Object.fromEntries(Object.entries(schedule).sort(([a], [b]) => a.localeCompare(b))))
     : 'no-schedule';
