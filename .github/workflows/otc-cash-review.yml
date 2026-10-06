@@ -117,17 +117,15 @@ jobs:
         id: frontend_build
         env:
           VITE_API_URL: /api/v1
-          VITE_SUPPORT_ENDPOINT: /api/support
         run: node scripts/otc-ci-evidence.cjs run frontend-build npm run build --prefix frontend
       - name: Separate legacy-component fixture bundle (never published)
         id: legacy_frontend_build
         env:
           VITE_API_URL: /api/v1
-          VITE_SUPPORT_ENDPOINT: /api/support
         run: node scripts/otc-ci-evidence.cjs run legacy-frontend-build npm exec --prefix frontend -- vite build --config frontend/vite.otc-legacy.config.ts
       - id: browser_dependency
         run: node scripts/otc-ci-evidence.cjs run browser-dependency node node_modules/.cache/deposit-qa/node_modules/playwright/cli.js install chromium
-      - name: Public manual support, failure, keyboard and idle viewport checks
+      - name: Authenticated manual support, failure, keyboard and idle viewport checks
         id: browser_qa
         run: |
           $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path

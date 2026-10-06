@@ -76,7 +76,7 @@ jobs:
           fi
           grep -R -q "/support/request" frontend/dist
       - name: QA bundle (endpoint = local Worker adapter)
-        run: VITE_SUPPORT_ENDPOINT=http://127.0.0.1:8799/v1/support npm run build --prefix frontend
+        run: npm run build --prefix frontend
       - name: Install disposable browser
         run: |
           npm install --prefix /tmp/support-form-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
