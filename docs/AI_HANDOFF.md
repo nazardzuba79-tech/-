@@ -5712,3 +5712,10 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Preserved search/filter/sort handlers, equal action gaps, mobile behavior, hide/delete logic, backend and all other pages.
 - Frontend build passed (existing chunk-size warning). Fixture-only built browser QA passed at 1920/1440/1366/390: computed styles, filter/sort selection, focus outline, no overflow/page errors. Screenshots in outputs/admin-users-filter-contrast-20261006 outside checkout.
 - PR review/merge/deploy pending; no production mutation.
+
+### 2026-10-06 Manual email blacklist (review only)
+- Code commit: bc60db3a95d1122136b85c23dd901640b2ea64e2. Admin Users row Spam / Not spam, filter and manually managed email list with actor/time.
+- Backend: ContactEmailPolicy + contactPolicy routes, auth/middleware enforcement and Support relay; Worker requires private relay key. Frontend hides guest Support and uses account email.
+- No User/balance/order/history deletion or financial changes; no Prisma/dependency changes. Block audit and session revoke are transactional. Production untouched; no merge/deploy before QA.
+- Local QA: backend build passed; auth/contact-policy/middleware/bcrypt 90 tests and frontend support/i18n/routes 169 passed; Worker 21 passed. Browser Support 320–1920 and Admin 390/1366/1440/1920 passed with local fixtures, recorded mail, external requests denied. Real PostgreSQL QA is in Support CI and must pass before release.
+
