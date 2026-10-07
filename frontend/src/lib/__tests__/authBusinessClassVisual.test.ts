@@ -147,6 +147,7 @@ describe('business-class visual preserves reviewed authentication', () => {
 
   test('fee typography is scoped, opaque and readable without a badge or smaller type', () => {
     expect(css).toContain('.vx-auth .vx-auth-card-fee { white-space: nowrap; }');
+    expect(css).toContain('.vx-auth-brand-banner .vx-auth-community-copy strong { max-width: calc(100% - 16px); }');
     expect(css).toContain('.vx-auth .vx-auth-community-copy strong { color: #123a33; font-size: 17px; font-weight: 600; line-height: 1.15; letter-spacing: -.025em; text-wrap: wrap; }');
     expect(css).toContain('.vx-auth .vx-auth-community-copy > span { color: #0d332d; font-size: 14px; font-weight: 400; line-height: 1.4; }');
     expect(css.match(/\.vx-auth \.vx-auth-community-copy strong \{ font-size: 16px; \}/g)).toHaveLength(2);

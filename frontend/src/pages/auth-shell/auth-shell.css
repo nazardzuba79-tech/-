@@ -190,6 +190,8 @@
 /* Keep the six examples within the free area between both card positions.
    Compact desktops use the same readable type scale as the mobile caption. */
 @media (min-width: 761px) and (max-width: 1399px), (min-width: 761px) and (max-height: 820px) {
+  /* Reserve a small glyph-safe inset beside the protected hand; do not shrink type. */
+  .vx-auth-brand-banner .vx-auth-community-copy strong { max-width: calc(100% - 16px); }
   .vx-auth .vx-auth-community { gap: 12px; }
   .vx-auth .vx-auth-currency { width: 34px; height: 34px; }
   .vx-auth .vx-auth-currency + .vx-auth-currency { margin-left: -16px; }
