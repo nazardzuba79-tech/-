@@ -59,3 +59,7 @@ At 250 active symbols, a single poll uses ≥250 requests/credits (not one batch
 SIGINT/SIGTERM stop the collector, abort provider requests, clear timers, close sockets/storage and remove the singleton lock. A crash leaves a lock and fails closed: verify no stock PID is running before removing that file. Stopping the stocks process/container does not restart any crypto service. Disable `VITE_STOCKS_ENABLED` and stop only the stock process to remove the review surface. No production infrastructure was configured.
 
 Metadata preparation shares the serial 1 MiB gateway; oversized country metadata fails closed and needs a provider-supported bounded export, never a raised runtime limit. Existing source snapshots retain their original hashes.
+
+## Conservative quota after measured contention
+
+Exact candidate c3614646 reproduced p95 degradation with stock readers (+12–28%); this is a failed acceptance result, not hidden by green CI. The next candidate reduces the aggregate stock CPU quota from 0.20 to 0.05 vCPU (RAM unchanged), preserving the same 10/50/100-reader load and all latency thresholds. Read responses omit repeated per-candle instrument/provider metadata (kept once per page; full provenance remains in SQLite), reducing cache churn without changing OHLC or the 300/500 limits. Exact-head comparative results are required again.

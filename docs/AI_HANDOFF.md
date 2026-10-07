@@ -5861,3 +5861,5 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Preserved existing crypto main and other PRs. Historical capacity REPORT/raw data retained unchanged in docs/qa/stocks/prior-capacity.
 - Candidate metadata 250, five actual indices; no licensed quote activation, no verified liquidity ranking, no imported logos.
 - See services/stocks/README.md for exact implemented limits and blockers. Stock-only runtime proof must not be described as crypto A/B acceptance. No merge/deploy.
+
+- Follow-up: c361464671bc428c72b1514dfe7a120cb7bad519 passed 3936 frontend tests and bounded-storage CI but FAILED stock-reader crypto p95 acceptance (+12–28%). Reduced only stock quota to 0.05 vCPU and response metadata duplication; workload/thresholds remain unchanged. Full raw CI results retained as artifacts. Current commit carries this follow-up; exact head CI must be checked again. No crypto/backend changes.

@@ -20,7 +20,7 @@ export function createStockServer({store,instruments,origin=''}){
       if(!allowed.get(id).enabled||allowed.get(id).dataRightsStatus!=='confirmed')return res.end('{"candles":[],"next":null}');
       const key=`${id}:${limit}:${before}`;
       // Admission precedes singleflight map growth, including random valid cursors.
-      const body=await gate.run(()=>cache.get(key,()=>{const candles=store.history(id,limit,before);return JSON.stringify({candles,next:candles.length===limit?candles[0].openTimeUtc:null});}));
+      const body=await gate.run(()=>cache.get(key,()=>{const candles=store.history(id,limit,before).map(({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt})=>({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt}));return JSON.stringify({instrumentId:id,currency:allowed.get(id).currency,provider:allowed.get(id).provider,adjustmentMode:'unadjusted',candles,next:candles.length===limit?candles[0].openTimeUtc:null});}));
       res.setHeader('Cache-Control','public, max-age=60');res.end(body);
     }catch(e){res.setHeader('Retry-After','15');res.writeHead(e.status??400);res.end('{"error":"unavailable"}');}
   });
