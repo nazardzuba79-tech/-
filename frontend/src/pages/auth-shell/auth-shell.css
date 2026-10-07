@@ -94,6 +94,27 @@
 .vx-auth-lead { max-width: 350px; color: #35453d; font-size: 14px; line-height: 1.65; text-wrap: pretty; }
 .vx-auth-copyright { margin-top: auto; padding-top: 30px; color: #fff9ee; font-size: 10px; text-shadow: 0 1px 5px #000; }
 
+/* Russian-only, owner-selected marketing raster. It already contains its
+   logo/copy; no HTML cards, scrim, cropping or duplicate text belongs here. */
+.vx-auth.vx-auth--banner { grid-template-columns: minmax(0, 55fr) minmax(0, 45fr); }
+.vx-auth .vx-auth-brand-banner {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  min-height: 0;
+  height: 100svh;
+  background: #eee5d8;
+}
+.vx-auth .vx-auth-brand-banner::before,
+.vx-auth .vx-auth-brand-banner::after { content: none; }
+.vx-auth .vx-auth-banner {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center top;
+}
+
 /* Light form theme also scopes the existing language switcher's tokens. */
 .vx-auth-work {
   --bg: #f7f8f5;
@@ -199,6 +220,7 @@ body:has(.vx-auth) .support-launcher[aria-expanded="false"] { display: none !imp
 }
 @media (max-width: 760px) {
   .vx-auth { display: block; }
+  .vx-auth .vx-auth-brand-banner { position: relative; height: 250px; }
   .vx-auth-brand { min-height: 0; }
   .vx-auth-brand-inner { min-height: 250px; padding: 22px 24px; }
   .vx-auth .vx-auth-photo { left: auto; width: 58%; object-position: 54% center; }

@@ -316,6 +316,7 @@ test('retained registration card artwork still renders its intact masters and ex
 test('the approved aircraft auth shell hosts real route forms and shared support/legal controls', () => {
   const shell = evaluate('src/pages/auth-shell/AuthShell.tsx', {
     './auth-shell.css': {},
+    './auth-form-premium.css': {},
     '../../components/Logo': { Logo: () => null, LogoMark: () => null },
     '../../components/LanguageSwitcher': { LanguageSwitcher: () => React.createElement('button', null, 'LANGUAGE') },
     '../../lib/i18n': { useLanguage: () => ({ t: (key: string) => key }) },

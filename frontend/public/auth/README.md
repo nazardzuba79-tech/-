@@ -1,6 +1,27 @@
 # Authentication artwork
 
-## Business-class photograph — owner-selected option 1, 2026-10-07
+## Russian selected marketing banner — owner clarification, 2026-10-07
+
+`selected-cabin-banner.webp` is the left 919 x 941 pixels (x0/y0) of the
+owner-selected saved raster `voltex-premium-gold-button-v6.png`, before the
+rejected HTML white cards and community/footer overlays. It includes the
+approved woman, phone, two cards, water, existing logo and Russian slogan.
+No image generation, retouching, inpainting, text masking or photo substitution
+was performed for this implementation. The image is illustrative artwork, not
+a customer testimonial. It does not claim a user count or product eligibility.
+
+Source PNG SHA256: `ba851d099f69bd70f6d0a3deb07203800eefd6b8b9d133577c04cc896368f81d`.
+Banner WebP SHA256: `a4b8e9d0e84fa4e95c4db1b561fefdcde9d0a8ed98f748a460ba989a22ecd1ae`.
+Lossless WebP, 805754 bytes. Decoded RGB pixels were compared against the
+source crop and are identical. The right raster form is outside this crop;
+the application renders real existing form fields and handlers instead.
+
+The Russian banner uses `object-fit: contain` without cropping, stretching,
+overlay copy or clickable image regions. Mobile retains a compact 250px visual
+area above the full-width form; it does not shrink the complete desktop page.
+The embedded copy is NOT localizable, so only `lang === 'ru'` selects it.
+
+## Other locales — previous real business-class photograph retained
 
 Photographer: **Christina Spoerer**. Source: [Unsplash IDihFjpf3-g](https://unsplash.com/photos/IDihFjpf3-g).
 Original CDN asset: `https://images.unsplash.com/photo-1674708059513-5f77494844db`.

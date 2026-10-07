@@ -6,13 +6,24 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useLanguage } from '../../lib/i18n';
 import { openSupportWidget } from '../../lib/supportWidget';
 import './auth-shell.css';
+import './auth-form-premium.css';
 
 /** Presentation only: the route forms retain their existing auth handlers. */
 export function AuthShell({ children }: { children: ReactNode }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const useSelectedBanner = lang === 'ru';
   return (
-    <div className="vx-auth">
-      <section className="vx-auth-brand">
+    <div className={`vx-auth${useSelectedBanner ? ' vx-auth--banner' : ''}`}>
+      {useSelectedBanner ? (
+        <section className="vx-auth-brand vx-auth-brand-banner">
+          {/* The owner-selected raster already includes the logo and slogan.
+              Do not duplicate them with HTML or make the banner interactive. */}
+          <img className="vx-auth-banner" src="/auth/selected-cabin-banner.webp"
+            alt="VOLTEX. Копируйте сделки лучших трейдеров мира. Девушка в кресле самолёта с телефоном и картой."
+            width="919" height="941" {...{ fetchpriority: 'high' }} />
+        </section>
+      ) : (
+      <section className="vx-auth-brand vx-auth-brand-localized">
         <picture>
           <source media="(max-width: 760px)" srcSet="/auth/business-class-mobile.webp" />
           <img className="vx-auth-photo" src="/auth/business-class-1440.webp"
@@ -30,6 +41,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <footer className="vx-auth-copyright">© {new Date().getFullYear()} VOLTEX</footer>
         </div>
       </section>
+      )}
       <section className="vx-auth-work">
         <header className="vx-auth-head">
           <span className="vx-auth-context">{t('authShell.context')}</span>
