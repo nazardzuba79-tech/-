@@ -32,7 +32,7 @@ These responses were replayed as local fixtures. A synthetic `ZQNEW/USDT` fixtur
 
 - TypeScript project build: PASS.
 - Vite production build: PASS; existing chunk-size warning remains.
-- 14 Jest suites: **471 passed, 0 failed**. Includes listing/managed-publication fencing, presentation, shared errors, Futures errors/unknown account state, wallet, support, card eligibility presentation and Spot feedback.
+- 15 Jest suites: **507 passed, 0 failed**. Includes listing/managed-publication fencing, presentation, shared errors, Futures errors/unknown account state, wallet, support, card eligibility presentation and Spot feedback.
 - Browser pass 1: **191 inspections**, zero unmocked requests and no page exceptions. Listings/search/favorites/Spot at Russian widths 1920/1440/1366/430/390/360/320; other six languages at 1440/320. Each catalogue includes AITH, NRX, VTA and the unknown ticker. Login failures tested in all seven languages at 390: offline, 401, 403, 429, 500, 504, empty and unknown responses.
 - Browser pass 2: **294 inspections**, zero unmocked requests and no page exceptions. Twenty route shells plus Support panel, seven languages, 1440/320. Includes home, login/register, Spot, Futures, CFD, wallet/deposit/withdraw/transfer URLs, Copy Trading, bots, Card, profile/security/KYC URLs, Academy/knowledge/FAQ/glossary. Forty Russian route checks repeat pass 1; these counts are inspections, not unique end-to-end workflows.
 - Browser checks examine visible text, title/accessible labels, nonblank error states and page overflow. No horizontal document overflow was observed in these runs. Desktop/mobile listing screenshots were also inspected visually.

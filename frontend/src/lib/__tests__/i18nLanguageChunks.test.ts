@@ -56,6 +56,15 @@ const KYC_PROFILE_CARD_KEYS = ['kycStepDocumentShort', 'kycStepReview', 'kycStep
   'kycStepNotSent', 'kycUploadTitle', 'kycUploadHint', 'kycChooseFile', 'kycReplaceFile', 'kycRemoveFile', 'kycPendingNoReupload',
   'kycRejectedHint', 'kycSubmittedData', 'kycStartCta', 'kycResubmitCta', 'kycOpenStatus', 'cardShortcutTitle'].map(key => `settings.${key}`);
 const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 'Faq', 'Glossary'].map(name => `nav.menu${name}Desc`);
+// Customer wording audit (2026-10-07): additive labels only. Keep the old
+// dictionary digest intact; do not exempt entire listing/error namespaces.
+const CUSTOMER_PRESENTATION_KEYS = [
+  'trade.statusUnavailable', 'trade.orderTypeUnavailable', 'trade.status.REJECTED', 'trade.status.EXPIRED',
+  'futures.positionStatus.OPEN', 'futures.positionStatus.CLOSED', 'futures.positionStatus.LIQUIDATED',
+  'listing.simulation', 'listing.tradingUnavailable', 'listing.marketLive', 'listing.dateUnconfirmed',
+  'listing.awaitingStart', 'listing.untilListing', 'listing.scheduledAt', 'listing.loadFailed',
+  'listing.dataStale', 'listing.volume24h', 'serverError.forbidden', 'serverError.network', 'serverError.timeout',
+];
 // Aircraft authentication design approved 2026-10-05: eleven existing labels
 // change and nine presentation labels are added. Name only those exact keys;
 // password rules, errors, 2FA, legal and all other auth copy remain frozen.
@@ -71,6 +80,13 @@ const APPROVED_AUTH_DESIGN_KEYS = [
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('provides the twenty new customer state labels in every locale', () => {
+    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(20);
+    for (const code of LOCALES) for (const key of CUSTOMER_PRESENTATION_KEYS) {
+      expect(dicts[code][key]?.trim()).toBeTruthy();
+      expect(dicts[code][key]).not.toBe(key);
+    }
+  });
   it('provides every shared menu description in all seven languages', () => {
     for (const code of LOCALES) for (const key of menuDescriptionKeys) expect(dicts[code][key]?.trim()).toBeTruthy();
   });
@@ -297,7 +313,8 @@ describe('translation integrity', () => {
           ...KYC_PROFILE_CARD_KEYS,
           // Mobile terminal (2026-10-04): `git diff --numstat` over the
           // locales reports `6 0` per language, additions only.
-          ...MOBILE_TERMINAL_KEYS];
+          ...MOBILE_TERMINAL_KEYS,
+          ...CUSTOMER_PRESENTATION_KEYS];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
