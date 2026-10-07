@@ -65,8 +65,6 @@ import './trade-terminal/TerminalCalm.css';
 // phone tone tokens only) stays the last sheet.
 import './trade-terminal/TerminalMobileHeader.css';
 import './trade-terminal/FuturesMobileCompact.css';
-// Bybit 1:1 geometry, type and colour (owner, 2026-10-07); TerminalPanelTiles stays last.
-import './trade-terminal/FuturesBybitParity.css';
 import './trade-terminal/TerminalPanelTiles.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
@@ -677,7 +675,7 @@ export function FuturesPage() {
             >
               <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
                 privateTrading={nativeExecution ? native.interaction : undefined}
-                positionLines={chartPositionLines} chartSettings foldHeading={false} />
+                positionLines={chartPositionLines} chartSettings foldHeading={archivePreview && desktopMarkets} />
               {nativeExecution && <button
                 type="button"
                 /* Touch has no double click. This is a compact control that

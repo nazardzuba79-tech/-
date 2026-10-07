@@ -467,24 +467,7 @@ export function FuturesPositionsPanel({
           renderState(account.positions.failed ? t('futures.loadPositionsError') : t('trade.loading'), account.positions.failed)
         ) : positions.length === 0 ? (
           renderState(t(account.positions.failed ? 'futures.loadPositionsError' : 'futures.noPositions'), account.positions.failed)
-        ) : (<>
-          {/* Bybit's line above the table (owner, 2026-10-07, 1:1): the
-              position count and the SUM of the unrealised P&L the rows
-              already show. A reading of the same figures, nothing new is
-              fetched; «—» while any row's P&L is still unknown. */}
-          {(() => {
-            const known = positions.filter(p => p.unrealizedPnl !== null);
-            const total = known.length === positions.length ? known.reduce((sum, p) => sum + Number(p.unrealizedPnl), 0) : null;
-            // Every contract settles in the quote of its pair; the sum is named after the first row's, as the rows name theirs.
-            const quoteAsset = positions[0].symbol.split('/')[1] ?? '';
-            return <div className="futures-positions-summary" data-positions-summary="true">
-              <span className="futures-positions-summary-title">{t('futures.allPositions')}</span>
-              <span className="futures-positions-summary-count">{t('futures.currentPositions')} <b>{positions.length}</b></span>
-              <span className="futures-positions-summary-pnl">{t('futures.totalPnl')}: <b className={total === null ? '' : total >= 0 ? 'up' : 'down'}>
-                {total === null ? '—' : `${total >= 0 ? '+' : '-'}${Math.abs(total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${quoteAsset}`}
-              </b></span>
-            </div>;
-          })()}
+        ) : (
           <div className="futures-positions-scroll" style={styles.tableWrap} ref={scrollRef}
             tabIndex={archive ? 0 : undefined} role={archive ? 'region' : undefined}
             aria-label={archive ? t('futures.positions') : undefined}>
@@ -707,7 +690,7 @@ export function FuturesPositionsPanel({
               </tbody>
             </table>
           </div>
-        </>)
+        )
       ) : history === null ? (
         renderState(account.positionHistory.failed ? t('futures.loadPositionsError') : t('trade.loading'), account.positionHistory.failed)
       ) : history.length === 0 ? (

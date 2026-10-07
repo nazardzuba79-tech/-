@@ -53,11 +53,8 @@ export const REFERENCE_CENTER_HEIGHT = 36;
  * for the last and mark price between the ladders. The other designs keep
  * the 20px pitch above; this is the one the owner looks at.
  */
-export const ARCHIVE_ROW_HEIGHT = 24;
-export const ARCHIVE_CENTER_HEIGHT = 40;
-// 2026-10-07: 28/48 → 24/40, Bybit's own pitch measured on its live page
-// (11 levels in 264px per side, a 40px last-price band). The 2000px
-// screenshot the 28px came from was a 1707px viewport at 1.17×.
+export const ARCHIVE_ROW_HEIGHT = 28;
+export const ARCHIVE_CENTER_HEIGHT = 48;
 /**
  * How often the archive book's figures may change on screen. The feed
  * publishes every 400ms; the owner asked for the numbers to move more

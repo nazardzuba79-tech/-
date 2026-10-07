@@ -297,9 +297,7 @@ describe('translation integrity', () => {
           ...KYC_PROFILE_CARD_KEYS,
           // Mobile terminal (2026-10-04): `git diff --numstat` over the
           // locales reports `6 0` per language, additions only.
-          ...MOBILE_TERMINAL_KEYS,
-          // Bybit 1:1 positions summary line (2026-10-07): `git diff --numstat` over the locales reports `3 0` per language.
-          'futures.allPositions', 'futures.currentPositions', 'futures.totalPnl'];
+          ...MOBILE_TERMINAL_KEYS];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

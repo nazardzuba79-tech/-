@@ -81,8 +81,7 @@ describe('chart settings', () => {
 
   it('is wired into the futures chart only, with its gear and dialog', () => {
     const page = read('frontend/src/pages/FuturesPage.tsx');
-    // 2026-10-07 (Bybit 1:1): the heading row is back above the toolbar, as Bybit's «График» tab row.
-    expect(page).toContain('positionLines={chartPositionLines} chartSettings foldHeading={false} />');
+    expect(page).toContain('positionLines={chartPositionLines} chartSettings foldHeading={archivePreview && desktopMarkets} />');
     const chart = read('frontend/src/components/PriceChart.tsx');
     expect(chart).toContain("aria-label={t('chart.settings.open')}");
     expect(chart).toContain('{settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} />}');

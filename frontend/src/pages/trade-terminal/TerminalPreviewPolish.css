@@ -18,10 +18,7 @@
   --preview-buy: #16825f;
   --preview-sell: #b83e50;
   --text-primary: #ffffff;
-  /* 2026-10-07: secondary text and the accent follow the shared terminal
-   * tokens (VoltexTerminalSystem.css) so the Spot/CFD phone layouts carry the
-   * same palette as Futures; qa-spot-cfd-terminal compares them per token. */
-  --text-secondary: #6a6e73;
+  --text-secondary: #b7bdc6;
   --text-tertiary: #909baa;
   --accent: #f0b90b;
   --accent-yellow: #f0b90b;
