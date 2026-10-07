@@ -323,14 +323,16 @@ test('the approved aircraft auth shell hosts real route forms and shared support
     'react-router-dom': { Link: ({ children, to, ...rest }: any) => React.createElement('a', { href: to, ...rest }, children) },
   });
   const html = renderToStaticMarkup(React.createElement(shell.AuthShell, { children: 'REAL_ROUTE_FORM' }));
-  expect(html).toContain('src="/auth/aircraft-v6.webp"');
+  expect(html).toContain('src="/auth/business-class-1440.webp"');
   expect(html).toContain('alt=""');
-  expect(html).toContain('width="1122" height="1402"');
+  expect(html).toContain('width="1440" height="2160"');
   expect(html).toContain('REAL_ROUTE_FORM');
   expect(html).toContain('LANGUAGE');
   expect(html).toContain('href="/legal/privacy"');
   expect(html).toContain('href="/legal/terms"');
-  expect(html).toContain('authShell.communityCount');
+  expect(html).not.toContain('authShell.communityCount');
+  expect(html).toContain('authShell.lead');
+  expect(html).toContain('srcSet="/auth/business-class-mobile.webp"');
   expect(html).not.toContain('two-cards-phone');
   expect(html).not.toContain('authShell.benefit.');
   expect(read('src/pages/register/RegisterPage.tsx')).toContain('<RegisterPanel />');
