@@ -141,8 +141,17 @@ describe('business-class visual preserves reviewed authentication', () => {
   });
 
   test('premium form is native CSS, keeps warning/error/focus/disabled states and adds no images', () => {
-    // Geometry follow-up must not restyle the accepted real form.
-    expect(digest(premiumCSS)).toBe('4db470ef528e16220c255290ba17df24c571edbdd3b55c6b83e89caf0a2e866b');
+    // Owner-approved registration color is the only exception to the original
+    // form fingerprint; existing validation, focus and all other styles stay locked.
+    const preservedPremiumCSS = premiumCSS.replace(
+      '/* Keep registration gold while its existing validation disables submission. */\n' +
+      '.vx-auth .vx-auth-form:has(#reg-email) .vx-auth-submit:disabled {\n' +
+      '  border-color: #d7b656;\n' +
+      '  background: linear-gradient(110deg, #f5db8b, #edcb6a);\n' +
+      '  color: #171b17;\n' +
+      '  box-shadow: 0 3px 8px #6651190c;\n' +
+      '}\n', '');
+    expect(digest(preservedPremiumCSS)).toBe('4db470ef528e16220c255290ba17df24c571edbdd3b55c6b83e89caf0a2e866b');
     expect(premiumCSS).not.toMatch(/url\(|opacity:\s*0\b|pointer-events:\s*none/);
     expect(premiumCSS).toContain('.vx-auth .vx-auth-input.vx-auth-input-error');
     expect(premiumCSS).toContain('.vx-auth .vx-auth-input.vx-auth-input-warn');

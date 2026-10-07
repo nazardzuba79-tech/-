@@ -2,7 +2,9 @@
 
 Follow-up branch `codex/auth-fiat-flags-copy` from main
 `8cbb74becc694ef29b90691d3f472390f2a1a413`, after #466 was merged externally.
-The owner authorized a new narrow PR, not merge or production deployment.
+The owner initially authorized a review-only narrow PR, then explicitly approved
+publication after reviewing the complete design and requesting a saturated
+registration button. Final exact-head checks remain required before merge.
 
 Russian Login and Register now use only the left 919 x 941 crop of the approved
 `voltex-premium-gold-button-v6.png`. This supersedes the earlier real-photo/RU
@@ -116,6 +118,14 @@ Photo assets, form geometry and the existing bottom scrim are unchanged.
 
 ## Publication boundary
 
-This is review, not production. Russian artwork provenance and the retained
-non-Russian photograph's licensing notes are recorded in
-`frontend/public/auth/README.md`. Owner approval is required before publication.
+The owner has authorized merge and frontend publication of PR #472. Russian
+artwork provenance and the retained non-Russian photograph's licensing notes
+are recorded in `frontend/public/auth/README.md`. No backend, Worker, database
+or infrastructure deployment is part of this change.
+
+Registration now keeps the existing enabled button's gold gradient, border,
+text and shadow even when validation disables submission. The disabled
+attribute and all auth behavior remain unchanged. Browser checks compare the
+empty, invalid and valid registration palettes, and still require disabled
+empty/invalid submission and enabled valid submission. Updated Register
+screenshots show the actual built page, not a mockup.
