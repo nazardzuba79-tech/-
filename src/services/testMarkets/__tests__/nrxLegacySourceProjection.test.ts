@@ -31,7 +31,7 @@ const PRODUCTION_HISTORY_HASHES: Record<string, string> = {
 const sha256 = (text: string) => createHash('sha256').update(text).digest('hex');
 const hash = (value: unknown) => sha256(JSON.stringify(value));
 const readSource = (file: string) => readFileSync(resolve(__dirname, '..', file), 'utf8').replace(/\r\n/g, '\n');
-const aith = parseListingConfig(JSON.parse(readFileSync(resolve(__dirname, '../../../../config/test-markets/aith.draft.json'), 'utf8')));
+const aith = parseListingConfig(JSON.parse(readFileSync(resolve(__dirname, 'aith-v1.fixture.json'), 'utf8')));
 
 test('legacy projection reconstructs every exact production source byte after LF normalization', () => {
   const sources = Object.fromEntries(TRAJECTORY_FILES.map((file: string) => [file, readSource(file)]));

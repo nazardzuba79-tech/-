@@ -158,7 +158,7 @@ export function TradePage() {
   // 2026-10-04). The chart stays first for CFD, for a listing still counting
   // down, and for a display-only test market whose ticket only refuses.
   const prelisting = testPair && testMarket.asset?.state.phase !== 'live';
-  const displayOnly = testPair && testMarket.asset?.isTradable === false;
+  const displayOnly = pair === 'AITH/USDT' || (testPair && testMarket.asset?.isTradable === false);
   const mobileTab = mobileTabChoice ?? (marketType === 'cfd' || prelisting || displayOnly ? 'chart' : 'trade');
   // Landing here is the signal that spot is this user's current trading
   // mode — see lib/tradingMode.

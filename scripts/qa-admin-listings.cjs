@@ -80,6 +80,7 @@ const accounts = { 'qa-admin': { role: 'ADMIN', email: 'listing.admin@example.in
 const prisma = {
   user: { findUnique: async ({ where: { id } }) => (accounts[id] ? { id, role: accounts[id].role } : null) },
   session: { findUnique: async () => null, update: async () => null },
+  ...Object.fromEntries(['order', 'trade', 'futuresOrder', 'futuresPosition', 'balance'].map(name => [name, { count: async () => 0 }])),
 };
 const tokens = { admin: jwt.sign({ sub: 'qa-admin' }, process.env.JWT_SECRET), user: jwt.sign({ sub: 'qa-user' }, process.env.JWT_SECRET) };
 const connected = new CloudflareListingStore(EDGE, STORE_TOKEN);
@@ -159,7 +160,7 @@ async function run() {
   await startEdge();
   const server = await new Promise((resolve) => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
   origin = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(process.env.QA_CHROMIUM_PATH ? { executablePath: process.env.QA_CHROMIUM_PATH } : {});
   const edgeRequests = [];
   const newPage = async (who, width, label = who) => {
     const context = await browser.newContext({ viewport: { width, height: width < 500 ? 844 : 1000 }, locale: 'ru-RU' });
@@ -178,10 +179,15 @@ async function run() {
   const noOverflow = async (page, name) => {
     const layout = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth }));
     report.layouts.push({ name, ...layout });
+    if (layout.documentWidth > layout.width) console.error('overflow elements', await page.evaluate(() => [...document.querySelectorAll('body *')].map(el => ({ tag: el.tagName, class: el.className, right: el.getBoundingClientRect().right, width: el.getBoundingClientRect().width })).filter(el => el.right > innerWidth + 1 && el.width > 0).slice(0, 20)));
     assert.ok(layout.documentWidth <= layout.width, `${name} overflows horizontally`);
   };
 
   try {
+    if (process.env.QA_AITH_REPLACEMENT === '1') {
+      await require('./qa-aith-replacement.cjs')({ root, render, connected, registry, prisma, newPage, origin, shot, noOverflow, report, check });
+      return;
+    }
     /* 0. Before the rollout is finished the page says "not connected" — never a success — and Create is disabled. */
     for (const [state, text] of [['unset', /хранилище Cloudflare не настроено/], ['mismatch', /ключ хранилища на сервере и в Cloudflare не совпадает/]]) {
       storeState = state;

@@ -23,6 +23,7 @@ import { ListingStoreError, type ListingStore } from '../../services/listings/st
 import { managedListingRegistry, type ManagedListingRegistry } from '../../services/listings/registry';
 import { simulationFor } from '../../services/testMarkets/testMarketSimulation';
 import { testMarketDepth } from '../../services/testMarkets/testMarketDepth';
+import { AITH_PUBLICATION_PROTOCOL, isAith } from '../../shared/aithPublication';
 import { publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../../services/testMarkets/testMarketService';
 import { listingScenarioPreview } from '../../services/listings/listingPreview';
 
@@ -69,7 +70,7 @@ export function adminListingsRouter(
   prisma: PrismaClient,
   store: ListingStore,
   venue: VenueSpotPairs | null,
-  registry: Pick<ManagedListingRegistry, 'invalidate' | 'ensureFresh'> = managedListingRegistry,
+  registry: Pick<ManagedListingRegistry, 'invalidate' | 'ensureFresh'> & Partial<Pick<ManagedListingRegistry, 'authoritative'>> = managedListingRegistry,
   clock: () => number = Date.now,
 ): Router {
   const router = Router();
@@ -83,6 +84,40 @@ export function adminListingsRouter(
   router.get('/admin/listings', ...guard, async (_req, res) => {
     noStore(res);
     try { res.json(await store.list()); } catch (error) { failure(res, error); }
+  });
+
+  router.get('/admin/listings/authority', ...guard, async (_req, res) => {
+    noStore(res);
+    try {
+      if (!registry.authoritative) return res.status(503).json({ error: 'authority_unavailable' });
+      const listings = await registry.authoritative();
+      res.json({ protocol: AITH_PUBLICATION_PROTOCOL, serverTime: clock(), listings: listings.map(item => ({ id: item.id, version: item.version, initialPrice: item.config.initialPrice, listingAt: item.config.listingAt, readLease: item.readLease })) });
+    } catch (error) { failure(res, error); }
+  });
+
+  router.post('/admin/listings/:id/replace-prelisting', ...guard, async (req: AuthedRequest, res) => {
+    noStore(res);
+    try {
+      if (!store.replacePrelisting || !registry.authoritative) return res.status(503).json({ error: 'replacement_protocol_unavailable' });
+      const listing = (await store.list()).listings.find(item => item.id === req.params.id);
+      if (!listing || !isAith(listing.symbol)) return res.status(422).json({ error: 'replacement_not_supported' });
+      // Read-only economic activity gate. AITH's independent trading guard prevents a racing order during the lease drain.
+      const counts = await Promise.all([
+        prisma.order.count({ where: { pair: { in: ['AITH/USDT', 'AITH-USDT', 'AITHUSDT'] } } }),
+        prisma.trade.count({ where: { pair: { in: ['AITH/USDT', 'AITH-USDT', 'AITHUSDT'] } } }),
+        prisma.futuresOrder.count({ where: { symbol: { in: ['AITH/USDT', 'AITH-USDT', 'AITHUSDT'] } } }),
+        prisma.futuresPosition.count({ where: { symbol: { in: ['AITH/USDT', 'AITH-USDT', 'AITHUSDT'] } } }),
+        prisma.balance.count({ where: { asset: 'AITH', OR: [{ available: { not: 0 } }, { locked: { not: 0 } }] } }),
+      ]);
+      if (counts.some(count => count !== 0)) return res.status(422).json({ error: 'HISTORY_LOCKED', message: 'AITH has economic activity; replacement is forbidden' });
+      const result = await store.replacePrelisting(req.params.id, req.body ?? {}, req.userId!);
+      registry.invalidate();
+      const current = await registry.authoritative();
+      if (result.phase === 'COMMITTED' && !current.some(item => item.id === listing.id && item.version === result.version)) {
+        return res.status(503).json({ error: 'replacement_committed_registry_unavailable', operationKey: result.operationKey });
+      }
+      res.json(result);
+    } catch (error) { failure(res, error); }
   });
 
   // Create: a new id; If-Match 0 makes a second submit of the same form a conflict, not a duplicate.

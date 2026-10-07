@@ -27,6 +27,7 @@ export interface ListingStore {
   published(): Promise<{ revision: string; listings: PublishedListing[] }>;
   saveDraft(id: string, config: ListingConfig, ifMatch: number, actor: string): Promise<{ id: string; draftRevision: number; draft: ListingConfig }>;
   publish(id: string, draftRevision: number, publishKey: string, actor: string): Promise<{ id: string; version: number; replayed: boolean; publishedAt: string }>;
+  replacePrelisting?(id: string, body: Record<string, unknown>, actor: string): Promise<Record<string, unknown>>;
 }
 
 /** Why Render has no listing store. Names only — never a value. */
@@ -67,6 +68,7 @@ export class CloudflareListingStore implements ListingStore {
         method: init.method ?? 'GET', redirect: 'error', signal: AbortSignal.timeout(8000),
         headers: {
           Authorization: `Bearer ${this.token}`, 'Content-Type': 'application/json',
+          'X-Voltex-Listing-Protocol': 'aith-prelisting-v1',
           ...(init.ifMatch !== undefined ? { 'If-Match': String(init.ifMatch) } : {}),
           ...(init.actor ? { 'X-Voltex-Admin-Id': init.actor } : {}),
         },
@@ -103,6 +105,10 @@ export class CloudflareListingStore implements ListingStore {
   publish(id: string, draftRevision: number, publishKey: string, actor: string) {
     return this.call(`/${encodeURIComponent(id)}/publish`, z.object({ id: z.string(), version: z.number(), replayed: z.boolean(), publishedAt: z.string() }),
       { method: 'POST', body: { draftRevision, publishKey }, actor });
+  }
+  replacePrelisting(id: string, body: Record<string, unknown>, actor: string) {
+    return this.call(`/${encodeURIComponent(id)}/replace-prelisting`, z.object({ id: z.string(), phase: z.enum(['PREPARED', 'COMMITTED', 'CANCELLED']) }).passthrough(),
+      { method: 'POST', body, actor });
   }
 }
 
