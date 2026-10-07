@@ -17,7 +17,8 @@ const SNAPSHOT_KEY='voltex.home.market.v1';
 // on its own and never counted here.
 const MARKET=/\/api\/v1\/(market\/external\/|market\/global|cfd\/(?:display\/)?tickers|futures\/config)/;
 const METADATA=/\/api\/v1\/market\/assets\//;
-const report={startedAt:new Date().toISOString(),firstVisit:{},reload:{},coldVisit:{},pageErrors:[],findings:[]};
+const EXPECTED_MARKET_PATHS=['/market/external/tickers','/market/external/orderbook/BTC-USDT','/market/external/candles/BTC-USDT','/market/external/trades/BTC-USDT','/market/external/rankings','/market/global','/cfd/tickers','/futures/config'].map(value=>'/api/v1'+value).sort();
+const report={startedAt:new Date().toISOString(),firstVisit:{},reload:{},coldVisit:{},writes:[],webSockets:[],pageErrors:[],findings:[]};
 let server,browser,page;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const candles=Array.from({length:48},(_,i)=>{const open=76000+i*9,close=open+(i%2?14:-8);return{time:1_799_990_000+i*900,open,high:Math.max(open,close)+12,low:Math.min(open,close)-10,close,volume:40+i};});
@@ -43,20 +44,20 @@ function fixture(req,res,next){
  return next();
 }
 
-// What the viewer sees: the laptop terminal's real candles, book and
-// trades, the BTC quote on the tape, the market map tiles and the popular
-// markets table — and no placeholder in any of them.
+// The decorative scene has no prices. Preserve the last-good-data checks
+// on the sections that still consume the common hook: overview, heatmap,
+// and popular markets. No old terminal is kept alive for this test.
 const painted=()=>({
- candles:document.querySelectorAll('#home-live-terminal .vx-real-candles').length,
- bookRows:document.querySelectorAll('#home-live-terminal .book-row').length,
- tradeRows:document.querySelectorAll('#home-live-terminal .hs-trade-row').length,
- tapeBtc:/BTC[\s\S]{0,80}76[,.]?746/.test(document.querySelector('.hs-tape .tape-set')?.textContent||''),
+ scene:document.querySelectorAll('[data-market-platform-hero] [data-market-visual]').length,
+ oldTerminal:document.querySelectorAll('.terminal-screen, .sapphire-terminal, #home-live-terminal .book-row, #home-live-terminal .hs-trade-row').length,
+ overview:[...document.querySelectorAll('.vx-home main > .vx-reveal')][0]?.textContent||'',
+ overviewPlaceholders:[...document.querySelectorAll('.vx-home main > .vx-reveal')][0]?.querySelectorAll('.animate-pulse').length??-1,
  heatmap:document.querySelectorAll('.vx-heatmap-meta').length,
+ heatmapBtc:[...document.querySelectorAll('.vx-heat-tile')].some(row=>/BTC/.test(row.textContent||'')&&/76[,.]?746/.test(row.textContent||'')),
  marketsBtc:[...document.querySelectorAll('table tbody tr')].some(row=>/BTC/.test(row.textContent||'')&&/76[,.]?746/.test(row.textContent||'')),
- placeholders:document.querySelectorAll('#home-live-terminal .hs-empty, .hs-tape-empty, .vx-heatmap-empty').length,
- badge:(document.querySelector('#home-live-terminal .feed-state')?.textContent||'').trim(),
+ placeholders:document.querySelectorAll('.vx-heatmap-empty').length,
 });
-const ready=state=>state.candles===1&&state.bookRows>=2&&state.tradeRows>=1&&state.tapeBtc&&state.heatmap>=1&&state.marketsBtc&&state.placeholders===0;
+const ready=state=>state.scene===1&&state.oldTerminal===0&&state.heatmap===1&&state.heatmapBtc&&state.marketsBtc&&state.placeholders===0&&state.overviewPlaceholders===0&&/61/.test(state.overview)&&/55\.1%/.test(state.overview)&&/4349\.19/.test(state.overview)&&/Layer 1/.test(state.overview);
 // Both probes run inside the page, so they travel as source text.
 const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
 
@@ -68,17 +69,19 @@ const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
  app.get('*',(_req,res)=>res.sendFile(path.resolve('frontend/dist/index.html')));
  server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
  const origin=`http://127.0.0.1:${server.address().port}`;
- browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ browser=await chromium.launch({headless:true,executablePath:process.env.HOME_QA_CHROMIUM||undefined,args:['--no-sandbox']});
  const context=await browser.newContext({viewport:{width:1600,height:1000},serviceWorkers:'block'});
  let phase='firstVisit',hold=false;
  const marketRequests={firstVisit:[],reload:[],coldVisit:[]},metadataRequests={firstVisit:[],reload:[],coldVisit:[]};
  await context.route('**/*',route=>{
-  const url=route.request().url();
+  const request=route.request(),url=request.url();
+  if(!['GET','HEAD','OPTIONS'].includes(request.method())){report.writes.push(request.method()+' '+new URL(url).pathname);return route.abort();}
   if(new URL(url).origin!==origin)return route.abort();
   if(MARKET.test(url)){marketRequests[phase].push(url.replace(origin,''));if(hold)return route.abort('timedout');}
   else if(METADATA.test(url))metadataRequests[phase].push(url.replace(origin,''));
   return route.continue();
  });
+ await context.routeWebSocket('**/*',socket=>{report.webSockets.push(socket.url());socket.close();});
  page=await context.newPage();page.on('pageerror',e=>report.pageErrors.push(e.message));
 
  // 1. The browser receives a real snapshot and confirms every surface.
@@ -86,12 +89,18 @@ const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
  await page.waitForFunction(READY,null,{timeout:10000});
  report.firstVisit={readyMs:Date.now()-start,marketRequests:marketRequests.firstVisit.length,metadataRequests:metadataRequests.firstVisit.length,painted:await page.evaluate(PAINTED)};
  // 2. It is persisted, versioned, with no request state written as data.
- await page.waitForFunction(key=>!!localStorage.getItem(key),SNAPSHOT_KEY,{timeout:3000});
+ await page.waitForFunction(key=>{
+  const record=JSON.parse(localStorage.getItem(key)||'null');
+  return record?.tickers?.length===3&&record?.hero?.candles?.length===48&&record?.hero?.book?.bids?.length===6
+   &&record?.hero?.trades?.length===6&&record?.rankings?.length===1&&record?.cfd?.tickers?.length===1&&record?.futuresSymbols?.length===1;
+ },SNAPSHOT_KEY,{timeout:3000});
  const raw=await page.evaluate(key=>localStorage.getItem(key),SNAPSHOT_KEY);
  const record=JSON.parse(raw);
  report.firstVisit.snapshot={version:record.version,tickers:record.tickers?.length,candles:record.hero?.candles?.length,bookBids:record.hero?.book?.bids?.length,trades:record.hero?.trades?.length,rankings:record.rankings?.length,cfd:record.cfd?.tickers?.length,futuresSymbols:record.futuresSymbols?.length,bytes:raw.length};
  if(record.version!==1||record.tickers?.length!==3||record.hero?.candles?.length!==48)report.findings.push('Persisted snapshot is incomplete: '+JSON.stringify(report.firstVisit.snapshot));
  if(/"(loading|error|refreshing)"/.test(raw))report.findings.push('Persisted snapshot carries request state as data');
+ report.firstVisit.marketPaths=marketRequests.firstVisit.map(value=>new URL(value,origin).pathname).sort();
+ if(JSON.stringify(report.firstVisit.marketPaths)!==JSON.stringify(EXPECTED_MARKET_PATHS))report.findings.push('Shared first-visit market request budget changed: '+JSON.stringify(report.firstVisit.marketPaths));
 
  // 3-4. "Browser reload": a new document, new store, new hook — and the API
  //      does NOT answer (every market request would time out).
@@ -135,7 +144,7 @@ const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
  report.reload.marketRequests=marketRequests.reload.slice();
  report.reload.metadataRequests=metadataRequests.reload.slice();
  if(report.reload.marketRequests.length)report.findings.push('Reload with a fresh snapshot issued market requests: '+report.reload.marketRequests.join(', '));
- if(report.reload.painted.badge!=='Market data')report.findings.push(`Reload badge is "${report.reload.painted.badge}", expected neutral "Market data"`);
+ if(report.reload.painted.overview!==report.firstVisit.painted.overview)report.findings.push('Reload changed the confirmed overview values before any provider replied');
  const after=await page.evaluate(PAINTED);
  if(!ready(after))report.findings.push('Confirmed values did not survive the failed background API: '+JSON.stringify(after));
 
@@ -146,6 +155,8 @@ const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
  await page.waitForFunction(READY,null,{timeout:10000});
  report.coldVisit={readyMs:Date.now()-start,marketRequests:marketRequests.coldVisit.length};
  if(report.coldVisit.marketRequests===0)report.findings.push('Cold visit issued no market requests; the request counter is not observing the app');
+ if(report.writes.length)report.findings.push('Unexpected writes: '+report.writes.join(', '));
+ if(report.webSockets.length)report.findings.push('Unexpected WebSocket: '+report.webSockets.join(', '));
  if(report.pageErrors.length)report.findings.push(`Page errors: ${report.pageErrors.length}`);
  fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
  console.log('HOME_SNAPSHOT_RELOAD '+JSON.stringify(report));
