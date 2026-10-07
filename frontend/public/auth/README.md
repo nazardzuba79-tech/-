@@ -22,7 +22,7 @@ small side-background crop before the compact breakpoint; protected logo,
 slogan, face, phone, hand/card regions are checked in browser coordinates.
 No stretched pixels, generated fill, duplicated logo/slogan or clickable image regions.
 The separate localized HTML block below the subject describes the card using
-the owner's supplied wording: 18+ currencies and 70 cryptocurrencies. These are
+the owner's supplied wording: 22+ currencies and 70 cryptocurrencies. These are
 owner-provided product claims, not an independently audited coverage list.
 At <=760px or portrait-like windows (aspect ratio <=3/2), the decorative banner
 is hidden without reserved space; the existing Logo appears in the form header.

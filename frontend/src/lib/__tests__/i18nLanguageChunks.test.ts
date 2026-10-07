@@ -74,20 +74,22 @@ const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySub
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
-  it('localizes the owner-approved card copy and exact 18+/70 counts without an investor claim', () => {
+  it('localizes the exact two-line card copy and 22+/70 currency counts without an investor claim', () => {
     for (const code of LOCALES) {
       const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
       for (const key of AUTH_COMMUNITY_KEYS) {
         expect(sourceKeys.filter(sourceKey => sourceKey === key)).toHaveLength(1);
         expect(dicts[code][key]?.trim()).toBeTruthy();
-        expect(dicts[code][key]).not.toMatch(/1[.,]2|million|миллион|млн|万|백만|लाख|30\+/i);
+        expect(dicts[code][key]).not.toMatch(/1[.,]2|million|миллион|млн|万|백만|लाख|18\+|30\+/i);
+        expect(dicts[code][key]).not.toMatch(/[.!?。！？।]$/);
       }
-      expect(dicts[code]['authShell.communityTitle']).toContain('VOLTEX');
-      expect(dicts[code]['authShell.communitySubtitle'].match(/\d+\+?/g)).toEqual(['18+', '70']);
+      expect(dicts[code]['authShell.communityTitle']).not.toMatch(/\d/);
+      expect(dicts[code]['authShell.communitySubtitle'].match(/\d+\+?/g)).toEqual(['22+', '70']);
+      expect(dicts[code]['authShell.communitySubtitle']).toContain(' · ');
     }
     for (const key of AUTH_COMMUNITY_KEYS) expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
-    expect(dicts.ru['authShell.communityTitle']).toBe('Карта VOLTEX — по всему миру');
-    expect(dicts.ru['authShell.communitySubtitle']).toBe('Покупки и снятие наличных. 18+ валют и 70 криптовалют.');
+    expect(dicts.ru['authShell.communityTitle']).toBe('Платите и снимайте наличные');
+    expect(dicts.ru['authShell.communitySubtitle']).toBe('22+ валют · 70 криптовалют');
   });
   it('provides every shared menu description in all seven languages', () => {
     for (const code of LOCALES) for (const key of menuDescriptionKeys) expect(dicts[code][key]?.trim()).toBeTruthy();

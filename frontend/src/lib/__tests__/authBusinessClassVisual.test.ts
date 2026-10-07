@@ -32,6 +32,14 @@ function renderShell(lang: string) {
 }
 
 describe('business-class visual preserves reviewed authentication', () => {
+  test('lower caption cleanup preserves shell markup, photo scrim and every style outside the captions', () => {
+    // Reviewed PR head 4064c065: this follow-up changes only caption spacing/copy.
+    expect(digest(shell)).toBe('355df0563d3de673b0573aa377e052514b0224746be37a802e1ca9e6fdb7b410');
+    expect(digest(css.slice(0, css.indexOf('/* Static, localized photo captions.')) + css.slice(css.indexOf('/* Light form theme'))))
+      .toBe('a9683d542ce768fe239dd7045229a38258583eed44f5d8b245a2b99ae55566b8');
+    expect(digest(css.slice(css.indexOf('.vx-auth-brand::before {'), css.indexOf('.vx-auth .vx-auth-extras {'))))
+      .toBe('ef783bf84795d0855d1f3831be101f6ed71989414355cfef1d7323b435cd00b9');
+  });
   // Exact fresh-main deb4b107 sources, normalized only for Windows line endings.
   test.each([
     ['frontend/src/pages/AuthPage.tsx', 'ed5c36556873dd4d51f2b7f41d554eb6bccd270f328488b0e0c0a11bc2621cf4'],

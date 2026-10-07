@@ -7,7 +7,7 @@ const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const dist = path.resolve('frontend/dist');
 const out = path.resolve(process.env.QA_OUT || 'output/auth-business-class');
 const slogan = 'Копируйте сделки лучших трейдеров мира.';
-const report = { head: process.env.QA_HEAD_SHA || process.env.GITHUB_SHA || null, fixtureOnly: true, cases: [], responsive: [], behavior: [], fixtureRequests: [], expectedFixtureErrors: [], errors: [], failed: [], denied: [], writes: [], result: 'FAIL' };
+const report = { head: process.env.QA_HEAD_SHA || process.env.GITHUB_SHA || null, fixtureOnly: true, cases: [], responsive: [], details: [], behavior: [], fixtureRequests: [], expectedFixtureErrors: [], errors: [], failed: [], denied: [], writes: [], result: 'FAIL' };
 // Coordinates in the unchanged 919x941 source, not the <img> element box.
 const protectedRasterRegions = {
   logo: [50, 35, 225, 75], slogan: [50, 120, 540, 212],
@@ -23,8 +23,8 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
   const server = await new Promise(resolve => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
   const origin = `http://127.0.0.1:${server.address().port}`;
   const browser = await chromium.launch({ headless: true });
-  async function openContext(width, lang = 'ru', fixtures = [], height = width > 760 ? 900 : 844) {
-    const ctx = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block', deviceScaleFactor: 1 });
+  async function openContext(width, lang = 'ru', fixtures = [], height = width > 760 ? 900 : 844, deviceScaleFactor = 1) {
+    const ctx = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block', deviceScaleFactor });
     await ctx.addInitScript(language => {
       localStorage.setItem('exchange_lang', language);
       window.__authCLS = 0;
@@ -88,12 +88,22 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         const style = getComputedStyle(node);
         return { background: style.backgroundColor, image: style.backgroundImage, border: style.borderWidth, radius: style.borderRadius, shadow: style.boxShadow, blur: style.backdropFilter };
       };
+      const textLayout = node => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const style = getComputedStyle(node);
+        return { ...rect(node), lines: new Set([...range.getClientRects()].map(r => Math.round(r.y))).size, fontSize: parseFloat(style.fontSize), fontWeight: Number(style.fontWeight), color: style.color };
+      };
       const extras = [...document.querySelectorAll('.vx-auth-extras')].filter(visible).map(node => ({
         ...rect(node), inBrand: !!node.closest('.vx-auth-brand'), text: node.textContent.trim(),
         wrappers: [node, ...node.querySelectorAll('.vx-auth-community,.vx-auth-community-copy,.vx-auth-avatars,.vx-auth-card-caption')].map(child => ({ selector: child.className, ...decoration(child) })),
         community: rect(node.querySelector('.vx-auth-community')),
         title: node.querySelector('.vx-auth-community-copy strong').textContent.trim(),
         subtitle: node.querySelector('.vx-auth-community-copy span').textContent.trim(),
+        titleLayout: textLayout(node.querySelector('.vx-auth-community-copy strong')),
+        subtitleLayout: textLayout(node.querySelector('.vx-auth-community-copy > span')),
+        copyLayout: rect(node.querySelector('.vx-auth-community-copy')),
+        avatarLayout: rect(node.querySelector('.vx-auth-avatars')),
         caption: { ...rect(node.querySelector('.vx-auth-card-caption')), number: node.querySelector('.vx-auth-card-number').textContent.trim(), label: node.querySelector('.vx-auth-card-label').textContent.trim() },
         avatars: [...node.querySelectorAll('.vx-auth-avatar')].map(avatar => ({ ...rect(avatar), image: getComputedStyle(avatar).backgroundImage, position: getComputedStyle(avatar).backgroundPosition, size: getComputedStyle(avatar).backgroundSize, radius: getComputedStyle(avatar).borderRadius })),
         avatarGroupHidden: node.querySelector('.vx-auth-avatars').getAttribute('aria-hidden'),
@@ -166,7 +176,25 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     assert.equal(await page.locator('.vx-auth-extras :is(a,button,input,select,textarea)').count(), 0, `${label} restored blocks are static, not a carousel or control`);
     assert.equal(await page.locator('.vx-auth-community-badge,.vx-auth-carousel,.vx-auth-pagination').count(), 0, `${label} no unsupported counter badge or carousel`);
     assert.doesNotMatch(block.text, /1[,.]2|млн|million|[0-9]\s*[Mm]\+|TEST|DEMO|NOT TRADABLE/, `${label} no unsupported investor count or new advertising labels`);
-    assert.deepEqual(block.subtitle.match(/\d+\+?/g), ['18+', '70'], `${label} exact owner-approved currency/crypto counts, not an investor statistic`);
+    assert.deepEqual(block.subtitle.match(/\d+\+?/g), ['22+', '70'], `${label} exact currency/crypto counts, not an age or investor statistic`);
+    assert.doesNotMatch(block.title, /[.。]$/, `${label} no trailing title period`);
+    assert.doesNotMatch(block.subtitle, /[.。]$/, `${label} no trailing subtitle period`);
+    const captionGap = block.caption.y - block.community.bottom;
+    assert.ok(captionGap >= 20 && captionGap <= 24, `${label} caption has a separate 20–24px gap: ${captionGap}`);
+    const textGap = block.subtitleLayout.y - block.titleLayout.bottom;
+    assert.ok(textGap >= 5 && textGap <= 6, `${label} two text rows have 5–6px spacing: ${textGap}`);
+    const avatarGap = block.copyLayout.x - block.avatarLayout.right;
+    assert.ok(avatarGap >= 12 && avatarGap <= 16, `${label} avatars have 12–16px breathing room: ${avatarGap}`);
+    assert.ok(Math.abs(block.avatarLayout.y + block.avatarLayout.height / 2 - block.copyLayout.y - block.copyLayout.height / 2) <= 1, `${label} avatars are vertically centered on the text`);
+    assert.ok(block.titleLayout.fontWeight >= 500 && block.titleLayout.fontWeight <= 600, `${label} medium/semibold main row`);
+    assert.equal(block.subtitleLayout.fontWeight, 400, `${label} ordinary-weight second row`);
+    assert.ok(block.titleLayout.fontSize >= 15 && block.subtitleLayout.fontSize >= 13 && block.titleLayout.fontSize > block.subtitleLayout.fontSize, `${label} readable hierarchy, not tiny text`);
+    assert.equal(block.titleLayout.color, 'rgb(18, 58, 51)', `${label} existing dark green`);
+    assert.equal(block.subtitleLayout.color, block.titleLayout.color, `${label} consistent dark-green copy`);
+    if (block.inBrand && viewport.width >= 1366 && viewport.height >= 768) {
+      assert.equal(block.titleLayout.lines, 1, `${label} desktop first phrase occupies one line`);
+      assert.equal(block.subtitleLayout.lines, 1, `${label} desktop second phrase occupies one line`);
+    }
     assert.equal(block.avatars.length, 3, `${label} three decorative avatars`);
     assert.equal(block.avatarGroupHidden, 'true', `${label} decorative faces are not presented as client testimonials`);
     const positions = new Set();
@@ -194,12 +222,13 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       assert.equal(style.blur, 'none', `${label} ${style.selector} no glass card`);
     }
     if (lang === 'ru') {
-      assert.equal(block.title, 'Карта VOLTEX — по всему миру');
-      assert.equal(block.subtitle, 'Покупки и снятие наличных. 18+ валют и 70 криптовалют.');
+      assert.equal(block.title, 'Платите и снимайте наличные');
+      assert.equal(block.subtitle, '22+ валют · 70 криптовалют');
       assert.equal(block.caption.label.toLocaleLowerCase('ru'), 'карта, которая всегда с вами');
+      if (viewport.height <= 650) assert.equal(block.inBrand, false, `${label} very short/zoomed windows use the existing post-form slot, clear of both cards`);
     } else {
       assert.doesNotMatch(block.text, /[А-Яа-яЁё]/, `${label} no Russian copy in another locale`);
-      assert.match(block.title, /VOLTEX/, `${label} localized community heading retains the brand`);
+      assert.ok(block.title.trim().length > 0, `${label} localized payment/withdrawal heading remains populated`);
       assert.doesNotMatch(block.text, /authShell\./, `${label} no untranslated localization keys`);
     }
     if (block.inBrand) {
@@ -344,6 +373,16 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       }
     }
     for (const routeName of ['login', 'register']) {
+      // A real high-DPI browser crop, not an enlarged/generated mockup.
+      const detail = await openContext(1440, 'ru', [], 900, 2);
+      await detail.page.goto(`${origin}/${routeName}?next=%2Fwallet`, { waitUntil: 'networkidle' });
+      await waitForVisual(detail.page);
+      const detailMeasurements = await measure(detail.page);
+      await assertRussianGeometry(detail.page, detailMeasurements, `${routeName} high-DPI detail`);
+      report.details.push({ route: routeName, deviceScaleFactor: 2, ...detailMeasurements });
+      const box = await detail.page.locator('.vx-auth-brand > .vx-auth-extras').boundingBox();
+      await detail.page.screenshot({ path: path.join(out, `${routeName}-block-2x.png`), clip: { x: box.x - 16, y: box.y - 16, width: box.width + 32, height: box.height + 32 } });
+      await detail.ctx.close();
       const { ctx, page } = await openContext(1440, 'ru', [], 900);
       await page.goto(`${origin}/${routeName}?next=%2Fwallet`, { waitUntil: 'networkidle' });
       await waitForVisual(page);
