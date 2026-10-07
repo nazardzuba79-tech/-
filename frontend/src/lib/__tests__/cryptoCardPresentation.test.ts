@@ -58,9 +58,9 @@ test('final approved marketing copy and monthly Black Signature limit are explic
   expect(component('Hero')).toContain('{c.heroTitle}');
   expect(component('Hero')).toContain('{c.heroLead}');
   expect([cardCopyRu.benefitCashback, cardCopyRu.benefitFees, cardCopyRu.benefitLimit])
-    .toEqual(['До 20% кешбека.', 'Без комиссий.', '$1 млн в месяц.']);
+    .toEqual(['До 20% кешбека.', '0% комиссии VOLTEX.', '$1 млн в месяц.']);
   expect([cardCopyRu.benefitCashbackNote, cardCopyRu.benefitFeesNote, cardCopyRu.benefitLimitNote])
-    .toEqual(['На повседневные покупки и выбранные категории.', 'За транзакции в любой валюте.', 'Решение для крупных платежей.']);
+    .toEqual(['На повседневные покупки и выбранные категории.', 'За покупки, снятие наличных и конвертацию валют.', 'Решение для крупных платежей.']);
   expect(component('PaymentSection')).toContain('c.cashbackUpTo');
   expect(component('FeesSection')).toContain('cardProducts.map');
   expect(component('FeesSection')).toContain('card.monthlyLimit');

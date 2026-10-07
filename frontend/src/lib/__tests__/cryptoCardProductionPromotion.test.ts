@@ -17,6 +17,9 @@ const source = (file: string) => readFileSync(resolve(repository, file), 'utf8')
 // Owner-requested /card hero polish advances only its scoped RU copy, hook,
 // hero markup/composition and CSS. Shared/Homepage output is frozen separately
 // by cryptoCardVisualConsistency; no product data or other sections change.
+// Owner-requested fee clarification advances only FeesSection, its seven
+// dictionaries and the existing FAQ answer binding. All eligibility,
+// application, hero markup and unrelated-source fingerprints remain frozen.
 const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/CardApplication.tsx": "3e7e7df0b2d344e05813f97c7f473fa127d833ed1c59e7cabebb9b72373e85f7",
   "frontend/src/pages/crypto-card-final/cardApplicationState.ts": "526e909eb7b161ee41bffdf474e1412082ce991d20a6b43e9cb54c8ed1913042",
@@ -30,7 +33,7 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/ControlSecuritySection.tsx": "08973402bfa700cccf851a4406fd3d42da81843fb7189fd1b3319c4ca0245203",
   "frontend/src/pages/crypto-card-final/components/CurrencyMarks.tsx": "da410cf0811f2671e394a997546fc27889f3f5ae0cce7cc2e9101114debc0e38",
   "frontend/src/pages/crypto-card-final/components/FaqSection.tsx": "cf38dd5e7db1820e9cce6a66f71ae2c264f6737a25f12f97f1e42a0a82cda1e1",
-  "frontend/src/pages/crypto-card-final/components/FeesSection.tsx": "dde9bf2fdfa33bba88f1c08027edd2e722b507682f5ccf7ce87422e941fc0c0f",
+  "frontend/src/pages/crypto-card-final/components/FeesSection.tsx": "adbc8ce5d34a4a021c4f64d69359f0ee634ea62c12ece450706523df71e4987c",
   "frontend/src/pages/crypto-card-final/components/FinalCtaFooter.tsx": "64682b2e76f1251aae617614cb434979fbf501036f5765c8eb5826a575b22b12",
   "frontend/src/pages/crypto-card-final/components/GlobalUseSection.tsx": "4c525768116bd5300e2897665d70833625e4b050df2668d76f500888f83a18a6",
   "frontend/src/pages/crypto-card-final/components/Header.tsx": "6e3337f6e583b561937637baa54b0ee8b83134d5759a70e5ea0e3abec66eb2b0",
@@ -41,12 +44,12 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/SubscriptionsSection.tsx": "7c04ff3acdd5711ab31e971b6fc2736551a3c17a4dd09da06ee32828175a670b",
   "frontend/src/pages/crypto-card-final/components/VoltexCard.tsx": "9ad5f670186e370e1a5d0bf2c0ff21650017a59387d5e746e89361933367b19f",
   // Preserve concurrent production f183f77: Russia and all-ATM wording only.
-  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "11023b06c0035609e55d11909aabcd4cdbc7e0887cc3589c6397a55dacbdb721",
+  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "8166ac15da11bd1811cdba7fc4d4a48103634cdeb2d7e1d9a4f5ddc7e5a4da96",
   "frontend/src/pages/crypto-card-final/data/cardCopy.ts": "10a568929e79f3819824c60b90edc7ca864d9897a2c64fe59c8e09570ee6a4fc",
   // Preserve owner copy cleanup already on starting main bd41a81.
-  "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "a6acb0f2e9fe5b36b485e1e637fb17ec34d1975729691ba2515f824c591bea62",
+  "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "5abd1d6c39546d96161848c93b54fee8890c954f017a2a0156d2d659218f2770",
   "frontend/src/pages/crypto-card-final/data/currencies.ts": "bdaa4ad2d7dfb2343c6c9d8bfb0f3ec717c9dc929febba27f93d1948b12ceba7",
-  "frontend/src/pages/crypto-card-final/data/faq.ts": "02fdb896f64036d3e5e41a95955b6c175fb15d70e1a8b6bf502011cf56842b91",
+  "frontend/src/pages/crypto-card-final/data/faq.ts": "4e3ad7d15ffc829c3d98015fde68f4d491a8ca65584e2db35264c500736776d9",
   "frontend/src/pages/crypto-card-final/data/products.ts": "f60770553a97b8fc0784247d0380919327fa998661e62cffe88681d92bf45c29",
   "frontend/src/pages/crypto-card-final/data/services.ts": "05e4d374f148d62bd4e24f6e757077eb1245b45f77bc246718356239795e1862",
   "frontend/src/pages/CardPage.tsx": "a6fb72e68a9edc6860edc2f49de4d374efc32f917b0e5ad43059b9e8853cf285",
