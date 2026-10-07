@@ -92,6 +92,36 @@ candidate fingerprint into this variable does not establish that verification
 and must never be used to bypass an expired new activation. Retain both exact
 deployment SHAs and the verification evidence.
 
+### Legacy identity after adding scenario-controls-v2
+
+The gate fingerprints the executable legacy path, including its dispatch
+conditions, rather than unrelated v2-only branches. `scripts/nrx-legacy-source.cjs`
+partially evaluates the reviewed `mode === 'scenario-controls-v2'` boundaries for
+legacy modes. It folds the formatter's legacy arm to the original `round`, checks
+that excluded imports have inert module initialization, and rejects hoisted
+declarations, unknown dispatch shapes, or remaining references to excluded bindings.
+All other source bytes and every asset/schedule field remain fingerprinted.
+No generator, activation time, listing configuration or public history is changed.
+
+The projection reconstructs the exact LF-normalized legacy source from serving
+API commit `6afe21b0a278d4b01605cf945eaed651f864cd69`; source digests and independent
+NRX/AITH/VTA price, tick and candle goldens are pinned in regression tests. Thus
+the already verified installed NRX fingerprint remains
+`63610d3e181b31f67934f94436a2072a03ed13d4727060e83d80655a03a25961`.
+There is no fingerprint alias, history sampling exception, forced activation or
+replacement value for `NRX_ACTIVE_SCHEDULE_SHA256`. Do not change that variable
+to the candidate's raw v2-inclusive hash. An actual legacy change still requires
+the existing prospective activation process. An unfamiliar source boundary fails
+closed and must be reviewed before release.
+
+Run the three release identity suites in both NRX CI and Worker verification.
+External Hetzner deployment must still invoke the gate from the exact approved
+candidate before migration or application activation. After approval, retain the
+previous API image/runtime configuration and Worker version for rollback; an
+additive `Session.remembered` migration can remain when rolling back the API.
+Refresh production migration status and the existing verified backup immediately
+before deployment. No production migration/deployment is part of this gate fix.
+
 ## Local verification and preview
 
 Local evidence in `output/nrx-two-week/`: **297 passing local tests** in total

@@ -47,6 +47,8 @@ jobs:
           src/services/testMarkets/__tests__/simulationSchedule.test.ts
           src/services/testMarkets/__tests__/simulationScheduleIntegration.test.ts
           src/services/testMarkets/__tests__/simulationScheduleRelease.test.ts
+          src/services/testMarkets/__tests__/nrxLegacyReleaseIdentity.test.ts
+          src/services/testMarkets/__tests__/nrxLegacySourceProjection.test.ts
           src/services/testMarkets/__tests__/nrxSpot.pg.test.ts
           src/services/testMarkets/__tests__/testMarketSimulation.test.ts
           src/services/testMarkets/__tests__/testMarketDepth.test.ts

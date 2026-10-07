@@ -5757,6 +5757,15 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - No merge, deployment, production data access or new npm dependency. Next step: owner review after exact-head PR checks; do not publish without explicit approval.
 - Linux CI follow-up: the full frontend suite passed on aef5dd9f, but actual Chromium QA exposed the shared guest header menu at x=363.4375 on a 360px viewport. The About-only header-wrap breakpoint was extended from 359px to 389px; heading sizes and all controls are preserved, with no overflow assertion relaxed. Final branch-head CI must rerun after this correction.
 
+## Codex — 2026-10-07 — Preserve legacy NRX release identity (review only)
+- Implementation commit: commit containing this entry. Base: fresh-fetched main `d1446baa716cd7611dbad7ae4a7009b594cbba56`; branch `codex/nrx-release-gate-compatibility-20261007`.
+- The release gate projects the reviewed scenario-controls-v2 dispatch boundary out of known legacy modes, preserving the original eight-module source fingerprint and existing installed token `63610d3e181b31f67934f94436a2072a03ed13d4727060e83d80655a03a25961`. Unknown boundaries fail closed; expired changed schedules still fail. No generator, asset configuration, activation time, live phase or published history was changed.
+- Added 50 regressions: installed/past legacy identity, changed history rejection, v2 isolation, fail-closed boundary mutations, all eight production source digests, NRX/AITH/VTA historical candles/ticks and NRX schedule boundaries. Both relevant CI workflows run the new suites.
+- Local validation: 73 tests across five suites, backend build, CJS syntax checks and diff whitespace check passed. Exact-head remote CI is reported on the PR separately.
+- Read-only readiness refresh: production API remains `6afe21b0a278d4b01605cf945eaed651f864cd69`; Worker remains `15679cd0-0094-41fb-923c-abd93a847fb2`. Existing API rollback image is present; the serving Worker version remains available. The normal R2 backup `r2-20261007T002652Z` is remotely verified and dump-verified; the existing backup monitor is healthy.
+- Production still lacks `Session.remembered`. Migration `20261003090000_session_remembered` contains only `ALTER TABLE "Session" ADD COLUMN "remembered" BOOLEAN NOT NULL DEFAULT false;`. Apply it through the existing Prisma production workflow only after separate authorization and a fresh backup/lock check, before API/Worker rollout. No production migration, deployment, merge, seed or financial write was performed for this change.
+
+
 ## Codex — 2026-10-07 — Crypto Card issuer-fee clarification (review only)
 - Code commit: 8566f8b27d7342646d0fa5f94cd78d6782f72381; isolated branch codex/card-fees-copy-20261007 from freshly fetched main d1446baa716cd7611dbad7ae4a7009b594cbba56, as explicitly requested by the owner.
 - Updated only the /card fee benefit, four compact numbered rows in the existing FeesSection, the existing FAQ answer, and issuer/third-party fee clarification across ru/en/zh/es/hi/ja/ko. Three hero benefits and existing layout remain.
