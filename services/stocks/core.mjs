@@ -7,7 +7,7 @@ export const limits = Object.freeze(JSON.parse(readFileSync(new URL('./limits.js
 const ceilings = {MAX_INSTRUMENTS:250,UPSTREAM_REQUESTS_IN_FLIGHT:1,MAX_CANDLES_PER_PROVIDER_RESPONSE:500,WRITE_BATCH_CANDLES:250,WRITER_CONCURRENCY:1,MAX_PENDING_CANDLES:1000,BACKFILL_JOB_CONCURRENCY:1,BACKFILL_MAX_CANDLES_PER_MINUTE:1000,BACKFILL_INITIAL_LOOKBACK_DAYS:30,CHART_DEFAULT_LIMIT:300,CHART_HARD_LIMIT:500,MAX_UNCACHED_HISTORY_READS:2,MAX_PENDING_HISTORY_READS:8,STOCK_CACHE_MAX_MIB:16,PROVIDER_RESPONSE_MAX_MIB:1,STOCK_LOCAL_DATA_BUDGET:1073741824,STOCK_WAL_PAUSE_THRESHOLD:67108864};
 export function validateLimits(value) {
   for (const [key,max] of Object.entries(ceilings)) if (!Number.isSafeInteger(value[key]) || value[key] < 1 || value[key] > max) throw Error(`Invalid limit: ${key}`);
-  if (value.MIN_UPSTREAM_REQUEST_GAP_MS < 2000 || value.MIN_FREE_DISK < 10737418240 || value.BACKFILL_ENABLED_BY_DEFAULT !== false) throw Error('Unsafe stock defaults');
+  if (!Number.isSafeInteger(value.MIN_UPSTREAM_REQUEST_GAP_MS) || !Number.isSafeInteger(value.MIN_FREE_DISK) || value.MIN_UPSTREAM_REQUEST_GAP_MS < 2000 || value.MIN_FREE_DISK < 10737418240 || value.BACKFILL_ENABLED_BY_DEFAULT !== false) throw Error('Unsafe stock defaults');
   if (value.WRITE_BATCH_CANDLES > value.MAX_CANDLES_PER_PROVIDER_RESPONSE || value.CHART_DEFAULT_LIMIT > value.CHART_HARD_LIMIT) throw Error('Inconsistent limits');
   return value;
 }
@@ -52,7 +52,8 @@ export class ByteCache {
 export function diskGuard(dir) {
   const fs=statfsSync(dir);let bytes=0;
   const walk=p=>{for(const f of readdirSync(p,{withFileTypes:true})){if(f.isSymbolicLink())throw Error('Stock directory contains symlink');const child=join(p,f.name);if(f.isDirectory())walk(child);else{const size=statSync(child).size;bytes+=size;if(f.name.endsWith('-wal')&&size>=limits.STOCK_WAL_PAUSE_THRESHOLD)throw Error('WAL pause');}}};walk(dir);
-  if(bytes>=limits.STOCK_LOCAL_DATA_BUDGET || fs.bavail*fs.bsize<limits.MIN_FREE_DISK)throw Error('Stock storage paused');
+  // Reserve the separately rotated Docker log allowance (three 1 MiB files).
+  if(bytes+3*1048576>=limits.STOCK_LOCAL_DATA_BUDGET || fs.bavail*fs.bsize<limits.MIN_FREE_DISK)throw Error('Stock storage paused');
   return bytes;
 }
 const decimal = v => typeof v==='string' && /^(?:0|[1-9]\d{0,14})(?:\.\d{1,12})?$/.test(v);
@@ -60,7 +61,8 @@ export function validateCandle(c,i,now=Date.now()) {
   if(c.instrumentId!==i.instrumentId || c.currency!==i.currency || c.interval!=='15m' || c.provider!==i.provider || c.adjustmentMode!=='unadjusted')throw Error('Candle identity mismatch');
   if(!Number.isSafeInteger(c.openTimeUtc)||!Number.isSafeInteger(c.closeTimeUtc)||c.closeTimeUtc-c.openTimeUtc!==900000||c.closeTimeUtc>now||c.openTimeUtc<0)throw Error('Candle is not closed');
   if(!['open','high','low','close'].every(k=>decimal(c[k])))throw Error('Invalid decimal price');
-  const [o,h,l,cl]=['open','high','low','close'].map(k=>Number(c[k]));if(l<=0||l>Math.min(o,cl)||h<Math.max(o,cl))throw Error('Invalid OHLC');
+  const scaled=v=>{const [whole,fraction='']=v.split('.');return BigInt(whole)*1000000000000n+BigInt(fraction.padEnd(12,'0'));};
+  const [o,h,l,cl]=['open','high','low','close'].map(k=>scaled(c[k]));if(l<=0n||l>o||l>cl||h<o||h<cl)throw Error('Invalid OHLC');
   if(c.volume!==null && !decimal(c.volume))throw Error('Invalid volume');
   if(!Number.isSafeInteger(c.providerTimestamp)||!Number.isSafeInteger(c.fetchedAt)||c.fetchedAt<c.closeTimeUtc||c.fetchedAt>now)throw Error('Invalid provenance');
   return c;

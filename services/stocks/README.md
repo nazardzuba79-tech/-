@@ -34,7 +34,7 @@ SQLite uses **DELETE/FULL**, one process/writer, busy timeout 200 ms. WAL is del
 
 Stock-only quota 1 GiB (all files below its dedicated directory), free space floor 10 GiB; imports stop on shortage. Additional physical WAL guard is present even though this version uses DELETE. No global cleanup, VACUUM in requests or system modifications. Retention is bounded initial 30-day history; automatic expiry/longer history is not enabled.
 
-Backfill code supports one resumable instrument checkpoint and one ≤500-candle step, maximum reserved 1000 candles/minute and 30 days. **Operator backfill command/job runner is not yet wired into the runtime**; runtime never starts it. Do not claim production backfill readiness from unit testing this scheduler. Current cycle has priority and no history archive is materialized in RAM.
+Backfill supports one resumable instrument checkpoint and one ≤500-candle step, maximum reserved 1000 candles/minute and 30 days. Explicit local commands: `node services/stocks/control.mjs backfill-start MIC:SYMBOL`, `backfill-pause`, `backfill-resume` with the same private `STOCKS_DATA_DIR`. The single runtime checks this operator file, runs current collection first, then at most one backfill page per 30-second turn. No control file means no backfill. Cursor survives process restarts. Production provider/calendar backfill validation is still blocked by missing entitlements. No history archive is materialized in RAM.
 
 ## Provider evidence, checked 2026-10-07
 

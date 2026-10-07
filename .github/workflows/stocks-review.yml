@@ -7,6 +7,47 @@ on:
 permissions:
   contents: read
 jobs:
+  crypto-service-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: integration_qa
+          POSTGRES_PASSWORD: ephemeral_ci_only
+          POSTGRES_DB: voltex_stock_qa
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U integration_qa -d voltex_stock_qa" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_stock_qa
+      DIRECT_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_stock_qa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npm run build && npx prisma migrate deploy
+      - run: docker build -t voltex-stock-review -f services/stocks/Dockerfile .
+      - name: Pin crypto and stock to the same CPU; keep load generator on another CPU
+        run: |
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+      - name: Repeat A/B/C/readers/failure/cold cache comparison
+        run: |
+          docker update --cpuset-cpus "$BENCH_CPU" $(docker ps --filter ancestor=postgres:16 -q)
+          taskset -c "$BENCH_CPU" node services/stocks/crypto-comparison.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-crypto-comparison-${{ github.sha }}
+          path: .ci-output/stocks
   bounded-stock-runtime:
     runs-on: ubuntu-latest
     timeout-minutes: 12
