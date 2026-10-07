@@ -147,5 +147,7 @@ export function testAssetForSymbol(symbol: string | null | undefined): TestAsset
 
 /** Restricted-asset guard (VTA, NRX and every published managed listing). Only ordinary Spot admits listed NRX and tradable managed listings. */
 export function isTestAssetPairOrSymbol(value: string | null | undefined): boolean {
+  // AITH remains restricted even while its publication is unavailable or changing generations.
+  if (value && ['AITH', 'AITH/USDT'].includes(normalizePair(value))) return true;
   return testAssetForPair(value) !== null || testAssetForSymbol(value) !== null;
 }

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from './api';
 import { fetchNrxPublic, isEdgeMarketUrl, isNrxPair, NRX_EDGE_BASE } from './nrxMarket';
 import { isManagedListingPair, parseTestMarkets, registerManagedListings, SIMULATION_PREVIEW_PARAM, withSimulationPreview, type TestAsset } from './testMarkets';
+import { aithLeaseDeadline, aithReadClock, isAith } from '../../../src/shared/aithPublication';
 
 /**
  * TEST MARKETS — the network half. One store per tab, the same idea as
@@ -55,7 +56,7 @@ export interface TestMarketsState {
 
 type Listener = (state: TestMarketsState) => void;
 
-class TestMarketStore {
+export class TestMarketStore {
   constructor(private readonly endpoint = `${API_BASE}/market/test-assets`, private readonly catalogue = false) {}
   private state: TestMarketsState = { loaded: false, error: false, assets: [], clockOffsetMs: 0 };
   private subscribers = new Map<symbol, { listener: Listener; intervalMs: number }>();
@@ -64,12 +65,29 @@ class TestMarketStore {
   private controller: AbortController | null = null;
   private refreshAfterFlight = false;
   private fetchedAt = 0;
+  private leaseTimer: ReturnType<typeof setTimeout> | null = null;
+  private highestAithVersion = 0;
+
+  private expireAith(): void {
+    const assets = this.state.assets.filter(asset => !isAith(asset.pair) || aithReadClock() < (asset.leaseDeadline ?? 0));
+    if (assets.length === this.state.assets.length) return;
+    this.state = { ...this.state, assets };
+    for (const { listener } of this.subscribers.values()) listener(this.state);
+  }
+
+  private scheduleLease(): void {
+    if (this.leaseTimer) clearTimeout(this.leaseTimer);
+    const asset = this.state.assets.find(asset => isAith(asset.pair));
+    this.leaseTimer = asset ? setTimeout(() => this.expireAith(), Math.max(0, (asset.leaseDeadline ?? 0) - aithReadClock())) : null;
+  }
 
   getState(): TestMarketsState {
+    this.expireAith();
     return this.state;
   }
 
   subscribe(listener: Listener, intervalMs = TEST_MARKET_LIST_INTERVAL_MS): () => void {
+    this.expireAith();
     const key = Symbol('test-market-subscriber');
     this.subscribers.set(key, { listener, intervalMs });
     listener(this.state);
@@ -91,6 +109,7 @@ class TestMarketStore {
     if (this.inFlight) return this.inFlight;
     if (typeof document !== 'undefined' && isBrowserInactive() && this.state.loaded) return Promise.resolve();
     const controller = new AbortController();
+    const requestStartedAt = aithReadClock();
     this.controller = controller;
     this.refreshAfterFlight = false;
     this.inFlight = trackBrowserRead(fetchTestMarketJson(this.endpoint, controller.signal)
@@ -98,13 +117,23 @@ class TestMarketStore {
         if (controller.signal.aborted || this.refreshAfterFlight) return;
         const snapshot = parseTestMarkets(body);
         if (!snapshot) throw new Error('test_market_shape');
+        snapshot.assets = snapshot.assets.filter(asset => {
+          if (!isAith(asset.pair)) return true;
+          if (!asset.readLease || !asset.version || asset.version < this.highestAithVersion) return false;
+          asset.leaseDeadline = aithLeaseDeadline(asset.readLease, requestStartedAt, snapshot.serverTime);
+          if (aithReadClock() >= asset.leaseDeadline) return false;
+          this.highestAithVersion = asset.version;
+          return true;
+        });
         registerManagedListings(snapshot.assets);
         this.state = { loaded: true, error: false, assets: snapshot.assets, clockOffsetMs: snapshot.serverTime - Date.now() };
+        this.scheduleLease();
       }))
       .catch(() => {
         if (controller.signal.aborted || this.refreshAfterFlight) return;
-        // Last good stays: a failed refresh never empties a list.
-        this.state = { ...this.state, loaded: true, error: true };
+        // AITH must fail closed; other markets retain their existing last-good policy.
+        this.state = { ...this.state, loaded: true, error: true, assets: this.state.assets.filter(asset => !isAith(asset.pair)) };
+        this.scheduleLease();
       })
       .finally(() => {
         this.inFlight = null;
@@ -129,6 +158,7 @@ class TestMarketStore {
   }
 
   private readonly onVisibility = (event?: Event) => {
+    this.expireAith();
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     if (isBrowserInactive() || !this.subscribers.size) return;
@@ -136,7 +166,7 @@ class TestMarketStore {
     // must not start a clock or create background traffic.
     if (!this.catalogue && this.state.loaded && !this.anyLive() && this.armedListings().length === 0) return;
     // Live or armed pre-listing: a tab that slept through the listing moment must wake.
-    const cadence = Math.min(...[...this.subscribers.values()].map((s) => s.intervalMs));
+    const cadence = Math.min(this.catalogue && this.highestAithVersion > 0 ? 15_000 : Infinity, ...[...this.subscribers.values()].map((s) => s.intervalMs));
     if (event?.type === 'voltex:browser-activity' || Date.now() - this.fetchedAt >= cadence) {
       if (event?.type === 'voltex:browser-activity' && this.inFlight) this.refreshAfterFlight = true;
       void this.refresh();
@@ -149,7 +179,7 @@ class TestMarketStore {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     if (!this.subscribers.size || isBrowserInactive()) return;
-    const cadence = Math.min(...[...this.subscribers.values()].map((s) => s.intervalMs));
+    const cadence = Math.min(this.catalogue && this.highestAithVersion > 0 ? 15_000 : Infinity, ...[...this.subscribers.values()].map((s) => s.intervalMs));
     let delay = Math.max(0, cadence - (Date.now() - this.fetchedAt));
     if (this.state.loaded && !this.state.error && this.state.assets.length > 0 && !this.anyLive()) {
       const armed = this.armedListings();

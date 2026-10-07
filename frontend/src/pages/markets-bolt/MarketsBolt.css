@@ -308,6 +308,7 @@
   .markets-bolt-root .overview-grid { grid-template-columns: 1fr; gap: 16px; }
   .markets-bolt-root .overview-card { min-width: 0; min-height: 0; padding: 22px 20px; }
   .markets-bolt-root .sectors-card { grid-column: auto; }
+  .markets-bolt-root .sector-row { grid-template-columns: minmax(0, 1fr) minmax(0, .9fr) minmax(0, .8fr) minmax(0, 1fr); }
   .markets-bolt-root .section-title-row { display: block; }
   .markets-bolt-root .search-box { margin-top: 18px; width: 100%; }
   .markets-bolt-root .highlights-grid { display: block; }

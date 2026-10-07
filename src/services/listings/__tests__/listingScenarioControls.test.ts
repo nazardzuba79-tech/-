@@ -172,7 +172,7 @@ describe('persisted version 2 controls use the existing canonical market pipelin
 });
 
 test('legacy VTA, NRX and bounded AITH golden histories remain byte-identical to main 12388249', () => {
-  const aith = parseListingConfig(JSON.parse(readFileSync(join(__dirname, '../../../../config/test-markets/aith.draft.json'), 'utf8')));
+  const aith = parseListingConfig(JSON.parse(readFileSync(join(__dirname, '../../testMarkets/__tests__/aith-v1.fixture.json'), 'utf8')));
   const expected: Record<string, string> = { VTA: '2b09f7addfb5efddc24b504ce488b3789370dbbc3625a3e3b7a893187b9560c7', NRX: 'a98d2d120c3a671efb4dcd1e8a200ee5fa8fac50de8f5344d22884ece25c82b2', AITH: '1f0b0221e7f25ce8ce913c9c800e654bb31038079ebe41ff95a68132fd4303c0' };
   for (const asset of [VOLTORA, NEURIX, listingSimulationConfig(aith)]) {
     const sim = new TestMarketSimulation(asset);

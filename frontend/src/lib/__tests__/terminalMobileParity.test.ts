@@ -25,7 +25,7 @@ describe('Spot/CFD mobile parity with Futures', () => {
     // (countdown card), a display-only test market and CFD stay chart-first.
     expect(page).toContain("const [mobileTabChoice, setMobileTab] = useState<'chart' | 'trade' | 'account' | null>(null)");
     expect(page).toContain("const prelisting = testPair && testMarket.asset?.state.phase !== 'live';");
-    expect(page).toContain("const displayOnly = testPair && testMarket.asset?.isTradable === false;");
+    expect(page).toContain("const displayOnly = pair === 'AITH/USDT' || (testPair && testMarket.asset?.isTradable === false);");
     expect(page).toContain("const mobileTab = mobileTabChoice ?? (marketType === 'cfd' || prelisting || displayOnly ? 'chart' : 'trade');");
     expect(page).toContain("const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart')");
     expect(page).toContain('data-mobile-market="spot"');

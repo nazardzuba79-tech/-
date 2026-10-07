@@ -11,6 +11,7 @@ import { simulationFor } from '../testMarkets/testMarketSimulation';
 import { testMarketDepth } from '../testMarkets/testMarketDepth';
 import { publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../testMarkets/testMarketService';
 import { listingPair, listingSimulationConfig, listingSlug, type PublishedListing } from './listingConfig';
+import { isAith, validAithLease } from '../../shared/aithPublication';
 
 const headers = {
   'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store',
@@ -25,6 +26,7 @@ export function publicListingAsset(listing: PublishedListing, now: number) {
     managed: true as const,
     listingId: listing.id,
     version: listing.version,
+    ...(listing.readLease ? { readLease: listing.readLease } : {}),
     logo: listing.config.logo,
     displayTimeZone: listing.config.displayTimeZone,
   };
@@ -46,6 +48,7 @@ export function listingForPath(pathname: string, listings: readonly PublishedLis
  * not about one (the caller then continues with its other handlers).
  */
 export function managedListingResponse(request: Request, listings: readonly PublishedListing[], now: number, revision: string): Response | null {
+  listings = listings.filter(item => !isAith(item.config.symbol) || validAithLease(item.readLease, item.version, now));
   const url = new URL(request.url);
   const path = url.pathname;
   const isCatalogue = path === PUBLIC_CATALOGUE_PATH;
@@ -60,6 +63,9 @@ export function managedListingResponse(request: Request, listings: readonly Publ
     return respond({ serverTime: now, revision, assets: listings.map((item) => publicListingAsset(item, now)) });
   }
   const current = listing as PublishedListing;
+  if (isAith(current.config.symbol) && url.searchParams.has('listingVersion') && url.searchParams.get('listingVersion') !== String(current.version)) {
+    return respond({ error: 'listing_version_changed', version: current.version }, 409);
+  }
   const asset = listingSimulationConfig(current.config);
   const simulation = simulationFor(asset);
   const slug = listingSlug(current.config.symbol);

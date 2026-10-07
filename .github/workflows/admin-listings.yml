@@ -4,6 +4,8 @@ on:
     paths:
       - 'src/services/listings/**'
       - 'src/shared/listingScenarioControls.ts'
+      - 'src/shared/aithPublication.ts'
+      - 'config/test-markets/aith.draft.json'
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
       - 'src/services/WalletPortfolioService.ts'
@@ -22,6 +24,7 @@ on:
       - 'frontend/src/components/CryptoIcon.tsx'
       - 'frontend/vite.config.ts'
       - 'scripts/qa-admin-listings.cjs'
+      - 'scripts/qa-aith-replacement.cjs'
       - 'scripts/qa-listing-controls.cjs'
       - 'frontend/src/lib/__tests__/listingMovement*.test.ts'
       - 'scripts/smoke-market-edge-listings.mjs'
@@ -63,6 +66,7 @@ jobs:
           npx jest --runInBand --silent --runTestsByPath
           src/services/listings/__tests__/listingConfig.test.ts
           src/services/listings/__tests__/tradingGates.test.ts
+          src/services/listings/__tests__/aithReplacement.test.ts
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
@@ -102,6 +106,13 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report/scenario-controls
+      - name: AITH immutable replacement, lease drain and seven customer viewport sizes
+        run: node scripts/qa-admin-listings.cjs
+        env:
+          QA_AITH_REPLACEMENT: '1'
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report/aith-replacement
       - uses: actions/upload-artifact@v4
         if: always()
         with:

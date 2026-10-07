@@ -4,6 +4,7 @@ import { simulationFor } from './testMarketSimulation';
 import { isTestAssetPairOrSymbol, testAssetForPair, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testAssetConfig';
 import { managedListingAssets } from '../listings/managedSnapshot';
 import { managedListingRegistry } from '../listings/registry';
+import { isAith } from '../../shared/aithPublication';
 
 const managedListingForPair = (pair: string) => {
   const asset = testAssetForPair(pair);
@@ -16,6 +17,7 @@ const managedListingForPair = (pair: string) => {
  * refuses orders; a non-tradable one refuses them always.
  */
 export function assertSpotListing(pair: string, now = Date.now()): void {
+  if (isAith(pair.replace(/[_-]/g, '/').replace(/^AITHUSDT$/i, 'AITH/USDT'))) throw new Error('Aitheron AI is not available for trading.');
   if (pair === NEURIX.pair) {
     if (!NEURIX.listingArmed || now < NEURIX.listingAt) throw new Error('Trading has not started yet');
     return;
@@ -43,6 +45,7 @@ export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSou
       return last === null ? null : { lastPrice: String(last) };
     }
     const managed = managedListingForPair(pair);
+    if (isAith(pair) && !managed) return null;
     if (!managed) return source.getTicker(pair);
     const last = simulationFor(managed).priceAt(clock());
     return last === null ? null : { lastPrice: String(last) };

@@ -256,6 +256,7 @@ export interface PublishedListing {
   version: number;
   publishedAt: string;
   config: ListingConfig;
+  readLease?: import('../../shared/aithPublication').ListingReadLease;
 }
 
 export const publishedListingSchema = z.object({
@@ -263,4 +264,8 @@ export const publishedListingSchema = z.object({
   version: z.number().int().positive(),
   publishedAt: z.string(),
   config: listingConfigSchema,
+  readLease: z.object({
+    protocol: z.literal('aith-prelisting-v1'), generation: z.number().int().positive(),
+    issuedAt: z.number().int().nonnegative(), expiresAt: z.number().int().positive(),
+  }).strict().optional(),
 }).strict();
