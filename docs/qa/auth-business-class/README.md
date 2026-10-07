@@ -8,8 +8,8 @@ Russian Login and Register now use only the left 919 x 941 crop of the approved
 `voltex-premium-gold-button-v6.png`. This supersedes the earlier real-photo/RU
 text composition. The lossless crop preserves every decoded pixel. Its embedded
 logo and slogan appear once: no HTML headline or white card.
-The owner-requested community and static card caption are ordinary localized
-HTML: three existing decorative avatars, localized card title/subtitle,
+The owner-requested benefits and static card caption are ordinary localized
+HTML: three local inline SVG fiat icons (RUB, USD, CNY), localized card title/subtitle,
 then `01`, the existing card label and a thin line. No shared panel, border,
 blur, raised shadow, numeric badge, carousel or testimonial claim is added.
 No verified evidence for the previous 1.2 million investor figure was found;
@@ -58,8 +58,8 @@ The same-page resize cases additionally check window-height changes and
 of a browser-toolbar zoom interaction). Geometry uses intrinsic raster size,
 computed object-fit/object-position, painted bounds, panel coverage and protected
 source regions. Checks also cover scroll access and validation errors.
-Community checks require exactly one visible pair, three distinct loaded local
-avatar tiles, decorative accessibility semantics, localized card copy without the
+Benefits checks require exactly one visible pair, three distinct local inline
+currency SVGs (not portraits or external images), decorative accessibility semantics, localized card copy without the
 unsupported investor counter, exact 22+/70 product figures, transparent unframed wrappers, and no protected-region or
 form/support/legal overlap. The prior behavior and geometry checks remain.
 Local result: 38 main cases + 12 resize/zoom-reflow cases PASS, CLS 0 on initial
@@ -77,7 +77,7 @@ uploads a SHA-named report/screenshots artifact. The independent full frontend
 regression workflow remains enabled and unmodified. Existing callback tests
 still cover login, 2FA, session, safe redirect, registration, referral and error
 handling; source fingerprints prove the functional form files are unchanged.
-The lower block uses a 6px text-row gap, 12–14px avatar/text gap with vertical
+The lower block uses a 6px text-row gap, 12–14px icon/text gap with vertical
 centering, and a 22px gap before the unchanged static card caption. Desktop
 checks require each phrase on one line at normal requested widths. Fonts remain
 16/14px on desktop and 15/13px on mobile; only the lower block is restyled.
@@ -86,7 +86,7 @@ At <=760px viewport height the lower block alone uses its existing post-form
 slot to avoid covering the cards under zoom; the photo and form keep their
 geometry. This also accommodates wider platform font metrics without shrinking
 the text or overlapping the black card at a 700px window height.
-Preservation locks also cover the shell markup, all CSS outside these captions,
+Preservation locks also cover the shell markup outside the fiat-icon row, all CSS outside these captions,
 and the unchanged soft bottom gradient. No global number replacement is used.
 Local TypeScript/build and 176 targeted tests passed. Fresh remote exact-head
 results are recorded on PR #466; older CI is not evidence for this revision.

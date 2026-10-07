@@ -32,9 +32,14 @@ function renderShell(lang: string) {
 }
 
 describe('business-class visual preserves reviewed authentication', () => {
-  test('lower caption cleanup preserves shell markup, photo scrim and every style outside the captions', () => {
-    // Reviewed PR head 4064c065: this follow-up changes only caption spacing/copy.
-    expect(digest(shell)).toBe('355df0563d3de673b0573aa377e052514b0224746be37a802e1ca9e6fdb7b410');
+  test('fiat-icon follow-up preserves shell outside the decorative icon group, photo scrim and other styles', () => {
+    // Fingerprint computed from reviewed head ab24d3da. Exclude only the
+    // authorized icon span and its descriptive comment, not AuthCommunity or
+    // AuthShell: all copy, captions, form placement and auth wiring stay locked.
+    const preservedShell = shell
+      .replace(/\/\*\* Decorative (?:portraits, not testimonials or an independently verified count|fiat symbols: ruble, US dollar and Chinese yuan, not a user count)\. \*\//, '/* Decorative icon-only follow-up. */')
+      .replace(/        <span className="vx-auth-(?:avatars|currencies)" aria-hidden="true">[\s\S]*?\n        <\/span>(?=\n        <div className="vx-auth-community-copy">)/, '        {/* Decorative icon group. */}');
+    expect(digest(preservedShell)).toBe('dc6b24e6f7ec31917072e12dd191bd4315ad75699bef58d1df7c9524fd036bbe');
     expect(digest(css.slice(0, css.indexOf('/* Static, localized photo captions.')) + css.slice(css.indexOf('/* Light form theme'))))
       .toBe('a9683d542ce768fe239dd7045229a38258583eed44f5d8b245a2b99ae55566b8');
     expect(digest(css.slice(css.indexOf('.vx-auth-brand::before {'), css.indexOf('.vx-auth .vx-auth-extras {'))))
@@ -68,6 +73,8 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(html).not.toMatch(/<picture|<h2|vx-auth-hero|vx-auth-lead|vx-auth-copyright/);
     const banner = html.split('vx-auth-brand-banner')[1].split('</section>')[0];
     expect(banner).not.toMatch(/<a\b|<button\b|<input\b|<p\b|<footer\b|HTML_LOGO/);
+    expect(banner.match(/<svg\b/g)).toHaveLength(3);
+    expect(banner.match(/class="vx-auth-currency"/g)).toHaveLength(3);
     // One existing Logo is available in the form header when the decorative
     // banner is omitted. Browser QA checks their mutually exclusive visibility.
     expect(html.match(/HTML_LOGO/g)).toHaveLength(1);
@@ -78,8 +85,24 @@ describe('business-class visual preserves reviewed authentication', () => {
   test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s has localized card copy without an investor-count badge', lang => {
     const html = renderShell(lang);
     expect(html.match(/class="vx-auth-extras"/g)).toHaveLength(2);
-    expect(html.match(/class="vx-auth-avatar"/g)).toHaveLength(6);
-    expect(html.match(/class="vx-auth-avatars" aria-hidden="true"/g)).toHaveLength(2);
+    expect(html.match(/class="vx-auth-currency"/g)).toHaveLength(6);
+    expect(html.match(/class="vx-auth-currencies" aria-hidden="true"/g)).toHaveLength(2);
+    const icons = [...html.matchAll(/<span class="vx-auth-currency" data-currency="([^"]+)">(<svg[\s\S]*?<\/svg>)<\/span>/g)];
+    expect(icons.map(icon => icon[1])).toEqual(['RUB', 'USD', 'CNY', 'RUB', 'USD', 'CNY']);
+    const paths: Record<string, string> = {
+      RUB: 'M8 21V3h7a4 4 0 0 1 0 8H5M5 16h10',
+      USD: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+      CNY: 'm4 3 8 10 8-10M12 13v8M5 13h14M5 17h14',
+    };
+    for (const [, currency, svg] of icons) {
+      expect(svg).toContain('viewBox="0 0 24 24"');
+      expect(svg).toContain('aria-hidden="true"');
+      expect(svg).toContain('focusable="false"');
+      expect(svg).toContain(`<path d="${paths[currency]}"></path>`);
+      expect(svg).not.toMatch(/<image\b|<use\b|<foreignObject\b|<text\b|<script\b|tabindex|onclick|href/);
+    }
+    expect(new Set(icons.slice(0, 3).map(icon => icon[2])).size).toBe(3);
+    expect(html).not.toMatch(/vx-auth-avatar|community-v4|data-currency="JPY"/);
     expect(html).toContain(`localized:${lang}:authShell.communityTitle`);
     expect(html).toContain(`localized:${lang}:authShell.communitySubtitle`);
     expect(html).toContain(`localized:${lang}:authShell.cardCaption`);
@@ -127,7 +150,8 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(shell).toContain('width="1440" height="2160"');
     expect(shell).toContain("fetchpriority: 'high'");
     expect(shell).not.toMatch(/aircraft-v6|communityCount|communityBadge|https:\/\//);
-    expect(css).toContain("url('/auth/community-v4.webp')");
+    expect(shell + css).not.toMatch(/vx-auth-avatar|community-v4/);
+    expect(css).toContain('.vx-auth .vx-auth-currency svg');
     expect(css).not.toMatch(/backdrop-filter|backdrop-blur/);
     expect(css).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)');
     expect(css).toContain('object-fit: cover');

@@ -35,6 +35,10 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     const fulfilled = [];
     await ctx.route('**/*', async route => {
       const req = route.request(), url = new URL(req.url());
+      if (url.pathname.endsWith('/auth/community-v4.webp')) {
+        report.denied.push(`Removed portrait asset requested: ${url.pathname}`);
+        return route.abort();
+      }
       if (!['GET', 'HEAD'].includes(req.method())) {
         const fixture = fixtures[0];
         if (url.origin === origin && req.method() === 'POST' && fixture?.path === url.pathname) {
@@ -68,12 +72,6 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     await page.locator('.vx-auth-form').waitFor();
     await page.evaluate(() => document.fonts.ready);
     await page.waitForFunction(() => [...document.querySelectorAll('.vx-auth-brand img')].every(img => img.complete && img.naturalWidth > 0));
-    await page.evaluate(() => Promise.all([...new Set([...document.querySelectorAll('.vx-auth-avatar')].map(node => getComputedStyle(node).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]).filter(Boolean))].map(src => new Promise((resolve, reject) => {
-      const avatar = new Image();
-      avatar.onload = () => avatar.naturalWidth === 432 && avatar.naturalHeight === 144 ? resolve() : reject(new Error('Unexpected local avatar sprite dimensions'));
-      avatar.onerror = () => reject(new Error('Local avatar sprite did not load'));
-      avatar.src = src;
-    }))));
     await page.evaluate(() => Promise.all(document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {}))));
   }
   async function measure(page) {
@@ -96,17 +94,30 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       };
       const extras = [...document.querySelectorAll('.vx-auth-extras')].filter(visible).map(node => ({
         ...rect(node), inBrand: !!node.closest('.vx-auth-brand'), text: node.textContent.trim(),
-        wrappers: [node, ...node.querySelectorAll('.vx-auth-community,.vx-auth-community-copy,.vx-auth-avatars,.vx-auth-card-caption')].map(child => ({ selector: child.className, ...decoration(child) })),
+        wrappers: [node, ...node.querySelectorAll('.vx-auth-community,.vx-auth-community-copy,.vx-auth-currencies,.vx-auth-card-caption')].map(child => ({ selector: child.className, ...decoration(child) })),
         community: rect(node.querySelector('.vx-auth-community')),
         title: node.querySelector('.vx-auth-community-copy strong').textContent.trim(),
         subtitle: node.querySelector('.vx-auth-community-copy span').textContent.trim(),
         titleLayout: textLayout(node.querySelector('.vx-auth-community-copy strong')),
         subtitleLayout: textLayout(node.querySelector('.vx-auth-community-copy > span')),
         copyLayout: rect(node.querySelector('.vx-auth-community-copy')),
-        avatarLayout: rect(node.querySelector('.vx-auth-avatars')),
+        currencyLayout: rect(node.querySelector('.vx-auth-currencies')),
         caption: { ...rect(node.querySelector('.vx-auth-card-caption')), number: node.querySelector('.vx-auth-card-number').textContent.trim(), label: node.querySelector('.vx-auth-card-label').textContent.trim() },
-        avatars: [...node.querySelectorAll('.vx-auth-avatar')].map(avatar => ({ ...rect(avatar), image: getComputedStyle(avatar).backgroundImage, position: getComputedStyle(avatar).backgroundPosition, size: getComputedStyle(avatar).backgroundSize, radius: getComputedStyle(avatar).borderRadius })),
-        avatarGroupHidden: node.querySelector('.vx-auth-avatars').getAttribute('aria-hidden'),
+        currencies: [...node.querySelectorAll('.vx-auth-currency')].map(currency => {
+          const svg = currency.querySelector('svg');
+          const style = svg && getComputedStyle(svg);
+          return {
+            ...rect(currency), code: currency.dataset.currency,
+            image: getComputedStyle(currency).backgroundImage, radius: getComputedStyle(currency).borderRadius,
+            svgCount: currency.querySelectorAll('svg').length,
+            svg: svg ? { ...rect(svg), viewBox: svg.getAttribute('viewBox'), hidden: svg.getAttribute('aria-hidden'), focusable: svg.getAttribute('focusable'),
+              stroke: style.stroke, strokeWidth: parseFloat(style.strokeWidth), fill: style.fill, display: style.display, visibility: style.visibility, opacity: style.opacity,
+              paths: [...svg.querySelectorAll('path')].map(path => path.getAttribute('d')),
+              children: [...svg.children].map(child => child.tagName),
+            } : null,
+          };
+        }),
+        currencyGroupHidden: node.querySelector('.vx-auth-currencies').getAttribute('aria-hidden'),
         line: { ...rect(node.querySelector('.vx-auth-card-line')), hidden: node.querySelector('.vx-auth-card-line').getAttribute('aria-hidden') },
         ink: [...node.querySelectorAll('.vx-auth-community,.vx-auth-card-caption')].map(rect),
       }));
@@ -175,6 +186,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     const block = extras[0];
     assert.equal(await page.locator('.vx-auth-extras :is(a,button,input,select,textarea)').count(), 0, `${label} restored blocks are static, not a carousel or control`);
     assert.equal(await page.locator('.vx-auth-community-badge,.vx-auth-carousel,.vx-auth-pagination').count(), 0, `${label} no unsupported counter badge or carousel`);
+    assert.equal(await page.locator('.vx-auth-avatar,.vx-auth-avatars').count(), 0, `${label} portraits and their old wrappers are removed`);
     assert.doesNotMatch(block.text, /1[,.]2|млн|million|[0-9]\s*[Mm]\+|TEST|DEMO|NOT TRADABLE/, `${label} no unsupported investor count or new advertising labels`);
     assert.deepEqual(block.subtitle.match(/\d+\+?/g), ['22+', '70'], `${label} exact currency/crypto counts, not an age or investor statistic`);
     assert.doesNotMatch(block.title, /[.。]$/, `${label} no trailing title period`);
@@ -183,9 +195,9 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     assert.ok(captionGap >= 20 && captionGap <= 24, `${label} caption has a separate 20–24px gap: ${captionGap}`);
     const textGap = block.subtitleLayout.y - block.titleLayout.bottom;
     assert.ok(textGap >= 5 && textGap <= 6, `${label} two text rows have 5–6px spacing: ${textGap}`);
-    const avatarGap = block.copyLayout.x - block.avatarLayout.right;
-    assert.ok(avatarGap >= 12 && avatarGap <= 16, `${label} avatars have 12–16px breathing room: ${avatarGap}`);
-    assert.ok(Math.abs(block.avatarLayout.y + block.avatarLayout.height / 2 - block.copyLayout.y - block.copyLayout.height / 2) <= 1, `${label} avatars are vertically centered on the text`);
+    const currencyGap = block.copyLayout.x - block.currencyLayout.right;
+    assert.ok(currencyGap >= 12 && currencyGap <= 16, `${label} currency symbols have 12–16px breathing room: ${currencyGap}`);
+    assert.ok(Math.abs(block.currencyLayout.y + block.currencyLayout.height / 2 - block.copyLayout.y - block.copyLayout.height / 2) <= 1, `${label} currency symbols are vertically centered on the text`);
     assert.ok(block.titleLayout.fontWeight >= 500 && block.titleLayout.fontWeight <= 600, `${label} medium/semibold main row`);
     assert.equal(block.subtitleLayout.fontWeight, 400, `${label} ordinary-weight second row`);
     assert.ok(block.titleLayout.fontSize >= 15 && block.subtitleLayout.fontSize >= 13 && block.titleLayout.fontSize > block.subtitleLayout.fontSize, `${label} readable hierarchy, not tiny text`);
@@ -195,18 +207,33 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       assert.equal(block.titleLayout.lines, 1, `${label} desktop first phrase occupies one line`);
       assert.equal(block.subtitleLayout.lines, 1, `${label} desktop second phrase occupies one line`);
     }
-    assert.equal(block.avatars.length, 3, `${label} three decorative avatars`);
-    assert.equal(block.avatarGroupHidden, 'true', `${label} decorative faces are not presented as client testimonials`);
-    const positions = new Set();
-    for (const avatar of block.avatars) {
-      assert.match(avatar.image, /\/auth\/community-v4\.webp["']?\)/, `${label} existing local avatar sprite`);
-      assert.equal(avatar.size, '300% 100%', `${label} three distinct sprite tiles`);
-      assert.equal(avatar.radius, '50%', `${label} circular avatar`);
-      assert.ok(Math.abs(avatar.width - avatar.height) < 1, `${label} undistorted avatar tile`);
-      positions.add(avatar.position);
+    assert.deepEqual(block.currencies.map(currency => currency.code), ['RUB', 'USD', 'CNY'], `${label} ruble, dollar and Chinese yuan, not Japanese yen`);
+    assert.equal(block.currencyGroupHidden, 'true', `${label} currency row is decorative, not controls or statistics`);
+    const paths = new Set();
+    for (const currency of block.currencies) {
+      assert.equal(currency.image, 'none', `${label} local SVG replaces portrait backgrounds`);
+      assert.equal(currency.radius, '50%', `${label} circular currency icon`);
+      assert.ok(Math.abs(currency.width - currency.height) < 1, `${label} undistorted currency circle`);
+      assert.equal(currency.width, viewport.width <= 760 ? 28 : 36, `${label} existing compact/desktop circle size`);
+      assert.equal(currency.svgCount, 1, `${label} exactly one inline SVG per currency`);
+      assert.ok(currency.svg && currency.svg.width > 0 && currency.svg.height > 0, `${label} currency symbol is painted`);
+      assert.ok(Math.abs(currency.svg.width - currency.svg.height) < 1, `${label} undistorted SVG`);
+      assert.equal(currency.svg.viewBox, '0 0 24 24', `${label} stable local SVG coordinates`);
+      assert.equal(currency.svg.hidden, 'true', `${label} decorative SVG is hidden from assistive technology`);
+      assert.equal(currency.svg.focusable, 'false', `${label} decorative SVG is not focusable`);
+      assert.equal(currency.svg.stroke, 'rgb(18, 58, 51)', `${label} visible dark-green glyph`);
+      assert.ok(currency.svg.strokeWidth > 0, `${label} currency path has visible stroke`);
+      assert.equal(currency.svg.fill, 'none', `${label} outlined currency glyph`);
+      assert.notEqual(currency.svg.display, 'none', `${label} glyph is displayed`);
+      assert.equal(currency.svg.visibility, 'visible', `${label} glyph is visible`);
+      assert.equal(currency.svg.opacity, '1', `${label} glyph is not transparent`);
+      assert.ok(currency.svg.paths.length > 0 && currency.svg.paths.every(Boolean), `${label} local glyph paths are nonempty`);
+      assert.ok(currency.svg.children.every(tag => tag === 'path'), `${label} no external images, linked glyphs or script in SVG`);
+      assert.ok(currency.svg.x >= currency.x && currency.svg.right <= currency.right && currency.svg.y >= currency.y && currency.svg.bottom <= currency.bottom, `${label} symbol fits its circle`);
+      paths.add(currency.svg.paths.join('|'));
     }
-    assert.equal(positions.size, 3, `${label} each existing face has its own sprite position`);
-    assert.ok(block.avatars[1].x < block.avatars[0].right && block.avatars[2].x < block.avatars[1].right, `${label} compact overlapping avatar row`);
+    assert.equal(paths.size, 3, `${label} each currency has a distinct glyph`);
+    assert.ok(block.currencies[1].x < block.currencies[0].right && block.currencies[2].x < block.currencies[1].right, `${label} compact overlapping currency row`);
     assert.equal(block.caption.number, '01', `${label} static card caption number`);
     assert.ok(block.caption.label.length > 5, `${label} localized card caption remains populated`);
     assert.equal(block.line.hidden, 'true', `${label} caption rule is decorative`);
@@ -330,7 +357,9 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
           }
           assert.equal(measurements.headline, null, `${label} no duplicate slogan over raster`);
           assert.equal(await page.locator('.vx-auth-banner').count(), 1);
-          assert.equal(await page.locator('.vx-auth-brand-banner :is(a,button,input,select,textarea,h1,h2,svg)').count(), 0, 'banner has no interactive or duplicate logo/text layers');
+          assert.equal(await page.locator('.vx-auth-brand-banner :is(a,button,input,select,textarea,h1,h2)').count(), 0, 'banner has no interactive or duplicate text layers');
+          assert.equal(await page.locator('.vx-auth-brand-banner svg').count(), 3, 'banner has exactly three currency SVGs, not another logo');
+          assert.equal(await page.locator('.vx-auth-brand-banner .vx-auth-currency > svg').count(), 3, 'all banner SVGs belong only to the currency group');
           assert.match(await page.locator('.vx-auth-banner').getAttribute('alt'), /Копируйте сделки лучших трейдеров мира/);
         } else {
           await assertExtras(page, measurements, label, lang);

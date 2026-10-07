@@ -8,14 +8,28 @@ import { openSupportWidget } from '../../lib/supportWidget';
 import './auth-shell.css';
 import './auth-form-premium.css';
 
-/** Decorative portraits, not testimonials or an independently verified count. */
+/** Decorative fiat symbols: ruble, US dollar and Chinese yuan, not a user count. */
 function AuthCommunity() {
   const { t } = useLanguage();
   return (
     <div className="vx-auth-extras">
       <div className="vx-auth-community">
-        <span className="vx-auth-avatars" aria-hidden="true">
-          <span className="vx-auth-avatar" /><span className="vx-auth-avatar" /><span className="vx-auth-avatar" />
+        <span className="vx-auth-currencies" aria-hidden="true">
+          <span className="vx-auth-currency" data-currency="RUB">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M8 21V3h7a4 4 0 0 1 0 8H5M5 16h10" />
+            </svg>
+          </span>
+          <span className="vx-auth-currency" data-currency="USD">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </span>
+          <span className="vx-auth-currency" data-currency="CNY">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m4 3 8 10 8-10M12 13v8M5 13h14M5 17h14" />
+            </svg>
+          </span>
         </span>
         <div className="vx-auth-community-copy">
           <strong>{t('authShell.communityTitle')}</strong>
