@@ -144,6 +144,13 @@
   color: #79735f;
   box-shadow: none;
 }
+/* Keep registration gold while its existing validation disables submission. */
+.vx-auth .vx-auth-form:has(#reg-email) .vx-auth-submit:disabled {
+  border-color: #d7b656;
+  background: linear-gradient(110deg, #f5db8b, #edcb6a);
+  color: #171b17;
+  box-shadow: 0 3px 8px #6651190c;
+}
 .vx-auth .vx-auth-support {
   flex-wrap: wrap;
   margin-top: 28px;
