@@ -11,6 +11,8 @@ on:
       - 'src/services/testMarkets/**'
       - 'src/services/listings/**'
       - 'scripts/smoke-vta-natural-wicks.mjs'
+      - 'scripts/check-nrx-scenario-release.cjs'
+      - 'scripts/nrx-legacy-source.cjs'
       - '.github/workflows/deploy-market-edge.yml'
   pull_request:
     paths:
@@ -35,6 +37,8 @@ on:
       - 'scripts/qa-cfd-display-browser.cjs'
       - 'scripts/smoke-market-edge-listings.mjs'
       - 'scripts/smoke-vta-natural-wicks.mjs'
+      - 'scripts/check-nrx-scenario-release.cjs'
+      - 'scripts/nrx-legacy-source.cjs'
       - '.github/workflows/deploy-market-edge.yml'
   workflow_dispatch:
     inputs:
@@ -70,6 +74,13 @@ jobs:
         run: node --experimental-default-type=module test.mjs
       - name: Install shared simulation dependency
         run: npm ci --prefix ../.. --ignore-scripts --no-audit --no-fund
+      - name: Legacy release identity and history regression tests
+        working-directory: .
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/services/testMarkets/__tests__/simulationScheduleRelease.test.ts
+          src/services/testMarkets/__tests__/nrxLegacyReleaseIdentity.test.ts
+          src/services/testMarkets/__tests__/nrxLegacySourceProjection.test.ts
       - name: Managed listings Durable Object on real workerd
         run: npm ci --ignore-scripts --no-audit --no-fund && npm run test:listings
       - name: Post-deploy smoke script against the real bundle (configured, not configured, token mismatch)
