@@ -91,7 +91,9 @@ describe('market platform presentation boundary', () => {
 describe('market carousel continuity and rhythm', () => {
   const frames = marketTileFrames();
   const at = (time: number) => frames.find(frame => Math.abs(Number(frame.offset) * MARKET_CYCLE_MS - time) < .001)!;
-  const pose = (frame: Keyframe) => ({ transform: frame.transform, opacity: frame.opacity, zIndex: frame.zIndex });
+  const pose = (frame: Keyframe) => ({ transform: frame.transform, opacity: frame.opacity });
+  const visible = (frame: Keyframe) => frame.opacity !== 0 && frame.opacity !== '0';
+  const scale = (frame: Keyframe) => Number(String(frame.transform).match(/scale\(([\d.]+)\)/)?.[1]);
 
   it('holds each composition, then moves once every four seconds without layout animation', () => {
     expect(MARKET_STEP_MS).toBe(4000);
@@ -111,32 +113,83 @@ describe('market carousel continuity and rhythm', () => {
       expect(Number(frame.offset)).toBeGreaterThan(previous);
       expect(Number(frame.offset)).toBeLessThanOrEqual(1);
       previous = Number(frame.offset);
-      expect(Object.keys(frame).some(key => ['width', 'height', 'top', 'left', 'margin', 'padding'].includes(key))).toBe(false);
+      expect(Object.keys(frame).filter(key => !['transform', 'opacity', 'offset', 'easing'].includes(key))).toEqual([]);
       expect(frame.easing ?? '').not.toMatch(/steps\(/);
     }
   });
 
-  it('never wraps a visible tile across the stage or snaps at the cycle boundary', () => {
+  it('closes the orbit without a visible wrap or a last-to-first snap', () => {
     expect(pose(frames[0])).toEqual(pose(frames[frames.length - 1]));
-    const y = (frame: Keyframe) => {
-      const transform = String(frame.transform);
-      const multiple = transform.match(/calc\((-?\d+) \* var\(--card-step\)\)/);
-      return multiple ? Number(multiple[1]) : transform.includes('var(--card-step)') ? 1 : 0;
-    };
-    const crossings = frames.slice(1).map((frame, index) => [frames[index], frame] as const)
-      .filter(([left, right]) => y(right) > y(left));
-    expect(crossings).toHaveLength(1);
-    for (const [left, right] of crossings) {
-      expect(Number(left.opacity)).toBe(0);
-      expect(Number(right.opacity)).toBe(0);
+    // The only short repositioning segment is behind the scene and invisible
+    // throughout. Normal visible transitions retain the one-second rhythm.
+    const transformFrames = frames.filter(frame => frame.transform != null);
+    const resets = transformFrames.slice(1).map((frame, index) => [transformFrames[index], frame] as const)
+      .filter(([left, right]) => left.transform !== right.transform
+        && (Number(right.offset) - Number(left.offset)) * MARKET_CYCLE_MS < MARKET_MOVE_MS / 2);
+    expect(resets).toHaveLength(1);
+    for (const [left, right] of resets) {
+      expect(visible(left)).toBe(false);
+      expect(visible(right)).toBe(false);
     }
-    expect(MARKET_POSES.filter(frame => frame.opacity > 0).map(y).sort((a, b) => a - b)).toEqual([-2, -1, 0, 1, 2]);
-    expect(MARKET_POSES.filter(frame => frame.opacity === 0).map(y).sort((a, b) => a - b)).toEqual([-3, 3]);
+    expect(MARKET_POSES.filter(visible)).toHaveLength(5);
+    expect(MARKET_POSES.filter(frame => !visible(frame))).toHaveLength(2);
     for (const frame of frames) {
-      expect(String(frame.transform)).toMatch(/^translate3d\(0, /);
-      const rotation = Number(String(frame.transform).match(/rotateX\((-?[\d.]+)deg\)/)?.[1]);
-      expect(Number.isFinite(rotation)).toBe(true);
-      expect(Math.abs(rotation)).toBeLessThan(45);
+      if (frame.transform == null) continue;
+      expect(String(frame.transform)).toMatch(/^translate3d\(/);
+      expect(Number.isFinite(scale(frame))).toBe(true);
+      for (const rotation of String(frame.transform).matchAll(/rotate[XYZ]\((-?[\d.]+)deg\)/g)) {
+        expect(Math.abs(Number(rotation[1]))).toBeLessThan(45);
+      }
+    }
+  });
+
+  it('finishes the outgoing fade before admitting a replacement on desktop and mobile', () => {
+    const opacityAt = (time: number, farOpacity: number) => {
+      const wrapped = ((time % MARKET_CYCLE_MS) + MARKET_CYCLE_MS) % MARKET_CYCLE_MS;
+      const rightIndex = frames.findIndex(frame => Number(frame.offset) * MARKET_CYCLE_MS >= wrapped);
+      const right = frames[rightIndex];
+      const numericOpacity = (frame: Keyframe) => typeof frame.opacity === 'number' ? frame.opacity
+        : frame.opacity === 'var(--orbit-far-opacity)' ? farOpacity : Number(frame.opacity);
+      if (rightIndex === 0) return numericOpacity(right);
+      const left = frames[rightIndex - 1];
+      const start = Number(left.offset) * MARKET_CYCLE_MS;
+      const end = Number(right.offset) * MARKET_CYCLE_MS;
+      const fraction = (wrapped - start) / (end - start);
+      // Easing changes the amount of a fade, but does not move its endpoints
+      // or make either neighbouring zero-opacity interval visible.
+      return numericOpacity(left) + (numericOpacity(right) - numericOpacity(left)) * fraction;
+    };
+    for (const profile of [
+      { farOpacity: .82, outgoing: 2, incoming: 4, maximum: 5 },
+      { farOpacity: 0, outgoing: 1, incoming: 5, maximum: 3 },
+    ]) {
+      const midway = MARKET_STEP_MS - MARKET_MOVE_MS / 2;
+      expect(opacityAt(profile.outgoing * MARKET_STEP_MS + midway - 100, profile.farOpacity)).toBeGreaterThan(0);
+      expect(opacityAt(profile.incoming * MARKET_STEP_MS + midway - 100, profile.farOpacity)).toBe(0);
+      expect(opacityAt(profile.outgoing * MARKET_STEP_MS + midway, profile.farOpacity)).toBe(0);
+      expect(opacityAt(profile.incoming * MARKET_STEP_MS + midway, profile.farOpacity)).toBe(0);
+      expect(opacityAt(profile.outgoing * MARKET_STEP_MS + midway + 100, profile.farOpacity)).toBe(0);
+      expect(opacityAt(profile.incoming * MARKET_STEP_MS + midway + 100, profile.farOpacity)).toBeGreaterThan(0);
+      for (let time = 0; time < MARKET_CYCLE_MS; time += 25) {
+        const count = HERO_INSTRUMENTS.filter((_, index) => opacityAt(time + initialMarketPose(index) * MARKET_STEP_MS, profile.farOpacity) > 1e-8).length;
+        expect(count).toBeLessThanOrEqual(profile.maximum);
+      }
+    }
+  });
+
+  it('creates a spatial arc with a dominant center rather than a column of equal cards', () => {
+    const center = MARKET_POSES[0];
+    expect(scale(center)).toBe(1);
+    const near = [MARKET_POSES[1], MARKET_POSES[6]];
+    for (const frame of near) {
+      const dominance = scale(center) / scale(frame);
+      expect(dominance).toBeGreaterThanOrEqual(1.5);
+      expect(dominance).toBeLessThanOrEqual(1.7);
+    }
+    expect(String(near[0].transform)).toMatch(/^translate3d\(calc\(-/);
+    expect(String(near[1].transform)).not.toMatch(/^translate3d\((?:0|calc\(-)/);
+    for (const frame of [MARKET_POSES[2], MARKET_POSES[5]]) {
+      expect(scale(frame)).toBeLessThan(scale(near[0]));
     }
   });
 
@@ -150,9 +203,9 @@ describe('market carousel continuity and rhythm', () => {
       expect(atFront).toHaveLength(1);
       leaders.push(atFront[0].index);
     }
-    expect(leaders).toEqual([2, 3, 4, 5, 6, 0, 1]);
-    expect(HERO_INSTRUMENTS.filter((_, index) => MARKET_POSES[initialMarketPose(index)].opacity > 0).map(item => item.symbol))
-      .toEqual(['BTC', 'GOLD', 'OIL', 'ETH', 'SOL']);
+    expect(leaders).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(HERO_INSTRUMENTS.filter((_, index) => visible(MARKET_POSES[initialMarketPose(index)])).map(item => item.symbol))
+      .toEqual(['BTC', 'GOLD', 'OIL', 'XRP', 'ADA']);
   });
 });
 
@@ -162,7 +215,7 @@ const fixtureMarket = () => ({
   tickers: [{ pair: 'BTC/USDT', price: 76746, change: -.67 }, { pair: 'ETH/USDT', price: 2479.53, change: -1.82 },
     { pair: 'SOL/USDT', price: 99.78, change: -1.94 }, { pair: 'XRP/USDT', price: 2.45, change: 1.15 }, { pair: 'ADA/USDT', price: .37, change: 2.18 }],
   tickersStale: false,
-  hero: { pair: 'BTC/USDT', livePrice: undefined as number | undefined },
+  hero: { pair: 'BTC/USDT', livePrice: undefined as number | undefined, stale: false },
   cfd: { configured: true, tickers: [
     { symbol: 'XAUUSD', price: '4349.19', changePercent24h: '-1.02', status: 'live', stale: false, displayOnly: true, executionAllowed: false },
     { symbol: 'WTIUSD', price: '96.607', changePercent24h: '2.36', status: 'market_closed', stale: false, displayOnly: true, executionAllowed: false },
@@ -275,21 +328,20 @@ describe('mounted market motion lifecycle', () => {
   it('renders existing numeric crypto and string CFD snapshots without new requests or data mutation', () => {
     const market = fixtureMarket();
     market.hero.livePrice = 76747.25;
+    market.cfd.tickers[1].status = 'live';
     const before = JSON.stringify(market);
     hero = mountHero({ market });
     const card = (symbol: string) => hero!.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
     expect(card('BTC').querySelector('.vm-card-price')?.textContent).toBe('76,747.25');
-    expect(card('BTC').querySelector('.vm-card-change')?.textContent).toBe('-0.67%');
     expect(card('GOLD').querySelector('.vm-card-price')?.textContent).toBe('4,349.19');
-    expect(card('GOLD').querySelector('.vm-card-change')?.textContent).toBe('-1.02%');
     expect(card('OIL').querySelector('.vm-card-price')?.textContent).toBe('96.61');
-    expect(card('OIL').querySelector('.vm-card-change')?.textContent).toBe('+2.36%');
+    expect(hero.scene.querySelector('.vm-card-face, .vm-card-copy, .vm-card-change, .vm-card-note')).toBeNull();
     hero.visible(true); hero.hidden(true); hero.hidden(false); hero.click();
     expect(JSON.stringify(market)).toBe(before);
     expect(hero.failWork).not.toHaveBeenCalled();
   });
 
-  it('keeps unknown/blank/non-finite quotes unavailable instead of inventing zeros', () => {
+  it('omits unknown, blank and non-finite quotes without repeating unavailable labels or inventing zeros', () => {
     const market: any = fixtureMarket();
     market.tickers = [{ pair: 'BTC/USDT', price: NaN, change: Infinity }];
     market.cfd.tickers[0].price = ' ';
@@ -299,26 +351,71 @@ describe('mounted market motion lifecycle', () => {
     hero = mountHero({ market });
     for (const symbol of ['BTC', 'GOLD', 'OIL', 'ETH', 'SOL', 'XRP', 'ADA']) {
       const card = hero.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
-      expect(card.querySelector('.vm-card-price')?.textContent).toBe('—');
-      expect(card.querySelector('.vm-card-change')?.textContent).toBe('—');
-      expect(card.querySelector('.vm-card-note')?.textContent).toBe(cfdMarketCopy('en').priceUnavailable);
+      expect(card.querySelector('.vm-card-price')).toBeNull();
+      expect(card.querySelector('.vm-card-note')).toBeNull();
+      expect(card.textContent).not.toContain(cfdMarketCopy('en').priceUnavailable);
       expect(card.textContent).not.toMatch(/NaN|Infinity|0\.00/);
     }
     expect(hero.failWork).not.toHaveBeenCalled();
   });
 
-  it('preserves sampled and stale quote disclosures without changing the shared values', () => {
+  it('omits stale, sampled and closed quotes while preserving the shared market values', () => {
     const market = fixtureMarket();
     market.tickersStale = true;
+    market.cfd.tickers[0].status = 'sampled';
+    // A sampled value is historical even when its stale flag is false.
+    expect(market.cfd.tickers[0].stale).toBe(false);
+    const before = JSON.stringify(market);
+    hero = mountHero({ market });
+    for (const symbol of ['BTC', 'GOLD', 'OIL', 'ETH', 'SOL', 'XRP', 'ADA']) {
+      const card = hero.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
+      expect(card.querySelector('.vm-card-price')).toBeNull();
+      expect(card.querySelector('.vm-card-note')).toBeNull();
+    }
+    expect(JSON.stringify(market)).toBe(before);
+    expect(hero.failWork).not.toHaveBeenCalled();
+  });
+
+  it('omits zero and negative prices rather than rendering them as a financial quote', () => {
+    const market = fixtureMarket();
+    market.tickers.forEach((ticker, index) => { ticker.price = index % 2 ? -1 : 0; });
+    market.cfd.tickers[0].price = '0';
+    market.cfd.tickers[1].status = 'live';
+    market.cfd.tickers[1].price = '-1';
+    hero = mountHero({ market });
+    expect(hero.scene.querySelector('.vm-card-price')).toBeNull();
+    expect(hero.scene.querySelectorAll('.vm-coin')).toHaveLength(7);
+    expect(hero.failWork).not.toHaveBeenCalled();
+  });
+
+  it('omits an explicitly stale CFD price even when its provider status says live', () => {
+    const market = fixtureMarket();
     market.cfd.tickers[0].stale = true;
     hero = mountHero({ market });
-    for (const symbol of ['BTC', 'GOLD']) {
-      const card = hero.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
-      expect(card.getAttribute('data-stale')).toBe('true');
-      expect(card.querySelector('.vm-card-note')?.textContent).toBe(cfdMarketCopy('en').lastQuote);
-    }
+    expect(hero.scene.querySelector('[data-market-tile="GOLD"] .vm-card-price')).toBeNull();
     expect(hero.scene.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent).toBe('76,746.00');
-    expect(hero.scene.querySelector('[data-market-tile="GOLD"] .vm-card-price')?.textContent).toBe('4,349.19');
+  });
+
+  it('uses the fresh ticker rather than a stale BTC hero override', () => {
+    const market = fixtureMarket();
+    market.hero.livePrice = 12345.67;
+    market.hero.stale = true;
+    const before = JSON.stringify(market);
+    hero = mountHero({ market });
+    expect(hero.scene.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent).toBe('76,746.00');
+    expect(JSON.stringify(market)).toBe(before);
+    expect(hero.failWork).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the valid ticker when a BTC hero override is invalid or nonpositive', () => {
+    for (const override of [NaN, Infinity, 0, -1, ' ', 'not-a-number', null]) {
+      const market: any = fixtureMarket();
+      market.hero.livePrice = override;
+      hero = mountHero({ market });
+      expect(hero.scene.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent).toBe('76,746.00');
+      expect(hero.failWork).not.toHaveBeenCalled();
+      hero.unmount(); hero = undefined;
+    }
   });
 
   it('freezes the current phase offscreen/hidden and resumes without catch-up or new work', () => {

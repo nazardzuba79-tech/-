@@ -84,7 +84,9 @@ function fixture(req,res,next){
   return record?.tickers?.length===3&&record?.hero?.candles?.length===48
    &&record?.hero?.book?.bids?.length===6&&record?.hero?.trades?.length===6
    &&document.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent==='76,746.00'
-   &&document.querySelector('[data-market-tile="GOLD"] .vm-card-price')?.textContent==='4,349.19'
+   &&!document.querySelector('[data-market-tile="GOLD"] .vm-card-price')
+   &&!document.querySelector('[data-market-tile="OIL"] .vm-card-price')
+   &&document.querySelectorAll('[data-market-tile] .vm-card-note, [data-market-tile] .vm-card-change').length===0
    &&document.querySelectorAll('.vx-heatmap-meta').length===1
    &&[...document.querySelectorAll('table tbody tr')].some(row=>/BTC/.test(row.textContent||'')&&/76[,.]?746/.test(row.textContent||''));
  },null,{timeout:10000});

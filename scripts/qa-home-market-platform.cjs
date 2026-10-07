@@ -15,8 +15,12 @@ const mode = process.env.QA_HERO_MODE || 'after';
 const resumeTail = process.env.QA_HERO_TAIL === '1';
 const visualOnly = process.env.QA_HERO_VISUAL === '1';
 const screenshotsOnly = process.env.QA_HERO_SCREENSHOTS_ONLY === '1';
+// Diagnostic capture continues across widths but still exits FAIL afterwards.
+const geometryDiagnostic = screenshotsOnly && process.env.QA_HERO_GEOMETRY_DIAGNOSTIC === '1';
+const geometryFailures=[];
 const dist = path.resolve(root, process.env.QA_DIST || 'frontend/dist');
 const out = path.resolve(root, process.env.QA_OUT || `output/home-market-platform/${mode}`);
+const baselineReportPath=path.resolve(root,process.env.QA_HERO_BASELINE_REPORT||'output/home-market-platform/baseline/report.json');
 const port = Number(process.env.QA_PORT || 4198);
 const origin = `http://127.0.0.1:${port}`;
 let modernServer, modernOrigin;
@@ -73,10 +77,10 @@ async function waitServer() {
   for (let i=0;i<100;i++) { try { if ((await fetch(origin + '/__qa/hits')).ok) return; } catch {} await sleep(100); }
   throw new Error('Local fixture server did not become ready');
 }
-async function createContext(browser, { width=1440, height=900, signed=false, lang='ru', reduced=false, logos='normal', video=false }={}) {
+async function createContext(browser, { width=1440, height=900, signed=false, lang='ru', reduced=false, logos='normal', video=false, quoteMode='fresh', snapshot=null }={}) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, colorScheme: 'dark', reducedMotion: reduced ? 'reduce' : 'no-preference', serviceWorkers: 'block', ...(video ? { recordVideo: { dir: path.join(out,'video'), size: { width:1440, height:900 } } } : {}) });
   await ctx.addInitScript(instrument);
-  await ctx.addInitScript(({ signed, lang }) => { localStorage.setItem('exchange_lang', lang); if (signed) localStorage.setItem('exchange_token','header.eyJzdWIiOiJxYS11c2VyIiwic2lkIjoicWEtc2Vzc2lvbiJ9.fixture'); }, { signed,lang });
+  await ctx.addInitScript(({ signed, lang, snapshot }) => { localStorage.setItem('exchange_lang', lang); if (signed) localStorage.setItem('exchange_token','header.eyJzdWIiOiJxYS11c2VyIiwic2lkIjoicWEtc2Vzc2lvbiJ9.fixture'); if(snapshot)localStorage.setItem('voltex.home.market.v1',snapshot); }, { signed,lang,snapshot });
   const requests=[];
   await ctx.route('**/*', async route => {
     const request=route.request(), url=new URL(request.url()), method=request.method(); requests.push({ url: request.url(), method, type: request.resourceType() });
@@ -98,6 +102,15 @@ async function createContext(browser, { width=1440, height=900, signed=false, la
       if (reply.status===404) report.unknownApi.push(url.pathname);
       let responseBody=await reply.text();
       if(reply.ok&&/^\/api\/v1\/market\/external\/(candles|trades)\//.test(url.pathname))responseBody=JSON.stringify({...JSON.parse(responseBody),pair:decodeURIComponent(url.pathname.split('/').at(-1)).replace('-','/'),interval:url.searchParams.get('interval')||'15m'});
+      if(reply.ok&&url.pathname==='/api/v1/market/external/tickers'&&quoteMode!=='fresh'){
+        const body=JSON.parse(responseBody),invalid={'BTC/USDT':'0','ETH/USDT':'NaN','SOL/USDT':'','XRP/USDT':'Infinity','ADA/USDT':'-1'};
+        if(quoteMode==='stale')body.tickers=[];
+        if(quoteMode==='missing')body.tickers=body.tickers.map(row=>row.pair in invalid?{...row,lastPrice:invalid[row.pair]}:row);
+        responseBody=JSON.stringify(body);
+      }
+      if(reply.ok&&/^\/api\/v1\/cfd\/(?:display\/)?tickers$/.test(url.pathname)&&quoteMode!=='fresh'){
+        const body=JSON.parse(responseBody);body.tickers=body.tickers.map(row=>({...row,...(quoteMode==='missing'?{price:null,status:'unavailable'}:{status:quoteMode==='sampled'?'sampled':'stale',stale:quoteMode==='stale'})}));responseBody=JSON.stringify(body);
+      }
       return route.fulfill({ status:reply.status,contentType:'application/json',body:responseBody });
     }
     if (url.origin !== origin) {
@@ -140,12 +153,13 @@ async function columnGeometry(page) {
   return page.evaluate(()=>{
     const box=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
     const scene=document.querySelector('[data-market-visual]'),viewport=box(scene),copy=box(document.querySelector('#home-global-hero .copy')),terminal=box(document.querySelector('#home-global-hero .terminal-screen'));
-    const tiles=[...scene.querySelectorAll('[data-market-tile]')].map(tile=>({symbol:tile.dataset.marketTile,...box(tile),opacity:Number(getComputedStyle(tile).opacity)}));
+    const tiles=[...scene.querySelectorAll('[data-market-tile]')].map(tile=>({symbol:tile.dataset.marketTile,...box(tile),coin:box(tile.querySelector('.vm-coin')),opacity:Number(getComputedStyle(tile).opacity)}));
     const visible=tiles.filter(t=>t.opacity>.05&&t.bottom>viewport.y+2&&t.y<viewport.bottom-2);
     const overlap=(a,b)=>a&&b?Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)):0;
     const text=[];const walker=document.createTreeWalker(document.querySelector('#home-global-hero .copy'),NodeFilter.SHOW_TEXT);
     while(walker.nextNode()){const node=walker.currentNode;if(!node.textContent.trim())continue;const range=document.createRange();range.selectNodeContents(node);for(const r of range.getClientRects())if(r.width&&r.height)text.push({x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom});}
-    return{viewport,copy,terminal,visibleCount:visible.length,visibleSymbols:visible.map(t=>t.symbol),textOverlapArea:text.reduce((sum,t)=>sum+overlap(viewport,t),0),terminalOverlapArea:overlap(viewport,terminal),originalArt:document.querySelector('#home-global-hero .art')?.getAttribute('src'),heading:document.querySelector('#home-global-hero h1')?.textContent,tapeCount:document.querySelectorAll('#home-global-hero .hs-tape').length,actualTerminal:document.querySelector('#home-global-hero .terminal-screen #home-live-terminal')!==null};
+    const coins=[...scene.querySelectorAll('.vm-coin')].map(coin=>{const s=getComputedStyle(coin);return{width:parseFloat(s.width),height:parseFloat(s.height),radius:s.borderRadius};});
+    return{viewport,copy,terminal,tiles,visibleCount:visible.length,visibleSymbols:visible.map(t=>t.symbol),coinShapes:coins,rectangularFaces:scene.querySelectorAll('.vm-card-face').length,changeLabels:scene.querySelectorAll('.vm-card-change').length,unavailableLabels:scene.querySelectorAll('.vm-card-note').length,visibleXSpan:Math.max(...visible.map(t=>t.coin.x+t.coin.width/2))-Math.min(...visible.map(t=>t.coin.x+t.coin.width/2)),textOverlapArea:text.reduce((sum,t)=>sum+visible.reduce((area,tile)=>area+overlap(tile,t),0),0),terminalOverlapArea:visible.reduce((sum,tile)=>sum+overlap(tile,terminal),0),originalArt:document.querySelector('#home-global-hero .art')?.getAttribute('src'),heading:document.querySelector('#home-global-hero h1')?.textContent,tapeCount:document.querySelectorAll('#home-global-hero .hs-tape').length,actualTerminal:document.querySelector('#home-global-hero .terminal-screen #home-live-terminal')!==null};
   });
 }
 async function metrics(page,cdp,requests,label,duration=4000) {
@@ -155,6 +169,10 @@ async function metrics(page,cdp,requests,label,duration=4000) {
   const data=await page.evaluate(()=>{const s=window.__heroQa;return {cls:s.cls,lcpMs:s.lcp,longTasks:s.longTasks,intervals:s.activeIntervals.size,timeouts:s.activeTimeouts.size,listeners:Object.fromEntries([...s.listeners].map(([k,v])=>[k,v.size])),resources:performance.getEntriesByType('resource').map(r=>({name:r.name,bytes:r.transferSize,encodedBytes:r.encodedBodySize,duration:r.duration,initiator:r.initiatorType})),heap:performance.memory?{used:performance.memory.usedJSHeapSize,total:performance.memory.totalJSHeapSize}:null};});
   const sorted=frames.slice(1).sort((a,b)=>a-b), span=last.Timestamp-first.Timestamp;
   const result={label,...data,requestCount:requests.length,requests:[...requests],frameCount:frames.length,frameP50Ms:sorted[Math.floor(sorted.length*.5)],frameP95Ms:sorted[Math.floor(sorted.length*.95)],framesOver50Ms:frames.filter(n=>n>50).length,mainThreadMs:(last.TaskDuration-first.TaskDuration)*1000,scriptMs:(last.ScriptDuration-first.ScriptDuration)*1000,layoutMs:(last.LayoutDuration-first.LayoutDuration)*1000,windowMs:span*1000,jsHeapBytes:last.JSHeapUsedSize,domNodes:last.Nodes,listenersCdp:last.JSEventListeners};
+  result.motionProfile=await page.evaluate(()=>({reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,state:document.querySelector('[data-market-visual]')?.dataset.motionState||null}));
+  result.marketRequestPaths=requests.filter(request=>/\/api\/v1\/(?:market\/external\/|market\/global|cfd\/(?:display\/)?tickers|futures\/config)/.test(request.url)).map(request=>new URL(request.url).pathname).sort();
+  const baselinePath=baselineReportPath;
+  if(mode==='after'&&fs.existsSync(baselinePath)){const baseline=JSON.parse(fs.readFileSync(baselinePath,'utf8')).metrics.find(metric=>metric.label===label);if(baseline){const before=baseline.requests.filter(request=>/\/api\/v1\/(?:market\/external\/|market\/global|cfd\/(?:display\/)?tickers|futures\/config)/.test(request.url)).map(request=>new URL(request.url).pathname).sort();assert.deepEqual(result.marketRequestPaths,before,`${label} keeps original market request budget`);result.marketRequestBudgetUnchanged=true;}}
   report.metrics.push(result); return result;
 }
 const check = name => {report.checks.push(name);console.log('PASS',name);};
@@ -165,17 +183,23 @@ async function main() {
   try {
     browser=await chromium.launch({headless:true,...(process.env.QA_CHROMIUM?{executablePath:process.env.QA_CHROMIUM}:{})});
     if(!resumeTail){for(const [width,height] of widths){
-      const {ctx,page,cdp,requests}=await createContext(browser,{width,height});
+      // Review the complete stable composition at every width. The separate
+      // full-cycle case below tests live transitions and their continuity.
+      const {ctx,page,cdp,requests}=await createContext(browser,{width,height,reduced:mode==='after'});
       await openHome(page);
       const shape=await geometry(page);
       await page.screenshot({path:path.join(out,`home-${width}.png`)});
       assert.equal(shape.overflow,false,`horizontal overflow ${width}`);
       if(mode==='after'){
-        const column=await columnGeometry(page);report.cases.push({name:`column-${width}`,width,height,...column});assert.equal(column.originalArt,'/hero/sapphire-refined.png');assert.equal(column.heading,'OWN YOUR FUTURE.');assert.equal(column.actualTerminal,true,'real terminal visibility target remains in original laptop');assert.equal(column.tapeCount,1,'original live market tape is present');
-        assert.equal(column.visibleCount,width>900?5:3,`compact column visible cards at ${width}`);
-        assert.equal(column.textOverlapArea,0,`column must not cover real copy/CTA at ${width}`);
-        assert.equal(column.terminalOverlapArea,0,`column must not cover real laptop display at ${width}`);
-        const baselinePath=path.join(root,'output/home-market-platform/baseline/report.json');
+        try {
+        const column=await columnGeometry(page);report.cases.push({name:`orbit-${width}`,width,height,...column});assert.equal(column.originalArt,'/hero/sapphire-refined.png');assert.equal(column.heading,'OWN YOUR FUTURE.');assert.equal(column.actualTerminal,true,'real terminal visibility target remains in original laptop');assert.equal(column.tapeCount,1,'original live market tape is present');
+        assert.equal(column.visibleCount,width>900?5:3,`orbit visible medallions at ${width}`);
+        assert.equal(column.textOverlapArea,0,`orbit must not cover real copy/CTA at ${width}`);
+        assert.equal(column.terminalOverlapArea,0,`orbit must not cover real laptop display at ${width}`);
+        assert.equal(column.rectangularFaces,0,'orbit has no rectangular card faces');assert.equal(column.changeLabels,0,'orbit omits quote change rows');assert.equal(column.unavailableLabels,0,'orbit omits repeated unavailable notes');
+        assert(column.coinShapes.every(c=>Math.abs(c.width-c.height)<.1&&/50%|999/.test(c.radius)),'all seven medallions have circular local geometry');
+        assert(column.visibleXSpan>30,'visible assets occupy an arc rather than a vertical sidebar');
+        const baselinePath=baselineReportPath;
         if(fs.existsSync(baselinePath)){
           const baseline=JSON.parse(fs.readFileSync(baselinePath,'utf8')).cases.find(c=>c.width===width&&!c.name);
           if(baseline)for(const label of ['OWN YOUR FUTURE.','Открыть терминал','Смотреть рынки']){
@@ -184,11 +208,14 @@ async function main() {
             for(const key of ['x','y','width','height'])assert(Math.abs(before[key]-after[key])<1,`original ${label} ${key} unchanged at ${width}`);
           }
         }
+        }catch(error){if(!geometryDiagnostic)throw error;geometryFailures.push({width,error:error.stack||String(error)});}
+        if(width<=430){await page.locator(heroSelector).screenshot({path:path.join(out,`home-${width}-full-hero.png`)});await page.locator('[data-market-platform-hero]').screenshot({path:path.join(out,`home-${width}-orbit.png`)});await page.evaluate(()=>window.scrollTo(0,0));await page.mouse.move(0,0);}
       }
       if(width===1440||width===390)await metrics(page,cdp,requests,`home-${width}`);
       report.cases.push({width,height,signed:false,...shape});
       await ctx.close();
     }
+    if(geometryFailures.length){report.geometryFailures=geometryFailures;throw new Error(`Orbit geometry diagnostic captured ${geometryFailures.length} failing viewport(s): ${JSON.stringify(geometryFailures)}`);}
     check(`${widths.length} viewport screenshots and horizontal layout`);
     if(!screenshotsOnly){for(const signed of [false,true]){
       const {ctx,page}=await createContext(browser,{signed,width:1440});
@@ -227,7 +254,7 @@ async function motion(page) {
   return page.locator('[data-market-visual]').evaluate(scene=>({
     state:scene.dataset.motionState,reasons:scene.dataset.motionReason,
     animations:scene.getAnimations({subtree:true}).map(a=>({time:a.currentTime,state:a.playState,duration:a.effect.getTiming().duration})),
-    tiles:[...scene.querySelectorAll('[data-market-tile]')].map(tile=>{const b=tile.getBoundingClientRect(),s=getComputedStyle(tile);return {symbol:tile.dataset.marketTile,x:b.x,y:b.y,width:b.width,height:b.height,opacity:Number(s.opacity),transform:s.transform};}),
+    tiles:[...scene.querySelectorAll('[data-market-tile]')].map(tile=>{const b=tile.getBoundingClientRect(),coin=tile.querySelector('.vm-coin').getBoundingClientRect(),s=getComputedStyle(tile);return {symbol:tile.dataset.marketTile,x:b.x,y:b.y,width:b.width,height:b.height,coin:{x:coin.x,y:coin.y,width:coin.width,height:coin.height},opacity:Number(s.opacity),transform:s.transform};}),
     viewport:(()=>{const b=scene.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height};})(),
   }));
 }
@@ -240,28 +267,44 @@ async function assertFrozen(page, reason) {
 }
 async function waitRunning(page) { await page.waitForFunction(()=>document.querySelector('[data-market-visual]')?.dataset.motionState==='running'); }
 async function spaRoute(page, route) { await page.evaluate(route=>{history.pushState({},'',route);window.dispatchEvent(new PopStateEvent('popstate'));},route); await page.waitForTimeout(1600); }
+async function orbitTrace(page,duration=28000){return page.evaluate(duration=>new Promise(resolve=>{
+  const scene=document.querySelector('[data-market-visual]'),trace=[];let start=performance.now(),previous=-Infinity;
+  function frame(now){if(now-previous>=45){previous=now;trace.push({time:now-start,tiles:[...scene.querySelectorAll('[data-market-tile]')].map(tile=>{const r=tile.querySelector('.vm-coin').getBoundingClientRect();return{symbol:tile.dataset.marketTile,x:r.x+r.width/2,y:r.y+r.height/2,size:r.width,opacity:Number(getComputedStyle(tile).opacity)};})});}if(now-start<duration)requestAnimationFrame(frame);else resolve(trace);}
+  requestAnimationFrame(frame);
+}),duration);}
 async function afterChecks(browser) {
   if(!resumeTail){
   // Actual 28 second timeline, sampled in the same stable part of each step.
   const cycle=await createContext(browser,{video:true});
   await openHome(cycle.page);await cycle.page.mouse.move(0,0);await waitRunning(cycle.page);
   const initial=await motion(cycle.page);assert.equal(initial.animations.length,7);assert(initial.animations.every(a=>a.duration===28000));
+  // Observe real compositor output throughout the full cycle. Visible motion
+  // remains continuous; the only large pose jumps are the fully hidden wrap.
+  const tracePromise=orbitTrace(cycle.page);
   const phases=[],started=Date.now();
   for(let phase=0;phase<8;phase++){
     await cycle.page.waitForTimeout(Math.max(0,started+phase*4000-Date.now()));
     const value=await motion(cycle.page),size=await geometry(cycle.page);
-    const centered=[...value.tiles].filter(t=>t.opacity>.05).sort((a,b)=>Math.abs(a.y+a.height/2-(value.viewport.y+value.viewport.height/2))-Math.abs(b.y+b.height/2-(value.viewport.y+value.viewport.height/2)))[0];
+    const ranked=[...value.tiles].filter(t=>t.opacity>.05).sort((a,b)=>b.coin.width-a.coin.width),centered=ranked[0];
+    assert(centered.coin.width/ranked[1].coin.width>1.45&&centered.coin.width/ranked[1].coin.width<1.75,'center is about 1.5–1.7x its neighbor');
     phases.push({phase,atMs:Date.now()-started,center:centered.symbol,...value,hero:size.hero});
     await cycle.page.screenshot({path:path.join(out,`phase-${phase}-${centered.symbol}.png`)});
   }
   assert.equal(new Set(phases.slice(0,7).map(p=>p.center)).size,7,'each of seven instruments must actually reach the center');
   assert.equal(phases[7].center,phases[0].center,'last-to-first cycle returns seamlessly');
-  for(const p of phases){assert.deepEqual(p.viewport,phases[0].viewport,'column viewport remains stationary');assert.deepEqual(p.hero,phases[0].hero,'original hero and copy do not change height');}
-  const firstCenter=phases[0].tiles.find(t=>t.symbol===phases[0].center),nextCenter=phases[1].tiles.find(t=>t.symbol===firstCenter.symbol);assert(nextCenter.y<firstCenter.y-20,'visible cards move upward between steps');
+  for(const p of phases){assert.deepEqual(p.viewport,phases[0].viewport,'orbit viewport remains stationary');assert.deepEqual(p.hero,phases[0].hero,'original hero and copy do not change height');}
+  const firstCenter=phases[0].tiles.find(t=>t.symbol===phases[0].center),nextCenter=phases[1].tiles.find(t=>t.symbol===firstCenter.symbol);assert(nextCenter.coin.width<firstCenter.coin.width*.75,'previous center recedes smoothly to a smaller neighboring pose');assert(Math.abs(nextCenter.coin.x-firstCenter.coin.x)>20,'previous center moves sideways into the arc');
   for(const tile of phases[0].tiles){const last=phases[7].tiles.find(t=>t.symbol===tile.symbol);assert(Math.abs(last.x-tile.x)<3&&Math.abs(last.y-tile.y)<3,`${tile.symbol} wrap position stable`);}
-  report.cases.push({name:'real-full-cycle',phases});
+  const trace=await tracePromise,steps=[];assert(trace.every(sample=>sample.tiles.filter(tile=>tile.opacity>.05).length<=5),'desktop never displays more than five assets, including crossfade transitions');
+  for(let index=1;index<trace.length;index++)for(const tile of trace[index].tiles){const previous=trace[index-1].tiles.find(value=>value.symbol===tile.symbol);steps.push({symbol:tile.symbol,dt:trace[index].time-trace[index-1].time,distance:Math.hypot(tile.x-previous.x,tile.y-previous.y),visible:tile.opacity>.05&&previous.opacity>.05,sizeChange:Math.abs(tile.size-previous.size)});}
+  const observed=steps.filter(step=>step.dt<120),visible=observed.filter(step=>step.visible);assert(visible.length>300,'full cycle samples actual visible transforms');assert(visible.every(step=>step.distance<55&&step.sizeChange<30),'visible orbit does not jump or abruptly resize');
+  const hiddenWrapJumps=observed.filter(step=>!step.visible&&step.distance>100).length;assert(hiddenWrapJumps>=6,'large wrap repositioning happens only while hidden');
+  report.cases.push({name:'real-full-cycle',phases,traceSamples:trace.length,maxVisibleFrameDistance:Math.max(...visible.map(step=>step.distance)),maxVisibleSizeChange:Math.max(...visible.map(step=>step.sizeChange)),hiddenWrapJumps});
+  await metrics(cycle.page,cycle.cdp,cycle.requests,'orbit-active-1440');
   const video=cycle.page.video();await cycle.ctx.close();
-  const source=await video.path();fs.copyFileSync(source,path.join(out,'market-platform-cycle.webm'));check('real upward column cycle, all seven center phases, last-to-first continuity and recorded video');
+  const source=await video.path();fs.copyFileSync(source,path.join(out,'market-platform-cycle.webm'));check('real orbit cycle, seven scaled center phases, sideways recession, last-to-first continuity and recorded video');
+  const mobileCycle=await createContext(browser,{width:390,height:844});await openHome(mobileCycle.page);await mobileCycle.page.mouse.move(0,0);await waitRunning(mobileCycle.page);
+  const mobileTrace=await orbitTrace(mobileCycle.page);assert(mobileTrace.length>300);assert(mobileTrace.every(sample=>sample.tiles.filter(tile=>tile.opacity>.05).length<=3),'mobile never displays more than center and two neighbors, including transitions');assert(new Set(mobileTrace.map(sample=>[...sample.tiles].filter(tile=>tile.opacity>.05).sort((a,b)=>b.size-a.size)[0]?.symbol)).size===7,'all seven instruments also lead the mobile orbit');report.cases.push({name:'mobile-full-cycle',samples:mobileTrace.length,maxVisible:Math.max(...mobileTrace.map(sample=>sample.tiles.filter(tile=>tile.opacity>.05).length))});await mobileCycle.ctx.close();check('mobile full cycle keeps at most three visible assets through every transition');
   if(visualOnly)return;
 
   const life=await createContext(browser);const page=life.page;
@@ -286,6 +329,23 @@ async function afterChecks(browser) {
   const reduced=await motion(page);assert.equal(reduced.animations.length,7);assert.equal((await columnGeometry(page)).visibleCount,5);await page.screenshot({path:path.join(out,'reduced-motion.png')});
   await page.emulateMedia({reducedMotion:'no-preference'});await waitRunning(page);check('live reduced-motion preference renders complete static composition');
   await life.ctx.close();
+
+  // The orbit is complete with only logos/tickers; it never converts a stale,
+  // sampled or malformed shared value into a displayed decorative price.
+  const quotes=await createContext(browser,{reduced:true});await openHome(quotes.page);
+  await quotes.page.waitForFunction(()=>document.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent==='104,235.42');
+  const prices=await quotes.page.locator('[data-market-tile]').evaluateAll(tiles=>Object.fromEntries(tiles.map(tile=>[tile.dataset.marketTile,tile.querySelector('.vm-card-price')?.textContent||''])));
+  assert.deepEqual(Object.fromEntries(['BTC','ETH','SOL','XRP','ADA'].map(symbol=>[symbol,prices[symbol]])),{BTC:'104,235.42',ETH:'3,892.15',SOL:'214.83',XRP:'2.43',ADA:'1.04'},'fresh fixture values keep real price precision');
+  const stored=await quotes.page.evaluate(()=>localStorage.getItem('voltex.home.market.v1'));assert(stored,'received shared snapshot exists');await quotes.ctx.close();
+  for(const quoteMode of ['missing','sampled','stale']){
+    const cached=JSON.parse(stored);cached.tickerUpdatedAt=Date.now()-7*60*60*1000;cached.cfdUpdatedAt=cached.tickerUpdatedAt;if(cached.cfd)cached.cfd.tickers=cached.cfd.tickers.map(row=>({...row,status:'stale',stale:true}));
+    const ctx=await createContext(browser,{reduced:true,quoteMode,snapshot:quoteMode==='stale'?JSON.stringify(cached):null});await openHome(ctx.page);
+    const values=await ctx.page.locator('[data-market-tile]').evaluateAll(tiles=>tiles.map(tile=>({symbol:tile.dataset.marketTile,price:tile.querySelector('.vm-card-price')?.textContent||'',text:tile.textContent})));report.cases.push({name:`quotes-${quoteMode}`,values});await ctx.page.screenshot({path:path.join(out,`quotes-${quoteMode}.png`)});assert.equal(values.length,7);
+    if(quoteMode==='sampled'){assert(values.filter(row=>['GOLD','OIL'].includes(row.symbol)).every(row=>!row.price),'sampled commodities omit price');assert.equal(values.find(row=>row.symbol==='BTC').price,'104,235.42');}
+    else assert(values.every(row=>!row.price),`${quoteMode} values omit every orbit price`);
+    assert.equal(await ctx.page.locator('[data-market-tile] .vm-card-note, [data-market-tile] .vm-card-change').count(),0);await ctx.ctx.close();
+  }
+  check('verified price precision, malformed/missing/stale omission and sampled commodity omission');
 
   for(const logos of ['slow','missing']){
     const ctx=await createContext(browser,{width:390,height:844,logos});await openHome(ctx.page);await ctx.page.mouse.move(0,0);

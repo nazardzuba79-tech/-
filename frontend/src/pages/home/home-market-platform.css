@@ -1,22 +1,57 @@
-/* Only the highlighted column; the original Sapphire composition owns all surrounding layout. */
-.hs-root .vm-column { --card-step: 86px; --card-height: 77px; position: absolute; left: calc(35% - 20px); top: 28%; width: 14.2%; z-index: 3; }
-.vm-column *, .vm-column *::before, .vm-column *::after { box-sizing: border-box; }
-.vm-column-scene { height: calc(var(--card-step) * 5 + 4px); position: relative; overflow: hidden; perspective: 900px; touch-action: pan-y; mask-image: linear-gradient(transparent, #000 4%, #000 96%, transparent); }
-.vm-card { position: absolute; top: calc(50% - var(--card-height) / 2); left: 5px; width: calc(100% - 12px); height: var(--card-height); border-radius: 17px; padding: 2px 3px 4px 2px; transform-origin: center; background: linear-gradient(125deg, #9eafaebf, #d4c39b7a 18%, #476072 46%, #d2c39a80 83%, #637787); box-shadow: 2px 3px 0 #061728bd, 0 9px 13px -8px #020b15d9; backface-visibility: hidden; }
-.vm-card-face { position: relative; display: flex; align-items: center; gap: 13px; height: 100%; padding: 8px 12px; border-radius: 14px; border: 1px solid #ffffff0d; background: linear-gradient(125deg, #1d3d52f2, #0c2336f7 57%, #092035fa); box-shadow: inset 0 1px 0 #ffffff12, inset 0 -3px 8px #020e1b33; }
-.vm-coin { display: grid; place-items: center; flex: 0 0 48px; width: 48px; height: 48px; padding: 3px; border-radius: 50%; background: conic-gradient(from 30deg, #f6e7b5, #728187 18%, #e8e7d6 37%, #67777e 53%, #e5cea0 71%, #e4e7db 87%, #f6e7b5); box-shadow: 2px 3px 0 #71818a, 4px 6px 7px #010b164d; }
-.vm-coin-face { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; border: 1px solid #e0ddc6; background: linear-gradient(135deg, #fffdf3, #e9eae0 52%, #bfc7c4); box-shadow: inset 0 2px 3px #fffaf2, inset 0 -2px 3px #737f7866; }
-.vm-coin img { display: block; width: 31px; height: 31px; object-fit: contain; user-select: none; }
-.vm-card-copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.vm-card-symbol { color: #c8d8e5; font: 600 10px/1.1 Arial, sans-serif; letter-spacing: .02em; white-space: nowrap; }
-.vm-card-price { color: #f5f7fa; font: 700 16px/1.15 Arial, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.vm-card-change { color: #9baabc; font: 600 9px/1 Arial, sans-serif; font-variant-numeric: tabular-nums; }
-.vm-card-change[data-direction=up] { color: #73d7bb; }
-.vm-card-change[data-direction=down] { color: #e3a9b0; }
-.vm-card-note { position: absolute; right: 8px; bottom: 3px; max-width: calc(100% - 12px); color: #b6c5d3; font: 8px/1.1 Arial, sans-serif; }
-.hs-root .vm-motion-toggle { position: absolute; bottom: -26px; right: 8px; display: grid; place-items: center; width: 27px; height: 27px; padding: 0; border: 1px solid #98b1c45e; border-radius: 50%; color: #e4d3a8; background: #092237d9; cursor: pointer; }
+/* Bybit's global-assets scene is the material reference; local licensed logos
+   sit on round ceramic faces. The surrounding Sapphire hero owns its layout. */
+.hs-root .vm-orbit {
+  --coin-size: 118px;
+  --orbit-near-x: 72px;
+  --orbit-near-y: 83px;
+  --orbit-far-x: 20px;
+  --orbit-far-y: 145px;
+  --orbit-back-x: 43px;
+  --orbit-back-y: 213px;
+  --orbit-far-opacity: .82;
+  position: absolute;
+  left: 33%;
+  top: 34%;
+  width: 14.2%;
+  z-index: 3;
+}
+.vm-orbit *, .vm-orbit *::before, .vm-orbit *::after { box-sizing: border-box; }
+.vm-orbit-scene { position: relative; height: 350px; perspective: 900px; touch-action: pan-y; }
+.vm-card { position: absolute; top: calc(50% - var(--coin-size) / 2); left: calc(50% - var(--coin-size) / 2); width: var(--coin-size); height: var(--coin-size); text-align: center; transform-origin: center; backface-visibility: hidden; }
+.vm-coin { position: relative; display: block; width: 100%; height: 100%; padding: 4px; border-radius: 50%; background: conic-gradient(from 35deg, #f8faf9, #9ca6ac 15%, #d8dce0 29%, #6b7681 43%, #c9ced2 57%, #ecd6b8 70%, #929ca5 83%, #f8faf9); box-shadow: 2px 3px 0 #9aa4ad, 4px 6px 0 #425264, 5px 10px 13px -6px #031121a8; }
+.vm-coin::after { content: ''; position: absolute; inset: 2px; border: 1px solid #f8fcff8f; border-radius: 50%; pointer-events: none; }
+.vm-coin-face { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 100%; height: 100%; padding: 12px; border: 1px solid #849299; border-radius: 50%; background: linear-gradient(145deg, #f8f9f7 4%, #e5e8e7 38%, #cdd4d5 100%); box-shadow: inset 0 1px 2px #fff, inset 0 -2px 3px #89969c80; }
+.vm-coin-face::before { content: ''; position: absolute; inset: 2px; border: 1px solid #fff9; border-radius: 50%; pointer-events: none; }
+.vm-coin img { display: block; width: 43px; height: 43px; object-fit: contain; user-select: none; }
+.vm-card-symbol { color: #121923; font: 700 16px/1 Arial, sans-serif; letter-spacing: -.02em; }
+.vm-coin-pair { color: #4b5963; font: 600 8px/1 Arial, sans-serif; letter-spacing: .02em; }
+.vm-card-price { display: block; margin-top: 10px; color: #e5eff7; font: 600 11px/1.1 Arial, sans-serif; font-variant-numeric: tabular-nums; text-shadow: 0 2px 4px #061c30; white-space: nowrap; }
+.hs-root .vm-motion-toggle { position: absolute; bottom: 2px; right: 8px; display: grid; place-items: center; width: 25px; height: 25px; padding: 0; border: 1px solid #9db9c74d; border-radius: 50%; color: #e4d3a8; background: #0922379c; cursor: pointer; }
 .hs-root .vm-motion-toggle:hover { background: #24465e; }
 .hs-root .vm-motion-toggle:focus-visible { outline: 2px solid #edc986; outline-offset: 4px; }
-@media (min-width: 1600px) { .hs-root .vm-column { --card-step: 94px; --card-height: 84px; top: 29%; } .vm-card-face { gap: 16px; padding-inline: 14px; } .vm-coin { width: 53px; height: 53px; flex-basis: 53px; } .vm-coin img { width: 36px; height: 36px; } .vm-card-symbol { font-size: 11px; } .vm-card-price { font-size: 18px; } .vm-card-change { font-size: 10px; } }
-@media (max-width: 1200px) and (min-width: 901px) { .hs-root .vm-column { --card-step: 77px; --card-height: 69px; left: calc(38.5% - 16px); width: 14%; top: 33%; } .vm-card-face { gap: 7px; padding: 6px 7px; } .vm-coin { width: 35px; height: 35px; flex-basis: 35px; padding: 2px; } .vm-coin img { width: 24px; height: 24px; } .vm-card-price { font-size: 13px; } .vm-card-symbol { font-size: 8px; } .vm-card-note { font-size: 7px; } }
-@media (max-width: 900px) { .hs-root .vm-column { --card-step: 77px; --card-height: 69px; position: relative; left: auto; top: auto; order: 1; width: min(320px, calc(100% - 32px)); margin: 20px auto 30px; } .vm-column-scene { height: calc(var(--card-step) * 3 + 4px); } .vm-card-face { padding: 7px 19px; gap: 22px; } .vm-card-price { font-size: 17px; } .vm-card-symbol { font-size: 11px; } .vm-coin { width: 47px; height: 47px; flex-basis: 47px; } .vm-card-copy { flex: 1; display: grid; grid-template-columns: 1fr auto; align-items: center; } .vm-card-symbol { grid-column: 1 / -1; } .vm-card-change { font-size: 10px; } .vm-card-note { font-size: 8px; } }
+@media (min-width: 1600px) {
+  .hs-root .vm-orbit { --coin-size: 132px; --orbit-near-x: 79px; --orbit-near-y: 85px; --orbit-far-y: 150px; }
+  .vm-orbit-scene { height: 360px; }
+  .vm-coin img { width: 47px; height: 47px; }
+  .vm-card-symbol { font-size: 18px; }
+  .vm-coin-pair { font-size: 9px; }
+}
+@media (max-width: 1200px) and (min-width: 901px) {
+  .hs-root .vm-orbit { --coin-size: 94px; --orbit-near-x: 50px; --orbit-near-y: 71px; --orbit-far-x: 12px; --orbit-far-y: 142px; --orbit-back-y: 177px; left: 38%; top: 32%; width: 13.6%; }
+  .vm-orbit-scene { height: 360px; }
+  .vm-coin-face { padding: 8px; gap: 4px; }
+  .vm-coin img { width: 34px; height: 34px; }
+  .vm-card-symbol { font-size: 13px; }
+  .vm-coin-pair { font-size: 7px; }
+  .vm-card-price { font-size: 10px; }
+}
+@media (max-width: 900px) {
+  .hs-root .vm-orbit { --coin-size: 96px; --orbit-near-x: 89px; --orbit-near-y: 22px; --orbit-far-x: 146px; --orbit-far-y: 42px; --orbit-back-x: 175px; --orbit-back-y: 50px; --orbit-far-opacity: 0; position: relative; left: auto; top: auto; order: 1; width: min(310px, calc(100% - 24px)); margin: 14px auto 20px; }
+  .vm-orbit-scene { height: 150px; }
+  .vm-coin-face { padding: 8px; gap: 4px; }
+  .vm-coin img { width: 35px; height: 35px; }
+  .vm-card-symbol { font-size: 14px; }
+  .vm-coin-pair { font-size: 7px; }
+  .vm-card-price { margin-top: 8px; font-size: 10px; }
+  .hs-root .vm-motion-toggle { bottom: -5px; right: 1px; }
+}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { useLanguage } from '../../lib/i18n';
-import { cfdDisplayState, cfdMarketCopy } from '../../lib/cfdPresentation';
+import { cfdDisplayState } from '../../lib/cfdPresentation';
 import { LiveValue } from './LiveValue';
 import { finiteQuote } from './HomeHeroAssets';
 import type { HomeMarket } from './useHomeMarket';
@@ -86,30 +86,26 @@ export function HomeMarketPlatformHero({ market }: { market: HomeMarket }) {
     synchronize.current?.();
   }
 
-  const marketCopy = cfdMarketCopy(lang);
   return (
-    <div className="vm-column" data-market-platform-hero>
-      <div id="home-market-column" className="vm-column-scene" ref={scene} data-market-visual data-motion-state="paused" role="group" aria-label={t('home.hero.sceneAria')}>
+    <div className="vm-orbit" data-market-platform-hero>
+      <div id="home-market-column" className="vm-orbit-scene" ref={scene} data-market-visual data-motion-state="paused" role="group" aria-label={t('home.hero.sceneAria')}>
         {instruments.map((instrument, index) => {
           const commoditySymbol = instrument.instrumentId === 'cfd:XAUUSD' ? 'XAUUSD' : 'WTIUSD';
           const commodity = instrument.category === 'commodity' ? market.cfd?.tickers.find(row => row.symbol === commoditySymbol) : undefined;
           const pair = instrument.symbol + '/USDT';
           const ticker = market.tickers.find(row => row.pair === pair);
-          const price = instrument.category === 'commodity' ? finiteQuote(commodity?.price) : finiteQuote(instrument.symbol === 'BTC' && market.hero.pair === pair ? market.hero.livePrice ?? ticker?.price : ticker?.price);
-          const change = finiteQuote(instrument.category === 'commodity' ? commodity?.changePercent24h : ticker?.change);
-          const stale = instrument.category === 'commodity' ? commodity?.stale : market.tickersStale;
-          const note = instrument.category === 'commodity' ? cfdDisplayState(commodity, lang).label : stale ? marketCopy.lastQuote : marketCopy.live;
+          const heroPrice = instrument.symbol === 'BTC' && market.hero.pair === pair && !market.hero.stale ? finiteQuote(market.hero.livePrice) : null;
+          const price = instrument.category === 'commodity' ? finiteQuote(commodity?.price) : heroPrice != null && heroPrice > 0 ? heroPrice : finiteQuote(ticker?.price);
+          const fresh = instrument.category === 'commodity' ? cfdDisplayState(commodity, lang).tone === 'live' : !market.tickersStale;
+          const visiblePrice = fresh && price != null && price > 0 ? price : null;
           return (
-            <div className="vm-card" data-market-tile={instrument.symbol} key={instrument.instrumentId} style={MARKET_POSES[initialMarketPose(index)]} data-stale={stale || undefined}>
-              <div className="vm-card-face">
-                <span className="vm-coin" aria-hidden="true"><span className="vm-coin-face"><img src={instrument.logoPath} alt="" width="36" height="36" draggable={false} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></span></span>
-                <div className="vm-card-copy">
-                  <span className="vm-card-symbol">{instrument.category === 'crypto' ? instrument.symbol + ' / USDT' : instrument.symbol}</span>
-                  <LiveValue className="vm-card-price" value={price} format={value => value.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })} />
-                  <span className="vm-card-change" data-direction={change == null ? undefined : change >= 0 ? 'up' : 'down'}>{change == null ? '—' : (change >= 0 ? '+' : '') + change.toFixed(2) + '%'}</span>
-                </div>
-                {(price == null || stale) && <small className="vm-card-note">{price == null ? marketCopy.priceUnavailable : note}</small>}
-              </div>
+            <div className="vm-card" data-market-tile={instrument.symbol} key={instrument.instrumentId} style={MARKET_POSES[initialMarketPose(index)]} aria-label={instrument.displayName}>
+              <span className="vm-coin"><span className="vm-coin-face">
+                <img src={instrument.logoPath} alt="" width="46" height="46" draggable={false} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} />
+                <span className="vm-card-symbol">{instrument.symbol}</span>
+                {instrument.category === 'crypto' && <span className="vm-coin-pair">{instrument.symbol} / USDT</span>}
+              </span></span>
+              {visiblePrice != null && <LiveValue className="vm-card-price" value={visiblePrice} format={value => value.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })} />}
             </div>
           );
         })}
