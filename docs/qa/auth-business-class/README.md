@@ -1,10 +1,10 @@
 # Login / Register — selected banner and real form
 
-Follow-up branch `codex/auth-fiat-flags-copy` from main
-`8cbb74becc694ef29b90691d3f472390f2a1a413`, after #466 was merged externally.
-The owner initially authorized a review-only narrow PR, then explicitly approved
-publication after reviewing the complete design and requesting a saturated
-registration button. Final exact-head checks remain required before merge.
+Current narrow follow-up: `codex/auth-card-fee-copy`, from fresh main
+`2f195cbe2f0f1c7ee31e2c9e887f7449a18cf34b` after #472 was published.
+This revision changes only the lower information block's localized fee wording
+and readability. The owner explicitly prohibits merge, deployment and production
+changes for this follow-up. The earlier publication approval does not apply here.
 
 Russian Login and Register now use only the left 919 x 941 crop of the approved
 `voltex-premium-gold-button-v6.png`. This supersedes the earlier real-photo/RU
@@ -19,7 +19,7 @@ unframed, with no shared panel, border, blur, raised shadow, numeric badge,
 carousel or testimonial claim.
 No verified evidence for the previous 1.2 million investor figure was found;
 old copy and comments are not evidence. The owner replaced the neutral community
-copy with the two lines “Платите и снимайте наличные” and
+copy with “Платите и снимайте наличные — 0% комиссии VOLTEX” and
 “22+ фиатных валют · 70+ криптовалют”. All seven locales retain the exact 22+/70+ product
 figures, supplied by the owner rather than independently verified coverage.
 See `frontend/public/auth/README.md` for image hashes.
@@ -70,7 +70,7 @@ semantics. The localized hint explicitly identifies the flags as a partial
 selection. Existing card copy, exact 22+/70+ product figures, transparent
 unframed wrappers, and no protected-region or form/support/legal overlap are
 also checked. The prior behavior and geometry checks remain.
-Local result: 38 main cases + 12 resize/zoom-reflow cases + two high-DPI detail
+Local result: 38 main cases + 12 resize/zoom-reflow cases + four high-DPI detail
 captures PASS, CLS 0 on initial
 loads; no horizontal overflow, clipped content, failed images, unexpected
 console/runtime errors, external traffic or forwarded writes. Password reveal,
@@ -86,24 +86,35 @@ uploads a SHA-named report/screenshots artifact. The independent full frontend
 regression workflow remains enabled and unmodified. Existing callback tests
 still cover login, 2FA, session, safe redirect, registration, referral and error
 handling; source fingerprints prove the functional form files are unchanged.
-The lower block uses a 6px text-row gap and a 22px gap before the unchanged
+The lower block uses a 5px text-row gap and a 20px gap before the unchanged
 static card caption. Wide desktops use 36px circles with 14px overlap, a 14px
-flag/copy gap and 16/14px title/subtitle type. The hint sits below the flags;
+flag/copy gap and 17/14px title/subtitle type. The hint sits below the flags;
 the title/subtitle is vertically centered beside this group. Compact desktops
 (width <=1399px or height <=820px, while the banner slot is available) use
-34px circles, 16px overlap, a 12px gap and 15/13px title/subtitle type. At
+34px circles, 16px overlap, a 12px gap and 16/13px title/subtitle type. At
 width <=760px, 34px flags with 12px overlap and the hint share a horizontal
-row, with the 15/13px title/subtitle below. The longer non-Russian copy has
+row, with the 16/13px title/subtitle below. The longer non-Russian copy has
 up to 540px of available lower-caption width without changing photo or form
 geometry. Only the lower block is restyled.
 High-DPI browser crops: [Login](login-block-2x.png) / [Register](register-block-2x.png).
+Mobile high-DPI crops: [Login](login-mobile-block-2x.png) / [Register](register-mobile-block-2x.png).
+The title is one CSS pixel larger than the published version, weight 600;
+the subtitle uses a slightly deeper dark green. All text ancestors have computed
+opacity 1. Commission wording remains an atomic phrase (not a badge), attributed
+explicitly to VOLTEX in all seven locales; it makes no claim about third-party
+bank/ATM charges. Existing tariffs and card conditions are unchanged.
+Only necessary internal text spacing changes: 40px right inset on the Russian
+photo text, compact title line-height 1.15 and natural, non-balanced wrapping.
+These keep the longer heading between both protected cards at 1366x768.
+Photo overlap checks now measure every actual text-node rectangle and flag,
+rather than empty flex-box area. All protected source regions remain enforced.
 At <=760px viewport height the lower block alone uses its existing post-form
 slot to avoid covering the cards under zoom; the photo and form keep their
 geometry. This also accommodates wider platform font metrics without
 overlapping the black card at a 700px window height.
 Preservation locks also cover the shell markup outside the currency presentation, all CSS outside these captions,
 and the unchanged soft bottom gradient. No global number replacement is used.
-Local TypeScript/build and 177 targeted tests passed. Fresh remote exact-head
+Local TypeScript/build and focused preservation/localization/auth tests passed. Fresh remote exact-head
 CI is still required for this follow-up; earlier PR/head results are not
 evidence for this revision.
 No checks are waived or disabled.
@@ -118,7 +129,8 @@ Photo assets, form geometry and the existing bottom scrim are unchanged.
 
 ## Publication boundary
 
-The owner has authorized merge and frontend publication of PR #472. Russian
+PR #472 was published under its earlier authorization. This follow-up is
+review-only: **NO MERGE, NO DEPLOY**, no production writes. Russian
 artwork provenance and the retained non-Russian photograph's licensing notes
 are recorded in `frontend/public/auth/README.md`. No backend, Worker, database
 or infrastructure deployment is part of this change.

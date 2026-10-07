@@ -108,9 +108,11 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         wrappers: [node, ...node.querySelectorAll('.vx-auth-community,.vx-auth-community-copy,.vx-auth-currency-sample,.vx-auth-currencies,.vx-auth-currency-more,.vx-auth-card-caption')].map(child => ({ selector: child.className, ...decoration(child) })),
         community: rect(node.querySelector('.vx-auth-community')),
         title: node.querySelector('.vx-auth-community-copy strong').textContent.trim(),
-        subtitle: node.querySelector('.vx-auth-community-copy span').textContent.trim(),
+        subtitle: node.querySelector('.vx-auth-community-copy > span').textContent.trim(),
         titleLayout: textLayout(node.querySelector('.vx-auth-community-copy strong')),
         subtitleLayout: textLayout(node.querySelector('.vx-auth-community-copy > span')),
+        fee: { ...textLayout(node.querySelector('.vx-auth-card-fee')), text: node.querySelector('.vx-auth-card-fee').textContent.trim(), whiteSpace: getComputedStyle(node.querySelector('.vx-auth-card-fee')).whiteSpace },
+        copyOpacity: (() => { const values = []; let parent = node.querySelector('.vx-auth-community-copy'); while (parent) { values.push(getComputedStyle(parent).opacity); parent = parent.parentElement; } return values; })(),
         amounts: [...node.querySelectorAll('.vx-auth-currency-amount')].map(amount => ({ ...textLayout(amount), text: amount.textContent.trim(), whiteSpace: getComputedStyle(amount).whiteSpace })),
         copyLayout: rect(node.querySelector('.vx-auth-community-copy')),
         currencyLayout: rect(node.querySelector('.vx-auth-currencies')),
@@ -139,7 +141,19 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         }),
         currencyGroupHidden: node.querySelector('.vx-auth-currencies').getAttribute('aria-hidden'),
         line: { ...rect(node.querySelector('.vx-auth-card-line')), hidden: node.querySelector('.vx-auth-card-line').getAttribute('aria-hidden') },
-        ink: [...node.querySelectorAll('.vx-auth-community,.vx-auth-card-caption')].map(rect),
+        // Test actual painted glyphs/flags, not the unused right side of a
+        // multi-line flex container. Keep every protected photo-region check.
+        ink: (() => {
+          const ink = [...node.querySelectorAll('.vx-auth-currencies,.vx-auth-card-line')].map(rect);
+          const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+          const range = document.createRange();
+          while (walker.nextNode()) {
+            if (!walker.currentNode.textContent.trim()) continue;
+            range.selectNodeContents(walker.currentNode);
+            ink.push(...[...range.getClientRects()].filter(r => r.width > 0).map(r => ({ x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height })));
+          }
+          return ink;
+        })(),
       }));
       // object-fit:contain can leave bands INSIDE a full-size <img>. Measure the
       // actual painted raster, including its object-position, rather than only
@@ -218,6 +232,12 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       assert.ok(amount.x >= block.copyLayout.x - 1 && amount.right <= block.copyLayout.right + 1, `${label} complete amount fits the available copy width`);
     }
     assert.doesNotMatch(block.title, /[.。]$/, `${label} no trailing title period`);
+    assert.equal(block.fee.lines, 1, `${label} VOLTEX fee is one complete phrase`);
+    assert.equal(block.fee.whiteSpace, 'nowrap', `${label} commission phrase never splits`);
+    assert.ok(block.fee.text.includes('0%') && block.fee.text.includes('VOLTEX'), `${label} fee explicitly belongs to VOLTEX`);
+    assert.ok(block.fee.x >= block.copyLayout.x - 1 && block.fee.right <= block.copyLayout.right + 1, `${label} entire fee phrase fits`);
+    assert.ok(block.copyOpacity.every(value => value === '1'), `${label} no faded copy or ancestors`);
+    if (lang === 'ru') assert.equal(block.title, 'Платите и снимайте наличные — 0% комиссии VOLTEX');
     assert.doesNotMatch(block.subtitle, /[.。]$/, `${label} no trailing subtitle period`);
     const captionGap = block.caption.y - block.community.bottom;
     assert.ok(captionGap >= 20 && captionGap <= 24, `${label} caption has a separate 20–24px gap: ${captionGap}`);
@@ -243,12 +263,13 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     }
     assert.ok(block.titleLayout.fontWeight >= 500 && block.titleLayout.fontWeight <= 600, `${label} medium/semibold main row`);
     assert.equal(block.subtitleLayout.fontWeight, 400, `${label} ordinary-weight second row`);
-    assert.ok(block.titleLayout.fontSize >= 15 && block.subtitleLayout.fontSize >= 13 && block.titleLayout.fontSize > block.subtitleLayout.fontSize, `${label} readable hierarchy, not tiny text`);
+    assert.equal(block.titleLayout.fontSize, viewport.width <= 1399 || viewport.height <= 820 ? 16 : 17, `${label} title grows exactly one CSS pixel`);
+    assert.equal(block.subtitleLayout.fontSize, viewport.width <= 1399 || viewport.height <= 820 ? 13 : 14, `${label} subtitle retains its readable scale`);
     assert.equal(block.titleLayout.color, 'rgb(18, 58, 51)', `${label} existing dark green`);
-    assert.equal(block.subtitleLayout.color, block.titleLayout.color, `${label} consistent dark-green copy`);
+    assert.equal(block.subtitleLayout.color, 'rgb(13, 51, 45)', `${label} subtitle has a stronger opaque dark-green contrast`);
     if (block.inBrand && viewport.width >= 1366 && viewport.height >= 768) {
-      assert.equal(block.titleLayout.lines, 1, `${label} desktop first phrase occupies one line`);
-      assert.equal(block.subtitleLayout.lines, 1, `${label} desktop second phrase occupies one line`);
+      assert.ok(block.titleLayout.lines <= 3, `${label} complete desktop title wraps naturally`);
+      assert.ok(block.subtitleLayout.lines <= 2, `${label} complete subtitle fits without shrinking`);
     }
     assert.deepEqual(block.currencies.map(currency => currency.code), ['EUR', 'CHF', 'JPY', 'USD', 'CNY', 'RUB'], `${label} exactly six supported currency examples in the agreed order`);
     assert.equal(block.currencyGroupHidden, 'true', `${label} currency row is decorative, not controls or statistics`);
@@ -313,7 +334,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       assert.equal(style.blur, 'none', `${label} ${style.selector} no glass card`);
     }
     if (lang === 'ru') {
-      assert.equal(block.title, 'Платите и снимайте наличные');
+      assert.equal(block.title, 'Платите и снимайте наличные — 0% комиссии VOLTEX');
       assert.equal(block.subtitle, '22+ фиатных валют · 70+ криптовалют');
       assert.equal(block.moreLayout.text, 'и другие валюты');
       assert.equal(block.caption.label.toLocaleLowerCase('ru'), 'карта, которая всегда с вами');
@@ -477,6 +498,15 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       const box = await detail.page.locator('.vx-auth-brand > .vx-auth-extras').boundingBox();
       await detail.page.screenshot({ path: path.join(out, `${routeName}-block-2x.png`), clip: { x: box.x - 16, y: box.y - 16, width: box.width + 32, height: box.height + 32 } });
       await detail.ctx.close();
+      const mobileDetail = await openContext(390, 'ru', [], 844, 2);
+      await mobileDetail.page.goto(`${origin}/${routeName}?next=%2Fwallet`, { waitUntil: 'networkidle' });
+      await waitForVisual(mobileDetail.page);
+      await mobileDetail.page.locator('.vx-auth-work > .vx-auth-extras').scrollIntoViewIfNeeded();
+      const mobileMeasurements = await measure(mobileDetail.page);
+      await assertRussianGeometry(mobileDetail.page, mobileMeasurements, `${routeName} mobile high-DPI detail`);
+      report.details.push({ route: routeName, deviceScaleFactor: 2, ...mobileMeasurements });
+      await mobileDetail.page.locator('.vx-auth-work > .vx-auth-extras').screenshot({ path: path.join(out, `${routeName}-mobile-block-2x.png`) });
+      await mobileDetail.ctx.close();
       const { ctx, page } = await openContext(1440, 'ru', [], 900);
       await page.goto(`${origin}/${routeName}?next=%2Fwallet`, { waitUntil: 'networkidle' });
       await waitForVisual(page);

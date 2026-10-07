@@ -13,6 +13,7 @@ import './auth-form-premium.css';
 function AuthCommunity() {
   const { t } = useLanguage();
   const [fiatCaption, cryptoCaption] = t('authShell.communitySubtitle').split(' · ');
+  const [cardAction, voltexFee] = t('authShell.communityTitle').split(' — ');
   return (
     <div className="vx-auth-extras">
       <div className="vx-auth-community">
@@ -40,7 +41,7 @@ function AuthCommunity() {
           <span className="vx-auth-currency-more">{t('authShell.moreCurrencies')}</span>
         </div>
         <div className="vx-auth-community-copy">
-          <strong>{t('authShell.communityTitle')}</strong>
+          <strong>{cardAction}{' '}<span className="vx-auth-card-fee">— {voltexFee}</span></strong>
           <span><span className="vx-auth-currency-amount">{fiatCaption} ·</span>{' '}<span className="vx-auth-currency-amount">{cryptoCaption}</span></span>
         </div>
       </div>
