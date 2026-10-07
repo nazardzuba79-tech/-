@@ -1,12 +1,13 @@
 # Login / Register — business-class visual review
 
 Base: fresh main `deb4b10746caf63107da05dfdb0806de8f713096`.
+Refreshed onto main `a9815b84fe9d9e0449ce7c2d42fb04eaba87951c`, retaining PR #465.
 Branch: `codex/auth-business-class-visual`. No merge or production deployment.
 
 The owner selected genuine business-class photograph option 1. The left visual
 is rebuilt around that image: 50/50 desktop composition, restrained Russian
 headline, local light gradient behind the text, no card/avatars/investor-count
-overlay. Mobile gets a separately cropped photograph and 250–272px hero, not the
+overlay. Mobile gets a separately cropped photograph and 250px hero, not the
 former large dark panel. The actual right forms and their theme are preserved.
 
 ## Evidence
@@ -20,7 +21,8 @@ former large dark panel. The actual right forms and their theme are preserved.
 at 1920 / 1440 / 1366 / 430 / 390 / 360 / 320 for both routes. All 14 local cases
 passed: no horizontal overflow, clipped text, broken image, console/page error,
 failed request, external request or write. Measured CLS was 0. The email input is
-on the first mobile screen. Password visibility toggles and both tabs retain
+on the first mobile screen. The headline stays within three lines at every tested
+width. Password visibility toggles and actual navigation through both tabs retain
 their behavior and return destination. No account is created or logged in.
 
 The auth-visual workflow repeats this on the exact PR head in Linux Chromium and

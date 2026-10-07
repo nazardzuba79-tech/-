@@ -50,13 +50,16 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         const measurements = await page.evaluate(() => {
           const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom }; };
           const img = document.querySelector('.vx-auth-photo');
+          const headline = document.querySelector('.vx-auth-hero h2');
           return { overflow: document.documentElement.scrollWidth > innerWidth, brand: rect('.vx-auth-brand'), form: rect('.vx-auth-form'), heading: rect('.vx-auth-hero'), photo: rect('.vx-auth-photo'), src: img.currentSrc.split('/').pop(), cls: window.__authCLS,
+            headlineLines: Math.round(headline.getBoundingClientRect().height / parseFloat(getComputedStyle(headline).lineHeight)),
             clipped: [...document.querySelectorAll('.vx-auth h1,.vx-auth h2,.vx-auth p,.vx-auth input,.vx-auth button')].filter(n => n.clientWidth && n.scrollWidth > n.clientWidth + 1).map(n => n.className) };
         });
         report.cases.push({ width, route: routeName, ...measurements });
         assert.equal(measurements.overflow, false, `${routeName} ${width} overflow`);
         assert.deepEqual(measurements.clipped, [], `${routeName} ${width} clipped content`);
         assert.ok(measurements.cls < .02, `${routeName} ${width} CLS ${measurements.cls}`);
+        assert.ok(measurements.headlineLines <= 3, `${routeName} ${width} headline stays within three lines`);
         if (width > 760) assert.equal(measurements.brand.width, width / 2);
         else {
           assert.ok(measurements.brand.height <= 295, 'mobile hero stays compact');
@@ -67,7 +70,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         assert.equal(await page.locator('.vx-auth-hero h2').textContent(), 'Копируйте сделки лучших трейдеров мира.');
         assert.equal(await page.locator('.vx-auth-tabs a').first().getAttribute('href'), '/login?next=%2Fwallet');
         assert.equal(await page.locator('.vx-auth-tabs a').last().getAttribute('href'), '/register?next=%2Fwallet');
-        if ([1440, 390].includes(width)) await page.screenshot({ path: path.join(out, `${routeName}-${width}.png`), fullPage: true });
+        await page.screenshot({ path: path.join(out, `${routeName}-${width}.png`), fullPage: true });
         await page.locator('input[type="email"]').fill('fixture@example.invalid');
         const password = page.locator('input[type="password"]').first();
         await password.fill('FixtureOnly123!');
@@ -78,6 +81,9 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         await page.locator('input[type="password"]').first().fill('');
         await page.locator('body').click({ position: { x: 1, y: 1 } });
         await page.evaluate(() => scrollTo(0, 0));
+        await page.locator('.vx-auth-tabs a').nth(routeName === 'login' ? 1 : 0).click();
+        await page.waitForURL(`${origin}/${routeName === 'login' ? 'register' : 'login'}?next=%2Fwallet`);
+        assert.equal(await page.locator('.vx-auth-tabs a[aria-current="page"]').count(), 1);
         console.log('PASS', routeName, width, JSON.stringify(measurements));
         await ctx.close();
       }
