@@ -55,6 +55,9 @@ test('AITH SQLite replacement drains leases, survives restart, preserves v1 and 
       return sql.exec('SELECT * FROM listing_version WHERE listing_id = ? AND version = 1', 'aith-existing');
     };
     const immutableV1 = await history();
+    const auditV1 = await (await request('/internal/listings/aith-existing/versions/1')).json();
+    assert.deepEqual(auditV1.config, original.active);
+    assert.equal((await mf.dispatchFetch('https://market.local/internal/listings/aith-existing/versions/1')).status, 401);
     const active = { ...original.active, initialPrice: '2.00', simulationProfile: 'COMPRESSION_BREAKOUT' };
     assert.equal((await catalogue())[0].initialPrice, .8);
     const oldPublic = (await catalogue())[0];
@@ -89,6 +92,7 @@ test('AITH SQLite replacement drains leases, survives restart, preserves v1 and 
     assert.equal((await catalogue())[0].version, 2);
     assert.equal((await detail()).versions.length, 2);
     assert.deepEqual(await history(), immutableV1, 'every original immutable history byte and audit field is retained');
+    assert.deepEqual(await (await request('/internal/listings/aith-existing/versions/1')).json(), auditV1);
     assert.equal(outbound, 0);
   } finally { await mf?.dispose(); }
 });

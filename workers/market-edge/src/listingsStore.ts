@@ -306,6 +306,13 @@ export class ManagedListingsDO {
       if (url.pathname === '/internal/listings' && request.method === 'GET') return reply(this.adminList());
       // Render's trading registry: published configurations INCLUDING the seed (never served publicly).
       if (url.pathname === '/internal/listings/published' && request.method === 'GET') return reply(this.published());
+      // Authenticated, read-only audit of an immutable publication; never exposed by public catalogue paths.
+      const history = /^\/internal\/listings\/([^/]+)\/versions\/([1-9]\d{0,8})$/.exec(url.pathname);
+      if (history && request.method === 'GET' && LISTING_ID_PATTERN.test(history[1])) {
+        const row = this.version(history[1], Number(history[2]));
+        return row ? reply({ id: history[1], version: Number(row.version), config: JSON.parse(String(row.config)),
+          publishedAt: new Date(Number(row.published_at)).toISOString(), publishedBy: String(row.published_by) }) : reply({ error: 'not_found' }, 404);
+      }
       const match = /^\/internal\/listings\/([^/]+)\/(draft|publish|replace-prelisting)$/.exec(url.pathname);
       if (!match || !LISTING_ID_PATTERN.test(match[1])) return reply({ error: 'not_found' }, 404);
       if (!ACTOR.test(actor)) return reply({ error: 'actor_required' }, 400);

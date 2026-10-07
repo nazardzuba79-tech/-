@@ -33,6 +33,8 @@ Authenticated `POST /admin/listings/:id/replace-prelisting` supports:
 Pending operations and receipts survive restart. Concurrent proposal keys
 conflict. Retrying the same completed key returns its receipt. The original
 version row is never updated or deleted. Admin history keeps both versions.
+The protected internal read `/internal/listings/:id/versions/:version` returns
+the immutable config and actor/time fields for post-operation audit comparison.
 
 ## Coordinated rollout
 
