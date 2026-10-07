@@ -105,6 +105,16 @@
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.market-panel-collapsed:not(.orderbook-collapsed) { grid-template-columns:0 minmax(0,1fr) var(--reference-book-width) 300px; }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.orderbook-collapsed:not(.market-panel-collapsed) { grid-template-columns:var(--market-panel-width,258px) minmax(0,1fr) 0 300px; }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.market-panel-collapsed.orderbook-collapsed { grid-template-columns:0 minmax(0,1fr) 0 300px; }
+  /* 901–1200px: Spot carries a market column Futures does not have, so the
+     Futures book/ticket tracks would leave the chart ~200px wide here. Keep
+     the sheet's own 220px book and 264px ticket at these widths (review on
+     #474, 2026-10-07); 1366 and up are unaffected. */
+  @media (max-width:1200px) {
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid:not(.market-panel-collapsed):not(.orderbook-collapsed) { grid-template-columns:var(--market-panel-width,258px) minmax(0,1fr) 220px 264px; }
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.market-panel-collapsed:not(.orderbook-collapsed) { grid-template-columns:0 minmax(0,1fr) 220px 264px; }
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.orderbook-collapsed:not(.market-panel-collapsed) { grid-template-columns:var(--market-panel-width,258px) minmax(0,1fr) 0 264px; }
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.market-panel-collapsed.orderbook-collapsed { grid-template-columns:0 minmax(0,1fr) 0 264px; }
+  }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-workspace { grid-template-columns:278px minmax(0,1fr) 300px; gap:4px; background:#000000 !important; }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.ticker-bar,.cfd-ticker-bar,.left-panel,.pairs-section,.chart-area,.orderbook-area,.order-form-area,.bottom-panel,.cfd-instruments-area,.cfd-chart-area,.cfd-form-area,.cfd-bottom-panel) {
     background:#101014 !important; border:0 !important; border-radius:0 !important; box-shadow:none !important;
