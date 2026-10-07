@@ -176,6 +176,8 @@ export const ES: Record<Key, string> = {
   'authShell.communityCount': 'Más de 1,2 millones de inversores',
   'authShell.communityText': 'ya siguen el mercado con VOLTEX',
   'authShell.communityBadge': '1,2M+',
+  'authShell.communityTitle': 'Comunidad VOLTEX',
+  'authShell.communitySubtitle': 'Mercados. Ideas. Posibilidades.',
   'authShell.cardCaption': 'LA TARJETA QUE SIEMPRE VA CONTIGO',
   'authShell.supportHint': '¿Necesitas ayuda para iniciar sesión?',
   'authShell.supportLink': 'Soporte',

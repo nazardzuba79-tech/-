@@ -8,6 +8,29 @@ import { openSupportWidget } from '../../lib/supportWidget';
 import './auth-shell.css';
 import './auth-form-premium.css';
 
+/** Decorative portraits, not testimonials or an independently verified count. */
+function AuthCommunity() {
+  const { t } = useLanguage();
+  return (
+    <div className="vx-auth-extras">
+      <div className="vx-auth-community">
+        <span className="vx-auth-avatars" aria-hidden="true">
+          <span className="vx-auth-avatar" /><span className="vx-auth-avatar" /><span className="vx-auth-avatar" />
+        </span>
+        <div className="vx-auth-community-copy">
+          <strong>{t('authShell.communityTitle')}</strong>
+          <span>{t('authShell.communitySubtitle')}</span>
+        </div>
+      </div>
+      <div className="vx-auth-card-caption">
+        <span className="vx-auth-card-number">01</span>
+        <span className="vx-auth-card-label">{t('authShell.cardCaption')}</span>
+        <span className="vx-auth-card-line" aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+
 /** Presentation only: the route forms retain their existing auth handlers. */
 export function AuthShell({ children }: { children: ReactNode }) {
   const { t, lang } = useLanguage();
@@ -21,6 +44,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <img className="vx-auth-banner" src="/auth/selected-cabin-banner.webp"
             alt="VOLTEX. Копируйте сделки лучших трейдеров мира. Девушка в кресле самолёта с телефоном и картой."
             width="919" height="941" {...{ fetchpriority: 'high' }} />
+          <AuthCommunity />
         </section>
       ) : (
       <section className="vx-auth-brand vx-auth-brand-localized">
@@ -40,6 +64,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           </div>
           <footer className="vx-auth-copyright">© {new Date().getFullYear()} VOLTEX</footer>
         </div>
+        <AuthCommunity />
       </section>
       )}
       <section className="vx-auth-work">
@@ -51,6 +76,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <LanguageSwitcher variant="pill" />
         </header>
         {children}
+        <AuthCommunity />
         <footer className="vx-auth-foot">
           <Link to="/legal/privacy">{t('footer.privacy')}</Link>
           <Link to="/legal/terms">{t('footer.terms')}</Link>

@@ -176,6 +176,8 @@ export const HI: Record<Key, string> = {
   'authShell.communityCount': '12 लाख से अधिक निवेशक',
   'authShell.communityText': 'पहले से ही VOLTEX के साथ बाज़ार पर नज़र रख रहे हैं',
   'authShell.communityBadge': '12 लाख+',
+  'authShell.communityTitle': 'VOLTEX समुदाय',
+  'authShell.communitySubtitle': 'बाज़ार। विचार। संभावनाएँ।',
   'authShell.cardCaption': 'हमेशा आपके साथ रहने वाला कार्ड',
   'authShell.supportHint': 'साइन इन करने में मदद चाहिए?',
   'authShell.supportLink': 'सहायता',

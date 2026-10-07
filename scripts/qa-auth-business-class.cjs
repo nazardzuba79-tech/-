@@ -68,6 +68,12 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     await page.locator('.vx-auth-form').waitFor();
     await page.evaluate(() => document.fonts.ready);
     await page.waitForFunction(() => [...document.querySelectorAll('.vx-auth-brand img')].every(img => img.complete && img.naturalWidth > 0));
+    await page.evaluate(() => Promise.all([...new Set([...document.querySelectorAll('.vx-auth-avatar')].map(node => getComputedStyle(node).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]).filter(Boolean))].map(src => new Promise((resolve, reject) => {
+      const avatar = new Image();
+      avatar.onload = () => avatar.naturalWidth === 432 && avatar.naturalHeight === 144 ? resolve() : reject(new Error('Unexpected local avatar sprite dimensions'));
+      avatar.onerror = () => reject(new Error('Local avatar sprite did not load'));
+      avatar.src = src;
+    }))));
     await page.evaluate(() => Promise.all(document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {}))));
   }
   async function measure(page) {
@@ -76,7 +82,24 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       const brand = document.querySelector('.vx-auth-brand');
       const img = brand.querySelector('img');
       const imageStyle = getComputedStyle(img);
-      const brandVisible = !!brand.getClientRects().length && getComputedStyle(brand).visibility !== 'hidden';
+      const visible = node => !!node.getClientRects().length && getComputedStyle(node).visibility !== 'hidden';
+      const brandVisible = visible(brand);
+      const decoration = node => {
+        const style = getComputedStyle(node);
+        return { background: style.backgroundColor, image: style.backgroundImage, border: style.borderWidth, radius: style.borderRadius, shadow: style.boxShadow, blur: style.backdropFilter };
+      };
+      const extras = [...document.querySelectorAll('.vx-auth-extras')].filter(visible).map(node => ({
+        ...rect(node), inBrand: !!node.closest('.vx-auth-brand'), text: node.textContent.trim(),
+        wrappers: [node, ...node.querySelectorAll('.vx-auth-community,.vx-auth-community-copy,.vx-auth-avatars,.vx-auth-card-caption')].map(child => ({ selector: child.className, ...decoration(child) })),
+        community: rect(node.querySelector('.vx-auth-community')),
+        title: node.querySelector('.vx-auth-community-copy strong').textContent.trim(),
+        subtitle: node.querySelector('.vx-auth-community-copy span').textContent.trim(),
+        caption: { ...rect(node.querySelector('.vx-auth-card-caption')), number: node.querySelector('.vx-auth-card-number').textContent.trim(), label: node.querySelector('.vx-auth-card-label').textContent.trim() },
+        avatars: [...node.querySelectorAll('.vx-auth-avatar')].map(avatar => ({ ...rect(avatar), image: getComputedStyle(avatar).backgroundImage, position: getComputedStyle(avatar).backgroundPosition, size: getComputedStyle(avatar).backgroundSize, radius: getComputedStyle(avatar).borderRadius })),
+        avatarGroupHidden: node.querySelector('.vx-auth-avatars').getAttribute('aria-hidden'),
+        line: { ...rect(node.querySelector('.vx-auth-card-line')), hidden: node.querySelector('.vx-auth-card-line').getAttribute('aria-hidden') },
+        ink: [...node.querySelectorAll('.vx-auth-community,.vx-auth-card-caption')].map(rect),
+      }));
       // object-fit:contain can leave bands INSIDE a full-size <img>. Measure the
       // actual painted raster, including its object-position, rather than only
       // getBoundingClientRect(). This deliberately rejects the former defect.
@@ -110,11 +133,18 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         overflow: document.documentElement.scrollWidth > innerWidth,
         viewport: { width: innerWidth, height: innerHeight },
         pageHeight: document.documentElement.scrollHeight,
-        brandVisible, paintedRaster,
+        brandVisible, paintedRaster, extras,
+        body: rect(document.querySelector('.vx-auth-body')),
+        footer: rect(document.querySelector('.vx-auth-foot')),
+        support: rect(document.querySelector('.vx-auth-support')),
+        security: rect(document.querySelector('.vx-auth-security')),
         brand: rect(brand), form: rect(document.querySelector('.vx-auth-form')), photo: rect(img),
         src: img.currentSrc.split('/').pop(), natural: { width: img.naturalWidth, height: img.naturalHeight }, fit: getComputedStyle(img).objectFit,
         bannerDecoration: {
           before: getComputedStyle(brand, '::before').content,
+          beforeImage: getComputedStyle(brand, '::before').backgroundImage,
+          beforeHeight: getComputedStyle(brand, '::before').height,
+          beforeBackground: getComputedStyle(brand, '::before').backgroundColor,
           after: getComputedStyle(brand, '::after').content,
           imageBackground: getComputedStyle(img).backgroundColor,
           imageBorder: getComputedStyle(img).borderWidth,
@@ -124,16 +154,80 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         },
         headline: headline ? { ...rect(headline), text: headline.textContent.trim(), lines: Math.round(headline.getBoundingClientRect().height / parseFloat(getComputedStyle(headline).lineHeight)) } : null,
         overlayStyles, cls: window.__authCLS,
-        clipped: [...document.querySelectorAll('.vx-auth h1,.vx-auth h2,.vx-auth p,.vx-auth input,.vx-auth button,.vx-auth-tabs a')].filter(n => n.clientWidth && n.scrollWidth > n.clientWidth + 1).map(n => n.className),
+        clipped: [...document.querySelectorAll('.vx-auth h1,.vx-auth h2,.vx-auth p,.vx-auth input,.vx-auth button,.vx-auth-tabs a,.vx-auth-community-copy strong,.vx-auth-community-copy > span,.vx-auth-card-label')].filter(n => n.clientWidth && n.scrollWidth > n.clientWidth + 1).map(n => n.className),
         submit: { tag: document.querySelector('.vx-auth-submit').tagName, color: getComputedStyle(document.querySelector('.vx-auth-submit')).backgroundColor },
       };
     });
+  }
+  async function assertExtras(page, measurements, label, lang = 'ru') {
+    const { extras, brand, paintedRaster: painted, viewport } = measurements;
+    assert.equal(extras.length, 1, `${label} exactly one visible community/caption pair`);
+    const block = extras[0];
+    assert.equal(await page.locator('.vx-auth-extras :is(a,button,input,select,textarea)').count(), 0, `${label} restored blocks are static, not a carousel or control`);
+    assert.equal(await page.locator('.vx-auth-community-badge,.vx-auth-carousel,.vx-auth-pagination').count(), 0, `${label} no unsupported counter badge or carousel`);
+    assert.doesNotMatch(block.text, /1[,.]2|млн|million|[0-9]\s*[Mm]\+|TEST|DEMO|NOT TRADABLE/, `${label} no unsupported investor count or new advertising labels`);
+    assert.equal(block.avatars.length, 3, `${label} three decorative avatars`);
+    assert.equal(block.avatarGroupHidden, 'true', `${label} decorative faces are not presented as client testimonials`);
+    const positions = new Set();
+    for (const avatar of block.avatars) {
+      assert.match(avatar.image, /\/auth\/community-v4\.webp["']?\)/, `${label} existing local avatar sprite`);
+      assert.equal(avatar.size, '300% 100%', `${label} three distinct sprite tiles`);
+      assert.equal(avatar.radius, '50%', `${label} circular avatar`);
+      assert.ok(Math.abs(avatar.width - avatar.height) < 1, `${label} undistorted avatar tile`);
+      positions.add(avatar.position);
+    }
+    assert.equal(positions.size, 3, `${label} each existing face has its own sprite position`);
+    assert.ok(block.avatars[1].x < block.avatars[0].right && block.avatars[2].x < block.avatars[1].right, `${label} compact overlapping avatar row`);
+    assert.equal(block.caption.number, '01', `${label} static card caption number`);
+    assert.ok(block.caption.label.length > 5, `${label} localized card caption remains populated`);
+    assert.equal(block.line.hidden, 'true', `${label} caption rule is decorative`);
+    assert.ok(block.line.width >= 16 && block.line.height <= 2, `${label} short thin caption rule`);
+    assert.ok(block.caption.y >= block.community.bottom, `${label} card caption follows community`);
+    assert.ok(block.x >= -1 && block.right <= viewport.width + 1, `${label} restored blocks fit viewport`);
+    for (const style of block.wrappers) {
+      assert.equal(style.background, 'rgba(0, 0, 0, 0)', `${label} ${style.selector} no colored/white card`);
+      assert.equal(style.image, 'none', `${label} ${style.selector} no background panel image`);
+      assert.equal(style.border, '0px', `${label} ${style.selector} no common border`);
+      assert.equal(style.radius, '0px', `${label} ${style.selector} no rounded card`);
+      assert.equal(style.shadow, 'none', `${label} ${style.selector} no raised card shadow`);
+      assert.equal(style.blur, 'none', `${label} ${style.selector} no glass card`);
+    }
+    if (lang === 'ru') {
+      assert.equal(block.title, 'Сообщество VOLTEX');
+      assert.equal(block.subtitle, 'Рынки. Идеи. Возможности.');
+      assert.equal(block.caption.label.toLocaleLowerCase('ru'), 'карта, которая всегда с вами');
+    } else {
+      assert.doesNotMatch(block.text, /[А-Яа-яЁё]/, `${label} no Russian copy in another locale`);
+      assert.match(block.title, /VOLTEX/, `${label} localized community heading retains the brand`);
+      assert.doesNotMatch(block.text, /authShell\./, `${label} no untranslated localization keys`);
+    }
+    if (block.inBrand) {
+      assert.equal(measurements.brandVisible, true, `${label} desktop blocks are on a visible photo`);
+      assert.ok(block.x >= brand.x - 1 && block.right <= brand.right + 1 && block.y >= brand.y && block.bottom <= brand.bottom + 1, `${label} both blocks remain within photo`);
+      assert.ok(block.y > brand.y + brand.height * .6, `${label} both blocks use the lower photo area`);
+      if (lang === 'ru') {
+        for (const [name, [left, top, right, bottom]] of Object.entries(protectedRasterRegions)) {
+          const region = { x: painted.x + left * painted.scaleX, y: painted.y + top * painted.scaleY, right: painted.x + right * painted.scaleX, bottom: painted.y + bottom * painted.scaleY };
+          for (const ink of block.ink) {
+            const overlapX = Math.min(ink.right, region.right) - Math.max(ink.x, region.x);
+            const overlapY = Math.min(ink.bottom, region.bottom) - Math.max(ink.y, region.y);
+            assert.ok(overlapX <= 1 || overlapY <= 1, `${label} restored copy does not cover ${name}: ${JSON.stringify({ ink, region })}`);
+          }
+        }
+      }
+    } else {
+      assert.ok(block.y >= measurements.form.bottom && block.y >= measurements.support.bottom && block.y >= measurements.security.bottom, `${label} compact blocks follow the form, support and security`);
+      assert.ok(block.bottom <= measurements.footer.y + 1, `${label} compact blocks do not overlap legal links`);
+      assert.ok(block.height <= 165, `${label} compact extras never become a tall promotion`);
+      assert.equal(await page.locator('.vx-auth-work > .vx-auth-extras').isVisible(), true, `${label} compact extras stay in ordinary document flow`);
+    }
   }
   async function assertRussianGeometry(page, measurements, label) {
     const { viewport, brand, paintedRaster: painted } = measurements;
     const scroll = await page.evaluate(() => ({ page: window.scrollY, work: document.querySelector('.vx-auth-work').scrollTop }));
     assert.equal(measurements.overflow, false, `${label} no horizontal overflow`);
     assert.deepEqual(measurements.clipped, [], `${label} no clipped form text or controls`);
+    await assertExtras(page, measurements, label);
     const compact = viewport.width <= 760 || viewport.width / viewport.height <= 1.5;
     if (compact) {
       assert.equal(measurements.brandVisible, false, `${label} compact raster is absent, not a tiny letterboxed poster`);
@@ -194,15 +288,22 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
           assert.equal(measurements.src, 'selected-cabin-banner.webp');
           assert.deepEqual(measurements.natural, { width: 919, height: 941 });
           await assertRussianGeometry(page, measurements, label);
-          assert.deepEqual(measurements.bannerDecoration, {
-            before: 'none', after: 'none', imageBackground: 'rgba(0, 0, 0, 0)',
+          const { before, beforeImage, beforeHeight, beforeBackground, ...imageDecoration } = measurements.bannerDecoration;
+          assert.deepEqual(imageDecoration, {
+            after: 'none', imageBackground: 'rgba(0, 0, 0, 0)',
             imageBorder: '0px', imageRadius: '0px', imageShadow: 'none', imageBlur: 'none',
-          }, `${label} no white card or pseudo-element over the approved raster`);
+          }, `${label} no white card or frame over the approved raster`);
+          if (measurements.brandVisible && before !== 'none') {
+            assert.equal(beforeBackground, 'rgba(0, 0, 0, 0)', `${label} contrast layer has no rectangular fill`);
+            assert.match(beforeImage, /^radial-gradient\(/, `${label} only a soft localized contrast gradient`);
+            assert.ok(parseFloat(beforeHeight) <= measurements.brand.height * .26, `${label} contrast remains local to the bottom, not the whole photograph`);
+          }
           assert.equal(measurements.headline, null, `${label} no duplicate slogan over raster`);
           assert.equal(await page.locator('.vx-auth-banner').count(), 1);
           assert.equal(await page.locator('.vx-auth-brand-banner :is(a,button,input,select,textarea,h1,h2,svg)').count(), 0, 'banner has no interactive or duplicate logo/text layers');
           assert.match(await page.locator('.vx-auth-banner').getAttribute('alt'), /Копируйте сделки лучших трейдеров мира/);
         } else {
+          await assertExtras(page, measurements, label, lang);
           assert.equal(await page.locator('.vx-auth-brand-localized').count(), 1);
           assert.equal(await page.locator('.vx-auth-banner').count(), 0, `${label} embedded Russian slogan not served to other locales`);
           assert.equal(await page.locator('.vx-auth-brand h2').count(), 1, `${label} one localized headline`);
@@ -220,8 +321,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
           }
         }
         assert.equal(await page.locator('h1').count(), 1, 'route form keeps the only h1');
-        assert.equal(await page.locator('.vx-auth-brand :is(.vx-auth-community,.vx-auth-social,.vx-auth-avatars,.vx-auth-carousel,.vx-auth-pagination)').count(), 0, 'unwanted blocks removed from DOM');
-        assert.doesNotMatch(await page.locator('.vx-auth-brand').textContent(), /Сообщество VOLTEX|Рынки\. Идеи\. Возможности\.|Карта, которая всегда с вами|TEST|DEMO|NOT TRADABLE/);
+        assert.doesNotMatch(await page.locator('.vx-auth-brand').textContent(), /TEST|DEMO|NOT TRADABLE/);
         assert.equal(await page.locator('.vx-auth-tabs a').first().getAttribute('href'), '/login?next=%2Fwallet');
         assert.equal(await page.locator('.vx-auth-tabs a').last().getAttribute('href'), '/register?next=%2Fwallet');
         assert.equal(await page.locator('input[type="email"]').count(), 1, 'one real email field');

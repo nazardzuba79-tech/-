@@ -109,7 +109,6 @@
   height: 100svh;
   background: #eee5d8;
 }
-.vx-auth .vx-auth-brand-banner::before,
 .vx-auth .vx-auth-brand-banner::after { content: none; }
 .vx-auth .vx-auth-banner {
   display: block;
@@ -123,6 +122,55 @@
   overflow-y: auto;
 }
 .vx-auth .vx-auth-compact-logo { display: none; }
+
+/* Static, localized photo captions. Only individual portraits have a rim.
+   The local bottom scrim fades into the photo, never into a rectangular card. */
+.vx-auth-brand::before {
+  position: absolute;
+  z-index: 0;
+  inset: auto 0 0;
+  height: 24%;
+  content: '';
+  pointer-events: none;
+  background: radial-gradient(ellipse 78% 100% at 18% 100%, #f8f3e6f5 0%, #f8f3e6cc 42%, #f8f3e600 100%);
+}
+.vx-auth .vx-auth-extras {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.7svh, 18px);
+  color: #123a33;
+}
+.vx-auth-brand > .vx-auth-extras {
+  position: absolute;
+  z-index: 1;
+  left: clamp(24px, 2.5vw, 40px);
+  bottom: clamp(12px, 2svh, 24px);
+  max-width: min(360px, calc(100% - 48px));
+}
+.vx-auth-brand-localized > .vx-auth-extras { bottom: 78px; }
+.vx-auth .vx-auth-community { display: flex; align-items: center; gap: 12px; }
+.vx-auth .vx-auth-avatars { display: inline-flex; flex: none; }
+.vx-auth .vx-auth-avatar {
+  flex: none;
+  width: clamp(28px, 4svh, 40px);
+  height: clamp(28px, 4svh, 40px);
+  border: 1.5px solid #f8f3e6;
+  border-radius: 50%;
+  background-image: url('/auth/community-v4.webp');
+  background-size: 300% 100%;
+  background-position: 0% center;
+}
+.vx-auth .vx-auth-avatar + .vx-auth-avatar { margin-left: -8px; }
+.vx-auth .vx-auth-avatar:nth-child(2) { background-position: 50% center; }
+.vx-auth .vx-auth-avatar:nth-child(3) { background-position: 100% center; }
+.vx-auth .vx-auth-community-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.vx-auth .vx-auth-community-copy strong { font-size: clamp(12px, 1.8svh, 16px); font-weight: 600; line-height: 1.25; }
+.vx-auth .vx-auth-community-copy > span { font-size: clamp(11px, 1.45svh, 13px); line-height: 1.4; }
+.vx-auth .vx-auth-card-caption { display: flex; align-items: center; gap: 10px; font-size: clamp(10px, 1.4svh, 12px); line-height: 1.4; }
+.vx-auth .vx-auth-card-number { font-weight: 650; color: #70541f; }
+.vx-auth .vx-auth-card-label { max-width: 250px; }
+.vx-auth .vx-auth-card-line { flex: 0 0 30px; height: 1px; background: #8b703b; }
+.vx-auth-work > .vx-auth-extras { display: none; }
 
 /* Light form theme also scopes the existing language switcher's tokens. */
 .vx-auth-work {
@@ -228,6 +276,8 @@ body:has(.vx-auth) .support-launcher[aria-expanded="false"] { display: none !imp
   .vx-auth-work { padding: 30px 26px; }
 }
 @media (max-width: 760px) {
+  .vx-auth-brand::before, .vx-auth-brand > .vx-auth-extras { display: none; }
+  .vx-auth-work > .vx-auth-extras { display: flex; width: 100%; max-width: 410px; margin: 0 auto 24px; }
   .vx-auth { display: block; }
   .vx-auth-brand { min-height: 0; }
   .vx-auth-brand-inner { min-height: 250px; padding: 22px 24px; }
@@ -249,6 +299,7 @@ body:has(.vx-auth) .support-launcher[aria-expanded="false"] { display: none !imp
 /* This raster cannot fill a narrow/portrait panel while preserving its
    embedded text, face and both hands. Do not crop those or reserve blank space. */
 @media (max-width: 760px), (max-aspect-ratio: 3/2) {
+  .vx-auth.vx-auth--banner .vx-auth-work > .vx-auth-extras { display: flex; width: 100%; max-width: 410px; margin: 0 auto 24px; }
   .vx-auth.vx-auth--banner { display: block; }
   .vx-auth .vx-auth-brand-banner { display: none; }
   .vx-auth.vx-auth--banner .vx-auth-work {

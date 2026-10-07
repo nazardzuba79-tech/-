@@ -51,13 +51,13 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(shell).not.toMatch(/\bfetch\(|\bapi\.|useEffect/);
   });
 
-  test('Russian marketing banner has no duplicate logo, slogan or extra bottom markup', () => {
+  test('Russian marketing banner has no duplicate logo or slogan; captions are static HTML', () => {
     const html = renderShell('ru');
     expect(html).toContain('src="/auth/selected-cabin-banner.webp"');
     expect(html).toContain('width="919" height="941"');
     expect(html).toContain('alt="VOLTEX. Копируйте сделки лучших трейдеров мира.');
     expect(html.match(/<img /g)).toHaveLength(1);
-    expect(html).not.toMatch(/<picture|<h2|vx-auth-hero|vx-auth-lead|vx-auth-copyright|community|card-caption|cardCaption/);
+    expect(html).not.toMatch(/<picture|<h2|vx-auth-hero|vx-auth-lead|vx-auth-copyright/);
     const banner = html.split('vx-auth-brand-banner')[1].split('</section>')[0];
     expect(banner).not.toMatch(/<a\b|<button\b|<input\b|<p\b|<footer\b|HTML_LOGO/);
     // One existing Logo is available in the form header when the decorative
@@ -65,6 +65,21 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(html.match(/HTML_LOGO/g)).toHaveLength(1);
     expect(html).toContain('class="vx-auth-compact-logo"');
     expect(html).toContain('EXISTING_ROUTE_FORM');
+  });
+
+  test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s has localized community and card copy without an unverified count', lang => {
+    const html = renderShell(lang);
+    expect(html.match(/class="vx-auth-extras"/g)).toHaveLength(2);
+    expect(html.match(/class="vx-auth-avatar"/g)).toHaveLength(6);
+    expect(html.match(/class="vx-auth-avatars" aria-hidden="true"/g)).toHaveLength(2);
+    expect(html).toContain(`localized:${lang}:authShell.communityTitle`);
+    expect(html).toContain(`localized:${lang}:authShell.communitySubtitle`);
+    expect(html).toContain(`localized:${lang}:authShell.cardCaption`);
+    expect(html).toContain('class="vx-auth-card-number">01</span>');
+    expect(html).toContain('class="vx-auth-card-line" aria-hidden="true"');
+    expect(html).not.toMatch(/communityCount|communityBadge|1[.,]2\+?\s*(M|млн)/);
+    expect(html.indexOf('EXISTING_ROUTE_FORM')).toBeLessThan(html.lastIndexOf('class="vx-auth-extras"'));
+    expect(html.lastIndexOf('class="vx-auth-extras"')).toBeLessThan(html.indexOf('class="vx-auth-foot"'));
   });
 
   test.each(['en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s retains the localized photo and copy, never translated over Russian artwork', lang => {
@@ -103,7 +118,9 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(shell).toContain('media="(max-width: 760px)"');
     expect(shell).toContain('width="1440" height="2160"');
     expect(shell).toContain("fetchpriority: 'high'");
-    expect(shell).not.toMatch(/aircraft-v6|communityCount|community-v4|cardCaption|https:\/\//);
+    expect(shell).not.toMatch(/aircraft-v6|communityCount|communityBadge|https:\/\//);
+    expect(css).toContain("url('/auth/community-v4.webp')");
+    expect(css).not.toMatch(/backdrop-filter|backdrop-blur/);
     expect(css).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)');
     expect(css).toContain('object-fit: cover');
     expect(css).not.toContain('mask-image');

@@ -176,6 +176,8 @@ export const KO: Record<Key, string> = {
   'authShell.communityCount': '120만 명 이상의 투자자가',
   'authShell.communityText': '이미 VOLTEX와 함께 시장을 살펴보고 있습니다',
   'authShell.communityBadge': '120만+',
+  'authShell.communityTitle': 'VOLTEX 커뮤니티',
+  'authShell.communitySubtitle': '시장. 아이디어. 가능성.',
   'authShell.cardCaption': '언제나 함께하는 카드',
   'authShell.supportHint': '로그인에 도움이 필요하신가요?',
   'authShell.supportLink': '고객 지원',

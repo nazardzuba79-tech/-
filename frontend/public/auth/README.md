@@ -53,12 +53,12 @@ Desktop uses `srcset` and 50vw sizing. Mobile uses a dedicated `<picture>` sourc
 to keep the face, hands and phone in the compact hero. Runtime requests are only
 to local `/auth/` assets, never Unsplash or an external image provider.
 
-## Previous artwork (retained, no longer rendered by AuthShell)
+## Retained artwork and decorative community portraits
 
 The owner approved these assets in local design revision 6 on 2026-10-05.
 
 - `aircraft-v6.webp`: the original selected `terminal-woman-cards-v3.png`, re-encoded as lossless WebP. All decoded RGB pixels were compared and are identical (1122 x 1402). The rejected regenerated v5 portrait is not shipped.
 - `community-v4.webp`: the approved illustrative avatar strip, resized to 432 x 144 (three 144 px tiles) for 38–42 px display and losslessly encoded. These are decorative illustrations, not named customer testimonials.
-- The owner explicitly confirmed the displayed 1.2+ million investor figure.
+- No independently verified source for the previous 1.2+ million investor figure was found. Old copy and comments are not metric evidence. AuthShell uses localized neutral community wording, with no numeric badge or count; the existing three portraits are decorative, not endorsements.
 
 No new image generation was used for this release. The white card remains in the woman's hand and the black card on the table, as in the approved asset.
