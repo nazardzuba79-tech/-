@@ -20,11 +20,10 @@ it('only reaches Spot/CFD, never Futures or non-terminal pages', () => {
 });
 
 it('copies the released Futures font, tile palette and enabled action colours exactly', () => {
-  // FuturesBybitParity (2026-10-07) is where Futures now sets its font: Inter, as Bybit.
-  const futures = ['TerminalGraphite','TerminalPanelTiles','ArchiveTerminalPreview','FuturesBybitParity']
+  const futures = ['TerminalGraphite','TerminalPanelTiles','ArchiveTerminalPreview']
     .map(name => read(`frontend/src/pages/trade-terminal/${name}.css`)).join('\n');
   for (const declaration of [
-    "--font-family:'Inter Terminal',Inter,-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;",
+    "--font-family:'IBM Plex Sans Terminal','Inter Terminal',Inter,system-ui,sans-serif;",
     '--tile-ground:#000000;', '--tile-fill:#101014;', '--tile-header:#17181f;', '--tile-bottom:#101014;',
     'background:#232227 !important;', 'background:#1ead6a;', 'background:#ea4151;',
   ]) {
@@ -48,7 +47,6 @@ it('keeps market-specific tracks, visibility, click targets and data untouched',
 it('adds desktop tile spacing without changing the mobile workspace layout', () => {
   const desktop = css.slice(css.indexOf('@media (min-width:901px)'));
   expect(desktop).toContain('padding:4px; gap:4px;');
-  // Square tiles since 2026-10-07 (Bybit 1:1 on Futures; Spot/CFD follow).
-  expect(desktop).toContain('border-radius:0;');
+  expect(desktop).toContain('border-radius:6px;');
   expect(css.slice(0, css.indexOf('@media (min-width:901px)'))).not.toMatch(/padding:|gap:/);
 });

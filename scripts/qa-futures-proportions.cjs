@@ -366,8 +366,7 @@ async function run() {
         check(initial.ticker.x === initial.chart.x && Math.abs(initial.ticker.right - initial.book.right) <= 1, 'ticker grid bounds');
         check(initial.ticker.bottom <= Math.min(initial.chart.y, initial.book.y) + 1, 'ticker overlaps chart/book');
         check(initial.toolbar.height >= 40 && initial.toolbar.height <= 44, 'toolbar height outside40–44');
-        // 2026-10-07 (Bybit 1:1): the margin-mode and leverage selects are Bybit's 32px; 36 stays for the other designs.
-        check(ticket.selectors.every(s => s.height >= 32 && s.height <= 36), 'selector height outside32–36');
+        check(ticket.selectors.every(s => s.height >= 34 && s.height <= 36), 'selector height outside34–36');
         check(ticket.fields.every(s => s.height >= 42 && s.height <= 46), 'field height outside42–46');
         check(ticket.fields.length === 2 && Math.abs(ticket.fields[0].x - ticket.fields[1].x) <= 1 && Math.abs(ticket.fields[0].right - ticket.fields[1].right) <= 1, 'price/quantity edges');
         check(ticket.calculators.length === 1 && ticket.calculators[0].name && ticket.calculators[0].title, 'single accessible calculator');
