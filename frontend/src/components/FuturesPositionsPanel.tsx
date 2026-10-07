@@ -6,6 +6,7 @@ import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesPositionProtectionCell } from './FuturesPositionProtection';
 import { formatPrice } from '../lib/formatNumber';
 import { formatPositionQuantity } from '../lib/futuresPositionActions';
+import { positionStatus } from './spotOrderPresentation';
 import { ExternalLink } from 'lucide-react';
 import { ArchivePositionCard } from './ArchiveTerminalDialogs';
 import { FuturesLimitCloseDialog } from './FuturesLimitCloseDialog';
@@ -723,7 +724,7 @@ export function FuturesPositionsPanel({
                     </Td>
                     <Td className="mono">{p.entryPrice}</Td>
                     <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{group(pnl, 2)}</Td>
-                    <Td>{p.status === 'LIQUIDATED' ? <span style={{ color: 'var(--sell)' }}>{p.status}</span> : p.status}</Td>
+                    <Td>{p.status === 'LIQUIDATED' ? <span style={{ color: 'var(--sell)' }}>{positionStatus(p.status, t)}</span> : positionStatus(p.status, t)}</Td>
                   </tr>
                 );
               })}

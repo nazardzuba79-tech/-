@@ -89,9 +89,9 @@ describe('futures order error messages', () => {
         'ACCOUNT_MISSING', 'SOME_CODE_NOBODY_MAPPED_YET',
       ];
       for (const code of codes) expect(say(engine(code))).not.toMatch(/[A-Z]{3,}_[A-Z_]{3,}/);
-      // The unmapped one is still recorded — for the logs, not the trader.
+      // The failure remains observable without exposing arbitrary payloads.
       expect(warn).toHaveBeenCalledWith(
-        '[futures] unmapped order error code', 'SOME_CODE_NOBODY_MAPPED_YET', undefined,
+        '[customer-error] unmapped server failure', 400, '', 'Unmapped server failure',
       );
     } finally {
       warn.mockRestore();
@@ -132,17 +132,17 @@ describe('futures order error messages', () => {
     expect(say(undefined)).toBe(FALLBACK);
   });
 
-  it('withholds the engine sentence when a code has no wording yet, and logs it', () => {
+  it('withholds unmapped engine sentences and records only safe failure metadata', () => {
     // This used to assert the opposite — an unmapped code showed the
     // engine's own text. Issue #144: that text is `data.error` verbatim,
     // which across these routes is English, a caught exception's message or
     // an HTML error page, none of it written for a trader. A gap in the
-    // table is now the caller's localized line plus a console warning
-    // naming the code, so the gap is visible to us and not to them.
+    // table is the caller's localized line plus a safe diagnostic warning.
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       expect(say(engine('NOT_IN_THE_TABLE'))).toBe(FALLBACK);
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('unmapped order error code'), 'NOT_IN_THE_TABLE', undefined);
+      expect(warn).toHaveBeenCalledWith('[customer-error] unmapped server failure', 400, '', 'Unmapped server failure');
+      expect(JSON.stringify(warn.mock.calls)).not.toContain('NOT_IN_THE_TABLE');
     } finally {
       warn.mockRestore();
     }

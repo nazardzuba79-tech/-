@@ -32,9 +32,9 @@ import type { Key } from './i18n/locales/keys';
  *   4. the caller's own localized fallback.
  *
  * Step 4 is reached when the server said something no route in this
- * repository is known to say. That original goes to the console, never to
- * the screen: an unmapped sentence is a gap in the table below, and the
- * honest thing to show meanwhile is the caller's plain refusal line.
+ * repository is known to say. Only a diagnostic category and HTTP status go
+ * to the console; free-form server text may contain credentials or personal
+ * data. Detailed investigation belongs in access-controlled server logs.
  */
 
 export type Translate = (key: Key, params?: Record<string, string | number>) => string;
@@ -66,6 +66,9 @@ const PHRASE_KEY: Record<string, Key> = {
   'Registration failed': 'register.error.failed',
   'Registration is currently closed': 'register.error.closed',
   Unauthorized: 'serverError.signInRequired',
+  'Failed to fetch': 'serverError.network',
+  'NetworkError when attempting to fetch resource.': 'serverError.network',
+  'Load failed': 'serverError.network',
   // account and security
   'Current password is incorrect': 'serverError.passwordIncorrect',
   'Two-factor authentication is already enabled': 'serverError.twoFaAlreadyOn',
@@ -130,6 +133,9 @@ const PATTERN_KEY: { shape: RegExp; key: Key; params?: (match: RegExpMatchArray)
 
 /** Statuses that say enough on their own when the sentence was unknown. */
 const STATUS_KEY: { matches: (status: number) => boolean; key: Key }[] = [
+  { matches: (s) => s === 401, key: 'serverError.signInRequired' },
+  { matches: (s) => s === 403, key: 'serverError.forbidden' },
+  { matches: (s) => s === 408 || s === 504, key: 'serverError.timeout' },
   { matches: (s) => s === 429, key: 'serverError.tooManyAttempts' },
   { matches: (s) => s >= 500, key: 'serverError.unavailable' },
 ];
@@ -137,7 +143,7 @@ const STATUS_KEY: { matches: (status: number) => boolean; key: Key }[] = [
 export interface CustomerErrorOptions {
   /** Wording this caller has for a server `code`, tried before the shared table. */
   byCode?: Record<string, Key>;
-  /** Where the withheld original is reported. Defaults to the console. */
+  /** Receives safe diagnostic metadata, never the free-form server payload. */
   report?: (detail: { message: string; status?: number; code?: string }) => void;
 }
 
@@ -170,34 +176,35 @@ export function customerErrorText(error: unknown, t: Translate, fallback: string
 
   if (code) {
     const key = options.byCode?.[code] ?? CODE_KEY[code];
-    if (key) return t(key);
+    if (typeof key === 'string') return t(key);
   }
 
   if (message) {
     const phrase = PHRASE_KEY[message];
-    if (phrase) return t(phrase);
+    if (typeof phrase === 'string') return t(phrase);
     for (const rule of PATTERN_KEY) {
       const match = message.match(rule.shape);
       if (match) return t(rule.key, rule.params?.(match));
     }
   }
 
-  // Past this point the server's own answer was not recognised, so it goes
-  // to the console whatever we end up showing. An unmapped sentence is a gap
-  // in the tables above, and a gap nobody can see never gets closed.
+  // Keep an observable failure without logging free-form secrets, personal
+  // data, arbitrary error codes or payloads supplied by the server.
   if (message || code) {
     const report =
       options.report ??
       ((detail) => {
         console.warn('[customer-error] unmapped server failure', detail.status ?? '', detail.code ?? '', detail.message);
       });
-    report({ message, status, code });
+    report({ message: 'Unmapped server failure', status: status !== undefined && status >= 100 && status <= 599 ? status : undefined });
   }
 
   if (status !== undefined) {
     const rule = STATUS_KEY.find((entry) => entry.matches(status));
     if (rule) return t(rule.key);
   }
+
+  if (error instanceof Error && error.name === 'TimeoutError') return t('serverError.timeout');
 
   return fallback;
 }

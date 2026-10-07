@@ -36,18 +36,18 @@ export function SpotOrdersView({ orders, loading, refreshing = false, error, his
         const quote = order.pair.split('/')[1] ?? '';
         const base = order.pair.split('/')[0] ?? '';
         return <tr key={order.id} data-order-id={order.id}>
-          <td className="spot-order-time"><time dateTime={validDate ? date.toISOString() : undefined} title={validDate ? date.toLocaleString(locale) : order.createdAt}>
+          <td className="spot-order-time"><time dateTime={validDate ? date.toISOString() : undefined} title={validDate ? date.toLocaleString(locale) : undefined}>
             <span>{validDate ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}</span>
             <small>{validDate ? date.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</small>
           </time></td>
           <td className="spot-order-pair">{order.pair}</td>
-          <td title={order.type.replace(/_/g, ' ')}>{spotOrderType(order, t)}</td>
+          <td title={spotOrderType(order, t)}>{spotOrderType(order, t)}</td>
           <td className={order.side === 'BUY' ? 'side-buy' : 'side-sell'}>{t(order.side === 'BUY' ? 'trade.buy' : 'trade.sell')}</td>
-          <td className="spot-order-number" title={order.price == null ? undefined : `${order.price} ${quote}`}>{order.price == null ? t('trade.market') : formatOrderDecimal(order.price)}</td>
-          <td className="spot-order-number" title={`${order.originalQuantity} ${base}`}>{formatOrderDecimal(order.originalQuantity)}</td>
+          <td className="spot-order-number" title={order.price == null ? undefined : `${formatOrderDecimal(order.price)} ${quote}`}>{order.price == null ? t('trade.market') : formatOrderDecimal(order.price)}</td>
+          <td className="spot-order-number" title={`${formatOrderDecimal(order.originalQuantity)} ${base}`}>{formatOrderDecimal(order.originalQuantity)}</td>
           <td className="spot-order-number">{formatOrderDifference(order.originalQuantity, order.remainingQuantity)}</td>
           <td className="spot-order-number">{formatOrderProduct(order.price, order.originalQuantity)}{order.price != null && <small className="spot-order-unit"> {quote}</small>}</td>
-          <td className="spot-order-number" title={order.triggerPrice ?? undefined}>{formatOrderDecimal(order.triggerPrice)}</td>
+          <td className="spot-order-number" title={order.triggerPrice == null ? undefined : formatOrderDecimal(order.triggerPrice)}>{formatOrderDecimal(order.triggerPrice)}</td>
           <td><span className="spot-order-status" data-status={order.status}>{spotOrderStatus(order.status, t)}</span></td>
           {!history && <td><button type="button" className="cancel-btn" disabled={cancelling} onClick={() => onCancel?.(order.id)} aria-label={`${t('trade.cancel')} ${order.pair} ${order.id}`}>
             {cancellingId === order.id ? t('trade.cancelling') : t('trade.cancel')}
