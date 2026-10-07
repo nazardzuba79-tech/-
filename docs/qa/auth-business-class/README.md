@@ -104,7 +104,8 @@ opacity 1. Commission wording remains an atomic phrase (not a badge), attributed
 explicitly to VOLTEX in all seven locales; it makes no claim about third-party
 bank/ATM charges. Existing tariffs and card conditions are unchanged.
 Only necessary internal text spacing changes: 40px right inset on the Russian
-photo text, compact title line-height 1.15 and natural, non-balanced wrapping.
+photo text, compact title line-height 1.15, -.025em letter spacing and natural,
+non-balanced wrapping.
 These keep the longer heading between both protected cards at 1366x768.
 Photo overlap checks now measure every actual text-node rectangle and flag,
 rather than empty flex-box area. All protected source regions remain enforced.
@@ -114,7 +115,10 @@ geometry. This also accommodates wider platform font metrics without
 overlapping the black card at a 700px window height.
 Preservation locks also cover the shell markup outside the currency presentation, all CSS outside these captions,
 and the unchanged soft bottom gradient. No global number replacement is used.
-Local TypeScript/build and focused preservation/localization/auth tests passed. Fresh remote exact-head
+Local TypeScript/build and five focused suites / 168 tests passed. The full
+browser matrix also passes with the existing Arial fallback selected before
+first paint, covering the wider font metrics found in Linux CI without changing
+production fonts or relaxing any overlap check. Fresh remote exact-head
 CI is still required for this follow-up; earlier PR/head results are not
 evidence for this revision.
 No checks are waived or disabled.
