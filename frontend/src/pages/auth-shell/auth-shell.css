@@ -149,7 +149,7 @@
 }
 .vx-auth-brand-localized > .vx-auth-extras { bottom: 78px; }
 /* Use the free lower-left width without crossing the unchanged card hand. */
-.vx-auth-brand-banner > .vx-auth-extras { max-width: min(440px, calc(52% - clamp(24px, 2.5vw, 40px))); }
+.vx-auth-brand-banner > .vx-auth-extras { max-width: min(480px, calc(60% - clamp(24px, 2.5vw, 40px))); }
 .vx-auth .vx-auth-community { display: flex; align-items: center; gap: 14px; }
 .vx-auth .vx-auth-currencies { display: inline-flex; flex: none; }
 .vx-auth .vx-auth-currency {
@@ -160,13 +160,14 @@
   height: 36px;
   border: 1.5px solid #f8f3e6;
   border-radius: 50%;
-  background: #f6efdf;
+  overflow: hidden;
 }
 .vx-auth .vx-auth-currency + .vx-auth-currency { margin-left: -8px; }
-.vx-auth .vx-auth-currency svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.vx-auth .vx-auth-currency svg { display: block; width: auto; height: 100%; max-width: none; }
 .vx-auth .vx-auth-community-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .vx-auth .vx-auth-community-copy strong { font-size: 16px; font-weight: 600; line-height: 1.25; }
 .vx-auth .vx-auth-community-copy > span { font-size: 14px; font-weight: 400; line-height: 1.4; }
+.vx-auth .vx-auth-currency-amount { display: inline-block; white-space: nowrap; }
 .vx-auth .vx-auth-card-caption { display: flex; align-items: center; gap: 10px; font-size: clamp(10px, 1.4svh, 12px); line-height: 1.4; }
 .vx-auth .vx-auth-card-number { font-weight: 650; color: #70541f; }
 .vx-auth .vx-auth-card-label { max-width: 250px; }
@@ -181,10 +182,9 @@
 @media (max-width: 760px) {
   .vx-auth .vx-auth-community { gap: 12px; }
   .vx-auth .vx-auth-currency { width: 28px; height: 28px; }
-  .vx-auth .vx-auth-currency svg { width: 14px; height: 14px; }
   .vx-auth .vx-auth-community-copy { text-wrap: balance; }
   .vx-auth .vx-auth-community-copy strong { font-size: 15px; }
-  .vx-auth .vx-auth-community-copy > span { font-size: 13px; }
+  .vx-auth .vx-auth-community-copy > span { font-size: 13px; text-wrap: wrap; }
 }
 
 /* Light form theme also scopes the existing language switcher's tokens. */

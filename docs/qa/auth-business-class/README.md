@@ -1,21 +1,21 @@
 # Login / Register — selected banner and real form
 
-PR #466, branch `codex/auth-business-class-visual`.
-Refreshed onto main `3e64ae89e4b328dfc3577e0539301c20ee07b31e`, retaining #465
-and #467. No merge into main or production deployment is authorized.
+Follow-up branch `codex/auth-fiat-flags-copy` from main
+`8cbb74becc694ef29b90691d3f472390f2a1a413`, after #466 was merged externally.
+The owner authorized a new narrow PR, not merge or production deployment.
 
 Russian Login and Register now use only the left 919 x 941 crop of the approved
 `voltex-premium-gold-button-v6.png`. This supersedes the earlier real-photo/RU
 text composition. The lossless crop preserves every decoded pixel. Its embedded
 logo and slogan appear once: no HTML headline or white card.
 The owner-requested benefits and static card caption are ordinary localized
-HTML: three local inline SVG fiat icons (RUB, USD, CNY), localized card title/subtitle,
+HTML: three local inline SVG fiat flags (RUB/RU, USD/US, CNY/CN), localized card title/subtitle,
 then `01`, the existing card label and a thin line. No shared panel, border,
 blur, raised shadow, numeric badge, carousel or testimonial claim is added.
 No verified evidence for the previous 1.2 million investor figure was found;
 old copy and comments are not evidence. The owner replaced the neutral community
 copy with the two lines “Платите и снимайте наличные” and
-“22+ валют · 70 криптовалют”. All seven locales retain the exact 22+/70 product
+“22+ фиатных валют · 70+ криптовалют”. All seven locales retain the exact 22+/70+ product
 figures, supplied by the owner rather than independently verified coverage.
 See `frontend/public/auth/README.md` for image hashes.
 
@@ -59,8 +59,8 @@ of a browser-toolbar zoom interaction). Geometry uses intrinsic raster size,
 computed object-fit/object-position, painted bounds, panel coverage and protected
 source regions. Checks also cover scroll access and validation errors.
 Benefits checks require exactly one visible pair, three distinct local inline
-currency SVGs (not portraits or external images), decorative accessibility semantics, localized card copy without the
-unsupported investor counter, exact 22+/70 product figures, transparent unframed wrappers, and no protected-region or
+currency flag SVGs (not portraits or external images), decorative accessibility semantics, localized card copy without the
+unsupported investor counter, exact 22+/70+ product figures, transparent unframed wrappers, and no protected-region or
 form/support/legal overlap. The prior behavior and geometry checks remain.
 Local result: 38 main cases + 12 resize/zoom-reflow cases PASS, CLS 0 on initial
 loads; no horizontal overflow, clipped content, failed images, unexpected
@@ -89,8 +89,16 @@ the text or overlapping the black card at a 700px window height.
 Preservation locks also cover the shell markup outside the fiat-icon row, all CSS outside these captions,
 and the unchanged soft bottom gradient. No global number replacement is used.
 Local TypeScript/build and 176 targeted tests passed. Fresh remote exact-head
-results are recorded on PR #466; older CI is not evidence for this revision.
+results are recorded on the follow-up PR; #466 CI is not evidence for this revision.
 No checks are waived or disabled.
+
+The fiat-logo reference is TradingView's [USD/RUB](https://www.tradingview.com/symbols/USDRUB/)
+and [USD/CNY](https://www.tradingview.com/symbols/USDCNY/) country-flag treatment.
+Implementation reuses the existing MIT-licensed `country-flag-icons/react/3x2`
+package, not TradingView CDN assets. Each flag fills its original 36/28px circular
+footprint with centered, proportionate clipping. No new dependency, remote logo
+request, new generation or investor count. Only the lower Russian block gains
+available width for the longer fiat caption; the photo and form geometry are unchanged.
 
 ## Publication boundary
 

@@ -39,6 +39,10 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         report.denied.push(`Removed portrait asset requested: ${url.pathname}`);
         return route.abort();
       }
+      if (req.resourceType() === 'image' && !/^\/auth\/(?:selected-cabin-banner|business-class-(?:960|1440|mobile))\.webp$/.test(url.pathname)) {
+        report.denied.push(`Unexpected image asset requested: ${url.pathname}`);
+        return route.abort();
+      }
       if (!['GET', 'HEAD'].includes(req.method())) {
         const fixture = fixtures[0];
         if (url.origin === origin && req.method() === 'POST' && fixture?.path === url.pathname) {
@@ -88,9 +92,16 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       };
       const textLayout = node => {
         const range = document.createRange();
-        range.selectNodeContents(node);
+        // Count painted text lines, excluding inline-block wrapper boxes whose
+        // line-height can put their top a pixel above the contained glyphs.
+        const textNodes = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+        const rects = [];
+        while (textNodes.nextNode()) {
+          range.selectNodeContents(textNodes.currentNode);
+          rects.push(...range.getClientRects());
+        }
         const style = getComputedStyle(node);
-        return { ...rect(node), lines: new Set([...range.getClientRects()].map(r => Math.round(r.y))).size, fontSize: parseFloat(style.fontSize), fontWeight: Number(style.fontWeight), color: style.color };
+        return { ...rect(node), lines: new Set(rects.filter(r => r.width > 0).map(r => Math.round(r.y))).size, fontSize: parseFloat(style.fontSize), fontWeight: Number(style.fontWeight), color: style.color };
       };
       const extras = [...document.querySelectorAll('.vx-auth-extras')].filter(visible).map(node => ({
         ...rect(node), inBrand: !!node.closest('.vx-auth-brand'), text: node.textContent.trim(),
@@ -100,19 +111,25 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         subtitle: node.querySelector('.vx-auth-community-copy span').textContent.trim(),
         titleLayout: textLayout(node.querySelector('.vx-auth-community-copy strong')),
         subtitleLayout: textLayout(node.querySelector('.vx-auth-community-copy > span')),
+        amounts: [...node.querySelectorAll('.vx-auth-currency-amount')].map(amount => ({ ...textLayout(amount), text: amount.textContent.trim(), whiteSpace: getComputedStyle(amount).whiteSpace })),
         copyLayout: rect(node.querySelector('.vx-auth-community-copy')),
         currencyLayout: rect(node.querySelector('.vx-auth-currencies')),
         caption: { ...rect(node.querySelector('.vx-auth-card-caption')), number: node.querySelector('.vx-auth-card-number').textContent.trim(), label: node.querySelector('.vx-auth-card-label').textContent.trim() },
         currencies: [...node.querySelectorAll('.vx-auth-currency')].map(currency => {
           const svg = currency.querySelector('svg');
           const style = svg && getComputedStyle(svg);
+          const circleStyle = getComputedStyle(currency);
           return {
             ...rect(currency), code: currency.dataset.currency,
-            image: getComputedStyle(currency).backgroundImage, radius: getComputedStyle(currency).borderRadius,
+            image: circleStyle.backgroundImage, radius: circleStyle.borderRadius,
+            overflow: circleStyle.overflow, border: parseFloat(circleStyle.borderLeftWidth),
             svgCount: currency.querySelectorAll('svg').length,
             svg: svg ? { ...rect(svg), viewBox: svg.getAttribute('viewBox'), hidden: svg.getAttribute('aria-hidden'), focusable: svg.getAttribute('focusable'),
-              stroke: style.stroke, strokeWidth: parseFloat(style.strokeWidth), fill: style.fill, display: style.display, visibility: style.visibility, opacity: style.opacity,
-              paths: [...svg.querySelectorAll('path')].map(path => path.getAttribute('d')),
+              display: style.display, visibility: style.visibility, opacity: style.opacity,
+              paths: [...svg.querySelectorAll('path')].map(path => {
+                const pathStyle = getComputedStyle(path);
+                return { d: path.getAttribute('d'), fill: pathStyle.fill, display: pathStyle.display, visibility: pathStyle.visibility, opacity: pathStyle.opacity };
+              }),
               children: [...svg.children].map(child => child.tagName),
             } : null,
           };
@@ -184,11 +201,19 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     const { extras, brand, paintedRaster: painted, viewport } = measurements;
     assert.equal(extras.length, 1, `${label} exactly one visible community/caption pair`);
     const block = extras[0];
-    assert.equal(await page.locator('.vx-auth-extras :is(a,button,input,select,textarea)').count(), 0, `${label} restored blocks are static, not a carousel or control`);
+    assert.equal(await page.locator('.vx-auth-extras :is(a,button,input,select,textarea,[tabindex],img,image,use,foreignObject,script)').count(), 0, `${label} restored blocks are static local SVGs, not images, linked content or controls`);
     assert.equal(await page.locator('.vx-auth-community-badge,.vx-auth-carousel,.vx-auth-pagination').count(), 0, `${label} no unsupported counter badge or carousel`);
     assert.equal(await page.locator('.vx-auth-avatar,.vx-auth-avatars').count(), 0, `${label} portraits and their old wrappers are removed`);
     assert.doesNotMatch(block.text, /1[,.]2|млн|million|[0-9]\s*[Mm]\+|TEST|DEMO|NOT TRADABLE/, `${label} no unsupported investor count or new advertising labels`);
-    assert.deepEqual(block.subtitle.match(/\d+\+?/g), ['22+', '70'], `${label} exact currency/crypto counts, not an age or investor statistic`);
+    assert.deepEqual(block.subtitle.match(/\d+\+?/g), ['22+', '70+'], `${label} exact fiat/crypto counts, not an age or investor statistic`);
+    assert.equal(block.amounts.length, 2, `${label} fiat and crypto amounts each have one text group`);
+    const [fiatCaption, cryptoCaption] = block.subtitle.split(' · ');
+    assert.deepEqual(block.amounts.map(amount => amount.text), [`${fiatCaption} ·`, cryptoCaption], `${label} separator stays with the fiat amount, never starts the crypto line`);
+    for (const amount of block.amounts) {
+      assert.equal(amount.lines, 1, `${label} count and currency label never split across lines`);
+      assert.equal(amount.whiteSpace, 'nowrap', `${label} each complete amount stays together`);
+      assert.ok(amount.x >= block.copyLayout.x - 1 && amount.right <= block.copyLayout.right + 1, `${label} complete amount fits the available copy width`);
+    }
     assert.doesNotMatch(block.title, /[.。]$/, `${label} no trailing title period`);
     assert.doesNotMatch(block.subtitle, /[.。]$/, `${label} no trailing subtitle period`);
     const captionGap = block.caption.y - block.community.bottom;
@@ -196,8 +221,8 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     const textGap = block.subtitleLayout.y - block.titleLayout.bottom;
     assert.ok(textGap >= 5 && textGap <= 6, `${label} two text rows have 5–6px spacing: ${textGap}`);
     const currencyGap = block.copyLayout.x - block.currencyLayout.right;
-    assert.ok(currencyGap >= 12 && currencyGap <= 16, `${label} currency symbols have 12–16px breathing room: ${currencyGap}`);
-    assert.ok(Math.abs(block.currencyLayout.y + block.currencyLayout.height / 2 - block.copyLayout.y - block.copyLayout.height / 2) <= 1, `${label} currency symbols are vertically centered on the text`);
+    assert.ok(currencyGap >= 12 && currencyGap <= 16, `${label} currency flags have 12–16px breathing room: ${currencyGap}`);
+    assert.ok(Math.abs(block.currencyLayout.y + block.currencyLayout.height / 2 - block.copyLayout.y - block.copyLayout.height / 2) <= 1, `${label} currency flags are vertically centered on the text`);
     assert.ok(block.titleLayout.fontWeight >= 500 && block.titleLayout.fontWeight <= 600, `${label} medium/semibold main row`);
     assert.equal(block.subtitleLayout.fontWeight, 400, `${label} ordinary-weight second row`);
     assert.ok(block.titleLayout.fontSize >= 15 && block.subtitleLayout.fontSize >= 13 && block.titleLayout.fontSize > block.subtitleLayout.fontSize, `${label} readable hierarchy, not tiny text`);
@@ -209,30 +234,35 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     }
     assert.deepEqual(block.currencies.map(currency => currency.code), ['RUB', 'USD', 'CNY'], `${label} ruble, dollar and Chinese yuan, not Japanese yen`);
     assert.equal(block.currencyGroupHidden, 'true', `${label} currency row is decorative, not controls or statistics`);
+    const flagColors = {
+      RUB: ['rgb(255, 255, 255)', 'rgb(0, 57, 166)', 'rgb(213, 43, 30)'],
+      USD: ['rgb(255, 255, 255)', 'rgb(216, 0, 39)', 'rgb(46, 82, 178)'],
+      CNY: ['rgb(216, 0, 39)', 'rgb(255, 218, 68)'],
+    };
     const paths = new Set();
     for (const currency of block.currencies) {
-      assert.equal(currency.image, 'none', `${label} local SVG replaces portrait backgrounds`);
+      assert.equal(currency.image, 'none', `${label} flags use inline SVG, not image backgrounds`);
       assert.equal(currency.radius, '50%', `${label} circular currency icon`);
+      assert.equal(currency.overflow, 'hidden', `${label} flag is clipped to its circle`);
       assert.ok(Math.abs(currency.width - currency.height) < 1, `${label} undistorted currency circle`);
       assert.equal(currency.width, viewport.width <= 760 ? 28 : 36, `${label} existing compact/desktop circle size`);
       assert.equal(currency.svgCount, 1, `${label} exactly one inline SVG per currency`);
-      assert.ok(currency.svg && currency.svg.width > 0 && currency.svg.height > 0, `${label} currency symbol is painted`);
-      assert.ok(Math.abs(currency.svg.width - currency.svg.height) < 1, `${label} undistorted SVG`);
-      assert.equal(currency.svg.viewBox, '0 0 24 24', `${label} stable local SVG coordinates`);
+      assert.ok(currency.svg && currency.svg.width > 0 && currency.svg.height > 0, `${label} currency flag is painted`);
+      assert.ok(Math.abs(currency.svg.width / currency.svg.height - 1.5) < .01, `${label} original 3:2 flag aspect ratio is preserved`);
+      assert.equal(currency.svg.viewBox, '0 0 513 342', `${label} existing local flag coordinates`);
       assert.equal(currency.svg.hidden, 'true', `${label} decorative SVG is hidden from assistive technology`);
       assert.equal(currency.svg.focusable, 'false', `${label} decorative SVG is not focusable`);
-      assert.equal(currency.svg.stroke, 'rgb(18, 58, 51)', `${label} visible dark-green glyph`);
-      assert.ok(currency.svg.strokeWidth > 0, `${label} currency path has visible stroke`);
-      assert.equal(currency.svg.fill, 'none', `${label} outlined currency glyph`);
-      assert.notEqual(currency.svg.display, 'none', `${label} glyph is displayed`);
-      assert.equal(currency.svg.visibility, 'visible', `${label} glyph is visible`);
-      assert.equal(currency.svg.opacity, '1', `${label} glyph is not transparent`);
-      assert.ok(currency.svg.paths.length > 0 && currency.svg.paths.every(Boolean), `${label} local glyph paths are nonempty`);
-      assert.ok(currency.svg.children.every(tag => tag === 'path'), `${label} no external images, linked glyphs or script in SVG`);
-      assert.ok(currency.svg.x >= currency.x && currency.svg.right <= currency.right && currency.svg.y >= currency.y && currency.svg.bottom <= currency.bottom, `${label} symbol fits its circle`);
-      paths.add(currency.svg.paths.join('|'));
+      assert.notEqual(currency.svg.display, 'none', `${label} flag is displayed`);
+      assert.equal(currency.svg.visibility, 'visible', `${label} flag is visible`);
+      assert.equal(currency.svg.opacity, '1', `${label} flag is not transparent`);
+      assert.ok(currency.svg.paths.length >= 2 && currency.svg.paths.every(path => path.d && path.display !== 'none' && path.visibility === 'visible' && path.opacity === '1'), `${label} local flag paths are painted and nonempty`);
+      assert.deepEqual([...new Set(currency.svg.paths.map(path => path.fill))].sort(), [...flagColors[currency.code]].sort(), `${label} ${currency.code} retains its recognizable flag colors`);
+      assert.ok(currency.svg.children.every(tag => tag === 'path'), `${label} no external images, linked flags or script in SVG`);
+      assert.ok(Math.abs(currency.svg.x + currency.svg.width / 2 - currency.x - currency.width / 2) <= 1 && Math.abs(currency.svg.y + currency.svg.height / 2 - currency.y - currency.height / 2) <= 1, `${label} flag crop is centered`);
+      assert.ok(Math.abs(currency.svg.height - (currency.height - currency.border * 2)) <= 1 && currency.svg.width >= currency.width - currency.border * 2, `${label} flag fills its circle without empty bands`);
+      paths.add(currency.svg.paths.map(path => path.d).join('|'));
     }
-    assert.equal(paths.size, 3, `${label} each currency has a distinct glyph`);
+    assert.equal(paths.size, 3, `${label} each currency has a distinct flag`);
     assert.ok(block.currencies[1].x < block.currencies[0].right && block.currencies[2].x < block.currencies[1].right, `${label} compact overlapping currency row`);
     assert.equal(block.caption.number, '01', `${label} static card caption number`);
     assert.ok(block.caption.label.length > 5, `${label} localized card caption remains populated`);
@@ -250,7 +280,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     }
     if (lang === 'ru') {
       assert.equal(block.title, 'Платите и снимайте наличные');
-      assert.equal(block.subtitle, '22+ валют · 70 криптовалют');
+      assert.equal(block.subtitle, '22+ фиатных валют · 70+ криптовалют');
       assert.equal(block.caption.label.toLocaleLowerCase('ru'), 'карта, которая всегда с вами');
       if (viewport.height <= 760) assert.equal(block.inBrand, false, `${label} short/zoomed windows use the existing post-form slot, clear of both cards`);
     } else {

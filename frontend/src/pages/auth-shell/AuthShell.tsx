@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRightIcon } from 'lucide-react';
+import { RU, US, CN } from 'country-flag-icons/react/3x2';
 import { Logo, LogoMark } from '../../components/Logo';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useLanguage } from '../../lib/i18n';
@@ -8,32 +9,27 @@ import { openSupportWidget } from '../../lib/supportWidget';
 import './auth-shell.css';
 import './auth-form-premium.css';
 
-/** Decorative fiat symbols: ruble, US dollar and Chinese yuan, not a user count. */
+/** Decorative fiat flags: ruble, US dollar and Chinese yuan, not a user count. */
 function AuthCommunity() {
   const { t } = useLanguage();
+  const [fiatCaption, cryptoCaption] = t('authShell.communitySubtitle').split(' · ');
   return (
     <div className="vx-auth-extras">
       <div className="vx-auth-community">
         <span className="vx-auth-currencies" aria-hidden="true">
           <span className="vx-auth-currency" data-currency="RUB">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M8 21V3h7a4 4 0 0 1 0 8H5M5 16h10" />
-            </svg>
+            <RU aria-hidden="true" focusable="false" />
           </span>
           <span className="vx-auth-currency" data-currency="USD">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
+            <US aria-hidden="true" focusable="false" />
           </span>
           <span className="vx-auth-currency" data-currency="CNY">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="m4 3 8 10 8-10M12 13v8M5 13h14M5 17h14" />
-            </svg>
+            <CN aria-hidden="true" focusable="false" />
           </span>
         </span>
         <div className="vx-auth-community-copy">
           <strong>{t('authShell.communityTitle')}</strong>
-          <span>{t('authShell.communitySubtitle')}</span>
+          <span><span className="vx-auth-currency-amount">{fiatCaption} ·</span>{' '}<span className="vx-auth-currency-amount">{cryptoCaption}</span></span>
         </div>
       </div>
       <div className="vx-auth-card-caption">

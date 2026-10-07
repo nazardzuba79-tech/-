@@ -178,7 +178,7 @@ export const EN: Record<Key, string> = {
   'authShell.communityText': 'already follow the market with VOLTEX',
   'authShell.communityBadge': '1.2M+',
   'authShell.communityTitle': 'Pay and withdraw cash',
-  'authShell.communitySubtitle': '22+ currencies · 70 cryptocurrencies',
+  'authShell.communitySubtitle': '22+ fiat currencies · 70+ cryptocurrencies',
   'authShell.cardCaption': 'THE CARD THAT GOES WITH YOU',
   'authShell.supportHint': 'Need help signing in?',
   'authShell.supportLink': 'Support',

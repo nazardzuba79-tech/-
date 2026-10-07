@@ -19,7 +19,7 @@ function renderShell(lang: string) {
     './auth-shell.css': {}, './auth-form-premium.css': {},
     '../../components/Logo': { Logo: () => React.createElement('span', null, 'HTML_LOGO'), LogoMark: () => null },
     '../../components/LanguageSwitcher': { LanguageSwitcher: () => null },
-    '../../lib/i18n': { useLanguage: () => ({ lang, t: (key: string) => `localized:${lang}:${key}` }) },
+    '../../lib/i18n': { useLanguage: () => ({ lang, t: (key: string) => key === 'authShell.communitySubtitle' ? `localized:${lang}:${key}:fiat · localized:${lang}:${key}:crypto` : `localized:${lang}:${key}` }) },
     '../../lib/supportWidget': { openSupportWidget: jest.fn() },
     'react-router-dom': { Link: ({ to, children, ...rest }: any) => React.createElement('a', { href: to, ...rest }, children) },
   };
@@ -32,12 +32,15 @@ function renderShell(lang: string) {
 }
 
 describe('business-class visual preserves reviewed authentication', () => {
-  test('fiat-icon follow-up preserves shell outside the decorative icon group, photo scrim and other styles', () => {
-    // Fingerprint computed from reviewed head ab24d3da. Exclude only the
-    // authorized icon span and its descriptive comment, not AuthCommunity or
-    // AuthShell: all copy, captions, form placement and auth wiring stay locked.
+  test('fiat-flag follow-up preserves shell outside the decorative icon group, photo scrim and other styles', () => {
+    // The ab24d3da fingerprint also matches fresh main 8cbb74be after this exact
+    // normalization. Only the three-flag import, decorative span/comment and
+    // exact subtitle grouping are exempt: localization, captions, form and auth stay locked.
     const preservedShell = shell
-      .replace(/\/\*\* Decorative (?:portraits, not testimonials or an independently verified count|fiat symbols: ruble, US dollar and Chinese yuan, not a user count)\. \*\//, '/* Decorative icon-only follow-up. */')
+      .replace(/^import \{ RU, US, CN \} from 'country-flag-icons\/react\/3x2';\n/m, '')
+      .replace("  const [fiatCaption, cryptoCaption] = t('authShell.communitySubtitle').split(' · ');\n", '')
+      .replace("          <span><span className=\"vx-auth-currency-amount\">{fiatCaption} ·</span>{' '}<span className=\"vx-auth-currency-amount\">{cryptoCaption}</span></span>", "          <span>{t('authShell.communitySubtitle')}</span>")
+      .replace(/\/\*\* Decorative (?:portraits, not testimonials or an independently verified count|fiat (?:symbols|flags): ruble, US dollar and Chinese yuan, not a user count)\. \*\//, '/* Decorative icon-only follow-up. */')
       .replace(/        <span className="vx-auth-(?:avatars|currencies)" aria-hidden="true">[\s\S]*?\n        <\/span>(?=\n        <div className="vx-auth-community-copy">)/, '        {/* Decorative icon group. */}');
     expect(digest(preservedShell)).toBe('dc6b24e6f7ec31917072e12dd191bd4315ad75699bef58d1df7c9524fd036bbe');
     expect(digest(css.slice(0, css.indexOf('/* Static, localized photo captions.')) + css.slice(css.indexOf('/* Light form theme'))))
@@ -89,22 +92,24 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(html.match(/class="vx-auth-currencies" aria-hidden="true"/g)).toHaveLength(2);
     const icons = [...html.matchAll(/<span class="vx-auth-currency" data-currency="([^"]+)">(<svg[\s\S]*?<\/svg>)<\/span>/g)];
     expect(icons.map(icon => icon[1])).toEqual(['RUB', 'USD', 'CNY', 'RUB', 'USD', 'CNY']);
-    const paths: Record<string, string> = {
-      RUB: 'M8 21V3h7a4 4 0 0 1 0 8H5M5 16h10',
-      USD: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-      CNY: 'm4 3 8 10 8-10M12 13v8M5 13h14M5 17h14',
-    };
+    const { RU, US, CN } = req('country-flag-icons/react/3x2');
+    const flags: Record<string, unknown> = { RUB: RU, USD: US, CNY: CN };
     for (const [, currency, svg] of icons) {
-      expect(svg).toContain('viewBox="0 0 24 24"');
+      // Render the existing local package independently: incorrect country
+      // selection, leftover currency glyphs and external flag images all fail.
+      expect(svg).toBe(renderToStaticMarkup(React.createElement(flags[currency], { 'aria-hidden': 'true', focusable: 'false' })));
+      expect(svg).toContain('viewBox="0 0 513 342"');
       expect(svg).toContain('aria-hidden="true"');
       expect(svg).toContain('focusable="false"');
-      expect(svg).toContain(`<path d="${paths[currency]}"></path>`);
+      expect(svg.match(/<path\b/g)!.length).toBeGreaterThanOrEqual(2);
       expect(svg).not.toMatch(/<image\b|<use\b|<foreignObject\b|<text\b|<script\b|tabindex|onclick|href/);
     }
     expect(new Set(icons.slice(0, 3).map(icon => icon[2])).size).toBe(3);
     expect(html).not.toMatch(/vx-auth-avatar|community-v4|data-currency="JPY"/);
     expect(html).toContain(`localized:${lang}:authShell.communityTitle`);
     expect(html).toContain(`localized:${lang}:authShell.communitySubtitle`);
+    expect(html.match(/class="vx-auth-currency-amount"/g)).toHaveLength(4);
+    expect(html).toContain(`<span class="vx-auth-currency-amount">localized:${lang}:authShell.communitySubtitle:fiat ·</span> <span class="vx-auth-currency-amount">localized:${lang}:authShell.communitySubtitle:crypto</span>`);
     expect(html).toContain(`localized:${lang}:authShell.cardCaption`);
     expect(html).toContain('class="vx-auth-card-number">01</span>');
     expect(html).toContain('class="vx-auth-card-line" aria-hidden="true"');
