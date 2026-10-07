@@ -47,16 +47,27 @@ function fixture(req,res,next){
 // The decorative scene has no prices. Preserve the last-good-data checks
 // on the sections that still consume the common hook: overview, heatmap,
 // and popular markets. No old terminal is kept alive for this test.
-const painted=()=>({
+const painted=()=>{
+ const overview=document.querySelector('.vx-home main > .vx-reveal');
+ return {
  scene:document.querySelectorAll('[data-market-platform-hero] [data-market-visual]').length,
  oldTerminal:document.querySelectorAll('.terminal-screen, .sapphire-terminal, #home-live-terminal .book-row, #home-live-terminal .hs-trade-row').length,
- overview:[...document.querySelectorAll('.vx-home main > .vx-reveal')][0]?.textContent||'',
- overviewPlaceholders:[...document.querySelectorAll('.vx-home main > .vx-reveal')][0]?.querySelectorAll('.animate-pulse').length??-1,
+ overview:overview?.textContent||'',
+ // CryptoIcon can replace its image with a letter avatar after an image
+ // failure. Compare confirmed values and row labels, not decorative text.
+ // Each overview list row begins with its icon; data starts at child 1.
+ overviewData:[...(overview?.querySelectorAll('section')||[])].map(panel=>({
+  title:panel.querySelector('h3')?.textContent?.trim()||'',
+  values:[...panel.querySelectorAll('.tabular-nums')].map(node=>node.textContent?.trim()||''),
+  rows:[...panel.querySelectorAll('li')].map(row=>[...row.children].slice(1).map(node=>node.textContent?.trim()||'')),
+ })),
+ overviewPlaceholders:overview?.querySelectorAll('.animate-pulse').length??-1,
  heatmap:document.querySelectorAll('.vx-heatmap-meta').length,
  heatmapBtc:[...document.querySelectorAll('.vx-heat-tile')].some(row=>/BTC/.test(row.textContent||'')&&/76[,.]?746/.test(row.textContent||'')),
  marketsBtc:[...document.querySelectorAll('table tbody tr')].some(row=>/BTC/.test(row.textContent||'')&&/76[,.]?746/.test(row.textContent||'')),
  placeholders:document.querySelectorAll('.vx-heatmap-empty').length,
-});
+ };
+};
 const ready=state=>state.scene===1&&state.oldTerminal===0&&state.heatmap===1&&state.heatmapBtc&&state.marketsBtc&&state.placeholders===0&&state.overviewPlaceholders===0&&/61/.test(state.overview)&&/55\.1%/.test(state.overview)&&/4349\.19/.test(state.overview)&&/Layer 1/.test(state.overview);
 // Both probes run inside the page, so they travel as source text.
 const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
@@ -88,6 +99,28 @@ const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
  let start=Date.now();await page.goto(origin+'/',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(READY,null,{timeout:10000});
  report.firstVisit={readyMs:Date.now()-start,marketRequests:marketRequests.firstVisit.length,metadataRequests:metadataRequests.firstVisit.length,painted:await page.evaluate(PAINTED)};
+ // Exercise the actual probe against both icon states, and prove that it
+ // still catches a changed BTC quote. DOM-only fixture mutation is restored
+ // synchronously; no application state, storage or server data is modified.
+ report.semanticProbe=await page.evaluate(`(() => {
+  const read=${painted};
+  const row=[...document.querySelectorAll('.vx-home main > .vx-reveal:first-of-type li')].find(node=>node.children[1]?.textContent==='BTC');
+  if(!row||!row.children[2])throw new Error('BTC overview row missing from semantic probe');
+  const originalIcon=row.firstElementChild,price=row.children[2],originalPrice=price.textContent;
+  const image=document.createElement('img');image.alt='BTC';
+  const letter=document.createElement('div');letter.textContent='B';
+  let currentIcon=originalIcon;
+  try {
+   currentIcon.replaceWith(image);currentIcon=image;
+   const imageData=JSON.stringify(read().overviewData);
+   currentIcon.replaceWith(letter);currentIcon=letter;
+   const letterData=JSON.stringify(read().overviewData);
+   price.textContent='1.00';
+   const changedPriceData=JSON.stringify(read().overviewData);
+   return {ignoresDecorativeFallback:imageData===letterData,detectsChangedQuote:letterData!==changedPriceData};
+  } finally {price.textContent=originalPrice;currentIcon.replaceWith(originalIcon);}
+ })()`);
+ if(!report.semanticProbe.ignoresDecorativeFallback||!report.semanticProbe.detectsChangedQuote)report.findings.push('Semantic quote probe regression: '+JSON.stringify(report.semanticProbe));
  // 2. It is persisted, versioned, with no request state written as data.
  await page.waitForFunction(key=>{
   const record=JSON.parse(localStorage.getItem(key)||'null');
@@ -144,7 +177,7 @@ const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
  report.reload.marketRequests=marketRequests.reload.slice();
  report.reload.metadataRequests=metadataRequests.reload.slice();
  if(report.reload.marketRequests.length)report.findings.push('Reload with a fresh snapshot issued market requests: '+report.reload.marketRequests.join(', '));
- if(report.reload.painted.overview!==report.firstVisit.painted.overview)report.findings.push('Reload changed the confirmed overview values before any provider replied');
+ if(JSON.stringify(report.reload.painted.overviewData)!==JSON.stringify(report.firstVisit.painted.overviewData))report.findings.push('Reload changed the confirmed overview values before any provider replied');
  const after=await page.evaluate(PAINTED);
  if(!ready(after))report.findings.push('Confirmed values did not survive the failed background API: '+JSON.stringify(after));
 
