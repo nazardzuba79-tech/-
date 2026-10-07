@@ -5863,3 +5863,9 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - See services/stocks/README.md for exact implemented limits and blockers. Stock-only runtime proof must not be described as crypto A/B acceptance. No merge/deploy.
 
 - Follow-up: c361464671bc428c72b1514dfe7a120cb7bad519 passed 3936 frontend tests and bounded-storage CI but FAILED stock-reader crypto p95 acceptance (+12–28%). Reduced only stock quota to 0.05 vCPU and response metadata duplication; workload/thresholds remain unchanged. Full raw CI results retained as artifacts. Current commit carries this follow-up; exact head CI must be checked again. No crypto/backend changes.
+
+## Codex — 2026-10-07 — PR #471 Stocks navigation
+- Follow-up on 8b28fdeef56823f348b2b24f01080e070e2c52a0; this commit moves the single Stocks item into shared Trading menus and adds the four-market mobile chooser, retaining four bottom buttons.
+- Files: Nav/HomeHeader/HeaderDropdown/BottomNav, scoped index.css rules, navigation tests, isolated browser QA and evidence under docs/qa/stocks-navigation.
+- Preserved existing Futures top shortcut, locale dictionaries, stock flag/routes/services/storage, all crypto/financial behavior and other agents changes.
+- Validation: 86 relevant tests, TypeScript/Vite build, 49 localized menu views and five route/back-forward/style-isolation scenarios passed. Prior resource/data-rights blockers remain; no merge or deploy.

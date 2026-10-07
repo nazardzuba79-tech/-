@@ -1,5 +1,3 @@
-declare const __VOLTEX_STOCKS_ENABLED__: boolean;
-const stocksEnabled = typeof __VOLTEX_STOCKS_ENABLED__ !== 'undefined' && __VOLTEX_STOCKS_ENABLED__;
 import { HeaderDropdown, KNOWLEDGE_LINKS, MARKET_LINKS, OTC_LINKS, TRADING_LINKS } from './HeaderDropdown';
 import { TradingBotIcon } from './TradingBotIcon';
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
@@ -30,11 +28,10 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
   const terminalCopy = active === '/trade' || active === '/futures';
   const terminalLabels = terminalNavCopy(lang);
   const marketSectionActive = active === '/markets' || active === '/tools';
-  const tradeSectionActive = active === '/trade';
+  const tradeSectionActive = active === '/trade' || active === '/stocks';
   const otcSectionActive = active === '/otc' || active === '/arbitrage';
   const LINKS=[
     {to:'/markets',label:t('nav.markets')},
-    ...(stocksEnabled ? [{to:'/stocks',label:t('stocks.nav')}] : []),
     {to:'/trade',label:t('nav.trade')},
     {to:'/futures',label:t('nav.futures')},
     {to:'/banking',label:'Banking & Earn'},
