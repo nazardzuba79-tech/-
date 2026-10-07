@@ -7,6 +7,27 @@ on:
 permissions:
   contents: read
 jobs:
+  frontend-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://test:test@127.0.0.1:9/frontend_test_unused
+      DIRECT_URL: postgresql://test:test@127.0.0.1:9/frontend_test_unused
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build --prefix frontend
+      - run: node node_modules/jest/bin/jest.js frontend/src --runInBand --json --outputFile=frontend-stock-review.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-frontend-regression-${{ github.sha }}
+          path: frontend-stock-review.json
   crypto-service-comparison:
     runs-on: ubuntu-latest
     timeout-minutes: 30
