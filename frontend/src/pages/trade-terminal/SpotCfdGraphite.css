@@ -3,7 +3,8 @@
  * The ID arm supplies the same cascade weight as Futures; .vx-terminal
  * deliberately excludes Futures itself, including after client navigation. */
 :is(#archive-terminal-preview, .vx-terminal).vx-terminal {
-  --font-family:'IBM Plex Sans Terminal','Inter Terminal',Inter,system-ui,sans-serif;
+  /* 2026-10-07: Inter and square tiles, as the Futures terminal (Bybit 1:1). */
+  --font-family:'Inter Terminal',Inter,-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
   --tile-ground:#000000;
   --tile-fill:#101014;
   --tile-header:#17181f;
@@ -79,7 +80,7 @@
   }
   :is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.ticker-bar,.cfd-ticker-bar,.left-panel,.pairs-section,.chart-area,.orderbook-area,.order-form-area,.bottom-panel,.cfd-instruments-area,.cfd-chart-area,.cfd-form-area,.cfd-bottom-panel) {
     background:var(--tile-fill) fixed !important; border:0 !important;
-    border-radius:6px; box-shadow:none;
+    border-radius:0; box-shadow:none;
   }
-  :is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.bottom-tabs,.cfd-bottom-tabs,.pairs-header,.terminal-chart-heading,.orderbook-header) { border-radius:6px 6px 0 0; }
+  :is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.bottom-tabs,.cfd-bottom-tabs,.pairs-header,.terminal-chart-heading,.orderbook-header) { border-radius:0; }
 }

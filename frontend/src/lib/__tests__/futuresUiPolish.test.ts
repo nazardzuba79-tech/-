@@ -420,7 +420,12 @@ test.each([
     // Order placement, execution, account source, depth and reference reads
     // are unchanged; futuresFinalPolish mounts the page and still proves one
     // chart, book, ticket and calculator instance across every workspace.
-    "ab3a3ea7bd7fee5c37314a1c22e87700dc9fc45a609644d3b7ae5608b9bf7a9b"
+    // Re-taken 2026-10-07 (Bybit 1:1). What differs: the chart heading is
+    // no longer folded into the toolbar (`foldHeading={false}`), so the
+    // chart has Bybit's two rows — «График» with the VOLTEX | TradingView
+    // switch, then the intervals. Payload, math and every handler unchanged;
+    // futuresFinalPolish still mounts the page and counts one chart.
+    "b76b54e9ad5ac9a2aeca45e6d86b5b627be2d5e4d60818cbef325cc2239ab375"
   ],
   [
     "components/FuturesPairList.tsx",
