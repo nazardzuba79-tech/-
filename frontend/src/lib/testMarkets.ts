@@ -1,5 +1,5 @@
 import type { MarketTicker } from './api';
-import { isAith, validAithLease, type ListingReadLease } from '../../../src/shared/aithPublication';
+import { aithReadClock, isAith, validAithLease, type ListingReadLease } from '../../../src/shared/aithPublication';
 
 /**
  * TEST MARKETS — the pure half (no network, no React).
@@ -82,7 +82,7 @@ export function isManagedTradablePair(pair: string | null | undefined): boolean 
 
 export function managedListingVersion(pair: string): number | undefined {
   const listing = managedListings.get(pair.toUpperCase());
-  return listing && (!isAith(pair) || Date.now() < (listing.leaseDeadline ?? 0)) ? listing.version : undefined;
+  return listing && (!isAith(pair) || aithReadClock() < (listing.leaseDeadline ?? 0)) ? listing.version : undefined;
 }
 
 /** The logo a published listing carries, by ticker. Never a registry lookup by ticker. */

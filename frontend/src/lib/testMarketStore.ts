@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from './api';
 import { fetchNrxPublic, isEdgeMarketUrl, isNrxPair, NRX_EDGE_BASE } from './nrxMarket';
 import { isManagedListingPair, parseTestMarkets, registerManagedListings, SIMULATION_PREVIEW_PARAM, withSimulationPreview, type TestAsset } from './testMarkets';
-import { aithLeaseDeadline, isAith } from '../../../src/shared/aithPublication';
+import { aithLeaseDeadline, aithReadClock, isAith } from '../../../src/shared/aithPublication';
 
 /**
  * TEST MARKETS — the network half. One store per tab, the same idea as
@@ -69,7 +69,7 @@ export class TestMarketStore {
   private highestAithVersion = 0;
 
   private expireAith(): void {
-    const assets = this.state.assets.filter(asset => !isAith(asset.pair) || Date.now() < (asset.leaseDeadline ?? 0));
+    const assets = this.state.assets.filter(asset => !isAith(asset.pair) || aithReadClock() < (asset.leaseDeadline ?? 0));
     if (assets.length === this.state.assets.length) return;
     this.state = { ...this.state, assets };
     for (const { listener } of this.subscribers.values()) listener(this.state);
@@ -78,7 +78,7 @@ export class TestMarketStore {
   private scheduleLease(): void {
     if (this.leaseTimer) clearTimeout(this.leaseTimer);
     const asset = this.state.assets.find(asset => isAith(asset.pair));
-    this.leaseTimer = asset ? setTimeout(() => this.expireAith(), Math.max(0, (asset.leaseDeadline ?? 0) - Date.now())) : null;
+    this.leaseTimer = asset ? setTimeout(() => this.expireAith(), Math.max(0, (asset.leaseDeadline ?? 0) - aithReadClock())) : null;
   }
 
   getState(): TestMarketsState {
@@ -109,7 +109,7 @@ export class TestMarketStore {
     if (this.inFlight) return this.inFlight;
     if (typeof document !== 'undefined' && isBrowserInactive() && this.state.loaded) return Promise.resolve();
     const controller = new AbortController();
-    const requestStartedAt = Date.now();
+    const requestStartedAt = aithReadClock();
     this.controller = controller;
     this.refreshAfterFlight = false;
     this.inFlight = trackBrowserRead(fetchTestMarketJson(this.endpoint, controller.signal)
@@ -121,7 +121,7 @@ export class TestMarketStore {
           if (!isAith(asset.pair)) return true;
           if (!asset.readLease || !asset.version || asset.version < this.highestAithVersion) return false;
           asset.leaseDeadline = aithLeaseDeadline(asset.readLease, requestStartedAt, snapshot.serverTime);
-          if (Date.now() >= asset.leaseDeadline) return false;
+          if (aithReadClock() >= asset.leaseDeadline) return false;
           this.highestAithVersion = asset.version;
           return true;
         });

@@ -4,6 +4,9 @@ export const AITH_READ_LEASE_MS = 45_000;
 export const AITH_LEASE_SAFETY_MS = 1_000;
 export const AITH_PUBLICATION_PROTOCOL = 'aith-prelisting-v1';
 
+/** Browser leases use elapsed time: changing the user's wall clock cannot revive an old version. */
+export const aithReadClock = (): number => performance.now();
+
 export interface ListingReadLease {
   protocol: typeof AITH_PUBLICATION_PROTOCOL;
   generation: number;

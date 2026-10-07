@@ -143,6 +143,7 @@ describe('managed catalogue scheduling with the real store', () => {
     expect(store.getState().assets).toHaveLength(2);
     hang = true;
     await jest.advanceTimersByTimeAsync(15_000);
+    jest.setSystemTime(Date.now() - 86400000); // Wall-clock rollback must not extend the read lease.
     market.visibility(true);
     await jest.advanceTimersByTimeAsync(29_000);
     expect(store.getState().assets.map((x: any) => x.symbol)).toEqual(['QAX']);
