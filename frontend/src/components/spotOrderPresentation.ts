@@ -55,12 +55,17 @@ export function spotOrderType(order: SpotOrderRow, t: (key: any) => string): str
     case 'TAKE_PROFIT_MARKET': return `${t('trade.orderType.TAKE_PROFIT_MARKET')} · ${t('trade.orderType.MARKET')}`;
     case 'LIMIT': return t('trade.orderType.LIMIT');
     case 'MARKET': return t('trade.orderType.MARKET');
-    default: return order.type;
+    default: return t('trade.orderTypeUnavailable');
   }
 }
 export function spotOrderStatus(status: string, t: (key: any) => string): string {
-  return ['OPEN', 'PENDING_TRIGGER', 'PARTIALLY_FILLED', 'FILLED', 'CANCELLED'].includes(status)
-    ? t(`trade.status.${status}`) : status;
+  return ['OPEN', 'PENDING_TRIGGER', 'PARTIALLY_FILLED', 'FILLED', 'CANCELLED', 'REJECTED', 'EXPIRED'].includes(status)
+    ? t(`trade.status.${status}`) : t('trade.statusUnavailable');
+}
+
+export function positionStatus(status: string, t: (key: any) => string): string {
+  return ['OPEN', 'CLOSED', 'LIQUIDATED'].includes(status)
+    ? t(`futures.positionStatus.${status}`) : t('trade.statusUnavailable');
 }
 
 export interface SpotReadController {
