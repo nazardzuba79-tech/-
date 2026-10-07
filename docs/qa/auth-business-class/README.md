@@ -9,11 +9,15 @@ Russian Login and Register now use only the left 919 x 941 crop of the approved
 text composition. The lossless crop preserves every decoded pixel. Its embedded
 logo and slogan appear once: no HTML headline or white card.
 The owner-requested community and static card caption are ordinary localized
-HTML: three existing decorative avatars, neutral community title/subtitle,
+HTML: three existing decorative avatars, localized card title/subtitle,
 then `01`, the existing card label and a thin line. No shared panel, border,
 blur, raised shadow, numeric badge, carousel or testimonial claim is added.
-No verified evidence for the previous 1.2 million figure was found; old copy
-and comments are not evidence. See `frontend/public/auth/README.md` for hashes.
+No verified evidence for the previous 1.2 million investor figure was found;
+old copy and comments are not evidence. The owner replaced the neutral community
+copy with “Карта VOLTEX — по всему миру” and “Покупки и снятие наличных.
+18+ валют и 70 криптовалют.” All seven locales retain the exact 18+/70 product
+figures, supplied by the owner rather than independently verified coverage.
+See `frontend/public/auth/README.md` for image hashes.
 
 The geometry follow-up removes the former contain/55:45 letterboxing. Desktop
 column width follows `viewport height * 919 / 941`, capped at 60% to keep the
@@ -55,8 +59,8 @@ of a browser-toolbar zoom interaction). Geometry uses intrinsic raster size,
 computed object-fit/object-position, painted bounds, panel coverage and protected
 source regions. Checks also cover scroll access and validation errors.
 Community checks require exactly one visible pair, three distinct loaded local
-avatar tiles, decorative accessibility semantics, localized copy without the
-unsupported counter, transparent unframed wrappers, and no protected-region or
+avatar tiles, decorative accessibility semantics, localized card copy without the
+unsupported investor counter, exact 18+/70 product figures, transparent unframed wrappers, and no protected-region or
 form/support/legal overlap. The prior behavior and geometry checks remain.
 Local result: 38 main cases + 12 resize/zoom-reflow cases PASS, CLS 0 on initial
 loads; no horizontal overflow, clipped content, failed images, unexpected

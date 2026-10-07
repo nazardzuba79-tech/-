@@ -166,6 +166,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     assert.equal(await page.locator('.vx-auth-extras :is(a,button,input,select,textarea)').count(), 0, `${label} restored blocks are static, not a carousel or control`);
     assert.equal(await page.locator('.vx-auth-community-badge,.vx-auth-carousel,.vx-auth-pagination').count(), 0, `${label} no unsupported counter badge or carousel`);
     assert.doesNotMatch(block.text, /1[,.]2|млн|million|[0-9]\s*[Mm]\+|TEST|DEMO|NOT TRADABLE/, `${label} no unsupported investor count or new advertising labels`);
+    assert.deepEqual(block.subtitle.match(/\d+\+?/g), ['18+', '70'], `${label} exact owner-approved currency/crypto counts, not an investor statistic`);
     assert.equal(block.avatars.length, 3, `${label} three decorative avatars`);
     assert.equal(block.avatarGroupHidden, 'true', `${label} decorative faces are not presented as client testimonials`);
     const positions = new Set();
@@ -193,8 +194,8 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       assert.equal(style.blur, 'none', `${label} ${style.selector} no glass card`);
     }
     if (lang === 'ru') {
-      assert.equal(block.title, 'Сообщество VOLTEX');
-      assert.equal(block.subtitle, 'Рынки. Идеи. Возможности.');
+      assert.equal(block.title, 'Карта VOLTEX — по всему миру');
+      assert.equal(block.subtitle, 'Покупки и снятие наличных. 18+ валют и 70 криптовалют.');
       assert.equal(block.caption.label.toLocaleLowerCase('ru'), 'карта, которая всегда с вами');
     } else {
       assert.doesNotMatch(block.text, /[А-Яа-яЁё]/, `${label} no Russian copy in another locale`);

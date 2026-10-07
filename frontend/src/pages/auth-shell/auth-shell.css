@@ -148,6 +148,8 @@
   max-width: min(360px, calc(100% - 48px));
 }
 .vx-auth-brand-localized > .vx-auth-extras { bottom: 78px; }
+/* Keep longer card copy to the left of the hand at short viewport heights. */
+.vx-auth-brand-banner > .vx-auth-extras { max-width: min(360px, calc(52% - clamp(24px, 2.5vw, 40px))); }
 .vx-auth .vx-auth-community { display: flex; align-items: center; gap: 12px; }
 .vx-auth .vx-auth-avatars { display: inline-flex; flex: none; }
 .vx-auth .vx-auth-avatar {

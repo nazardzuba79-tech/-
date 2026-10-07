@@ -5810,3 +5810,10 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Unchanged selected-cabin-banner.webp bytes, photo geometry, premium-form CSS and functional auth/2FA/validation/session/referral/returnTo/API sources. No image generation, financial/backend/DB/route or infrastructure change.
 - TypeScript/frontend build and 175 focused tests PASS. Offline built-browser QA covers 38 route/locale/device cases, 12 resize/zoom-reflow equivalents and 3 auth-error fixture scenarios; new assertions verify three local avatars, unframed blocks, neutral copy, protected-image-region clearance and mobile form/support/legal order. Updated actual page screenshots accompany this commit. Fresh exact-head Linux CI is required after push, not the previous head's PASS.
 - No merge, manual deploy or production writes. PR remains review-only.
+
+## Codex — 2026-10-07 — PR #466 owner-approved card wording
+- Implementation commit: commit containing this entry. Fresh main `3e64ae89e4b328dfc3577e0539301c20ee07b31e`; starting PR head `2987369ef15f5d75eb165596b6a1da1737423c16`. Same branch/PR, no unrelated work.
+- Replaced only the two promotional locale values with card payment/cash-withdrawal copy in all seven languages. The owner explicitly supplied 18+ currencies and 70 cryptocurrencies; these are owner-provided product claims, not independently audited coverage. The unsupported investor count/badge stays absent. Russian title is shortened to fit cleanly: “Карта VOLTEX — по всему миру”.
+- Longer copy required one banner-only maximum-width rule to keep it left of the card hand at short heights. No right-form styling/handlers, auth/security, photos, avatar assets, static caption or banner geometry changed. No image generation or backend/API/trading change.
+- Frontend build and 175 targeted tests PASS. Browser checks retain the complete offline route/locale/resize/zoom/auth-error matrix and protected-source-region assertions; the initial long-copy overlap was fixed rather than bypassing the guard. Updated screenshots and final exact-head CI are required before reporting completion.
+- No merge or deployment authorized; production is unchanged.

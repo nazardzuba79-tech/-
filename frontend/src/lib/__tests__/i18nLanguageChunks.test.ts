@@ -67,25 +67,27 @@ const APPROVED_AUTH_DESIGN_KEYS = [
   'authShell.communityCount', 'authShell.communityText', 'authShell.communityBadge',
   'authShell.cardCaption', 'authShell.supportHint', 'authShell.supportLink',
 ];
-// PR #466: two additive neutral community labels. Only these exact additions
+// PR #466: two additive auth promotional labels. Only these exact additions
 // are omitted from the historical digest; existing numeric/other copy is not changed.
 const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySubtitle'];
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
-  it('adds the two neutral auth community labels once in each locale without an investor claim', () => {
+  it('localizes the owner-approved card copy and exact 18+/70 counts without an investor claim', () => {
     for (const code of LOCALES) {
       const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
       for (const key of AUTH_COMMUNITY_KEYS) {
         expect(sourceKeys.filter(sourceKey => sourceKey === key)).toHaveLength(1);
         expect(dicts[code][key]?.trim()).toBeTruthy();
-        expect(dicts[code][key]).not.toMatch(/\d|million|миллион|млн|万|백만|लाख/i);
+        expect(dicts[code][key]).not.toMatch(/1[.,]2|million|миллион|млн|万|백만|लाख|30\+/i);
       }
+      expect(dicts[code]['authShell.communityTitle']).toContain('VOLTEX');
+      expect(dicts[code]['authShell.communitySubtitle'].match(/\d+\+?/g)).toEqual(['18+', '70']);
     }
     for (const key of AUTH_COMMUNITY_KEYS) expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
-    expect(dicts.ru['authShell.communityTitle']).toBe('Сообщество VOLTEX');
-    expect(dicts.ru['authShell.communitySubtitle']).toBe('Рынки. Идеи. Возможности.');
+    expect(dicts.ru['authShell.communityTitle']).toBe('Карта VOLTEX — по всему миру');
+    expect(dicts.ru['authShell.communitySubtitle']).toBe('Покупки и снятие наличных. 18+ валют и 70 криптовалют.');
   });
   it('provides every shared menu description in all seven languages', () => {
     for (const code of LOCALES) for (const key of menuDescriptionKeys) expect(dicts[code][key]?.trim()).toBeTruthy();

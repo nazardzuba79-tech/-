@@ -67,7 +67,7 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(html).toContain('EXISTING_ROUTE_FORM');
   });
 
-  test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s has localized community and card copy without an unverified count', lang => {
+  test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s has localized card copy without an investor-count badge', lang => {
     const html = renderShell(lang);
     expect(html.match(/class="vx-auth-extras"/g)).toHaveLength(2);
     expect(html.match(/class="vx-auth-avatar"/g)).toHaveLength(6);

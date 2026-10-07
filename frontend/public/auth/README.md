@@ -20,7 +20,10 @@ The Russian desktop panel follows the raster's aspect ratio at viewport height,
 with a 60% column cap preserving form width. Cover/center-top needs at most a
 small side-background crop before the compact breakpoint; protected logo,
 slogan, face, phone, hand/card regions are checked in browser coordinates.
-No stretched pixels, generated fill, overlay copy or clickable image regions.
+No stretched pixels, generated fill, duplicated logo/slogan or clickable image regions.
+The separate localized HTML block below the subject describes the card using
+the owner's supplied wording: 18+ currencies and 70 cryptocurrencies. These are
+owner-provided product claims, not an independently audited coverage list.
 At <=760px or portrait-like windows (aspect ratio <=3/2), the decorative banner
 is hidden without reserved space; the existing Logo appears in the form header.
 The embedded copy is NOT localizable, so only `lang === 'ru'` selects it.
@@ -59,6 +62,6 @@ The owner approved these assets in local design revision 6 on 2026-10-05.
 
 - `aircraft-v6.webp`: the original selected `terminal-woman-cards-v3.png`, re-encoded as lossless WebP. All decoded RGB pixels were compared and are identical (1122 x 1402). The rejected regenerated v5 portrait is not shipped.
 - `community-v4.webp`: the approved illustrative avatar strip, resized to 432 x 144 (three 144 px tiles) for 38–42 px display and losslessly encoded. These are decorative illustrations, not named customer testimonials.
-- No independently verified source for the previous 1.2+ million investor figure was found. Old copy and comments are not metric evidence. AuthShell uses localized neutral community wording, with no numeric badge or count; the existing three portraits are decorative, not endorsements.
+- No independently verified source for the previous 1.2+ million investor figure was found. Old copy and comments are not metric evidence. That investor claim and its numeric badge are not rendered. The owner subsequently replaced the neutral community wording with card copy; the existing three portraits remain decorative, not endorsements.
 
 No new image generation was used for this release. The white card remains in the woman's hand and the black card on the table, as in the approved asset.
