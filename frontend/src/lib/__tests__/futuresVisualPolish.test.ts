@@ -170,8 +170,9 @@ describe('3. the order book takes the reference treatment, and only its paint', 
     // reference's 28px and 48px band, passed in by the page.
     const lib = read('lib/referenceBook.ts');
     expect(lib).toContain('export const REFERENCE_ROW_HEIGHT = 20;');
-    expect(lib).toContain('export const ARCHIVE_ROW_HEIGHT = 28;');
-    expect(lib).toContain('export const ARCHIVE_CENTER_HEIGHT = 48;');
+    // 2026-10-07: Bybit's measured pitch (24px rows, 40px centre) replaces the 28/48 read off a scaled screenshot.
+    expect(lib).toContain('export const ARCHIVE_ROW_HEIGHT = 24;');
+    expect(lib).toContain('export const ARCHIVE_CENTER_HEIGHT = 40;');
     const book = strip(read('components/FuturesReferenceBook.tsx'));
     expect(book).toContain('const rowHeight = archive ? ARCHIVE_ROW_HEIGHT : REFERENCE_ROW_HEIGHT;');
     expect(book).toContain('const centerHeight = archive ? ARCHIVE_CENTER_HEIGHT : REFERENCE_CENTER_HEIGHT;');
