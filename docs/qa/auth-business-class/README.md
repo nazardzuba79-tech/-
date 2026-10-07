@@ -82,9 +82,10 @@ centering, and a 22px gap before the unchanged static card caption. Desktop
 checks require each phrase on one line at normal requested widths. Fonts remain
 16/14px on desktop and 15/13px on mobile; only the lower block is restyled.
 High-DPI browser crops: [Login](login-block-2x.png) / [Register](register-block-2x.png).
-At <=650px viewport height the lower block alone uses its existing post-form
+At <=760px viewport height the lower block alone uses its existing post-form
 slot to avoid covering the cards under zoom; the photo and form keep their
-geometry. At 700px smaller avatars retain readable 16/14px text on the photo.
+geometry. This also accommodates wider platform font metrics without shrinking
+the text or overlapping the black card at a 700px window height.
 Preservation locks also cover the shell markup, all CSS outside these captions,
 and the unchanged soft bottom gradient. No global number replacement is used.
 Local TypeScript/build and 176 targeted tests passed. Fresh remote exact-head

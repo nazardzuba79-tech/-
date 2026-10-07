@@ -173,12 +173,9 @@
 .vx-auth .vx-auth-card-label { max-width: 250px; }
 .vx-auth .vx-auth-card-line { flex: 0 0 30px; height: 1px; background: #8b703b; }
 .vx-auth-work > .vx-auth-extras { display: none; }
-@media (min-width: 761px) and (max-height: 760px) {
-  .vx-auth-brand-banner .vx-auth-avatar { width: 28px; height: 28px; }
-}
 /* At very short/zoomed heights there is no safe two-line area below both
    cards. Use the existing post-form slot, never shrink the text over a hand. */
-@media (max-height: 650px) {
+@media (max-height: 760px) {
   .vx-auth-brand-banner > .vx-auth-extras { display: none; }
   .vx-auth.vx-auth--banner .vx-auth-work > .vx-auth-extras { display: flex; width: 100%; max-width: 410px; margin: 0 auto 24px; }
 }

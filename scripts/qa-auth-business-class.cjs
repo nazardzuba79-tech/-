@@ -225,7 +225,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       assert.equal(block.title, 'Платите и снимайте наличные');
       assert.equal(block.subtitle, '22+ валют · 70 криптовалют');
       assert.equal(block.caption.label.toLocaleLowerCase('ru'), 'карта, которая всегда с вами');
-      if (viewport.height <= 650) assert.equal(block.inBrand, false, `${label} very short/zoomed windows use the existing post-form slot, clear of both cards`);
+      if (viewport.height <= 760) assert.equal(block.inBrand, false, `${label} short/zoomed windows use the existing post-form slot, clear of both cards`);
     } else {
       assert.doesNotMatch(block.text, /[А-Яа-яЁё]/, `${label} no Russian copy in another locale`);
       assert.ok(block.title.trim().length > 0, `${label} localized payment/withdrawal heading remains populated`);
