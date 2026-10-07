@@ -1,0 +1,54 @@
+name: About page presentation
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/about/**'
+      - 'frontend/src/pages/LegalPage.tsx'
+      - 'frontend/public/about/**'
+      - 'frontend/src/lib/__tests__/aboutPage.test.ts'
+      - 'scripts/qa-about-page.cjs'
+      - '.github/workflows/about-page.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: about-page-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: About, legal and shared navigation regression tests
+        run: node node_modules/jest/bin/jest.js --runInBand --runTestsByPath frontend/src/lib/__tests__/aboutPage.test.ts frontend/src/lib/__tests__/academyHelpPages.test.ts frontend/src/lib/__tests__/academyHelpContent.test.ts
+      - name: TypeScript and production frontend build
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build --prefix frontend
+      - name: Disposable browser tools
+        run: |
+          npm install --prefix /tmp/voltex-about-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/voltex-about-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Actual bundle, eight widths, guest/account, keyboard and legal preservation
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-about-qa/node_modules/playwright
+          QA_DIST: frontend/dist
+          QA_OUT: output/about-page
+          QA_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/qa-about-page.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: about-page-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/about-page/
+          if-no-files-found: warn
+          retention-days: 7
