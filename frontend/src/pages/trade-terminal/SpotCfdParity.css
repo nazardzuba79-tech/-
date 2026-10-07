@@ -1,0 +1,392 @@
+/* THE RELEASED FUTURES LOOK ON SPOT AND CFD (owner, 2026-10-07: «перенести
+   текущий опубликованный дизайн Futures на существующие Spot и CFD … чтобы
+   Futures, Spot и CFD выглядели частями одного терминала»).
+
+   The reference is the Futures terminal as it ships on main (PR #469,
+   FuturesBybitParity.css): every number below is that sheet's, applied to the
+   Spot and CFD DOM that TradePage.tsx already renders. Nothing of Futures is
+   loaded here and nothing here reaches Futures: every rule starts with the
+   Spot or CFD root, `.trade-terminal.vx-terminal.spot-terminal` /
+   `.cfd-terminal`, and the `:is(#archive-terminal-preview, .vx-terminal)` arm
+   only lends the id weight the earlier Spot/CFD layers (TerminalPreviewPolish,
+   SpotCfdGraphite) already carry, so this sheet can follow them without a
+   second chain of !important. The id itself is never on a Spot or CFD element.
+
+   Desktop only below 901px nothing but the tokens changes; the phone layouts
+   keep TerminalMobileParity / SpotMobileCompact as they are. Presentation
+   only: no figure, control, handler, request or market rule is touched. */
+
+/* ── Tokens: the Futures palette and type ─────────────────────────────── */
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) {
+  --font-family:'Inter Terminal',Inter,-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+  --tile-ground:#000000; --tile-fill:#101014; --tile-header:#17181e; --tile-bottom:#101014;
+  --studio-canvas:#000000; --bg-primary:#000000; --workspace-bg:#101014; --studio-panel:#101014;
+  --panel:#101014; --bg-secondary:#101014; --toolbar-bg:#101014; --chart-bg:#101014; --voltex-plot-background:#101014;
+  --panel-alt:#222227; --studio-raised:#222227; --bg-tertiary:#222227; --panel-alt-hover:#2a2a30;
+  --border:#222227 !important; --border-color:#222227; --panel-border:#222227; --layer-border:#222227;
+  --field-line:#404347; --control:#404347; --control-hover:#4c4f54;
+  --text-primary:#ffffff; --text-secondary:#6a6e73; --text-tertiary:#6a6e73; --muted:#6a6e73;
+  --accent:#f0b90b; --accent-yellow:#f0b90b; --color-accent:#f0b90b;
+  --buy:#06c167; --color-buy:#06c167; --sell:#f63649; --color-sell:#f63649;
+  --h-bg-1:#17181e; --h-bg-2:#17181e; --h-border:#17181e; --h-accent:#f0b90b; --h-accent-text:#17181e;
+  font-family:var(--font-family); font-size:12px; color:#ffffff;
+  background:#000000 !important;
+}
+/* The chart paints from these tokens. Spot's chart now carries the viewer's
+   chart settings exactly as Futures does (TradePage), so its candles and
+   volume come from lib/chartSettings; the CFD chart reads its colours once
+   from these at mount. Both start from the Futures defaults. */
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.terminal-chart-shell,.cfd-chart) {
+  --voltex-chart-font:'Inter Terminal',Inter,-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+  --voltex-plot-background:#101014; --voltex-candle-up:#2ebd85; --voltex-candle-down:#f6465d;
+  --voltex-volume-up:rgba(46,189,133,0.75); --voltex-volume-down:rgba(246,70,93,0.75);
+  --voltex-axis-text:#8b8b8e; --voltex-axis-border:#25282c;
+  background:#101014;
+}
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(input,button,select):focus-visible { outline:2px solid #f0b90b80; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.text-buy,.up) { color:#06c167; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.text-sell,.down) { color:#f63649; }
+
+@media (min-width:901px) {
+  /* ── Header: 48px, #17181E, Inter 14/400, 32px pills (as on Futures) ──── */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) > :is(.global-header) {
+    --exchange-header-height:48px; height:48px; min-height:48px; padding-inline:16px;
+    background:#17181e; border-bottom:0; font-family:var(--font-family);
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.brand-separator) { display:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.header-brand) { margin-right:12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.main-nav) { gap:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.nav-item,.top-nav-link) {
+    font-family:var(--font-family); font-size:14px; font-weight:400; line-height:48px; color:#ffffff;
+    margin:0; padding:0 12px; border-radius:0; letter-spacing:0;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.header-disclosure-toggle) { width:16px; color:#71757a; }
+  /* The active item is the one Nav marks for this route («Торговля» on Spot
+     and CFD); as on Futures it reads white, without the underline. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.nav-active) { color:#ffffff; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.nav-active)::after { display:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.header-actions) { gap:8px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.nav-wallet-link) {
+    height:32px; min-height:32px; margin:0; padding:0 16px; gap:8px; border:1px solid transparent; border-radius:100px;
+    background:transparent; color:#ffffff; font-size:14px; font-weight:600; line-height:30px; box-shadow:none;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.nav-wallet-link):hover { background:rgba(255,255,255,.08); border-color:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.nav-wallet-link) svg { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.deposit-button) {
+    height:32px; min-height:32px; padding:0 20px; border:0; border-radius:100px; box-shadow:none;
+    background:#f0b90b; color:#17181e; font-family:var(--font-family); font-size:14px; font-weight:600; line-height:32px;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.deposit-button):hover { background:#ffad52; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.header-icon) { font-family:var(--font-family); font-size:14px; }
+  /* The same closing-up as Futures below 1660px / 1600px, so «Академия» is
+     never covered by the account cluster. */
+  @media (max-width:1659px) {
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.nav-item,.top-nav-link) { padding:0 11px; font-size:13px; }
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.nav-wallet-link) { padding:0 12px; font-size:13px; }
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.deposit-button) { padding:0 14px; font-size:13px; }
+  }
+  @media (max-width:1599px) {
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) > :is(.global-header) { padding-inline:12px; }
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.header-brand) { margin-right:2px; }
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .global-header :is(.header-actions) { gap:4px; }
+  }
+
+  /* ── Grid: Futures' 4px black gutters (already on these shells), its
+     300px ticket and its book column; Spot keeps its own market column,
+     collapse states and resizable widths, CFD its three columns. ─────── */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .terminal { padding:4px; gap:4px; background:#000000 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid {
+    /* Futures' book column: 253px at 1707, 319px at 1920. Its 250px floor is what
+       lets «Количество» stay whole in the 12px column header at 1366. */
+    --reference-book-width:clamp(250px,calc(31vw - 276px),340px);
+    gap:4px; background:#000000 !important;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid:not(.market-panel-collapsed):not(.orderbook-collapsed) { grid-template-columns:var(--market-panel-width,258px) minmax(0,1fr) var(--reference-book-width) 300px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.market-panel-collapsed:not(.orderbook-collapsed) { grid-template-columns:0 minmax(0,1fr) var(--reference-book-width) 300px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.orderbook-collapsed:not(.market-panel-collapsed) { grid-template-columns:var(--market-panel-width,258px) minmax(0,1fr) 0 300px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.market-panel-collapsed.orderbook-collapsed { grid-template-columns:0 minmax(0,1fr) 0 300px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-workspace { grid-template-columns:278px minmax(0,1fr) 300px; gap:4px; background:#000000 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.ticker-bar,.cfd-ticker-bar,.left-panel,.pairs-section,.chart-area,.orderbook-area,.order-form-area,.bottom-panel,.cfd-instruments-area,.cfd-chart-area,.cfd-form-area,.cfd-bottom-panel) {
+    background:#101014 !important; border:0 !important; border-radius:0 !important; box-shadow:none !important;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.terminal-chart-heading,.chart-toolbar,.drawing-rail-shell,.drawing-rail,.orderbook-header,.orderbook-col-headers,.orderbook-spread,.bottom-tabs,.terminal-account-header,.pairs-header,.cfd-chart-toolbar,.cfd-owned-chart,.cfd-tabs,.cfd-columns,.cfd-th) { background:#101014; border-color:#222227; box-shadow:none; }
+
+  /* ── Instrument bar: 56px, pair 16/600, price 16/600, stats 12 ────────── */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.ticker-bar,.cfd-ticker-bar) { height:56px; min-height:56px; max-height:56px; padding:0 12px; gap:16px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-cluster { padding-right:16px; border-right:0; gap:10px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-name { font-size:16px; font-weight:600; line-height:16px; gap:4px; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-asset { font-size:12px; line-height:20px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-markets-btn { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item { grid-template-rows:18px 14px; align-items:start; gap:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:has(.value.price) { grid-template-rows:14px 24px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item > :is(.label,.value) { line-height:14px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .label { font-size:12px; line-height:14px; font-weight:400; color:#494c4f; text-transform:none; letter-spacing:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .value:not(.price) { font-size:12px; line-height:14px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.price { font-size:16px; line-height:24px; font-weight:600; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.change { font-size:12px; line-height:14px; font-weight:500; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.price.up, :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.change.up { color:#06c167; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.price.down, :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.change.down { color:#f63649; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-bar { gap:16px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-pair-cluster { flex-direction:row; align-items:center; gap:10px; min-width:0; padding-right:16px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-instrument-identity { display:flex; flex-direction:column; gap:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-symbol { font-size:16px; font-weight:600; line-height:16px; letter-spacing:0; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-instrument-name { font-size:12px; line-height:20px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric { gap:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric > :first-child { font-size:12px; line-height:14px; font-weight:400; color:#494c4f; text-transform:none; letter-spacing:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric > :last-child { font-size:12px; line-height:14px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric > .cfd-ticker-price { font-size:16px; line-height:24px; font-weight:600; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-change { font-size:12px; line-height:14px; font-weight:500; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-market-state { margin-left:auto; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-state-pill { font-size:10px; line-height:14px; font-weight:400; padding:2px 4px; border:0; border-radius:4px; color:#f0b90b; background:rgba(247,166,0,.12); letter-spacing:0; }
+
+  /* ── Chart: heading row 40 + intervals row 40, 28px buttons, 52px rail ── */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-heading {
+    height:40px; min-height:40px; padding:8px 16px 0; border-bottom:0; align-items:flex-start;
+    font-size:14px; font-weight:500; color:#ffffff;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-heading > span {
+    display:inline-flex; align-items:center; box-sizing:content-box; height:22px; padding-bottom:8px;
+    border-bottom:2px solid #f0b90b; font-size:14px; font-weight:500; line-height:14px; color:#ffffff; text-transform:none; letter-spacing:0;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-heading > div { gap:16px; align-self:flex-start; align-items:center; height:24px; margin-left:auto; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-heading button { height:auto; padding:0; border:0; font-size:12px; font-weight:400; color:#6a6e73; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-heading button:hover { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-heading button[aria-pressed=true] { color:#f0b90b; border-bottom-color:transparent; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-shell .chart-toolbar { height:40px; min-height:40px; padding:6px 12px; gap:0; border:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-shell :is(.chart-tabs,.chart-tools,.chart-type-group,.chart-indicator-group) { gap:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-shell .chart-tools { margin-left:12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-shell :is(.chart-tab,.chart-tool-btn) {
+    height:28px; min-width:0; padding:0 8px; border:0; border-radius:0; font-size:12px; font-weight:400; color:#6a6e73; background:transparent; box-shadow:none;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-shell :is(.chart-tab,.chart-tool-btn):hover { color:#ffffff; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-shell .chart-tabs .chart-tab.active,
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-chart-shell .chart-tool-btn.active { color:#f0b90b; background:transparent; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .chart-toolbar-end .chart-settings-trigger { width:28px; height:28px; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .chart-toolbar-end .chart-settings-trigger:hover { color:#ffffff; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .drawing-tools .drawing-rail { width:52px; min-width:52px; padding:6px 0; gap:0; border-right:0; background:#101014; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .drawing-tools .drawing-rail .tool-group { width:52px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .drawing-tools .drawing-rail .tool-btn { width:52px; height:36px; min-height:36px; border-radius:0; color:#adb1b8; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .drawing-tools .drawing-rail .tool-btn:hover:not(.active) { color:#ffffff; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .drawing-tools .drawing-rail .tool-btn.active { color:#f0b90b; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .drawing-tools .drawing-rail .tool-divider { width:28px; background:#222227; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .drawing-tools .drawing-rail .tool-group-chevron { color:#8c8c8c; }
+  /* The CFD chart has no tabs row and no rail: its one toolbar takes the Futures intervals row. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-owned-chart { background:#101014; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-chart-toolbar { min-height:40px; height:40px; padding:6px 12px; gap:12px; border-bottom:0; background:#101014; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-chart-toolbar strong { font-size:14px; font-weight:500; letter-spacing:0; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-chart-intervals { gap:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-chart-intervals button {
+    min-width:0; height:28px; padding:0 8px; border:0; border-radius:0; font-size:12px; font-weight:400; color:#6a6e73; background:transparent; box-shadow:none;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-chart-intervals button:hover { color:#ffffff; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-chart-intervals button.active { color:#f0b90b; background:transparent; }
+
+  /* ── Spot order book: title row 40, columns 32, rows 24, centre 40 ─────── */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orderbook-header { height:40px; min-height:40px; padding:12px 12px 0; gap:12px; border-bottom:0; align-items:flex-start; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orderbook-title { box-sizing:content-box; height:18px; padding:0 0 8px; border-bottom:2px solid #f0b90b; font-size:14px; font-weight:500; line-height:18px; color:#ffffff; text-transform:none; letter-spacing:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orderbook-header-actions { gap:8px; align-items:center; height:24px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-group-select {
+    width:100px; height:24px; padding:0 8px; border-radius:4px; color:#ffffff; font-size:12px; font-weight:500;
+    background:#222227 !important; border:1px solid #222227 !important;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-group-select:hover { background:#2a2a30 !important; border-color:#2a2a30 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orderbook-collapse { width:24px; height:24px; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orderbook-collapse:hover { color:#ffffff; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal :is(.orderbook-col-headers,.ob-row) { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr); column-gap:0; gap:0; padding:0 12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orderbook-col-headers { height:32px; min-height:32px; font-size:12px; font-weight:500; line-height:32px; color:#6a6e73; text-transform:none; letter-spacing:0; border-bottom:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orderbook-col-headers .ob-col { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-row { height:24px; min-height:24px; flex-basis:24px; line-height:24px; font-size:12px; font-weight:400; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-row .cell { font-size:12px; font-weight:400; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-row .ask-price { color:#ef454a; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-row .bid-price { color:#20b26c; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-depth-bar { border-radius:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-depth-bar.bid { background:rgba(32,178,108,.14); }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-depth-bar.ask { background:rgba(239,69,74,.14); }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-row:hover { background:rgba(192,210,231,.12); }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orderbook-spread { height:40px; min-height:40px; padding:0 12px; gap:0 12px; border:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-spread-price { font-size:16px; font-weight:600; line-height:18px; letter-spacing:0; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-spread-price .usd { font-size:12px; font-weight:500; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .ob-spread-detail { font-size:12px; font-weight:500; line-height:14px; color:#6a6e73; }
+
+  /* ── Spot ticket: 300px, padding 12, 42px fields, 38px pill ─────────────── */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-form-area { padding:12px 12px 24px; gap:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-form-tabs { height:32px; min-height:32px; padding:0; gap:4px; border:0; border-radius:4px; background:#222227; margin:0 0 12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-form-tab { height:32px; min-height:32px; padding:0; border:0; border-radius:4px; font-size:14px; font-weight:500; line-height:32px; color:#6a6e73; background:transparent; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-form-tab:hover { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-form-tab.buy.active { background:#06c167; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-form-tab.sell.active { background:#f63649; color:#ffffff; }
+  /* Five order types in 276px: Futures' 8px gap is 6px here, and a language whose
+     labels still do not fit (ja) wraps the last tab instead of hiding it. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-type-tabs { margin:0 0 12px; padding:0; gap:0 6px; flex-wrap:wrap; justify-content:space-between; overflow:visible; border-bottom:0; min-height:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-type-tabs .order-type-tab { padding:4px 0; min-height:0; font-size:14px; font-weight:500; line-height:20px; color:#6a6e73; border:0; border-bottom:0; background:transparent; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-type-tabs .order-type-tab:hover { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-type-tabs .order-type-tab.active { color:#f0b90b; font-weight:500; background:transparent; border-bottom-color:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-form-content { gap:12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .form-group { gap:4px; margin:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .form-label { font-size:12px; font-weight:500; line-height:18px; color:#6a6e73; text-transform:none; letter-spacing:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .form-label .max-btn { font-size:12px; font-weight:500; color:#f0b90b; background:transparent; border:0; padding:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .input-group {
+    height:42px; min-height:42px; border-radius:4px; background:#222227 !important; border:1px solid #222227 !important; box-shadow:none;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .input-group:hover { background:#26262b !important; border-color:#404347 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .input-group:focus-within { border-color:#f0b90b !important; background:#222227 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .input-group:has([aria-invalid=true]) { border-color:#f63649 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .input-group input { height:40px; padding:0 12px; font-size:14px; font-weight:500; line-height:20px; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .input-group .input-suffix { padding:0 12px 0 8px; font-size:12px; font-weight:500; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-container { padding:10px 4px 0; margin:0; gap:6px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-size-range { height:16px; accent-color:#f0b90b; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-size-range::-webkit-slider-runnable-track { height:4px; border-radius:6px; background:#404347; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-size-range::-webkit-slider-thumb { height:16px; width:16px; margin-top:-6px; border:2px solid #f0b90b; border-radius:50%; background:#101014; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-size-range::-moz-range-track { height:4px; border-radius:6px; background:#404347; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-size-range::-moz-range-progress { height:4px; background:#f0b90b; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-size-range::-moz-range-thumb { height:12px; width:12px; border:2px solid #f0b90b; border-radius:50%; background:#101014; box-shadow:none; }
+  /* The Spot slider's step buttons carry the percent labels (ProfessionalTerminal): Futures' preset labels, not dots. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-track { gap:0; justify-content:space-between; margin:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-step { width:auto; height:20px; min-height:20px; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-step::after { font-size:12px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-step:hover::after { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-step[aria-pressed=true]::after { color:#f0b90b; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .slider-labels span { font-size:12px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-summary { margin:0; padding:0; border:0; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .available-balance { min-height:22px; padding:0; border:0; background:transparent; font-size:12px; line-height:18px; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .available-balance .amount { font-size:12px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .submit-btn { height:38px; min-height:38px; padding:0 12px; border:0; border-radius:100px; font-size:14px; font-weight:600; line-height:20px; color:#ffffff; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .submit-btn.buy:not(:disabled) { background:#06c167; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .submit-btn.sell:not(:disabled) { background:#f63649; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .submit-btn.buy:not(:disabled):hover { background:#36c277; filter:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .submit-btn.sell:not(:disabled):hover { background:#f55d58; filter:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .submit-btn:disabled { background:#404347; color:#6a6e73; opacity:1; }
+  /* The market figures in Futures' bordered box: 22px rows, 12px. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .info-section { margin:0; padding:4px 12px; gap:0; border:1px solid #222227; border-radius:4px; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .info-heading { min-height:22px; padding:0; margin:0; font-size:12px; font-weight:500; line-height:22px; color:#ffffff; text-transform:none; letter-spacing:0; border:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .info-row { min-height:22px; padding:0; font-size:12px; line-height:18px; border:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .info-label { font-size:12px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .info-value { font-size:12px; font-weight:500; color:#ffffff; }
+
+  /* ── CFD ticket: the same ticket on its own fields ─────────────────────── */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-order-panel { padding:12px 12px 24px; gap:12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-sideTabs { height:32px; min-height:32px; padding:0; gap:4px; border:0; border-radius:4px; background:#222227; margin:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-sideTab { height:32px; min-height:32px; padding:0; border:0; border-radius:4px; font-size:14px; font-weight:500; line-height:32px; color:#6a6e73; background:transparent; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-sideTab:hover { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-sideTab.buy.active { background:#06c167; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-sideTab.sell.active { background:#f63649; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-tabs { margin:0; padding:0; gap:0 6px; flex-wrap:wrap; justify-content:space-between; overflow:visible; border-bottom:0; min-height:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-tabs button { padding:4px 0; min-height:0; font-size:14px; font-weight:500; line-height:20px; color:#6a6e73; border:0; border-bottom:0; background:transparent; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-tabs button:hover { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-tabs button.active { color:#f0b90b; font-weight:500; background:transparent; border-bottom-color:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-product-terms { font-size:12px; line-height:18px; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .terminal-practice-label { font-size:10px; line-height:14px; font-weight:400; padding:2px 4px; border:0; border-radius:4px; color:#f0b90b; background:rgba(247,166,0,.12); letter-spacing:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-form { gap:12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-form-fields { gap:12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal :is(.cfd-label,.order-family-label) { gap:4px; font-size:12px; font-weight:500; line-height:18px; color:#6a6e73; text-transform:none; letter-spacing:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-fields { gap:12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-execution { gap:4px; padding:0; border-radius:4px; background:#222227; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-execution button { height:28px; min-height:28px; padding:0 8px; border:0; border-radius:4px; font-size:12px; font-weight:500; color:#6a6e73; background:transparent; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-execution button[aria-pressed=true] { color:#ffffff; background:#404347; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal :is(.cfd-input,.order-family-input) {
+    min-height:42px; height:42px; padding:0 12px; border-radius:4px; font-size:14px; font-weight:500; line-height:20px; color:#ffffff;
+    background:#222227 !important; border:1px solid #222227 !important; box-shadow:none;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-input input { height:40px; padding:0; font-size:14px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal :is(.cfd-input,.order-family-input):hover { background:#26262b !important; border-color:#404347 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-input:focus, :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-input:focus-within { border-color:#f0b90b !important; background:#222227 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-input[aria-invalid=true], :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .order-family-input:has([aria-invalid=true]) { border-color:#f63649 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-referencePrice { display:flex; align-items:center; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-order-state { right:12px; font-size:10px; font-weight:500; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-infoBox { margin:0; padding:4px 12px; gap:0; border:1px solid #222227; border-radius:4px; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-infoRow { min-height:22px; align-items:center; font-size:12px; line-height:18px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-infoRow .mono { font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-muted { color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-error { padding:8px 12px; border:1px solid rgba(246,54,73,.4); border-radius:4px; background:rgba(246,54,73,.08); font-size:12px; line-height:18px; color:#f63649; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-submit { height:38px; min-height:38px; padding:0 12px; border:0; border-radius:100px; font-size:14px; font-weight:600; line-height:20px; color:#ffffff; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-submit.buy:not(:disabled) { background:#06c167; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-submit.sell:not(:disabled) { background:#f63649; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-submit.buy:not(:disabled):hover { background:#36c277; filter:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-submit.sell:not(:disabled):hover { background:#f55d58; filter:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-submit:disabled { background:#404347; color:#6a6e73; opacity:1; }
+
+  /* ── Bottom panel: tabs 44, headings 32, rows 40, 24px pills ──────────── */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal :is(.terminal-account-header,.bottom-tabs) { height:44px; min-height:44px; padding-inline:18px 0; font-size:14px; border-bottom:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .bottom-tabs { gap:24px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .bottom-tabs .bottom-tab { padding:0; min-height:0; font-size:14px; font-weight:400; line-height:40px; color:#6a6e73; border:0; background:transparent; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .bottom-tabs .bottom-tab:hover { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .bottom-tabs .bottom-tab.active { color:#ffffff; background:transparent; box-shadow:inset 0 -2px 0 #f0b90b; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .bottom-tab .badge { font-size:12px; font-weight:400; color:#6a6e73; background:transparent; padding:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .bottom-actions { gap:8px; padding-right:12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .bottom-action-btn { height:24px; min-height:24px; padding:0 12px; border:0; border-radius:100px; background:#404347; color:#ffffff; font-size:12px; font-weight:500; line-height:24px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .bottom-action-btn:hover { background:#4c4f54; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .terminal-account-toggle { color:#6a6e73; border-left:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orders-table th { height:32px; padding:0 12px; font-size:12px; font-weight:400; line-height:14px; color:#6a6e73; text-transform:none; letter-spacing:0; background:#101014; border-bottom:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orders-table th:first-child { padding-left:18px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orders-table td { height:40px; padding:0 12px; font-size:14px; font-weight:500; line-height:18px; color:#ffffff; border-top:0; border-bottom:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orders-table td:first-child { padding-left:18px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orders-table :is(.spot-order-unit,.spot-order-time) { font-size:12px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orders-table tbody tr:hover td { background:#17171c; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .cancel-btn { height:24px; min-height:24px; padding:0 12px; border:0; border-radius:100px; background:#404347; color:#ffffff; font-size:12px; font-weight:500; line-height:24px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .cancel-btn:hover { background:#4c4f54; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-empty { font-size:12px; line-height:18px; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-empty strong { font-size:14px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-empty-icon { color:#6a6e73; border-color:#222227; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-tabs { height:44px; min-height:44px; padding:0 18px; gap:24px; border-bottom:0; font-size:14px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-tab { padding:0; font-size:14px; font-weight:400; line-height:40px; color:#6a6e73; border:0; background:transparent; text-transform:none; letter-spacing:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-tab:hover { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-tab.active { color:#ffffff; box-shadow:inset 0 -2px 0 #f0b90b; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-tab-count { min-width:0; padding:0; border-radius:0; background:transparent; font-size:12px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-table { font-size:14px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-th { height:32px; padding:0 12px; font-size:12px; font-weight:400; line-height:14px; color:#6a6e73; text-transform:none; letter-spacing:0; background:#101014; border-bottom:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-th:first-child { padding-left:18px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-td { height:40px; padding:0 12px; font-size:14px; font-weight:500; line-height:18px; color:#ffffff; border-top:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-td:first-child { padding-left:18px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-td strong { font-size:14px; font-weight:600; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-table tbody tr:hover .cfd-td { background:#17171c; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-closeBtn { height:24px; min-height:24px; padding:0 12px; border:0; border-radius:100px; background:#404347; color:#ffffff; font-size:12px; font-weight:500; line-height:24px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-closeBtn:hover { background:#4c4f54; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-empty { font-size:12px; line-height:18px; color:#6a6e73; }
+
+  /* ── Market lists: 40px title, 32px search, 12px rows ───────────────────── */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-header { height:40px; min-height:40px; padding:12px 12px 0; border-bottom:0; align-items:flex-start; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-header > span { box-sizing:content-box; height:18px; padding-bottom:8px; border-bottom:2px solid #f0b90b; font-size:14px; font-weight:500; line-height:18px; color:#ffffff; text-transform:none; letter-spacing:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-header button { width:24px; height:24px; color:#6a6e73; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-header button:hover { color:#ffffff; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .pairs-search { padding:8px 12px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .pairs-search input {
+    height:32px; min-height:32px; border-radius:4px; padding-left:32px; font-size:12px; font-weight:400; color:#ffffff;
+    background:#222227 !important; border:1px solid #222227 !important; box-shadow:none;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .pairs-search input:hover { background:#26262b !important; border-color:#404347 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .pairs-search input:focus { border-color:#f0b90b !important; background:#222227 !important; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .pairs-search kbd { font-size:10px; color:#6a6e73; border-color:#404347; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-tabs { padding:0 12px; gap:16px; border-bottom:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-tab { padding:4px 0 6px; font-size:12px; font-weight:500; line-height:16px; color:#6a6e73; border:0; border-bottom:2px solid transparent; background:transparent; box-shadow:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-tab:hover { color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-tab.active { color:#ffffff; border-bottom-color:#f0b90b; background:transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-sort { min-height:32px; font-size:12px; color:#6a6e73; border-bottom:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-sort button { font-size:12px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pairs-sort button:hover { color:#ffffff; }
+  /* Figures at 12px need wider tracks than the 11px rows had («-52.57%» clipped at 54px); the
+     tracks live on the section so the sort header and the rows share them, and the compact
+     10px case for very long values (qa-spot-market-7d) stays as SpotMarketControls draws it. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal :is(.pairs-sort,.pairs-list) { --spot-mk-price:66px; --spot-mk-change:60px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pair-row { min-height:32px; font-size:12px; border:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pair-row:hover { background:#17171c; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pair-row.active { background:#17171c; box-shadow:inset 2px 0 0 #f0b90b; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pair-row .p-base { font-size:12px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pair-row .p-quote { font-size:12px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pair-row .p-price:not([data-compact]) { font-size:12px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pair-row .p-change:not([data-compact]) { font-size:12px; font-weight:500; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .pair-row :is(.p-price,.p-change)[data-compact] { font-weight:500; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .p-star { color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .p-star.on { color:#f0b90b; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-instruments { padding:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal :is(.cfd-columns,.cfd-option) { grid-template-columns:minmax(0,1fr) 76px 82px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-columns { min-height:32px; padding:0 12px; font-size:12px; font-weight:500; line-height:32px; color:#6a6e73; text-transform:none; letter-spacing:0; border-bottom:0; background:#101014; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-columns button { font-size:12px; font-weight:500; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-option { min-height:44px; padding:0 12px; font-size:12px; border:0; border-left:2px solid transparent; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-option:hover { background:#17171c; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-option.active { background:#17171c; border-left-color:#f0b90b; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-optionSymbol { font-size:12px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-optionName { font-size:12px; font-weight:400; color:#6a6e73; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-price { font-size:12px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-change { font-size:12px; font-weight:500; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-hint { font-size:12px; color:#6a6e73; }
+}
