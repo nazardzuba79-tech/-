@@ -38,6 +38,7 @@ async function main(){
       if(reply.status===404&&/^\/api\/v1\/(?:market\/(?:display|futures\/candles|derivatives|universe|pairs|test-assets)|private-trading\/access)(?:\/|$)/.test(url.pathname))reply=await fetch(modernOrigin+url.pathname+url.search);
       res.writeHead(reply.status,{'content-type':reply.headers.get('content-type')||'application/octet-stream','cache-control':'no-store','content-security-policy':"default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self'; media-src 'self' blob:; object-src 'none'; form-action 'none'"});
       let body=Buffer.from(await reply.arrayBuffer());
+      if(reply.ok&&/^\/api\/v1\/market\/external\/(candles|trades)\//.test(url.pathname))body=Buffer.from(JSON.stringify({...JSON.parse(body.toString()),pair:decodeURIComponent(url.pathname.split('/').at(-1)).replace('-','/'),interval:url.searchParams.get('interval')||'15m'}));
       if(reply.headers.get('content-type')?.includes('text/html'))body=Buffer.from(body.toString().replace('<head>','<head>'+localImages).replace(/<link[^>]+href=["']https?:\/\/[^>]+>/g,''));
       if(reply.headers.get('content-type')?.includes('text/css'))body=Buffer.from(body.toString().replace(/@import\s+(?:url\()?['"]?https?:\/\/[^;]+;/g,''));
       res.end(body);

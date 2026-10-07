@@ -14,13 +14,14 @@ const root = path.resolve(__dirname, '..');
 const mode = process.env.QA_HERO_MODE || 'after';
 const resumeTail = process.env.QA_HERO_TAIL === '1';
 const visualOnly = process.env.QA_HERO_VISUAL === '1';
+const screenshotsOnly = process.env.QA_HERO_SCREENSHOTS_ONLY === '1';
 const dist = path.resolve(root, process.env.QA_DIST || 'frontend/dist');
 const out = path.resolve(root, process.env.QA_OUT || `output/home-market-platform/${mode}`);
 const port = Number(process.env.QA_PORT || 4198);
 const origin = `http://127.0.0.1:${port}`;
 let modernServer, modernOrigin;
-const heroSelector = mode==='baseline' ? '#home-global-hero' : '[data-market-platform-hero]';
-const widths = [[1920,1080],[1707,940],[1440,900],[1366,768],[430,932],[390,844],[360,800],[320,740]];
+const heroSelector = '#home-global-hero';
+const widths = [[1920,1080],[1707,940],[1440,900],[1366,768],[430,932],[390,844],[360,800],[320,740]].filter(([width])=>!process.env.QA_HERO_WIDTHS||process.env.QA_HERO_WIDTHS.split(',').map(Number).includes(width));
 fs.mkdirSync(out, { recursive: true });
 assert(fs.existsSync(path.join(dist, 'index.html')), 'Build the requested production bundle first');
 const report = { mode, fixtureOnly: true, productionAccess: false, profile: { chromium: 'headless', deviceScaleFactor: 1, cpuThrottle: 2, latencyMs: 40, downloadBytesPerSecond: 1250000, uploadBytesPerSecond: 625000 }, cases: [], checks: [], errors: [], consoleErrors: [], denied: [], writes: [], unknownApi: [], metrics: [], result: 'FAIL' };
@@ -95,7 +96,9 @@ async function createContext(browser, { width=1440, height=900, signed=false, la
       else reply=await fetch(origin+url.pathname+url.search);
       if(reply.status===404 && /^\/api\/v1\/(?:market\/(?:display|futures\/candles|derivatives|universe|pairs|test-assets)|private-trading\/access)(?:\/|$)/.test(url.pathname)) reply=await fetch(modernOrigin+url.pathname+url.search);
       if (reply.status===404) report.unknownApi.push(url.pathname);
-      return route.fulfill({ status:reply.status,contentType:'application/json',body:await reply.text() });
+      let responseBody=await reply.text();
+      if(reply.ok&&/^\/api\/v1\/market\/external\/(candles|trades)\//.test(url.pathname))responseBody=JSON.stringify({...JSON.parse(responseBody),pair:decodeURIComponent(url.pathname.split('/').at(-1)).replace('-','/'),interval:url.searchParams.get('interval')||'15m'});
+      return route.fulfill({ status:reply.status,contentType:'application/json',body:responseBody });
     }
     if (url.origin !== origin) {
       if (request.resourceType()==='image') return route.fulfill({ status:200,contentType:'image/svg+xml',body:syntheticLogo });
@@ -122,6 +125,8 @@ async function openHome(page) {
   await page.goto(origin+'/',{waitUntil:'domcontentloaded'});
   await page.locator(heroSelector+' h1').waitFor();
   await page.evaluate(()=>document.fonts.ready);
+  await page.waitForFunction(()=>{const image=document.querySelector('#home-global-hero .art');return !image||(image.complete&&image.naturalWidth>0);});
+  await page.waitForFunction(()=>document.querySelector('#home-live-terminal .vx-real-candles')&&document.querySelectorAll('#home-live-terminal .hs-trade-row').length===6);
   await page.waitForTimeout(2200);
 }
 async function geometry(page) {
@@ -130,6 +135,18 @@ async function geometry(page) {
     const boxes=[...hero.querySelectorAll('h1,p,a,button')].filter(n=>n.getBoundingClientRect().width&&getComputedStyle(n).visibility!=='hidden').map(n=>({tag:n.tagName,text:n.textContent.trim().slice(0,90),x:n.getBoundingClientRect().x,y:n.getBoundingClientRect().y,width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height,scrollWidth:n.scrollWidth,clientWidth:n.clientWidth}));
     return {viewport:innerWidth,pageWidth:document.documentElement.scrollWidth,overflow:document.documentElement.scrollWidth>innerWidth+1,hero:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},boxes,heading:hero.querySelector('h1').textContent};
   },heroSelector);
+}
+async function columnGeometry(page) {
+  return page.evaluate(()=>{
+    const box=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
+    const scene=document.querySelector('[data-market-visual]'),viewport=box(scene),copy=box(document.querySelector('#home-global-hero .copy')),terminal=box(document.querySelector('#home-global-hero .terminal-screen'));
+    const tiles=[...scene.querySelectorAll('[data-market-tile]')].map(tile=>({symbol:tile.dataset.marketTile,...box(tile),opacity:Number(getComputedStyle(tile).opacity)}));
+    const visible=tiles.filter(t=>t.opacity>.05&&t.bottom>viewport.y+2&&t.y<viewport.bottom-2);
+    const overlap=(a,b)=>a&&b?Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)):0;
+    const text=[];const walker=document.createTreeWalker(document.querySelector('#home-global-hero .copy'),NodeFilter.SHOW_TEXT);
+    while(walker.nextNode()){const node=walker.currentNode;if(!node.textContent.trim())continue;const range=document.createRange();range.selectNodeContents(node);for(const r of range.getClientRects())if(r.width&&r.height)text.push({x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom});}
+    return{viewport,copy,terminal,visibleCount:visible.length,visibleSymbols:visible.map(t=>t.symbol),textOverlapArea:text.reduce((sum,t)=>sum+overlap(viewport,t),0),terminalOverlapArea:overlap(viewport,terminal),originalArt:document.querySelector('#home-global-hero .art')?.getAttribute('src'),heading:document.querySelector('#home-global-hero h1')?.textContent,tapeCount:document.querySelectorAll('#home-global-hero .hs-tape').length,actualTerminal:document.querySelector('#home-global-hero .terminal-screen #home-live-terminal')!==null};
+  });
 }
 async function metrics(page,cdp,requests,label,duration=4000) {
   const first=Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(m=>[m.name,m.value]));
@@ -151,14 +168,29 @@ async function main() {
       const {ctx,page,cdp,requests}=await createContext(browser,{width,height});
       await openHome(page);
       const shape=await geometry(page);
-      assert.equal(shape.overflow,false,`horizontal overflow ${width}`);
       await page.screenshot({path:path.join(out,`home-${width}.png`)});
+      assert.equal(shape.overflow,false,`horizontal overflow ${width}`);
+      if(mode==='after'){
+        const column=await columnGeometry(page);report.cases.push({name:`column-${width}`,width,height,...column});assert.equal(column.originalArt,'/hero/sapphire-refined.png');assert.equal(column.heading,'OWN YOUR FUTURE.');assert.equal(column.actualTerminal,true,'real terminal visibility target remains in original laptop');assert.equal(column.tapeCount,1,'original live market tape is present');
+        assert.equal(column.visibleCount,width>900?5:3,`compact column visible cards at ${width}`);
+        assert.equal(column.textOverlapArea,0,`column must not cover real copy/CTA at ${width}`);
+        assert.equal(column.terminalOverlapArea,0,`column must not cover real laptop display at ${width}`);
+        const baselinePath=path.join(root,'output/home-market-platform/baseline/report.json');
+        if(fs.existsSync(baselinePath)){
+          const baseline=JSON.parse(fs.readFileSync(baselinePath,'utf8')).cases.find(c=>c.width===width&&!c.name);
+          if(baseline)for(const label of ['OWN YOUR FUTURE.','Открыть терминал','Смотреть рынки']){
+            const before=baseline.boxes.find(b=>b.text===label),after=shape.boxes.find(b=>b.text===label);
+            assert(before&&after,`preserved original ${label}`);
+            for(const key of ['x','y','width','height'])assert(Math.abs(before[key]-after[key])<1,`original ${label} ${key} unchanged at ${width}`);
+          }
+        }
+      }
       if(width===1440||width===390)await metrics(page,cdp,requests,`home-${width}`);
       report.cases.push({width,height,signed:false,...shape});
       await ctx.close();
     }
-    check('eight viewport screenshots and horizontal layout');
-    for(const signed of [false,true]){
+    check(`${widths.length} viewport screenshots and horizontal layout`);
+    if(!screenshotsOnly){for(const signed of [false,true]){
       const {ctx,page}=await createContext(browser,{signed,width:1440});
       if(signed){
         await page.goto(origin+'/',{waitUntil:'domcontentloaded'});
@@ -173,7 +205,8 @@ async function main() {
     }
     check('guest and authenticated fixture render');
     }
-    if(mode==='after')await afterChecks(browser);
+    }
+    if(mode==='after'&&!screenshotsOnly)await afterChecks(browser);
     assert.deepEqual(report.errors,[],'uncaught browser errors');
     assert.deepEqual(report.consoleErrors,[],'browser console errors');
     assert.deepEqual(report.unknownApi,[],'missing isolated fixture endpoints');
@@ -195,7 +228,7 @@ async function motion(page) {
     state:scene.dataset.motionState,reasons:scene.dataset.motionReason,
     animations:scene.getAnimations({subtree:true}).map(a=>({time:a.currentTime,state:a.playState,duration:a.effect.getTiming().duration})),
     tiles:[...scene.querySelectorAll('[data-market-tile]')].map(tile=>{const b=tile.getBoundingClientRect(),s=getComputedStyle(tile);return {symbol:tile.dataset.marketTile,x:b.x,y:b.y,width:b.width,height:b.height,opacity:Number(s.opacity),transform:s.transform};}),
-    platform:(()=>{const b=scene.querySelector('.vm-platform').getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height};})(),
+    viewport:(()=>{const b=scene.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height};})(),
   }));
 }
 async function assertFrozen(page, reason) {
@@ -217,17 +250,18 @@ async function afterChecks(browser) {
   for(let phase=0;phase<8;phase++){
     await cycle.page.waitForTimeout(Math.max(0,started+phase*4000-Date.now()));
     const value=await motion(cycle.page),size=await geometry(cycle.page);
-    const largest=[...value.tiles].sort((a,b)=>b.width-a.width)[0];
-    phases.push({phase,atMs:Date.now()-started,center:largest.symbol,...value,hero:size.hero});
-    await cycle.page.screenshot({path:path.join(out,`phase-${phase}-${largest.symbol}.png`)});
+    const centered=[...value.tiles].filter(t=>t.opacity>.05).sort((a,b)=>Math.abs(a.y+a.height/2-(value.viewport.y+value.viewport.height/2))-Math.abs(b.y+b.height/2-(value.viewport.y+value.viewport.height/2)))[0];
+    phases.push({phase,atMs:Date.now()-started,center:centered.symbol,...value,hero:size.hero});
+    await cycle.page.screenshot({path:path.join(out,`phase-${phase}-${centered.symbol}.png`)});
   }
   assert.equal(new Set(phases.slice(0,7).map(p=>p.center)).size,7,'each of seven instruments must actually reach the center');
   assert.equal(phases[7].center,phases[0].center,'last-to-first cycle returns seamlessly');
-  for(const p of phases){assert.deepEqual(p.platform,phases[0].platform,'platform remains stationary');assert.deepEqual(p.hero,phases[0].hero,'scene and copy do not change height');}
+  for(const p of phases){assert.deepEqual(p.viewport,phases[0].viewport,'column viewport remains stationary');assert.deepEqual(p.hero,phases[0].hero,'original hero and copy do not change height');}
+  const firstCenter=phases[0].tiles.find(t=>t.symbol===phases[0].center),nextCenter=phases[1].tiles.find(t=>t.symbol===firstCenter.symbol);assert(nextCenter.y<firstCenter.y-20,'visible cards move upward between steps');
   for(const tile of phases[0].tiles){const last=phases[7].tiles.find(t=>t.symbol===tile.symbol);assert(Math.abs(last.x-tile.x)<3&&Math.abs(last.y-tile.y)<3,`${tile.symbol} wrap position stable`);}
   report.cases.push({name:'real-full-cycle',phases});
   const video=cycle.page.video();await cycle.ctx.close();
-  const source=await video.path();fs.copyFileSync(source,path.join(out,'market-platform-cycle.webm'));check('real complete cycle, all seven center phases, last-to-first continuity and recorded video');
+  const source=await video.path();fs.copyFileSync(source,path.join(out,'market-platform-cycle.webm'));check('real upward column cycle, all seven center phases, last-to-first continuity and recorded video');
   if(visualOnly)return;
 
   const life=await createContext(browser);const page=life.page;
@@ -249,7 +283,7 @@ async function afterChecks(browser) {
   report.cases.push({name:'visibility-event-fixture',requests:life.requests.length-requestsBefore,mainThreadMs:(cdpAfter.TaskDuration-cdpBefore.TaskDuration)*1000,windowMs:2000});
   await page.evaluate(()=>{delete document.hidden;delete document.visibilityState;document.dispatchEvent(new Event('visibilitychange'));});await waitRunning(page);check('hidden visibility event stops animation without new requests');
   await page.emulateMedia({reducedMotion:'reduce'});await assertFrozen(page,'reduced-motion');
-  const reduced=await motion(page);assert.equal(reduced.tiles.sort((a,b)=>b.width-a.width)[0].symbol,'BTC');await page.screenshot({path:path.join(out,'reduced-motion.png')});
+  const reduced=await motion(page);assert.equal(reduced.animations.length,7);assert.equal((await columnGeometry(page)).visibleCount,5);await page.screenshot({path:path.join(out,'reduced-motion.png')});
   await page.emulateMedia({reducedMotion:'no-preference'});await waitRunning(page);check('live reduced-motion preference renders complete static composition');
   await life.ctx.close();
 
@@ -278,7 +312,7 @@ async function afterChecks(browser) {
   const reflow=await createContext(browser,{width:720,height:450,reduced:true});await openHome(reflow.page);assert.equal((await geometry(reflow.page)).overflow,false);await reflow.page.screenshot({path:path.join(out,'zoom-200-reflow.png')});await reflow.ctx.close();check('200% zoom and 720 CSS pixel reflow');
 
   const routes=await createContext(browser);await openHome(routes.page);
-  await routes.page.locator('.vm-primary').click();await routes.page.waitForURL(/\/login\?next=/);assert(decodeURIComponent(routes.page.url()).includes('/trade'));check('guest CTA keeps protected route and next target');
+  await routes.page.locator('#home-global-hero .actions .primary').click();await routes.page.waitForURL(/\/login\?next=/);assert(decodeURIComponent(routes.page.url()).includes('/trade'));check('guest CTA keeps protected route and next target');
   await routes.page.evaluate(()=>localStorage.setItem('exchange_token','header.eyJzdWIiOiJxYS11c2VyIn0.fixture'));
   const routeRows=[];
   for(const target of ['/trade?pair=BTC%2FUSDT','/futures?pair=BTC%2FUSDT','/trade?market=cfd']){
@@ -288,7 +322,7 @@ async function afterChecks(browser) {
   await routes.page.evaluate(()=>localStorage.removeItem('exchange_token'));await spaRoute(routes.page,'/');await routes.page.locator(heroSelector).waitFor();await routes.page.mouse.move(0,0);await waitRunning(routes.page);
   const counts=[];
   for(let round=0;round<4;round++){
-    await routes.page.locator('.vm-primary').click();await routes.page.waitForURL(/\/login/);
+    await routes.page.locator('#home-global-hero .actions .primary').click();await routes.page.waitForURL(/\/login/);
     const unmounted=await routes.page.evaluate(()=>({sceneAnimations:document.getAnimations().filter(a=>a.effect?.target?.hasAttribute('data-market-tile')).length,intervals:window.__heroQa.activeIntervals.size,listeners:Object.fromEntries([...window.__heroQa.listeners].map(([k,v])=>[k,v.size]))}));assert.equal(unmounted.sceneAnimations,0);
     await spaRoute(routes.page,'/');await routes.page.locator(heroSelector).waitFor();await routes.page.mouse.move(0,0);await waitRunning(routes.page);
     counts.push(await routes.page.evaluate(()=>({round:window.__heroQa.remountRound=(window.__heroQa.remountRound||0)+1,intervals:window.__heroQa.activeIntervals.size,visibility:window.__heroQa.listeners.get('document:visibilitychange')?.size,animations:document.querySelector('[data-market-visual]').getAnimations({subtree:true}).length})));

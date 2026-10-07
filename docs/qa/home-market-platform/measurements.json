@@ -1,5 +1,6 @@
 {
   "baselineSha": "8cbb74becc694ef29b90691d3f472390f2a1a413",
+  "productCandidate": "36dc293069d1b693c1cc6857ef82be9b99abb207; bundled index-CpmoccwL.js",
   "result": "PASS",
   "fixtureOnly": true,
   "productionAccess": false,
@@ -15,97 +16,97 @@
     {
       "label": "baseline",
       "viewport": "home-1440",
-      "lcpMs": 3988,
-      "cls": 9.399594907407406E-05,
-      "longTasks": 1,
-      "longTasksTotalMs": 110,
-      "longTasksMaxMs": 110,
-      "frameP95Ms": 16.800000000000182,
+      "lcpMs": 3852,
+      "cls": 0.0004977066251966688,
+      "longTasks": 2,
+      "longTasksTotalMs": 108,
+      "longTasksMaxMs": 57,
+      "frameP95Ms": 16.700000000000728,
       "framesOver50Ms": 0,
-      "mainThreadMs": 651.7380000000002,
-      "scriptMs": 75.17999999999996,
-      "windowMs": 4016.187999994145,
-      "heapBytes": 6236948,
-      "domNodes": 2432,
+      "mainThreadMs": 332.23400000000015,
+      "scriptMs": 40.86000000000001,
+      "windowMs": 4007.9790000017965,
+      "heapBytes": 7044460,
+      "domNodes": 2789,
       "requests": 27,
       "apiRequests": 9,
       "jsBytes": 635595,
       "jsGzip": 201181,
-      "resourcesEncoded": 4582869
+      "resourcesEncoded": 4582939
     },
     {
       "label": "baseline",
       "viewport": "home-390",
-      "lcpMs": 1120,
+      "lcpMs": 1104,
       "cls": 0,
       "longTasks": 1,
       "longTasksTotalMs": 56,
       "longTasksMaxMs": 56,
-      "frameP95Ms": 16.799999999999272,
+      "frameP95Ms": 16.700000000000728,
       "framesOver50Ms": 0,
-      "mainThreadMs": 123.9039999999999,
-      "scriptMs": 24.758000000000003,
-      "windowMs": 4013.8980000047013,
-      "heapBytes": 6643668,
-      "domNodes": 2430,
+      "mainThreadMs": 82.299,
+      "scriptMs": 18.632999999999996,
+      "windowMs": 4010.987000001478,
+      "heapBytes": 6941196,
+      "domNodes": 2787,
       "requests": 26,
       "apiRequests": 9,
       "jsBytes": 635595,
       "jsGzip": 201181,
-      "resourcesEncoded": 2791967
+      "resourcesEncoded": 2792037
     },
     {
       "label": "after",
       "viewport": "home-1440",
-      "lcpMs": 1080,
-      "cls": 0,
-      "longTasks": 1,
-      "longTasksTotalMs": 57,
-      "longTasksMaxMs": 57,
-      "frameP95Ms": 16.800000000000182,
+      "lcpMs": 3912,
+      "cls": 9.399594907407406E-05,
+      "longTasks": 2,
+      "longTasksTotalMs": 121,
+      "longTasksMaxMs": 62,
+      "frameP95Ms": 16.700000000000728,
       "framesOver50Ms": 0,
-      "mainThreadMs": 301.094,
-      "scriptMs": 18.901,
-      "windowMs": 4010.3889999882085,
-      "heapBytes": 6461040,
-      "domNodes": 1813,
-      "requests": 32,
+      "mainThreadMs": 543.1949999999998,
+      "scriptMs": 43.71600000000001,
+      "windowMs": 4007.1209999878192,
+      "heapBytes": 6677928,
+      "domNodes": 2916,
+      "requests": 34,
       "apiRequests": 9,
-      "jsBytes": 610461,
-      "jsGzip": 191683,
-      "resourcesEncoded": 2719106
+      "jsBytes": 637360,
+      "jsGzip": 201707,
+      "resourcesEncoded": 4599743
     },
     {
       "label": "after",
       "viewport": "home-390",
-      "lcpMs": 1120,
-      "cls": 0,
-      "longTasks": 1,
-      "longTasksTotalMs": 94,
-      "longTasksMaxMs": 94,
-      "frameP95Ms": 16.700000000000728,
+      "lcpMs": 1164,
+      "cls": 3.1288096577811824E-05,
+      "longTasks": 2,
+      "longTasksTotalMs": 130,
+      "longTasksMaxMs": 69,
+      "frameP95Ms": 16.799999999999272,
       "framesOver50Ms": 0,
-      "mainThreadMs": 223.54300000000003,
-      "scriptMs": 12.45099999999999,
-      "windowMs": 4017.7939999994123,
-      "heapBytes": 5735568,
-      "domNodes": 1811,
-      "requests": 32,
+      "mainThreadMs": 303.50699999999995,
+      "scriptMs": 29.201000000000004,
+      "windowMs": 4016.0959999921033,
+      "heapBytes": 6529816,
+      "domNodes": 2914,
+      "requests": 33,
       "apiRequests": 9,
-      "jsBytes": 610461,
-      "jsGzip": 191683,
-      "resourcesEncoded": 2719106
+      "jsBytes": 637360,
+      "jsGzip": 201707,
+      "resourcesEncoded": 2808841
     }
   ],
   "budgets": {
-    "additionalHeroJsGzipBytes": 2167,
-    "heroCssGzipBytes": 2124,
-    "initialHeroSvgBytes": 8662
+    "isolatedColumnModuleGzipBytes": 6998,
+    "columnCssGzipBytes": 1445,
+    "initialColumnSvgBytes": 10586
   },
   "checks": [
-    "eight viewport screenshots and horizontal layout",
+    "8 viewport screenshots and horizontal layout",
     "guest and authenticated fixture render",
-    "real complete cycle, all seven center phases, last-to-first continuity and recorded video",
+    "real upward column cycle, all seven center phases, last-to-first continuity and recorded video",
     "visible scene advances",
     "hover, keyboard focus, manual pause and resume",
     "offscreen compositor clocks pause and resume",
@@ -159,77 +160,279 @@
       "overflow": false
     }
   ],
+  "columns": [
+    {
+      "width": 1920,
+      "height": 1080,
+      "viewport": {
+        "x": 652,
+        "y": 336,
+        "width": 272.625,
+        "height": 474,
+        "right": 924.625,
+        "bottom": 810
+      },
+      "visibleCount": 5,
+      "visibleSymbols": [
+        "GOLD",
+        "OIL",
+        "ETH",
+        "SOL",
+        "XRP"
+      ],
+      "textOverlapArea": 0,
+      "terminalOverlapArea": 0,
+      "originalArt": "/hero/sapphire-refined.png",
+      "heading": "OWN YOUR FUTURE.",
+      "tapeCount": 1,
+      "actualTerminal": true
+    },
+    {
+      "width": 1707,
+      "height": 940,
+      "viewport": {
+        "x": 577.4375,
+        "y": 322.5,
+        "width": 242.390625,
+        "height": 474,
+        "right": 819.828125,
+        "bottom": 796.5
+      },
+      "visibleCount": 5,
+      "visibleSymbols": [
+        "GOLD",
+        "OIL",
+        "ETH",
+        "SOL",
+        "XRP"
+      ],
+      "textOverlapArea": 0,
+      "terminalOverlapArea": 0,
+      "originalArt": "/hero/sapphire-refined.png",
+      "heading": "OWN YOUR FUTURE.",
+      "tapeCount": 1,
+      "actualTerminal": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "viewport": {
+        "x": 484,
+        "y": 276.59375,
+        "width": 204.46875,
+        "height": 434,
+        "right": 688.46875,
+        "bottom": 710.59375
+      },
+      "visibleCount": 5,
+      "visibleSymbols": [
+        "GOLD",
+        "OIL",
+        "ETH",
+        "SOL",
+        "XRP"
+      ],
+      "textOverlapArea": 0,
+      "terminalOverlapArea": 0,
+      "originalArt": "/hero/sapphire-refined.png",
+      "heading": "OWN YOUR FUTURE.",
+      "tapeCount": 1,
+      "actualTerminal": true
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "viewport": {
+        "x": 458.09375,
+        "y": 266.234375,
+        "width": 193.96875,
+        "height": 434,
+        "right": 652.0625,
+        "bottom": 700.234375
+      },
+      "visibleCount": 5,
+      "visibleSymbols": [
+        "GOLD",
+        "OIL",
+        "ETH",
+        "SOL",
+        "XRP"
+      ],
+      "textOverlapArea": 0,
+      "terminalOverlapArea": 0,
+      "originalArt": "/hero/sapphire-refined.png",
+      "heading": "OWN YOUR FUTURE.",
+      "tapeCount": 1,
+      "actualTerminal": true
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "viewport": {
+        "x": 55,
+        "y": 616.1875,
+        "width": 320,
+        "height": 235,
+        "right": 375,
+        "bottom": 851.1875
+      },
+      "visibleCount": 3,
+      "visibleSymbols": [
+        "OIL",
+        "ETH",
+        "SOL"
+      ],
+      "textOverlapArea": 0,
+      "terminalOverlapArea": 0,
+      "originalArt": "/hero/sapphire-refined.png",
+      "heading": "OWN YOUR FUTURE.",
+      "tapeCount": 1,
+      "actualTerminal": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "viewport": {
+        "x": 35,
+        "y": 702.078125,
+        "width": 320,
+        "height": 235,
+        "right": 355,
+        "bottom": 937.078125
+      },
+      "visibleCount": 3,
+      "visibleSymbols": [
+        "OIL",
+        "ETH",
+        "SOL"
+      ],
+      "textOverlapArea": 0,
+      "terminalOverlapArea": 0,
+      "originalArt": "/hero/sapphire-refined.png",
+      "heading": "OWN YOUR FUTURE.",
+      "tapeCount": 1,
+      "actualTerminal": true
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "viewport": {
+        "x": 20,
+        "y": 702.078125,
+        "width": 320,
+        "height": 235,
+        "right": 340,
+        "bottom": 937.078125
+      },
+      "visibleCount": 3,
+      "visibleSymbols": [
+        "OIL",
+        "ETH",
+        "SOL"
+      ],
+      "textOverlapArea": 0,
+      "terminalOverlapArea": 0,
+      "originalArt": "/hero/sapphire-refined.png",
+      "heading": "OWN YOUR FUTURE.",
+      "tapeCount": 1,
+      "actualTerminal": true
+    },
+    {
+      "width": 320,
+      "height": 740,
+      "viewport": {
+        "x": 16,
+        "y": 769.015625,
+        "width": 288,
+        "height": 235,
+        "right": 304,
+        "bottom": 1004.015625
+      },
+      "visibleCount": 3,
+      "visibleSymbols": [
+        "GOLD",
+        "OIL",
+        "ETH"
+      ],
+      "textOverlapArea": 0,
+      "terminalOverlapArea": 0,
+      "originalArt": "/hero/sapphire-refined.png",
+      "heading": "OWN YOUR FUTURE.",
+      "tapeCount": 1,
+      "actualTerminal": true
+    }
+  ],
   "cycle": [
     {
       "phase": 0,
-      "atMs": 28,
-      "center": "BTC"
-    },
-    {
-      "phase": 1,
-      "atMs": 4024,
+      "atMs": 29,
       "center": "ETH"
     },
     {
-      "phase": 2,
-      "atMs": 8030,
+      "phase": 1,
+      "atMs": 4012,
       "center": "SOL"
     },
     {
-      "phase": 3,
-      "atMs": 12038,
+      "phase": 2,
+      "atMs": 8036,
       "center": "XRP"
     },
     {
-      "phase": 4,
-      "atMs": 16028,
+      "phase": 3,
+      "atMs": 12052,
       "center": "ADA"
     },
     {
+      "phase": 4,
+      "atMs": 16061,
+      "center": "BTC"
+    },
+    {
       "phase": 5,
-      "atMs": 20034,
-      "center": "DOGE"
+      "atMs": 20035,
+      "center": "GOLD"
     },
     {
       "phase": 6,
-      "atMs": 24036,
-      "center": "LTC"
+      "atMs": 24052,
+      "center": "OIL"
     },
     {
       "phase": 7,
-      "atMs": 28030,
-      "center": "BTC"
+      "atMs": 28032,
+      "center": "ETH"
     }
   ],
   "hiddenEvent": {
     "name": "visibility-event-fixture",
     "requests": 0,
-    "mainThreadMs": 0.49000000000010147,
+    "mainThreadMs": 1.1830000000001561,
     "windowMs": 2000
   },
   "remounts": [
     {
       "round": 1,
       "intervals": 1,
-      "visibility": 10,
+      "visibility": 11,
       "animations": 7
     },
     {
       "round": 2,
       "intervals": 1,
-      "visibility": 10,
+      "visibility": 11,
       "animations": 7
     },
     {
       "round": 3,
       "intervals": 1,
-      "visibility": 10,
+      "visibility": 11,
       "animations": 7
     },
     {
       "round": 4,
       "intervals": 1,
-      "visibility": 10,
+      "visibility": 11,
       "animations": 7
     }
   ],
@@ -241,7 +444,7 @@
   "limitations": [
     "One timed run per viewport, local diagnostic not production Web Vitals",
     "Hidden-tab handler uses explicit document.hidden visibility-event fixture; OS background scheduling not claimed",
-    "CPU figure is instrumented renderer main-thread activity, not total machine CPU"
-  ],
-  "productCandidateSha": "d5615337dcce8968ed24823087c30e5c6fad268d"
+    "CPU figure is instrumented renderer main-thread activity, not total machine CPU",
+    "Original Sapphire bitmap, laptop, copy and live tape preserved at owner request; decorative asset budget applies to added column assets"
+  ]
 }
