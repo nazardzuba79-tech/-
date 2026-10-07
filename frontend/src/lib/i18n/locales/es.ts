@@ -1686,7 +1686,7 @@ export const ES: Record<Key, string> = {
   'listing.tradingUnavailable': "Trading no disponible por ahora",
   'listing.marketLive': "Mercado abierto",
   'listing.dateUnconfirmed': "La fecha de listado aún no está confirmada",
-  'listing.awaitingStart': "Esperando la confirmación del inicio de trading",
+  'listing.awaitingStart': "Esperando la confirmación del lanzamiento del mercado",
   'listing.untilListing': "Tiempo hasta el listado",
   'listing.scheduledAt': "Fecha de listado",
   'listing.loadFailed': "No se pudieron cargar los datos del listado. Inténtalo de nuevo.",

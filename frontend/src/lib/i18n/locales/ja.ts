@@ -1686,7 +1686,7 @@ export const JA: Record<Key, string> = {
   'listing.tradingUnavailable': "現在取引できません",
   'listing.marketLive': "市場は開始しています",
   'listing.dateUnconfirmed': "上場日はまだ確定していません",
-  'listing.awaitingStart': "取引開始の確認を待っています",
+  'listing.awaitingStart': "市場の開始確認を待っています",
   'listing.untilListing': "上場まで",
   'listing.scheduledAt': "上場日",
   'listing.loadFailed': "上場データを読み込めませんでした。もう一度お試しください。",

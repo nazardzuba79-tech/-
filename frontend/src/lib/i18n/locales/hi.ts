@@ -1686,7 +1686,7 @@ export const HI: Record<Key, string> = {
   'listing.tradingUnavailable': "ट्रेडिंग अभी उपलब्ध नहीं है",
   'listing.marketLive': "बाज़ार खुला है",
   'listing.dateUnconfirmed': "लिस्टिंग की तारीख अभी पुष्ट नहीं है",
-  'listing.awaitingStart': "ट्रेडिंग शुरू होने की पुष्टि की प्रतीक्षा है",
+  'listing.awaitingStart': "बाज़ार शुरू होने की पुष्टि की प्रतीक्षा है",
   'listing.untilListing': "लिस्टिंग तक समय",
   'listing.scheduledAt': "लिस्टिंग की तारीख",
   'listing.loadFailed': "लिस्टिंग डेटा लोड नहीं हो सका। फिर से कोशिश करें।",

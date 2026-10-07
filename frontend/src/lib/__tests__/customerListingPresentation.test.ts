@@ -14,6 +14,15 @@ const React = req('react');
 const { renderToStaticMarkup } = req('react-dom/server');
 const dictionaries = readDictionaries();
 const now = Date.parse('2026-10-07T12:00:00Z');
+const awaitingLaunch = {
+  ru: 'Ожидаем подтверждения запуска рынка',
+  en: 'Waiting for confirmation of the market launch',
+  zh: '等待确认市场启动',
+  es: 'Esperando la confirmación del lanzamiento del mercado',
+  hi: 'बाज़ार शुरू होने की पुष्टि की प्रतीक्षा है',
+  ja: '市場の開始確認を待っています',
+  ko: '시장 시작 확인을 기다리고 있습니다',
+};
 const fixture: markets.TestAsset = {
   pair: 'ZQNEW/USDT', symbol: 'ZQNEW', name: 'New listing', quote: 'USDT',
   isTestAsset: true, isTradable: false, managed: true, status: 'TEST · NOT TRADABLE',
@@ -49,7 +58,7 @@ function component(file: string, lang: typeof LOCALES[number], assets = [fixture
 }
 function chart(asset: markets.TestAsset | null, lang: typeof LOCALES[number] = 'ru', error = false, loaded = true) {
   const { TestMarketChart } = component('components/TestMarketTerminal.tsx', lang);
-  return renderToStaticMarkup(React.createElement(TestMarketChart, { pair: fixture.pair, asset, loaded, error, clockOffsetMs: 0 }));
+  return renderToStaticMarkup(React.createElement(TestMarketChart, { pair: asset?.pair ?? fixture.pair, asset, loaded, error, clockOffsetMs: 0 }));
 }
 
 beforeEach(() => jest.spyOn(Date, 'now').mockReturnValue(now));
@@ -57,6 +66,9 @@ afterEach(() => jest.restoreAllMocks());
 
 describe.each(LOCALES)('listing customer states in %s', lang => {
   const t = translate(lang);
+  test('awaits market launch confirmation without promising trading permission', () => {
+    expect(t('listing.awaitingStart')).toBe(awaitingLaunch[lang]);
+  });
   test('unknown ticker parses without special-casing; technical status is never rendered', () => {
     const parsed = markets.parseTestMarkets({ serverTime: now, assets: [fixture] })!.assets[0];
     expect(parsed).toMatchObject(fixture);
@@ -83,12 +95,37 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
     expect(html).not.toContain('role="timer"');
     expect(html).not.toContain('<dt>' + t('listing.scheduledAt') + '</dt>');
   });
-  test('clock crossing zero cannot claim the market opened', () => {
-    jest.spyOn(Date, 'now').mockReturnValue(Date.parse(fixture.listingAt) + 1);
-    const html = chart({ ...fixture, isTradable: true }, lang);
-    expect(html).toContain(t('listing.awaitingStart'));
-    expect(html).not.toMatch(/role="timer"|data-chart/);
-    expect(html).not.toContain(t('listing.marketLive'));
+  describe.each(['ZQNEW', 'AITH'])('countdown boundary for %s', symbol => {
+    test.each([true, false])('server phase owns the transition; tradable=%s', isTradable => {
+      for (const delta of [-1, 0, 1]) for (const phase of ['pre-listing', 'live'] as const) {
+        const time = Date.parse(fixture.listingAt) + delta;
+        jest.spyOn(Date, 'now').mockReturnValue(time);
+        const raw: markets.TestAsset = {
+          ...fixture, symbol, pair: `${symbol}/USDT`, isTradable, version: 2,
+          readLease: { protocol: 'aith-prelisting-v1', generation: 2, issuedAt: time, expiresAt: time + 45_000 },
+          state: { ...fixture.state, phase, serverTime: time },
+        };
+        const original = JSON.stringify(raw);
+        const parsed = markets.parseTestMarkets({ serverTime: time, assets: [raw] })!.assets[0];
+        if (symbol === 'AITH' && isTradable) {
+          // The real AITH publication contract forbids a tradable payload,
+          // even at/after its scheduled time or when the chart is live.
+          expect(parsed).toBeUndefined();
+          continue;
+        }
+        expect(parsed).toMatchObject({ initialPrice: 2, listingAt: fixture.listingAt, version: 2, isTradable, state: { phase } });
+        if (symbol === 'AITH') expect(parsed.readLease).toEqual(raw.readLease);
+        const html = chart(parsed, lang);
+        const waiting = phase === 'pre-listing' && delta >= 0;
+        expect(html.includes(t('listing.awaitingStart'))).toBe(waiting);
+        expect(html.includes('role="timer"')).toBe(phase === 'pre-listing' && delta < 0);
+        expect(html.includes('data-chart')).toBe(phase === 'live');
+        expect(html.includes(t('listing.marketLive'))).toBe(phase === 'live' && isTradable);
+        expect(html.includes(t('listing.tradingUnavailable'))).toBe(!isTradable);
+        expect(html).not.toContain(raw.status);
+        expect(JSON.stringify(raw)).toBe(original);
+      }
+    });
   });
   test('missing data is an explicit failure, stale data stays marked', () => {
     expect(chart(null, lang)).toContain(t('listing.loadFailed'));

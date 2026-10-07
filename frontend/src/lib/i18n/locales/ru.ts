@@ -1745,7 +1745,7 @@ export const RU = {
   'listing.tradingUnavailable': "Торговля пока недоступна",
   'listing.marketLive': "Рынок открыт",
   'listing.dateUnconfirmed': "Дата листинга ещё не подтверждена",
-  'listing.awaitingStart': "Ожидаем подтверждения начала торгов",
+  'listing.awaitingStart': "Ожидаем подтверждения запуска рынка",
   'listing.untilListing': "До листинга",
   'listing.scheduledAt': "Дата листинга",
   'listing.loadFailed': "Не удалось загрузить данные листинга. Попробуйте ещё раз.",
