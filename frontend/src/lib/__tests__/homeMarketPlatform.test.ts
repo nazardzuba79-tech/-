@@ -235,6 +235,12 @@ function mountHero(options: { reduced?: boolean; animate?: boolean; market?: any
     output, Observer, failWork, failWork, failWork, failWork, failWork,
   );
   const root = createRoot(dom.window.document.getElementById('root'));
+  let mounted = true;
+  const detach = () => {
+    if (!mounted) return;
+    act(() => root.unmount());
+    mounted = false;
+  };
   const market = options.market ?? fixtureMarket();
   const beforeMarket = JSON.stringify(market);
   act(() => root.render(React.createElement(output.HomeMarketPlatformHero, { market })));
@@ -246,13 +252,13 @@ function mountHero(options: { reduced?: boolean; animate?: boolean; market?: any
     Object.defineProperty(e, 'pointerType', { value: pointerType });
     act(() => scene.dispatchEvent(e));
   };
-  return { dom, scene, button, animations, disconnect, failWork,
+  return { dom, scene, button, animations, disconnect, failWork, detach,
     visible(value: boolean) { act(() => intersect([{ isIntersecting: value }])); },
     hidden(value: boolean) { hidden = value; act(() => dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'))); },
     reduce(value: boolean) { media.matches = value; act(() => media.dispatchEvent(new dom.window.Event('change'))); },
     click() { act(() => button.click()); }, event,
     unmount() {
-      act(() => root.unmount());
+      detach();
       dom.window.close();
       for (const [name, descriptor] of restored) {
         if (descriptor) Object.defineProperty(globalThis, name, descriptor);
@@ -397,5 +403,23 @@ describe('mounted market motion lifecycle', () => {
     hero.unmount(); hero = undefined;
     expect(disconnect).toHaveBeenCalledTimes(1);
     for (const animation of running) expect(animation.cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores an already queued observer callback after unmount without restarting cancelled animations', () => {
+    hero = mountHero();
+    hero.visible(true);
+    const animations = hero.animations;
+    const plays = animations.map(animation => animation.play.mock.calls.length);
+    // Keep the document alive, as when React removes only the home route.
+    hero.detach();
+    expect(animations.every(animation => animation.playState === 'idle')).toBe(true);
+    // IntersectionObserver delivery already queued before disconnect can
+    // still reach its captured callback. It must do no animation work.
+    hero.visible(true);
+    expect(animations.every(animation => animation.playState === 'idle')).toBe(true);
+    expect(animations.map(animation => animation.play.mock.calls.length)).toEqual(plays);
+    for (const animation of animations) expect(animation.cancel).toHaveBeenCalledTimes(1);
+    expect(hero.disconnect).toHaveBeenCalledTimes(1);
+    expect(hero.failWork).not.toHaveBeenCalled();
   });
 });

@@ -26,9 +26,11 @@ export function HomeMarketPlatformHero({ market }: { market: HomeMarket }) {
     let intersecting = false;
     let hovered = false;
     let focused = false;
+    let disposed = false;
     const animations: Animation[] = [];
 
     function sync() {
+      if (disposed) return;
       const reasons = [document.hidden && 'hidden', !intersecting && 'offscreen', manualPause.current && 'manual', hovered && 'hover', focused && 'focus', reduced.matches && 'reduced-motion'].filter(Boolean);
       const running = reasons.length === 0;
       element!.dataset.motionState = running ? 'running' : 'paused';
@@ -65,6 +67,7 @@ export function HomeMarketPlatformHero({ market }: { market: HomeMarket }) {
     synchronize.current = sync;
     sync();
     return () => {
+      disposed = true;
       synchronize.current = null;
       observer.disconnect();
       document.removeEventListener('visibilitychange', sync);

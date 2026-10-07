@@ -4,6 +4,8 @@ The revised PR #473 keeps the original Sapphire globe, laptop, text, CTAs and li
 
 **Browser QA: PASS.** Baseline: `8cbb74becc694ef29b90691d3f472390f2a1a413`. Product candidate: `36dc293069d1b693c1cc6857ef82be9b99abb207`, bundled as `index-CpmoccwL.js`. This is local review evidence, not production deployment; exact-head CI is reported separately by the PR.
 
+A subsequent lifecycle-only fix prevents queued observer callbacks from restarting cancelled animations after unmount. Its actual-controller regression passes (15/15 tests in the column suite); the final production build passes as `index-BdLfCd-U.js`. The screenshots and timed samples below remain the unchanged visual candidate identified above.
+
 ## Method and measured cost
 
 Both production bundles ran in fresh Chromium contexts: CPU 2× throttling, 40 ms latency, 10 Mbps download / 5 Mbps upload, 1× pixel ratio, same deterministic read-only fixtures and system-font fallback. External HTTP/WebSocket dispatch and writes were blocked. The original artwork and laptop chart/trades render before the measurement window.
