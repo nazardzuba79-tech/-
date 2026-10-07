@@ -32,8 +32,11 @@ it('the palette is declared once, and both terminals read that one block', () =>
   // buy #0ecb81 (the green the terminal shipped with). The accent stays
   // VOLTEX gold. Still one block, still read by all three terminals —
   // which is the property pinned here.
-  for (const token of ['--bg-primary:#0b0e11', '--accent-yellow:#f0b90b',
-    '--color-buy:#0ecb81', '--color-sell:#f6465d', '--panel:#181a20', '--border-color:#2b3139']) {
+  // 2026-10-07 (owner: Bybit 1:1): Bybit's dark theme read off its live page —
+  // page #000000, panel #101014, divider #222227, gold #f0b90b (owner kept the brand accent where Bybit has orange), buy
+  // #06c167, sell #f63649. Still one block, still read by all three.
+  for (const token of ['--bg-primary:#000000', '--accent-yellow:#f0b90b',
+    '--color-buy:#06c167', '--color-sell:#f63649', '--panel:#101014', '--border-color:#222227']) {
     expect(css).toContain(token);
   }
   // …and the copy it replaced is gone, so there is nothing to drift against.
