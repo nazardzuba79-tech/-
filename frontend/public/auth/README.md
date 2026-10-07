@@ -22,7 +22,7 @@ small side-background crop before the compact breakpoint; protected logo,
 slogan, face, phone, hand/card regions are checked in browser coordinates.
 No stretched pixels, generated fill, duplicated logo/slogan or clickable image regions.
 The separate localized HTML block below the subject describes the card using
-the owner's supplied wording: 22+ currencies and 70 cryptocurrencies. These are
+the owner's supplied wording: 22+ fiat currencies and 70+ cryptocurrencies. These are
 owner-provided product claims, not an independently audited coverage list.
 At <=760px or portrait-like windows (aspect ratio <=3/2), the decorative banner
 is hidden without reserved space; the existing Logo appears in the form header.
@@ -65,3 +65,25 @@ The owner approved these assets in local design revision 6 on 2026-10-05.
 - No independently verified source for the previous 1.2+ million investor figure was found. Old copy and comments are not metric evidence. That investor claim and its numeric badge are not rendered. The owner subsequently replaced the neutral community wording with card copy and then the portraits with inline SVG fiat symbols: RUB (ruble), USD (US dollar), CNY (Chinese yuan). Login/Register no longer loads the retained portrait strip; the historical asset itself is not deleted.
 
 No new image generation was used for this release. The white card remains in the woman's hand and the black card on the table, as in the approved asset.
+
+## Premium fiat flag follow-up
+
+The current owner-requested block uses six local SVG flags in order:
+EUR/EU, CHF/CH, JPY/JP, USD/US, CNY/CN and RUB/RU. They come from the
+already-installed MIT-licensed `country-flag-icons` package. The earlier flag
+correction followed the currency-country treatment on TradingView's USD/RUB
+and USD/CNY pages without loading or copying their CDN assets.
+
+The circles form one centered overlapping row, with thin white rims and soft
+individual shadows. Wide desktops use 36px circles and 14px overlap; compact
+desktops use 34px circles and 16px overlap. Mobile uses 34px circles with 12px
+overlap, with the localized “and more currencies” hint beside them and the
+existing card copy below. On desktop the hint sits below the flags beside the
+existing card copy. The hint is available in all seven locales and makes clear
+that these six examples are only part of the owner's stated 22+ fiat currencies.
+
+Flags remain decorative; the information is accessible as real localized text.
+The full block has no panel or shared raised shadow. No authentication artwork,
+form geometry or bottom scrim was edited; the existing portraits remain unused
+historical files. No new image generation, dependency or remote asset request
+is introduced.

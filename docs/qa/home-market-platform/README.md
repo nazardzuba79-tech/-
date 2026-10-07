@@ -6,6 +6,8 @@ The revised PR #473 keeps the original Sapphire globe, laptop, text, CTAs and li
 
 A subsequent lifecycle-only fix prevents queued observer callbacks from restarting cancelled animations after unmount. Its actual-controller regression passes (15/15 tests in the column suite); the final production build passes as `index-BdLfCd-U.js`. The screenshots and timed samples below remain the unchanged visual candidate identified above.
 
+Current-main integration: auth PR #472 advanced main to `2f195cbe2f0f1c7ee31e2c9e887f7449a18cf34b` after the hero head passed 22/22 CI checks. The review branch preserves that auth change and all hero product/assets Git bytes. Combined locale/auth/hero validation passes 8 suites / 109 tests; frontend build passes as `index-CARLQ-lO.js`. The measurements retain their explicitly identified earlier baseline and visual candidate.
+
 ## Method and measured cost
 
 Both production bundles ran in fresh Chromium contexts: CPU 2× throttling, 40 ms latency, 10 Mbps download / 5 Mbps upload, 1× pixel ratio, same deterministic read-only fixtures and system-font fallback. External HTTP/WebSocket dispatch and writes were blocked. The original artwork and laptop chart/trades render before the measurement window.
