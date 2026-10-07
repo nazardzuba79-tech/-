@@ -41,7 +41,7 @@ function AuthCommunity() {
           <span className="vx-auth-currency-more">{t('authShell.moreCurrencies')}</span>
         </div>
         <div className="vx-auth-community-copy">
-          <strong>{cardAction}{' '}<span className="vx-auth-card-fee">— {voltexFee}</span></strong>
+          <strong>{cardAction} —{' '}<span className="vx-auth-card-fee">{voltexFee}</span></strong>
           <span><span className="vx-auth-currency-amount">{fiatCaption} ·</span>{' '}<span className="vx-auth-currency-amount">{cryptoCaption}</span></span>
         </div>
       </div>

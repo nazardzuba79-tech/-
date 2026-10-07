@@ -2,13 +2,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
+const { createHash } = require('node:crypto');
 const express = require('express');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const dist = path.resolve('frontend/dist');
 const out = path.resolve(process.env.QA_OUT || 'output/auth-business-class');
 const slogan = 'Копируйте сделки лучших трейдеров мира.';
 const report = { head: process.env.QA_HEAD_SHA || process.env.GITHUB_SHA || null, fixtureOnly: true, cases: [], responsive: [], details: [], behavior: [], fixtureRequests: [], expectedFixtureErrors: [], errors: [], failed: [], denied: [], writes: [], result: 'FAIL' };
-// Coordinates in the unchanged 919x941 source, not the <img> element box.
+// Coordinates in the original 919x941 scene, not the <img> element box.
 const protectedRasterRegions = {
   logo: [50, 35, 225, 75], slogan: [50, 120, 540, 212],
   faceAndHair: [440, 150, 865, 540], phoneAndHand: [245, 450, 395, 665],
@@ -232,12 +233,12 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       assert.ok(amount.x >= block.copyLayout.x - 1 && amount.right <= block.copyLayout.right + 1, `${label} complete amount fits the available copy width`);
     }
     assert.doesNotMatch(block.title, /[.。]$/, `${label} no trailing title period`);
-    assert.equal(block.fee.lines, 1, `${label} VOLTEX fee is one complete phrase`);
+    assert.equal(block.fee.lines, 1, `${label} fee is one complete phrase`);
     assert.equal(block.fee.whiteSpace, 'nowrap', `${label} commission phrase never splits`);
-    assert.ok(block.fee.text.includes('0%') && block.fee.text.includes('VOLTEX'), `${label} fee explicitly belongs to VOLTEX`);
+    assert.ok(block.fee.text.includes('0%') && !block.fee.text.includes('VOLTEX'), `${label} fee uses only the approved short wording`);
     assert.ok(block.fee.x >= block.copyLayout.x - 1 && block.fee.right <= block.copyLayout.right + 1, `${label} entire fee phrase fits`);
     assert.ok(block.copyOpacity.every(value => value === '1'), `${label} no faded copy or ancestors`);
-    if (lang === 'ru') assert.equal(block.title, 'Платите и снимайте наличные — 0% комиссии VOLTEX');
+    if (lang === 'ru') assert.equal(block.title, 'Платите и снимайте наличные — 0% комиссии');
     assert.doesNotMatch(block.subtitle, /[.。]$/, `${label} no trailing subtitle period`);
     const captionGap = block.caption.y - block.community.bottom;
     assert.ok(captionGap >= 20 && captionGap <= 24, `${label} caption has a separate 20–24px gap: ${captionGap}`);
@@ -334,7 +335,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       assert.equal(style.blur, 'none', `${label} ${style.selector} no glass card`);
     }
     if (lang === 'ru') {
-      assert.equal(block.title, 'Платите и снимайте наличные — 0% комиссии VOLTEX');
+      assert.equal(block.title, 'Платите и снимайте наличные — 0% комиссии');
       assert.equal(block.subtitle, '22+ фиатных валют · 70+ криптовалют');
       assert.equal(block.moreLayout.text, 'и другие валюты');
       assert.equal(block.caption.label.toLocaleLowerCase('ru'), 'карта, которая всегда с вами');
@@ -494,9 +495,38 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       await waitForVisual(detail.page);
       const detailMeasurements = await measure(detail.page);
       await assertRussianGeometry(detail.page, detailMeasurements, `${routeName} high-DPI detail`);
+      // Decode the actual served asset in the browser: all pixels outside the
+      // inset card surface must exactly match the approved pre-retouch photo.
+      const preserved = await detail.page.evaluate(() => {
+        const img = document.querySelector('.vx-auth-banner');
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0);
+        const rgba = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const polygon = [[512,681],[614,710],[607,750],[590,751],[578,756],[576,765],[501,744]];
+        const outside = [];
+        for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
+          let inside = false;
+          for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const a = polygon[i], b = polygon[j];
+            if ((a[1] > y+.5) !== (b[1] > y+.5) && x+.5 < (b[0]-a[0])*(y+.5-a[1])/(b[1]-a[1])+a[0]) inside = !inside;
+          }
+          if (!inside) {
+            const index = (y*canvas.width+x)*4;
+            outside.push(rgba[index], rgba[index+1], rgba[index+2]);
+          }
+        }
+        let binary = '';
+        for (let i = 0; i < outside.length; i += 16384) binary += String.fromCharCode(...outside.slice(i, i+16384));
+        return btoa(binary);
+      });
+      assert.equal(createHash('sha256').update(Buffer.from(preserved, 'base64')).digest('hex'), 'e102df04852a5032e17e6ae08a6190295a9a5de432b700af4c2fef8a9aecd322', `${routeName} every pixel outside the card surface is unchanged`);
       report.details.push({ route: routeName, deviceScaleFactor: 2, ...detailMeasurements });
       const box = await detail.page.locator('.vx-auth-brand > .vx-auth-extras').boundingBox();
       await detail.page.screenshot({ path: path.join(out, `${routeName}-block-2x.png`), clip: { x: box.x - 16, y: box.y - 16, width: box.width + 32, height: box.height + 32 } });
+      const painted = detailMeasurements.paintedRaster;
+      await detail.page.screenshot({ path: path.join(out, `${routeName}-card-2x.png`), clip: { x: painted.x + 475 * painted.scaleX, y: painted.y + 655 * painted.scaleY, width: 175 * painted.scaleX, height: 150 * painted.scaleY } });
       await detail.ctx.close();
       const mobileDetail = await openContext(390, 'ru', [], 844, 2);
       await mobileDetail.page.goto(`${origin}/${routeName}?next=%2Fwallet`, { waitUntil: 'networkidle' });

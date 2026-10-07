@@ -2,13 +2,15 @@
 
 Current narrow follow-up: `codex/auth-card-fee-copy`, from fresh main
 `2f195cbe2f0f1c7ee31e2c9e887f7449a18cf34b` after #472 was published.
-This revision changes only the lower information block's localized fee wording
-and readability. The owner explicitly prohibits merge, deployment and production
+This revision changes the lower information block's localized fee wording
+and readability, plus the owner-approved white-card surface retouch. The owner
+explicitly prohibits merge, deployment and production
 changes for this follow-up. The earlier publication approval does not apply here.
 
 Russian Login and Register now use only the left 919 x 941 crop of the approved
 `voltex-premium-gold-button-v6.png`. This supersedes the earlier real-photo/RU
-text composition. The lossless crop preserves every decoded pixel. Its embedded
+text composition. The lossless image preserves every decoded pixel outside the
+inset white-card surface; the girl's hand and original card edge are unchanged. Its embedded
 logo and slogan appear once: no HTML headline or white card.
 The owner-requested benefits and static card caption are ordinary localized
 HTML: six overlapping local inline SVG fiat flags (EUR/EU, CHF/CH, JPY/JP,
@@ -19,10 +21,14 @@ unframed, with no shared panel, border, blur, raised shadow, numeric badge,
 carousel or testimonial claim.
 No verified evidence for the previous 1.2 million investor figure was found;
 old copy and comments are not evidence. The owner replaced the neutral community
-copy with “Платите и снимайте наличные — 0% комиссии VOLTEX” and
+copy with “Платите и снимайте наличные — 0% комиссии” and
 “22+ фиатных валют · 70+ криптовалют”. All seven locales retain the exact 22+/70+ product
 figures, supplied by the owner rather than independently verified coverage.
 See `frontend/public/auth/README.md` for image hashes.
+The card is locally brighter with clearer branding, without enlarging or moving
+it. Real high-DPI browser crops: [Login card](login-card-2x.png) and
+[Register card](register-card-2x.png). The outside-card pixel hash is checked
+against the original raster on both routes, not only a new whole-file checksum.
 
 The geometry follow-up removes the former contain/55:45 letterboxing. Desktop
 column width follows `viewport height * 919 / 941`, capped at 60% to keep the
