@@ -1,4 +1,5 @@
-import { stocksEnabled } from '../../lib/stocks';
+declare const __VOLTEX_STOCKS_ENABLED__: boolean;
+const stocksEnabled = typeof __VOLTEX_STOCKS_ENABLED__ !== 'undefined' && __VOLTEX_STOCKS_ENABLED__;
 import { HeaderDropdown, KNOWLEDGE_LINKS, MARKET_LINKS, OTC_LINKS, TRADING_LINKS } from '../../components/HeaderDropdown';
 import { TradingBotIcon } from '../../components/TradingBotIcon';
 import { useEffect, useState } from 'react';

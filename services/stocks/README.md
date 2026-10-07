@@ -22,7 +22,7 @@ Browser test: set `QA_PLAYWRIGHT_MODULE` to Playwright, start Vite at `127.0.0.1
 2. Review catalogue liquidity/issuer/share-class associations; this is a provisional candidate universe, **not a verified current top-250 ranking**. Index objects are distinct; no ETF substitution. Company IDs/approved logos need a separate reviewed source.
 3. Supply a verified exchange calendar in the private stock data directory: `{verified,sourceUrl,validUntil,publicationDelayMs,sessions:[{instrumentId,open,close}]}`. All times are epoch milliseconds; sessions may be split around breaks and move across DST. No calendar means no collection. Holiday/short-session provenance remains unverified.
 4. Manual activation stages: 10 → 25 → 50 → 100 → 250. Explicitly review `enabled`/`dataRightsStatus` and set `STOCKS_ACTIVE_STAGE` to the approved ceiling. No automatic escalation or production enabling is included.
-5. Re-run comparable crypto A/B/C/D/E/F tests under the **aggregate** hard quota before any rollout. Current resource proof is stock-only, not an acceptance pass for crypto latency.
+5. Re-run comparable crypto A/B/C/D/E/F tests under the **aggregate** hard quota before any rollout. The isolated CI includes the original real Spot/Futures service workload, three repeats of A/B/C/D10/D50/D100/E/F, raw timings, and actual cgroups. Service-call checks are not HTTP/E2E or production acceptance; inspect exact-head artifacts and variance.
 
 ## Limits and storage
 
@@ -32,7 +32,7 @@ Read API: 300 default/500 hard limit; canonical IDs, bounded cursor, parameter S
 
 SQLite uses **DELETE/FULL**, one process/writer, busy timeout 200 ms. WAL is deliberately not enabled. Runtime tested separately from crypto; no common Node/SQLite upgrade. Strings retain decimal prices. Unique instrument/interval/time/adjustment key; corrected provider values update, identical values do not. Null index volume stays null. No fabricated gap candles or FX conversion.
 
-Stock-only quota 1 GiB (all files below its dedicated directory), free space floor 10 GiB; imports stop on shortage. Additional physical WAL guard is present even though this version uses DELETE. No global cleanup, VACUUM in requests or system modifications. Retention is bounded initial 30-day history; automatic expiry/longer history is not enabled.
+Stock-only quota 1 GiB (all files below its dedicated directory), free space floor 10 GiB; 19 MiB reserved below the quota for rotated logs and bounded transaction growth; imports stop on shortage. Additional physical WAL guard is present even though this version uses DELETE. No global cleanup, VACUUM in requests or system modifications. Retention is bounded initial 30-day history; automatic expiry/longer history is not enabled.
 
 Backfill supports one resumable instrument checkpoint and one ≤500-candle step, maximum reserved 1000 candles/minute and 30 days. Explicit local commands: `node services/stocks/control.mjs backfill-start MIC:SYMBOL`, `backfill-pause`, `backfill-resume` with the same private `STOCKS_DATA_DIR`. The single runtime checks this operator file, runs current collection first, then at most one backfill page per 30-second turn. No control file means no backfill. Cursor survives process restarts. Production provider/calendar backfill validation is still blocked by missing entitlements. No history archive is materialized in RAM.
 
@@ -54,6 +54,8 @@ At 250 active symbols, a single poll uses ≥250 requests/credits (not one batch
 
 ## Resource evidence and stop
 
-`compose.review.yaml` is isolated review configuration only, not production configuration. `.github/workflows/stocks-review.yml` checks real cgroup CPU/memory/swap values, three stock-only samples and ENOSPC on a separate 8 MiB tmpfs. This is not an I/O throttle or Crypto A/B test. No host block device is guessed. Local Windows has neither Docker nor installed WSL; **hard I/O limits and comparable crypto retest remain blockers**.
+`compose.review.yaml` is isolated review configuration only, not production configuration. `.github/workflows/stocks-review.yml` checks real cgroup CPU/memory/swap values, three stock-only samples and ENOSPC on a separate 8 MiB tmpfs. This is not an I/O throttle or Crypto A/B test. No host block device is guessed. Local Windows has neither Docker nor installed WSL; CI supplies Linux cgroups and a disposable PostgreSQL comparison. **Hard I/O throttling and production-comparable capacity acceptance remain blockers**. The fixture workload uses 500 candles/symbol; a separate 720,000-candle storage proof measures a conservative 30-day continuous-session upper bound, not licensed history.
 
 SIGINT/SIGTERM stop the collector, abort provider requests, clear timers, close sockets/storage and remove the singleton lock. A crash leaves a lock and fails closed: verify no stock PID is running before removing that file. Stopping the stocks process/container does not restart any crypto service. Disable `VITE_STOCKS_ENABLED` and stop only the stock process to remove the review surface. No production infrastructure was configured.
+
+Metadata preparation shares the serial 1 MiB gateway; oversized country metadata fails closed and needs a provider-supported bounded export, never a raised runtime limit. Existing source snapshots retain their original hashes.

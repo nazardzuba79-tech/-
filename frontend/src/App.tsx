@@ -1,4 +1,5 @@
-import { stocksEnabled } from './lib/stocks';
+declare const __VOLTEX_STOCKS_ENABLED__: boolean;
+const stocksEnabled = typeof __VOLTEX_STOCKS_ENABLED__ !== 'undefined' && __VOLTEX_STOCKS_ENABLED__;
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';

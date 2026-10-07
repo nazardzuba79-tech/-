@@ -7,7 +7,9 @@ export class Scheduler {
   async cycle(now=Date.now()){
     if(this.running||this.stopped)return false;this.running=true;
     try{for(const i of this.instruments.filter(x=>x.enabled)){if(this.stopped)break;const end=closedSessionEnd(i,this.sessions,now,this.delayMs);if(end===null)continue;
-      const latest=this.store.history(i.instrumentId,1).at(-1);const start=latest?Math.max(latest.openTimeUtc-900000,end-3*900000):end-2*900000;
+      const latest=this.store.history(i.instrumentId,1).at(-1);
+      if(latest&&latest.closeTimeUtc>=end)continue;
+      const start=latest?Math.max(latest.openTimeUtc-900000,end-3*900000):end-2*900000;
       const rows=await this.adapter.page(i,start,end);this.guard(this.dataDir);this.store.write(rows,i);}}
     finally{this.running=false;}return true;
   }

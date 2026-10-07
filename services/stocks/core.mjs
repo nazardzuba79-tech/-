@@ -52,8 +52,8 @@ export class ByteCache {
 export function diskGuard(dir) {
   const fs=statfsSync(dir);let bytes=0;
   const walk=p=>{for(const f of readdirSync(p,{withFileTypes:true})){if(f.isSymbolicLink())throw Error('Stock directory contains symlink');const child=join(p,f.name);if(f.isDirectory())walk(child);else{const size=statSync(child).size;bytes+=size;if(f.name.endsWith('-wal')&&size>=limits.STOCK_WAL_PAUSE_THRESHOLD)throw Error('WAL pause');}}};walk(dir);
-  // Reserve the separately rotated Docker log allowance (three 1 MiB files).
-  if(bytes+3*1048576>=limits.STOCK_LOCAL_DATA_BUDGET || fs.bavail*fs.bsize<limits.MIN_FREE_DISK)throw Error('Stock storage paused');
+  // Reserve rotated logs (3 MiB) plus 16 MiB for a bounded transaction/journal.
+  if(bytes+19*1048576>=limits.STOCK_LOCAL_DATA_BUDGET || fs.bavail*fs.bsize<limits.MIN_FREE_DISK)throw Error('Stock storage paused');
   return bytes;
 }
 const decimal = v => typeof v==='string' && /^(?:0|[1-9]\d{0,14})(?:\.\d{1,12})?$/.test(v);

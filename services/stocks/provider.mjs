@@ -37,7 +37,7 @@ export class TwelveDataAdapter {
     for(const [k,v] of Object.entries({symbol:instrument.providerSymbol,mic_code:instrument.exchange,interval:'15min',timezone:'UTC',order:'asc',outputsize:'500',start_date:iso(start),end_date:iso(end),adjust:'none',apikey:this.apiKey}))u.searchParams.set(k,v);
     const data=await this.gateway.request(u);
     if(data.status==='error'||!Array.isArray(data.values)||data.values.length>500||data.meta?.currency!==instrument.currency||data.meta?.symbol!==instrument.providerSymbol||data.meta?.mic_code!==instrument.exchange)throw Error('Provider metadata mismatch');
-    const fetchedAt=Date.now();return data.values.map(v=>{const openTimeUtc=Date.parse(v.datetime.replace(' ','T')+'Z');return {instrumentId:instrument.instrumentId,interval:'15m',openTimeUtc,closeTimeUtc:openTimeUtc+900000,open:v.open,high:v.high,low:v.low,close:v.close,volume:v.volume??null,currency:instrument.currency,provider:instrument.provider,providerTimestamp:openTimeUtc+900000,fetchedAt,adjustmentMode:'unadjusted'};}).filter(v=>v.closeTimeUtc<=fetchedAt);
+    const fetchedAt=Date.now();return data.values.map(v=>{const openTimeUtc=Date.parse(v.datetime.replace(' ','T')+'Z');return {instrumentId:instrument.instrumentId,interval:'15m',openTimeUtc,closeTimeUtc:openTimeUtc+900000,open:v.open,high:v.high,low:v.low,close:v.close,volume:v.volume??null,currency:instrument.currency,provider:instrument.provider,providerTimestamp:openTimeUtc,fetchedAt,adjustmentMode:'unadjusted'};}).filter(v=>v.closeTimeUtc<=fetchedAt);
   }
 }
 

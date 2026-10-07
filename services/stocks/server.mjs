@@ -11,13 +11,13 @@ export function createStockServer({store,instruments,origin=''}){
       if(req.method!=='GET'){res.writeHead(405);return res.end('{}');}
       const u=new URL(req.url,'http://localhost');if(req.url.length>1024)throw Error('Invalid request');
       if(u.pathname==='/health'){return res.end(JSON.stringify({status:'ok',module:'stocks',readOnly:true}));}
-      if(u.pathname==='/stocks'&&!u.search){return res.end(await cache.get('catalogue',()=>gate.run(()=>JSON.stringify({instruments:instruments.map(i=>({...i,latest:i.dataRightsStatus==='confirmed'?store.history(i.instrumentId,1).at(-1)??null:null,sessionChange:null}))}))));}
+      if(u.pathname==='/stocks'&&!u.search){return res.end(await cache.get('catalogue',()=>gate.run(()=>JSON.stringify({instruments:instruments.map(i=>({...i,latest:i.enabled&&i.dataRightsStatus==='confirmed'?store.history(i.instrumentId,1).at(-1)??null:null,sessionChange:null}))}))));}
       const id=decodeURIComponent(u.pathname.slice('/stocks/history/'.length));
       if(!u.pathname.startsWith('/stocks/history/')||!allowed.has(id)){res.writeHead(404);return res.end('{}');}
       if([...u.searchParams.keys()].some(k=>!['limit','before'].includes(k))||[...u.searchParams.keys()].length!==new Set(u.searchParams.keys()).size)throw Error('Invalid query');
       const limit=Number(u.searchParams.get('limit')??limits.CHART_DEFAULT_LIMIT),before=Number(u.searchParams.get('before')??Number.MAX_SAFE_INTEGER);
       if(!Number.isSafeInteger(limit)||limit<1||limit>limits.CHART_HARD_LIMIT||!Number.isSafeInteger(before)||before<0)throw Error('Invalid range');
-      if(allowed.get(id).dataRightsStatus!=='confirmed')return res.end('{"candles":[],"next":null}');
+      if(!allowed.get(id).enabled||allowed.get(id).dataRightsStatus!=='confirmed')return res.end('{"candles":[],"next":null}');
       const key=`${id}:${limit}:${before}`;
       // Admission precedes singleflight map growth, including random valid cursors.
       const body=await gate.run(()=>cache.get(key,()=>{const candles=store.history(id,limit,before);return JSON.stringify({candles,next:candles.length===limit?candles[0].openTimeUtc:null});}));
