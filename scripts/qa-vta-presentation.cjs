@@ -7,13 +7,19 @@ const { createRequire } = require('node:module');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
 // Spot now uses the released Futures CTA finish; side tabs retain their
-// existing selected-side colour. Read the source of truth, not old RGBs.
-const futuresStyle = fs.readFileSync(path.join(root, 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'), 'utf8');
-const ctaFill = Object.fromEntries(['buy','sell'].map(side => {
-  const fill = [...futuresStyle.matchAll(new RegExp(`\\.fo-submitPair \\.${side} \\{ background:(#[0-9a-f]+);`, 'g'))].at(-1)?.[1];
-  assert(fill, `Missing released Futures ${side} colour`);
-  return [side,fill];
-}));
+// existing selected-side colour. Read the colour the Futures terminal really
+// paints at this width (its desktop and mobile sheets differ since #469,
+// 2026-10-07), not a hex from one stylesheet.
+async function releasedCtaFill(ctx, origin) {
+  const page = await ctx.newPage();
+  await page.goto(origin + '/futures');
+  await page.waitForSelector('.fo-submitPair .buy');
+  const fill = await page.evaluate(() => Object.fromEntries(['buy','sell'].map(side =>
+    [side, getComputedStyle(document.querySelector(`.fo-submitPair .${side}`)).backgroundColor])));
+  await page.close();
+  for (const side of ['buy','sell']) assert(/^rgb/.test(fill[side] || ''), `Missing released Futures ${side} colour`);
+  return fill;
+}
 const out = process.env.QA_OUT || path.join(root, 'output/vta-presentation');
 fs.mkdirSync(out, { recursive: true });
 const source = fs.readFileSync(path.join(__dirname, 'qa-spot-cfd-terminal.cjs'), 'utf8').split('const DESKTOP =')[0];
@@ -57,6 +63,7 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
         if (u.origin === origin || u.protocol === 'data:') return route.continue();
         return route.abort();
       });
+      const ctaFill = await releasedCtaFill(ctx, origin);
       const page = await ctx.newPage(); page.on('pageerror', error => errors.push(error.message));
       await page.clock.install();
       await page.goto(origin + '/trade?pair=VTA%2FUSDT');
