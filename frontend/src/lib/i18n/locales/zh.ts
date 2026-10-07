@@ -177,6 +177,8 @@ export const ZH: Record<Key, string> = {
   'authShell.communityCount': '超过120万名投资者',
   'authShell.communityText': '已在与 VOLTEX 一起关注市场',
   'authShell.communityBadge': '120万+',
+  'authShell.communityTitle': '支付与取现',
+  'authShell.communitySubtitle': '22+ 种货币 · 70 种加密货币',
   'authShell.cardCaption': '始终伴您左右的卡',
   'authShell.supportHint': '登录需要帮助？',
   'authShell.supportLink': '客户支持',

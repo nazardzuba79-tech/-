@@ -1,4 +1,4 @@
-/* Approved aircraft auth design, shared by login and registration.
+/* Business-class auth visual, shared by login and registration.
    Keep every rule local: these pages import CSS into the global bundle. */
 .vx-auth {
   --bg: #181713;
@@ -9,7 +9,7 @@
   --text-tertiary: #d0c9bb;
   --accent: #d6b566;
   display: grid;
-  grid-template-columns: minmax(0, 62fr) minmax(0, 38fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: 100vh;
   min-height: 100svh;
   background: #f7f8f5;
@@ -36,27 +36,28 @@
 }
 .vx-auth-brand a:focus-visible { outline-color: #e6c68e; }
 
-/* Original approved portrait: no generative replacement or extra card art. */
+/* Genuine licensed photograph. Only a local light scrim behind the copy;
+   no synthetic subject, endorsements, cards or full-frame darkening. */
 .vx-auth-brand {
+  --text-primary: #253c33;
+  --bg: #eae5dd;
   position: relative;
   isolation: isolate;
   min-width: 0;
-  min-height: 900px;
+  min-height: 100svh;
   overflow: hidden;
-  background: #181713;
-  color: #fff9ee;
+  background: #eae5dd;
+  color: #253c33;
 }
 .vx-auth .vx-auth-photo {
   position: absolute;
   z-index: -2;
-  top: 0;
-  right: 0;
-  width: auto;
+  inset: 0;
+  width: 100%;
   max-width: none;
   height: 100%;
-  object-fit: contain;
-  object-position: right bottom;
-  mask-image: linear-gradient(90deg, transparent 0, #000 18%);
+  object-fit: cover;
+  object-position: 50% 48%;
 }
 .vx-auth-brand::after {
   position: absolute;
@@ -64,7 +65,7 @@
   inset: 0;
   content: '';
   pointer-events: none;
-  background: linear-gradient(90deg, #15130fb8, transparent 48%), linear-gradient(0deg, #17140f88, transparent 13%);
+  background: linear-gradient(180deg, #f1ece3eb 0%, #f1ece3c9 16%, #f1ece300 43%);
 }
 .vx-auth-brand-inner {
   position: relative;
@@ -72,65 +73,119 @@
   flex-direction: column;
   min-height: inherit;
   height: 100%;
-  padding: 40px clamp(32px, 3.7vw, 70px);
+  padding: 40px clamp(32px, 3.4vw, 64px);
 }
 .vx-auth-brand-head { display: flex; align-items: center; min-height: 35px; }
 .vx-auth-brand-head a { display: inline-flex; align-items: center; }
 .vx-auth-brand-head a > span { font-family: inherit !important; font-size: 24px !important; letter-spacing: .115em !important; line-height: 1; }
 .vx-auth-brand-head a > span > svg { width: 35px; height: 35px; }
-.vx-auth-brand-head a > span > span > span { color: #d6b566 !important; }
-.vx-auth-hero { width: 46%; max-width: 360px; margin-top: 139px; }
-.vx-auth-hero h1 {
-  margin: 0 0 27px;
-  color: #fff9ee;
+.vx-auth-brand-head a > span > span > span { color: #96733d !important; }
+.vx-auth-hero { max-width: 445px; margin-top: 56px; }
+.vx-auth-hero h2 {
+  margin: 0 0 18px;
+  color: #253c33;
   font-family: inherit;
-  font-size: clamp(35px, 3vw, 56px);
-  font-weight: 500;
-  letter-spacing: -1.5px;
-  line-height: 1.13;
+  font-size: clamp(30px, 2.7vw, 44px);
+  font-weight: 550;
+  letter-spacing: -.035em;
+  line-height: 1.16;
+  text-wrap: balance;
 }
-.vx-auth-hero h1 span { display: block; }
-.vx-auth-hero h1 .vx-auth-hero-gold { color: #e6c68e; }
-.vx-auth-lead { max-width: 275px; color: #e3dfd6; font-size: 15px; line-height: 1.75; }
-.vx-auth-community {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  width: max-content;
-  max-width: 100%;
-  margin-top: 32px;
+.vx-auth-lead { max-width: 350px; color: #35453d; font-size: 14px; line-height: 1.65; text-wrap: pretty; }
+.vx-auth-copyright { margin-top: auto; padding-top: 30px; color: #fff9ee; font-size: 10px; text-shadow: 0 1px 5px #000; }
+
+/* Russian-only, owner-selected marketing raster. It already contains its
+   logo/copy. Match the column to its native ratio and cap its width to leave
+   room for the real form. Only a small side crop is needed near the cap;
+   portrait/compact windows use the existing logo instead of a tiny poster. */
+.vx-auth.vx-auth--banner {
+  grid-template-columns: min(60%, calc(100svh * 919 / 941)) minmax(0, 1fr);
 }
-.vx-auth-avatars { display: flex; flex: none; align-items: center; }
-.vx-auth-avatar, .vx-auth-avatar-count {
+.vx-auth .vx-auth-brand-banner {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  min-height: 0;
+  height: 100svh;
+  background: #eee5d8;
+}
+.vx-auth .vx-auth-brand-banner::after { content: none; }
+.vx-auth .vx-auth-banner {
   display: block;
-  flex: 0 0 42px;
-  width: 42px;
-  height: 42px;
-  border: 1.5px solid #ded6c9;
-  border-radius: 50%;
-  background: #d5d4cf url('/auth/community-v4.webp') no-repeat left center / 300% 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
 }
-.vx-auth-avatar + .vx-auth-avatar, .vx-auth-avatar-count { margin-left: -13px; }
-.vx-auth-avatar:nth-child(2) { background-position: center; }
-.vx-auth-avatar:nth-child(3) { background-position: right center; }
-.vx-auth-avatar-count {
+.vx-auth.vx-auth--banner .vx-auth-work {
+  max-height: 100svh;
+  overflow-y: auto;
+}
+.vx-auth .vx-auth-compact-logo { display: none; }
+
+/* Static, localized photo captions. Only individual currency icons have a rim.
+   The local bottom scrim fades into the photo, never into a rectangular card. */
+.vx-auth-brand::before {
+  position: absolute;
+  z-index: 0;
+  inset: auto 0 0;
+  height: 24%;
+  content: '';
+  pointer-events: none;
+  background: radial-gradient(ellipse 78% 100% at 18% 100%, #f8f3e6f5 0%, #f8f3e6cc 42%, #f8f3e600 100%);
+}
+.vx-auth .vx-auth-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  color: #123a33;
+}
+.vx-auth-brand > .vx-auth-extras {
+  position: absolute;
+  z-index: 1;
+  left: clamp(24px, 2.5vw, 40px);
+  bottom: clamp(20px, 2svh, 24px);
+  max-width: min(440px, calc(100% - 48px));
+}
+.vx-auth-brand-localized > .vx-auth-extras { bottom: 78px; }
+/* Use the free lower-left width without crossing the unchanged card hand. */
+.vx-auth-brand-banner > .vx-auth-extras { max-width: min(440px, calc(52% - clamp(24px, 2.5vw, 40px))); }
+.vx-auth .vx-auth-community { display: flex; align-items: center; gap: 14px; }
+.vx-auth .vx-auth-currencies { display: inline-flex; flex: none; }
+.vx-auth .vx-auth-currency {
   display: grid;
   place-items: center;
-  border-color: #e9cd8e;
-  background: #d7b66f;
-  color: #fffaf0;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: -.5px;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #f8f3e6;
+  border-radius: 50%;
+  background: #f6efdf;
 }
-.vx-auth-community-copy { min-width: 0; line-height: 1.55; }
-.vx-auth-community-copy strong { display: block; color: #fff9ee; font-size: 16px; font-weight: 600; letter-spacing: -.1px; }
-.vx-auth-community-copy p { max-width: 220px; margin-top: 3px; color: #d1ccc2; font-size: 12px; }
-.vx-auth-card-caption { display: flex; align-items: flex-start; gap: 15px; margin-top: 54px; color: #cdc7bb; font-size: 10px; line-height: 1.6; letter-spacing: .06em; }
-.vx-auth-card-caption > span { color: #dec18a; font-weight: 600; }
-.vx-auth-card-caption p { max-width: 140px; }
-.vx-auth-card-caption::after { content: ''; width: 29px; height: 1px; margin-top: 7px; background: #bda270; }
-.vx-auth-copyright { margin-top: auto; padding-top: 30px; color: #d0c9bb; font-size: 10px; }
+.vx-auth .vx-auth-currency + .vx-auth-currency { margin-left: -8px; }
+.vx-auth .vx-auth-currency svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.vx-auth .vx-auth-community-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.vx-auth .vx-auth-community-copy strong { font-size: 16px; font-weight: 600; line-height: 1.25; }
+.vx-auth .vx-auth-community-copy > span { font-size: 14px; font-weight: 400; line-height: 1.4; }
+.vx-auth .vx-auth-card-caption { display: flex; align-items: center; gap: 10px; font-size: clamp(10px, 1.4svh, 12px); line-height: 1.4; }
+.vx-auth .vx-auth-card-number { font-weight: 650; color: #70541f; }
+.vx-auth .vx-auth-card-label { max-width: 250px; }
+.vx-auth .vx-auth-card-line { flex: 0 0 30px; height: 1px; background: #8b703b; }
+.vx-auth-work > .vx-auth-extras { display: none; }
+/* At very short/zoomed heights there is no safe two-line area below both
+   cards. Use the existing post-form slot, never shrink the text over a hand. */
+@media (max-height: 760px) {
+  .vx-auth-brand-banner > .vx-auth-extras { display: none; }
+  .vx-auth.vx-auth--banner .vx-auth-work > .vx-auth-extras { display: flex; width: 100%; max-width: 410px; margin: 0 auto 24px; }
+}
+@media (max-width: 760px) {
+  .vx-auth .vx-auth-community { gap: 12px; }
+  .vx-auth .vx-auth-currency { width: 28px; height: 28px; }
+  .vx-auth .vx-auth-currency svg { width: 14px; height: 14px; }
+  .vx-auth .vx-auth-community-copy { text-wrap: balance; }
+  .vx-auth .vx-auth-community-copy strong { font-size: 15px; }
+  .vx-auth .vx-auth-community-copy > span { font-size: 13px; }
+}
 
 /* Light form theme also scopes the existing language switcher's tokens. */
 .vx-auth-work {
@@ -225,58 +280,30 @@ body:has(.vx-auth) .support-launcher[aria-expanded="false"] { display: none !imp
 .vx-auth-foot a:hover { color: #284d3c; text-decoration: underline; }
 
 @media (min-width: 1800px) {
-  .vx-auth-brand { min-height: 100svh; }
-  .vx-auth-hero { max-width: 430px; margin-top: 160px; }
-  .vx-auth-lead { max-width: 330px; font-size: 17px; }
-  .vx-auth-community { margin-top: 38px; }
-  .vx-auth-card-caption { margin-top: 60px; }
   .vx-auth-input { height: 56px; }
 }
 @media (max-width: 1250px) and (min-width: 761px) {
-  .vx-auth { grid-template-columns: minmax(0, 58fr) minmax(0, 42fr); }
   .vx-auth-brand-inner { padding: 32px; }
-  .vx-auth .vx-auth-photo { top: auto; right: 0; bottom: 45px; height: 720px; mask-image: linear-gradient(90deg, transparent, #000 20%), linear-gradient(180deg, transparent, #000 18%, #000 94%, transparent); mask-composite: intersect; }
-  .vx-auth-brand::after { background: linear-gradient(90deg, #181713c9 0%, #1817138c 28%, transparent 67%), linear-gradient(0deg, #18171366, transparent 16%); }
-  .vx-auth-hero { width: 53%; margin-top: 127px; }
-  .vx-auth-hero h1 { font-size: 32px; letter-spacing: -1px; }
-  .vx-auth-lead { max-width: 215px; font-size: 14px; }
+  .vx-auth-hero { margin-top: 40px; }
   .vx-auth-work { padding: 32px; }
-  .vx-auth-community { gap: 9px; }
-  .vx-auth-avatar, .vx-auth-avatar-count { width: 32px; height: 32px; flex-basis: 32px; }
-  .vx-auth-avatar + .vx-auth-avatar, .vx-auth-avatar-count { margin-left: -12px; }
-  .vx-auth-avatar-count { font-size: 8px; }
-  .vx-auth-community-copy strong { font-size: 13px; }
-  .vx-auth-community-copy p { font-size: 11px; }
 }
 @media (max-width: 1000px) and (min-width: 761px) {
-  .vx-auth .vx-auth-photo { height: 600px; }
-  .vx-auth-hero { width: 59%; margin-top: 112px; }
-  .vx-auth-hero h1 { max-width: 210px; font-size: 28px; }
-  .vx-auth-lead { max-width: 190px; font-size: 13px; }
   .vx-auth-work { padding: 30px 26px; }
-  .vx-auth-avatar, .vx-auth-avatar-count { width: 28px; height: 28px; flex-basis: 28px; }
-  .vx-auth-avatar + .vx-auth-avatar, .vx-auth-avatar-count { margin-left: -11px; }
-  .vx-auth-avatar-count { font-size: 7px; }
-  .vx-auth-community-copy strong { font-size: 12px; }
-  .vx-auth-community-copy p { font-size: 10px; }
 }
 @media (max-width: 760px) {
+  .vx-auth-brand::before, .vx-auth-brand > .vx-auth-extras { display: none; }
+  .vx-auth-work > .vx-auth-extras { display: flex; width: 100%; max-width: 410px; margin: 0 auto 24px; }
   .vx-auth { display: block; }
-  .vx-auth-brand { min-height: 0; background: #1b1813; }
-  .vx-auth-brand-inner { height: auto; min-height: 0; padding: 23px 24px 25px; }
-  .vx-auth .vx-auth-photo { top: 0; right: 0; bottom: auto; height: 340px; mask-image: linear-gradient(90deg, transparent, #000 23%); }
-  .vx-auth-brand::after { background: linear-gradient(0deg, #1b1813 0, #1b1813 27%, transparent 44%), linear-gradient(90deg, #1b181377, transparent 62%); }
-  .vx-auth-brand-head { margin-bottom: 41px; }
-  .vx-auth-hero { width: auto; max-width: none; margin: 0; }
-  .vx-auth-hero h1 { max-width: 175px; min-height: 210px; margin: 0; font-size: 25px; line-height: 1.14; letter-spacing: -.9px; }
-  .vx-auth-lead { max-width: 330px; margin-top: 20px; font-size: 12px; line-height: 1.65; }
-  .vx-auth-community { gap: 11px; margin-top: 20px; }
-  .vx-auth-avatar, .vx-auth-avatar-count { width: 38px; height: 38px; flex-basis: 38px; }
-  .vx-auth-avatar + .vx-auth-avatar, .vx-auth-avatar-count { margin-left: -13px; }
-  .vx-auth-avatar-count { font-size: 9px; }
-  .vx-auth-community-copy strong { font-size: 14px; }
-  .vx-auth-community-copy p { max-width: 180px; font-size: 10px; }
-  .vx-auth-card-caption, .vx-auth-copyright { display: none; }
+  .vx-auth-brand { min-height: 0; }
+  .vx-auth-brand-inner { min-height: 250px; padding: 22px 24px; }
+  .vx-auth .vx-auth-photo { left: auto; width: 58%; object-position: 54% center; }
+  .vx-auth-brand::after { background: linear-gradient(90deg, #eae5dd 0%, #eae5dd 37%, #eae5dd00 66%); }
+  .vx-auth-brand-head a > span { font-size: 18px !important; }
+  .vx-auth-brand-head a > span > svg { width: 26px; height: 26px; }
+  .vx-auth-hero { width: 58%; margin-top: 22px; }
+  .vx-auth-hero h2 { margin-bottom: 12px; font-size: 22px; line-height: 1.16; letter-spacing: -.6px; text-wrap: initial; }
+  .vx-auth-lead { font-size: 11px; line-height: 1.5; }
+  .vx-auth-copyright { display: none; }
   .vx-auth-work { padding: 23px 26px 24px; }
   .vx-auth-body { margin: 0 auto; padding: 27px 0 23px; }
   .vx-auth-form-icon { display: none; }
@@ -284,10 +311,23 @@ body:has(.vx-auth) .support-launcher[aria-expanded="false"] { display: none !imp
   .vx-auth-support { flex-wrap: wrap; gap: 9px; }
   .vx-auth-input { font-size: 16px; }
 }
+/* This raster cannot fill a narrow/portrait panel while preserving its
+   embedded text, face and both hands. Do not crop those or reserve blank space. */
+@media (max-width: 760px), (max-aspect-ratio: 3/2) {
+  .vx-auth.vx-auth--banner .vx-auth-work > .vx-auth-extras { display: flex; width: 100%; max-width: 410px; margin: 0 auto 24px; }
+  .vx-auth.vx-auth--banner { display: block; }
+  .vx-auth .vx-auth-brand-banner { display: none; }
+  .vx-auth.vx-auth--banner .vx-auth-work {
+    min-height: 100svh;
+    max-height: none;
+    overflow-y: visible;
+  }
+  .vx-auth.vx-auth--banner .vx-auth-context { display: none; }
+  .vx-auth .vx-auth-compact-logo { display: inline-flex; align-items: center; }
+}
 @media (max-width: 360px) {
-  .vx-auth-brand-inner { padding-right: 21px; padding-left: 21px; }
-  .vx-auth .vx-auth-photo { right: -17px; }
-  .vx-auth-hero h1 { max-width: 145px; font-size: 23px; }
+  .vx-auth-brand-inner { padding-right: 22px; padding-left: 22px; }
+  .vx-auth-hero h2 { font-size: 20px; }
   .vx-auth-work { padding-right: 22px; padding-left: 22px; }
   .vx-auth-body h1 { font-size: 28px; }
 }

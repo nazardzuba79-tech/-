@@ -231,9 +231,9 @@ test('approved Russian copy and all newly introduced keys exist in every support
   for (const dictionary of Object.values(dictionaries)) {
     for (const key of keys) expect(dictionary[`authShell.${key}`]?.trim().length).toBeGreaterThan(0);
   }
-  expect(dictionaries.ru['authShell.lead']).toBe('Следуйте стратегиям сильнейших трейдеров мира, и превращайте рыночные возможности в капитал.');
+  expect(dictionaries.ru['authShell.lead']).toBe('Один аккаунт. Рынки, копитрейдинг и управление активами в единой платформе.');
   expect(dictionaries.ru['authShell.communityCount']).toBe('1,2+ млн инвесторов');
   expect(dictionaries.ru['authShell.hero.line1']).toBe('Копируйте сделки');
   expect(dictionaries.ru['authShell.hero.line2']).toBe('лучших трейдеров');
-  expect(dictionaries.ru['authShell.hero.line3']).toBe('мира');
+  expect(dictionaries.ru['authShell.hero.line3']).toBe('мира.');
 });

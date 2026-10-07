@@ -67,10 +67,30 @@ const APPROVED_AUTH_DESIGN_KEYS = [
   'authShell.communityCount', 'authShell.communityText', 'authShell.communityBadge',
   'authShell.cardCaption', 'authShell.supportHint', 'authShell.supportLink',
 ];
+// PR #466: two additive auth promotional labels. Only these exact additions
+// are omitted from the historical digest; existing numeric/other copy is not changed.
+const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySubtitle'];
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('localizes the exact two-line card copy and 22+/70 currency counts without an investor claim', () => {
+    for (const code of LOCALES) {
+      const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
+      for (const key of AUTH_COMMUNITY_KEYS) {
+        expect(sourceKeys.filter(sourceKey => sourceKey === key)).toHaveLength(1);
+        expect(dicts[code][key]?.trim()).toBeTruthy();
+        expect(dicts[code][key]).not.toMatch(/1[.,]2|million|миллион|млн|万|백만|लाख|18\+|30\+/i);
+        expect(dicts[code][key]).not.toMatch(/[.!?。！？।]$/);
+      }
+      expect(dicts[code]['authShell.communityTitle']).not.toMatch(/\d/);
+      expect(dicts[code]['authShell.communitySubtitle'].match(/\d+\+?/g)).toEqual(['22+', '70']);
+      expect(dicts[code]['authShell.communitySubtitle']).toContain(' · ');
+    }
+    for (const key of AUTH_COMMUNITY_KEYS) expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
+    expect(dicts.ru['authShell.communityTitle']).toBe('Платите и снимайте наличные');
+    expect(dicts.ru['authShell.communitySubtitle']).toBe('22+ валют · 70 криптовалют');
+  });
   it('provides every shared menu description in all seven languages', () => {
     for (const code of LOCALES) for (const key of menuDescriptionKeys) expect(dicts[code][key]?.trim()).toBeTruthy();
   });
@@ -260,6 +280,7 @@ describe('translation integrity', () => {
       const source = readLocale(code).split('\n').filter(line => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
         if (key && APPROVED_AUTH_DESIGN_KEYS.includes(key)) return false;
+        if (key && AUTH_COMMUNITY_KEYS.includes(key)) return false;
         // Keys ADDED since the digests were taken are excluded by name
         // rather than by re-taking seven digests — that is what keeps the
         // guard meaningful: every OTHER byte of every dictionary still has

@@ -1,0 +1,54 @@
+name: Auth visual preservation
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/auth-shell/**'
+      - 'frontend/src/pages/AuthPage.tsx'
+      - 'frontend/src/pages/register/**'
+      - 'frontend/public/auth/**'
+      - 'frontend/src/lib/__tests__/auth*'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'scripts/qa-auth-business-class.cjs'
+      - '.github/workflows/auth-visual.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: auth-visual-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Existing auth callbacks and presentation preservation
+        run: node node_modules/jest/bin/jest.js --runInBand --runTestsByPath frontend/src/lib/__tests__/authApprovedDesign.test.ts frontend/src/lib/__tests__/authBusinessClassVisual.test.ts
+      - name: TypeScript and production frontend build
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build --prefix frontend
+      - name: Disposable browser tools
+        run: |
+          npm install --prefix /tmp/voltex-auth-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/voltex-auth-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Actual Login/Register bundle at seven widths, strictly offline fixtures
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-auth-qa/node_modules/playwright
+          QA_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/qa-auth-business-class.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: auth-visual-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/auth-business-class/
+          if-no-files-found: warn
+          retention-days: 7
