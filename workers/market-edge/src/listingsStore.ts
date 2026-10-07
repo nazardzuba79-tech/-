@@ -16,6 +16,8 @@ import {
   ListingValidationError, LISTING_ID_PATTERN, MIN_LEAD_FLOOR_MS, MIN_LEAD_MS, checkPublishable, parseListingConfig, withStableProfile, withStableSeed,
   type ListingConfig, type PublishedListing,
 } from '../../../src/services/listings/listingConfig';
+import { aithReplacementConfig } from '../../../src/services/listings/aithReplacement';
+import { AITH_READ_LEASE_MS, AITH_LEASE_SAFETY_MS, AITH_PUBLICATION_PROTOCOL, isAith, validAithLease } from '../../../src/shared/aithPublication';
 
 const MAX_BODY_BYTES = 160 * 1024;
 const OBJECT_NAME = 'voltex-managed-listings-v1';
@@ -111,14 +113,91 @@ export class ManagedListingsDO {
     return this.sql.exec('SELECT version, config, published_at, published_by FROM listing_version WHERE listing_id = ? AND version = ?', id, version).toArray()[0];
   }
 
+  private replacement(): Record<string, unknown> | null {
+    const row = this.sql.exec("SELECT v FROM meta WHERE k = 'aith_replacement_pending'").toArray()[0];
+    return row ? JSON.parse(String(row.v)) : null;
+  }
+
+  private setMeta(key: string, value: string): void {
+    this.sql.exec('INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v', key, value);
+  }
+
+  private replaceAith(id: string, input: Record<string, unknown> | undefined, actor: string, now: number): Response {
+    const key = input?.operationKey;
+    if (!input || typeof key !== 'string' || !PUBLISH_KEY.test(key) || !['prepare', 'commit', 'cancel'].includes(String(input.phase))) return reply({ error: 'invalid_replacement_request' }, 400);
+    return this.state.storage.transactionSync(() => {
+      const receiptKey = `aith_replacement_receipt:${key}`;
+      const receipt = this.sql.exec('SELECT v FROM meta WHERE k = ?', receiptKey).toArray()[0];
+      if (receipt) {
+        const result = JSON.parse(String(receipt.v));
+        return result.id === id ? reply({ ...result, replayed: true }) : reply({ error: 'replacement_key_conflict' }, 409);
+      }
+      const row = this.sql.exec('SELECT * FROM listing WHERE id = ?', id).toArray()[0];
+      if (!row || row.active_version === null || !isAith(row.symbol)) return reply({ error: 'replacement_not_supported' }, 422);
+      const active = JSON.parse(String(this.version(id, Number(row.active_version))!.config)) as ListingConfig;
+      const pending = this.replacement();
+      if (pending && (pending.id !== id || pending.operationKey !== key)) return reply({ error: 'replacement_in_progress' }, 409);
+      if (input.phase === 'cancel') {
+        if (!pending) return reply({ error: 'replacement_not_prepared' }, 409);
+        const result = { id, operationKey: key, phase: 'CANCELLED', version: Number(row.active_version), requestedAt: pending.requestedAt, requestedBy: pending.requestedBy, cancelledAt: now, cancelledBy: actor };
+        this.setMeta(receiptKey, JSON.stringify(result));
+        this.sql.exec("DELETE FROM meta WHERE k = 'aith_replacement_pending'");
+        this.setMeta('catalogue_revision', String(BigInt(this.catalogueRevision()) + 1n));
+        return reply(result);
+      }
+      if (this.sql.exec("SELECT v FROM meta WHERE k = 'aith_public_history_started'").toArray().length) return reply({ error: 'HISTORY_LOCKED' }, 422);
+      if (input?.phase === 'prepare') {
+        if (pending) return reply(pending);
+        if (input.expectedVersion !== Number(row.active_version) || input.draftRevision !== Number(row.draft_revision)) return reply({ error: 'revision_conflict' }, 409);
+        let next: ListingConfig;
+        try { next = aithReplacementConfig(active, input.config, now); } catch (error) { return validationReply(error); }
+        if (JSON.stringify(next) === JSON.stringify(active)) return reply({ error: 'replacement_already_active' }, 409);
+        const lastLease = Number(this.sql.exec("SELECT v FROM meta WHERE k = 'aith_last_read_lease'").toArray()[0]?.v ?? 0);
+        const prepared = { id, operationKey: key, phase: 'PREPARED', expectedVersion: Number(row.active_version), draftRevision: Number(row.draft_revision),
+          config: next, requestedAt: now, requestedBy: actor, notBefore: Math.max(now + AITH_READ_LEASE_MS, lastLease) + AITH_LEASE_SAFETY_MS };
+        // Stop issuing old-generation leases before waiting for every outstanding read to expire.
+        this.setMeta('aith_replacement_pending', JSON.stringify(prepared));
+        this.setMeta('catalogue_revision', String(BigInt(this.catalogueRevision()) + 1n));
+        return reply(prepared);
+      }
+      if (!pending) return reply({ error: 'replacement_not_prepared' }, 409);
+      if (now < Number(pending.notBefore)) return reply({ error: 'replacement_leases_active', notBefore: pending.notBefore }, 409);
+      if (Number(row.active_version) !== pending.expectedVersion || Number(row.draft_revision) !== pending.draftRevision) return reply({ error: 'revision_conflict' }, 409);
+      let next: ListingConfig;
+      try { next = aithReplacementConfig(active, pending.config, now); } catch (error) { return validationReply(error); }
+      const version = Number(this.sql.exec('SELECT MAX(version) AS v FROM listing_version WHERE listing_id = ?', id).toArray()[0].v) + 1;
+      this.sql.exec('INSERT INTO listing_version (listing_id, version, config, publish_key, published_at, published_by) VALUES (?, ?, ?, ?, ?, ?)', id, version, JSON.stringify(next), key, now, actor);
+      this.sql.exec('UPDATE listing SET active_version = ?, draft = ?, draft_revision = draft_revision + 1, draft_updated_at = ?, draft_updated_by = ? WHERE id = ?', version, JSON.stringify(next), now, actor, id);
+      const result = { id, operationKey: key, phase: 'COMMITTED', version, replacedVersion: pending.expectedVersion, requestedAt: pending.requestedAt, requestedBy: pending.requestedBy, publishedAt: new Date(now).toISOString(), publishedBy: actor };
+      this.setMeta(receiptKey, JSON.stringify(result));
+      this.sql.exec("DELETE FROM meta WHERE k = 'aith_replacement_pending'");
+      this.setMeta('catalogue_revision', String(BigInt(this.catalogueRevision()) + 1n));
+      return reply(result);
+    });
+  }
+
   /** Every active version, as the public catalogue and Render's trading registry read it. */
   published(): { revision: string; listings: PublishedListing[] } {
     const rows = this.sql.exec(`SELECT l.id, v.version, v.config, v.published_at FROM listing l
       JOIN listing_version v ON v.listing_id = l.id AND v.version = l.active_version ORDER BY v.published_at, l.id`).toArray();
+    const now = Date.now();
+    const pending = this.replacement();
+    const listings: PublishedListing[] = [];
+    for (const row of rows) {
+      const config = JSON.parse(String(row.config)) as ListingConfig;
+      const listing: PublishedListing = { id: String(row.id), version: Number(row.version), publishedAt: new Date(Number(row.published_at)).toISOString(), config };
+      if (isAith(config.symbol)) {
+        if (pending) continue;
+        if (now >= Date.parse(config.listingAt)) this.setMeta('aith_public_history_started', String(now));
+        const expiresAt = now + AITH_READ_LEASE_MS;
+        this.setMeta('aith_last_read_lease', String(Math.max(expiresAt, Number(this.sql.exec("SELECT v FROM meta WHERE k = 'aith_last_read_lease'").toArray()[0]?.v ?? 0))));
+        listing.readLease = { protocol: AITH_PUBLICATION_PROTOCOL, generation: listing.version, issuedAt: now, expiresAt };
+      }
+      listings.push(listing);
+    }
     return {
       revision: this.catalogueRevision(),
-      listings: rows.map((row) => ({ id: String(row.id), version: Number(row.version), publishedAt: new Date(Number(row.published_at)).toISOString(),
-        config: JSON.parse(String(row.config)) as ListingConfig })),
+      listings,
     };
   }
 
@@ -144,6 +223,7 @@ export class ManagedListingsDO {
   }
 
   private saveDraft(id: string, ifMatch: string, input: unknown, actor: string, now: number): Response {
+    if (this.replacement()?.id === id) return reply({ error: 'replacement_in_progress' }, 409);
     let config: ListingConfig;
     try { config = parseListingConfig(input); } catch (error) { return validationReply(error); }
     return this.state.storage.transactionSync(() => {
@@ -186,6 +266,7 @@ export class ManagedListingsDO {
   }
 
   private publish(id: string, draftRevision: unknown, publishKey: unknown, actor: string, now: number): Response {
+    if (this.replacement()?.id === id) return reply({ error: 'replacement_in_progress' }, 409);
     if (!Number.isSafeInteger(draftRevision) || typeof publishKey !== 'string' || !PUBLISH_KEY.test(publishKey)) return reply({ error: 'invalid_publish_request' }, 400);
     return this.state.storage.transactionSync(() => {
       const row = this.sql.exec('SELECT * FROM listing WHERE id = ?', id).toArray()[0];
@@ -225,11 +306,15 @@ export class ManagedListingsDO {
       if (url.pathname === '/internal/listings' && request.method === 'GET') return reply(this.adminList());
       // Render's trading registry: published configurations INCLUDING the seed (never served publicly).
       if (url.pathname === '/internal/listings/published' && request.method === 'GET') return reply(this.published());
-      const match = /^\/internal\/listings\/([^/]+)\/(draft|publish)$/.exec(url.pathname);
+      const match = /^\/internal\/listings\/([^/]+)\/(draft|publish|replace-prelisting)$/.exec(url.pathname);
       if (!match || !LISTING_ID_PATTERN.test(match[1])) return reply({ error: 'not_found' }, 404);
       if (!ACTOR.test(actor)) return reply({ error: 'actor_required' }, 400);
       const body = await readJson(request);
       if (body.error) return body.error;
+      if (match[2] === 'replace-prelisting' && request.method === 'POST') {
+        if (request.headers.get('X-Voltex-Listing-Protocol') !== AITH_PUBLICATION_PROTOCOL) return reply({ error: 'replacement_protocol_required' }, 428);
+        return this.replaceAith(match[1], body.value, actor, Date.now());
+      }
       if (match[2] === 'draft' && request.method === 'PUT') {
         const ifMatch = request.headers.get('If-Match');
         if (!ifMatch) return reply({ error: 'if_match_required' }, 428);
@@ -262,10 +347,14 @@ export const PUBLISHED_CACHE_MS = 15_000;
 let cache: { at: number; revision: string; listings: PublishedListing[] } | null = null;
 let inFlight: Promise<{ revision: string; listings: PublishedListing[] } | null> | null = null;
 
+function usablePublished(snapshot: { revision: string; listings: PublishedListing[] } | null, now: number) {
+  return snapshot && { ...snapshot, listings: snapshot.listings.filter(item => !isAith(item.config.symbol) || validAithLease(item.readLease, item.version, now)) };
+}
+
 export async function publishedListings(env: ListingsEnv, now = Date.now()): Promise<{ revision: string; listings: PublishedListing[] } | null> {
-  if (cache && now - cache.at < envMs(env.LISTINGS_PUBLIC_CACHE_MS, PUBLISHED_CACHE_MS, 0)) return cache;
+  if (cache && now - cache.at < envMs(env.LISTINGS_PUBLIC_CACHE_MS, PUBLISHED_CACHE_MS, 0)) return usablePublished(cache, now);
   const stub = listingsStub(env);
-  if (!stub) return cache;
+  if (!stub) return usablePublished(cache, now);
   if (!inFlight) {
     inFlight = stub.fetch(new Request('https://listings.internal/published'))
       .then(async (response) => {
@@ -279,7 +368,7 @@ export async function publishedListings(env: ListingsEnv, now = Date.now()): Pro
       .catch(() => cache)
       .finally(() => { inFlight = null; });
   }
-  return inFlight;
+  return usablePublished(await inFlight, Date.now());
 }
 
 /** Test hook: forget the isolate cache. */

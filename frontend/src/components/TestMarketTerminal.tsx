@@ -52,7 +52,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
   }, [counting, left, pair]);
 
   if (asset && !preListing) {
-    const chart = <TerminalChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
+    const chart = <TerminalChart key={`${pair}:${asset.version ?? 0}`} pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
       tradingView={false} priceScaleMode="normal" priceFormatter={formatTestAxisPrice} />;
     return displayOnlyLabel ? <div className="managed-demo-chart">
       <div className="managed-demo-status">{displayOnlyLabel}</div>
@@ -95,7 +95,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
             )}
             <dl className="vta-prelisting-facts">
               <div><dt>{t('listing.startTime')}</dt><dd>{startsAt}</dd></div>
-              <div><dt>{t('listing.initialPrice')}</dt><dd>{formatTestPrice(asset.initialPrice)} {asset.quote}</dd></div>
+              <div><dt>{t('listing.initialPrice')}</dt><dd>{asset.symbol === 'AITH' ? asset.initialPrice.toFixed(6) : formatTestPrice(asset.initialPrice)} {asset.quote}</dd></div>
             </dl>
           </>
         ) : !loaded ? (

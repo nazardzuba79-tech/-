@@ -1,4 +1,5 @@
 import type { MarketTicker } from './api';
+import { isAith, validAithLease, type ListingReadLease } from '../../../src/shared/aithPublication';
 
 /**
  * TEST MARKETS — the pure half (no network, no React).
@@ -46,6 +47,9 @@ export interface TestAsset {
   managed?: boolean;
   logo?: string | null;
   displayTimeZone?: string;
+  version?: number;
+  readLease?: ListingReadLease;
+  leaseDeadline?: number;
 }
 
 export interface TestMarketsSnapshot {
@@ -59,21 +63,26 @@ export interface TestMarketsSnapshot {
  * with its logo and whether it trades on Spot after listing.
  */
 const MANAGED_PAIR_PATTERN = /^[A-Z][A-Z0-9]{1,9}\/USDT$/;
-const managedListings = new Map<string, { symbol: string; logo: string | null; tradable: boolean }>();
+const managedListings = new Map<string, { symbol: string; logo: string | null; tradable: boolean; version?: number; leaseDeadline?: number }>();
 
 export function registerManagedListings(assets: readonly TestAsset[]): void {
   for (const asset of assets) {
-    if (asset.managed) managedListings.set(asset.pair, { symbol: asset.symbol, logo: asset.logo ?? null, tradable: asset.isTradable });
+    if (asset.managed) managedListings.set(asset.pair, { symbol: asset.symbol, logo: asset.logo ?? null, tradable: asset.isTradable, version: asset.version, leaseDeadline: asset.leaseDeadline });
   }
 }
 
 export function isManagedListingPair(pair: string | null | undefined): boolean {
-  return typeof pair === 'string' && managedListings.has(pair.toUpperCase());
+  return isAith(pair) || (typeof pair === 'string' && managedListings.has(pair.toUpperCase()));
 }
 
 /** A managed listing that trades on ordinary Spot once listed (the server enforces the time). */
 export function isManagedTradablePair(pair: string | null | undefined): boolean {
-  return typeof pair === 'string' && managedListings.get(pair.toUpperCase())?.tradable === true;
+  return !isAith(pair) && typeof pair === 'string' && managedListings.get(pair.toUpperCase())?.tradable === true;
+}
+
+export function managedListingVersion(pair: string): number | undefined {
+  const listing = managedListings.get(pair.toUpperCase());
+  return listing && (!isAith(pair) || Date.now() < (listing.leaseDeadline ?? 0)) ? listing.version : undefined;
 }
 
 /** The logo a published listing carries, by ticker. Never a registry lookup by ticker. */
@@ -83,7 +92,7 @@ export function managedListingLogo(symbol: string): string | null | undefined {
 }
 
 export function isTestMarketPair(pair: string | null | undefined): boolean {
-  return typeof pair === 'string' && (TEST_MARKET_PAIRS.includes(pair.toUpperCase()) || managedListings.has(pair.toUpperCase()));
+  return typeof pair === 'string' && (TEST_MARKET_PAIRS.includes(pair.toUpperCase()) || isManagedListingPair(pair));
 }
 
 const finiteOrNull = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
@@ -96,6 +105,7 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
   for (const raw of body.assets as any[]) {
     const managed = raw?.managed === true;
     if (!raw || typeof raw.pair !== 'string' || raw.isTestAsset !== true) continue;
+    if (isAith(raw.pair) && (!managed || raw.isTradable !== false || !validAithLease(raw.readLease, raw.version, body.serverTime))) continue;
     if (managed) {
       // A published listing: any well-formed USDT pair that is not a built-in test asset.
       if (!MANAGED_PAIR_PATTERN.test(raw.pair.toUpperCase()) || TEST_MARKET_PAIRS.includes(raw.pair.toUpperCase()) || typeof raw.isTradable !== 'boolean') continue;
@@ -110,7 +120,7 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
       quote: String(raw.quote ?? raw.pair.split('/')[1]),
       isTestAsset: true,
       isTradable: raw.isTradable,
-      status: typeof raw.status === 'string' ? raw.status : TEST_ASSET_STATUS_LABEL,
+      status: isAith(raw.pair) ? '' : typeof raw.status === 'string' ? raw.status : TEST_ASSET_STATUS_LABEL,
       listingArmed: typeof raw.listingArmed === 'boolean' ? raw.listingArmed : true,
       listingAt: raw.listingAt,
       initialPrice: finiteOrNull(raw.initialPrice) ?? 0,
@@ -127,6 +137,8 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
       },
       ...(managed ? {
         managed: true,
+        version: raw.version,
+        ...(isAith(raw.pair) ? { readLease: raw.readLease } : {}),
         logo: typeof raw.logo === 'string' && /^data:image\/(png|jpeg|webp|svg\+xml);base64,/.test(raw.logo) ? raw.logo : null,
         displayTimeZone: typeof raw.displayTimeZone === 'string' ? raw.displayTimeZone : 'UTC',
       } : {}),

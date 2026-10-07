@@ -35,15 +35,17 @@ export default {
       return stub ? stub.fetch(request) : unavailable();
     }
     const isCatalogue = url.pathname === PUBLIC_CATALOGUE_PATH;
+    const isAithPath = /(?:^|\/)AITH-USDT(?:\/|$)/i.test(url.pathname);
     // Only the catalogue and paths shaped like a pair route cost a store read (cached per isolate).
     if (isCatalogue || /^\/(market|orderbook)\//.test(url.pathname)) {
       const published = await publishedListings(env);
       if (!published) {
-        if (isCatalogue) return unavailable();
+        if (isCatalogue || isAithPath) return unavailable();
       } else if (isCatalogue || listingForPath(url.pathname, published.listings)) {
         const response = managedListingResponse(request, published.listings, Date.now(), published.revision);
         if (response) return response;
       }
+      if (isAithPath) return unavailable();
     }
     return existingWorker.fetch(request);
   },

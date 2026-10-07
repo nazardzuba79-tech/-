@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import { isManagedListingPair, isManagedTradablePair, isTestMarketPair, managedListingLogo, managedListingTime, parseTestMarkets, registerManagedListings } from '../testMarkets';
 import * as testMarketHelpers from '../testMarkets';
+import * as aithPublication from '../../../../src/shared/aithPublication';
 import { isEdgeMarketPair, isEdgeMarketUrl, nrxPublicUrl } from '../nrxMarket';
 import * as nrxHelpers from '../nrxMarket';
 import { resolveMarketEdgeBase, MARKET_EDGE_BASE } from '../marketEdge';
@@ -107,6 +108,7 @@ function stores(read: (url: string) => Promise<unknown>) {
     if (name === './testMarkets') return testMarketHelpers;
     if (name === './nrxMarket') return { ...nrxHelpers, fetchNrxPublic: read };
     if (name === './browserActivity') return activity;
+    if (name === '../../../src/shared/aithPublication') return aithPublication;
     return req(name);
   }, output, document, async (url: string) => ({ ok: true, json: () => read(url) }));
   return { ...output, listeners, visibility(hidden: boolean) { document.hidden = hidden; for (const listener of listeners) listener(); },
@@ -116,6 +118,60 @@ function stores(read: (url: string) => Promise<unknown>) {
 describe('managed catalogue scheduling with the real store', () => {
   beforeEach(() => jest.useFakeTimers().setSystemTime(Date.parse('2026-09-29T00:00:00Z')));
   afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
+
+  const aith = (version = 1, initialPrice = .8) => managed({ pair: 'AITH/USDT', symbol: 'AITH', name: 'Aitheron AI', isTradable: false,
+    status: 'TEST · NOT TRADABLE', initialPrice, version,
+    readLease: { protocol: 'aith-prelisting-v1', generation: version, issuedAt: Date.now(), expiresAt: Date.now() + 45_000 } });
+
+  test('AITH alone hides customer labels while retaining the non-tradable classification and actual price', () => {
+    const parsed = parseTestMarkets({ serverTime: Date.now(), assets: [aith(2, 2), managed({ isTradable: false, status: 'TEST · NOT TRADABLE' })] })!;
+    expect(parsed.assets[0]).toMatchObject({ initialPrice: 2, version: 2, status: '', isTestAsset: true, isTradable: false });
+    expect(parsed.assets[1].status).toBe('TEST · NOT TRADABLE');
+    expect(parseTestMarkets({ serverTime: Date.now() + 46_000, assets: [aith()] })!.assets).toEqual([]);
+    expect(parseTestMarkets({ serverTime: Date.now(), assets: [{ ...aith(), readLease: undefined }] })!.assets).toEqual([]);
+    expect(isManagedListingPair('AITH/USDT')).toBe(true);
+    expect(isManagedTradablePair('AITH/USDT')).toBe(false);
+  });
+
+  test('a hanging refresh cannot keep old AITH visible after its lease, including while hidden', async () => {
+    let hang = false;
+    const read = jest.fn(async () => hang ? new Promise(() => {}) : ({ serverTime: Date.now(), assets: [aith(), managed()] }));
+    const market = stores(read), store = market.managedListingStore;
+    const listener = jest.fn();
+    const off = store.subscribe(listener);
+    await settle();
+    expect(store.getState().assets).toHaveLength(2);
+    hang = true;
+    await jest.advanceTimersByTimeAsync(15_000);
+    market.visibility(true);
+    await jest.advanceTimersByTimeAsync(29_000);
+    expect(store.getState().assets.map((x: any) => x.symbol)).toEqual(['QAX']);
+    expect(listener.mock.calls.at(-1)[0].assets.map((x: any) => x.symbol)).toEqual(['QAX']);
+    off();
+  });
+
+  test('failed authority removes only AITH, delayed replies do not extend leases, and version cannot regress', async () => {
+    let mode = 'v2';
+    let release: (value: unknown) => void = () => {};
+    const read = async () => {
+      if (mode === 'failure') throw new Error('offline');
+      if (mode === 'delay') return new Promise(resolve => { release = resolve; });
+      return { serverTime: Date.now(), assets: [aith(mode === 'v2' ? 2 : 1, mode === 'v2' ? 2 : .8), managed()] };
+    };
+    const store = stores(read).managedListingStore;
+    await store.refresh();
+    expect(store.getState().assets[0].initialPrice).toBe(2);
+    mode = 'v1'; await store.refresh();
+    expect(store.getState().assets.map((x: any) => x.symbol)).toEqual(['QAX']);
+    mode = 'v2'; await store.refresh();
+    mode = 'failure'; await store.refresh();
+    expect(store.getState().assets.map((x: any) => x.symbol)).toEqual(['QAX']);
+    mode = 'delay'; const request = store.refresh();
+    const captured = { serverTime: Date.now(), assets: [aith(2, 2)] };
+    await jest.advanceTimersByTimeAsync(46_000);
+    release(captured); await request;
+    expect(store.getState().assets).toEqual([]);
+  });
 
   test('a future-only catalogue discovers another listing on its regular minute cadence and stops after unsubscribe', async () => {
     const assets = [managed()];
