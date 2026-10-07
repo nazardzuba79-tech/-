@@ -1,3 +1,4 @@
+import * as aithPublication from '../../../../src/shared/aithPublication';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -83,7 +84,7 @@ beforeEach(() => {
       if (name.endsWith('/NrxBookTabs')) return { NrxBookTabs: ({ children }: any) => children };
       if (name.endsWith('.css')) return {};
       if (name.startsWith('../components/')) return child;
-      return req(name);
+      return (name === '../../../src/shared/aithPublication' ? aithPublication : req(name));
     });
     return output;
   };
