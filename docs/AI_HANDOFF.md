@@ -5855,3 +5855,9 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 ## Codex — 2026-10-07 — PR #466 current-main compatibility
 - Integrated main `d36d33ced7cfb0864d102e7d6c714923dd1bedd6` into the existing review branch after concurrent #469 landed. Only merge conflict was the appended handoff history; both histories retained. Futures changes and independent locale keys from main are preserved.
 - Lower auth fiat icon correction remains the only new UI work. No PR merge into main, deployment or production write. Rechecking tests, build, actual Login/Register screenshots and exact-head CI on the combined version.
+
+## Codex — 2026-10-07 — Stocks bounded V1 review
+- Base d36d33ced7cfb0864d102e7d6c714923dd1bedd6, separate stock process/storage/read UI, default OFF. No crypto/financial DB/API execution changes.
+- Preserved existing crypto main and other PRs. Historical capacity REPORT/raw data retained unchanged in docs/qa/stocks/prior-capacity.
+- Candidate metadata 250, five actual indices; no licensed quote activation, no verified liquidity ranking, no imported logos.
+- See services/stocks/README.md for exact implemented limits and blockers. Stock-only runtime proof must not be described as crypto A/B acceptance. No merge/deploy.

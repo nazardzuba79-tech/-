@@ -1,3 +1,4 @@
+import { stocksEnabled } from '../../lib/stocks';
 import { HeaderDropdown, KNOWLEDGE_LINKS, MARKET_LINKS, OTC_LINKS, TRADING_LINKS } from '../../components/HeaderDropdown';
 import { TradingBotIcon } from '../../components/TradingBotIcon';
 import { useEffect, useState } from 'react';
@@ -25,6 +26,7 @@ import { WalletBalanceControl } from '../../components/WalletBalanceControl';
  */
 const LINKS: { to: string; labelKey: Key }[] = [
   { to: '/markets', labelKey: 'nav.markets' },
+  ...(stocksEnabled ? [{to:'/stocks',labelKey:'stocks.nav' as Key}] : []),
   { to: '/trade', labelKey: 'nav.trade' },
   { to: '/futures', labelKey: 'nav.futures' },
   { to: '/copy-trading', labelKey: 'nav.copyTrading' },
