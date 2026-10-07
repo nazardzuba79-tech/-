@@ -19,7 +19,7 @@ function renderShell(lang: string) {
     './auth-shell.css': {}, './auth-form-premium.css': {},
     '../../components/Logo': { Logo: () => React.createElement('span', null, 'HTML_LOGO'), LogoMark: () => null },
     '../../components/LanguageSwitcher': { LanguageSwitcher: () => null },
-    '../../lib/i18n': { useLanguage: () => ({ lang, t: (key: string) => `localized:${lang}:${key}` }) },
+    '../../lib/i18n': { useLanguage: () => ({ lang, t: (key: string) => key === 'authShell.communitySubtitle' ? `localized:${lang}:${key}:fiat · localized:${lang}:${key}:crypto` : `localized:${lang}:${key}` }) },
     '../../lib/supportWidget': { openSupportWidget: jest.fn() },
     'react-router-dom': { Link: ({ to, children, ...rest }: any) => React.createElement('a', { href: to, ...rest }, children) },
   };
@@ -32,13 +32,16 @@ function renderShell(lang: string) {
 }
 
 describe('business-class visual preserves reviewed authentication', () => {
-  test('fiat-icon follow-up preserves shell outside the decorative icon group, photo scrim and other styles', () => {
-    // Fingerprint computed from reviewed head ab24d3da. Exclude only the
-    // authorized icon span and its descriptive comment, not AuthCommunity or
-    // AuthShell: all copy, captions, form placement and auth wiring stay locked.
+  test('fiat-flag follow-up preserves shell outside the decorative icon group, photo scrim and other styles', () => {
+    // The ab24d3da fingerprint also matches fresh main 8cbb74be after this exact
+    // normalization. Only the six-flag import, decorative sample/comment and
+    // exact subtitle grouping are exempt: localization, captions, form and auth stay locked.
     const preservedShell = shell
-      .replace(/\/\*\* Decorative (?:portraits, not testimonials or an independently verified count|fiat symbols: ruble, US dollar and Chinese yuan, not a user count)\. \*\//, '/* Decorative icon-only follow-up. */')
-      .replace(/        <span className="vx-auth-(?:avatars|currencies)" aria-hidden="true">[\s\S]*?\n        <\/span>(?=\n        <div className="vx-auth-community-copy">)/, '        {/* Decorative icon group. */}');
+      .replace(/^import \{ EU, CH, JP, US, CN, RU \} from 'country-flag-icons\/react\/3x2';\n/m, '')
+      .replace("  const [fiatCaption, cryptoCaption] = t('authShell.communitySubtitle').split(' · ');\n", '')
+      .replace("          <span><span className=\"vx-auth-currency-amount\">{fiatCaption} ·</span>{' '}<span className=\"vx-auth-currency-amount\">{cryptoCaption}</span></span>", "          <span>{t('authShell.communitySubtitle')}</span>")
+      .replace('/** Decorative currency examples, not the complete list or a user count. */', '/* Decorative icon-only follow-up. */')
+      .replace(/        <div className="vx-auth-currency-sample">[\s\S]*?\n        <\/div>(?=\n        <div className="vx-auth-community-copy">)/, '        {/* Decorative icon group. */}');
     expect(digest(preservedShell)).toBe('dc6b24e6f7ec31917072e12dd191bd4315ad75699bef58d1df7c9524fd036bbe');
     expect(digest(css.slice(0, css.indexOf('/* Static, localized photo captions.')) + css.slice(css.indexOf('/* Light form theme'))))
       .toBe('a9683d542ce768fe239dd7045229a38258583eed44f5d8b245a2b99ae55566b8');
@@ -73,8 +76,8 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(html).not.toMatch(/<picture|<h2|vx-auth-hero|vx-auth-lead|vx-auth-copyright/);
     const banner = html.split('vx-auth-brand-banner')[1].split('</section>')[0];
     expect(banner).not.toMatch(/<a\b|<button\b|<input\b|<p\b|<footer\b|HTML_LOGO/);
-    expect(banner.match(/<svg\b/g)).toHaveLength(3);
-    expect(banner.match(/class="vx-auth-currency"/g)).toHaveLength(3);
+    expect(banner.match(/<svg\b/g)).toHaveLength(6);
+    expect(banner.match(/class="vx-auth-currency"/g)).toHaveLength(6);
     // One existing Logo is available in the form header when the decorative
     // banner is omitted. Browser QA checks their mutually exclusive visibility.
     expect(html.match(/HTML_LOGO/g)).toHaveLength(1);
@@ -85,26 +88,31 @@ describe('business-class visual preserves reviewed authentication', () => {
   test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s has localized card copy without an investor-count badge', lang => {
     const html = renderShell(lang);
     expect(html.match(/class="vx-auth-extras"/g)).toHaveLength(2);
-    expect(html.match(/class="vx-auth-currency"/g)).toHaveLength(6);
+    expect(html.match(/class="vx-auth-currency"/g)).toHaveLength(12);
     expect(html.match(/class="vx-auth-currencies" aria-hidden="true"/g)).toHaveLength(2);
+    expect(html.match(/class="vx-auth-currency-sample"/g)).toHaveLength(2);
+    expect(html.match(new RegExp(`<span class="vx-auth-currency-more">localized:${lang}:authShell.moreCurrencies</span>`, 'g'))).toHaveLength(2);
     const icons = [...html.matchAll(/<span class="vx-auth-currency" data-currency="([^"]+)">(<svg[\s\S]*?<\/svg>)<\/span>/g)];
-    expect(icons.map(icon => icon[1])).toEqual(['RUB', 'USD', 'CNY', 'RUB', 'USD', 'CNY']);
-    const paths: Record<string, string> = {
-      RUB: 'M8 21V3h7a4 4 0 0 1 0 8H5M5 16h10',
-      USD: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-      CNY: 'm4 3 8 10 8-10M12 13v8M5 13h14M5 17h14',
-    };
+    const currencies = ['EUR', 'CHF', 'JPY', 'USD', 'CNY', 'RUB'];
+    expect(icons.map(icon => icon[1])).toEqual([...currencies, ...currencies]);
+    const { EU, CH, JP, US, CN, RU } = req('country-flag-icons/react/3x2');
+    const flags: Record<string, unknown> = { EUR: EU, CHF: CH, JPY: JP, USD: US, CNY: CN, RUB: RU };
     for (const [, currency, svg] of icons) {
-      expect(svg).toContain('viewBox="0 0 24 24"');
+      // Render the existing local package independently: incorrect country
+      // selection, leftover currency glyphs and external flag images all fail.
+      expect(svg).toBe(renderToStaticMarkup(React.createElement(flags[currency], { 'aria-hidden': 'true', focusable: 'false' })));
+      expect(svg).toContain(`viewBox="${currency === 'EUR' ? '0 0 810 540' : currency === 'CHF' ? '0 0 768 512' : '0 0 513 342'}"`);
       expect(svg).toContain('aria-hidden="true"');
       expect(svg).toContain('focusable="false"');
-      expect(svg).toContain(`<path d="${paths[currency]}"></path>`);
+      expect(svg.match(/<(?:path|circle)\b/g)!.length).toBeGreaterThanOrEqual(2);
       expect(svg).not.toMatch(/<image\b|<use\b|<foreignObject\b|<text\b|<script\b|tabindex|onclick|href/);
     }
-    expect(new Set(icons.slice(0, 3).map(icon => icon[2])).size).toBe(3);
-    expect(html).not.toMatch(/vx-auth-avatar|community-v4|data-currency="JPY"/);
+    expect(new Set(icons.slice(0, 6).map(icon => icon[2])).size).toBe(6);
+    expect(html).not.toMatch(/vx-auth-avatar|community-v4/);
     expect(html).toContain(`localized:${lang}:authShell.communityTitle`);
     expect(html).toContain(`localized:${lang}:authShell.communitySubtitle`);
+    expect(html.match(/class="vx-auth-currency-amount"/g)).toHaveLength(4);
+    expect(html).toContain(`<span class="vx-auth-currency-amount">localized:${lang}:authShell.communitySubtitle:fiat ·</span> <span class="vx-auth-currency-amount">localized:${lang}:authShell.communitySubtitle:crypto</span>`);
     expect(html).toContain(`localized:${lang}:authShell.cardCaption`);
     expect(html).toContain('class="vx-auth-card-number">01</span>');
     expect(html).toContain('class="vx-auth-card-line" aria-hidden="true"');
@@ -133,8 +141,17 @@ describe('business-class visual preserves reviewed authentication', () => {
   });
 
   test('premium form is native CSS, keeps warning/error/focus/disabled states and adds no images', () => {
-    // Geometry follow-up must not restyle the accepted real form.
-    expect(digest(premiumCSS)).toBe('4db470ef528e16220c255290ba17df24c571edbdd3b55c6b83e89caf0a2e866b');
+    // Owner-approved registration color is the only exception to the original
+    // form fingerprint; existing validation, focus and all other styles stay locked.
+    const preservedPremiumCSS = premiumCSS.replace(
+      '/* Keep registration gold while its existing validation disables submission. */\n' +
+      '.vx-auth .vx-auth-form:has(#reg-email) .vx-auth-submit:disabled {\n' +
+      '  border-color: #d7b656;\n' +
+      '  background: linear-gradient(110deg, #f5db8b, #edcb6a);\n' +
+      '  color: #171b17;\n' +
+      '  box-shadow: 0 3px 8px #6651190c;\n' +
+      '}\n', '');
+    expect(digest(preservedPremiumCSS)).toBe('4db470ef528e16220c255290ba17df24c571edbdd3b55c6b83e89caf0a2e866b');
     expect(premiumCSS).not.toMatch(/url\(|opacity:\s*0\b|pointer-events:\s*none/);
     expect(premiumCSS).toContain('.vx-auth .vx-auth-input.vx-auth-input-error');
     expect(premiumCSS).toContain('.vx-auth .vx-auth-input.vx-auth-input-warn');
