@@ -31,6 +31,7 @@ These responses were replayed as local fixtures. A synthetic `ZQNEW/USDT` fixtur
 ## Verification
 
 - TypeScript project build: PASS.
+- Existing VTA browser regression: PASS at 1440/430/390/360/320; moving countdown, explicit trading refusals, no write requests, page errors or overflow. Updated only its exact date-label expectation and added simulation/availability assertions.
 - Vite production build: PASS; existing chunk-size warning remains.
 - 15 Jest suites: **507 passed, 0 failed**. Includes listing/managed-publication fencing, presentation, shared errors, Futures errors/unknown account state, wallet, support, card eligibility presentation and Spot feedback.
 - Browser pass 1: **191 inspections**, zero unmocked requests and no page exceptions. Listings/search/favorites/Spot at Russian widths 1920/1440/1366/430/390/360/320; other six languages at 1440/320. Each catalogue includes AITH, NRX, VTA and the unknown ticker. Login failures tested in all seven languages at 390: offline, 401, 403, 429, 500, 504, empty and unknown responses.
