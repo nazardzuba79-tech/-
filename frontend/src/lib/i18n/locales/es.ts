@@ -1450,6 +1450,15 @@ export const ES: Record<Key, string> = {
   'futures.transferAction': 'Transferir',
 
   // --- Homepage (pages/home) ---
+  'home.hero.platformTitle': 'Los mercados del mundo en un solo lugar',
+  'home.hero.platformDescription': 'Opera, analiza y copia estrategias en la plataforma unificada de VOLTEX.',
+  'home.hero.startTrading': 'Empezar a operar',
+  'home.hero.exploreMarkets': 'Explorar mercados',
+  'home.hero.pauseMotion': 'Pausar la animación de mercados',
+  'home.hero.resumeMotion': 'Reanudar la animación de mercados',
+  'home.hero.sceneAria': 'Mercados de criptomonedas alrededor de la plataforma VOLTEX',
+  'home.hero.instrumentsAria': 'Elegir un mercado de criptomonedas',
+  'home.hero.cryptoLabel': 'Criptomonedas',
   'home.nav.main': 'Navegación principal',
   'home.nav.mobile': 'Navegación móvil',
   'home.cta.startTrading': 'Empezar a operar',

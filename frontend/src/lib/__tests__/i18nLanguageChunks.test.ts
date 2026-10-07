@@ -70,10 +70,29 @@ const APPROVED_AUTH_DESIGN_KEYS = [
 // PR #466: two additive auth promotional labels. Only these exact additions
 // are omitted from the historical digest; existing numeric/other copy is not changed.
 const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySubtitle'];
+// 2026-10-07 homepage market platform: additions only. Exclude these exact
+// named keys from the older digest; no existing translation is re-baselined.
+const HOME_PLATFORM_HERO_KEYS = ['platformTitle', 'platformDescription', 'startTrading', 'exploreMarkets',
+  'pauseMotion', 'resumeMotion', 'sceneAria', 'instrumentsAria', 'cryptoLabel'].map(key => `home.hero.${key}`);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('localizes the market platform hero and its motion/navigation labels in every language', () => {
+    for (const code of LOCALES) {
+      const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
+      for (const key of HOME_PLATFORM_HERO_KEYS) {
+        expect(sourceKeys.filter(sourceKey => sourceKey === key)).toHaveLength(1);
+        expect(dicts[code][key]?.trim()).toBeTruthy();
+      }
+      expect(dicts[code]['home.hero.pauseMotion']).not.toEqual(dicts[code]['home.hero.resumeMotion']);
+    }
+    for (const key of HOME_PLATFORM_HERO_KEYS) expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
+    expect(dicts.ru['home.hero.platformTitle']).toBe('Рынки мира в одном месте');
+    expect(dicts.ru['home.hero.platformDescription']).toBe('Торгуйте, анализируйте и копируйте стратегии в единой платформе VOLTEX.');
+    expect(dicts.ru['home.hero.startTrading']).toBe('Начать торговлю');
+    expect(dicts.ru['home.hero.exploreMarkets']).toBe('Изучить рынки');
+  });
   it('localizes the exact two-line card copy and 22+/70 currency counts without an investor claim', () => {
     for (const code of LOCALES) {
       const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
@@ -281,6 +300,7 @@ describe('translation integrity', () => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
         if (key && APPROVED_AUTH_DESIGN_KEYS.includes(key)) return false;
         if (key && AUTH_COMMUNITY_KEYS.includes(key)) return false;
+        if (key && HOME_PLATFORM_HERO_KEYS.includes(key)) return false;
         // Keys ADDED since the digests were taken are excluded by name
         // rather than by re-taking seven digests — that is what keeps the
         // guard meaningful: every OTHER byte of every dictionary still has

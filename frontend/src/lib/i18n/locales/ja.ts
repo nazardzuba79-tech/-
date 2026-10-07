@@ -1450,6 +1450,15 @@ export const JA: Record<Key, string> = {
   'futures.transferAction': '振替',
 
   // --- Homepage (pages/home) ---
+  'home.hero.platformTitle': '世界の市場をひとつに',
+  'home.hero.platformDescription': 'VOLTEX の統合プラットフォームで取引、分析、戦略のコピーを。',
+  'home.hero.startTrading': '取引を始める',
+  'home.hero.exploreMarkets': '市場を見る',
+  'home.hero.pauseMotion': '市場アニメーションを停止',
+  'home.hero.resumeMotion': '市場アニメーションを再開',
+  'home.hero.sceneAria': 'VOLTEX プラットフォームを囲む暗号資産市場',
+  'home.hero.instrumentsAria': '暗号資産市場を選択',
+  'home.hero.cryptoLabel': '暗号資産',
   'home.nav.main': 'メインナビゲーション',
   'home.nav.mobile': 'モバイルナビゲーション',
   'home.cta.startTrading': '取引を始める',
