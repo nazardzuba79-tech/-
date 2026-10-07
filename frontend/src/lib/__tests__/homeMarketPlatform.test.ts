@@ -5,6 +5,7 @@ import { createHash } from 'crypto';
 import ts from 'typescript';
 import { HERO_INSTRUMENTS } from '../../pages/home/heroInstruments';
 import { initialMarketPose, marketTileFrames, MARKET_CYCLE_MS, MARKET_MOVE_MS, MARKET_POSES, MARKET_STEP_MS } from '../../pages/home/marketPlatformMotion';
+import { cfdDisplayState, cfdMarketCopy } from '../cfdPresentation';
 
 const frontend = resolve(__dirname, '../../..');
 const req = createRequire(resolve(frontend, 'package.json'));
@@ -14,35 +15,68 @@ const { act } = React;
 const { JSDOM } = req('jsdom');
 
 describe('market platform presentation boundary', () => {
-  it('uses only seven confirmed external crypto identities and existing spot routes', () => {
-    expect(HERO_INSTRUMENTS.map(item => item.symbol)).toEqual(['BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'LTC']);
+  it('changes only the highlighted asset mount inside the restored Sapphire hero', () => {
+    const read = (file: string) => readFileSync(resolve(frontend, 'src/pages/home', file), 'utf8').replace(/\r\n/g, '\n');
+    expect(read('HomeHero.tsx')).toBe("export { HomeSapphireHero as HomeHero } from './HomeSapphireHero';\n");
+    // Owner revision: preserve original artwork/projection, copy, CTAs,
+    // visible terminal and tape byte-for-byte outside this one column.
+    const restored = read('HomeSapphireHero.tsx')
+      .replace("import { HomeMarketPlatformHero } from './HomeMarketPlatformHero';", "import { HomeHeroAssets } from './HomeHeroAssets';")
+      .replace(/<HomeMarketPlatformHero(?: market=\{market\})?\s*\/>/, '<HomeHeroAssets market={market} englishLabels/>');
+    expect(createHash('sha256').update(restored).digest('hex')).toBe('a982f2b68e0a2ca9afa2a67b4d18ded4c414e224f2b0095c69f72f7262608db7');
+  });
+
+  it('uses the existing BTC/Gold/Oil references plus four confirmed crypto identities', () => {
+    expect(HERO_INSTRUMENTS.map(item => item.symbol)).toEqual(['BTC', 'GOLD', 'OIL', 'ETH', 'SOL', 'XRP', 'ADA']);
     expect(new Set(HERO_INSTRUMENTS.map(item => item.instrumentId)).size).toBe(7);
     for (const item of HERO_INSTRUMENTS) {
       expect(Object.keys(item).sort()).toEqual(['instrumentId', 'symbol', 'displayName', 'category', 'logoPath', 'destination', 'enabled'].sort());
-      expect(item.instrumentId).toMatch(/^cg:/);
-      expect(item.category).toBe('crypto');
       expect(item.enabled).toBe(true);
       expect(['AITH', 'NRX', 'VTA', 'SPX', 'NDX', 'AAPL']).not.toContain(item.symbol);
       const target = new URL(item.destination, 'https://voltex.invalid');
       expect(target.origin).toBe('https://voltex.invalid');
       expect(target.pathname).toBe('/trade');
-      expect(target.searchParams.get('pair')).toBe(`${item.symbol}/USDT`);
+      if (item.category === 'commodity') {
+        expect(['GOLD', 'OIL']).toContain(item.symbol);
+        const underlying = item.symbol === 'GOLD' ? 'XAUUSD' : 'WTIUSD';
+        expect(item.instrumentId).toBe(`cfd:${underlying}`);
+        expect(target.searchParams.get('market')).toBe('cfd');
+        expect(target.searchParams.get('symbol')).toBe(underlying);
+      } else {
+        expect(item.instrumentId).toMatch(/^cg:/);
+        expect(item.category).toBe('crypto');
+        expect(target.searchParams.get('pair')).toBe(`${item.symbol}/USDT`);
+      }
     }
   });
 
   it('ships small local marks with no per-icon remote image, font or script dependency', () => {
     let bytes = 0;
-    const localIcons: Record<string, string> = { BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana', ADA: 'Cardano', DOGE: 'Dogecoin', LTC: 'Litecoin' };
+    const localIcons: Record<string, string> = { BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana', ADA: 'Cardano' };
     for (const item of HERO_INSTRUMENTS) {
       expect(item.logoPath).toMatch(/^\/hero\/instruments\/[a-z]+\.svg$/);
       const icon = readFileSync(resolve(frontend, 'public', item.logoPath.slice(1)), 'utf8');
       expect(icon).toContain('<path ');
-      expect(icon).not.toMatch(/<script|<image|<foreignObject|href\s*=|url\(/i);
+      expect(icon).not.toMatch(/<script|<image|<foreignObject|href\s*=|url\(\s*(?!#)/i);
       if (item.symbol === 'XRP') {
         // Preserve the currency mark from the existing provider, not the
         // similarly named green XRP Ledger/site icon in Simple Icons.
         expect(createHash('sha256').update(icon).digest('hex')).toBe('31fe41b6b3a4d98c9b46d7c37d60dea97fa5d9ebbd235ac5bfe23e4fd1eb8361');
         expect(readFileSync(resolve(frontend, 'public/hero/instruments/LICENSE-cryptocurrency-icons.txt'), 'utf8')).toContain('CC0');
+      } else if (item.category === 'commodity') {
+        // Render the already shipped Gold/Oil source with the same props.
+        // Local gradient references are allowed; no new artwork is inferred.
+        const original = readFileSync(resolve(frontend, 'src/pages/home/HomeHeroAssets.tsx'), 'utf8');
+        const compiled = ts.transpileModule(original, { compilerOptions: {
+          jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
+        } }).outputText;
+        const icons: any = {};
+        new Function('require', 'exports', `${compiled}\nexports.gold = GoldIcon; exports.oil = OilIcon;`)(
+          (name: string) => name === 'react/jsx-runtime' ? req(name) : {}, icons,
+        );
+        const rendered = req('react-dom/server').renderToStaticMarkup(React.createElement(icons[item.symbol.toLowerCase()], { size: 24 }))
+          .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+        expect(icon.trim()).toBe(rendered);
       } else {
         const original = readFileSync(resolve(frontend, `node_modules/@icons-pack/react-simple-icons/src/icons/Si${localIcons[item.symbol]}.tsx`), 'utf8');
         expect(icon.match(/<path d="([^"]+)"/)?.[1]).toBe(original.match(/<path d='([^']+)'/)?.[1]);
@@ -84,20 +118,23 @@ describe('market carousel continuity and rhythm', () => {
 
   it('never wraps a visible tile across the stage or snaps at the cycle boundary', () => {
     expect(pose(frames[0])).toEqual(pose(frames[frames.length - 1]));
-    const x = (frame: Keyframe) => {
+    const y = (frame: Keyframe) => {
       const transform = String(frame.transform);
-      const distance = transform.includes('--edge') ? 407 : transform.includes('--middle') ? 301 : transform.includes('--near') ? 174 : 0;
-      return transform.includes('calc(-1') ? -distance : distance;
+      const multiple = transform.match(/calc\((-?\d+) \* var\(--card-step\)\)/);
+      return multiple ? Number(multiple[1]) : transform.includes('var(--card-step)') ? 1 : 0;
     };
     const crossings = frames.slice(1).map((frame, index) => [frames[index], frame] as const)
-      .filter(([left, right]) => Math.abs(x(right) - x(left)) > 400);
+      .filter(([left, right]) => y(right) > y(left));
     expect(crossings).toHaveLength(1);
     for (const [left, right] of crossings) {
       expect(Number(left.opacity)).toBe(0);
       expect(Number(right.opacity)).toBe(0);
     }
+    expect(MARKET_POSES.filter(frame => frame.opacity > 0).map(y).sort((a, b) => a - b)).toEqual([-2, -1, 0, 1, 2]);
+    expect(MARKET_POSES.filter(frame => frame.opacity === 0).map(y).sort((a, b) => a - b)).toEqual([-3, 3]);
     for (const frame of frames) {
-      const rotation = Number(String(frame.transform).match(/rotateY\((-?[\d.]+)deg\)/)?.[1]);
+      expect(String(frame.transform)).toMatch(/^translate3d\(0, /);
+      const rotation = Number(String(frame.transform).match(/rotateX\((-?[\d.]+)deg\)/)?.[1]);
       expect(Number.isFinite(rotation)).toBe(true);
       expect(Math.abs(rotation)).toBeLessThan(45);
     }
@@ -113,13 +150,26 @@ describe('market carousel continuity and rhythm', () => {
       expect(atFront).toHaveLength(1);
       leaders.push(atFront[0].index);
     }
-    expect(leaders).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(leaders).toEqual([2, 3, 4, 5, 6, 0, 1]);
+    expect(HERO_INSTRUMENTS.filter((_, index) => MARKET_POSES[initialMarketPose(index)].opacity > 0).map(item => item.symbol))
+      .toEqual(['BTC', 'GOLD', 'OIL', 'ETH', 'SOL']);
   });
 });
 
 type TestAnimation = { currentTime: number; playState: string; play: jest.Mock; pause: jest.Mock; cancel: jest.Mock };
 
-function mountHero(options: { reduced?: boolean; animate?: boolean } = {}) {
+const fixtureMarket = () => ({
+  tickers: [{ pair: 'BTC/USDT', price: 76746, change: -.67 }, { pair: 'ETH/USDT', price: 2479.53, change: -1.82 },
+    { pair: 'SOL/USDT', price: 99.78, change: -1.94 }, { pair: 'XRP/USDT', price: 2.45, change: 1.15 }, { pair: 'ADA/USDT', price: .37, change: 2.18 }],
+  tickersStale: false,
+  hero: { pair: 'BTC/USDT', livePrice: undefined as number | undefined },
+  cfd: { configured: true, tickers: [
+    { symbol: 'XAUUSD', price: '4349.19', changePercent24h: '-1.02', status: 'live', stale: false, displayOnly: true, executionAllowed: false },
+    { symbol: 'WTIUSD', price: '96.607', changePercent24h: '2.36', status: 'market_closed', stale: false, displayOnly: true, executionAllowed: false },
+  ] },
+});
+
+function mountHero(options: { reduced?: boolean; animate?: boolean; market?: any } = {}) {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://voltex.invalid', pretendToBeVisual: true });
   const restored = new Map<string, PropertyDescriptor | undefined>();
   for (const [name, value] of Object.entries({ window: dom.window, document: dom.window.document,
@@ -153,11 +203,29 @@ function mountHero(options: { reduced?: boolean; animate?: boolean } = {}) {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const output: any = {};
+  const oldAssets: any = {};
+  const oldAssetsCode = ts.transpileModule(readFileSync(resolve(frontend, 'src/pages/home/HomeHeroAssets.tsx'), 'utf8'), {
+    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  new Function('require', 'exports', oldAssetsCode)((name: string) => name === 'react/jsx-runtime' ? req(name) : {}, oldAssets);
+  const liveValue: any = {};
+  const liveValueCode = ts.transpileModule(readFileSync(resolve(frontend, 'src/pages/home/LiveValue.tsx'), 'utf8'), {
+    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  new Function('require', 'exports', liveValueCode)((name: string) => {
+    if (name === 'react') return React;
+    if (name === 'react/jsx-runtime') return req(name);
+    if (name === './useHomeMarket') return { formatPriceValue: (value: number) => value.toFixed(2) };
+    throw new Error(`Unexpected quote rendering dependency: ${name}`);
+  }, liveValue);
   const modules: Record<string, unknown> = {
     react: React, 'react/jsx-runtime': req('react/jsx-runtime'),
     'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     'lucide-react': { ArrowRight: () => null, Pause: () => null, Play: () => null },
-    '../../lib/i18n': { useLanguage: () => ({ t: (key: string) => key }) },
+    '../../lib/i18n': { useLanguage: () => ({ lang: 'en', t: (key: string) => key }) },
+    '../../lib/cfdPresentation': { cfdDisplayState, cfdMarketCopy },
+    './LiveValue': liveValue,
+    './HomeHeroAssets': oldAssets,
     './heroInstruments': { HERO_INSTRUMENTS },
     './marketPlatformMotion': { initialMarketPose, marketTileFrames, MARKET_CYCLE_MS, MARKET_POSES, MARKET_STEP_MS },
     './home-market-platform.css': {},
@@ -167,8 +235,10 @@ function mountHero(options: { reduced?: boolean; animate?: boolean } = {}) {
     output, Observer, failWork, failWork, failWork, failWork, failWork,
   );
   const root = createRoot(dom.window.document.getElementById('root'));
-  const market = new Proxy({}, { get() { throw new Error('Decoration read financial data'); } });
+  const market = options.market ?? fixtureMarket();
+  const beforeMarket = JSON.stringify(market);
   act(() => root.render(React.createElement(output.HomeMarketPlatformHero, { market })));
+  expect(JSON.stringify(market)).toBe(beforeMarket);
   const scene = dom.window.document.querySelector('[data-market-visual]');
   const button = dom.window.document.querySelector('[data-motion-toggle]');
   const event = (name: string, pointerType = 'mouse') => {
@@ -195,6 +265,55 @@ function mountHero(options: { reduced?: boolean; animate?: boolean } = {}) {
 describe('mounted market motion lifecycle', () => {
   let hero: ReturnType<typeof mountHero> | undefined;
   afterEach(() => { hero?.unmount(); hero = undefined; });
+
+  it('renders existing numeric crypto and string CFD snapshots without new requests or data mutation', () => {
+    const market = fixtureMarket();
+    market.hero.livePrice = 76747.25;
+    const before = JSON.stringify(market);
+    hero = mountHero({ market });
+    const card = (symbol: string) => hero!.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
+    expect(card('BTC').querySelector('.vm-card-price')?.textContent).toBe('76,747.25');
+    expect(card('BTC').querySelector('.vm-card-change')?.textContent).toBe('-0.67%');
+    expect(card('GOLD').querySelector('.vm-card-price')?.textContent).toBe('4,349.19');
+    expect(card('GOLD').querySelector('.vm-card-change')?.textContent).toBe('-1.02%');
+    expect(card('OIL').querySelector('.vm-card-price')?.textContent).toBe('96.61');
+    expect(card('OIL').querySelector('.vm-card-change')?.textContent).toBe('+2.36%');
+    hero.visible(true); hero.hidden(true); hero.hidden(false); hero.click();
+    expect(JSON.stringify(market)).toBe(before);
+    expect(hero.failWork).not.toHaveBeenCalled();
+  });
+
+  it('keeps unknown/blank/non-finite quotes unavailable instead of inventing zeros', () => {
+    const market: any = fixtureMarket();
+    market.tickers = [{ pair: 'BTC/USDT', price: NaN, change: Infinity }];
+    market.cfd.tickers[0].price = ' ';
+    market.cfd.tickers[0].changePercent24h = '';
+    market.cfd.tickers[1].price = null;
+    market.cfd.tickers[1].changePercent24h = 'not-a-number';
+    hero = mountHero({ market });
+    for (const symbol of ['BTC', 'GOLD', 'OIL', 'ETH', 'SOL', 'XRP', 'ADA']) {
+      const card = hero.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
+      expect(card.querySelector('.vm-card-price')?.textContent).toBe('—');
+      expect(card.querySelector('.vm-card-change')?.textContent).toBe('—');
+      expect(card.querySelector('.vm-card-note')?.textContent).toBe(cfdMarketCopy('en').priceUnavailable);
+      expect(card.textContent).not.toMatch(/NaN|Infinity|0\.00/);
+    }
+    expect(hero.failWork).not.toHaveBeenCalled();
+  });
+
+  it('preserves sampled and stale quote disclosures without changing the shared values', () => {
+    const market = fixtureMarket();
+    market.tickersStale = true;
+    market.cfd.tickers[0].stale = true;
+    hero = mountHero({ market });
+    for (const symbol of ['BTC', 'GOLD']) {
+      const card = hero.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
+      expect(card.getAttribute('data-stale')).toBe('true');
+      expect(card.querySelector('.vm-card-note')?.textContent).toBe(cfdMarketCopy('en').lastQuote);
+    }
+    expect(hero.scene.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent).toBe('76,746.00');
+    expect(hero.scene.querySelector('[data-market-tile="GOLD"] .vm-card-price')?.textContent).toBe('4,349.19');
+  });
 
   it('freezes the current phase offscreen/hidden and resumes without catch-up or new work', () => {
     hero = mountHero();
@@ -242,7 +361,7 @@ describe('mounted market motion lifecycle', () => {
     act(() => hero!.button.blur());
     expect(hero.animations.every(animation => animation.playState === 'running')).toBe(true);
     expect(hero.dom.window.document.querySelector('[aria-live]')).toBeNull();
-    expect(hero.scene.getAttribute('role')).toBe('img');
+    expect(hero.scene.getAttribute('role')).toBe('group');
     expect(hero.scene.getAttribute('aria-label')).toBe('home.hero.sceneAria');
   });
 
@@ -255,7 +374,7 @@ describe('mounted market motion lifecycle', () => {
     expect(hero.animations.every(animation => animation.playState === 'running')).toBe(true);
     hero.animations.forEach(animation => { animation.currentTime += 3500; });
     hero.reduce(true);
-    expect(hero.animations.map(animation => animation.currentTime)).toEqual([0, 24000, 20000, 16000, 12000, 8000, 4000]);
+    expect(hero.animations.map(animation => animation.currentTime)).toEqual(HERO_INSTRUMENTS.map((_, index) => initialMarketPose(index) * MARKET_STEP_MS));
     hero.click(); hero.reduce(false);
     expect(hero.animations.every(animation => animation.playState === 'paused')).toBe(true);
     expect(hero.scene.dataset.motionReason).toContain('manual');
@@ -265,8 +384,11 @@ describe('mounted market motion lifecycle', () => {
     hero = mountHero({ animate: false });
     hero.visible(true);
     expect(hero.scene.querySelectorAll('[data-market-tile]')).toHaveLength(7);
-    expect(hero.dom.window.document.querySelector('h1')?.textContent).toBe('home.hero.platformTitle');
-    expect(hero.dom.window.document.querySelectorAll('.vm-actions a')).toHaveLength(2);
+    expect(hero.dom.window.document.getElementById('home-market-column')).not.toBeNull();
+    expect(hero.dom.window.document.getElementById('home-live-terminal')).toBeNull();
+    expect(hero.dom.window.document.querySelector('h1')).toBeNull();
+    expect(hero.dom.window.document.querySelectorAll('a')).toHaveLength(0);
+    expect(hero.button.getAttribute('aria-label')).toBe('home.hero.pauseMotion');
     expect(hero.animations).toHaveLength(0);
     hero.unmount(); hero = mountHero();
     hero.visible(true);

@@ -1473,15 +1473,9 @@ export const ZH: Record<Key, string> = {
   'futures.transferAction': '划转',
 
   // --- Homepage (pages/home) ---
-  'home.hero.platformTitle': '全球市场，尽在一处',
-  'home.hero.platformDescription': '在统一的 VOLTEX 平台上交易、分析并跟单策略。',
-  'home.hero.startTrading': '开始交易',
-  'home.hero.exploreMarkets': '探索市场',
   'home.hero.pauseMotion': '暂停市场动画',
   'home.hero.resumeMotion': '继续市场动画',
-  'home.hero.sceneAria': '环绕 VOLTEX 平台的加密货币市场',
-  'home.hero.instrumentsAria': '选择加密货币市场',
-  'home.hero.cryptoLabel': '加密货币',
+  'home.hero.sceneAria': '市场交易品种',
   'home.nav.main': '主导航',
   'home.nav.mobile': '移动端导航',
   'home.cta.startTrading': '开始交易',

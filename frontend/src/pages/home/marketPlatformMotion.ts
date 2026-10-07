@@ -4,13 +4,13 @@ export const MARKET_MOVE_MS = 1000;
 export const MARKET_CYCLE_MS = MARKET_STEP_MS * 7;
 
 export const MARKET_POSES = [
-  { transform: 'translate3d(0, 0, 0) rotateY(0deg) scale(1)', opacity: 1, zIndex: 7 },
-  { transform: 'translate3d(calc(-1 * var(--near)), 16px, 0) rotateY(20deg) scale(.625)', opacity: 1, zIndex: 6 },
-  { transform: 'translate3d(calc(-1 * var(--middle)), 28px, 0) rotateY(28deg) scale(.51)', opacity: 1, zIndex: 5 },
-  { transform: 'translate3d(calc(-1 * var(--edge)), 38px, 0) rotateY(34deg) scale(.4)', opacity: .65, zIndex: 4 },
-  { transform: 'translate3d(var(--edge), 38px, 0) rotateY(-34deg) scale(.4)', opacity: .65, zIndex: 4 },
-  { transform: 'translate3d(var(--middle), 28px, 0) rotateY(-28deg) scale(.51)', opacity: 1, zIndex: 5 },
-  { transform: 'translate3d(var(--near), 16px, 0) rotateY(-20deg) scale(.625)', opacity: 1, zIndex: 6 },
+  { transform: 'translate3d(0, 0, 0) rotateX(0deg) scale(1)', opacity: 1, zIndex: 7 },
+  { transform: 'translate3d(0, calc(-1 * var(--card-step)), 0) rotateX(7deg) scale(.96)', opacity: 1, zIndex: 6 },
+  { transform: 'translate3d(0, calc(-2 * var(--card-step)), 0) rotateX(12deg) scale(.9)', opacity: .94, zIndex: 5 },
+  { transform: 'translate3d(0, calc(-3 * var(--card-step)), 0) rotateX(16deg) scale(.84)', opacity: 0, zIndex: 4 },
+  { transform: 'translate3d(0, calc(3 * var(--card-step)), 0) rotateX(-16deg) scale(.84)', opacity: 0, zIndex: 4 },
+  { transform: 'translate3d(0, calc(2 * var(--card-step)), 0) rotateX(-12deg) scale(.9)', opacity: .94, zIndex: 5 },
+  { transform: 'translate3d(0, var(--card-step), 0) rotateX(-7deg) scale(.96)', opacity: 1, zIndex: 6 },
 ] as const;
 
 export function marketTileFrames(): Keyframe[] {
@@ -18,7 +18,7 @@ export function marketTileFrames(): Keyframe[] {
   MARKET_POSES.forEach((pose, index) => {
     frames.push({ ...pose, offset: index / 7 });
     frames.push({ ...pose, offset: (index * MARKET_STEP_MS + MARKET_STEP_MS - MARKET_MOVE_MS) / MARKET_CYCLE_MS, easing: 'cubic-bezier(.22,.68,.25,1)' });
-    // The farthest tile crosses behind the scene while invisible. Its face
+    // The top exit and bottom return remain invisible. The card face
     // never turns away, and no visible tile jumps on the last-to-first wrap.
     if (index === 3) {
       frames.push({ ...pose, opacity: 0, offset: 15.25 / 28 });
@@ -32,5 +32,5 @@ export function marketTileFrames(): Keyframe[] {
 }
 
 export function initialMarketPose(index: number) {
-  return (MARKET_POSES.length - index) % MARKET_POSES.length;
+  return (2 - index + MARKET_POSES.length) % MARKET_POSES.length;
 }

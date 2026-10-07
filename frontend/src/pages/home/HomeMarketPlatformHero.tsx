@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Pause, Play } from 'lucide-react';
+import { Pause, Play } from 'lucide-react';
 import { useLanguage } from '../../lib/i18n';
+import { cfdDisplayState, cfdMarketCopy } from '../../lib/cfdPresentation';
+import { LiveValue } from './LiveValue';
+import { finiteQuote } from './HomeHeroAssets';
 import type { HomeMarket } from './useHomeMarket';
 import { HERO_INSTRUMENTS } from './heroInstruments';
 import { initialMarketPose, marketTileFrames, MARKET_CYCLE_MS, MARKET_POSES, MARKET_STEP_MS } from './marketPlatformMotion';
@@ -9,8 +11,8 @@ import './home-market-platform.css';
 
 const instruments = HERO_INSTRUMENTS.filter((instrument) => instrument.enabled);
 
-export function HomeMarketPlatformHero(_props: { market: HomeMarket }) {
-  const { t } = useLanguage();
+export function HomeMarketPlatformHero({ market }: { market: HomeMarket }) {
+  const { lang, t } = useLanguage();
   const scene = useRef<HTMLDivElement>(null);
   const manualPause = useRef(false);
   const synchronize = useRef<(() => void) | null>(null);
@@ -81,45 +83,37 @@ export function HomeMarketPlatformHero(_props: { market: HomeMarket }) {
     synchronize.current?.();
   }
 
+  const marketCopy = cfdMarketCopy(lang);
   return (
-    <section className="vm-hero" data-market-platform-hero aria-labelledby="vm-hero-title">
-      <div className="vm-scene-wrap">
-        {/* Keep the shared market hook's existing visibility target. Animation
-            pause is deliberately independent of its data-refresh lifecycle. */}
-        <div id="home-live-terminal" className="vm-scene" ref={scene} data-market-visual data-motion-state="paused" role="img" aria-label={t('home.hero.sceneAria')}>
-          <div className="vm-horizon" aria-hidden="true" />
-          <div className="vm-platform" aria-hidden="true"><div className="vm-platform-top" /></div>
-          <div className="vm-tiles" aria-hidden="true">
-            {instruments.map((instrument, index) => (
-              <div className="vm-tile" data-market-tile={instrument.symbol} key={instrument.instrumentId} style={MARKET_POSES[initialMarketPose(index)]}>
-                <div className="vm-tile-face">
-                  <div className={`vm-logo vm-logo-${instrument.symbol.toLowerCase()}`}>
-                    <img src={instrument.logoPath} alt="" width="72" height="72" draggable={false} onError={(event) => { event.currentTarget.style.visibility = 'hidden'; }} />
-                  </div>
-                  <span className="vm-symbol">{instrument.symbol}</span>
+    <div className="vm-column" data-market-platform-hero>
+      <div id="home-market-column" className="vm-column-scene" ref={scene} data-market-visual data-motion-state="paused" role="group" aria-label={t('home.hero.sceneAria')}>
+        {instruments.map((instrument, index) => {
+          const commoditySymbol = instrument.instrumentId === 'cfd:XAUUSD' ? 'XAUUSD' : 'WTIUSD';
+          const commodity = instrument.category === 'commodity' ? market.cfd?.tickers.find(row => row.symbol === commoditySymbol) : undefined;
+          const pair = instrument.symbol + '/USDT';
+          const ticker = market.tickers.find(row => row.pair === pair);
+          const price = instrument.category === 'commodity' ? finiteQuote(commodity?.price) : finiteQuote(instrument.symbol === 'BTC' && market.hero.pair === pair ? market.hero.livePrice ?? ticker?.price : ticker?.price);
+          const change = finiteQuote(instrument.category === 'commodity' ? commodity?.changePercent24h : ticker?.change);
+          const stale = instrument.category === 'commodity' ? commodity?.stale : market.tickersStale;
+          const note = instrument.category === 'commodity' ? cfdDisplayState(commodity, lang).label : stale ? marketCopy.lastQuote : marketCopy.live;
+          return (
+            <div className="vm-card" data-market-tile={instrument.symbol} key={instrument.instrumentId} style={MARKET_POSES[initialMarketPose(index)]} data-stale={stale || undefined}>
+              <div className="vm-card-face">
+                <span className="vm-coin" aria-hidden="true"><span className="vm-coin-face"><img src={instrument.logoPath} alt="" width="36" height="36" draggable={false} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></span></span>
+                <div className="vm-card-copy">
+                  <span className="vm-card-symbol">{instrument.category === 'crypto' ? instrument.symbol + ' / USDT' : instrument.symbol}</span>
+                  <LiveValue className="vm-card-price" value={price} format={value => value.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })} />
+                  <span className="vm-card-change" data-direction={change == null ? undefined : change >= 0 ? 'up' : 'down'}>{change == null ? '—' : (change >= 0 ? '+' : '') + change.toFixed(2) + '%'}</span>
                 </div>
+                {(price == null || stale) && <small className="vm-card-note">{price == null ? marketCopy.priceUnavailable : note}</small>}
               </div>
-            ))}
-          </div>
-        </div>
-        <button type="button" className="vm-motion-toggle" data-motion-toggle onClick={toggleMotion} aria-pressed={paused} aria-label={t(paused ? 'home.hero.resumeMotion' : 'home.hero.pauseMotion')} title={t(paused ? 'home.hero.resumeMotion' : 'home.hero.pauseMotion')}>
-          {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
-        </button>
+            </div>
+          );
+        })}
       </div>
-      <div className="vm-copy">
-        <h1 id="vm-hero-title">{t('home.hero.platformTitle')}</h1>
-        <p>{t('home.hero.platformDescription')}</p>
-        <div className="vm-actions">
-          <Link className="vm-primary" to="/trade">{t('home.hero.startTrading')}<ArrowRight size={18} aria-hidden="true" /></Link>
-          <Link className="vm-secondary" to="/markets">{t('home.hero.exploreMarkets')}</Link>
-        </div>
-        <nav className="vm-products" aria-label={t('home.footer.products')}>
-          <Link to="/trade">{t('trade.spotTab')}</Link>
-          <Link to="/futures">{t('nav.futures')}</Link>
-          <Link to="/copy-trading">{t('nav.copyTrading')}</Link>
-          <Link to="/card">{t('nav.card')}</Link>
-        </nav>
-      </div>
-    </section>
+      <button type="button" className="vm-motion-toggle" data-motion-toggle onClick={toggleMotion} aria-pressed={paused} aria-label={t(paused ? 'home.hero.resumeMotion' : 'home.hero.pauseMotion')} title={t(paused ? 'home.hero.resumeMotion' : 'home.hero.pauseMotion')}>
+        {paused ? <Play size={13} aria-hidden="true" /> : <Pause size={13} aria-hidden="true" />}
+      </button>
+    </div>
   );
 }

@@ -1,9 +1,9 @@
 # Homepage market marks
 
-Six SVG path values and brand colors are copied without alteration from
+Four SVG path values and brand colors are copied without alteration from
 the already pinned local `@icons-pack/react-simple-icons` **12.9.0** dependency:
 `src/icons/SiBitcoin.tsx`, `SiEthereum.tsx`, `SiSolana.tsx`,
-`SiCardano.tsx`, `SiDogecoin.tsx`, and `SiLitecoin.tsx`.
+and `SiCardano.tsx`.
 
 The wrapper is a static 24 by 24 SVG. No image, script, font or icon request to
 an external host is required. The dependency's MIT license is retained alongside
@@ -23,7 +23,20 @@ not call the provider. Its CC0 license is retained in
 - File SHA-256: `31fe41b6b3a4d98c9b46d7c37d60dea97fa5d9ebbd235ac5bfe23e4fd1eb8361`
 - Size: 399 bytes; native 32 by 32 viewBox.
 
+Gold and oil retain the existing `GoldIcon` and `OilIcon` from
+`frontend/src/pages/home/HomeHeroAssets.tsx` at main
+`8cbb74becc694ef29b90691d3f472390f2a1a413`. Their original components were rendered
+to static SVG with `size={24}`; only the required SVG XML namespace was added.
+Paths, viewBoxes, gradients, colors and strokes are unchanged. The local SVG
+files have no external dependencies; their `url(#...)` fills refer only to
+their own local gradients. No new graphic was generated or downloaded.
+
 On 2026-10-07, read-only responses from VOLTEX's existing
 `/api/v1/market/external/tickers` and `/api/v1/market/assets/icons` confirmed the
-seven USDT pairs and canonical identities in `heroInstruments.ts`. The manifest
+five USDT pairs and canonical crypto identities in `heroInstruments.ts`.
+The existing `/api/v1/cfd/tickers` also confirmed `configured: true`, Gold Spot
+`XAUUSD` and Crude Oil WTI Spot `WTIUSD` (`status: live`, `stale: false`). Both
+CFD quotes remain **display-only** (`executionAllowed: false`). Their manifest
+IDs and routes follow the existing `HomeMarkets.tsx` CFD convention; `enabled`
+means visible in the column and does not authorize trading. The manifest
 contains no prices, performance numbers or additional provider configuration.

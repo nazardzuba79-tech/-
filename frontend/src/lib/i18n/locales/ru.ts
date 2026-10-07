@@ -1509,15 +1509,9 @@ export const RU = {
   'futures.transferAction': 'Перевести',
 
   // --- Homepage (pages/home) ---
-  'home.hero.platformTitle': 'Рынки мира в одном месте',
-  'home.hero.platformDescription': 'Торгуйте, анализируйте и копируйте стратегии в единой платформе VOLTEX.',
-  'home.hero.startTrading': 'Начать торговлю',
-  'home.hero.exploreMarkets': 'Изучить рынки',
   'home.hero.pauseMotion': 'Приостановить анимацию рынков',
   'home.hero.resumeMotion': 'Продолжить анимацию рынков',
-  'home.hero.sceneAria': 'Криптовалютные рынки вокруг платформы VOLTEX',
-  'home.hero.instrumentsAria': 'Выбрать криптовалютный рынок',
-  'home.hero.cryptoLabel': 'Криптовалюты',
+  'home.hero.sceneAria': 'Рыночные инструменты',
   'home.nav.main': 'Основная навигация',
   'home.nav.mobile': 'Мобильная навигация',
   'home.cta.startTrading': 'Начать торговлю',

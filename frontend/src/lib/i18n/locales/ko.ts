@@ -1450,15 +1450,9 @@ export const KO: Record<Key, string> = {
   'futures.transferAction': '이체',
 
   // --- Homepage (pages/home) ---
-  'home.hero.platformTitle': '세계 시장을 한곳에서',
-  'home.hero.platformDescription': '하나의 VOLTEX 플랫폼에서 거래하고 분석하며 전략을 복사하세요.',
-  'home.hero.startTrading': '거래 시작',
-  'home.hero.exploreMarkets': '시장 둘러보기',
   'home.hero.pauseMotion': '시장 애니메이션 일시 정지',
   'home.hero.resumeMotion': '시장 애니메이션 재개',
-  'home.hero.sceneAria': 'VOLTEX 플랫폼을 둘러싼 암호화폐 시장',
-  'home.hero.instrumentsAria': '암호화폐 시장 선택',
-  'home.hero.cryptoLabel': '암호화폐',
+  'home.hero.sceneAria': '시장 거래 종목',
   'home.nav.main': '기본 내비게이션',
   'home.nav.mobile': '모바일 내비게이션',
   'home.cta.startTrading': '거래 시작하기',

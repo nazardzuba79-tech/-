@@ -30,7 +30,7 @@ import './sapphire-terminal-detail.css';
 /**
  * The VOLTEX homepage, in the approved section order:
  *
- *   header · market platform hero · market overview · approved Crypto Card A ·
+ *   header · hero + market tape · market overview · approved Crypto Card A ·
  *   trading sessions · heatmap · markets · institutional ecosystem · FAQ · footer
  *
  * One market hook feeds every section. Public quote/depth/candle snapshots

@@ -55,20 +55,26 @@ function fixture(req,res,next){
  await context.routeWebSocket('**/*',socket=>{report.webSockets.push(socket.url());socket.close();});
  page=await context.newPage();page.on('pageerror',e=>report.pageErrors.push(e.message));
  const start=Date.now();await page.goto(origin+'/',{waitUntil:'domcontentloaded'});
- // The replacement is a complete DOM scene and useful navigation even when
- // the shared market universe is slow. It must not hide a working terminal.
+ // The owner restored the Sapphire composition. Its compact new column and
+ // original visible terminal must work before the shared universe replies.
  await page.locator('[data-market-platform-hero] [data-market-visual]').waitFor({state:'visible',timeout:4000});
+ await page.locator('#home-live-terminal').waitFor({state:'visible',timeout:4000});
  await page.waitForFunction(()=>{
-  const hero=document.querySelector('[data-market-platform-hero]');
+  const hero=document.querySelector('#home-global-hero');
   const visible=node=>!!node&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0;
   return !!hero?.querySelector('h1')?.textContent?.trim()
    &&visible(hero.querySelector('a[href="/trade"]'))&&visible(hero.querySelector('a[href="/markets"]'))
-   &&visible(hero.querySelector('button[data-motion-toggle]'));
+   &&visible(hero.querySelector('button[data-motion-toggle]'))
+   &&document.querySelectorAll('#home-live-terminal').length===1
+   &&document.querySelectorAll('#home-live-terminal .vx-real-candles').length===1
+   &&document.querySelectorAll('#home-live-terminal .book-row').length>=2
+   &&document.querySelectorAll('#home-live-terminal .hs-trade-row').length>=1;
  },null,{timeout:4000});
  report.heroReadyMs=Date.now()-start;report.tickerFinishedBeforeHero=tickerFinished;
  if(tickerFinished)report.findings.push('Market scene waited for delayed all-pairs ticker response');
  if(report.heroReadyMs>=TICKER_DELAY_MS)report.findings.push(`Market scene first content took ${report.heroReadyMs}ms`);
- if(await page.locator('.terminal-screen, .sapphire-terminal, #home-live-terminal .book-row, #home-live-terminal .hs-trade-row').count())report.findings.push('Retired laptop terminal remains mounted behind the scene');
+ if(await page.locator('.terminal-screen').count()!==1)report.findings.push('Expected exactly one visible Sapphire terminal beside the revised column');
+ if(await page.locator('[data-market-platform-hero] #home-live-terminal').count())report.findings.push('Column reused the terminal observer identity');
  await page.screenshot({path:path.join(OUT,'first-load-1600.png'),fullPage:true});
  // Preserve the data regression: the same shared hook still obtains and
  // persists its genuine BTC snapshot, and lower sections paint the delayed
@@ -77,6 +83,8 @@ function fixture(req,res,next){
   const record=JSON.parse(localStorage.getItem('voltex.home.market.v1')||'null');
   return record?.tickers?.length===3&&record?.hero?.candles?.length===48
    &&record?.hero?.book?.bids?.length===6&&record?.hero?.trades?.length===6
+   &&document.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent==='76,746.00'
+   &&document.querySelector('[data-market-tile="GOLD"] .vm-card-price')?.textContent==='4,349.19'
    &&document.querySelectorAll('.vx-heatmap-meta').length===1
    &&[...document.querySelectorAll('table tbody tr')].some(row=>/BTC/.test(row.textContent||'')&&/76[,.]?746/.test(row.textContent||''));
  },null,{timeout:10000});

@@ -1450,15 +1450,9 @@ export const HI: Record<Key, string> = {
   'futures.transferAction': 'ट्रांसफर करें',
 
   // --- Homepage (pages/home) ---
-  'home.hero.platformTitle': 'दुनिया के बाज़ार, एक ही जगह',
-  'home.hero.platformDescription': 'VOLTEX के एकीकृत प्लेटफ़ॉर्म पर ट्रेड करें, विश्लेषण करें और रणनीतियाँ कॉपी करें।',
-  'home.hero.startTrading': 'ट्रेडिंग शुरू करें',
-  'home.hero.exploreMarkets': 'बाज़ार देखें',
   'home.hero.pauseMotion': 'बाज़ार एनीमेशन रोकें',
   'home.hero.resumeMotion': 'बाज़ार एनीमेशन फिर चलाएँ',
-  'home.hero.sceneAria': 'VOLTEX प्लेटफ़ॉर्म के चारों ओर क्रिप्टोकरेंसी बाज़ार',
-  'home.hero.instrumentsAria': 'क्रिप्टोकरेंसी बाज़ार चुनें',
-  'home.hero.cryptoLabel': 'क्रिप्टोकरेंसी',
+  'home.hero.sceneAria': 'बाज़ार के वित्तीय साधन',
   'home.nav.main': 'मुख्य नेविगेशन',
   'home.nav.mobile': 'मोबाइल नेविगेशन',
   'home.cta.startTrading': 'ट्रेडिंग शुरू करें',

@@ -1,1 +1,1 @@
-export { HomeMarketPlatformHero as HomeHero } from './HomeMarketPlatformHero';
+export { HomeSapphireHero as HomeHero } from './HomeSapphireHero';
