@@ -178,6 +178,7 @@ export const HI: Record<Key, string> = {
   'authShell.communityBadge': '12 लाख+',
   'authShell.communityTitle': 'भुगतान करें और नकद निकालें',
   'authShell.communitySubtitle': '22+ फ़िएट मुद्राएँ · 70+ क्रिप्टोकरेंसी',
+  'authShell.moreCurrencies': 'और अन्य मुद्राएँ',
   'authShell.cardCaption': 'हमेशा आपके साथ रहने वाला कार्ड',
   'authShell.supportHint': 'साइन इन करने में मदद चाहिए?',
   'authShell.supportLink': 'सहायता',

@@ -179,6 +179,7 @@ export const ZH: Record<Key, string> = {
   'authShell.communityBadge': '120万+',
   'authShell.communityTitle': '支付与取现',
   'authShell.communitySubtitle': '22+ 种法定货币 · 70+ 种加密货币',
+  'authShell.moreCurrencies': '及更多货币',
   'authShell.cardCaption': '始终伴您左右的卡',
   'authShell.supportHint': '登录需要帮助？',
   'authShell.supportLink': '客户支持',

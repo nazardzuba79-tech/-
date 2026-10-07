@@ -102,6 +102,22 @@ describe('translation integrity', () => {
     expect(dicts.ru['authShell.communityTitle']).toBe('Платите и снимайте наличные');
     expect(dicts.ru['authShell.communitySubtitle']).toBe('22+ фиатных валют · 70+ криптовалют');
   });
+  it('clarifies that the displayed currency flags are a partial selection in all seven languages', () => {
+    const approvedMoreCurrencies: Record<string, string> = {
+      ru: 'и другие валюты',
+      en: 'and more currencies',
+      zh: '及更多货币',
+      es: 'y otras monedas',
+      hi: 'और अन्य मुद्राएँ',
+      ja: 'その他の通貨にも対応',
+      ko: '그 외 다양한 통화',
+    };
+    for (const code of LOCALES) {
+      const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
+      expect(sourceKeys.filter(key => key === 'authShell.moreCurrencies')).toHaveLength(1);
+      expect(dicts[code]['authShell.moreCurrencies']).toBe(approvedMoreCurrencies[code]);
+    }
+  });
   it('provides every shared menu description in all seven languages', () => {
     for (const code of LOCALES) for (const key of menuDescriptionKeys) expect(dicts[code][key]?.trim()).toBeTruthy();
   });
@@ -330,6 +346,8 @@ describe('translation integrity', () => {
           // Mobile terminal (2026-10-04): `git diff --numstat` over the
           // locales reports `6 0` per language, additions only.
           ...MOBILE_TERMINAL_KEYS,
+          // Currency flag selection (2026-10-07): one additive label per language.
+          'authShell.moreCurrencies',
           // Bybit 1:1 positions summary line (2026-10-07): `git diff --numstat` over the locales reports `3 0` per language.
           'futures.allPositions', 'futures.currentPositions', 'futures.totalPnl'];
         // `chart.settings.*` is the futures chart's settings dialog

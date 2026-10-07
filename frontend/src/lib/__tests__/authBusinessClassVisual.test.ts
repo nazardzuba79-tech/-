@@ -34,14 +34,14 @@ function renderShell(lang: string) {
 describe('business-class visual preserves reviewed authentication', () => {
   test('fiat-flag follow-up preserves shell outside the decorative icon group, photo scrim and other styles', () => {
     // The ab24d3da fingerprint also matches fresh main 8cbb74be after this exact
-    // normalization. Only the three-flag import, decorative span/comment and
+    // normalization. Only the six-flag import, decorative sample/comment and
     // exact subtitle grouping are exempt: localization, captions, form and auth stay locked.
     const preservedShell = shell
-      .replace(/^import \{ RU, US, CN \} from 'country-flag-icons\/react\/3x2';\n/m, '')
+      .replace(/^import \{ EU, CH, JP, US, CN, RU \} from 'country-flag-icons\/react\/3x2';\n/m, '')
       .replace("  const [fiatCaption, cryptoCaption] = t('authShell.communitySubtitle').split(' · ');\n", '')
       .replace("          <span><span className=\"vx-auth-currency-amount\">{fiatCaption} ·</span>{' '}<span className=\"vx-auth-currency-amount\">{cryptoCaption}</span></span>", "          <span>{t('authShell.communitySubtitle')}</span>")
-      .replace(/\/\*\* Decorative (?:portraits, not testimonials or an independently verified count|fiat (?:symbols|flags): ruble, US dollar and Chinese yuan, not a user count)\. \*\//, '/* Decorative icon-only follow-up. */')
-      .replace(/        <span className="vx-auth-(?:avatars|currencies)" aria-hidden="true">[\s\S]*?\n        <\/span>(?=\n        <div className="vx-auth-community-copy">)/, '        {/* Decorative icon group. */}');
+      .replace('/** Decorative currency examples, not the complete list or a user count. */', '/* Decorative icon-only follow-up. */')
+      .replace(/        <div className="vx-auth-currency-sample">[\s\S]*?\n        <\/div>(?=\n        <div className="vx-auth-community-copy">)/, '        {/* Decorative icon group. */}');
     expect(digest(preservedShell)).toBe('dc6b24e6f7ec31917072e12dd191bd4315ad75699bef58d1df7c9524fd036bbe');
     expect(digest(css.slice(0, css.indexOf('/* Static, localized photo captions.')) + css.slice(css.indexOf('/* Light form theme'))))
       .toBe('a9683d542ce768fe239dd7045229a38258583eed44f5d8b245a2b99ae55566b8');
@@ -76,8 +76,8 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(html).not.toMatch(/<picture|<h2|vx-auth-hero|vx-auth-lead|vx-auth-copyright/);
     const banner = html.split('vx-auth-brand-banner')[1].split('</section>')[0];
     expect(banner).not.toMatch(/<a\b|<button\b|<input\b|<p\b|<footer\b|HTML_LOGO/);
-    expect(banner.match(/<svg\b/g)).toHaveLength(3);
-    expect(banner.match(/class="vx-auth-currency"/g)).toHaveLength(3);
+    expect(banner.match(/<svg\b/g)).toHaveLength(6);
+    expect(banner.match(/class="vx-auth-currency"/g)).toHaveLength(6);
     // One existing Logo is available in the form header when the decorative
     // banner is omitted. Browser QA checks their mutually exclusive visibility.
     expect(html.match(/HTML_LOGO/g)).toHaveLength(1);
@@ -88,24 +88,27 @@ describe('business-class visual preserves reviewed authentication', () => {
   test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s has localized card copy without an investor-count badge', lang => {
     const html = renderShell(lang);
     expect(html.match(/class="vx-auth-extras"/g)).toHaveLength(2);
-    expect(html.match(/class="vx-auth-currency"/g)).toHaveLength(6);
+    expect(html.match(/class="vx-auth-currency"/g)).toHaveLength(12);
     expect(html.match(/class="vx-auth-currencies" aria-hidden="true"/g)).toHaveLength(2);
+    expect(html.match(/class="vx-auth-currency-sample"/g)).toHaveLength(2);
+    expect(html.match(new RegExp(`<span class="vx-auth-currency-more">localized:${lang}:authShell.moreCurrencies</span>`, 'g'))).toHaveLength(2);
     const icons = [...html.matchAll(/<span class="vx-auth-currency" data-currency="([^"]+)">(<svg[\s\S]*?<\/svg>)<\/span>/g)];
-    expect(icons.map(icon => icon[1])).toEqual(['RUB', 'USD', 'CNY', 'RUB', 'USD', 'CNY']);
-    const { RU, US, CN } = req('country-flag-icons/react/3x2');
-    const flags: Record<string, unknown> = { RUB: RU, USD: US, CNY: CN };
+    const currencies = ['EUR', 'CHF', 'JPY', 'USD', 'CNY', 'RUB'];
+    expect(icons.map(icon => icon[1])).toEqual([...currencies, ...currencies]);
+    const { EU, CH, JP, US, CN, RU } = req('country-flag-icons/react/3x2');
+    const flags: Record<string, unknown> = { EUR: EU, CHF: CH, JPY: JP, USD: US, CNY: CN, RUB: RU };
     for (const [, currency, svg] of icons) {
       // Render the existing local package independently: incorrect country
       // selection, leftover currency glyphs and external flag images all fail.
       expect(svg).toBe(renderToStaticMarkup(React.createElement(flags[currency], { 'aria-hidden': 'true', focusable: 'false' })));
-      expect(svg).toContain('viewBox="0 0 513 342"');
+      expect(svg).toContain(`viewBox="${currency === 'EUR' ? '0 0 810 540' : currency === 'CHF' ? '0 0 768 512' : '0 0 513 342'}"`);
       expect(svg).toContain('aria-hidden="true"');
       expect(svg).toContain('focusable="false"');
-      expect(svg.match(/<path\b/g)!.length).toBeGreaterThanOrEqual(2);
+      expect(svg.match(/<(?:path|circle)\b/g)!.length).toBeGreaterThanOrEqual(2);
       expect(svg).not.toMatch(/<image\b|<use\b|<foreignObject\b|<text\b|<script\b|tabindex|onclick|href/);
     }
-    expect(new Set(icons.slice(0, 3).map(icon => icon[2])).size).toBe(3);
-    expect(html).not.toMatch(/vx-auth-avatar|community-v4|data-currency="JPY"/);
+    expect(new Set(icons.slice(0, 6).map(icon => icon[2])).size).toBe(6);
+    expect(html).not.toMatch(/vx-auth-avatar|community-v4/);
     expect(html).toContain(`localized:${lang}:authShell.communityTitle`);
     expect(html).toContain(`localized:${lang}:authShell.communitySubtitle`);
     expect(html.match(/class="vx-auth-currency-amount"/g)).toHaveLength(4);

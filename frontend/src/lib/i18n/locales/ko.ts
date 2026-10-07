@@ -178,6 +178,7 @@ export const KO: Record<Key, string> = {
   'authShell.communityBadge': '120만+',
   'authShell.communityTitle': '결제하고 현금을 인출하세요',
   'authShell.communitySubtitle': '22+개 법정화폐 · 70+개 암호화폐',
+  'authShell.moreCurrencies': '그 외 다양한 통화',
   'authShell.cardCaption': '언제나 함께하는 카드',
   'authShell.supportHint': '로그인에 도움이 필요하신가요?',
   'authShell.supportLink': '고객 지원',

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRightIcon } from 'lucide-react';
-import { RU, US, CN } from 'country-flag-icons/react/3x2';
+import { EU, CH, JP, US, CN, RU } from 'country-flag-icons/react/3x2';
 import { Logo, LogoMark } from '../../components/Logo';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useLanguage } from '../../lib/i18n';
@@ -9,24 +9,36 @@ import { openSupportWidget } from '../../lib/supportWidget';
 import './auth-shell.css';
 import './auth-form-premium.css';
 
-/** Decorative fiat flags: ruble, US dollar and Chinese yuan, not a user count. */
+/** Decorative currency examples, not the complete list or a user count. */
 function AuthCommunity() {
   const { t } = useLanguage();
   const [fiatCaption, cryptoCaption] = t('authShell.communitySubtitle').split(' · ');
   return (
     <div className="vx-auth-extras">
       <div className="vx-auth-community">
-        <span className="vx-auth-currencies" aria-hidden="true">
-          <span className="vx-auth-currency" data-currency="RUB">
-            <RU aria-hidden="true" focusable="false" />
+        <div className="vx-auth-currency-sample">
+          <span className="vx-auth-currencies" aria-hidden="true">
+            <span className="vx-auth-currency" data-currency="EUR">
+              <EU aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="CHF">
+              <CH aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="JPY">
+              <JP aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="USD">
+              <US aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="CNY">
+              <CN aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="RUB">
+              <RU aria-hidden="true" focusable="false" />
+            </span>
           </span>
-          <span className="vx-auth-currency" data-currency="USD">
-            <US aria-hidden="true" focusable="false" />
-          </span>
-          <span className="vx-auth-currency" data-currency="CNY">
-            <CN aria-hidden="true" focusable="false" />
-          </span>
-        </span>
+          <span className="vx-auth-currency-more">{t('authShell.moreCurrencies')}</span>
+        </div>
         <div className="vx-auth-community-copy">
           <strong>{t('authShell.communityTitle')}</strong>
           <span><span className="vx-auth-currency-amount">{fiatCaption} ·</span>{' '}<span className="vx-auth-currency-amount">{cryptoCaption}</span></span>

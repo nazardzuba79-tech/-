@@ -182,6 +182,7 @@ export const RU = {
   'authShell.communityBadge': '1,2M+',
   'authShell.communityTitle': 'Платите и снимайте наличные',
   'authShell.communitySubtitle': '22+ фиатных валют · 70+ криптовалют',
+  'authShell.moreCurrencies': 'и другие валюты',
   'authShell.cardCaption': 'КАРТА, КОТОРАЯ ВСЕГДА С ВАМИ',
   'authShell.supportHint': 'Нужна помощь со входом?',
   'authShell.supportLink': 'Служба поддержки',

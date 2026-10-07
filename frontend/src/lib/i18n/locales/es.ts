@@ -178,6 +178,7 @@ export const ES: Record<Key, string> = {
   'authShell.communityBadge': '1,2M+',
   'authShell.communityTitle': 'Paga y retira efectivo',
   'authShell.communitySubtitle': '22+ monedas fiduciarias · 70+ criptomonedas',
+  'authShell.moreCurrencies': 'y otras monedas',
   'authShell.cardCaption': 'LA TARJETA QUE SIEMPRE VA CONTIGO',
   'authShell.supportHint': '¿Necesitas ayuda para iniciar sesión?',
   'authShell.supportLink': 'Soporte',

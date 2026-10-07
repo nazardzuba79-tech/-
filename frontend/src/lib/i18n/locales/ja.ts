@@ -178,6 +178,7 @@ export const JA: Record<Key, string> = {
   'authShell.communityBadge': '120万+',
   'authShell.communityTitle': 'お支払いと現金の引き出し',
   'authShell.communitySubtitle': '22+ の法定通貨 · 70+種類の暗号資産',
+  'authShell.moreCurrencies': 'その他の通貨にも対応',
   'authShell.cardCaption': 'いつもあなたとともにあるカード',
   'authShell.supportHint': 'ログインでお困りですか？',
   'authShell.supportLink': 'サポート',
