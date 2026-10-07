@@ -16,9 +16,13 @@ Lossless WebP, 805754 bytes. Decoded RGB pixels were compared against the
 source crop and are identical. The right raster form is outside this crop;
 the application renders real existing form fields and handlers instead.
 
-The Russian banner uses `object-fit: contain` without cropping, stretching,
-overlay copy or clickable image regions. Mobile retains a compact 250px visual
-area above the full-width form; it does not shrink the complete desktop page.
+The Russian desktop panel follows the raster's aspect ratio at viewport height,
+with a 60% column cap preserving form width. Cover/center-top needs at most a
+small side-background crop before the compact breakpoint; protected logo,
+slogan, face, phone, hand/card regions are checked in browser coordinates.
+No stretched pixels, generated fill, overlay copy or clickable image regions.
+At <=760px or portrait-like windows (aspect ratio <=3/2), the decorative banner
+is hidden without reserved space; the existing Logo appears in the form header.
 The embedded copy is NOT localizable, so only `lang === 'ru'` selects it.
 
 ## Other locales — previous real business-class photograph retained

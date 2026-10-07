@@ -57,9 +57,13 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(html).toContain('width="919" height="941"');
     expect(html).toContain('alt="VOLTEX. Копируйте сделки лучших трейдеров мира.');
     expect(html.match(/<img /g)).toHaveLength(1);
-    expect(html).not.toMatch(/<picture|<h2|HTML_LOGO|vx-auth-hero|vx-auth-lead|vx-auth-copyright|community|card-caption|cardCaption/);
+    expect(html).not.toMatch(/<picture|<h2|vx-auth-hero|vx-auth-lead|vx-auth-copyright|community|card-caption|cardCaption/);
     const banner = html.split('vx-auth-brand-banner')[1].split('</section>')[0];
-    expect(banner).not.toMatch(/<a\b|<button\b|<input\b|<p\b|<footer\b/);
+    expect(banner).not.toMatch(/<a\b|<button\b|<input\b|<p\b|<footer\b|HTML_LOGO/);
+    // One existing Logo is available in the form header when the decorative
+    // banner is omitted. Browser QA checks their mutually exclusive visibility.
+    expect(html.match(/HTML_LOGO/g)).toHaveLength(1);
+    expect(html).toContain('class="vx-auth-compact-logo"');
     expect(html).toContain('EXISTING_ROUTE_FORM');
   });
 
@@ -77,12 +81,14 @@ describe('business-class visual preserves reviewed authentication', () => {
     const banner = readFileSync(resolve(root, 'frontend/public/auth/selected-cabin-banner.webp'));
     expect(createHash('sha256').update(banner).digest('hex'))
       .toBe('a4b8e9d0e84fa4e95c4db1b561fefdcde9d0a8ed98f748a460ba989a22ecd1ae');
-    expect(css).toContain('object-fit: contain');
     expect(css).toContain('.vx-auth .vx-auth-brand-banner::after { content: none; }');
-    expect(css).toContain('.vx-auth .vx-auth-brand-banner { position: relative; height: 250px; }');
+    // Actual painted coverage, protected image regions, resize/zoom and compact
+    // form access are measured by qa-auth-business-class.cjs, not CSS literals.
   });
 
   test('premium form is native CSS, keeps warning/error/focus/disabled states and adds no images', () => {
+    // Geometry follow-up must not restyle the accepted real form.
+    expect(digest(premiumCSS)).toBe('4db470ef528e16220c255290ba17df24c571edbdd3b55c6b83e89caf0a2e866b');
     expect(premiumCSS).not.toMatch(/url\(|opacity:\s*0\b|pointer-events:\s*none/);
     expect(premiumCSS).toContain('.vx-auth .vx-auth-input.vx-auth-input-error');
     expect(premiumCSS).toContain('.vx-auth .vx-auth-input.vx-auth-input-warn');

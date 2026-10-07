@@ -95,8 +95,12 @@
 .vx-auth-copyright { margin-top: auto; padding-top: 30px; color: #fff9ee; font-size: 10px; text-shadow: 0 1px 5px #000; }
 
 /* Russian-only, owner-selected marketing raster. It already contains its
-   logo/copy; no HTML cards, scrim, cropping or duplicate text belongs here. */
-.vx-auth.vx-auth--banner { grid-template-columns: minmax(0, 55fr) minmax(0, 45fr); }
+   logo/copy. Match the column to its native ratio and cap its width to leave
+   room for the real form. Only a small side crop is needed near the cap;
+   portrait/compact windows use the existing logo instead of a tiny poster. */
+.vx-auth.vx-auth--banner {
+  grid-template-columns: min(60%, calc(100svh * 919 / 941)) minmax(0, 1fr);
+}
 .vx-auth .vx-auth-brand-banner {
   position: sticky;
   top: 0;
@@ -111,9 +115,14 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center top;
 }
+.vx-auth.vx-auth--banner .vx-auth-work {
+  max-height: 100svh;
+  overflow-y: auto;
+}
+.vx-auth .vx-auth-compact-logo { display: none; }
 
 /* Light form theme also scopes the existing language switcher's tokens. */
 .vx-auth-work {
@@ -220,7 +229,6 @@ body:has(.vx-auth) .support-launcher[aria-expanded="false"] { display: none !imp
 }
 @media (max-width: 760px) {
   .vx-auth { display: block; }
-  .vx-auth .vx-auth-brand-banner { position: relative; height: 250px; }
   .vx-auth-brand { min-height: 0; }
   .vx-auth-brand-inner { min-height: 250px; padding: 22px 24px; }
   .vx-auth .vx-auth-photo { left: auto; width: 58%; object-position: 54% center; }
@@ -237,6 +245,19 @@ body:has(.vx-auth) .support-launcher[aria-expanded="false"] { display: none !imp
   .vx-auth-body h1 { font-size: 31px; }
   .vx-auth-support { flex-wrap: wrap; gap: 9px; }
   .vx-auth-input { font-size: 16px; }
+}
+/* This raster cannot fill a narrow/portrait panel while preserving its
+   embedded text, face and both hands. Do not crop those or reserve blank space. */
+@media (max-width: 760px), (max-aspect-ratio: 3/2) {
+  .vx-auth.vx-auth--banner { display: block; }
+  .vx-auth .vx-auth-brand-banner { display: none; }
+  .vx-auth.vx-auth--banner .vx-auth-work {
+    min-height: 100svh;
+    max-height: none;
+    overflow-y: visible;
+  }
+  .vx-auth.vx-auth--banner .vx-auth-context { display: none; }
+  .vx-auth .vx-auth-compact-logo { display: inline-flex; align-items: center; }
 }
 @media (max-width: 360px) {
   .vx-auth-brand-inner { padding-right: 22px; padding-left: 22px; }

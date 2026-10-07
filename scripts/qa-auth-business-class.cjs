@@ -7,7 +7,13 @@ const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const dist = path.resolve('frontend/dist');
 const out = path.resolve(process.env.QA_OUT || 'output/auth-business-class');
 const slogan = 'Копируйте сделки лучших трейдеров мира.';
-const report = { head: process.env.QA_HEAD_SHA || process.env.GITHUB_SHA || null, fixtureOnly: true, cases: [], behavior: [], fixtureRequests: [], expectedFixtureErrors: [], errors: [], failed: [], denied: [], writes: [], result: 'FAIL' };
+const report = { head: process.env.QA_HEAD_SHA || process.env.GITHUB_SHA || null, fixtureOnly: true, cases: [], responsive: [], behavior: [], fixtureRequests: [], expectedFixtureErrors: [], errors: [], failed: [], denied: [], writes: [], result: 'FAIL' };
+// Coordinates in the unchanged 919x941 source, not the <img> element box.
+const protectedRasterRegions = {
+  logo: [50, 35, 225, 75], slogan: [50, 120, 540, 212],
+  faceAndHair: [440, 150, 865, 540], phoneAndHand: [245, 450, 395, 665],
+  cardAndHand: [495, 665, 805, 875], blackCard: [145, 737, 285, 798],
+};
 fs.mkdirSync(out, { recursive: true });
 const app = express();
 app.use('/api', (_req, res) => res.status(405).end());
@@ -17,8 +23,8 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
   const server = await new Promise(resolve => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
   const origin = `http://127.0.0.1:${server.address().port}`;
   const browser = await chromium.launch({ headless: true });
-  async function openContext(width, lang = 'ru', fixtures = []) {
-    const ctx = await browser.newContext({ viewport: { width, height: width > 760 ? 960 : 844 }, serviceWorkers: 'block', deviceScaleFactor: 1 });
+  async function openContext(width, lang = 'ru', fixtures = [], height = width > 760 ? 900 : 844) {
+    const ctx = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block', deviceScaleFactor: 1 });
     await ctx.addInitScript(language => {
       localStorage.setItem('exchange_lang', language);
       window.__authCLS = 0;
@@ -66,9 +72,35 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
   }
   async function measure(page) {
     return page.evaluate(() => {
-      const rect = node => { const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom }; };
+      const rect = node => { const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom }; };
       const brand = document.querySelector('.vx-auth-brand');
       const img = brand.querySelector('img');
+      const imageStyle = getComputedStyle(img);
+      const brandVisible = !!brand.getClientRects().length && getComputedStyle(brand).visibility !== 'hidden';
+      // object-fit:contain can leave bands INSIDE a full-size <img>. Measure the
+      // actual painted raster, including its object-position, rather than only
+      // getBoundingClientRect(). This deliberately rejects the former defect.
+      let paintedRaster = null;
+      if (brandVisible) {
+        const imageRect = img.getBoundingClientRect();
+        const px = value => parseFloat(value) || 0;
+        const box = {
+          x: imageRect.x + px(imageStyle.borderLeftWidth) + px(imageStyle.paddingLeft),
+          y: imageRect.y + px(imageStyle.borderTopWidth) + px(imageStyle.paddingTop),
+          width: imageRect.width - px(imageStyle.borderLeftWidth) - px(imageStyle.borderRightWidth) - px(imageStyle.paddingLeft) - px(imageStyle.paddingRight),
+          height: imageRect.height - px(imageStyle.borderTopWidth) - px(imageStyle.borderBottomWidth) - px(imageStyle.paddingTop) - px(imageStyle.paddingBottom),
+        };
+        const contain = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight);
+        const scale = imageStyle.objectFit === 'cover' ? Math.max(box.width / img.naturalWidth, box.height / img.naturalHeight)
+          : imageStyle.objectFit === 'none' ? 1 : imageStyle.objectFit === 'scale-down' ? Math.min(1, contain) : contain;
+        const width = imageStyle.objectFit === 'fill' ? box.width : img.naturalWidth * scale;
+        const height = imageStyle.objectFit === 'fill' ? box.height : img.naturalHeight * scale;
+        const position = imageStyle.objectPosition.split(/\s+/);
+        const offset = (value, spare) => value.endsWith('%') ? spare * parseFloat(value) / 100 : parseFloat(value);
+        const x = box.x + offset(position[0], box.width - width);
+        const y = box.y + offset(position[1] || position[0], box.height - height);
+        paintedRaster = { x, y, width, height, right: x + width, bottom: y + height, scaleX: width / img.naturalWidth, scaleY: height / img.naturalHeight };
+      }
       const headline = brand.querySelector('.vx-auth-hero h2');
       const overlayStyles = [...brand.querySelectorAll('.vx-auth-brand-inner,.vx-auth-brand-head,.vx-auth-hero,.vx-auth-hero h2')].flatMap(node => [null, '::before', '::after'].map(pseudo => {
         const style = getComputedStyle(node, pseudo);
@@ -76,6 +108,9 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       })).filter(style => !style.pseudo || !['none', 'normal'].includes(style.content));
       return {
         overflow: document.documentElement.scrollWidth > innerWidth,
+        viewport: { width: innerWidth, height: innerHeight },
+        pageHeight: document.documentElement.scrollHeight,
+        brandVisible, paintedRaster,
         brand: rect(brand), form: rect(document.querySelector('.vx-auth-form')), photo: rect(img),
         src: img.currentSrc.split('/').pop(), natural: { width: img.naturalWidth, height: img.naturalHeight }, fit: getComputedStyle(img).objectFit,
         bannerDecoration: {
@@ -94,32 +129,71 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       };
     });
   }
+  async function assertRussianGeometry(page, measurements, label) {
+    const { viewport, brand, paintedRaster: painted } = measurements;
+    const scroll = await page.evaluate(() => ({ page: window.scrollY, work: document.querySelector('.vx-auth-work').scrollTop }));
+    assert.equal(measurements.overflow, false, `${label} no horizontal overflow`);
+    assert.deepEqual(measurements.clipped, [], `${label} no clipped form text or controls`);
+    const compact = viewport.width <= 760 || viewport.width / viewport.height <= 1.5;
+    if (compact) {
+      assert.equal(measurements.brandVisible, false, `${label} compact raster is absent, not a tiny letterboxed poster`);
+      assert.equal(brand.height, 0, `${label} hidden banner reserves no height`);
+      const logo = page.locator('.vx-auth-head .vx-auth-compact-logo');
+      assert.equal(await logo.isVisible(), true, `${label} original VOLTEX logo remains visible`);
+      assert.equal((await logo.textContent()).replace(/\s+/g, ''), 'VOLTEX', `${label} existing full wordmark, not only a new icon`);
+      const maxFormStart = viewport.width <= 760 ? 470 : viewport.height * .55;
+      assert.ok(measurements.form.y < maxFormStart, `${label} form follows header without a tall photo block`);
+    } else {
+      assert.equal(measurements.brandVisible, true, `${label} desktop photo remains visible`);
+      assert.ok(painted && Object.values(painted).every(Number.isFinite), `${label} measurable raster paint bounds`);
+      assert.ok(Math.abs(painted.scaleX - painted.scaleY) < .0001, `${label} photo is not distorted`);
+      for (const [edge, gap] of Object.entries({ left: painted.x - brand.x, top: painted.y - brand.y, right: brand.right - painted.right, bottom: brand.bottom - painted.bottom })) {
+        assert.ok(gap <= 1, `${label} unpainted ${edge} band: ${gap.toFixed(2)}px`);
+      }
+      assert.ok(Math.abs(brand.y) <= 1 && Math.abs(brand.bottom - viewport.height) <= 1, `${label} photo covers the full left viewport, not a shorter panel`);
+      assert.ok(measurements.pageHeight <= viewport.height + 1, `${label} form does not create an empty left column below the photo`);
+      assert.ok(measurements.form.width >= 320, `${label} form keeps a readable desktop width`);
+      for (const [name, [left, top, right, bottom]] of Object.entries(protectedRasterRegions)) {
+        const projection = { left: painted.x + left * painted.scaleX, top: painted.y + top * painted.scaleY, right: painted.x + right * painted.scaleX, bottom: painted.y + bottom * painted.scaleY };
+        assert.ok(projection.left >= brand.x - 1 && projection.top >= brand.y - 1 && projection.right <= brand.right + 1 && projection.bottom <= brand.bottom + 1, `${label} important ${name} pixels remain visible: ${JSON.stringify(projection)}`);
+      }
+    }
+    await page.locator('.vx-auth-submit').scrollIntoViewIfNeeded();
+    assert.equal(await page.locator('.vx-auth-submit').isVisible(), true, `${label} submit remains reachable`);
+    const button = await page.locator('.vx-auth-submit').boundingBox();
+    assert.ok(button.x >= 0 && button.x + button.width <= viewport.width + 1, `${label} submit fits viewport`);
+    assert.ok(button.y >= -1 && button.y + button.height <= viewport.height + 1, `${label} submit can be fully reached by scrolling`);
+    await page.locator('.vx-auth-foot').scrollIntoViewIfNeeded();
+    const footer = await page.locator('.vx-auth-foot').boundingBox();
+    assert.ok(footer.y >= -1 && footer.y + footer.height <= viewport.height + 1, `${label} existing legal links remain reachable`);
+    await page.evaluate(previous => { window.scrollTo(0, previous.page); document.querySelector('.vx-auth-work').scrollTop = previous.work; }, scroll);
+  }
   try {
     const matrix = [
-      ...[1920, 1440, 1366, 430, 390, 360, 320].map(width => ({ width, lang: 'ru' })),
-      ...['en', 'zh', 'es', 'hi', 'ja', 'ko'].flatMap(lang => [1440, 320].map(width => ({ width, lang }))),
+      ...[[1920, 1080], [1440, 900], [1366, 768], [430, 844], [390, 844], [360, 844], [320, 844]].map(([width, height]) => ({ width, height, lang: 'ru' })),
+      ...['en', 'zh', 'es', 'hi', 'ja', 'ko'].flatMap(lang => [1440, 320].map(width => ({ width, height: width > 760 ? 900 : 844, lang }))),
     ];
-    for (const { width, lang } of matrix) {
+    for (const { width, height, lang } of matrix) {
       for (const routeName of ['login', 'register']) {
-        const { ctx, page } = await openContext(width, lang);
+        const { ctx, page } = await openContext(width, lang, [], height);
         await page.goto(`${origin}/${routeName}?next=%2Fwallet`, { waitUntil: 'networkidle' });
         await waitForVisual(page);
         const measurements = await measure(page);
-        const label = `${lang} ${routeName} ${width}`;
-        report.cases.push({ width, lang, route: routeName, ...measurements });
+        const label = `${lang} ${routeName} ${width}x${height}`;
+        report.cases.push({ width, height, lang, route: routeName, ...measurements });
         assert.equal(measurements.overflow, false, `${label} overflow`);
         assert.deepEqual(measurements.clipped, [], `${label} clipped content`);
         assert.ok(measurements.cls < .02, `${label} CLS ${measurements.cls}`);
         assert.equal(measurements.submit.tag, 'BUTTON', `${label} real submit`);
-        if (width > 760) assert.ok(Math.abs(measurements.brand.width - width * (lang === 'ru' ? .55 : .5)) <= 1, `${label} desktop column ratio`);
-        else {
+        if (lang !== 'ru' && width > 760) assert.ok(Math.abs(measurements.brand.width - width * .5) <= 1, `${label} existing localized desktop column ratio`);
+        else if (lang !== 'ru') {
           assert.ok(measurements.brand.height <= 295, `${label} mobile hero stays compact`);
           assert.ok(measurements.form.y < 650, `${label} mobile form is on first screen`);
         }
         if (lang === 'ru') {
           assert.equal(measurements.src, 'selected-cabin-banner.webp');
           assert.deepEqual(measurements.natural, { width: 919, height: 941 });
-          assert.equal(measurements.fit, 'contain', `${label} complete uncropped banner`);
+          await assertRussianGeometry(page, measurements, label);
           assert.deepEqual(measurements.bannerDecoration, {
             before: 'none', after: 'none', imageBackground: 'rgba(0, 0, 0, 0)',
             imageBorder: '0px', imageRadius: '0px', imageShadow: 'none', imageBlur: 'none',
@@ -128,7 +202,6 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
           assert.equal(await page.locator('.vx-auth-banner').count(), 1);
           assert.equal(await page.locator('.vx-auth-brand-banner :is(a,button,input,select,textarea,h1,h2,svg)').count(), 0, 'banner has no interactive or duplicate logo/text layers');
           assert.match(await page.locator('.vx-auth-banner').getAttribute('alt'), /Копируйте сделки лучших трейдеров мира/);
-          if (width <= 760) assert.equal(measurements.brand.height, 250, 'Russian banner preserves compact mobile image area');
         } else {
           assert.equal(await page.locator('.vx-auth-brand-localized').count(), 1);
           assert.equal(await page.locator('.vx-auth-banner').count(), 0, `${label} embedded Russian slogan not served to other locales`);
@@ -169,6 +242,39 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
         await ctx.close();
       }
     }
+    for (const routeName of ['login', 'register']) {
+      const { ctx, page } = await openContext(1440, 'ru', [], 900);
+      await page.goto(`${origin}/${routeName}?next=%2Fwallet`, { waitUntil: 'networkidle' });
+      await waitForVisual(page);
+      // Resize the SAME document, including crossing the compact breakpoint.
+      for (const height of [700, 1000, 1200, 900]) {
+        await page.setViewportSize({ width: 1440, height });
+        await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector('.vx-auth-work').scrollTop = 0; });
+        await waitForVisual(page);
+        const measurements = await measure(page);
+        await assertRussianGeometry(page, measurements, `${routeName} live resize 1440x${height}`);
+        report.responsive.push({ kind: 'live-window-height-resize', route: routeName, ...measurements });
+        await page.screenshot({ path: path.join(out, `${routeName}-resize-1440x${height}.png`), fullPage: true });
+      }
+      const cdp = await ctx.newCDPSession(page);
+      // Browser zoom reduces the CSS layout viewport and increases device pixel
+      // ratio. Reproduce that reflow deterministically via CDP, NOT CSS zoom or
+      // pinch scale. This is recorded honestly as an equivalent, not a claim
+      // that an automation API clicked Chrome's actual toolbar zoom controls.
+      for (const factor of [1.5, 2]) {
+        const width = Math.round(1440 / factor), height = Math.round(900 / factor);
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: factor, mobile: false });
+        await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector('.vx-auth-work').scrollTop = 0; });
+        await waitForVisual(page);
+        const measurements = await measure(page);
+        assert.deepEqual(measurements.viewport, { width, height }, 'zoom equivalent actually changes CSS layout viewport');
+        await assertRussianGeometry(page, measurements, `${routeName} ${factor * 100}% browser-zoom reflow equivalent`);
+        report.responsive.push({ kind: 'browser-zoom-reflow-equivalent', zoom: factor, physicalViewport: { width: 1440, height: 900 }, route: routeName, ...measurements });
+        await page.screenshot({ path: path.join(out, `${routeName}-zoom-equivalent-${factor * 100}.png`), fullPage: true });
+      }
+      await cdp.detach();
+      await ctx.close();
+    }
     // Single-use fixtures exercise real callbacks without creating accounts,
     // sessions or reaching a backend. Unmatched writes still fail closed.
     const credentials = { email: 'fixture@example.invalid', password: 'FixtureOnly123!' };
@@ -187,6 +293,10 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     await page.getByRole('alert').filter({ hasText: 'Неверная почта или пароль.' }).waitFor();
     assert.equal(await page.locator('.vx-auth-submit').isEnabled(), true, 'login can retry after rejection');
     assert.equal(await page.evaluate(() => localStorage.getItem('exchange_token')), null, 'rejected login creates no session');
+    await assertRussianGeometry(page, await measure(page), '320px login validation error');
+    await page.setViewportSize({ width: 1440, height: 700 });
+    await assertRussianGeometry(page, await measure(page), 'short desktop login validation error');
+    await page.setViewportSize({ width: 320, height: 844 });
     report.behavior.push('offline login rejection, visible localized error and retry');
     await page.locator('.vx-auth-submit').click();
     await page.locator('#login-2fa').waitFor();
@@ -199,6 +309,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     const twoFaMeasurements = await measure(page);
     assert.equal(twoFaMeasurements.overflow, false, '2FA error has no overflow');
     assert.deepEqual(twoFaMeasurements.clipped, [], '2FA error is not clipped');
+    await assertRussianGeometry(page, twoFaMeasurements, '320px 2FA validation error');
     await page.screenshot({ path: path.join(out, 'login-2fa-error-320.png'), fullPage: true });
     await page.locator('.vx-auth-alt .vx-auth-forgot').click();
     await page.locator('#login-password').waitFor();
@@ -221,7 +332,11 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     const registerMeasurements = await measure(page);
     assert.equal(registerMeasurements.overflow, false, 'registration error has no overflow');
     assert.deepEqual(registerMeasurements.clipped, [], 'registration error is not clipped');
+    await assertRussianGeometry(page, registerMeasurements, '320px registration validation error');
     await page.screenshot({ path: path.join(out, 'register-error-320.png'), fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 700 });
+    await assertRussianGeometry(page, await measure(page), 'short desktop registration validation error');
+    await page.screenshot({ path: path.join(out, 'register-error-1440x700.png'), fullPage: true });
     report.behavior.push('registration validity, offline rejection, visible error and retry');
     assert.equal(fixtures.length, 0, 'all explicit fixtures consumed once');
     await ctx.close();

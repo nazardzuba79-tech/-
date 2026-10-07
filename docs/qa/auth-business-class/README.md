@@ -10,11 +10,19 @@ text composition. The lossless crop preserves every decoded pixel. Its embedded
 logo and slogan appear once: no HTML headline/white card, community, avatars,
 caption or numbered controls. See `frontend/public/auth/README.md` for hashes.
 
-Desktop uses 55/45 columns and `object-fit: contain`: no cropping or stretching.
-Different viewport proportions leave a plain surrounding background, not a
-generated extension of the photo. Mobile keeps a compact 250px banner above a
-full-size form. Other languages retain the existing localized photo/copy branch,
-without Russian raster text behind a translated heading.
+The geometry follow-up removes the former contain/55:45 letterboxing. Desktop
+column width follows `viewport height * 919 / 941`, capped at 60% to keep the
+form readable. The photo fills the full-height panel uniformly; only a small
+side-background crop is allowed near the cap. Important source-image regions
+are projected into the panel and checked for visibility, not just img bounds.
+The form keeps its accepted styles; at short desktop heights its own panel
+scrolls to all controls and legal links instead of leaving empty space below
+the photo. No extra page height is introduced to fit the artwork.
+
+At <=760px or aspect ratio <=3/2 the Russian banner is omitted without reserved
+space, and the existing Logo is shown in the form header. This also handles
+narrow/portrait windows and zoom reflow without a tiny unreadable poster.
+Other languages retain their existing localized photo/copy and mobile layout.
 
 The white form, centered logo/heading, segmented tabs and gold button are CSS
 on existing controls, NOT a screenshot. `AuthPage`, `RegisterPage`,
@@ -29,9 +37,15 @@ New presentation CSS is scoped to `.vx-auth` only.
 | Register | [1440px](register-1440.png) | [390px](register-390.png) |
 
 `node scripts/qa-auth-business-class.cjs` exercises the actual production bundle
-at 1920 / 1440 / 1366 / 430 / 390 / 360 / 320 for both Russian routes, and both
-routes at 1440 / 320 for all six other languages. All 38 local cases passed:
-CLS 0, no horizontal overflow, clipped content, failed images, unexpected
+at 1920x1080 / 1440x900 / 1366x768 and mobile widths 430 / 390 / 360 / 320 for
+both Russian routes, and both routes at 1440 / 320 for six other languages.
+The same-page resize cases additionally check window-height changes and
+150%/200% zoom-equivalent CSS layout viewports/DPR (not pinch zoom or a claim
+of a browser-toolbar zoom interaction). Geometry uses intrinsic raster size,
+computed object-fit/object-position, painted bounds, panel coverage and protected
+source regions. Checks also cover scroll access and validation errors.
+Local result: 38 main cases + 12 resize/zoom-reflow cases PASS, CLS 0 on initial
+loads; no horizontal overflow, clipped content, failed images, unexpected
 console/runtime errors, external traffic or forwarded writes. Password reveal,
 tab navigation and the safe return query are checked on the real DOM.
 

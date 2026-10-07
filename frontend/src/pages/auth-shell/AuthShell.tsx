@@ -44,6 +44,9 @@ export function AuthShell({ children }: { children: ReactNode }) {
       )}
       <section className="vx-auth-work">
         <header className="vx-auth-head">
+          {useSelectedBanner && (
+            <Link className="vx-auth-compact-logo" to="/" aria-label={t('register.backHomeAria')}><Logo /></Link>
+          )}
           <span className="vx-auth-context">{t('authShell.context')}</span>
           <LanguageSwitcher variant="pill" />
         </header>
