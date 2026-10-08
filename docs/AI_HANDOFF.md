@@ -5987,3 +5987,12 @@ Stocks #471 follow-up: discarded empty green benchmark artifacts caused by waiti
 - PR #480 CI follow-up commit `8c3a639c60edf7d9c3324ee324c626f331c4ba7d`, material file `scripts/qa-home-v0.cjs`: Linux browser runner exposed a test synchronization race after mobile-to-desktop resize (4 slots sampled before React's desktop remount). The runner now awaits eight slots AND ready WebGL before starting the unchanged no-duplicate/all-24 cycle assertions. No production implementation or financial checks changed; rerun final-head CI before release.
 - PR #480 review follow-up (commit containing this entry): corrected missing-price state, added enlarged-heading wrapping/probe, aligned the scoped CI with all 15 home suites, and made `--updated-only` independent of the baseline directory. Preserved all price arithmetic and layout at normal text size. Previous head had 15/15 green checks; it does not substitute for fresh checks of this follow-up.
 
+
+
+## Codex — 2026-10-08 — Stocks terminal, separate Draft UI review
+
+- Owner explicitly requested a separate Draft compatible with #471, no merge/deploy/production activation. Branch codex/stocks-terminal-ui-20261008 preserves parent 13fe4a8f9aad5d873612fdb0be57c027767336c6; integrated main b607fd68d997ecdda00217215c704c7a9dd72848. The additive handoff conflict retains both histories.
+- Native presentation-only Buy/Sell and Limit/Market ticket, Price/Amount/unknown Total, unknown balance, disabled placement and localized unavailability. Reuses OrderFamilyTabs without changing existing defaults; no account/execution hooks, API or database changes. Widget attribution/delay retained; technical prose and empty facts removed; seven locales.
+- TypeScript and OFF/widget builds pass. Browser fixture 691 assertions, live official chart 76 assertions, 49 navigation views and crypto route/style isolation pass, zero writes/financial requests/stock backend reads. Current-main full frontend suite run; local legacy byte-digest Windows checkout issue fixed by restoring existing Git bytes, not by changing guards. Final CI result belongs to the exact Draft head.
+- Evidence, metrics, ten live chart screenshots, mobile views and switching recording: docs/qa/stocks-terminal-ui. Running isolated widget preview: http://127.0.0.1:4435/stocks/XNGS%3AAAPL; ordinary Pages builds keep Stocks OFF.
+- Stop after exact-head CI. No production release, merge, automerge, Worker/VPS change, or financial write authorized. Legacy collector launch gates remain separate from this widget UI review.

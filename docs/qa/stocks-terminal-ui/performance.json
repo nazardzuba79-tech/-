@@ -1,0 +1,61 @@
+{
+  "scope": "Local Chromium, built static preview. Host replacement timings are not quote readiness or VPS financial API p95. Fixture graph is blank lifecycle double only. No production load.",
+  "results": {
+    "fixture-final": {
+      "checks": 691,
+      "coldHostP95Ms": 294,
+      "switchHostP95Ms": 82,
+      "memoryAfterGC": [
+        {
+          "stage": "before switches",
+          "documents": 3,
+          "nodes": 767,
+          "jsEventListeners": 277,
+          "jsHeapUsedBytes": 5973144
+        },
+        {
+          "stage": "after 30 switches",
+          "documents": 3,
+          "nodes": 751,
+          "jsEventListeners": 277,
+          "jsHeapUsedBytes": 6674928
+        },
+        {
+          "stage": "after exit",
+          "documents": 1,
+          "nodes": 77,
+          "jsEventListeners": 174,
+          "jsHeapUsedBytes": 3694672
+        }
+      ],
+      "financialRequests": [],
+      "stockAPIReads": [],
+      "pageErrors": []
+    },
+    "live-final": {
+      "checks": 76,
+      "coldHostP95Ms": 254,
+      "switchHostP95Ms": 111,
+      "memoryAfterGC": [
+        {
+          "stage": "live before switches",
+          "documents": 4,
+          "nodes": 1601,
+          "jsEventListeners": 1856,
+          "jsHeapUsedBytes": 26150576
+        },
+        {
+          "stage": "live after 12 switches",
+          "documents": 4,
+          "nodes": 1601,
+          "jsEventListeners": 1869,
+          "jsHeapUsedBytes": 27962076
+        }
+      ],
+      "financialRequests": [],
+      "stockAPIReads": [],
+      "pageErrors": []
+    }
+  },
+  "limits": "Bounded 30 fixture / 12 live switches; not a 24h soak, mobile hardware, or VPN-region availability certification."
+}
