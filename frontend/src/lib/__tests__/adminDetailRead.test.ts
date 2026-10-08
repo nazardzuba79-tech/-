@@ -12,6 +12,7 @@ const flush = () => new Promise<void>(done => setImmediate(done));
 let dom: any, root: any, host: HTMLElement, id: string, token: string | null, read: jest.Mock;
 let sessions: Set<() => void>, modules: Map<string, any>, historyRead: jest.Mock, balancesRead: jest.Mock;
 let params: URLSearchParams, paramWrites: jest.Mock;
+let adjustmentProps: any, summaryRefresh: jest.Mock;
 const detail = (value: string) => ({ id: value, email: `${value}@example.invalid`, role: 'USER', isAdmin: false,
   createdAt: '2026-10-01T12:00:00Z', kycStatus: 'NOT_STARTED', balances: [], demoBalances: [],
   deposits: [], withdrawals: [], orders: [], purchases: [], kycSubmissions: [], isBlocked: false });
@@ -30,8 +31,10 @@ function load(file: string): any {
       }];
     }, useNavigate: () => jest.fn(), Link: (p: any) => React.createElement('a', { href: p.to, className: p.className }, p.children) };
     if (name.endsWith('/adminPagedApi')) return { getAdminProfile: (...args: any[]) => read(...args), getAdminHistory: (...args: any[]) => historyRead(...args), getAdminProfileBalances: (...args: any[]) => balancesRead(...args) };
-    if (name.endsWith('/adminWorkSummary')) return { refreshAdminSummary: jest.fn() };
-    if (name.endsWith('/AdminBalanceAdjustment')) return { AdminBalanceAdjustment: () => null };
+    if (name.endsWith('/adminWorkSummary')) return { refreshAdminSummary: summaryRefresh };
+    if (name.endsWith('/AdminBalanceAdjustment')) return { AdminBalanceAdjustment: (props: any) => {
+      adjustmentProps = props; return React.createElement('div', { 'data-adjustment-fixture': true });
+    } };
     if (name.endsWith('/adminReadApi')) return { getAdminUserDetailAbortable: (...args: any[]) => read(...args) };
     if (name.endsWith('/lib/api')) return { api: { getAdminUserDetail: (...args: any[]) => read(...args) },
       getToken: () => token, onSessionChange: (fn: () => void) => { sessions.add(fn); return () => sessions.delete(fn); }, ApiError: Error };
@@ -49,6 +52,7 @@ beforeEach(() => {
   host = document.getElementById('root')!; root = req('react-dom/client').createRoot(host);
   id = 'a'; token = 'fixture-session'; sessions = new Set(); modules = new Map(); read = jest.fn(); historyRead = jest.fn().mockResolvedValue({items: [], total: 0, page: 1, pageSize: 20, totalPages: 0});
   params = new URLSearchParams(); paramWrites = jest.fn();
+  adjustmentProps = null; summaryRefresh = jest.fn();
   balancesRead = jest.fn().mockResolvedValue({ balances: [], demoBalances: [] });
 });
 afterEach(async () => { await act(async () => root.unmount()); dom.window.close(); jest.useRealTimers(); });
@@ -100,9 +104,46 @@ test('profile opens without eager histories; only the selected history is fetche
   const signal = historyRead.mock.calls[0][3]; await click(/^Общее$/); expect(signal.aborted).toBe(true);
   expect(historyRead).toHaveBeenCalledTimes(1);
 });
-test('manual balance adjustment is an additional action, never a default profile form', async () => {
+test('manual adjustment is only above deposits history, never duplicated in additional actions', async () => {
   read.mockResolvedValue(detail('a')); await render(); expect(host.querySelector('form')).toBeNull();
   expect(host.textContent).toContain('Дополнительные действия');
+  expect(host.textContent).not.toContain('Корректировка баланса');
+  await click(/^Пополнения$/);
+  const panel = host.querySelector('[role="tabpanel"]')!;
+  expect(panel.querySelectorAll('button').length).toBeGreaterThan(0);
+  const adjustment = panel.querySelector('.admin-deposit-adjustment')!;
+  expect(adjustment).not.toBeNull();
+  expect(adjustment.textContent).toContain('Ручное начисление или списание со спотового счёта. Не является подтверждением депозита.');
+  expect(adjustment.nextElementSibling?.tagName).toBe('SECTION');
+  expect(host.querySelector('.admin-user-actions')?.textContent).not.toContain('Корректировка');
+  await click(/^Корректировка баланса$/);
+  expect(adjustmentProps.profile.id).toBe('a');
+  expect(read).toHaveBeenCalledTimes(1); expect(summaryRefresh).not.toHaveBeenCalled();
+  await act(async () => { adjustmentProps.onClose(); await flush(); });
+  expect(host.querySelector('[data-adjustment-fixture]')).toBeNull();
+  expect(read).toHaveBeenCalledTimes(1);
+  await click(/^Выводы$/); expect(host.textContent).not.toContain('Корректировка баланса');
+});
+
+test('a confirmed adjustment refreshes the profile, selected deposit history and summary without fabricating a deposit', async () => {
+  params = new URLSearchParams({tab:'deposits'}); read.mockResolvedValue(detail('a'));
+  await render(); await click(/^Корректировка баланса$/);
+  read.mockResolvedValue({...detail('a'), balances:[{asset:'USDT',available:'150',locked:'2'}]});
+  await act(async () => { adjustmentProps.onChanged(); await flush(); });
+  expect(read).toHaveBeenCalledTimes(2); expect(historyRead).toHaveBeenCalledTimes(2);
+  expect(summaryRefresh).toHaveBeenCalledTimes(1);
+  expect(historyRead.mock.calls[0][3].aborted).toBe(true);
+  expect(adjustmentProps.profile.balances[0].available).toBe('150');
+  expect(host.querySelectorAll('.admin-history-item')).toHaveLength(0);
+  await act(async () => { adjustmentProps.onClose(); await flush(); });
+  await click(/^Балансы$/); expect(host.textContent).toContain('150'); expect(host.textContent).toContain('Тестовый счёт — отдельно');
+});
+
+test('missing spot balances explain unavailability in deposits and cannot open the form', async () => {
+  params = new URLSearchParams({tab:'deposits'}); read.mockResolvedValue({...detail('a'),balances:null});
+  await render(); const button = host.querySelector('.admin-deposit-adjustment button') as HTMLButtonElement;
+  expect(button.disabled).toBe(true); expect(host.textContent).toContain('данные спотового баланса не получены');
+  await act(async () => { button.click(); await flush(); }); expect(adjustmentProps).toBeNull();
 });
 
 test.each(['/admin/users', '/admin/audit-log?userId=a&page=3', '/admin/kyc?status=PENDING', '/admin/deposits?userId=a', '/admin/withdrawals?status=active'])('return link preserves whitelisted read list %s', async value => {
@@ -173,6 +214,7 @@ test('legacy balances read shows exact real and demo amounts separately after ex
 });
 
 test('legacy profiles cannot offer an incompatible balance adjustment write', async () => {
+  params = new URLSearchParams({tab:'deposits'});
   read.mockResolvedValue({ ...detail('a'), demoBalances: null, compatibility: legacy }); await render();
   const adjustment = Array.from(host.querySelectorAll('button')).find(button => button.textContent === 'Корректировка баланса');
   expect(adjustment?.disabled).toBe(true); expect(host.textContent).toMatch(/Корректировка.*недоступна.*версии сервера/);

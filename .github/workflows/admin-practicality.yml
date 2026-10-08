@@ -10,6 +10,7 @@ on:
       - 'scripts/qa-admin-practicality.cjs'
       - 'scripts/qa-admin-workflow-interactions.cjs'
       - 'scripts/qa-admin-api-compatibility.cjs'
+      - 'scripts/qa-admin-adjustment-placement.cjs'
       - '.github/workflows/admin-practicality.yml'
 permissions:
   contents: read
@@ -57,6 +58,11 @@ jobs:
           QA_COMPATIBILITY: '1'
           QA_OUT: output/admin-practicality/api-compatibility
         run: node scripts/qa-admin-practicality.cjs
+      - name: Deposits adjustment entry, confirmation and timeout recovery
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright
+          QA_ADJUSTMENT_OUT: output/admin-practicality/adjustment-placement
+        run: node scripts/qa-admin-adjustment-placement.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
