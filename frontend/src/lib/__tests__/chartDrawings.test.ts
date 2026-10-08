@@ -661,7 +661,8 @@ describe('the rail is shared, and every button does something', () => {
     expect(futures).toMatch(/<PriceChart pair=\{symbol\} chrome="terminal" drawingTools market="futures" compactTools=\{studio\}/);
     expect(futures).not.toContain('DrawToolbar');
     expect(futures.match(/<PriceChart\b/g)).toHaveLength(1);
-    expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />');
+    // 2026-10-07: Spot's chart carries the viewer's chart settings like Futures (Spot/CFD parity).
+    expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />');
     // One implementation, not two: there is a single chart component and a
     // single rail, and both pages reach it through the same prop.
     expect(fs.existsSync(path.resolve(__dirname, '../../components/FuturesPriceChart.tsx'))).toBe(false);

@@ -283,8 +283,11 @@ const READ = (tokenNames) => {
       /* The primary action is the one control a trader must never miss:
          at least 50px on desktop and 52px on phones (the released Futures
          ticket and TerminalMobileParity.css), fully inside the viewport. */
-      if (!mobile && name !== 'futures' && (!m.desktopCta?.visible || m.desktopCta.height < 50)) {
-        findings.push(`${name} @${key}: primary action missing or under 50px ${JSON.stringify(m.desktopCta)}`);
+      // 2026-10-07 (Spot/CFD in the released Futures look): the desktop primary
+      // action is Futures' 38px pill, as qa-order-panel-refinement pins it there.
+      // Phones keep the 52px touch target below.
+      if (!mobile && name !== 'futures' && (!m.desktopCta?.visible || m.desktopCta.height < 38)) {
+        findings.push(`${name} @${key}: primary action missing or under 38px ${JSON.stringify(m.desktopCta)}`);
       }
       if (mobile && name !== 'futures' && (m.tradeWorkspace?.ctaHeight ?? 0) < 52) {
         findings.push(`${name} @${key}: primary action on the Trade tab missing or under 52px (${m.tradeWorkspace?.ctaHeight ?? 0}px)`);
