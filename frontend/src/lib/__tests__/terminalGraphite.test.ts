@@ -91,7 +91,11 @@ describe('chart settings', () => {
     expect(chart).toContain('const volumePane = s.volume ? 1 : 0;');
     expect(chart).toContain('if (volume.getPane().paneIndex() !== volumePane) volume.moveToPane(volumePane);');
     expect(chart).toContain('panes[1]?.setStretchFactor(0.2);');
-    for (const other of ['frontend/src/pages/TradePage.tsx', 'frontend/src/pages/CfdPage.tsx']) {
+    // 2026-10-07 (Spot/CFD in the released Futures look): the Spot chart carries the same
+    // settings as Futures, so one chart setting serves both terminals; the CFD chart does not.
+    expect(read('frontend/src/pages/TradePage.tsx')).toContain('drawingTools market="spot" compactTools chartSettings />');
+    expect(read('frontend/src/pages/TradePage.tsx')).toContain('<CfdChart symbol={selectedCfdSymbol} />');
+    for (const other of ['frontend/src/pages/CfdPage.tsx']) {
       if (existsSync(resolve(root, other))) expect(read(other)).not.toContain('chartSettings');
     }
     const dialog = read('frontend/src/components/ChartSettingsDialog.tsx');

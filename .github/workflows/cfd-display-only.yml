@@ -14,9 +14,14 @@ on:
       - 'src/cfd/__tests__/CfdDisplayFeedLifecycle.test.ts'
       - 'src/cfd/__tests__/CfdQuoteSafety.test.ts'
       - 'src/cfd/__tests__/CfdQuoteRoutes.test.ts'
+      - 'src/cfd/__tests__/CfdDailySessionBudget.test.ts'
       - 'frontend/src/components/Cfd*'
       - 'frontend/src/lib/cfd*'
       - 'frontend/src/lib/useCfdTickers.ts'
+      - 'frontend/src/lib/useCfdDailySession.ts'
+      - 'frontend/src/lib/useCfdEconomicEvent.ts'
+      - 'frontend/src/lib/__tests__/cfdInfoStrip.test.ts'
+      - 'frontend/src/pages/trade-terminal/CfdInfoStrip.css'
       - 'frontend/src/lib/__tests__/cfdDisplayOnly.test.ts'
       - 'frontend/src/lib/__tests__/cfdTerminal.test.ts'
       - 'frontend/src/pages/home/**'
@@ -53,7 +58,7 @@ jobs:
       - name: Market-data collector build
         run: npx tsc -p tsconfig.collector.json
       - name: Market-data and CFD regression tests
-        run: npm test -- --runInBand --silent --runTestsByPath src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts src/services/marketData/live/__tests__/CollectorDepthRouting.test.ts src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts src/cfd/__tests__/CfdDisplaySelfTest.test.ts src/cfd/__tests__/CfdDerivRequestId.test.ts src/cfd/__tests__/CfdDerivShutdown.test.ts src/cfd/__tests__/CfdDisplayFeedLifecycle.test.ts src/cfd/__tests__/CfdQuoteSafety.test.ts src/cfd/__tests__/CfdQuoteRoutes.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts
+        run: npm test -- --runInBand --silent --runTestsByPath src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts src/services/marketData/live/__tests__/CollectorDepthRouting.test.ts src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts src/cfd/__tests__/CfdDisplaySelfTest.test.ts src/cfd/__tests__/CfdDerivRequestId.test.ts src/cfd/__tests__/CfdDerivShutdown.test.ts src/cfd/__tests__/CfdDisplayFeedLifecycle.test.ts src/cfd/__tests__/CfdQuoteSafety.test.ts src/cfd/__tests__/CfdQuoteRoutes.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts src/cfd/__tests__/CfdDailySessionBudget.test.ts frontend/src/lib/__tests__/cfdInfoStrip.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
