@@ -176,7 +176,7 @@ export const JA: Record<Key, string> = {
   'authShell.communityCount': '120万人以上の投資家が',
   'authShell.communityText': 'すでに VOLTEX で市場をチェックしています',
   'authShell.communityBadge': '120万+',
-  'authShell.communityTitle': 'お支払いと現金の引き出し',
+  'authShell.communityTitle': 'お支払いと現金の引き出し — 手数料0%',
   'authShell.communitySubtitle': '22+ の法定通貨 · 70+種類の暗号資産',
   'authShell.moreCurrencies': 'その他の通貨にも対応',
   'authShell.cardCaption': 'いつもあなたとともにあるカード',
