@@ -48,7 +48,13 @@ const report = { views: [], transitions: [], pageErrors: [], writesBlocked: 0, e
       });
       await ctx.routeWebSocket('**/*', socket => socket.close());
       const page = await ctx.newPage(); page.on('pageerror',e => report.pageErrors.push(e.message));
-      const waitStock = () => page.locator('.stocks-row').nth(1).waitFor();
+      // Stocks opens on its working panel; phones keep the list in a drawer.
+      const waitStock = () => page.locator('.vxs-terminal').waitFor();
+      const openFirstInstrument = async (width) => {
+        if (width <= 860) await page.locator('.vxs-list-button').first().click();
+        // Not the reopened active row: a link to the current URL replaces history.
+        await page.locator('.vxs-row:not(.is-active) > a:visible').first().click();
+      };
       async function chooseMenu(width) {
         if (width <= 430) {
           await page.locator('.bottom-trading-trigger').click();
@@ -118,13 +124,13 @@ const report = { views: [], transitions: [], pageErrors: [], writesBlocked: 0, e
             const after=await terminalSnapshot(); assert.deepEqual(after,baseline[target],`${width} ${target} terminal style/route isolation`);
           }
           const menu=await chooseMenu(width); await menu.locator('a[href="/stocks"]').click(); await waitStock();
-          await page.locator('.stocks-identity a').first().click(); await page.locator('.stocks-chart canvas').first().waitFor();
-          const detailURL=page.url(); await page.goBack();await waitStock();await page.goForward();await page.locator('.stocks-chart canvas').first().waitFor();
-          assert.equal(page.url(),detailURL); await page.reload();await page.locator('.stocks-chart canvas').first().waitFor();
+          await openFirstInstrument(width); await page.locator('.vxs-chart-host canvas').first().waitFor();
+          const detailURL=page.url(); await page.goBack();await waitStock();await page.goForward();await page.locator('.vxs-chart-host canvas').first().waitFor();
+          assert.equal(page.url(),detailURL); await page.reload();await page.locator('.vxs-chart-host canvas').first().waitFor();
           const detailMenu=await chooseMenu(width);
           if(width<=430) assert.equal(await detailMenu.locator('[aria-current="page"]').getAttribute('href'),'/stocks');
           await detailMenu.locator('a[href="/trade"]').click();await terminalSnapshot();
-          await page.goBack();await page.locator('.stocks-chart canvas').first().waitFor();
+          await page.goBack();await page.locator('.vxs-chart-host canvas').first().waitFor();
           await page.goForward();await terminalSnapshot();
           report.transitions.push({width,sequence:'Spot → Futures → CFD → Stocks → Spot',terminalStylesAndRouteState:'unchanged',backForward:true,directDetailReload:true});
         }

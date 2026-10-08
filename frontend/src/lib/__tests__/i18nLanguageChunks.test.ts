@@ -353,7 +353,8 @@ describe('translation integrity', () => {
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
-        // The 19 stock-only additions leave all older translations byte-identical.
+        // The stock-only additions (19 for the review module, 56 for its
+        // panel/overview UI) leave all older translations byte-identical.
         if (key?.startsWith('stocks.')) return false;
         // `otc.*` is the OTC page from the owner's OTC.zip (2026-09-30):
         // `git diff --numstat` over the locales directory reports `63 0` for
@@ -373,7 +374,7 @@ describe('translation integrity', () => {
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
-      expect(Object.keys(dicts[code]).filter(key => key.startsWith('stocks.'))).toHaveLength(19);
+      expect(Object.keys(dicts[code]).filter(key => key.startsWith('stocks.'))).toHaveLength(19 + 56);
       expect(Object.entries(dicts[code]).filter(([key]) => key.startsWith('stocks.')).every(([, value]) => value.trim().length > 0)).toBe(true);
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       // Added for the approved compact order-panel disclosure; older copy remains frozen.

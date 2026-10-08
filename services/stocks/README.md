@@ -16,6 +16,14 @@ For local UI review only, use `VITE_STOCKS_ENABLED=true` and `VITE_STOCKS_ORIGIN
 
 Browser test: set `QA_PLAYWRIGHT_MODULE` to Playwright, start Vite at `127.0.0.1:4422` with stock origin `http://127.0.0.1:4422/stock-fixture`, then `node scripts/qa-stocks.cjs`. Quotes are intercepted fixtures, never production. API writes and outside WebSockets are denied. Real screenshots are under `output/stocks-qa/`.
 
+## UI — working panel first, overview second (flag-gated, information only)
+
+- `/stocks` opens the dark working panel and reopens the last valid instrument (otherwise «Выберите инструмент», never a guessed one); `/stocks/:instrumentId` takes the canonical catalogue id; `/stocks?view=overview` is the light catalogue. «Панель / Обзор» switches inside Stocks; no new top-level navigation.
+- Both views read only this read API through `frontend/src/lib/stocks.ts`: the catalogue and the selected instrument's default history page. Shared cache, deduplication, 15-minute freshness and hidden-tab pause; state is scoped to its path (a late answer for the previous instrument is dropped), 12 s client deadline, explicit retry. No other endpoint, polling, stream, backfill or provider call.
+- Shown only when supplied: last close of a completed 15-minute candle (not an execution price), candle close and fetch time, last candle OHLC labelled as that candle, volume when not null. `sessionChange`, previous close, session status, 52-week range, sector and descriptions are not supplied, so they are not shown or are shown as «—» / «Нет данных о сессии».
+- No trading: no buy/sell, leverage, orders, book, positions or balances.
+- Browser QA over the real server and generated candles: `node scripts/qa-stocks-ui.cjs`; evidence in `docs/qa/stocks-ui/`.
+
 ## Activation gates — deliberately not satisfied
 
 1. Confirm per-instrument commercial public-display, storage and cache entitlements, 15-minute coverage, publication lag, currency and adjustment contract. A public metadata listing is not this proof.

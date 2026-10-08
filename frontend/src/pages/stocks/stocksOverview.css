@@ -1,0 +1,152 @@
+/* Stocks overview — the light catalogue from the approved Bolt design, with
+ * its own local palette (owner, 2026-10-07): page #F6F7F9, surfaces #FFFFFF,
+ * hover #EEF1F4, dividers #DFE3E8, text #17212B / #5E6875, accent #F0B90B
+ * (dark text on gold), up #0A7B46, down #C93343. Scoped to
+ * .vx-stocks-overview: not a replacement of the global VOLTEX theme. No
+ * shadows, blur, glow or decorative gradients; the VOLTEX UI font. */
+.vx-stocks-overview {
+  --vxo-bg:#f6f7f9;
+  --vxo-surface:#ffffff;
+  --vxo-hover:#eef1f4;
+  --vxo-divider:#dfe3e8;
+  --vxo-text:#17212b;
+  --vxo-text-2:#5e6875;
+  --vxo-accent:#f0b90b;
+  --vxo-accent-soft:rgba(240,185,11,.18);
+  --vxo-on-accent:#17212b;
+  /* Filled star on white: the accent hue darkened to a 3:1 non-text contrast. */
+  --vxo-star:#b38600;
+  --vxo-up:#0a7b46;
+  --vxo-down:#c93343;
+  --vxo-font:var(--font-ui,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif);
+}
+.vx-stocks-overview > .vxs-main { font-family:var(--vxo-font); font-size:14px; color:var(--vxo-text); background:var(--vxo-bg); }
+/* Zero-specificity reset, so every component rule below can set its own colour. */
+:where(.vx-stocks-overview .vxs-main) :where(button,input,select) { font:inherit; color:inherit; }
+.vx-stocks-overview .vxs-main :is(a,button,input,select):focus-visible { outline:2px solid var(--vxo-text); outline-offset:2px; }
+.vx-stocks-overview .vxo-sr-only { position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.vx-stocks-overview .vxo-page { width:100%; max-width:1600px; margin:0 auto; padding:24px 24px 48px; }
+
+.vx-stocks-overview .vxo-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; }
+.vx-stocks-overview .vxo-head h1 { margin:0; font-size:24px; font-weight:700; line-height:1.25; color:var(--vxo-text); }
+.vx-stocks-overview .vxo-head p { margin:4px 0 0; color:var(--vxo-text-2); font-size:13px; }
+.vx-stocks-overview .vxs-view-switch { display:flex; padding:3px; border:1px solid var(--vxo-divider); border-radius:8px; background:var(--vxo-surface); flex-shrink:0; }
+.vx-stocks-overview .vxs-view-switch > a { padding:6px 14px; border-radius:6px; color:var(--vxo-text-2); font-size:13px; font-weight:600; text-decoration:none; white-space:nowrap; }
+.vx-stocks-overview .vxs-view-switch > a:hover { color:var(--vxo-text); background:var(--vxo-hover); }
+.vx-stocks-overview .vxs-view-switch > a[aria-current='page'] { background:var(--vxo-accent); color:var(--vxo-on-accent); }
+
+/* Index cards (no sparkline: the catalogue carries one candle per instrument) */
+.vx-stocks-overview .vxo-indices { margin-bottom:24px; }
+.vx-stocks-overview .vxo-indices h2 { margin:0 0 10px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--vxo-text-2); }
+.vx-stocks-overview .vxo-index-row { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(196px,1fr); gap:12px; overflow-x:auto; padding-bottom:2px; scrollbar-width:thin; }
+.vx-stocks-overview .vxo-index-card { display:flex; flex-direction:column; gap:8px; padding:12px 14px; border:1px solid var(--vxo-divider); border-radius:10px; background:var(--vxo-surface); color:inherit; text-decoration:none; min-width:0; }
+.vx-stocks-overview .vxo-index-card:hover { background:var(--vxo-hover); }
+.vx-stocks-overview .vxo-index-top { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+.vx-stocks-overview .vxo-index-top strong { font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-stocks-overview .vxo-index-top small,
+.vx-stocks-overview .vxo-index-meta small { color:var(--vxo-text-2); font-size:11px; flex-shrink:0; }
+.vx-stocks-overview .vxo-index-value { font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.vx-stocks-overview .vxo-index-value small { color:var(--vxo-text-2); font-size:11px; font-weight:500; }
+.vx-stocks-overview .vxo-index-meta { display:flex; justify-content:space-between; gap:8px; font-size:12px; }
+
+/* Filters */
+.vx-stocks-overview .vxo-filters { display:flex; flex-direction:column; gap:12px; margin-bottom:14px; }
+.vx-stocks-overview .vxo-tabs,
+.vx-stocks-overview .vxo-subtabs { display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; }
+.vx-stocks-overview .vxo-tabs::-webkit-scrollbar,
+.vx-stocks-overview .vxo-subtabs::-webkit-scrollbar { display:none; }
+.vx-stocks-overview .vxo-tabs > button { flex-shrink:0; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border:0; border-radius:6px; background:none; color:var(--vxo-text-2); font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap; }
+.vx-stocks-overview .vxo-tabs > button:hover { background:var(--vxo-hover); color:var(--vxo-text); }
+.vx-stocks-overview .vxo-tabs > button[aria-pressed='true'] { background:var(--vxo-accent-soft); color:var(--vxo-text); font-weight:600; }
+.vx-stocks-overview .vxo-count { padding:0 6px; border-radius:4px; background:var(--vxo-divider); color:var(--vxo-text-2); font-size:11px; font-variant-numeric:tabular-nums; }
+.vx-stocks-overview .vxo-subtabs > button { flex-shrink:0; height:28px; padding:0 10px; border:1px solid transparent; border-radius:6px; background:none; color:var(--vxo-text-2); font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap; }
+.vx-stocks-overview .vxo-subtabs > button:hover { color:var(--vxo-text); }
+.vx-stocks-overview .vxo-subtabs > button[aria-pressed='true'] { border-color:var(--vxo-divider); background:var(--vxo-surface); color:var(--vxo-text); }
+.vx-stocks-overview .vxo-search-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.vx-stocks-overview .vxo-search { position:relative; flex:1 1 320px; display:flex; align-items:center; color:var(--vxo-text-2); }
+.vx-stocks-overview .vxo-search > svg { position:absolute; left:12px; pointer-events:none; }
+.vx-stocks-overview .vxo-search > input { width:100%; height:38px; padding:0 14px 0 36px; border:1px solid var(--vxo-divider); border-radius:8px; background:var(--vxo-surface); color:var(--vxo-text); font-size:14px; }
+.vx-stocks-overview .vxo-search > input::placeholder { color:var(--vxo-text-2); }
+.vx-stocks-overview .vxo-search > input:focus { border-color:var(--vxo-text-2); outline:none; }
+.vx-stocks-overview .vxo-selects { display:flex; flex-wrap:wrap; gap:8px; }
+.vx-stocks-overview .vxo-select { position:relative; display:flex; align-items:center; color:var(--vxo-text-2); }
+.vx-stocks-overview .vxo-select > select { height:38px; padding:0 32px 0 12px; border:1px solid var(--vxo-divider); border-radius:8px; background:var(--vxo-surface); color:var(--vxo-text); font-size:13px; cursor:pointer; appearance:none; -webkit-appearance:none; max-width:260px; }
+.vx-stocks-overview .vxo-select > svg { position:absolute; right:10px; pointer-events:none; }
+.vx-stocks-overview .vxo-more { display:none; }
+.vx-stocks-overview .vxo-active { display:flex; justify-content:flex-end; }
+.vx-stocks-overview .vxo-active > button,
+.vx-stocks-overview .vxo-plain { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:1px solid var(--vxo-divider); border-radius:6px; background:var(--vxo-surface); color:var(--vxo-text); font-size:12px; font-weight:500; cursor:pointer; }
+.vx-stocks-overview .vxo-active > button:hover,
+.vx-stocks-overview .vxo-plain:hover { background:var(--vxo-hover); }
+.vx-stocks-overview .vxo-found { margin:0 0 10px; color:var(--vxo-text-2); font-size:12px; font-variant-numeric:tabular-nums; }
+
+/* Table */
+.vx-stocks-overview .vxo-table { border:1px solid var(--vxo-divider); border-radius:10px; background:var(--vxo-surface); overflow:hidden; }
+.vx-stocks-overview .vxo-row { position:relative; display:grid; grid-template-columns:44px minmax(0,1fr) 170px 120px 110px 200px; align-items:center; gap:8px; min-height:60px; padding:0 16px 0 6px; border-bottom:1px solid var(--vxo-divider); }
+.vx-stocks-overview .vxo-row:last-child { border-bottom:0; }
+.vx-stocks-overview [role='rowgroup']:not(.vxo-thead) .vxo-row:hover { background:var(--vxo-hover); }
+/* Rows off screen skip layout and paint; the catalogue has at most 250. */
+.vx-stocks-overview [role='rowgroup']:not(.vxo-thead) .vxo-row { content-visibility:auto; contain-intrinsic-size:auto 60px; }
+.vx-stocks-overview .vxo-row.is-skeleton { margin:10px 16px; min-height:40px; border:0; border-radius:6px; background:var(--vxo-hover); }
+.vx-stocks-overview .vxo-row-head { min-height:42px; color:var(--vxo-text-2); font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; }
+.vx-stocks-overview .vxo-thead { position:sticky; top:0; z-index:2; background:var(--vxo-surface); }
+.vx-stocks-overview .vxo-row-head button { display:inline-flex; align-items:center; gap:4px; padding:0; border:0; background:none; color:inherit; font:inherit; letter-spacing:inherit; text-transform:inherit; cursor:pointer; }
+.vx-stocks-overview .vxo-row-head button:hover { color:var(--vxo-text); }
+.vx-stocks-overview .vxo-sort-idle { opacity:.45; }
+.vx-stocks-overview .vxo-num { text-align:end; justify-self:end; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.vx-stocks-overview .vxo-cell-star { display:flex; justify-content:center; }
+.vx-stocks-overview .vxo-cell-name { display:flex; align-items:center; gap:12px; min-width:0; }
+.vx-stocks-overview .vxo-row-link { display:flex; flex-direction:column; min-width:0; color:inherit; text-decoration:none; }
+.vx-stocks-overview .vxo-row-link::after { content:''; position:absolute; inset:0; }
+.vx-stocks-overview .vxo-row-link strong { font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-stocks-overview .vxo-row-link small { color:var(--vxo-text-2); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vx-stocks-overview .vxo-price { font-size:14px; font-weight:500; }
+.vx-stocks-overview .vxo-price small { color:var(--vxo-text-2); font-size:11px; font-weight:400; }
+.vx-stocks-overview .vxo-muted { color:var(--vxo-text-2); font-size:12px; }
+.vx-stocks-overview .vxs-star { position:relative; z-index:1; display:grid; place-items:center; width:32px; height:32px; padding:0; border:0; border-radius:6px; background:none; color:var(--vxo-text-2); cursor:pointer; }
+.vx-stocks-overview .vxs-star:hover { background:var(--vxo-hover); color:var(--vxo-text); }
+.vx-stocks-overview .vxs-star[aria-pressed='true'] { color:var(--vxo-star); }
+.vx-stocks-overview .vxs-logo { display:grid; place-items:center; flex-shrink:0; overflow:hidden; border-radius:8px; background:var(--vxo-hover); color:var(--vxo-text); font-weight:600; }
+.vx-stocks-overview .vxs-logo.is-index { border:1px solid var(--vxo-divider); color:var(--vxo-text-2); }
+.vx-stocks-overview .vxs-logo > img { width:100%; height:100%; object-fit:contain; }
+.vx-stocks-overview .vxs-change { font-size:14px; font-weight:500; font-variant-numeric:tabular-nums; }
+.vx-stocks-overview .vxs-change.is-up { color:var(--vxo-up); }
+.vx-stocks-overview .vxs-change.is-down { color:var(--vxo-down); }
+.vx-stocks-overview .vxs-change.is-flat { color:var(--vxo-text-2); }
+.vx-stocks-overview .vxo-state { display:flex; flex-direction:column; align-items:center; gap:8px; padding:56px 16px; border:1px solid var(--vxo-divider); border-radius:10px; background:var(--vxo-surface); color:var(--vxo-text-2); text-align:center; }
+.vx-stocks-overview .vxo-state p { margin:0; }
+.vx-stocks-overview .vxo-state strong { color:var(--vxo-text); }
+.vx-stocks-overview .vxo-gold { display:inline-flex; align-items:center; gap:6px; height:36px; margin-top:8px; padding:0 18px; border:0; border-radius:8px; background:var(--vxo-accent); color:var(--vxo-on-accent); font-weight:600; cursor:pointer; }
+.vx-stocks-overview .vxo-gold:hover { background:#f5c62e; }
+.vx-stocks-overview .vxo-note { margin:14px 0 0; color:var(--vxo-text-2); font-size:12px; text-align:center; }
+
+@media (max-width:1180px) {
+  .vx-stocks-overview .vxo-row { grid-template-columns:44px minmax(0,1fr) 150px 110px 170px; }
+  .vx-stocks-overview .vxo-row > .vxo-wide:nth-last-child(2) { display:none; }
+}
+@media (max-width:860px) {
+  .vx-stocks-overview .vxo-page { padding:16px 12px calc(84px + env(safe-area-inset-bottom)); }
+  .vx-stocks-overview .vxo-head { flex-direction:column; gap:12px; margin-bottom:16px; }
+  .vx-stocks-overview .vxo-head h1 { font-size:20px; }
+  .vx-stocks-overview .vxo-index-row { grid-auto-columns:minmax(168px,72%); }
+  .vx-stocks-overview .vxo-search { flex-basis:100%; order:0; }
+  .vx-stocks-overview .vxo-more { order:1; display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 12px; border:1px solid var(--vxo-divider); border-radius:8px; background:var(--vxo-surface); color:var(--vxo-text); font-size:13px; font-weight:500; cursor:pointer; }
+  .vx-stocks-overview .vxo-selects { order:2; display:none; width:100%; }
+  .vx-stocks-overview .vxo-selects.is-open { display:grid; grid-template-columns:1fr 1fr; }
+  .vx-stocks-overview .vxo-select > select { width:100%; max-width:none; }
+  .vx-stocks-overview .vxo-row { grid-template-columns:36px minmax(0,1fr) auto; grid-template-areas:'star name price' 'star name change'; gap:0 10px; min-height:58px; padding:8px 12px 8px 4px; }
+  .vx-stocks-overview .vxo-row > .vxo-cell-star { grid-area:star; }
+  .vx-stocks-overview .vxo-row > .vxo-cell-name,
+  .vx-stocks-overview .vxo-row-head > :nth-child(2) { grid-area:name; }
+  .vx-stocks-overview .vxo-row > :nth-child(3) { grid-area:price; align-self:end; }
+  .vx-stocks-overview .vxo-row > :nth-child(4) { grid-area:change; align-self:start; }
+  .vx-stocks-overview .vxo-row > .vxo-wide { display:none; }
+  .vx-stocks-overview .vxo-row-head { min-height:44px; padding-top:6px; padding-bottom:6px; font-size:10px; }
+  .vx-stocks-overview .vxo-row-link strong { font-size:13px; }
+  .vx-stocks-overview .vxo-price,
+  .vx-stocks-overview .vxo-row .vxs-change { font-size:13px; }
+  .vx-stocks-overview .vxo-row.is-skeleton { margin:8px 12px; }
+}
+@media (max-width:480px) {
+  .vx-stocks-overview .vxo-cell-name .vxs-logo { display:none; }
+}
