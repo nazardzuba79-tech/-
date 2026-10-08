@@ -6,6 +6,7 @@ interface Props {
   instrument: StockInstrument;
   latest: StockCandle | null;
   adjustmentMode?: string;
+  widgetMode?: boolean;
 }
 
 /**
@@ -13,7 +14,7 @@ interface Props {
  * candle's high and low are that candle's, labelled as such — never a session
  * range — and nothing is filled in where the service has no value.
  */
-export function StockFacts({ instrument, latest, adjustmentMode }: Props) {
+export function StockFacts({ instrument, latest, adjustmentMode, widgetMode }: Props) {
   const { t, lang } = useLanguage();
   const row = (label: Key, value: string) => <div key={label}><dt>{t(label)}</dt><dd>{value}</dd></div>;
   const zone = instrument.exchangeTimeZone;
@@ -28,6 +29,7 @@ export function StockFacts({ instrument, latest, adjustmentMode }: Props) {
         {row('stocks.instrumentId', instrument.instrumentId)}
         <div><dt>{t('stocks.session')}</dt><dd className="vxs-muted">{t('stocks.noSession')}</dd></div>
       </dl>
+      {widgetMode ? <p className="vxs-note">{t('stocks.widgetOnly')}</p> : <>
       <h3>{t('stocks.lastCandle')}</h3>
       {latest ? <dl>
         {row('stocks.open', formatStockPrice(latest.open, instrument.currency))}
@@ -45,6 +47,7 @@ export function StockFacts({ instrument, latest, adjustmentMode }: Props) {
         {adjustmentMode === 'unadjusted' && row('stocks.adjustment', t('stocks.unadjusted'))}
       </dl>
       <p className="vxs-note">{t('stocks.priceNote')}</p>
+      </>}
     </div>
   );
 }

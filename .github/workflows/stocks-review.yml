@@ -68,6 +68,19 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
           QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/navigation
         run: node scripts/qa-stocks-navigation.cjs
+      - name: Free widget preview build (no stock service origin)
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_WIDGET_PREVIEW: 'true'
+      - name: Widget lifetime, seven locales, mobile and script errors (no provider data)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/widgets
+        run: |
+          node frontend/node_modules/vite/bin/vite.js preview frontend --host 127.0.0.1 --port 4432 --strictPort > /tmp/widget-preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4432/ > /dev/null && break; sleep 1; done
+          node scripts/qa-stocks-widget.cjs
       # Not a dot-directory: upload-artifact@v4 skips hidden paths by default.
       - uses: actions/upload-artifact@v4
         if: always()

@@ -1927,4 +1927,9 @@ export const JA: Record<Key, string> = {
   'terminal.noFuturesContract': "{pair} の先物契約はありません。利用可能な契約を選択してください。",
   'terminal.noSpotPair': "{pair} は現物に上場していません。利用可能なペアを選択してください。",
   'trade.orderType': "注文タイプ",
+  "stocks.widgetDelayed": "遅延相場",
+  "stocks.widgetOnly": "価格と履歴は公式 TradingView チャート内でのみ利用できます。",
+  "stocks.widgetNotice": "チャートが表示されない場合は接続を確認するか再読み込みしてください。利用可否と遅延は TradingView が表示します。",
+  "stocks.widgetLoadError": "TradingView を読み込めませんでした。ネットワークと外部スクリプトのブロック設定を確認してください。",
+  "stocks.widgetUnavailable": "この銘柄は埋め込み表示に対応していません。",
 };

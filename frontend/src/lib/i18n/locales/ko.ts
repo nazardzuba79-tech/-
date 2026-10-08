@@ -1927,4 +1927,9 @@ export const KO: Record<Key, string> = {
   'terminal.noFuturesContract': "{pair}에는 선물 계약이 없습니다. 이용 가능한 계약을 선택하세요.",
   'terminal.noSpotPair': "{pair}은(는) 현물에 없습니다. 이용 가능한 페어를 선택하세요.",
   'trade.orderType': "주문 유형",
+  "stocks.widgetDelayed": "지연 시세",
+  "stocks.widgetOnly": "가격과 이력은 공식 TradingView 차트에서만 제공됩니다.",
+  "stocks.widgetNotice": "차트를 사용할 수 없으면 연결을 확인하거나 다시 불러오세요. 제공 여부와 지연은 TradingView가 표시합니다.",
+  "stocks.widgetLoadError": "TradingView를 불러오지 못했습니다. 네트워크와 외부 스크립트 차단을 확인하세요.",
+  "stocks.widgetUnavailable": "이 종목은 임베드할 수 없습니다.",
 };

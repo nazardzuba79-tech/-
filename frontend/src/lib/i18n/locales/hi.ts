@@ -1927,4 +1927,9 @@ export const HI: Record<Key, string> = {
   'terminal.noFuturesContract': "{pair} का कोई फ्यूचर्स कॉन्ट्रैक्ट नहीं है। उपलब्ध कॉन्ट्रैक्ट चुनें।",
   'terminal.noSpotPair': "{pair} स्पॉट पर उपलब्ध नहीं है। उपलब्ध जोड़ी चुनें।",
   'trade.orderType': "ऑर्डर प्रकार",
+  "stocks.widgetDelayed": "विलंबित भाव",
+  "stocks.widgetOnly": "कीमतें और इतिहास केवल आधिकारिक TradingView चार्ट में उपलब्ध हैं।",
+  "stocks.widgetNotice": "चार्ट उपलब्ध न हो तो कनेक्शन जाँचें या दोबारा लोड करें। उपलब्धता और विलंब TradingView दिखाता है।",
+  "stocks.widgetLoadError": "TradingView लोड नहीं हुआ। नेटवर्क और तृतीय-पक्ष स्क्रिप्ट ब्लॉकिंग जाँचें।",
+  "stocks.widgetUnavailable": "यह उपकरण एम्बेड करने के लिए उपलब्ध नहीं है।",
 };

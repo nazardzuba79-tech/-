@@ -10,9 +10,11 @@ import { StockFacts } from './StockFacts';
 import { StockList, type ListFilter } from './StockList';
 import { FavoriteStar, StaleNotice, StockChange, StockLogo, ViewSwitch } from './StockParts';
 import './stocksTerminal.css';
+import { WidgetInstrumentView } from './StockWidget';
 
 interface Props {
   instrumentId?: string;
+  widgetMode?: boolean;
   catalogue: StockRead<StockCatalogue>;
   favorites: ReadonlySet<string>;
   onToggleFavorite: (id: string) => void;
@@ -27,7 +29,7 @@ function newest(a: StockCandle | null, b: StockCandle | undefined): StockCandle 
 }
 
 /** Dark working panel: list, one chart of the chosen instrument, its facts. Information only, no trading. */
-export default function StocksTerminal({ instrumentId, catalogue, favorites, onToggleFavorite }: Props) {
+export default function StocksTerminal({ instrumentId, catalogue, favorites, onToggleFavorite, widgetMode }: Props) {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const items = catalogue.data?.instruments ?? [];
@@ -97,8 +99,9 @@ export default function StocksTerminal({ instrumentId, catalogue, favorites, onT
         <div className="vxs-list-head"><span>{t('stocks.title')}</span><ViewSwitch view="panel" panelTo={panelTo} /></div>
         {list(false)}
       </aside>
-      {selected ? <InstrumentView key="instrument" instrument={selected} favorite={favorites.has(selected.instrumentId)}
-        onToggleFavorite={onToggleFavorite} listButton={listButton} panelTo={panelTo} />
+      {selected ? (widgetMode
+        ? <WidgetInstrumentView instrument={selected} favorite={favorites.has(selected.instrumentId)} onToggleFavorite={onToggleFavorite} listButton={listButton} panelTo={panelTo} />
+        : <InstrumentView key="instrument" instrument={selected} favorite={favorites.has(selected.instrumentId)} onToggleFavorite={onToggleFavorite} listButton={listButton} panelTo={panelTo} />)
         : <section className="vxs-center">
           <div className="vxs-tile vxs-strip vxs-strip-empty">{listButton}<ViewSwitch view="panel" panelTo={panelTo} /></div>
           <div className="vxs-tile vxs-choose" role="status">

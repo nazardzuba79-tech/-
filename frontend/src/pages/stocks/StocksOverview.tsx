@@ -12,6 +12,7 @@ import { FavoriteStar, StaleNotice, StockChange, StockLogo, ViewSwitch } from '.
 import './stocksOverview.css';
 
 interface Props {
+  widgetMode?: boolean;
   catalogue: StockRead<StockCatalogue>;
   favorites: ReadonlySet<string>;
   onToggleFavorite: (id: string) => void;
@@ -32,7 +33,7 @@ function sortFromParams(params: URLSearchParams): StockSort {
 }
 
 /** Light catalogue of the same data the panel reads; a row opens that instrument's panel. */
-export default function StocksOverview({ catalogue, favorites, onToggleFavorite }: Props) {
+export default function StocksOverview({ catalogue, favorites, onToggleFavorite, widgetMode }: Props) {
   const { t, lang } = useLanguage();
   const [params, setParams] = useSearchParams();
   const filters = filtersFromParams(params);
@@ -80,7 +81,7 @@ export default function StocksOverview({ catalogue, favorites, onToggleFavorite 
       <header className="vxo-head">
         <div>
           <h1>{t('stocks.title')}</h1>
-          <p>{t('stocks.closed')}</p>
+          <p>{t(widgetMode ? 'stocks.widgetOnly' : 'stocks.closed')}</p>
         </div>
         <ViewSwitch view="overview" panelTo={panelTo} />
       </header>

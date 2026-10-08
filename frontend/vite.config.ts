@@ -7,7 +7,7 @@ import { voltexContent } from './contentPlugin';
 // at runtime, so a malformed origin must stop the build rather than ship a
 // Deposit dialog that silently reads Render (or nothing).
 const depositEdge = process.env.VITE_DEPOSIT_CATALOGUE_URL;
-if (process.env.VITE_STOCKS_ENABLED === 'true') {
+if (process.env.VITE_STOCKS_ENABLED === 'true' && process.env.VITE_STOCKS_WIDGET_PREVIEW !== 'true') {
   const stockOrigin = new URL(process.env.VITE_STOCKS_ORIGIN ?? '');
   if ((stockOrigin.protocol !== 'https:' && !(stockOrigin.protocol === 'http:' && stockOrigin.hostname === '127.0.0.1')) || stockOrigin.username || stockOrigin.password || stockOrigin.search || stockOrigin.hash) throw new Error('Stocks requires a dedicated https origin (loopback allowed for QA)');
 }
@@ -25,6 +25,7 @@ export default defineConfig({
   // A compile-time constant rather than import.meta, so modules that read it
   // stay importable from the CommonJS Jest suites.
   define: {
+    __VOLTEX_STOCKS_WIDGET_PREVIEW__: process.env.VITE_STOCKS_WIDGET_PREVIEW === 'true',
     __VOLTEX_STOCKS_ENABLED__: process.env.VITE_STOCKS_ENABLED === 'true',
     __VOLTEX_STOCKS_ORIGIN__: JSON.stringify(process.env.VITE_STOCKS_ORIGIN ?? ''),
     __VOLTEX_MARKET_EDGE_URL__: JSON.stringify(process.env.VITE_MARKET_EDGE_URL ?? ''),

@@ -1956,4 +1956,9 @@ export const EN: Record<Key, string> = {
   'terminal.noFuturesContract': "{pair} has no futures contract. Choose an available one.",
   'terminal.noSpotPair': "{pair} is not listed on spot. Choose an available pair.",
   'trade.orderType': "Order type",
+  "stocks.widgetDelayed": "Delayed quotes",
+  "stocks.widgetOnly": "Prices and history are available only in the official TradingView chart.",
+  "stocks.widgetNotice": "If the chart is unavailable, check your connection or reload it. TradingView indicates availability and delay.",
+  "stocks.widgetLoadError": "TradingView could not load. Check your network and third-party script blocking.",
+  "stocks.widgetUnavailable": "This instrument is unavailable for embedding.",
 };
