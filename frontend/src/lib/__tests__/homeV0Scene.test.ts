@@ -1,6 +1,7 @@
 import { createSceneSequence, SCENE_INSTRUMENTS, scenePrice, sceneQuote } from '../../pages/home/v0MarketScene';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { cfdDisplayState } from '../cfdPresentation';
 
 const market = (overrides: Record<string, unknown> = {}): any => ({
   tickers: [{ pair: 'BTC/USDT', price: 76746 }, { pair: 'XAU/USDT', price: 99999 }],
@@ -45,14 +46,16 @@ test('stocks and absent CFD instruments never inherit demo, spot or made-up trad
 });
 
 test.each([null, undefined, '', 'NaN', 'Infinity', '-1', '0'])('invalid snapshot value %p stays unavailable', price => {
-  expect(sceneQuote(instrument('BTCUSDT'), market({ tickers: [{ pair: 'BTC/USDT', price }] }), 'en').price).toBeNull();
-  expect(sceneQuote(instrument('XAUUSD'), market({ cfd: { tickers: [{ symbol: 'XAUUSD', price, status: 'sampled' }] } }), 'en').price).toBeNull();
+  expect(sceneQuote(instrument('BTCUSDT'), market({ tickers: [{ pair: 'BTC/USDT', price }], tickersStale: true }), 'en')).toEqual({ price: null, state: 'unavailable' });
+  for (const lang of ['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko']) {
+    expect(sceneQuote(instrument('XAUUSD'), market({ cfd: { tickers: [{ symbol: 'XAUUSD', price, status: 'sampled' }] } }), lang)).toEqual({ price: null, state: cfdDisplayState(undefined, lang).label });
+  }
   expect(scenePrice(null, 'ru')).toBe('—');
 });
 
 test('CFD error quotes fail closed, market closed/sampled values retain the existing status', () => {
   const cfd = (status: string) => market({ cfd: { tickers: [{ symbol: 'XAUUSD', price: '4349.19', status }] } });
-  expect(sceneQuote(instrument('XAUUSD'), cfd('error'), 'en').price).toBeNull();
+  expect(sceneQuote(instrument('XAUUSD'), cfd('error'), 'en')).toEqual({ price: null, state: cfdDisplayState(undefined, 'en').label });
   expect(sceneQuote(instrument('XAUUSD'), cfd('market_closed'), 'en')).toEqual({ price: 4349.19, state: 'Market closed' });
 });
 

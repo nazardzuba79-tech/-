@@ -3,6 +3,7 @@
 .hs-root.v0-approved-hero .hero { min-height: clamp(690px, 53vw, 950px); }
 .hs-root.v0-approved-hero .copy { width: 31%; padding: 46px 0 56px 3.3%; }
 .hs-root.v0-approved-hero h1 { font-size: clamp(46px, 4.3vw, 82px); line-height: 1.05; }
+.hs-root.v0-approved-hero h1, .hs-root.v0-approved-hero h1 span { overflow-wrap: anywhere; white-space: normal; }
 .hs-root.v0-approved-hero .subtitle { font-size: clamp(22px, 2vw, 34px); }
 .hs-root.v0-approved-hero .description { max-width: 380px; font-size: 16px; line-height: 1.65; }
 .hs-root.v0-approved-hero .actions { flex-wrap: wrap; gap: 12px; }

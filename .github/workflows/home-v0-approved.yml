@@ -27,7 +27,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
         working-directory: frontend
       - name: Roster, quote-domain, cleanup and preserved-home regression tests
-        run: node node_modules/jest/bin/jest.js --runInBand --runTestsByPath frontend/src/lib/__tests__/homeV0Scene.test.ts frontend/src/lib/__tests__/homeApprovedAssembly.test.ts frontend/src/lib/__tests__/homeSapphireProjection.test.ts frontend/src/lib/__tests__/homeSapphireTerminal.test.ts
+        run: node node_modules/jest/bin/jest.js --runInBand --testPathPattern=frontend/src/lib/__tests__/home
       - run: npm run build
         working-directory: frontend
         env:

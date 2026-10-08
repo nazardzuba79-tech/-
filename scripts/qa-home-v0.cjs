@@ -81,6 +81,12 @@ if (require.main === module) (async () => {
       await page.setViewportSize({ width, height: width > 1000 ? (width === 1366 ? 768 : 1080) : 900 });
       await wait(200); await geometry(String(width)); await screenshot(`home-${width}`);
     }
+    if (!baseline) {
+      await page.setViewportSize({ width: 320, height: 900 });
+      await page.locator('#hs-title').evaluate(element => { element.style.fontSize = `${parseFloat(getComputedStyle(element).fontSize) * 2}px`; });
+      assert.equal(await page.locator('#hs-title').evaluate(element => element.scrollWidth <= element.clientWidth + 1), true, 'enlarged heading text stays within 320px copy');
+      await page.locator('#hs-title').evaluate(element => element.style.removeProperty('font-size'));
+    }
     await page.setViewportSize({ width: 1440, height: 900 });
     if (!baseline) {
       // matchMedia/React/WebGL remount settle asynchronously after the last

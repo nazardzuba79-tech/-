@@ -83,14 +83,16 @@ export function sceneQuote(instrument: SceneInstrument, market: HomeMarket, lang
   if (instrument.market === 'stock') return { price: null, state: 'unavailable' };
   if (instrument.market === 'spot') {
     const ticker = market.tickers.find(x => x.pair === instrument.symbol);
-    return { price: positive(ticker?.price), state: market.tickersStale ? 'stale' : 'snapshot' };
+    const price = positive(ticker?.price);
+    return { price, state: price === null ? 'unavailable' : market.tickersStale ? 'stale' : 'snapshot' };
   }
   const ticker = market.cfd?.tickers.find(x => x.symbol === instrument.symbol);
   const state = cfdDisplayState(ticker, lang);
   // Never take a spot quote as a substitute for CFD or turn a missing catalogue
   // entry into a synthetic price. Error quotes fail closed even if cached price exists.
   const valid = ticker && ['live', 'sampled', 'stale', 'market_closed'].includes(ticker.status ?? '');
-  return { price: valid ? positive(ticker.price) : null, state: state.label };
+  const price = valid ? positive(ticker.price) : null;
+  return { price, state: price === null ? cfdDisplayState(undefined, lang).label : state.label };
 }
 
 export function scenePrice(price: number | null, lang: string) {

@@ -12,7 +12,7 @@ const out = path.resolve(`output/home-v0/performance${mobile ? '-mobile' : ''}${
 let browser, server, variant = 'baseline';
 const rows = [];
 (async () => {
-  const dirs = { baseline: path.resolve('output/baseline-dist'), updated: path.resolve('frontend/dist') };
+  const dirs = { ...(optimized ? {} : { baseline: path.resolve('output/baseline-dist') }), updated: path.resolve('frontend/dist') };
   for (const dir of Object.values(dirs)) if (!fs.existsSync(path.join(dir, 'index.html'))) throw new Error(`Missing prepared build: ${dir}`);
   const app = express(); app.use('/api/v1', fixture);
   const statics = Object.fromEntries(Object.entries(dirs).map(([key, dir]) => [key, express.static(dir)]));
