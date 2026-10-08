@@ -139,7 +139,29 @@ export function AdminUsersPage() {
       <strong className="admin-hidden-account">Скрытый аккаунт</strong><small className="admin-hidden-id">ID ·••••{user.id.slice(-6)}</small>
       <p className="admin-muted">{user.hiddenAt ? `Скрыт ${adminDate(user.hiddenAt, true)}` : ''}</p>{actions(user)}
     </article> : <article key={user.id} data-user-card={user.id} className="admin-user-mobile" style={styles.card}>
-      <strong className="admin-user-email">{user.email}</strong>{newMark(user)}{spamSet.has(user.email.trim().toLowerCase()) && <span className="admin-spam-badge">Спам</span>}<dl><dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd><dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd><dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd><dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd><dt>Баланс</dt><dd>{balances(user)}</dd></dl>{signals(user)}{actions(user)}
+      <div className="admin-user-mobile-heading">
+        <strong className="admin-user-email">{user.email}</strong>
+        {newMark(user)}
+        {spamSet.has(user.email.trim().toLowerCase()) && <span className="admin-spam-badge">Спам</span>}
+        {signals(user)}
+      </div>
+      <div className="admin-user-mobile-summary">
+        <span className="admin-user-mobile-last-login">{lastLogin(user.lastLoginAt)}</span>
+        {kycCell(user.kycStatus)}
+      </div>
+      <div className="admin-user-mobile-bottom">
+        {actions(user)}
+        <details className="admin-user-mobile-details">
+          <summary>Подробнее</summary>
+          <dl>
+            <dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd>
+            <dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd>
+            <dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd>
+            <dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd>
+            <dt>Баланс</dt><dd>{balances(user)}</dd>
+          </dl>
+        </details>
+      </div>
     </article>)}</div>
     {spamTarget && <SpamEmailDialog {...spamTarget} onClose={() => setSpamTarget(null)} onSaved={() => { setSpamTarget(null); spam.reload(); read.reload(); }} />}
     {deleting && <DeleteUserDialog user={deleting} onClose={() => setDeleting(null)} onDeleted={() => { setNotice('Аккаунт удалён.'); setDeleting(null); changed(); }} />}
