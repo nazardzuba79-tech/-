@@ -63,6 +63,7 @@ const report = { views: [], transitions: [], pageErrors: [], writesBlocked: 0, e
         const desktop = page.locator('.nav-desktop-links');
         if (await desktop.isVisible()) {
           const disclosure = desktop.locator('.header-disclosure').filter({has:page.locator('.header-disclosure-heading > a[href="/trade"]')});
+          await page.mouse.move(0, 0);
           await disclosure.hover();
           await disclosure.locator('.header-disclosure-panel').waitFor();
           return disclosure.locator('.header-disclosure-panel');
@@ -93,6 +94,7 @@ const report = { views: [], transitions: [], pageErrors: [], writesBlocked: 0, e
       // Shared HomeHeader must expose the same single stock menu item.
       await page.setViewportSize({width:1920,height:1000}); await page.goto(origin+'/');
       const homeTrade = page.locator('.header-disclosure:visible').filter({has:page.locator('.header-disclosure-heading > a[href="/trade"]')});
+      await page.mouse.move(0, 0);
       await homeTrade.hover();
       await homeTrade.locator('.header-disclosure-panel').waitFor();
       assert.equal(await homeTrade.locator('a[href="/stocks"]').count(),1);

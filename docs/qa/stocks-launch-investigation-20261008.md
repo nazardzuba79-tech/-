@@ -74,3 +74,9 @@ Before first real activation:
 
 
 Confirmed local socket probe:100simultaneous direct history GETs,32success/68ECONNRESET,68server drop events; subsequent healthOK. No limits raised. Linux paired financial fixture now has1500MiB/noSwap cap, PostgreSQL1600MiB/noSwap; stock .05CPU256MiB/noSwap. First disk job failed because backing device lookup was empty; raw log preserved. Updated inventory records mount/lsblk before selecting a device, and keeps an explicit failed I/O gate when no verifiable device is exposed.
+
+### Evidence runner corrections
+
+The new drain instrumentation revealed a harness defect: a zero-reader child can exit before the benchmark attaches its exit listener. Awaiting that missed event allowed Node to exit with code 0 and an empty artifact. Those short green runs are discarded, not performance passes. A bounded close/error-aware drain now handles already-exited children; three regression tests cover early exit, graceful stop, and failed child. A beforeExit completeness guard, measured-case/sample assertions and required result file prevent false green.
+
+The constrained runner also exposed an incompatible host taskset binary (GLIBC_2.38 on a Bookworm container) and whitespace in findmnt MAJ:MIN output that prevented matching the real device. CI now builds native util-linux into a separate benchmark-only image and trims device identifiers. Production stock image/resources are unchanged. Navigation fixture QA moves the pointer outside the disclosure before hover, ensuring a real enter event after route changes; product UI is unchanged.
