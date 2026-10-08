@@ -12,6 +12,8 @@ export function cfdQuoteCurrency(symbol: string): string {
   return Object.prototype.hasOwnProperty.call(CFD_DECIMALS, symbol) ? symbol.slice(-3) : '—';
 }
 
+export function cfdPriceDecimals(symbol:string):number{return CFD_DECIMALS[symbol]??5;}
+
 export function formatCfdPrice(value:string|number|null,symbol:string):string{
   if(value===null||value===''||!Number.isFinite(Number(value)))return '—';
   const price=Number(value);if(price<=0)return '—';
