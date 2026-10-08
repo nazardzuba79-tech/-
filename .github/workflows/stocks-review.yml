@@ -60,19 +60,21 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
           QA_FLAG_OFF_DIST: /tmp/stocks-flag-off
-          QA_OUT: ${{ github.workspace }}/.ci-output/stocks-ui
+          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/panel-overview
         run: node scripts/qa-stocks-ui.cjs
       - name: Shared Trading navigation and terminal isolation (fixtures only)
         if: ${{ !cancelled() }}
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
-          QA_OUTPUT: ${{ github.workspace }}/.ci-output/stocks-navigation
+          QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/navigation
         run: node scripts/qa-stocks-navigation.cjs
+      # Not a dot-directory: upload-artifact@v4 skips hidden paths by default.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: stocks-ui-browser-${{ github.sha }}
-          path: .ci-output
+          path: stocks-ui-evidence
+          if-no-files-found: error
   crypto-service-comparison:
     runs-on: ubuntu-latest
     timeout-minutes: 30
