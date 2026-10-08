@@ -89,10 +89,10 @@ exports.run = async ({ origin, out, state }) => {
     check('Read-only navigation has zero financial writes', state.writes.length === 0);
     await page.goto(`${origin}/admin/users/qa-user-1`);
     await page.locator('.admin-main h1').filter({ hasText: 'client.01' }).waitFor();
-    const openAdjustment = async () => { await page.getByText('Дополнительные действия', { exact: true }).click(); await page.getByRole('button', { name: 'Корректировка баланса', exact: true }).click(); };
+    const openAdjustment = async () => { await page.getByRole('tab', { name: 'Пополнения', exact: true }).click(); await page.getByRole('button', { name: 'Корректировка баланса', exact: true }).click(); };
     await openAdjustment(); await page.getByRole('button', { name: 'Отмена', exact: true }).click();
     check('Cancel adjustment writes nothing', state.writes.length === 0);
-    // The details menu stays open after closing its dialog.
+    // The selected Deposits tab retains its adjustment entry after closing.
     await page.getByRole('button', { name: 'Корректировка баланса', exact: true }).click();
     await page.getByLabel('Сумма со знаком + / −', { exact: true }).fill('10');
     await page.getByLabel('Причина', { exact: true }).fill('Synthetic browser recovery');

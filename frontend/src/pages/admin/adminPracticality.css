@@ -73,6 +73,10 @@
 .admin-state-warning { color: var(--sell); font-size: 12px; }
 .admin-detail-view> .admin-list-heading { margin-top: 14px; }
 .admin-detail-view h1 { overflow-wrap: anywhere; }
+.admin-deposit-adjustment { margin: 14px 0; }
+.admin-deposit-adjustment button { align-self: flex-start; max-width: 100%; white-space: normal; }
+.admin-deposit-adjustment button:disabled { opacity: .55; cursor: not-allowed; }
+.admin-deposit-adjustment p { margin: 10px 0 0; font-size: 12px; line-height: 1.5; }
 .admin-detail-overview { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
 .admin-tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); margin: 16px 0; }
 .admin-tabs button { padding: 12px 14px; flex-shrink: 0; background: transparent; color: var(--text-secondary); border: 0; border-bottom: 2px solid transparent; font-size: 13px; }
