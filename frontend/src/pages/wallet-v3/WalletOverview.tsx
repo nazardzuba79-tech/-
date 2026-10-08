@@ -46,7 +46,6 @@ const ACTION_BASE =
   'wallet-btn flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-w px-4 text-[13px] font-semibold leading-5 transition-colors duration-150 ease-exp';
 const ACTION_PRIMARY = ACTION_BASE + ' bg-gold text-[#1a1400] hover:bg-gold-light';
 const ACTION_SECONDARY = ACTION_BASE + ' border border-hair bg-panel text-ink hover:border-hair-strong hover:bg-panel-2';
-const ACTION_OFF = ACTION_BASE + ' wallet-action-convert cursor-not-allowed border border-hair bg-panel text-ink-4';
 const ICON_BUTTON = 'wallet-account-icon-button';
 
 type Tab = 'account' | 'asset';
@@ -97,6 +96,7 @@ export function WalletOverview({
   onDeposit,
   onWithdraw,
   onTransfer,
+  onConvert,
   onHistory,
   onOpenUnified,
   onOpenFunding,
@@ -115,6 +115,7 @@ export function WalletOverview({
   onDeposit: () => void;
   onWithdraw: () => void;
   onTransfer: () => void;
+  onConvert: () => void;
   onHistory: () => void;
   onOpenUnified: () => void;
   onOpenFunding: () => void;
@@ -228,7 +229,7 @@ export function WalletOverview({
             <ArrowLeftRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.transfer')}
           </button>
-          <button type="button" disabled aria-disabled="true" title={t('wallet.convertUnavailable')} className={ACTION_OFF}>
+          <button type="button" onClick={onConvert} className={`${ACTION_SECONDARY} wallet-action-convert`}>
             <RepeatIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.convert')}
           </button>

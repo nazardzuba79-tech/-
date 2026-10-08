@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import BigNumber from 'bignumber.js';
 import {
   ArrowDownToLineIcon,
   ArrowLeftRightIcon,
@@ -11,15 +12,16 @@ import { api } from '../../lib/api';
 import { Key, localeOf, useLanguage } from '../../lib/i18n';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { EmptyState } from './ui';
-import { MASK, decimalsFor, formatAmount } from './format';
+import { MASK, decimalsFor } from './format';
 
 /**
  * Real account activity only — the exchange's own deposits, withdrawals and
- * spot fills. Nothing here is generated to fill the table: an account with
+ * spot fills, audited real adjustments and internal conversions. Nothing here
+ * is generated to fill the table: an account with
  * no history shows an empty state.
  */
 
-type Kind = 'deposit' | 'withdraw' | 'trade';
+type Kind = 'deposit' | 'withdraw' | 'trade' | 'adjustment' | 'conversion';
 type Status = 'done' | 'pending' | 'rejected' | 'belowMinimum';
 
 interface Row {
@@ -27,7 +29,9 @@ interface Row {
   kind: Kind;
   asset: string;
   /** Signed units: positive in, negative out. */
-  amount: number;
+  amount: string;
+  toAsset?: string;
+  toAmount?: string;
   status: Status;
   at: number;
   chain?: string;
@@ -45,12 +49,16 @@ const KIND_ICON: Record<Kind, typeof ArrowDownToLineIcon> = {
   deposit: ArrowDownToLineIcon,
   withdraw: ArrowUpFromLineIcon,
   trade: ArrowLeftRightIcon,
+  adjustment: ArrowDownToLineIcon,
+  conversion: ArrowLeftRightIcon,
 };
 
 const KIND_LABEL: Record<Kind, Key> = {
   deposit: 'wallet.txDeposit',
   withdraw: 'wallet.txWithdraw',
   trade: 'wallet.txTrade',
+  adjustment: 'wallet.txAdjustments',
+  conversion: 'wallet.convert',
 };
 
 const STATUS_STYLE: Record<Status, { className: string; dot: string; label: Key }> = {
@@ -72,21 +80,31 @@ function withdrawalStatus(status: string): Status {
   return 'pending';
 }
 
-export function TransactionHistory({ hidden }: { hidden: boolean }) {
+export function TransactionHistory({ hidden, refreshKey = 0 }: { hidden: boolean; refreshKey?: number }) {
   const { t, lang } = useLanguage();
   const [tab, setTab] = useState<'all' | Kind>('all');
   const [rows, setRows] = useState<Row[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [partial, setPartial] = useState(false);
 
   useEffect(() => {
-    Promise.all([api.getMyDeposits(), api.getMyWithdrawals(), api.getMyTrades()])
-      .then(([deposits, withdrawals, trades]) => {
+    let active = true;
+    setFailed(false); setPartial(false); setRows(null);
+    Promise.allSettled([api.getMyDeposits(), api.getMyWithdrawals(), api.getMyTrades(), api.getWalletActivity()])
+      .then(([d, w, tr, activity]) => {
+        if (!active) return;
+        const settled = [d, w, tr, activity];
+        if (settled.every(r => r.status === 'rejected')) { setFailed(true); return; }
+        setPartial(settled.some(r => r.status === 'rejected'));
+        const deposits = d.status === 'fulfilled' ? d.value : [];
+        const withdrawals = w.status === 'fulfilled' ? w.value : [];
+        const trades = tr.status === 'fulfilled' ? tr.value : [];
         const items: Row[] = [
           ...deposits.map((d): Row => ({
             id: `dep-${d.id}`,
             kind: 'deposit',
             asset: d.asset,
-            amount: Number(d.amount),
+            amount: d.amount,
             status: depositStatus(d.status),
             at: new Date(d.createdAt).getTime(),
             chain: d.chain,
@@ -96,7 +114,7 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
             id: `wd-${w.id}`,
             kind: 'withdraw',
             asset: w.asset,
-            amount: -Number(w.amount),
+            amount: new BigNumber(w.amount).negated().toFixed(),
             status: withdrawalStatus(w.status),
             at: new Date(w.createdAt).getTime(),
           })),
@@ -106,17 +124,22 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
               id: `tr-${tr.id}`,
               kind: 'trade',
               asset: base,
-              amount: tr.side === 'BUY' ? Number(tr.quantity) : -Number(tr.quantity),
+              amount: new BigNumber(tr.quantity).times(tr.side === 'BUY' ? 1 : -1).toFixed(),
               status: 'done',
               at: new Date(tr.executedAt).getTime(),
             };
           }),
+          ...(activity.status === 'fulfilled' ? activity.value.map((a): Row => ({
+            id: `activity-${a.id}`, kind: a.kind, asset: a.asset, amount: a.amount,
+            toAsset: a.toAsset, toAmount: a.toAmount, status: 'done', at: new Date(a.createdAt).getTime(),
+          })) : []),
         ];
         items.sort((a, b) => b.at - a.at);
         setRows(items);
       })
-      .catch(() => setFailed(true));
-  }, []);
+      .catch(() => { if (active) setFailed(true); });
+    return () => { active = false; };
+  }, [refreshKey]);
 
   const visible = useMemo(() => (rows ?? []).filter((r) => tab === 'all' || r.kind === tab), [rows, tab]);
 
@@ -125,6 +148,8 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
     { id: 'deposit', label: t('wallet.txDeposits') },
     { id: 'withdraw', label: t('wallet.txWithdrawals') },
     { id: 'trade', label: t('wallet.txTrades') },
+    { id: 'adjustment', label: t('wallet.txAdjustments') },
+    { id: 'conversion', label: t('wallet.convert') },
   ];
 
   return (
@@ -151,6 +176,7 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
       </div>
 
       <div className="overflow-hidden rounded-wlg border border-hair bg-panel shadow-panel">
+        {partial && <p role="status" className="px-4 py-3 text-[13px] text-ink-3">{t('wallet.txPartial')}</p>}
         {failed ? (
           <EmptyState icon={WifiOffIcon} title={t('wallet.dataUnavailable')} description={t('wallet.historyUnavailableBody')} compact />
         ) : rows === null ? (
@@ -175,6 +201,17 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
                   const s = STATUS_STYLE[r.status];
                   const explorer = r.chain && r.txHash ? EXPLORER_TX_URL[r.chain]?.(r.txHash) : undefined;
                   const dp = decimalsFor(r.asset);
+                  const units = new BigNumber(r.amount);
+                  // Keep original decimal strings; never round money through Number.
+                  const signed = (value: string, places: number) => {
+                    const n = new BigNumber(value);
+                    const parts = new Intl.NumberFormat(localeOf(lang)).formatToParts(12345.6);
+                    const text = n.abs().toFormat(n.abs().lt(new BigNumber(10).pow(-places)) ? 18 : places, BigNumber.ROUND_DOWN, {
+                      groupSize: 3, groupSeparator: parts.find(p => p.type === 'group')?.value ?? ',',
+                      decimalSeparator: parts.find(p => p.type === 'decimal')?.value ?? '.',
+                    });
+                    return `${n.gt(0) ? '+' : n.lt(0) ? '-' : ''}${text}`;
+                  };
                   return (
                     <tr key={r.id} className="border-b border-hair-soft transition-colors duration-150 ease-exp last:border-b-0 hover:bg-panel-2">
                       <td className="whitespace-nowrap px-4 py-3 sm:pl-5">
@@ -182,17 +219,18 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
                           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-wsm border border-hair bg-panel-2">
                             <Icon className="h-3.5 w-3.5 text-ink-3" strokeWidth={1.8} />
                           </span>
-                          <span className="text-[14px] font-medium leading-5 text-ink">{t(KIND_LABEL[r.kind])}</span>
+                          <span className="text-[14px] font-medium leading-5 text-ink">{t(r.kind === 'adjustment' ? units.gt(0) ? 'wallet.txCredit' : 'wallet.txDebit' : KIND_LABEL[r.kind])}</span>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-3 py-3">
                         <div className="flex items-center gap-2">
                           <CryptoIcon symbol={r.asset} size={18} />
-                          <span className="text-[14px] font-medium leading-5 text-ink-2">{r.asset}</span>
+                          <span className="text-[14px] font-medium leading-5 text-ink-2">{r.toAsset ? `${r.asset} → ${r.toAsset}` : r.asset}</span>
                         </div>
                       </td>
-                      <td className={`num whitespace-nowrap px-3 py-3 text-right text-[14px] font-semibold leading-5 ${r.amount >= 0 ? 'text-pos' : 'text-neg'}`}>
-                        {hidden ? MASK : `${r.amount > 0 ? '+' : '-'}${formatAmount(Math.abs(r.amount), lang, dp)}`}
+                      <td title={hidden ? undefined : r.toAmount ? `${r.amount} ${r.asset} → +${r.toAmount} ${r.toAsset}` : r.amount} className={`num whitespace-nowrap px-3 py-3 text-right text-[14px] font-semibold leading-5 ${units.gte(0) ? 'text-pos' : 'text-neg'}`}>
+                        {hidden ? MASK : signed(r.amount, dp)}
+                        {!hidden && r.toAmount && r.toAsset && <div className="text-pos">{signed(r.toAmount, decimalsFor(r.toAsset))} {r.toAsset}</div>}
                       </td>
                       <td className="whitespace-nowrap px-3 py-3">
                         <span className={`inline-flex items-center gap-1.5 rounded-wsm px-2 py-1 text-[12px] font-medium leading-4 ${s.className}`}>
