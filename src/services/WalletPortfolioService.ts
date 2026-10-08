@@ -138,10 +138,10 @@ export class WalletPortfolioService {
    *
    * Crypto comes from the exchange's own Kraken-mirrored ticker feed — the
    * same numbers the terminal trades on. Stables are pegged, following the
-   * valuation the rest of the app already uses. EUR reuses the existing CFD
-   * provider's EURUSD instrument rather than adding a market-data provider
-   * for one currency; when that provider is not configured, EUR simply has
-   * no price and the UI says so.
+   * valuation the rest of the app already uses. Fiat holdings use existing
+   * USD spot pairs (including inverse pairs); EUR keeps its prior CFD
+   * fallback when no spot quote is available. Missing prices remain unknown.
+   * These display valuations are not conversion execution prices.
    */
   async pricesFor(assets: string[]): Promise<PriceMap> {
     const wanted = new Set(assets.map((a) => a.toUpperCase()));
@@ -156,9 +156,10 @@ export class WalletPortfolioService {
     const byBase = new Map<string, number>();
     for (const t of tickers) {
       const [base, quote] = t.pair.split('/');
-      if (quote !== 'USDT') continue;
       const price = Number(t.lastPrice);
-      if (Number.isFinite(price) && price > 0) byBase.set(base, price);
+      if (!Number.isFinite(price) || price <= 0) continue;
+      if (quote === 'USDT' || (quote === 'USD' && ['EUR', 'GBP', 'CHF', 'JPY', 'AUD', 'CAD'].includes(base))) byBase.set(base, price);
+      if (base === 'USD' && ['EUR', 'GBP', 'CHF', 'JPY', 'AUD', 'CAD'].includes(quote)) byBase.set(quote, 1 / price);
     }
 
     // Account valuation, not a public market-data request. The listing price
@@ -178,8 +179,8 @@ export class WalletPortfolioService {
       for (const asset of held) byBase.set(asset.symbol, simulationFor(asset).priceAt(Date.now()) ?? asset.initialPrice);
     }
 
-    let eurUsd: number | null = null;
-    if (wanted.has('EUR') && this.cfdData.isConfigured()) {
+    let eurUsd: number | null = byBase.get('EUR') ?? null;
+    if (eurUsd === null && wanted.has('EUR') && this.cfdData.isConfigured()) {
       try {
         const cfd = await this.cfdData.getTickers();
         const eur = cfd.find((c) => c.symbol === 'EURUSD');

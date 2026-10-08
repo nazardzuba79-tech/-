@@ -70,6 +70,9 @@ const APPROVED_AUTH_DESIGN_KEYS = [
 // PR #466: two additive auth promotional labels. Only these exact additions
 // are omitted from the historical digest; existing numeric/other copy is not changed.
 const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySubtitle'];
+// Additive funded-wallet conversion/history vocabulary; do not rehash older copy.
+const WALLET_CONVERSION_KEYS = ['title','subtitle','from','to','fiat','crypto','preview','receive','rate','fee','priceNotice','success','unavailable','refreshQuote','insufficient','unknown','check','retry']
+  .map(key => `wallet.conversion.${key}`).concat(['wallet.txAdjustments','wallet.txCredit','wallet.txDebit','wallet.txPartial']);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
@@ -313,6 +316,7 @@ describe('translation integrity', () => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
         if (key && APPROVED_AUTH_DESIGN_KEYS.includes(key)) return false;
         if (key && AUTH_COMMUNITY_KEYS.includes(key)) return false;
+        if (key && WALLET_CONVERSION_KEYS.includes(key)) return false;
         // Keys ADDED since the digests were taken are excluded by name
         // rather than by re-taking seven digests — that is what keeps the
         // guard meaningful: every OTHER byte of every dictionary still has

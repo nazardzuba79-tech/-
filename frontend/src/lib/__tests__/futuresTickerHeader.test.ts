@@ -287,6 +287,11 @@ test.each([
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
   const source = path === 'frontend/src/lib/api.ts' ? read(path)
+    // Only the new funded-wallet API additions are excluded. All pre-existing
+    // transport, auth, Spot/Futures and index/OI methods keep their fingerprint.
+    .replace(/export interface WalletConversionQuote \{[\s\S]*?export interface WalletConversionReceipt[^\n]*\n\n/, '')
+    .replace(/^  getConversionReceipt:[^\n]*\n\n/m, '')
+    .replace(/^  (?:getWalletActivity|getConversionAssets|quoteConversion|confirmConversion):[^\n]*\n/gm, '')
     // Reuse the identical authenticated transport in the lazy OTC module.
     .replace('export async function request<T>', 'async function request<T>')
     // Remembered-device auth (2026-10-03, admin accounts only) adds logout and

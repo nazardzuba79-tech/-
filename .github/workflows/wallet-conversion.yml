@@ -1,0 +1,79 @@
+name: Wallet conversion safety
+on:
+  pull_request:
+    paths:
+      - 'src/services/WalletConversionService.ts'
+      - 'src/services/WalletPortfolioService.ts'
+      - 'src/services/WalletMutation.ts'
+      - 'src/services/BalanceAdjustmentService.ts'
+      - 'src/api/routes/walletActivity.ts'
+      - 'src/index.ts'
+      - 'src/services/__tests__/WalletConversionService.test.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'frontend/src/pages/WalletPage.tsx'
+      - 'frontend/src/pages/wallet-v3/**'
+      - 'frontend/src/lib/__tests__/walletConversion.test.ts'
+      - 'scripts/*wallet-conversion*.cjs'
+      - '.github/workflows/wallet-conversion.yml'
+permissions:
+  contents: read
+jobs:
+  wallet-conversion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: frontend
+      - run: npx prisma generate
+      - name: Backend build
+        run: npm run build
+      - name: Frontend build
+        run: npm run build
+        working-directory: frontend
+      - name: Financial and wallet UI regressions
+        run: >-
+          npm test -- --runInBand --json --outputFile=wallet-conversion-tests.json
+          --runTestsByPath
+          src/services/__tests__/WalletConversionService.test.ts
+          src/services/__tests__/WalletPortfolioService.test.ts
+          src/services/__tests__/BalanceAdjustmentService.test.ts
+          src/services/__tests__/DepositService.test.ts
+          src/api/routes/__tests__/adminDeposits.test.ts
+          src/api/routes/__tests__/deposits.test.ts
+          frontend/src/lib/__tests__/walletConversion.test.ts
+          frontend/src/lib/__tests__/walletUxRefinement.test.ts
+          frontend/src/lib/__tests__/walletOverview.test.ts
+          frontend/src/lib/__tests__/walletUnifiedAccount.test.ts
+      - name: Isolated QA tools only (not application dependencies)
+        run: |
+          npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts --no-audit --no-fund pg@8.23.1 playwright@1.58.2
+          output/wallet-qa-deps/node_modules/.bin/playwright install --with-deps chromium
+      - name: Runner PostgreSQL tools (new temporary cluster only)
+        run: |
+          pg_config --version
+          test -x "$(pg_config --bindir)/initdb"
+          test -x "$(pg_config --bindir)/pg_ctl"
+          echo "WALLET_QA_PG_BIN=$(pg_config --bindir)" >> "$GITHUB_ENV"
+      - name: Real disposable PostgreSQL and network-denied browser acceptance
+        env:
+          WALLET_QA_BROWSER: '1'
+        run: node scripts/test-wallet-conversion-postgres.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wallet-conversion-evidence
+          path: |
+            wallet-conversion-tests.json
+            output/wallet-conversion/*.json
+            output/wallet-conversion/*.png
+            output/wallet-conversion/*.log
