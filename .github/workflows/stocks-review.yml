@@ -171,7 +171,8 @@ jobs:
           docker run --rm --cpus .05 --memory 256m --memory-swap 256m --pids-limit 32 --network none --read-only --cap-drop ALL --security-opt no-new-privileges --mount type=bind,src="$RUNNER_TEMP/stock-disk/seed",dst=/data -e STOCK_LOAD_DB=/data/load.sqlite -e STOCK_LOAD_SEED_ONLY=true -e STOCK_FIXTURE_NOW voltex-stock-after node load-fixture.mjs
       - name: Paired before / after / separate CPU experiments on same runner and real disk
         run: |
-          docker update --cpuset-cpus "$BENCH_CPU" $(docker ps --filter ancestor=postgres:16 -q)
+          # Match existing Hetzner hard ceilings; never give crypto a larger budget.
+          docker update --memory 1600m --memory-swap 1600m --cpuset-cpus "$BENCH_CPU" $(docker ps --filter ancestor=postgres:16 -q)
           export STOCK_BENCH_SEED="$RUNNER_TEMP/stock-disk/seed/load.sqlite"
           for variant in before after separated; do
             export STOCK_BENCH_OUTPUT="$PWD/.ci-output/stock-launch/$variant"
@@ -181,7 +182,8 @@ jobs:
             export STOCK_BENCH_CASES=A,B,C,D10,D50,D100,E,F
             if [ "$variant" = before ]; then export STOCK_BENCH_IMAGE=voltex-stock-before; fi
             if [ "$variant" = separated ]; then export STOCK_BENCH_CPU="$LOAD_CPU"; export STOCK_BENCH_CASES=A,C,D100,F; fi
-            taskset -c "$BENCH_CPU" node services/stocks/crypto-comparison.cjs
+            mkdir -p "$STOCK_BENCH_OUTPUT"
+            sudo --preserve-env=STOCK_BENCH_SEED,STOCK_BENCH_OUTPUT,STOCK_BENCH_DISK,STOCK_BENCH_IMAGE,STOCK_BENCH_CPU,STOCK_BENCH_CASES,STOCK_BENCH_DEVICE,STOCK_FIXTURE_NOW,BENCH_CPU,LOAD_CPU,PATH systemd-run --scope --quiet -p MemoryMax=1500M -p MemorySwapMax=0 taskset -c "$BENCH_CPU" node services/stocks/crypto-comparison.cjs
           done
       - name: Summarize without treating completed evidence as acceptance
         if: always()
