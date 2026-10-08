@@ -80,7 +80,7 @@ const painted=()=>{
  placeholders:document.querySelectorAll('#home-live-terminal .hs-empty, .hs-tape-empty, .vx-heatmap-empty').length,
  };
 };
-const ready=state=>state.scene===1&&state.columnData.length===9&&state.columnData.every(row=>/^(?:S&P 500)?[A-Z/0-9]+(?:CFD|STOCKS SOON)?$/.test(row.text)&&!row.quote)&&state.terminals===1&&state.terminalVisible&&state.duplicateTerminalInColumn===0&&state.candles===1&&state.bookRows>=2&&state.tradeRows>=1&&state.tapeBtc&&state.heatmap===1&&state.heatmapBtc&&state.marketsBtc&&state.placeholders===0&&state.overviewPlaceholders===0&&/61/.test(state.overview)&&/55\.1%/.test(state.overview)&&/4349\.19/.test(state.overview)&&/Layer 1/.test(state.overview);
+const ready=state=>state.scene===1&&state.columnData.length===8&&state.columnData.every(row=>/^(?:CFD|STOCKS SOON)?$/.test(row.text)&&!row.quote)&&state.terminals===1&&state.terminalVisible&&state.duplicateTerminalInColumn===0&&state.candles===1&&state.bookRows>=2&&state.tradeRows>=1&&state.tapeBtc&&state.heatmap===1&&state.heatmapBtc&&state.marketsBtc&&state.placeholders===0&&state.overviewPlaceholders===0&&/61/.test(state.overview)&&/55\.1%/.test(state.overview)&&/4349\.19/.test(state.overview)&&/Layer 1/.test(state.overview);
 // Both probes run inside the page, so they travel as source text.
 const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
 

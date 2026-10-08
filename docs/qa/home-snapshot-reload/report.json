@@ -1,7 +1,7 @@
 {
-  "startedAt": "2026-10-08T05:59:10.900Z",
+  "startedAt": "2026-10-08T07:33:23.893Z",
   "firstVisit": {
-    "readyMs": 599,
+    "readyMs": 555,
     "marketRequests": 8,
     "metadataRequests": 1,
     "painted": {
@@ -9,47 +9,42 @@
       "columnData": [
         {
           "symbol": "BTC",
-          "text": "BTC",
+          "text": "",
           "quote": false
         },
         {
           "symbol": "AAPL",
-          "text": "AAPLSTOCKS SOON",
+          "text": "STOCKS SOON",
           "quote": false
         },
         {
           "symbol": "OIL",
-          "text": "OILCFD",
+          "text": "CFD",
           "quote": false
         },
         {
           "symbol": "GOLD",
-          "text": "GOLDCFD",
+          "text": "CFD",
           "quote": false
         },
         {
           "symbol": "ETH",
-          "text": "ETH",
+          "text": "",
           "quote": false
         },
         {
           "symbol": "NVDA",
-          "text": "NVDASTOCKS SOON",
+          "text": "STOCKS SOON",
           "quote": false
         },
         {
           "symbol": "EURUSD",
-          "text": "EUR/USDCFD",
-          "quote": false
-        },
-        {
-          "symbol": "US500",
-          "text": "S&P 500US500CFD",
+          "text": "CFD",
           "quote": false
         },
         {
           "symbol": "SOL",
-          "text": "SOL",
+          "text": "",
           "quote": false
         }
       ],
@@ -164,53 +159,48 @@
     ]
   },
   "reload": {
-    "readyMs": 294,
+    "readyMs": 400,
     "painted": {
       "scene": 1,
       "columnData": [
         {
           "symbol": "BTC",
-          "text": "BTC",
+          "text": "",
           "quote": false
         },
         {
           "symbol": "AAPL",
-          "text": "AAPLSTOCKS SOON",
+          "text": "STOCKS SOON",
           "quote": false
         },
         {
           "symbol": "OIL",
-          "text": "OILCFD",
+          "text": "CFD",
           "quote": false
         },
         {
           "symbol": "GOLD",
-          "text": "GOLDCFD",
+          "text": "CFD",
           "quote": false
         },
         {
           "symbol": "ETH",
-          "text": "ETH",
+          "text": "",
           "quote": false
         },
         {
           "symbol": "NVDA",
-          "text": "NVDASTOCKS SOON",
+          "text": "STOCKS SOON",
           "quote": false
         },
         {
           "symbol": "EURUSD",
-          "text": "EUR/USDCFD",
-          "quote": false
-        },
-        {
-          "symbol": "US500",
-          "text": "S&P 500US500CFD",
+          "text": "CFD",
           "quote": false
         },
         {
           "symbol": "SOL",
-          "text": "SOL",
+          "text": "",
           "quote": false
         }
       ],
@@ -368,12 +358,11 @@
     },
     "marketRequests": [],
     "metadataRequests": [
-      "/api/v1/market/assets/icons?symbols=BTC%2CETH%2CSOL%2CXAU",
       "/api/v1/market/assets/icons?symbols=BTC%2CETH%2CSOL%2CXAU"
     ]
   },
   "coldVisit": {
-    "readyMs": 286,
+    "readyMs": 447,
     "marketRequests": 8
   },
   "writes": [],

@@ -1,64 +1,52 @@
 /* Orbital market scene from the owner's approved hero image: a large centre
-   medallion, an elliptical orbit of crypto, CFD and stocks-soon medallions,
-   and a glowing gold platform that the orbit rises from. Drawn on a 460x690
+   medallion, a perspective ring of crypto, CFD and stocks-soon medallions and
+   a glowing graphite/gold platform they rise from. Medallions and platform are
+   pre-rendered transparent WebP (scripts/hero-medallions). Drawn on a 520x900
    design stage and scaled as one object, so marketPlatformMotion.ts stays exact. */
 .hs-root .hero { --orbit-k: .8; --orbit-x: 46%; --orbit-top: 0px; }
 .hs-root .vm-orbit {
   position: absolute;
   z-index: 3;
-  left: calc(var(--orbit-x) - 230px * var(--orbit-k));
+  left: calc(var(--orbit-x) - 260px * var(--orbit-k));
   top: var(--orbit-top);
-  width: calc(460px * var(--orbit-k));
-  height: calc(690px * var(--orbit-k));
+  width: calc(520px * var(--orbit-k));
+  height: calc(900px * var(--orbit-k));
 }
 .vm-orbit *, .vm-orbit *::before, .vm-orbit *::after { box-sizing: border-box; }
-.vm-orbit-stage { position: absolute; left: 0; top: 0; width: 460px; height: 690px; transform: scale(var(--orbit-k)); transform-origin: 0 0; }
-.vm-orbit-aura, .vm-orbit-rings, .vm-orbit-beam, .vm-orbit-pedestal, .vm-orbit-scene { position: absolute; }
-.vm-orbit-aura { left: -70px; top: -20px; width: 600px; height: 640px; border-radius: 50%; background: radial-gradient(closest-side, #f2c66a24, #f2c66a0d 45%, #0000 70%), radial-gradient(closest-side, #030c1ccc, #030c1c80 55%, #030c1c00); pointer-events: none; }
+.vm-orbit-stage { position: absolute; left: 0; top: 0; width: 520px; height: 900px; transform: scale(var(--orbit-k)); transform-origin: 0 0; }
+.vm-orbit-aura, .vm-orbit-floor, .vm-orbit-rings, .vm-spark-track, .vm-orbit-platform, .vm-orbit-beam, .vm-orbit-scene { position: absolute; }
+.vm-orbit-aura { left: -90px; top: -30px; width: 700px; height: 940px; border-radius: 50%; background: radial-gradient(closest-side, #f2c66a1c, #f2c66a0a 42%, #0000 70%), radial-gradient(closest-side, #030c1cc4, #030c1c7a 52%, #030c1c00); pointer-events: none; }
+/* Gold light pooling on the floor around the platform. */
+.vm-orbit-floor { left: -60px; top: 630px; width: 640px; height: 300px; background: radial-gradient(ellipse at 50% 42%, #f6c76a66, #f0b85a29 34%, #f0b85a00 66%); pointer-events: none; }
 
-/* Orbit lines and two sparks travelling on them. */
-.vm-orbit-rings { inset: 0; pointer-events: none; }
-.vm-ring, .vm-spark-track { position: absolute; border-radius: 50%; }
-.vm-ring-main { left: 86px; top: 68px; width: 288px; height: 444px; border: 1.5px solid #e9bd6a8c; transform: rotate(8deg); box-shadow: 0 0 12px #e9bd6a2e, inset 0 0 12px #e9bd6a1f; }
-.vm-ring-wide { left: 30px; top: 185px; width: 400px; height: 210px; border: 1px solid #e9bd6a4d; transform: rotate(-22deg); }
-.vm-ring-steep { left: 90px; top: 60px; width: 280px; height: 460px; border: 1px solid #e9bd6a3d; transform: rotate(22deg); }
-.vm-spark-track { left: 8px; top: 68px; width: 444px; height: 444px; transform: rotate(8deg) scaleX(.6486); }
-.vm-spark-b { left: 30px; top: 90px; width: 400px; height: 400px; transform: rotate(-22deg) scaleY(.525); }
+/* Orbit lines: the main one is the medallions' projected path. */
+.vm-orbit-rings { left: 0; top: 0; overflow: visible; pointer-events: none; }
+.vm-ring { fill: none; stroke: url(#vm-ring-gold); stroke-width: 1.4; }
+.vm-ring-main { stroke-width: 2; }
+.vm-ring-main-glow { stroke: #f1c46a; stroke-opacity: .7; stroke-width: 6; filter: url(#vm-ring-glow); }
+.vm-ring-wide { stroke-opacity: .7; }
+.vm-ring-steep { stroke-opacity: .55; }
+.vm-ring-dots circle { fill: #fff2cf; filter: drop-shadow(0 0 4px #f4c86a) drop-shadow(0 0 9px #f4c86a99); }
+/* Two sparks travelling on the decorative rings. */
+.vm-spark-track { left: 45px; top: 75px; width: 430px; height: 430px; border-radius: 50%; transform: rotate(-24deg) scaleY(.4651); pointer-events: none; }
+.vm-spark-b { left: 84px; top: 114px; width: 352px; height: 352px; transform: rotate(28deg) scaleY(1.3636); }
 .vm-spark-track i { position: absolute; inset: 0; border-radius: 50%; animation: vm-orbit-spin 26s linear infinite; }
 .vm-spark-b i { animation-duration: 38s; animation-direction: reverse; }
 .vm-spark-track i::after { content: ''; position: absolute; left: calc(50% - 5px); top: -5px; width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle, #fffbe9 0 22%, #f6cf75 38%, #f6cf7500 72%); box-shadow: 0 0 12px 3px #f4c86a99; }
 @keyframes vm-orbit-spin { to { transform: rotate(360deg); } }
 
+/* Platform asset (graphite/gold, lit top, floor reflection baked in). */
+.vm-orbit-platform { left: 25px; top: 623px; width: 470px; height: auto; max-width: none; user-select: none; pointer-events: none; }
 /* Light rising from the platform into the centre medallion. */
-.vm-orbit-beam { left: 145px; top: 270px; width: 170px; height: 300px; background: linear-gradient(to top, #ffe2a0d9 0%, #f6c66a73 34%, #f6c66a00 92%); -webkit-mask-image: linear-gradient(90deg, transparent, #000 34%, #000 66%, transparent); mask-image: linear-gradient(90deg, transparent, #000 34%, #000 66%, transparent); animation: vm-beam 3.6s ease-in-out infinite alternate; pointer-events: none; }
-@keyframes vm-beam { from { opacity: .62; } to { opacity: 1; } }
-
-/* Three-tier platform with gold rims and a lit top. */
-.vm-orbit-pedestal { left: 65px; top: 548px; width: 330px; height: 124px; pointer-events: none; }
-.vm-tier, .vm-tier-glow { position: absolute; border-radius: 50%; }
-.vm-tier-base { left: 0; right: 0; top: 40px; height: 76px; background: linear-gradient(180deg, #3a3020 0%, #17130c 48%, #070605 100%); box-shadow: inset 0 2px 0 #f1c873, inset 0 -3px 6px #e8b85a40, 0 0 0 1px #5d4419, 0 18px 34px #000d, 0 0 46px #e6b4583d; }
-.vm-tier-mid { left: 24px; right: 24px; top: 22px; height: 62px; background: linear-gradient(180deg, #4a3c22 0%, #1d170d 55%, #0b0906 100%); box-shadow: inset 0 2px 0 #f6d184, 0 0 0 1px #6a4e1e, 0 6px 14px #000b, 0 0 28px #efc06a4d; }
-.vm-tier-top { left: 56px; right: 56px; top: 4px; height: 50px; background: radial-gradient(ellipse at 50% 44%, #fff7dc 0%, #f6d07a 20%, #c18a33 44%, #4a3514 70%, #1c150b 100%); box-shadow: 0 0 0 2px #f2cb76, inset 0 0 0 7px #2a1f0e8c, inset 0 0 0 8.5px #f2cb7699, 0 0 34px #f4c76a99; }
-.vm-tier-glow { left: 90px; right: 90px; top: -6px; height: 40px; background: radial-gradient(closest-side, #fff4d0d9, #ffe1a000); filter: blur(4px); }
+.vm-orbit-beam { left: 140px; top: 400px; width: 240px; height: 300px; background: linear-gradient(to top, #ffe2a0d9 0%, #f6c66a73 34%, #f6c66a00 90%); -webkit-mask-image: linear-gradient(90deg, transparent, #000 34%, #000 66%, transparent); mask-image: linear-gradient(90deg, transparent, #000 34%, #000 66%, transparent); animation: vm-beam 3.6s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes vm-beam { from { opacity: .6; } to { opacity: 1; } }
 
 /* Medallions. Depth (translate) sorts overlap during the centre swap. */
 .vm-orbit-scene { inset: 0; transform-style: preserve-3d; touch-action: pan-y; }
-.vm-asset { position: absolute; left: 145px; top: 205px; width: 170px; height: 170px; transform-origin: 50% 50%; will-change: transform, opacity; }
-.vm-medal { position: relative; display: block; width: 170px; height: 170px; padding: 12px; border-radius: 50%; background: conic-gradient(from 205deg, var(--rim-a), var(--rim-b) 16%, var(--rim-c) 30%, var(--rim-d) 48%, var(--rim-b) 64%, var(--rim-c) 80%, var(--rim-a)); box-shadow: 0 0 0 1.5px var(--rim-edge), inset 0 2px 2px #ffffffa6, inset 0 -3px 5px #00000080, 0 18px 30px -10px #000000d9, 0 0 30px -6px var(--glow); }
-.vm-medal::before { content: ''; position: absolute; inset: 9px; border-radius: 50%; box-shadow: 0 0 0 1.5px #00000080, 0 0 0 3px var(--rim-line); pointer-events: none; }
-.vm-medal::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(120% 90% at 30% 12%, #ffffff73 0%, #ffffff1a 26%, #fff0 44%); pointer-events: none; }
-.vm-medal-face { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; border-radius: 50%; background: var(--face); box-shadow: inset 0 7px 14px #000000a6, inset 0 -2px 6px #ffffff2e; overflow: hidden; }
-.vm-medal-face img { display: block; width: 66px; height: 66px; object-fit: contain; user-select: none; filter: drop-shadow(0 2px 2px #0000006b); }
-.vm-card-symbol { font: 700 24px/1 Arial, Helvetica, sans-serif; letter-spacing: .03em; color: var(--ink); text-shadow: var(--ink-shadow); }
-.vm-index-mark { font: 800 30px/1 Arial, Helvetica, sans-serif; letter-spacing: -.01em; color: #c8102e; text-shadow: 0 1px 0 #ffffffb3; }
-.vm-asset-badge { position: absolute; left: 50%; top: calc(100% - 24px); transform: translateX(-50%); padding: 6px 13px 5px; border: 2px solid #d8a955; border-radius: 999px; background: linear-gradient(180deg, #1d2534, #0b1019); box-shadow: 0 6px 12px #000000b3, inset 0 1px 0 #ffffff1f; color: #f7e6c2; font: 700 18px/1 Arial, Helvetica, sans-serif; letter-spacing: .09em; white-space: nowrap; }
-
-.vm-asset { --rim-a: #fff3cf; --rim-b: #d9ac57; --rim-c: #8b5f1f; --rim-d: #f7dc98; --rim-edge: #4f3812; --rim-line: #f4d38a; --glow: #f1c46a8c; }
-.vm-asset[data-face=gold] { --rim-a: #fff6d6; --rim-b: #e7b65a; --rim-c: #946219; --rim-d: #fbe2a2; --glow: #f6c66acc;
-  --face: radial-gradient(circle at 50% 34%, #f9df9c 0%, #e2b154 34%, #b07b2a 68%, #6c4614 100%); --ink: #4c3107; --ink-shadow: 0 1px 0 #ffe7a6b3; }
-.vm-asset[data-face=gold] .vm-medal-face img { width: 82px; height: 82px; filter: drop-shadow(0 2px 1px #5a3a0bcc) drop-shadow(0 -1px 0 #fff4cf80); }
-.vm-asset[data-face=silver] { --face: radial-gradient(circle at 50% 30%, #ffffff 0%, #eef0f3 40%, #cdd2d8 78%, #a7aeb7 100%); --ink: #15181d; --ink-shadow: 0 1px 0 #ffffffb3; }
-.vm-asset[data-face=graphite] { --face: radial-gradient(circle at 50% 30%, #4a505a 0%, #262a31 46%, #121418 100%); --ink: #f4f5f7; --ink-shadow: 0 1px 2px #000000b3; }
+.vm-asset { position: absolute; left: 170px; top: 240px; width: 180px; height: 180px; transform-origin: 50% 50%; will-change: transform, opacity; }
+/* The render has a 1.32x margin for the bevel and its soft shadow. */
+.vm-coin { position: absolute; left: -16%; top: -16%; width: 132%; height: 132%; max-width: none; max-height: none; transform: scale(var(--coin-size, 1)); transform-origin: 50% 50%; user-select: none; pointer-events: none; }
+.vm-asset-badge { position: absolute; left: 50%; top: calc(100% - 26px); transform: translateX(-50%); padding: 5px 11px 4px; border: 2px solid #d8a955; border-radius: 999px; background: linear-gradient(180deg, #1a2231f0, #0a0f18f0); box-shadow: 0 5px 12px #000000a6, inset 0 1px 0 #ffffff1c; color: #f6e2b4; font: 700 17px/1 Inter, ui-sans-serif, system-ui, Arial, sans-serif; letter-spacing: .09em; white-space: nowrap; }
 
 .vm-motion-toggle { position: absolute; right: calc(34px * var(--orbit-k)); top: calc(20px * var(--orbit-k)); z-index: 4; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid #c8d3df55; border-radius: 50%; background: #071a31b8; color: #e4e9ef; cursor: pointer; }
 .vm-motion-toggle:hover { border-color: #e2bb6d; color: #fff; }
@@ -78,36 +66,37 @@
 @media (min-width: 901px) {
   .hs-root .hero > .art { left: 20%; width: 80%; -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%); mask-image: linear-gradient(90deg, transparent, #000 16%); }
 }
-@media (min-width: 901px) { .hs-root .hero { --orbit-k: 0.44; --orbit-x: 51.55%; } }
-@media (min-width: 961px) { .hs-root .hero { --orbit-k: 0.51; --orbit-x: 49.53%; } }
-@media (min-width: 1021px) { .hs-root .hero { --orbit-k: 0.48; --orbit-x: 51.22%; } }
-@media (min-width: 1061px) { .hs-root .hero { --orbit-k: 0.48; --orbit-x: 50.7%; } }
-@media (min-width: 1141px) { .hs-root .hero { --orbit-k: 0.56; --orbit-x: 49.03%; } }
-@media (min-width: 1221px) { .hs-root .hero { --orbit-k: 0.64; --orbit-x: 48.42%; } }
-@media (min-width: 1301px) { .hs-root .hero { --orbit-k: 0.69; --orbit-x: 47.43%; } }
-@media (min-width: 1341px) { .hs-root .hero { --orbit-k: 0.73; --orbit-x: 46.84%; } }
-@media (min-width: 1401px) { .hs-root .hero { --orbit-k: 0.78; --orbit-x: 46.05%; } }
-@media (min-width: 1461px) { .hs-root .hero { --orbit-k: 0.82; --orbit-x: 45.33%; } }
-@media (min-width: 1521px) { .hs-root .hero { --orbit-k: 0.86; --orbit-x: 44.18%; } }
-@media (min-width: 1601px) { .hs-root .hero { --orbit-k: 0.91; --orbit-x: 43.5%; } }
-@media (min-width: 1701px) { .hs-root .hero { --orbit-k: 0.97; --orbit-x: 43.29%; } }
-@media (min-width: 1801px) { .hs-root .hero { --orbit-k: 1.03; --orbit-x: 42.43%; } }
-@media (min-width: 1901px) { .hs-root .hero { --orbit-k: 1.05; --orbit-x: 40.11%; } }
-@media (min-width: 2101px) { .hs-root .hero { --orbit-k: 1.08; --orbit-x: 38.39%; } }
+@media (min-width: 901px) { .hs-root .hero { --orbit-k: 0.43; --orbit-x: 50.3%; --orbit-top: 44px; } }
+@media (min-width: 961px) { .hs-root .hero { --orbit-k: 0.49; --orbit-x: 49.05%; --orbit-top: 32px; } }
+@media (min-width: 1021px) { .hs-root .hero { --orbit-k: 0.55; --orbit-x: 47.7%; --orbit-top: 28px; } }
+@media (min-width: 1061px) { .hs-root .hero { --orbit-k: 0.46; --orbit-x: 50.3%; --orbit-top: 8px; } }
+@media (min-width: 1141px) { .hs-root .hero { --orbit-k: 0.52; --orbit-x: 49.21%; --orbit-top: 8px; } }
+@media (min-width: 1221px) { .hs-root .hero { --orbit-k: 0.59; --orbit-x: 48.81%; --orbit-top: 8px; } }
+@media (min-width: 1301px) { .hs-root .hero { --orbit-k: 0.62; --orbit-x: 47.48%; --orbit-top: 8px; } }
+@media (min-width: 1341px) { .hs-root .hero { --orbit-k: 0.63; --orbit-x: 46.02%; --orbit-top: 8px; } }
+@media (min-width: 1401px) { .hs-root .hero { --orbit-k: 0.64; --orbit-x: 44.68%; --orbit-top: 8px; } }
+@media (min-width: 1461px) { .hs-root .hero { --orbit-k: 0.67; --orbit-x: 43.11%; --orbit-top: 12px; } }
+@media (min-width: 1521px) { .hs-root .hero { --orbit-k: 0.7; --orbit-x: 42.57%; --orbit-top: 12px; } }
+@media (min-width: 1601px) { .hs-root .hero { --orbit-k: 0.74; --orbit-x: 42.24%; --orbit-top: 12px; } }
+@media (min-width: 1701px) { .hs-root .hero { --orbit-k: 0.78; --orbit-x: 43.1%; --orbit-top: 12px; } }
+@media (min-width: 1801px) { .hs-root .hero { --orbit-k: 0.84; --orbit-x: 40.86%; --orbit-top: 12px; } }
+@media (min-width: 1901px) { .hs-root .hero { --orbit-k: 0.95; --orbit-x: 40.24%; --orbit-top: 48px; } }
+@media (min-width: 2101px) { .hs-root .hero { --orbit-k: 1.03; --orbit-x: 38.43%; --orbit-top: 12px; } }
 
-/* Phones and tablets: the centre medallion with the front of the orbit and
+/* Phones and tablets: the centre medallion with the front of the ring and
    the platform, between the copy and the laptop artwork. */
 @media (max-width: 900px) {
-  .hs-root .hero { --orbit-k: .8; }
-  .hs-root .vm-orbit { left: calc(50% - 230px * var(--orbit-k)); top: auto; bottom: calc(51.7vw - 18px * var(--orbit-k)); pointer-events: none; }
-  .hs-root .vm-motion-toggle { pointer-events: auto; top: auto; right: calc(230px * var(--orbit-k) - 50vw + 16px); bottom: calc(150px * var(--orbit-k)); }
-  .hs-root .hero > .art { margin-top: calc(477px * var(--orbit-k) - 12.8vw + 10px); -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 88%, transparent); mask-image: linear-gradient(transparent, #000 22%, #000 88%, transparent); }
-  .vm-ring-wide, .vm-ring-steep, .vm-spark-b { display: none; }
-  .vm-orbit-rings { -webkit-mask-image: linear-gradient(transparent 36%, #000 50%); mask-image: linear-gradient(transparent 36%, #000 50%); }
-  .vm-orbit-aura { top: 150px; height: 540px; }
+  .hs-root .hero { --orbit-k: .7; }
+  .hs-root .vm-orbit { left: calc(50% - 260px * var(--orbit-k)); top: auto; bottom: calc(51.7vw - 18px * var(--orbit-k)); pointer-events: none; }
+  .hs-root .vm-motion-toggle { pointer-events: auto; top: auto; right: calc(260px * var(--orbit-k) - 50vw + 16px); bottom: calc(300px * var(--orbit-k)); }
+  /* Only the lower part of the stage is used on phones (centre, lower ring, platform): the empty top rows overlap the copy's bottom margin. */
+  .hs-root .hero > .art { margin-top: calc(642px * var(--orbit-k) - 12.8vw + 10px); -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 88%, transparent); mask-image: linear-gradient(transparent, #000 22%, #000 88%, transparent); }
+  .vm-ring-wide, .vm-ring-steep, .vm-spark-b, .vm-ring-dots { display: none; }
+  .vm-orbit-rings { -webkit-mask-image: linear-gradient(transparent 30%, #000 48%); mask-image: linear-gradient(transparent 30%, #000 48%); }
+  .vm-orbit-aura { top: 150px; height: 640px; }
   .hs-root .market-mix { margin-top: 16px; font-size: 14px; }
 }
-@media (max-width: 599px) { .hs-root .hero { --orbit-k: .64; } }
-@media (max-width: 429px) { .hs-root .hero { --orbit-k: .6; } }
-@media (max-width: 389px) { .hs-root .hero { --orbit-k: .55; } }
-@media (max-width: 359px) { .hs-root .hero { --orbit-k: .5; } .hs-root .market-mix { gap: 8px; font-size: 13px; } .hs-root .market-mix::before, .hs-root .market-mix::after { width: 18px; } }
+@media (max-width: 599px) { .hs-root .hero { --orbit-k: .58; } }
+@media (max-width: 429px) { .hs-root .hero { --orbit-k: .54; } }
+@media (max-width: 389px) { .hs-root .hero { --orbit-k: .5; } }
+@media (max-width: 359px) { .hs-root .hero { --orbit-k: .45; } .hs-root .market-mix { gap: 8px; font-size: 13px; } .hs-root .market-mix::before, .hs-root .market-mix::after { width: 18px; } }

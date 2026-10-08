@@ -1,0 +1,1 @@
+{"kind": "coin", "face": "graphite", "logo": {"png": "logos/btc-mark.png", "mode": "gold", "box": [0.0, 0.17, 1.0, 1.02]}, "label": {"text": "BTC", "mode": "gold", "font": "fonts/Inter-Bold.ttf", "size": 0.25, "y": -0.62, "tracking": 0.06}, "size": 1024}
