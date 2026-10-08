@@ -15,7 +15,7 @@ const href = symbol => '/stocks/'+encodeURIComponent('XNGS:'+symbol);
 async function main() {
   const browser = await chromium.launch({headless:true});
   try {
-    const ctx = await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
+    const ctx = await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block',...(process.env.QA_VIDEO ? {recordVideo:{dir:OUT,size:{width:1440,height:900}}} : {})});
     await ctx.addInitScript(() => {if(window.top!==window)return;if(!localStorage.getItem('exchange_lang'))localStorage.setItem('exchange_lang','ru');localStorage.removeItem('exchange_token');});
     let blocked = false;
     await ctx.route('**/*',async route => {
@@ -50,7 +50,16 @@ async function main() {
       ok(await page.locator('.vxs-tv-frame').count()===1,'exactly one selected host');
       ok(await page.locator('.vxs-tv').getAttribute('data-widget-symbol')==='NASDAQ:'+symbol,'exact symbol');
     };
-    await select('AAPL');
+    const ticket = async () => {
+      ok(await page.locator('.vxs-order-panel').count()===1,'one native ticket');
+      ok(await page.locator('.vxs-order-submit').isDisabled(),'order submission disabled');
+      ok(await page.locator('.vxs-order-field input').count()===3,'Price Amount Total');
+      ok(await page.locator('.vxs-order-field input').last().inputValue()==='','no invented total');
+      ok((await page.locator('.vxs-order-available').innerText()).includes('— USD'),'no invented balance');
+      ok(await page.locator('.vxs-order-panel .order-family-tabs button').count()===2,'Limit Market only');
+      ok(!/stocks\.[a-zA-Z]|widget|preview|Нет данных о сессии|Цены и история доступны/.test(await page.locator('.vxs-trade-tile').innerText()),'no internal ticket copy');
+    };
+    await select('AAPL'); await ticket();
     await page.screenshot({path:path.join(OUT,'desktop-aapl.png')});
     if(LIVE) {
       for(const symbol of SYMBOLS) {
@@ -68,7 +77,8 @@ async function main() {
         ok(await page.locator('.vxs-tv-frame').count()===1,'one live host '+n);
       }
       report.memory.push({stage:'live after 12 switches',...await metric()});
-      await page.setViewportSize({width:390,height:844});await select('NVDA');await page.screenshot({path:path.join(OUT,'mobile-nvda.png'),fullPage:true});
+      for(const width of [1920,1440,1366]) {await page.setViewportSize({width,height:900});await page.screenshot({path:path.join(OUT,'live-desktop-'+width+'.png')});await ticket();}
+      await page.setViewportSize({width:390,height:844});await select('NVDA');await ticket();await page.screenshot({path:path.join(OUT,'mobile-nvda.png'),fullPage:true});await page.locator('.vxs-order-panel').evaluate(el=>window.scrollTo(0,el.getBoundingClientRect().top+scrollY-60));await page.waitForTimeout(150);await page.screenshot({path:path.join(OUT,'mobile-order-ticket.png')});
     } else {
       for(const lang of LANGS) for(const width of WIDTHS) {
         await page.setViewportSize({width,height:width<861?844:900});
@@ -76,6 +86,8 @@ async function main() {
         await page.waitForFunction(l=>document.querySelector('.vxs-tv-frame')?.srcdoc.includes('"locale":"'+l+'"'),lang==='zh'?'zh_CN':lang==='hi'?'en':lang);
         ok(true,lang+' official widget supported locale/fallback');
         ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),lang+' '+width+' no horizontal overflow');
+        await ticket();
+        ok(await page.locator('.vxs-order-panel').evaluate(el=>el.getBoundingClientRect().width>=280),'ticket usable width '+width);
         report.views.push({lang,width});
         if(lang==='ru')await page.screenshot({path:path.join(OUT,'fixture-'+width+'.png'),fullPage:true});
       }
@@ -85,12 +97,22 @@ async function main() {
       await page.locator('.vxs-list-tile .vxs-tabs button').last().click();
       ok(await page.locator('.vxs-list-tile .vxs-row').count()===1,'favorites filter');
       await page.locator('.vxs-list-tile .vxs-tabs button').first().click();
+      await page.locator('.vxs-order-field input').nth(0).fill('123.45');
+      await page.locator('.vxs-order-field input').nth(1).fill('2');
+      await page.locator('.vxs-side-tabs .sell').click();
+      await page.locator('.order-family-tabs button').nth(1).click();
+      ok(await page.locator('.vxs-order-field input').first().getAttribute('readonly')!==null,'Market price readonly');
+      await page.locator('.order-family-tabs button').first().click();
+      ok(await page.locator('.vxs-order-field input').first().inputValue()==='123.45','Limit draft preserved');
+      await page.locator('.vxs-order-form').evaluate(el=>el.requestSubmit());
+      await ticket();
       report.memory.push({stage:'before switches',...await metric()});
       for(let n=0;n<30;n++) {
         const symbol=SYMBOLS[(n+1)%SYMBOLS.length],start=performance.now();
         await page.locator('.vxs-list-tile a[href="'+href(symbol)+'"]').click();
         await page.waitForFunction(s=>document.querySelector('.vxs-tv')?.getAttribute('data-widget-symbol')==='NASDAQ:'+s,symbol);
         ok(await page.locator('.vxs-tv-frame').count()===1,'switch cleanup '+n);
+        ok(await page.locator('.vxs-order-field input').first().inputValue()==='','ticket draft resets '+n);
         report.timings.push({symbol,ms:Math.round(performance.now()-start),kind:'SPA host replacement'});
       }
       report.memory.push({stage:'after 30 switches',...await metric()});
@@ -121,6 +143,7 @@ async function main() {
       report.memory.push({stage:'after exit',...await metric()});
     }
     ok(report.financialRequests.length===0,'zero financial requests');ok(report.stockReads.length===0,'zero stock API reads');ok(report.pageErrors.length===0,'no app errors');
+    if(process.env.QA_VIDEO) {const video=page.video();await ctx.close();await video.saveAs(path.join(OUT,'instrument-switching.webm'));} else await ctx.close();
     fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
   } finally {await browser.close();}
 }

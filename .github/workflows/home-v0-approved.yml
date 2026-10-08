@@ -1,0 +1,49 @@
+name: Homepage approved v0
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/home/**'
+      - 'frontend/src/lib/__tests__/homeV0Scene.test.ts'
+      - 'frontend/package*.json'
+      - 'scripts/qa-home-v0.cjs'
+      - '.github/workflows/home-v0-approved.yml'
+permissions:
+  contents: read
+concurrency:
+  group: home-v0-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: frontend
+      - name: Roster, quote-domain, cleanup and preserved-home regression tests
+        run: node node_modules/jest/bin/jest.js --runInBand --testPathPattern=frontend/src/lib/__tests__/home
+      - run: npm run build
+        working-directory: frontend
+        env:
+          VITE_API_URL: /api/v1
+      - name: Disposable browser
+        run: |
+          npm install --prefix /tmp/voltex-home-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-home-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Network-denied responsive and complete animation cycle QA
+        run: node scripts/qa-home-v0.cjs
+        env:
+          HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
+      - name: Retain exact-head browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: home-v0-${{ github.event.pull_request.head.sha }}
+          path: output/home-v0/updated/
+          retention-days: 14

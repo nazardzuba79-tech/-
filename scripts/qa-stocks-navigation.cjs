@@ -19,6 +19,8 @@ const candles = Array.from({length: 30}, (_, n) => ({openTimeUtc: now-(30-n)*900
   closeTimeUtc: now-(29-n)*900000, open: '100', high: '102', low: '99', close: '101', volume: null, fetchedAt: now}));
 const instruments = manifest.map(i => ({...i, latest: candles.at(-1), sessionChange: 1}));
 const routes = ['/trade', '/futures', '/trade?market=cfd', '/stocks'];
+const widgetMode = process.env.QA_WIDGET_MODE === 'true';
+const graphSelector = widgetMode ? '.vxs-tv-frame' : '.vxs-chart-host canvas';
 const langs = ['ru','en','zh','es','hi','ja','ko'];
 const report = { views: [], transitions: [], pageErrors: [], writesBlocked: 0, externalBlocked: 0, stockRequests: 0 };
 
@@ -39,6 +41,10 @@ const report = { views: [], transitions: [], pageErrors: [], writesBlocked: 0, e
           return route.fulfill({contentType:'application/json',body:JSON.stringify(u.pathname.includes('/history/')?{candles,next:null}:{instruments})});
         }
         if (u.origin === origin) return route.continue();
+        if (widgetMode && u.hostname === 's3.tradingview.com' && u.pathname.endsWith('embed-widget-advanced-chart.js')) {
+          // Lifecycle double only; never fabricated market data.
+          return route.fulfill({contentType:'application/javascript',body:"const f=document.createElement('iframe');f.src='about:blank';document.querySelector('.tradingview-widget-container__widget').appendChild(f);"});
+        }
         report.externalBlocked++;
         if (u.hostname === 'market.voltextech.net') {
           const response = await route.fetch({url:origin+'/api/v1'+u.pathname+u.search});
@@ -126,13 +132,13 @@ const report = { views: [], transitions: [], pageErrors: [], writesBlocked: 0, e
             const after=await terminalSnapshot(); assert.deepEqual(after,baseline[target],`${width} ${target} terminal style/route isolation`);
           }
           const menu=await chooseMenu(width); await menu.locator('a[href="/stocks"]').click(); await waitStock();
-          await openFirstInstrument(width); await page.locator('.vxs-chart-host canvas').first().waitFor();
-          const detailURL=page.url(); await page.goBack();await waitStock();await page.goForward();await page.locator('.vxs-chart-host canvas').first().waitFor();
-          assert.equal(page.url(),detailURL); await page.reload();await page.locator('.vxs-chart-host canvas').first().waitFor();
+          await openFirstInstrument(width); await page.locator(graphSelector).first().waitFor();
+          const detailURL=page.url(); await page.goBack();await waitStock();await page.goForward();await page.locator(graphSelector).first().waitFor();
+          assert.equal(page.url(),detailURL); await page.reload();await page.locator(graphSelector).first().waitFor();
           const detailMenu=await chooseMenu(width);
           if(width<=430) assert.equal(await detailMenu.locator('[aria-current="page"]').getAttribute('href'),'/stocks');
           await detailMenu.locator('a[href="/trade"]').click();await terminalSnapshot();
-          await page.goBack();await page.locator('.vxs-chart-host canvas').first().waitFor();
+          await page.goBack();await page.locator(graphSelector).first().waitFor();
           await page.goForward();await terminalSnapshot();
           report.transitions.push({width,sequence:'Spot → Futures → CFD → Stocks → Spot',terminalStylesAndRouteState:'unchanged',backForward:true,directDetailReload:true});
         }

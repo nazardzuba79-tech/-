@@ -64,7 +64,7 @@ test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline a
     // The requested laptop/globe replaces the old phone overlay. Keep the
     // existing copy/CTA guarantees while isolating this renderer from streams.
     './HeroReferenceScene': { HeroReferenceScene: () => React.createElement('div', { 'data-preview': 'terminal' }) },
-    './HomeHeroAssets': { HomeHeroAssets: () => React.createElement('div', { 'data-preview': 'assets' }) },
+    './HomeV0Coins': { HomeV0Coins: () => React.createElement('div', { 'data-preview': 'assets' }) },
     './HomeSapphireTape': { HomeSapphireTape: () => React.createElement('div', { 'data-preview': 'tape' }) },
     './useHeroStream': { useHeroStream: (market: unknown) => market },
     './HomeMotion': { MotionStage: ({ children }: any) => React.createElement('div', {}, children) },

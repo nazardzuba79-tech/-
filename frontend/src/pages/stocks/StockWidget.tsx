@@ -3,6 +3,7 @@ import type { StockInstrument } from '../../lib/stocks';
 import { useLanguage } from '../../lib/i18n';
 import { FavoriteStar, StockLogo, ViewSwitch } from './StockParts';
 import { StockFacts } from './StockFacts';
+import { StockOrderPanel } from './StockOrderPanel';
 import { widgetLocale, widgetSymbol } from './stockWidgetCatalogue';
 import './stockWidget.css';
 
@@ -62,9 +63,6 @@ export function StockWidget({ instrumentId }: { instrumentId: string }) {
       <p>{t(symbol ? 'stocks.widgetLoadError' : 'stocks.widgetUnavailable')}</p>
       {symbol && <button type="button" className="vxs-retry" onClick={() => setAttempt(n => n + 1)}>{t('stocks.retry')}</button>}
     </div>}
-    <div className="vxs-tv-foot"><span>{t('stocks.widgetNotice')}</span>
-      <button type="button" className="vxs-retry" onClick={() => setAttempt(n => n + 1)}>{t('stocks.retry')}</button>
-    </div>
   </div>;
 }
 
@@ -81,12 +79,14 @@ export function WidgetInstrumentView({ instrument, favorite, onToggleFavorite, l
           <div><h2>{instrument.symbol}</h2><span title={instrument.name}>{instrument.name}</span></div>
           <FavoriteStar instrument={instrument} active={favorite} onToggle={onToggleFavorite} />
         </div>
-        <div className="vxs-strip-metric"><span className="vxs-label">TradingView</span><span>{t('stocks.widgetDelayed')}</span></div>
+        <div className="vxs-strip-metric"><span>{t('stocks.widgetDelayed')}</span></div>
         <ViewSwitch view="panel" panelTo={panelTo} />
       </div>
       <div className="vxs-tile vxs-chart-tile"><StockWidget instrumentId={instrument.instrumentId} /></div>
-      <details className="vxs-tile vxs-about"><summary>{t('stocks.about')}</summary>{facts}</details>
     </section>
-    <aside className="vxs-tile vxs-facts-tile" aria-label={t('stocks.about')}><h2>{t('stocks.about')}</h2>{facts}</aside>
+    <aside className="vxs-tile vxs-trade-tile" aria-label={t('nav.trade')}>
+      <StockOrderPanel key={instrument.instrumentId} instrument={instrument} />
+      <details className="vxs-trade-facts" open><summary>{t('stocks.about')}</summary>{facts}</details>
+    </aside>
   </>;
 }

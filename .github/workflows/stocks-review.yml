@@ -81,6 +81,12 @@ jobs:
           node frontend/node_modules/vite/bin/vite.js preview frontend --host 127.0.0.1 --port 4432 --strictPort > /tmp/widget-preview.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4432/ > /dev/null && break; sleep 1; done
           node scripts/qa-stocks-widget.cjs
+      - name: Widget terminal and crypto navigation isolation (fixtures only)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_WIDGET_MODE: 'true'
+          QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/widget-navigation
+        run: node scripts/qa-stocks-navigation.cjs
       # Not a dot-directory: upload-artifact@v4 skips hidden paths by default.
       - uses: actions/upload-artifact@v4
         if: always()

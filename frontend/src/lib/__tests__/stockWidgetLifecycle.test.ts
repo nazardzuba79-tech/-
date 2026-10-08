@@ -14,7 +14,7 @@ describe('official stock embed lifecycle without provider data access',()=>{
     dom=new JSDOM('<div id="root"></div>',{url:'http://localhost',pretendToBeVisual:true});
     Object.assign(globalThis,{window:dom.window,document:dom.window.document,IS_REACT_ACT_ENVIRONMENT:true});
     const imports:Record<string,unknown>={react:React,'react/jsx-runtime':req('react/jsx-runtime'),
-      '../../lib/i18n':{useLanguage:()=>({lang:'ru',t:(k:string)=>k})},'./StockParts':{},'./StockFacts':{},
+      '../../lib/i18n':{useLanguage:()=>({lang:'ru',t:(k:string)=>k})},'./StockParts':{},'./StockFacts':{},'./StockOrderPanel':{},
       './stockWidgetCatalogue':{widgetSymbol,widgetLocale},'./stockWidget.css':{}};
     const out:any={};new Function('exports','require',source)(out,(id:string)=>{if(!(id in imports))throw Error(id);return imports[id];});
     Widget=out.StockWidget;root=createRoot(document.getElementById('root'));

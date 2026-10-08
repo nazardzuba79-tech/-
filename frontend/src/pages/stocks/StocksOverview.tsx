@@ -81,7 +81,7 @@ export default function StocksOverview({ catalogue, favorites, onToggleFavorite,
       <header className="vxo-head">
         <div>
           <h1>{t('stocks.title')}</h1>
-          <p>{t(widgetMode ? 'stocks.widgetOnly' : 'stocks.closed')}</p>
+          <p>{t(widgetMode ? 'stocks.explore' : 'stocks.closed')}</p>
         </div>
         <ViewSwitch view="overview" panelTo={panelTo} />
       </header>
@@ -186,7 +186,7 @@ export default function StocksOverview({ catalogue, favorites, onToggleFavorite,
             : <><SearchX size={28} aria-hidden="true" /><p><strong>{t('stocks.nothingFound')}</strong></p><p>{t('stocks.nothingFoundHint')}</p>
               {active && <button type="button" className="vxo-plain" onClick={() => update({ ...EMPTY_FILTERS, tab: filters.tab })}><RotateCcw size={14} aria-hidden="true" />{t('stocks.resetFilters')}</button>}</>}
         </div>}
-        <p className="vxo-note">{t(widgetMode ? 'stocks.widgetOnly' : 'stocks.priceNote')}</p>
+        {!widgetMode && <p className="vxo-note">{t('stocks.priceNote')}</p>}
       </>}
     </div>
   );

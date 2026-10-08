@@ -93,7 +93,7 @@ export default function StocksTerminal({ instrumentId, catalogue, favorites, onT
   );
 
   return (
-    <div className={`vxs-terminal${selected ? ' has-instrument' : ''}`}>
+    <div className={`vxs-terminal${selected ? ' has-instrument' : ''}${selected && widgetMode ? ' has-trading-panel' : ''}`}>
       <h1 className="vxs-sr-only">{t('stocks.title')}</h1>
       <aside className="vxs-tile vxs-list-tile" aria-label={t('stocks.instruments')}>
         <div className="vxs-list-head"><span>{t('stocks.title')}</span><ViewSwitch view="panel" panelTo={panelTo} /></div>
