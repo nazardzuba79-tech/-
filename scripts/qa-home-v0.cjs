@@ -83,6 +83,9 @@ if (require.main === module) (async () => {
     }
     await page.setViewportSize({ width: 1440, height: 900 });
     if (!baseline) {
+      // matchMedia/React/WebGL remount settle asynchronously after the last
+      // mobile viewport. Begin the eight-slot cycle only on the ready desktop scene.
+      await page.waitForFunction(() => document.querySelectorAll('.v0-coin').length === 8 && document.querySelector('.v0-coins')?.dataset.ready === 'true');
       const seen = new Set(); const requestsBefore = report.requests.length;
       report.videoCycleStartSeconds = (Date.now() - videoStartedAt) / 1000;
       for (let i = 0; i < 55; i++) {
