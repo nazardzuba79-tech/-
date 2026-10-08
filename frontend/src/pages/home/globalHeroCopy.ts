@@ -10,3 +10,14 @@ export const globalHeroCopy: Record<Lang, typeof en> = {
   ja: { gold: '金', oil: '原油', quote: '参考価格', pause: 'アニメーションを停止', resume: 'アニメーションを再開', live: 'ライブ', snapshot: '市場データ', unavailable: 'データを取得できません', globe: 'グローバル市場', field: '世界の金融をより身近に' },
   ko: { gold: '금', oil: '원유', quote: '참고 시세', pause: '모션 일시 정지', resume: '모션 재개', live: '실시간', snapshot: '시장 데이터', unavailable: '데이터 없음', globe: '글로벌 시장', field: '더 긴밀하게 연결된 금융 세계' },
 };
+
+// Small category legend in the approved reference; it does not enable stocks.
+export const referenceMarketLegend: Record<Lang, string> = {
+  en: 'Crypto · CFD · Stocks soon',
+  ru: 'Крипто · CFD · Акции — скоро',
+  zh: '加密货币 · CFD · 股票即将推出',
+  es: 'Cripto · CFD · Acciones próximamente',
+  hi: 'क्रिप्टो · CFD · शेयर जल्द',
+  ja: '暗号資産 · CFD · 株式は近日公開',
+  ko: '암호화폐 · CFD · 주식 출시 예정',
+};

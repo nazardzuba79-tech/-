@@ -5,6 +5,7 @@ import { globalHeroCopy } from './globalHeroCopy';
 import type { HomeMarket } from './useHomeMarket';
 import { MOBILE_SCENE_HEIGHT, MOBILE_SCENE_SPOTS, SCENE_INSTRUMENTS, SCENE_SPOTS, SCENE_WIDTH, SCENE_HEIGHT, scenePrice, sceneQuote } from './v0MarketScene';
 import type { SceneController } from './v0CoinRenderer';
+import { MEDALLION_URLS } from './v0MedallionArtwork';
 
 export function HomeV0Coins({ market }: { market: HomeMarket }) {
   const { lang } = useLanguage();
@@ -43,13 +44,15 @@ export function HomeV0Coins({ market }: { market: HomeMarket }) {
       try {
         const { createCoinScene } = await import('./v0CoinRenderer');
         if (disposed) return;
-        controller.current = createCoinScene(element, next => setIds(next), () => setReady(false), compact);
+        const scene = await createCoinScene(element, next => setIds(next), () => setReady(false), compact, () => disposed);
+        if (disposed || !scene) { scene?.dispose(); return; }
+        controller.current = scene;
         setReady(true);
         sync();
       } catch {
         // Static, readable local medallions remain available when WebGL/import
         // is unsupported. No blank hero and no dependency on a CDN logo service.
-        setReady(false);
+        if (!disposed) setReady(false);
       }
     };
     const observer = new IntersectionObserver(entries => {
@@ -80,14 +83,14 @@ export function HomeV0Coins({ market }: { market: HomeMarket }) {
         const quote = sceneQuote(instrument, market, lang);
         return <div className={`v0-coin v0-coin-${slot}`} key={slot} data-instrument={id} data-market={instrument.market}
           style={{ left: `${spot.x / SCENE_WIDTH * 100}%`, top: `${spot.y / height * 100}%`, width: `${spot.r * 2 / SCENE_WIDTH * 100}%` }}>
-          <div className={`v0-coin-fallback v0-metal-${instrument.metal}`} aria-hidden="true">{instrument.ticker}</div>
+          <img className="v0-coin-fallback" src={MEDALLION_URLS.get(instrument.id)} alt="" aria-hidden="true" />
           <div className="v0-quote" data-state={quote.state} title={`${instrument.symbol} · ${instrument.market.toUpperCase()} · ${quote.state}`}>
             <span>{instrument.ticker}</span><strong>{scenePrice(quote.price, lang)}</strong>
           </div>
         </div>;
       })}
     </div>
-    <div className="v0-pedestal-fallback" aria-hidden="true" />
+
     {ready && <button type="button" className="v0-motion-toggle" aria-label={paused ? globalHeroCopy[lang].resume : globalHeroCopy[lang].pause}
       aria-pressed={paused} onClick={() => setPaused(value => !value)}>{paused ? <Play size={13} aria-hidden="true"/> : <Pause size={13} aria-hidden="true"/>}</button>}
   </div>;

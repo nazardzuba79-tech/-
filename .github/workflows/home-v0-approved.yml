@@ -6,6 +6,8 @@ on:
       - 'frontend/src/lib/__tests__/homeV0Scene.test.ts'
       - 'frontend/package*.json'
       - 'scripts/qa-home-v0.cjs'
+      - 'scripts/qa-home-v0-reference.cjs'
+      - 'docs/qa/home-v0-reference-correction/reference.png'
       - '.github/workflows/home-v0-approved.yml'
 permissions:
   contents: read
@@ -40,10 +42,17 @@ jobs:
         run: node scripts/qa-home-v0.cjs
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
+      - name: Pixel-aligned reference and browser comparison
+        run: node scripts/qa-home-v0-reference.cjs
+        env:
+          HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
+          HOME_V0_REFERENCE: docs/qa/home-v0-reference-correction/reference.png
       - name: Retain exact-head browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: home-v0-${{ github.event.pull_request.head.sha }}
-          path: output/home-v0/updated/
+          path: |
+            output/home-v0/updated/
+            output/home-v0/reference/
           retention-days: 14
