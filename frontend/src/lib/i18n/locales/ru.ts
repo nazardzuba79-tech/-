@@ -1510,6 +1510,9 @@ export const RU = {
   'futures.transferAction': 'Перевести',
 
   // --- Homepage (pages/home) ---
+  'home.hero.pauseMotion': 'Приостановить анимацию рынков',
+  'home.hero.resumeMotion': 'Продолжить анимацию рынков',
+  'home.hero.sceneAria': 'Рыночные инструменты',
   'home.nav.main': 'Основная навигация',
   'home.nav.mobile': 'Мобильная навигация',
   'home.cta.startTrading': 'Начать торговлю',

@@ -1451,6 +1451,9 @@ export const HI: Record<Key, string> = {
   'futures.transferAction': 'ट्रांसफर करें',
 
   // --- Homepage (pages/home) ---
+  'home.hero.pauseMotion': 'बाज़ार एनीमेशन रोकें',
+  'home.hero.resumeMotion': 'बाज़ार एनीमेशन फिर चलाएँ',
+  'home.hero.sceneAria': 'बाज़ार के वित्तीय साधन',
   'home.nav.main': 'मुख्य नेविगेशन',
   'home.nav.mobile': 'मोबाइल नेविगेशन',
   'home.cta.startTrading': 'ट्रेडिंग शुरू करें',

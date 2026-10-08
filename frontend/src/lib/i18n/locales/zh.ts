@@ -1474,6 +1474,9 @@ export const ZH: Record<Key, string> = {
   'futures.transferAction': '划转',
 
   // --- Homepage (pages/home) ---
+  'home.hero.pauseMotion': '暂停市场动画',
+  'home.hero.resumeMotion': '继续市场动画',
+  'home.hero.sceneAria': '市场交易品种',
   'home.nav.main': '主导航',
   'home.nav.mobile': '移动端导航',
   'home.cta.startTrading': '开始交易',

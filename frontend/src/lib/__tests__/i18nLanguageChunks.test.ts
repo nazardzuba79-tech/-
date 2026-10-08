@@ -70,10 +70,28 @@ const APPROVED_AUTH_DESIGN_KEYS = [
 // PR #466: two additive auth promotional labels. Only these exact additions
 // are omitted from the historical digest; existing numeric/other copy is not changed.
 const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySubtitle'];
+// 2026-10-07 homepage instrument column: additions only. Exclude these exact
+// named keys from the older digest; no existing translation is re-baselined.
+const HOME_MARKET_COLUMN_KEYS = ['pauseMotion', 'resumeMotion', 'sceneAria'].map(key => `home.hero.${key}`);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('localizes instrument-column motion labels without replacing the original hero copy', () => {
+    for (const code of LOCALES) {
+      const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
+      for (const key of HOME_MARKET_COLUMN_KEYS) {
+        expect(sourceKeys.filter(sourceKey => sourceKey === key)).toHaveLength(1);
+        expect(dicts[code][key]?.trim()).toBeTruthy();
+      }
+      expect(dicts[code]['home.hero.pauseMotion']).not.toEqual(dicts[code]['home.hero.resumeMotion']);
+      for (const removed of ['platformTitle', 'platformDescription', 'startTrading', 'exploreMarkets', 'instrumentsAria', 'cryptoLabel']) {
+        expect(dicts[code]).not.toHaveProperty(`home.hero.${removed}`);
+      }
+    }
+    for (const key of HOME_MARKET_COLUMN_KEYS) expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
+    expect(dicts.ru['home.hero.sceneAria']).toBe('Рыночные инструменты');
+  });
   it('localizes the exact two-line card copy and 22+/70+ fiat/crypto counts without an investor claim', () => {
     const approvedCommunityCopy: Record<string, { title: string; subtitle: string }> = {
       ru: { title: 'Платите и снимайте наличные — 0% комиссии', subtitle: '22+ фиатных валют · 70+ криптовалют' },
@@ -313,6 +331,7 @@ describe('translation integrity', () => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
         if (key && APPROVED_AUTH_DESIGN_KEYS.includes(key)) return false;
         if (key && AUTH_COMMUNITY_KEYS.includes(key)) return false;
+        if (key && HOME_MARKET_COLUMN_KEYS.includes(key)) return false;
         // Keys ADDED since the digests were taken are excluded by name
         // rather than by re-taking seven digests — that is what keeps the
         // guard meaningful: every OTHER byte of every dictionary still has

@@ -1,18 +1,145 @@
 {
-  "startedAt": "2026-09-19T08:02:49.335Z",
+  "startedAt": "2026-10-08T05:59:10.900Z",
   "firstVisit": {
-    "readyMs": 1048,
+    "readyMs": 599,
     "marketRequests": 8,
     "metadataRequests": 1,
     "painted": {
+      "scene": 1,
+      "columnData": [
+        {
+          "symbol": "BTC",
+          "text": "BTC",
+          "quote": false
+        },
+        {
+          "symbol": "AAPL",
+          "text": "AAPLSTOCKS SOON",
+          "quote": false
+        },
+        {
+          "symbol": "OIL",
+          "text": "OILCFD",
+          "quote": false
+        },
+        {
+          "symbol": "GOLD",
+          "text": "GOLDCFD",
+          "quote": false
+        },
+        {
+          "symbol": "ETH",
+          "text": "ETH",
+          "quote": false
+        },
+        {
+          "symbol": "NVDA",
+          "text": "NVDASTOCKS SOON",
+          "quote": false
+        },
+        {
+          "symbol": "EURUSD",
+          "text": "EUR/USDCFD",
+          "quote": false
+        },
+        {
+          "symbol": "US500",
+          "text": "S&P 500US500CFD",
+          "quote": false
+        },
+        {
+          "symbol": "SOL",
+          "text": "SOL",
+          "quote": false
+        }
+      ],
+      "terminals": 1,
+      "terminalVisible": true,
+      "duplicateTerminalInColumn": 0,
       "candles": 1,
       "bookRows": 12,
       "tradeRows": 6,
       "tapeBtc": true,
+      "badge": "Market data",
+      "overview": "Индекс страха и жадности61GreedРыночные данныеКапитализация$2.40T-0.40%Объём (24ч)$89.00BBTC Dominance55.1%ETH Dominance—Популярные сектораLLayer 1-0.67%Трендовые парыSOL99.78-1.94%ETH2,479.53-1.82%BTC76,746.00-0.67%CFD на активыGGold Spot4349.19-1.02%Торговать CFD",
+      "overviewData": [
+        {
+          "title": "Индекс страха и жадности",
+          "values": [
+            "61"
+          ],
+          "rows": []
+        },
+        {
+          "title": "Рыночные данные",
+          "values": [
+            "$2.40T",
+            "-0.40%",
+            "$89.00B",
+            "55.1%",
+            "—"
+          ],
+          "rows": []
+        },
+        {
+          "title": "Популярные сектора",
+          "values": [
+            "-0.67%"
+          ],
+          "rows": [
+            [
+              "Layer 1",
+              "-0.67%"
+            ]
+          ]
+        },
+        {
+          "title": "Трендовые пары",
+          "values": [
+            "99.78",
+            "-1.94%",
+            "2,479.53",
+            "-1.82%",
+            "76,746.00",
+            "-0.67%"
+          ],
+          "rows": [
+            [
+              "SOL",
+              "99.78",
+              "-1.94%"
+            ],
+            [
+              "ETH",
+              "2,479.53",
+              "-1.82%"
+            ],
+            [
+              "BTC",
+              "76,746.00",
+              "-0.67%"
+            ]
+          ]
+        },
+        {
+          "title": "CFD на активы",
+          "values": [
+            "4349.19",
+            "-1.02%"
+          ],
+          "rows": [
+            [
+              "Gold Spot4349.19",
+              "-1.02%"
+            ]
+          ]
+        }
+      ],
+      "overviewPlaceholders": 0,
       "heatmap": 1,
+      "heatmapBtc": true,
       "marketsBtc": true,
-      "placeholders": 0,
-      "badge": "Updated every 6h"
+      "placeholders": 0
     },
     "snapshot": {
       "version": 1,
@@ -24,19 +151,156 @@
       "cfd": 1,
       "futuresSymbols": 1,
       "bytes": 6698
-    }
+    },
+    "marketPaths": [
+      "/api/v1/cfd/tickers",
+      "/api/v1/futures/config",
+      "/api/v1/market/external/candles/BTC-USDT",
+      "/api/v1/market/external/orderbook/BTC-USDT",
+      "/api/v1/market/external/rankings",
+      "/api/v1/market/external/tickers",
+      "/api/v1/market/external/trades/BTC-USDT",
+      "/api/v1/market/global"
+    ]
   },
   "reload": {
-    "readyMs": 334,
+    "readyMs": 294,
     "painted": {
+      "scene": 1,
+      "columnData": [
+        {
+          "symbol": "BTC",
+          "text": "BTC",
+          "quote": false
+        },
+        {
+          "symbol": "AAPL",
+          "text": "AAPLSTOCKS SOON",
+          "quote": false
+        },
+        {
+          "symbol": "OIL",
+          "text": "OILCFD",
+          "quote": false
+        },
+        {
+          "symbol": "GOLD",
+          "text": "GOLDCFD",
+          "quote": false
+        },
+        {
+          "symbol": "ETH",
+          "text": "ETH",
+          "quote": false
+        },
+        {
+          "symbol": "NVDA",
+          "text": "NVDASTOCKS SOON",
+          "quote": false
+        },
+        {
+          "symbol": "EURUSD",
+          "text": "EUR/USDCFD",
+          "quote": false
+        },
+        {
+          "symbol": "US500",
+          "text": "S&P 500US500CFD",
+          "quote": false
+        },
+        {
+          "symbol": "SOL",
+          "text": "SOL",
+          "quote": false
+        }
+      ],
+      "terminals": 1,
+      "terminalVisible": true,
+      "duplicateTerminalInColumn": 0,
       "candles": 1,
       "bookRows": 12,
       "tradeRows": 6,
       "tapeBtc": true,
+      "badge": "Market data",
+      "overview": "Индекс страха и жадности61GreedРыночные данныеКапитализация$2.40T-0.40%Объём (24ч)$89.00BBTC Dominance55.1%ETH Dominance—Популярные сектораLLayer 1-0.67%Трендовые парыSSOL99.78-1.94%EETH2,479.53-1.82%BBTC76,746.00-0.67%CFD на активыGGold Spot4349.19-1.02%Торговать CFD",
+      "overviewData": [
+        {
+          "title": "Индекс страха и жадности",
+          "values": [
+            "61"
+          ],
+          "rows": []
+        },
+        {
+          "title": "Рыночные данные",
+          "values": [
+            "$2.40T",
+            "-0.40%",
+            "$89.00B",
+            "55.1%",
+            "—"
+          ],
+          "rows": []
+        },
+        {
+          "title": "Популярные сектора",
+          "values": [
+            "-0.67%"
+          ],
+          "rows": [
+            [
+              "Layer 1",
+              "-0.67%"
+            ]
+          ]
+        },
+        {
+          "title": "Трендовые пары",
+          "values": [
+            "99.78",
+            "-1.94%",
+            "2,479.53",
+            "-1.82%",
+            "76,746.00",
+            "-0.67%"
+          ],
+          "rows": [
+            [
+              "SOL",
+              "99.78",
+              "-1.94%"
+            ],
+            [
+              "ETH",
+              "2,479.53",
+              "-1.82%"
+            ],
+            [
+              "BTC",
+              "76,746.00",
+              "-0.67%"
+            ]
+          ]
+        },
+        {
+          "title": "CFD на активы",
+          "values": [
+            "4349.19",
+            "-1.02%"
+          ],
+          "rows": [
+            [
+              "Gold Spot4349.19",
+              "-1.02%"
+            ]
+          ]
+        }
+      ],
+      "overviewPlaceholders": 0,
       "heatmap": 1,
+      "heatmapBtc": true,
       "marketsBtc": true,
-      "placeholders": 0,
-      "badge": "Updated every 6h"
+      "placeholders": 0
     },
     "reveal": {
       "sections": [
@@ -99,7 +363,7 @@
       ],
       "footerTop": 5474.984375,
       "contentBottom": 5430.984375,
-      "scrollHeight": 5809,
+      "scrollHeight": 5781,
       "unshown": 0
     },
     "marketRequests": [],
@@ -109,9 +373,15 @@
     ]
   },
   "coldVisit": {
-    "readyMs": 484,
+    "readyMs": 286,
     "marketRequests": 8
   },
+  "writes": [],
+  "webSockets": [],
   "pageErrors": [],
-  "findings": []
+  "findings": [],
+  "semanticProbe": {
+    "ignoresDecorativeFallback": true,
+    "detectsChangedQuote": true
+  }
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChartCandlestick, TrendingUp, Copy, CreditCard } from 'lucide-react';
 import { useLanguage } from '../../lib/i18n';
-import { HomeHeroAssets } from './HomeHeroAssets';
+import { HomeMarketPlatformHero } from './HomeMarketPlatformHero';
 import { HomeMarket } from './useHomeMarket';
 import { HomeSapphireTape } from './HomeSapphireTape';
 import { SapphireTerminal } from './SapphireTerminal';
@@ -29,8 +29,8 @@ export function HomeSapphireHero({market}:{market:HomeMarket}){
   return <section id="home-global-hero" className="hs-root" data-design="sapphire-gold" aria-labelledby="hs-title">
     <div className="hero" ref={hero}><img ref={art} className="art" src="/hero/sapphire-refined.png" width="1672" height="941" alt="" aria-hidden="true" fetchPriority="high"/>
       <div className="terminal-screen" ref={display} style={{visibility:aligned?'visible':'hidden'}}><SapphireTerminal market={market}/></div>
-      <HomeHeroAssets market={market} englishLabels/>
-      <div className="shade" aria-hidden="true"/><div className="copy"><p className="eyebrow">GLOBAL MARKETS. REAL OPPORTUNITIES.</p><h1 id="hs-title">OWN YOUR{' '}<span>FUTURE<i>.</i></span></h1><p className="subtitle">{t('home.hero.subtitle')}</p><p className="description">{t('home.hero.description')}</p><div className="actions"><Link className="primary" to="/trade">{t('home.cta.openTerminal')}<ArrowRight size={19}/></Link><Link className="secondary" to="/markets">{t('home.cta.viewMarkets')}</Link></div><nav className="product-links product-shortcuts" aria-label="VOLTEX products"><Link to="/trade"><ChartCandlestick aria-hidden="true" size={18}/><span>Spot</span></Link><Link to="/futures"><TrendingUp aria-hidden="true" size={18}/><span>Futures</span></Link><Link to="/copy-trading"><Copy aria-hidden="true" size={18}/><span>Copy Trading</span></Link><Link to="/card"><CreditCard aria-hidden="true" size={18}/><span>Crypto Card</span></Link></nav></div>
+      <HomeMarketPlatformHero/>
+      <div className="shade" aria-hidden="true"/><div className="copy"><p className="eyebrow">GLOBAL MARKETS. REAL OPPORTUNITIES.</p><h1 id="hs-title">OWN YOUR{' '}<span>FUTURE<i>.</i></span></h1><p className="subtitle">{t('home.hero.subtitle')}</p><p className="description">{t('home.hero.description')}</p><div className="actions"><Link className="primary" to="/trade">{t('home.cta.openTerminal')}<ArrowRight size={19}/></Link><Link className="secondary" to="/markets">{t('home.cta.viewMarkets')}</Link></div><nav className="product-links product-shortcuts" aria-label="VOLTEX products"><Link to="/trade"><ChartCandlestick aria-hidden="true" size={18}/><span>Spot</span></Link><Link to="/futures"><TrendingUp aria-hidden="true" size={18}/><span>Futures</span></Link><Link to="/copy-trading"><Copy aria-hidden="true" size={18}/><span>Copy Trading</span></Link><Link to="/card"><CreditCard aria-hidden="true" size={18}/><span>Crypto Card</span></Link></nav><p className="market-mix"><span>Crypto</span><i aria-hidden="true">•</i><span>CFD</span><i aria-hidden="true">•</i><span>Stocks soon</span></p></div>
     </div><HomeSapphireTape market={market}/>
   </section>;
 }

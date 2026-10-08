@@ -7,7 +7,9 @@ const{chromium}=require(process.env.HOME_QA_PLAYWRIGHT||'playwright');
 const OUT=path.resolve('docs/qa/home-laptop-first-load');
 fs.mkdirSync(OUT,{recursive:true});
 const TICKER_DELAY_MS=5000;
-const report={startedAt:new Date().toISOString(),tickerDelayMs:TICKER_DELAY_MS,heroReadyMs:null,tickerFinishedBeforeHero:false,pageErrors:[],findings:[]};
+const MARKET=/\/api\/v1\/(market\/external\/|market\/global|cfd\/(?:display\/)?tickers|futures\/config)/;
+const EXPECTED_MARKET_PATHS=['/market/external/tickers','/market/external/orderbook/BTC-USDT','/market/external/candles/BTC-USDT','/market/external/trades/BTC-USDT','/market/external/rankings','/market/global','/cfd/tickers','/futures/config'].map(value=>'/api/v1'+value).sort();
+const report={startedAt:new Date().toISOString(),tickerDelayMs:TICKER_DELAY_MS,heroReadyMs:null,tickerFinishedBeforeHero:false,marketRequests:[],writes:[],webSockets:[],pageErrors:[],findings:[]};
 let tickerFinished=false,server,browser,page;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const candles=Array.from({length:48},(_,i)=>{const open=76000+i*9,close=open+(i%2?14:-8);return{time:1_799_990_000+i*900,open,high:Math.max(open,close)+12,low:Math.min(open,close)-10,close,volume:40+i};});
@@ -41,18 +43,57 @@ function fixture(req,res,next){
  app.get('*',(_req,res)=>res.sendFile(path.resolve('frontend/dist/index.html')));
  server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
  const origin=`http://127.0.0.1:${server.address().port}`;
- browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ browser=await chromium.launch({headless:true,executablePath:process.env.HOME_QA_CHROMIUM||undefined,args:['--no-sandbox']});
  const context=await browser.newContext({viewport:{width:1600,height:1000},serviceWorkers:'block'});
- await context.route('**/*',route=>{const u=new URL(route.request().url());return u.origin===origin?route.continue():route.abort();});
+ await context.route('**/*',route=>{
+  const request=route.request(),u=new URL(request.url());
+  if(!['GET','HEAD','OPTIONS'].includes(request.method())){report.writes.push(request.method()+' '+u.pathname);return route.abort();}
+  if(u.origin!==origin)return route.abort();
+  if(MARKET.test(u.href))report.marketRequests.push(u.pathname);
+  return route.continue();
+ });
+ await context.routeWebSocket('**/*',socket=>{report.webSockets.push(socket.url());socket.close();});
  page=await context.newPage();page.on('pageerror',e=>report.pageErrors.push(e.message));
  const start=Date.now();await page.goto(origin+'/',{waitUntil:'domcontentloaded'});
- await page.locator('#home-live-terminal').waitFor({state:'visible',timeout:10000});
- await page.waitForFunction(()=>document.querySelectorAll('#home-live-terminal .vx-real-candles').length===1&&document.querySelectorAll('#home-live-terminal .book-row').length>=2&&document.querySelectorAll('#home-live-terminal .hs-trade-row').length>=1,{timeout:4000});
+ // The owner restored the Sapphire composition. Its compact new column and
+ // original visible terminal must work before the shared universe replies.
+ await page.locator('[data-market-platform-hero] [data-market-visual]').waitFor({state:'visible',timeout:4000});
+ await page.locator('#home-live-terminal').waitFor({state:'visible',timeout:4000});
+ await page.waitForFunction(()=>{
+  const hero=document.querySelector('#home-global-hero');
+  const visible=node=>!!node&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0;
+  return !!hero?.querySelector('h1')?.textContent?.trim()
+   &&visible(hero.querySelector('a[href="/trade"]'))&&visible(hero.querySelector('a[href="/markets"]'))
+   &&visible(hero.querySelector('button[data-motion-toggle]'))
+   &&document.querySelectorAll('#home-live-terminal').length===1
+   &&document.querySelectorAll('#home-live-terminal .vx-real-candles').length===1
+   &&document.querySelectorAll('#home-live-terminal .book-row').length>=2
+   &&document.querySelectorAll('#home-live-terminal .hs-trade-row').length>=1;
+ },null,{timeout:4000});
  report.heroReadyMs=Date.now()-start;report.tickerFinishedBeforeHero=tickerFinished;
- if(tickerFinished)report.findings.push('Laptop hero waited for delayed all-pairs ticker response');
- if(report.heroReadyMs>=TICKER_DELAY_MS)report.findings.push(`Laptop hero first data took ${report.heroReadyMs}ms`);
- if(report.pageErrors.length)report.findings.push(`Page errors: ${report.pageErrors.length}`);
+ if(tickerFinished)report.findings.push('Market scene waited for delayed all-pairs ticker response');
+ if(report.heroReadyMs>=TICKER_DELAY_MS)report.findings.push(`Market scene first content took ${report.heroReadyMs}ms`);
+ if(await page.locator('.terminal-screen').count()!==1)report.findings.push('Expected exactly one visible Sapphire terminal beside the revised column');
+ if(await page.locator('[data-market-platform-hero] #home-live-terminal').count())report.findings.push('Column reused the terminal observer identity');
  await page.screenshot({path:path.join(OUT,'first-load-1600.png'),fullPage:true});
+ // Preserve the data regression: the same shared hook still obtains and
+ // persists its genuine BTC snapshot, and lower sections paint the delayed
+ // ticker result. The decorative scene adds no provider reads or sockets.
+ await page.waitForFunction(()=>{
+  const record=JSON.parse(localStorage.getItem('voltex.home.market.v1')||'null');
+  return record?.tickers?.length===3&&record?.hero?.candles?.length===48
+   &&record?.hero?.book?.bids?.length===6&&record?.hero?.trades?.length===6
+   &&document.querySelectorAll('[data-market-tile]').length===9
+   &&[...document.querySelectorAll('[data-market-tile]')].every(coin=>/^(?:S&P 500)?[A-Z/0-9]+(?:CFD|STOCKS SOON)?$/.test(coin.textContent||''))
+   &&document.querySelectorAll('[data-market-tile] .vm-card-price, [data-market-tile] .vm-card-note, [data-market-tile] .vm-card-change').length===0
+   &&document.querySelectorAll('.vx-heatmap-meta').length===1
+   &&[...document.querySelectorAll('table tbody tr')].some(row=>/BTC/.test(row.textContent||'')&&/76[,.]?746/.test(row.textContent||''));
+ },null,{timeout:10000});
+ report.sharedSnapshot=await page.evaluate(()=>{const record=JSON.parse(localStorage.getItem('voltex.home.market.v1'));return{version:record.version,tickers:record.tickers.length,candles:record.hero.candles.length,bookBids:record.hero.book.bids.length,trades:record.hero.trades.length};});
+ if(JSON.stringify([...report.marketRequests].sort())!==JSON.stringify(EXPECTED_MARKET_PATHS))report.findings.push('Shared market request budget changed: '+JSON.stringify(report.marketRequests));
+ if(report.writes.length)report.findings.push('Unexpected writes: '+report.writes.join(', '));
+ if(report.webSockets.length)report.findings.push('Unexpected WebSocket: '+report.webSockets.join(', '));
+ if(report.pageErrors.length)report.findings.push(`Page errors: ${report.pageErrors.length}`);
  fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
  console.log('HOME_LAPTOP_FIRST_LOAD '+JSON.stringify(report));
  if(report.findings.length)process.exitCode=1;

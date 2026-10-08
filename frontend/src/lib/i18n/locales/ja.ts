@@ -1451,6 +1451,9 @@ export const JA: Record<Key, string> = {
   'futures.transferAction': '振替',
 
   // --- Homepage (pages/home) ---
+  'home.hero.pauseMotion': '市場アニメーションを停止',
+  'home.hero.resumeMotion': '市場アニメーションを再開',
+  'home.hero.sceneAria': '市場の取引銘柄',
   'home.nav.main': 'メインナビゲーション',
   'home.nav.mobile': 'モバイルナビゲーション',
   'home.cta.startTrading': '取引を始める',

@@ -1451,6 +1451,9 @@ export const KO: Record<Key, string> = {
   'futures.transferAction': '이체',
 
   // --- Homepage (pages/home) ---
+  'home.hero.pauseMotion': '시장 애니메이션 일시 정지',
+  'home.hero.resumeMotion': '시장 애니메이션 재개',
+  'home.hero.sceneAria': '시장 거래 종목',
   'home.nav.main': '기본 내비게이션',
   'home.nav.mobile': '모바일 내비게이션',
   'home.cta.startTrading': '거래 시작하기',

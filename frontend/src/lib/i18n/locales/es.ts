@@ -1451,6 +1451,9 @@ export const ES: Record<Key, string> = {
   'futures.transferAction': 'Transferir',
 
   // --- Homepage (pages/home) ---
+  'home.hero.pauseMotion': 'Pausar la animación de mercados',
+  'home.hero.resumeMotion': 'Reanudar la animación de mercados',
+  'home.hero.sceneAria': 'Instrumentos de mercado',
   'home.nav.main': 'Navegación principal',
   'home.nav.mobile': 'Navegación móvil',
   'home.cta.startTrading': 'Empezar a operar',
