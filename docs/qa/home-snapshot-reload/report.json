@@ -1,18 +1,135 @@
 {
-  "startedAt": "2026-09-19T08:02:49.335Z",
+  "startedAt": "2026-10-07T19:06:59.276Z",
   "firstVisit": {
-    "readyMs": 1048,
+    "readyMs": 972,
     "marketRequests": 8,
-    "metadataRequests": 1,
+    "metadataRequests": 2,
     "painted": {
+      "scene": 1,
+      "columnData": [
+        {
+          "symbol": "BTC",
+          "price": "76,746.00",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "GOLD",
+          "price": "4,349.19",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "OIL",
+          "price": "",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "ETH",
+          "price": "2,479.53",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "SOL",
+          "price": "99.78",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "XRP",
+          "price": "",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "ADA",
+          "price": "",
+          "unavailableNote": ""
+        }
+      ],
+      "terminals": 1,
+      "terminalVisible": true,
+      "duplicateTerminalInColumn": 0,
       "candles": 1,
       "bookRows": 12,
       "tradeRows": 6,
       "tapeBtc": true,
+      "badge": "Market data",
+      "overview": "Индекс страха и жадности61GreedРыночные данныеКапитализация$2.40T-0.40%Объём (24ч)$89.00BBTC Dominance55.1%ETH Dominance—Популярные сектораLLayer 1-0.67%Трендовые парыSSOL99.78-1.94%EETH2,479.53-1.82%BBTC76,746.00-0.67%CFD на активыGGold Spot4349.19-1.02%Торговать CFD",
+      "overviewData": [
+        {
+          "title": "Индекс страха и жадности",
+          "values": [
+            "61"
+          ],
+          "rows": []
+        },
+        {
+          "title": "Рыночные данные",
+          "values": [
+            "$2.40T",
+            "-0.40%",
+            "$89.00B",
+            "55.1%",
+            "—"
+          ],
+          "rows": []
+        },
+        {
+          "title": "Популярные сектора",
+          "values": [
+            "-0.67%"
+          ],
+          "rows": [
+            [
+              "Layer 1",
+              "-0.67%"
+            ]
+          ]
+        },
+        {
+          "title": "Трендовые пары",
+          "values": [
+            "99.78",
+            "-1.94%",
+            "2,479.53",
+            "-1.82%",
+            "76,746.00",
+            "-0.67%"
+          ],
+          "rows": [
+            [
+              "SOL",
+              "99.78",
+              "-1.94%"
+            ],
+            [
+              "ETH",
+              "2,479.53",
+              "-1.82%"
+            ],
+            [
+              "BTC",
+              "76,746.00",
+              "-0.67%"
+            ]
+          ]
+        },
+        {
+          "title": "CFD на активы",
+          "values": [
+            "4349.19",
+            "-1.02%"
+          ],
+          "rows": [
+            [
+              "Gold Spot4349.19",
+              "-1.02%"
+            ]
+          ]
+        }
+      ],
+      "overviewPlaceholders": 0,
       "heatmap": 1,
+      "heatmapBtc": true,
       "marketsBtc": true,
-      "placeholders": 0,
-      "badge": "Updated every 6h"
+      "placeholders": 0
     },
     "snapshot": {
       "version": 1,
@@ -24,19 +141,146 @@
       "cfd": 1,
       "futuresSymbols": 1,
       "bytes": 6698
-    }
+    },
+    "marketPaths": [
+      "/api/v1/cfd/tickers",
+      "/api/v1/futures/config",
+      "/api/v1/market/external/candles/BTC-USDT",
+      "/api/v1/market/external/orderbook/BTC-USDT",
+      "/api/v1/market/external/rankings",
+      "/api/v1/market/external/tickers",
+      "/api/v1/market/external/trades/BTC-USDT",
+      "/api/v1/market/global"
+    ]
   },
   "reload": {
-    "readyMs": 334,
+    "readyMs": 107,
     "painted": {
+      "scene": 1,
+      "columnData": [
+        {
+          "symbol": "BTC",
+          "price": "76,746.00",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "GOLD",
+          "price": "4,349.19",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "OIL",
+          "price": "",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "ETH",
+          "price": "2,479.53",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "SOL",
+          "price": "99.78",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "XRP",
+          "price": "",
+          "unavailableNote": ""
+        },
+        {
+          "symbol": "ADA",
+          "price": "",
+          "unavailableNote": ""
+        }
+      ],
+      "terminals": 1,
+      "terminalVisible": true,
+      "duplicateTerminalInColumn": 0,
       "candles": 1,
       "bookRows": 12,
       "tradeRows": 6,
       "tapeBtc": true,
+      "badge": "Market data",
+      "overview": "Индекс страха и жадности61GreedРыночные данныеКапитализация$2.40T-0.40%Объём (24ч)$89.00BBTC Dominance55.1%ETH Dominance—Популярные сектораLLayer 1-0.67%Трендовые парыSSOL99.78-1.94%EETH2,479.53-1.82%BBTC76,746.00-0.67%CFD на активыGGold Spot4349.19-1.02%Торговать CFD",
+      "overviewData": [
+        {
+          "title": "Индекс страха и жадности",
+          "values": [
+            "61"
+          ],
+          "rows": []
+        },
+        {
+          "title": "Рыночные данные",
+          "values": [
+            "$2.40T",
+            "-0.40%",
+            "$89.00B",
+            "55.1%",
+            "—"
+          ],
+          "rows": []
+        },
+        {
+          "title": "Популярные сектора",
+          "values": [
+            "-0.67%"
+          ],
+          "rows": [
+            [
+              "Layer 1",
+              "-0.67%"
+            ]
+          ]
+        },
+        {
+          "title": "Трендовые пары",
+          "values": [
+            "99.78",
+            "-1.94%",
+            "2,479.53",
+            "-1.82%",
+            "76,746.00",
+            "-0.67%"
+          ],
+          "rows": [
+            [
+              "SOL",
+              "99.78",
+              "-1.94%"
+            ],
+            [
+              "ETH",
+              "2,479.53",
+              "-1.82%"
+            ],
+            [
+              "BTC",
+              "76,746.00",
+              "-0.67%"
+            ]
+          ]
+        },
+        {
+          "title": "CFD на активы",
+          "values": [
+            "4349.19",
+            "-1.02%"
+          ],
+          "rows": [
+            [
+              "Gold Spot4349.19",
+              "-1.02%"
+            ]
+          ]
+        }
+      ],
+      "overviewPlaceholders": 0,
       "heatmap": 1,
+      "heatmapBtc": true,
       "marketsBtc": true,
-      "placeholders": 0,
-      "badge": "Updated every 6h"
+      "placeholders": 0
     },
     "reveal": {
       "sections": [
@@ -60,58 +304,63 @@
           "shown": true,
           "opaque": true,
           "opacity": "1",
-          "height": 1048.96875,
+          "height": 1049.96875,
           "top": 2099.28125,
-          "bottom": 3148.25
+          "bottom": 3149.25
         },
         {
           "shown": true,
           "opaque": true,
           "opacity": "1",
           "height": 722.078125,
-          "top": 3168.25,
-          "bottom": 3890.328125
+          "top": 3169.25,
+          "bottom": 3891.328125
         },
         {
           "shown": true,
           "opaque": true,
           "opacity": "1",
           "height": 375.0625,
-          "top": 3910.328125,
-          "bottom": 4285.390625
+          "top": 3911.328125,
+          "bottom": 4286.390625
         },
         {
           "shown": true,
           "opaque": true,
           "opacity": "1",
           "height": 834.8125,
-          "top": 4305.390625,
-          "bottom": 5140.203125
+          "top": 4306.390625,
+          "bottom": 5141.203125
         },
         {
           "shown": true,
           "opaque": true,
           "opacity": "1",
           "height": 270.78125,
-          "top": 5160.203125,
-          "bottom": 5430.984375
+          "top": 5161.203125,
+          "bottom": 5431.984375
         }
       ],
-      "footerTop": 5474.984375,
-      "contentBottom": 5430.984375,
-      "scrollHeight": 5809,
+      "footerTop": 5475.984375,
+      "contentBottom": 5431.984375,
+      "scrollHeight": 5782,
       "unshown": 0
     },
     "marketRequests": [],
     "metadataRequests": [
-      "/api/v1/market/assets/icons?symbols=BTC%2CETH%2CSOL%2CXAU",
       "/api/v1/market/assets/icons?symbols=BTC%2CETH%2CSOL%2CXAU"
     ]
   },
   "coldVisit": {
-    "readyMs": 484,
+    "readyMs": 181,
     "marketRequests": 8
   },
+  "writes": [],
+  "webSockets": [],
   "pageErrors": [],
-  "findings": []
+  "findings": [],
+  "semanticProbe": {
+    "ignoresDecorativeFallback": true,
+    "detectsChangedQuote": true
+  }
 }

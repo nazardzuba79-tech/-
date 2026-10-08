@@ -1,86 +1,50 @@
-# Compact upward market column: isolated browser QA
+# Sapphire circular market orbit — PR #473
 
-The revised PR #473 keeps the original Sapphire globe, laptop, text, CTAs and live tape. Only its highlighted asset column changes: smaller cards with round dimensional medallions, five visible desktop rows and three mobile rows, moving upward through seven existing instruments.
+The market sidebar is replaced by round ceramic/metal medallions on a compact perspective arc. The material reference is the **“One platform. 400+ global assets.”** scene observed on [Bybit](https://www.bybit.com/en/) on 2026-10-07. The original local licensed logos remain byte-identical; the circular presentation uses CSS.
 
-**Browser QA: PASS.** Baseline: `8cbb74becc694ef29b90691d3f472390f2a1a413`. Product candidate: `36dc293069d1b693c1cc6857ef82be9b99abb207`, bundled as `index-CpmoccwL.js`. This is local review evidence, not production deployment; exact-head CI is reported separately by the PR.
+Implementation commit: `c4b312ef5f1040b861db80c2dd585f29c5bd49da`.
+Rejected-column baseline: `e4aeed256341b9c25063f90f4940c7ee22039cd6`.
+Fresh main: `2f195cbe2f0f1c7ee31e2c9e887f7449a18cf34b`.
+The current review HEAD and its CI status are recorded in [PR #473](https://github.com/nazardzuba79-tech/-/pull/473); older CI results do not validate the new HEAD.
 
-A subsequent lifecycle-only fix prevents queued observer callbacks from restarting cancelled animations after unmount. Its actual-controller regression passes (15/15 tests in the column suite); the final production build passes as `index-BdLfCd-U.js`. The screenshots and timed samples below remain the unchanged visual candidate identified above.
+Five coins are visible on desktop and at most three on mobile, including during transitions. The central coin is 1.5–1.7 times larger than its neighbours. All seven assets take the centre once in a 28-second cycle: a three-second hold and one-second transition. Sequential opacity fades hide the wrap and prevent a fourth mobile neighbour.
 
-Current-main integration: auth PR #472 advanced main to `2f195cbe2f0f1c7ee31e2c9e887f7449a18cf34b` after the hero head passed 22/22 CI checks. The review branch preserves that auth change and all hero product/assets Git bytes. Combined locale/auth/hero validation passes 8 suites / 109 tests; frontend build passes as `index-CARLQ-lO.js`. The measurements retain their explicitly identified earlier baseline and visual candidate.
+Only finite positive, fresh shared quotes render. Missing, malformed, sampled, closed or stale quotes have no price node and no repeated unavailable label. A stale BTC hero override falls back to the fresh shared ticker. Seven compositor animations retain hover/focus/manual, offscreen, hidden-tab and reduced-motion pause, with unmount cleanup and the queued-observer disposal guard.
 
-## Method and measured cost
+## Evidence
 
-Both production bundles ran in fresh Chromium contexts: CPU 2× throttling, 40 ms latency, 10 Mbps download / 5 Mbps upload, 1× pixel ratio, same deterministic read-only fixtures and system-font fallback. External HTTP/WebSocket dispatch and writes were blocked. The original artwork and laptop chart/trades render before the measurement window.
+All eight widths were visually reviewed by Codex. Desktop compositions clear the headline, CTA and laptop. Mobile places a compact 150px scene after the existing CTA and shortcuts.
 
-One sample per viewport is recorded. Main-thread activity covers approximately four seconds with identical QA instrumentation; it is not total device CPU or production Web Vitals.
+| Desktop | Mobile, full hero |
+| --- | --- |
+| [1920](home-1920.png) | [430](home-430.png) |
+| [1707](home-1707.png) | [390](home-390.png) |
+| [1440](home-1440.png) | [360](home-360.png) |
+| [1366](home-1366.png) | [320](home-320.png) |
 
-| Metric | Desktop 1440 baseline → column | Mobile 390 baseline → column |
-|---|---:|---:|
-| LCP | 3,852 → 3,912 ms | 1,104 → 1,164 ms |
-| CLS | 0.000498 → 0.000094 | 0 → 0.000031 |
-| Loaded JS, gzip | 201,181 → 201,707 bytes | 201,181 → 201,707 bytes |
-| Encoded resource bodies | 4,582,939 → 4,599,743 bytes | 2,792,037 → 2,808,841 bytes |
-| Requests / API reads | 27 / 9 → 34 / 9 | 26 / 9 → 33 / 9 |
-| Main-thread activity / ~4 s | 332 → 543 ms | 82 → 304 ms |
-| Script activity / ~4 s | 41 → 44 ms | 19 → 29 ms |
-| Frame interval p95 | 16.7 → 16.7 ms | 16.7 → 16.8 ms |
-| Frames over 50 ms in sample | 0 → 0 | 0 → 0 |
-| Long tasks during load and sample | 2 / 108 → 2 / 121 ms total | 1 / 56 → 2 / 130 ms total |
-| JS heap at sample end | 7,044,460 → 6,677,928 bytes | 6,941,196 → 6,529,816 bytes |
+[Actual 29-second browser recording](market-orbit-cycle.mp4) includes the full 28-second cycle. Prices in the screenshots and recording are deterministic QA fixtures. They are not production price claims.
 
-The animation adds measured main-thread activity on both profiles. Frame pacing remained stable, but this evidence does **not** support a zero-cost claim. The same nine API reads occur before and after; seven additional requests are local column SVGs, not new subscriptions or price polling.
+[Current measurements](orbit-measurements.json): 38 browser cases / 15 checks PASS; four focused suites / 83 tests PASS; frontend TypeScript and production build PASS. Existing laptop-first-load and snapshot-reload checks also PASS. Browser/console errors, unknown API paths, denied egress and writes: **0**.
 
-Actual loaded-JS increase: **526 bytes gzip**. The isolated minified column bundle including local copy/format dependencies, with shared runtime/i18n/market-hook imports external, is **6,998 bytes gzip**; scoped CSS is **1,445 bytes gzip**. Seven SVGs total **10,586 bytes**. These meet the 50 KiB additional-JS and 400 KiB additional-decorative-asset budgets. The owner's original Sapphire bitmap is retained from the baseline, not counted as a new column asset.
+The same-environment fresh e4 baseline at 1440 and 390 has exactly the same market request paths as the candidate. Shared market hook, original Sapphire mount/style/art, headline/copy/CTA, terminal, tape, manifest and all seven SVGs are unchanged. No backend, Worker, listing, financial logic or production configuration changes.
 
-## Checks actually run
+## Bundle delta versus exact e4 baseline
 
-- Screenshots and no horizontal overflow: 1920×1080, 1707×940, 1440×900, 1366×768 and 430/390/360/320 px mobile.
-- Original artwork, heading, CTAs, tape and laptop visibility target retained. Heading and both main CTA bounds match the baseline within one pixel at every width.
-- Five desktop / three mobile cards at measured resting positions. Zero overlap with actual text ranges, CTA text or laptop display. Unused whitespace inside broad text block boxes is not treated as painted text.
-- Laptop fixture renders 48 valid candles and six trades. Canonical-pair metadata was corrected in QA transport for both baseline and candidate; product validation was preserved.
-- Real 28-second upward cycle and wrap: ETH → SOL → XRP → ADA → BTC → GOLD → OIL → ETH. All seven instruments reach center; column and hero bounds stay fixed; each tile returns within three pixels of its starting position.
-- Hover, keyboard focus, manual pause/resume, real scrolling offscreen and live reduced-motion changes freeze the column's actual Web Animations clocks. Original terminal/tape behavior remains separate.
-- Slow/missing logos retain readable symbols and geometry with CLS below 0.01. Unavailable quotes keep a dash and localized explanation rather than a fabricated price.
-- Actual EN/ES/中文/RU controls, keyboard pause, 200% CSS zoom and 720 CSS px reflow.
-- Guest CTA preserves `/login?next=/trade`; original authenticated `/` redirect to Futures is unchanged.
-- Fixture navigation Home → Spot → Futures → CFD → Home, then four remounts. Column animations disappear from terminals and on unmount. Each home remount has seven column animations, one existing global interval and eleven tracked document visibility listeners; counts do not grow.
-- Final run: zero uncaught browser errors, console errors, unknown fixture APIs, external dispatches or write attempts.
+Both source trees were built using the same local runtime and dependencies. Aggregate emitted JS gzip: **+72 bytes**. Aggregate CSS gzip: **−153 bytes**. Combined delta: **−81 bytes gzip**. Raw JS: −58 bytes; raw CSS: −411 bytes. Logo assets are unchanged. This is a bundle measurement, not a runtime CPU claim.
 
-The hidden-tab check explicitly fixtures `document.hidden` and dispatches `visibilitychange` in headless Chromium. The real application handler freezes all seven column clocks: **0 requests and 1.18 ms main-thread activity over two seconds**. This does not measure operating-system background scheduling. Offscreen behavior uses actual scrolling and IntersectionObserver.
+Static screenshot profiles use reduced motion. The active diagnostic ran during video recording and is not directly comparable to the non-recorded baseline; no CPU reduction or production Web Vitals claim is made. The unchanged main application produces the existing large-chunk build warning, and the legacy SSR copy test produces its existing `fetchPriority` warning.
 
-## Evidence and reproduction
+`measurements.json` retains the prior column iteration; use `orbit-measurements.json` for this revision. Full local raw reports and compositor traces are under `output/home-market-platform/orbit-final/`.
 
-- [Compact raw measurements](measurements.json), [desktop](home-1920.png), [mobile](home-390.png).
-- Full local screenshots/raw reports: `output/home-market-platform/baseline/` and `output/home-market-platform/column-after/`.
-- Real 35.08-second recording, including the entire 28-second cycle: `output/home-market-platform/column-after/market-platform-cycle.mp4` (1440×900, 25 fps, H.264). Original WebM and eight cycle-phase images remain beside it.
+## Changed implementation and QA files
 
-Use existing locked repository dependencies and Playwright/Chromium. No application dependency was added.
+- `frontend/src/pages/home/HomeMarketPlatformHero.tsx`
+- `frontend/src/pages/home/home-market-platform.css`
+- `frontend/src/pages/home/marketPlatformMotion.ts`
+- `frontend/src/lib/__tests__/homeMarketPlatform.test.ts`
+- `scripts/qa-home-market-platform.cjs`
+- `scripts/qa-home-laptop-first-load.cjs`
+- `scripts/qa-home-snapshot-reload.cjs`
+- QA evidence in this directory and the existing first-load/reload report directories; append-only `docs/AI_HANDOFF.md` entry.
 
-```powershell
-# First freeze a production build from the stated baseline SHA.
-Push-Location frontend
-node node_modules/vite/bin/vite.js build --outDir ../.home-hero-baseline-dist
-Pop-Location
-$env:QA_PLAYWRIGHT_MODULE = '<absolute path to playwright or playwright-core>'
-$env:QA_CHROMIUM = '<absolute path to Chromium executable>'
-$env:QA_PORT = '4208' # separate from the persistent review preview
-$env:QA_HERO_MODE = 'baseline'
-$env:QA_DIST = '.home-hero-baseline-dist'
-node scripts/qa-home-market-platform.cjs
-
-# Build the candidate and run the same profile plus behavior checks.
-Push-Location frontend
-npm.cmd run build
-Pop-Location
-$env:QA_HERO_MODE = 'after'
-$env:QA_DIST = 'frontend/dist'
-$env:QA_OUT = 'output/home-market-platform/column-after'
-node scripts/qa-home-market-platform.cjs
-
-# Persistent local preview, without Playwright.
-node scripts/qa-home-market-platform-preview.cjs frontend/dist 4198
-```
-
-Review URL: `http://127.0.0.1:4198`. It binds only loopback, accepts GET/HEAD only and uses CSP to block nonlocal browser traffic. Its transport supplies deterministic API fixtures, canonical candle/trade pair metadata and local substitutes for old remote image/font fallbacks, without editing product files or the bundle. `GET /__hero-preview` exposes fixture-only status.
-
-No merge, production deployment, production account, database or financial write is part of this QA.
+Review only. No PR merge or production deployment.
