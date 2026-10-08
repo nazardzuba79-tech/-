@@ -41,6 +41,12 @@ export class ReadGate {
 export class ByteCache {
   entries=new Map();bytes=0; pending=new Map();
   constructor(max=limits.STOCK_CACHE_MAX_MIB*1048576){this.max=max;}
+  peek(key,now=Date.now()) {
+    const hit=this.entries.get(key);
+    if(hit&&hit.until>now)return {value:hit.value};
+    if(this.pending.has(key))return {value:this.pending.get(key)};
+    return undefined;
+  }
   async get(key,loader,now=Date.now()) {
     const hit=this.entries.get(key);if(hit&&hit.until>now)return hit.value;
     if(this.pending.has(key))return this.pending.get(key);

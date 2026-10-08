@@ -2,8 +2,8 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { Store, ByteCache, ReadGate, limits, validateManifest } from './core.mjs';
 
-export function createStockServer({store,instruments,origin=''}){
-  validateManifest(instruments);const allowed=new Map(instruments.map(i=>[i.instrumentId,i]));const cache=new ByteCache(),gate=new ReadGate();
+export function createStockServer({store,instruments,origin='',readGate=new ReadGate()}){
+  validateManifest(instruments);const allowed=new Map(instruments.map(i=>[i.instrumentId,i]));const cache=new ByteCache(),gate=readGate;
   const server=createServer(async(req,res)=>{
     res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('X-Content-Type-Options','nosniff');
     if(origin&&req.headers.origin===origin)res.setHeader('Access-Control-Allow-Origin',origin);
@@ -19,8 +19,10 @@ export function createStockServer({store,instruments,origin=''}){
       if(!Number.isSafeInteger(limit)||limit<1||limit>limits.CHART_HARD_LIMIT||!Number.isSafeInteger(before)||before<0)throw Error('Invalid range');
       if(!allowed.get(id).enabled||allowed.get(id).dataRightsStatus!=='confirmed')return res.end('{"candles":[],"next":null}');
       const key=`${id}:${limit}:${before}`;
-      // Admission precedes singleflight map growth, including random valid cursors.
-      const body=await gate.run(()=>cache.get(key,()=>{const candles=store.history(id,limit,before).map(({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt})=>({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt}));return JSON.stringify({instrumentId:id,currency:allowed.get(id).currency,provider:allowed.get(id).provider,adjustmentMode:'unadjusted',candles,next:candles.length===limit?candles[0].openTimeUtc:null});}));
+      // Hits/singleflight followers do not consume scarce database admission.
+      // New keys still enter the bounded gate BEFORE growing the pending map.
+      const cached=cache.peek(key);
+      const body=await (cached?cached.value:gate.run(()=>cache.get(key,()=>{const candles=store.history(id,limit,before).map(({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt})=>({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt}));return JSON.stringify({instrumentId:id,currency:allowed.get(id).currency,provider:allowed.get(id).provider,adjustmentMode:'unadjusted',candles,next:candles.length===limit?candles[0].openTimeUtc:null});})));
       res.setHeader('Cache-Control','public, max-age=60');res.end(body);
     }catch(e){res.setHeader('Retry-After','15');res.writeHead(e.status??400);res.end('{"error":"unavailable"}');}
   });

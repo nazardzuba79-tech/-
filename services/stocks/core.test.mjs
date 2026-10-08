@@ -17,6 +17,33 @@ test('500 rows in bounded transactions, duplicate replay unchanged, explicit cor
 test('invalid currency, open candle, bad OHLC, adjustment mode and unordered duplicates rejected',()=>{for(const patch of [{currency:'BAD'},{closeTimeUtc:now+1},{low:'103'},{high:'99'},{volume:'NaN'},{adjustmentMode:'adjusted'},{instrumentId:'XNAS:OTHER'}])assert.throws(()=>validateCandle({...row(),...patch},i,now));const f=fixture();try{assert.throws(()=>f.store.write([row(),row()],i,now));assert.equal(f.store.history(i.instrumentId).length,0);}finally{f.close();}});
 test('read gate bounded at two active/eight pending and releases after error',async()=>{const g=new ReadGate();let release;const held=new Promise(r=>release=r);const jobs=Array.from({length:10},()=>g.run(()=>held));await assert.rejects(g.run(()=>null));assert.equal(g.active,2);assert.equal(g.queue.length,8);release();await Promise.all(jobs);assert.equal(g.active,0);await assert.rejects(g.run(()=>{throw Error('storage');}));assert.equal(await g.run(()=>3),3);});
 test('singleflight response cache byte cap',async()=>{const c=new ByteCache(16);let calls=0;const load=()=>{calls++;return '12345678';};await Promise.all([c.get('a',load),c.get('a',load)]);assert.equal(calls,1);await c.get('b',load);await c.get('c',load);assert.ok(c.bytes<=16);});
+
+test('cache peek does not create misses; expiry and pending singleflight stay bounded',async()=>{
+  const cache=new ByteCache(16);for(let n=0;n<1000;n++)assert.equal(cache.peek(String(n)),undefined);
+  assert.equal(cache.pending.size,0);let release,calls=0;
+  const job=cache.get('a',()=>{calls++;return new Promise(r=>release=r);},1000);
+  const follower=cache.peek('a',1000);assert.ok(follower);await Promise.resolve();
+  release('12345678');assert.equal(await follower.value,'12345678');await job;
+  assert.equal(calls,1);assert.equal(cache.peek('a',900999).value,'12345678');
+  assert.equal(cache.peek('a',901000),undefined);assert.equal(cache.pending.size,0);
+});
+
+test('cached HTTP history remains available while uncached read admission is full',async()=>{
+  const f=fixture(),gate=new ReadGate();f.store.write([row()],i,now);
+  const server=createStockServer({store:f.store,instruments:[i],readGate:gate});
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const url='http://127.0.0.1:'+server.address().port+'/stocks/history/'+i.instrumentId;
+  let release;const held=new Promise(r=>release=r);let jobs=[];
+  try{
+    const warm=await fetch(url);assert.equal(warm.status,200);const expected=await warm.text();
+    jobs=Array.from({length:10},()=>gate.run(()=>held));
+    const hit=await fetch(url);assert.equal(hit.status,200);assert.equal(await hit.text(),expected);
+    assert.equal((await fetch(url+'?before='+now)).status,503);
+    assert.equal(gate.active,2);assert.equal(gate.queue.length,8);
+    assert.equal(server.stockCache.pending.size,0);
+    release();await Promise.all(jobs);assert.equal((await fetch(url+'?before='+now)).status,200);
+  }finally{release();await Promise.allSettled(jobs);server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}
+});
 test('provider body cap while streaming, no JSON parsing oversized response',async()=>{let cancelled=false;const p=new ProviderGateway({fetchImpl:async()=>({ok:true,body:new ReadableStream({pull(c){c.enqueue(new Uint8Array(600000));},cancel(){cancelled=true;}})})});await assert.rejects(p.request('https://fixture.invalid'),/response limit/);assert.ok(cancelled);assert.ok(p.pausedUntil>Date.now());p.close();});
 test('aborting collector cancels in-flight provider fetch',async()=>{const p=new ProviderGateway({fetchImpl:(_u,{signal})=>new Promise((_r,reject)=>signal.addEventListener('abort',()=>reject(signal.reason)))});const job=p.request('https://fixture.invalid');setTimeout(()=>p.close(),20);await assert.rejects(job);assert.equal(p.busy,false);});
 test('exchange intervals account for publication lag, breaks and absent session; no invented candles',()=>{const s=[{instrumentId:i.instrumentId,open:now-1800000,close:now}];assert.equal(closedSessionEnd(i,s,now,60000),now-900000);assert.equal(closedSessionEnd(i,[],now,0),null);assert.equal(closedSessionEnd(i,s,now+3600000,0),now);});
