@@ -43,6 +43,9 @@ import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/TerminalMobileParity.css';
 import './trade-terminal/TerminalPreviewPolish.css';
 import './trade-terminal/SpotCfdGraphite.css';
+// The released Futures look (PR #469) on the Spot and CFD DOM: geometry, type
+// and palette only, scoped to .spot-terminal / .cfd-terminal (owner, 2026-10-07).
+import './trade-terminal/SpotCfdParity.css';
 import './trade-terminal/SpotMobileCompact.css';
 import './trade-terminal/TerminalMobileHeader.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
@@ -443,7 +446,7 @@ export function TradePage() {
               ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} />
               : pairResolving
                 ? <div className="chart-resolving" style={{ width: "100%", height: "100%" }} aria-busy="true" data-pair-resolving />
-                : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />}
+                : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />}
           </div>
 
           <div className="orderbook-area" data-sampled-book="true">
