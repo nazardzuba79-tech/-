@@ -76,13 +76,13 @@ const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySub
 describe('translation integrity', () => {
   it('localizes the exact two-line card copy and 22+/70+ fiat/crypto counts without an investor claim', () => {
     const approvedCommunityCopy: Record<string, { title: string; subtitle: string }> = {
-      ru: { title: 'Платите и снимайте наличные', subtitle: '22+ фиатных валют · 70+ криптовалют' },
-      en: { title: 'Pay and withdraw cash', subtitle: '22+ fiat currencies · 70+ cryptocurrencies' },
-      zh: { title: '支付与取现', subtitle: '22+ 种法定货币 · 70+ 种加密货币' },
-      es: { title: 'Paga y retira efectivo', subtitle: '22+ monedas fiduciarias · 70+ criptomonedas' },
-      hi: { title: 'भुगतान करें और नकद निकालें', subtitle: '22+ फ़िएट मुद्राएँ · 70+ क्रिप्टोकरेंसी' },
-      ja: { title: 'お支払いと現金の引き出し', subtitle: '22+ の法定通貨 · 70+種類の暗号資産' },
-      ko: { title: '결제하고 현금을 인출하세요', subtitle: '22+개 법정화폐 · 70+개 암호화폐' },
+      ru: { title: 'Платите и снимайте наличные — 0% комиссии', subtitle: '22+ фиатных валют · 70+ криптовалют' },
+      en: { title: 'Pay and withdraw cash — 0% fees', subtitle: '22+ fiat currencies · 70+ cryptocurrencies' },
+      zh: { title: '支付与取现 — 手续费 0%', subtitle: '22+ 种法定货币 · 70+ 种加密货币' },
+      es: { title: 'Paga y retira efectivo — 0% de comisión', subtitle: '22+ monedas fiduciarias · 70+ criptomonedas' },
+      hi: { title: 'भुगतान करें और नकद निकालें — शुल्क 0%', subtitle: '22+ फ़िएट मुद्राएँ · 70+ क्रिप्टोकरेंसी' },
+      ja: { title: 'お支払いと現金の引き出し — 手数料0%', subtitle: '22+ の法定通貨 · 70+種類の暗号資産' },
+      ko: { title: '결제하고 현금을 인출하세요 — 수수료 0%', subtitle: '22+개 법정화폐 · 70+개 암호화폐' },
     };
     for (const code of LOCALES) {
       const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
@@ -92,14 +92,19 @@ describe('translation integrity', () => {
         expect(dicts[code][key]).not.toMatch(/1[.,]2|million|миллион|млн|万|백만|लाख|18\+|30\+/i);
         expect(dicts[code][key]).not.toMatch(/[.!?。！？।]$/);
       }
-      expect(dicts[code]['authShell.communityTitle']).not.toMatch(/\d/);
+      const feeParts = dicts[code]['authShell.communityTitle'].split(' — ');
+      expect(feeParts).toHaveLength(2);
+      expect(feeParts[0]).not.toMatch(/\d/);
+      expect(feeParts[1]).not.toContain('VOLTEX');
+      expect(feeParts[1]).toContain('0%');
+      expect(dicts[code]['authShell.communityTitle'].match(/\d+%/g)).toEqual(['0%']);
       expect(dicts[code]['authShell.communityTitle']).toBe(approvedCommunityCopy[code].title);
       expect(dicts[code]['authShell.communitySubtitle']).toBe(approvedCommunityCopy[code].subtitle);
       expect(dicts[code]['authShell.communitySubtitle'].match(/\d+\+?/g)).toEqual(['22+', '70+']);
       expect(dicts[code]['authShell.communitySubtitle']).toContain(' · ');
     }
     for (const key of AUTH_COMMUNITY_KEYS) expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
-    expect(dicts.ru['authShell.communityTitle']).toBe('Платите и снимайте наличные');
+    expect(dicts.ru['authShell.communityTitle']).toBe('Платите и снимайте наличные — 0% комиссии');
     expect(dicts.ru['authShell.communitySubtitle']).toBe('22+ фиатных валют · 70+ криптовалют');
   });
   it('clarifies that the displayed currency flags are a partial selection in all seven languages', () => {
