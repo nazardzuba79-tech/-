@@ -151,7 +151,7 @@ jobs:
           cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/stock-before/services/stocks/load-fixture.mjs"
           docker build -t voltex-stock-before -f "$RUNNER_TEMP/stock-before/services/stocks/Dockerfile" "$RUNNER_TEMP/stock-before"
           # CI-only tools must match the container libc; never mount host taskset.
-          printf 'FROM voltex-stock-after\nUSER root\nRUN apt-get update && apt-get install -y --no-install-recommends util-linux && rm -rf /var/lib/apt/lists/*\n' | docker build -t voltex-stock-bench -f - .
+          printf 'FROM voltex-stock-after\nUSER root\nRUN apt-get update && apt-get install -y --no-install-recommends util-linux openssl && rm -rf /var/lib/apt/lists/*\n' | docker build -t voltex-stock-bench -f - .
       - name: Inventory real block device and two CPU placement (no production access)
         run: |
           mkdir -p "$RUNNER_TEMP/stock-disk/seed" .ci-output/stock-launch
