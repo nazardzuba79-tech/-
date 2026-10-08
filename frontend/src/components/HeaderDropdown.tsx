@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeftRight, BookOpen, BookOpenText, ChartCandlestick, ChevronDown, CircleHelp, GraduationCap, Handshake, Route, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, BookOpen, BookOpenText, ChartCandlestick, ChevronDown, CircleHelp, GraduationCap, Handshake, Route, SlidersHorizontal, TrendingUp, type LucideIcon } from 'lucide-react';
 import { Key, useLanguage } from '../lib/i18n';
 import './HeaderDropdown.css';
 
@@ -11,9 +11,14 @@ export interface HeaderDropdownItem {
   description: Key;
 }
 
+declare const __VOLTEX_STOCKS_ENABLED__: boolean;
+const stocksEnabled = typeof __VOLTEX_STOCKS_ENABLED__ !== 'undefined' && __VOLTEX_STOCKS_ENABLED__;
+
 export const TRADING_LINKS: readonly HeaderDropdownItem[] = [
   { to: '/trade', label: 'trade.spotTab', icon: ArrowLeftRight, description: 'nav.tradeSpotDesc' },
+  { to: '/futures', label: 'nav.futures', icon: TrendingUp, description: 'dashboard.quickLinkFuturesDesc' },
   { to: '/trade?market=cfd', label: 'trade.cfdTab', icon: ChartCandlestick, description: 'nav.tradeCfdDesc' },
+  ...(stocksEnabled ? [{ to: '/stocks', label: 'stocks.title' as Key, icon: BarChart3, description: 'stocks.closed' as Key }] : []),
 ];
 export const MARKET_LINKS: readonly HeaderDropdownItem[] = [
   { to: '/tools', label: 'nav.tools', icon: SlidersHorizontal, description: 'nav.menuToolsDesc' },

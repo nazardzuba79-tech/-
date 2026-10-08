@@ -28,7 +28,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
   const terminalCopy = active === '/trade' || active === '/futures';
   const terminalLabels = terminalNavCopy(lang);
   const marketSectionActive = active === '/markets' || active === '/tools';
-  const tradeSectionActive = active === '/trade';
+  const tradeSectionActive = active === '/trade' || active === '/stocks';
   const otcSectionActive = active === '/otc' || active === '/arbitrage';
   const LINKS=[
     {to:'/markets',label:t('nav.markets')},
