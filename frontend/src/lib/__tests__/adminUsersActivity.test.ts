@@ -154,7 +154,7 @@ test('phone layout keeps two compact filters and expandable user details without
   expect(card.querySelector('.admin-user-mobile-details dl')?.textContent).toContain('FixturePassword123');
   expect(card.querySelector('.admin-user-mobile-bottom .admin-open-button')).not.toBeNull();
   const css = readFileSync(resolve(frontend, 'src/pages/admin/adminPracticality.css'), 'utf8');
-  expect(css).toMatch(/\\.admin-page-grid \\.admin-users-workspace \\.admin-users-filters \\{/);
+  expect(css).toMatch(/\.admin-page-grid \.admin-users-workspace \.admin-users-filters \{/);
   expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
   expect(css).toContain('.admin-users-workspace .admin-users-filters input { grid-column: 1 / -1; }');
   expect(f.api.getAdminUsersPage).toHaveBeenCalledTimes(1);
