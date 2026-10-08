@@ -1,0 +1,733 @@
+{
+ "mode": "after",
+ "fixtureOnly": true,
+ "productionAccess": false,
+ "profile": {
+  "chromium": "headless",
+  "deviceScaleFactor": 1,
+  "cpuThrottle": 2,
+  "latencyMs": 40,
+  "downloadBytesPerSecond": 1250000,
+  "uploadBytesPerSecond": 625000
+ },
+ "cases": [
+  {
+   "name": "orbit-1920",
+   "width": 1920,
+   "height": 1080,
+   "content": {
+    "count": 9,
+    "round": true,
+    "textOnly": true,
+    "quotes": 0,
+    "badges": {
+     "BTC": null,
+     "AAPL": "STOCKS SOON",
+     "OIL": "CFD",
+     "GOLD": "CFD",
+     "ETH": null,
+     "NVDA": "STOCKS SOON",
+     "EURUSD": "CFD",
+     "US500": "CFD",
+     "SOL": null
+    },
+    "logos": [
+     "/hero/instruments/aapl.svg",
+     "/hero/instruments/btc-mark.svg",
+     "/hero/instruments/eth.svg",
+     "/hero/instruments/eurusd.svg",
+     "/hero/instruments/gold.svg",
+     "/hero/instruments/nvda.svg",
+     "/hero/instruments/oil.svg",
+     "/hero/instruments/sol.svg"
+    ],
+    "front": "BTC",
+    "originalArt": "/hero/sapphire-refined.png",
+    "heading": "OWN YOUR FUTURE.",
+    "terminals": 1
+   },
+   "rest": {
+    "centre": {
+     "x": 680.859375,
+     "y": 290.25,
+     "right": 859.359375,
+     "bottom": 468.7499694824219,
+     "width": 178.5,
+     "height": 178.49996948242188
+    },
+    "pedestal": {
+     "x": 596.859375,
+     "y": 650.3999633789062,
+     "right": 943.359375,
+     "bottom": 780.5999755859375,
+     "width": 346.5,
+     "height": 130.20001220703125
+    },
+    "heroBottom": 975,
+    "visibleParts": 15
+   },
+   "phases": 90,
+   "worst": {
+    "textOverlap": 0,
+    "minTextGap": 35,
+    "minScreenGap": 148,
+    "deckGap": 20,
+    "pageWidth": 1920
+   }
+  },
+  {
+   "name": "orbit-1707",
+   "width": 1707,
+   "height": 940,
+   "content": {
+    "count": 9,
+    "round": true,
+    "textOnly": true,
+    "quotes": 0,
+    "badges": {
+     "BTC": null,
+     "AAPL": "STOCKS SOON",
+     "OIL": "CFD",
+     "GOLD": "CFD",
+     "ETH": null,
+     "NVDA": "STOCKS SOON",
+     "EURUSD": "CFD",
+     "US500": "CFD",
+     "SOL": null
+    },
+    "logos": [
+     "/hero/instruments/aapl.svg",
+     "/hero/instruments/btc-mark.svg",
+     "/hero/instruments/eth.svg",
+     "/hero/instruments/eurusd.svg",
+     "/hero/instruments/gold.svg",
+     "/hero/instruments/nvda.svg",
+     "/hero/instruments/oil.svg",
+     "/hero/instruments/sol.svg"
+    ],
+    "front": "BTC",
+    "originalArt": "/hero/sapphire-refined.png",
+    "heading": "OWN YOUR FUTURE.",
+    "terminals": 1
+   },
+   "rest": {
+    "centre": {
+     "x": 656.5093994140625,
+     "y": 273.8500061035156,
+     "right": 821.409423828125,
+     "bottom": 438.75,
+     "width": 164.9000244140625,
+     "height": 164.89999389648438
+    },
+    "pedestal": {
+     "x": 578.9093627929688,
+     "y": 606.5599975585938,
+     "right": 899.0093994140625,
+     "bottom": 726.8400268554688,
+     "width": 320.10003662109375,
+     "height": 120.280029296875
+    },
+    "heroBottom": 928.5,
+    "visibleParts": 15
+   },
+   "phases": 90,
+   "worst": {
+    "textOverlap": 0,
+    "minTextGap": 31,
+    "minScreenGap": 71,
+    "deckGap": 22,
+    "pageWidth": 1707
+   }
+  },
+  {
+   "name": "orbit-1440",
+   "width": 1440,
+   "height": 900,
+   "content": {
+    "count": 9,
+    "round": true,
+    "textOnly": true,
+    "quotes": 0,
+    "badges": {
+     "BTC": null,
+     "AAPL": "STOCKS SOON",
+     "OIL": "CFD",
+     "GOLD": "CFD",
+     "ETH": null,
+     "NVDA": "STOCKS SOON",
+     "EURUSD": "CFD",
+     "US500": "CFD",
+     "SOL": null
+    },
+    "logos": [
+     "/hero/instruments/aapl.svg",
+     "/hero/instruments/btc-mark.svg",
+     "/hero/instruments/eth.svg",
+     "/hero/instruments/eurusd.svg",
+     "/hero/instruments/gold.svg",
+     "/hero/instruments/nvda.svg",
+     "/hero/instruments/oil.svg",
+     "/hero/instruments/sol.svg"
+    ],
+    "front": "BTC",
+    "originalArt": "/hero/sapphire-refined.png",
+    "heading": "OWN YOUR FUTURE.",
+    "terminals": 1
+   },
+   "rest": {
+    "centre": {
+     "x": 596.8187255859375,
+     "y": 234.89999389648438,
+     "right": 729.4187622070312,
+     "bottom": 367.5,
+     "width": 132.60003662109375,
+     "height": 132.60000610351562
+    },
+    "pedestal": {
+     "x": 534.4187622070312,
+     "y": 502.4399719238281,
+     "right": 791.8187255859375,
+     "bottom": 599.1599731445312,
+     "width": 257.39996337890625,
+     "height": 96.72000122070312
+    },
+    "heroBottom": 795,
+    "visibleParts": 15
+   },
+   "phases": 90,
+   "worst": {
+    "textOverlap": 0,
+    "minTextGap": 55,
+    "minScreenGap": 33,
+    "deckGap": 38,
+    "pageWidth": 1440
+   }
+  },
+  {
+   "name": "orbit-1366",
+   "width": 1366,
+   "height": 768,
+   "content": {
+    "count": 9,
+    "round": true,
+    "textOnly": true,
+    "quotes": 0,
+    "badges": {
+     "BTC": null,
+     "AAPL": "STOCKS SOON",
+     "OIL": "CFD",
+     "GOLD": "CFD",
+     "ETH": null,
+     "NVDA": "STOCKS SOON",
+     "EURUSD": "CFD",
+     "US500": "CFD",
+     "SOL": null
+    },
+    "logos": [
+     "/hero/instruments/aapl.svg",
+     "/hero/instruments/btc-mark.svg",
+     "/hero/instruments/eth.svg",
+     "/hero/instruments/eurusd.svg",
+     "/hero/instruments/gold.svg",
+     "/hero/instruments/nvda.svg",
+     "/hero/instruments/oil.svg",
+     "/hero/instruments/sol.svg"
+    ],
+    "front": "BTC",
+    "originalArt": "/hero/sapphire-refined.png",
+    "heading": "OWN YOUR FUTURE.",
+    "terminals": 1
+   },
+   "rest": {
+    "centre": {
+     "x": 577.7718505859375,
+     "y": 224.65000915527344,
+     "right": 701.8718872070312,
+     "bottom": 348.75,
+     "width": 124.10003662109375,
+     "height": 124.09999084472656
+    },
+    "pedestal": {
+     "x": 519.3718872070312,
+     "y": 475.0400085449219,
+     "right": 760.2718505859375,
+     "bottom": 565.5599975585938,
+     "width": 240.89996337890625,
+     "height": 90.51998901367188
+    },
+    "heroBottom": 771,
+    "visibleParts": 15
+   },
+   "phases": 90,
+   "worst": {
+    "textOverlap": 0,
+    "minTextGap": 46,
+    "minScreenGap": 25,
+    "deckGap": 50,
+    "pageWidth": 1366
+   }
+  },
+  {
+   "name": "orbit-430",
+   "width": 430,
+   "height": 932,
+   "content": {
+    "count": 9,
+    "round": true,
+    "textOnly": true,
+    "quotes": 0,
+    "badges": {
+     "BTC": null,
+     "AAPL": "STOCKS SOON",
+     "OIL": "CFD",
+     "GOLD": "CFD",
+     "ETH": null,
+     "NVDA": "STOCKS SOON",
+     "EURUSD": "CFD",
+     "US500": "CFD",
+     "SOL": null
+    },
+    "logos": [
+     "/hero/instruments/aapl.svg",
+     "/hero/instruments/btc-mark.svg",
+     "/hero/instruments/eth.svg",
+     "/hero/instruments/eurusd.svg",
+     "/hero/instruments/gold.svg",
+     "/hero/instruments/nvda.svg",
+     "/hero/instruments/oil.svg",
+     "/hero/instruments/sol.svg"
+    ],
+    "front": "BTC",
+    "originalArt": "/hero/sapphire-refined.png",
+    "heading": "OWN YOUR FUTURE.",
+    "terminals": 1
+   },
+   "rest": {
+    "centre": {
+     "x": 160.59686279296875,
+     "y": 648.9500122070312,
+     "right": 269.3968505859375,
+     "bottom": 757.75,
+     "width": 108.79998779296875,
+     "height": 108.79998779296875
+    },
+    "pedestal": {
+     "x": 109.3968734741211,
+     "y": 868.469970703125,
+     "right": 320.5968551635742,
+     "bottom": 947.8299560546875,
+     "width": 211.19998168945312,
+     "height": 79.3599853515625
+    },
+    "heroBottom": 1170.125,
+    "visibleParts": 6
+   },
+   "phases": 90,
+   "worst": {
+    "textOverlap": 0,
+    "minTextGap": 1000000000,
+    "minScreenGap": 1000000000,
+    "deckGap": 158,
+    "pageWidth": 430
+   }
+  },
+  {
+   "name": "orbit-390",
+   "width": 390,
+   "height": 844,
+   "content": {
+    "count": 9,
+    "round": true,
+    "textOnly": true,
+    "quotes": 0,
+    "badges": {
+     "BTC": null,
+     "AAPL": "STOCKS SOON",
+     "OIL": "CFD",
+     "GOLD": "CFD",
+     "ETH": null,
+     "NVDA": "STOCKS SOON",
+     "EURUSD": "CFD",
+     "US500": "CFD",
+     "SOL": null
+    },
+    "logos": [
+     "/hero/instruments/aapl.svg",
+     "/hero/instruments/btc-mark.svg",
+     "/hero/instruments/eth.svg",
+     "/hero/instruments/eurusd.svg",
+     "/hero/instruments/gold.svg",
+     "/hero/instruments/nvda.svg",
+     "/hero/instruments/oil.svg",
+     "/hero/instruments/sol.svg"
+    ],
+    "front": "BTC",
+    "originalArt": "/hero/sapphire-refined.png",
+    "heading": "OWN YOUR FUTURE.",
+    "terminals": 1
+   },
+   "rest": {
+    "centre": {
+     "x": 144,
+     "y": 734.421875,
+     "right": 246,
+     "bottom": 836.421875,
+     "width": 102,
+     "height": 102
+    },
+    "pedestal": {
+     "x": 96,
+     "y": 940.221923828125,
+     "right": 294,
+     "bottom": 1014.6218872070312,
+     "width": 198,
+     "height": 74.39996337890625
+    },
+    "heroBottom": 1216.25,
+    "visibleParts": 6
+   },
+   "phases": 90,
+   "worst": {
+    "textOverlap": 0,
+    "minTextGap": 1000000000,
+    "minScreenGap": 1000000000,
+    "deckGap": 143,
+    "pageWidth": 390
+   }
+  },
+  {
+   "name": "orbit-360",
+   "width": 360,
+   "height": 800,
+   "content": {
+    "count": 9,
+    "round": true,
+    "textOnly": true,
+    "quotes": 0,
+    "badges": {
+     "BTC": null,
+     "AAPL": "STOCKS SOON",
+     "OIL": "CFD",
+     "GOLD": "CFD",
+     "ETH": null,
+     "NVDA": "STOCKS SOON",
+     "EURUSD": "CFD",
+     "US500": "CFD",
+     "SOL": null
+    },
+    "logos": [
+     "/hero/instruments/aapl.svg",
+     "/hero/instruments/btc-mark.svg",
+     "/hero/instruments/eth.svg",
+     "/hero/instruments/eurusd.svg",
+     "/hero/instruments/gold.svg",
+     "/hero/instruments/nvda.svg",
+     "/hero/instruments/oil.svg",
+     "/hero/instruments/sol.svg"
+    ],
+    "front": "BTC",
+    "originalArt": "/hero/sapphire-refined.png",
+    "heading": "OWN YOUR FUTURE.",
+    "terminals": 1
+   },
+   "rest": {
+    "centre": {
+     "x": 133.25,
+     "y": 733.921875,
+     "right": 226.75,
+     "bottom": 827.421875,
+     "width": 93.5,
+     "height": 93.5
+    },
+    "pedestal": {
+     "x": 89.25,
+     "y": 922.5718994140625,
+     "right": 270.75,
+     "bottom": 990.7718505859375,
+     "width": 181.5,
+     "height": 68.199951171875
+    },
+    "heroBottom": 1176.890625,
+    "visibleParts": 6
+   },
+   "phases": 90,
+   "worst": {
+    "textOverlap": 0,
+    "minTextGap": 1000000000,
+    "minScreenGap": 1000000000,
+    "deckGap": 132,
+    "pageWidth": 360
+   }
+  },
+  {
+   "name": "orbit-320",
+   "width": 320,
+   "height": 740,
+   "content": {
+    "count": 9,
+    "round": true,
+    "textOnly": true,
+    "quotes": 0,
+    "badges": {
+     "BTC": null,
+     "AAPL": "STOCKS SOON",
+     "OIL": "CFD",
+     "GOLD": "CFD",
+     "ETH": null,
+     "NVDA": "STOCKS SOON",
+     "EURUSD": "CFD",
+     "US500": "CFD",
+     "SOL": null
+    },
+    "logos": [
+     "/hero/instruments/aapl.svg",
+     "/hero/instruments/btc-mark.svg",
+     "/hero/instruments/eth.svg",
+     "/hero/instruments/eurusd.svg",
+     "/hero/instruments/gold.svg",
+     "/hero/instruments/nvda.svg",
+     "/hero/instruments/oil.svg",
+     "/hero/instruments/sol.svg"
+    ],
+    "front": "BTC",
+    "originalArt": "/hero/sapphire-refined.png",
+    "heading": "OWN YOUR FUTURE.",
+    "terminals": 1
+   },
+   "rest": {
+    "centre": {
+     "x": 117.5,
+     "y": 798.890625,
+     "right": 202.5,
+     "bottom": 883.890625,
+     "width": 85,
+     "height": 85
+    },
+    "pedestal": {
+     "x": 77.5,
+     "y": 970.390625,
+     "right": 242.5,
+     "bottom": 1032.390625,
+     "width": 165,
+     "height": 62
+    },
+    "heroBottom": 1197.828125,
+    "visibleParts": 6
+   },
+   "phases": 90,
+   "worst": {
+    "textOverlap": 0,
+    "minTextGap": 1000000000,
+    "minScreenGap": 1000000000,
+    "deckGap": 117,
+    "pageWidth": 320
+   }
+  },
+  {
+   "name": "hidden-tab-fixture",
+   "requestsWhileHidden": 0
+  },
+  {
+   "name": "route-round-trips",
+   "listenersBefore": {
+    "vis": 10,
+    "intervals": 1
+   },
+   "listenersAfter": {
+    "vis": 10,
+    "intervals": 1
+   }
+  },
+  {
+   "name": "cold-and-warm-visit",
+   "cold": {
+    "readyMs": 1553,
+    "heroAssetRequests": 8
+   },
+   "warm": {
+    "readyMs": 1543,
+    "requests": 27,
+    "heroAssets": [
+     {
+      "name": "btc-mark.svg",
+      "transfer": 1275
+     },
+     {
+      "name": "aapl.svg",
+      "transfer": 934
+     },
+     {
+      "name": "oil.svg",
+      "transfer": 1189
+     },
+     {
+      "name": "gold.svg",
+      "transfer": 2142
+     },
+     {
+      "name": "eth.svg",
+      "transfer": 510
+     },
+     {
+      "name": "nvda.svg",
+      "transfer": 1164
+     },
+     {
+      "name": "eurusd.svg",
+      "transfer": 2857
+     },
+     {
+      "name": "sol.svg",
+      "transfer": 1515
+     }
+    ]
+   }
+  }
+ ],
+ "checks": [
+  "8 widths: resting screenshots, no overflow, no copy/laptop intersection across 90 phases of the cycle",
+  "pointer hover pauses and resumes",
+  "keyboard focus on the control pauses and resumes",
+  "manual pause holds until resumed",
+  "hidden tab (visibility event) freezes the orbit and resumes",
+  "offscreen pauses and resumes",
+  "Spot and Futures round trips release and restore the orbit",
+  "reduced motion shows the complete resting composition",
+  "cold and warm visits measured",
+  "real-time recordings of one full cycle at 1440 and 390"
+ ],
+ "errors": [],
+ "consoleErrors": [],
+ "denied": [],
+ "writes": [],
+ "unknownApi": [],
+ "metrics": [
+  {
+   "label": "running-1440",
+   "cls": 9.399594907407406e-05,
+   "lcpMs": 3892,
+   "longTasks": [
+    {
+     "start": 880.7000000001863,
+     "duration": 129
+    },
+    {
+     "start": 1010.8999999994412,
+     "duration": 245
+    },
+    {
+     "start": 1451.2000000001863,
+     "duration": 87
+    },
+    {
+     "start": 1541,
+     "duration": 125
+    },
+    {
+     "start": 14629.299999999814,
+     "duration": 93
+    },
+    {
+     "start": 17997.5,
+     "duration": 166
+    }
+   ],
+   "intervals": 1,
+   "timeouts": 2,
+   "heap": {
+    "used": 10000000,
+    "total": 11900000
+   },
+   "requestCount": 166,
+   "frameCount": 481,
+   "frameP50Ms": 16.69999999999709,
+   "frameP95Ms": 16.799999999999272,
+   "framesOver50Ms": 0,
+   "mainThreadMs": 2549.3179999999993,
+   "scriptMs": 159.56599999999997,
+   "layoutMs": 116.73999999999995,
+   "windowMs": 8023.317000000134,
+   "jsHeapBytes": 6751416,
+   "domNodes": 6369,
+   "listenersCdp": 675,
+   "motionProfile": {
+    "reduced": false,
+    "state": "running"
+   },
+   "marketRequestPaths": [
+    "/api/v1/cfd/tickers",
+    "/api/v1/futures/config",
+    "/api/v1/market/external/candles/BTC-USDT",
+    "/api/v1/market/external/orderbook/BTC-USDT",
+    "/api/v1/market/external/rankings",
+    "/api/v1/market/external/tickers",
+    "/api/v1/market/external/trades/BTC-USDT",
+    "/api/v1/market/global"
+   ]
+  },
+  {
+   "label": "paused-1440",
+   "cls": 9.399594907407406e-05,
+   "lcpMs": 3892,
+   "longTasks": [
+    {
+     "start": 880.7000000001863,
+     "duration": 129
+    },
+    {
+     "start": 1010.8999999994412,
+     "duration": 245
+    },
+    {
+     "start": 1451.2000000001863,
+     "duration": 87
+    },
+    {
+     "start": 1541,
+     "duration": 125
+    },
+    {
+     "start": 14629.299999999814,
+     "duration": 93
+    },
+    {
+     "start": 17997.5,
+     "duration": 166
+    }
+   ],
+   "intervals": 1,
+   "timeouts": 2,
+   "heap": {
+    "used": 10000000,
+    "total": 11900000
+   },
+   "requestCount": 166,
+   "frameCount": 481,
+   "frameP50Ms": 16.69999999999709,
+   "frameP95Ms": 16.799999999995634,
+   "framesOver50Ms": 0,
+   "mainThreadMs": 1875.024,
+   "scriptMs": 160.53099999999998,
+   "layoutMs": 117.42699999999995,
+   "windowMs": 8018.549000000348,
+   "jsHeapBytes": 6571536,
+   "domNodes": 3281,
+   "listenersCdp": 446,
+   "motionProfile": {
+    "reduced": false,
+    "state": "paused"
+   },
+   "marketRequestPaths": [
+    "/api/v1/cfd/tickers",
+    "/api/v1/futures/config",
+    "/api/v1/market/external/candles/BTC-USDT",
+    "/api/v1/market/external/orderbook/BTC-USDT",
+    "/api/v1/market/external/rankings",
+    "/api/v1/market/external/tickers",
+    "/api/v1/market/external/trades/BTC-USDT",
+    "/api/v1/market/global"
+   ]
+  }
+ ],
+ "result": "PASS"
+}

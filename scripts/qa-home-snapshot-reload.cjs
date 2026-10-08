@@ -44,7 +44,7 @@ function fixture(req,res,next){
  return next();
 }
 
-// The compact orbit, restored visible Sapphire terminal and existing
+// The logo-only orbit, restored visible Sapphire terminal and existing
 // overview, heatmap and table all read the same confirmed snapshot.
 const painted=()=>{
  const overview=document.querySelector('.vx-home main > .vx-reveal');
@@ -53,8 +53,8 @@ const painted=()=>{
  scene:document.querySelectorAll('[data-market-platform-hero] [data-market-visual]').length,
  columnData:[...document.querySelectorAll('[data-market-tile]')].map(card=>({
   symbol:card.getAttribute('data-market-tile'),
-  price:card.querySelector('.vm-card-price')?.textContent||'',
-  unavailableNote:card.querySelector('.vm-card-note')?.textContent||'',
+  text:card.textContent||'',
+  quote:!!card.querySelector('.vm-card-price, .vm-card-note, .vm-card-change'),
  })),
  terminals:document.querySelectorAll('#home-live-terminal').length,
  terminalVisible:!!terminal&&getComputedStyle(terminal).visibility==='visible'&&terminal.getBoundingClientRect().width>0,
@@ -80,7 +80,7 @@ const painted=()=>{
  placeholders:document.querySelectorAll('#home-live-terminal .hs-empty, .hs-tape-empty, .vx-heatmap-empty').length,
  };
 };
-const ready=state=>state.scene===1&&state.columnData.length===7&&state.columnData.find(row=>row.symbol==='BTC')?.price==='76,746.00'&&state.columnData.find(row=>row.symbol==='GOLD')?.price==='4,349.19'&&state.columnData.find(row=>row.symbol==='OIL')?.price===''&&state.columnData.every(row=>row.unavailableNote==='')&&state.terminals===1&&state.terminalVisible&&state.duplicateTerminalInColumn===0&&state.candles===1&&state.bookRows>=2&&state.tradeRows>=1&&state.tapeBtc&&state.heatmap===1&&state.heatmapBtc&&state.marketsBtc&&state.placeholders===0&&state.overviewPlaceholders===0&&/61/.test(state.overview)&&/55\.1%/.test(state.overview)&&/4349\.19/.test(state.overview)&&/Layer 1/.test(state.overview);
+const ready=state=>state.scene===1&&state.columnData.length===9&&state.columnData.every(row=>/^(?:S&P 500)?[A-Z/0-9]+(?:CFD|STOCKS SOON)?$/.test(row.text)&&!row.quote)&&state.terminals===1&&state.terminalVisible&&state.duplicateTerminalInColumn===0&&state.candles===1&&state.bookRows>=2&&state.tradeRows>=1&&state.tapeBtc&&state.heatmap===1&&state.heatmapBtc&&state.marketsBtc&&state.placeholders===0&&state.overviewPlaceholders===0&&/61/.test(state.overview)&&/55\.1%/.test(state.overview)&&/4349\.19/.test(state.overview)&&/Layer 1/.test(state.overview);
 // Both probes run inside the page, so they travel as source text.
 const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
 
@@ -191,7 +191,7 @@ const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
  if(report.reload.marketRequests.length)report.findings.push('Reload with a fresh snapshot issued market requests: '+report.reload.marketRequests.join(', '));
  if(report.reload.painted.badge!=='Market data')report.findings.push(`Reload badge is "${report.reload.painted.badge}", expected neutral "Market data"`);
  if(JSON.stringify(report.reload.painted.overviewData)!==JSON.stringify(report.firstVisit.painted.overviewData))report.findings.push('Reload changed the confirmed overview values before any provider replied');
- if(JSON.stringify(report.reload.painted.columnData)!==JSON.stringify(report.firstVisit.painted.columnData))report.findings.push('Reload changed verified orbit quotes before any provider replied');
+ if(JSON.stringify(report.reload.painted.columnData)!==JSON.stringify(report.firstVisit.painted.columnData))report.findings.push('Reload changed the logo-only orbit before any provider replied');
  const after=await page.evaluate(PAINTED);
  if(!ready(after))report.findings.push('Confirmed values did not survive the failed background API: '+JSON.stringify(after));
 

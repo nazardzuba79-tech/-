@@ -4,8 +4,8 @@ import { createRequire } from 'module';
 import { createHash } from 'crypto';
 import ts from 'typescript';
 import { HERO_INSTRUMENTS } from '../../pages/home/heroInstruments';
-import { initialMarketPose, marketTileFrames, MARKET_CYCLE_MS, MARKET_MOVE_MS, MARKET_POSES, MARKET_STEP_MS } from '../../pages/home/marketPlatformMotion';
-import { cfdDisplayState, cfdMarketCopy } from '../cfdPresentation';
+import * as motion from '../../pages/home/marketPlatformMotion';
+import { initialMarketPose, marketTileFrames, MARKET_CYCLE_MS, MARKET_STEP_MS, MARKET_SWAP_MS, ORBIT, orbitPose, orbitPoseAt, restingPose, ENTRY_DEG, EXIT_DEG } from '../../pages/home/marketPlatformMotion';
 
 const frontend = resolve(__dirname, '../../..');
 const req = createRequire(resolve(frontend, 'package.json'));
@@ -13,199 +13,152 @@ const React = req('react');
 const { createRoot } = req('react-dom/client');
 const { act } = React;
 const { JSDOM } = req('jsdom');
+const read = (file: string) => readFileSync(resolve(frontend, file), 'utf8').replace(/\r\n/g, '\n');
 
-describe('market platform presentation boundary', () => {
-  it('changes only the highlighted asset mount inside the restored Sapphire hero', () => {
-    const read = (file: string) => readFileSync(resolve(frontend, 'src/pages/home', file), 'utf8').replace(/\r\n/g, '\n');
-    expect(read('HomeHero.tsx')).toBe("export { HomeSapphireHero as HomeHero } from './HomeSapphireHero';\n");
-    // Owner revision: preserve original artwork/projection, copy, CTAs,
-    // visible terminal and tape byte-for-byte outside this one column.
-    const restored = read('HomeSapphireHero.tsx')
+describe('orbital hero presentation boundary', () => {
+  it('changes only the scene mount and the owner-approved market mix line inside the Sapphire hero', () => {
+    expect(read('src/pages/home/HomeHero.tsx')).toBe("export { HomeSapphireHero as HomeHero } from './HomeSapphireHero';\n");
+    // Artwork/projection, copy, CTAs, visible terminal and tape stay byte-for-byte.
+    const restored = read('src/pages/home/HomeSapphireHero.tsx')
       .replace("import { HomeMarketPlatformHero } from './HomeMarketPlatformHero';", "import { HomeHeroAssets } from './HomeHeroAssets';")
-      .replace(/<HomeMarketPlatformHero(?: market=\{market\})?\s*\/>/, '<HomeHeroAssets market={market} englishLabels/>');
+      .replace(/<HomeMarketPlatformHero(?: market=\{market\})?\s*\/>/, '<HomeHeroAssets market={market} englishLabels/>')
+      .replace('<p className="market-mix"><span>Crypto</span><i aria-hidden="true">•</i><span>CFD</span><i aria-hidden="true">•</i><span>Stocks soon</span></p>', '');
     expect(createHash('sha256').update(restored).digest('hex')).toBe('a982f2b68e0a2ca9afa2a67b4d18ded4c414e224f2b0095c69f72f7262608db7');
   });
 
-  it('uses the existing BTC/Gold/Oil references plus four confirmed crypto identities', () => {
-    expect(HERO_INSTRUMENTS.map(item => item.symbol)).toEqual(['BTC', 'GOLD', 'OIL', 'ETH', 'SOL', 'XRP', 'ADA']);
-    expect(new Set(HERO_INSTRUMENTS.map(item => item.instrumentId)).size).toBe(7);
+  it('mixes crypto, CFD and stocks-soon markets in the owner\'s order with honest badges', () => {
+    expect(HERO_INSTRUMENTS.map(item => item.symbol)).toEqual(['BTC', 'AAPL', 'OIL', 'GOLD', 'ETH', 'NVDA', 'EURUSD', 'US500', 'SOL']);
+    expect(new Set(HERO_INSTRUMENTS.map(item => item.instrumentId)).size).toBe(HERO_INSTRUMENTS.length);
     for (const item of HERO_INSTRUMENTS) {
-      expect(Object.keys(item).sort()).toEqual(['instrumentId', 'symbol', 'displayName', 'category', 'logoPath', 'destination', 'enabled'].sort());
+      expect(Object.keys(item).sort()).toEqual(['instrumentId', 'symbol', 'label', 'displayName', 'category', 'badge', 'face', 'logoPath', 'enabled'].sort());
       expect(item.enabled).toBe(true);
-      expect(['AITH', 'NRX', 'VTA', 'SPX', 'NDX', 'AAPL']).not.toContain(item.symbol);
-      const target = new URL(item.destination, 'https://voltex.invalid');
-      expect(target.origin).toBe('https://voltex.invalid');
-      expect(target.pathname).toBe('/trade');
-      if (item.category === 'commodity') {
-        expect(['GOLD', 'OIL']).toContain(item.symbol);
-        const underlying = item.symbol === 'GOLD' ? 'XAUUSD' : 'WTIUSD';
-        expect(item.instrumentId).toBe(`cfd:${underlying}`);
-        expect(target.searchParams.get('market')).toBe('cfd');
-        expect(target.searchParams.get('symbol')).toBe(underlying);
-      } else {
-        expect(item.instrumentId).toMatch(/^cg:/);
-        expect(item.category).toBe('crypto');
-        expect(target.searchParams.get('pair')).toBe(`${item.symbol}/USDT`);
-      }
+      expect(['gold', 'silver', 'graphite']).toContain(item.face);
+      expect(item.badge).toBe(item.category === 'cfd' ? 'CFD' : item.category === 'stock' ? 'STOCKS SOON' : null);
+      if (item.category === 'stock') expect(item.displayName).toMatch(/coming soon/);
     }
+    expect(HERO_INSTRUMENTS.filter(item => item.category === 'crypto').map(item => item.symbol)).toEqual(['BTC', 'ETH', 'SOL']);
+    expect(HERO_INSTRUMENTS.filter(item => item.category === 'cfd').map(item => item.symbol)).toEqual(['OIL', 'GOLD', 'EURUSD', 'US500']);
+    expect(HERO_INSTRUMENTS.filter(item => item.category === 'stock').map(item => item.symbol)).toEqual(['AAPL', 'NVDA']);
+    expect(HERO_INSTRUMENTS[0]).toMatchObject({ symbol: 'BTC', face: 'gold' });
   });
 
-  it('ships small local marks with no per-icon remote image, font or script dependency', () => {
+  it('ships small local marks with traceable sources and no remote image, font or script', () => {
     let bytes = 0;
-    const localIcons: Record<string, string> = { BTC: 'Bitcoin', ETH: 'Ethereum', SOL: 'Solana', ADA: 'Cardano' };
+    const simple = (name: string) => read(`node_modules/@icons-pack/react-simple-icons/src/icons/Si${name}.tsx`).match(/<path d='([^']+)'/)?.[1];
     for (const item of HERO_INSTRUMENTS) {
-      expect(item.logoPath).toMatch(/^\/hero\/instruments\/[a-z]+\.svg$/);
-      const icon = readFileSync(resolve(frontend, 'public', item.logoPath.slice(1)), 'utf8');
-      expect(icon).toContain('<path ');
+      if (item.logoPath === null) { expect(item.symbol).toBe('US500'); continue; }
+      expect(item.logoPath).toMatch(/^\/hero\/instruments\/[a-z-]+\.svg$/);
+      const icon = read('public' + item.logoPath);
       expect(icon).not.toMatch(/<script|<image|<foreignObject|href\s*=|url\(\s*(?!#)/i);
-      if (item.symbol === 'XRP') {
-        // Preserve the currency mark from the existing provider, not the
-        // similarly named green XRP Ledger/site icon in Simple Icons.
-        expect(createHash('sha256').update(icon).digest('hex')).toBe('31fe41b6b3a4d98c9b46d7c37d60dea97fa5d9ebbd235ac5bfe23e4fd1eb8361');
-        expect(readFileSync(resolve(frontend, 'public/hero/instruments/LICENSE-cryptocurrency-icons.txt'), 'utf8')).toContain('CC0');
-      } else if (item.category === 'commodity') {
-        // Render the already shipped Gold/Oil source with the same props.
-        // Local gradient references are allowed; no new artwork is inferred.
-        const original = readFileSync(resolve(frontend, 'src/pages/home/HomeHeroAssets.tsx'), 'utf8');
-        const compiled = ts.transpileModule(original, { compilerOptions: {
-          jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
-        } }).outputText;
+      const path = icon.match(/<path[^>]* d="([^"]+)"/)?.[1];
+      if (item.symbol === 'ETH') expect(path).toBe(simple('Ethereum'));
+      if (item.symbol === 'SOL') expect(path).toBe(simple('Solana'));
+      if (item.symbol === 'AAPL') expect(path).toBe(simple('Apple'));
+      if (item.symbol === 'NVDA') expect(path).toBe(simple('Nvidia'));
+      // The gold coin's mark is the B of the same Simple Icons Bitcoin path.
+      if (item.symbol === 'BTC') expect(simple('Bitcoin')).toContain(path!.replace(/^M17\.288 10\.291/, ''));
+      if (item.symbol === 'EURUSD') expect(icon.replace(/<(?:svg|\/svg|defs|\/defs|clipPath|\/clipPath|g|\/g|rect|circle)\b[^>]*>/g, '')).toBe('');
+      if (item.category === 'cfd' && ['GOLD', 'OIL'].includes(item.symbol)) {
+        const original = read('src/pages/home/HomeHeroAssets.tsx');
+        const compiled = ts.transpileModule(original, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
         const icons: any = {};
-        new Function('require', 'exports', `${compiled}\nexports.gold = GoldIcon; exports.oil = OilIcon;`)(
-          (name: string) => name === 'react/jsx-runtime' ? req(name) : {}, icons,
-        );
-        const rendered = req('react-dom/server').renderToStaticMarkup(React.createElement(icons[item.symbol.toLowerCase()], { size: 24 }))
-          .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+        new Function('require', 'exports', `${compiled}\nexports.gold = GoldIcon; exports.oil = OilIcon;`)((name: string) => name === 'react/jsx-runtime' ? req(name) : {}, icons);
+        const rendered = req('react-dom/server').renderToStaticMarkup(React.createElement(icons[item.symbol.toLowerCase()], { size: 24 })).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
         expect(icon.trim()).toBe(rendered);
-      } else {
-        const original = readFileSync(resolve(frontend, `node_modules/@icons-pack/react-simple-icons/src/icons/Si${localIcons[item.symbol]}.tsx`), 'utf8');
-        expect(icon.match(/<path d="([^"]+)"/)?.[1]).toBe(original.match(/<path d='([^']+)'/)?.[1]);
       }
       bytes += Buffer.byteLength(icon);
     }
-    expect(bytes).toBeLessThan(12_000);
+    expect(bytes).toBeLessThan(14_000);
     expect(existsSync(resolve(frontend, 'public/hero/instruments/LICENSE.txt'))).toBe(true);
+    expect(read('public/hero/instruments/SOURCES.md')).toMatch(/SiApple[\s\S]*SiNvidia/);
   });
 });
 
-describe('market carousel continuity and rhythm', () => {
+describe('orbit rhythm, depth and continuity', () => {
   const frames = marketTileFrames();
-  const at = (time: number) => frames.find(frame => Math.abs(Number(frame.offset) * MARKET_CYCLE_MS - time) < .001)!;
-  const pose = (frame: Keyframe) => ({ transform: frame.transform, opacity: frame.opacity });
-  const visible = (frame: Keyframe) => frame.opacity !== 0 && frame.opacity !== '0';
-  const scale = (frame: Keyframe) => Number(String(frame.transform).match(/scale\(([\d.]+)\)/)?.[1]);
+  const poseFrames = frames.filter(frame => frame.transform != null);
+  const depthFrames = frames.filter(frame => frame.translate != null);
+  const scaleOf = (frame: Keyframe) => Number(String(frame.transform).match(/scale\(([\d.]+)\)$/)?.[1]);
 
-  it('holds each composition, then moves once every four seconds without layout animation', () => {
-    expect(MARKET_STEP_MS).toBe(4000);
-    expect(MARKET_MOVE_MS).toBeGreaterThanOrEqual(800);
-    expect(MARKET_MOVE_MS).toBeLessThanOrEqual(1100);
+  it('changes the centre every 2.5 s with a 1.2 s swap, inside the requested range', () => {
+    expect(MARKET_STEP_MS).toBeGreaterThanOrEqual(2500);
+    expect(MARKET_STEP_MS).toBeLessThanOrEqual(4500);
+    expect(MARKET_SWAP_MS).toBe(1200);
     expect(MARKET_CYCLE_MS).toBe(MARKET_STEP_MS * HERO_INSTRUMENTS.length);
-    for (let phase = 0; phase < HERO_INSTRUMENTS.length; phase++) {
-      const start = at(phase * MARKET_STEP_MS);
-      const held = at((phase + 1) * MARKET_STEP_MS - MARKET_MOVE_MS);
-      expect(start).toBeDefined();
-      expect(held).toBeDefined();
-      expect(pose(held)).toEqual(pose(start));
-      expect(Number(held.offset) - Number(start.offset)).toBeGreaterThan(.1);
-    }
     let previous = -1;
     for (const frame of frames) {
-      expect(Number(frame.offset)).toBeGreaterThan(previous);
+      expect(Number(frame.offset)).toBeGreaterThanOrEqual(previous);
       expect(Number(frame.offset)).toBeLessThanOrEqual(1);
       previous = Number(frame.offset);
-      expect(Object.keys(frame).filter(key => !['transform', 'opacity', 'offset', 'easing'].includes(key))).toEqual([]);
+      // Compositor-only properties; no layout, no stepped jumps.
+      expect(Object.keys(frame).filter(key => !['transform', 'opacity', 'translate', 'offset', 'easing'].includes(key))).toEqual([]);
       expect(frame.easing ?? '').not.toMatch(/steps\(/);
     }
   });
 
-  it('closes the orbit without a visible wrap or a last-to-first snap', () => {
-    expect(pose(frames[0])).toEqual(pose(frames[frames.length - 1]));
-    // The only short repositioning segment is behind the scene and invisible
-    // throughout. Normal visible transitions retain the one-second rhythm.
-    const transformFrames = frames.filter(frame => frame.transform != null);
-    const resets = transformFrames.slice(1).map((frame, index) => [transformFrames[index], frame] as const)
-      .filter(([left, right]) => left.transform !== right.transform
-        && (Number(right.offset) - Number(left.offset)) * MARKET_CYCLE_MS < MARKET_MOVE_MS / 2);
-    expect(resets).toHaveLength(1);
-    for (const [left, right] of resets) {
-      expect(visible(left)).toBe(false);
-      expect(visible(right)).toBe(false);
-    }
-    expect(MARKET_POSES.filter(visible)).toHaveLength(5);
-    expect(MARKET_POSES.filter(frame => !visible(frame))).toHaveLength(2);
-    for (const frame of frames) {
-      if (frame.transform == null) continue;
-      expect(String(frame.transform)).toMatch(/^translate3d\(/);
-      expect(Number.isFinite(scale(frame))).toBe(true);
-      for (const rotation of String(frame.transform).matchAll(/rotate[XYZ]\((-?[\d.]+)deg\)/g)) {
-        expect(Math.abs(Number(rotation[1]))).toBeLessThan(45);
+  it('closes the loop on the same pose and depth, so the cycle never snaps', () => {
+    expect(poseFrames[0].transform).toBe(poseFrames[poseFrames.length - 1].transform);
+    expect(poseFrames[0].opacity).toBe(poseFrames[poseFrames.length - 1].opacity);
+    expect(depthFrames[0].translate).toBe(depthFrames[depthFrames.length - 1].translate);
+    for (const frame of poseFrames) expect(String(frame.transform)).toMatch(/^translate3d\(-?[\d.]+px, -?[\d.]+px, 0px\) perspective\(900px\) rotateY\(-?[\d.]+deg\) scale\([\d.]+\)$/);
+    // Consecutive orbit samples stay close: no teleport on the ring.
+    const xy = poseFrames.map(frame => String(frame.transform).match(/translate3d\((-?[\d.]+)px, (-?[\d.]+)px/)!.slice(1).map(Number));
+    const steps = xy.slice(1).map((point, i) => Math.hypot(point[0] - xy[i][0], point[1] - xy[i][1]));
+    expect(Math.max(...steps)).toBeLessThan(260);
+    expect(steps.filter(step => step > 40)).toHaveLength(2);
+  });
+
+  it('keeps one dominant centre, nearer orbit coins larger and the incoming coin in front during a swap', () => {
+    expect(scaleOf(poseFrames[0])).toBe(1);
+    const front = orbitPose(90), back = orbitPose(270), side = orbitPose(0);
+    expect(front.scale).toBeGreaterThan(side.scale);
+    expect(side.scale).toBeGreaterThan(back.scale);
+    expect(1 / front.scale).toBeGreaterThanOrEqual(1.5);
+    expect(front.z).toBeGreaterThan(back.z);
+    expect([front.opacity, side.opacity, back.opacity]).toEqual([1, 1, 1]);
+    expect(orbitPose(90, 'mobile').opacity).toBe(1);
+    expect(orbitPose(270, 'mobile').opacity).toBe(0);
+    expect(ORBIT.centreDepth).toBeGreaterThan(front.z);
+    expect(ORBIT.incomingDepth).toBeGreaterThan(ORBIT.centreDepth);
+    expect(ORBIT.outgoingDepth).toBeLessThan(orbitPose(EXIT_DEG).z);
+    // The orbit meets the centre at the front, just above the platform.
+    expect(Math.sin(EXIT_DEG * Math.PI / 180)).toBeGreaterThan(.85);
+    expect(Math.sin(ENTRY_DEG * Math.PI / 180)).toBeGreaterThan(.85);
+  });
+
+  it('spaces the orbit evenly and never lets two medallions collide on it', () => {
+    let minimum = Infinity;
+    for (let time = 0; time < MARKET_CYCLE_MS; time += 50) {
+      const ring = HERO_INSTRUMENTS.map((_, index) => orbitPoseAt(index, time)).filter(pose => pose.phase === 'orbit');
+      for (let a = 0; a < ring.length; a++) for (let b = a + 1; b < ring.length; b++) {
+        minimum = Math.min(minimum, Math.hypot(ring[a].x - ring[b].x, ring[a].y - ring[b].y) - ORBIT.coin / 2 * (ring[a].scale + ring[b].scale));
       }
     }
+    expect(minimum).toBeGreaterThan(20);
+    const rest = HERO_INSTRUMENTS.map((_, index) => restingPose(index));
+    expect(rest[0]).toMatchObject({ x: 0, y: 0, scale: 1 });
+    for (let a = 1; a < rest.length; a++) expect(Math.hypot(rest[a].x, rest[a].y) - ORBIT.coin / 2 * (1 + rest[a].scale)).toBeGreaterThan(5);
   });
 
-  it('finishes the outgoing fade before admitting a replacement on desktop and mobile', () => {
-    const opacityAt = (time: number, farOpacity: number) => {
-      const wrapped = ((time % MARKET_CYCLE_MS) + MARKET_CYCLE_MS) % MARKET_CYCLE_MS;
-      const rightIndex = frames.findIndex(frame => Number(frame.offset) * MARKET_CYCLE_MS >= wrapped);
-      const right = frames[rightIndex];
-      const numericOpacity = (frame: Keyframe) => typeof frame.opacity === 'number' ? frame.opacity
-        : frame.opacity === 'var(--orbit-far-opacity)' ? farOpacity : Number(frame.opacity);
-      if (rightIndex === 0) return numericOpacity(right);
-      const left = frames[rightIndex - 1];
-      const start = Number(left.offset) * MARKET_CYCLE_MS;
-      const end = Number(right.offset) * MARKET_CYCLE_MS;
-      const fraction = (wrapped - start) / (end - start);
-      // Easing changes the amount of a fade, but does not move its endpoints
-      // or make either neighbouring zero-opacity interval visible.
-      return numericOpacity(left) + (numericOpacity(right) - numericOpacity(left)) * fraction;
-    };
-    for (const profile of [
-      { farOpacity: .82, outgoing: 2, incoming: 4, maximum: 5 },
-      { farOpacity: 0, outgoing: 1, incoming: 5, maximum: 3 },
-    ]) {
-      const midway = MARKET_STEP_MS - MARKET_MOVE_MS / 2;
-      expect(opacityAt(profile.outgoing * MARKET_STEP_MS + midway - 100, profile.farOpacity)).toBeGreaterThan(0);
-      expect(opacityAt(profile.incoming * MARKET_STEP_MS + midway - 100, profile.farOpacity)).toBe(0);
-      expect(opacityAt(profile.outgoing * MARKET_STEP_MS + midway, profile.farOpacity)).toBe(0);
-      expect(opacityAt(profile.incoming * MARKET_STEP_MS + midway, profile.farOpacity)).toBe(0);
-      expect(opacityAt(profile.outgoing * MARKET_STEP_MS + midway + 100, profile.farOpacity)).toBe(0);
-      expect(opacityAt(profile.incoming * MARKET_STEP_MS + midway + 100, profile.farOpacity)).toBeGreaterThan(0);
-      for (let time = 0; time < MARKET_CYCLE_MS; time += 25) {
-        const count = HERO_INSTRUMENTS.filter((_, index) => opacityAt(time + initialMarketPose(index) * MARKET_STEP_MS, profile.farOpacity) > 1e-8).length;
-        expect(count).toBeLessThanOrEqual(profile.maximum);
-      }
+  it('gives every market one turn at the centre per cycle, in manifest order', () => {
+    const leaders: string[] = [];
+    for (let step = 0; step < HERO_INSTRUMENTS.length; step++) {
+      const centre = HERO_INSTRUMENTS.filter((_, index) => orbitPoseAt(index, step * MARKET_STEP_MS + 100).phase === 'centre');
+      expect(centre).toHaveLength(1);
+      leaders.push(centre[0].symbol);
     }
+    expect(leaders).toEqual(HERO_INSTRUMENTS.map(item => item.symbol));
+    expect(new Set(HERO_INSTRUMENTS.map((_, index) => initialMarketPose(index))).size).toBe(HERO_INSTRUMENTS.length);
   });
 
-  it('creates a spatial arc with a dominant center rather than a column of equal cards', () => {
-    const center = MARKET_POSES[0];
-    expect(scale(center)).toBe(1);
-    const near = [MARKET_POSES[1], MARKET_POSES[6]];
-    for (const frame of near) {
-      const dominance = scale(center) / scale(frame);
-      expect(dominance).toBeGreaterThanOrEqual(1.5);
-      expect(dominance).toBeLessThanOrEqual(1.7);
+  it('shows two to four helpers on phones, never the far side of the orbit', () => {
+    for (let time = 0; time < MARKET_CYCLE_MS; time += 50) {
+      const helpers = HERO_INSTRUMENTS.map((_, index) => orbitPoseAt(index, time, 'mobile')).filter(pose => pose.phase !== 'centre' && pose.opacity > .05);
+      expect(helpers.length).toBeGreaterThanOrEqual(2);
+      expect(helpers.length).toBeLessThanOrEqual(4);
+      expect(helpers.every(pose => pose.y > -40)).toBe(true);
     }
-    expect(String(near[0].transform)).toMatch(/^translate3d\(calc\(-/);
-    expect(String(near[1].transform)).not.toMatch(/^translate3d\((?:0|calc\(-)/);
-    for (const frame of [MARKET_POSES[2], MARKET_POSES[5]]) {
-      expect(scale(frame)).toBeLessThan(scale(near[0]));
-    }
-  });
-
-  it('gives every market exactly one turn at the front without duplicate phases', () => {
-    const phases = HERO_INSTRUMENTS.map((_, index) => initialMarketPose(index));
-    expect(new Set(phases).size).toBe(7);
-    const leaders: number[] = [];
-    for (let step = 0; step < 7; step++) {
-      const atFront = phases.map((phase, index) => ({ index, frame: at(((phase + step) % 7) * MARKET_STEP_MS) }))
-        .filter(({ frame }) => frame.transform === MARKET_POSES[0].transform);
-      expect(atFront).toHaveLength(1);
-      leaders.push(atFront[0].index);
-    }
-    expect(leaders).toEqual([0, 1, 2, 3, 4, 5, 6]);
-    expect(HERO_INSTRUMENTS.filter((_, index) => visible(MARKET_POSES[initialMarketPose(index)])).map(item => item.symbol))
-      .toEqual(['BTC', 'GOLD', 'OIL', 'XRP', 'ADA']);
+    expect(marketTileFrames('mobile').filter(frame => frame.opacity === 0).length).toBeGreaterThan(0);
   });
 });
 
@@ -256,31 +209,13 @@ function mountHero(options: { reduced?: boolean; animate?: boolean; market?: any
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const output: any = {};
-  const oldAssets: any = {};
-  const oldAssetsCode = ts.transpileModule(readFileSync(resolve(frontend, 'src/pages/home/HomeHeroAssets.tsx'), 'utf8'), {
-    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
-  }).outputText;
-  new Function('require', 'exports', oldAssetsCode)((name: string) => name === 'react/jsx-runtime' ? req(name) : {}, oldAssets);
-  const liveValue: any = {};
-  const liveValueCode = ts.transpileModule(readFileSync(resolve(frontend, 'src/pages/home/LiveValue.tsx'), 'utf8'), {
-    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
-  }).outputText;
-  new Function('require', 'exports', liveValueCode)((name: string) => {
-    if (name === 'react') return React;
-    if (name === 'react/jsx-runtime') return req(name);
-    if (name === './useHomeMarket') return { formatPriceValue: (value: number) => value.toFixed(2) };
-    throw new Error(`Unexpected quote rendering dependency: ${name}`);
-  }, liveValue);
   const modules: Record<string, unknown> = {
     react: React, 'react/jsx-runtime': req('react/jsx-runtime'),
     'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     'lucide-react': { ArrowRight: () => null, Pause: () => null, Play: () => null },
     '../../lib/i18n': { useLanguage: () => ({ lang: 'en', t: (key: string) => key }) },
-    '../../lib/cfdPresentation': { cfdDisplayState, cfdMarketCopy },
-    './LiveValue': liveValue,
-    './HomeHeroAssets': oldAssets,
     './heroInstruments': { HERO_INSTRUMENTS },
-    './marketPlatformMotion': { initialMarketPose, marketTileFrames, MARKET_CYCLE_MS, MARKET_POSES, MARKET_STEP_MS },
+    './marketPlatformMotion': motion,
     './home-market-platform.css': {},
   };
   new Function('require', 'exports', 'IntersectionObserver', 'fetch', 'WebSocket', 'setInterval', 'setTimeout', 'requestAnimationFrame', source)(
@@ -325,105 +260,35 @@ describe('mounted market motion lifecycle', () => {
   let hero: ReturnType<typeof mountHero> | undefined;
   afterEach(() => { hero?.unmount(); hero = undefined; });
 
-  it('renders existing numeric crypto and string CFD snapshots without new requests or data mutation', () => {
+  it('shows each market as its local logo and ticker only, with no quotes, labels or data reads', () => {
     const market = fixtureMarket();
-    market.hero.livePrice = 76747.25;
-    market.cfd.tickers[1].status = 'live';
     const before = JSON.stringify(market);
     hero = mountHero({ market });
-    const card = (symbol: string) => hero!.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
-    expect(card('BTC').querySelector('.vm-card-price')?.textContent).toBe('76,747.25');
-    expect(card('GOLD').querySelector('.vm-card-price')?.textContent).toBe('4,349.19');
-    expect(card('OIL').querySelector('.vm-card-price')?.textContent).toBe('96.61');
-    expect(hero.scene.querySelector('.vm-card-face, .vm-card-copy, .vm-card-change, .vm-card-note')).toBeNull();
+    const coins = [...hero.scene.querySelectorAll('[data-market-tile]')] as HTMLElement[];
+    expect(coins.map(coin => coin.dataset.marketTile)).toEqual(HERO_INSTRUMENTS.map(item => item.symbol));
+    coins.forEach((coin, index) => {
+      const item = HERO_INSTRUMENTS[index];
+      expect(coin.getAttribute('role')).toBe('img');
+      expect(coin.getAttribute('aria-label')).toBe(item.displayName);
+      expect(coin.dataset.face).toBe(item.face);
+      expect(coin.querySelector('img')?.getAttribute('src') ?? null).toBe(item.logoPath);
+      expect(coin.querySelector('.vm-card-symbol')?.textContent).toBe(item.label);
+      expect(coin.querySelector('.vm-asset-badge')?.textContent ?? null).toBe(item.badge);
+      expect(coin.textContent).toBe((item.logoPath ? '' : 'S&P 500') + item.label + (item.badge ?? ''));
+      expect(coin.textContent).not.toMatch(/unavailable|NaN|\d{3},/i);
+    });
+    expect(hero.scene.querySelector('.vm-card-price, .vm-card-note, .vm-card-change')).toBeNull();
     hero.visible(true); hero.hidden(true); hero.hidden(false); hero.click();
     expect(JSON.stringify(market)).toBe(before);
     expect(hero.failWork).not.toHaveBeenCalled();
   });
 
-  it('omits unknown, blank and non-finite quotes without repeating unavailable labels or inventing zeros', () => {
-    const market: any = fixtureMarket();
-    market.tickers = [{ pair: 'BTC/USDT', price: NaN, change: Infinity }];
-    market.cfd.tickers[0].price = ' ';
-    market.cfd.tickers[0].changePercent24h = '';
-    market.cfd.tickers[1].price = null;
-    market.cfd.tickers[1].changePercent24h = 'not-a-number';
-    hero = mountHero({ market });
-    for (const symbol of ['BTC', 'GOLD', 'OIL', 'ETH', 'SOL', 'XRP', 'ADA']) {
-      const card = hero.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
-      expect(card.querySelector('.vm-card-price')).toBeNull();
-      expect(card.querySelector('.vm-card-note')).toBeNull();
-      expect(card.textContent).not.toContain(cfdMarketCopy('en').priceUnavailable);
-      expect(card.textContent).not.toMatch(/NaN|Infinity|0\.00/);
-    }
-    expect(hero.failWork).not.toHaveBeenCalled();
-  });
-
-  it('omits stale, sampled and closed quotes while preserving the shared market values', () => {
-    const market = fixtureMarket();
-    market.tickersStale = true;
-    market.cfd.tickers[0].status = 'sampled';
-    // A sampled value is historical even when its stale flag is false.
-    expect(market.cfd.tickers[0].stale).toBe(false);
-    const before = JSON.stringify(market);
-    hero = mountHero({ market });
-    for (const symbol of ['BTC', 'GOLD', 'OIL', 'ETH', 'SOL', 'XRP', 'ADA']) {
-      const card = hero.scene.querySelector(`[data-market-tile="${symbol}"]`)!;
-      expect(card.querySelector('.vm-card-price')).toBeNull();
-      expect(card.querySelector('.vm-card-note')).toBeNull();
-    }
-    expect(JSON.stringify(market)).toBe(before);
-    expect(hero.failWork).not.toHaveBeenCalled();
-  });
-
-  it('omits zero and negative prices rather than rendering them as a financial quote', () => {
-    const market = fixtureMarket();
-    market.tickers.forEach((ticker, index) => { ticker.price = index % 2 ? -1 : 0; });
-    market.cfd.tickers[0].price = '0';
-    market.cfd.tickers[1].status = 'live';
-    market.cfd.tickers[1].price = '-1';
-    hero = mountHero({ market });
-    expect(hero.scene.querySelector('.vm-card-price')).toBeNull();
-    expect(hero.scene.querySelectorAll('.vm-coin')).toHaveLength(7);
-    expect(hero.failWork).not.toHaveBeenCalled();
-  });
-
-  it('omits an explicitly stale CFD price even when its provider status says live', () => {
-    const market = fixtureMarket();
-    market.cfd.tickers[0].stale = true;
-    hero = mountHero({ market });
-    expect(hero.scene.querySelector('[data-market-tile="GOLD"] .vm-card-price')).toBeNull();
-    expect(hero.scene.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent).toBe('76,746.00');
-  });
-
-  it('uses the fresh ticker rather than a stale BTC hero override', () => {
-    const market = fixtureMarket();
-    market.hero.livePrice = 12345.67;
-    market.hero.stale = true;
-    const before = JSON.stringify(market);
-    hero = mountHero({ market });
-    expect(hero.scene.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent).toBe('76,746.00');
-    expect(JSON.stringify(market)).toBe(before);
-    expect(hero.failWork).not.toHaveBeenCalled();
-  });
-
-  it('falls back to the valid ticker when a BTC hero override is invalid or nonpositive', () => {
-    for (const override of [NaN, Infinity, 0, -1, ' ', 'not-a-number', null]) {
-      const market: any = fixtureMarket();
-      market.hero.livePrice = override;
-      hero = mountHero({ market });
-      expect(hero.scene.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent).toBe('76,746.00');
-      expect(hero.failWork).not.toHaveBeenCalled();
-      hero.unmount(); hero = undefined;
-    }
-  });
-
   it('freezes the current phase offscreen/hidden and resumes without catch-up or new work', () => {
     hero = mountHero();
-    expect(hero.animations).toHaveLength(7);
+    expect(hero.animations).toHaveLength(HERO_INSTRUMENTS.length);
     expect(hero.animations.every(animation => animation.playState === 'paused')).toBe(true);
     hero.visible(true);
-    hero.animations.forEach((animation, index) => { animation.currentTime = 3750 + index * 4000; });
+    hero.animations.forEach((animation, index) => { animation.currentTime = 700 + index * MARKET_STEP_MS; });
     const times = hero.animations.map(animation => animation.currentTime);
     hero.hidden(true);
     expect(hero.animations.every(animation => animation.playState === 'paused')).toBe(true);
@@ -433,7 +298,7 @@ describe('mounted market motion lifecycle', () => {
     expect(hero.animations.every(animation => animation.playState === 'paused')).toBe(true);
     hero.visible(true);
     expect(hero.animations.map(animation => animation.currentTime)).toEqual(times);
-    expect(hero.animations).toHaveLength(7);
+    expect(hero.animations).toHaveLength(HERO_INSTRUMENTS.length);
     expect(hero.failWork).not.toHaveBeenCalled();
   });
 
@@ -472,12 +337,12 @@ describe('mounted market motion lifecycle', () => {
     hero = mountHero({ reduced: true });
     hero.visible(true);
     expect(hero.animations.every(animation => animation.playState === 'paused')).toBe(true);
-    expect(new Set(hero.animations.map(animation => animation.currentTime)).size).toBe(7);
+    expect(new Set(hero.animations.map(animation => animation.currentTime)).size).toBe(HERO_INSTRUMENTS.length);
     hero.reduce(false);
     expect(hero.animations.every(animation => animation.playState === 'running')).toBe(true);
-    hero.animations.forEach(animation => { animation.currentTime += 3500; });
+    hero.animations.forEach(animation => { animation.currentTime += 700; });
     hero.reduce(true);
-    expect(hero.animations.map(animation => animation.currentTime)).toEqual(HERO_INSTRUMENTS.map((_, index) => initialMarketPose(index) * MARKET_STEP_MS));
+    expect(hero.animations.map(animation => animation.currentTime)).toEqual(hero.animations.map((_, index) => initialMarketPose(index) * MARKET_STEP_MS));
     hero.click(); hero.reduce(false);
     expect(hero.animations.every(animation => animation.playState === 'paused')).toBe(true);
     expect(hero.scene.dataset.motionReason).toContain('manual');
@@ -486,7 +351,7 @@ describe('mounted market motion lifecycle', () => {
   it('retains complete content without Web Animations and releases each animation when unmounted', () => {
     hero = mountHero({ animate: false });
     hero.visible(true);
-    expect(hero.scene.querySelectorAll('[data-market-tile]')).toHaveLength(7);
+    expect(hero.scene.querySelectorAll('[data-market-tile]')).toHaveLength(HERO_INSTRUMENTS.length);
     expect(hero.dom.window.document.getElementById('home-market-column')).not.toBeNull();
     expect(hero.dom.window.document.getElementById('home-live-terminal')).toBeNull();
     expect(hero.dom.window.document.querySelector('h1')).toBeNull();

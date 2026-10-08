@@ -1,50 +1,73 @@
-# Sapphire circular market orbit — PR #473
+# Homepage orbit hero — QA evidence
 
-The market sidebar is replaced by round ceramic/metal medallions on a compact perspective arc. The material reference is the **“One platform. 400+ global assets.”** scene observed on [Bybit](https://www.bybit.com/en/) on 2026-10-07. The original local licensed logos remain byte-identical; the circular presentation uses CSS.
+Owner target: the attached hero image of 2026-10-08 — a large centre medallion
+inside an elliptical orbit of crypto, CFD and stocks-soon medallions above a
+glowing gold platform, the laptop secondary on the right. Review branch only:
+no merge, no production deployment, no production writes.
 
-Implementation commit: `c4b312ef5f1040b861db80c2dd585f29c5bd49da`.
-Rejected-column baseline: `e4aeed256341b9c25063f90f4940c7ee22039cd6`.
-Fresh main: `2f195cbe2f0f1c7ee31e2c9e887f7449a18cf34b`.
-The current review HEAD and its CI status are recorded in [PR #473](https://github.com/nazardzuba79-tech/-/pull/473); older CI results do not validate the new HEAD.
+## What runs
 
-Five coins are visible on desktop and at most three on mobile, including during transitions. The central coin is 1.5–1.7 times larger than its neighbours. All seven assets take the centre once in a 28-second cycle: a three-second hold and one-second transition. Sequential opacity fades hide the wrap and prevent a fourth mobile neighbour.
+- Nine medallions on one tilted elliptical orbit (rx 144, ry 222 design px,
+  equal arc spacing). Order of the centre: BTC → AAPL → OIL → GOLD → ETH →
+  NVDA → EUR/USD → US500 → SOL.
+- The centre changes every 2.5 s with a 1.2 s swap: the outgoing medallion
+  drops to the lower left onto the orbit, the incoming one rises from the
+  lower right, out of the platform's light. Depth (`translate` z) keeps the
+  incoming medallion in front. One lap of the orbit is ~19 s; every asset has
+  had its turn at the centre after 22.5 s, then the loop closes on the same
+  pose (no reset). Medallions turn slightly (rotateY ±14°) as they travel.
+- Badges: CFD on OIL, GOLD, EUR/USD and US500; STOCKS SOON on AAPL and NVDA;
+  crypto shows the ticker only. No quotes are shown.
+- Desktop: every medallion opaque, depth through scale (0.55–0.64 of the
+  centre) and overlap. Phones: the centre plus the front of the orbit, 2–4
+  helpers at any moment, scene placed between the copy and the laptop art.
+- The laptop artwork moves right and recedes (art box 20%–100% with a left
+  fade) so the orbit owns the centre; its projected live terminal still
+  aligns. Copy, CTAs, header and lower sections are unchanged except the
+  owner's `Crypto • CFD • Stocks soon` line under the product shortcuts.
 
-Only finite positive, fresh shared quotes render. Missing, malformed, sampled, closed or stale quotes have no price node and no repeated unavailable label. A stale BTC hero override falls back to the fresh shared ticker. Seven compositor animations retain hover/focus/manual, offscreen, hidden-tab and reduced-motion pause, with unmount cleanup and the queued-observer disposal guard.
+## Motion budget
 
-## Evidence
+One Web Animation per medallion (transform, opacity, translate), two CSS
+spark rotations and one beam opacity pulse — compositor-only properties, no
+timers, no frame loop, no new requests. Paused on hover, keyboard focus,
+manual pause, hidden tab, offscreen and reduced motion; cancelled on unmount.
 
-All eight widths were visually reviewed by Codex. Desktop compositions clear the headline, CTA and laptop. Mobile places a compact 150px scene after the existing CTA and shortcuts.
+## Browser QA (`scripts/qa-home-market-platform.cjs`, isolated fixture)
 
-| Desktop | Mobile, full hero |
-| --- | --- |
-| [1920](home-1920.png) | [430](home-430.png) |
-| [1707](home-1707.png) | [390](home-390.png) |
-| [1440](home-1440.png) | [360](home-360.png) |
-| [1366](home-1366.png) | [320](home-320.png) |
+`report.json` — result PASS, 10 checks, 0 page errors, 0 console errors,
+0 unknown API paths, 0 writes.
 
-[Actual 29-second browser recording](market-orbit-cycle.mp4) includes the full 28-second cycle. Prices in the screenshots and recording are deterministic QA fixtures. They are not production price claims.
+| Width | Centre coin | Min gap to copy | Min gap to laptop screen | Platform above deck |
+|---|---|---|---|---|
+| 1920 | 178 px | 35 px | 148 px | 20 px |
+| 1707 | 165 px | 31 px | 71 px | 22 px |
+| 1440 | 133 px | 55 px | 33 px | 38 px |
+| 1366 | 124 px | 46 px | 25 px | 50 px |
+| 430 | 109 px | below copy | above screen | 158 px |
+| 390 | 102 px | below copy | above screen | 143 px |
+| 360 | 94 px | below copy | above screen | 132 px |
+| 320 | 85 px | below copy | above screen | 117 px |
 
-[Current measurements](orbit-measurements.json): 38 browser cases / 15 checks PASS; four focused suites / 83 tests PASS; frontend TypeScript and production build PASS. Existing laptop-first-load and snapshot-reload checks also PASS. Browser/console errors, unknown API paths, denied egress and writes: **0**.
+Gaps are the worst case over 90 phases of the 22.5 s cycle. Desktop bands
+(901–2560 px) were solved from measured copy, screen and deck edges and then
+re-verified in the browser.
 
-The same-environment fresh e4 baseline at 1440 and 390 has exactly the same market request paths as the candidate. Shared market hook, original Sapphire mount/style/art, headline/copy/CTA, terminal, tape, manifest and all seven SVGs are unchanged. No backend, Worker, listing, financial logic or production configuration changes.
+Performance (1440×900, 2× CPU throttle, 8 s windows): running 481 frames,
+p50 16.7 ms, p95 16.8 ms, 0 frames over 50 ms; no long task inside either
+window. Main-thread task time 1987 ms running vs 1609 ms paused.
+Unthrottled 6 s windows: main build 525 ms, previous PR orbit 629 ms, this
+orbit 761 ms (603 ms paused). Market request paths are the existing eight.
 
-## Bundle delta versus exact e4 baseline
+Bundle vs main 964d62da (gzip): JS +1984 B, CSS +2356 B; local SVG marks
+9186 B raw. The fixture server sends no cache headers, so the eight SVGs
+reload on its warm visit.
 
-Both source trees were built using the same local runtime and dependencies. Aggregate emitted JS gzip: **+72 bytes**. Aggregate CSS gzip: **−153 bytes**. Combined delta: **−81 bytes gzip**. Raw JS: −58 bytes; raw CSS: −411 bytes. Logo assets are unchanged. This is a bundle measurement, not a runtime CPU claim.
+## Files
 
-Static screenshot profiles use reduced motion. The active diagnostic ran during video recording and is not directly comparable to the non-recorded baseline; no CPU reduction or production Web Vitals claim is made. The unchanged main application produces the existing large-chunk build warning, and the legacy SSR copy test produces its existing `fetchPriority` warning.
+- `home-<width>.png` — first screen at each width (resting composition).
+- `home-<phone>-hero.png` — the whole phone hero.
+- `orbit-cycle-1440.mp4`, `orbit-cycle-390.mp4` — real-time recordings of one
+  full cycle (headless Chromium, 25 fps capture).
 
-`measurements.json` retains the prior column iteration; use `orbit-measurements.json` for this revision. Full local raw reports and compositor traces are under `output/home-market-platform/orbit-final/`.
-
-## Changed implementation and QA files
-
-- `frontend/src/pages/home/HomeMarketPlatformHero.tsx`
-- `frontend/src/pages/home/home-market-platform.css`
-- `frontend/src/pages/home/marketPlatformMotion.ts`
-- `frontend/src/lib/__tests__/homeMarketPlatform.test.ts`
-- `scripts/qa-home-market-platform.cjs`
-- `scripts/qa-home-laptop-first-load.cjs`
-- `scripts/qa-home-snapshot-reload.cjs`
-- QA evidence in this directory and the existing first-load/reload report directories; append-only `docs/AI_HANDOFF.md` entry.
-
-Review only. No PR merge or production deployment.
+Not covered: real devices, Safari/WebKit, production Web Vitals.

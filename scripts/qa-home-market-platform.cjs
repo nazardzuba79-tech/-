@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-/** Production-bundle, loopback-only hero QA. No backend, account or external network.
- * QA_HERO_MODE=baseline QA_DIST=.home-hero-baseline-dist node scripts/qa-home-market-platform.cjs
+/** Production-bundle, loopback-only QA for the homepage orbit. No backend, account or external network.
+ * QA_HERO_MODE=baseline QA_DIST=.home-hero-baseline-dist node scripts/qa-home-market-platform.cjs   (metrics/screens only)
  * QA_HERO_MODE=after QA_DIST=frontend/dist node scripts/qa-home-market-platform.cjs
- * QA_HERO_SERVE=1 keeps only the read-only preview server alive after QA.
+ * QA_HERO_WIDTHS=1440,390 limits the width matrix; QA_HERO_VIDEO=0 skips the real-time recordings.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -12,12 +12,6 @@ const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const { createFixture } = require('./qa-mobile-trade-fixture.cjs');
 const root = path.resolve(__dirname, '..');
 const mode = process.env.QA_HERO_MODE || 'after';
-const resumeTail = process.env.QA_HERO_TAIL === '1';
-const visualOnly = process.env.QA_HERO_VISUAL === '1';
-const screenshotsOnly = process.env.QA_HERO_SCREENSHOTS_ONLY === '1';
-// Diagnostic capture continues across widths but still exits FAIL afterwards.
-const geometryDiagnostic = screenshotsOnly && process.env.QA_HERO_GEOMETRY_DIAGNOSTIC === '1';
-const geometryFailures=[];
 const dist = path.resolve(root, process.env.QA_DIST || 'frontend/dist');
 const out = path.resolve(root, process.env.QA_OUT || `output/home-market-platform/${mode}`);
 const baselineReportPath=path.resolve(root,process.env.QA_HERO_BASELINE_REPORT||'output/home-market-platform/baseline/report.json');
@@ -29,12 +23,6 @@ const widths = [[1920,1080],[1707,940],[1440,900],[1366,768],[430,932],[390,844]
 fs.mkdirSync(out, { recursive: true });
 assert(fs.existsSync(path.join(dist, 'index.html')), 'Build the requested production bundle first');
 const report = { mode, fixtureOnly: true, productionAccess: false, profile: { chromium: 'headless', deviceScaleFactor: 1, cpuThrottle: 2, latencyMs: 40, downloadBytesPerSecond: 1250000, uploadBytesPerSecond: 625000 }, cases: [], checks: [], errors: [], consoleErrors: [], denied: [], writes: [], unknownApi: [], metrics: [], result: 'FAIL' };
-if(resumeTail||visualOnly){
-  const previous=JSON.parse(fs.readFileSync(path.join(out,'report.json'),'utf8'));
-  Object.assign(report,previous,{consoleErrors:[],unknownApi:[],denied:[]});
-  if(visualOnly)report.metrics=[];
-  if(previous.consoleErrors.length||previous.unknownApi.length||previous.denied.length)fs.writeFileSync(path.join(out,'fixture-gap-before-repair.json'),JSON.stringify({consoleErrors:previous.consoleErrors,unknownApi:previous.unknownApi,denied:previous.denied},null,2));
-}
 const fixture = cp.spawn(process.execPath, [path.join(__dirname, 'qa-perf-harness.cjs'), '--port', String(port), '--dist', dist], { cwd: root, stdio: ['ignore','pipe','pipe'], windowsHide: true });
 const fixtureLog = fs.createWriteStream(path.join(out, 'fixture.log'));
 fixture.stdout.pipe(fixtureLog); fixture.stderr.pipe(fixtureLog);
@@ -142,26 +130,6 @@ async function openHome(page) {
   await page.waitForFunction(()=>document.querySelector('#home-live-terminal .vx-real-candles')&&document.querySelectorAll('#home-live-terminal .hs-trade-row').length===6);
   await page.waitForTimeout(2200);
 }
-async function geometry(page) {
-  return page.evaluate(selector=>{
-    const hero=document.querySelector(selector), rect=hero.getBoundingClientRect();
-    const boxes=[...hero.querySelectorAll('h1,p,a,button')].filter(n=>n.getBoundingClientRect().width&&getComputedStyle(n).visibility!=='hidden').map(n=>({tag:n.tagName,text:n.textContent.trim().slice(0,90),x:n.getBoundingClientRect().x,y:n.getBoundingClientRect().y,width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height,scrollWidth:n.scrollWidth,clientWidth:n.clientWidth}));
-    return {viewport:innerWidth,pageWidth:document.documentElement.scrollWidth,overflow:document.documentElement.scrollWidth>innerWidth+1,hero:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},boxes,heading:hero.querySelector('h1').textContent};
-  },heroSelector);
-}
-async function columnGeometry(page) {
-  return page.evaluate(()=>{
-    const box=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
-    const scene=document.querySelector('[data-market-visual]'),viewport=box(scene),copy=box(document.querySelector('#home-global-hero .copy')),terminal=box(document.querySelector('#home-global-hero .terminal-screen'));
-    const tiles=[...scene.querySelectorAll('[data-market-tile]')].map(tile=>({symbol:tile.dataset.marketTile,...box(tile),coin:box(tile.querySelector('.vm-coin')),opacity:Number(getComputedStyle(tile).opacity)}));
-    const visible=tiles.filter(t=>t.opacity>.05&&t.bottom>viewport.y+2&&t.y<viewport.bottom-2);
-    const overlap=(a,b)=>a&&b?Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)):0;
-    const text=[];const walker=document.createTreeWalker(document.querySelector('#home-global-hero .copy'),NodeFilter.SHOW_TEXT);
-    while(walker.nextNode()){const node=walker.currentNode;if(!node.textContent.trim())continue;const range=document.createRange();range.selectNodeContents(node);for(const r of range.getClientRects())if(r.width&&r.height)text.push({x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom});}
-    const coins=[...scene.querySelectorAll('.vm-coin')].map(coin=>{const s=getComputedStyle(coin);return{width:parseFloat(s.width),height:parseFloat(s.height),radius:s.borderRadius};});
-    return{viewport,copy,terminal,tiles,visibleCount:visible.length,visibleSymbols:visible.map(t=>t.symbol),coinShapes:coins,rectangularFaces:scene.querySelectorAll('.vm-card-face').length,changeLabels:scene.querySelectorAll('.vm-card-change').length,unavailableLabels:scene.querySelectorAll('.vm-card-note').length,visibleXSpan:Math.max(...visible.map(t=>t.coin.x+t.coin.width/2))-Math.min(...visible.map(t=>t.coin.x+t.coin.width/2)),textOverlapArea:text.reduce((sum,t)=>sum+visible.reduce((area,tile)=>area+overlap(tile,t),0),0),terminalOverlapArea:visible.reduce((sum,tile)=>sum+overlap(tile,terminal),0),originalArt:document.querySelector('#home-global-hero .art')?.getAttribute('src'),heading:document.querySelector('#home-global-hero h1')?.textContent,tapeCount:document.querySelectorAll('#home-global-hero .hs-tape').length,actualTerminal:document.querySelector('#home-global-hero .terminal-screen #home-live-terminal')!==null};
-  });
-}
 async function metrics(page,cdp,requests,label,duration=4000) {
   const first=Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(m=>[m.name,m.value]));
   const frames=await page.evaluate(duration=>new Promise(resolve=>{const result=[];let previous=performance.now(),start=previous;const step=now=>{result.push(now-previous);previous=now;if(now-start<duration)requestAnimationFrame(step);else resolve(result);};requestAnimationFrame(step);}),duration);
@@ -175,219 +143,149 @@ async function metrics(page,cdp,requests,label,duration=4000) {
   if(mode==='after'&&fs.existsSync(baselinePath)){const baseline=JSON.parse(fs.readFileSync(baselinePath,'utf8')).metrics.find(metric=>metric.label===label);if(baseline){const before=baseline.requests.filter(request=>/\/api\/v1\/(?:market\/external\/|market\/global|cfd\/(?:display\/)?tickers|futures\/config)/.test(request.url)).map(request=>new URL(request.url).pathname).sort();assert.deepEqual(result.marketRequestPaths,before,`${label} keeps original market request budget`);result.marketRequestBudgetUnchanged=true;}}
   report.metrics.push(result); return result;
 }
+
 const check = name => {report.checks.push(name);console.log('PASS',name);};
+const heroAnimations = page => page.evaluate(()=>document.getAnimations().filter(a=>a.effect?.target?.dataset?.marketTile).map(a=>({state:a.playState,time:Math.round(Number(a.currentTime)),symbol:a.effect.target.dataset.marketTile})));
+async function setPhase(page, offset) {
+  await page.evaluate(offset=>{const tiles=[...document.querySelectorAll('[data-market-tile]')];
+    document.getAnimations().filter(a=>a.effect?.target?.dataset?.marketTile).forEach(a=>{const i=tiles.indexOf(a.effect.target);a.pause();a.currentTime=((tiles.length-i)%tiles.length)*2500+offset;});},offset);
+  await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+}
+// Everything the orbit may not touch: copy text, links, buttons, the projected
+// laptop screen and, below it, the laptop deck. Measured on the live frame.
+async function orbitClearance(page) {
+  return page.evaluate(()=>{
+    const R=b=>({x:b.left,y:b.top,right:b.right,bottom:b.bottom,width:b.width,height:b.height});
+    const copy=document.querySelector('#home-global-hero .copy');const text=[];
+    const walker=document.createTreeWalker(copy,NodeFilter.SHOW_TEXT);let node;
+    while((node=walker.nextNode())){if(!node.textContent.trim())continue;const range=document.createRange();range.selectNodeContents(node);for(const r of range.getClientRects())if(r.width&&r.height)text.push(R(r));}
+    for(const a of copy.querySelectorAll('a,button'))text.push(R(a.getBoundingClientRect()));
+    const screen=document.querySelector('#home-global-hero .terminal-screen'),m=new DOMMatrix(getComputedStyle(screen).transform),base=screen.offsetParent.getBoundingClientRect();
+    const pt=(x,y)=>{const p=m.transformPoint(new DOMPoint(x,y));return[base.left+screen.offsetLeft+p.x/p.w,base.top+screen.offsetTop+p.y/p.w];};
+    const TL=pt(0,0),BL=pt(0,600),edgeAt=y=>TL[0]+(BL[0]-TL[0])*(y-TL[1])/(BL[1]-TL[1]);
+    const art=document.querySelector('#home-global-hero .art').getBoundingClientRect(),mobile=innerWidth<=900,sc=Math.max(art.width/1672,art.height/941);
+    const deck=[art.left+(art.width-1672*sc)*(mobile?1:.5)+581*sc,art.top+(art.height-941*sc)/2+766*sc];
+    const deckYAt=x=>deck[1]+(BL[1]-deck[1])*(x-deck[0])/(BL[0]-deck[0]);
+    const parts=[...document.querySelectorAll('[data-market-tile]')].filter(t=>Number(getComputedStyle(t).opacity)>.05).flatMap(t=>[...t.querySelectorAll('.vm-medal,.vm-asset-badge')]).map(f=>R(f.getBoundingClientRect())).filter(b=>b.width>1&&b.height>1);
+    const pedestal=R(document.querySelector('.vm-orbit-pedestal').getBoundingClientRect()),toggle=R(document.querySelector('[data-motion-toggle]').getBoundingClientRect());
+    const rings=mobile?[]:[...document.querySelectorAll('.vm-ring')].map(r=>R(r.getBoundingClientRect()));
+    const all=[...parts,...rings,pedestal,toggle];
+    const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y));
+    let textOverlap=0,minTextGap=1e9;for(const p of all)for(const t of text){textOverlap+=overlap(p,t);if(Math.max(0,Math.min(p.bottom,t.bottom)-Math.max(p.y,t.y))>0)minTextGap=Math.min(minTextGap,p.x-t.right);}
+    // Only the vertical span shared with the screen matters; above its top edge is open sky.
+    let minScreenGap=1e9;for(const p of all){const y0=Math.max(p.y,TL[1]),y1=Math.min(p.bottom,BL[1]);if(y0<=y1)for(const y of [y0,y1])minScreenGap=Math.min(minScreenGap,edgeAt(y)-p.right);}
+    // The deck's top-left edge runs from its front corner up to the screen's lower-left corner.
+    const deckLimit=x=>x<deck[0]?1e9:x<=BL[0]?deckYAt(x):BL[1];
+    const deckGap=Math.min(...[pedestal.x,pedestal.right].map(x=>deckLimit(x)-pedestal.bottom));
+    const centre=[...document.querySelectorAll('[data-market-tile]')].map(t=>t.querySelector('.vm-medal').getBoundingClientRect()).sort((a,b)=>b.width-a.width)[0];
+    return{textOverlap,minTextGap:Math.round(minTextGap),minScreenGap:Math.round(minScreenGap),deckGap:Math.round(deckGap),pageWidth:document.documentElement.scrollWidth,viewport:innerWidth,visibleParts:parts.length,centre:R(centre),pedestal,heroBottom:document.querySelector('#home-global-hero .hero').getBoundingClientRect().bottom};
+  });
+}
+async function orbitContent(page) {
+  return page.evaluate(()=>{const coins=[...document.querySelectorAll('[data-market-tile]')];
+    return{count:coins.length,round:coins.every(c=>{const f=c.querySelector('.vm-medal'),s=getComputedStyle(f);return Math.abs(parseFloat(s.width)-parseFloat(s.height))<.1&&s.borderRadius==='50%';}),
+      textOnly:coins.every(c=>/^(?:S&P 500)?[A-Z/0-9]+(?:CFD|STOCKS SOON)?$/.test(c.textContent)),quotes:document.querySelectorAll('.vm-card-price,.vm-card-note,.vm-card-change').length,
+      badges:Object.fromEntries(coins.map(c=>[c.dataset.marketTile,c.querySelector('.vm-asset-badge')?.textContent||null])),
+      logos:[...new Set(coins.map(c=>c.querySelector('img')?.getAttribute('src')).filter(Boolean))].sort(),front:coins.map(c=>({s:c.dataset.marketTile,w:c.querySelector('.vm-medal').getBoundingClientRect().width})).sort((a,b)=>b.w-a.w)[0].s,
+      originalArt:document.querySelector('#home-global-hero .art')?.getAttribute('src'),heading:document.querySelector('#hs-title')?.textContent,terminals:document.querySelectorAll('#home-live-terminal').length};});
+}
+const motionState=page=>page.evaluate(()=>{const s=document.querySelector('[data-market-visual]');return{state:s.dataset.motionState,reason:s.dataset.motionReason};});
+async function waitState(page,state){await page.waitForFunction(state=>document.querySelector('[data-market-visual]')?.dataset.motionState===state,state,{timeout:5000});}
+async function frozen(page,reason){
+  await waitState(page,'paused');const a=await heroAnimations(page);await page.waitForTimeout(700);const b=await heroAnimations(page);
+  assert.deepEqual(b.map(x=>x.time),a.map(x=>x.time),`orbit frozen while ${reason}`);assert(b.every(x=>x.state==='paused'),`all orbit clocks paused while ${reason}`);
+  assert((await motionState(page)).reason.includes(reason),`pause reason ${reason}`);
+}
+async function spaRoute(page,route){await page.evaluate(route=>{history.pushState({},'',route);window.dispatchEvent(new PopStateEvent('popstate'));},route);await page.waitForTimeout(1600);}
 
 async function main() {
   await waitServer();
   let browser;
   try {
     browser=await chromium.launch({headless:true,...(process.env.QA_CHROMIUM?{executablePath:process.env.QA_CHROMIUM}:{})});
-    if(!resumeTail){for(const [width,height] of widths){
-      // Review the complete stable composition at every width. The separate
-      // full-cycle case below tests live transitions and their continuity.
-      const {ctx,page,cdp,requests}=await createContext(browser,{width,height,reduced:mode==='after'});
+    for(const [width,height] of widths){
+      // Resting composition (reduced motion) for review screenshots; the
+      // phase sweep then checks clearance through a whole turn.
+      const {ctx,page}=await createContext(browser,{width,height,reduced:true});
       await openHome(page);
-      const shape=await geometry(page);
       await page.screenshot({path:path.join(out,`home-${width}.png`)});
-      assert.equal(shape.overflow,false,`horizontal overflow ${width}`);
+      const pageWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
+      assert(pageWidth<=width+1,`horizontal overflow ${width}`);
       if(mode==='after'){
-        try {
-        const column=await columnGeometry(page);report.cases.push({name:`orbit-${width}`,width,height,...column});assert.equal(column.originalArt,'/hero/sapphire-refined.png');assert.equal(column.heading,'OWN YOUR FUTURE.');assert.equal(column.actualTerminal,true,'real terminal visibility target remains in original laptop');assert.equal(column.tapeCount,1,'original live market tape is present');
-        assert.equal(column.visibleCount,width>900?5:3,`orbit visible medallions at ${width}`);
-        assert.equal(column.textOverlapArea,0,`orbit must not cover real copy/CTA at ${width}`);
-        assert.equal(column.terminalOverlapArea,0,`orbit must not cover real laptop display at ${width}`);
-        assert.equal(column.rectangularFaces,0,'orbit has no rectangular card faces');assert.equal(column.changeLabels,0,'orbit omits quote change rows');assert.equal(column.unavailableLabels,0,'orbit omits repeated unavailable notes');
-        assert(column.coinShapes.every(c=>Math.abs(c.width-c.height)<.1&&/50%|999/.test(c.radius)),'all seven medallions have circular local geometry');
-        assert(column.visibleXSpan>30,'visible assets occupy an arc rather than a vertical sidebar');
-        const baselinePath=baselineReportPath;
-        if(fs.existsSync(baselinePath)){
-          const baseline=JSON.parse(fs.readFileSync(baselinePath,'utf8')).cases.find(c=>c.width===width&&!c.name);
-          if(baseline)for(const label of ['OWN YOUR FUTURE.','Открыть терминал','Смотреть рынки']){
-            const before=baseline.boxes.find(b=>b.text===label),after=shape.boxes.find(b=>b.text===label);
-            assert(before&&after,`preserved original ${label}`);
-            for(const key of ['x','y','width','height'])assert(Math.abs(before[key]-after[key])<1,`original ${label} ${key} unchanged at ${width}`);
-          }
-        }
-        }catch(error){if(!geometryDiagnostic)throw error;geometryFailures.push({width,error:error.stack||String(error)});}
-        if(width<=430){await page.locator(heroSelector).screenshot({path:path.join(out,`home-${width}-full-hero.png`)});await page.locator('[data-market-platform-hero]').screenshot({path:path.join(out,`home-${width}-orbit.png`)});await page.evaluate(()=>window.scrollTo(0,0));await page.mouse.move(0,0);}
-      }
-      if(width===1440||width===390)await metrics(page,cdp,requests,`home-${width}`);
-      report.cases.push({width,height,signed:false,...shape});
-      await ctx.close();
-    }
-    if(geometryFailures.length){report.geometryFailures=geometryFailures;throw new Error(`Orbit geometry diagnostic captured ${geometryFailures.length} failing viewport(s): ${JSON.stringify(geometryFailures)}`);}
-    check(`${widths.length} viewport screenshots and horizontal layout`);
-    if(!screenshotsOnly){for(const signed of [false,true]){
-      const {ctx,page}=await createContext(browser,{signed,width:1440});
-      if(signed){
-        await page.goto(origin+'/',{waitUntil:'domcontentloaded'});
-        await page.waitForURL(/\/futures/); await page.waitForTimeout(2500);
-        assert.equal(await page.locator(heroSelector).count(),0,'authenticated root preserves default trading redirect');
-        report.cases.push({name:'authenticated-root-redirect',path:new URL(page.url()).pathname});
-      }else{
-        await openHome(page);assert(await page.locator(heroSelector+' a[href="/trade"]').count()>0);
-        report.cases.push({name:'guest',...(await geometry(page))});
+        const content=await orbitContent(page);
+        assert.equal(content.count,9,'nine markets on one orbit');assert(content.round,'every medallion is round');
+        assert.deepEqual(content.badges,{BTC:null,AAPL:'STOCKS SOON',OIL:'CFD',GOLD:'CFD',ETH:null,NVDA:'STOCKS SOON',EURUSD:'CFD',US500:'CFD',SOL:null},'category badges');
+        assert(content.textOnly,'medallions carry mark, ticker and badge only');assert.equal(content.quotes,0,'no quote, change or unavailable labels');
+        assert.equal(content.front,'BTC','resting composition leads with BTC');assert.equal(content.originalArt,'/hero/sapphire-refined.png');assert.equal(content.heading,'OWN YOUR FUTURE.');assert.equal(content.terminals,1);
+        const sweep=[];
+        for(let offset=0;offset<22500;offset+=250){await setPhase(page,offset);const c=await orbitClearance(page);sweep.push({offset,...c});}
+        const worst={textOverlap:Math.max(...sweep.map(s=>s.textOverlap)),minTextGap:Math.min(...sweep.map(s=>s.minTextGap)),minScreenGap:Math.min(...sweep.map(s=>s.minScreenGap)),deckGap:Math.min(...sweep.map(s=>s.deckGap)),pageWidth:Math.max(...sweep.map(s=>s.pageWidth))};
+        const rest=sweep[0];
+        report.cases.push({name:`orbit-${width}`,width,height,content,rest:{centre:rest.centre,pedestal:rest.pedestal,heroBottom:rest.heroBottom,visibleParts:rest.visibleParts},phases:sweep.length,worst});
+        assert.equal(worst.textOverlap,0,`orbit never covers copy or CTA at ${width}`);assert(worst.minTextGap>=10,`orbit keeps ${worst.minTextGap}px from copy at ${width}`);
+        assert(worst.minScreenGap>=6,`orbit keeps ${worst.minScreenGap}px from the laptop screen at ${width}`);assert(worst.deckGap>=4,`platform stays above the laptop deck at ${width} (${worst.deckGap}px)`);
+        assert(worst.pageWidth<=width+1,`no overflow during motion at ${width}`);
       }
       await ctx.close();
     }
-    check('guest and authenticated fixture render');
+    check(`${widths.length} widths: resting screenshots, no overflow${mode==='after'?', no copy/laptop intersection across 90 phases of the cycle':''}`);
+
+    // Live motion and every pause path in a real browser.
+    const life=await createContext(browser,{width:1440,height:900});const page=life.page;
+    await openHome(page);
+    if(mode==='after'){
+      await waitState(page,'running');let anims=await heroAnimations(page);assert.equal(anims.length,9,'one compositor animation per medallion');
+      const t1=anims.map(a=>a.time);await page.waitForTimeout(1200);const t2=(await heroAnimations(page)).map(a=>a.time);assert(t2.every((t,i)=>t>t1[i]),'orbit runs while visible');
+      {const b=await page.locator('.vm-orbit-scene').boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height*.42);}await frozen(page,'hover');await page.mouse.move(5,890);await waitState(page,'running');check('pointer hover pauses and resumes');
+      await page.focus('[data-motion-toggle]');await frozen(page,'focus');await page.evaluate(()=>document.activeElement.blur());await waitState(page,'running');check('keyboard focus on the control pauses and resumes');
+      await page.click('[data-motion-toggle]');await page.mouse.move(5,890);await page.evaluate(()=>document.activeElement.blur());await frozen(page,'manual');
+      assert.equal(await page.getAttribute('[data-motion-toggle]','aria-pressed'),'true');await page.click('[data-motion-toggle]');await page.mouse.move(5,890);await page.evaluate(()=>document.activeElement.blur());await waitState(page,'running');check('manual pause holds until resumed');
+      const before=life.requests.length;
+      await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'));});
+      await frozen(page,'hidden');await page.waitForTimeout(1500);
+      await page.evaluate(()=>{delete document.hidden;delete document.visibilityState;document.dispatchEvent(new Event('visibilitychange'));});await waitState(page,'running');
+      report.cases.push({name:'hidden-tab-fixture',requestsWhileHidden:life.requests.length-before});check('hidden tab (visibility event) freezes the orbit and resumes');
+      await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));await frozen(page,'offscreen');await page.evaluate(()=>window.scrollTo(0,0));await waitState(page,'running');check('offscreen pauses and resumes');
+      // Leave for Spot and Futures and come back: no leaked clocks or listeners.
+      const listeners=()=>page.evaluate(()=>({vis:window.__heroQa.listeners.get('document:visibilitychange')?.size||0,intervals:window.__heroQa.activeIntervals.size}));
+      const l0=await listeners();
+      for(const route of ['/trade?pair=BTC%2FUSDT','/futures?pair=BTC%2FUSDT']){
+        await spaRoute(page,route);assert.equal((await heroAnimations(page)).length,0,`orbit animations released on ${route}`);
+        await spaRoute(page,'/');await page.locator('[data-market-visual]').waitFor();await waitState(page,'running');assert.equal((await heroAnimations(page)).length,9,'exactly nine clocks after return');
+      }
+      const l1=await listeners();assert.equal(l1.vis,l0.vis,'visibility listeners stable after Spot/Futures round trips');
+      report.cases.push({name:'route-round-trips',listenersBefore:l0,listenersAfter:l1});check('Spot and Futures round trips release and restore the orbit');
     }
+    await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(600);
+    await metrics(page,life.cdp,life.requests,'running-1440',8000);
+    if(mode==='after'){await page.click('[data-motion-toggle]');await page.mouse.move(5,890);await page.evaluate(()=>document.activeElement.blur());await waitState(page,'paused');await metrics(page,life.cdp,life.requests,'paused-1440',8000);}
+    await life.ctx.close();
+    if(mode==='after'){
+      const reduced=await createContext(browser,{width:390,height:844,reduced:true});await openHome(reduced.page);await reduced.page.evaluate(()=>document.querySelector('[data-market-visual]').scrollIntoView({block:'center'}));
+      await frozen(reduced.page,'reduced-motion');const times=(await heroAnimations(reduced.page)).map(a=>a.time);assert.deepEqual(times,times.map((_,i)=>((9-i)%9)*2500),'reduced motion rests at the full composition');
+      await reduced.ctx.close();check('reduced motion shows the complete resting composition');
+      // Cold visit, then a warm repeat visit in the same profile.
+      const visits=await createContext(browser,{width:1440,height:900});const t0=Date.now();await visits.page.goto(origin+'/',{waitUntil:'domcontentloaded'});await visits.page.locator('[data-market-visual]').waitFor();
+      const cold={readyMs:Date.now()-t0,heroAssetRequests:visits.requests.filter(r=>/\/hero\/instruments\//.test(r.url)).length};await visits.page.waitForTimeout(2500);
+      const mark=visits.requests.length;const t1=Date.now();await visits.page.reload({waitUntil:'domcontentloaded'});await visits.page.locator('[data-market-visual]').waitFor();
+      const warmEntries=await visits.page.evaluate(()=>performance.getEntriesByType('resource').filter(r=>/\/hero\/instruments\//.test(r.name)).map(r=>({name:r.name.split('/').pop(),transfer:r.transferSize})));
+      report.cases.push({name:'cold-and-warm-visit',cold,warm:{readyMs:Date.now()-t1,requests:visits.requests.length-mark,heroAssets:warmEntries}});await visits.ctx.close();check('cold and warm visits measured');
     }
-    if(mode==='after'&&!screenshotsOnly)await afterChecks(browser);
-    assert.deepEqual(report.errors,[],'uncaught browser errors');
-    assert.deepEqual(report.consoleErrors,[],'browser console errors');
-    assert.deepEqual(report.unknownApi,[],'missing isolated fixture endpoints');
-    assert.deepEqual(report.denied,[],'unexpected nonlocal request');
-    assert.deepEqual(report.writes,[],'unexpected browser write attempt');
-    report.result='PASS';
+    if(mode==='after'&&process.env.QA_HERO_VIDEO!=='0'){
+      for(const [w,h] of [[1440,900],[390,844]]){
+        const rec=await browser.newContext({viewport:{width:w,height:h},deviceScaleFactor:1,colorScheme:'dark',reducedMotion:'no-preference',recordVideo:{dir:path.join(out,'video'),size:{width:w,height:h}}});
+        await rec.route(/^(?!http:\/\/127\.0\.0\.1)/,r=>r.abort());const p=await rec.newPage();await p.goto(origin+'/',{waitUntil:'domcontentloaded'});await p.locator('[data-market-visual]').waitFor();
+        if(w<=900)await p.evaluate(()=>window.scrollTo(0,document.querySelector('.vm-orbit-pedestal').getBoundingClientRect().bottom+scrollY-innerHeight+40));
+        await p.mouse.move(2,h-2);await p.waitForTimeout(1500+22500+1200);const v=p.video();await rec.close();fs.copyFileSync(await v.path(),path.join(out,`orbit-cycle-${w}.webm`));
+      }
+      check('real-time recordings of one full cycle at 1440 and 390');
+    }
+    report.result=report.errors.length||report.consoleErrors.length||report.unknownApi.length||report.writes.length?'FAIL':'PASS';
   } finally {
-    if(browser)await browser.close();
-    report.checks=[...new Set(report.checks)];
-    report.cases=[...new Map(report.cases.map(c=>[c.name||`viewport-${c.width}`,c])).values()];
+    await browser?.close();fixture.kill();modernServer?.close();
     fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));
-    if(process.env.QA_HERO_SERVE!=='1'){fixture.kill();fixtureLog.end();modernServer?.close();}
-    else console.log(`Read-only preview remains at ${origin}; PID ${fixture.pid}`);
+    console.log('HOME_ORBIT_QA',JSON.stringify({result:report.result,checks:report.checks.length,errors:report.errors.length,consoleErrors:report.consoleErrors.length,unknownApi:report.unknownApi,writes:report.writes.length,denied:report.denied.length}));
+    if(report.result!=='PASS')process.exitCode=1;
   }
-  console.log(JSON.stringify({result:report.result,out,checks:report.checks.length,metrics:report.metrics.map(m=>({label:m.label,lcpMs:m.lcpMs,cls:m.cls,mainThreadMs:m.mainThreadMs,frameP95Ms:m.frameP95Ms,requests:m.requestCount})),unknownApi:[...new Set(report.unknownApi)],errors:report.errors,consoleErrors:report.consoleErrors.length}));
-}
-async function motion(page) {
-  return page.locator('[data-market-visual]').evaluate(scene=>({
-    state:scene.dataset.motionState,reasons:scene.dataset.motionReason,
-    animations:scene.getAnimations({subtree:true}).map(a=>({time:a.currentTime,state:a.playState,duration:a.effect.getTiming().duration})),
-    tiles:[...scene.querySelectorAll('[data-market-tile]')].map(tile=>{const b=tile.getBoundingClientRect(),coin=tile.querySelector('.vm-coin').getBoundingClientRect(),s=getComputedStyle(tile);return {symbol:tile.dataset.marketTile,x:b.x,y:b.y,width:b.width,height:b.height,coin:{x:coin.x,y:coin.y,width:coin.width,height:coin.height},opacity:Number(s.opacity),transform:s.transform};}),
-    viewport:(()=>{const b=scene.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height};})(),
-  }));
-}
-async function assertFrozen(page, reason) {
-  await page.waitForFunction(reason=>{const el=document.querySelector('[data-market-visual]');return el?.dataset.motionState==='paused'&&el.dataset.motionReason.includes(reason);},reason);
-  await page.waitForTimeout(80);
-  const before=await motion(page);await page.waitForTimeout(650);const after=await motion(page);
-  assert(before.animations.every((a,i)=>Math.abs(Number(a.time)-Number(after.animations[i].time))<2),`${reason} animation clocks must freeze`);
-  report.cases.push({name:`pause-${reason}`,before,after});
-}
-async function waitRunning(page) { await page.waitForFunction(()=>document.querySelector('[data-market-visual]')?.dataset.motionState==='running'); }
-async function spaRoute(page, route) { await page.evaluate(route=>{history.pushState({},'',route);window.dispatchEvent(new PopStateEvent('popstate'));},route); await page.waitForTimeout(1600); }
-async function orbitTrace(page,duration=28000){return page.evaluate(duration=>new Promise(resolve=>{
-  const scene=document.querySelector('[data-market-visual]'),trace=[];let start=performance.now(),previous=-Infinity;
-  function frame(now){if(now-previous>=45){previous=now;trace.push({time:now-start,tiles:[...scene.querySelectorAll('[data-market-tile]')].map(tile=>{const r=tile.querySelector('.vm-coin').getBoundingClientRect();return{symbol:tile.dataset.marketTile,x:r.x+r.width/2,y:r.y+r.height/2,size:r.width,opacity:Number(getComputedStyle(tile).opacity)};})});}if(now-start<duration)requestAnimationFrame(frame);else resolve(trace);}
-  requestAnimationFrame(frame);
-}),duration);}
-async function afterChecks(browser) {
-  if(!resumeTail){
-  // Actual 28 second timeline, sampled in the same stable part of each step.
-  const cycle=await createContext(browser,{video:true});
-  await openHome(cycle.page);await cycle.page.mouse.move(0,0);await waitRunning(cycle.page);
-  const initial=await motion(cycle.page);assert.equal(initial.animations.length,7);assert(initial.animations.every(a=>a.duration===28000));
-  // Observe real compositor output throughout the full cycle. Visible motion
-  // remains continuous; the only large pose jumps are the fully hidden wrap.
-  const tracePromise=orbitTrace(cycle.page);
-  const phases=[],started=Date.now();
-  for(let phase=0;phase<8;phase++){
-    await cycle.page.waitForTimeout(Math.max(0,started+phase*4000-Date.now()));
-    const value=await motion(cycle.page),size=await geometry(cycle.page);
-    const ranked=[...value.tiles].filter(t=>t.opacity>.05).sort((a,b)=>b.coin.width-a.coin.width),centered=ranked[0];
-    assert(centered.coin.width/ranked[1].coin.width>1.45&&centered.coin.width/ranked[1].coin.width<1.75,'center is about 1.5–1.7x its neighbor');
-    phases.push({phase,atMs:Date.now()-started,center:centered.symbol,...value,hero:size.hero});
-    await cycle.page.screenshot({path:path.join(out,`phase-${phase}-${centered.symbol}.png`)});
-  }
-  assert.equal(new Set(phases.slice(0,7).map(p=>p.center)).size,7,'each of seven instruments must actually reach the center');
-  assert.equal(phases[7].center,phases[0].center,'last-to-first cycle returns seamlessly');
-  for(const p of phases){assert.deepEqual(p.viewport,phases[0].viewport,'orbit viewport remains stationary');assert.deepEqual(p.hero,phases[0].hero,'original hero and copy do not change height');}
-  const firstCenter=phases[0].tiles.find(t=>t.symbol===phases[0].center),nextCenter=phases[1].tiles.find(t=>t.symbol===firstCenter.symbol);assert(nextCenter.coin.width<firstCenter.coin.width*.75,'previous center recedes smoothly to a smaller neighboring pose');assert(Math.abs(nextCenter.coin.x-firstCenter.coin.x)>20,'previous center moves sideways into the arc');
-  for(const tile of phases[0].tiles){const last=phases[7].tiles.find(t=>t.symbol===tile.symbol);assert(Math.abs(last.x-tile.x)<3&&Math.abs(last.y-tile.y)<3,`${tile.symbol} wrap position stable`);}
-  const trace=await tracePromise,steps=[];assert(trace.every(sample=>sample.tiles.filter(tile=>tile.opacity>.05).length<=5),'desktop never displays more than five assets, including crossfade transitions');
-  for(let index=1;index<trace.length;index++)for(const tile of trace[index].tiles){const previous=trace[index-1].tiles.find(value=>value.symbol===tile.symbol);steps.push({symbol:tile.symbol,dt:trace[index].time-trace[index-1].time,distance:Math.hypot(tile.x-previous.x,tile.y-previous.y),visible:tile.opacity>.05&&previous.opacity>.05,sizeChange:Math.abs(tile.size-previous.size)});}
-  const observed=steps.filter(step=>step.dt<120),visible=observed.filter(step=>step.visible);assert(visible.length>300,'full cycle samples actual visible transforms');assert(visible.every(step=>step.distance<55&&step.sizeChange<30),'visible orbit does not jump or abruptly resize');
-  const hiddenWrapJumps=observed.filter(step=>!step.visible&&step.distance>100).length;assert(hiddenWrapJumps>=6,'large wrap repositioning happens only while hidden');
-  report.cases.push({name:'real-full-cycle',phases,traceSamples:trace.length,maxVisibleFrameDistance:Math.max(...visible.map(step=>step.distance)),maxVisibleSizeChange:Math.max(...visible.map(step=>step.sizeChange)),hiddenWrapJumps});
-  await metrics(cycle.page,cycle.cdp,cycle.requests,'orbit-active-1440');
-  const video=cycle.page.video();await cycle.ctx.close();
-  const source=await video.path();fs.copyFileSync(source,path.join(out,'market-platform-cycle.webm'));check('real orbit cycle, seven scaled center phases, sideways recession, last-to-first continuity and recorded video');
-  const mobileCycle=await createContext(browser,{width:390,height:844});await openHome(mobileCycle.page);await mobileCycle.page.mouse.move(0,0);await waitRunning(mobileCycle.page);
-  const mobileTrace=await orbitTrace(mobileCycle.page);assert(mobileTrace.length>300);assert(mobileTrace.every(sample=>sample.tiles.filter(tile=>tile.opacity>.05).length<=3),'mobile never displays more than center and two neighbors, including transitions');assert(new Set(mobileTrace.map(sample=>[...sample.tiles].filter(tile=>tile.opacity>.05).sort((a,b)=>b.size-a.size)[0]?.symbol)).size===7,'all seven instruments also lead the mobile orbit');report.cases.push({name:'mobile-full-cycle',samples:mobileTrace.length,maxVisible:Math.max(...mobileTrace.map(sample=>sample.tiles.filter(tile=>tile.opacity>.05).length))});await mobileCycle.ctx.close();check('mobile full cycle keeps at most three visible assets through every transition');
-  if(visualOnly)return;
-
-  const life=await createContext(browser);const page=life.page;
-  await openHome(page);await page.mouse.move(0,0);await waitRunning(page);
-  const start=await motion(page);await page.waitForTimeout(300);const advanced=await motion(page);assert(Number(advanced.animations[0].time)>Number(start.animations[0].time)+150);check('visible scene advances');
-  await page.locator('[data-market-visual]').hover();await assertFrozen(page,'hover');await page.mouse.move(0,0);await waitRunning(page);
-  const toggle=page.locator('[data-motion-toggle]');await toggle.focus();await assertFrozen(page,'focus');
-  await page.keyboard.press('Enter');assert.equal(await toggle.getAttribute('aria-pressed'),'true');
-  await toggle.evaluate(n=>n.blur());await page.mouse.move(0,0);await assertFrozen(page,'manual');
-  await toggle.focus();await page.keyboard.press('Enter');assert.equal(await toggle.getAttribute('aria-pressed'),'false');
-  await toggle.evaluate(n=>n.blur());await page.mouse.move(0,0);await waitRunning(page);check('hover, keyboard focus, manual pause and resume');
-  await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));await assertFrozen(page,'offscreen');await page.evaluate(()=>window.scrollTo(0,0));await waitRunning(page);check('offscreen compositor clocks pause and resume');
-  // Chromium headless keeps background pages visible. Dispatch the real event
-  // with an explicit visibility fixture; this tests the app handler, not OS scheduling.
-  const requestsBefore=life.requests.length;
-  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'));});
-  await assertFrozen(page,'hidden');const cdpBefore=Object.fromEntries((await life.cdp.send('Performance.getMetrics')).metrics.map(m=>[m.name,m.value]));
-  await page.waitForTimeout(2000);const cdpAfter=Object.fromEntries((await life.cdp.send('Performance.getMetrics')).metrics.map(m=>[m.name,m.value]));
-  report.cases.push({name:'visibility-event-fixture',requests:life.requests.length-requestsBefore,mainThreadMs:(cdpAfter.TaskDuration-cdpBefore.TaskDuration)*1000,windowMs:2000});
-  await page.evaluate(()=>{delete document.hidden;delete document.visibilityState;document.dispatchEvent(new Event('visibilitychange'));});await waitRunning(page);check('hidden visibility event stops animation without new requests');
-  await page.emulateMedia({reducedMotion:'reduce'});await assertFrozen(page,'reduced-motion');
-  const reduced=await motion(page);assert.equal(reduced.animations.length,7);assert.equal((await columnGeometry(page)).visibleCount,5);await page.screenshot({path:path.join(out,'reduced-motion.png')});
-  await page.emulateMedia({reducedMotion:'no-preference'});await waitRunning(page);check('live reduced-motion preference renders complete static composition');
-  await life.ctx.close();
-
-  // The orbit is complete with only logos/tickers; it never converts a stale,
-  // sampled or malformed shared value into a displayed decorative price.
-  const quotes=await createContext(browser,{reduced:true});await openHome(quotes.page);
-  await quotes.page.waitForFunction(()=>document.querySelector('[data-market-tile="BTC"] .vm-card-price')?.textContent==='104,235.42');
-  const prices=await quotes.page.locator('[data-market-tile]').evaluateAll(tiles=>Object.fromEntries(tiles.map(tile=>[tile.dataset.marketTile,tile.querySelector('.vm-card-price')?.textContent||''])));
-  assert.deepEqual(Object.fromEntries(['BTC','ETH','SOL','XRP','ADA'].map(symbol=>[symbol,prices[symbol]])),{BTC:'104,235.42',ETH:'3,892.15',SOL:'214.83',XRP:'2.43',ADA:'1.04'},'fresh fixture values keep real price precision');
-  const stored=await quotes.page.evaluate(()=>localStorage.getItem('voltex.home.market.v1'));assert(stored,'received shared snapshot exists');await quotes.ctx.close();
-  for(const quoteMode of ['missing','sampled','stale']){
-    const cached=JSON.parse(stored);cached.tickerUpdatedAt=Date.now()-7*60*60*1000;cached.cfdUpdatedAt=cached.tickerUpdatedAt;if(cached.cfd)cached.cfd.tickers=cached.cfd.tickers.map(row=>({...row,status:'stale',stale:true}));
-    const ctx=await createContext(browser,{reduced:true,quoteMode,snapshot:quoteMode==='stale'?JSON.stringify(cached):null});await openHome(ctx.page);
-    const values=await ctx.page.locator('[data-market-tile]').evaluateAll(tiles=>tiles.map(tile=>({symbol:tile.dataset.marketTile,price:tile.querySelector('.vm-card-price')?.textContent||'',text:tile.textContent})));report.cases.push({name:`quotes-${quoteMode}`,values});await ctx.page.screenshot({path:path.join(out,`quotes-${quoteMode}.png`)});assert.equal(values.length,7);
-    if(quoteMode==='sampled'){assert(values.filter(row=>['GOLD','OIL'].includes(row.symbol)).every(row=>!row.price),'sampled commodities omit price');assert.equal(values.find(row=>row.symbol==='BTC').price,'104,235.42');}
-    else assert(values.every(row=>!row.price),`${quoteMode} values omit every orbit price`);
-    assert.equal(await ctx.page.locator('[data-market-tile] .vm-card-note, [data-market-tile] .vm-card-change').count(),0);await ctx.ctx.close();
-  }
-  check('verified price precision, malformed/missing/stale omission and sampled commodity omission');
-
-  for(const logos of ['slow','missing']){
-    const ctx=await createContext(browser,{width:390,height:844,logos});await openHome(ctx.page);await ctx.page.mouse.move(0,0);
-    const shape=await geometry(ctx.page);assert.equal(shape.overflow,false);assert.equal(await ctx.page.locator('[data-market-tile]').count(),7);
-    if(logos==='missing')assert(await ctx.page.locator('[data-market-tile] img').evaluateAll(imgs=>imgs.every(i=>getComputedStyle(i).visibility==='hidden')),'failed local logos hide image glyph and retain symbol');
-    const cls=await ctx.page.evaluate(()=>window.__heroQa.cls);assert(cls<.01,`${logos} logos reserve their layout`);
-    await ctx.page.screenshot({path:path.join(out,`${logos}-logos-390.png`)});report.cases.push({name:`${logos}-logos`,cls,...shape});await ctx.ctx.close();
-  }
-  check('slow and absent local logos preserve geometry and symbol fallback');
-  }
-  const locales=await createContext(browser);await openHome(locales.page);
-  for(const [label,code] of [['EN','en'],['ES','es'],['中文','zh'],['RU','ru']]){
-    await locales.page.getByRole('button',{name:'Language / Язык / 语言',exact:true}).click();
-    await locales.page.getByRole('button',{name:label,exact:true}).click();await locales.page.waitForTimeout(600);
-    const shape=await geometry(locales.page);assert.equal(shape.overflow,false);assert(!shape.heading.includes('home.hero.'));report.cases.push({name:`language-switch-${code}`,...shape});
-    await locales.page.screenshot({path:path.join(out,`locale-${code}.png`)});
-  }
-  await locales.ctx.close();check('actual language control switches new hero copy');
-  const zoom=await createContext(browser,{width:1440,height:900,reduced:true});await openHome(zoom.page);
-  await zoom.page.evaluate(()=>document.documentElement.style.zoom='2');await zoom.page.waitForTimeout(500);
-  const zoomGeometry=await geometry(zoom.page);assert.equal(zoomGeometry.overflow,false,'200% CSS zoom layout');
-  await zoom.page.screenshot({path:path.join(out,'zoom-200.png')});report.cases.push({name:'200%-css-zoom',...zoomGeometry});await zoom.ctx.close();
-  // Browser-page zoom changes the layout viewport to half its CSS width.
-  const reflow=await createContext(browser,{width:720,height:450,reduced:true});await openHome(reflow.page);assert.equal((await geometry(reflow.page)).overflow,false);await reflow.page.screenshot({path:path.join(out,'zoom-200-reflow.png')});await reflow.ctx.close();check('200% zoom and 720 CSS pixel reflow');
-
-  const routes=await createContext(browser);await openHome(routes.page);
-  await routes.page.locator('#home-global-hero .actions .primary').click();await routes.page.waitForURL(/\/login\?next=/);assert(decodeURIComponent(routes.page.url()).includes('/trade'));check('guest CTA keeps protected route and next target');
-  await routes.page.evaluate(()=>localStorage.setItem('exchange_token','header.eyJzdWIiOiJxYS11c2VyIn0.fixture'));
-  const routeRows=[];
-  for(const target of ['/trade?pair=BTC%2FUSDT','/futures?pair=BTC%2FUSDT','/trade?market=cfd']){
-    await spaRoute(routes.page,target);assert.equal(await routes.page.locator('[data-market-platform-hero]').count(),0);
-    routeRows.push({target,url:routes.page.url(),heading:await routes.page.locator('body').innerText().then(t=>t.slice(0,160))});
-  }
-  await routes.page.evaluate(()=>localStorage.removeItem('exchange_token'));await spaRoute(routes.page,'/');await routes.page.locator(heroSelector).waitFor();await routes.page.mouse.move(0,0);await waitRunning(routes.page);
-  const counts=[];
-  for(let round=0;round<4;round++){
-    await routes.page.locator('#home-global-hero .actions .primary').click();await routes.page.waitForURL(/\/login/);
-    const unmounted=await routes.page.evaluate(()=>({sceneAnimations:document.getAnimations().filter(a=>a.effect?.target?.hasAttribute('data-market-tile')).length,intervals:window.__heroQa.activeIntervals.size,listeners:Object.fromEntries([...window.__heroQa.listeners].map(([k,v])=>[k,v.size]))}));assert.equal(unmounted.sceneAnimations,0);
-    await spaRoute(routes.page,'/');await routes.page.locator(heroSelector).waitFor();await routes.page.mouse.move(0,0);await waitRunning(routes.page);
-    counts.push(await routes.page.evaluate(()=>({round:window.__heroQa.remountRound=(window.__heroQa.remountRound||0)+1,intervals:window.__heroQa.activeIntervals.size,visibility:window.__heroQa.listeners.get('document:visibilitychange')?.size,animations:document.querySelector('[data-market-visual]').getAnimations({subtree:true}).length})));
-  }
-  assert(counts.every(c=>c.animations===7));assert.equal(counts.at(-1).visibility,counts[1].visibility,'visibility listener count stable after warm remount');assert.equal(counts.at(-1).intervals,counts[1].intervals,'interval count stable after warm remount');
-  report.cases.push({name:'home-spot-futures-cfd-home',routes:routeRows,remounts:counts});await routes.ctx.close();check('protected route chain and four remounts keep exactly seven animations with stable global timers/listeners');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
