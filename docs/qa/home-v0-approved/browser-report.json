@@ -1,0 +1,1910 @@
+{
+  "baseline": false,
+  "fixtureOnly": true,
+  "startedAt": "2026-10-08T10:27:46.975Z",
+  "screenshots": [
+    "home-1440.png",
+    "home-1920.png",
+    "home-1707.png",
+    "home-1366.png",
+    "home-1024.png",
+    "home-768.png",
+    "home-430.png",
+    "home-390.png",
+    "home-360.png",
+    "home-320.png",
+    "home-reduced-motion.png",
+    "home-full.png",
+    "home-en-1440.png",
+    "home-zh-1440.png",
+    "home-es-1440.png",
+    "home-hi-1440.png",
+    "home-ja-1440.png",
+    "home-ko-1440.png",
+    "home-ru-1440.png",
+    "home-mobile-hero.png",
+    "login.png",
+    "register.png",
+    "home-webgl-fallback.png"
+  ],
+  "findings": [],
+  "pageErrors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED"
+  ],
+  "requests": [
+    "GET /market/external/tickers",
+    "GET /market/external/orderbook/BTC-USDT",
+    "GET /market/external/candles/BTC-USDT",
+    "GET /market/external/trades/BTC-USDT",
+    "GET /cfd/tickers",
+    "GET /market/external/rankings",
+    "GET /market/global",
+    "GET /futures/config",
+    "GET /market/assets/icons",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons",
+    "GET /market/global",
+    "GET /market/assets/icons"
+  ],
+  "blocked": [
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://fonts.googleapis.com/css2",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/bnb.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/xrp.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ada.png",
+    "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/doge.png"
+  ],
+  "metrics": {
+    "coldReadyMs": 941,
+    "cycleInstruments": [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD",
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN",
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    "cycleRequests": [],
+    "browser": {
+      "longTasks": [
+        90,
+        71,
+        118,
+        146,
+        237,
+        78,
+        199,
+        70,
+        58
+      ],
+      "shifts": [
+        0.0000016021519204389574,
+        0.0000072281448929398145,
+        0.0000020219465342078192,
+        0.0000013663837448559673,
+        8.782280815972222e-7,
+        0.000002120456774048354,
+        0.0000042341820987654325,
+        8.089042004243827e-7,
+        0.0000016551076630015433,
+        0.000004067001028806585,
+        7.233796296296296e-7,
+        0.0000037211183984910837,
+        0.000001390764317558299,
+        0.000009149622034143517
+      ],
+      "fps": [
+        42.696852348263704,
+        59.020263623844194,
+        57.05292150304938,
+        32,
+        58.03659256344676,
+        41,
+        59.020263623844215,
+        53,
+        57.05853418593212,
+        52,
+        55,
+        57.05292150304936,
+        52,
+        54.10190832185715,
+        55.08016130618674,
+        50.16722408026754,
+        56.069250442651956,
+        54.10190832185725,
+        53.118237261459655,
+        56,
+        51.150895140665035,
+        57,
+        57,
+        56.06925044265186,
+        55.08557938225465,
+        55,
+        55.08557938225465,
+        55.163069776444246,
+        54.10190832185725,
+        56,
+        55.09099852434825,
+        50.994900509949076,
+        56.074766355140184,
+        54.99450054994509,
+        53.123462862764384,
+        55.99440055994368,
+        54.10723069355632,
+        52,
+        55.08557938225465,
+        52,
+        57.05292150304946,
+        50.162289760991584,
+        51.150895140664666,
+        58.07200929152165,
+        54,
+        30.968740927126593
+      ],
+      "lcp": [
+        204
+      ],
+      "heap": 10000000,
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 748,
+        "textures": 26,
+        "geometries": 9
+      }
+    },
+    "mobileCycleInstruments": [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD",
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN",
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ]
+  },
+  "responsive": [
+    {
+      "label": "1440",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 109.671875,
+        "width": 446.390625,
+        "height": 693.828125
+      },
+      "coins": {
+        "x": 446.390625,
+        "y": 90.25,
+        "width": 367.1875,
+        "height": 644.8125
+      },
+      "terminal": {
+        "x": 696.7445068359375,
+        "y": 308.00567626953125,
+        "width": 675.0787353515625,
+        "height": 397.8477783203125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53",
+        "NVDA—",
+        "US500—",
+        "WTI96,607",
+        "EUR/USD1,17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "1920",
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 174.1875,
+        "width": 595.1875,
+        "height": 751.609375
+      },
+      "coins": {
+        "x": 595.1875,
+        "y": 94,
+        "width": 489.59375,
+        "height": 859.765625
+      },
+      "terminal": {
+        "x": 928.99267578125,
+        "y": 351.8859558105469,
+        "width": 900.10498046875,
+        "height": 530.464111328125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53",
+        "NVDA—",
+        "US500—",
+        "WTI96,607",
+        "EUR/USD1,17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "1707",
+      "width": 1707,
+      "height": 1080,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 160.578125,
+        "width": 529.15625,
+        "height": 733.546875
+      },
+      "coins": {
+        "x": 529.15625,
+        "y": 93.09375,
+        "width": 435.28125,
+        "height": 764.390625
+      },
+      "terminal": {
+        "x": 825.9325561523438,
+        "y": 351.2127990722656,
+        "width": 800.2494506835938,
+        "height": 471.6153259277344
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53",
+        "NVDA—",
+        "US500—",
+        "WTI96,607",
+        "EUR/USD1,17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "1366",
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 75,
+        "width": 423.453125,
+        "height": 749.515625
+      },
+      "coins": {
+        "x": 423.453125,
+        "y": 89.984375,
+        "width": 348.328125,
+        "height": 611.6875
+      },
+      "terminal": {
+        "x": 660.9395751953125,
+        "y": 308.80419921875,
+        "width": 640.3870849609375,
+        "height": 377.40264892578125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "SOL99,78",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53",
+        "NVDA—",
+        "US500—",
+        "WTI96,607",
+        "EUR/USD1,17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "1024",
+      "width": 1024,
+      "height": 1080,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 75,
+        "width": 317.4375,
+        "height": 707.40625
+      },
+      "coins": {
+        "x": 317.4375,
+        "y": 89.140625,
+        "width": 261.109375,
+        "height": 458.53125
+      },
+      "terminal": {
+        "x": 491.7011413574219,
+        "y": 299.00189208984375,
+        "width": 589.27197265625,
+        "height": 347.27197265625
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "SOL99,78",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53",
+        "NVDA—",
+        "US500—",
+        "WTI96,607",
+        "EUR/USD1,17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "768",
+      "width": 768,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 768,
+        "height": 542.125
+      },
+      "coins": {
+        "x": 174,
+        "y": 607.125,
+        "width": 420,
+        "height": 389.265625
+      },
+      "terminal": {
+        "x": 313.6001281738281,
+        "y": 1129.2821044921875,
+        "width": 412.7302551269531,
+        "height": 243.22998046875
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "430",
+      "width": 430,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 430,
+        "height": 560.703125
+      },
+      "coins": {
+        "x": 15.046875,
+        "y": 625.703125,
+        "width": 399.890625,
+        "height": 370.625
+      },
+      "terminal": {
+        "x": 175.587646484375,
+        "y": 1060.16943359375,
+        "width": 231.08206176757812,
+        "height": 136.1812744140625
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "390",
+      "width": 390,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 620.09375
+      },
+      "coins": {
+        "x": 13.65625,
+        "y": 685.09375,
+        "width": 362.6875,
+        "height": 336.140625
+      },
+      "terminal": {
+        "x": 159.24627685546875,
+        "y": 1076.9071044921875,
+        "width": 209.593017578125,
+        "height": 123.5172119140625
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "360",
+      "width": 360,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 360,
+        "height": 620.09375
+      },
+      "coins": {
+        "x": 12.59375,
+        "y": 685.09375,
+        "width": 334.796875,
+        "height": 310.296875
+      },
+      "terminal": {
+        "x": 147.00094604492188,
+        "y": 1044.93310546875,
+        "width": 193.4664306640625,
+        "height": 114.013671875
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "320",
+      "width": 320,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 659.53125
+      },
+      "coins": {
+        "x": 11.203125,
+        "y": 724.53125,
+        "width": 297.59375,
+        "height": 275.8125
+      },
+      "terminal": {
+        "x": 130.6738739013672,
+        "y": 1041.7127685546875,
+        "width": 171.9644012451172,
+        "height": 101.342041015625
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-en",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 109.671875,
+        "width": 446.390625,
+        "height": 693.828125
+      },
+      "coins": {
+        "x": 446.390625,
+        "y": 90.25,
+        "width": 367.1875,
+        "height": 644.8125
+      },
+      "terminal": {
+        "x": 696.7445068359375,
+        "y": 308.00567626953125,
+        "width": 675.0787353515625,
+        "height": 397.8477783203125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53",
+        "NVDA—",
+        "US500—",
+        "WTI96.607",
+        "EUR/USD1.17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-en-320",
+      "width": 320,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 633.140625
+      },
+      "coins": {
+        "x": 11.203125,
+        "y": 698.140625,
+        "width": 297.59375,
+        "height": 275.8125
+      },
+      "terminal": {
+        "x": 130.6738739013672,
+        "y": 1015.3221435546875,
+        "width": 171.9644012451172,
+        "height": 101.342041015625
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-zh",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 144.46875,
+        "width": 446.390625,
+        "height": 624.25
+      },
+      "coins": {
+        "x": 446.390625,
+        "y": 90.25,
+        "width": 367.1875,
+        "height": 644.8125
+      },
+      "terminal": {
+        "x": 696.7445068359375,
+        "y": 308.00567626953125,
+        "width": 675.0787353515625,
+        "height": 397.8477783203125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53",
+        "NVDA—",
+        "US500—",
+        "WTI96.607",
+        "EUR/USD1.17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-zh-320",
+      "width": 320,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 573.75
+      },
+      "coins": {
+        "x": 11.203125,
+        "y": 638.75,
+        "width": 297.59375,
+        "height": 275.8125
+      },
+      "terminal": {
+        "x": 130.6738739013672,
+        "y": 955.9315185546875,
+        "width": 171.9644012451172,
+        "height": 101.3419189453125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-es",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 109.671875,
+        "width": 446.390625,
+        "height": 693.828125
+      },
+      "coins": {
+        "x": 446.390625,
+        "y": 90.25,
+        "width": 367.1875,
+        "height": 644.8125
+      },
+      "terminal": {
+        "x": 696.7445068359375,
+        "y": 308.00567626953125,
+        "width": 675.0787353515625,
+        "height": 397.8477783203125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76.746",
+        "AAPL—",
+        "XAU4349,19",
+        "ETH2479,53",
+        "NVDA—",
+        "US500—",
+        "WTI96,607",
+        "EUR/USD1,17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-es-320",
+      "width": 320,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 659.53125
+      },
+      "coins": {
+        "x": 11.203125,
+        "y": 724.53125,
+        "width": 297.59375,
+        "height": 275.8125
+      },
+      "terminal": {
+        "x": 130.6738739013672,
+        "y": 1041.7127685546875,
+        "width": 171.9644012451172,
+        "height": 101.342041015625
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76.746",
+        "AAPL—",
+        "XAU4349,19",
+        "ETH2479,53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-hi",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 122.875,
+        "width": 446.390625,
+        "height": 667.4375
+      },
+      "coins": {
+        "x": 446.390625,
+        "y": 90.25,
+        "width": 367.1875,
+        "height": 644.8125
+      },
+      "terminal": {
+        "x": 696.7445068359375,
+        "y": 308.00567626953125,
+        "width": 675.0787353515625,
+        "height": 397.8477783203125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53",
+        "NVDA—",
+        "US500—",
+        "WTI96.607",
+        "EUR/USD1.17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-hi-320",
+      "width": 320,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 573.75
+      },
+      "coins": {
+        "x": 11.203125,
+        "y": 638.75,
+        "width": 297.59375,
+        "height": 275.8125
+      },
+      "terminal": {
+        "x": 130.6738739013672,
+        "y": 955.9315185546875,
+        "width": 171.9644012451172,
+        "height": 101.3419189453125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-ja",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 109.671875,
+        "width": 446.390625,
+        "height": 693.828125
+      },
+      "coins": {
+        "x": 446.390625,
+        "y": 90.25,
+        "width": 367.1875,
+        "height": 644.8125
+      },
+      "terminal": {
+        "x": 696.7445068359375,
+        "y": 308.00567626953125,
+        "width": 675.0787353515625,
+        "height": 397.8477783203125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53",
+        "NVDA—",
+        "US500—",
+        "WTI96.607",
+        "EUR/USD1.17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-ja-320",
+      "width": 320,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 659.53125
+      },
+      "coins": {
+        "x": 11.203125,
+        "y": 724.53125,
+        "width": 297.59375,
+        "height": 275.8125
+      },
+      "terminal": {
+        "x": 130.6738739013672,
+        "y": 1041.7127685546875,
+        "width": 171.9644012451172,
+        "height": 101.342041015625
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-ko",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 109.671875,
+        "width": 446.390625,
+        "height": 693.828125
+      },
+      "coins": {
+        "x": 446.390625,
+        "y": 90.25,
+        "width": 367.1875,
+        "height": 644.8125
+      },
+      "terminal": {
+        "x": 696.7445068359375,
+        "y": 308.00567626953125,
+        "width": 675.0787353515625,
+        "height": 397.8477783203125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53",
+        "NVDA—",
+        "US500—",
+        "WTI96.607",
+        "EUR/USD1.17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-ko-320",
+      "width": 320,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 573.75
+      },
+      "coins": {
+        "x": 11.203125,
+        "y": 638.75,
+        "width": 297.59375,
+        "height": 275.8125
+      },
+      "terminal": {
+        "x": 130.6738739013672,
+        "y": 955.9315185546875,
+        "width": 171.9644012451172,
+        "height": 101.3419189453125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76,746",
+        "AAPL—",
+        "XAU4,349.19",
+        "ETH2,479.53"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-ru",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 109.671875,
+        "width": 446.390625,
+        "height": 693.828125
+      },
+      "coins": {
+        "x": 446.390625,
+        "y": 90.25,
+        "width": 367.1875,
+        "height": 644.8125
+      },
+      "terminal": {
+        "x": 696.7445068359375,
+        "y": 308.00567626953125,
+        "width": 675.0787353515625,
+        "height": 397.8477783203125
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 8,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53",
+        "NVDA—",
+        "US500—",
+        "WTI96,607",
+        "EUR/USD1,17"
+      ],
+      "brokenImages": []
+    },
+    {
+      "label": "language-ru-320",
+      "width": 320,
+      "height": 900,
+      "overflow": 0,
+      "copy": {
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 659.53125
+      },
+      "coins": {
+        "x": 11.203125,
+        "y": 724.53125,
+        "width": 297.59375,
+        "height": 275.8125
+      },
+      "terminal": {
+        "x": 130.6738739013672,
+        "y": 1041.7127685546875,
+        "width": 171.9644012451172,
+        "height": 101.342041015625
+      },
+      "heading": "OWN YOUR FUTURE.",
+      "medallions": 4,
+      "texts": [
+        "BTC76 746",
+        "AAPL—",
+        "XAU4 349,19",
+        "ETH2 479,53"
+      ],
+      "brokenImages": []
+    }
+  ],
+  "cycle": [
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "ETHUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "NVDA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "US500",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "WTI",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "EURUSD"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "SOLUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "XRPUSDT",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "MSFT",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "BNBUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "TSLA",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "ADAUSDT",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "XAGUSD",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "AMZN"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "DOGEUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "GBPUSD",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "GOOGL",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "TRXUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "BRENT",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ],
+    [
+      "BTCUSDT",
+      "AAPL",
+      "XAUUSD",
+      "ETHUSDT",
+      "NVDA",
+      "META",
+      "USDJPY",
+      "NAS100"
+    ]
+  ],
+  "videoCycleStartSeconds": 5.705,
+  "copy-en": "Your access to global markets and freedom.",
+  "copy-zh": "通往全球市场与自由的入口。",
+  "copy-es": "Tu acceso a los mercados globales y a la libertad.",
+  "copy-hi": "वैश्विक बाज़ारों और स्वतंत्रता तक आपकी पहुँच।",
+  "copy-ja": "世界の市場と自由へのアクセスを。",
+  "copy-ko": "글로벌 시장과 자유를 향한 당신의 접근.",
+  "copy-ru": "Ваш доступ к мировым рынкам и свободе."
+}
