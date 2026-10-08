@@ -6,14 +6,17 @@
 owner-selected saved raster `voltex-premium-gold-button-v6.png`, before the
 rejected HTML white cards and community/footer overlays. It includes the
 approved woman, phone, two cards, water, existing logo and Russian slogan.
-No image generation, retouching, inpainting, text masking or photo substitution
-was performed for this implementation. The image is illustrative artwork, not
+The initial implementation used no image generation or retouching. The latest
+owner-approved revision retouches only the inset white-card surface (see below),
+without changing the woman, hand or scene. The image is illustrative artwork, not
 a customer testimonial. It does not claim a user count or product eligibility.
 
 Source PNG SHA256: `ba851d099f69bd70f6d0a3deb07203800eefd6b8b9d133577c04cc896368f81d`.
-Banner WebP SHA256: `a4b8e9d0e84fa4e95c4db1b561fefdcde9d0a8ed98f748a460ba989a22ecd1ae`.
-Lossless WebP, 805754 bytes. Decoded RGB pixels were compared against the
-source crop and are identical. The right raster form is outside this crop;
+Original banner WebP SHA256: `a4b8e9d0e84fa4e95c4db1b561fefdcde9d0a8ed98f748a460ba989a22ecd1ae`.
+Current banner WebP SHA256: `692d9c278407952b1943cdb5b88fdd4c3856c82a3dc9ddb15104beafd30bf9a8`.
+Lossless WebP, 825184 bytes. The original is retained in Git history; every
+decoded RGB pixel outside the authorized card-surface polygon is unchanged.
+The right raster form is outside this crop;
 the application renders real existing form fields and handlers instead.
 
 The Russian desktop panel follows the raster's aspect ratio at viewport height,
@@ -27,6 +30,26 @@ owner-provided product claims, not an independently audited coverage list.
 At <=760px or portrait-like windows (aspect ratio <=3/2), the decorative banner
 is hidden without reserved space; the existing Logo appears in the form header.
 The embedded copy is NOT localizable, so only `lang === 'ru'` selects it.
+
+### Card-only retouch — PR #475, 2026-10-07
+
+Built-in imagegen edited an enlarged crop x475/y655/w175/h150. Its result was
+resampled to the original scale and blended at 85% only inside the inset polygon
+`[[512,681],[614,710],[607,750],[590,751],[578,756],[576,765],[501,744]]`,
+with a 1.5px inward feather. The original physical edge and fingers remain.
+6221 pixels changed; no size, pose, hand, face, cabin or composition change.
+Browser QA decodes the served image and hashes ALL other RGB pixels:
+`e102df04852a5032e17e6ae08a6190295a9a5de432b700af4c2fef8a9aecd322`.
+
+Final prompt (built-in edit, not CLI):
+> Retouch only the existing printed VOLTEX card surface: mildly brighten its
+> ivory/silver face, improve local contrast, and make the existing small planet
+> logo and exact word VOLTEX slightly clearer/darker. Preserve gold ring, chip,
+> markings, layout, perspective, boundary, size and position. Keep warm natural
+> photographic light and softness; no redesign, extra text, 3D rendering, HDR or
+> glow. Keep framing, sweater, skin, fingernails, fingers and background unchanged.
+
+Saved project asset: `frontend/public/auth/selected-cabin-banner.webp`.
 
 ## Other locales — previous real business-class photograph retained
 
