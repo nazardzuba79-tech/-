@@ -49,7 +49,7 @@ Across3 repeats:
 Confirmed defects in code/test design:
 1. server.mjs placed history cache hits behind the2-active/8-pending ReadGate. Actual isolated HTTP regression first failed503!=200, then passes after cachepeek bypass. New misses still enter admission BEFORE pendingmapgrowth; quota unchanged.
 2. server.maxConnections remains32. 100 parallel direct readers can exceed the explicit connection budget. New fixture counts real 'drop' events and reader socket/timeout/HTTP status errors to quantify this, rather than hiding them with a larger cap.
-3. Old SQLite+DELETEjournals were /tmp/load.sqlite in Docker tmpfs128MiB. Empty io.stat did not prove disk isolation. New paired suite uses a real block-backed bind mount with requested1MiB/s read /128KiB/s write limits, reports io.max/io.stat/pressure and fails setup if no real block device can be found.
+3. Old SQLite+DELETEjournals were /tmp/load.sqlite in Docker tmpfs128MiB. Empty io.stat did not prove disk isolation. New paired suite uses a persistent bind mount and records its actual backing filesystem. A verified exposed block device enables direct-I/O proof at1MiB/s read /128KiB/s write; if unavailable, comparisons may still run, but the separate I/O evidence gate remains FAILED, never substituted by tmpfs.
 4. Stocks was pinned to the SAME core as crypto AND PostgreSQL. Three-variant comparison before/after/separate-core holds quota .05vCPU256MiBzeroSwap constant. It measures placement effect, not permission to pin production API/DB.
 5. Old readerSIGTERM discarded in-flight outcomes. New reader drains before fixture shutdown and categorizes errors; request cadence200ms, timeout3s and cursor workload unchanged.
 
@@ -67,8 +67,10 @@ Cheapest architecture path: retain isolated stockprocess/privateSQLite with unch
 
 Before first real activation:
 1. Owner approves budget/provider; obtain written publicdisplay+cachedJSON+OHLCV retention+backup+attribution scope, USadd-on/fullTOPS fees, symbol coverage and exact delay.
-2. Provider-specific adapter and calendar mapping: real15m bars, unadjusted decimals, native volume/venue labeling, gaps remain gaps; fixture only now. Current code has generic adapter contract, not an approved live feed.
+2. Provider-specific adapter and calendar mapping: real15m bars, unadjusted decimals, native volume/venue labeling, gaps remain gaps; fixture only now. Current code already has a TwelveDataAdapter, but there is no approved/connected live feed or licensed current calendar.
 3. Confirm response/body500-row1MiB caps, closed timestamp mapping/DST/holidays, corrections/checkpoints. Controlled credential-free mocks first, then authorized real read QA.
 4. First10licensedmanifest only; retain Russia/Asia/indices OFF pending separate rights. Complete paired performance and proxy tests, actualAPI/CFD isolation and long soak.
 5. Separate rollout approval; no enable/deploy as part of this PR. Current launch status **NOT READY**.
 
+
+Confirmed local socket probe:100simultaneous direct history GETs,32success/68ECONNRESET,68server drop events; subsequent healthOK. No limits raised. Linux paired financial fixture now has1500MiB/noSwap cap, PostgreSQL1600MiB/noSwap; stock .05CPU256MiB/noSwap. First disk job failed because backing device lookup was empty; raw log preserved. Updated inventory records mount/lsblk before selecting a device, and keeps an explicit failed I/O gate when no verifiable device is exposed.
