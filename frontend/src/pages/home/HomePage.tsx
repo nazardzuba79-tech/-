@@ -26,6 +26,7 @@ import './home-heatmap.css';
 import './hero-reference.css';
 import './home-sapphire.css';
 import './sapphire-terminal-detail.css';
+import './home-v0-approved.css';
 
 /**
  * The VOLTEX homepage, in the approved section order:
