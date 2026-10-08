@@ -40,7 +40,8 @@ function AdminUserDetail({ id }: { id: string }) {
   };
   const [adjusting, setAdjusting] = useState(false), [deleting, setDeleting] = useState(false);
   const navigate = useNavigate(), detail = read.data;
-  const refreshed = () => { read.reload(); refreshAdminSummary(); };
+  const [historyRevision, setHistoryRevision] = useState(0);
+  const refreshed = () => { read.reload(); setHistoryRevision(value => value + 1); refreshAdminSummary(); };
   if (!detail) return read.error ? <div role="alert" style={styles.card}><p>{read.error}</p><button onClick={read.reload}>Повторить</button><Link to={back}>Все пользователи</Link></div> : <div aria-label="Загрузка пользователя"><Skeleton height={100} /><Skeleton height={200} /></div>;
   const accountKnown = detail.isBlocked !== null;
   const canAdjust = detail.compatibility?.mode !== 'legacy' && detail.balances !== null;
@@ -48,8 +49,6 @@ function AdminUserDetail({ id }: { id: string }) {
     <Link to={back} className="admin-back">← Все пользователи</Link>
     <div className="admin-list-heading"><div><h1 style={styles.title}>{detail.email}</h1><CopyValue value={detail.id} label="ID пользователя" full /><p className="admin-muted">{!accountKnown ? 'Статус недоступен' : detail.isBlocked ? 'Заблокирован' : 'Активен'} · KYC: {adminStatus(detail.kycStatus)}</p></div>
       <details className="admin-user-actions"><summary>Дополнительные действия</summary><div>
-        <button disabled={!canAdjust} onClick={() => setAdjusting(true)}>Корректировка баланса</button>
-        {!canAdjust && <p className="admin-muted">Корректировка баланса недоступна на текущей версии сервера.</p>}
         {canDeleteUser(detail) && <button onClick={() => setDeleting(true)}>Удалить аккаунт</button>}
       </div></details>
     </div>
@@ -72,7 +71,12 @@ function AdminUserDetail({ id }: { id: string }) {
         </section>
       </div>}
       {tab === 'Балансы' && <ProfileBalances profile={detail} />}
-      {histories[tab] && <AdminUserHistory key={tab} id={id} initialKind={histories[tab]!} onChanged={refreshed} />}
+      {tab === 'Пополнения' && <section style={styles.card} className="admin-deposit-adjustment" aria-label="Ручная корректировка спотового счёта">
+        <button style={{ ...styles.primaryBtn, width: 'auto' }} disabled={!canAdjust} aria-describedby={canAdjust ? 'admin-adjustment-description' : 'admin-adjustment-description admin-adjustment-availability'} onClick={() => setAdjusting(true)}>Корректировка баланса</button>
+        <p id="admin-adjustment-description" className="admin-muted">Ручное начисление или списание со спотового счёта. Не является подтверждением депозита.</p>
+        {!canAdjust && <p id="admin-adjustment-availability" role="status">{detail.compatibility?.mode === 'legacy' ? 'Корректировка баланса недоступна на текущей версии сервера.' : 'Корректировка недоступна, пока данные спотового баланса не получены. Обновите данные пользователя.'}</p>}
+      </section>}
+      {histories[tab] && <AdminUserHistory key={tab} id={id} initialKind={histories[tab]!} revision={historyRevision} onChanged={refreshed} />}
     </div>
     {adjusting && canAdjust && detail.balances !== null && <AdminBalanceAdjustment key={id} profile={{ ...detail, balances: detail.balances }} onClose={() => setAdjusting(false)} onChanged={refreshed} />}
     {deleting && <DeleteUserDialog user={detail} onClose={() => setDeleting(false)} onDeleted={() => { refreshAdminSummary(); navigate(back, { replace: true }); }} />}
@@ -92,9 +96,9 @@ function BalanceTable({ title, rows }: { title: string; rows: AdminProfile['bala
   return <section style={styles.card}><h2>{title}</h2>{rows === null ? <p>Данные баланса недоступны.</p> : !rows.length ? <p>Записей баланса нет.</p> : <div className="admin-table-scroll"><table className="admin-data-table"><thead><tr><th>Актив</th><th>Доступно</th><th>В резерве</th></tr></thead><tbody>{rows.map(row => <tr key={row.asset}><th>{row.asset}</th><td className="mono">{row.available}</td><td className="mono">{row.locked}</td></tr>)}</tbody></table></div>}<p className="admin-muted">Значения показаны по активам без пересчёта в общую сумму.</p></section>;
 }
 const orderKinds: [HistoryKind, string][] = [['orders', 'Спот'], ['futuresOrders', 'Фьючерсные ордера'], ['futuresPositions', 'Фьючерсные позиции'], ['cfdPositions', 'Позиции CFD'], ['purchases', 'Покупки']];
-function AdminUserHistory({ id, initialKind, onChanged }: { id: string; initialKind: HistoryKind; onChanged: () => void }) {
+function AdminUserHistory({ id, initialKind, revision, onChanged }: { id: string; initialKind: HistoryKind; revision: number; onChanged: () => void }) {
   const [kind, setKind] = useState(initialKind), [page, setPage] = useState(1);
-  const read = useAdminRead(`${id}:${kind}:${page}`, signal => getAdminHistory(id, kind, page, signal));
+  const read = useAdminRead(`${id}:${kind}:${page}:${revision}`, signal => getAdminHistory(id, kind, page, signal));
   return <section style={styles.card}>
     {initialKind === 'orders' && <label className="admin-history-kind">Раздел <select value={kind} onChange={e => { setKind(e.target.value as HistoryKind); setPage(1); }}>{orderKinds.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>}
     <AdminReadStatus {...read} hasData={!!read.data} />

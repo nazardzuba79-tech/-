@@ -1,0 +1,166 @@
+{
+  "fixtureOnly": true,
+  "productionAccess": false,
+  "layouts": [
+    {
+      "width": 1920,
+      "height": 1080,
+      "button": {
+        "x": 255,
+        "y": 367.4375,
+        "right": 440.796875,
+        "bottom": 401.4375
+      },
+      "historyY": 468.4375,
+      "overflow": false,
+      "duplicate": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "button": {
+        "x": 255,
+        "y": 367.4375,
+        "right": 440.796875,
+        "bottom": 401.4375
+      },
+      "historyY": 468.4375,
+      "overflow": false,
+      "duplicate": false
+    },
+    {
+      "width": 1366,
+      "height": 900,
+      "button": {
+        "x": 255,
+        "y": 367.4375,
+        "right": 440.796875,
+        "bottom": 401.4375
+      },
+      "historyY": 468.4375,
+      "overflow": false,
+      "duplicate": false
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "button": {
+        "x": 35,
+        "y": 418.234375,
+        "right": 220.796875,
+        "bottom": 452.234375
+      },
+      "historyY": 537.234375,
+      "overflow": false,
+      "duplicate": false
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "button": {
+        "x": 35,
+        "y": 418.234375,
+        "right": 220.796875,
+        "bottom": 452.234375
+      },
+      "historyY": 537.234375,
+      "overflow": false,
+      "duplicate": false
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "button": {
+        "x": 35,
+        "y": 418.234375,
+        "right": 220.796875,
+        "bottom": 452.234375
+      },
+      "historyY": 537.234375,
+      "overflow": false,
+      "duplicate": false
+    },
+    {
+      "width": 320,
+      "height": 740,
+      "button": {
+        "x": 35,
+        "y": 418.234375,
+        "right": 220.796875,
+        "bottom": 452.234375
+      },
+      "historyY": 555.234375,
+      "overflow": false,
+      "duplicate": false
+    }
+  ],
+  "checks": [
+    "Deposits entry placement 1920",
+    "Deposits entry placement 1440",
+    "Deposits entry placement 1366",
+    "Deposits entry placement 430",
+    "Deposits entry placement 390",
+    "Deposits entry placement 360",
+    "Deposits entry placement 320",
+    "Delete remains in additional actions",
+    "Confirmation shows account, signed change and reason",
+    "Cancellation sends no operation",
+    "Cancel restores focus to deposits entry",
+    "Double confirmation sends one POST",
+    "Success refreshes profile and visible history",
+    "Fixture reserves unchanged",
+    "Adjustment does not become a blockchain deposit",
+    "Refreshed spot and separate test balance remain visible",
+    "Existing audit presentation accepts adjustment",
+    "Validation error returns to editable form",
+    "Timeout with applied receipt recovers via GET without another POST",
+    "Timeout retry after reopening reuses complete immutable intent",
+    "Server failure is uncertain, never falsely reported as a credit",
+    "Unsupported server explains disabled entry",
+    "Mobile confirmation fits viewport",
+    "Admin permission gate prevents access",
+    "No unhandled JavaScript errors",
+    "All mutation requests target existing adjustment endpoint only"
+  ],
+  "pageErrors": [],
+  "blockedExternal": [],
+  "writes": [
+    {
+      "asset": "USDT",
+      "amount": "10",
+      "reason": "Synthetic placement QA",
+      "idempotencyKey": "0dc25e47-1cd8-45b1-a965-58665cd63b9b"
+    },
+    {
+      "asset": "USDT",
+      "amount": "10",
+      "reason": "Synthetic placement QA",
+      "idempotencyKey": "7a3980ed-9a8f-486d-9df2-154de0cd9497"
+    },
+    {
+      "asset": "USDT",
+      "amount": "10",
+      "reason": "Synthetic placement QA",
+      "idempotencyKey": "0f07ae5a-4fac-4776-9321-184fe50a5f89"
+    },
+    {
+      "asset": "USDT",
+      "amount": "-1",
+      "reason": "Synthetic placement QA",
+      "idempotencyKey": "027b5f96-b67f-4c82-a712-dc2ead6646ca"
+    },
+    {
+      "asset": "USDT",
+      "amount": "-1",
+      "reason": "Synthetic placement QA",
+      "idempotencyKey": "027b5f96-b67f-4c82-a712-dc2ead6646ca"
+    },
+    {
+      "asset": "USDT",
+      "amount": "10",
+      "reason": "Synthetic placement QA",
+      "idempotencyKey": "549f5e09-2064-4251-96e9-2feab5b12a28"
+    }
+  ],
+  "fixtureOperationCount": 3
+}
