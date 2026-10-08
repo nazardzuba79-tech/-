@@ -1930,6 +1930,8 @@ export const KO: Record<Key, string> = {
   'stocks.widgetDelayed': "지연 시세",
   'stocks.widgetOnly': "가격과 이력은 공식 TradingView 차트에서만 제공됩니다.",
   'stocks.widgetNotice': "차트를 사용할 수 없으면 연결을 확인하거나 다시 불러오세요. 제공 여부와 지연은 TradingView가 표시합니다.",
-  'stocks.widgetLoadError': "TradingView를 불러오지 못했습니다. 네트워크와 외부 스크립트 차단을 확인하세요.",
-  'stocks.widgetUnavailable': "이 종목은 임베드할 수 없습니다.",
+  'stocks.widgetLoadError': "차트를 불러올 수 없습니다. 다시 시도해 주세요.",
+  'stocks.widgetUnavailable': "이 종목의 차트를 사용할 수 없습니다.",
+  'stocks.tradingUnavailable': "주식 거래는 아직 이용할 수 없습니다.",
+  'stocks.explore': "종목을 선택하고 차트를 확인하세요.",
 };
