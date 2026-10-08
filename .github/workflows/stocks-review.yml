@@ -164,8 +164,16 @@ jobs:
           majmin=$(findmnt -n -o MAJ:MIN -T "$RUNNER_TEMP/stock-disk")
           device=$(lsblk -nrpo NAME,MAJ:MIN | awk -v mm="$majmin" '$2==mm {print $1; exit}')
           test -n "$device" && test -b "$device"
+          parent=$(lsblk -ndo PKNAME "$device")
+          if [ -n "$parent" ]; then device="/dev/$parent"; fi
+          test -b "$device"
           printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
           { nproc; free -m; findmnt -T "$RUNNER_TEMP/stock-disk"; lsblk; docker info; } > .ci-output/stock-launch/host.txt
+      - name: Prove actual read/write throttling without filesystem cache
+        run: |
+          mkdir -p "$RUNNER_TEMP/stock-disk/probe"
+          chmod 777 "$RUNNER_TEMP/stock-disk/probe"
+          docker run --rm --network none --cpus .05 --memory 256m --memory-swap 256m --pids-limit 32 --read-only --cap-drop ALL --security-opt no-new-privileges --device-read-bps "$STOCK_BENCH_DEVICE:1048576" --device-write-bps "$STOCK_BENCH_DEVICE:131072" --mount type=bind,src="$RUNNER_TEMP/stock-disk/probe",dst=/data voltex-stock-after node io-proof.mjs | tee .ci-output/stock-launch/io-proof.json
       - name: Seed once under unchanged .05 CPU / 256 MiB; outside measured workload
         run: |
           docker run --rm --cpus .05 --memory 256m --memory-swap 256m --pids-limit 32 --network none --read-only --cap-drop ALL --security-opt no-new-privileges --mount type=bind,src="$RUNNER_TEMP/stock-disk/seed",dst=/data -e STOCK_LOAD_DB=/data/load.sqlite -e STOCK_LOAD_SEED_ONLY=true -e STOCK_FIXTURE_NOW voltex-stock-after node load-fixture.mjs
