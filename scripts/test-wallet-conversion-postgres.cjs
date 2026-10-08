@@ -18,12 +18,20 @@ const express = require('express'), jwt = require('jsonwebtoken');
 function run(bin, args, stdio = 'pipe') { return spawnSync(bin, args, { cwd: root, encoding: 'utf8', stdio, timeout: 120000, windowsHide: true }); }
 function freePort() { return new Promise(resolve => { const server = net.createServer(); server.listen(0, '127.0.0.1', () => { const port = server.address().port; server.close(() => resolve(port)); }); }); }
 async function main() {
-  const bin = qa(process.platform === 'win32' ? '@embedded-postgres/windows-x64' : '@embedded-postgres/linux-x64');
+  // Linux CI uses the runner's PostgreSQL tools, not an embedded binary linked
+  // against obsolete ICU libraries. This is ONLY a binary path: never a DB URL.
+  const configuredBin = process.env.WALLET_QA_PG_BIN;
+  if (configuredBin) assert(path.isAbsolute(configuredBin), 'PostgreSQL tool directory must be absolute');
+  const bin = configuredBin
+    ? Object.fromEntries(['initdb', 'pg_ctl'].map(name => [name, path.join(fs.realpathSync(configuredBin), name + (process.platform === 'win32' ? '.exe' : ''))]))
+    : qa(process.platform === 'win32' ? '@embedded-postgres/windows-x64' : '@embedded-postgres/linux-x64');
+  for (const name of ['initdb', 'pg_ctl']) assert(fs.statSync(bin[name]).isFile(), `Missing fixture PostgreSQL tool: ${name}`);
   const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'voltex-wallet-conversion-fixture-')), 'data');
   const port = await freePort();
   const init = run(bin.initdb, ['-D', dir, '-U', 'postgres', '-A', 'trust', '--encoding=UTF8', '--locale=C']); assert.equal(init.status, 0, init.stderr);
   const fd = fs.openSync(path.join(out, 'postgres-control.log'), 'w'); let start;
-  try { start = run(bin.pg_ctl, ['-D', dir, '-l', path.join(out, 'postgres.log'), '-o', `-h 127.0.0.1 -p ${port}`, 'start', '-w'], ['ignore', fd, fd]); } finally { fs.closeSync(fd); }
+  const socketOptions = process.platform === 'win32' ? '' : ` -k ${path.dirname(dir)}`;
+  try { start = run(bin.pg_ctl, ['-D', dir, '-l', path.join(out, 'postgres.log'), '-o', `-h 127.0.0.1 -p ${port}${socketOptions}`, 'start', '-w'], ['ignore', fd, fd]); } finally { fs.closeSync(fd); }
   assert.equal(start.status, 0);
   let sql, prisma, server;
   const checks = []; const check = async (name, fn) => { await fn(); checks.push(name); console.log('PASS ' + name); };

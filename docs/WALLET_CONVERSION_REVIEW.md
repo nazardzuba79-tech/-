@@ -64,12 +64,16 @@ npm ci --ignore-scripts --prefix frontend
 npx prisma generate
 npm run build
 npm run build --prefix frontend
-npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts pg@8.23.1 @embedded-postgres/linux-x64@18.4.0-beta.17 playwright@1.58.2
+npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts pg@8.23.1 playwright@1.58.2
 output/wallet-qa-deps/node_modules/.bin/playwright install chromium
-WALLET_QA_BROWSER=1 node scripts/test-wallet-conversion-postgres.cjs
+WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 node scripts/test-wallet-conversion-postgres.cjs
 ```
 
-Windows: use the equivalent `@embedded-postgres/windows-x64` version. The runner
+Linux uses the installed PostgreSQL client/server tools (`pg_config`, `initdb`,
+`pg_ctl`), but not any existing server or cluster. CI verifies those tools first;
+the fixture also puts Unix sockets inside its own temporary directory.
+Windows: additionally install `@embedded-postgres/windows-x64@18.4.0-beta.17`
+in the QA-only prefix and omit `WALLET_QA_PG_BIN`. The runner
 ignores DATABASE_URL, creates a fresh loopback-only temporary PostgreSQL cluster
 and dedicated fixture DB, applies repository migrations **only there**, stops it
 in `finally`, and never starts production index/watchers. Browser uses the real
