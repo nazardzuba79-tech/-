@@ -1,49 +1,58 @@
-/* Only the approved homepage Hero. All lower sections and terminal controls keep
-   their existing styles. The source artwork's real DOM screen stays aligned. */
-.hs-root.v0-approved-hero .hero { min-height: clamp(690px, 53vw, 950px); }
-.hs-root.v0-approved-hero .copy { width: 31%; padding: 46px 0 56px 3.3%; }
-.hs-root.v0-approved-hero h1 { font-size: clamp(46px, 4.3vw, 82px); line-height: 1.05; }
+/* Geometry measured on voltex-reference.png (1619x971). The real header/tape
+   replace the raster's y=0..60 and y=876..971 bands. Scoped to this Hero only. */
+.hs-root.v0-approved-hero .hero { min-height: 0; height: auto; aspect-ratio: 1619 / 816; display: block; overflow: hidden; }
+.hs-root.v0-approved-hero .art { inset: auto; left: 0; top: -7.352941%; width: 100%; height: auto; aspect-ratio: 1619 / 971; object-fit: fill; object-position: center; mask-image: none; }
+.hs-root.v0-approved-hero .shade { display: none; }
+.hs-root.v0-approved-hero .copy { position: absolute; left: 3.33539%; top: 19.4853%; width: 26.5596%; padding: 0; z-index: 3; }
+.hs-root.v0-approved-hero .eyebrow { font-size: .72vw; letter-spacing: .16em; margin: 0 0 1.5vw; gap: .8vw; color: #edc06e; }
+.hs-root.v0-approved-hero h1 { font-size: 4.85vw; font-weight: 700; letter-spacing: -.035em; line-height: .96; margin: 0 0 1.05vw; }
 .hs-root.v0-approved-hero h1, .hs-root.v0-approved-hero h1 span { overflow-wrap: anywhere; white-space: normal; }
-.hs-root.v0-approved-hero .subtitle { font-size: clamp(22px, 2vw, 34px); }
-.hs-root.v0-approved-hero .description { max-width: 380px; font-size: 16px; line-height: 1.65; }
-.hs-root.v0-approved-hero .actions { flex-wrap: wrap; gap: 12px; }
-.hs-root.v0-approved-hero .actions a { max-width: 100%; }
-.hs-root.v0-approved-hero .product-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); display: grid; gap: 14px 8px; }
-.v0-approved-hero .v0-coins { position: absolute; z-index: 2; left: 31%; top: 2%; width: 25.5%; height: auto; aspect-ratio: 410 / 720; pointer-events: none; }
+.hs-root.v0-approved-hero h1 span { color: #ffe7a6; }
+.hs-root.v0-approved-hero .subtitle { font-size: 1.25vw; line-height: 1.5; margin: 0 0 .8vw; max-width: none; color: #f0f2fa; }
+.hs-root.v0-approved-hero .description { max-width: 95%; font-family: Arial,sans-serif; font-size: 1.02vw; line-height: 1.65; color: #d8e2f0; }
+.hs-root.v0-approved-hero .actions { margin-top: 1.55vw; gap: .85vw; flex-wrap: nowrap; }
+.hs-root.v0-approved-hero .actions a { min-height: 0; padding: .95vw 1.38vw; font-size: .88vw; line-height: 1.35; gap: 1.25vw; max-width: 100%; border-radius: 7px; }
+.hs-root.v0-approved-hero .primary { background: linear-gradient(115deg,#f7c35f,#ffe69c); }
+.hs-root.v0-approved-hero .secondary { background: #051c32a0; border-color: #52718b65; }
+.hs-root.v0-approved-hero .product-shortcuts { display: flex; flex-wrap: nowrap; max-width: none; gap: .55vw; margin-top: 1vw; }
+.hs-root.v0-approved-hero .product-shortcuts>a, .hs-root.v0-approved-hero .product-shortcuts>a+a { flex: 0 1 auto; min-height: 0; padding: .67vw .65vw; font-size: .68vw; gap: .4vw; border-radius: 6px; }
+.hs-root.v0-approved-hero .product-shortcuts svg { width: 1vw; height: 1vw; }
+.hs-root.v0-approved-hero .reference-market-legend { display: flex; align-items: center; gap: 1.2vw; margin-top: 1.2vw; color: #e6bd72; font-size: .85vw; line-height: 1.4; }
+.hs-root.v0-approved-hero .reference-market-legend::before, .hs-root.v0-approved-hero .reference-market-legend::after { content: ''; width: 2vw; height: 1px; background: #b8924e; flex: 0 0 auto; }
+.v0-approved-hero .v0-coins { position: absolute; z-index: 2; left: 30.265596%; top: 2.45098%; width: 25.324274%; height: auto; aspect-ratio: 410 / 570; pointer-events: none; }
 .v0-coin-canvas, .v0-coins-labels { position: absolute; inset: 0; width: 100%; height: 100%; }
 .v0-coin-canvas { display: block; }
 .v0-coins[data-ready=false] .v0-coin-canvas { visibility: hidden; }
-.v0-motion-toggle { position: absolute; left: 45%; bottom: 0; display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #bdc9dc45; border-radius: 6px; background: #0b1b3080; color: #bbcde3; pointer-events: auto; cursor: pointer; }
+.v0-motion-toggle { position: absolute; left: 45%; bottom: -18%; display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #e0bd7855; border-radius: 6px; background: #0b1b3080; color: #e9cb91; pointer-events: auto; cursor: pointer; }
 .v0-motion-toggle:hover, .v0-motion-toggle:focus-visible { color: #fff0bf; border-color: #e9c57d; }
-.v0-coin { position: absolute; aspect-ratio: 1; transform: translate(-50%, -50%); container-type: inline-size; }
-.v0-coin-fallback { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 50%; border: 3px double #d6c092; color: #29374a; font-weight: 700; font-size: clamp(12px, 1.5vw, 23px); background: radial-gradient(circle at 30% 20%, #f2f4f3, #aeb9c4 55%, #4f5e73); box-shadow: inset 0 0 0 5px #ffffff20, 4px 5px 0 #344053; }
-.v0-metal-gold { background: radial-gradient(circle at 30% 20%, #fff0ae, #cf9c41 55%, #694313); }
-.v0-coin-fallback { font-size: 20cqw; }
-.v0-metal-graphite { color: #f0e4c7; background: radial-gradient(circle at 30% 20%, #bcc4ce, #465364 55%, #131f31); }
-.v0-coins[data-ready=true] .v0-coin-fallback, .v0-coins[data-ready=true] .v0-pedestal-fallback { visibility: hidden; }
-.v0-quote { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 7px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: clamp(10px, .78vw, 14px); line-height: 1.4; padding: 4px 7px; border: 1px solid #b9c7dd30; border-radius: 6px; color: #d4dfec; background: #0b1b30ef; box-shadow: 0 3px 12px #020c1c50; }
+.v0-coin { position: absolute; aspect-ratio: 1; transform: translate(-50%, -50%); }
+.v0-coin-fallback { display: block; width: 100%; height: 100%; border-radius: 50%; }
+.v0-coins[data-ready=true] .v0-coin-fallback { visibility: hidden; }
+.v0-quote { position: absolute; top: 97%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: clamp(9px,.67vw,13px); line-height: 1.4; padding: 2px 6px; border: 1px solid #c7a36280; border-radius: 9px; color: #d4dfec; background: #071828ee; }
 .v0-quote strong { font-weight: 600; color: #f5deaa; }
-.v0-coin-0 .v0-quote { font-size: clamp(11px, .88vw, 15px); }
-.v0-pedestal-fallback { position: absolute; left: 12%; right: 20%; top: 86%; height: 10%; border-radius: 50%; background: radial-gradient(ellipse, #fff0b1, #d9a443 38%, #ffe4a0 42%, #37475c 45%, #172d4a 68%, #d7ac58 71%, transparent 73%); }
-@media (max-width: 1200px) and (min-width: 901px) {
-  .hs-root.v0-approved-hero .copy { width: 31%; padding-left: 2.5%; }
-  .hs-root.v0-approved-hero h1 { font-size: 43px; }
-  .hs-root.v0-approved-hero .subtitle { font-size: 24px; }
-  .hs-root.v0-approved-hero .description { font-size: 14px; }
-  .hs-root.v0-approved-hero .actions a { padding: 14px 16px; font-size: 13px; }
+@media (max-width: 1100px) and (min-width: 901px) {
+  .hs-root.v0-approved-hero .eyebrow { font-size: 9px; }
+  .hs-root.v0-approved-hero .description { font-size: 12px; }
+  .hs-root.v0-approved-hero .product-shortcuts { flex-wrap: wrap; }
+  .hs-root.v0-approved-hero .product-shortcuts>a, .hs-root.v0-approved-hero .product-shortcuts>a+a { font-size: 10px; }
 }
 @media (max-width: 900px) {
-  .hs-root.v0-approved-hero .hero { min-height: 0; }
-  .hs-root.v0-approved-hero .copy { width: auto; padding: 35px 22px 15px; }
-  .hs-root.v0-approved-hero h1 { font-size: clamp(42px, 8vw, 66px); }
-  .hs-root.v0-approved-hero .description { max-width: 580px; }
-  .hs-root.v0-approved-hero .product-shortcuts { max-width: 400px; }
-  .v0-approved-hero .v0-coins { position: relative; order: 1; left: auto; top: auto; margin: 0 auto -24px; width: min(84%, 420px); height: auto; aspect-ratio: 410 / 380; z-index: 2; }
-  .v0-quote, .v0-coin-0 .v0-quote { font-size: 12px; }
-  .hs-root.v0-approved-hero .art { order: 2; }
+  .hs-root.v0-approved-hero .hero { aspect-ratio: auto; display: flex; flex-direction: column; padding-bottom: 0; background: #031326; }
+  .hs-root.v0-approved-hero .copy { position: relative; left: auto; top: auto; width: 100%; padding: 34px 22px 18px; order: 0; }
+  .hs-root.v0-approved-hero .eyebrow { font-size: 9px; margin-bottom: 20px; gap: 12px; }
+  .hs-root.v0-approved-hero h1 { font-size: clamp(42px,8vw,66px); margin-bottom: 20px; }
+  .hs-root.v0-approved-hero .subtitle { font-size: 21px; margin-bottom: 12px; }
+  .hs-root.v0-approved-hero .description { font-size: 15px; max-width: 580px; }
+  .hs-root.v0-approved-hero .actions { flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .hs-root.v0-approved-hero .actions a { padding: 14px 16px; font-size: 13px; gap: 15px; }
+  .hs-root.v0-approved-hero .product-shortcuts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 16px; max-width: 420px; }
+  .hs-root.v0-approved-hero .product-shortcuts>a, .hs-root.v0-approved-hero .product-shortcuts>a+a { padding: 10px 12px; font-size: 11px; gap: 8px; }
+  .hs-root.v0-approved-hero .product-shortcuts svg { width: 16px; height: 16px; }
+  .hs-root.v0-approved-hero .reference-market-legend { margin-top: 18px; font-size: 12px; gap: 12px; }
+  .hs-root.v0-approved-hero .reference-market-legend::before, .hs-root.v0-approved-hero .reference-market-legend::after { width: 18px; }
+  .v0-approved-hero .v0-coins { position: relative; order: 1; left: auto; top: auto; margin: 0 auto; width: min(95%,410px); height: auto; aspect-ratio: 410 / 190; }
+  .v0-quote { font-size: 10px; flex-direction: column; gap: 0; top: 102%; padding: 2px 5px; }
+  .v0-motion-toggle { left: auto; right: 0; bottom: 0; }
+  .hs-root.v0-approved-hero .art { position: relative; inset: auto; width: 166%; height: auto; max-width: none; align-self: flex-end; order: 2; margin-top: -40px; margin-bottom: -10%; mask-image: linear-gradient(transparent,#000 14%); }
 }
-@media (max-width: 430px) {
-  .hs-root.v0-approved-hero .copy { padding-inline: 18px; }
-  .v0-approved-hero .v0-coins { width: 93%; margin-bottom: -24px; }
-  .v0-quote, .v0-coin-0 .v0-quote { font-size: 10px; gap: 4px; padding: 3px 4px; }
-}
+@media (max-width: 430px) { .hs-root.v0-approved-hero .copy { padding-inline: 18px; } }

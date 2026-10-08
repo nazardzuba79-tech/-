@@ -68,7 +68,7 @@ test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline a
     './HomeSapphireTape': { HomeSapphireTape: () => React.createElement('div', { 'data-preview': 'tape' }) },
     './useHeroStream': { useHeroStream: (market: unknown) => market },
     './HomeMotion': { MotionStage: ({ children }: any) => React.createElement('div', {}, children) },
-    './globalHeroCopy': { globalHeroCopy: { [lang]: { pause: 'Pause', resume: 'Resume', globe: 'Global markets' } } },
+    './globalHeroCopy': { globalHeroCopy: { [lang]: { pause: 'Pause', resume: 'Resume', globe: 'Global markets' } }, referenceMarketLegend: { [lang]: 'Crypto · CFD · Stocks soon' } },
     './hero-reference.css': {},
     'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
   };

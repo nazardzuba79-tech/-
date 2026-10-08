@@ -1,4 +1,5 @@
-import { createSceneSequence, SCENE_INSTRUMENTS, scenePrice, sceneQuote } from '../../pages/home/v0MarketScene';
+import { createSceneSequence, SCENE_INSTRUMENTS, SCENE_SPOTS, scenePrice, sceneQuote } from '../../pages/home/v0MarketScene';
+import { medallionSvg } from '../../pages/home/v0MedallionArtwork';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { cfdDisplayState } from '../cfdPresentation';
@@ -65,7 +66,8 @@ test('scene has no network/pricing scheduler and keeps live terminal, real links
   expect(files).not.toMatch(/\bfetch\s*\(|new WebSocket|setInterval|demo.quotes|Math\.random|https:\/\//);
   const hero = source('HomeSapphireHero.tsx');
   expect(hero).toContain('<SapphireTerminal market={market}/>');
-  expect(hero).toContain('/hero/sapphire-refined.png');
+  expect(hero).toContain('/hero/v0-reference-clean.png');
+  expect(hero).not.toContain('/hero/sapphire-refined.png');
   expect(hero).toContain('<HomeSapphireTape market={market}/>');
   for (const route of ['/trade', '/markets', '/futures', '/copy-trading', '/card']) expect(hero).toContain(`to="${route}"`);
   const renderer = source('v0CoinRenderer.ts');
@@ -73,6 +75,29 @@ test('scene has no network/pricing scheduler and keeps live terminal, real links
   expect(source('HomeV0Coins.tsx')).toContain('prefers-reduced-motion: reduce');
   expect(source('HomeV0Coins.tsx')).toContain('document.hidden');
   for (const section of ['HomeHeader', 'HomeMarketOverview', 'HomeCardTravel', 'HomeTradingSessions', 'HomeHeatmap', 'HomeMarkets', 'HomeEcosystem', 'HomeFaq', 'HomeFooter']) expect(source('HomePage.tsx')).toContain(`<${section}`);
+});
+
+test('desktop coin geometry uses the exact archive positions, not the rejected composition', () => {
+  expect(SCENE_SPOTS.map(s => [s.x + 490, s.y + 80, s.r])).toEqual([
+    [683,362,86], [662,138,50], [808,306,52], [570,469,53],
+    [760,200,51], [665,556,53], [578,252,51], [787,490,51],
+  ]);
+  const renderer = readFileSync(resolve(__dirname, '../../pages/home/v0CoinRenderer.ts'), 'utf8');
+  expect(renderer).not.toMatch(/fillText|platformX|glowTexture/);
+  expect(renderer).toContain('CylinderGeometry');
+  expect(renderer).toContain('TorusGeometry');
+  expect(renderer).toContain('if (cancelled()) return null');
+  const component = readFileSync(resolve(__dirname, '../../pages/home/HomeV0Coins.tsx'), 'utf8');
+  expect(component).toContain('if (disposed || !scene)');
+  expect(component).not.toContain('v0-pedestal-fallback');
+});
+
+test.each(SCENE_INSTRUMENTS)('local %s face uses vector relief, no demo prices or category labels', instrument => {
+  const svg = medallionSvg(instrument);
+  expect(svg).toContain('linearGradient');
+  expect(svg).toContain('<path');
+  expect(svg).not.toMatch(/STOCKS|CRYPTO|CFD|104,235|https:|<script|<image/);
+  expect(svg).toContain('width="256"');
 });
 
 test('context loss reveals fallback and cannot resume GPU work until a fresh mount', () => {

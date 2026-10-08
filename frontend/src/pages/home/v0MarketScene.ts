@@ -38,19 +38,20 @@ export const SCENE_INSTRUMENTS: readonly SceneInstrument[] = [
   { id: 'NAS100', ticker: 'NAS100', market: 'cfd', symbol: 'NAS100', metal: 'graphite' },
 ];
 
-// Coordinates adapted from coin-layout.ts, retaining its eight-medallion cluster.
+// Exact coin-layout.ts coordinates in the 1619x971 reference, translated by
+// the scene origin (490,80). No independently guessed scaling or orbit layout.
 export const SCENE_SPOTS = [
-  { x: 193, y: 282, r: 78 }, { x: 172, y: 58, r: 45 },
-  { x: 318, y: 226, r: 47 }, { x: 80, y: 389, r: 48 },
-  { x: 270, y: 120, r: 46 }, { x: 175, y: 476, r: 48 },
-  { x: 88, y: 172, r: 46 }, { x: 307, y: 410, r: 46 },
+  { x: 193, y: 282, r: 86 }, { x: 172, y: 58, r: 50 },
+  { x: 318, y: 226, r: 52 }, { x: 80, y: 389, r: 53 },
+  { x: 270, y: 120, r: 51 }, { x: 175, y: 476, r: 53 },
+  { x: 88, y: 172, r: 51 }, { x: 297, y: 410, r: 51 },
 ] as const;
 export const SCENE_WIDTH = 410;
-export const SCENE_HEIGHT = 720;
-export const MOBILE_SCENE_HEIGHT = 380;
+export const SCENE_HEIGHT = 570;
+export const MOBILE_SCENE_HEIGHT = 190;
 export const MOBILE_SCENE_SPOTS = [
-  { x: 225, y: 154, r: 68 }, { x: 94, y: 68, r: 42 },
-  { x: 333, y: 59, r: 43 }, { x: 81, y: 224, r: 42 },
+  { x: 56, y: 70, r: 43 }, { x: 156, y: 70, r: 43 },
+  { x: 256, y: 70, r: 43 }, { x: 356, y: 70, r: 43 },
 ] as const;
 export const STEP_SECONDS = 1.6;
 export const FLIP_SECONDS = 1.15;

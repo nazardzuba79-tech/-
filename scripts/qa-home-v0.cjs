@@ -11,7 +11,7 @@ const quick = process.argv.includes('--quick');
 const dist = path.resolve(baseline ? 'output/baseline-dist' : 'frontend/dist');
 const out = path.resolve(`output/home-v0/${baseline ? 'baseline' : 'updated'}`);
 fs.mkdirSync(out, { recursive: true });
-const report = { baseline, fixtureOnly: true, startedAt: new Date().toISOString(), screenshots: [], findings: [], pageErrors: [], consoleErrors: [], requests: [], blocked: [], metrics: {}, responsive: [], cycle: [] };
+const report = { baseline, fixtureOnly: true, startedAt: new Date().toISOString(), screenshots: [], findings: [], pageErrors: [], consoleErrors: [], unexpectedConsoleErrors: [], requests: [], blocked: [], metrics: {}, responsive: [], cycle: [] };
 const prices = { BTC: 76746, ETH: 2479.53, SOL: 99.78, XRP: 1.35, BNB: 610, ADA: .24, DOGE: .095, TRX: .3 };
 const tickers = Object.entries(prices).map(([base, price]) => ({ pair: `${base}/USDT`, lastPrice: String(price), bidPrice: String(price * .9999), askPrice: String(price * 1.0001), high24h: String(price * 1.02), low24h: String(price * .98), volume24h: '1000', quoteVolume24h: String(price * 1000), changePercent24h: '1.25' }));
 const candles = Array.from({ length: 48 }, (_, i) => { const open = 76000 + i * 9, close = open + (i % 2 ? 14 : -8); return { time: 1799990000 + i * 900, open, high: Math.max(open, close) + 12, low: Math.min(open, close) - 10, close, volume: 40 + i }; });
@@ -70,7 +70,16 @@ if (require.main === module) (async () => {
   page = await context.newPage();
   const videoStartedAt = Date.now();
   page.on('pageerror', e => report.pageErrors.push(e.message));
-  page.on('console', message => { if (message.type() === 'error') report.consoleErrors.push(message.text()); });
+  page.on('console', message => {
+    if (message.type() !== 'error') return;
+    report.consoleErrors.push(message.text());
+    const url = message.location().url;
+    const parsed = url ? new URL(url) : null;
+    const intentionallyBlocked = parsed && report.blocked.includes(parsed.origin + parsed.pathname);
+    if (!(intentionallyBlocked && message.text() === 'Failed to load resource: net::ERR_FAILED')) {
+      report.unexpectedConsoleErrors.push({ text: message.text(), url });
+    }
+  });
   const start = Date.now(); await page.goto(origin, { waitUntil: 'networkidle' });
   await page.locator('#home-live-terminal .book-row').first().waitFor({ timeout: 15000 });
   report.metrics.coldReadyMs = Date.now() - start;
@@ -170,6 +179,7 @@ if (require.main === module) (async () => {
   }
   if (!report.metrics.browser) report.metrics.browser = await page.evaluate(() => ({ ...window.__homePerf, heap: performance.memory?.usedJSHeapSize, resources: performance.getEntriesByType('resource').map(x => ({ name: new URL(x.name).pathname, bytes: x.transferSize, duration: x.duration })), renderer: document.querySelector('.v0-coins')?.dataset ? { ...document.querySelector('.v0-coins').dataset } : null }));
   assert.equal(report.pageErrors.length, 0, 'browser exceptions');
+  assert.equal(report.unexpectedConsoleErrors.length, 0, 'unexpected browser console errors');
   await context.close(); context = null;
 })().catch(error => { report.findings.push(error.stack || String(error)); console.error(error); process.exitCode = 1; }).finally(async () => {
   fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));

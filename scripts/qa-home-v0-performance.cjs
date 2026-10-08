@@ -37,7 +37,12 @@ const rows = [];
     await page.locator('#home-live-terminal .book-row').first().waitFor();
     const coldReadyMs = Date.now() - start;
     if (mobile) await page.locator(variant === 'updated' ? '.v0-coins' : '.hero').scrollIntoViewIfNeeded();
-    if (variant === 'updated') await page.waitForFunction(() => document.querySelector('.v0-coins')?.dataset.ready === 'true');
+    // Both paired builds must have an active renderer before sampling. A slow
+    // lazy import in the baseline is not a zero-cost animation result.
+    await page.waitForFunction(() => {
+      const scene = document.querySelector('.v0-coins');
+      return scene?.dataset.ready === 'true' && scene.__voltexHeroSceneStats?.frames > 0;
+    });
     await wait(2500);
     const snapshot = async () => ({ metrics: Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(x => [x.name, x.value])), ui: await page.evaluate(() => ({ time: performance.now(), frames: window.__perf.frames, sceneFrames: document.querySelector('.v0-coins')?.__voltexHeroSceneStats.frames ?? 0 })) });
     const before = await snapshot(); await wait(6000); const after = await snapshot();
