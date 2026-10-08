@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CandlestickSeries, ColorType, createChart, CrosshairMode, HistogramSeries, TickMarkType, type IChartApi, type ISeriesApi, type MouseEventParams, type Time, type UTCTimestamp } from 'lightweight-charts';
 import { RotateCcw } from 'lucide-react';
 import type { StockCandle } from '../../lib/stocks';
@@ -19,6 +19,10 @@ interface Props {
   period: ChartPeriod;
   onPeriod: (period: ChartPeriod) => void;
   onRetry: () => void;
+  /** Text of the error overlay (no data to show). */
+  errorText?: Key;
+  /** A compact strip between the toolbar and the plot, e.g. a failed refresh over kept data. */
+  notice?: ReactNode;
 }
 
 const PERIOD_ORDER: readonly ChartPeriod[] = ['1D', '5D', '1M', 'all'];
@@ -44,7 +48,7 @@ function pricePrecision(candles: readonly StockCandle[], currency: string): numb
  * overlays on top of it. Switching instrument or period re-frames the chart;
  * a refresh of the same instrument keeps the reader's zoom.
  */
-export function StockChart({ instrumentId, candles, currency, timeZone, status, periods, period, onPeriod, onRetry }: Props) {
+export function StockChart({ instrumentId, candles, currency, timeZone, status, periods, period, onPeriod, onRetry, errorText = 'stocks.unavailable', notice }: Props) {
   const { t, lang } = useLanguage();
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -122,7 +126,10 @@ export function StockChart({ instrumentId, candles, currency, timeZone, status, 
     const { volumeUp, volumeDown } = tokens.current;
     volumeSeries.setData(candles.filter(c => c.volume !== null).map(c => ({ time: seconds(c.openTimeUtc), value: Number(c.volume), color: Number(c.close) >= Number(c.open) ? volumeUp : volumeDown })));
     const frame = `${instrumentId}|${period}`;
-    if (!candles.length || framed.current === frame) return;
+    // An emptied chart (another instrument loading) is re-framed by whatever
+    // it draws next, even the same instrument again; kept data never empties it.
+    if (!candles.length) { framed.current = ''; return; }
+    if (framed.current === frame) return;
     const range = periods.get(period);
     if (period === 'all' || !range) chart.timeScale().fitContent();
     else chart.timeScale().setVisibleRange({ from: seconds(range.from), to: seconds(range.to) });
@@ -151,11 +158,12 @@ export function StockChart({ instrumentId, candles, currency, timeZone, status, 
           <div><dt>{t('stocks.ohlcClose')}</dt><dd>{formatStockPrice(shown.close, currency)}</dd></div>
         </dl>}
       </div>
+      {notice}
       <div className="vxs-chart-stage">
         <div ref={hostRef} className="vxs-chart-host" data-instrument={instrumentId} />
         {status !== 'ready' && <div className="vxs-chart-overlay" role="status">
           {status === 'loading' ? <span className="vxs-spinner" aria-hidden="true" /> : null}
-          <p>{t(status === 'loading' ? 'stocks.loading' : status === 'empty' ? 'stocks.noHistory' : 'stocks.unavailable')}</p>
+          <p>{t(status === 'loading' ? 'stocks.loading' : status === 'empty' ? 'stocks.noHistory' : errorText)}</p>
           {status === 'error' && <button type="button" className="vxs-retry" onClick={onRetry}><RotateCcw size={14} aria-hidden="true" />{t('stocks.retry')}</button>}
         </div>}
       </div>

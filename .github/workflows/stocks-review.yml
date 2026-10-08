@@ -1,7 +1,7 @@
 name: Stocks isolated review
 on:
   pull_request:
-    paths: ['services/stocks/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/stocks.ts', '.github/workflows/stocks-review.yml']
+    paths: ['services/stocks/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', '.github/workflows/stocks-review.yml']
   push:
     branches: [codex/stocks-bounded-v1-20261007]
 permissions:
@@ -28,6 +28,51 @@ jobs:
         with:
           name: stock-frontend-regression-${{ github.sha }}
           path: frontend-stock-review.json
+  # Stocks panel/overview in a real browser. Isolated fixtures only: the real
+  # read-only stock server over a disposable SQLite file of generated candles
+  # on 127.0.0.1:4431, crypto pages on the terminal QA's read-only Express
+  # fixtures; outside hosts blocked, writes refused. No production endpoint,
+  # account, financial database or market quote.
+  stocks-ui-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Default build (stocks flag OFF)
+        run: npm run build --prefix frontend && cp -r frontend/dist /tmp/stocks-flag-off
+      - name: Review build against the loopback stock fixture
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_ORIGIN: 'http://127.0.0.1:4431'
+      - name: Disposable browser tooling
+        run: |
+          npm install --prefix /tmp/stocks-ui-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/stocks-ui-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Panel/overview browser QA (fixtures only)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_FLAG_OFF_DIST: /tmp/stocks-flag-off
+          QA_OUT: ${{ github.workspace }}/.ci-output/stocks-ui
+        run: node scripts/qa-stocks-ui.cjs
+      - name: Shared Trading navigation and terminal isolation (fixtures only)
+        if: ${{ !cancelled() }}
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_OUTPUT: ${{ github.workspace }}/.ci-output/stocks-navigation
+        run: node scripts/qa-stocks-navigation.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-ui-browser-${{ github.sha }}
+          path: .ci-output
   crypto-service-comparison:
     runs-on: ubuntu-latest
     timeout-minutes: 30

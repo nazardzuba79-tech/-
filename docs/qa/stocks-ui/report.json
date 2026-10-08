@@ -1461,7 +1461,7 @@
     {
       "name": "stalled history becomes an error after the 12 s deadline",
       "ok": true,
-      "detail": 12711
+      "detail": 12694
     },
     {
       "name": "failed logo → letters fallback, list intact",
@@ -1470,6 +1470,253 @@
         "images": 0,
         "aapl": "AA",
         "rows": 250
+      }
+    },
+    {
+      "name": "1440: nothing is read inside the 15-minute window",
+      "ok": true,
+      "detail": {
+        "startReads": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "now": {
+          "catalogue": 1,
+          "history": 1
+        }
+      }
+    },
+    {
+      "name": "1440: at 15 minutes exactly one catalogue and one history read",
+      "ok": true,
+      "detail": {
+        "startReads": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "cadence": {
+          "catalogue": 2,
+          "history": 2
+        }
+      }
+    },
+    {
+      "name": "1440: a successful refresh of the same instrument keeps its zoom and pixels",
+      "ok": true
+    },
+    {
+      "name": "1440: refresh 503 → warning over kept AAPL data, no overlay, one chart",
+      "ok": true,
+      "detail": {
+        "text": "Не удалось обновить данные. Показаны последние полученные значенияПоследняя свеча: 07 окт., 16:00 GMT-4Повторить",
+        "overlay": false,
+        "charts": 1,
+        "symbol": "AAPL",
+        "instrument": "XNGS:AAPL"
+      }
+    },
+    {
+      "name": "1440: retry clicked twice reads once and clears the warning",
+      "ok": true,
+      "detail": {
+        "beforeRetry": 3,
+        "now": 4
+      }
+    },
+    {
+      "name": "1440: after the retry the same data and zoom are on screen",
+      "ok": true
+    },
+    {
+      "name": "1440: a refresh in flight is not an error and keeps the chart",
+      "ok": true
+    },
+    {
+      "name": "1440: refresh timeout → warning over kept data",
+      "ok": true
+    },
+    {
+      "name": "1440: retry after the timeout clears the warning",
+      "ok": true
+    },
+    {
+      "name": "1440: catalogue refresh fails → list rows kept with the warning",
+      "ok": true
+    },
+    {
+      "name": "1440: overview keeps 250 rows with the warning",
+      "ok": true
+    },
+    {
+      "name": "1440: hidden tab: no reads for 45 minutes",
+      "ok": true,
+      "detail": {
+        "hiddenReads": {
+          "catalogue": 5,
+          "history": 7
+        },
+        "now": {
+          "catalogue": 5,
+          "history": 7
+        }
+      }
+    },
+    {
+      "name": "1440: visible again: one catalogue read, warning cleared",
+      "ok": true,
+      "detail": {
+        "hiddenReads": {
+          "catalogue": 5,
+          "history": 7
+        },
+        "now": {
+          "catalogue": 6,
+          "history": 7
+        }
+      }
+    },
+    {
+      "name": "390: nothing is read inside the 15-minute window",
+      "ok": true,
+      "detail": {
+        "startReads": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "now": {
+          "catalogue": 1,
+          "history": 1
+        }
+      }
+    },
+    {
+      "name": "390: at 15 minutes exactly one catalogue and one history read",
+      "ok": true,
+      "detail": {
+        "startReads": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "cadence": {
+          "catalogue": 2,
+          "history": 2
+        }
+      }
+    },
+    {
+      "name": "390: a successful refresh of the same instrument keeps its zoom and pixels",
+      "ok": true
+    },
+    {
+      "name": "390: refresh 503 → warning over kept AAPL data, no overlay, one chart",
+      "ok": true,
+      "detail": {
+        "text": "Не удалось обновить данные. Показаны последние полученные значенияПоследняя свеча: 07 окт., 16:00 GMT-4Повторить",
+        "overlay": false,
+        "charts": 1,
+        "symbol": "AAPL",
+        "instrument": "XNGS:AAPL"
+      }
+    },
+    {
+      "name": "390: retry clicked twice reads once and clears the warning",
+      "ok": true,
+      "detail": {
+        "beforeRetry": 3,
+        "now": 4
+      }
+    },
+    {
+      "name": "390: after the retry the same data and zoom are on screen",
+      "ok": true
+    },
+    {
+      "name": "390: a refresh in flight is not an error and keeps the chart",
+      "ok": true
+    },
+    {
+      "name": "390: refresh timeout → warning over kept data",
+      "ok": true
+    },
+    {
+      "name": "390: retry after the timeout clears the warning",
+      "ok": true
+    },
+    {
+      "name": "390: catalogue refresh fails → list rows kept with the warning",
+      "ok": true
+    },
+    {
+      "name": "390: overview keeps 250 rows with the warning",
+      "ok": true
+    },
+    {
+      "name": "390: hidden tab: no reads for 45 minutes",
+      "ok": true,
+      "detail": {
+        "hiddenReads": {
+          "catalogue": 5,
+          "history": 7
+        },
+        "now": {
+          "catalogue": 5,
+          "history": 7
+        }
+      }
+    },
+    {
+      "name": "390: visible again: one catalogue read, warning cleared",
+      "ok": true,
+      "detail": {
+        "hiddenReads": {
+          "catalogue": 5,
+          "history": 7
+        },
+        "now": {
+          "catalogue": 6,
+          "history": 7
+        }
+      }
+    },
+    {
+      "name": "HTTP 200 with another instrumentId → data error with retry, no candles, no spinner",
+      "ok": true,
+      "detail": {
+        "overlay": "Получен некорректный ответ. Данные не показаныПовторить",
+        "ohlc": false,
+        "spinner": false,
+        "instrument": "XNGS:AAPL"
+      }
+    },
+    {
+      "name": "foreign answer after a valid AAPL page → AAPL kept with the invalid-data warning",
+      "ok": true,
+      "detail": {
+        "text": "Получен некорректный ответ. Показаны последние корректные значенияПоследняя свеча: 07 окт., 16:00 GMT-4Повторить",
+        "symbol": "AAPL"
+      }
+    },
+    {
+      "name": "retry → AAPL again, identical pixels",
+      "ok": true
+    },
+    {
+      "name": "fast AAPL → MSFT → AAPL: AAPL drawn, late MSFT dropped, one chart",
+      "ok": true,
+      "detail": {
+        "symbol": "AAPL",
+        "instrument": "XNGS:AAPL",
+        "overlay": false,
+        "charts": 1
+      }
+    },
+    {
+      "name": "valid empty history → «История пока недоступна», no error, no retry",
+      "ok": true,
+      "detail": {
+        "overlay": "История пока недоступна",
+        "retry": false,
+        "stale": false
       }
     },
     {
@@ -2115,6 +2362,34 @@
         "webSocket": 0
       }
     },
+    "refreshReads1440": {
+      "start": {
+        "catalogue": 1,
+        "history": 1
+      },
+      "atFifteen": {
+        "catalogue": 2,
+        "history": 2
+      },
+      "end": {
+        "catalogue": 6,
+        "history": 7
+      }
+    },
+    "refreshReads390": {
+      "start": {
+        "catalogue": 1,
+        "history": 1
+      },
+      "atFifteen": {
+        "catalogue": 2,
+        "history": 2
+      },
+      "end": {
+        "catalogue": 6,
+        "history": 7
+      }
+    },
     "routeRun1920": {
       "futures": {
         "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
@@ -2289,11 +2564,11 @@
     },
     "after": {
       "panel": {
-        "requests": 20,
-        "bytes": 1517409,
+        "requests": 23,
+        "bytes": 1522353,
         "jsFiles": 11,
-        "jsBytes": 928031,
-        "cssBytes": 270420,
+        "jsBytes": 931731,
+        "cssBytes": 271664,
         "stock": {
           "catalogue": 1,
           "history": 1,
@@ -2301,20 +2576,20 @@
         },
         "chart": 1,
         "stockChunks": [
-          "StocksPage-BBT89wqr.js:6831",
+          "StocksPage-OBLD7SfM.js:8874",
           "StocksPage-ArYStUD_.css:431",
-          "StocksTerminal-Cqiw6wCI.js:15682",
-          "StockParts-BmybqX79.js:3478",
-          "StocksTerminal-D3H7Amp2.css:16208"
+          "StocksTerminal-BV9StZeh.js:16204",
+          "StockParts-D6rC8kfV.js:4025",
+          "StocksTerminal-D17XjZaq.css:17194"
         ],
         "lightweightCharts": true
       },
       "overview": {
-        "requests": 16,
-        "bytes": 1202161,
+        "requests": 19,
+        "bytes": 1206743,
         "jsFiles": 10,
-        "jsBytes": 734434,
-        "cssBytes": 266754,
+        "jsBytes": 737797,
+        "cssBytes": 267973,
         "stock": {
           "catalogue": 1,
           "history": 0,
@@ -2322,20 +2597,20 @@
         },
         "chart": 0,
         "stockChunks": [
-          "StocksPage-BBT89wqr.js:6831",
+          "StocksPage-OBLD7SfM.js:8874",
           "StocksPage-ArYStUD_.css:431",
-          "StocksOverview-BBAaOPpA.js:9158",
-          "StockParts-BmybqX79.js:3478",
-          "StocksOverview-DS-trwFH.css:12542"
+          "StocksOverview-C0borPvQ.js:9343",
+          "StockParts-D6rC8kfV.js:4025",
+          "StocksOverview-B_I8XbP9.css:13503"
         ],
         "lightweightCharts": false
       },
       "entry": {
-        "requests": 19,
-        "bytes": 1466428,
+        "requests": 22,
+        "bytes": 1471372,
         "jsFiles": 11,
-        "jsBytes": 928031,
-        "cssBytes": 270420,
+        "jsBytes": 931731,
+        "cssBytes": 271664,
         "stock": {
           "catalogue": 1,
           "history": 0,
@@ -2343,17 +2618,17 @@
         },
         "chart": 0,
         "stockChunks": [
-          "StocksPage-BBT89wqr.js:6831",
+          "StocksPage-OBLD7SfM.js:8874",
           "StocksPage-ArYStUD_.css:431",
-          "StocksTerminal-Cqiw6wCI.js:15682",
-          "StockParts-BmybqX79.js:3478",
-          "StocksTerminal-D3H7Amp2.css:16208"
+          "StocksTerminal-BV9StZeh.js:16204",
+          "StockParts-D6rC8kfV.js:4025",
+          "StocksTerminal-D17XjZaq.css:17194"
         ],
         "lightweightCharts": true
       },
       "memory": {
         "warm": {
-          "heapMiB": 10.08,
+          "heapMiB": 10.11,
           "nodes": 5674,
           "listeners": 780,
           "charts": 1,
@@ -2361,7 +2636,7 @@
           "overlay": null
         },
         "after20Switches": {
-          "heapMiB": 9.33,
+          "heapMiB": 9.36,
           "nodes": 5672,
           "listeners": 782,
           "charts": 1,
@@ -2379,7 +2654,7 @@
     },
     "before": {
       "panel": {
-        "requests": 11,
+        "requests": 14,
         "bytes": 1412536,
         "jsFiles": 5,
         "jsBytes": 903848,
@@ -2397,7 +2672,7 @@
         "lightweightCharts": true
       },
       "overview": {
-        "requests": 10,
+        "requests": 13,
         "bytes": 1361555,
         "jsFiles": 5,
         "jsBytes": 903848,
@@ -2415,7 +2690,7 @@
         "lightweightCharts": true
       },
       "entry": {
-        "requests": 10,
+        "requests": 13,
         "bytes": 1361555,
         "jsFiles": 5,
         "jsBytes": 903848,
@@ -2434,7 +2709,7 @@
       },
       "memory": {
         "warm": {
-          "heapMiB": 5.57,
+          "heapMiB": 5.54,
           "nodes": 342,
           "listeners": 250,
           "charts": 1,
@@ -2442,7 +2717,7 @@
           "overlay": null
         },
         "after20Switches": {
-          "heapMiB": 6.78,
+          "heapMiB": 6.75,
           "nodes": 345,
           "listeners": 250,
           "charts": 1,
@@ -2460,7 +2735,7 @@
     }
   },
   "pageErrors": [],
-  "startedAt": "2026-10-08T04:08:54.920Z",
+  "startedAt": "2026-10-08T05:41:16.212Z",
   "fixture": {
     "instruments": 250,
     "withData": 227,
@@ -2476,39 +2751,39 @@
   "bundle": {
     "after": {
       "entry": {
-        "index-DEOOTkH7.js": {
-          "raw": 647425,
-          "gzip": 203766
+        "index-L6Z7_A9u.js": {
+          "raw": 648013,
+          "gzip": 203872
         }
       },
       "stocks": {
-        "StockParts-BmybqX79.js": {
-          "raw": 3478,
-          "gzip": 1748
+        "StockParts-D6rC8kfV.js": {
+          "raw": 4025,
+          "gzip": 1938
         },
-        "StocksOverview-BBAaOPpA.js": {
-          "raw": 9158,
-          "gzip": 2767
+        "StocksOverview-B_I8XbP9.css": {
+          "raw": 13503,
+          "gzip": 2669
         },
-        "StocksOverview-DS-trwFH.css": {
-          "raw": 12542,
-          "gzip": 2535
+        "StocksOverview-C0borPvQ.js": {
+          "raw": 9343,
+          "gzip": 2852
         },
         "StocksPage-ArYStUD_.css": {
           "raw": 431,
           "gzip": 208
         },
-        "StocksPage-BBT89wqr.js": {
-          "raw": 6831,
-          "gzip": 2968
+        "StocksPage-OBLD7SfM.js": {
+          "raw": 8874,
+          "gzip": 3689
         },
-        "StocksTerminal-Cqiw6wCI.js": {
-          "raw": 15682,
-          "gzip": 5066
+        "StocksTerminal-BV9StZeh.js": {
+          "raw": 16204,
+          "gzip": 5264
         },
-        "StocksTerminal-D3H7Amp2.css": {
-          "raw": 16208,
-          "gzip": 3211
+        "StocksTerminal-D17XjZaq.css": {
+          "raw": 17194,
+          "gzip": 3357
         }
       }
     },
@@ -2532,49 +2807,50 @@
     },
     "flagOff": {
       "entry": {
-        "index-D67arde9.js": {
-          "raw": 646888,
-          "gzip": 203669
+        "index-CP1MLBRe.js": {
+          "raw": 647476,
+          "gzip": 203749
         }
       },
       "stocks": {
-        "StockParts-DHNIpPdz.js": {
-          "raw": 3478,
-          "gzip": 1748
+        "StockParts-B_hf8KU1.js": {
+          "raw": 4025,
+          "gzip": 1938
         },
-        "StocksOverview-BewrrDnC.js": {
-          "raw": 9158,
-          "gzip": 2765
+        "StocksOverview-B_I8XbP9.css": {
+          "raw": 13503,
+          "gzip": 2669
         },
-        "StocksOverview-DS-trwFH.css": {
-          "raw": 12542,
-          "gzip": 2535
+        "StocksOverview-CTUEmNVV.js": {
+          "raw": 9343,
+          "gzip": 2851
         },
         "StocksPage-ArYStUD_.css": {
           "raw": 431,
           "gzip": 208
         },
-        "StocksPage-C7AVbP_o.js": {
-          "raw": 5528,
-          "gzip": 2423
+        "StocksPage-DgOmSDEJ.js": {
+          "raw": 7398,
+          "gzip": 3038
         },
-        "StocksTerminal-D3H7Amp2.css": {
-          "raw": 16208,
-          "gzip": 3211
+        "StocksTerminal-Bxz-O3aG.js": {
+          "raw": 16204,
+          "gzip": 5262
         },
-        "StocksTerminal-DZkfFHLg.js": {
-          "raw": 15682,
-          "gzip": 5064
+        "StocksTerminal-D17XjZaq.css": {
+          "raw": 17194,
+          "gzip": 3357
         }
       }
     }
   },
-  "finishedAt": "2026-10-08T04:12:12.325Z",
+  "finishedAt": "2026-10-08T05:44:55.303Z",
   "summary": {
-    "checks": 214,
+    "checks": 245,
     "failed": 0,
     "pageErrors": 0,
     "writesBlocked": 0
   },
-  "screenshots": "curated subset committed beside this report; the run wrote 49"
+  "screenshots": "curated subset committed beside this report; the run wrote 57",
+  "ranIn": "local (Windows, Playwright 1.63 Chromium); CI runs the same script in stocks-review.yml / stocks-ui-browser"
 }

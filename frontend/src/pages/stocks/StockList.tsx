@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type Ref } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode, type Ref } from 'react';
 import { Link } from 'react-router-dom';
 import { RotateCcw, Search, Star } from 'lucide-react';
 import type { StockInstrument } from '../../lib/stocks';
@@ -13,6 +13,10 @@ interface Props {
   items: readonly StockInstrument[];
   status: 'loading' | 'ready' | 'error';
   onRetry: () => void;
+  /** Text of the no-data error state. */
+  errorText?: Key;
+  /** Shown above the rows, e.g. a failed refresh over the kept list. */
+  notice?: ReactNode;
   selectedId?: string;
   favorites: ReadonlySet<string>;
   onToggleFavorite: (id: string) => void;
@@ -27,7 +31,7 @@ const TAB_LABEL: Record<StockFilters['tab'], Key> = {
 };
 
 /** The panel's compact list: logo, ticker, last available price and change. No charts per row. */
-export function StockList({ items, status, onRetry, selectedId, favorites, onToggleFavorite, filter, onFilter, onPick, searchRef }: Props) {
+export function StockList({ items, status, onRetry, errorText = 'stocks.unavailable', notice, selectedId, favorites, onToggleFavorite, filter, onFilter, onPick, searchRef }: Props) {
   const { t } = useLanguage();
   const scroller = useRef<HTMLDivElement>(null);
   const shown = useMemo(() => filterInstruments(items, { ...EMPTY_FILTERS, ...filter }, favorites), [items, filter, favorites]);
@@ -57,10 +61,11 @@ export function StockList({ items, status, onRetry, selectedId, favorites, onTog
           </button>
         ))}
       </div>
+      {notice}
       <div className="vxs-list-columns" aria-hidden="true"><span>{t('stocks.instrument')}</span><span>{t('stocks.price')} / {t('stocks.change')}</span></div>
       <div className="vxs-list-rows" ref={scroller}>
         {status === 'error' && !items.length ? <div className="vxs-list-state" role="status">
-          <p>{t('stocks.unavailable')}</p>
+          <p>{t(errorText)}</p>
           <button type="button" className="vxs-retry" onClick={onRetry}><RotateCcw size={14} aria-hidden="true" />{t('stocks.retry')}</button>
         </div> : status === 'loading' && !items.length ? Array.from({ length: 10 }, (_, n) => <div key={n} className="vxs-row is-skeleton" aria-hidden="true" />)
         : shown.length ? <ul>

@@ -143,6 +143,15 @@
 .vx-stocks-terminal .vxs-retry { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 16px; border:0; border-radius:999px; background:var(--vxs-accent); color:var(--vxs-on-accent); font-weight:600; cursor:pointer; }
 .vx-stocks-terminal .vxs-retry:hover { background:#f0c964; }
 
+/* A failed refresh over kept data: a compact strip, never an overlay on a good chart. */
+.vx-stocks-terminal .vxs-stale { display:flex; align-items:center; gap:8px; margin:6px 12px; padding:6px 8px 6px 10px; border:1px solid rgba(240,185,11,.32); border-radius:4px; background:rgba(240,185,11,.08); color:var(--vxs-text-soft); font-size:11px; line-height:1.4; flex-shrink:0; }
+.vx-stocks-terminal .vxs-stale > svg { color:var(--vxs-accent); flex-shrink:0; }
+.vx-stocks-terminal .vxs-stale > p { margin:0; flex:1; min-width:0; display:flex; flex-wrap:wrap; gap:2px 8px; }
+.vx-stocks-terminal .vxs-stale small { color:var(--vxs-label); font-size:11px; font-variant-numeric:tabular-nums; }
+.vx-stocks-terminal .vxs-stale > button { display:inline-flex; align-items:center; gap:4px; height:24px; padding:0 10px; border:1px solid rgba(240,185,11,.5); border-radius:999px; background:none; color:var(--vxs-accent); font-size:11px; font-weight:600; cursor:pointer; flex-shrink:0; white-space:nowrap; }
+.vx-stocks-terminal .vxs-stale > button:hover:not(:disabled) { background:rgba(240,185,11,.12); }
+.vx-stocks-terminal .vxs-stale > button:disabled { opacity:.55; cursor:default; }
+
 /* Facts: right column on wide screens, «Об инструменте» below the chart otherwise */
 .vx-stocks-terminal .vxs-facts-tile { overflow-y:auto; min-height:0; scrollbar-width:thin; scrollbar-color:#2a3038 transparent; }
 .vx-stocks-terminal .vxs-facts-tile > h2 { margin:0; min-height:44px; display:flex; align-items:center; padding:0 16px; border-bottom:1px solid var(--vxs-border); font-size:14px; font-weight:600; color:var(--vxs-text-soft); }

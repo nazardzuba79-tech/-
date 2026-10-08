@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Nav } from '../../components/Nav';
-import { useStocks, type StockCatalogue } from '../../lib/stocks';
+import { isStockCatalogue, useStocks, type StockCatalogue } from '../../lib/stocks';
 import { readFavorites, writeFavorites } from './stockModel';
 import './stocks.css';
 
@@ -20,7 +20,7 @@ export function StocksPage() {
   const { instrumentId } = useParams();
   const [params] = useSearchParams();
   const overview = !instrumentId && params.get('view') === 'overview';
-  const catalogue = useStocks<StockCatalogue>('/stocks');
+  const catalogue = useStocks<StockCatalogue>('/stocks', isStockCatalogue);
   const [favoriteIds, setFavoriteIds] = useState<string[]>(readFavorites);
   const favorites = useMemo(() => new Set(favoriteIds), [favoriteIds]);
   const toggleFavorite = useCallback((id: string) => setFavoriteIds(old => {

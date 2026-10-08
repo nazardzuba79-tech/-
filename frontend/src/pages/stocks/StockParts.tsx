@@ -1,7 +1,7 @@
 import { useState, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Star } from 'lucide-react';
-import type { StockInstrument } from '../../lib/stocks';
+import { AlertTriangle, RotateCcw, Star } from 'lucide-react';
+import type { StockFailure, StockInstrument } from '../../lib/stocks';
 import { useLanguage } from '../../lib/i18n';
 import { changeTone, formatStockChange } from './stockFormat';
 import { readOverviewQuery } from './stockModel';
@@ -36,6 +36,26 @@ export function FavoriteStar({ instrument, active, onToggle, size = 16 }: { inst
 
 export function StockChange({ value, className = '' }: { value: number | null | undefined; className?: string }) {
   return <span className={`vxs-change is-${changeTone(value)} ${className}`.trim()}>{formatStockChange(value)}</span>;
+}
+
+/**
+ * A refresh failed while earlier data is on screen: say so, name the data's
+ * own time (never the browser clock) and offer a retry. The data stays.
+ */
+export function StaleNotice({ failure, time, busy, onRetry }: { failure?: StockFailure; time?: string | null; busy: boolean; onRetry: () => void }) {
+  const { t } = useLanguage();
+  return (
+    <div className="vxs-stale" role="status">
+      <AlertTriangle size={14} aria-hidden="true" />
+      <p>
+        <span>{t(failure === 'invalid' ? 'stocks.staleInvalid' : 'stocks.staleRefresh')}</span>
+        {time ? <small>{t('stocks.lastCandleAt', { time })}</small> : null}
+      </p>
+      <button type="button" onClick={onRetry} disabled={busy} aria-busy={busy}>
+        <RotateCcw size={13} aria-hidden="true" />{t('stocks.retry')}
+      </button>
+    </div>
+  );
 }
 
 /** «Панель / Обзор» inside Stocks; never a new top-level navigation item. */

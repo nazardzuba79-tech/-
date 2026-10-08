@@ -5,10 +5,10 @@ import type { StockCatalogue, StockInstrument, StockRead } from '../../lib/stock
 import { localeOf, useLanguage, type Key } from '../../lib/i18n';
 import { countryName, exchangeName, formatStockPrice, formatStockTime } from './stockFormat';
 import {
-  ASIA_MARKETS, EMPTY_FILTERS, filterInstruments, filtersFromParams, filtersToParams, hasActiveFilters, readLastInstrument,
+  ASIA_MARKETS, EMPTY_FILTERS, filterInstruments, filtersFromParams, filtersToParams, hasActiveFilters, newestClose, readLastInstrument,
   sortInstruments, STOCK_TABS, tabInstruments, writeOverviewQuery, type SortKey, type StockFilters, type StockSort,
 } from './stockModel';
-import { FavoriteStar, StockChange, StockLogo, ViewSwitch } from './StockParts';
+import { FavoriteStar, StaleNotice, StockChange, StockLogo, ViewSwitch } from './StockParts';
 import './stocksOverview.css';
 
 interface Props {
@@ -85,8 +85,8 @@ export default function StocksOverview({ catalogue, favorites, onToggleFavorite 
         <ViewSwitch view="overview" panelTo={panelTo} />
       </header>
 
-      {catalogue.error && !items.length ? <div className="vxo-state" role="status">
-        <p><strong>{t('stocks.unavailable')}</strong></p>
+      {catalogue.error && !catalogue.data && !catalogue.loading ? <div className="vxo-state" role="status">
+        <p><strong>{t(catalogue.failure === 'invalid' ? 'stocks.invalidData' : 'stocks.unavailable')}</strong></p>
         <button type="button" className="vxo-gold" onClick={catalogue.retry}><RotateCcw size={14} aria-hidden="true" />{t('stocks.retry')}</button>
       </div> : <>
         {indices.length > 0 && <section className="vxo-indices" aria-label={t('stocks.index')}>
@@ -148,6 +148,8 @@ export default function StocksOverview({ catalogue, favorites, onToggleFavorite 
           </div>}
         </div>
 
+        {catalogue.error && catalogue.data && <StaleNotice failure={catalogue.failure} busy={catalogue.loading} onRetry={catalogue.retry}
+          time={formatStockTime(newestClose(catalogue.data.instruments), lang)} />}
         {catalogue.data && <p className="vxo-found">{t('stocks.found', { count: shown.length })}</p>}
 
         {!catalogue.data ? <div className="vxo-table" aria-busy="true">

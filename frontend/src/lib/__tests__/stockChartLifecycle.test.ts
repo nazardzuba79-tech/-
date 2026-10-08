@@ -130,6 +130,32 @@ describe('StockChart lifecycle', () => {
     await React.act(async () => root.unmount());
   });
 
+  test('a failed refresh adds a notice above the same chart: no overlay, no new chart, zoom untouched', async () => {
+    const t0 = Date.UTC(2026, 9, 1, 13, 30);
+    // As in the panel: kept candles are the same array and periods are memoised from them.
+    const kept = candles(t0, 40), periods = new Map([['all', { from: t0, to: t0 + 40 * SLOT }]]);
+    await draw({ instrumentId: 'XNGS:AAPL', candles: kept, status: 'ready', periods });
+    expect(calls.fit).toBe(1);
+    const setDataCalls = calls.candles.length;
+    const notice = React.createElement('div', { className: 'vxs-stale' }, 'stale');
+    await draw({ instrumentId: 'XNGS:AAPL', candles: kept, status: 'ready', periods, notice });
+    const chart = document.querySelector('.vxs-chart')!;
+    expect(chart.querySelector(':scope > .vxs-stale')?.nextElementSibling?.className).toBe('vxs-chart-stage');
+    expect(document.querySelector('.vxs-chart-overlay')).toBeNull();
+    expect(calls.created).toHaveLength(1);
+    expect(calls.fit).toBe(1);
+    expect(calls.ranges).toHaveLength(0);
+    // The kept candles are the same array: nothing is redrawn.
+    expect(calls.candles.length).toBe(setDataCalls);
+    await draw({ instrumentId: 'XNGS:AAPL', candles: kept, status: 'ready', periods });
+    expect(document.querySelector('.vxs-stale')).toBeNull();
+    expect(calls.fit).toBe(1);
+    expect(calls.created).toHaveLength(1);
+    await draw({ instrumentId: 'XJPX:N225', candles: [], status: 'error', errorText: 'stocks.invalidData' });
+    expect(document.querySelector('.vxs-chart-overlay')?.textContent).toContain('stocks.invalidData');
+    await React.act(async () => root.unmount());
+  });
+
   test('only periods the data covers are offered', async () => {
     const t0 = Date.UTC(2026, 9, 1, 13, 30);
     await draw({ instrumentId: 'XNGS:AAPL', candles: candles(t0, 10), status: 'ready', periods: new Map([['all', { from: t0, to: t0 + 10 * SLOT }], ['1D', { from: t0, to: t0 + 10 * SLOT }]]) });

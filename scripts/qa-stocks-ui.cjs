@@ -71,10 +71,14 @@ async function context(browser, { width = 1440, height = 900, lang = 'ru', token
   await ctx.routeWebSocket('**/*', socket => socket.close());
   const page = await ctx.newPage();
   page.on('pageerror', error => report.pageErrors.push({ url: page.url(), message: error.message }));
-  const log = [];
+  // Counted when issued (so every read, aborted ones too, is counted at once);
+  // body bytes are filled in when the response has finished.
+  const log = [], entries = new Map();
+  page.on('request', request => { const entry = { url: request.url(), type: request.resourceType(), bytes: 0 }; entries.set(request, entry); log.push(entry); });
   page.on('requestfinished', async request => {
     const sizes = await request.sizes().catch(() => null);
-    log.push({ url: request.url(), type: request.resourceType(), bytes: sizes ? sizes.responseBodySize : 0 });
+    const entry = entries.get(request);
+    if (entry && sizes) entry.bytes = sizes.responseBodySize;
   });
   return { ctx, page, log };
 }
@@ -314,6 +318,137 @@ async function failuresAndRetry(browser) {
   await ctx.close();
 }
 
+/**
+ * Failed refreshes over kept data, contract violations and the 15-minute
+ * cadence, on a controlled page clock (no real 15-minute waits). Chart pixels
+ * are compared to prove the same instrument, the same data and the same zoom.
+ */
+const historyURL = id => STOCK + '/stocks/history/' + encodeURIComponent(id);
+const cors = { 'Access-Control-Allow-Origin': ORIGIN };
+// After page.clock.fastForward the first real mouse click can be lost (a Playwright
+// fake-clock input quirk; without the fake clock every click lands). Clicks that
+// follow a fast-forward are dispatched to the element; pointer delivery is
+// covered by the scenarios without a fake clock.
+const tap = locator => locator.dispatchEvent('click');
+async function plot(page) { await page.mouse.move(1, 1); await page.waitForTimeout(250); return page.locator('.vxs-chart-host').screenshot(); }
+async function refreshStates(browser) {
+  for (const [width, height] of [[1440, 900], [390, 844]]) {
+    const phone = width <= 860;
+    const { ctx, page, log } = await context(browser, { width, height });
+    await page.clock.install();
+    await page.goto(ORIGIN + href(AAPL)); await panelReady(page);
+    if (!phone) {
+      // A reader's zoom: two wheel steps over the plot.
+      const box = await page.locator('.vxs-chart-host').boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.wheel(0, -300); await page.waitForTimeout(200); await page.mouse.wheel(0, -300);
+    }
+    const zoomed = await plot(page);
+    const startReads = stockReads(log);
+    await page.clock.fastForward('14:00'); await settle(page);
+    check(`${width}: nothing is read inside the 15-minute window`, JSON.stringify(stockReads(log)) === JSON.stringify(startReads), { startReads, now: stockReads(log) });
+    await page.clock.fastForward('01:30'); await settle(page);
+    const cadence = stockReads(log);
+    check(`${width}: at 15 minutes exactly one catalogue and one history read`, cadence.catalogue === startReads.catalogue + 1 && cadence.history === startReads.history + 1, { startReads, cadence });
+    check(`${width}: a successful refresh of the same instrument keeps its zoom and pixels`, Buffer.compare(await plot(page), zoomed) === 0);
+
+    // Refresh → 503: the chart stays, a compact warning with the data's own time and a retry.
+    await page.route(historyURL(AAPL), route => route.fulfill({ status: 503, headers: cors, body: '{"error":"unavailable"}' }));
+    await page.clock.fastForward('15:30');
+    await page.locator('.vxs-chart .vxs-stale').waitFor();
+    const stale = await page.evaluate(() => ({ text: document.querySelector('.vxs-chart .vxs-stale')?.textContent, overlay: !!document.querySelector('.vxs-chart-overlay'), charts: document.querySelectorAll('.tv-lightweight-charts').length, symbol: document.querySelector('.vxs-strip-id h2')?.textContent, instrument: document.querySelector('.vxs-chart-host')?.getAttribute('data-instrument') }));
+    check(`${width}: refresh 503 → warning over kept AAPL data, no overlay, one chart`, stale.text?.includes('Не удалось обновить данные. Показаны последние полученные значения') && /Последняя свеча: .*(GMT|EDT|EST)/.test(stale.text) && !stale.overlay && stale.charts === 1 && stale.symbol === 'AAPL' && stale.instrument === AAPL, stale);
+    await shot(page, `panel-ru-${width}-refresh-failed`);
+    await page.unroute(historyURL(AAPL));
+    const beforeRetry = stockReads(log).history;
+    await page.locator('.vxs-chart .vxs-stale button').evaluate(button => { button.click(); button.click(); });
+    await page.waitForFunction(() => !document.querySelector('.vxs-stale')); await settle(page);
+    check(`${width}: retry clicked twice reads once and clears the warning`, stockReads(log).history === beforeRetry + 1, { beforeRetry, now: stockReads(log).history });
+    check(`${width}: after the retry the same data and zoom are on screen`, Buffer.compare(await plot(page), zoomed) === 0);
+
+    // Refresh → timeout: an ordinary wait first, an error only after the 12 s deadline.
+    await page.route(historyURL(AAPL), () => { /* never answers */ });
+    await page.clock.fastForward('15:30'); await page.waitForTimeout(400);
+    check(`${width}: a refresh in flight is not an error and keeps the chart`, !(await page.locator('.vxs-stale').count()) && (await charts(page)).overlay === null);
+    await page.clock.fastForward('00:13');
+    await page.locator('.vxs-chart .vxs-stale').waitFor();
+    check(`${width}: refresh timeout → warning over kept data`, (await charts(page)).overlay === null && (await charts(page)).charts === 1);
+    await page.unroute(historyURL(AAPL));
+    await tap(page.locator('.vxs-chart .vxs-stale button'));
+    await page.waitForFunction(() => !document.querySelector('.vxs-stale'));
+    check(`${width}: retry after the timeout clears the warning`, Buffer.compare(await plot(page), zoomed) === 0);
+
+    // Catalogue refresh fails: the list keeps its rows, warned; so does the overview.
+    await page.route(STOCK + '/stocks', route => route.fulfill({ status: 503, headers: cors, body: '{"error":"unavailable"}' }));
+    await page.clock.fastForward('15:30'); await settle(page);
+    if (phone) { await tap(page.locator('.vxs-list-button')); await page.locator('.vxs-drawer').waitFor(); }
+    const list = phone ? '.vxs-drawer' : '.vxs-list-tile';
+    await page.locator(`${list} .vxs-stale`).waitFor();
+    check(`${width}: catalogue refresh fails → list rows kept with the warning`, (await page.locator(`${list} .vxs-row`).count()) === 250);
+    await shot(page, `panel-ru-${width}-catalogue-refresh-failed`);
+    if (phone) await tap(page.locator('.vxs-drawer-head button'));
+    await tap(page.locator(phone ? '.vxs-strip .vxs-view-switch a' : '.vxs-list-head .vxs-view-switch a', { hasText: 'Обзор' }));
+    await page.locator('.vxo-page .vxs-stale').waitFor();
+    check(`${width}: overview keeps 250 rows with the warning`, (await page.locator('.vxo-row-link').count()) === 250 && !(await page.locator('.vxo-state').count()));
+    await shot(page, `overview-ru-${width}-refresh-failed`);
+    // A hidden tab starts no extra polling, even while a refresh is failing.
+    const hiddenReads = stockReads(log);
+    await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
+    await page.clock.fastForward('45:00'); await settle(page);
+    check(`${width}: hidden tab: no reads for 45 minutes`, JSON.stringify(stockReads(log)) === JSON.stringify(hiddenReads), { hiddenReads, now: stockReads(log) });
+    await page.unroute(STOCK + '/stocks');
+    await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: false }); document.dispatchEvent(new Event('visibilitychange')); });
+    await page.waitForFunction(() => !document.querySelector('.vxs-stale')); await settle(page);
+    check(`${width}: visible again: one catalogue read, warning cleared`, stockReads(log).catalogue === hiddenReads.catalogue + 1 && stockReads(log).history === hiddenReads.history, { hiddenReads, now: stockReads(log) });
+    report.measurements[`refreshReads${width}`] = { start: startReads, atFifteen: cadence, end: stockReads(log) };
+    await ctx.close();
+  }
+}
+
+async function contractStates(browser) {
+  const { ctx, page, log } = await context(browser, { width: 1440, height: 900 });
+  await page.clock.install();
+  const foreign = async route => {
+    const other = await route.fetch({ url: historyURL(MSFT) });
+    route.fulfill({ response: other, headers: { ...other.headers(), ...cors } });
+  };
+  // First read answers with another instrument: an error, never MSFT's candles.
+  await page.route(historyURL(AAPL), foreign);
+  await page.goto(ORIGIN + href(AAPL)); await page.locator('.vxs-chart-overlay .vxs-retry').waitFor();
+  const first = await page.evaluate(() => ({ overlay: document.querySelector('.vxs-chart-overlay')?.textContent, ohlc: !!document.querySelector('.vxs-ohlc'), spinner: !!document.querySelector('.vxs-spinner'), instrument: document.querySelector('.vxs-chart-host')?.getAttribute('data-instrument') }));
+  check('HTTP 200 with another instrumentId → data error with retry, no candles, no spinner', first.overlay?.includes('Получен некорректный ответ. Данные не показаны') && !first.ohlc && !first.spinner && first.instrument === AAPL, first);
+  await shot(page, 'panel-ru-1440-foreign-instrument');
+  await page.unroute(historyURL(AAPL));
+  await page.locator('.vxs-chart-overlay .vxs-retry').click(); await page.waitForFunction(() => !document.querySelector('.vxs-chart-overlay')); await settle(page);
+  const aapl = await plot(page);
+  const price = await page.locator('.vxs-strip-price strong').textContent();
+  // A later answer with another instrument: the last valid AAPL page stays, warned.
+  await page.route(historyURL(AAPL), foreign);
+  await page.clock.fastForward('15:30');
+  await page.locator('.vxs-chart .vxs-stale').waitFor();
+  const kept = await page.evaluate(() => ({ text: document.querySelector('.vxs-stale')?.textContent, symbol: document.querySelector('.vxs-strip-id h2')?.textContent }));
+  check('foreign answer after a valid AAPL page → AAPL kept with the invalid-data warning', kept.text?.includes('Получен некорректный ответ. Показаны последние корректные значения') && kept.symbol === 'AAPL' && (await page.locator('.vxs-strip-price strong').textContent()) === price, kept);
+  await shot(page, 'panel-ru-1440-foreign-instrument-kept');
+  await page.unroute(historyURL(AAPL));
+  await tap(page.locator('.vxs-chart .vxs-stale button')); await page.waitForFunction(() => !document.querySelector('.vxs-stale'));
+  check('retry → AAPL again, identical pixels', Buffer.compare(await plot(page), aapl) === 0);
+  // Fast AAPL → MSFT → AAPL with a slow MSFT answer: AAPL stays AAPL.
+  await page.route(historyURL(MSFT), route => setTimeout(() => route.continue().catch(() => {}), 1500));
+  await tap(page.locator(listLink(MSFT))); await tap(page.locator(listLink(AAPL)));
+  await page.waitForTimeout(2200); await settle(page);
+  const back = await page.evaluate(() => ({ symbol: document.querySelector('.vxs-strip-id h2')?.textContent, instrument: document.querySelector('.vxs-chart-host')?.getAttribute('data-instrument'), overlay: !!document.querySelector('.vxs-chart-overlay'), charts: document.querySelectorAll('.tv-lightweight-charts').length }));
+  check('fast AAPL → MSFT → AAPL: AAPL drawn, late MSFT dropped, one chart', back.symbol === 'AAPL' && back.instrument === AAPL && !back.overlay && back.charts === 1 && Buffer.compare(await plot(page), aapl) === 0, back);
+  await page.unroute(historyURL(MSFT));
+  await ctx.close();
+  // A valid empty page is "no history yet", not an error.
+  const empty = await context(browser, { width: 1440, height: 900 });
+  await empty.page.route(historyURL(AAPL), route => route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: '{"candles":[],"next":null}' }));
+  await empty.page.goto(ORIGIN + href(AAPL)); await panelReady(empty.page);
+  const view = await empty.page.evaluate(() => ({ overlay: document.querySelector('.vxs-chart-overlay')?.textContent, retry: !!document.querySelector('.vxs-chart-overlay button'), stale: !!document.querySelector('.vxs-stale') }));
+  check('valid empty history → «История пока недоступна», no error, no retry', view.overlay === 'История пока недоступна' && !view.retry && !view.stale, view);
+  await empty.ctx.close();
+}
+
 async function keyboard(browser) {
   const { ctx, page } = await context(browser, { width: 390, height: 844 });
   await page.goto(ORIGIN + href(AAPL)); await panelReady(page);
@@ -489,6 +624,8 @@ function bundle(dist) {
       await states(browser);
       await filtersFavoritesSort(browser);
       await failuresAndRetry(browser);
+      await refreshStates(browser);
+      await contractStates(browser);
       await keyboard(browser);
       await routeRun(browser);
     } finally { await close(); }

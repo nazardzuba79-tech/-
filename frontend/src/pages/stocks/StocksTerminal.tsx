@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, List, X } from 'lucide-react';
-import { catalogueHistoryPath, useStocks, type StockCatalogue, type StockCandle, type StockHistory, type StockInstrument, type StockRead } from '../../lib/stocks';
+import { catalogueHistoryPath, stockHistoryCheck, useStocks, type StockCatalogue, type StockCandle, type StockHistory, type StockInstrument, type StockRead } from '../../lib/stocks';
 import { useLanguage } from '../../lib/i18n';
 import { formatStockPrice, formatStockTime } from './stockFormat';
-import { chartPeriods, readLastInstrument, readPanelFilter, writeLastInstrument, writePanelFilter, type ChartPeriod } from './stockModel';
+import { chartPeriods, newestClose, readLastInstrument, readPanelFilter, writeLastInstrument, writePanelFilter, type ChartPeriod } from './stockModel';
 import { StockChart, type ChartStatus } from './StockChart';
 import { StockFacts } from './StockFacts';
 import { StockList, type ListFilter } from './StockList';
-import { FavoriteStar, StockChange, StockLogo, ViewSwitch } from './StockParts';
+import { FavoriteStar, StaleNotice, StockChange, StockLogo, ViewSwitch } from './StockParts';
 import './stocksTerminal.css';
 
 interface Props {
@@ -28,7 +28,7 @@ function newest(a: StockCandle | null, b: StockCandle | undefined): StockCandle 
 
 /** Dark working panel: list, one chart of the chosen instrument, its facts. Information only, no trading. */
 export default function StocksTerminal({ instrumentId, catalogue, favorites, onToggleFavorite }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const items = catalogue.data?.instruments ?? [];
   const selected = instrumentId ? items.find(item => item.instrumentId === instrumentId) : undefined;
@@ -37,7 +37,14 @@ export default function StocksTerminal({ instrumentId, catalogue, favorites, onT
   const drawerButton = useRef<HTMLButtonElement>(null);
   const drawerSearch = useRef<HTMLInputElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
-  const listStatus = catalogue.data ? 'ready' : catalogue.error ? 'error' : 'loading';
+  // Having data and the state of its latest refresh are separate: kept data
+  // stays on screen and a failed refresh is reported beside it.
+  const listStatus = catalogue.data ? 'ready' : catalogue.loading ? 'loading' : catalogue.error ? 'error' : 'loading';
+  const errorText = catalogue.failure === 'invalid' ? 'stocks.invalidData' : 'stocks.unavailable';
+  const listNotice = catalogue.error && catalogue.data
+    ? <StaleNotice failure={catalogue.failure} busy={catalogue.loading} onRetry={catalogue.retry}
+      time={formatStockTime(newestClose(catalogue.data.instruments), lang)} />
+    : null;
 
   const changeFilter = (next: ListFilter) => { setFilter(next); writePanelFilter(next); };
 
@@ -70,7 +77,7 @@ export default function StocksTerminal({ instrumentId, catalogue, favorites, onT
   const closeDrawer = () => { setDrawer(false); drawerButton.current?.focus(); };
 
   const list = (inDrawer: boolean) => (
-    <StockList items={items} status={listStatus} onRetry={catalogue.retry} selectedId={selected?.instrumentId}
+    <StockList items={items} status={listStatus} onRetry={catalogue.retry} errorText={errorText} notice={listNotice} selectedId={selected?.instrumentId}
       favorites={favorites} onToggleFavorite={onToggleFavorite} filter={filter} onFilter={changeFilter}
       onPick={inDrawer ? () => setDrawer(false) : undefined} searchRef={inDrawer ? drawerSearch : undefined} />
   );
@@ -96,7 +103,7 @@ export default function StocksTerminal({ instrumentId, catalogue, favorites, onT
           <div className="vxs-tile vxs-strip vxs-strip-empty">{listButton}<ViewSwitch view="panel" panelTo={panelTo} /></div>
           <div className="vxs-tile vxs-choose" role="status">
             {listStatus === 'error' ? <>
-              <h2>{t('stocks.unavailable')}</h2>
+              <h2>{t(errorText)}</h2>
               <button type="button" className="vxs-retry" onClick={catalogue.retry}>{t('stocks.retry')}</button>
             </> : listStatus === 'loading' || restoring ? <p>{t('stocks.loading')}</p>
             : <>
@@ -123,16 +130,23 @@ function InstrumentView({ instrument, favorite, onToggleFavorite, listButton, pa
   instrument: StockInstrument; favorite: boolean; onToggleFavorite: (id: string) => void; listButton: JSX.Element; panelTo: string;
 }) {
   const { t, lang } = useLanguage();
-  const history = useStocks<StockHistory>(catalogueHistoryPath(instrument.instrumentId));
-  // A body that names another instrument is never drawn under this one.
-  const own = history.data && (!history.data.instrumentId || history.data.instrumentId === instrument.instrumentId) ? history.data : undefined;
+  // Checked before caching: another instrument's (or a malformed) page is an
+  // error and never replaces this instrument's last valid page.
+  const accept = useMemo(() => stockHistoryCheck(instrument), [instrument.instrumentId, instrument.currency]);
+  const history = useStocks<StockHistory>(catalogueHistoryPath(instrument.instrumentId), accept);
+  const own = history.data;
   const candles = own?.candles ?? EMPTY;
   const periods = useMemo(() => chartPeriods(candles, instrument.exchangeTimeZone), [candles, instrument.exchangeTimeZone]);
   const [chosen, setChosen] = useState<ChartPeriod>('all');
   const period = periods.has(chosen) ? chosen : 'all';
-  const status: ChartStatus = candles.length ? 'ready' : own ? 'empty' : history.error ? 'error' : 'loading';
+  const status: ChartStatus = candles.length ? 'ready' : own ? 'empty' : history.loading ? 'loading' : history.error ? 'error' : 'loading';
   const latest = newest(instrument.latest, candles[candles.length - 1]);
   const zone = instrument.exchangeTimeZone;
+  const lastCandle = candles[candles.length - 1];
+  const notice = history.error && own
+    ? <StaleNotice failure={history.failure} busy={history.loading} onRetry={history.retry}
+      time={lastCandle ? formatStockTime(lastCandle.closeTimeUtc, lang, zone) : null} />
+    : null;
 
   return <>
     <section className="vxs-center" aria-label={instrument.name}>
@@ -154,7 +168,8 @@ function InstrumentView({ instrument, favorite, onToggleFavorite, listButton, pa
       </div>
       <div className="vxs-tile vxs-chart-tile">
         <StockChart instrumentId={instrument.instrumentId} candles={candles} currency={instrument.currency} timeZone={zone}
-          status={status} periods={periods} period={period} onPeriod={setChosen} onRetry={history.retry} />
+          status={status} periods={periods} period={period} onPeriod={setChosen} onRetry={history.retry}
+          errorText={history.failure === 'invalid' ? 'stocks.invalidData' : 'stocks.unavailable'} notice={notice} />
       </div>
       <details className="vxs-tile vxs-about">
         <summary>{t('stocks.about')}</summary>

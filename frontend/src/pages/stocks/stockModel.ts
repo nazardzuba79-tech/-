@@ -143,6 +143,13 @@ export function writePanelFilter(filter: Pick<StockFilters, 'tab' | 'query'>): v
   try { sessionStorage.setItem(PANEL_FILTER_KEY, JSON.stringify(filter)); } catch { /* storage unavailable */ }
 }
 
+/** Close time of the newest candle in the catalogue: the data's own time, not the browser's. */
+export function newestClose(items: readonly StockInstrument[]): number | null {
+  let newest: number | null = null;
+  for (const item of items) if (item.latest && (newest === null || item.latest.closeTimeUtc > newest)) newest = item.latest.closeTimeUtc;
+  return newest;
+}
+
 export type ChartPeriod = '1D' | '5D' | '1M' | 'all';
 
 export interface PeriodRange { from: number; to: number }
