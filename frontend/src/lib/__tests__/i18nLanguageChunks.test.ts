@@ -380,7 +380,10 @@ describe('translation integrity', () => {
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
-      expect(Object.keys(dicts[code]).filter(key => key.startsWith('stocks.'))).toHaveLength(19 + 56 + 4);
+      expect(Object.keys(dicts[code]).filter(key => key.startsWith('stocks.'))).toHaveLength(19 + 56 + 4 + 5);
+      for (const key of ['widgetDelayed', 'widgetOnly', 'widgetNotice', 'widgetLoadError', 'widgetUnavailable']) {
+        expect(dicts[code]['stocks.' + key]?.trim().length).toBeGreaterThan(0);
+      }
       expect(Object.entries(dicts[code]).filter(([key]) => key.startsWith('stocks.')).every(([, value]) => value.trim().length > 0)).toBe(true);
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       // Added for the approved compact order-panel disclosure; older copy remains frozen.

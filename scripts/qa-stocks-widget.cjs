@@ -20,6 +20,10 @@ async function main() {
     let blocked = false;
     await ctx.route('**/*',async route => {
       const req = route.request(),u=new URL(req.url());
+      const official=/(^|\.)tradingview(-widget)?\.com$/.test(u.hostname);
+      if(u.hostname!=='127.0.0.1' && !official && ['fetch','xhr'].includes(req.resourceType())) {
+        report.financialRequests.push(u.hostname+u.pathname);return route.abort();
+      }
       if(u.hostname==='127.0.0.1') {
         if (/^\/api(?:\/|$)/.test(u.pathname)) {report.financialRequests.push(u.pathname);return route.abort();}
         if(/^\/stocks(?:\/history)?\//.test(u.pathname) && req.resourceType()!=='document') {report.stockReads.push(u.pathname);return route.abort();}
@@ -33,6 +37,7 @@ async function main() {
       return route.abort();
     });
     const page=await ctx.newPage(); page.on('pageerror',error=>report.pageErrors.push(error.message));
+    page.on('websocket',socket=>{const h=new URL(socket.url()).hostname;if(!/(^|\.)tradingview(-widget)?\.com$/.test(h))report.financialRequests.push('unexpected websocket host '+h);});
     const cdp=await ctx.newCDPSession(page);
     await cdp.send('Performance.enable');
     const metric=async()=>{await cdp.send('HeapProfiler.collectGarbage');const m=await cdp.send('Performance.getMetrics');return {...await cdp.send('Memory.getDOMCounters'),jsHeapUsedBytes:m.metrics.find(x=>x.name==='JSHeapUsedSize').value};};

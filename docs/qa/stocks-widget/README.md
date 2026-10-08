@@ -148,7 +148,7 @@ widget only** because Hindi is absent from the official
 [supported-language list](https://www.tradingview.com/widget-docs/faq/languages/).
 The surrounding VOLTEX UI remains Hindi; this fallback is explicitly tested.
 
-Focused frontend regression: **41 tests / 5 suites passed**. Default-OFF build
+Focused frontend regression: **78 tests / 6 suites passed** (including frozen translation integrity). Default-OFF build
 and widget build pass (existing >500 kB chunk warning retained). The attempted
 full local frontend run exceeded its 240-second bound and also exposed existing
 Windows CRLF-sensitive source assertions; no full local pass is claimed. Exact
