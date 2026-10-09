@@ -23,6 +23,10 @@ test('quotes use the shared spot/CFD snapshot without mixing price domains', () 
 test('stocks and absent CFD instruments never inherit demo, spot or made-up tradable prices', () => {
   const m = market({ tickers: [{ pair: 'AAPL', price: 123 }], cfd: { tickers: [{ symbol: 'AAPL', price: '123', status: 'live' }] } });
   for (const row of SCENE_INSTRUMENTS.filter(x => x.market === 'stock')) expect(sceneQuote(row, m, 'en').price).toBeNull();
+  for (const row of HERO_INSTRUMENTS.filter(x => ['NFLX', 'AMD'].includes(x.id))) {
+    expect(row.market).toBe('stock');
+    expect(sceneQuote(row, market({ tickers: [{ pair: row.id, price: 123 }], cfd: { tickers: [{ symbol: row.id, price: '123', status: 'live' }] } }), 'en').price).toBeNull();
+  }
   for (const id of ['US500', 'NAS100']) expect(sceneQuote(instrument(id), m, 'en').price).toBeNull();
 });
 
@@ -43,7 +47,7 @@ test('CFD error quotes fail closed, market closed/sampled values retain the exis
 
 test('exactly 20 distinct requested assets including the central BTC; unchanged quote roster', () => {
   expect(HERO_INSTRUMENTS.map(x => x.id)).toEqual([
-    'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'ADAUSDT', 'DOGEUSDT',
+    'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'NFLX', 'AMD',
     'TRXUSDT', 'AAPL', 'NVDA', 'TSLA', 'META', 'AMZN', 'MSFT', 'US500', 'NAS100',
     'EURUSD', 'XAUUSD', 'WTI', 'USDJPY',
   ]);

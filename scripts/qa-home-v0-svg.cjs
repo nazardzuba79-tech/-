@@ -4,9 +4,9 @@ const {chromium}=require(process.env.HOME_QA_PLAYWRIGHT || 'playwright');
 const {fixture}=require('./qa-home-v0-fixture.cjs');
 const {pixels}=require('./qa-home-v0-pixels.cjs');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const DESKTOP_IDS=['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','BNBUSDT','ADAUSDT','DOGEUSDT','TRXUSDT','AAPL','NVDA','TSLA','META','AMZN','MSFT','US500','NAS100','EURUSD','XAUUSD','WTI','USDJPY'];
+const DESKTOP_IDS=['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','BNBUSDT','NFLX','AMD','TRXUSDT','AAPL','NVDA','TSLA','META','AMZN','MSFT','US500','NAS100','EURUSD','XAUUSD','WTI','USDJPY'];
 const MOBILE_IDS=['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','AAPL','NVDA','TSLA','META','MSFT','US500','EURUSD','XAUUSD'];
-const ICONS=['btc','eth','sol','xrp','bnb','ada','doge','trx','apple','nvidia','tesla','meta','amazon','microsoft','us500','nas100','eurusd','gold','oil','usdjpy'];
+const ICONS=['btc','eth','sol','xrp','bnb','netflix','amd','trx','apple','nvidia','tesla','meta','amazon','microsoft','us500','nas100','eurusd','gold','oil','usdjpy'];
 
 // Inspect the rendered DOM, not an imported copy of the orbit implementation.
 function rosterAndGeometry(sample,compact=false) {

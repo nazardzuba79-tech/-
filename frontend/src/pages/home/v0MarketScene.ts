@@ -40,12 +40,16 @@ export const SCENE_INSTRUMENTS: readonly SceneInstrument[] = [
 
 // Twenty distinct owner-selected assets TOTAL: BTC centre, then rings of 6/6/7.
 // Keep the existing quote roster/domain mapping independent of presentation.
-const HERO_IDS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'ADAUSDT', 'DOGEUSDT',
+const HERO_IDS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'NFLX', 'AMD',
   'TRXUSDT', 'AAPL', 'NVDA', 'TSLA', 'META', 'AMZN',
   'MSFT', 'US500', 'NAS100', 'EURUSD', 'XAUUSD', 'WTI', 'USDJPY'];
-export const HERO_INSTRUMENTS = HERO_IDS.map(id => SCENE_INSTRUMENTS.find(item => item.id === id)!);
+export const HERO_INSTRUMENTS: readonly SceneInstrument[] = HERO_IDS.map(id => {
+  // Presentation-only stock identities; no new quote subscription or trading entry.
+  if (id === 'NFLX' || id === 'AMD') return { id, ticker: id, market: 'stock', symbol: id, metal: 'graphite' };
+  return SCENE_INSTRUMENTS.find(item => item.id === id)!;
+});
 export const HERO_ICONS: Readonly<Record<string, string>> = {
-  BTCUSDT: 'btc', ETHUSDT: 'eth', SOLUSDT: 'sol', XRPUSDT: 'xrp', BNBUSDT: 'bnb', ADAUSDT: 'ada', DOGEUSDT: 'doge',
+  BTCUSDT: 'btc', ETHUSDT: 'eth', SOLUSDT: 'sol', XRPUSDT: 'xrp', BNBUSDT: 'bnb', NFLX: 'netflix', AMD: 'amd',
   TRXUSDT: 'trx', AAPL: 'apple', NVDA: 'nvidia', TSLA: 'tesla', META: 'meta', AMZN: 'amazon', MSFT: 'microsoft',
   US500: 'us500', NAS100: 'nas100', EURUSD: 'eurusd', XAUUSD: 'gold', WTI: 'oil', USDJPY: 'usdjpy',
 };

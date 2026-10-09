@@ -1,6 +1,6 @@
 # Hero asset icons
 
-20 instruments: BTC, ETH, SOL, XRP, BNB, ADA, DOGE, TRX, AAPL, NVDA,
+20 instruments: BTC, ETH, SOL, XRP, BNB, NFLX, AMD, TRX, AAPL, NVDA,
 TSLA, META, AMZN, MSFT, US500, NAS100, EUR/USD, XAU, WTI, USD/JPY.
 All SVGs are served locally at runtime; no CDN requests, AI artwork, embedded
 bitmaps, scripts, filters, or font downloads.
@@ -15,8 +15,9 @@ The newly added current icons use revision `98820a4dc8c363ca72fa2c0d294ea4a0a9bb
 
 - `sol.svg`: [Solana](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/solana.svg), three slanted bars.
 - `bnb.svg`: [Binance](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/binance.svg), diamond mark.
-- `ada.svg`: [Cardano](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/cardano.svg), radial dot mark.
-- `doge.svg`: [Dogecoin](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/dogecoin.svg), crossed D mark.
+- `netflix.svg`: [Netflix](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/netflix.svg), red N mark for NFLX.
+- `amd.svg`: [AMD](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/amd.svg), the two arrow-mark subpaths, with the wordmark omitted and viewBox tightened for legibility. The second subpath's relative initial move is converted to its equivalent absolute coordinate; its geometry is unchanged.
+- `ada.svg` and `doge.svg` retain the [Cardano](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/cardano.svg) and [Dogecoin](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/dogecoin.svg) paths for compatibility; they are no longer shown in the Hero.
 - `tesla.svg`: [Tesla](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/tesla.svg), T mark.
 - `meta.svg`: [Meta](https://github.com/simple-icons/simple-icons/blob/98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d/icons/meta.svg), infinity mark.
 
@@ -46,7 +47,7 @@ assets use deliberately neutral original vector symbols, accompanied by
 the instrument ticker in the Hero:
 
 - `gold.svg`: bullion bars for XAU.
-- `oil.svg`: barrel/drop for WTI.
+- `oil.svg`: solid steel oil drum with broad hoops and a contrasting oil drop for WTI; an original neutral pictogram designed to remain legible at small icon sizes, not a corporate logo.
 - `eurusd.svg`: euro and dollar symbols.
 - `usdjpy.svg`: dollar and yen symbols.
 - `us500.svg`: index bars/line for US500.
