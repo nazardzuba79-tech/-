@@ -1,26 +1,26 @@
-import { HERO_INSTRUMENTS, orbitPose, SCENE_WIDTH } from './v0MarketScene';
+import { heroInstruments, orbitPose, SCENE_WIDTH } from './v0MarketScene';
 
 export type SceneController = { setActive(active: boolean): void; dispose(): void };
 
 /** Local SVG layers, one active-time RAF. No canvas, WebGL, textures or network. */
 export function createCoinScene(host: HTMLElement, compact: boolean): SceneController {
   const nodes = Array.from(host.querySelectorAll<HTMLElement>('.v0-coin'));
+  const instruments = heroInstruments(compact);
   let disposed = false, active = false, raf = 0, previous = 0, elapsed = 0, frames = 0;
-  let scale = host.clientWidth / SCENE_WIDTH;
+  // Match the SVG guides at fractional CSS widths (clientWidth rounds pixels).
+  let scale = host.getBoundingClientRect().width / SCENE_WIDTH;
   const draw = () => {
-    HERO_INSTRUMENTS.forEach((_, i) => {
+    instruments.forEach((_, i) => {
       const node = nodes[i];
       if (!node) return;
       const pose = orbitPose(i, elapsed, compact);
-      node.style.transform = 'translate3d(' + pose.x * scale + 'px,' + pose.y * scale + 'px,0) translate(-50%,-50%) rotate(' + pose.rotation + 'deg) scale(' + pose.scale + ')';
-      const z = String(i === 0 ? 10 : pose.depth > 0 ? 12 : 8);
-      if (node.style.zIndex !== z) node.style.zIndex = z;
+      node.style.transform = 'translate3d(' + pose.x * scale + 'px,' + pose.y * scale + 'px,0) translate(-50%,-50%)';
     });
     host.dataset.frames = String(++frames);
     host.dataset.elapsed = String(elapsed);
   };
   const resize = () => {
-    scale = host.clientWidth / SCENE_WIDTH;
+    scale = host.getBoundingClientRect().width / SCENE_WIDTH;
     nodes.forEach((node, i) => {
       node.style.left = '0';
       node.style.top = '0';
