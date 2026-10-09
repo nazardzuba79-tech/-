@@ -20,15 +20,19 @@
 .hs-root.v0-approved-hero .reference-market-legend { display: flex; align-items: center; gap: 1.2vw; margin-top: 1.2vw; color: #e6bd72; font-size: .85vw; line-height: 1.4; }
 .hs-root.v0-approved-hero .reference-market-legend::before, .hs-root.v0-approved-hero .reference-market-legend::after { content: ''; width: 2vw; height: 1px; background: #b8924e; flex: 0 0 auto; }
 .v0-approved-hero .v0-coins { position: absolute; z-index: 2; left: 30.265596%; top: 2.45098%; width: 25.324274%; height: auto; aspect-ratio: 410 / 570; pointer-events: none; }
-.v0-coin-canvas, .v0-coins-labels { position: absolute; inset: 0; width: 100%; height: 100%; }
-.v0-coin-canvas { display: block; }
-.v0-coins[data-ready=false] .v0-coin-canvas { visibility: hidden; }
+.v0-coins-labels { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 
-.v0-coin { position: absolute; aspect-ratio: 1; transform: translate(-50%, -50%); }
-.v0-coin-fallback { display: block; width: 100%; height: 100%; border-radius: 50%; }
-.v0-coins[data-ready=true] .v0-coin-fallback { visibility: hidden; }
-.v0-quote { position: absolute; top: 97%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: clamp(9px,.67vw,13px); line-height: 1.4; padding: 2px 6px; border: 1px solid #c7a36280; border-radius: 9px; color: #d4dfec; background: #071828ee; }
+.v0-coin { position: absolute; aspect-ratio: 1; transform: translate(-50%, -50%); will-change: transform; }
+.v0-coin-face { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 50%; background: #0c2034; border: 1.5px solid #b69a60; box-shadow: inset 0 0 0 4px #0c2034, inset 0 0 0 5px #324454, 0 6px 16px #0007; }
+.v0-coin-face img { width: 53%; height: 53%; object-fit: contain; }
+.v0-coin-btc .v0-coin-face { background: #dba73a; border-color: #ffe6a5; box-shadow: inset 0 0 0 5px #dba73a, inset 0 0 0 6px #ffedb980, 0 8px 24px #0006; }
+.v0-coin-btc .v0-coin-face img { width: 50%; height: 50%; transform: translateY(-24%); }
+.v0-coin-btc .v0-quote { top: auto; bottom: 9%; padding: 0; border: 0; background: transparent; color: #33260b; }
+.v0-coin-btc .v0-quote strong { color: #33260b; }
+.v0-coin-apple .v0-coin-face img { filter: invert(1); }
+.v0-coin-nvidia .v0-coin-face img { filter: invert(76%) sepia(82%) saturate(784%) hue-rotate(27deg) brightness(98%); }
+.v0-quote { position: absolute; top: 105%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: clamp(9px,.67vw,13px); line-height: 1.4; padding: 2px 6px; border: 1px solid #c7a36280; border-radius: 9px; color: #d4dfec; background: #071828ee; }
 .v0-quote strong { font-weight: 600; color: #f5deaa; }
 @media (max-width: 1100px) and (min-width: 901px) {
   .hs-root.v0-approved-hero .eyebrow { font-size: 9px; }
@@ -50,8 +54,8 @@
   .hs-root.v0-approved-hero .product-shortcuts svg { width: 16px; height: 16px; }
   .hs-root.v0-approved-hero .reference-market-legend { margin-top: 18px; font-size: 12px; gap: 12px; }
   .hs-root.v0-approved-hero .reference-market-legend::before, .hs-root.v0-approved-hero .reference-market-legend::after { width: 18px; }
-  .v0-approved-hero .v0-coins { position: relative; order: 1; left: auto; top: auto; margin: 0 auto; width: min(95%,410px); height: auto; aspect-ratio: 410 / 190; }
-  .v0-quote { font-size: 10px; flex-direction: column; gap: 0; top: 102%; padding: 2px 5px; }
+  .v0-approved-hero .v0-coins { position: relative; order: 1; left: auto; top: auto; margin: 0 auto; width: min(95%,410px); height: auto; aspect-ratio: 410 / 320; }
+  .v0-quote { font-size: 10px; flex-direction: column; gap: 0; top: 105%; padding: 2px 5px; }
 
   .hs-root.v0-approved-hero .art { position: relative; inset: auto; width: 166%; height: auto; max-width: none; align-self: flex-end; order: 2; margin-top: -40px; margin-bottom: -10%; mask-image: linear-gradient(transparent,#000 14%); }
 }

@@ -5946,3 +5946,10 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Preserved artwork, composition, copy/CTA, quote helpers, lower Homepage and all unrelated trading/backend products. No merge/deploy/production writes.
 - Local at implementation: 176 Homepage tests and TypeScript/Vite pass; real 75.663s cycle covers all 24 plus continuation and 42.84% rendered-layer pixel change. Broader responsive/lifecycle/performance runs and exact-head CI are tracked in the PR; do not infer their completion from this entry.
 - Reproduction and artifact details: docs/qa/home-v0-motion/README.md. Owner must visually confirm real motion before publication.
+
+
+## Codex — 2026-10-09 — Hero recognizable SVGs and continuous orbits (Draft #485)
+- Owner revised the previous 24-centre concept: BTC stays dominant, seven specified markets orbit it. Previous exact head f50c884e8bce9f395ebbed02404f4ebe7b421421 remains the comparison baseline; current main df0573e344f685be9ecd35c7a116d333db71da25 merged safely before edits.
+- Replaced Three medallions and synthetic relief artwork with eight local sourced glyphs/pictograms and one 30fps DOM-transform RAF. Independent ellipses/phase/speed modulation never stop at anchors; bounded modulation avoids overtaking.
+- Quote helpers/full quote roster, all other homepage blocks, background, laptop, copy, routing and financial behavior preserved. No new network API or dependency. Removed unused pseudo-artwork generator.
+- Material files: HomeV0Coins, v0CoinRenderer, v0MarketScene, scoped CSS, asset-icons, scene tests and browser/performance QA. Latest browser evidence and measurements must be read from the PR; no production change or owner visual approval claimed here.

@@ -41,10 +41,10 @@ const rows = [];
     // lazy import in the baseline is not a zero-cost animation result.
     await page.waitForFunction(() => {
       const scene = document.querySelector('.v0-coins');
-      return scene?.dataset.ready === 'true' && scene.dataset.active === 'true' && scene.__voltexHeroSceneStats?.frames > 0;
+      return scene?.dataset.ready === 'true' && scene.dataset.active === 'true' && Number(scene.__voltexHeroSceneStats?.frames ?? scene.dataset.frames) > 0;
     });
     await wait(2500);
-    const snapshot = async () => ({ metrics: Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(x => [x.name, x.value])), ui: await page.evaluate(() => ({ time: performance.now(), frames: window.__perf.frames, sceneFrames: document.querySelector('.v0-coins')?.__voltexHeroSceneStats.frames ?? 0 })) });
+    const snapshot = async () => ({ metrics: Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(x => [x.name, x.value])), ui: await page.evaluate(() => ({ time: performance.now(), frames: window.__perf.frames, sceneFrames: Number(document.querySelector('.v0-coins')?.__voltexHeroSceneStats?.frames ?? document.querySelector('.v0-coins')?.dataset.frames ?? 0) })) });
     const before = await snapshot(); await wait(6000); const after = await snapshot();
     const perf = await page.evaluate(() => ({ ...window.__perf, renderer: document.querySelector('.v0-coins')?.dataset ? { ...document.querySelector('.v0-coins').dataset, ...document.querySelector('.v0-coins').__voltexHeroSceneStats } : null }));
     const seconds = (after.ui.time - before.ui.time) / 1000;

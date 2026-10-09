@@ -1,40 +1,37 @@
-# Hero physical orbit — review only
+# Hero SVG orbit — owner revision, review only
 
-Base: 5db75c5fb29870b38624db265503531fe943f024. No production publication is authorized. Owner must review the real animation before merge/deploy.
+This supersedes the earlier 24-assets-taking-centre proposal in Draft PR #485. The owner's latest request is a dominant BTC surrounded by seven named markets: ETH, AAPL, NVDA, XAU, WTI, EUR/USD, US500. The full 24-entry quote roster and quote-domain helpers remain unchanged; this is presentation only.
 
-## Root cause
+## Cause and correction
 
-- The former renderer attached eight groups to fixed X/Y anchors and exchanged front/back maps. Its 3px bob was not orbital movement.
-- The 1.6s slot scheduler revisited the centre every 12.8s. With 24 instruments and eight fixed slots, only BTC/SOL/DOGE reached the centre, even though the old all-visible-roster test passed.
-- Context loss disabled the renderer permanently: there was no context-restored listener.
-- Baseline browser evidence: all eight slot displacements were 0px; real loss/restore left ready=false, active=false with normal motion enabled.
+Production still has the old static-slot implementation; PR #485 has never been merged. The previous review implementation physically moved its meshes, but smoothstep between anchors decelerated to zero at every anchor. Embossed pseudo-logo illustrations also obscured brand identity.
 
-## Change
+The revised scene has eight stable local SVG identities. Apple/NVIDIA use recognizable Simple Icons paths; BTC/ETH retain the sourced CC0 glyphs without decorative plates. Bullion, barrel/drop, currencies and index bars are honest neutral pictograms, not fabricated company logos. Provenance: frontend/public/images/home-v0/asset-icons/SOURCES.md.
 
-Each of the 24 identities owns a permanent textured mesh and DOM quote. A single active-time clock moves X/Y/Z, perspective scale and restrained rotation along the original anchors. Each asset reaches centre every three seconds; the full period is 72s. At most eight desktop/four mobile objects are visible. Hidden roster members enter/exit through the rear gate. Quotes follow their objects; rear labels fade behind nearer medallion faces.
+One requestAnimationFrame clock writes only translate3d/rotate/scale to eight DOM layers at at most 30fps. Each satellite has its own ellipse, phase and bounded speed modulation. Base circulation takes 28s; modulation periods differ per asset, so they remain spaced rather than lapping and obscuring each other. BTC remains dominant with a small central float. There are no keyframe stops, texture changes, per-frame React updates, WebGL context or GPU resource allocations.
 
-All moving geometry is redrawn transparently, without retained scissor rectangles. The renderer retains its 30fps limit, DPR caps (desktop 1.5/mobile 1), lazy visibility startup and GPU disposal. Restoration preserves phase and still obeys offscreen/hidden/reduced-motion guards. Responsive remounts reset label DOM so old desktop visibility cannot leak into mobile. The Hero medallion Pause/Play control and its CSS are removed; unrelated ticker-tape controls remain unchanged.
+Initial SVGs are readable before effects mount. IntersectionObserver, visibility and reduced-motion handlers control the same loop. Resume excludes paused wall time; unmount cancels RAF and both observers/listeners. Ordinary users see automatic motion. No pause control was added.
 
-No artwork, text, CTA, lower-page content, data sources or pricing logic changed. Quote helpers are byte-identical after line-ending normalization. Approved background SHA256: d88c656c6f8ef003428f344a238cee525abb6969f8927c4a535da6b21fc7836a.
+The background, globe, laptop, terminal, text, links and lower homepage remain unchanged. Mobile scene height now accommodates a real orbit instead of a single row.
 
-## Reproduce and review
+## Reproduce
 
-All browser scripts serve loopback fixtures, deny external traffic and perform no production writes. Prices in recorded browser evidence are isolated QA fixtures, never production code. Missing stock quotes remain an em dash.
-
-Set HOME_QA_PLAYWRIGHT to an installed Playwright module if not on the default module path.
+All browser checks use loopback read-only fixtures and deny external requests. No production writes, credentials, fake market data in application code, or added quote polling.
 
 - node node_modules/jest/bin/jest.js --runInBand --testPathPattern=frontend/src/lib/__tests__/home
 - npm run build --prefix frontend
-- node scripts/qa-home-v0-motion.cjs
 - node scripts/qa-home-v0.cjs
-- node scripts/qa-home-v0-reference.cjs
-- HOME_QA_BASELINE_DIR=<fresh main build> node scripts/qa-home-v0-performance.cjs
-- Repeat the paired performance command with --mobile.
+- node scripts/qa-home-v0-motion.cjs
+- HOME_V0_REFERENCE=docs/qa/home-v0-reference-correction/reference.png node scripts/qa-home-v0-reference.cjs
+- HOME_QA_BASELINE_DIR=<previous PR build> node scripts/qa-home-v0-performance.cjs
+- Repeat performance with --mobile.
 
-The motion script records an unaccelerated 75+ second video, 26 centre samples (BTC through all 24 and continuation), 0/3/10s screenshots, actual WebGL pixel differences and context restoration. It does not accelerate RAF. Coordinate assertions cover BTC and a side medallion; screenshots/video independently show the actual objects. Local complete-cycle run: 75.663s, 42.84% of WebGL-layer pixels changed from 0s to 3s; context loss/recovery preserved phase and respected reduced motion. TypeScript/Vite and 176 Homepage tests passed locally.
+HOME_QA_PLAYWRIGHT can select an installed module. CI uses full bundled Chromium via HOME_QA_BROWSER_CHANNEL=chromium and install --no-shell, without changing resource budgets.
 
-The responsive script covers 1920/1440/1366/430/390/360/320 plus intermediate widths, seven languages, offscreen/hidden/reduced-motion, full mobile cycle, eight route remounts, bounded post-GC heap, login/register, fallback and restoration. The deliberately missing global-summary fixture already retries every 60 seconds; the long-cycle check permits only that existing retry, never quote requests from the animation. The reference script still checks all eight approved anchor coordinates at reduced-motion time zero.
+Responsive QA checks every satellite's actual screen displacement, nine widths including 1920/1440/1366/430/390/360/320, seven languages, loaded icons, overflow, reduced motion, hidden/offscreen pause/resume, eight route unmounts with stopped RAF and bounded post-GC heap, and real login/register forms.
 
-CI uploads output/home-v0/{updated,reference,motion} as an exact-head artifact. Paired performance reports live in output/home-v0/performance*.json; compare medians from alternating baseline/candidate runs with both scenes actively rendering. SwiftShader figures are software-browser evidence, not physical GPU/mobile certification. Existing large-bundle and React SSR fetchPriority warnings are outside this change.
+Motion QA records 34 unaccelerated seconds, actual PNG pixel differences, 0/.5/1/2/3/5/10/20/32/34 screenshots, every asset's coordinates, moving quote attachment and BTC dominance. Canvas absence is asserted: WebGL context loss can no longer freeze this scene.
 
-CI uses the fully downloaded bundled Chromium in its new headless mode (HOME_QA_BROWSER_CHANNEL=chromium, Playwright install --no-shell). This avoids a redundant Headless Shell download: the initial runner fetched full Chromium in seconds but timed out after 14 minutes at 80% of Headless Shell. All browser tests, artifact capture and the 15-minute job budget remain enabled. Local tools may omit the channel override to use the installed headless shell.
+CI uploads reports/video/screenshots as exact-head artifacts. The preserved reference comparison checks the unchanged backdrop, copy and laptop ordering; old fixed-medallion coordinates are deliberately not the new visual contract.
+
+No merge/deploy. Owner visual approval remains required.

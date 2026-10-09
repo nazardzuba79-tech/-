@@ -8,6 +8,10 @@ on:
       - 'scripts/qa-home-v0.cjs'
       - 'scripts/qa-home-v0-reference.cjs'
       - 'scripts/qa-home-v0-motion.cjs'
+      - 'scripts/qa-home-v0-svg.cjs'
+      - 'scripts/qa-home-v0-fixture.cjs'
+      - 'scripts/qa-home-v0-pixels.cjs'
+      - 'frontend/public/images/home-v0/asset-icons/**'
       - 'docs/qa/home-v0-reference-correction/reference.png'
       - '.github/workflows/home-v0-approved.yml'
 permissions:
@@ -45,7 +49,7 @@ jobs:
         run: node scripts/qa-home-v0.cjs
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
-      - name: Real-time 24-centre orbit, rendered pixels and context recovery
+      - name: Real-time SVG orbits, rendered pixels and automatic startup
         run: node scripts/qa-home-v0-motion.cjs
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
