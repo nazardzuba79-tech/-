@@ -1,7 +1,7 @@
 {
-  "startedAt": "2026-10-08T07:33:23.893Z",
+  "startedAt": "2026-10-08T07:51:43.071Z",
   "firstVisit": {
-    "readyMs": 555,
+    "readyMs": 605,
     "marketRequests": 8,
     "metadataRequests": 1,
     "painted": {
@@ -56,7 +56,7 @@
       "tradeRows": 6,
       "tapeBtc": true,
       "badge": "Market data",
-      "overview": "Индекс страха и жадности61GreedРыночные данныеКапитализация$2.40T-0.40%Объём (24ч)$89.00BBTC Dominance55.1%ETH Dominance—Популярные сектораLLayer 1-0.67%Трендовые парыSOL99.78-1.94%ETH2,479.53-1.82%BTC76,746.00-0.67%CFD на активыGGold Spot4349.19-1.02%Торговать CFD",
+      "overview": "Индекс страха и жадности61GreedРыночные данныеКапитализация$2.40T-0.40%Объём (24ч)$89.00BBTC Dominance55.1%ETH Dominance—Популярные сектораLLayer 1-0.67%Трендовые парыSSOL99.78-1.94%EETH2,479.53-1.82%BTC76,746.00-0.67%CFD на активыGGold Spot4349.19-1.02%Торговать CFD",
       "overviewData": [
         {
           "title": "Индекс страха и жадности",
@@ -159,7 +159,7 @@
     ]
   },
   "reload": {
-    "readyMs": 400,
+    "readyMs": 316,
     "painted": {
       "scene": 1,
       "columnData": [
@@ -362,7 +362,7 @@
     ]
   },
   "coldVisit": {
-    "readyMs": 447,
+    "readyMs": 366,
     "marketRequests": 8
   },
   "writes": [],

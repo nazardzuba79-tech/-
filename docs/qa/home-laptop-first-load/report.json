@@ -1,7 +1,7 @@
 {
-  "startedAt": "2026-10-08T07:33:17.746Z",
+  "startedAt": "2026-10-08T07:51:36.999Z",
   "tickerDelayMs": 5000,
-  "heroReadyMs": 714,
+  "heroReadyMs": 582,
   "tickerFinishedBeforeHero": false,
   "marketRequests": [
     "/api/v1/market/external/tickers",

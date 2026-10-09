@@ -105,8 +105,8 @@ async function createContext(browser, { width=1440, height=900, signed=false, la
       if (request.resourceType()==='image') return route.fulfill({ status:200,contentType:'image/svg+xml',body:syntheticLogo });
       report.denied.push({url:request.url(),type:request.resourceType()}); return route.abort('blockedbyclient');
     }
-    if (logos!=='normal' && url.pathname.startsWith('/hero/instruments/')) {
-      if (logos==='missing') return route.fulfill({status:200,contentType:'image/svg+xml',body:'not an image'});
+    if (logos!=='normal' && url.pathname.startsWith('/hero/medallions/')) {
+      if (logos==='missing') return route.fulfill({status:200,contentType:'image/webp',body:'not an image'});
       await sleep(1800);
     }
     return route.continue();
@@ -166,27 +166,36 @@ async function orbitClearance(page) {
     const art=document.querySelector('#home-global-hero .art').getBoundingClientRect(),mobile=innerWidth<=900,sc=Math.max(art.width/1672,art.height/941);
     const deck=[art.left+(art.width-1672*sc)*(mobile?1:.5)+581*sc,art.top+(art.height-941*sc)/2+766*sc];
     const deckYAt=x=>deck[1]+(BL[1]-deck[1])*(x-deck[0])/(BL[0]-deck[0]);
-    const parts=[...document.querySelectorAll('[data-market-tile]')].filter(t=>Number(getComputedStyle(t).opacity)>.05).flatMap(t=>[...t.querySelectorAll('.vm-medal,.vm-asset-badge')]).map(f=>R(f.getBoundingClientRect())).filter(b=>b.width>1&&b.height>1);
-    const pedestal=R(document.querySelector('.vm-orbit-pedestal').getBoundingClientRect()),toggle=R(document.querySelector('[data-motion-toggle]').getBoundingClientRect());
-    const rings=mobile?[]:[...document.querySelectorAll('.vm-ring')].map(r=>R(r.getBoundingClientRect()));
-    const all=[...parts,...rings,pedestal,toggle];
+    // Each medallion is a pre-rendered image with a 1.32x margin for bevel and shadow; the coin itself is the inner circle.
+    const coinRect=t=>{const b=t.querySelector('.vm-coin').getBoundingClientRect();const d=b.width/1.32,cx=b.left+b.width/2,cy=b.top+b.height/2;return{x:cx-d/2,y:cy-d/2,right:cx+d/2,bottom:cy+d/2,width:d,height:d};};
+    const parts=[...document.querySelectorAll('[data-market-tile]')].filter(t=>Number(getComputedStyle(t).opacity)>.05).flatMap(t=>[coinRect(t),...[...t.querySelectorAll('.vm-asset-badge')].map(f=>R(f.getBoundingClientRect()))]).filter(b=>b.width>1&&b.height>1);
+    // Solid tiers of the platform render; its glow and floor reflection are soft and may touch the floor under the laptop.
+    const pb=document.querySelector('.vm-orbit-platform').getBoundingClientRect();
+    const slice=(y0,y1,hw)=>({x:pb.left+pb.width*(.5-hw),y:pb.top+pb.height*y0,right:pb.left+pb.width*(.5+hw),bottom:pb.top+pb.height*y1,width:pb.width*2*hw,height:pb.height*(y1-y0)});
+    const pedestalParts=[slice(.17,.45,.27),slice(.30,.62,.335),slice(.50,.70,.415),slice(.70,.80,.30)];
+    const pedestal={x:pedestalParts[2].x,y:pedestalParts[0].y,right:pedestalParts[2].right,bottom:pedestalParts[3].bottom,width:pedestalParts[2].width,height:pedestalParts[3].bottom-pedestalParts[0].y};
+    const toggle=R(document.querySelector('[data-motion-toggle]').getBoundingClientRect());
+    const all=[...parts,...pedestalParts,toggle];
     const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y));
     let textOverlap=0,minTextGap=1e9;for(const p of all)for(const t of text){textOverlap+=overlap(p,t);if(Math.max(0,Math.min(p.bottom,t.bottom)-Math.max(p.y,t.y))>0)minTextGap=Math.min(minTextGap,p.x-t.right);}
     // Only the vertical span shared with the screen matters; above its top edge is open sky.
     let minScreenGap=1e9;for(const p of all){const y0=Math.max(p.y,TL[1]),y1=Math.min(p.bottom,BL[1]);if(y0<=y1)for(const y of [y0,y1])minScreenGap=Math.min(minScreenGap,edgeAt(y)-p.right);}
-    // The deck's top-left edge runs from its front corner up to the screen's lower-left corner.
-    const deckLimit=x=>x<deck[0]?1e9:x<=BL[0]?deckYAt(x):BL[1];
-    const deckGap=Math.min(...[pedestal.x,pedestal.right].map(x=>deckLimit(x)-pedestal.bottom));
-    const centre=[...document.querySelectorAll('[data-market-tile]')].map(t=>t.querySelector('.vm-medal').getBoundingClientRect()).sort((a,b)=>b.width-a.width)[0];
+    // The deck's top-left edge runs from its front corner up to the screen's lower-left corner;
+    // below the corner the laptop's front edge runs right almost flat, so the floor there is open.
+    const rightLimit=y=>y<=BL[1]?edgeAt(y):y<=deck[1]?BL[0]+(deck[0]-BL[0])*(y-BL[1])/(deck[1]-BL[1]):1e9;
+    // Phones stack the laptop artwork under the scene: the platform may sit on the globe but must stay above the laptop's screen.
+    const screenTop=Math.min(TL[1],pt(1000,0)[1]);
+    let deckGap=1e9;for(const p of pedestalParts){if(mobile)deckGap=Math.min(deckGap,screenTop-p.bottom);else for(const y of [p.y,p.bottom])deckGap=Math.min(deckGap,rightLimit(y)-p.right);}
+    const centre=[...document.querySelectorAll('[data-market-tile]')].map(coinRect).sort((a,b)=>b.width-a.width)[0];
     return{textOverlap,minTextGap:Math.round(minTextGap),minScreenGap:Math.round(minScreenGap),deckGap:Math.round(deckGap),pageWidth:document.documentElement.scrollWidth,viewport:innerWidth,visibleParts:parts.length,centre:R(centre),pedestal,heroBottom:document.querySelector('#home-global-hero .hero').getBoundingClientRect().bottom};
   });
 }
 async function orbitContent(page) {
   return page.evaluate(()=>{const coins=[...document.querySelectorAll('[data-market-tile]')];
-    return{count:coins.length,round:coins.every(c=>{const f=c.querySelector('.vm-medal'),s=getComputedStyle(f);return Math.abs(parseFloat(s.width)-parseFloat(s.height))<.1&&s.borderRadius==='50%';}),
-      textOnly:coins.every(c=>/^(?:S&P 500)?[A-Z/0-9]+(?:CFD|STOCKS SOON)?$/.test(c.textContent)),quotes:document.querySelectorAll('.vm-card-price,.vm-card-note,.vm-card-change').length,
+    return{count:coins.length,round:coins.every(c=>{const img=c.querySelector('img.vm-coin');return !!img&&img.naturalWidth===img.naturalHeight&&img.naturalWidth>=640&&img.complete;}),
+      textOnly:coins.every(c=>/^(?:CFD|STOCKS SOON)?$/.test(c.textContent)),quotes:document.querySelectorAll('.vm-card-price,.vm-card-note,.vm-card-change,.vm-card-symbol').length,
       badges:Object.fromEntries(coins.map(c=>[c.dataset.marketTile,c.querySelector('.vm-asset-badge')?.textContent||null])),
-      logos:[...new Set(coins.map(c=>c.querySelector('img')?.getAttribute('src')).filter(Boolean))].sort(),front:coins.map(c=>({s:c.dataset.marketTile,w:c.querySelector('.vm-medal').getBoundingClientRect().width})).sort((a,b)=>b.w-a.w)[0].s,
+      logos:[...new Set(coins.map(c=>c.querySelector('img')?.getAttribute('src')).filter(Boolean))].sort(),platform:document.querySelector('img.vm-orbit-platform')?.getAttribute('src')||null,front:coins.map(c=>({s:c.dataset.marketTile,w:c.querySelector('.vm-coin').getBoundingClientRect().width})).sort((a,b)=>b.w-a.w)[0].s,
       originalArt:document.querySelector('#home-global-hero .art')?.getAttribute('src'),heading:document.querySelector('#hs-title')?.textContent,terminals:document.querySelectorAll('#home-live-terminal').length};});
 }
 const motionState=page=>page.evaluate(()=>{const s=document.querySelector('[data-market-visual]');return{state:s.dataset.motionState,reason:s.dataset.motionReason};});
@@ -213,12 +222,12 @@ async function main() {
       assert(pageWidth<=width+1,`horizontal overflow ${width}`);
       if(mode==='after'){
         const content=await orbitContent(page);
-        assert.equal(content.count,9,'nine markets on one orbit');assert(content.round,'every medallion is round');
-        assert.deepEqual(content.badges,{BTC:null,AAPL:'STOCKS SOON',OIL:'CFD',GOLD:'CFD',ETH:null,NVDA:'STOCKS SOON',EURUSD:'CFD',US500:'CFD',SOL:null},'category badges');
+        assert.equal(content.count,8,'eight markets on one ring');assert(content.round,'every medallion is a loaded square pre-render');assert.equal(content.platform,'/hero/medallions/platform.webp','platform pre-render');
+        assert.deepEqual(content.badges,{BTC:null,AAPL:'STOCKS SOON',OIL:'CFD',GOLD:'CFD',ETH:null,NVDA:'STOCKS SOON',EURUSD:'CFD',SOL:null},'category badges');
         assert(content.textOnly,'medallions carry mark, ticker and badge only');assert.equal(content.quotes,0,'no quote, change or unavailable labels');
         assert.equal(content.front,'BTC','resting composition leads with BTC');assert.equal(content.originalArt,'/hero/sapphire-refined.png');assert.equal(content.heading,'OWN YOUR FUTURE.');assert.equal(content.terminals,1);
         const sweep=[];
-        for(let offset=0;offset<22500;offset+=250){await setPhase(page,offset);const c=await orbitClearance(page);sweep.push({offset,...c});}
+        for(let offset=0;offset<20000;offset+=250){await setPhase(page,offset);const c=await orbitClearance(page);sweep.push({offset,...c});}
         const worst={textOverlap:Math.max(...sweep.map(s=>s.textOverlap)),minTextGap:Math.min(...sweep.map(s=>s.minTextGap)),minScreenGap:Math.min(...sweep.map(s=>s.minScreenGap)),deckGap:Math.min(...sweep.map(s=>s.deckGap)),pageWidth:Math.max(...sweep.map(s=>s.pageWidth))};
         const rest=sweep[0];
         report.cases.push({name:`orbit-${width}`,width,height,content,rest:{centre:rest.centre,pedestal:rest.pedestal,heroBottom:rest.heroBottom,visibleParts:rest.visibleParts},phases:sweep.length,worst});
@@ -234,7 +243,7 @@ async function main() {
     const life=await createContext(browser,{width:1440,height:900});const page=life.page;
     await openHome(page);
     if(mode==='after'){
-      await waitState(page,'running');let anims=await heroAnimations(page);assert.equal(anims.length,9,'one compositor animation per medallion');
+      await waitState(page,'running');let anims=await heroAnimations(page);assert.equal(anims.length,8,'one compositor animation per medallion');
       const t1=anims.map(a=>a.time);await page.waitForTimeout(1200);const t2=(await heroAnimations(page)).map(a=>a.time);assert(t2.every((t,i)=>t>t1[i]),'orbit runs while visible');
       {const b=await page.locator('.vm-orbit-scene').boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height*.42);}await frozen(page,'hover');await page.mouse.move(5,890);await waitState(page,'running');check('pointer hover pauses and resumes');
       await page.focus('[data-motion-toggle]');await frozen(page,'focus');await page.evaluate(()=>document.activeElement.blur());await waitState(page,'running');check('keyboard focus on the control pauses and resumes');
@@ -251,7 +260,7 @@ async function main() {
       const l0=await listeners();
       for(const route of ['/trade?pair=BTC%2FUSDT','/futures?pair=BTC%2FUSDT']){
         await spaRoute(page,route);assert.equal((await heroAnimations(page)).length,0,`orbit animations released on ${route}`);
-        await spaRoute(page,'/');await page.locator('[data-market-visual]').waitFor();await waitState(page,'running');assert.equal((await heroAnimations(page)).length,9,'exactly nine clocks after return');
+        await spaRoute(page,'/');await page.locator('[data-market-visual]').waitFor();await waitState(page,'running');assert.equal((await heroAnimations(page)).length,8,'exactly eight clocks after return');
       }
       const l1=await listeners();assert.equal(l1.vis,l0.vis,'visibility listeners stable after Spot/Futures round trips');
       report.cases.push({name:'route-round-trips',listenersBefore:l0,listenersAfter:l1});check('Spot and Futures round trips release and restore the orbit');
@@ -262,21 +271,21 @@ async function main() {
     await life.ctx.close();
     if(mode==='after'){
       const reduced=await createContext(browser,{width:390,height:844,reduced:true});await openHome(reduced.page);await reduced.page.evaluate(()=>document.querySelector('[data-market-visual]').scrollIntoView({block:'center'}));
-      await frozen(reduced.page,'reduced-motion');const times=(await heroAnimations(reduced.page)).map(a=>a.time);assert.deepEqual(times,times.map((_,i)=>((9-i)%9)*2500),'reduced motion rests at the full composition');
+      await frozen(reduced.page,'reduced-motion');const times=(await heroAnimations(reduced.page)).map(a=>a.time);assert.deepEqual(times,times.map((_,i)=>((8-i)%8)*2500),'reduced motion rests at the full composition');
       await reduced.ctx.close();check('reduced motion shows the complete resting composition');
       // Cold visit, then a warm repeat visit in the same profile.
       const visits=await createContext(browser,{width:1440,height:900});const t0=Date.now();await visits.page.goto(origin+'/',{waitUntil:'domcontentloaded'});await visits.page.locator('[data-market-visual]').waitFor();
-      const cold={readyMs:Date.now()-t0,heroAssetRequests:visits.requests.filter(r=>/\/hero\/instruments\//.test(r.url)).length};await visits.page.waitForTimeout(2500);
+      const cold={readyMs:Date.now()-t0,heroAssetRequests:visits.requests.filter(r=>/\/hero\/medallions\//.test(r.url)).length};await visits.page.waitForTimeout(2500);
       const mark=visits.requests.length;const t1=Date.now();await visits.page.reload({waitUntil:'domcontentloaded'});await visits.page.locator('[data-market-visual]').waitFor();
-      const warmEntries=await visits.page.evaluate(()=>performance.getEntriesByType('resource').filter(r=>/\/hero\/instruments\//.test(r.name)).map(r=>({name:r.name.split('/').pop(),transfer:r.transferSize})));
+      const warmEntries=await visits.page.evaluate(()=>performance.getEntriesByType('resource').filter(r=>/\/hero\/medallions\//.test(r.name)).map(r=>({name:r.name.split('/').pop(),transfer:r.transferSize})));
       report.cases.push({name:'cold-and-warm-visit',cold,warm:{readyMs:Date.now()-t1,requests:visits.requests.length-mark,heroAssets:warmEntries}});await visits.ctx.close();check('cold and warm visits measured');
     }
     if(mode==='after'&&process.env.QA_HERO_VIDEO!=='0'){
       for(const [w,h] of [[1440,900],[390,844]]){
         const rec=await browser.newContext({viewport:{width:w,height:h},deviceScaleFactor:1,colorScheme:'dark',reducedMotion:'no-preference',recordVideo:{dir:path.join(out,'video'),size:{width:w,height:h}}});
         await rec.route(/^(?!http:\/\/127\.0\.0\.1)/,r=>r.abort());const p=await rec.newPage();await p.goto(origin+'/',{waitUntil:'domcontentloaded'});await p.locator('[data-market-visual]').waitFor();
-        if(w<=900)await p.evaluate(()=>window.scrollTo(0,document.querySelector('.vm-orbit-pedestal').getBoundingClientRect().bottom+scrollY-innerHeight+40));
-        await p.mouse.move(2,h-2);await p.waitForTimeout(1500+22500+1200);const v=p.video();await rec.close();fs.copyFileSync(await v.path(),path.join(out,`orbit-cycle-${w}.webm`));
+        if(w<=900)await p.evaluate(()=>window.scrollTo(0,document.querySelector('.vm-orbit-platform').getBoundingClientRect().bottom+scrollY-innerHeight+40));
+        await p.mouse.move(2,h-2);await p.waitForTimeout(1500+20000+1200);const v=p.video();await rec.close();fs.copyFileSync(await v.path(),path.join(out,`orbit-cycle-${w}.webm`));
       }
       check('real-time recordings of one full cycle at 1440 and 390');
     }
