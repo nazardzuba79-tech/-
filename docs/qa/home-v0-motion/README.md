@@ -1,37 +1,32 @@
-# Hero SVG orbit — owner revision, review only
+# Hero three-ring revision — review only
 
-This supersedes the earlier 24-assets-taking-centre proposal in Draft PR #485. The owner's latest request is a dominant BTC surrounded by seven named markets: ETH, AAPL, NVDA, XAU, WTI, EUR/USD, US500. The full 24-entry quote roster and quote-domain helpers remain unchanged; this is presentation only.
+The owner rejected the eight-asset proposal from merged PR #485 and clarified the new count: **20 distinct assets total**, including the central BTC. Desktop has BTC plus rings of 6/6/7; mobile has BTC plus 3/4/4 (12 total).
 
-## Cause and correction
+## Implementation
 
-Production still has the old static-slot implementation; PR #485 has never been merged. The previous review implementation physically moved its meshes, but smoothstep between anchors decelerated to zero at every anchor. Embossed pseudo-logo illustrations also obscured brand identity.
-
-The revised scene has eight stable local SVG identities. Apple/NVIDIA use recognizable Simple Icons paths; BTC/ETH retain the sourced CC0 glyphs without decorative plates. Bullion, barrel/drop, currencies and index bars are honest neutral pictograms, not fabricated company logos. Provenance: frontend/public/images/home-v0/asset-icons/SOURCES.md.
-
-One requestAnimationFrame clock writes only translate3d/rotate/scale to eight DOM layers at at most 30fps. Each satellite has its own ellipse, phase and bounded speed modulation. Base circulation takes 28s; modulation periods differ per asset, so they remain spaced rather than lapping and obscuring each other. BTC remains dominant with a small central float. There are no keyframe stops, texture changes, per-frame React updates, WebGL context or GPU resource allocations.
-
-Initial SVGs are readable before effects mount. IntersectionObserver, visibility and reduced-motion handlers control the same loop. Resume excludes paused wall time; unmount cancels RAF and both observers/listeners. Ordinary users see automatic motion. No pause control was added.
-
-The background, globe, laptop, terminal, text, links and lower homepage remain unchanged. Mobile scene height now accommodates a real orbit instead of a single row.
+- Three concentric ellipses complete uninterrupted revolutions in 14, 19 and 25 seconds. The middle ring moves in the opposite direction. Equal angular spacing prevents bunching. The BTC centre stays fixed and larger.
+- One existing active-time RAF updates only DOM transforms at 30 fps. Logos stay upright. No WebGL, canvas, Lottie, dependency, timer or quote polling was added. Reduced-motion, hidden-tab and offscreen pauses retain their cleanup/resume behavior.
+- Resize uses fractional bounding width so SVG guides and DOM assets share the exact same centre; clientWidth rounded it by a fraction of a pixel.
+- Twenty local SVG files use recognizable brand paths and neutral market symbols. Sources and license/trademark notes are in frontend/public/images/home-v0/asset-icons/SOURCES.md.
+- Satellite tickers sit inside their badges, avoiding twenty overlapping external price labels. BTC retains its existing quote. All quote mapping, domain/status guards and the full original quote roster are unchanged.
+- Background, globe, laptop, left copy/CTAs, other homepage sections and financial/backend behavior are preserved.
 
 ## Reproduce
 
-All browser checks use loopback read-only fixtures and deny external requests. No production writes, credentials, fake market data in application code, or added quote polling.
+All browser checks use loopback read-only fixtures, deny external requests, and record real time (no clock acceleration or simulated animation evidence).
 
 - node node_modules/jest/bin/jest.js --runInBand --testPathPattern=frontend/src/lib/__tests__/home
 - npm run build --prefix frontend
 - node scripts/qa-home-v0.cjs
 - node scripts/qa-home-v0-motion.cjs
 - HOME_V0_REFERENCE=docs/qa/home-v0-reference-correction/reference.png node scripts/qa-home-v0-reference.cjs
-- HOME_QA_BASELINE_DIR=<previous PR build> node scripts/qa-home-v0-performance.cjs
+- HOME_QA_BASELINE_DIR=<eight-asset-build> node scripts/qa-home-v0-performance.cjs
 - Repeat performance with --mobile.
 
-HOME_QA_PLAYWRIGHT can select an installed module. CI uses full bundled Chromium via HOME_QA_BROWSER_CHANNEL=chromium and install --no-shell, without changing resource budgets.
+Set HOME_QA_PLAYWRIGHT to the installed Playwright module when needed. CI uses full Chromium. Screenshots, the real-time video, continuity samples and JSON reports are retained as an exact-head Actions artifact.
 
-Responsive QA checks every satellite's actual screen displacement, nine widths including 1920/1440/1366/430/390/360/320, seven languages, loaded icons, overflow, reduced motion, hidden/offscreen pause/resume, eight route unmounts with stopped RAF and bounded post-GC heap, and real login/register forms.
+The browser gates check 20/12 unique loaded assets, 6/6/7 and 3/4/4 ring counts, visible first-second movement, every satellite completing a full revolution, continuous direction/spacing, upright logos, no badge collisions or clipping, nine viewport widths, seven languages, lifecycle cleanup and bounded post-GC heap. Unit tests additionally sample the full 6650-second relative-phase cycle.
 
-Motion QA records 34 unaccelerated seconds, actual PNG pixel differences, 0/.5/1/2/3/5/10/20/32/34 screenshots, every asset's coordinates, moving quote attachment and BTC dominance. Canvas absence is asserted: WebGL context loss can no longer freeze this scene.
+Performance runs alternate baseline and updated builds on the same host and browser without changing resource limits. Mobile results mean viewport emulation; they do not certify physical phone hardware.
 
-CI uploads reports/video/screenshots as exact-head artifacts. The preserved reference comparison checks the unchanged backdrop, copy and laptop ordering; old fixed-medallion coordinates are deliberately not the new visual contract.
-
-No merge/deploy. Owner visual approval remains required.
+No merge, production deploy or production runtime changes are authorized.
