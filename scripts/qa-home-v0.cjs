@@ -156,6 +156,9 @@ if (require.main === module) (async () => {
       if (!baseline) await page.evaluate(() => { window.__oldHero = document.querySelector('.v0-coins'); });
       await page.locator(`.product-shortcuts a[href="${route}"]`).click(); await page.waitForURL(url => url.pathname === route || url.pathname === '/login');
       if (!baseline) {
+        // A lazy route updates the URL before React commits the replacement.
+        // Measure disposal after the actual unmount, not during that transition.
+        await page.waitForFunction(() => !window.__oldHero.isConnected && !window.__oldHero.querySelector('canvas'));
         const stopped = await page.evaluate(() => window.__oldHero.__voltexHeroSceneStats.frames); await wait(120);
         assert.equal(await page.evaluate(() => window.__oldHero.__voltexHeroSceneStats.frames), stopped, 'unmounted renderer has no active RAF');
         assert.equal(await page.evaluate(() => window.__oldHero.querySelectorAll('canvas').length), 0, 'disposed canvas removed');
