@@ -30,7 +30,12 @@
 .admin-rail-label small { color: var(--text-secondary); font-size: 10.5px; }
 .admin-full-value { overflow-wrap: anywhere; user-select: all; font-size: 12px; }
 .admin-empty { padding: 14px; color: var(--text-secondary); font-size: 13px; }
-.admin-modal { color: var(--text-primary); background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 0; width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); margin: auto; box-shadow: 0 20px 60px #10182830; }
+.admin-modal { color: var(--text-primary); background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 0; width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); max-height: calc(var(--admin-viewport-height, 100dvh) - 32px); margin: auto; box-shadow: 0 20px 60px #10182830; }
+/* Header and footer stay in reach: only .admin-modal-body scrolls. A dialog without that wrapper scrolls as a whole (UA overflow: auto). */
+.admin-modal[open] { display: flex; flex-direction: column; }
+.admin-modal > header, .admin-modal > footer { flex: none; }
+.admin-modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.admin-modal footer { flex-wrap: wrap; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 .admin-modal::backdrop { background: #10182870; }
 .admin-modal header, .admin-modal footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: var(--panel); }
 .admin-modal header { border-bottom: 1px solid var(--border); }
@@ -81,7 +86,8 @@
   .admin-main > header > div > div > div { display: none; }
   .admin-user-stats { grid-template-columns: minmax(0, 1fr) !important; }
   .admin-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .admin-data-table { min-width: 950px; }
+  /* Wide registry tables scroll inside .admin-data-wrap; the balances table has its own phone layout below. */
+  .admin-data-table:not(.admin-balance-table) { min-width: 950px; }
   .admin-kyc-grid { grid-template-columns: minmax(0, 1fr); }
   .admin-kyc-grid > div:first-child { max-height: 220px !important; }
   .admin-page-grid .admin-detail-grid, .admin-page-grid .admin-detail-form { grid-template-columns: minmax(0, 1fr) !important; }
@@ -138,3 +144,86 @@
   .admin-main > header .admin-mobile-menu-btn { min-height: 40px; min-width: 40px; align-items: center; justify-content: center; }
   .admin-main h1 { font-size: 19px !important; margin-top: 0 !important; margin-bottom: 7px !important; }
 }
+
+/* Card «Балансы»: three columns on a desktop; on a phone each asset is one block
+ * with its exact available and reserved values (no rounding, nothing hidden). */
+.admin-table-scroll { min-width: 0; }
+.admin-balance-table { min-width: 0; table-layout: auto; }
+.admin-balance-table th[scope=row] { font-weight: 700; }
+.admin-balance-table td.mono { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .admin-balance-table, .admin-balance-table tbody, .admin-balance-table tr { display: block; width: 100%; }
+  .admin-balance-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .admin-balance-table tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .admin-balance-table tr:last-child { border-bottom: 0; }
+  .admin-balance-table th, .admin-balance-table td { display: grid; grid-template-columns: minmax(84px, 92px) minmax(0, 1fr); gap: 8px; height: auto; padding: 2px 0; border: 0; line-height: 1.4; text-align: left; }
+  .admin-balance-table th[scope=row] { grid-template-columns: minmax(0, 1fr); font-size: 13px; }
+  .admin-balance-table th[scope=row]::before { display: none; }
+  .admin-balance-table td::before { content: attr(data-label); color: var(--text-secondary); font-size: 12px; font-weight: 500; }
+  .admin-balance-table td.mono { font-size: 12.5px; }
+}
+
+/* Credit drawer: the visible viewport (keyboard, collapsing browser bars) with a 100dvh fallback;
+ * the header and footer never leave the screen, only the body scrolls. */
+.admin-drawer-panel { height: 100vh; height: 100dvh; height: var(--admin-viewport-height, 100dvh); max-height: 100dvh; box-sizing: border-box; outline: none; }
+.admin-drawer-body { min-height: 0; overscroll-behavior: contain; }
+.admin-drawer-footer { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important; }
+@media (max-width: 480px) {
+  .admin-drawer-header { padding: 0 16px !important; height: 56px !important; }
+  .admin-drawer-body { padding: 14px 16px 18px !important; }
+  .admin-drawer-footer { padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+/* Off-canvas sidebar on phones: the visible height, the safe area, no launcher above it. */
+@media (max-width: 900px) {
+  .admin-mobile-sidebar { height: 100dvh; height: var(--admin-viewport-height, 100dvh); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+  .admin-main > header .admin-mobile-menu-btn { min-height: 40px; min-width: 40px; align-items: center; justify-content: center; }
+}
+/* Touch targets on phones (design goal ~44px): confirmations, pagination and action rows. */
+@media (pointer: coarse) and (max-width: 767px) {
+  .admin-drawer-footer button, .admin-modal footer button, .admin-dialog-actions button, .listing-dialog .listing-buttons button, .admin-queue-pagination button, .admin-read-status button, .admin-withdrawal-actions button, .admin-account-actions button, .admin-deposit-adjustment button, [data-open-package], [data-deposit-refresh], [data-watcher-run], [data-watcher-toggle], [data-check-tx] button, [data-other-networks] { min-height: 44px; }
+  .admin-user-tabs button, .admin-queue-tabs button { min-height: 38px; }
+  .admin-tabs button { min-height: 44px; }
+}
+
+/* Phone-only arrangements (useAdminCompact, ≤767px): the same controls, folded. */
+.admin-disclosure { border: 1px solid var(--border); border-radius: 9px; background: var(--panel); padding: 0 12px; margin-bottom: 12px; min-width: 0; }
+.admin-disclosure > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; font-size: 13.5px; font-weight: 700; list-style: none; }
+.admin-disclosure > summary::-webkit-details-marker { display: none; }
+.admin-disclosure > summary::after { content: ''; margin-left: auto; width: 8px; height: 8px; border-right: 2px solid var(--text-tertiary); border-bottom: 2px solid var(--text-tertiary); transform: rotate(45deg); transition: transform .15s; flex: none; }
+.admin-disclosure[open] > summary::after { transform: rotate(-135deg); }
+.admin-disclosure-hint { font-size: 12px; font-weight: 500; color: var(--text-tertiary); }
+.admin-disclosure-plain { border: 0; padding: 0; margin: 2px 0 0; background: transparent; }
+.admin-disclosure-plain > summary { min-height: 36px; font-size: 12.5px; font-weight: 600; color: var(--admin-brand); }
+.admin-disclosure-plain > summary::after { margin-left: 8px; }
+.admin-filter-disclosure { flex: 1 1 100%; grid-column: 1 / -1; min-width: 0; border: 1px solid var(--border); border-radius: 9px; background: var(--panel); padding: 0 12px; }
+.admin-filter-disclosure > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; min-height: 44px; padding: 6px 0; cursor: pointer; list-style: none; }
+.admin-filter-disclosure > summary::-webkit-details-marker { display: none; }
+.admin-filter-disclosure > summary::after { content: ''; grid-column: 2; grid-row: 1; width: 8px; height: 8px; border-right: 2px solid var(--text-tertiary); border-bottom: 2px solid var(--text-tertiary); transform: rotate(45deg); transition: transform .15s; }
+.admin-filter-disclosure[open] > summary::after { transform: rotate(-135deg); }
+.admin-filter-summary { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+.admin-filter-count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--admin-brand); color: var(--admin-brand-on); font-size: 11.5px; line-height: 20px; text-align: center; }
+.admin-filter-hint { grid-column: 1; font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.admin-filter-disclosure[open] > summary .admin-filter-hint { display: none; }
+.admin-filter-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 10px; padding: 2px 0 10px; }
+.admin-filter-fields label { display: grid; gap: 5px; font-size: 12.5px; color: var(--text-secondary); min-width: 0; }
+.admin-filter-fields input, .admin-filter-fields select { width: 100%; min-width: 0; box-sizing: border-box; }
+.admin-filter-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 0 12px; }
+.admin-filter-reset { min-height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text-secondary); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.admin-queue-filters-compact { align-items: stretch !important; }
+.admin-queue-filters-compact .admin-filter-search { flex: 1 1 200px !important; }
+.admin-queue-filters-compact > button { flex: 0 0 auto; align-self: flex-end; min-height: 38px; }
+.admin-audit-filters-compact { grid-template-columns: minmax(0, 1fr) !important; }
+
+/* Profile tabs: a strip that marks where more tabs are; the selected tab is scrolled into view. */
+.admin-tabs-wrap { position: relative; min-width: 0; }
+.admin-tabs-wrap::before, .admin-tabs-wrap::after { content: ''; position: absolute; top: 16px; bottom: 16px; width: 36px; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 1; }
+.admin-tabs-wrap::before { left: 0; background: linear-gradient(to right, var(--bg) 35%, transparent); }
+.admin-tabs-wrap::after { right: 0; background: linear-gradient(to left, var(--bg) 35%, transparent); }
+.admin-tabs-wrap[data-more~="left"]::before, .admin-tabs-wrap[data-more~="right"]::after { opacity: 1; }
+.admin-tabs { scrollbar-width: thin; scroll-snap-type: x proximity; scroll-padding: 0 24px; -webkit-overflow-scrolling: touch; }
+.admin-tabs button { scroll-snap-align: start; white-space: nowrap; }
+@media (max-width: 767px) { .admin-tabs { padding-right: 24px; } .admin-tabs-wrap::after { width: 48px; } }
+
+/* KYC queue on a phone: the chosen client is unmistakable above the review card. */
+[data-kyc-client][aria-pressed="true"] { box-shadow: inset 3px 0 0 var(--admin-brand); }
+[data-kyc-review], [data-kyc-empty] { scroll-margin-top: 12px; }

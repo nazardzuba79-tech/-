@@ -35,6 +35,8 @@ function load(file: string) {
     if (name.endsWith('/adminWorkSummary')) return { refreshAdminSummary: summary };
     if (name.endsWith('/useAdminRead')) return load('src/pages/admin/useAdminRead.ts');
     if (name.endsWith('/adminPageSupport')) return load('src/pages/admin/adminPageSupport.tsx');
+    // Phone arrangement only (matchMedia); desktop markup under test.
+    if (name.endsWith('/useAdminCompact')) return { useAdminCompact: () => false };
     throw new Error(`Unexpected import ${name}`);
   });
   return output;

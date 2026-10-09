@@ -11,6 +11,8 @@ import { adminDate, adminStatus } from './adminPresentation';
 import { refreshAdminSummary } from './adminWorkSummary';
 import { adminQueueDateBounds } from './adminQueueDates';
 import { AdminCompatibilityNotice, adminPageEmpty } from './adminPageSupport';
+import { AdminFilterDisclosure } from './AdminFilterDisclosure';
+import { useAdminCompact } from './useAdminCompact';
 import './adminQueueViews.css';
 
 const KYC_STATUSES = ['all', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_STARTED'] as const;
@@ -20,6 +22,7 @@ const KYC_STATUSES = ['all', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_STARTED'] a
  * администратора через Cloudflare KYC edge и на сервер биржи не попадают. */
 export function AdminKycPage() {
   const view = useAdminView();
+  const compact = useAdminCompact();
   const search = view.params.get('search') ?? view.params.get('user') ?? '';
   const requestedStatus = view.params.get('status');
   const status = KYC_STATUSES.find(value => value === requestedStatus) ?? (view.params.has('user') ? 'all' : 'PENDING');
@@ -40,6 +43,20 @@ export function AdminKycPage() {
   const selected = queue.find((c) => c.id === selectedId) ?? queue[0] ?? null;
   const first = clients?.total ? (clients.page - 1) * clients.pageSize + 1 : 0;
   const last = clients ? Math.min(clients.total, first + clients.items.length - 1) : 0;
+  // On a phone the list sits above the review card: a tap on a client brings the card into view.
+  const choose = (id: string) => {
+    setSelectedId(id);
+    if (compact) requestAnimationFrame(() => document.querySelector('[data-kyc-review], [data-kyc-empty]')?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }));
+  };
+  const secondaryActive = Number(Boolean(fromDate)) + Number(Boolean(toDate)) + Number(status !== 'PENDING');
+  const secondaryHint = [fromDate && `с ${fromDate}`, toDate && `по ${toDate}`, status !== 'PENDING' && (status === 'all' ? 'Все пользователи' : adminStatus(status))].filter(Boolean).join(' · ');
+  const resetAll = () => view.update({ search: '', user: '', fromDate: '', toDate: '', status: 'PENDING', page: 1 });
+  const userField = <label className="admin-filter-search">Пользователь<input aria-label="Поиск заявок KYC" style={styles.input} placeholder="Email или ID пользователя" maxLength={200} value={searchDraft} onChange={event => setSearchDraft(event.target.value)} /></label>;
+  const fromField = <label>Заявка с<input aria-label="Дата заявки с" type="date" style={styles.input} value={fromDraft} max={toDraft || undefined} onChange={event => setFromDraft(event.target.value)} /></label>;
+  const toField = <label>По дату<input aria-label="Дата заявки по" type="date" style={styles.input} value={toDraft} min={fromDraft || undefined} onChange={event => setToDraft(event.target.value)} /></label>;
+  const statusField = <label>Статус<select aria-label="Статус KYC" style={styles.input} value={status} onChange={event => view.update({ status: event.target.value, page: 1 })}>
+    {KYC_STATUSES.map(value => <option key={value} value={value}>{value === 'all' ? 'Все пользователи' : adminStatus(value)}</option>)}
+  </select></label>;
 
   return (
     <div className="admin-queue-page">
@@ -66,15 +83,20 @@ export function AdminKycPage() {
         </div>
       )}
 
-      <form className="admin-toolbar admin-queue-filters" onSubmit={event => { event.preventDefault(); view.update({ search: searchDraft.trim(), user: '', fromDate: fromDraft, toDate: toDraft, page: 1 }); }}>
-        <label>Пользователь<input aria-label="Поиск заявок KYC" style={styles.input} placeholder="Email или ID пользователя" maxLength={200} value={searchDraft} onChange={event => setSearchDraft(event.target.value)} /></label>
-        <label>Заявка с<input aria-label="Дата заявки с" type="date" style={styles.input} value={fromDraft} max={toDraft || undefined} onChange={event => setFromDraft(event.target.value)} /></label>
-        <label>По дату<input aria-label="Дата заявки по" type="date" style={styles.input} value={toDraft} min={fromDraft || undefined} onChange={event => setToDraft(event.target.value)} /></label>
-        <button type="submit" style={styles.neutralBtn}>Найти</button>
-        <label>Статус<select aria-label="Статус KYC" style={styles.input} value={status} onChange={event => view.update({ status: event.target.value, page: 1 })}>
-          {KYC_STATUSES.map(value => <option key={value} value={value}>{value === 'all' ? 'Все пользователи' : adminStatus(value)}</option>)}
-        </select></label>
-        {(search || fromDate || toDate || status !== 'PENDING') && <button type="button" style={styles.neutralBtn} onClick={() => view.update({ search: '', user: '', fromDate: '', toDate: '', status: 'PENDING', page: 1 })}>Сбросить</button>}
+      <form className={`admin-toolbar admin-queue-filters${compact ? ' admin-queue-filters-compact' : ''}`} onSubmit={event => { event.preventDefault(); view.update({ search: searchDraft.trim(), user: '', fromDate: fromDraft, toDate: toDraft, page: 1 }); }}>
+        {compact ? <>
+          {userField}
+          <button type="submit" style={styles.neutralBtn}>Найти</button>
+          <AdminFilterDisclosure compact active={secondaryActive} hint={secondaryHint} onReset={resetAll} apply={<button type="submit" style={styles.neutralBtn}>Применить даты</button>}>
+            {fromField}{toField}{statusField}
+          </AdminFilterDisclosure>
+          {search && <button type="button" style={styles.neutralBtn} onClick={() => view.update({ search: '', user: '', page: 1 })}>Сбросить поиск</button>}
+        </> : <>
+          {userField}{fromField}{toField}
+          <button type="submit" style={styles.neutralBtn}>Найти</button>
+          {statusField}
+          {(search || fromDate || toDate || status !== 'PENDING') && <button type="button" style={styles.neutralBtn} onClick={resetAll}>Сбросить</button>}
+        </>}
       </form>
       <AdminCompatibilityNotice compatibility={clients?.compatibility} />
       <div className="admin-queue-pagination" aria-label="Страницы заявок KYC">
@@ -91,7 +113,7 @@ export function AdminKycPage() {
               key={c.id}
               data-kyc-client={c.id}
               aria-pressed={selected?.id === c.id}
-              onClick={() => setSelectedId(c.id)}
+              onClick={() => choose(c.id)}
               className="row-hover"
               style={{
                 display: 'flex',
@@ -120,7 +142,7 @@ export function AdminKycPage() {
             <Link to={`/admin/users/${encodeURIComponent(selected.id)}?tab=kyc&returnTo=${encodeURIComponent(view.returnTo)}`} style={styles.neutralBtn}>Открыть пользователя</Link>
           </div>}
           {!selected?.latestKyc ? (
-            <p style={{ color: 'var(--text-tertiary)' }}>{selected ? 'У пользователя ещё нет заявки на проверку.' : 'Выберите заявку из списка.'}</p>
+            <p data-kyc-empty style={{ color: 'var(--text-tertiary)' }}>{selected ? 'У пользователя ещё нет заявки на проверку.' : 'Выберите заявку из списка.'}</p>
           ) : (
             <KycSubmissionReview
               submission={selected.latestKyc}

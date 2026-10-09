@@ -11,6 +11,8 @@ import { useAdminView } from './useAdminView';
 import { AdminReadStatus } from './AdminReadStatus';
 import { adminDate } from './adminPresentation';
 import { refreshAdminSummary } from './adminWorkSummary';
+import { AdminFilterDisclosure } from './AdminFilterDisclosure';
+import { useAdminCompact } from './useAdminCompact';
 import './adminQueueViews.css';
 
 type Withdrawal = Awaited<ReturnType<typeof api.getAdminWithdrawals>>[number];
@@ -42,6 +44,7 @@ function waitingMinutes(createdAt: string, now: number): number {
  * выводов с указанием, какой админ что сделал. */
 export function AdminWithdrawalsPage() {
   const view = useAdminView();
+  const compact = useAdminCompact();
   const search = view.params.get('search') ?? '';
   const requestedStatus = view.params.get('status') ?? 'active';
   const status = requestedStatus in QUEUES || requestedStatus in STATUS_LABEL ? requestedStatus : 'active';
@@ -126,13 +129,15 @@ export function AdminWithdrawalsPage() {
           background: status === key ? 'var(--admin-brand)' : 'var(--surface)', color: status === key ? 'var(--admin-brand-on)' : 'var(--text-primary)' }}
           aria-pressed={status === key} onClick={() => view.update({ status: key, page: 1 })}>{label}</button>)}
       </nav>
-      <form className="admin-toolbar admin-queue-filters" onSubmit={event => { event.preventDefault(); view.update({ search: searchDraft.trim(), page: 1 }); }}>
-        <label>Поиск<input style={styles.input} aria-label="Поиск выводов" placeholder="Email, ID, актив, адрес или TXID" maxLength={200} value={searchDraft} onChange={event => setSearchDraft(event.target.value)} /></label>
+      <form className={`admin-toolbar admin-queue-filters${compact ? ' admin-queue-filters-compact' : ''}`} onSubmit={event => { event.preventDefault(); view.update({ search: searchDraft.trim(), page: 1 }); }}>
+        <label className="admin-filter-search">Поиск<input style={styles.input} aria-label="Поиск выводов" placeholder="Email, ID, актив, адрес или TXID" maxLength={200} value={searchDraft} onChange={event => setSearchDraft(event.target.value)} /></label>
         <button type="submit" style={styles.neutralBtn}>Найти</button>
-        <label>Статус<select aria-label="Статус вывода" style={styles.input} value={status} onChange={event => view.update({ status: event.target.value, page: 1 })}>
-          {Object.entries(QUEUES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          {Object.entries(STATUS_LABEL).filter(([key]) => !(key in QUEUES)).map(([key, label]) => <option key={key} value={key}>{label.text}{key === 'COMPLETED' ? ' (ранее обработанные)' : ''}</option>)}
-        </select></label>
+        <AdminFilterDisclosure compact={compact} active={Number(status !== 'active')} hint={status !== 'active' ? `Статус: ${QUEUES[status] ?? statusBadge(status).text}` : undefined} onReset={() => view.update({ status: 'active', page: 1 })}>
+          <label>Статус<select aria-label="Статус вывода" style={styles.input} value={status} onChange={event => view.update({ status: event.target.value, page: 1 })}>
+            {Object.entries(QUEUES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            {Object.entries(STATUS_LABEL).filter(([key]) => !(key in QUEUES)).map(([key, label]) => <option key={key} value={key}>{label.text}{key === 'COMPLETED' ? ' (ранее обработанные)' : ''}</option>)}
+          </select></label>
+        </AdminFilterDisclosure>
         {search && <button type="button" style={styles.neutralBtn} onClick={() => view.update({ search: '', page: 1 })}>Сбросить поиск</button>}
       </form>
       <AdminCompatibilityNotice compatibility={read.data?.compatibility} />

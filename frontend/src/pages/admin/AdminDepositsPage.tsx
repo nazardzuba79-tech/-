@@ -12,6 +12,7 @@ import { CopyValue, RailLabel } from './AdminPrimitives';
 import { Skeleton } from '../../components/Skeleton';
 import { CreditDepositDrawer } from './CreditDepositDrawer';
 import { DepositCopiesSection } from './DepositCopiesSection';
+import { useAdminCompact } from './useAdminCompact';
 import {
   adminDepositApi, AdminDepositApiError, STATE_LABEL, IGNORE_REASON_LABEL,
   type CreditedBatch, type DepositPackage, type DepositQueue, type DepositQueueRow, type IgnoreReason, type WatcherStatus,
@@ -55,6 +56,9 @@ export function AdminDepositsPage() {
 
 function AdminDepositsSession({ session }: { session: string }) {
   const { hash, search } = useLocation();
+  // Phones: the queue tabs come right after the status line; the watcher's
+  // details and «Проверить TXID» open on demand. Same data, same handlers.
+  const compact = useAdminCompact();
   const params = new URLSearchParams(search);
   const requestedTab = STATE_TAB[params.get('state') ?? ''];
   const userFilter = params.get('userId') ?? '';
@@ -246,8 +250,13 @@ function AdminDepositsSession({ session }: { session: string }) {
         {userFilter && <span style={styles.hint}>Пользователь: {userFilter}</span>}
       </div>
 
-      <WatcherPanel status={queue?.watcher ?? null} onChanged={changed} onError={setError} />
-      <CheckTxForm onChecked={changed} />
+      <WatcherPanel status={queue?.watcher ?? null} onChanged={changed} onError={setError} compact={compact} />
+      {compact
+        ? <details className="admin-disclosure" data-check-tx-disclosure>
+          <summary>Проверить TXID<span className="admin-disclosure-hint">вручную, по хэшу транзакции</span></summary>
+          <CheckTxForm onChecked={changed} compact />
+        </details>
+        : <CheckTxForm onChecked={changed} />}
 
       <div className="admin-user-tabs" role="tablist" aria-label="Очередь пополнений" style={{ margin: '16px 0 10px' }}>
         {TABS.map((t) => (
@@ -474,7 +483,7 @@ function IgnoreModal({ row, onClose, onDone }: { row: DepositQueueRow; onClose: 
     <>
       <div style={styles.drawerOverlay} onClick={() => { if (!busy) onClose(); }} />
       <div role="dialog" aria-modal="true" aria-labelledby="ignore-title" data-ignore-modal={row.id}
-        style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(440px, calc(100vw - 32px))', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto',
+        style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(440px, calc(100vw - 32px))', maxHeight: 'calc(var(--admin-viewport-height, 100dvh) - 32px)', overflowY: 'auto',
           background: 'var(--panel)', color: 'var(--text-primary)', borderRadius: 12, boxShadow: '0 20px 50px rgba(15,17,21,.25)', padding: 18, zIndex: 1001, boxSizing: 'border-box' }}>
         <strong id="ignore-title" style={{ fontSize: 15 }}>Игнорировать перевод</strong>
         <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', margin: '6px 0 10px', overflowWrap: 'anywhere' }}>
@@ -558,7 +567,7 @@ function TransferRow({ row, onAttribute }: { row: DepositQueueRow; onAttribute?:
   );
 }
 
-function WatcherPanel({ status, onChanged, onError }: { status: WatcherStatus | null; onChanged: () => Promise<void>; onError: (m: string | null) => void }) {
+function WatcherPanel({ status, onChanged, onError, compact = false }: { status: WatcherStatus | null; onChanged: () => Promise<void>; onError: (m: string | null) => void; compact?: boolean }) {
   const [busy, setBusy] = useState<'run' | 'toggle' | null>(null);
   const [result, setResult] = useState<string | null>(null);
   if (!status) return null;
@@ -567,6 +576,65 @@ function WatcherPanel({ status, onChanged, onError }: { status: WatcherStatus | 
   const lag = status.cursors.length ? Math.max(...status.cursors.map((c) => c.lagMs)) : null;
   const backlog = status.cursors.some((c) => c.windowInProgress) || !!status.lastRunSummary?.backlog;
   const schedule = `при первом открытии после ${status.policy.dayStart}, в ${status.policy.slots.join(', ')} (Киев)`;
+  const scannedThrough = status.cursors.length ? when(status.cursors.reduce((m, c) => (c.scannedThrough < m ? c.scannedThrough : m), status.cursors[0].scannedThrough)) : 'ещё не запускалось';
+  const lagText = `${lag === null ? '—' : lagLabel(lag)}${backlog ? ' · есть очередь' : ''}`;
+  const runButton = <button type="button" data-watcher-run disabled={busy !== null || status.running} style={styles.neutralBtn} onClick={async () => {
+    setBusy('run'); onError(null); setResult(null);
+    try {
+      const r = await adminDepositApi.runWatcher();
+      setResult(r.skipped === 'LEASE_HELD' ? 'Проверка уже выполняется.' : r.ok ? `Проверка выполнена. Новых переводов: ${r.newTransfers}.` : `Проверка не завершена: ${r.error ?? 'ошибка провайдера'}.`);
+    } catch (err) { onError(err instanceof AdminDepositApiError ? err.message : 'Не удалось запустить проверку.'); }
+    finally { setBusy(null); await onChanged(); }
+  }}>{busy === 'run' ? 'Проверка…' : 'Проверить новые поступления'}</button>;
+  const toggleButton = <button type="button" data-watcher-toggle disabled={busy !== null} style={styles.neutralBtn} onClick={async () => {
+    if (!window.confirm(status.enabled ? 'Выключить автоматическую проверку? Очередь и прогресс сохранятся.' : `Включить автоматическую проверку (${schedule}; ночью ${status.policy.nightStart}–${status.policy.dayStart} — нет)? Она только находит переводы: без уведомлений и без зачисления.`)) return;
+    setBusy('toggle'); onError(null);
+    try { await adminDepositApi.setWatcherEnabled(!status.enabled); }
+    catch (err) { onError(err instanceof AdminDepositApiError ? err.message : 'Не удалось изменить режим.'); }
+    finally { setBusy(null); await onChanged(); }
+  }}>{status.enabled ? 'Выключить автопроверку' : 'Включить автопроверку'}</button>;
+  const scheduleNote = <p data-watcher-schedule style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '6px 0 0' }}>
+    Ночью {status.policy.nightStart}–{status.policy.dayStart} автоматическая проверка не выполняется. Уведомлений нет — ручная проверка доступна всегда.
+  </p>;
+  const runError = status.lastRunSummary?.error && <p role="alert" style={{ ...styles.errorBox, marginTop: 8 }}>Последняя проверка не завершена: {status.lastRunSummary.error}. Сохранённые переводы доступны.</p>;
+  const runResult = result && <p role="status" style={{ fontSize: 12, marginTop: 8 }}>{result}</p>;
+  if (compact) {
+    // One status line that never hides a problem: the last success, the
+    // provider, the lag and anything unverified stay in view; the schedule,
+    // the cursor and the mode switch open under «Подробности».
+    const attention = status.providerStatus !== 'OK' || backlog || status.unverifiedOrUnfinalized > 0 || !status.enabled;
+    return (
+      <section data-watcher data-watcher-compact style={{ ...styles.card, marginBottom: 12, padding: 12, gap: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+          <strong style={{ fontSize: 13.5 }}>Наблюдение USDT / TRC20</strong>
+          <span data-watcher-enabled={status.enabled ? 'on' : 'off'} style={{ fontSize: 12, fontWeight: 700, color: status.enabled ? 'var(--buy)' : 'var(--sell)' }}>
+            {status.enabled ? 'Автоматически' : 'Автопроверка выключена'}
+          </span>
+        </div>
+        <p data-watcher-summary style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: attention ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+          Последняя успешная: <b>{when(status.lastSuccessAt)}</b> · Провайдер: <b style={{ color: status.providerStatus === 'OK' ? 'inherit' : 'var(--sell)' }}>{provider}</b> · Отставание: <b style={{ color: backlog ? 'var(--sell)' : 'inherit' }}>{lagText}</b>
+          {status.unverifiedOrUnfinalized > 0 && <> · <b style={{ color: 'var(--sell)' }}>Не проверено: {status.unverifiedOrUnfinalized}</b></>}
+        </p>
+        {runError}
+        {runResult}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 2 }}>{runButton}</div>
+        <details className="admin-disclosure admin-disclosure-plain" data-watcher-details>
+          <summary>Подробности и расписание</summary>
+          <div style={{ display: 'grid', rowGap: 2, marginTop: 4 }}>
+            <Line label="Последняя успешная">{when(status.lastSuccessAt)}</Line>
+            <Line label="Следующая автоматическая">{status.enabled ? when(status.nextScheduledRunAt) : '—'}</Line>
+            <Line label="Провайдер">{provider}</Line>
+            <Line label="Проверено до">{scannedThrough}</Line>
+            <Line label="Отставание">{lagText}</Line>
+            <Line label="Не проверено / не окончательно">{status.unverifiedOrUnfinalized}</Line>
+            <Line label="Режим">{status.enabled ? `Автоматически: ${schedule}` : 'Автоматическая проверка выключена'}</Line>
+          </div>
+          {scheduleNote}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>{toggleButton}</div>
+        </details>
+      </section>
+    );
+  }
   return (
     <section data-watcher style={{ ...styles.card, marginBottom: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -579,44 +647,29 @@ function WatcherPanel({ status, onChanged, onError }: { status: WatcherStatus | 
         <Line label="Последняя успешная">{when(status.lastSuccessAt)}</Line>
         <Line label="Следующая автоматическая">{status.enabled ? when(status.nextScheduledRunAt) : '—'}</Line>
         <Line label="Провайдер">{provider}</Line>
-        <Line label="Проверено до">{status.cursors.length ? when(status.cursors.reduce((m, c) => (c.scannedThrough < m ? c.scannedThrough : m), status.cursors[0].scannedThrough)) : 'ещё не запускалось'}</Line>
-        <Line label="Отставание">{lag === null ? '—' : lagLabel(lag)}{backlog ? ' · есть очередь' : ''}</Line>
+        <Line label="Проверено до">{scannedThrough}</Line>
+        <Line label="Отставание">{lagText}</Line>
         <Line label="Не проверено / не окончательно">{status.unverifiedOrUnfinalized}</Line>
       </div>
-      <p data-watcher-schedule style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '6px 0 0' }}>
-        Ночью {status.policy.nightStart}–{status.policy.dayStart} автоматическая проверка не выполняется. Уведомлений нет — ручная проверка доступна всегда.
-      </p>
-      {status.lastRunSummary?.error && <p role="alert" style={{ ...styles.errorBox, marginTop: 8 }}>Последняя проверка не завершена: {status.lastRunSummary.error}. Сохранённые переводы доступны.</p>}
-      {result && <p role="status" style={{ fontSize: 12, marginTop: 8 }}>{result}</p>}
+      {scheduleNote}
+      {runError}
+      {runResult}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-        <button type="button" data-watcher-run disabled={busy !== null || status.running} style={styles.neutralBtn} onClick={async () => {
-          setBusy('run'); onError(null); setResult(null);
-          try {
-            const r = await adminDepositApi.runWatcher();
-            setResult(r.skipped === 'LEASE_HELD' ? 'Проверка уже выполняется.' : r.ok ? `Проверка выполнена. Новых переводов: ${r.newTransfers}.` : `Проверка не завершена: ${r.error ?? 'ошибка провайдера'}.`);
-          } catch (err) { onError(err instanceof AdminDepositApiError ? err.message : 'Не удалось запустить проверку.'); }
-          finally { setBusy(null); await onChanged(); }
-        }}>{busy === 'run' ? 'Проверка…' : 'Проверить новые поступления'}</button>
-        <button type="button" data-watcher-toggle disabled={busy !== null} style={styles.neutralBtn} onClick={async () => {
-          if (!window.confirm(status.enabled ? 'Выключить автоматическую проверку? Очередь и прогресс сохранятся.' : `Включить автоматическую проверку (${schedule}; ночью ${status.policy.nightStart}–${status.policy.dayStart} — нет)? Она только находит переводы: без уведомлений и без зачисления.`)) return;
-          setBusy('toggle'); onError(null);
-          try { await adminDepositApi.setWatcherEnabled(!status.enabled); }
-          catch (err) { onError(err instanceof AdminDepositApiError ? err.message : 'Не удалось изменить режим.'); }
-          finally { setBusy(null); await onChanged(); }
-        }}>{status.enabled ? 'Выключить автопроверку' : 'Включить автопроверку'}</button>
+        {runButton}
+        {toggleButton}
       </div>
     </section>
   );
 }
 
-function CheckTxForm({ onChecked }: { onChecked: () => Promise<void> }) {
+function CheckTxForm({ onChecked, compact = false }: { onChecked: () => Promise<void>; compact?: boolean }) {
   const [chain, setChain] = useState('tron');
   const [asset, setAsset] = useState('USDT');
   const [txHash, setTxHash] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   return (
-    <form data-check-tx style={{ ...styles.card, display: 'grid', gap: 8 }} onSubmit={async (e) => {
+    <form data-check-tx style={{ ...styles.card, display: 'grid', gap: 8, ...(compact ? { border: 'none', boxShadow: 'none', padding: '4px 0 8px' } : {}) }} onSubmit={async (e) => {
       e.preventDefault();
       if (!txHash.trim() || busy) return;
       setBusy(true); setResult(null);
@@ -630,7 +683,7 @@ function CheckTxForm({ onChecked }: { onChecked: () => Promise<void> }) {
         setResult({ ok: false, text: err instanceof AdminDepositApiError ? err.message : 'Проверка не выполнена.' });
       } finally { setBusy(false); }
     }}>
-      <strong style={{ fontSize: 14 }}>Проверить TXID</strong>
+      {!compact && <strong style={{ fontSize: 14 }}>Проверить TXID</strong>}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <select aria-label="Сеть" value={chain} onChange={(e) => setChain(e.target.value)} style={{ ...styles.input, width: 140 }}>
           {['tron', 'ethereum', 'bsc', 'bitcoin', 'solana', 'ton'].map((c) => <option key={c} value={c}>{c === 'tron' ? 'TRON (TRC20)' : c}</option>)}
