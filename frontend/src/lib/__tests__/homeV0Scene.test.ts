@@ -1,4 +1,4 @@
-import { createSceneSequence, SCENE_INSTRUMENTS, SCENE_SPOTS, scenePrice, sceneQuote } from '../../pages/home/v0MarketScene';
+import { scenePose, sceneLabelOpacity, STEP_SECONDS, SCENE_CYCLE_SECONDS, SCENE_INSTRUMENTS, SCENE_SPOTS, scenePrice, sceneQuote } from '../../pages/home/v0MarketScene';
 import { medallionSvg } from '../../pages/home/v0MedallionArtwork';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -18,16 +18,41 @@ test('approved roster retains all 24 unique instruments, not a new trading catal
   expect(SCENE_INSTRUMENTS.filter(x => x.market === 'stock').map(x => x.id)).toEqual(['AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'GOOGL', 'META']);
 });
 
-test.each([4, 8])('bounded deterministic %i-slot sequence covers every instrument without duplicates over repeated cycles', count => {
-  const sequence = createSceneSequence(count);
-  const seen = new Set(sequence.visible);
-  for (let step = 0; step < 240; step++) {
-    const { slot, id } = sequence.next();
-    expect(slot).toBe(step % count);
-    expect(sequence.visible[slot]).toBe(id);
-    expect(new Set(sequence.visible).size).toBe(count);
-    seen.add(id);
-    if (step === 23) expect(seen.size).toBe(24);
+test.each([false, true])('physical orbit covers all 24 centres every 3 seconds, compact=%s', compact => {
+  expect(STEP_SECONDS).toBe(3);
+  expect(SCENE_CYCLE_SECONDS).toBe(72);
+  const centre = scenePose(0, 0, compact);
+  for (let i = 0; i < 48; i++) {
+    const pose = scenePose(i % 24, i * STEP_SECONDS, compact);
+    expect(pose).toEqual(centre);
+    expect(pose.opacity).toBe(1);
+  }
+  for (let frame = 0; frame <= 4320; frame++) {
+    const seconds = frame / 30;
+    const poses = SCENE_INSTRUMENTS.map((_, i) => scenePose(i, seconds, compact));
+    expect(poses.filter(p => p.opacity > .001).length).toBeLessThanOrEqual(compact ? 4 : 8);
+    expect(poses.filter(p => p.opacity > .001).length).toBeGreaterThanOrEqual(compact ? 3 : 7);
+    for (let i = 0; i < poses.length; i++) {
+      const p = poses[i], next = scenePose(i, seconds + 1 / 30, compact);
+      if (p.opacity > .001 && next.opacity > .001) {
+        expect(Math.hypot(next.x - p.x, next.y - p.y)).toBeLessThan(5);
+        expect(Math.abs(next.r - p.r)).toBeLessThan(2);
+      }
+    }
+  }
+});
+test.each([false, true])('centre and side medallions really translate and scale without changing identity, compact=%s', compact => {
+  for (const index of [0, 1, 2]) {
+    const before = scenePose(index, 0, compact), after = scenePose(index, 1.5, compact);
+    expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(20);
+    expect(after.z).not.toBe(before.z);
+    expect(after.r).not.toBe(before.r);
+    expect(after.rotationY).not.toBe(before.rotationY);
+  }
+  for (let index = 0; index < 24; index++) {
+    expect(scenePose(index, 72, compact)).toEqual(scenePose(index, 0, compact));
+    const before = scenePose(index, 71.999, compact), after = scenePose(index, .001, compact);
+    if (before.opacity && after.opacity) expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeLessThan(.01);
   }
 });
 
@@ -100,11 +125,24 @@ test.each(SCENE_INSTRUMENTS)('local %s face uses vector relief, no demo prices o
   expect(svg).toContain('width="256"');
 });
 
-test('context loss reveals fallback and cannot resume GPU work until a fresh mount', () => {
+test('context restoration preserves lifecycle guards and removes the manual toggle', () => {
   const css = readFileSync(resolve(__dirname, '../../pages/home/home-v0-approved.css'), 'utf8');
   expect(css).toMatch(/\[data-ready=false\] \.v0-coin-canvas\s*\{\s*visibility:\s*hidden/);
   const renderer = readFileSync(resolve(__dirname, '../../pages/home/v0CoinRenderer.ts'), 'utf8');
   expect(renderer).toContain('contextLost = true');
-  expect(renderer).toContain('if (disposed || contextLost || active === value) return');
+  expect(renderer).toContain('requestedActive && !contextLost && !disposed');
+  expect(renderer).toContain("addEventListener('webglcontextrestored', restored)");
+  expect(renderer).toContain("removeEventListener('webglcontextrestored', restored)");
+  expect(renderer).not.toMatch(/setScissor|preserveDrawingBuffer|front.map =|back.map =/);
+  const component = readFileSync(resolve(__dirname, '../../pages/home/HomeV0Coins.tsx'), 'utf8');
+  expect(component + css).not.toMatch(/v0-motion-toggle|Pause|Play|setPaused/);
   expect(renderer).toContain('if (disposed || contextLost) return');
+});
+
+test('depth-aware quote labels never overlay a nearer medallion face', () => {
+  const poses = SCENE_INSTRUMENTS.map((_, i) => scenePose(i, 10));
+  expect(sceneLabelOpacity(poses[4], poses)).toBe(0);
+  expect(sceneLabelOpacity(poses[3], poses)).toBe(1);
+  const initial = SCENE_INSTRUMENTS.map((_, i) => scenePose(i, 0));
+  initial.filter(p => p.opacity > .9).forEach(p => expect(sceneLabelOpacity(p, initial)).toBe(1));
 });

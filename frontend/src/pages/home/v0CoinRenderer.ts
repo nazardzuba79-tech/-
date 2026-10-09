@@ -1,21 +1,19 @@
 import * as THREE from 'three';
-import { createSceneSequence, FLIP_SECONDS, MOBILE_SCENE_HEIGHT, MOBILE_SCENE_SPOTS, SCENE_HEIGHT, SCENE_INSTRUMENTS, SCENE_SPOTS, SCENE_WIDTH, STEP_SECONDS } from './v0MarketScene';
+import { MOBILE_SCENE_HEIGHT, SCENE_HEIGHT, SCENE_INSTRUMENTS, SCENE_WIDTH, scenePose, sceneLabelOpacity, STEP_SECONDS } from './v0MarketScene';
 import { MEDALLION_URLS } from './v0MedallionArtwork';
 
 export interface SceneController { setActive(active: boolean): void; dispose(): void }
 
-export async function createCoinScene(host: HTMLElement, onChange: (ids: string[]) => void, onLost: () => void, compact = false, cancelled = () => false): Promise<SceneController | null> {
+export async function createCoinScene(host: HTMLElement, onAvailability: (ready: boolean) => void, compact = false, cancelled = () => false): Promise<SceneController | null> {
   const artwork = await Promise.all(SCENE_INSTRUMENTS.map(async instrument => {
     const image = new Image(); image.src = MEDALLION_URLS.get(instrument.id)!;
     await image.decode(); return { id: instrument.id, image };
   }));
   // An unmount/resize during decoding must not install an orphan GPU.
   if (cancelled()) return null;
-  const spots = compact ? MOBILE_SCENE_SPOTS : SCENE_SPOTS;
   const height = compact ? MOBILE_SCENE_HEIGHT : SCENE_HEIGHT;
-  // Keep the static medallions in the buffer. Only the rotating
-  // coin's bounded rectangle is cleared/redrawn, not the whole transparent hero.
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true, powerPreference: 'low-power' });
+  // Every object moves: clear the transparent canvas, never retain old scissor pixels.
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, compact ? 1 : 1.5));
   renderer.setClearColor(0, 0);
   renderer.domElement.className = 'v0-coin-canvas';
@@ -33,98 +31,105 @@ export async function createCoinScene(host: HTMLElement, onChange: (ids: string[
   const face = own(new THREE.CircleGeometry(1, 64));
   const rim = own(new THREE.CylinderGeometry(1, 1, .21, 64, 1, true).rotateX(Math.PI / 2));
   const bevel = own(new THREE.TorusGeometry(.975, .028, 6, 64));
-  const bevelMaterial = own(new THREE.MeshBasicMaterial({ color: '#ffdf9c' }));
-  const rimMaterial = own(new THREE.MeshStandardMaterial({ color: '#e6b866', metalness: .82, roughness: .24, side: THREE.DoubleSide }));
   scene.add(new THREE.AmbientLight('#d7e5ff', 2.2));
   const key = new THREE.DirectionalLight('#ffdf9d', 3); key.position.set(-150, 150, 500); scene.add(key);
-  const sequence = createSceneSequence(spots.length);
-  const coins = spots.map((spot, index) => {
-    const group = new THREE.Group(); group.position.set(spot.x, -spot.y, 30); group.scale.setScalar(spot.r);
-    const front = own(new THREE.MeshBasicMaterial({ map: textures.get(sequence.visible[index]), toneMapped: false }));
-    const back = own(new THREE.MeshBasicMaterial({ map: textures.get(sequence.visible[index]), toneMapped: false }));
+  // Stable identity, including while behind the scene: no texture replacement.
+  const coins = SCENE_INSTRUMENTS.map((instrument, index) => {
+    const group = new THREE.Group();
+    const front = own(new THREE.MeshBasicMaterial({ map: textures.get(instrument.id), toneMapped: false, transparent: true }));
+    const back = own(front.clone());
+    const edgeMaterial = own(new THREE.MeshBasicMaterial({ color: '#ffdf9c', transparent: true }));
+    const rimMaterial = own(new THREE.MeshStandardMaterial({ color: '#e6b866', metalness: .82, roughness: .24, side: THREE.DoubleSide, transparent: true }));
     group.add(new THREE.Mesh(rim, rimMaterial));
     const frontMesh = new THREE.Mesh(face, front); frontMesh.position.z = .106; group.add(frontMesh);
     const backMesh = new THREE.Mesh(face, back); backMesh.position.z = -.106; backMesh.rotation.y = Math.PI; group.add(backMesh);
-    for (const z of [-.11, .11]) { const edge = new THREE.Mesh(bevel, bevelMaterial); edge.position.z = z; group.add(edge); }
-    group.rotation.y = index % 2 ? -.17 : .15; group.rotation.z = index === 0 ? -.08 : .03;
-    scene.add(group); return { group, front, back, turn: 0 };
+    for (const z of [-.11, .11]) { const edge = new THREE.Mesh(bevel, edgeMaterial); edge.position.z = z; group.add(edge); }
+    scene.add(group);
+    const label = host.querySelector<HTMLElement>(`[data-instrument="${instrument.id}"]`);
+    return { group, materials: [front, back, edgeMaterial, rimMaterial], label,
+      quote: label?.querySelector<HTMLElement>('.v0-quote'), image: label?.querySelector<HTMLElement>('.v0-coin-fallback'),
+      // React can reuse label nodes across a responsive renderer remount.
+      // Explicitly reset even invisible ones on the first draw.
+      base: scenePose(index, 0, compact), visible: null as boolean | null };
   });
-
-  // Original perspective-correct pedestal remains in the cleaned reference.
-  // Never draw a second platform over the laptop.
-  let disposed = false, contextLost = false, active = false, raf = 0, last = 0, lastDraw = 0, elapsed = 0, step = -1;
-  let pending: { slot: number; id: string; committed: boolean } | null = null;
-  const stats = { frames: 0, textures: 0, geometries: 0 };
+  let disposed = false, contextLost = false, requestedActive = false, active = false;
+  let raf = 0, last = 0, lastDraw = 0, elapsed = 0, sx = 1, sy = 1;
+  const stats = { frames: 0, textures: 0, geometries: 0, elapsed: 0, centre: 'BTCUSDT' };
   Object.defineProperty(host, '__voltexHeroSceneStats', { value: stats, configurable: true });
-  const draw = (spot?: { x: number; y: number; r: number }) => {
-    renderer.setScissorTest(Boolean(spot));
-    if (spot) {
-      // setScissor takes CSS renderer pixels, not drawing-buffer/DPR pixels.
-      const sx = host.clientWidth / SCENE_WIDTH, sy = host.clientHeight / height, radius = spot.r * 1.2;
-      renderer.setScissor(Math.floor((spot.x - radius) * sx), Math.floor((height - spot.y - radius) * sy), Math.ceil(radius * 2 * sx), Math.ceil(radius * 2 * sy));
-    }
-    // Scissor limits pixels, not draw calls. Submit only medallions intersecting
-    // the damaged region; include neighbours so their overlapping edges survive.
+  const draw = () => {
+    const poses = SCENE_INSTRUMENTS.map((_, index) => scenePose(index, elapsed, compact));
     coins.forEach((coin, index) => {
-      const other = spots[index];
-      coin.group.visible = !spot || (Math.abs(other.x - spot.x) < (other.r + spot.r) * 1.2
-        && Math.abs(other.y - spot.y) < (other.r + spot.r) * 1.2);
+      const pose = poses[index], visible = pose.opacity > .001;
+      coin.group.visible = visible;
+      if (coin.label && visible !== coin.visible) {
+        coin.label.style.visibility = visible ? 'visible' : 'hidden';
+        coin.label.setAttribute('aria-hidden', String(!visible));
+      }
+      coin.visible = visible;
+      if (!visible) return;
+      coin.group.position.set(pose.x, -pose.y, pose.z);
+      coin.group.scale.setScalar(pose.r);
+      coin.group.rotation.set(pose.rotationX, pose.rotationY, pose.rotationZ);
+      coin.materials.forEach(material => { material.opacity = pose.opacity; });
+      if (coin.label) {
+        coin.label.style.opacity = String(pose.opacity);
+        coin.label.style.transform = `translate3d(${(pose.x - coin.base.x) * sx}px, ${(pose.y - coin.base.y) * sy}px, 0) translate(-50%, -50%)`;
+        coin.label.style.zIndex = String(Math.round(pose.z + 300));
+      }
+      if (coin.image) coin.image.style.transform = `scale(${pose.r / coin.base.r})`;
+      if (coin.quote) {
+        coin.quote.style.transform = `translate(-50%, ${(pose.r - coin.base.r) * (compact ? 1.04 : 1.16) * sy}px)`;
+        coin.quote.style.opacity = String(sceneLabelOpacity(pose, poses, compact));
+      }
     });
     renderer.render(scene, camera);
-    coins.forEach(coin => { coin.group.visible = true; });
-    // Plain local object, NOT DOM mutations on every frame. No global listener,
-    // telemetry, style invalidation or React render for diagnostics.
-    stats.frames++;
-    stats.textures = renderer.info.memory.textures;
-    stats.geometries = renderer.info.memory.geometries;
+    stats.frames++; stats.elapsed = elapsed;
+    stats.centre = SCENE_INSTRUMENTS[Math.round(elapsed / STEP_SECONDS) % SCENE_INSTRUMENTS.length].id;
+    stats.textures = renderer.info.memory.textures; stats.geometries = renderer.info.memory.geometries;
   };
-  let lastProgress = -1;
-  const frame = (now: number) => {
-    if (!active || disposed) return;
-    // Decorative motion gets a 30 fps GPU budget; the real terminal and page
-    // retain their own refresh rates. No timers, network polling or React frames.
-    if (now - lastDraw < 1000 / 30 - 1) { raf = requestAnimationFrame(frame); return; }
-    lastDraw = now;
-    if (last) elapsed += Math.min((now - last) / 1000, .1);
+  const tick = (now: number) => {
+    if (!active || disposed || contextLost) return;
+    if (last) elapsed += Math.max(0, now - last) / 1000;
+    stats.elapsed = elapsed;
     last = now;
-    const local = Math.max(0, elapsed - 1.4);
-    const nextStep = elapsed < 1.4 ? -1 : Math.floor(local / STEP_SECONDS);
-    if (nextStep !== step) {
-      if (pending) { const coin = coins[pending.slot]; coin.turn++; coin.front.map = coin.back.map = textures.get(pending.id)!; }
-      step = nextStep;
-      lastProgress = -1;
-      const next = sequence.next(); pending = { ...next, committed: false };
-      const coin = coins[next.slot];
-      const hidden = coin.turn % 2 === 0 ? coin.back : coin.front;
-      hidden.map = textures.get(next.id)!; hidden.needsUpdate = true;
-    }
-    const progress = step < 0 ? 0 : Math.min((local - step * STEP_SECONDS) / FLIP_SECONDS, 1);
-    if (pending && !pending.committed && progress >= .5) { pending.committed = true; onChange([...sequence.visible]); }
-    coins.forEach((coin, index) => {
-      const p = pending?.slot === index ? progress : 0;
-      const ease = p * p * (3 - 2 * p);
-      coin.group.rotation.y = (coin.turn + ease) * Math.PI + (index % 2 ? -.17 : .15);
-      coin.group.rotation.x = Math.sin(p * Math.PI) * .13;
-      coin.group.position.y = -spots[index].y + Math.sin(p * Math.PI) * 3;
-    });
-    if (pending && progress !== lastProgress) { draw(spots[pending.slot]); lastProgress = progress; }
-    raf = requestAnimationFrame(frame);
+    if (now - lastDraw >= 1000 / 30) { lastDraw = now - (now - lastDraw) % (1000 / 30); draw(); }
+    raf = requestAnimationFrame(tick);
   };
-  const resize = () => { if (disposed || contextLost) return; renderer.setSize(host.clientWidth, host.clientHeight, false); draw(); };
-  const observer = new ResizeObserver(resize); observer.observe(host); resize();
-  const lost = (event: Event) => { event.preventDefault(); contextLost = true; active = false; cancelAnimationFrame(raf); host.dataset.active = 'false'; onLost(); };
+  const sync = () => {
+    const next = requestedActive && !contextLost && !disposed;
+    if (active === next) return;
+    active = next; host.dataset.active = String(active);
+    cancelAnimationFrame(raf); last = 0; lastDraw = 0;
+    if (active) raf = requestAnimationFrame(tick);
+  };
+  const resize = () => {
+    if (disposed || contextLost) return;
+    const bounds = host.getBoundingClientRect();
+    sx = bounds.width / SCENE_WIDTH; sy = bounds.height / height;
+    renderer.setSize(bounds.width, bounds.height, false); draw();
+  };
+  const observer = new ResizeObserver(resize); observer.observe(host);
+  const lost = (event: Event) => {
+    event.preventDefault(); contextLost = true; sync(); onAvailability(false);
+  };
+  const restored = () => {
+    if (disposed) return;
+    // Three restores GPU resources first. Keep the same timeline and identities;
+    // resuming still depends on the current visibility/reduced-motion request.
+    contextLost = false; resize(); onAvailability(true); sync();
+  };
   renderer.domElement.addEventListener('webglcontextlost', lost);
+  renderer.domElement.addEventListener('webglcontextrestored', restored);
+  host.dataset.active = 'false'; resize();
   return {
-    setActive(value) {
-      if (disposed || contextLost || active === value) return;
-      active = value; host.dataset.active = String(value); last = 0;
-      cancelAnimationFrame(raf); if (value) raf = requestAnimationFrame(frame);
-    },
+    setActive(value) { requestedActive = value; sync(); },
     dispose() {
-      disposed = true; active = false; cancelAnimationFrame(raf); observer.disconnect();
+      if (disposed) return;
+      disposed = true; sync(); observer.disconnect(); cancelAnimationFrame(raf);
       renderer.domElement.removeEventListener('webglcontextlost', lost);
-      resources.forEach(resource => resource.dispose());
-      scene.clear(); renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove();
+      renderer.domElement.removeEventListener('webglcontextrestored', restored);
+      resources.forEach(resource => resource.dispose()); scene.clear();
+      renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove();
     },
   };
 }

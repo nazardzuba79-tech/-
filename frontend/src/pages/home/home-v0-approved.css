@@ -23,8 +23,8 @@
 .v0-coin-canvas, .v0-coins-labels { position: absolute; inset: 0; width: 100%; height: 100%; }
 .v0-coin-canvas { display: block; }
 .v0-coins[data-ready=false] .v0-coin-canvas { visibility: hidden; }
-.v0-motion-toggle { position: absolute; left: 45%; bottom: -18%; display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #e0bd7855; border-radius: 6px; background: #0b1b3080; color: #e9cb91; pointer-events: auto; cursor: pointer; }
-.v0-motion-toggle:hover, .v0-motion-toggle:focus-visible { color: #fff0bf; border-color: #e9c57d; }
+
+
 .v0-coin { position: absolute; aspect-ratio: 1; transform: translate(-50%, -50%); }
 .v0-coin-fallback { display: block; width: 100%; height: 100%; border-radius: 50%; }
 .v0-coins[data-ready=true] .v0-coin-fallback { visibility: hidden; }
@@ -52,7 +52,7 @@
   .hs-root.v0-approved-hero .reference-market-legend::before, .hs-root.v0-approved-hero .reference-market-legend::after { width: 18px; }
   .v0-approved-hero .v0-coins { position: relative; order: 1; left: auto; top: auto; margin: 0 auto; width: min(95%,410px); height: auto; aspect-ratio: 410 / 190; }
   .v0-quote { font-size: 10px; flex-direction: column; gap: 0; top: 102%; padding: 2px 5px; }
-  .v0-motion-toggle { left: auto; right: 0; bottom: 0; }
+
   .hs-root.v0-approved-hero .art { position: relative; inset: auto; width: 166%; height: auto; max-width: none; align-self: flex-end; order: 2; margin-top: -40px; margin-bottom: -10%; mask-image: linear-gradient(transparent,#000 14%); }
 }
 @media (max-width: 430px) { .hs-root.v0-approved-hero .copy { padding-inline: 18px; } }

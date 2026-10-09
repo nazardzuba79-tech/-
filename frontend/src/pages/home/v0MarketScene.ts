@@ -53,25 +53,73 @@ export const MOBILE_SCENE_SPOTS = [
   { x: 56, y: 70, r: 43 }, { x: 156, y: 70, r: 43 },
   { x: 256, y: 70, r: 43 }, { x: 356, y: 70, r: 43 },
 ] as const;
-export const STEP_SECONDS = 1.6;
-export const FLIP_SECONDS = 1.15;
+export const STEP_SECONDS = 3;
+export const SCENE_CYCLE_SECONDS = SCENE_INSTRUMENTS.length * STEP_SECONDS;
 
-// One queue; the outgoing slot is replaced only at the edge-on midpoint.
-// Queue order, not random selection, guarantees coverage and no duplicates.
-export function createSceneSequence(count = 8) {
-  const visible = SCENE_INSTRUMENTS.slice(0, count).map(x => x.id);
-  const queue = SCENE_INSTRUMENTS.slice(count).map(x => x.id);
-  let step = 0;
+export type ScenePose = {
+  x: number; y: number; z: number; r: number; opacity: number;
+  rotationX: number; rotationY: number; rotationZ: number;
+};
+type Waypoint = { x: number; y: number; z: number; r: number };
+// A single clockwise route through the approved anchors, with a foreground
+// excursion through the centre. Each instrument keeps its own mesh and texture.
+// The rear gate admits the next instrument only after the outgoing one recedes;
+// the remaining roster travels invisibly behind the scene, never texture-swaps.
+const desktopRoute: readonly Waypoint[] = [
+  { x: 90, y: 440, r: 16, z: -220 },
+  { ...SCENE_SPOTS[5], z: -80 }, { ...SCENE_SPOTS[7], z: -30 },
+  { ...SCENE_SPOTS[2], z: 15 }, { ...SCENE_SPOTS[0], z: 110 },
+  { ...SCENE_SPOTS[4], z: 30 }, { ...SCENE_SPOTS[1], z: -30 },
+  { ...SCENE_SPOTS[6], z: -50 }, { ...SCENE_SPOTS[3], z: -70 },
+  { x: 55, y: 470, r: 16, z: -220 },
+];
+const mobileRoute: readonly Waypoint[] = [
+  { x: 10, y: 100, r: 12, z: -180 },
+  { ...MOBILE_SCENE_SPOTS[0], r: 36, z: -30 },
+  { ...MOBILE_SCENE_SPOTS[1], r: 50, z: 110 },
+  { ...MOBILE_SCENE_SPOTS[2], r: 36, z: 0 },
+  { ...MOBILE_SCENE_SPOTS[3], r: 34, z: -50 },
+  { x: 399, y: 80, r: 12, z: -180 },
+];
+const smooth = (value: number) => {
+  const t = Math.max(0, Math.min(1, value));
+  return t * t * (3 - 2 * t);
+};
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+
+/** Pure, periodic pose from the one active-time clock; no quotes or timers. */
+export function scenePose(index: number, seconds: number, compact = false): ScenePose {
+  const time = Number.isFinite(seconds) ? Math.max(0, seconds) % SCENE_CYCLE_SECONDS : 0;
+  const count = SCENE_INSTRUMENTS.length;
+  const phase = ((index - time / STEP_SECONDS + 4 + count) % count) - 4;
+  const route = compact ? mobileRoute : desktopRoute;
+  const first = compact ? -2 : -4, last = compact ? 3 : 5;
+  const coordinate = Math.max(0, Math.min(route.length - 1, phase - first));
+  const segment = Math.min(Math.floor(coordinate), route.length - 2);
+  const a = route[segment], b = route[segment + 1], t = smooth(coordinate - segment);
+  const z = mix(a.z, b.z, t);
+  // Perspective scale while retaining the reference's orthographic composition.
+  const focal = 900;
+  const r = mix(a.r * (1 - a.z / focal), b.r * (1 - b.z / focal), t) / (1 - z / focal);
+  const exit = first + 1, entry = last - 1;
+  const opacity = phase < exit ? smooth((phase - exit + .45) / .45)
+    : phase > entry ? smooth((entry + .45 - phase) / .45) : 1;
   return {
-    visible,
-    next() {
-      const slot = step++ % count;
-      const id = queue.shift()!;
-      queue.push(visible[slot]);
-      visible[slot] = id;
-      return { slot, id };
-    },
+    x: mix(a.x, b.x, t), y: mix(a.y, b.y, t), z, r, opacity,
+    rotationX: Math.sin(phase * 1.7) * .07,
+    rotationY: .14 + Math.sin(phase * Math.PI / 4) * .22,
+    rotationZ: -.04 + Math.sin(phase * 1.1) * .035,
   };
+}
+
+/** A rear label must not float over the face of a nearer medallion. */
+export function sceneLabelOpacity(pose: ScenePose, poses: readonly ScenePose[], compact = false): number {
+  const y = pose.y + pose.r * (compact ? 1.04 : 1.16) + 7;
+  return poses.reduce((opacity, foreground) => {
+    if (foreground.opacity < .9 || foreground.z <= pose.z) return opacity;
+    const clearance = Math.hypot(pose.x - foreground.x, y - foreground.y) - foreground.r;
+    return Math.min(opacity, smooth(clearance / 12));
+  }, 1);
 }
 
 const positive = (value: unknown) => {

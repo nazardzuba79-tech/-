@@ -39,13 +39,13 @@ async function geometry(label) {
   const state = await page.evaluate(() => {
     const r = element => { const b = element.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height }; };
     const copy = document.querySelector('.hs-root .copy'), coins = document.querySelector('.v0-coins'), terminal = document.querySelector('#home-live-terminal');
-    return { width: innerWidth, height: innerHeight, overflow: document.documentElement.scrollWidth - innerWidth, copy: copy && r(copy), coins: coins && r(coins), terminal: terminal && r(terminal), heading: document.querySelector('#hs-title')?.textContent, medallions: document.querySelectorAll('.v0-coin').length, texts: [...document.querySelectorAll('.v0-quote')].map(x => x.textContent), brokenImages: [...document.images].filter(x => x.complete && !x.naturalWidth).map(x => x.getAttribute('src')) };
+    return { width: innerWidth, height: innerHeight, overflow: document.documentElement.scrollWidth - innerWidth, copy: copy && r(copy), coins: coins && r(coins), terminal: terminal && r(terminal), heading: document.querySelector('#hs-title')?.textContent, medallions: [...document.querySelectorAll('.v0-coin')].filter(e => getComputedStyle(e).visibility !== 'hidden').length, texts: [...document.querySelectorAll('.v0-quote')].map(x => x.textContent), brokenImages: [...document.images].filter(x => x.complete && !x.naturalWidth).map(x => x.getAttribute('src')) };
   });
   report.responsive.push({ label, ...state });
   assert.ok(state.overflow <= 1, `${label} overflow ${state.overflow}`);
   assert.equal(state.brokenImages.length, 0, `${label} broken images`);
   if (!baseline) {
-    assert.equal(state.medallions, state.width > 900 ? 8 : 4);
+    assert.ok(state.medallions >= (state.width > 900 ? 7 : 3) && state.medallions <= (state.width > 900 ? 8 : 4));
     if (state.width > 900) assert.ok(state.copy.x + state.copy.width <= state.coins.x + 4, `${label} copy/coin overlap`);
   }
 }
@@ -99,23 +99,25 @@ if (require.main === module) (async () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     if (!baseline) {
       // matchMedia/React/WebGL remount settle asynchronously after the last
-      // mobile viewport. Begin the eight-slot cycle only on the ready desktop scene.
-      await page.waitForFunction(() => document.querySelectorAll('.v0-coin').length === 8 && document.querySelector('.v0-coins')?.dataset.ready === 'true');
+      // mobile viewport. Begin the full physical cycle only on the ready desktop scene.
+      await page.waitForFunction(() => document.querySelectorAll('.v0-coin').length === 24 && document.querySelector('.v0-coins')?.dataset.ready === 'true');
       const seen = new Set(); const requestsBefore = report.requests.length;
       report.videoCycleStartSeconds = (Date.now() - videoStartedAt) / 1000;
-      for (let i = 0; i < 55; i++) {
-        const ids = await page.locator('.v0-coin').evaluateAll(elements => elements.map(x => x.dataset.instrument));
-        assert.equal(new Set(ids).size, 8, 'duplicate instrument in visible scene');
+      for (let i = 0; i < 115; i++) {
+        const ids = await page.locator('.v0-coin').evaluateAll(elements => elements.filter(x => getComputedStyle(x).visibility !== 'hidden').map(x => x.dataset.instrument));
+        assert.equal(new Set(ids).size, ids.length, 'duplicate instrument in visible scene'); assert.ok(ids.length >= 7 && ids.length <= 8);
         ids.forEach(id => seen.add(id)); report.cycle.push(ids); await wait(650);
       }
       report.metrics.cycleInstruments = [...seen]; assert.equal(seen.size, 24, 'all archive instruments participate');
-      report.metrics.cycleRequests = report.requests.slice(requestsBefore); assert.equal(report.metrics.cycleRequests.length, 0, 'animation must not request quotes');
+      report.metrics.cycleRequests = report.requests.slice(requestsBefore); // This fixture deliberately has global:null. The existing homepage retries
+      // only that missing summary after 60s; the former 35s test never reached it.
+      assert.ok(report.metrics.cycleRequests.length <= 2 && report.metrics.cycleRequests.every(p => p === 'GET /market/global'), 'animation must not request any quotes; only the unchanged missing-summary retry is allowed');
       const frames = () => page.locator('.v0-coins').evaluate(element => element.__voltexHeroSceneStats.frames);
       await page.evaluate(() => scrollTo(0, document.body.scrollHeight)); await wait(150); const a = await frames(); await wait(700); assert.equal(await frames(), a, 'offscreen loop stopped');
       await page.evaluate(() => scrollTo(0, 0)); await wait(200);
       await page.emulateMedia({ reducedMotion: 'reduce' }); await wait(100); const b = await frames(); await wait(700); assert.equal(await frames(), b, 'reduced-motion loop stopped');
       await screenshot('home-reduced-motion'); await page.emulateMedia({ reducedMotion: 'no-preference' });
-      await page.locator('.v0-motion-toggle').click(); await wait(100); const c = await frames(); await wait(500); assert.equal(await frames(), c, 'manual pause works'); await page.locator('.v0-motion-toggle').click();
+      assert.equal(await page.locator('.v0-motion-toggle').count(), 0, 'manual control removed');
       // Explicit visibility-state fixture; no claim that headless tabs model an
       // OS-minimized window. Exercise the same real visibility event handler.
       await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
@@ -138,9 +140,9 @@ if (require.main === module) (async () => {
     if (!baseline) {
       await page.setViewportSize({ width: 390, height: 900 });
       await page.locator('.v0-coins').scrollIntoViewIfNeeded();
-      await page.waitForFunction(() => document.querySelectorAll('.v0-coin').length === 4 && document.querySelector('.v0-coins')?.dataset.ready === 'true');
+      await page.waitForFunction(() => document.querySelectorAll('.v0-coin').length === 24 && document.querySelector('.v0-coins')?.dataset.ready === 'true');
       const seen = new Set();
-      for (let i = 0; i < 55; i++) { const ids = await page.locator('.v0-coin').evaluateAll(elements => elements.map(x => x.dataset.instrument)); assert.equal(new Set(ids).size, 4); ids.forEach(id => seen.add(id)); await wait(650); }
+      for (let i = 0; i < 115; i++) { const ids = await page.locator('.v0-coin').evaluateAll(elements => elements.filter(x => getComputedStyle(x).visibility !== 'hidden').map(x => x.dataset.instrument)); assert.equal(new Set(ids).size, ids.length); assert.ok(ids.length >= 3 && ids.length <= 4); ids.forEach(id => seen.add(id)); await wait(650); }
       assert.equal(seen.size, 24, 'mobile cycle includes all 24 instruments'); report.metrics.mobileCycleInstruments = [...seen];
       await page.evaluate(() => scrollTo(0, 0)); await wait(100);
       const heroBottom = await page.locator('#home-global-hero').evaluate(element => Math.ceil(element.getBoundingClientRect().bottom));
@@ -148,14 +150,26 @@ if (require.main === module) (async () => {
       report.screenshots.push(path.join(out, 'home-mobile-hero.png'));
       await page.setViewportSize({ width: 1440, height: 900 }); await page.evaluate(() => scrollTo(0, 0));
     }
-    for (const route of ['/futures', '/trade']) {
+    const memoryCdp = await context.newCDPSession(page); await memoryCdp.send('Performance.enable');
+    report.metrics.remountHeapBytes = [];
+    for (const route of ['/futures', '/trade', '/futures', '/trade', '/futures', '/trade', '/futures', '/trade']) {
+      if (!baseline) await page.evaluate(() => { window.__oldHero = document.querySelector('.v0-coins'); });
       await page.locator(`.product-shortcuts a[href="${route}"]`).click(); await page.waitForURL(url => url.pathname === route || url.pathname === '/login');
+      if (!baseline) {
+        const stopped = await page.evaluate(() => window.__oldHero.__voltexHeroSceneStats.frames); await wait(120);
+        assert.equal(await page.evaluate(() => window.__oldHero.__voltexHeroSceneStats.frames), stopped, 'unmounted renderer has no active RAF');
+        assert.equal(await page.evaluate(() => window.__oldHero.querySelectorAll('canvas').length), 0, 'disposed canvas removed');
+        await page.evaluate(() => { delete window.__oldHero; });
+      }
       await page.goBack({ waitUntil: 'networkidle' }); await page.locator('#hs-title').waitFor();
       if (!baseline) {
         await page.waitForFunction(() => document.querySelector('.v0-coins')?.dataset.ready === 'true');
         assert.equal(await page.locator('.v0-coin-canvas').count(), 1, 'one canvas after route return');
+        await memoryCdp.send('HeapProfiler.collectGarbage');
+        report.metrics.remountHeapBytes.push((await memoryCdp.send('Performance.getMetrics')).metrics.find(x => x.name === 'JSHeapUsedSize').value);
       }
     }
+    if (!baseline) assert.ok(report.metrics.remountHeapBytes.at(-1) - report.metrics.remountHeapBytes[1] < 8 * 1024 * 1024, 'bounded post-GC heap across eight route remounts');
     for (const route of ['/login', '/register']) {
       await page.goto(origin + route, { waitUntil: 'networkidle' });
       assert.ok(await page.locator('input[type="password"]').count(), `${route} real form available`);
@@ -166,15 +180,19 @@ if (require.main === module) (async () => {
       // Exercise a real WebGL context loss: the complete readable static scene
       // must survive, not a blank canvas or raster with demo prices.
       await page.waitForFunction(() => document.querySelector('.v0-coins')?.dataset.ready === 'true');
-      await page.locator('.v0-coin-canvas').evaluate(canvas => canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
+      await page.locator('.v0-coin-canvas').evaluate(canvas => { window.__lost = canvas.getContext('webgl2').getExtension('WEBGL_lose_context'); window.__lost.loseContext(); });
       await page.waitForFunction(() => document.querySelector('.v0-coins')?.dataset.ready === 'false');
-      assert.equal(await page.locator('.v0-coin').count(), 8);
+      assert.equal(await page.locator('.v0-coin').count(), 24);
       assert.equal(await page.locator('.v0-coin-canvas').isVisible(), false, 'lost canvas must not cover static fallback');
       assert.equal(await page.locator('.v0-coin-fallback').first().isVisible(), true);
       await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
       await wait(100);
       assert.equal(await page.locator('.v0-coins').getAttribute('data-active'), 'false', 'lost context must not restart on visibility');
       await screenshot('home-webgl-fallback');
+      await page.evaluate(() => window.__lost.restoreContext());
+      await page.waitForSelector('.v0-coins[data-ready=true][data-active=true]');
+      const recovered = await page.locator('.v0-coins').evaluate(e => e.__voltexHeroSceneStats.frames);
+      await wait(400); assert.ok(await page.locator('.v0-coins').evaluate(e => e.__voltexHeroSceneStats.frames) > recovered, 'restored context resumes movement');
     }
   }
   if (!report.metrics.browser) report.metrics.browser = await page.evaluate(() => ({ ...window.__homePerf, heap: performance.memory?.usedJSHeapSize, resources: performance.getEntriesByType('resource').map(x => ({ name: new URL(x.name).pathname, bytes: x.transferSize, duration: x.duration })), renderer: document.querySelector('.v0-coins')?.dataset ? { ...document.querySelector('.v0-coins').dataset } : null }));

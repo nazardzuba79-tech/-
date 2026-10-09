@@ -12,7 +12,7 @@ const out = path.resolve(`output/home-v0/performance${mobile ? '-mobile' : ''}${
 let browser, server, variant = 'baseline';
 const rows = [];
 (async () => {
-  const dirs = { ...(optimized ? {} : { baseline: path.resolve('output/baseline-dist') }), updated: path.resolve('frontend/dist') };
+  const dirs = { ...(optimized ? {} : { baseline: path.resolve(process.env.HOME_QA_BASELINE_DIR || 'output/baseline-dist') }), updated: path.resolve('frontend/dist') };
   for (const dir of Object.values(dirs)) if (!fs.existsSync(path.join(dir, 'index.html'))) throw new Error(`Missing prepared build: ${dir}`);
   const app = express(); app.use('/api/v1', fixture);
   const statics = Object.fromEntries(Object.entries(dirs).map(([key, dir]) => [key, express.static(dir)]));
@@ -36,12 +36,12 @@ const rows = [];
     const start = Date.now(); await page.goto(origin, { waitUntil: 'networkidle' });
     await page.locator('#home-live-terminal .book-row').first().waitFor();
     const coldReadyMs = Date.now() - start;
-    if (mobile) await page.locator(variant === 'updated' ? '.v0-coins' : '.hero').scrollIntoViewIfNeeded();
+    if (mobile) await page.locator('.v0-coins').scrollIntoViewIfNeeded();
     // Both paired builds must have an active renderer before sampling. A slow
     // lazy import in the baseline is not a zero-cost animation result.
     await page.waitForFunction(() => {
       const scene = document.querySelector('.v0-coins');
-      return scene?.dataset.ready === 'true' && scene.__voltexHeroSceneStats?.frames > 0;
+      return scene?.dataset.ready === 'true' && scene.dataset.active === 'true' && scene.__voltexHeroSceneStats?.frames > 0;
     });
     await wait(2500);
     const snapshot = async () => ({ metrics: Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(x => [x.name, x.value])), ui: await page.evaluate(() => ({ time: performance.now(), frames: window.__perf.frames, sceneFrames: document.querySelector('.v0-coins')?.__voltexHeroSceneStats.frames ?? 0 })) });

@@ -7,6 +7,7 @@ on:
       - 'frontend/package*.json'
       - 'scripts/qa-home-v0.cjs'
       - 'scripts/qa-home-v0-reference.cjs'
+      - 'scripts/qa-home-v0-motion.cjs'
       - 'docs/qa/home-v0-reference-correction/reference.png'
       - '.github/workflows/home-v0-approved.yml'
 permissions:
@@ -42,6 +43,10 @@ jobs:
         run: node scripts/qa-home-v0.cjs
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
+      - name: Real-time 24-centre orbit, rendered pixels and context recovery
+        run: node scripts/qa-home-v0-motion.cjs
+        env:
+          HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
       - name: Pixel-aligned reference and browser comparison
         run: node scripts/qa-home-v0-reference.cjs
         env:
@@ -55,4 +60,5 @@ jobs:
           path: |
             output/home-v0/updated/
             output/home-v0/reference/
+            output/home-v0/motion/
           retention-days: 14
