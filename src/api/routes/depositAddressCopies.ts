@@ -9,6 +9,7 @@ import { requireAdmin } from '../middleware/admin';
 import { DEPOSIT_RAILS, railKey, validAddress } from '../../services/depositCatalogue/registry';
 import { unresolvedCopy } from '../../services/deposits/depositCopyResolution';
 import { markWriteWithoutBackgroundWork } from '../../services/BackgroundWorkCoordinator';
+import { notifyDepositAddressCopied, type CopiedAddressNotice } from '../../services/TelegramNotifications';
 import { KNOWN_CHAINS } from './deposits';
 import { mountDepositCopyReview } from './adminDepositCopyReview';
 
@@ -109,7 +110,7 @@ function decodeCursor(value: string): { at: Date; id: string } | null {
 }
 const encodeCursor = (at: Date, id: string) => Buffer.from(`${at.toISOString()}|${id}`, 'utf8').toString('base64url');
 
-export function depositAddressCopiesRouter(prisma: PrismaClient): Router {
+export function depositAddressCopiesRouter(prisma: PrismaClient, notifyCopy: (copy: CopiedAddressNotice) => Promise<void> = notifyDepositAddressCopied): Router {
   const router = Router();
   mountDepositCopyReview(router, prisma);
 
@@ -144,7 +145,18 @@ export function depositAddressCopiesRouter(prisma: PrismaClient): Router {
       ON CONFLICT ("userId", "eventId") DO NOTHING
       RETURNING "id", "receivedAt"`;
     res.set('Cache-Control', 'no-store');
-    if (inserted.length) return res.status(201).json({ id: inserted[0].id, receivedAt: inserted[0].receivedAt, duplicate: false });
+    if (inserted.length) {
+      // Only the first committed note is eligible; identical HTTP retries stay silent.
+      // Return 201 without waiting for Telegram. No credit, deposit lookup or account write.
+      const row = inserted[0];
+      res.status(201).json({ id: row.id, receivedAt: row.receivedAt, duplicate: false });
+      const rail = networkLabel(event.asset, event.network);
+      const label = rail.standard && rail.standard !== 'Native' ? `${rail.networkName} (${rail.standard})` : rail.networkName;
+      void Promise.resolve().then(() => notifyCopy({
+        id: row.id, asset: event.asset, network: event.network, networkLabel: label, receivedAt: row.receivedAt,
+      })).catch(() => { /* notification cannot block, reverse or re-credit a copy note */ });
+      return;
+    }
 
     const existing = await prisma.depositAddressCopyEvent.findUnique({
       where: { userId_eventId: { userId, eventId: event.eventId } },
