@@ -1,6 +1,6 @@
 export const RETENTION_MS = 7 * 24 * 60 * 60_000;
 export const VERSION = 'notifications-v1';
-const TYPES = ['KYC_SUBMITTED', 'DEPOSIT_DISCOVERED', 'NEW_USER_REGISTERED'];
+const TYPES = ['KYC_SUBMITTED', 'DEPOSIT_DISCOVERED', 'NEW_USER_REGISTERED', 'DEPOSIT_ADDRESS_COPIED'];
 export const reply = (status, code, extra = {}) => Response.json({ status: code, ...extra }, {
   status, headers: { 'cache-control': 'no-store' },
 });
@@ -16,6 +16,11 @@ export function validEvent(e, type, now = Date.now()) {
   if (type === 'NEW_USER_REGISTERED') {
     return e.role === 'USER' && e.userId === e.eventId
       && text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email);
+  }
+  if (type === 'DEPOSIT_ADDRESS_COPIED') {
+    return text(e.asset, 15) && /^[A-Z0-9]{1,15}$/.test(e.asset)
+      && text(e.network, 40) && /^[a-z0-9-]{2,40}$/.test(e.network)
+      && text(e.networkLabel, 80) && /^[A-Za-z0-9][A-Za-z0-9 .()_\/+\-]{0,79}$/.test(e.networkLabel);
   }
   if (type === 'KYC_SUBMITTED') {
     return (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
@@ -39,6 +44,10 @@ export function message(e) {
     'Нова реєстрація VOLTEX', '', `Email: ${e.email}`,
     `Дата і час: ${kyivTime(e.timestamp)} (Київ)`,
   ].join('\n');
+  if (e.eventType === 'DEPOSIT_ADDRESS_COPIED') return [
+    'Скопійовано депозитну адресу VOLTEX', '',
+    `Монета: ${e.asset}`, `Мережа: ${e.networkLabel}`,
+  ].join('\n');
   if (e.eventType === 'KYC_SUBMITTED') return [
     '🔔 Новая KYC заявка', '', e.email && `Email: ${e.email}`,
     'Статус: ожидает проверки', e.fullName && `Full Name: ${e.fullName}`,
@@ -60,6 +69,8 @@ export async function acceptEvent(event, type, env) {
   // Reject unknown fields: no documents, document text or arbitrary message bodies.
   const allowed = type === 'NEW_USER_REGISTERED'
     ? ['eventId', 'eventType', 'timestamp', 'userId', 'email', 'role']
+    : type === 'DEPOSIT_ADDRESS_COPIED'
+    ? ['eventId', 'eventType', 'timestamp', 'asset', 'network', 'networkLabel']
     : type === 'KYC_SUBMITTED'
     ? ['eventId', 'eventType', 'timestamp', 'email', 'fullName', 'documentType']
     : ['eventId', 'eventType', 'timestamp', 'amount', 'asset', 'network', 'email', 'accumulated', 'remaining'];
@@ -91,7 +102,8 @@ export async function handle(request, env) {
     depositSigningConfigured: Boolean(env.DEPOSIT_SIGNING_PUBLIC_KEY),
   });
   const type = path === '/v1/deposit' ? 'DEPOSIT_DISCOVERED'
-    : path === '/v1/registration' ? 'NEW_USER_REGISTERED' : null;
+    : path === '/v1/registration' ? 'NEW_USER_REGISTERED'
+    : path === '/v1/copy' ? 'DEPOSIT_ADDRESS_COPIED' : null;
   if (request.method !== 'POST' || !type) return reply(404, 'NOT_FOUND');
   // No browser entry point; even a non-browser caller must sign the exact body.
   if (request.headers.has('origin') || request.headers.has('sec-fetch-site')) return reply(403, 'FORBIDDEN');
