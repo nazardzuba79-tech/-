@@ -30,10 +30,11 @@
 .v0-coin-face { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 50%; background: #0c2034; border: 1px solid #b69a60; box-shadow: 0 3px 9px #0007; }
 .v0-coin-face img { width: 53%; height: 53%; object-fit: contain; transform: translateY(-15%); }
 .v0-coin-symbol { position: absolute; bottom: 10%; left: 0; width: 100%; text-align: center; color: #e6edf6; font: 600 clamp(6px,.48vw,10px)/1 Arial,sans-serif; white-space: nowrap; }
-.v0-coin-btc .v0-coin-face { background: #dba73a; border-color: #ffe6a5; box-shadow: inset 0 0 0 5px #dba73a, inset 0 0 0 6px #ffedb980, 0 8px 24px #0006; }
-.v0-coin-btc .v0-coin-face img { width: 50%; height: 50%; transform: translateY(-24%); }
-.v0-coin-btc .v0-quote { top: auto; bottom: 9%; padding: 0; border: 0; background: transparent; color: #33260b; flex-direction: column; gap: 0; font-size: clamp(7px,.57vw,11px); }
-.v0-coin-btc .v0-quote strong { color: #33260b; }
+.v0-coin-btc .v0-coin-face { position: relative; background: radial-gradient(ellipse at 30% 12%,#294456 0%,#112b3e 45%,#061522 100%); border-color: #f0cd84; box-shadow: inset 0 1px 1px #fff2c94d, inset 0 -2px 5px #0008, 0 0 0 1px #bc89394d, 0 0 22px #e8b65426, 0 8px 24px #0006; }
+.v0-coin-btc .v0-coin-face::before { content: ''; position: absolute; inset: 5%; border: 1px solid #e9c57c45; border-radius: 50%; pointer-events: none; }
+.v0-coin-btc .v0-coin-face img { width: 54%; height: 54%; transform: translateY(-28%); }
+.v0-coin-btc .v0-quote { top: auto; bottom: 9%; padding: 0; border: 0; background: transparent; color: #decba3; flex-direction: column; gap: 0; font-size: clamp(7px,.57vw,11px); line-height: 1.15; }
+.v0-coin-btc .v0-quote strong { color: #fff3d8; }
 .v0-coin-apple .v0-coin-face img { filter: invert(1); }
 .v0-coin-nvidia .v0-coin-face img { filter: invert(76%) sepia(82%) saturate(784%) hue-rotate(27deg) brightness(98%); }
 .v0-quote { position: absolute; top: 105%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: clamp(9px,.67vw,13px); line-height: 1.4; padding: 2px 6px; border: 1px solid #c7a36280; border-radius: 9px; color: #d4dfec; background: #071828ee; }
