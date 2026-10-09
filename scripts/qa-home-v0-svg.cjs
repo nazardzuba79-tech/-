@@ -4,6 +4,46 @@ const {chromium}=require(process.env.HOME_QA_PLAYWRIGHT || 'playwright');
 const {fixture}=require('./qa-home-v0-fixture.cjs');
 const {pixels}=require('./qa-home-v0-pixels.cjs');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const DESKTOP_IDS=['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','BNBUSDT','ADAUSDT','DOGEUSDT','TRXUSDT','AAPL','NVDA','TSLA','META','AMZN','MSFT','US500','NAS100','EURUSD','XAUUSD','WTI','USDJPY'];
+const MOBILE_IDS=['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','AAPL','NVDA','TSLA','META','MSFT','US500','EURUSD','XAUUSD'];
+const ICONS=['btc','eth','sol','xrp','bnb','ada','doge','trx','apple','nvidia','tesla','meta','amazon','microsoft','us500','nas100','eurusd','gold','oil','usdjpy'];
+
+// Inspect the rendered DOM, not an imported copy of the orbit implementation.
+function rosterAndGeometry(sample,compact=false) {
+  const expected=compact?MOBILE_IDS:DESKTOP_IDS;
+  assert.deepEqual(sample.coins.map(c=>c.id),expected,'all requested assets are present once, with BTC in the centre');
+  assert.equal(new Set(sample.coins.map(c=>c.id)).size,expected.length);
+  assert.equal(new Set(sample.coins.map(c=>c.icon)).size,expected.length,'each asset has its own SVG');
+  assert.deepEqual([1,2,3].map(ring=>sample.coins.filter(c=>c.ring===ring).length),compact?[3,4,4]:[6,6,7]);
+  assert.deepEqual(sample.rings.map(r=>r.ring),[1,2,3]);
+  let closestGap=Infinity;
+  for(const coin of sample.coins) {
+    assert.ok(coin.loaded,coin.id+' SVG loaded');
+    assert.ok(coin.icon.endsWith('/'+ICONS[DESKTOP_IDS.indexOf(coin.id)]+'.svg'),coin.id+' correct local logo');
+    assert.ok(coin.label.length>0,coin.id+' has a readable ticker');
+    assert.ok(coin.width>0&&coin.height>0,coin.id+' is visible');
+    assert.ok(coin.x-coin.width/2>=sample.host.x-1&&coin.x+coin.width/2<=sample.host.x+sample.host.width+1,coin.id+' horizontal bounds');
+    assert.ok(coin.y-coin.height/2>=sample.host.y-1&&coin.y+coin.height/2<=sample.host.y+sample.host.height+1,coin.id+' vertical bounds');
+    assert.ok(Math.abs(coin.rotation)<.001,coin.id+' logo remains upright');
+    if(coin.quoteX!==null)assert.ok(Math.abs(coin.quoteX-coin.x)<4,'BTC quote remains attached');
+    for(const other of sample.coins)if(other.id>coin.id) {
+      // The faces are circles. Diagonally adjacent bounding boxes may overlap
+      // without the visible badges doing so; measure their actual circular edges.
+      const gap=Math.hypot(other.x-coin.x,other.y-coin.y)-(coin.width+other.width)/2;
+      closestGap=Math.min(closestGap,gap);
+      assert.ok(gap>=-.5,coin.id+' and '+other.id+' badges overlap by '+(-gap).toFixed(2)+'px');
+    }
+  }
+  assert.equal(sample.coins[0].ring,0);
+  assert.ok(sample.coins[0].width>Math.max(...sample.coins.slice(1).map(c=>c.width))*1.5,'BTC remains dominant');
+  return closestGap;
+}
+function ringAngle(sample,coin) {
+  const ring=sample.rings.find(r=>r.ring===coin.ring);
+  return Math.atan2((coin.y-ring.y)/ring.ry,(coin.x-ring.x)/ring.rx);
+}
+const angleDelta=(next,previous)=>Math.atan2(Math.sin(next-previous),Math.cos(next-previous));
+
 async function run(mode='responsive') {
   const out=path.resolve('output/home-v0/'+(mode==='motion'?'motion':'updated'));
   fs.mkdirSync(out,{recursive:true});
@@ -28,31 +68,67 @@ async function run(mode='responsive') {
     await page.locator('.v0-coins').scrollIntoViewIfNeeded();
     await page.waitForFunction(()=>document.querySelector('.v0-coins')?.dataset.active==='true');
     report.coldReadyMs=Date.now()-start;
-    const sample=()=>page.locator('.v0-coins').evaluate(host=>({elapsed:Number(host.dataset.elapsed),frames:Number(host.dataset.frames),active:host.dataset.active,
-      coins:[...host.querySelectorAll('.v0-coin')].map(e=>{const b=e.getBoundingClientRect(),q=e.querySelector('.v0-quote').getBoundingClientRect(),img=e.querySelector('img');return {id:e.dataset.instrument,x:b.x+b.width/2,y:b.y+b.height/2,width:b.width,quoteX:q.x+q.width/2,loaded:img.complete&&img.naturalWidth>0};})}));
+    const sample=()=>page.locator('.v0-coins').evaluate(host=>{
+      const h=host.getBoundingClientRect();
+      return {elapsed:Number(host.dataset.elapsed),frames:Number(host.dataset.frames),active:host.dataset.active,
+        host:{x:h.x,y:h.y,width:h.width,height:h.height},
+        rings:[...host.querySelectorAll('.v0-orbit-ring')].map(e=>{const b=e.getBoundingClientRect();return {ring:Number(e.dataset.ring),x:b.x+b.width/2,y:b.y+b.height/2,rx:b.width/2,ry:b.height/2};}),
+        coins:[...host.querySelectorAll('.v0-coin')].map(e=>{
+          const b=e.getBoundingClientRect(),q=e.querySelector('.v0-quote')?.getBoundingClientRect(),img=e.querySelector('img');
+          const matrix=new DOMMatrixReadOnly(getComputedStyle(e).transform);
+          return {id:e.dataset.instrument,ring:Number(e.dataset.ring),x:b.x+b.width/2,y:b.y+b.height/2,width:b.width,height:b.height,
+            label:e.querySelector('.v0-coin-symbol')?.textContent||img.alt,rotation:Math.atan2(matrix.b,matrix.a),
+            quoteX:q?q.x+q.width/2:null,icon:img.getAttribute('src'),loaded:img.complete&&img.naturalWidth>0};
+        })};
+    });
     const shot=name=>page.screenshot({path:path.join(out,name+'.png')});
     assert.equal(await page.locator('.v0-coins canvas').count(),0,'SVG scene must not depend on WebGL');
     assert.equal(await page.locator('.v0-motion-toggle').count(),0);
     await page.locator('.v0-coin img').evaluateAll(imgs=>Promise.all(imgs.map(i=>i.decode())));
     const before=await sample();await wait(1000);const after=await sample();
-    assert.equal(before.coins.length,8);assert.equal(after.coins.length,8);
-    for(let i=1;i<8;i++)assert.ok(Math.hypot(after.coins[i].x-before.coins[i].x,after.coins[i].y-before.coins[i].y)>10,'every satellite visibly moves within 1s');
+    rosterAndGeometry(before);rosterAndGeometry(after);
+    const firstSecondDisplacement=after.coins.slice(1).map((coin,index)=>({id:coin.id,px:Math.hypot(coin.x-before.coins[index+1].x,coin.y-before.coins[index+1].y)}));
+    for(const coin of firstSecondDisplacement)assert.ok(coin.px>8,coin.id+' visibly moves within 1s');
+    assert.ok(firstSecondDisplacement.filter(c=>c.px>15).length>firstSecondDisplacement.length/2,'majority moves more than 15px immediately');
+    assert.ok(Math.hypot(after.coins[0].x-before.coins[0].x,after.coins[0].y-before.coins[0].y)<.1,'central BTC stays centred');
     assert.ok(after.frames>before.frames+15,'loop starts automatically after mount');
-    report.autoStart={before,after};
+    report.autoStart={before,after,firstSecondDisplacement};
     if(mode==='motion') {
-      const start=Date.now();let firstPixels;
-      for(const second of [0,.5,1,2,3,5,10,20,32,34]) {
-        await wait(Math.max(0,start+second*1000-Date.now()));
-        const s=await sample();report.samples.push({second,...s});await shot(second+'s');
-        if(second===0)firstPixels=pixels(await page.locator('.v0-coins').screenshot());
-        if(second===3){
+      const start=Date.now(),screens=[0,.5,1,2,3,5,10,20,32,34],turns=new Map();let firstPixels,previous;
+      let closestGap=Infinity;
+      // Keep sampling the actual rendered scene between screenshots. A 34s
+      // recording covers the slowest (25s) orbit, including the loop seam.
+      while(screens.length||Date.now()-start<34000) {
+        const second=(Date.now()-start)/1000,s=await sample();report.samples.push({second,...s});
+        closestGap=Math.min(closestGap,rosterAndGeometry(s));
+        if(previous) {
+          assert.ok(s.frames>previous.frames,'RAF must advance between continuous samples');
+          assert.ok(s.elapsed>previous.elapsed,'animation clock must not stop');
+          const velocities=new Map();
+          for(let i=1;i<s.coins.length;i++) {
+            const coin=s.coins[i],delta=angleDelta(ringAngle(s,coin),ringAngle(previous,previous.coins[i]));
+            assert.ok((coin.ring===2?-delta:delta)>.001,coin.id+' moves continuously in its ring direction');
+            turns.set(coin.id,(turns.get(coin.id)||0)+delta);
+            const speed=delta/(s.elapsed-previous.elapsed);
+            if(velocities.has(coin.ring))assert.ok(Math.abs(speed-velocities.get(coin.ring))<.003,'assets keep equal spacing on their ring');
+            else velocities.set(coin.ring,speed);
+          }
+        }
+        previous=s;
+        const screenshotAt=screens[0];
+        if(second>=screenshotAt) {
+          screens.shift();await shot(screenshotAt+'s');
+          if(screenshotAt===0)firstPixels=pixels(await page.locator('.v0-coins').screenshot());
+          if(screenshotAt===3){
           const next=pixels(await page.locator('.v0-coins').screenshot());assert.equal(next.width,firstPixels.width);assert.equal(next.height,firstPixels.height);
           let changed=0;for(let i=0;i<next.width*next.height;i++){let difference=0;for(let c=0;c<3;c++)difference+=Math.abs(next.data[i*next.channels+c]-firstPixels.data[i*firstPixels.channels+c]);if(difference>36)changed++;}
           report.changedPixelFraction=changed/(next.width*next.height);assert.ok(report.changedPixelFraction>.03,'actual scene pixels must move');
+          }
         }
-        for(const c of s.coins){assert.ok(c.loaded);assert.ok(Math.abs(c.quoteX-c.x)<4,'quote moves with its asset');}
-        assert.ok(s.coins[0].width>Math.max(...s.coins.slice(1).map(c=>c.width))*1.5,'BTC remains dominant');
+        await wait(200);
       }
+      report.continuity={samples:report.samples.length,closestBadgeGapPx:closestGap,turns:Object.fromEntries([...turns].map(([id,radians])=>[id,radians/(2*Math.PI)]))};
+      for(const [id,turn] of Object.entries(report.continuity.turns))assert.ok(Math.abs(turn)>1,id+' completes a full continuous revolution');
       report.wallSeconds=(Date.now()-start)/1000;
       await context.close();context=null;await page.video().saveAs(path.join(out,'full-cycle.webm'));
     } else {
@@ -60,12 +136,15 @@ async function run(mode='responsive') {
         await page.setViewportSize({width,height:width<900?844:900});await page.locator('.v0-coins').scrollIntoViewIfNeeded();await wait(250);
         const geometry=await page.evaluate(()=>({width:innerWidth,overflow:document.documentElement.scrollWidth-innerWidth,broken:[...document.querySelectorAll('.v0-coin img')].filter(i=>!i.complete||!i.naturalWidth).length}));
         assert.ok(geometry.overflow<=1);assert.equal(geometry.broken,0);report.responsive.push(geometry);
-        const a=await sample();await wait(400);const b=await sample();assert.ok(b.frames>a.frames);assert.ok(Math.hypot(b.coins[1].x-a.coins[1].x,b.coins[1].y-a.coins[1].y)>2);
+        const a=await sample();rosterAndGeometry(a,width<=900);await wait(400);const b=await sample();rosterAndGeometry(b,width<=900);assert.ok(b.frames>a.frames);
+        for(let i=1;i<b.coins.length;i++)assert.ok(Math.hypot(b.coins[i].x-a.coins[i].x,b.coins[i].y-a.coins[i].y)>2,b.coins[i].id+' moves at '+width+'px viewport');
+        Object.assign(geometry,{visibleAssets:b.coins.length,ringCounts:[1,2,3].map(ring=>b.coins.filter(c=>c.ring===ring).length)});
         await shot('home-'+width);
       }
       for(const lang of ['ru','en','zh','es','hi','ja','ko']) for(const width of [1440,320]) {
         await page.setViewportSize({width,height:900});await page.evaluate(l=>localStorage.setItem('exchange_lang',l),lang);await page.reload({waitUntil:'networkidle'});await page.locator('.v0-coins').scrollIntoViewIfNeeded();
         assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,lang+' overflow');
+        rosterAndGeometry(await sample(),width<=900);
         await shot('home-'+lang+'-'+width);
       }
       await page.setViewportSize({width:1440,height:900});await page.goto(origin);await page.locator('.v0-coins[data-active=true]').waitFor();

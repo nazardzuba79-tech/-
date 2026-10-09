@@ -39,7 +39,7 @@ let browser, server;
       return {hero:b(document.querySelector('.hs-root .hero')), image:b(document.querySelector('.hs-root .art')), title:b(document.querySelector('#hs-title')), copy:b(document.querySelector('.hs-root .copy')), terminal:b(document.querySelector('.terminal-screen')), slots:b(document.querySelector('.v0-coins-labels')), coins:[...document.querySelectorAll('.v0-coin')].filter(e=>getComputedStyle(e).visibility!=='hidden').map(b), overflow:document.documentElement.scrollWidth-innerWidth};
     });
     assert.ok(geometry.overflow<=1);
-    assert.equal(geometry.coins.length,8,'eight requested markets');
+    assert.equal(geometry.coins.length,20,'twenty requested markets: BTC centre and nineteen satellites');
     assert.ok(Math.abs(geometry.image.w-geometry.hero.w)<1,'unchanged full-width reference plate');
     assert.ok(geometry.copy.x < geometry.slots.x && geometry.terminal.x > geometry.slots.x,'copy/scene/terminal ordering retained');
     report.rows.push({width,geometry});

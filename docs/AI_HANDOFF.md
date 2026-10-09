@@ -5953,3 +5953,13 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Replaced Three medallions and synthetic relief artwork with eight local sourced glyphs/pictograms and one 30fps DOM-transform RAF. Independent ellipses/phase/speed modulation never stop at anchors; bounded modulation avoids overtaking.
 - Quote helpers/full quote roster, all other homepage blocks, background, laptop, copy, routing and financial behavior preserved. No new network API or dependency. Removed unused pseudo-artwork generator.
 - Material files: HomeV0Coins, v0CoinRenderer, v0MarketScene, scoped CSS, asset-icons, scene tests and browser/performance QA. Latest browser evidence and measurements must be read from the PR; no production change or owner visual approval claimed here.
+
+## Codex — 2026-10-09 — Twenty-asset three-ring Hero (review only)
+
+Base: cb5559db24c7c8ba4cae75997a1c9145a193151f. Implementation SHA: the commit containing this entry on codex/hero-three-rings-20261009.
+
+The owner clarified 20 total: fixed dominant BTC plus rings of 6/6/7; mobile has 12 total, with rings of 3/4/4. Replaced the eight-asset presentation from merged #485 with upright local SVG logos and steady 14/19/25-second ellipses using the existing single RAF.
+
+Changed: 12 SVG assets and source provenance, HomeV0Coins, v0MarketScene orbit presentation, v0CoinRenderer fractional resize geometry, scoped Hero CSS, scene tests, browser QA and reproduction guide. Preserved: original 24-entry quote mapping/helpers, background/globe/laptop, left copy, other homepage layout and all financial/API behavior.
+
+Validation: 46/46 scene tests, build, responsive checks at nine widths/seven locales, and reference checks passed. A real 34.769-second browser recording confirms all 19 satellites move continuously and complete more than one revolution without overlap. Final exact-head CI and paired performance results belong in the new Draft PR report. No merge/deploy; owner visual review remains required.

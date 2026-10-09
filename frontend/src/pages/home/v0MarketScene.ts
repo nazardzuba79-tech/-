@@ -38,41 +38,57 @@ export const SCENE_INSTRUMENTS: readonly SceneInstrument[] = [
   { id: 'NAS100', ticker: 'NAS100', market: 'cfd', symbol: 'NAS100', metal: 'graphite' },
 ];
 
-// The revised hero uses the eight owner-selected markets; the full quote roster stays intact.
-export const HERO_INSTRUMENTS = SCENE_INSTRUMENTS.slice(0, 8);
+// Twenty distinct owner-selected assets TOTAL: BTC centre, then rings of 6/6/7.
+// Keep the existing quote roster/domain mapping independent of presentation.
+const HERO_IDS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'ADAUSDT', 'DOGEUSDT',
+  'TRXUSDT', 'AAPL', 'NVDA', 'TSLA', 'META', 'AMZN',
+  'MSFT', 'US500', 'NAS100', 'EURUSD', 'XAUUSD', 'WTI', 'USDJPY'];
+export const HERO_INSTRUMENTS = HERO_IDS.map(id => SCENE_INSTRUMENTS.find(item => item.id === id)!);
+export const HERO_ICONS: Readonly<Record<string, string>> = {
+  BTCUSDT: 'btc', ETHUSDT: 'eth', SOLUSDT: 'sol', XRPUSDT: 'xrp', BNBUSDT: 'bnb', ADAUSDT: 'ada', DOGEUSDT: 'doge',
+  TRXUSDT: 'trx', AAPL: 'apple', NVDA: 'nvidia', TSLA: 'tesla', META: 'meta', AMZN: 'amazon', MSFT: 'microsoft',
+  US500: 'us500', NAS100: 'nas100', EURUSD: 'eurusd', XAUUSD: 'gold', WTI: 'oil', USDJPY: 'usdjpy',
+};
+const MOBILE_IDS = new Set(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'AAPL', 'NVDA', 'TSLA', 'META',
+  'MSFT', 'US500', 'EURUSD', 'XAUUSD']);
+export function heroInstruments(compact = false) {
+  return compact ? HERO_INSTRUMENTS.filter(item => MOBILE_IDS.has(item.id)) : HERO_INSTRUMENTS;
+}
 export const SCENE_WIDTH = 410;
 export const SCENE_HEIGHT = 570;
-export const MOBILE_SCENE_HEIGHT = 320;
+export const MOBILE_SCENE_HEIGHT = 430;
 export const ORBITS = [
-  { rx: 143, ry: 209, period: 29, phase: -1.57 },
-  { rx: 149, ry: 201, period: 25, phase: -.67 },
-  { rx: 145, ry: 214, period: 33, phase: .23 },
-  { rx: 151, ry: 205, period: 27, phase: 1.13 },
-  { rx: 147, ry: 216, period: 35, phase: 2.03 },
-  { rx: 152, ry: 204, period: 31, phase: 2.93 },
-  { rx: 144, ry: 211, period: 37, phase: 3.83 },
+  { rx: 72, ry: 107, mobileRy: 85, period: 14, direction: 1, phase: -.8, count: 6, mobileCount: 3 },
+  { rx: 124, ry: 179, mobileRy: 139, period: 19, direction: -1, phase: -1.2, count: 6, mobileCount: 4 },
+  { rx: 177, ry: 251, mobileRy: 190, period: 25, direction: 1, phase: -1.5, count: 7, mobileCount: 4 },
 ] as const;
 
-/** Continuous analytic paths: no keyframe stops, slot swaps or texture changes. */
+export function orbitRing(index: number, compact = false) {
+  if (index === 0) return 0;
+  let end = 0;
+  for (let ring = 0; ring < ORBITS.length; ring++) {
+    end += compact ? ORBITS[ring].mobileCount : ORBITS[ring].count;
+    if (index <= end) return ring + 1;
+  }
+  throw new RangeError('Hero asset index outside the visible roster');
+}
+
+/** Three steady ellipses. Only position changes; logos always remain upright. */
 export function orbitPose(index: number, seconds: number, compact = false) {
   const t = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
-  const cx = 205, cy = compact ? 148 : 270;
+  const cx = 205, cy = compact ? 214 : 280;
   if (index === 0) return {
-    x: cx + Math.sin(t * .7) * 5, y: cy + Math.sin(t * .9) * 7,
-    radius: compact ? 43 : 69, scale: 1, depth: 0, rotation: Math.sin(t * .6) * 2,
+    x: cx, y: cy, radius: 39, scale: 1, depth: 0, rotation: 0,
   };
-  const orbit = ORBITS[index - 1];
-  // Bounded per-asset speed modulation preserves spacing instead of letting faster
-  // neighbours lap and obscure each other. All velocities remain non-zero.
-  const angle = orbit.phase + t * Math.PI * 2 / 28 + .10 * Math.sin(t * Math.PI * 2 / orbit.period + orbit.phase);
-  const depth = Math.sin(angle);
+  const ring = orbitRing(index, compact) - 1;
+  const orbit = ORBITS[ring];
+  const preceding = ORBITS.slice(0, ring).reduce((sum, item) => sum + (compact ? item.mobileCount : item.count), 0);
+  const count = compact ? orbit.mobileCount : orbit.count;
+  const angle = orbit.phase + (index - preceding - 1) * Math.PI * 2 / count + t * Math.PI * 2 / orbit.period * orbit.direction;
   return {
-    x: cx + Math.cos(angle) * orbit.rx + Math.sin(t * 1.2 + index) * 2,
-    y: cy + depth * orbit.ry * (compact ? .48 : 1) + Math.sin(t * .85 + index) * 3,
-    radius: compact ? 23 : 35,
-    scale: 1 + depth * .09,
-    depth,
-    rotation: Math.sin(t * .6 + index) * 2.5,
+    x: cx + Math.cos(angle) * orbit.rx,
+    y: cy + Math.sin(angle) * (compact ? orbit.mobileRy : orbit.ry),
+    radius: compact ? 23 : 24, scale: 1, depth: 0, rotation: 0,
   };
 }
 
