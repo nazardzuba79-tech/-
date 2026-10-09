@@ -5939,3 +5939,17 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Preserved other main work: Header, Login/Register, CTA routes, real snapshot prices and unavailable dashes, financial logic, all 24 instruments, pause/reduced-motion/offscreen/hidden-tab cleanup, seven languages and lower sections. No API, WebSocket, trading/auth/Admin/backend/Worker/DB/infra changes. PRs #473/#478/#481 untouched.
 - Verification: TypeScript/Vite build PASS; 15 home suites / 173 tests PASS; fixture browser 10 widths / 7 languages, both all-24 cycles, no extra animation quote requests, no unexpected console errors PASS. Reference/browser desktop comparisons and bounds: <0.1 CSS px coin geometry error. Page ~60 FPS; paired warm main-thread CPU ~11% lower; cold readiness +161–195ms, documented. Existing bundle/SSR warnings remain.
 - Known limits: neutral corporate artwork/inpainting is not pixel-identical; field GPU/network metrics not measured. Unchanged Header clips CTA/menu at 320px identically in baseline/candidate (documented, not silently fixed outside scope). Next: exact-head CI, owner review of LEFT reference / RIGHT browser captures. No merge/deploy/production write occurred.
+
+## Codex — 2026-10-09 — Hero physical orbit (review only)
+- Fresh main base: 5db75c5fb29870b38624db265503531fe943f024; isolated branch codex/hero-physical-orbit-20261009. Source commit: commit containing this entry.
+- Replaced fixed-slot texture swapping with stable 24-mesh physical motion, 3s central handoff and a continuous 72s cycle through approved anchors. Removed only the medallion Pause/Play control. Added context restoration, label depth handling and responsive label cleanup.
+- Preserved artwork, composition, copy/CTA, quote helpers, lower Homepage and all unrelated trading/backend products. No merge/deploy/production writes.
+- Local at implementation: 176 Homepage tests and TypeScript/Vite pass; real 75.663s cycle covers all 24 plus continuation and 42.84% rendered-layer pixel change. Broader responsive/lifecycle/performance runs and exact-head CI are tracked in the PR; do not infer their completion from this entry.
+- Reproduction and artifact details: docs/qa/home-v0-motion/README.md. Owner must visually confirm real motion before publication.
+
+
+## Codex — 2026-10-09 — Hero recognizable SVGs and continuous orbits (Draft #485)
+- Owner revised the previous 24-centre concept: BTC stays dominant, seven specified markets orbit it. Previous exact head f50c884e8bce9f395ebbed02404f4ebe7b421421 remains the comparison baseline; current main df0573e344f685be9ecd35c7a116d333db71da25 merged safely before edits.
+- Replaced Three medallions and synthetic relief artwork with eight local sourced glyphs/pictograms and one 30fps DOM-transform RAF. Independent ellipses/phase/speed modulation never stop at anchors; bounded modulation avoids overtaking.
+- Quote helpers/full quote roster, all other homepage blocks, background, laptop, copy, routing and financial behavior preserved. No new network API or dependency. Removed unused pseudo-artwork generator.
+- Material files: HomeV0Coins, v0CoinRenderer, v0MarketScene, scoped CSS, asset-icons, scene tests and browser/performance QA. Latest browser evidence and measurements must be read from the PR; no production change or owner visual approval claimed here.

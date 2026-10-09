@@ -7,6 +7,11 @@ on:
       - 'frontend/package*.json'
       - 'scripts/qa-home-v0.cjs'
       - 'scripts/qa-home-v0-reference.cjs'
+      - 'scripts/qa-home-v0-motion.cjs'
+      - 'scripts/qa-home-v0-svg.cjs'
+      - 'scripts/qa-home-v0-fixture.cjs'
+      - 'scripts/qa-home-v0-pixels.cjs'
+      - 'frontend/public/images/home-v0/asset-icons/**'
       - 'docs/qa/home-v0-reference-correction/reference.png'
       - '.github/workflows/home-v0-approved.yml'
 permissions:
@@ -18,6 +23,8 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      HOME_QA_BROWSER_CHANNEL: chromium
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,9 +44,13 @@ jobs:
       - name: Disposable browser
         run: |
           npm install --prefix /tmp/voltex-home-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
-          node /tmp/voltex-home-qa/node_modules/playwright/cli.js install --with-deps chromium
+          node /tmp/voltex-home-qa/node_modules/playwright/cli.js install --with-deps --no-shell chromium
       - name: Network-denied responsive and complete animation cycle QA
         run: node scripts/qa-home-v0.cjs
+        env:
+          HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
+      - name: Real-time SVG orbits, rendered pixels and automatic startup
+        run: node scripts/qa-home-v0-motion.cjs
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
       - name: Pixel-aligned reference and browser comparison
@@ -55,4 +66,5 @@ jobs:
           path: |
             output/home-v0/updated/
             output/home-v0/reference/
+            output/home-v0/motion/
           retention-days: 14

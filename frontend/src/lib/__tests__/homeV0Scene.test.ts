@@ -1,9 +1,8 @@
-import { createSceneSequence, SCENE_INSTRUMENTS, SCENE_SPOTS, scenePrice, sceneQuote } from '../../pages/home/v0MarketScene';
-import { medallionSvg } from '../../pages/home/v0MedallionArtwork';
+import { HERO_INSTRUMENTS, ORBITS, orbitPose, SCENE_INSTRUMENTS, scenePrice, sceneQuote } from '../../pages/home/v0MarketScene';
+import { createCoinScene } from '../../pages/home/v0CoinRenderer';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { cfdDisplayState } from '../cfdPresentation';
-
+import { cfdDisplayState } from '../../lib/cfdPresentation';
 const market = (overrides: Record<string, unknown> = {}): any => ({
   tickers: [{ pair: 'BTC/USDT', price: 76746 }, { pair: 'XAU/USDT', price: 99999 }],
   tickersStale: false,
@@ -11,25 +10,6 @@ const market = (overrides: Record<string, unknown> = {}): any => ({
   ...overrides,
 });
 const instrument = (id: string) => SCENE_INSTRUMENTS.find(x => x.id === id)!;
-
-test('approved roster retains all 24 unique instruments, not a new trading catalogue', () => {
-  expect(SCENE_INSTRUMENTS).toHaveLength(24);
-  expect(new Set(SCENE_INSTRUMENTS.map(x => x.id)).size).toBe(24);
-  expect(SCENE_INSTRUMENTS.filter(x => x.market === 'stock').map(x => x.id)).toEqual(['AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'GOOGL', 'META']);
-});
-
-test.each([4, 8])('bounded deterministic %i-slot sequence covers every instrument without duplicates over repeated cycles', count => {
-  const sequence = createSceneSequence(count);
-  const seen = new Set(sequence.visible);
-  for (let step = 0; step < 240; step++) {
-    const { slot, id } = sequence.next();
-    expect(slot).toBe(step % count);
-    expect(sequence.visible[slot]).toBe(id);
-    expect(new Set(sequence.visible).size).toBe(count);
-    seen.add(id);
-    if (step === 23) expect(seen.size).toBe(24);
-  }
-});
 
 test('quotes use the shared spot/CFD snapshot without mixing price domains', () => {
   expect(sceneQuote(instrument('BTCUSDT'), market(), 'ru').price).toBe(76746);
@@ -60,51 +40,75 @@ test('CFD error quotes fail closed, market closed/sampled values retain the exis
   expect(sceneQuote(instrument('XAUUSD'), cfd('market_closed'), 'en')).toEqual({ price: 4349.19, state: 'Market closed' });
 });
 
-test('scene has no network/pricing scheduler and keeps live terminal, real links and source artwork', () => {
-  const source = (name: string) => readFileSync(resolve(__dirname, '../../pages/home', name), 'utf8');
-  const files = ['v0MarketScene.ts', 'v0CoinRenderer.ts', 'HomeV0Coins.tsx'].map(source).join('\n');
-  expect(files).not.toMatch(/\bfetch\s*\(|new WebSocket|setInterval|demo.quotes|Math\.random|https:\/\//);
-  const hero = source('HomeSapphireHero.tsx');
-  expect(hero).toContain('<SapphireTerminal market={market}/>');
-  expect(hero).toContain('/hero/v0-reference-clean.png');
-  expect(hero).not.toContain('/hero/sapphire-refined.png');
-  expect(hero).toContain('<HomeSapphireTape market={market}/>');
-  for (const route of ['/trade', '/markets', '/futures', '/copy-trading', '/card']) expect(hero).toContain(`to="${route}"`);
-  const renderer = source('v0CoinRenderer.ts');
-  for (const cleanup of ['cancelAnimationFrame', 'observer.disconnect()', 'resource.dispose()', 'renderer.dispose()', 'renderer.forceContextLoss()', 'renderer.domElement.remove()']) expect(renderer).toContain(cleanup);
+
+test('eight requested hero markets; unchanged 24-entry quote roster', () => {
+  expect(HERO_INSTRUMENTS.map(x => x.id)).toEqual(['BTCUSDT','AAPL','XAUUSD','ETHUSDT','NVDA','US500','WTI','EURUSD']);
+  expect(SCENE_INSTRUMENTS).toHaveLength(24);
+  expect(new Set(ORBITS.map(x => x.period)).size).toBe(7);
+  expect(new Set(ORBITS.map(x => x.phase)).size).toBe(7);
+});
+test.each([false, true])('all satellite paths move continuously, without keyframe stops: compact=%s', compact => {
+  for (let t = 0; t < 120; t += .17) for (let i = 1; i < 8; i++) {
+    const a = orbitPose(i, t, compact), b = orbitPose(i, t + 1 / 30, compact);
+    const speed = Math.hypot(b.x - a.x, b.y - a.y);
+    expect(speed).toBeGreaterThan(.35);
+    expect(speed).toBeLessThan(2);
+    expect(a.x - a.radius * a.scale).toBeGreaterThan(0);
+    expect(a.x + a.radius * a.scale).toBeLessThan(410);
+    expect(a.y - a.radius * a.scale).toBeGreaterThan(0);
+    expect(a.y + a.radius * a.scale + 30).toBeLessThan(compact ? 320 : 570);
+    const btc = orbitPose(0, t, compact);
+    expect(btc.radius).toBeGreaterThan(a.radius * 1.7);
+    expect(Math.hypot(a.x - btc.x, a.y - btc.y)).toBeGreaterThan(btc.radius + a.radius);
+  }
+});
+test.each([false,true])('visible movement within one second and BTC stays dominant: compact=%s', compact => {
+  for (let i=1;i<8;i++) {
+    const a=orbitPose(i,0,compact), b=orbitPose(i,1,compact);
+    expect(Math.hypot(a.x-b.x,a.y-b.y)).toBeGreaterThan(15);
+  }
+  expect(orbitPose(0,1,compact).x).not.toBe(orbitPose(0,0,compact).x);
+  expect(orbitPose(0,50,compact).x).toBeGreaterThan(199);
+  expect(orbitPose(0,50,compact).x).toBeLessThan(211);
+});
+test.each(['btc','eth','apple','nvidia','gold','oil','eurusd','us500'])('local real glyph/pictogram %s has no raster/filter art', name => {
+  const svg = readFileSync(resolve(__dirname, '../../../public/images/home-v0/asset-icons',name+'.svg'),'utf8');
+  expect(svg).toContain('<svg');
+  expect(svg).toContain('<path');
+  expect(svg).not.toMatch(/<image|<filter|<script|<text|linearGradient|https?:.*href=/);
+});
+test('preserves live terminal, hero background and non-hero homepage', () => {
+  const source=(name:string)=>readFileSync(resolve(__dirname,'../../pages/home',name),'utf8');
+  const files=['HomeV0Coins.tsx','v0CoinRenderer.ts','v0MarketScene.ts'].map(source).join(' ');
+  expect(files).not.toMatch(/\bfetch\s*\(|new WebSocket|setInterval|Math\.random/);
   expect(source('HomeV0Coins.tsx')).toContain('prefers-reduced-motion: reduce');
   expect(source('HomeV0Coins.tsx')).toContain('document.hidden');
-  for (const section of ['HomeHeader', 'HomeMarketOverview', 'HomeCardTravel', 'HomeTradingSessions', 'HomeHeatmap', 'HomeMarkets', 'HomeEcosystem', 'HomeFaq', 'HomeFooter']) expect(source('HomePage.tsx')).toContain(`<${section}`);
+  expect(source('HomeV0Coins.tsx')).not.toMatch(/Pause|Play|motion-toggle/);
+  const hero=source('HomeSapphireHero.tsx');
+  expect(hero).toContain('/hero/v0-reference-clean.png');
+  expect(hero).toContain('<SapphireTerminal market={market}/>');
+  for(const route of ['/trade','/markets','/futures','/copy-trading','/card'])expect(hero).toContain('to="'+route+'"');
+  for(const section of ['HomeHeader','HomeMarketOverview','HomeCardTravel','HomeTradingSessions','HomeHeatmap','HomeMarkets','HomeEcosystem','HomeFaq','HomeFooter'])expect(source('HomePage.tsx')).toContain('<'+section);
 });
-
-test('desktop coin geometry uses the exact archive positions, not the rejected composition', () => {
-  expect(SCENE_SPOTS.map(s => [s.x + 490, s.y + 80, s.r])).toEqual([
-    [683,362,86], [662,138,50], [808,306,52], [570,469,53],
-    [760,200,51], [665,556,53], [578,252,51], [787,490,51],
-  ]);
-  const renderer = readFileSync(resolve(__dirname, '../../pages/home/v0CoinRenderer.ts'), 'utf8');
-  expect(renderer).not.toMatch(/fillText|platformX|glowTexture/);
-  expect(renderer).toContain('CylinderGeometry');
-  expect(renderer).toContain('TorusGeometry');
-  expect(renderer).toContain('if (cancelled()) return null');
-  const component = readFileSync(resolve(__dirname, '../../pages/home/HomeV0Coins.tsx'), 'utf8');
-  expect(component).toContain('if (disposed || !scene)');
-  expect(component).not.toContain('v0-pedestal-fallback');
-});
-
-test.each(SCENE_INSTRUMENTS)('local %s face uses vector relief, no demo prices or category labels', instrument => {
-  const svg = medallionSvg(instrument);
-  expect(svg).toContain('linearGradient');
-  expect(svg).toContain('<path');
-  expect(svg).not.toMatch(/STOCKS|CRYPTO|CFD|104,235|https:|<script|<image/);
-  expect(svg).toContain('width="256"');
-});
-
-test('context loss reveals fallback and cannot resume GPU work until a fresh mount', () => {
-  const css = readFileSync(resolve(__dirname, '../../pages/home/home-v0-approved.css'), 'utf8');
-  expect(css).toMatch(/\[data-ready=false\] \.v0-coin-canvas\s*\{\s*visibility:\s*hidden/);
-  const renderer = readFileSync(resolve(__dirname, '../../pages/home/v0CoinRenderer.ts'), 'utf8');
-  expect(renderer).toContain('contextLost = true');
-  expect(renderer).toContain('if (disposed || contextLost || active === value) return');
-  expect(renderer).toContain('if (disposed || contextLost) return');
+test('single RAF starts, stops, resumes without hidden-time jump and disposes', () => {
+  const saved = { raf: global.requestAnimationFrame, cancel: global.cancelAnimationFrame, resize: global.ResizeObserver };
+  let id=0; const callbacks=new Map<number, FrameRequestCallback>(), disconnect=jest.fn();
+  global.requestAnimationFrame=((callback:FrameRequestCallback)=>{callbacks.set(++id,callback);return id;}) as any;
+  global.cancelAnimationFrame=((key:number)=>callbacks.delete(key)) as any;
+  global.ResizeObserver=class { observe(){} disconnect(){disconnect();} } as any;
+  const nodes=Array.from({length:8},()=>({style:{}}));
+  const host={clientWidth:410,dataset:{},querySelectorAll:()=>nodes} as any;
+  try {
+    const scene=createCoinScene(host,false);
+    expect(callbacks.size).toBe(0);
+    const frame=(time:number)=>{const c=[...callbacks.values()];callbacks.clear();c.forEach(fn=>fn(time));};
+    scene.setActive(true);scene.setActive(true);expect(callbacks.size).toBe(1);
+    frame(100);frame(140);const before=Number(host.dataset.elapsed);
+    expect(before).toBeGreaterThan(0);
+    scene.setActive(false);expect(callbacks.size).toBe(0);
+    scene.setActive(true);frame(50000);expect(Number(host.dataset.elapsed)).toBe(before);
+    frame(50040);expect(Number(host.dataset.elapsed)).toBeGreaterThan(before);
+    scene.dispose();expect(callbacks.size).toBe(0);expect(disconnect).toHaveBeenCalledTimes(1);
+    scene.setActive(true);expect(callbacks.size).toBe(0);
+  } finally {global.requestAnimationFrame=saved.raf;global.cancelAnimationFrame=saved.cancel;global.ResizeObserver=saved.resize;}
 });

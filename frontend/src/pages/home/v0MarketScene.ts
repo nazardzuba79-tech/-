@@ -38,39 +38,41 @@ export const SCENE_INSTRUMENTS: readonly SceneInstrument[] = [
   { id: 'NAS100', ticker: 'NAS100', market: 'cfd', symbol: 'NAS100', metal: 'graphite' },
 ];
 
-// Exact coin-layout.ts coordinates in the 1619x971 reference, translated by
-// the scene origin (490,80). No independently guessed scaling or orbit layout.
-export const SCENE_SPOTS = [
-  { x: 193, y: 282, r: 86 }, { x: 172, y: 58, r: 50 },
-  { x: 318, y: 226, r: 52 }, { x: 80, y: 389, r: 53 },
-  { x: 270, y: 120, r: 51 }, { x: 175, y: 476, r: 53 },
-  { x: 88, y: 172, r: 51 }, { x: 297, y: 410, r: 51 },
-] as const;
+// The revised hero uses the eight owner-selected markets; the full quote roster stays intact.
+export const HERO_INSTRUMENTS = SCENE_INSTRUMENTS.slice(0, 8);
 export const SCENE_WIDTH = 410;
 export const SCENE_HEIGHT = 570;
-export const MOBILE_SCENE_HEIGHT = 190;
-export const MOBILE_SCENE_SPOTS = [
-  { x: 56, y: 70, r: 43 }, { x: 156, y: 70, r: 43 },
-  { x: 256, y: 70, r: 43 }, { x: 356, y: 70, r: 43 },
+export const MOBILE_SCENE_HEIGHT = 320;
+export const ORBITS = [
+  { rx: 143, ry: 209, period: 29, phase: -1.57 },
+  { rx: 149, ry: 201, period: 25, phase: -.67 },
+  { rx: 145, ry: 214, period: 33, phase: .23 },
+  { rx: 151, ry: 205, period: 27, phase: 1.13 },
+  { rx: 147, ry: 216, period: 35, phase: 2.03 },
+  { rx: 152, ry: 204, period: 31, phase: 2.93 },
+  { rx: 144, ry: 211, period: 37, phase: 3.83 },
 ] as const;
-export const STEP_SECONDS = 1.6;
-export const FLIP_SECONDS = 1.15;
 
-// One queue; the outgoing slot is replaced only at the edge-on midpoint.
-// Queue order, not random selection, guarantees coverage and no duplicates.
-export function createSceneSequence(count = 8) {
-  const visible = SCENE_INSTRUMENTS.slice(0, count).map(x => x.id);
-  const queue = SCENE_INSTRUMENTS.slice(count).map(x => x.id);
-  let step = 0;
+/** Continuous analytic paths: no keyframe stops, slot swaps or texture changes. */
+export function orbitPose(index: number, seconds: number, compact = false) {
+  const t = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+  const cx = 205, cy = compact ? 148 : 270;
+  if (index === 0) return {
+    x: cx + Math.sin(t * .7) * 5, y: cy + Math.sin(t * .9) * 7,
+    radius: compact ? 43 : 69, scale: 1, depth: 0, rotation: Math.sin(t * .6) * 2,
+  };
+  const orbit = ORBITS[index - 1];
+  // Bounded per-asset speed modulation preserves spacing instead of letting faster
+  // neighbours lap and obscure each other. All velocities remain non-zero.
+  const angle = orbit.phase + t * Math.PI * 2 / 28 + .10 * Math.sin(t * Math.PI * 2 / orbit.period + orbit.phase);
+  const depth = Math.sin(angle);
   return {
-    visible,
-    next() {
-      const slot = step++ % count;
-      const id = queue.shift()!;
-      queue.push(visible[slot]);
-      visible[slot] = id;
-      return { slot, id };
-    },
+    x: cx + Math.cos(angle) * orbit.rx + Math.sin(t * 1.2 + index) * 2,
+    y: cy + depth * orbit.ry * (compact ? .48 : 1) + Math.sin(t * .85 + index) * 3,
+    radius: compact ? 23 : 35,
+    scale: 1 + depth * .09,
+    depth,
+    rotation: Math.sin(t * .6 + index) * 2.5,
   };
 }
 

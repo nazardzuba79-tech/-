@@ -1,97 +1,57 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../../lib/i18n';
-import { Pause, Play } from 'lucide-react';
-import { globalHeroCopy } from './globalHeroCopy';
 import type { HomeMarket } from './useHomeMarket';
-import { MOBILE_SCENE_HEIGHT, MOBILE_SCENE_SPOTS, SCENE_INSTRUMENTS, SCENE_SPOTS, SCENE_WIDTH, SCENE_HEIGHT, scenePrice, sceneQuote } from './v0MarketScene';
-import type { SceneController } from './v0CoinRenderer';
-import { MEDALLION_URLS } from './v0MedallionArtwork';
+import { HERO_INSTRUMENTS, MOBILE_SCENE_HEIGHT, SCENE_HEIGHT, SCENE_WIDTH, orbitPose, scenePrice, sceneQuote } from './v0MarketScene';
+import { createCoinScene } from './v0CoinRenderer';
+
+const ICONS = ['btc', 'apple', 'gold', 'eth', 'nvidia', 'us500', 'oil', 'eurusd'];
 
 export function HomeV0Coins({ market }: { market: HomeMarket }) {
   const { lang } = useLanguage();
   const host = useRef<HTMLDivElement>(null);
-  const controller = useRef<SceneController | null>(null);
   const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 900);
-  const [ids, setIds] = useState(SCENE_INSTRUMENTS.slice(0, 8).map(x => x.id));
-  const [ready, setReady] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const pausedRef = useRef(false);
-  const syncRef = useRef(() => {});
-  pausedRef.current = paused;
-  const spots = compact ? MOBILE_SCENE_SPOTS : SCENE_SPOTS;
   const height = compact ? MOBILE_SCENE_HEIGHT : SCENE_HEIGHT;
-  useEffect(() => { syncRef.current(); }, [paused]);
-
   useEffect(() => {
     const media = matchMedia('(max-width: 900px)');
     const change = () => setCompact(media.matches);
     media.addEventListener('change', change);
     return () => media.removeEventListener('change', change);
   }, []);
-
   useEffect(() => {
     const element = host.current;
     if (!element) return;
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
-    setIds(SCENE_INSTRUMENTS.slice(0, compact ? 4 : 8).map(x => x.id));
-    setReady(false);
-    let disposed = false, inView = false, starting = false;
-    const sync = () => controller.current?.setActive(inView && !document.hidden && !motion.matches && !pausedRef.current);
-    syncRef.current = sync;
-    const start = async () => {
-      if (starting || controller.current || disposed) return;
-      starting = true;
-      try {
-        const { createCoinScene } = await import('./v0CoinRenderer');
-        if (disposed) return;
-        const scene = await createCoinScene(element, next => setIds(next), () => setReady(false), compact, () => disposed);
-        if (disposed || !scene) { scene?.dispose(); return; }
-        controller.current = scene;
-        setReady(true);
-        sync();
-      } catch {
-        // Static, readable local medallions remain available when WebGL/import
-        // is unsupported. No blank hero and no dependency on a CDN logo service.
-        if (!disposed) setReady(false);
-      }
-    };
+    const scene = createCoinScene(element, compact);
+    let inView = false;
+    const sync = () => scene.setActive(inView && !document.hidden && !motion.matches);
     const observer = new IntersectionObserver(entries => {
       inView = entries[0]?.isIntersecting ?? false;
-      if (inView && !document.hidden) void start();
       sync();
-    }, { threshold: 0.03 });
+    }, { threshold: .03 });
     observer.observe(element);
-    const visibility = () => { if (!document.hidden && inView) void start(); sync(); };
-    document.addEventListener('visibilitychange', visibility);
+    document.addEventListener('visibilitychange', sync);
     motion.addEventListener('change', sync);
     return () => {
-      disposed = true;
       observer.disconnect();
-      document.removeEventListener('visibilitychange', visibility);
+      document.removeEventListener('visibilitychange', sync);
       motion.removeEventListener('change', sync);
-      controller.current?.dispose();
-      controller.current = null;
-      syncRef.current = () => {};
+      scene.dispose();
     };
   }, [compact]);
 
-  return <div className="v0-coins" ref={host} data-ready={ready}>
-    <div className="v0-coins-labels">
-      {ids.slice(0, spots.length).map((id, slot) => {
-        const instrument = SCENE_INSTRUMENTS.find(x => x.id === id)!;
-        const spot = spots[slot];
+  return <div className="v0-coins" ref={host}>
+    <div className="v0-coins-labels" key={compact ? 'compact' : 'desktop'}>
+      {HERO_INSTRUMENTS.map((instrument, index) => {
+        const pose = orbitPose(index, 0, compact);
         const quote = sceneQuote(instrument, market, lang);
-        return <div className={`v0-coin v0-coin-${slot}`} key={slot} data-instrument={id} data-market={instrument.market}
-          style={{ left: `${spot.x / SCENE_WIDTH * 100}%`, top: `${spot.y / height * 100}%`, width: `${spot.r * 2 / SCENE_WIDTH * 100}%` }}>
-          <img className="v0-coin-fallback" src={MEDALLION_URLS.get(instrument.id)} alt="" aria-hidden="true" />
-          <div className="v0-quote" data-state={quote.state} title={`${instrument.symbol} · ${instrument.market.toUpperCase()} · ${quote.state}`}>
+        return <div className={'v0-coin v0-coin-' + ICONS[index]} key={instrument.id} data-instrument={instrument.id} data-market={instrument.market}
+          style={{ left: pose.x / SCENE_WIDTH * 100 + '%', top: pose.y / height * 100 + '%', width: pose.radius * 2 / SCENE_WIDTH * 100 + '%' }}>
+          <div className="v0-coin-face"><img src={'/images/home-v0/asset-icons/' + ICONS[index] + '.svg'} alt={instrument.ticker} draggable={false} /></div>
+          <div className="v0-quote" data-state={quote.state} title={instrument.symbol + ' · ' + instrument.market.toUpperCase() + ' · ' + quote.state}>
             <span>{instrument.ticker}</span><strong>{scenePrice(quote.price, lang)}</strong>
           </div>
         </div>;
       })}
     </div>
-
-    {ready && <button type="button" className="v0-motion-toggle" aria-label={paused ? globalHeroCopy[lang].resume : globalHeroCopy[lang].pause}
-      aria-pressed={paused} onClick={() => setPaused(value => !value)}>{paused ? <Play size={13} aria-hidden="true"/> : <Pause size={13} aria-hidden="true"/>}</button>}
   </div>;
 }
