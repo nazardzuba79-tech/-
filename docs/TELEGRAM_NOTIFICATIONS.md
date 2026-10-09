@@ -55,6 +55,33 @@ claimed on the basis of synthetic tests.
 - No balance credit, attribution, KYC update, user write, migration, funding,
   matching or trading change is performed by notifications.
 
+## Copy-address alerts (manual reconciliation only)
+
+A successfully signed-in customer copying a deposit address already creates one
+journal event (only after the clipboard succeeds). A new, committed INSERT sends
+one best-effort signed `DEPOSIT_ADDRESS_COPIED` event to `/v1/copy`. Retries with
+the same copy ID do not send again. The existing notification Worker uses the
+**same configured Telegram bot/chat** as new registrations and KYC. Telegram
+contains only the header and **coin + human-readable network**, for example:
+
+```
+Скопійовано депозитну адресу VOLTEX
+
+Монета: USDT
+Мережа: TRON (TRC-20)
+```
+
+Email, wallet, memo, balance, deposit amount and time are not sent. The user
+identity and server-recorded time remain in Admin → Пополнения → Копировали
+адрес. This is a copy event, NOT a transfer, confirmation, credited deposit or
+payment promise. Admin manually verifies the actual incoming transfer, coin,
+network, address, TXID, confirmations and account before crediting.
+
+Notification dispatch is asynchronously isolated from a successful 201 copy
+response; Telegram failures do not affect the journal or funds. New copy events
+may cost one internal signed call, one DO claim and at most one Telegram call;
+there is no polling, new Neon query, cron, queue, extra server or bot secret.
+
 ## Storage, duplicates, failures
 
 Each event has one SQLite-backed Durable Object. Atomic claim BEFORE the

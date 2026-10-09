@@ -47,11 +47,14 @@ function fakeDb(roles: Record<string, string> = {}) {
   return db;
 }
 
-function app(db: any, coordinator?: BackgroundWorkCoordinator) {
+const notifyCopy = jest.fn(async (_copy: any) => {});
+beforeEach(() => notifyCopy.mockClear());
+
+function app(db: any, coordinator?: BackgroundWorkCoordinator, notifier = notifyCopy) {
   const a = express();
   a.use(express.json());
   if (coordinator) a.use(coordinator.middleware());
-  a.use('/api/v1', depositAddressCopiesRouter(db));
+  a.use('/api/v1', depositAddressCopiesRouter(db, notifier));
   return a;
 }
 
@@ -116,6 +119,22 @@ describe('POST /deposit-address-copies', () => {
     // The same eventId from another account is its own note.
     expect((await request(a).post('/api/v1/deposit-address-copies').set('Authorization', auth(U2)).send(e)).status).toBe(201);
     expect(db.inserts).toBe(2);
+    expect(notifyCopy).toHaveBeenCalledTimes(2);
+    expect(notifyCopy.mock.calls[0][0]).toEqual(expect.objectContaining({
+      id: first.body.id, asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)',
+    }));
+    expect(notifyCopy.mock.calls[0][0]).not.toHaveProperty('address');
+    expect(notifyCopy.mock.calls[0][0]).not.toHaveProperty('userId');
+    expect(notifyCopy.mock.calls[0][0]).not.toHaveProperty('email');
+  });
+
+  it('a Telegram outage cannot fail the saved copy or trigger any financial operation', async () => {
+    const db = fakeDb();
+    const rejected = jest.fn(async (_copy: any) => { throw new Error('simulated Telegram outage'); });
+    const result = await request(app(db, undefined, rejected)).post('/api/v1/deposit-address-copies').set('Authorization', auth(U1)).send(event());
+    expect(result.status).toBe(201);
+    expect(db.inserts).toBe(1);
+    expect(rejected).toHaveBeenCalledTimes(1);
   });
 
   it('keeps a plausible device time and drops an implausible one', async () => {
