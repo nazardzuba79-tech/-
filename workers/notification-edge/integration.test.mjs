@@ -69,7 +69,7 @@ test('real workerd + SQLite DO: signed deposit/registration, private KYC binding
     const copies = await Promise.all(Array.from({ length: 12 }, () => mf.dispatchFetch('https://local/v1/copy', signed(copy, '/v1/copy')).then(r => r.json())));
     assert.equal(copies.filter(r => r.status === 'SENT').length, 1);
     assert.equal(calls.length, 4, 'only one Telegram message per recorded copy event');
-    assert.equal(calls[3].text, 'Скопійовано депозитну адресу VOLTEX\\n\\nМонета: USDT\\nМережа: TRON (TRC-20)'.replaceAll('\\n', '\n'));
+    assert.equal(calls[3].text, 'Скопійовано депозитну адресу VOLTEX\n\nМонета: USDT\nМережа: TRON (TRC-20)');
     assert.ok(!calls[3].text.includes(registration.email), 'no account identity in copy Telegram');
     const wrongBinding = await kyc.fetch('https://local/', { method: 'POST', body: JSON.stringify(registration) });
     assert.equal((await wrongBinding.json()).status, 'INVALID_EVENT', 'KYC authority not broadened');
