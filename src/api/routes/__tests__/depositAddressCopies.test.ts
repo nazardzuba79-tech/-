@@ -130,7 +130,7 @@ describe('POST /deposit-address-copies', () => {
 
   it('a Telegram outage cannot fail the saved copy or trigger any financial operation', async () => {
     const db = fakeDb();
-    const rejected = jest.fn(async () => { throw new Error('simulated Telegram outage'); });
+    const rejected = jest.fn(async (_copy: any) => { throw new Error('simulated Telegram outage'); });
     const result = await request(app(db, undefined, rejected)).post('/api/v1/deposit-address-copies').set('Authorization', auth(U1)).send(event());
     expect(result.status).toBe(201);
     expect(db.inserts).toBe(1);
