@@ -53,8 +53,9 @@
 .listing-preview-grid .bid span:first-child { color: var(--buy); }
 .listing-preview-grid .ask span:first-child { color: var(--sell); }
 .listing-versions { font-size: 12px; color: var(--text-secondary); display: grid; gap: 2px; }
-.listing-dialog-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 17, 21, 0.45); }
-.listing-dialog { width: 100%; max-width: 440px; display: grid; gap: 8px; padding: 18px; border-radius: 12px; background: #fff; color: #101828; box-sizing: border-box; }
+.listing-dialog-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: rgba(15, 17, 21, 0.45); }
+/* Bounded to the visible viewport: a short or landscape phone scrolls the text, the title and the buttons stay reachable. */
+.listing-dialog { width: 100%; max-width: 440px; max-height: calc(100dvh - 32px); max-height: calc(var(--admin-viewport-height, 100dvh) - 32px); overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 8px; padding: 18px; border-radius: 12px; background: #fff; color: #101828; box-sizing: border-box; outline: none; }
 .listing-dialog h2 { margin: 0; font-size: 16px; }
 .listing-dialog p { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
 .listing-movement { min-width: 0; margin: 4px 0 0; padding: 20px; border: 1px solid var(--border); border-radius: 12px; display: grid; gap: 18px; background: #fbfcfe; }
@@ -101,3 +102,20 @@
   .listing-preview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .listing-settings-details summary span { display: block; margin: 4px 0 0; }
 }
+
+/* Phone form (AdminListingsPage, ≤767px): section jumps on top, the actions pinned to the bottom
+ * with their own space reserved, compact inner padding. «Сохранить черновик» and «Опубликовать»
+ * stay separate buttons with the same handlers and confirmation. */
+.listing-section-nav { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; margin: -4px 0 0; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.admin-listings .listing-section-nav button { flex: none; min-height: 36px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; }
+#listing-section-main, #listing-section-movement, #listing-section-stages, #listing-section-advanced, #listing-section-preview { scroll-margin-top: 12px; }
+.listing-form-compact { padding: 12px; padding-bottom: 76px; }
+.listing-form-compact .listing-movement { padding: 12px 10px; gap: 14px; }
+.listing-form-compact .listing-movement .listing-grid { gap: 12px 14px; }
+.listing-form-compact .listing-stage { padding: 10px; }
+.listing-actions-dock { display: grid; gap: 14px; min-width: 0; }
+.listing-form-compact .listing-actions-dock { position: sticky; bottom: 0; z-index: 3; margin: 0 -12px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); gap: 8px; background: var(--panel); border-top: 1px solid var(--border); box-shadow: 0 -8px 16px -12px rgba(16, 24, 40, .25); }
+.listing-form-compact .listing-actions-dock > p { margin: 0; }
+.listing-form-compact .listing-buttons button { min-height: 44px; flex: 1 1 auto; }
+.listing-form-compact .listing-buttons .listing-primary { flex: 1 1 100%; }
+.listing-form-compact :is(input, select, textarea) { scroll-margin-bottom: 96px; }

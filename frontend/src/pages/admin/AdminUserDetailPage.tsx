@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { getAdminProfile, getAdminProfileBalances, getAdminHistory, type AdminProfile, type HistoryKind, type HistoryRow } from '../../lib/adminPagedApi';
@@ -40,6 +40,24 @@ function AdminUserDetail({ id }: { id: string }) {
   };
   const [adjusting, setAdjusting] = useState(false), [deleting, setDeleting] = useState(false);
   const navigate = useNavigate(), detail = read.data;
+  // Seven tabs scroll sideways on a phone: the selected one (also from
+  // ?tab=kyc / ?tab=audit) is brought into view, and the strip marks which
+  // side still has more tabs. No new requests; hidden sections stay unmounted.
+  const tabStrip = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState('');
+  useEffect(() => {
+    const strip = tabStrip.current;
+    if (!strip) return;
+    const measure = () => setMore(`${strip.scrollLeft > 1 ? 'left ' : ''}${strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1 ? 'right' : ''}`.trim());
+    measure();
+    strip.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    return () => { strip.removeEventListener('scroll', measure); window.removeEventListener('resize', measure); };
+  }, [detail]);
+  useEffect(() => {
+    const selected = tabStrip.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+    selected?.scrollIntoView?.({ block: 'nearest', inline: 'center' });
+  }, [tab, detail]);
   const [historyRevision, setHistoryRevision] = useState(0);
   const refreshed = () => { read.reload(); setHistoryRevision(value => value + 1); refreshAdminSummary(); };
   if (!detail) return read.error ? <div role="alert" style={styles.card}><p>{read.error}</p><button onClick={read.reload}>Повторить</button><Link to={back}>Все пользователи</Link></div> : <div aria-label="Загрузка пользователя"><Skeleton height={100} /><Skeleton height={200} /></div>;
@@ -54,7 +72,7 @@ function AdminUserDetail({ id }: { id: string }) {
     </div>
     <AdminReadStatus {...read} hasData />
     <AdminCompatibilityNotice compatibility={detail.compatibility} />
-    <div className="admin-tabs" role="tablist" aria-label="Разделы пользователя">{tabs.map(name => <button key={name} role="tab" aria-selected={tab === name} aria-controls="admin-detail-panel" onClick={() => setTab(name)}>{name}</button>)}</div>
+    <div className="admin-tabs-wrap" data-more={more || undefined}><div className="admin-tabs" role="tablist" aria-label="Разделы пользователя" ref={tabStrip}>{tabs.map(name => <button key={name} role="tab" aria-selected={tab === name} aria-controls="admin-detail-panel" onClick={() => setTab(name)}>{name}</button>)}</div></div>
     <div id="admin-detail-panel" role="tabpanel" aria-label={tab}>
       {tab === 'Общее' && <div className="admin-detail-overview">
         <section style={styles.card}><h2>Профиль</h2><dl className="admin-key-values">
@@ -93,7 +111,7 @@ function LazyProfileBalances({ id }: { id: string }) {
   return <><AdminReadStatus {...read} hasData={!!read.data} />{read.data && <><AdminCompatibilityNotice compatibility={read.data.compatibility} /><div className="admin-detail-overview"><BalanceTable title="Спотовый счёт" rows={read.data.balances} /><BalanceTable title="Тестовый счёт — отдельно" rows={read.data.demoBalances} /></div></>}</>;
 }
 function BalanceTable({ title, rows }: { title: string; rows: AdminProfile['balances'] }) {
-  return <section style={styles.card}><h2>{title}</h2>{rows === null ? <p>Данные баланса недоступны.</p> : !rows.length ? <p>Записей баланса нет.</p> : <div className="admin-table-scroll"><table className="admin-data-table"><thead><tr><th>Актив</th><th>Доступно</th><th>В резерве</th></tr></thead><tbody>{rows.map(row => <tr key={row.asset}><th>{row.asset}</th><td className="mono">{row.available}</td><td className="mono">{row.locked}</td></tr>)}</tbody></table></div>}<p className="admin-muted">Значения показаны по активам без пересчёта в общую сумму.</p></section>;
+  return <section style={styles.card}><h2>{title}</h2>{rows === null ? <p>Данные баланса недоступны.</p> : !rows.length ? <p>Записей баланса нет.</p> : <div className="admin-table-scroll"><table className="admin-data-table admin-balance-table" data-balance-table><thead><tr><th>Актив</th><th>Доступно</th><th>В резерве</th></tr></thead><tbody>{rows.map(row => <tr key={row.asset}><th scope="row" data-label="Актив">{row.asset}</th><td className="mono" data-label="Доступно">{row.available}</td><td className="mono" data-label="В резерве">{row.locked}</td></tr>)}</tbody></table></div>}<p className="admin-muted">Значения показаны по активам без пересчёта в общую сумму.</p></section>;
 }
 const orderKinds: [HistoryKind, string][] = [['orders', 'Спот'], ['futuresOrders', 'Фьючерсные ордера'], ['futuresPositions', 'Фьючерсные позиции'], ['cfdPositions', 'Позиции CFD'], ['purchases', 'Покупки']];
 function AdminUserHistory({ id, initialKind, revision, onChanged }: { id: string; initialKind: HistoryKind; revision: number; onChanged: () => void }) {

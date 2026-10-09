@@ -423,7 +423,7 @@ export const styles: Record<string, CSSProperties> = {
     right: 0,
     top: 0,
     zIndex: 51,
-    height: '100vh',
+    // Height: .admin-drawer-panel (adminConsole.css) — the visible viewport with a 100dvh fallback.
     width: 'min(100%, 440px)',
     background: 'var(--panel)',
     boxShadow: '-12px 0 32px -12px rgba(16,24,40,0.18)',

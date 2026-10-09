@@ -21,7 +21,14 @@ export function cashAdminNextStep(row: Pick<CashSummary, 'status' | 'cancelReque
   };
   return steps[row.status] ?? 'Обновить заявку и проверить подтверждённое состояние.';
 }
-export function CashList({ admin = false, active = true, onOpen }: { admin?: boolean; active?: boolean; onOpen: (id:string)=>void }) {
+/** Admin desk only: jumps between the request, its terms and the private thread. The shared panel itself is unchanged. */
+const ADMIN_SECTIONS = [['otc-section-request', 'Заявка'], ['otc-section-terms', 'Условия и история'], ['otc-section-chat', 'Переписка']] as const;
+function AdminSectionNav() {
+  return <nav className="otc-admin-nav" aria-label="Разделы заявки">
+    {ADMIN_SECTIONS.map(([id, label]) => <button type="button" key={id} data-otc-section={id} onClick={() => document.getElementById(id)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })}>{label}</button>)}
+  </nav>;
+}
+export function CashList({ admin = false, active = true, onOpen, heading = true }: { admin?: boolean; active?: boolean; onOpen: (id:string)=>void; heading?: boolean }) {
   const [rows,setRows]=useState<CashSummary[]>([]),[page,setPage]=useState(0),[more,setMore]=useState(false);
   const [filter,setFilter]=useState(''),[applied,setApplied]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(true),[revision,setRevision]=useState(0);
   useEffect(()=>{
@@ -34,7 +41,7 @@ export function CashList({ admin = false, active = true, onOpen }: { admin?: boo
     return()=>{alive=false;};
   },[admin,page,applied,revision,active]);
   return <section className="otc-cash-panel" aria-label={admin?'OTC-заявки':'Мои заявки'}>
-    <div className="otc-cash-row"><h2>{admin?'OTC-заявки':'Мои заявки'}</h2><button onClick={()=>setRevision(x=>x+1)} disabled={busy}>Обновить</button></div>
+    <div className="otc-cash-row">{heading&&<h2>{admin?'OTC-заявки':'Мои заявки'}</h2>}<button onClick={()=>setRevision(x=>x+1)} disabled={busy}>Обновить</button></div>
     {admin&&<form className="otc-cash-row" onSubmit={e=>{e.preventDefault();setApplied(filter);setPage(0);setRevision(x=>x+1);}}>
       <label>Статус<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="">Все статусы</option>{Object.entries(CASH_STATUSES).map(([key,name])=><option key={key} value={key}>{name}</option>)}</select></label>
       <button disabled={busy}>Применить</button>
@@ -79,7 +86,8 @@ export function CashDetailPanel({id,admin=false,onClose}:{id:string;admin?:boole
     {busy&&<p role="status">Проверяем актуальное состояние…</p>}
     {error&&<p role="alert">{error} Денежные действия недоступны до обновления.</p>}
     {detail&&<>
-      <h2>{detail.number} · {CASH_STATUSES[detail.status]}</h2>
+      <h2 id="otc-section-request">{detail.number} · {CASH_STATUSES[detail.status]}</h2>
+      {admin && <AdminSectionNav />}
       {admin && <p className="otc-cash-notice"><strong>Следующий шаг:</strong> {busy || error ? 'Сначала обновить и подтвердить состояние заявки.' : cashAdminNextStep(detail)}</p>}
       <p>{detail.user&&`${detail.user.email} · UID ${detail.user.id} · `}{countryName(detail.country,'ru')}, {cashCity(detail)?.name}</p>
       <p>Количество: <strong>{detail.quantity} {detail.asset}</strong> · Наличные: {detail.fiat}</p>
@@ -88,7 +96,7 @@ export function CashDetailPanel({id,admin=false,onClose}:{id:string;admin?:boole
       {detail.pickupRevision>0&&<p className="otc-cash-notice">Адрес и время — в приватной переписке. Актуальная версия инструкции: {detail.pickupRevision}. При изменении используйте последнее сообщение оператора.</p>}
       {detail.cancelRequested&&<p className="otc-cash-notice">Отмена запрошена. Резерв сохраняется, начало выдачи заблокировано до подтверждения кассы.</p>}
       {detail.status==='PAYOUT_IN_PROGRESS'&&<p className="otc-cash-notice">Выдача начата. Если результат неизвестен, нужна ручная сверка кассы. Не выдавайте повторно и не возвращайте криптовалюту автоматически.</p>}
-      <h3>Условия и история согласия</h3>
+      <h3 id="otc-section-terms">Условия и история согласия</h3>
       {!detail.offers.length&&<p>Курс, комиссия и сумма к выдаче согласовываются с поддержкой.</p>}
       {detail.offers.map(offer=><div key={offer.version} className="otc-cash-offer">
         <strong>Версия {offer.version}{offer.acceptedAt?' · Принята пользователем':''}</strong>
@@ -97,7 +105,7 @@ export function CashDetailPanel({id,admin=false,onClose}:{id:string;admin?:boole
       </div>)}
       <CashActions key={`${detail.id}:${detail.version}`} row={detail} admin={admin} disabled={busy||!!error} refresh={refresh}/>
     </>}
-    <h3>Приватная поддержка по заявке</h3>
+    <h3 id="otc-section-chat">Приватная поддержка по заявке</h3>
     <p>Сообщения обновляются только по вашему действию. Здесь нет статуса «оператор онлайн».</p>
     {!busy&&!error&&<div className="otc-cash-messages">{messages.length?messages.map(message=><article key={message.id} data-sender={message.sender}>
       <strong>{message.sender==='ADMIN'?'Оператор':'Пользователь'}</strong><time>{displayDate(message.createdAt)}</time><p>{message.text}</p>
