@@ -55,7 +55,7 @@ if (require.main === module) (async () => {
   app.use(express.static(dist)); app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
   server = await new Promise(resolve => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
   const origin = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-unsafe-swiftshader'] });
+  browser = await chromium.launch({ channel: process.env.HOME_QA_BROWSER_CHANNEL || undefined, headless: true, args: ['--no-sandbox', '--enable-unsafe-swiftshader'] });
   context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block', recordVideo: !quick && !baseline ? { dir: path.join(out, 'video'), size: { width: 1440, height: 900 } } : undefined });
   await context.route('**/*', route => { const url = new URL(route.request().url()); if (url.origin === origin || url.protocol === 'data:') return route.continue(); report.blocked.push(url.origin + url.pathname); return route.abort(); });
   await context.addInitScript(() => {

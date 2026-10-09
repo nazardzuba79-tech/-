@@ -31,7 +31,7 @@ let browser, server, context;
   app.use(express.static(path.resolve('frontend/dist'))); app.get('*',(_,res)=>res.sendFile(path.resolve('frontend/dist/index.html')));
   server = await new Promise(r=>{ const s=app.listen(0,'127.0.0.1',()=>r(s)); });
   const origin='http://127.0.0.1:'+server.address().port;
-  browser=await chromium.launch({args:['--no-sandbox','--enable-unsafe-swiftshader','--enable-precise-memory-info']});
+  browser=await chromium.launch({ channel: process.env.HOME_QA_BROWSER_CHANNEL || undefined,args:['--no-sandbox','--enable-unsafe-swiftshader','--enable-precise-memory-info']});
   context=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block',reducedMotion:'reduce',recordVideo:{dir:path.join(out,'video'),size:{width:1440,height:900}}});
   await context.route('**/*',r=>new URL(r.request().url()).origin===origin || r.request().url().startsWith('data:') ? r.continue():r.abort());
   await context.addInitScript(()=>localStorage.setItem('exchange_lang','ru'));

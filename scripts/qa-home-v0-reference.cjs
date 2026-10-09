@@ -22,7 +22,7 @@ let browser, server;
   app.get('*', (_req,res) => res.sendFile(path.resolve('frontend/dist/index.html')));
   server = await new Promise(resolve => { const s = app.listen(0,'127.0.0.1',()=>resolve(s)); });
   const origin = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch({ args: ['--no-sandbox','--enable-unsafe-swiftshader'] });
+  browser = await chromium.launch({ channel: process.env.HOME_QA_BROWSER_CHANNEL || undefined, args: ['--no-sandbox','--enable-unsafe-swiftshader'] });
   const context = await browser.newContext({ reducedMotion: 'reduce', serviceWorkers: 'block' });
   await context.route('**/*', route => new URL(route.request().url()).origin === origin || route.request().url().startsWith('data:') ? route.continue() : route.abort());
   await context.addInitScript(() => localStorage.setItem('exchange_lang','ru'));
