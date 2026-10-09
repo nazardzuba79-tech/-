@@ -47,7 +47,7 @@ function fakeDb(roles: Record<string, string> = {}) {
   return db;
 }
 
-const notifyCopy = jest.fn(async () => {});
+const notifyCopy = jest.fn(async (_copy: any) => {});
 beforeEach(() => notifyCopy.mockClear());
 
 function app(db: any, coordinator?: BackgroundWorkCoordinator, notifier = notifyCopy) {
