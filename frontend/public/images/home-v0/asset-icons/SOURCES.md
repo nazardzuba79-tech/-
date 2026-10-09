@@ -33,7 +33,7 @@ Existing glyphs retained from the previous Hero revision:
 - `apple.svg`: [Apple / Simple Icons](https://github.com/simple-icons/simple-icons/blob/develop/icons/apple.svg).
 - `nvidia.svg`: [NVIDIA / Simple Icons](https://github.com/simple-icons/simple-icons/blob/develop/icons/nvidia.svg).
 - `btc.svg`, `eth.svg`: [Bitcoin and Ethereum / cryptocurrency-icons](https://github.com/spothq/cryptocurrency-icons/tree/1a63530be6e374711a8554f31b17e4cb92c25fa5/svg/black). The previously sourced CC0 glyphs retain their recognizable paths, without decorative plates.
-  BTC uses a tighter viewBox and champagne fill for a clearer central mark; its upstream path is unchanged. The navy face and fine gold rim are scoped Hero CSS.
+  BTC uses a tighter viewBox and warm white fill for a clearer central mark; its upstream path is unchanged. The metallic gold rim and bronze face follow the owner's reference and use scoped Hero CSS.
 
 `xrp.svg` uses the conventional [XRP ribbon glyph from cryptocurrency-icons](https://github.com/spothq/cryptocurrency-icons/blob/1a63530be6e374711a8554f31b17e4cb92c25fa5/svg/color/xrp.svg).
 `trx.svg` uses the [TRON glyph from cryptocurrency-icons](https://github.com/spothq/cryptocurrency-icons/blob/1a63530be6e374711a8554f31b17e4cb92c25fa5/svg/color/trx.svg).
@@ -48,7 +48,7 @@ assets use deliberately neutral original vector symbols, accompanied by
 the instrument ticker in the Hero:
 
 - `gold.svg`: bullion bars for XAU.
-- `oil.svg`: solid steel oil drum with broad hoops and a contrasting oil drop for WTI; an original neutral pictogram designed to remain legible at small icon sizes, not a corporate logo.
+- `oil.svg`: simple black oil drop with a small highlight, matching the owner's reference; original neutral WTI symbol, not a corporate logo. A light silver Hero badge preserves its contrast at small sizes.
 - `eurusd.svg`: euro and dollar symbols.
 - `usdjpy.svg`: dollar and yen symbols.
 - `us500.svg`: index bars/line for US500.

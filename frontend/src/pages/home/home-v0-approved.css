@@ -30,11 +30,13 @@
 .v0-coin-face { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 50%; background: #0c2034; border: 1px solid #b69a60; box-shadow: 0 3px 9px #0007; }
 .v0-coin-face img { width: 53%; height: 53%; object-fit: contain; transform: translateY(-15%); }
 .v0-coin-symbol { position: absolute; bottom: 10%; left: 0; width: 100%; text-align: center; color: #e6edf6; font: 600 clamp(6px,.48vw,10px)/1 Arial,sans-serif; white-space: nowrap; }
-.v0-coin-btc .v0-coin-face { position: relative; background: radial-gradient(ellipse at 30% 12%,#294456 0%,#112b3e 45%,#061522 100%); border-color: #f0cd84; box-shadow: inset 0 1px 1px #fff2c94d, inset 0 -2px 5px #0008, 0 0 0 1px #bc89394d, 0 0 22px #e8b65426, 0 8px 24px #0006; }
-.v0-coin-btc .v0-coin-face::before { content: ''; position: absolute; inset: 5%; border: 1px solid #e9c57c45; border-radius: 50%; pointer-events: none; }
-.v0-coin-btc .v0-coin-face img { width: 54%; height: 54%; transform: translateY(-28%); }
+.v0-coin-btc .v0-coin-face { position: relative; background: conic-gradient(from 135deg,#ae6a1e,#fff0bd 17%,#c58c35 32%,#ffe4a0 49%,#985717 65%,#f6cd79 82%,#ae6a1e); border-color: #ffe7a4; box-shadow: inset 0 0 0 1px #fff4c999, 0 0 0 1px #b67a3280, 0 0 22px #f6bf584d, 0 8px 24px #0008; }
+.v0-coin-btc .v0-coin-face::before { content: ''; position: absolute; inset: 5%; border: 1px solid #ffe6ae99; border-radius: 50%; background: radial-gradient(ellipse at 30% 18%,#ffe8ad80,transparent 44%),linear-gradient(135deg,#71512f 0%,#b58a52 32%,#4b341d 53%,#98703b 75%,#3b2919 100%); box-shadow: inset 0 1px 4px #30190680; pointer-events: none; }
+.v0-coin-btc .v0-coin-face img { position: relative; width: 64%; height: 64%; transform: translateY(-14%); filter: drop-shadow(0 1px .5px #563510); }
 .v0-coin-btc .v0-quote { top: auto; bottom: 9%; padding: 0; border: 0; background: transparent; color: #decba3; flex-direction: column; gap: 0; font-size: clamp(7px,.57vw,11px); line-height: 1.15; }
 .v0-coin-btc .v0-quote strong { color: #fff3d8; }
+.v0-coin-oil .v0-coin-face { background: linear-gradient(145deg,#f2f5f8 0%,#cbd5df 60%,#9cabbc 100%); border-color: #e6d7b5; box-shadow: inset 0 1px 1px #fff9, 0 3px 9px #0007; }
+.v0-coin-oil .v0-coin-symbol { color: #182331; }
 .v0-coin-apple .v0-coin-face img { filter: invert(1); }
 .v0-coin-nvidia .v0-coin-face img { filter: invert(76%) sepia(82%) saturate(784%) hue-rotate(27deg) brightness(98%); }
 .v0-quote { position: absolute; top: 105%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: clamp(9px,.67vw,13px); line-height: 1.4; padding: 2px 6px; border: 1px solid #c7a36280; border-radius: 9px; color: #d4dfec; background: #071828ee; }

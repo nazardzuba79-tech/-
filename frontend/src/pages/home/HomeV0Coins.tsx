@@ -54,7 +54,7 @@ export function HomeV0Coins({ market }: { market: HomeMarket }) {
             {index > 0 && <span className="v0-coin-symbol">{instrument.ticker}</span>}
           </div>
           {index === 0 && <div className="v0-quote" data-state={quote.state} title={instrument.symbol + ' · ' + instrument.market.toUpperCase() + ' · ' + quote.state}>
-            <span>{instrument.ticker}</span><strong>{scenePrice(quote.price, lang)}</strong>
+            <strong>{scenePrice(quote.price, lang)}</strong>
           </div>}
         </div>;
       })}
