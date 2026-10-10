@@ -54,7 +54,7 @@ export const ZH: Record<Key, string> = {
   'nav.wallet': '钱包',
   'nav.markets': '行情',
   'nav.products': '商品',
-  'nav.card': 'Crypto-Card',
+  'nav.card': 'Card',
   'nav.menuToolsDesc': '市场分析工具',
   'nav.menuOtcDesc': '通过客服兑换加密货币与现金',
   'nav.menuArbitrageDesc': '探索跨市场机会',

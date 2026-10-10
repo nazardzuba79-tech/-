@@ -77,7 +77,7 @@ async function run() {
           return { svg:icon.querySelectorAll('svg').length, tile:rect.width, size:parseFloat(style.fontSize), weight:Number(style.fontWeight), description:description.textContent, descSize:parseFloat(desc.fontSize) };
         }));
         for (const card of cards) { assert.equal(card.svg,1); assert.ok(card.tile>=32&&card.tile<=36); assert.ok(card.size>=13&&card.size<=14); assert.ok(card.weight>=600); assert.ok(card.descSize>=11&&card.descSize<=12); assert.ok(card.description.length>0); }
-        assert.equal(await nav.locator('a[href="/card"]').innerText(),'Crypto-Card');
+        assert.equal(await nav.locator('a[href="/card"]').innerText(),'Card');
         const last=panel.locator('a').last(); await last.scrollIntoViewIfNeeded();
         assert.ok(await last.evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}), 'menu card must receive pointer events');
       }

@@ -54,7 +54,7 @@ export const KO: Record<Key, string> = {
   'nav.wallet': '지갑',
   'nav.markets': '마켓',
   'nav.products': '상품',
-  'nav.card': 'Crypto-Card',
+  'nav.card': 'Card',
   'nav.menuToolsDesc': '시장 분석 도구',
   'nav.menuOtcDesc': '고객 지원을 통한 암호화폐와 현금 교환',
   'nav.menuArbitrageDesc': '시장 간 기회 살펴보기',

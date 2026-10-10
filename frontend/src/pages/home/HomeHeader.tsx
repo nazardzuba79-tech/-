@@ -2,7 +2,7 @@ import { HeaderDropdown, KNOWLEDGE_LINKS, MARKET_LINKS, OTC_LINKS, TRADING_LINKS
 import { TradingBotIcon } from '../../components/TradingBotIcon';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, CreditCard } from 'lucide-react';
 import { api, getToken } from '../../lib/api';
 import { Key, useLanguage } from '../../lib/i18n';
 import { Logo } from '../../components/Logo';
@@ -77,9 +77,9 @@ export function HomeHeader() {
             l.to === '/markets' || l.to === '/trade' || l.to === '/otc' || l.to === '/academy' ? <HeaderDropdown key={l.to} to={l.to} label={t(l.labelKey)} links={l.to === '/markets' ? MARKET_LINKS : l.to === '/trade' ? TRADING_LINKS : l.to === '/otc' ? OTC_LINKS : KNOWLEDGE_LINKS} className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted hover:text-white"/> : <Link
               key={l.to}
               to={l.to}
-              className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"
+              className={`whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white${l.to === '/card' ? ' inline-flex items-center gap-[6px]' : ''}`}
             >
-              {t(l.labelKey)}
+              {l.to === '/card' && <CreditCard size={14} aria-hidden="true" />}{t(l.labelKey)}
             </Link>
           ))}
           <Link to="/trading-bots" className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"><TradingBotIcon/>{HOME_BOTS_LABEL[lang] ?? HOME_BOTS_LABEL.ru}</Link>
@@ -146,9 +146,9 @@ export function HomeHeader() {
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                className="whitespace-nowrap rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:bg-white/[0.05] hover:text-white"
+                className={`whitespace-nowrap rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:bg-white/[0.05] hover:text-white${l.to === '/card' ? ' inline-flex items-center gap-[6px]' : ''}`}
               >
-                {t(l.labelKey)}
+                {l.to === '/card' && <CreditCard size={14} aria-hidden="true" />}{t(l.labelKey)}
               </Link>
             ))}
             <Link to="/trading-bots" onClick={() => setOpen(false)} className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:bg-white/[0.05] hover:text-white"><TradingBotIcon/>{HOME_BOTS_LABEL[lang] ?? HOME_BOTS_LABEL.ru}</Link>
