@@ -139,3 +139,23 @@
   .support-form-body { padding:13px 14px; }
 }
 @media (prefers-reduced-motion:reduce) { .support-launcher, .support-panel * { transition:none !important; scroll-behavior:auto !important; } }
+
+
+/* Telegram is an optional contact channel; the existing authenticated email
+   form and Cloudflare support-edge POST remain completely unchanged. */
+.support-telegram-option { display:flex; flex-direction:column; gap:10px; padding:13px; border:1px solid #e0e5eb; border-radius:12px; background:#f7f8fa; }
+.support-telegram-top { display:flex; align-items:center; gap:10px; min-width:0; }
+.support-telegram-icon { display:grid; place-items:center; width:38px; height:38px; flex:0 0 38px; border-radius:10px; background:#eaf3ff; color:#2576c7; }
+.support-telegram-description { display:flex; flex:1; min-width:0; flex-direction:column; gap:2px; line-height:1.35; }
+.support-telegram-description strong { color:var(--support-ink); font-size:13.5px; font-weight:600; }
+.support-telegram-description span { color:var(--support-muted); font-size:11.5px; }
+.support-telegram-link { display:flex; align-items:center; justify-content:center; gap:7px; min-height:42px; border-radius:9px; text-decoration:none; background:#f0b90b; color:#1e2329; font-weight:600; font-size:13px; }
+.support-telegram-link:hover { background:#f5c629; color:#1e2329; }
+.support-telegram-note { color:var(--support-muted); font-size:11px; line-height:1.5; margin:0; }
+.support-contact-separator { display:flex; align-items:center; gap:10px; color:var(--support-muted); font-size:11.5px; text-align:center; }
+.support-contact-separator::before,.support-contact-separator::after { content:''; height:1px; background:var(--support-line); flex:1; }
+.support-contact-separator span { flex-shrink:1; }
+@media (max-width:360px) {
+  .support-telegram-option { padding:11px; }
+  .support-telegram-description span { font-size:11px; }
+}
