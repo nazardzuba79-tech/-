@@ -7,7 +7,7 @@ Fresh main: `7d9ee6fc6bfe76badaac680313e9728e5abd3550`.
 
 ## Presentation
 
-- `Crypto-Card` navigation label in all seven existing locales; product copy outside navigation is preserved.
+- `Card` navigation label in all seven existing locales; product copy outside navigation is preserved.
 - One typed HeaderDropdown item contract (`to`, `label`, `icon`, `description`), shared by authenticated Nav and HomeHeader, desktop and mobile.
 - Nine distinct bundled Lucide SVG icons, 34px icon tiles, 14px semibold titles, 11.5px muted descriptions, whole-card hover/focus and reduced-motion support. No emoji or external images in these menus.
 - Existing routes, direct section links, keyboard/touch disclosure, Escape and focus return retained. Trading/OTC now use the same renderer as Markets/Academy.
@@ -20,7 +20,7 @@ Fresh main: `7d9ee6fc6bfe76badaac680313e9728e5abd3550`.
 
 `before-report.json`: 20 baseline cases. `after-report.json`: 20 Futures cases. `after-home-report.json`: 20 actual signed-out HomeHeader cases (the fixture must use `--signed-out`, otherwise root redirects to Futures). All use the real built bundle and loopback-only fixture data. No production tokens, accounts, orders or data.
 
-Browser checks assert exact destinations, SVG counts, computed tile/type sizes, description content, Crypto-Card label, pointer hit testing, viewport bounds and no page overflow. External network is denied, fixture financial writes are denied. Existing `qa-futures-proportions.cjs` also covers all five widths, ticker gaps, chart/settings/order-panel interactions, loading/error/populated fixtures, mobile layering and Wallet/Futures/Spot SPA navigation. The navigation test opens the existing drawer when a desktop link is unavailable; no checks are bypassed.
+Browser checks assert exact destinations, SVG counts, computed tile/type sizes, description content, Card label, pointer hit testing, viewport bounds and no page overflow. External network is denied, fixture financial writes are denied. Existing `qa-futures-proportions.cjs` also covers all five widths, ticker gaps, chart/settings/order-panel interactions, loading/error/populated fixtures, mobile layering and Wallet/Futures/Spot SPA navigation. The navigation test opens the existing drawer when a desktop link is unavailable; no checks are bypassed.
 
 ## Validation
 
