@@ -7,6 +7,7 @@ const read = (file: string) => readFileSync(resolve(frontend, file), 'utf8');
 describe('mobile round 3: scoped fixes without trading changes', () => {
   const header = read('src/pages/home/HomeHeader.tsx');
   const largeText = read('src/pages/trade-terminal/FuturesMobileLargeText.css');
+  const walletUi = read('src/pages/wallet-v3/ui.tsx');
 
   test('both homepage Trading Bots links use a localized label', () => {
     const expected: Record<string, string> = {
@@ -23,6 +24,12 @@ describe('mobile round 3: scoped fixes without trading changes', () => {
     }
     expect(header.match(/<TradingBotIcon\/>{HOME_BOTS_LABEL\[lang\] \?\? HOME_BOTS_LABEL\.ru}<\/Link>/g)).toHaveLength(2);
     expect(header).toContain('const { lang, t } = useLanguage();');
+  });
+
+  test('wallet withdrawal validation wraps rather than overlaps at 200% text', () => {
+    expect(walletUi).toContain('flex min-w-0 items-start');
+    expect(walletUi).toContain('break-words leading-normal');
+    expect(walletUi).toContain('<span className="min-w-0 flex-1 break-words leading-normal">{children}</span>');
   });
 
   test('narrow Futures order tickets place captions in document flow', () => {
