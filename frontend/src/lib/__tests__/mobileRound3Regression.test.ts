@@ -8,6 +8,8 @@ describe('mobile round 3: scoped fixes without trading changes', () => {
   const header = read('src/pages/home/HomeHeader.tsx');
   const largeText = read('src/pages/trade-terminal/FuturesMobileLargeText.css');
   const walletUi = read('src/pages/wallet-v3/ui.tsx');
+  const withdrawModal = read('src/pages/wallet-v3/WithdrawModal.tsx');
+  const walletCss = read('src/pages/wallet-v3/wallet.css');
 
   test('both homepage Trading Bots links use a localized label', () => {
     const expected: Record<string, string> = {
@@ -26,10 +28,14 @@ describe('mobile round 3: scoped fixes without trading changes', () => {
     expect(header).toContain('const { lang, t } = useLanguage();');
   });
 
-  test('wallet withdrawal validation wraps rather than overlaps at 200% text', () => {
-    expect(walletUi).toContain('flex min-w-0 items-start');
-    expect(walletUi).toContain('break-words leading-normal');
-    expect(walletUi).toContain('<span className="min-w-0 flex-1 break-words leading-normal">{children}</span>');
+  test('wallet withdrawal validation wraps through scoped CSS without changing protected shared UI', () => {
+    expect(walletUi).toContain('<p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] leading-4 text-neg">');
+    expect(withdrawModal).toContain('<div className="wallet-withdraw-address-field">');
+    expect(walletCss).toContain('.vx-wallet-modal-root .wallet-withdraw-address-field > p.text-neg {');
+    expect(walletCss).toContain('line-height: 1.4;');
+    expect(walletCss).toContain('.vx-wallet-modal-root .wallet-withdraw-address-field > p.text-neg > span {');
+    expect(walletCss).toContain('min-width: 0;');
+    expect(walletCss).toContain('overflow-wrap: break-word;');
   });
 
   test('narrow Futures order tickets place captions in document flow', () => {
