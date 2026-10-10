@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../lib/i18n';
+import type { DrawingMarket } from '../lib/chartDrawings';
 import {
   AXIS_FONT_SIZES, AXIS_WHITE, CHART_PRESETS, DEFAULT_CHART_SETTINGS, PRICE_DECIMALS, getSavedChartSettings, previewChartSettings, revertChartSettings, saveChartSettings, withPreset,
   type ChartAxisFont, type ChartColorPreset, type ChartGridMode, type ChartLineStyle, type ChartPriceDecimals, type ChartScaleMode, type ChartSettings,
@@ -31,11 +32,11 @@ export function requestChartSettingsView(tab: ChartSettingsTab, focus?: string):
  * width and visibility, plus the catalogue). Indicators follow the same
  * draft / keep / throw-away flow as the paint settings.
  */
-export function ChartSettingsDialog({ onClose, initialTab = 'candles', focusIndicator }: { onClose: () => void; initialTab?: ChartSettingsTab; focusIndicator?: string }) {
+export function ChartSettingsDialog({ onClose, initialTab = 'candles', focusIndicator, market = 'futures' }: { onClose: () => void; initialTab?: ChartSettingsTab; focusIndicator?: string; market?: DrawingMarket }) {
   const { t } = useLanguage();
   const [tab, setTab] = useState<ChartSettingsTab>(() => { const r = requested; requested = null; if (r) focusIndicator = r.focus; return r?.tab ?? initialTab; });
   const [draft, setDraft] = useState<ChartSettings>(() => ({ ...getSavedChartSettings() }));
-  const [indicators, setIndicators] = useState<IndicatorInstance[]>(() => getSavedChartIndicators().map(i => ({ ...i, params: { ...i.params }, colors: [...i.colors] })));
+  const [indicators, setIndicators] = useState<IndicatorInstance[]>(() => getSavedChartIndicators(market).map(i => ({ ...i, params: { ...i.params }, colors: [...i.colors] })));
   const [query, setQuery] = useState('');
   const boxRef = useRef<HTMLDivElement | null>(null);
   const focusRef = useRef<string | undefined>(focusIndicator);
@@ -46,10 +47,10 @@ export function ChartSettingsDialog({ onClose, initialTab = 'candles', focusIndi
     const colour = /Up$|Down$/.test(String(key));
     change({ ...draft, [key]: value, ...(colour ? { preset: 'custom' as ChartColorPreset } : {}) });
   };
-  const changeIndicators = (next: IndicatorInstance[]) => { setIndicators(next); previewChartIndicators(next); };
+  const changeIndicators = (next: IndicatorInstance[]) => { setIndicators(next); previewChartIndicators(next, market); };
   const updateIndicator = (id: string, patch: (inst: IndicatorInstance) => IndicatorInstance) => changeIndicators(indicators.map(i => (i.id === id ? patch(i) : i)));
-  const cancel = () => { revertChartSettings(); revertChartIndicators(); onClose(); };
-  const ok = () => { saveChartSettings(draft); saveChartIndicators(indicators); onClose(); };
+  const cancel = () => { revertChartSettings(); revertChartIndicators(market); onClose(); };
+  const ok = () => { saveChartSettings(draft); saveChartIndicators(indicators, market); onClose(); };
   const reset = () => {
     change({ ...DEFAULT_CHART_SETTINGS });
     changeIndicators(DEFAULT_CHART_INDICATORS.map(i => ({ ...i, params: { ...i.params }, colors: [...i.colors] })));
@@ -83,7 +84,7 @@ export function ChartSettingsDialog({ onClose, initialTab = 'candles', focusIndi
       // Pair/route changes can unmount the dialog without calling Cancel.
       // Reverting after Ok is also safe: saveChartSettings already kept the draft.
       revertChartSettings();
-      revertChartIndicators();
+      revertChartIndicators(market);
       const opener = openerRef.current as HTMLElement | null;
       if (opener?.isConnected) opener.focus?.();
     };
