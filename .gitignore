@@ -5,6 +5,7 @@ dist/
 uploads/
 *.tsbuildinfo
 frontend/dist-mobile-review/
+frontend/dist-stocks-global/
 frontend/dist-otc-legacy/
 .ci-output/
 outputs/

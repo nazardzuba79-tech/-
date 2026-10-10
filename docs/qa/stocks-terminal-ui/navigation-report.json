@@ -1,0 +1,584 @@
+{
+  "views": [
+    {
+      "lang": "ru",
+      "width": 1920,
+      "stockLabel": "Акции и индексы\nЦены закрытия готовых 15-минутных свечей",
+      "menuBounds": {
+        "x": 273.6875,
+        "y": 67,
+        "width": 332,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "stockLabel": "Акции и индексы\nЦены закрытия готовых 15-минутных свечей",
+      "menuBounds": {
+        "x": 16,
+        "y": 214,
+        "width": 1408,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "stockLabel": "Акции и индексы\nЦены закрытия готовых 15-минутных свечей",
+      "menuBounds": {
+        "x": 16,
+        "y": 214,
+        "width": 1334,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "stockLabel": "Акции и индексы",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 406,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "stockLabel": "Акции и индексы",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 366,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "stockLabel": "Акции и индексы",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 336,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "stockLabel": "Акции и индексы",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 296,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "stockLabel": "Stocks and indices\nClosing prices of completed 15-minute candles",
+      "menuBounds": {
+        "x": 281.109375,
+        "y": 67,
+        "width": 332,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "stockLabel": "Stocks and indices\nClosing prices of completed 15-minute candles",
+      "menuBounds": {
+        "x": 16,
+        "y": 214,
+        "width": 1408,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "stockLabel": "Stocks and indices\nClosing prices of completed 15-minute candles",
+      "menuBounds": {
+        "x": 16,
+        "y": 214,
+        "width": 1334,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "stockLabel": "Stocks and indices",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 406,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "stockLabel": "Stocks and indices",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 366,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "stockLabel": "Stocks and indices",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 336,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "stockLabel": "Stocks and indices",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 296,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "stockLabel": "股票与指数\n已完成的15分钟K线收盘价",
+      "menuBounds": {
+        "x": 256.546875,
+        "y": 67,
+        "width": 332,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "stockLabel": "股票与指数\n已完成的15分钟K线收盘价",
+      "menuBounds": {
+        "x": 16,
+        "y": 216,
+        "width": 1408,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "stockLabel": "股票与指数\n已完成的15分钟K线收盘价",
+      "menuBounds": {
+        "x": 16,
+        "y": 216,
+        "width": 1334,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "stockLabel": "股票与指数",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 406,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "stockLabel": "股票与指数",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 366,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "stockLabel": "股票与指数",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 336,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "stockLabel": "股票与指数",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 296,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "stockLabel": "Acciones e índices\nPrecios de cierre de velas completas de 15 minutos",
+      "menuBounds": {
+        "x": 293.484375,
+        "y": 67,
+        "width": 332,
+        "height": 310.625
+      }
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "stockLabel": "Acciones e índices\nPrecios de cierre de velas completas de 15 minutos",
+      "menuBounds": {
+        "x": 16,
+        "y": 214,
+        "width": 1408,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "stockLabel": "Acciones e índices\nPrecios de cierre de velas completas de 15 minutos",
+      "menuBounds": {
+        "x": 16,
+        "y": 214,
+        "width": 1334,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "stockLabel": "Acciones e índices",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 406,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "stockLabel": "Acciones e índices",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 366,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "stockLabel": "Acciones e índices",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 336,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "stockLabel": "Acciones e índices",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 296,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "stockLabel": "शेयर और सूचकांक\nपूर्ण 15-मिनट कैंडल की समापन कीमतें",
+      "menuBounds": {
+        "x": 275.46875,
+        "y": 67,
+        "width": 332,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "stockLabel": "शेयर और सूचकांक\nपूर्ण 15-मिनट कैंडल की समापन कीमतें",
+      "menuBounds": {
+        "x": 16,
+        "y": 216,
+        "width": 1408,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "stockLabel": "शेयर और सूचकांक\nपूर्ण 15-मिनट कैंडल की समापन कीमतें",
+      "menuBounds": {
+        "x": 16,
+        "y": 216,
+        "width": 1334,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "stockLabel": "शेयर और सूचकांक",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 406,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "stockLabel": "शेयर और सूचकांक",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 366,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "stockLabel": "शेयर और सूचकांक",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 336,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "stockLabel": "शेयर और सूचकांक",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 296,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "stockLabel": "株式と指数\n確定した15分足の終値",
+      "menuBounds": {
+        "x": 298.328125,
+        "y": 67,
+        "width": 332,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "stockLabel": "株式と指数\n確定した15分足の終値",
+      "menuBounds": {
+        "x": 16,
+        "y": 216,
+        "width": 1408,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "stockLabel": "株式と指数\n確定した15分足の終値",
+      "menuBounds": {
+        "x": 16,
+        "y": 216,
+        "width": 1334,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "stockLabel": "株式と指数",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 406,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "stockLabel": "株式と指数",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 366,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "stockLabel": "株式と指数",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 336,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "stockLabel": "株式と指数",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 296,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "stockLabel": "주식 및 지수\n완료된 15분 봉의 종가",
+      "menuBounds": {
+        "x": 256.546875,
+        "y": 67,
+        "width": 332,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "stockLabel": "주식 및 지수\n완료된 15분 봉의 종가",
+      "menuBounds": {
+        "x": 16,
+        "y": 217,
+        "width": 1408,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "stockLabel": "주식 및 지수\n완료된 15분 봉의 종가",
+      "menuBounds": {
+        "x": 16,
+        "y": 217,
+        "width": 1334,
+        "height": 293.375
+      }
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "stockLabel": "주식 및 지수",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 406,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "stockLabel": "주식 및 지수",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 366,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "stockLabel": "주식 및 지수",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 336,
+        "height": 252.296875
+      }
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "stockLabel": "주식 및 지수",
+      "menuBounds": {
+        "x": 12,
+        "y": 685.203125,
+        "width": 296,
+        "height": 252.296875
+      }
+    }
+  ],
+  "transitions": [
+    {
+      "width": 1920,
+      "sequence": "Spot → Futures → CFD → Stocks → Spot",
+      "terminalStylesAndRouteState": "unchanged",
+      "backForward": true,
+      "directDetailReload": true
+    },
+    {
+      "width": 430,
+      "sequence": "Spot → Futures → CFD → Stocks → Spot",
+      "terminalStylesAndRouteState": "unchanged",
+      "backForward": true,
+      "directDetailReload": true
+    },
+    {
+      "width": 390,
+      "sequence": "Spot → Futures → CFD → Stocks → Spot",
+      "terminalStylesAndRouteState": "unchanged",
+      "backForward": true,
+      "directDetailReload": true
+    },
+    {
+      "width": 360,
+      "sequence": "Spot → Futures → CFD → Stocks → Spot",
+      "terminalStylesAndRouteState": "unchanged",
+      "backForward": true,
+      "directDetailReload": true
+    },
+    {
+      "width": 320,
+      "sequence": "Spot → Futures → CFD → Stocks → Spot",
+      "terminalStylesAndRouteState": "unchanged",
+      "backForward": true,
+      "directDetailReload": true
+    }
+  ],
+  "pageErrors": [],
+  "writesBlocked": 0,
+  "externalBlocked": 448,
+  "stockRequests": 0
+}

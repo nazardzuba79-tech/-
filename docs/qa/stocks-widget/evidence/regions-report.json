@@ -1,0 +1,102 @@
+[
+  {
+    "symbol": "RUS:SBER",
+    "interval": "D",
+    "screenshot": "RUS-SBER.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  },
+  {
+    "symbol": "TSE:7203",
+    "interval": "D",
+    "screenshot": "TSE-7203.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  },
+  {
+    "symbol": "HKEX:700",
+    "interval": "D",
+    "screenshot": "HKEX-700.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  },
+  {
+    "symbol": "SSE:600519",
+    "interval": "D",
+    "screenshot": "SSE-600519.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  },
+  {
+    "symbol": "SZSE:000001",
+    "interval": "D",
+    "screenshot": "SZSE-000001.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  },
+  {
+    "symbol": "SSE:000001",
+    "interval": "D",
+    "screenshot": "SSE-000001.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  },
+  {
+    "symbol": "HSI:HSI",
+    "interval": "D",
+    "screenshot": "HSI-HSI.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  },
+  {
+    "symbol": "SP:SPX",
+    "interval": "D",
+    "screenshot": "SP-SPX.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  },
+  {
+    "symbol": "NASDAQ:NDX",
+    "interval": "D",
+    "screenshot": "NASDAQ-NDX.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  },
+  {
+    "symbol": "TVC:DJI",
+    "interval": "D",
+    "screenshot": "TVC-DJI.png",
+    "frames": [
+      "about:blank",
+      "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=en"
+    ],
+    "result": "Requires visual assessment; script/iframe load is not market-data availability"
+  }
+]
