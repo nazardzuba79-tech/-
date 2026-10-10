@@ -14,6 +14,44 @@ function fixture(){const dir=mkdtempSync(join(tmpdir(),'voltex-stock-'));const s
 test('validated configuration cannot relax any budget',()=>{for(const [k,v]of Object.entries(limits)){if(typeof v==='number'&&!['MIN_FREE_DISK','MIN_UPSTREAM_REQUEST_GAP_MS'].includes(k))assert.throws(()=>validateLimits({...limits,[k]:v*2}));}assert.throws(()=>validateLimits({...limits,BACKFILL_ENABLED_BY_DEFAULT:true}));});
 test('250 canonical disabled catalogue records, regional caps, same ticker across venues',()=>{assert.equal(manifest.length,250);validateManifest(manifest);assert.ok(manifest.every(x=>!x.enabled));validateManifest([{...i,instrumentId:'XNAS:SAME'},{...i,instrumentId:'XNYS:SAME'}]);assert.throws(()=>validateManifest([i,i]));assert.throws(()=>validateManifest([{...i,dataRightsStatus:'unconfirmed'}]));});
 test('500 rows in bounded transactions, duplicate replay unchanged, explicit correction and decimal preservation',()=>{const f=fixture();try{const rows=Array.from({length:500},(_,n)=>row(499-n));assert.equal(f.store.write(rows,i,now),500);assert.equal(f.store.write(rows,i,now),0);assert.equal(f.store.history(i.instrumentId,500).length,500);assert.equal(f.store.history(i.instrumentId,1)[0].open,'100.12345678');assert.equal(f.store.write([{...row(),close:'101.5'}],i,now),1);assert.equal(f.store.db.prepare('PRAGMA journal_mode').get().journal_mode,'delete');}finally{f.close();}});
+
+test('equivalent recent cursors share one encoded page; genuine pagination stays exact',async()=>{
+  const f=fixture();f.store.write([row(2),row(1),row()],i,now);
+  let reads=0;const history=f.store.history.bind(f.store);f.store.history=(...args)=>{reads++;return history(...args);};
+  const server=createStockServer({store:f.store,instruments:[i]});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const url='http://127.0.0.1:'+server.address().port+'/stocks/history/'+i.instrumentId;
+  try{
+    for(let n=0;n<100;n++){
+      const r=await fetch(url+'?limit=2&before='+(now-n));assert.equal(r.status,200);
+      const page=await r.json();assert.deepEqual(page.candles.map(c=>c.openTimeUtc),[now-1800000,now-900000]);assert.equal(page.next,now-1800000);
+    }
+    assert.equal(reads,1);assert.equal(server.stockCache.entries.size,1);
+    const older=await(await fetch(url+'?limit=2&before='+(now-900000))).json();
+    assert.deepEqual(older.candles.map(c=>c.openTimeUtc),[now-2700000,now-1800000]);assert.equal(reads,2);
+    // Correction + invalidation must not return a previously encoded page.
+    f.store.write([{...row(),close:'100.5'}],i,now);server.stockCache.clear();
+    assert.equal((await(await fetch(url)).json()).candles.at(-1).close,'100.5');
+  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}
+});
+
+test('100 simultaneous cached HTTP readers are not rejected by idle transport sockets',async()=>{
+  const f=fixture();f.store.write([row()],i,now);const server=createStockServer({store:f.store,instruments:[i]});
+  let dropped=0;server.on('drop',()=>dropped++);await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const url='http://127.0.0.1:'+server.address().port+'/stocks/history/'+i.instrumentId;
+  try{
+    const results=await Promise.all(Array.from({length:100},async()=>{const r=await fetch(url,{signal:AbortSignal.timeout(3000)});assert.equal(r.status,200);return r.json();}));
+    assert.equal(results.length,100);assert.equal(dropped,0);assert.equal(server.maxConnections,128);
+    assert.ok(server.stockCache.bytes<=16*1048576);assert.equal(server.stockCache.pending.size,0);
+  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}
+});
+
+test('cache invalidation fences in-flight data and LRU stays inside original byte budget',async()=>{
+  const cache=new ByteCache(16);let release;const stale=cache.get('page',()=>new Promise(r=>release=r));await Promise.resolve();
+  cache.clear();await cache.get('page',()=> 'new');release('stale');await stale;
+  assert.equal(cache.peek('page').value,'new');assert.equal(cache.bytes,3);
+  await cache.get('second',()=> '12345678');cache.peek('page');await cache.get('third',()=> '12345678');
+  assert.equal(cache.peek('second'),undefined);assert.equal(cache.peek('page').value,'new');assert.ok(cache.bytes<=16);
+});
 test('invalid currency, open candle, bad OHLC, adjustment mode and unordered duplicates rejected',()=>{for(const patch of [{currency:'BAD'},{closeTimeUtc:now+1},{low:'103'},{high:'99'},{volume:'NaN'},{adjustmentMode:'adjusted'},{instrumentId:'XNAS:OTHER'}])assert.throws(()=>validateCandle({...row(),...patch},i,now));const f=fixture();try{assert.throws(()=>f.store.write([row(),row()],i,now));assert.equal(f.store.history(i.instrumentId).length,0);}finally{f.close();}});
 test('read gate bounded at two active/eight pending and releases after error',async()=>{const g=new ReadGate();let release;const held=new Promise(r=>release=r);const jobs=Array.from({length:10},()=>g.run(()=>held));await assert.rejects(g.run(()=>null));assert.equal(g.active,2);assert.equal(g.queue.length,8);release();await Promise.all(jobs);assert.equal(g.active,0);await assert.rejects(g.run(()=>{throw Error('storage');}));assert.equal(await g.run(()=>3),3);});
 test('singleflight response cache byte cap',async()=>{const c=new ByteCache(16);let calls=0;const load=()=>{calls++;return '12345678';};await Promise.all([c.get('a',load),c.get('a',load)]);assert.equal(calls,1);await c.get('b',load);await c.get('c',load);assert.ok(c.bytes<=16);});
@@ -38,10 +76,11 @@ test('cached HTTP history remains available while uncached read admission is ful
     const warm=await fetch(url);assert.equal(warm.status,200);const expected=await warm.text();
     jobs=Array.from({length:10},()=>gate.run(()=>held));
     const hit=await fetch(url);assert.equal(hit.status,200);assert.equal(await hit.text(),expected);
-    assert.equal((await fetch(url+'?before='+now)).status,503);
+    // Exclude the cached newest candle: this is a genuinely uncached page.
+    assert.equal((await fetch(url+'?before='+(now-900000))).status,503);
     assert.equal(gate.active,2);assert.equal(gate.queue.length,8);
     assert.equal(server.stockCache.pending.size,0);
-    release();await Promise.all(jobs);assert.equal((await fetch(url+'?before='+now)).status,200);
+    release();await Promise.all(jobs);assert.equal((await fetch(url+'?before='+(now-900000))).status,200);
   }finally{release();await Promise.allSettled(jobs);server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}
 });
 test('provider body cap while streaming, no JSON parsing oversized response',async()=>{let cancelled=false;const p=new ProviderGateway({fetchImpl:async()=>({ok:true,body:new ReadableStream({pull(c){c.enqueue(new Uint8Array(600000));},cancel(){cancelled=true;}})})});await assert.rejects(p.request('https://fixture.invalid'),/response limit/);assert.ok(cancelled);assert.ok(p.pausedUntil>Date.now());p.close();});

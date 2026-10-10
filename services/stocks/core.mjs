@@ -39,21 +39,22 @@ export class ReadGate {
   close(){for(const x of this.queue){clearTimeout(x.timer);x.reject(new Busy());}this.queue=[];}
 }
 export class ByteCache {
-  entries=new Map();bytes=0; pending=new Map();
-  constructor(max=limits.STOCK_CACHE_MAX_MIB*1048576){this.max=max;}
+  entries=new Map();bytes=0; pending=new Map();generation=0;
+  constructor(max=limits.STOCK_CACHE_MAX_MIB*1048576,sizeOf=Buffer.byteLength){this.max=max;this.sizeOf=sizeOf;}
   peek(key,now=Date.now()) {
     const hit=this.entries.get(key);
-    if(hit&&hit.until>now)return {value:hit.value};
+    if(hit&&hit.until>now){this.entries.delete(key);this.entries.set(key,hit);return {value:hit.value};}
     if(this.pending.has(key))return {value:this.pending.get(key)};
     return undefined;
   }
   async get(key,loader,now=Date.now()) {
-    const hit=this.entries.get(key);if(hit&&hit.until>now)return hit.value;
+    const hit=this.entries.get(key);if(hit&&hit.until>now){this.entries.delete(key);this.entries.set(key,hit);return hit.value;}
     if(this.pending.has(key))return this.pending.get(key);
-    const work=Promise.resolve().then(loader).then(value=>{const size=Buffer.byteLength(value);if(size<=this.max){if(hit){this.entries.delete(key);this.bytes-=hit.size;}while(this.bytes+size>this.max){const [k,v]=this.entries.entries().next().value;this.entries.delete(k);this.bytes-=v.size;}this.entries.set(key,{value,size,until:now+900000});this.bytes+=size;}return value;}).finally(()=>this.pending.delete(key));
+    const generation=this.generation;
+    const work=Promise.resolve().then(loader).then(value=>{const size=this.sizeOf(value);if(generation===this.generation&&size<=this.max){const previous=this.entries.get(key);if(previous){this.entries.delete(key);this.bytes-=previous.size;}while(this.bytes+size>this.max){const [k,v]=this.entries.entries().next().value;this.entries.delete(k);this.bytes-=v.size;}this.entries.set(key,{value,size,until:now+900000});this.bytes+=size;}return value;}).finally(()=>{if(this.pending.get(key)===work)this.pending.delete(key);});
     this.pending.set(key,work);return work;
   }
-  clear(){this.entries.clear();this.bytes=0;}
+  clear(){this.generation++;this.entries.clear();this.pending.clear();this.bytes=0;}
 }
 export function diskGuard(dir) {
   const fs=statfsSync(dir);let bytes=0;
@@ -81,6 +82,7 @@ export class Store {
       CREATE TABLE IF NOT EXISTS candles(instrumentId TEXT,interval TEXT,openTimeUtc INTEGER,closeTimeUtc INTEGER,open TEXT,high TEXT,low TEXT,close TEXT,volume TEXT,currency TEXT,provider TEXT,providerTimestamp INTEGER,fetchedAt INTEGER,adjustmentMode TEXT,PRIMARY KEY(instrumentId,interval,openTimeUtc,adjustmentMode)) WITHOUT ROWID;
       CREATE TABLE IF NOT EXISTS checkpoints(instrumentId TEXT PRIMARY KEY,cursor INTEGER NOT NULL,completed INTEGER NOT NULL DEFAULT 0);`);
     }
+    this.historyQuery=this.db.prepare("SELECT * FROM candles WHERE instrumentId=? AND interval='15m' AND adjustmentMode='unadjusted' AND openTimeUtc<? ORDER BY openTimeUtc DESC LIMIT ?");
   }
   write(rows,i,now=Date.now()){
     if(rows.length>limits.MAX_CANDLES_PER_PROVIDER_RESPONSE)throw Error('Provider candle limit');
@@ -89,7 +91,7 @@ export class Store {
     let changes=0;for(let n=0;n<rows.length;n+=limits.WRITE_BATCH_CANDLES){this.db.exec('BEGIN IMMEDIATE');try{for(const c of rows.slice(n,n+limits.WRITE_BATCH_CANDLES))changes+=Number(q.run(...['instrumentId','interval','openTimeUtc','closeTimeUtc','open','high','low','close','volume','currency','provider','providerTimestamp','fetchedAt','adjustmentMode'].map(k=>c[k])).changes);this.db.exec('COMMIT');}catch(e){this.db.exec('ROLLBACK');throw e;}}
     return changes;
   }
-  history(id,limit=300,before=Number.MAX_SAFE_INTEGER){return this.db.prepare("SELECT * FROM candles WHERE instrumentId=? AND interval='15m' AND adjustmentMode='unadjusted' AND openTimeUtc<? ORDER BY openTimeUtc DESC LIMIT ?").all(id,before,limit).reverse();}
+  history(id,limit=300,before=Number.MAX_SAFE_INTEGER){return this.historyQuery.all(id,before,limit).reverse();}
   checkpoint(id,cursor,completed=false){this.db.prepare('INSERT INTO checkpoints VALUES(?,?,?) ON CONFLICT DO UPDATE SET cursor=excluded.cursor,completed=excluded.completed').run(id,cursor,Number(completed));}
   close(){this.db.close();}
 }

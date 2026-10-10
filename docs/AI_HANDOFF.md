@@ -6100,3 +6100,12 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
 - Separate 4440 paper ledger retains all 22 previous fills and 25 orders. Fifteen new fills/eighteen orders reconcile exactly; no open positions/reserves, no MOEX fill. Full repeated browser-cycle capture has seven writes, all local paper endpoints. Original 4438/4439 ledgers and worktrees unchanged. Read-only local resource smoke: 200 requests, zero errors, p95 4.77 ms, about 90.9 MB RSS, zero extra provider requests.
 - Actual probe: 20 US instruments return data; 10 fresh and 10 stale at snapshot. All 20 MOEX candidates remain DNS-unavailable; RUB FX unavailable; observed USDC FX succeeds. No fabricated data or live Russian-market readiness claim.
 - Evidence and remaining production blockers: docs/qa/stocks-integration-20261010/README.md. Local preview http://127.0.0.1:4440/stocks/BYBIT%3AAAPLXUSDT. Draft integration PR targets main; exact final-head CI belongs to its PR record. Public demo publication is not approved: loopback-only/single-ledger architecture needs per-user hosting isolation, applicable data-use rights remain unconfirmed, and MOEX/RUB/physical-keyboard limitations remain. No merge/deploy or production changes.
+
+
+## Codex — 2026-10-10 — PR #497 Stocks performance candidate
+
+- Continues the owner-authorized integration branch from 727148aab693019b8a831195d8e0328f9e5199b3; fresh main e7c6fea3532ea78ff1e3d8287dc592ba2b82641a. Commit carrying this entry is the candidate, not launch approval.
+- Stocks-only HTTP/cache fixes: bounded 128 transport sockets, unchanged 2 active/8 pending database reads, encoded response reuse for proven-equivalent cursors, prepared query, LRU and invalidation generation fencing. No CPU, RAM, provider, payload or reader-workload budget increase.
+- Strengthened regressions: 26/26 local stock tests pass. Existing full-admission test still asserts HTTP 503 for a genuinely uncached older range; its timestamp now excludes the cached newest candle. Added 100-reader, exact pagination and invalidation tests.
+- CI before image now pins the exact prior #497 head; identical observational SQL/cache metrics are copied into both images. Same three repetitions, concurrency, cadence, timeouts and cgroup/I/O limits. Paired resource evidence is pending.
+- Professional B, Futures/Spot/Admin and Claude #495 preserved. Per-user account work follows separately. No production, merge or deploy.

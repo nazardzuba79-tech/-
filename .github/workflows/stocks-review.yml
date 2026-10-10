@@ -191,7 +191,8 @@ jobs:
         run: |
           docker build -t voltex-stock-after -f services/stocks/Dockerfile .
           mkdir -p "$RUNNER_TEMP/stock-before"
-          git archive a9de4298a1b3d69f6b3bc9a783d07271d3a22fc2 services/stocks | tar -x -C "$RUNNER_TEMP/stock-before"
+          # Exact prior #497 head: same workload/budgets, current known timeout baseline.
+          git archive 727148aab693019b8a831195d8e0328f9e5199b3 services/stocks | tar -x -C "$RUNNER_TEMP/stock-before"
           cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/stock-before/services/stocks/load-fixture.mjs"
           docker build -t voltex-stock-before -f "$RUNNER_TEMP/stock-before/services/stocks/Dockerfile" "$RUNNER_TEMP/stock-before"
           # CI-only tools must match the container libc; never mount host taskset.
