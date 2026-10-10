@@ -54,7 +54,7 @@ export const HI: Record<Key, string> = {
   'nav.wallet': 'वॉलेट',
   'nav.markets': 'मार्केट्स',
   'nav.products': 'प्रोडक्ट्स',
-  'nav.card': 'Crypto-Card',
+  'nav.card': 'Card',
   'nav.menuToolsDesc': 'बाज़ार विश्लेषण के साधन',
   'nav.menuOtcDesc': 'सहायता के माध्यम से क्रिप्टो और नकद',
   'nav.menuArbitrageDesc': 'बाज़ारों के बीच अवसरों का अवलोकन',
