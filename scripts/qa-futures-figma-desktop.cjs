@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 const out = path.resolve(process.env.FIGMA_QA_OUT || path.join(root, 'output/futures-figma'));
 const port = 4445;
 const origin = `http://127.0.0.1:${port}`;
-const selectors = { ticker: '.ticker-bar', chart: '.chart-area', book: '.orderbook-area',
+const selectors = { header: '.global-header', ticker: '.ticker-bar', chart: '.chart-area', book: '.orderbook-area',
   form: '.order-form-area', bottom: '.bottom-panel', workspace: '.terminal',
   heading: '.archive-trading-heading', chartHeading: '.terminal-chart-heading',
   toolbar: '.chart-toolbar', bottomTabs: '.terminal-account-header', price: '.fo-priceInputRow',
@@ -24,7 +24,7 @@ const selectors = { ticker: '.ticker-bar', chart: '.chart-area', book: '.orderbo
   const browser = await chromium.launch({ headless: true });
   const report = { cases: [], errors: [], external: [], writes: [] };
   try {
-    for (const [width, height] of [[1920,1080], [1440,900], [1366,768], [1548,1052]]) {
+    for (const [width, height] of [[1920,1080], [1440,900], [1707,900], [1366,768]]) {
       const context = await browser.newContext({ viewport: { width, height } });
       await context.route('**/*', route => {
         const req = route.request(), url = new URL(req.url());
@@ -46,7 +46,9 @@ const selectors = { ticker: '.ticker-bar', chart: '.chart-area', book: '.orderbo
         return { ...parts, tabs, overflow:document.documentElement.scrollWidth-innerWidth };
       }, selectors);
       const near = (a,b,why) => assert.ok(Math.abs(a-b)<1.5, `${width}: ${why}: ${a} vs ${b}`);
-      near(geometry.ticker.height,56,'56px instrument bar');
+      near(geometry.header.height,40,'40px global header');
+      near(geometry.ticker.height,48,'48px instrument bar');
+      near(geometry.bottom.height,160,'160px empty account panel');
       near(geometry.book.width,286,'Figma orderbook width');
       near(geometry.form.width,300,'Figma order ticket width');
       near(geometry.chart.y,geometry.book.y,'aligned chart/book');
@@ -60,7 +62,7 @@ const selectors = { ticker: '.ticker-bar', chart: '.chart-area', book: '.orderbo
       assert.ok(geometry.buy.bottom<=height && geometry.sell.bottom<=height,'both trading actions visible');
       assert.ok(geometry.tabs.every(t=>t.x>=geometry.form.x && t.right<=geometry.form.right),'all order types inside ticket');
       assert.ok(geometry.tabs.every((t,i,a)=>!i || t.x>=a[i-1].right),'order type tabs do not overlap');
-      assert.ok(Math.abs(geometry.chart.height / geometry.bottom.height - 524 / 380) < 0.005, 'reference chart/account proportion');
+      assert.ok(geometry.chart.height > height * 0.60, 'chart dominates viewport height');
       await page.screenshot({ path:path.join(out,`desktop-${width}.png`) });
       const top = geometry.workspace.y;
       await page.screenshot({path:path.join(out,`workspace-${width}.png`),clip:{x:0,y:top,width,height:geometry.workspace.height}});
@@ -69,6 +71,24 @@ const selectors = { ticker: '.ticker-bar', chart: '.chart-area', book: '.orderbo
       await page.locator('.order-family-tabs button').first().click();
       await page.locator('.fo-priceInputRow input').fill('85000');
       assert.equal(await page.locator('.fo-priceInputRow input').inputValue(),'85000');
+      // Existing collapse/expand and populated-table scrolling must survive the CSS change.
+      await page.locator('.terminal-account-toggle').click();
+      near((await page.locator('.bottom-panel').boundingBox()).height,44,'collapsed account header');
+      await page.locator('.terminal-account-toggle').click();
+      await context.addCookies([{name:'qa_state',value:'filled',url:origin}]);
+      await page.reload();
+      await page.locator('.futures-positions-table tbody tr').first().waitFor();
+      near((await page.locator('.bottom-panel').boundingBox()).height,200,'200px populated account panel');
+      assert.equal(await page.locator('.futures-positions-table tbody tr').count(),3,'all fixture positions retained');
+      await page.waitForFunction(() => /\d/.test(document.querySelector('.rb-row')?.textContent || ''));
+      await page.screenshot({path:path.join(out,`populated-top-${width}.png`)});
+      await page.locator('.futures-positions-table tbody tr').last().scrollIntoViewIfNeeded();
+      await page.screenshot({path:path.join(out,`populated-${width}.png`)});
+      for (const tab of ['orders','orderHistory','positionHistory','assets','positions']) {
+        const button = page.locator('#futures-tab-' + tab);
+        await button.click();
+        assert.equal(await button.getAttribute('aria-selected'),'true','account tab remains usable');
+      }
       report.cases.push({width,height,geometry});
       await context.close();
     }
