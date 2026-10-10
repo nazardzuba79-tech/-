@@ -10,7 +10,8 @@ export class StockSessionFence {
     return {
       headers,
       current: () => generation === this.generation && credential === this.credential(),
+      reject: (clear: () => void) => { if (credential && generation === this.generation && credential === this.credential()) clear(); },
     };
   }
 }
-export const pendingOrderKey = (accountId?: string) => `voltex.stocks.global.pending.v2.${accountId || 'legacy'}`;
+export const pendingOrderKey = (accountId?: string) => `voltex.stocks.global.pending.v2${accountId ? '.' + accountId : ''}`;
