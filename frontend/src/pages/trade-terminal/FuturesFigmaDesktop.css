@@ -1,28 +1,35 @@
 /* Figma 9gbmBfp0OSHTzLsnbBUnrZ / 19:103, measured 2026-10-10.
  * Desktop geometry only. Keep the existing palette, controls and engines.
- * Reference: 56px ticker, 286px book, 300px ticket, 4px gutters;
- * chart / account workspace 524:380. The imported frame has unused space
- * below that workspace; distribute the available viewport height instead.
+ * Follow-up: prioritize the chart over the imported frame's tall idle account area.
+ * 40px header, 48px ticker, 160px empty / 200px populated account area;
+ * retain the measured 286px book, 300px ticket and 4px gutters.
  * The mobile cascade and alternative terminal layouts are deliberately scoped out.
  */
 @media (min-width: 901px) {
   #archive-terminal-preview.futures-terminal .terminal {
-    --futures-ticker-height: 56px;
+    --futures-ticker-height: 48px;
+    --futures-account-height: 200px;
     --reference-book-width: 286px;
     grid-template-columns: minmax(0, 1fr) var(--reference-book-width) 300px;
-    grid-template-rows: 56px minmax(300px, 524fr) minmax(180px, 380fr);
+    grid-template-rows: 48px minmax(300px, 1fr) var(--futures-account-height);
     gap: 4px;
     padding: 4px;
   }
 
+  /* Existing empty/loading/error status markup; no account state or readers change. */
+  #archive-terminal-preview.futures-terminal .terminal:has(.bottom-panel .futures-position-state) {
+    --futures-account-height: 160px;
+  }
+
   /* Preserve the existing user-controlled collapse, including mounted readers. */
   #archive-terminal-preview.futures-terminal .terminal[data-account-compact=true] {
-    grid-template-rows: 56px minmax(300px, 1fr) 44px;
+    grid-template-rows: 48px minmax(300px, 1fr) 44px;
   }
 
   #archive-terminal-preview.futures-terminal .ticker-bar {
-    height: 56px;
-    min-height: 56px;
+    height: 48px;
+    min-height: 48px;
+    padding-block: 0;
     grid-template-columns: max-content minmax(0, 1fr);
     overflow: hidden;
   }
