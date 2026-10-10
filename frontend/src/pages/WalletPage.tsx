@@ -222,7 +222,7 @@ export function WalletPage() {
             )}
 
             {section === 'orders' && (
-              <div ref={historyRef}>
+              <div ref={historyRef} className="wallet-history-host">
                 <TransactionHistory hidden={hidden} />
               </div>
             )}

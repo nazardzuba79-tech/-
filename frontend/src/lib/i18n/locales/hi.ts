@@ -464,6 +464,7 @@ export const HI: Record<Key, string> = {
   'trade.volume24h': '24घं वॉल्यूम',
   'trade.turnover24h': '24घं टर्नओवर',
   'trade.tabOpenOrders': 'खुले ऑर्डर',
+  'trade.mobileTabOrders': 'ऑर्डर',
   'futures.noOpenOrders': 'कोई खुला ऑर्डर नहीं है।',
   'futures.noOrderHistory': 'अभी कोई ऑर्डर इतिहास नहीं है।',
   'futures.latestOrders': 'नवीनतम 100 ऑर्डर · सभी अनुबंध',

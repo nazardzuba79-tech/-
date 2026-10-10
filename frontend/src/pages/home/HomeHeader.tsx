@@ -55,7 +55,7 @@ export function HomeHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/6 bg-[#1a1b20]" style={{fontFamily:'Arial, Helvetica, sans-serif',background:'#1a1b20'}}>
       <div className="mx-auto flex h-[58px] min-[1025px]:h-[68px] w-full max-w-[1460px] items-center gap-2 px-4 sm:gap-6 sm:px-6">
-        <Link to="/" className="shrink-0" aria-label="VOLTEX">
+        <Link to="/" className="home-brand shrink-0" aria-label="VOLTEX">
           <Logo />
         </Link>
 

@@ -466,6 +466,7 @@ export const EN: Record<Key, string> = {
   'trade.volume24h': '24h Volume',
   'trade.turnover24h': '24h Turnover',
   'trade.tabOpenOrders': 'Open Orders',
+  'trade.mobileTabOrders': 'Orders',
   'futures.noOpenOrders': 'No open orders.',
   'futures.noOrderHistory': 'No order history yet.',
   'futures.latestOrders': 'Latest 100 orders · All contracts',

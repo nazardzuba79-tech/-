@@ -47,6 +47,7 @@ import './trade-terminal/SpotCfdGraphite.css';
 // and palette only, scoped to .spot-terminal / .cfd-terminal (owner, 2026-10-07).
 import './trade-terminal/SpotCfdParity.css';
 import './trade-terminal/SpotMobileCompact.css';
+import './trade-terminal/SpotMobilePhone.css';
 import './trade-terminal/TerminalMobileHeader.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
@@ -350,7 +351,9 @@ export function TradePage() {
 
   const mobileTabs = (
     <div className="terminal-mobile-tabs" ref={mobileTabsRef} role="tablist" aria-label={t('nav.trade')}>
-      {([['chart', 'futures.chart'], ['trade', 'nav.trade'], ['account', 'trade.tabOpenOrders']] as const).map(([id, label]) => (
+      {/* «Ордера» / «Позиции», not «Открытые ордера»: the third tab's label
+          wrapped onto two lines at 390px and under (three equal columns). */}
+      {([['chart', 'futures.chart'], ['trade', 'nav.trade'], ['account', marketType === 'cfd' ? 'futures.positions' : 'trade.mobileTabOrders']] as const).map(([id, label]) => (
         <button type="button" role="tab" key={id} id={`mobile-trade-${id}`}
           aria-selected={mobileTab === id} tabIndex={mobileTab === id ? 0 : -1}
           onKeyDown={event => {

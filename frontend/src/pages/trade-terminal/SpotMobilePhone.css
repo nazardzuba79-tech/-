@@ -1,0 +1,74 @@
+/* Spot/CFD phone tiers that SpotMobileCompact.css cannot host: its contract
+   (mobileSpotCascade.test.ts) allows only the 900px and 359px tiers and
+   Spot-only selectors. Loaded right after it from TradePage.tsx. */
+/* Phone: the account tables (open orders, history, assets) become cards, as
+   the Futures positions already are. A 950px table scrolled sideways and
+   kept the price, the total and «Отменить» 600px past the right edge with
+   nothing to say they were there. Same id-weighted prefix and later cascade
+   position as SpotCfdParity.css's table rules, so these win the tie. */
+@media (max-width:600px) {
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table[data-has-rows="true"],
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-assets-table[data-has-rows="true"] { min-width:0; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table thead { display:none; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table { display:block; width:100%; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table tbody { display:grid; gap:8px; padding:8px; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table tbody tr {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px 12px;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:var(--panel-alt);
+  }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table tbody tr:has(.spot-orders-empty-cell) { display:block; padding:0; border:0; background:transparent; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table td {
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+    height:auto;
+    min-width:0;
+    padding:0;
+    border:0;
+    text-align:left;
+    font-size:13px;
+    line-height:18px;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table td::before {
+    content:attr(data-mobile-label);
+    font-size:10.5px;
+    line-height:14px;
+    font-weight:400;
+    color:var(--text-tertiary);
+  }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table td.spot-orders-empty-cell { display:block; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table :is(td.spot-orders-empty-cell,td.spot-order-pair,td.spot-order-action)::before { display:none; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table :is(td.spot-order-pair,td.spot-order-action) { grid-column:1 / -1; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table td.spot-order-pair { font-size:14px; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table .spot-order-time time { display:flex; flex-wrap:wrap; gap:0 6px; }
+  :is(#archive-terminal-preview,.trade-terminal).trade-terminal.vx-terminal.spot-terminal .spot-orders-table .cancel-btn { width:100%; min-height:40px; font-size:13px; }
+}
+
+/* Up to 389px the ticket column is 60% of a narrow row: the «Посл. цена» key
+   and the unit suffix give the price and total fields ~20px more, so a long
+   figure shows more digits before the field has to scroll. */
+@media (max-width:389px) {
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .form-group > .form-label .max-btn { max-width:54px; padding:0 4px; font-size:10.5px; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .input-suffix { max-width:46px; padding:0 4px; font-size:10.5px; }
+}
+/* 320–359px: the six interval keys and the two toolbar keys («•••» and the
+   settings gear) share one row instead of the gear dropping to a second. */
+@media (max-width:359px) {
+  .trade-terminal.vx-terminal .terminal-chart-shell .chart-tab { min-width:36px; padding-inline:5px; font-size:12px; }
+}
+
+/* CFD instrument list on a phone: the price column was a fixed 82px and
+   «19,876.50000» (five decimals) is 85px at 12px — the last digit was cut.
+   The column takes what its widest price needs; the name column gives. */
+@media (max-width:900px) {
+  .trade-terminal.vx-terminal.cfd-terminal :is(.cfd-columns,.cfd-option) { grid-template-columns:minmax(0,1fr) auto 60px; }
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-price { white-space:nowrap; }
+}

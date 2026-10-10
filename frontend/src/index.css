@@ -863,6 +863,29 @@ body {
     display: none;
   }
 }
+/* 320–359px: the wordmark ran under the deposit key. The mark stays, the
+   letters go; the terminals already do the same from 429px down. The home
+   header does the same (its own row was wider than the screen and the menu
+   key sat past the right edge). Both rules live here because home.css is
+   byte-frozen by cryptoCardVisualConsistency/cryptoCardProductionPromotion. */
+@media (max-width: 359px) {
+  .global-header .header-brand > span > span,
+  .home-brand > span > span {
+    display: none;
+  }
+}
+/* 320–359px, /card: the section titles keep a 3rem+ floor from their
+   clamp(), and one word («Приватность» is 300px at 49.6px) was wider than
+   the column, so the whole page scrolled sideways by 19px. A smaller floor
+   on the narrowest phones, and a word may still wrap rather than push the
+   page. Hosted here because crypto-card.css is byte-frozen by
+   cryptoCardProductionPromotion. */
+@media (max-width: 359px) {
+  .crypto-card-page h2 {
+    font-size: 2.6rem;
+    overflow-wrap: anywhere;
+  }
+}
 @media (max-width: 420px) {
   .global-header {
     padding: 0 10px;

@@ -12,3 +12,6 @@
 .markets-analytics-embedded .ap-span-3{grid-column:1/-1;min-width:0}
 .markets-analytics-empty{padding:28px;border:1px solid var(--ap-line);background:white;color:var(--ap-muted);text-align:center}
 @media(max-width:760px){.markets-view-tabs{width:100%}.markets-view-tabs a{flex:1;text-align:center}.markets-analytics-launch{right:14px;bottom:76px}.markets-analytics-page .page-intro{align-items:stretch}.markets-analytics-embedded .markets-analytics-head{align-items:flex-start}.markets-analytics-embedded .markets-analytics-head h2{font-size:21px}}
+/* The bottom bar exists from 860px down (index.css), the pill moved above it only from 760px:
+   at 768 and 844×390 it sat under the bar. Same offsets as the phone tier. */
+@media(max-width:860px){.markets-analytics-launch{right:14px;bottom:76px}}

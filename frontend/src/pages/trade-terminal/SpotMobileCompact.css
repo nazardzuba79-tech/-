@@ -322,3 +322,12 @@
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.price { font-size:15px; }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-content { padding-inline:6px; }
 }
+
+/* 320–359px: the instrument row's first column is 110px and «BTC/USDT» with
+   its coin badge needs 111 — the badge goes (Futures does the same at this
+   width), the pair name stays whole. */
+@media (max-width:359px) {
+  /* !important: the badge is a plain div with an inline display from TickerBar. */
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-selector > :first-child:not(.pair-identity) { display:none !important; }
+}
+

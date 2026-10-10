@@ -324,6 +324,10 @@
 @media (max-width: 700px) {
   .copytrading-bolt-root.profile-view .trader-hero-metrics-simple { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .copytrading-bolt-root.profile-view .trader-hero-metrics-simple > div:last-child { grid-column: 1 / -1; }
+  /* Two ~130px cells at 320: «7 200 000 USDT» lost its last letters at the
+     cell edge. The figure keeps its no-break thousands; the unit may wrap. */
+  .copytrading-bolt-root.profile-view .trader-hero-metrics strong,
+  .copytrading-bolt-root.profile-view .trader-hero-metrics .copy-live-metric[class] { white-space: normal; overflow-wrap: anywhere; }
 }
 @media (max-width: 1180px) {
   .copytrading-bolt-root.profile-view .trader-profile-hero { grid-template-columns: 1fr 1.5fr; }

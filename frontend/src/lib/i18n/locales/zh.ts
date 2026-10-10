@@ -466,6 +466,7 @@ export const ZH: Record<Key, string> = {
   'trade.volume24h': '24小时成交量',
   'trade.turnover24h': '24小时成交额',
   'trade.tabOpenOrders': '当前委托',
+  'trade.mobileTabOrders': '订单',
   'futures.noOpenOrders': '暂无未成交订单。',
   'futures.noOrderHistory': '暂无订单历史。',
   'futures.latestOrders': '最近100笔订单 · 所有合约',
