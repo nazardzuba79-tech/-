@@ -1,313 +1,887 @@
 {
- "assertions": 113,
- "failed": [],
- "errors": [],
- "external": [],
- "writes": 24,
- "cases": [
-  {
-   "width": 1366,
-   "height": 768,
-   "indicatorTriggerText": "Индикаторы",
-   "paneRows": 8,
-   "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
-   "priceScalePixels": {
-    "default": {
-     "white": 0,
-     "bright": 0,
-     "width": 80,
-     "height": 197
+  "label": "after",
+  "cases": [
+    {
+      "width": 1366,
+      "height": 768,
+      "triggerText": "Индикаторы",
+      "paneRows": 8,
+      "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
+      "whiteBefore": {
+        "white": 0,
+        "bright": 0,
+        "width": 80,
+        "height": 197
+      },
+      "whitePreview": {
+        "white": 244,
+        "bright": 615,
+        "width": 80,
+        "height": 197
+      },
+      "saved": {
+        "priceAxisText": "#ffffff",
+        "timeAxisText": "#ffffff",
+        "axisFontSize": 14
+      },
+      "whiteKept": {
+        "white": 449,
+        "bright": 824,
+        "width": 90,
+        "height": 195
+      },
+      "timeWhite": {
+        "white": 260,
+        "bright": 524,
+        "width": 618,
+        "height": 32
+      },
+      "rail": {
+        "width": 56,
+        "toggle": {
+          "x": 59,
+          "y": 468.796875,
+          "width": 22,
+          "height": 48
+        },
+        "toggleStyle": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(38, 47, 59)",
+          "border": "rgb(90, 100, 116)"
+        }
+      },
+      "plot": {
+        "before": 708,
+        "after": 764
+      },
+      "geometry": {
+        "chart": {
+          "x": 4,
+          "y": 96,
+          "width": 764,
+          "height": 476
+        },
+        "book": {
+          "x": 772,
+          "y": 96,
+          "width": 286,
+          "height": 476
+        },
+        "form": {
+          "x": 1062,
+          "y": 44,
+          "width": 300,
+          "height": 692
+        }
+      }
     },
-    "whitePreview": {
-     "white": 244,
-     "bright": 615,
-     "width": 80,
-     "height": 197
+    {
+      "width": 1440,
+      "height": 900,
+      "triggerText": "Индикаторы",
+      "paneRows": 8,
+      "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
+      "whiteBefore": {
+        "white": 0,
+        "bright": 0,
+        "width": 80,
+        "height": 269
+      },
+      "whitePreview": {
+        "white": 428,
+        "bright": 1077,
+        "width": 80,
+        "height": 269
+      },
+      "saved": {
+        "priceAxisText": "#ffffff",
+        "timeAxisText": "#ffffff",
+        "axisFontSize": 14
+      },
+      "whiteKept": {
+        "white": 741,
+        "bright": 1373,
+        "width": 90,
+        "height": 266
+      },
+      "timeWhite": {
+        "white": 259,
+        "bright": 516,
+        "width": 692,
+        "height": 32
+      },
+      "rail": {
+        "width": 56,
+        "toggle": {
+          "x": 59,
+          "y": 574.390625,
+          "width": 22,
+          "height": 48
+        },
+        "toggleStyle": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(38, 47, 59)",
+          "border": "rgb(90, 100, 116)"
+        }
+      },
+      "plot": {
+        "before": 782,
+        "after": 838
+      },
+      "geometry": {
+        "chart": {
+          "x": 4,
+          "y": 96,
+          "width": 838,
+          "height": 608
+        },
+        "book": {
+          "x": 846,
+          "y": 96,
+          "width": 286,
+          "height": 608
+        },
+        "form": {
+          "x": 1136,
+          "y": 44,
+          "width": 300,
+          "height": 824
+        }
+      }
     },
-    "whiteKept": {
-     "white": 449,
-     "bright": 824,
-     "width": 90,
-     "height": 195
+    {
+      "width": 1707,
+      "height": 900,
+      "triggerText": "Индикаторы",
+      "paneRows": 8,
+      "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
+      "whiteBefore": {
+        "white": 0,
+        "bright": 0,
+        "width": 80,
+        "height": 269
+      },
+      "whitePreview": {
+        "white": 428,
+        "bright": 1077,
+        "width": 80,
+        "height": 269
+      },
+      "saved": {
+        "priceAxisText": "#ffffff",
+        "timeAxisText": "#ffffff",
+        "axisFontSize": 14
+      },
+      "whiteKept": {
+        "white": 741,
+        "bright": 1373,
+        "width": 90,
+        "height": 266
+      },
+      "timeWhite": {
+        "white": 559,
+        "bright": 1098,
+        "width": 958,
+        "height": 32
+      },
+      "rail": {
+        "width": 56,
+        "toggle": {
+          "x": 59,
+          "y": 574.390625,
+          "width": 22,
+          "height": 48
+        },
+        "toggleStyle": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(38, 47, 59)",
+          "border": "rgb(90, 100, 116)"
+        }
+      },
+      "plot": {
+        "before": 1048,
+        "after": 1104
+      },
+      "geometry": {
+        "chart": {
+          "x": 4,
+          "y": 96,
+          "width": 1105,
+          "height": 608
+        },
+        "book": {
+          "x": 1113,
+          "y": 96,
+          "width": 286,
+          "height": 608
+        },
+        "form": {
+          "x": 1403,
+          "y": 44,
+          "width": 300,
+          "height": 824
+        }
+      }
     },
-    "timeScaleWhite": {
-     "white": 260,
-     "bright": 524,
-     "width": 618,
-     "height": 32
+    {
+      "width": 1920,
+      "height": 1080,
+      "triggerText": "Индикаторы",
+      "paneRows": 8,
+      "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
+      "whiteBefore": {
+        "white": 0,
+        "bright": 0,
+        "width": 80,
+        "height": 366
+      },
+      "whitePreview": {
+        "white": 428,
+        "bright": 1077,
+        "width": 80,
+        "height": 366
+      },
+      "saved": {
+        "priceAxisText": "#ffffff",
+        "timeAxisText": "#ffffff",
+        "axisFontSize": 14
+      },
+      "whiteKept": {
+        "white": 779,
+        "bright": 1449,
+        "width": 90,
+        "height": 364
+      },
+      "timeWhite": {
+        "white": 558,
+        "bright": 1093,
+        "width": 1172,
+        "height": 32
+      },
+      "rail": {
+        "width": 56,
+        "toggle": {
+          "x": 59,
+          "y": 718.390625,
+          "width": 22,
+          "height": 48
+        },
+        "toggleStyle": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(38, 47, 59)",
+          "border": "rgb(90, 100, 116)"
+        }
+      },
+      "plot": {
+        "before": 1262,
+        "after": 1318
+      },
+      "geometry": {
+        "chart": {
+          "x": 4,
+          "y": 96,
+          "width": 1318,
+          "height": 788
+        },
+        "book": {
+          "x": 1326,
+          "y": 96,
+          "width": 286,
+          "height": 788
+        },
+        "form": {
+          "x": 1616,
+          "y": 44,
+          "width": 300,
+          "height": 1004
+        }
+      }
     }
-   },
-   "saved": {
-    "priceAxisText": "#ffffff",
-    "timeAxisText": "#ffffff",
-    "axisFontSize": 14
-   },
-   "rail": {
-    "width": 56,
-    "toggle": {
-     "x": 59,
-     "y": 468.796875,
-     "width": 22,
-     "height": 48
+  ],
+  "errors": [],
+  "external": [],
+  "writes": [
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
     },
-    "toggleStyle": {
-     "color": "rgb(255, 255, 255)",
-     "background": "rgb(38, 47, 59)",
-     "border": "rgb(90, 100, 116)"
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:4452/api/v1/private-trading/native/execution-session",
+      "method": "POST"
     }
-   },
-   "plotWidth": {
-    "before": 708,
-    "after": 764
-   },
-   "geometry": {
-    "chart": {
-     "x": 4,
-     "y": 96,
-     "width": 764,
-     "height": 476
+  ],
+  "assertions": [
+    {
+      "name": "1366: indicator trigger shows no digit (Индикаторы)",
+      "ok": true
     },
-    "book": {
-     "x": 772,
-     "y": 96,
-     "width": 286,
-     "height": 476
+    {
+      "name": "1366: no visible count badge",
+      "ok": true
     },
-    "form": {
-     "x": 1062,
-     "y": 44,
-     "width": 300,
-     "height": 692
+    {
+      "name": "1366: catalogue lists 15 indicators",
+      "ok": true
+    },
+    {
+      "name": "1366: search narrows the catalogue",
+      "ok": true
+    },
+    {
+      "name": "1366: four instances on the chart",
+      "ok": true
+    },
+    {
+      "name": "1366: trigger still shows no digit with four active (Индикаторы)",
+      "ok": true
+    },
+    {
+      "name": "1366: the count is announced to assistive technology",
+      "ok": true
+    },
+    {
+      "name": "1366: two lower-pane indicators open two panes (rows 8)",
+      "ok": true
+    },
+    {
+      "name": "1366: hiding RSI releases an oscillator pane (8 → 6)",
+      "ok": true
+    },
+    {
+      "name": "1366: showing RSI restores its pane (6 → 8)",
+      "ok": true
+    },
+    {
+      "name": "1366: legend names the instances",
+      "ok": true
+    },
+    {
+      "name": "1366: indicators persist across a reload",
+      "ok": true
+    },
+    {
+      "name": "1366: indicators survive a timeframe change",
+      "ok": true
+    },
+    {
+      "name": "1366: price scale digits are grey by default (bright 0, white 0)",
+      "ok": true
+    },
+    {
+      "name": "1366: #FFFFFF paints the price scale digits white at once (bright 615, white 244)",
+      "ok": true
+    },
+    {
+      "name": "1366: Cancel puts the grey back (bright 0)",
+      "ok": true
+    },
+    {
+      "name": "1366: Ok keeps #ffffff and 14px in this browser",
+      "ok": true
+    },
+    {
+      "name": "1366: both scales are white after Ok (price 449, time 260)",
+      "ok": true
+    },
+    {
+      "name": "1366: white scales survive a reload (white 449)",
+      "ok": true
+    },
+    {
+      "name": "1366: white scales survive a symbol change",
+      "ok": true
+    },
+    {
+      "name": "1366: white scales survive an interval change",
+      "ok": true
+    },
+    {
+      "name": "1366: rail is 56px wide (56)",
+      "ok": true
+    },
+    {
+      "name": "1366: collapse handle is at least 22×48 (22×48)",
+      "ok": true
+    },
+    {
+      "name": "1366: handle is white on a lifted surface",
+      "ok": true
+    },
+    {
+      "name": "1366: the handle's hit area reaches 12px past its edge",
+      "ok": true
+    },
+    {
+      "name": "1366: Enter collapses the rail (aria-expanded=false)",
+      "ok": true
+    },
+    {
+      "name": "1366: collapsing gives the plot the rail's width (708 → 764)",
+      "ok": true
+    },
+    {
+      "name": "1366: the collapsed rail is remembered",
+      "ok": true
+    },
+    {
+      "name": "1366: Space expands it again",
+      "ok": true
+    },
+    {
+      "name": "1366: #494 geometry kept — book 286, ticket 300, chart beside the book",
+      "ok": true
+    },
+    {
+      "name": "1440: indicator trigger shows no digit (Индикаторы)",
+      "ok": true
+    },
+    {
+      "name": "1440: no visible count badge",
+      "ok": true
+    },
+    {
+      "name": "1440: catalogue lists 15 indicators",
+      "ok": true
+    },
+    {
+      "name": "1440: search narrows the catalogue",
+      "ok": true
+    },
+    {
+      "name": "1440: four instances on the chart",
+      "ok": true
+    },
+    {
+      "name": "1440: trigger still shows no digit with four active (Индикаторы)",
+      "ok": true
+    },
+    {
+      "name": "1440: the count is announced to assistive technology",
+      "ok": true
+    },
+    {
+      "name": "1440: two lower-pane indicators open two panes (rows 8)",
+      "ok": true
+    },
+    {
+      "name": "1440: hiding RSI releases an oscillator pane (8 → 6)",
+      "ok": true
+    },
+    {
+      "name": "1440: showing RSI restores its pane (6 → 8)",
+      "ok": true
+    },
+    {
+      "name": "1440: legend names the instances",
+      "ok": true
+    },
+    {
+      "name": "1440: indicators persist across a reload",
+      "ok": true
+    },
+    {
+      "name": "1440: indicators survive a timeframe change",
+      "ok": true
+    },
+    {
+      "name": "1440: price scale digits are grey by default (bright 0, white 0)",
+      "ok": true
+    },
+    {
+      "name": "1440: #FFFFFF paints the price scale digits white at once (bright 1077, white 428)",
+      "ok": true
+    },
+    {
+      "name": "1440: Cancel puts the grey back (bright 0)",
+      "ok": true
+    },
+    {
+      "name": "1440: Ok keeps #ffffff and 14px in this browser",
+      "ok": true
+    },
+    {
+      "name": "1440: both scales are white after Ok (price 741, time 259)",
+      "ok": true
+    },
+    {
+      "name": "1440: white scales survive a reload (white 741)",
+      "ok": true
+    },
+    {
+      "name": "1440: white scales survive a symbol change",
+      "ok": true
+    },
+    {
+      "name": "1440: white scales survive an interval change",
+      "ok": true
+    },
+    {
+      "name": "1440: rail is 56px wide (56)",
+      "ok": true
+    },
+    {
+      "name": "1440: collapse handle is at least 22×48 (22×48)",
+      "ok": true
+    },
+    {
+      "name": "1440: handle is white on a lifted surface",
+      "ok": true
+    },
+    {
+      "name": "1440: the handle's hit area reaches 12px past its edge",
+      "ok": true
+    },
+    {
+      "name": "1440: Enter collapses the rail (aria-expanded=false)",
+      "ok": true
+    },
+    {
+      "name": "1440: collapsing gives the plot the rail's width (782 → 838)",
+      "ok": true
+    },
+    {
+      "name": "1440: the collapsed rail is remembered",
+      "ok": true
+    },
+    {
+      "name": "1440: Space expands it again",
+      "ok": true
+    },
+    {
+      "name": "1440: #494 geometry kept — book 286, ticket 300, chart beside the book",
+      "ok": true
+    },
+    {
+      "name": "1707: indicator trigger shows no digit (Индикаторы)",
+      "ok": true
+    },
+    {
+      "name": "1707: no visible count badge",
+      "ok": true
+    },
+    {
+      "name": "1707: catalogue lists 15 indicators",
+      "ok": true
+    },
+    {
+      "name": "1707: search narrows the catalogue",
+      "ok": true
+    },
+    {
+      "name": "1707: four instances on the chart",
+      "ok": true
+    },
+    {
+      "name": "1707: trigger still shows no digit with four active (Индикаторы)",
+      "ok": true
+    },
+    {
+      "name": "1707: the count is announced to assistive technology",
+      "ok": true
+    },
+    {
+      "name": "1707: two lower-pane indicators open two panes (rows 8)",
+      "ok": true
+    },
+    {
+      "name": "1707: hiding RSI releases an oscillator pane (8 → 6)",
+      "ok": true
+    },
+    {
+      "name": "1707: showing RSI restores its pane (6 → 8)",
+      "ok": true
+    },
+    {
+      "name": "1707: legend names the instances",
+      "ok": true
+    },
+    {
+      "name": "1707: indicators persist across a reload",
+      "ok": true
+    },
+    {
+      "name": "1707: indicators survive a timeframe change",
+      "ok": true
+    },
+    {
+      "name": "1707: price scale digits are grey by default (bright 0, white 0)",
+      "ok": true
+    },
+    {
+      "name": "1707: #FFFFFF paints the price scale digits white at once (bright 1077, white 428)",
+      "ok": true
+    },
+    {
+      "name": "1707: Cancel puts the grey back (bright 0)",
+      "ok": true
+    },
+    {
+      "name": "1707: Ok keeps #ffffff and 14px in this browser",
+      "ok": true
+    },
+    {
+      "name": "1707: both scales are white after Ok (price 741, time 559)",
+      "ok": true
+    },
+    {
+      "name": "1707: white scales survive a reload (white 741)",
+      "ok": true
+    },
+    {
+      "name": "1707: white scales survive a symbol change",
+      "ok": true
+    },
+    {
+      "name": "1707: white scales survive an interval change",
+      "ok": true
+    },
+    {
+      "name": "1707: rail is 56px wide (56)",
+      "ok": true
+    },
+    {
+      "name": "1707: collapse handle is at least 22×48 (22×48)",
+      "ok": true
+    },
+    {
+      "name": "1707: handle is white on a lifted surface",
+      "ok": true
+    },
+    {
+      "name": "1707: the handle's hit area reaches 12px past its edge",
+      "ok": true
+    },
+    {
+      "name": "1707: Enter collapses the rail (aria-expanded=false)",
+      "ok": true
+    },
+    {
+      "name": "1707: collapsing gives the plot the rail's width (1048 → 1104)",
+      "ok": true
+    },
+    {
+      "name": "1707: the collapsed rail is remembered",
+      "ok": true
+    },
+    {
+      "name": "1707: Space expands it again",
+      "ok": true
+    },
+    {
+      "name": "1707: #494 geometry kept — book 286, ticket 300, chart beside the book",
+      "ok": true
+    },
+    {
+      "name": "1920: indicator trigger shows no digit (Индикаторы)",
+      "ok": true
+    },
+    {
+      "name": "1920: no visible count badge",
+      "ok": true
+    },
+    {
+      "name": "1920: catalogue lists 15 indicators",
+      "ok": true
+    },
+    {
+      "name": "1920: search narrows the catalogue",
+      "ok": true
+    },
+    {
+      "name": "1920: four instances on the chart",
+      "ok": true
+    },
+    {
+      "name": "1920: trigger still shows no digit with four active (Индикаторы)",
+      "ok": true
+    },
+    {
+      "name": "1920: the count is announced to assistive technology",
+      "ok": true
+    },
+    {
+      "name": "1920: two lower-pane indicators open two panes (rows 8)",
+      "ok": true
+    },
+    {
+      "name": "1920: hiding RSI releases an oscillator pane (8 → 6)",
+      "ok": true
+    },
+    {
+      "name": "1920: showing RSI restores its pane (6 → 8)",
+      "ok": true
+    },
+    {
+      "name": "1920: legend names the instances",
+      "ok": true
+    },
+    {
+      "name": "1920: indicators persist across a reload",
+      "ok": true
+    },
+    {
+      "name": "1920: indicators survive a timeframe change",
+      "ok": true
+    },
+    {
+      "name": "1920: price scale digits are grey by default (bright 0, white 0)",
+      "ok": true
+    },
+    {
+      "name": "1920: #FFFFFF paints the price scale digits white at once (bright 1077, white 428)",
+      "ok": true
+    },
+    {
+      "name": "1920: Cancel puts the grey back (bright 0)",
+      "ok": true
+    },
+    {
+      "name": "1920: Ok keeps #ffffff and 14px in this browser",
+      "ok": true
+    },
+    {
+      "name": "1920: both scales are white after Ok (price 779, time 558)",
+      "ok": true
+    },
+    {
+      "name": "1920: white scales survive a reload (white 779)",
+      "ok": true
+    },
+    {
+      "name": "1920: white scales survive a symbol change",
+      "ok": true
+    },
+    {
+      "name": "1920: white scales survive an interval change",
+      "ok": true
+    },
+    {
+      "name": "1920: rail is 56px wide (56)",
+      "ok": true
+    },
+    {
+      "name": "1920: collapse handle is at least 22×48 (22×48)",
+      "ok": true
+    },
+    {
+      "name": "1920: handle is white on a lifted surface",
+      "ok": true
+    },
+    {
+      "name": "1920: the handle's hit area reaches 12px past its edge",
+      "ok": true
+    },
+    {
+      "name": "1920: Enter collapses the rail (aria-expanded=false)",
+      "ok": true
+    },
+    {
+      "name": "1920: collapsing gives the plot the rail's width (1262 → 1318)",
+      "ok": true
+    },
+    {
+      "name": "1920: the collapsed rail is remembered",
+      "ok": true
+    },
+    {
+      "name": "1920: Space expands it again",
+      "ok": true
+    },
+    {
+      "name": "1920: #494 geometry kept — book 286, ticket 300, chart beside the book",
+      "ok": true
+    },
+    {
+      "name": "390: phone rail stays a horizontal strip (346×48)",
+      "ok": true
     }
-   }
-  },
-  {
-   "width": 1440,
-   "height": 900,
-   "indicatorTriggerText": "Индикаторы",
-   "paneRows": 8,
-   "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
-   "priceScalePixels": {
-    "default": {
-     "white": 0,
-     "bright": 0,
-     "width": 80,
-     "height": 269
-    },
-    "whitePreview": {
-     "white": 428,
-     "bright": 1077,
-     "width": 80,
-     "height": 269
-    },
-    "whiteKept": {
-     "white": 741,
-     "bright": 1373,
-     "width": 90,
-     "height": 266
-    },
-    "timeScaleWhite": {
-     "white": 259,
-     "bright": 516,
-     "width": 692,
-     "height": 32
-    }
-   },
-   "saved": {
-    "priceAxisText": "#ffffff",
-    "timeAxisText": "#ffffff",
-    "axisFontSize": 14
-   },
-   "rail": {
-    "width": 56,
-    "toggle": {
-     "x": 59,
-     "y": 574.390625,
-     "width": 22,
-     "height": 48
-    },
-    "toggleStyle": {
-     "color": "rgb(255, 255, 255)",
-     "background": "rgb(38, 47, 59)",
-     "border": "rgb(90, 100, 116)"
-    }
-   },
-   "plotWidth": {
-    "before": 782,
-    "after": 838
-   },
-   "geometry": {
-    "chart": {
-     "x": 4,
-     "y": 96,
-     "width": 838,
-     "height": 608
-    },
-    "book": {
-     "x": 846,
-     "y": 96,
-     "width": 286,
-     "height": 608
-    },
-    "form": {
-     "x": 1136,
-     "y": 44,
-     "width": 300,
-     "height": 824
-    }
-   }
-  },
-  {
-   "width": 1707,
-   "height": 900,
-   "indicatorTriggerText": "Индикаторы",
-   "paneRows": 8,
-   "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
-   "priceScalePixels": {
-    "default": {
-     "white": 0,
-     "bright": 0,
-     "width": 80,
-     "height": 269
-    },
-    "whitePreview": {
-     "white": 428,
-     "bright": 1077,
-     "width": 80,
-     "height": 269
-    },
-    "whiteKept": {
-     "white": 741,
-     "bright": 1373,
-     "width": 90,
-     "height": 266
-    },
-    "timeScaleWhite": {
-     "white": 559,
-     "bright": 1098,
-     "width": 958,
-     "height": 32
-    }
-   },
-   "saved": {
-    "priceAxisText": "#ffffff",
-    "timeAxisText": "#ffffff",
-    "axisFontSize": 14
-   },
-   "rail": {
-    "width": 56,
-    "toggle": {
-     "x": 59,
-     "y": 574.390625,
-     "width": 22,
-     "height": 48
-    },
-    "toggleStyle": {
-     "color": "rgb(255, 255, 255)",
-     "background": "rgb(38, 47, 59)",
-     "border": "rgb(90, 100, 116)"
-    }
-   },
-   "plotWidth": {
-    "before": 1048,
-    "after": 1104
-   },
-   "geometry": {
-    "chart": {
-     "x": 4,
-     "y": 96,
-     "width": 1105,
-     "height": 608
-    },
-    "book": {
-     "x": 1113,
-     "y": 96,
-     "width": 286,
-     "height": 608
-    },
-    "form": {
-     "x": 1403,
-     "y": 44,
-     "width": 300,
-     "height": 824
-    }
-   }
-  },
-  {
-   "width": 1920,
-   "height": 1080,
-   "indicatorTriggerText": "Индикаторы",
-   "paneRows": 8,
-   "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
-   "priceScalePixels": {
-    "default": {
-     "white": 0,
-     "bright": 0,
-     "width": 80,
-     "height": 366
-    },
-    "whitePreview": {
-     "white": 428,
-     "bright": 1077,
-     "width": 80,
-     "height": 366
-    },
-    "whiteKept": {
-     "white": 779,
-     "bright": 1449,
-     "width": 90,
-     "height": 364
-    },
-    "timeScaleWhite": {
-     "white": 558,
-     "bright": 1093,
-     "width": 1172,
-     "height": 32
-    }
-   },
-   "saved": {
-    "priceAxisText": "#ffffff",
-    "timeAxisText": "#ffffff",
-    "axisFontSize": 14
-   },
-   "rail": {
-    "width": 56,
-    "toggle": {
-     "x": 59,
-     "y": 718.390625,
-     "width": 22,
-     "height": 48
-    },
-    "toggleStyle": {
-     "color": "rgb(255, 255, 255)",
-     "background": "rgb(38, 47, 59)",
-     "border": "rgb(90, 100, 116)"
-    }
-   },
-   "plotWidth": {
-    "before": 1262,
-    "after": 1318
-   },
-   "geometry": {
-    "chart": {
-     "x": 4,
-     "y": 96,
-     "width": 1318,
-     "height": 788
-    },
-    "book": {
-     "x": 1326,
-     "y": 96,
-     "width": 286,
-     "height": 788
-    },
-    "form": {
-     "x": 1616,
-     "y": 44,
-     "width": 300,
-     "height": 1004
-    }
-   }
-  }
- ]
+  ]
 }
