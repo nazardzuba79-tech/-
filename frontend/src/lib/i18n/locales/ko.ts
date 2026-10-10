@@ -176,7 +176,7 @@ export const KO: Record<Key, string> = {
   'authShell.communityCount': '120만 명 이상의 투자자가',
   'authShell.communityText': '이미 VOLTEX와 함께 시장을 살펴보고 있습니다',
   'authShell.communityBadge': '120만+',
-  'authShell.communityTitle': '결제하고 현금을 인출하세요 — 수수료 0%',
+  'authShell.communityTitle': '수수료 0% — 구매 및 현금 인출',
   'authShell.communitySubtitle': '22+개 법정화폐 · 70+개 암호화폐',
   'authShell.moreCurrencies': '그 외 다양한 통화',
   'authShell.cardCaption': '언제나 함께하는 카드',

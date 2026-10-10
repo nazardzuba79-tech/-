@@ -19,7 +19,7 @@ function renderShell(lang: string) {
     './auth-shell.css': {}, './auth-form-premium.css': {},
     '../../components/Logo': { Logo: () => React.createElement('span', null, 'HTML_LOGO'), LogoMark: () => null },
     '../../components/LanguageSwitcher': { LanguageSwitcher: () => null },
-    '../../lib/i18n': { useLanguage: () => ({ lang, t: (key: string) => key === 'authShell.communitySubtitle' ? `localized:${lang}:${key}:fiat · localized:${lang}:${key}:crypto` : key === 'authShell.communityTitle' ? `localized:${lang}:${key}:action — localized:${lang}:${key}:0%` : `localized:${lang}:${key}` }) },
+    '../../lib/i18n': { useLanguage: () => ({ lang, t: (key: string) => key === 'authShell.communitySubtitle' ? `localized:${lang}:${key}:fiat · localized:${lang}:${key}:crypto` : key === 'authShell.communityTitle' ? `localized:${lang}:${key}:0% — localized:${lang}:${key}:cash` : `localized:${lang}:${key}` }) },
     '../../lib/supportWidget': { openSupportWidget: jest.fn() },
     'react-router-dom': { Link: ({ to, children, ...rest }: any) => React.createElement('a', { href: to, ...rest }, children) },
   };
@@ -40,7 +40,7 @@ describe('business-class visual preserves reviewed authentication', () => {
       .replace(/^import \{ EU, CH, JP, US, CN, RU \} from 'country-flag-icons\/react\/3x2';\n/m, '')
       .replace("  const [fiatCaption, cryptoCaption] = t('authShell.communitySubtitle').split(' · ');\n", '')
       .replace("  const [cardAction, voltexFee] = t('authShell.communityTitle').split(' — ');\n", '')
-      .replace('          <strong>{cardAction} —{\' \'}<span className="vx-auth-card-fee">{voltexFee}</span></strong>', "          <strong>{t('authShell.communityTitle')}</strong>")
+      .replace('          <strong>{cardAction}{\' \'}<span className="vx-auth-card-fee">{voltexFee}</span></strong>', "          <strong>{t('authShell.communityTitle')}</strong>")
       .replace("          <span><span className=\"vx-auth-currency-amount\">{fiatCaption} ·</span>{' '}<span className=\"vx-auth-currency-amount\">{cryptoCaption}</span></span>", "          <span>{t('authShell.communitySubtitle')}</span>")
       .replace('/** Decorative currency examples, not the complete list or a user count. */', '/* Decorative icon-only follow-up. */')
       .replace(/        <div className="vx-auth-currency-sample">[\s\S]*?\n        <\/div>(?=\n        <div className="vx-auth-community-copy">)/, '        {/* Decorative icon group. */}');
@@ -113,7 +113,7 @@ describe('business-class visual preserves reviewed authentication', () => {
     expect(html).not.toMatch(/vx-auth-avatar|community-v4/);
     expect(html).toContain(`localized:${lang}:authShell.communityTitle`);
     expect(html.match(/class="vx-auth-card-fee"/g)).toHaveLength(2);
-    expect(html).toContain(`<strong>localized:${lang}:authShell.communityTitle:action — <span class="vx-auth-card-fee">localized:${lang}:authShell.communityTitle:0%</span></strong>`);
+    expect(html).toContain(`<strong>localized:${lang}:authShell.communityTitle:0% <span class="vx-auth-card-fee">localized:${lang}:authShell.communityTitle:cash</span></strong>`);
     expect(html).toContain(`localized:${lang}:authShell.communitySubtitle`);
     expect(html.match(/class="vx-auth-currency-amount"/g)).toHaveLength(4);
     expect(html).toContain(`<span class="vx-auth-currency-amount">localized:${lang}:authShell.communitySubtitle:fiat ·</span> <span class="vx-auth-currency-amount">localized:${lang}:authShell.communitySubtitle:crypto</span>`);
@@ -146,9 +146,9 @@ describe('business-class visual preserves reviewed authentication', () => {
   });
 
   test('fee typography is scoped, opaque and readable without a badge or smaller type', () => {
-    expect(css).toContain('.vx-auth .vx-auth-card-fee { white-space: nowrap; }');
+    expect(css).toContain('.vx-auth .vx-auth-card-fee { display: block; white-space: nowrap; }');
     expect(css).toContain('.vx-auth-brand-banner .vx-auth-community-copy strong { max-width: calc(100% - 16px); }');
-    expect(css).toContain('.vx-auth .vx-auth-community-copy strong { color: #123a33; font-size: 17px; font-weight: 600; line-height: 1.15; letter-spacing: -.025em; text-wrap: wrap; }');
+    expect(css).toContain('.vx-auth .vx-auth-community-copy strong { display: block; color: #123a33; font-size: 17px; font-weight: 600; line-height: 1.15; letter-spacing: -.025em; text-wrap: wrap; }');
     expect(css).toContain('.vx-auth .vx-auth-community-copy > span { color: #0d332d; font-size: 14px; font-weight: 400; line-height: 1.4; }');
     expect(css.match(/\.vx-auth \.vx-auth-community-copy strong \{ font-size: 16px; \}/g)).toHaveLength(2);
     const captionCSS = css.slice(css.indexOf('.vx-auth .vx-auth-extras {'), css.indexOf('/* Light form theme'));
