@@ -38,9 +38,18 @@ describe('Spot chart axis precision uses real candle magnitudes', () => {
     const start = source.indexOf('        } else if (spotChartRefinements || candleLoader) {\n          const priceFormat = spotChartPriceFormat(res.candles);');
     expect(start).toBeGreaterThan(-1);
     const block = source.slice(start, source.indexOf('        seriesRef.current.setData(', start));
-    for (const ref of ['seriesRef', 'lineSeriesRef', 'areaSeriesRef', 'maSeriesRef', 'bollUpperRef', 'bollMiddleRef', 'bollLowerRef']) expect(block).toContain(ref);
-    expect(block).not.toContain('volumeSeriesRef'); expect(block).not.toContain('rsiSeriesRef'); expect(block).not.toContain('macdLineRef');
-    expect(block).toContain('applyOptions({ priceFormat })'); expect(block).not.toContain('setData(');
+    // Issue #502 (2026-10-10): the price-axis series are gathered by
+    // `priceScaleSeries()` — the candles, their line/area twins and every
+    // price-pane indicator line — so one formatter still reaches all of them
+    // and never the volume or a lower-pane indicator.
+    expect(block).toContain('for (const sr of priceScaleSeries())');
+    const gather = source.slice(source.indexOf('const priceScaleSeries = ('), source.indexOf('return out;', source.indexOf('const priceScaleSeries = (')));
+    for (const ref of ['seriesRef', 'lineSeriesRef', 'areaSeriesRef']) expect(gather).toContain(ref);
+    expect(gather).toContain("if (set.pane === 'price') out.push(...Object.values(set.lines));");
+    for (const text of [block, gather]) { expect(text).not.toContain('volumeSeriesRef'); expect(text).not.toContain("'lower'"); }
+    expect(block).toContain('applyOptions({ priceFormat: wanted })'); expect(block).not.toContain('setData(');
+    // A fixed decimals setting wins over the instrument's precision, which is remembered for «auto».
+    expect(block).toContain('autoPriceFormatRef.current = priceFormat;');
     // An exact contract loader now opts into small-price precision too;
     // drawing-tool selection alone still does not control the formatter.
     expect(source).toContain('const drawingToolsOn = terminal && drawingTools');

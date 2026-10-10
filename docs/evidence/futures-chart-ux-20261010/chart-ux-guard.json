@@ -1,0 +1,313 @@
+{
+ "assertions": 113,
+ "failed": [],
+ "errors": [],
+ "external": [],
+ "writes": 24,
+ "cases": [
+  {
+   "width": 1366,
+   "height": 768,
+   "indicatorTriggerText": "Индикаторы",
+   "paneRows": 8,
+   "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
+   "priceScalePixels": {
+    "default": {
+     "white": 0,
+     "bright": 0,
+     "width": 80,
+     "height": 197
+    },
+    "whitePreview": {
+     "white": 244,
+     "bright": 615,
+     "width": 80,
+     "height": 197
+    },
+    "whiteKept": {
+     "white": 449,
+     "bright": 824,
+     "width": 90,
+     "height": 195
+    },
+    "timeScaleWhite": {
+     "white": 260,
+     "bright": 524,
+     "width": 618,
+     "height": 32
+    }
+   },
+   "saved": {
+    "priceAxisText": "#ffffff",
+    "timeAxisText": "#ffffff",
+    "axisFontSize": 14
+   },
+   "rail": {
+    "width": 56,
+    "toggle": {
+     "x": 59,
+     "y": 468.796875,
+     "width": 22,
+     "height": 48
+    },
+    "toggleStyle": {
+     "color": "rgb(255, 255, 255)",
+     "background": "rgb(38, 47, 59)",
+     "border": "rgb(90, 100, 116)"
+    }
+   },
+   "plotWidth": {
+    "before": 708,
+    "after": 764
+   },
+   "geometry": {
+    "chart": {
+     "x": 4,
+     "y": 96,
+     "width": 764,
+     "height": 476
+    },
+    "book": {
+     "x": 772,
+     "y": 96,
+     "width": 286,
+     "height": 476
+    },
+    "form": {
+     "x": 1062,
+     "y": 44,
+     "width": 300,
+     "height": 692
+    }
+   }
+  },
+  {
+   "width": 1440,
+   "height": 900,
+   "indicatorTriggerText": "Индикаторы",
+   "paneRows": 8,
+   "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
+   "priceScalePixels": {
+    "default": {
+     "white": 0,
+     "bright": 0,
+     "width": 80,
+     "height": 269
+    },
+    "whitePreview": {
+     "white": 428,
+     "bright": 1077,
+     "width": 80,
+     "height": 269
+    },
+    "whiteKept": {
+     "white": 741,
+     "bright": 1373,
+     "width": 90,
+     "height": 266
+    },
+    "timeScaleWhite": {
+     "white": 259,
+     "bright": 516,
+     "width": 692,
+     "height": 32
+    }
+   },
+   "saved": {
+    "priceAxisText": "#ffffff",
+    "timeAxisText": "#ffffff",
+    "axisFontSize": 14
+   },
+   "rail": {
+    "width": 56,
+    "toggle": {
+     "x": 59,
+     "y": 574.390625,
+     "width": 22,
+     "height": 48
+    },
+    "toggleStyle": {
+     "color": "rgb(255, 255, 255)",
+     "background": "rgb(38, 47, 59)",
+     "border": "rgb(90, 100, 116)"
+    }
+   },
+   "plotWidth": {
+    "before": 782,
+    "after": 838
+   },
+   "geometry": {
+    "chart": {
+     "x": 4,
+     "y": 96,
+     "width": 838,
+     "height": 608
+    },
+    "book": {
+     "x": 846,
+     "y": 96,
+     "width": 286,
+     "height": 608
+    },
+    "form": {
+     "x": 1136,
+     "y": 44,
+     "width": 300,
+     "height": 824
+    }
+   }
+  },
+  {
+   "width": 1707,
+   "height": 900,
+   "indicatorTriggerText": "Индикаторы",
+   "paneRows": 8,
+   "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
+   "priceScalePixels": {
+    "default": {
+     "white": 0,
+     "bright": 0,
+     "width": 80,
+     "height": 269
+    },
+    "whitePreview": {
+     "white": 428,
+     "bright": 1077,
+     "width": 80,
+     "height": 269
+    },
+    "whiteKept": {
+     "white": 741,
+     "bright": 1373,
+     "width": 90,
+     "height": 266
+    },
+    "timeScaleWhite": {
+     "white": 559,
+     "bright": 1098,
+     "width": 958,
+     "height": 32
+    }
+   },
+   "saved": {
+    "priceAxisText": "#ffffff",
+    "timeAxisText": "#ffffff",
+    "axisFontSize": 14
+   },
+   "rail": {
+    "width": 56,
+    "toggle": {
+     "x": 59,
+     "y": 574.390625,
+     "width": 22,
+     "height": 48
+    },
+    "toggleStyle": {
+     "color": "rgb(255, 255, 255)",
+     "background": "rgb(38, 47, 59)",
+     "border": "rgb(90, 100, 116)"
+    }
+   },
+   "plotWidth": {
+    "before": 1048,
+    "after": 1104
+   },
+   "geometry": {
+    "chart": {
+     "x": 4,
+     "y": 96,
+     "width": 1105,
+     "height": 608
+    },
+    "book": {
+     "x": 1113,
+     "y": 96,
+     "width": 286,
+     "height": 608
+    },
+    "form": {
+     "x": 1403,
+     "y": 44,
+     "width": 300,
+     "height": 824
+    }
+   }
+  },
+  {
+   "width": 1920,
+   "height": 1080,
+   "indicatorTriggerText": "Индикаторы",
+   "paneRows": 8,
+   "legend": "SMA 200\nEMA 20\nRSI 14\nMACD 12 · 26 · 9",
+   "priceScalePixels": {
+    "default": {
+     "white": 0,
+     "bright": 0,
+     "width": 80,
+     "height": 366
+    },
+    "whitePreview": {
+     "white": 428,
+     "bright": 1077,
+     "width": 80,
+     "height": 366
+    },
+    "whiteKept": {
+     "white": 779,
+     "bright": 1449,
+     "width": 90,
+     "height": 364
+    },
+    "timeScaleWhite": {
+     "white": 558,
+     "bright": 1093,
+     "width": 1172,
+     "height": 32
+    }
+   },
+   "saved": {
+    "priceAxisText": "#ffffff",
+    "timeAxisText": "#ffffff",
+    "axisFontSize": 14
+   },
+   "rail": {
+    "width": 56,
+    "toggle": {
+     "x": 59,
+     "y": 718.390625,
+     "width": 22,
+     "height": 48
+    },
+    "toggleStyle": {
+     "color": "rgb(255, 255, 255)",
+     "background": "rgb(38, 47, 59)",
+     "border": "rgb(90, 100, 116)"
+    }
+   },
+   "plotWidth": {
+    "before": 1262,
+    "after": 1318
+   },
+   "geometry": {
+    "chart": {
+     "x": 4,
+     "y": 96,
+     "width": 1318,
+     "height": 788
+    },
+    "book": {
+     "x": 1326,
+     "y": 96,
+     "width": 286,
+     "height": 788
+    },
+    "form": {
+     "x": 1616,
+     "y": 44,
+     "width": 300,
+     "height": 1004
+    }
+   }
+  }
+ ]
+}

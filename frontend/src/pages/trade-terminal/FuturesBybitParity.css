@@ -149,13 +149,23 @@
   #archive-terminal-preview.futures-terminal .terminal-chart-shell .chart-tools { gap:0; }
   #archive-terminal-preview.futures-terminal .chart-toolbar-end .chart-settings-trigger { width:28px; height:28px; color:#6a6e73; }
   #archive-terminal-preview.futures-terminal .chart-toolbar-end .chart-settings-trigger:hover { color:#ffffff; background:transparent; }
-  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail { width:52px; min-width:52px; padding:6px 0; gap:0; border-right:0; background:#101014; }
-  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-group { width:52px; }
-  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-btn { width:52px; height:36px; min-height:36px; border-radius:0; color:#adb1b8; }
+  /* Drawing rail (Issue #502, 2026-10-10): Figma 19:103 draws a 52px rail
+     with 24px glyphs on a 36px pitch and no divider. VOLTEX's rail carried
+     28px TradingView glyphs in the same 52px, so the icons read cramped. It
+     is now 56px — slightly wider, as asked, not a sidebar — with 24px glyphs
+     in 56×38 keys, 2px between keys, so every icon has air on all sides.
+     The shell beside it follows the same width (TerminalChart.css). */
+  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail { width:56px; min-width:56px; padding:6px 0 4px; gap:2px; border-right:0; background:#101014; }
+  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-group { width:56px; }
+  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-btn { width:56px; height:38px; min-height:38px; border-radius:0; color:#adb1b8; }
+  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-btn > svg { width:24px; height:24px; }
   #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-btn:hover:not(.active) { color:#ffffff; background:transparent; }
   #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-btn.active { color:#f0b90b; background:transparent; }
-  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-divider { width:28px; background:#222227; }
-  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-group-chevron { color:#8c8c8c; }
+  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-divider { width:32px; margin:3px 0; background:#222227; }
+  #archive-terminal-preview.futures-terminal .drawing-tools .drawing-rail .tool-group-chevron { color:#8c8c8c; right:3px; bottom:2px; }
+  #archive-terminal-preview.futures-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell { flex-basis:56px; width:56px; }
+  /* Collapsed means gone: the plot takes all 56px back and only the handle stays on its edge. */
+  #archive-terminal-preview.futures-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed { flex-basis:0; width:0; }
 
   /* ── Order book: tabs 40, icons row 32, columns 32, rows 24, centre 40 ─ */
   #archive-terminal-preview.futures-terminal .rb-tabs { height:40px; min-height:40px; flex-basis:40px; padding:12px 12px 0; gap:24px; border-bottom:0; }

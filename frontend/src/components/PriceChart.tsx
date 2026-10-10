@@ -24,7 +24,11 @@ import {
 } from 'lightweight-charts';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
-import { computeSMA, computeBollingerBands, computeRSI, computeMACD, Candle } from '../lib/indicators';
+import { type Candle } from '../lib/indicators';
+import {
+  INDICATOR_CATALOGUE, computeIndicator, getChartIndicators, indicatorDefinition, indicatorInstanceLabel, newIndicatorInstance,
+  saveChartIndicators, subscribeChartIndicators, type IndicatorInstance, type IndicatorType,
+} from '../lib/chartIndicators';
 import {
   drawingFlyoutPosition,
   drawingRange,
@@ -45,7 +49,7 @@ import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCa
 import './DrawingTools.css';
 import { PrivatePositionLines } from './PrivatePositionLines';
 import { ChartToolbarMenus } from './ChartToolbarMenus';
-import { ChartSettingsDialog } from './ChartSettingsDialog';
+import { ChartSettingsDialog, requestChartSettingsView } from './ChartSettingsDialog';
 import { DEFAULT_CHART_SETTINGS, getChartSettings, rgbaOf, subscribeChartSettings, type ChartSettings } from '../lib/chartSettings';
 
 const MA_PERIOD = 200;
@@ -71,6 +75,22 @@ const INDICATOR_COLORS = {
   rsi: '#c084fc',
   macd: '#5b8def',
 };
+
+/** The series one indicator instance owns (Issue #502): created when the
+ *  instance appears, taken off the chart with it. `signature` records what
+ *  the data was computed from, so colour or width changes never recompute. */
+type IndicatorSeriesSet = {
+  signature: string;
+  pane: 'price' | 'lower' | 'band';
+  lines: Record<string, ISeriesApi<'Line'>>;
+  histogram: ISeriesApi<'Histogram'> | null;
+  levels: IPriceLine[];
+};
+
+/** The drawing rail's open/closed state outlives the page in this browser. */
+const RAIL_COLLAPSED_KEY = 'voltex.drawingRail.collapsed';
+const readRailCollapsed = (): boolean => { try { return typeof localStorage !== 'undefined' && localStorage.getItem(RAIL_COLLAPSED_KEY) === '1'; } catch { return false; } };
+const writeRailCollapsed = (collapsed: boolean): void => { try { localStorage.setItem(RAIL_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch { /* private mode: the choice lasts this visit */ } };
 
 interface ConditionalOrder {
   id: string;
@@ -232,7 +252,9 @@ export function PriceChart({
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => (chartSettings ? subscribeChartSettings(setViewSettings) : undefined), [chartSettings]);
   /** Paint the settings replace — kept so «as the terminal» can put it back. */
-  const basePaintRef = useRef<{ background: string } | null>(null);
+  const basePaintRef = useRef<{ background: string; textColor: string; fontFamily: string; fontSize: number; borderColor: string } | null>(null);
+  /** The instrument's own price format, re-applied when the decimals setting goes back to «auto». */
+  const autoPriceFormatRef = useRef<{ type: 'price'; precision: number; minMove: number } | null>(null);
   const watermarkRef = useRef<{ detach: () => void; applyOptions: (o: object) => void } | null>(null);
   /** Volume bars follow the candles' own colours. */
   const volumeColorsRef = useRef<[string, string]>(['rgba(234,236,239,0.5)', 'rgba(247,166,0,0.5)']);
@@ -245,14 +267,8 @@ export function PriceChart({
   const lineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const areaSeriesRef = useRef<ISeriesApi<'Area'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
-  const maSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const bollUpperRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const bollMiddleRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const bollLowerRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const rsiSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const macdLineRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const macdSignalRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const macdHistRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  /** Series per indicator instance id (lib/chartIndicators). */
+  const indicatorSeriesRef = useRef<Map<string, IndicatorSeriesSet>>(new Map());
   const priceLinesRef = useRef<IPriceLine[]>([]);
   const candlesRef = useRef<Candle[]>([]);
   const tradingRef = useRef(privateTrading);
@@ -284,12 +300,26 @@ export function PriceChart({
   /** Retries the candle request alone — never a page reload. */
   const retryCandlesRef = useRef<(() => void) | null>(null);
   const [chartType, setChartType] = useState<ChartType>('candles');
-  const [showMA, setShowMA] = useState(true);
-  const [showBollinger, setShowBollinger] = useState(false);
-  const [showRSI, setShowRSI] = useState(false);
-  const [showMACD, setShowMACD] = useState(false);
-  const chartHitRef = useRef({ pair, interval, showRSI, showMACD });
-  chartHitRef.current = { pair, interval, showRSI, showMACD };
+  /** The indicators on the chart: the viewer's instances (lib/chartIndicators),
+   *  shared by every chart that has settings, as the paint settings are. */
+  const [indicatorInstances, setIndicatorInstances] = useState<IndicatorInstance[]>(() => getChartIndicators());
+  useEffect(() => subscribeChartIndicators(setIndicatorInstances), []);
+  /** Bumped when the candles change, so every instance recomputes once. */
+  const [indicatorDataVersion, setIndicatorDataVersion] = useState(0);
+  /** Lower-pane indicators get panes of their own on the futures chart; Spot and
+   *  CFD keep the band under the candles they always had. */
+  const paneSupport = terminal && market === 'futures';
+  const hasType = (type: IndicatorType) => indicatorInstances.some(i => i.type === type && i.visible);
+  /** Spot's flat toggles: off → one instance with its defaults, on → every instance of that kind off. */
+  const toggleType = (type: IndicatorType) => {
+    const saved = getChartIndicators();
+    saveChartIndicators(saved.some(i => i.type === type) ? saved.filter(i => i.type !== type) : [...saved, newIndicatorInstance(type)]);
+  };
+  const showMA = hasType('ma'), showBollinger = hasType('bollinger'), showRSI = hasType('rsi'), showMACD = hasType('macd');
+  /** True when a lower-pane indicator is drawn in the main pane's bottom band (Spot/CFD). */
+  const bandOscillators = !paneSupport && indicatorInstances.some(i => i.visible && indicatorDefinition(i.type).pane === 'lower');
+  const chartHitRef = useRef({ pair, interval, bandOscillators });
+  chartHitRef.current = { pair, interval, bandOscillators };
   const tradingSelection = !!privateTrading?.enabled && !!privateTrading.selecting;
 
   const [tool, setTool] = useState<Tool>('cursor');
@@ -451,74 +481,24 @@ export function PriceChart({
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
-    const maSeries = chart.addSeries(LineSeries, {
-      color: '#f7d51d',
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-    });
-
-    const bollOpts = { lineWidth: 1 as const, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, visible: false };
-    const bollUpper = chart.addSeries(LineSeries, { ...bollOpts, color: 'rgba(91,141,239,0.7)' });
-    const bollMiddle = chart.addSeries(LineSeries, { ...bollOpts, color: 'rgba(91,141,239,0.4)', lineStyle: 2 });
-    const bollLower = chart.addSeries(LineSeries, { ...bollOpts, color: 'rgba(91,141,239,0.7)' });
-
-    // RSI and MACD get their own price scale (0-100 / unbounded-around-0
-    // are meaningless on the price axis) squeezed into a thin band near
-    // the bottom — a real second lane, just not a fully separate chart pane
-    // (lightweight-charts doesn't support stacked panes in one instance).
-    const rsiSeries = chart.addSeries(LineSeries, {
-      color: '#c084fc',
-      lineWidth: 1,
-      priceScaleId: 'rsi',
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-      visible: false,
-    });
-    rsiSeries.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 }, visible: false });
-
-    const macdLine = chart.addSeries(LineSeries, {
-      color: '#5b8def',
-      lineWidth: 1,
-      priceScaleId: 'macd',
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-      visible: false,
-    });
-    const macdSignal = chart.addSeries(LineSeries, {
-      color: '#f7a600',
-      lineWidth: 1,
-      priceScaleId: 'macd',
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-      visible: false,
-    });
-    const macdHist = chart.addSeries(HistogramSeries, {
-      priceScaleId: 'macd',
-      priceLineVisible: false,
-      lastValueVisible: false,
-      visible: false,
-    });
-    macdLine.priceScale().applyOptions({ scaleMargins: { top: 0.78, bottom: 0.02 }, visible: false });
+    // Indicator series are created per instance by the indicator effect below
+    // (lib/chartIndicators), not here: the chart opens with whatever the viewer
+    // kept, and each instance's lines come and go with it.
 
     chartRef.current = chart;
-    basePaintRef.current = { background: plotBackground || '#101014' };
+    // What the chart was created with, so «as the terminal» in the settings can put it back.
+    const created = typeof (chart as { options?: () => unknown }).options === 'function' ? chart.options() : null;
+    basePaintRef.current = {
+      background: plotBackground || '#101014',
+      textColor: created?.layout.textColor ?? token('--voltex-axis-text', terminal ? '#f3f4f6' : '#a3adba'),
+      fontFamily: created?.layout.fontFamily ?? 'Inter, Arial, sans-serif',
+      fontSize: created?.layout.fontSize ?? (terminal ? 12 : 11),
+      borderColor: created?.rightPriceScale.borderColor ?? token('--voltex-axis-border', '#292c34'),
+    };
     seriesRef.current = series;
     lineSeriesRef.current = lineSeries;
     areaSeriesRef.current = areaSeries;
     volumeSeriesRef.current = volumeSeries;
-    maSeriesRef.current = maSeries;
-    bollUpperRef.current = bollUpper;
-    bollMiddleRef.current = bollMiddle;
-    bollLowerRef.current = bollLower;
-    rsiSeriesRef.current = rsiSeries;
-    macdLineRef.current = macdLine;
-    macdSignalRef.current = macdSignal;
-    macdHistRef.current = macdHist;
 
     const redraw = () => forceRedraw((n) => n + 1);
     chart.timeScale().subscribeVisibleTimeRangeChange(redraw);
@@ -574,7 +554,7 @@ export function PriceChart({
             candleX: chart.timeScale().timeToCoordinate(data.time), highY: series.priceToCoordinate(candle.high), lowY: series.priceToCoordinate(candle.low),
             paneWidth: pane.width, paneHeight: pane.height, barSpacing: chart.timeScale().options().barSpacing,
             paneIndex: param.paneIndex, dragged, indicatorHovered: !!hovered && hovered !== series,
-            indicatorPanelVisible: chartHitRef.current.showRSI || chartHitRef.current.showMACD })) return;
+            indicatorPanelVisible: chartHitRef.current.bandOscillators })) return;
           const selected = completeChartCandle(candle, chartHitRef.current.pair, chartHitRef.current.interval);
           if (!selected) return;
           const bounds = host.getBoundingClientRect();
@@ -614,31 +594,90 @@ export function PriceChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Every series on the right price scale: the candles, their line/area twins and the price-pane indicators. */
+  const priceScaleSeries = (): ISeriesApi<'Candlestick' | 'Line' | 'Area'>[] => {
+    const out: ISeriesApi<'Candlestick' | 'Line' | 'Area'>[] = [];
+    for (const ref of [seriesRef, lineSeriesRef, areaSeriesRef]) if (ref.current) out.push(ref.current as ISeriesApi<'Candlestick' | 'Line' | 'Area'>);
+    for (const set of indicatorSeriesRef.current.values()) if (set.pane === 'price') out.push(...Object.values(set.lines));
+    return out;
+  };
+  /** Pane heights: the candles keep most of the chart, volume a fifth of it,
+   *  every lower-pane indicator a strip under them. Stretch factors are
+   *  relative, so the candles give way slowly as panes are added. */
+  const layoutPanes = () => {
+    const chart = chartRef.current;
+    if (!chart || typeof chart.panes !== 'function') return;
+    const panes = chart.panes();
+    if (!panes.length || typeof panes[0].setStretchFactor !== 'function') return;
+    const volumeSeries = volumeSeriesRef.current;
+    const volumeOn = !!volumeSeries && typeof volumeSeries.getPane === 'function' && volumeSeries.getPane().paneIndex() === 1;
+    const lower = Math.max(0, panes.length - (volumeOn ? 2 : 1));
+    const each = lower >= 3 ? 0.18 : 0.24;
+    panes.forEach((pane, i) => pane.setStretchFactor(i === 0 ? 0.8 : volumeOn && i === 1 ? 0.2 : each));
+  };
+
   // The viewer's chart settings, applied over the paint the chart was created with.
   useEffect(() => {
     const chart = chartRef.current, series = seriesRef.current, volume = volumeSeriesRef.current;
     if (!viewSettings || !chart || !series || !volume) return;
-    const s = viewSettings, clear = 'rgba(0,0,0,0)';
+    const s = viewSettings, clear = 'rgba(0,0,0,0)', base = basePaintRef.current;
     series.applyOptions({
       upColor: s.body ? s.bodyUp : clear, downColor: s.body ? s.bodyDown : clear,
       borderVisible: s.border, borderUpColor: s.borderUp, borderDownColor: s.borderDown,
       wickVisible: s.wick, wickUpColor: s.wickUp, wickDownColor: s.wickDown,
       priceLineVisible: s.lastPriceLine,
     });
+    // Scales (Issue #502). Lightweight Charts paints the time axis, the
+    // crosshair labels and any price scale without a colour of its own in
+    // `layout.textColor`; the right price scale takes its own `textColor`.
+    // So the time-axis colour is the chart's shared label colour and the
+    // price-axis colour overrides it on the right scale. Canvas text cannot
+    // read a CSS variable, hence the literal font stacks.
+    const textColor = s.timeAxisText ?? base?.textColor ?? (terminal ? '#f3f4f6' : '#a3adba');
+    const fontFamily = s.axisFont === 'inter' ? 'Inter, Arial, sans-serif'
+      : s.axisFont === 'mono' ? 'ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace'
+      : (base?.fontFamily ?? 'Inter, Arial, sans-serif');
+    const borderColor = s.scaleBorderColor ?? base?.borderColor ?? '#292c34';
+    const STYLE = { solid: LineStyle.Solid, dashed: LineStyle.Dashed, dotted: LineStyle.Dotted } as const;
+    const gridColor = rgbaOf(s.gridColor, s.gridOpacity);
     chart.applyOptions({
-      layout: { background: { type: ColorType.Solid, color: s.background ?? basePaintRef.current?.background ?? '#101014' } },
+      layout: {
+        background: { type: ColorType.Solid, color: s.background ?? base?.background ?? '#101014' },
+        textColor, fontFamily, fontSize: s.axisFontSize ?? base?.fontSize ?? (terminal ? 12 : 11),
+      },
       grid: {
-        vertLines: { visible: s.grid === 'all' || s.grid === 'vertical', color: s.gridColor },
-        horzLines: { visible: s.grid === 'all' || s.grid === 'horizontal', color: s.gridColor },
+        vertLines: { visible: s.grid === 'all' || s.grid === 'vertical', color: gridColor },
+        horzLines: { visible: s.grid === 'all' || s.grid === 'horizontal', color: gridColor },
       },
       // The default keeps the terminal's grey vertical and gold horizontal hair.
-      crosshair: { vertLine: { color: s.crosshair === DEFAULT_CHART_SETTINGS.crosshair ? 'rgba(148, 163, 184, 0.35)' : rgbaOf(s.crosshair, 0.45) }, horzLine: { color: s.crosshair, labelBackgroundColor: s.crosshair } },
+      crosshair: {
+        vertLine: { color: s.crosshair === DEFAULT_CHART_SETTINGS.crosshair ? 'rgba(148, 163, 184, 0.35)' : rgbaOf(s.crosshair, 0.45), style: STYLE[s.crosshairStyle] },
+        horzLine: { color: s.crosshair, labelBackgroundColor: s.crosshair, style: STYLE[s.crosshairStyle] },
+      },
+      rightPriceScale: {
+        textColor: s.priceAxisText ?? textColor,
+        borderVisible: s.scaleBorders, borderColor, ticksVisible: s.scaleTicks, visible: s.priceScaleVisible,
+        mode: priceScaleMode === 'logarithmic' || s.scaleMode === 'logarithmic' ? PriceScaleMode.Logarithmic : PriceScaleMode.Normal,
+      },
+      timeScale: { borderVisible: s.scaleBorders, borderColor, ticksVisible: s.scaleTicks, visible: s.timeScaleVisible },
     });
+    // Decimals: «auto» is the instrument's own precision (the data effect keeps
+    // it in autoPriceFormatRef); a number fixes what every price-scale series shows.
+    if (!priceFormatter) {
+      const format = s.priceDecimals === 'auto'
+        ? autoPriceFormatRef.current
+        : { type: 'price' as const, precision: s.priceDecimals, minMove: Number((10 ** -s.priceDecimals).toFixed(s.priceDecimals)) };
+      if (format) for (const sr of priceScaleSeries()) {
+        const previous = sr.options().priceFormat;
+        if (previous?.type !== 'price' || previous.precision !== format.precision || previous.minMove !== format.minMove) sr.applyOptions({ priceFormat: format });
+      }
+    }
     // Volume in its own strip under the candles, as Binance draws it (owner,
     // 2026-09-30: «обсяг … залазить на свічки … у Binance він в окремій смузі
-    // знизу»). The candles then keep the whole upper pane; RSI and MACD, when
-    // shown, still take the bottom of it as before. Hidden volume goes back to
-    // the main pane, which lets the empty strip close.
+    // знизу»). The candles then keep the whole upper pane; lower-pane
+    // indicators follow in panes of their own on Futures, or in the band at
+    // the bottom of the main pane on Spot/CFD. Hidden volume goes back to the
+    // main pane, which lets the empty strip close.
     volume.applyOptions({ visible: s.volume });
     const volumePane = s.volume ? 1 : 0;
     if (volume.getPane().paneIndex() !== volumePane) volume.moveToPane(volumePane);
@@ -646,13 +685,14 @@ export function PriceChart({
       const panes = chart.panes();
       panes[0]?.setStretchFactor(0.8);
       panes[1]?.setStretchFactor(0.2);
+      layoutPanes();
       volume.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0 } });
     } else {
       volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     }
     chart.applyOptions({ layout: { panes: { separatorColor: 'rgba(255, 255, 255, 0.08)', separatorHoverColor: 'rgba(255, 255, 255, 0.16)' } } });
-    chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: showRSI || showMACD ? 0.3 : 0.06 } });
-    volumeColorsRef.current = [rgbaOf(s.bodyUp, 0.75), rgbaOf(s.bodyDown, 0.75)];
+    chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: bandOscillators ? 0.3 : 0.06 } });
+    volumeColorsRef.current = [rgbaOf(s.bodyUp, s.volumeOpacity), rgbaOf(s.bodyDown, s.volumeOpacity)];
     const candles = candlesRef.current;
     if (candles?.length) volume.setData(candles.map(c => ({ time: c.time as any, value: c.volume, color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1] })));
     const text = `${pair.includes('/') ? pair : pair.replace(/USDT$/, '/USDT')} · ${interval}`;
@@ -661,7 +701,75 @@ export function PriceChart({
       if (watermarkRef.current) watermarkRef.current.applyOptions({ lines });
       else watermarkRef.current = createTextWatermark(chart.panes()[0], { horzAlign: 'center', vertAlign: 'center', lines }) as unknown as { detach: () => void; applyOptions: (o: object) => void };
     } else if (watermarkRef.current) { watermarkRef.current.detach(); watermarkRef.current = null; }
-  }, [viewSettings, pair, interval, showRSI, showMACD]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewSettings, pair, interval, bandOscillators, priceScaleMode, priceFormatter, indicatorInstances]);
+
+  // The indicators on the chart (Issue #502): one set of series per instance,
+  // created when it appears, removed with it; data computed from the chart's
+  // own candles only when the candles or the parameters change.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || !chartReady) return;
+    const map = indicatorSeriesRef.current, candles = candlesRef.current, live = new Set(indicatorInstances.map(i => i.id));
+    const canRemove = typeof chart.removeSeries === 'function';
+    for (const [id, set] of map) {
+      if (live.has(id)) continue;
+      for (const sr of [...Object.values(set.lines), set.histogram]) if (sr && canRemove) chart.removeSeries(sr);
+      map.delete(id);
+    }
+    const volumeSeries = volumeSeriesRef.current;
+    const volumePane = volumeSeries && typeof volumeSeries.getPane === 'function' ? volumeSeries.getPane().paneIndex() : 0;
+    const firstLower = volumePane >= 1 ? 2 : 1;
+    let lowerIndex = 0;
+    for (const inst of indicatorInstances) {
+      const def = indicatorDefinition(inst.type);
+      const pane: IndicatorSeriesSet['pane'] = def.pane === 'price' ? 'price' : paneSupport ? 'lower' : 'band';
+      let set = map.get(inst.id);
+      if (!set) {
+        const priceScaleId = pane === 'price' ? 'right' : `ind-${inst.id}`;
+        const lines: Record<string, ISeriesApi<'Line'>> = {};
+        for (const line of def.lines) {
+          if (line.colorOnly) continue;
+          lines[line.key] = chart.addSeries(LineSeries, {
+            color: line.color, lineWidth: 1, priceScaleId,
+            priceLineVisible: false, lastValueVisible: pane === 'lower', crosshairMarkerVisible: false, visible: false,
+          });
+        }
+        const histogram = def.histogram ? chart.addSeries(HistogramSeries, { priceScaleId, priceLineVisible: false, lastValueVisible: false, visible: false }) : null;
+        set = { signature: '', pane, lines, histogram, levels: [] };
+        map.set(inst.id, set);
+        const first = Object.values(lines)[0];
+        if (pane === 'band') first?.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 }, visible: false });
+      }
+      const all = [...Object.values(set.lines), ...(set.histogram ? [set.histogram] : [])];
+      if (pane === 'lower') {
+        const target = firstLower + lowerIndex++;
+        for (const sr of all) if (typeof sr.moveToPane === 'function' && sr.getPane().paneIndex() !== target) sr.moveToPane(target);
+        Object.values(set.lines)[0]?.priceScale().applyOptions({ visible: true, scaleMargins: { top: 0.12, bottom: 0.08 } });
+      }
+      def.lines.forEach((line, k) => set!.lines[line.key]?.applyOptions({ color: inst.colors[k] ?? line.color, lineWidth: inst.lineWidth, lineStyle: line.dashed ? LineStyle.Dashed : LineStyle.Solid, visible: inst.visible }));
+      set.histogram?.applyOptions({ visible: inst.visible });
+      const signature = `${inst.type}|${JSON.stringify(inst.params)}|${inst.colors.join(',')}|${pane}|${indicatorDataVersion}`;
+      if (!inst.visible || set.signature === signature || !candles.length) continue;
+      const out = computeIndicator(inst, candles, { macdWarmupFromValid: spotChartRefinements });
+      for (const line of def.lines) if (out.lines[line.key]) set.lines[line.key]?.setData(out.lines[line.key] as any);
+      if (set.histogram && out.histogram) set.histogram.setData(out.histogram as any);
+      if (pane === 'lower' && def.levels && !set.levels.length) {
+        const first = Object.values(set.lines)[0];
+        if (first && typeof first.createPriceLine === 'function') for (const level of def.levels) {
+          set.levels.push(first.createPriceLine({ price: level, color: 'rgba(255,255,255,0.18)', lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: false, title: '' }));
+        }
+      }
+      set.signature = signature;
+    }
+    // A pane left with nothing in it would stay as an empty strip.
+    if (typeof chart.panes === 'function' && typeof chart.removePane === 'function') {
+      const panes = chart.panes();
+      for (let i = panes.length - 1; i >= 1; i--) if (typeof panes[i].getSeries === 'function' && panes[i].getSeries().length === 0) chart.removePane(i);
+    }
+    layoutPanes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indicatorInstances, indicatorDataVersion, chartReady, paneSupport, viewSettings?.volume, spotChartRefinements]);
 
   useEffect(() => {
     if (!tradingSelection) return;
@@ -1006,7 +1114,8 @@ export function PriceChart({
     // replay chart. This is user-driven only: no extra idle polling.
     const historyEnabled = privateMode || (market === 'futures' && !!candleLoader);
     const clearSeries = () => {
-      for (const ref of [seriesRef,volumeSeriesRef,lineSeriesRef,areaSeriesRef,maSeriesRef,bollUpperRef,bollMiddleRef,bollLowerRef,rsiSeriesRef,macdLineRef,macdSignalRef,macdHistRef]) ref.current?.setData([]);
+      for (const ref of [seriesRef,volumeSeriesRef,lineSeriesRef,areaSeriesRef]) ref.current?.setData([]);
+      for (const set of indicatorSeriesRef.current.values()) { for (const sr of [...Object.values(set.lines), set.histogram]) sr?.setData([]); set.signature = ''; }
       candlesRef.current=[];
       setEmpty(true);
       if (privateMode) setCandlesRevision(value => value + 1);
@@ -1038,18 +1147,23 @@ export function PriceChart({
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
         if (priceFormatter) {
-          for (const ref of [seriesRef, lineSeriesRef, areaSeriesRef, maSeriesRef, bollUpperRef, bollMiddleRef, bollLowerRef]) {
-            if (ref.current?.options().priceFormat.type !== 'custom') ref.current?.applyOptions({ priceFormat: { type: 'custom', formatter: priceFormatter, minMove: 1e-8 } });
+          for (const sr of priceScaleSeries()) {
+            if (sr.options().priceFormat.type !== 'custom') sr.applyOptions({ priceFormat: { type: 'custom', formatter: priceFormatter, minMove: 1e-8 } });
           }
         } else if (spotChartRefinements || candleLoader) {
           const priceFormat = spotChartPriceFormat(res.candles);
           // All series sharing the price axis need the same formatter, even
           // when candles are hidden by Line/Area or an indicator toggle.
-          // Volume, RSI and MACD keep their own existing scale semantics.
-          if (priceFormat) for (const ref of [seriesRef, lineSeriesRef, areaSeriesRef, maSeriesRef, bollUpperRef, bollMiddleRef, bollLowerRef]) {
-            const previous = ref.current?.options().priceFormat;
-            if (previous?.type !== 'price' || previous.precision !== priceFormat.precision || previous.minMove !== priceFormat.minMove) {
-              ref.current?.applyOptions({ priceFormat });
+          // Volume and lower-pane indicators keep their own scale semantics.
+          // A fixed decimals setting (chart settings → Scales) takes precedence
+          // over the instrument's own precision; the latter is remembered for «auto».
+          if (priceFormat) {
+            autoPriceFormatRef.current = priceFormat;
+            const decimals = getChartSettings().priceDecimals;
+            const wanted = chartSettings && decimals !== 'auto' ? { type: 'price' as const, precision: decimals, minMove: Number((10 ** -decimals).toFixed(decimals)) } : priceFormat;
+            for (const sr of priceScaleSeries()) {
+              const previous = sr.options().priceFormat;
+              if (previous?.type !== 'price' || previous.precision !== wanted.precision || previous.minMove !== wanted.minMove) sr.applyOptions({ priceFormat: wanted });
             }
           }
         }
@@ -1063,27 +1177,13 @@ export function PriceChart({
             color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1],
           }))
         );
-        maSeriesRef.current?.setData(computeSMA(res.candles, MA_PERIOD) as any);
-
-        // Cache for the line/area chart-type swap and indicator toggles
-        // below — all computed eagerly here (cheap, pure math) so flipping
-        // a toggle is an instant visible-flag flip, not a recompute wait.
+        // Cache for the line/area chart-type swap; the indicators recompute
+        // from this list in their own effect once per candle change.
         candlesRef.current = res.candles;
         const closeLine = res.candles.map((c) => ({ time: c.time as any, value: c.close }));
         lineSeriesRef.current?.setData(closeLine as any);
         areaSeriesRef.current?.setData(closeLine as any);
-
-        const boll = computeBollingerBands(res.candles);
-        bollUpperRef.current?.setData(boll.upper as any);
-        bollMiddleRef.current?.setData(boll.middle as any);
-        bollLowerRef.current?.setData(boll.lower as any);
-
-        rsiSeriesRef.current?.setData(computeRSI(res.candles) as any);
-
-        const macd = computeMACD(res.candles, 12, 26, 9, { warmupFromValidMacd: spotChartRefinements });
-        macdLineRef.current?.setData(macd.macd as any);
-        macdSignalRef.current?.setData(macd.signal as any);
-        macdHistRef.current?.setData(macd.histogram as any);
+        setIndicatorDataVersion(version => version + 1);
 
         if (!hasSetInitialRange && chartRef.current) {
           hasSetInitialRange = true;
@@ -1272,27 +1372,6 @@ export function PriceChart({
     areaSeriesRef.current?.applyOptions({ visible: chartType === 'area' });
   }, [chartType]);
 
-  useEffect(() => {
-    maSeriesRef.current?.applyOptions({ visible: showMA });
-  }, [showMA]);
-
-  useEffect(() => {
-    bollUpperRef.current?.applyOptions({ visible: showBollinger });
-    bollMiddleRef.current?.applyOptions({ visible: showBollinger });
-    bollLowerRef.current?.applyOptions({ visible: showBollinger });
-  }, [showBollinger]);
-
-  useEffect(() => {
-    rsiSeriesRef.current?.applyOptions({ visible: showRSI });
-    rsiSeriesRef.current?.priceScale().applyOptions({ visible: showRSI });
-  }, [showRSI]);
-
-  useEffect(() => {
-    macdLineRef.current?.applyOptions({ visible: showMACD });
-    macdSignalRef.current?.applyOptions({ visible: showMACD });
-    macdHistRef.current?.applyOptions({ visible: showMACD });
-    macdLineRef.current?.priceScale().applyOptions({ visible: showMACD });
-  }, [showMACD]);
 
   const priceToY = useCallback((price: number): number | null => {
     const y = seriesRef.current?.priceToCoordinate(price);
@@ -1512,17 +1591,17 @@ export function PriceChart({
 
   const indicatorButtons = (
     [
-      ['ma', showMA, setShowMA, INDICATOR_COLORS.ma, t('chart.indicator.ma')],
-      ['bollinger', showBollinger, setShowBollinger, INDICATOR_COLORS.bollinger, t('chart.indicator.bollinger')],
-      ['rsi', showRSI, setShowRSI, INDICATOR_COLORS.rsi, t('chart.indicator.rsi')],
-      ['macd', showMACD, setShowMACD, INDICATOR_COLORS.macd, t('chart.indicator.macd')],
-    ] as [string, boolean, (v: boolean) => void, string, string][]
-  ).map(([key, active, setter, color, label]) => (
+      ['ma', showMA, INDICATOR_COLORS.ma, t('chart.indicator.ma')],
+      ['bollinger', showBollinger, INDICATOR_COLORS.bollinger, t('chart.indicator.bollinger')],
+      ['rsi', showRSI, INDICATOR_COLORS.rsi, t('chart.indicator.rsi')],
+      ['macd', showMACD, INDICATOR_COLORS.macd, t('chart.indicator.macd')],
+    ] as [IndicatorType, boolean, string, string][]
+  ).map(([key, active, color, label]) => (
     <button
       key={key}
       type="button"
       aria-pressed={active}
-      onClick={() => setter(!active)}
+      onClick={() => toggleType(key)}
       className={terminal ? `chart-tool-btn ${active ? 'active' : ''}` : undefined}
       style={
         terminal
@@ -1554,12 +1633,26 @@ export function PriceChart({
               typeLabels={{ candles: t('chart.type.candles'), line: t('chart.type.line'), area: t('chart.type.area') }}
               typeGroupLabel={t('chart.group.type')}
               indicatorsLabel={t('chart.group.indicators')}
-              indicators={[
-                { key: 'ma', label: t('chart.indicator.ma'), params: 'SMA', color: INDICATOR_COLORS.ma, active: showMA, onToggle: () => setShowMA(!showMA) },
-                { key: 'bollinger', label: t('chart.indicator.bollinger'), params: '20 · 2', color: INDICATOR_COLORS.bollinger, active: showBollinger, onToggle: () => setShowBollinger(!showBollinger) },
-                { key: 'rsi', label: t('chart.indicator.rsi'), params: '14', color: INDICATOR_COLORS.rsi, active: showRSI, onToggle: () => setShowRSI(!showRSI) },
-                { key: 'macd', label: t('chart.indicator.macd'), params: '12 · 26 · 9', color: INDICATOR_COLORS.macd, active: showMACD, onToggle: () => setShowMACD(!showMACD) },
-              ]}
+              indicators={INDICATOR_CATALOGUE.map(def => ({
+                key: def.type, label: t(def.label as never), params: def.params.map(p => String(p.default)).join(' · '),
+                color: def.lines[0].color, pane: def.pane, active: indicatorInstances.some(i => i.type === def.type),
+                onToggle: () => toggleType(def.type),
+                onAdd: () => saveChartIndicators([...getChartIndicators(), newIndicatorInstance(def.type)]),
+              }))}
+              catalogue={{
+                active: indicatorInstances.map(inst => ({
+                  id: inst.id, label: indicatorInstanceLabel(inst), color: inst.colors[0], visible: inst.visible,
+                  onToggleVisible: () => saveChartIndicators(getChartIndicators().map(i => (i.id === inst.id ? { ...i, visible: !i.visible } : i))),
+                  onConfigure: () => { requestChartSettingsView('indicators', inst.id); setSettingsOpen(true); },
+                  onRemove: () => saveChartIndicators(getChartIndicators().filter(i => i.id !== inst.id)),
+                })),
+                activeLabel: t('chart.settings.indicatorsActive'), catalogueLabel: t('chart.settings.indicatorsCatalogue'),
+                searchLabel: t('chart.settings.indicatorSearch'), noMatchLabel: t('chart.settings.indicatorNoMatch'),
+                activeCountLabel: count => t('chart.settings.activeCount', { count: String(count) }),
+                visibleLabel: t('chart.settings.indicatorVisible'), configureLabel: t('chart.settings.indicatorSettings'),
+                removeLabel: t('chart.settings.indicatorRemove'), addLabel: t('chart.settings.indicatorAdd'),
+                pricePaneLabel: t('chart.settings.pricePane'), lowerPaneLabel: t('chart.settings.lowerPane'),
+              }}
             /> : <>
               <div className="chart-type-group" role="group" aria-label={t('chart.group.type')}>{typeButtons}</div>
               <div className="chart-indicator-group" role="group" aria-label={t('chart.group.indicators')}>{indicatorButtons}</div>
@@ -1713,12 +1806,9 @@ export function PriceChart({
             </div>
           )}
 
-          {(showMA || showBollinger || showRSI || showMACD) && (
+          {(viewSettings?.indicatorLegend ?? true) && indicatorInstances.some(i => i.visible) && (
             <div className="voltex-indicator-legend" style={styles.legend}>
-              {showMA && <LegendItem color={INDICATOR_COLORS.ma} label={t('chart.indicator.ma')} />}
-              {showBollinger && <LegendItem color={INDICATOR_COLORS.bollinger} label={t('chart.indicator.bollinger')} />}
-              {showRSI && <LegendItem color={INDICATOR_COLORS.rsi} label={t('chart.indicator.rsi')} />}
-              {showMACD && <LegendItem color={INDICATOR_COLORS.macd} label={t('chart.indicator.macd')} />}
+              {indicatorInstances.filter(i => i.visible).map(i => <LegendItem key={i.id} color={i.colors[0]} label={indicatorInstanceLabel(i)} />)}
             </div>
           )}
         </div>
@@ -1903,7 +1993,7 @@ function DrawToolbar({
   const { t } = useLanguage();
   // Presentation state only: keep the rail mounted so each group's
   // last-used tool survives collapse. Drawings and preferences live above.
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(drawingTools ? readRailCollapsed() : false);
   const railId = useId();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [toolHint, setToolHint] = useState<{ label:string; left:number; top:number } | null>(null);
@@ -2148,6 +2238,7 @@ function DrawToolbar({
         setToolHint(null);
         if (!collapsed) onCollapse?.();
         setCollapsed(!collapsed);
+        if (drawingTools) writeRailCollapsed(!collapsed);
       }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="m14 6-6 6 6 6" />

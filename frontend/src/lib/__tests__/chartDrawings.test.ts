@@ -117,6 +117,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartIndicators') return require('../chartIndicators');
     if (id === './ChartDrawingLayer') return layer;
     if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
     return localRequire(id);
@@ -252,6 +253,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartIndicators') return require('../chartIndicators');
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, output);
@@ -381,6 +383,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartIndicators') return require('../chartIndicators');
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, bindings);
