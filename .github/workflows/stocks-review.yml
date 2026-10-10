@@ -25,7 +25,7 @@ jobs:
       - name: Build exact before and after fixtures without external services
         run: |
           mkdir -p "$RUNNER_TEMP/profile-before" .ci-output/stock-performance
-          git archive 0f01070b5d08ff88afa85d7a4a7e81d8eea8cfe2 services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
+          git archive bd97e35020e40bfc48cdc5647b32d5e79b023c05 services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
           cp services/stocks/realistic* services/stocks/profile* "$RUNNER_TEMP/profile-before/services/stocks/"
           cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/profile-before/services/stocks/"
           docker build -t voltex-realistic-before -f "$RUNNER_TEMP/profile-before/services/stocks/realistic.Dockerfile" "$RUNNER_TEMP/profile-before"
@@ -90,7 +90,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stocks-sqlite-isolation-${{ matrix.io }}-${{ github.sha }}
+          name: stocks-cache-overload-${{ matrix.io }}-${{ github.sha }}
           path: .ci-output/stock-performance
           if-no-files-found: error
   isolated-simulator:
@@ -198,6 +198,18 @@ jobs:
           QA_WIDGET_MODE: 'true'
           QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/widget-navigation
         run: node scripts/qa-stocks-navigation.cjs
+      - name: Global Stocks paper terminal build (local fixtures only)
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_WIDGET_PREVIEW: 'true'
+          VITE_STOCKS_GLOBAL_SIMULATOR: 'true'
+      - name: Stocks overload cooldown and manual recovery (isolated paper accounts)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_DIST: ${{ github.workspace }}/frontend/dist
+          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/overload
+        run: node scripts/qa-stocks-overload.cjs
       # Not a dot-directory: upload-artifact@v4 skips hidden paths by default.
       - uses: actions/upload-artifact@v4
         if: always()

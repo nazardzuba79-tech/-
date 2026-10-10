@@ -57,7 +57,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     catch(e){ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;await ctx.store.execute('quoteFailed',{id});}
   }
   const refreshInBackground=ctx=>{const id=ctx.selected,pending=refreshContext(ctx,id).catch(e=>{ctx.errors[id]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>refreshTasks.delete(pending));refreshTasks.add(pending);};
-  const send=(res,code,body)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
+  const send=(res,code,body,headers={})=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers});res.end(JSON.stringify(body));};
   const server=http.createServer(async(req,res)=>{try{
     check(req.headers.host==='127.0.0.1:'+address.port,'HOST_FORBIDDEN');check(!req.headers.origin||req.headers.origin==='http://127.0.0.1:'+address.port,'ORIGIN_FORBIDDEN');check(!req.headers['sec-fetch-site']||['same-origin','none'].includes(req.headers['sec-fetch-site']),'ORIGIN_FORBIDDEN');
     const u=new URL(req.url,'http://127.0.0.1:'+address.port);
@@ -83,7 +83,12 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     }
     check(req.method==='GET'&&!/^\/(api|v1|v2|admin|__stocks_simulator)(\/|$)/.test(u.pathname),'ROUTE_NOT_FOUND');
     let relative;try{relative=decodeURIComponent(u.pathname);}catch{throw new SimError('ROUTE_NOT_FOUND');}let path=resolve(dist,'.'+relative);check(path.startsWith(dist+sep)||path===dist,'ROUTE_NOT_FOUND');if(!extname(path))path=resolve(dist,'index.html');check((await stat(path)).isFile(),'ROUTE_NOT_FOUND');res.writeHead(200,{'Content-Type':MIME[extname(path)]||'application/octet-stream','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(await readFile(path));
-  }catch(e){if(!res.headersSent)send(res,e.code==='AUTH_REQUIRED'?401:['AUTH_UNAVAILABLE','ACCOUNT_CAPACITY','SOURCE_BUSY','ACCOUNT_BUSY','ACCOUNT_UNAVAILABLE','ACCOUNT_STORAGE_ERROR','ACCOUNT_OUTCOME_UNKNOWN'].includes(e.code)?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR'});else res.end();}});
+  }catch(e){if(!res.headersSent){
+    // Advisory minimum wait for a manual read probe, never permission to replay
+    // a trade. Unknown mutation outcomes deliberately have no retry hint.
+    const retryAfterMs=e instanceof SimError?(e.code==='RATE_LIMIT'?60000:['SOURCE_BUSY','ACCOUNT_BUSY'].includes(e.code)?3000:null):null;
+    send(res,e.code==='AUTH_REQUIRED'?401:['AUTH_UNAVAILABLE','ACCOUNT_CAPACITY','SOURCE_BUSY','ACCOUNT_BUSY','ACCOUNT_UNAVAILABLE','ACCOUNT_STORAGE_ERROR','ACCOUNT_OUTCOME_UNKNOWN'].includes(e.code)?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR',...(retryAfterMs===null?{}:{retryAfterMs})},retryAfterMs===null?{}:{'Retry-After':String(retryAfterMs/1000)});
+  }else res.end();}});
   server.requestTimeout=15000;server.headersTimeout=10000;server.keepAliveTimeout=2000;server.maxConnections=128;
   await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,'127.0.0.1',ok);}).catch(async e=>{await accounts?.close();await legacy?.close();throw e;});address=server.address();
   let tick=null;

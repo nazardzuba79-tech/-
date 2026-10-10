@@ -2,6 +2,7 @@ import { CATALOG, instrument, TIMEFRAMES } from './catalog.mjs';
 import { check, units, decimal, SimError } from './engine.mjs';
 import { performance } from 'node:perf_hooks';
 const S=100000000n;
+const HISTORY_CACHE_BYTES=8*1048576, HISTORY_CACHE_PAGES=128;
 const fixed=(v)=>{const n=String(v);check(/^\d+(\.\d+)?$/.test(n),'INVALID_DATA');return decimal(units(n.split('.')[0]+'.'+(n.split('.')[1]||'').padEnd(8,'0').slice(0,8)));};
 const positive=v=>{const d=fixed(v);units(d,true);return d;};
 const tables=(j,name)=>{const t=j[name];check(Array.isArray(t?.columns)&&Array.isArray(t?.data),'INVALID_DATA');return t.data.map(row=>Object.fromEntries(t.columns.map((k,i)=>[k,row[i]])));};
@@ -15,7 +16,7 @@ export function parseCandles(rows,provider,now){
   return [...map.values()].sort((a,b)=>a.time-b.time);
 }
 export class MarketHub {
-  constructor({fetchImpl=fetch,now=Date.now}={}){this.fetch=fetchImpl;this.now=now;this.cache=new Map();this.inflight=new Map();this.starts=new Map();this.errors={};this.metrics={requests:0,bytes:0,cacheHits:0,historyParses:0,historyParseMs:0,historyCacheHits:0,historyCoalesced:0,historyCacheBytes:0};this.verified=new Map();this.displays=new Map();this.historyCache=new Map();this.historyFlights=new Map();this.historyActive=0;this.historyQueue=[];}
+  constructor({fetchImpl=fetch,now=Date.now}={}){this.fetch=fetchImpl;this.now=now;this.cache=new Map();this.inflight=new Map();this.starts=new Map();this.errors={};this.metrics={requests:0,bytes:0,cacheHits:0,historyParses:0,historyParseMs:0,historyCacheHits:0,historyCoalesced:0,historyCacheBytes:0,historyCacheExpired:0,historyCacheEvictions:0};this.verified=new Map();this.displays=new Map();this.historyCache=new Map();this.historyFlights=new Map();this.historyActive=0;this.historyQueue=[];}
   async request(url,ttl=0,text=false){
     const u=new URL(url);check(['api.binance.com','api.bybit.com','iss.moex.com','www.cbr.ru','api.kraken.com'].includes(u.hostname)&&u.protocol==='https:','SOURCE_FORBIDDEN');
     const old=this.cache.get(url);if(old&&this.now()-old.at<ttl){this.metrics.cacheHits++;return old.value;}if(this.inflight.has(url))return this.inflight.get(url);
@@ -71,9 +72,13 @@ export class MarketHub {
       const value=Object.freeze({instrumentId:id,interval,currency:i.currency,provider:i.provider,delaySeconds:i.delaySeconds,candles,receivedAt:this.now()});
       this.metrics.historyParses++;this.metrics.historyParseMs+=performance.now()-started;
       const size=candles.length*256+1024; // Conservative object/array allowance, not only JSON bytes.
+      // Expired current pages must not evict still-valid history. Prune on demand,
+      // with no timer, prefetch, TTL extension or change to exact cursor identity.
+      const cacheNow=this.now();
+      for(const [oldKey,old] of this.historyCache){if(old.until<=cacheNow){this.metrics.historyCacheBytes-=old.size;this.historyCache.delete(oldKey);this.metrics.historyCacheExpired++;}}
       const previous=this.historyCache.get(key);if(previous){this.metrics.historyCacheBytes-=previous.size;this.historyCache.delete(key);}
-      while(this.historyCache.size&&(this.metrics.historyCacheBytes+size>8*1048576||this.historyCache.size>=80)){const [oldKey,old]=this.historyCache.entries().next().value;this.metrics.historyCacheBytes-=old.size;this.historyCache.delete(oldKey);}
-      if(size<=8*1048576){this.historyCache.set(key,{value,size,until:this.now()+(i.provider==='moex'?10000:end?300000:10000)});this.metrics.historyCacheBytes+=size;}
+      while(this.historyCache.size&&(this.metrics.historyCacheBytes+size>HISTORY_CACHE_BYTES||this.historyCache.size>=HISTORY_CACHE_PAGES)){const [oldKey,old]=this.historyCache.entries().next().value;this.metrics.historyCacheBytes-=old.size;this.historyCache.delete(oldKey);this.metrics.historyCacheEvictions++;}
+      if(size<=HISTORY_CACHE_BYTES){this.historyCache.set(key,{value,size,until:this.now()+(i.provider==='moex'?10000:end?300000:10000)});this.metrics.historyCacheBytes+=size;}
       return value;
     }).finally(()=>this.historyFlights.delete(key));
     this.historyFlights.set(key,pending);return pending;
