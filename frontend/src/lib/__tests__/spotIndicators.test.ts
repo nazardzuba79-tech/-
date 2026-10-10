@@ -102,7 +102,11 @@ test('legacy shared MACD is unchanged unless explicitly opted in by the Spot cha
   // Futures now opts into the same rail, and this gate is what stops that
   // from quietly changing its MACD too.
   expect(chart).toContain("const spotChartRefinements = terminal && market === 'spot'");
-  expect(chart).toContain('computeMACD(res.candles, 12, 26, 9, { warmupFromValidMacd: spotChartRefinements })');
+  // Issue #502 (2026-10-10): MACD is computed through the indicator catalogue
+  // now; the Spot opt-in rides the same gate into computeMACD unchanged.
+  expect(chart).toContain('computeIndicator(inst, candles, { macdWarmupFromValid: spotChartRefinements })');
+  const catalogue = readFileSync(resolve(__dirname, '../chartIndicators.ts'), 'utf8');
+  expect(catalogue).toContain("computeMACD(candles, p(inst, 'fast'), p(inst, 'slow'), p(inst, 'signal'), { warmupFromValidMacd: options.macdWarmupFromValid })");
   // THE INVARIANT IS THE `market` PROP, NOT THE WHOLE LINE.
   //
   // This used to pin the entire `<PriceChart …/>` element verbatim, which
