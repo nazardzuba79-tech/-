@@ -28,8 +28,8 @@ test('all seven languages retain the approved headline, institutional positionin
   expect(source).not.toContain('с реальными рыночными данными и единым кошельком');
 });
 
-test('header uses Crypto-Card while other product naming stays unchanged', () => {
-  expect(rows('nav.card')).toEqual(Array(7).fill('Crypto-Card'));
+test('header uses Card while other product naming stays unchanged', () => {
+  expect(rows('nav.card')).toEqual(Array(7).fill('Card'));
   expect(rows('home.card.name')).toEqual(Array(7).fill('VOLTEX Crypto Card'));
   for (const key of ['marketing.heroPerk2', 'home.hero.description', 'home.faq.q6']) {
     expect(rows(key)).toHaveLength(7);
