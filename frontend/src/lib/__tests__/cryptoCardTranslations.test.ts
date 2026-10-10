@@ -11,6 +11,8 @@ test('fee promises identify VOLTEX in every locale and reuse the existing FAQ it
       expect(value).toContain('VOLTEX');
     }
     expect(copy.feesNote).toContain('VOLTEX');
+    // No external-provider fee disclaimers in public Card marketing (owner-approved).
+    expect(copy.feesNote).not.toMatch(/стороннего банка|third-party bank|第三方银行|banco externo|तीसरे पक्ष|第三者の銀行|외부 은행/i);
     const faq = getCardFaq(copy);
     expect(faq).toHaveLength(7);
     expect(faq.filter(item => item.question === copy.faqFeesQ)).toEqual([
@@ -18,7 +20,7 @@ test('fee promises identify VOLTEX in every locale and reuse the existing FAQ it
     ]);
   }
   expect(cardCopy.ru.faqFeesA).toBe('Нет. Выпуск и обслуживание карты бесплатны. VOLTEX также не взимает собственную комиссию за покупки, снятие наличных и конвертацию валют.');
-  expect(cardCopy.ru.feesNote).toContain('VOLTEX не взимает собственную комиссию за покупки, снятие наличных и конвертацию. Возможные комиссии стороннего банка, банкомата или платёжной системы, если они применяются, определяются их условиями.');
+  expect(cardCopy.ru.feesNote).toContain('VOLTEX не взимает собственную комиссию за покупки, снятие наличных и конвертацию.');
 });
 
 test('Crypto Card has complete nonempty copy in all seven supported languages', () => {

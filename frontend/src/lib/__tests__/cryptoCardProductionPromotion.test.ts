@@ -44,10 +44,11 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/SubscriptionsSection.tsx": "7c04ff3acdd5711ab31e971b6fc2736551a3c17a4dd09da06ee32828175a670b",
   "frontend/src/pages/crypto-card-final/components/VoltexCard.tsx": "9ad5f670186e370e1a5d0bf2c0ff21650017a59387d5e746e89361933367b19f",
   // Preserve concurrent production f183f77: Russia and all-ATM wording only.
-  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "8166ac15da11bd1811cdba7fc4d4a48103634cdeb2d7e1d9a4f5ddc7e5a4da96",
+  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "9ce9ccbcc0597433456163ed1f96724ae0ebc0558f43f5e26639d59a8c4bfdc1",
   "frontend/src/pages/crypto-card-final/data/cardCopy.ts": "10a568929e79f3819824c60b90edc7ca864d9897a2c64fe59c8e09570ee6a4fc",
+  // Owner-requested 2026-10-10: remove external-provider caveat from Card marketing; keep VOLTEX 0% fees.
   // Preserve owner copy cleanup already on starting main bd41a81.
-  "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "5abd1d6c39546d96161848c93b54fee8890c954f017a2a0156d2d659218f2770",
+  "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "3b62df09c68969fd09185095220c28e9471554a5371f211041fb5dfff0bbb4d1",
   "frontend/src/pages/crypto-card-final/data/currencies.ts": "bdaa4ad2d7dfb2343c6c9d8bfb0f3ec717c9dc929febba27f93d1948b12ceba7",
   "frontend/src/pages/crypto-card-final/data/faq.ts": "4e3ad7d15ffc829c3d98015fde68f4d491a8ca65584e2db35264c500736776d9",
   "frontend/src/pages/crypto-card-final/data/products.ts": "f60770553a97b8fc0784247d0380919327fa998661e62cffe88681d92bf45c29",

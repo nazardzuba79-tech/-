@@ -22,11 +22,11 @@ Started from freshly fetched main `e7c6fea3532ea78ff1e3d8287dc592ba2b82641a`, wh
 
 The latest #495 follow-up scopes withdrawal-address error wrapping to phone CSS and a wrapper class, leaving the shared `wallet-v3/ui.tsx` unchanged. Integration retains that final implementation. The original `walletUxRefinement.test.ts` is byte-identical to main: its existing whole-file hash guard stays intact, with no exception, changed hash, skip or waiver. No address validation, confirmation, financial calculation or submission behavior changes.
 
-## Fee claim: publication blocker
+## Card fee wording — owner-confirmed update
 
-The auth banner's “0% fees on purchases and cash withdrawals” is **owner-provided promotional wording, not an independently verified tariff**. Existing `/card` copy says VOLTEX charges no own commission while a bank, ATM operator or payment network may charge separately. That existing caveat and all fee/application logic remain unchanged.
+On 2026-10-10 the VOLTEX owner confirmed that VOLTEX currently charges 0% of its own commission for card purchases and cash withdrawals and explicitly requested that public Card marketing omit statements about other financial institutions' fee policies. The auth promotion and seven-language Card fee notes now describe VOLTEX's commission only, with no external-provider disclaimer. This does not represent a claim that fees charged by unrelated entities are zero or a promise that VOLTEX's own rates will stay unchanged forever.
 
-No issuer agreement, effective tariff schedule, applicable region/card programme or independent evidence establishing this broad promotional statement was identified in this integration. An existing marketing string or passing test is not substantiation. **Before publication, the owner must provide/confirm the applicable tariff and the scope of the claim, including third-party ATM charges.** If the broad wording is not supported, obtain approval for qualified wording before release. This Draft PR is not clearance to publish the claim. The report and local review gallery explicitly carry this blocker; no endorsement or independently verified fee assertion is added.
+The existing regional/programme eligibility language, Card FAQ, service fee calculations and all backend behavior remain unchanged. The owner confirmation is not an independently reviewed issuer tariff agreement. Recheck actual VOLTEX card terms before changing or expanding this claim.
 
 ## Browser review
 
