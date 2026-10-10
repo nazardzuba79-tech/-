@@ -1,0 +1,49 @@
+{
+  "source": "scripts/qa-futures-figma-desktop.cjs geometry.json on the 48px header build",
+  "cases": [
+    {
+      "width": 1920,
+      "height": 1080,
+      "header": 48,
+      "ticker": 48,
+      "chart": 780,
+      "book": 286,
+      "form": 300,
+      "bottom": 160,
+      "chartShare": 0.7222
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "header": 48,
+      "ticker": 48,
+      "chart": 600,
+      "book": 286,
+      "form": 300,
+      "bottom": 160,
+      "chartShare": 0.6667
+    },
+    {
+      "width": 1707,
+      "height": 900,
+      "header": 48,
+      "ticker": 48,
+      "chart": 600,
+      "book": 286,
+      "form": 300,
+      "bottom": 160,
+      "chartShare": 0.6667
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "header": 48,
+      "ticker": 48,
+      "chart": 468,
+      "book": 286,
+      "form": 300,
+      "bottom": 160,
+      "chartShare": 0.6094
+    }
+  ]
+}
