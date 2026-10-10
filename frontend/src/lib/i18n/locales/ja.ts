@@ -54,7 +54,7 @@ export const JA: Record<Key, string> = {
   'nav.wallet': 'ウォレット',
   'nav.markets': 'マーケット',
   'nav.products': 'プロダクト',
-  'nav.card': 'Crypto-Card',
+  'nav.card': 'Card',
   'nav.menuToolsDesc': '市場分析のためのツール',
   'nav.menuOtcDesc': 'サポートを通じた暗号資産と現金の交換',
   'nav.menuArbitrageDesc': '市場間の機会を確認',
