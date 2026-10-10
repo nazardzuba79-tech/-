@@ -79,4 +79,33 @@
   #archive-terminal-preview.futures-terminal .fo-infoBox .fo-sidePair > span { white-space:normal; overflow-wrap:anywhere; }
   #archive-terminal-preview.futures-terminal .fo-form .fo-fieldCaption { min-width:0; white-space:normal; overflow-wrap:anywhere; }
   #archive-terminal-preview.futures-terminal .fo-form :is(.fo-fieldRow,.fo-fieldHead) { flex-wrap:wrap; }
+  /* At 200% OS text on 320–360px the floating "Количество" caption
+     touched the BTC unit. Give the caption its own layout row on a truly
+     narrow ticket; never cover the input, unit, or validation message. */
+  #archive-terminal-preview.futures-terminal .fo-form .fo-field {
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:4px;
+  }
+  #archive-terminal-preview.futures-terminal .fo-form .fo-field > .fo-fieldCaption,
+  #archive-terminal-preview.futures-terminal .fo-form .fo-field:has(.fo-input:placeholder-shown):not(:focus-within) > .fo-fieldCaption {
+    position:static;
+    inset:auto;
+    transform:none;
+    display:block;
+    width:auto;
+    max-width:100%;
+    font-size:1em;
+    line-height:1.25;
+    white-space:normal;
+    overflow-wrap:break-word;
+  }
+  #archive-terminal-preview.futures-terminal .fo-form .fo-field .fo-fieldRow {
+    height:auto;
+    min-height:48px;
+  }
+  #archive-terminal-preview.futures-terminal .fo-form .fo-field :is(.fo-input,.fo-markPrice) {
+    padding-block:8px;
+  }
 }
