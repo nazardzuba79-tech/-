@@ -652,19 +652,7 @@ test.each([
   ['src/services/PortfolioPerformanceEngine.ts', '7df2bd63857e0f710d020caaabcdc7b42f3269d8949ae03e908251562ab523b6'],
   ['src/api/routes/portfolio.ts', '3b4708bd2376dfd12d359645f866853f00f36a8967d104c1fec775f31dfdd051'],
 ])('preserves unchanged financial/data/format/modal source %s exactly', (file, hash) => {
-  let source = file === wallet + 'TransactionHistory.tsx' ? restoreApprovedHistoryTypography(read(file)) : read(file);
-  if (file === wallet + 'ui.tsx') {
-    // PR #495 only changes these two FieldError classes for large mobile text.
-    // Assert that exact change, then retain the existing whole-file guard for
-    // every other primitive, modal, event handler and financial boundary.
-    const mobileError = '<p className="mt-1.5 flex min-w-0 items-start gap-1.5 text-[11.5px] leading-normal text-neg">';
-    const mobileText = '<span className="min-w-0 flex-1 break-words leading-normal">{children}</span>';
-    expect(source.split(mobileError)).toHaveLength(2);
-    expect(source.split(mobileText)).toHaveLength(2);
-    source = source
-      .replace(mobileError, '<p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] leading-4 text-neg">')
-      .replace(mobileText, '<span>{children}</span>');
-  }
+  const source = file === wallet + 'TransactionHistory.tsx' ? restoreApprovedHistoryTypography(read(file)) : read(file);
   expect(createHash('sha256').update(source).digest('hex')).toBe(hash);
 });
 

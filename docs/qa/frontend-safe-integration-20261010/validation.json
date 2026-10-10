@@ -3,11 +3,10 @@
   "productionUnchanged": true,
   "build": "PASS (existing >500 kB chunk advisory)",
   "frontend": {
-    "success": true,
     "suites": 235,
     "tests": 4067,
     "failed": 0,
-    "skipped": 0
+    "success": true
   },
   "auth": {
     "result": "PASS",
@@ -731,5 +730,80 @@
       }
     ]
   },
-  "publicationBlocked": "0% promotional claim requires owner tariff substantiation and publication approval"
+  "publicationBlocked": "0% promotional claim requires owner tariff substantiation and publication approval",
+  "integration": {
+    "cases": 392,
+    "navigation": 98,
+    "failures": [],
+    "pageErrors": [],
+    "blockedSnapshotPostAttempts": 49,
+    "forwardedWrites": 0,
+    "languages": [
+      "ru",
+      "en",
+      "zh",
+      "es",
+      "hi",
+      "ja",
+      "ko"
+    ],
+    "widths": [
+      320,
+      360,
+      390,
+      430,
+      1366,
+      1440,
+      1920
+    ]
+  },
+  "walletFinal": {
+    "executed": 71,
+    "inapplicable": 6,
+    "failed": 0,
+    "errorWrap200Percent": [
+      {
+        "width": 320,
+        "fontSize": "23px",
+        "lineHeight": "32.2px",
+        "errorHeight": 64.375,
+        "textHeight": 64.375,
+        "textWithinError": true,
+        "overflow": 0
+      },
+      {
+        "width": 360,
+        "fontSize": "23px",
+        "lineHeight": "32.2px",
+        "errorHeight": 64.375,
+        "textHeight": 64.375,
+        "textWithinError": true,
+        "overflow": 0
+      },
+      {
+        "width": 390,
+        "fontSize": "23px",
+        "lineHeight": "32.2px",
+        "errorHeight": 64.375,
+        "textHeight": 64.375,
+        "textWithinError": true,
+        "overflow": 0
+      },
+      {
+        "width": 430,
+        "fontSize": "23px",
+        "lineHeight": "32.2px",
+        "errorHeight": 64.375,
+        "textHeight": 64.375,
+        "textWithinError": true,
+        "overflow": 0
+      }
+    ]
+  },
+  "sourceHeads": {
+    "main": "e7c6fea3532ea78ff1e3d8287dc592ba2b82641a",
+    "pr490": "db8f5f21a5b3bb0b8e6a60f590956d7043ebb73b",
+    "pr491": "1b3ae760de1df746604a1d108a8745836aa0d0e8",
+    "pr495": "246c00639ed6ac1f2b7fb5180c658055f5195322"
+  }
 }

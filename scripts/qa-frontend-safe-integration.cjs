@@ -81,8 +81,17 @@ async function main() {
             assert.ok(await card.locator('svg.lucide-credit-card').count(), `${label}: CreditCard icon`);
             await page.screenshot({ path: path.join(out, `nav-${file}`), animations: 'disabled' });
             await card.click();
-            await page.waitForURL('**/card');
-            report.navigation.push({ lang, width, from: route, to: '/card', creditCard: true });
+            if (route === '/') {
+              // Card is already auth-protected. Guest navigation must preserve
+              // the /card return target, not briefly match it before redirect.
+              await page.waitForURL(u => u.pathname === '/login' && u.searchParams.get('next') === '/card', { waitUntil: 'domcontentloaded' });
+              await page.locator('#login-email').waitFor();
+            } else {
+              await page.waitForURL('**/card', { waitUntil: 'domcontentloaded' });
+              await page.locator('.vc-card-hero-layout').waitFor();
+            }
+            const destination = new URL(page.url());
+            report.navigation.push({ lang, width, from: route, target: '/card', to: destination.pathname + destination.search, creditCard: true });
           }
         } catch (e) { report.failures.push({ label, error: String(e) }); }
       }
@@ -93,7 +102,7 @@ async function main() {
   }
   await Promise.all(Array.from({ length: 3 }, worker));
   report.blockedExternal = [...new Set(report.blockedExternal)];
-  report.fixtureWrites = fixture.state.requests.filter(r => !['GET', 'HEAD'].includes(r.method()));
+  report.fixtureWrites = fixture.state.requests.filter(r => !['GET', 'HEAD'].includes(r.method));
   assert.deepEqual(report.failures, []);
   assert.deepEqual(report.pageErrors, []);
   // Wallet's existing background snapshot request is a write attempt, and is

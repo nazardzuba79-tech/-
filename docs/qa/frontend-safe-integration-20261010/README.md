@@ -8,7 +8,7 @@ Started from freshly fetched main `e7c6fea3532ea78ff1e3d8287dc592ba2b82641a`, wh
 |---|---|---|
 | #490 | `db8f5f21a5b3bb0b8e6a60f590956d7043ebb73b` | Existing two-line auth card promotion |
 | #491 | `1b3ae760de1df746604a1d108a8745836aa0d0e8` | Card label in seven languages; CreditCard icons |
-| #495 | `4f3af358dbfca95dccbc5a8601ac6ca2a4664aa6` | Claude mobile audit including final round-three fixes |
+| #495 | `246c00639ed6ac1f2b7fb5180c658055f5195322` | Claude mobile audit including final round-three fixes |
 
 ## Reconciliation and preservation
 
@@ -18,9 +18,9 @@ Started from freshly fetched main `e7c6fea3532ea78ff1e3d8287dc592ba2b82641a`, wh
 - Both Desktop Futures stylesheets from #494 are byte-identical to main: 40px header, 48px instrument bar, 160px empty / 200px populated / 44px collapsed account panel, 286px book and 300px ticket.
 - Every non-shared frontend file from #495 is byte-identical to its final head. No Stocks #497, admin, financial, API, backend, database, package or infrastructure changes are added.
 
-## Fix for the failing source-PR test
+## Protected wallet UI remains unchanged
 
-PR #495's exact-head full frontend CI failed one test: the historical whole-file hash of `wallet-v3/ui.tsx` did not allow Claude's two FieldError class changes for mobile text wrapping. Integration retains those classes. The test now asserts both exact class changes, reverses only those two strings in memory, and applies the original hash to the rest of the file. The financial/modal source guard remains active and its expected hash is unchanged. Nothing is skipped or waived.
+The latest #495 follow-up scopes withdrawal-address error wrapping to phone CSS and a wrapper class, leaving the shared `wallet-v3/ui.tsx` unchanged. Integration retains that final implementation. The original `walletUxRefinement.test.ts` is byte-identical to main: its existing whole-file hash guard stays intact, with no exception, changed hash, skip or waiver. No address validation, confirmation, financial calculation or submission behavior changes.
 
 ## Fee claim: publication blocker
 
@@ -32,7 +32,7 @@ No issuer agreement, effective tariff schedule, applicable region/card programme
 
 All browser checks use the real production frontend build over a loopback-only, synthetic fixture. External origins are denied; no real credentials, balances, orders or production writes are used.
 
-- Integration matrix: home, login, register, Spot, Futures, CFD, Wallet, Card; ru/en/zh/es/hi/ja/ko; 320/360/390/430/1366/1440/1920px. Card label/icon and actual `/card` navigation are checked from home and Futures menus.
+- Final integration matrix PASS: **392 route/language/width cases and 98 Card navigation transitions**, zero failures, page errors or horizontal document overflow; all 49 existing Wallet snapshot POST attempts blocked before forwarding. Coverage: home, login, register, Spot, Futures, CFD, Wallet, Card; ru/en/zh/es/hi/ja/ko; 320/360/390/430/1366/1440/1920px. Card label/icon and navigation are checked from home and Futures menus. The existing auth gate is explicitly preserved: guests reach `/login?next=%2Fcard`, signed-in fixture users reach `/card` and its rendered hero.
 - Existing mobile audit: 311 executed states at the requested seven widths, plus 60 explicitly inapplicable desktop/mobile states. Includes tabs, dialogs, filled tables, 200% text and simulated keyboard states. No failed steps, page-level JavaScript errors, horizontal document overflow or unknown fixture endpoints; no writes reached the fixture. Blocked remote CDN asset errors are expected in this offline fixture and are not production availability measurements.
 - Auth visual/behavior suite: 38 cases and 12 responsive cases across seven languages; rejection/retry, 2FA and registration validity checked against explicit offline responses. No unexpected errors or writes.
 - Dedicated #494 geometry suite: four desktop widths, empty/populated/collapsed states, table scrolling and order-type controls. Eight read-only native quote/execution-session POSTs remain inside its synthetic fixture; no order execution is submitted.
@@ -43,6 +43,24 @@ All browser checks use the real production frontend build over a loopback-only, 
 The automatic text-box audit flags fixed bottom navigation covering scrolling content, intentionally clipped ticker/chart content, and dense desktop account-table labels. A real overlap between the realized-PnL and TP/SL headings in a populated 1440px Futures table was reproduced against both **unchanged main** and the integration with the same fixture. Their geometry is identical; see `desktop-preservation.json` and the two comparison screenshots. This integration preserves #494 as instructed and does not redesign that table. Do not describe all visual signals as clean or new defects as fixed. A separate focused follow-up is advisable before release if that populated-table case is a release requirement.
 
 Real iOS devices, system keyboards and live third-party resources are not exercised by these isolated Chromium checks.
+
+## Screenshots from this integration build
+
+All account values below are synthetic fixtures, not customer information.
+
+| Surface | Desktop | Mobile |
+|---|---|---|
+| Home Card navigation | [1920](screenshots/nav-ru-1920-home.png) | [390](screenshots/nav-ru-390-home.png) |
+| Futures | [1440](screenshots/ru-1440-futures.png) | [390](screenshots/ru-390-futures.png), [Card menu](screenshots/nav-ru-390-futures.png) |
+| Spot / CFD | [Spot 1366](screenshots/ru-1366-trade.png) | [CFD 430](screenshots/ru-430-cfd.png) |
+| Wallet / Card | — | [Wallet 320](screenshots/ru-320-wallet.png), [Card 390](screenshots/ru-390-card.png) |
+| Authentication | [Login 1440](screenshots/ru-1440-login.png) | [Register 390](screenshots/ru-390-register.png) |
+
+[Main populated Futures 1440](screenshots/futures-populated-main-1440.png) · [Integration populated Futures 1440](screenshots/futures-populated-integration-1440.png)
+
+## Final Wallet follow-up
+
+The final #495 head was rebuilt and retested: 71 Wallet browser states passed (six inapplicable desktop/mobile states skipped). Invalid withdrawal-address errors fit at 320/360/390/430px after actual 200% computed text scaling, with zero document overflow. See `wallet-error-wrap.json` and `screenshots/wallet-error-200-320.png`. Shared wallet UI and its original hash test remain unchanged.
 
 ## Reproduction
 
