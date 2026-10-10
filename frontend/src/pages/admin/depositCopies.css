@@ -39,3 +39,21 @@
   .deposit-copies-asset[data-label]::before { margin-right: 4px; }
   .deposit-copies-actions { flex-direction: row; flex-wrap: wrap; }
 }
+
+/* Phone cards (≤767px, DepositCopiesSection renders CopyCard): the essentials on top, the rest under «Подробности». */
+.deposit-copies-cards { display: grid; gap: 8px; }
+.deposit-copies-card { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--panel); min-width: 0; overflow-wrap: anywhere; }
+.deposit-copies-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.deposit-copies-card-head .deposit-copies-user { display: grid; gap: 2px; min-width: 0; font-size: 13px; }
+.deposit-copies-card-head .deposit-copies-asset { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.deposit-copies-card-line { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-secondary); }
+.deposit-copies-card-line .num { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); }
+.deposit-copies-card-details summary { display: flex; align-items: center; gap: 8px; min-height: 40px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--admin-brand); list-style: none; }
+.deposit-copies-card-details summary::-webkit-details-marker { display: none; }
+.deposit-copies-card-details summary::before { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; flex: none; }
+.deposit-copies-card-details[open] summary::before { transform: rotate(45deg); }
+.deposit-copies-card-details summary span { font-weight: 500; color: var(--text-tertiary); }
+.deposit-copies-card-facts { margin: 2px 0 4px; font-size: 12.5px; }
+.deposit-copies-card-facts dd { display: grid; gap: 3px; }
+.deposit-copies-card .deposit-copies-actions { flex-direction: row; flex-wrap: wrap; gap: 6px 8px; padding-top: 2px; }
+@media (pointer: coarse) { .deposit-copies-card .deposit-copies-action { min-height: 36px; display: inline-flex; align-items: center; } }

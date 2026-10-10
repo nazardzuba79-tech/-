@@ -114,7 +114,7 @@
   .admin-page-grid .admin-users-workspace .admin-table-desktop { display: none !important; }
   .admin-page-grid .admin-users-workspace .admin-table-mobile { display: block !important; }
 }
-@media(max-width:767px) { .admin-attention { padding: 10px; } .admin-attention-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-users-filters,.admin-audit-filters { grid-template-columns: 1fr; } .admin-detail-overview { grid-template-columns: 1fr; } .admin-section-heading>span { line-height: 1.5; } .admin-tabs button { padding: 10px; } .admin-modal { box-sizing: border-box; width: calc(100vw - 24px); max-width: 600px; } .admin-modal input,.admin-modal textarea { max-width: 100%; } .admin-key-values { grid-template-columns: minmax(90px,1fr) minmax(0,1.6fr); gap: 8px; } }
+@media(max-width:767px) { .admin-attention { padding: 10px; } .admin-attention-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-users-filters,.admin-audit-filters { grid-template-columns: 1fr; } .admin-detail-overview { grid-template-columns: minmax(0, 1fr); } .admin-section-heading>span { line-height: 1.5; } .admin-tabs button { padding: 10px; } .admin-modal { box-sizing: border-box; width: calc(100vw - 24px); max-width: 600px; } .admin-modal input,.admin-modal textarea { max-width: 100%; } .admin-key-values { grid-template-columns: minmax(90px,1fr) minmax(0,1.6fr); gap: 8px; } }
 
 /* Manual spam policy stays separate from account deletion and hiding. */
 .admin-spam-manager { margin: 0 0 16px; }
@@ -171,3 +171,4 @@
   .admin-user-mobile .admin-last-login { white-space: normal; }
   .admin-user-mobile > .admin-muted { margin: 0; }
 }
+

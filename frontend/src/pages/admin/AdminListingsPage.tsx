@@ -10,6 +10,7 @@ import { ListingScenarioLab } from './ListingScenarioLab';
 import { ListingMovementEditor } from './ListingMovementEditor';
 import { ListingCandlePreview } from './ListingCandlePreview';
 import { formatMovementPrice, newListingMovement, rebaseListingMovement, validateListingMovement, type ListingMovement, type ListingProgram } from './listingMovementModel';
+import { useAdminCompact } from './useAdminCompact';
 import './adminListings.css';
 
 const LOGO_MAX_BYTES = 64 * 1024;
@@ -68,7 +69,22 @@ const errorText = (error: unknown) => {
   return listingRequestError(error);
 };
 
+/** Phone navigation inside the long listing form: jumps to a section and opens it if it is folded. */
+function ListingSectionNav({ sections }: { sections: { id: string; label: string }[] }) {
+  const jump = (id: string) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    const folded = target instanceof HTMLDetailsElement ? target : target.closest('details');
+    if (folded) folded.open = true;
+    target.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+  };
+  return <nav className="listing-section-nav" aria-label="Разделы листинга" data-listing-sections>
+    {sections.map(section => <button type="button" key={section.id} onClick={() => jump(section.id)} data-listing-section={section.id}>{section.label}</button>)}
+  </nav>;
+}
+
 export function AdminListingsPage() {
+  const compact = useAdminCompact();
   const [listings, setListings] = useState<AdminListing[] | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -93,6 +109,17 @@ export function AdminListingsPage() {
   const logoRequest = useRef(0);
   // Rebase each keystroke from one unrounded editing baseline, not the last rounded result.
   const initialPriceAnchor = useRef<{ initial: string; program: ListingMovement } | null>(null);
+  const publishDialog = useRef<HTMLDivElement>(null);
+  // The publish confirmation takes focus and gives it back; Escape cancels it
+  // while nothing is in flight (the same as its «Отмена»).
+  useEffect(() => {
+    if (!publishing) return;
+    const previous = document.activeElement as HTMLElement | null;
+    publishDialog.current?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !busy) { event.preventDefault(); setPublishing(null); } };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); if (previous?.isConnected) previous.focus({ preventScroll: true }); };
+  }, [publishing, busy]);
 
   const load = useCallback(async () => {
     if (!mounted.current || loading.current) return;
@@ -293,10 +320,15 @@ export function AdminListingsPage() {
       )}
 
       {editing && (
-        <form className="listing-form" onSubmit={save} data-listing-form noValidate>
+        <form className={`listing-form${compact ? ' listing-form-compact' : ''}`} onSubmit={save} data-listing-form noValidate>
           <h2>{editing.id ? `Листинг ${form.symbol}/USDT` : 'Новый листинг'}</h2>
           {editing.locked && <p className="listing-hint">Опубликован: тикер, код варианта, начальная цена и настройки движения больше не меняются — это защищает историю цен. Время можно перенести только до открытия.</p>}
-          <div className="listing-grid">
+          {compact && <ListingSectionNav sections={[
+            { id: 'listing-section-main', label: 'Параметры' },
+            ...(form.simulationProgram?.kind === 'scenario-controls-v2' ? [{ id: 'listing-section-movement', label: 'Движение' }, { id: 'listing-section-stages', label: 'Этапы' }, { id: 'listing-section-advanced', label: 'Точная настройка' }] : []),
+            ...(editing.id ? [{ id: 'listing-section-preview', label: 'Предпросмотр' }] : []),
+          ]} />}
+          <div className="listing-grid" id="listing-section-main">
             <label>Название<input value={form.name} maxLength={40} onChange={(e) => changeForm({ ...form, name: e.target.value })} data-field="name" required /></label>
             <label>Тикер<input value={form.symbol} maxLength={10} disabled={editing.locked} onChange={(e) => changeForm({ ...form, symbol: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} data-field="symbol" required /></label>
             <label>Начальная цена, USDT<input value={form.initialPrice} inputMode="decimal" disabled={editing.locked} onFocus={() => {
@@ -340,23 +372,27 @@ export function AdminListingsPage() {
             <label className="listing-check"><input type="checkbox" checked={form.tradable} disabled={Boolean(form.simulationProgram)} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Спотовая торговля после листинга
               <small>{form.simulationProgram ? 'Для ограниченной демонстрации исполнение заявок недоступно. Сохранение и публикация не меняют балансы.' : 'Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.'}</small></label>
           </div>
-          {form.simulationProgram?.kind === 'scenario-controls-v2' && <ListingMovementEditor key={editing.id ?? 'new'} value={form.simulationProgram} initialPrice={form.initialPrice} listingAt={listingAtUtc} locked={editing.locked} onChange={simulationProgram => changeForm({ ...form, simulationProgram })} />}
+          {form.simulationProgram?.kind === 'scenario-controls-v2' && <div id="listing-section-movement" className="listing-section-anchor"><ListingMovementEditor key={editing.id ?? 'new'} value={form.simulationProgram} initialPrice={form.initialPrice} listingAt={listingAtUtc} locked={editing.locked} onChange={simulationProgram => changeForm({ ...form, simulationProgram })} /></div>}
           {form.simulationProgram?.kind === 'capped-growth-range-v1' && <p className="listing-hint" data-legacy-movement>Сохранён прежний ограниченный сценарий. Его параметры и история не заменяются новым алгоритмом.</p>}
           {!form.simulationProgram && !editing.locked && <button type="button" onClick={() => changeForm({ ...form, simulationProgram: newListingMovement(form.initialPrice || '1'), tradable: false })} data-enable-movement>Настроить движение в демонстрационном режиме</button>}
-          {formError && <p role="alert" style={styles.errorBox} data-listing-error>{formError}</p>}
-          {editing.id && !draftIsSaved && !logoReading && <p className="listing-hint" role="status" data-unsaved-draft>Настройки изменены — обновите предпросмотр. Сначала сохраните изменения черновика, чтобы открыть предпросмотр или опубликовать их.</p>}
-          <div className="listing-buttons">
-            <button type="submit" className="listing-primary" disabled={busy || logoReading} data-save-draft>Сохранить черновик</button>
-            {editing.id && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
-            {current && <button type="button" disabled={busy || !draftIsSaved} onClick={openPublish} data-publish>Опубликовать</button>}
-            <button type="button" onClick={() => { cancelLogoRead(); setEditing(null); setPublishing(null); invalidatePreview(); }}>Закрыть</button>
+          {/* The error and the unsaved-draft note travel with the actions: on a phone the
+              dock is pinned to the bottom, so a refused save is never shown off-screen. */}
+          <div className="listing-actions-dock">
+            {formError && <p role="alert" style={styles.errorBox} data-listing-error>{formError}</p>}
+            {editing.id && !draftIsSaved && !logoReading && <p className="listing-hint" role="status" data-unsaved-draft>Настройки изменены — обновите предпросмотр. Сначала сохраните изменения черновика, чтобы открыть предпросмотр или опубликовать их.</p>}
+            <div className="listing-buttons">
+              <button type="submit" className="listing-primary" disabled={busy || logoReading} data-save-draft>Сохранить черновик</button>
+              {editing.id && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
+              {current && <button type="button" disabled={busy || !draftIsSaved} onClick={openPublish} data-publish>Опубликовать</button>}
+              <button type="button" onClick={() => { cancelLogoRead(); setEditing(null); setPublishing(null); invalidatePreview(); }}>Закрыть</button>
+            </div>
           </div>
-          {editing.id && form.simulationProgram?.kind === 'scenario-controls-v2' && <div className="listing-preview-selectors listing-grid">
+          {editing.id && form.simulationProgram?.kind === 'scenario-controls-v2' && <div className="listing-preview-selectors listing-grid" id="listing-section-preview">
             <label>Отрезок предпросмотра<select value={previewHorizon} data-field="previewHorizon" onChange={e => { invalidatePreview(); setPreviewHorizon(e.target.value as typeof previewHorizon); setPreviewInterval(e.target.value === 'first24h' ? '5m' : '1h'); }}><option value="first24h">Первые 24 часа</option><option value="growth">Весь этап роста</option><option value="afterGrowth">Поведение после роста</option></select></label>
             <label>Интервал свечей<select value={previewInterval} data-field="previewInterval" onChange={e => { invalidatePreview(); setPreviewInterval(e.target.value); }}><option value="5m">5 минут</option><option value="15m">15 минут</option><option value="1h">1 час</option><option value="4h">4 часа</option><option value="1d">1 день</option></select><small>До 360 свечей за запрос. Для длинного отрезка выберите более крупный интервал.</small></label>
           </div>}
           {editing.id && form.simulationProgram?.kind !== 'scenario-controls-v2' && (
-            <div className="listing-preview-controls">
+            <div className="listing-preview-controls" id="listing-section-preview">
               <label>Момент предпросмотра ({listingTimeZoneLabel(form.timeZone)})<input type="datetime-local" value={previewAt} onChange={(e) => { invalidatePreview(); setPreviewAt(e.target.value); }} data-field="previewAt" /></label>
               <small>Пусто = через 2 часа после листинга. Предпросмотр виден только администратору.</small>
             </div>
@@ -396,7 +432,7 @@ export function AdminListingsPage() {
 
       {publishing && (
         <div className="listing-dialog-backdrop" role="presentation">
-          <div className="listing-dialog" role="dialog" aria-modal="true" aria-label="Публикация листинга" data-publish-dialog>
+          <div className="listing-dialog" role="dialog" aria-modal="true" aria-label="Публикация листинга" data-publish-dialog ref={publishDialog} tabIndex={-1}>
             <h2>Опубликовать {publishing.listing.draft.symbol}/USDT?</h2>
             <p>{publishing.listing.draft.name} · начальная цена {publishing.listing.draft.initialPrice} USDT</p>
             <p>Листинг: {listingMoment(publishing.listing.draft.listingAt, publishing.listing.draft.displayTimeZone)}</p>

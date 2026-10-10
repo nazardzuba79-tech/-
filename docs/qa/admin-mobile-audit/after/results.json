@@ -1,0 +1,2923 @@
+{
+  "label": "after",
+  "origin": "http://127.0.0.1:4404",
+  "errors": [],
+  "blocked": [],
+  "results": [
+    {
+      "label": "after",
+      "route": "users",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "profile",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "tabsScrollW": [
+        691,
+        296
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-balances",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "tables": [
+        {
+          "w": 266,
+          "min": "0px",
+          "scrollParent": 266
+        },
+        {
+          "w": 266,
+          "min": "0px",
+          "scrollParent": 266
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-kyc",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "activeTabVisible": true
+    },
+    {
+      "label": "after",
+      "route": "deposits",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "queueTabsTop": 662,
+      "viewSwitchTop": 197
+    },
+    {
+      "label": "after",
+      "route": "credit-drawer",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 164,
+          "t": 512,
+          "w": 140,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "cancel": {
+        "found": true,
+        "box": {
+          "l": 16,
+          "t": 512,
+          "w": 140,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "launcher": {
+        "l": 0,
+        "t": 0,
+        "w": 0,
+        "h": 0,
+        "z": "998"
+      },
+      "panel": {
+        "t": 0,
+        "h": 568,
+        "inner": 568,
+        "bodyScroll": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "deposit-copies",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "cards": 3,
+      "cardMode": true
+    },
+    {
+      "label": "after",
+      "route": "kyc",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "listTop": 517,
+      "reviewTop": 859
+    },
+    {
+      "label": "after",
+      "route": "kyc-filters-open",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "kyc-emailed",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "emailed": 1,
+      "reviewInView": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-pdf",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "pdfLink": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-rejected",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "reason": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-missing",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "reupload": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-confirm",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "modal": {
+        "t": 67,
+        "h": 433,
+        "footerBottom": 500,
+        "inner": 568,
+        "bodyScrolls": false
+      },
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 125,
+          "t": 457,
+          "w": 162,
+          "h": 30
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "withdrawals",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "firstRowTop": 553
+    },
+    {
+      "label": "after",
+      "route": "withdrawal-reject",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "modal": {
+        "t": 17,
+        "h": 535,
+        "footerBottom": 550,
+        "inner": 568
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "formH": 2109,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 25,
+          "t": 568,
+          "w": 270,
+          "h": 44
+        },
+        "inViewport": false,
+        "okPoints": 0,
+        "points": 27,
+        "blockedBy": {
+          "offscreen": 27
+        }
+      },
+      "nav": 1
+    },
+    {
+      "label": "after",
+      "route": "listing-form-stages",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "stagesOpen": true,
+      "stagesTop": 12,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 25,
+          "t": 472,
+          "w": 270,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form-focused",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "focusedVisible": {
+        "top": 129,
+        "bottom": 165,
+        "barTop": 472,
+        "clear": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "otc",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "h1": [
+        "OTC-заявки"
+      ]
+    },
+    {
+      "label": "after",
+      "route": "otc-detail",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "pageH": 1899,
+      "composerTop": 1677,
+      "nav": 3
+    },
+    {
+      "label": "after",
+      "route": "otc-detail-chat",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "composerVisible": true
+    },
+    {
+      "label": "after",
+      "route": "audit-log",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "firstEntryTop": 415
+    },
+    {
+      "label": "after",
+      "route": "audit-filtered",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "count": "2",
+      "hint": "Верификация одобрена · от 2026-10-01",
+      "entries": 12
+    },
+    {
+      "label": "after",
+      "route": "wallets",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "sidebar",
+      "w": 320,
+      "h": 568,
+      "docW": 320,
+      "overflow": false,
+      "focusedInMenu": true,
+      "closedByEscape": true,
+      "focusBack": true,
+      "support": 1,
+      "launcherOverMenu": {
+        "overlaps": false,
+        "topIsLauncher": false,
+        "zLauncher": "998",
+        "zSidebar": "40"
+      }
+    },
+    {
+      "label": "after",
+      "route": "users",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "profile",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "tabsScrollW": [
+        691,
+        336
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-balances",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "tables": [
+        {
+          "w": 306,
+          "min": "0px",
+          "scrollParent": 306
+        },
+        {
+          "w": 306,
+          "min": "0px",
+          "scrollParent": 306
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-kyc",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "activeTabVisible": true
+    },
+    {
+      "label": "after",
+      "route": "deposits",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "queueTabsTop": 584,
+      "viewSwitchTop": 180
+    },
+    {
+      "label": "after",
+      "route": "credit-drawer",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 184,
+          "t": 744,
+          "w": 160,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "cancel": {
+        "found": true,
+        "box": {
+          "l": 16,
+          "t": 744,
+          "w": 160,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "launcher": {
+        "l": 0,
+        "t": 0,
+        "w": 0,
+        "h": 0,
+        "z": "998"
+      },
+      "panel": {
+        "t": 0,
+        "h": 800,
+        "inner": 800,
+        "bodyScroll": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "deposit-copies",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "cards": 3,
+      "cardMode": true
+    },
+    {
+      "label": "after",
+      "route": "kyc",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "listTop": 517,
+      "reviewTop": 859
+    },
+    {
+      "label": "after",
+      "route": "kyc-filters-open",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "kyc-emailed",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "emailed": 1,
+      "reviewInView": false
+    },
+    {
+      "label": "after",
+      "route": "kyc-pdf",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "pdfLink": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-rejected",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "reason": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-missing",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "reupload": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-confirm",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "modal": {
+        "t": 183,
+        "h": 433,
+        "footerBottom": 616,
+        "inner": 800,
+        "bodyScrolls": false
+      },
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 165,
+          "t": 573,
+          "w": 162,
+          "h": 30
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "withdrawals",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "firstRowTop": 495
+    },
+    {
+      "label": "after",
+      "route": "withdrawal-reject",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "modal": {
+        "t": 172,
+        "h": 456,
+        "footerBottom": 627,
+        "inner": 800
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "formH": 2078,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 25,
+          "t": 704,
+          "w": 310,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "nav": 1
+    },
+    {
+      "label": "after",
+      "route": "listing-form-stages",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "stagesOpen": true,
+      "stagesTop": 12,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 25,
+          "t": 704,
+          "w": 310,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form-focused",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "focusedVisible": {
+        "top": 129,
+        "bottom": 165,
+        "barTop": 704,
+        "clear": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "otc",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "h1": [
+        "OTC-заявки"
+      ]
+    },
+    {
+      "label": "after",
+      "route": "otc-detail",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "pageH": 1729,
+      "composerTop": 1508,
+      "nav": 3
+    },
+    {
+      "label": "after",
+      "route": "otc-detail-chat",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "composerVisible": true
+    },
+    {
+      "label": "after",
+      "route": "audit-log",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "firstEntryTop": 415
+    },
+    {
+      "label": "after",
+      "route": "audit-filtered",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "count": "2",
+      "hint": "Верификация одобрена · от 2026-10-01",
+      "entries": 12
+    },
+    {
+      "label": "after",
+      "route": "wallets",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "sidebar",
+      "w": 360,
+      "h": 800,
+      "docW": 360,
+      "overflow": false,
+      "focusedInMenu": true,
+      "closedByEscape": true,
+      "focusBack": true,
+      "support": 1,
+      "launcherOverMenu": {
+        "overlaps": false,
+        "topIsLauncher": false,
+        "zLauncher": "998",
+        "zSidebar": "40"
+      }
+    },
+    {
+      "label": "after",
+      "route": "users",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "profile",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "tabsScrollW": [
+        691,
+        366
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-balances",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "tables": [
+        {
+          "w": 336,
+          "min": "0px",
+          "scrollParent": 336
+        },
+        {
+          "w": 336,
+          "min": "0px",
+          "scrollParent": 336
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-kyc",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "activeTabVisible": true
+    },
+    {
+      "label": "after",
+      "route": "deposits",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "queueTabsTop": 584,
+      "viewSwitchTop": 180
+    },
+    {
+      "label": "after",
+      "route": "credit-drawer",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 199,
+          "t": 788,
+          "w": 175,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "cancel": {
+        "found": true,
+        "box": {
+          "l": 16,
+          "t": 788,
+          "w": 175,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "launcher": {
+        "l": 0,
+        "t": 0,
+        "w": 0,
+        "h": 0,
+        "z": "998"
+      },
+      "panel": {
+        "t": 0,
+        "h": 844,
+        "inner": 844,
+        "bodyScroll": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "deposit-copies",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "cards": 3,
+      "cardMode": true
+    },
+    {
+      "label": "after",
+      "route": "kyc",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "listTop": 481,
+      "reviewTop": 823
+    },
+    {
+      "label": "after",
+      "route": "kyc-filters-open",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "kyc-emailed",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "emailed": 1,
+      "reviewInView": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-pdf",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "pdfLink": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-rejected",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "reason": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-missing",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "reupload": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-confirm",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "modal": {
+        "t": 220,
+        "h": 404,
+        "footerBottom": 623,
+        "inner": 844,
+        "bodyScrolls": false
+      },
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 195,
+          "t": 580,
+          "w": 162,
+          "h": 30
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "withdrawals",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "firstRowTop": 495
+    },
+    {
+      "label": "after",
+      "route": "withdrawal-reject",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "modal": {
+        "t": 194,
+        "h": 456,
+        "footerBottom": 649,
+        "inner": 844
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "formH": 2050,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 25,
+          "t": 748,
+          "w": 340,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "nav": 1
+    },
+    {
+      "label": "after",
+      "route": "listing-form-stages",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "stagesOpen": true,
+      "stagesTop": 12,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 25,
+          "t": 748,
+          "w": 340,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form-focused",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "focusedVisible": {
+        "top": 129,
+        "bottom": 165,
+        "barTop": 748,
+        "clear": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "otc",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "h1": [
+        "OTC-заявки"
+      ]
+    },
+    {
+      "label": "after",
+      "route": "otc-detail",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "pageH": 1684,
+      "composerTop": 1463,
+      "nav": 3
+    },
+    {
+      "label": "after",
+      "route": "otc-detail-chat",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "composerVisible": true
+    },
+    {
+      "label": "after",
+      "route": "audit-log",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "firstEntryTop": 367
+    },
+    {
+      "label": "after",
+      "route": "audit-filtered",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "count": "2",
+      "hint": "Верификация одобрена · от 2026-10-01",
+      "entries": 12
+    },
+    {
+      "label": "after",
+      "route": "wallets",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "sidebar",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "focusedInMenu": true,
+      "closedByEscape": true,
+      "focusBack": true,
+      "support": 1,
+      "launcherOverMenu": {
+        "overlaps": false,
+        "topIsLauncher": false,
+        "zLauncher": "998",
+        "zSidebar": "40"
+      }
+    },
+    {
+      "label": "after",
+      "route": "users",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "profile",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "tabsScrollW": [
+        691,
+        406
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-balances",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "tables": [
+        {
+          "w": 376,
+          "min": "0px",
+          "scrollParent": 376
+        },
+        {
+          "w": 376,
+          "min": "0px",
+          "scrollParent": 376
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-kyc",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "activeTabVisible": true
+    },
+    {
+      "label": "after",
+      "route": "deposits",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "queueTabsTop": 548,
+      "viewSwitchTop": 180
+    },
+    {
+      "label": "after",
+      "route": "credit-drawer",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 219,
+          "t": 888,
+          "w": 195,
+          "h": 32
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "cancel": {
+        "found": true,
+        "box": {
+          "l": 16,
+          "t": 888,
+          "w": 195,
+          "h": 32
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "launcher": {
+        "l": 0,
+        "t": 0,
+        "w": 0,
+        "h": 0,
+        "z": "998"
+      },
+      "panel": {
+        "t": 0,
+        "h": 932,
+        "inner": 932,
+        "bodyScroll": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "deposit-copies",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "cards": 3,
+      "cardMode": true
+    },
+    {
+      "label": "after",
+      "route": "kyc",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "listTop": 481,
+      "reviewTop": 805
+    },
+    {
+      "label": "after",
+      "route": "kyc-filters-open",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "kyc-emailed",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "emailed": 1,
+      "reviewInView": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-pdf",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "pdfLink": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-rejected",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "reason": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-missing",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "reupload": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-confirm",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "modal": {
+        "t": 264,
+        "h": 404,
+        "footerBottom": 667,
+        "inner": 932,
+        "bodyScrolls": false
+      },
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 235,
+          "t": 624,
+          "w": 162,
+          "h": 30
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "withdrawals",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "firstRowTop": 495
+    },
+    {
+      "label": "after",
+      "route": "withdrawal-reject",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "modal": {
+        "t": 246,
+        "h": 439,
+        "footerBottom": 685,
+        "inner": 932
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "formH": 1977,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 25,
+          "t": 836,
+          "w": 380,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "nav": 1
+    },
+    {
+      "label": "after",
+      "route": "listing-form-stages",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "stagesOpen": true,
+      "stagesTop": 12,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 25,
+          "t": 836,
+          "w": 380,
+          "h": 44
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form-focused",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "focusedVisible": {
+        "top": 129,
+        "bottom": 165,
+        "barTop": 836,
+        "clear": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "otc",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "h1": [
+        "OTC-заявки"
+      ]
+    },
+    {
+      "label": "after",
+      "route": "otc-detail",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "pageH": 1587,
+      "composerTop": 1365,
+      "nav": 3
+    },
+    {
+      "label": "after",
+      "route": "otc-detail-chat",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "composerVisible": true
+    },
+    {
+      "label": "after",
+      "route": "audit-log",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "firstEntryTop": 367
+    },
+    {
+      "label": "after",
+      "route": "audit-filtered",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "count": "2",
+      "hint": "Верификация одобрена · от 2026-10-01",
+      "entries": 12
+    },
+    {
+      "label": "after",
+      "route": "wallets",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "sidebar",
+      "w": 430,
+      "h": 932,
+      "docW": 430,
+      "overflow": false,
+      "focusedInMenu": true,
+      "closedByEscape": true,
+      "focusBack": true,
+      "support": 1,
+      "launcherOverMenu": {
+        "overlaps": false,
+        "topIsLauncher": false,
+        "zLauncher": "998",
+        "zSidebar": "40"
+      }
+    },
+    {
+      "label": "after",
+      "route": "users",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "profile",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "tabsScrollW": [
+        804,
+        804
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-balances",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "tables": [
+        {
+          "w": 365,
+          "min": "0px",
+          "scrollParent": 365
+        },
+        {
+          "w": 365,
+          "min": "0px",
+          "scrollParent": 365
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-kyc",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "activeTabVisible": true
+    },
+    {
+      "label": "after",
+      "route": "deposits",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "queueTabsTop": 594,
+      "viewSwitchTop": 167
+    },
+    {
+      "label": "after",
+      "route": "credit-drawer",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 628,
+          "t": 342,
+          "w": 200,
+          "h": 32
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "cancel": {
+        "found": true,
+        "box": {
+          "l": 420,
+          "t": 342,
+          "w": 200,
+          "h": 32
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "launcher": {
+        "l": 0,
+        "t": 0,
+        "w": 0,
+        "h": 0,
+        "z": "998"
+      },
+      "panel": {
+        "t": 0,
+        "h": 390,
+        "inner": 390,
+        "bodyScroll": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "deposit-copies",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "cards": 3,
+      "cardMode": false
+    },
+    {
+      "label": "after",
+      "route": "kyc",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "listTop": 449,
+      "reviewTop": 551
+    },
+    {
+      "label": "after",
+      "route": "kyc-emailed",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "emailed": 1,
+      "reviewInView": false
+    },
+    {
+      "label": "after",
+      "route": "kyc-pdf",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "pdfLink": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-rejected",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "reason": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-missing",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "reupload": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-confirm",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "modal": {
+        "t": 16,
+        "h": 358,
+        "footerBottom": 373,
+        "inner": 390,
+        "bodyScrolls": true
+      },
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 523,
+          "t": 330,
+          "w": 162,
+          "h": 30
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "withdrawals",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "firstRowTop": 374
+    },
+    {
+      "label": "after",
+      "route": "withdrawal-reject",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "modal": {
+        "t": 16,
+        "h": 358,
+        "footerBottom": 373,
+        "inner": 390
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "formH": 1239,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 37,
+          "t": 1616,
+          "w": 169,
+          "h": 38
+        },
+        "inViewport": false,
+        "okPoints": 0,
+        "points": 27,
+        "blockedBy": {
+          "offscreen": 27
+        }
+      },
+      "nav": 0
+    },
+    {
+      "label": "after",
+      "route": "listing-form-focused",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "focusedVisible": {
+        "top": 360,
+        "bottom": 406,
+        "barTop": 1390,
+        "clear": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "otc",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "h1": [
+        "OTC-заявки"
+      ]
+    },
+    {
+      "label": "after",
+      "route": "otc-detail",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "pageH": 1334,
+      "composerTop": 1084,
+      "nav": 3
+    },
+    {
+      "label": "after",
+      "route": "otc-detail-chat",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "composerVisible": true
+    },
+    {
+      "label": "after",
+      "route": "audit-log",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "firstEntryTop": 390
+    },
+    {
+      "label": "after",
+      "route": "audit-filtered",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "count": null,
+      "hint": null,
+      "entries": 12
+    },
+    {
+      "label": "after",
+      "route": "wallets",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "sidebar",
+      "w": 844,
+      "h": 390,
+      "docW": 844,
+      "overflow": false,
+      "focusedInMenu": true,
+      "closedByEscape": true,
+      "focusBack": true,
+      "support": 1,
+      "launcherOverMenu": {
+        "overlaps": false,
+        "topIsLauncher": false,
+        "zLauncher": "998",
+        "zSidebar": "40"
+      }
+    },
+    {
+      "label": "after",
+      "route": "users",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "profile",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "tabsScrollW": [
+        1176,
+        1176
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-balances",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "tables": [
+        {
+          "w": 551,
+          "min": "0px",
+          "scrollParent": 551
+        },
+        {
+          "w": 551,
+          "min": "0px",
+          "scrollParent": 551
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-kyc",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "activeTabVisible": true
+    },
+    {
+      "label": "after",
+      "route": "deposits",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "queueTabsTop": 573,
+      "viewSwitchTop": 146
+    },
+    {
+      "label": "after",
+      "route": "credit-drawer",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 1224,
+          "t": 852,
+          "w": 200,
+          "h": 32
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "cancel": {
+        "found": true,
+        "box": {
+          "l": 1016,
+          "t": 852,
+          "w": 200,
+          "h": 32
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "launcher": {
+        "l": 0,
+        "t": 0,
+        "w": 0,
+        "h": 0,
+        "z": "998"
+      },
+      "panel": {
+        "t": 0,
+        "h": 900,
+        "inner": 900,
+        "bodyScroll": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "deposit-copies",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "cards": 3,
+      "cardMode": false
+    },
+    {
+      "label": "after",
+      "route": "kyc",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "listTop": 360,
+      "reviewTop": 433
+    },
+    {
+      "label": "after",
+      "route": "kyc-emailed",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "emailed": 1,
+      "reviewInView": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-pdf",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "pdfLink": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-rejected",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "reason": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-missing",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "reupload": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-confirm",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "modal": {
+        "t": 248,
+        "h": 404,
+        "footerBottom": 651,
+        "inner": 900,
+        "bodyScrolls": false
+      },
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 821,
+          "t": 608,
+          "w": 162,
+          "h": 30
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "withdrawals",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "firstRowTop": 393
+    },
+    {
+      "label": "after",
+      "route": "withdrawal-reject",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "modal": {
+        "t": 239,
+        "h": 421,
+        "footerBottom": 660,
+        "inner": 900
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "formH": 1211,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 257,
+          "t": 1584,
+          "w": 169,
+          "h": 38
+        },
+        "inViewport": false,
+        "okPoints": 0,
+        "points": 27,
+        "blockedBy": {
+          "offscreen": 27
+        }
+      },
+      "nav": 0
+    },
+    {
+      "label": "after",
+      "route": "listing-form-focused",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "focusedVisible": {
+        "top": 582,
+        "bottom": 628,
+        "barTop": 1584,
+        "clear": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "otc",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "h1": [
+        "OTC-заявки"
+      ]
+    },
+    {
+      "label": "after",
+      "route": "otc-detail",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "pageH": 1311,
+      "composerTop": 1058,
+      "nav": 3
+    },
+    {
+      "label": "after",
+      "route": "otc-detail-chat",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "composerVisible": true
+    },
+    {
+      "label": "after",
+      "route": "audit-log",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "firstEntryTop": 386
+    },
+    {
+      "label": "after",
+      "route": "audit-filtered",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false,
+      "count": null,
+      "hint": null,
+      "entries": 12
+    },
+    {
+      "label": "after",
+      "route": "wallets",
+      "w": 1440,
+      "h": 900,
+      "docW": 1440,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "users",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "profile",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "tabsScrollW": [
+        1656,
+        1656
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-balances",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "tables": [
+        {
+          "w": 791,
+          "min": "0px",
+          "scrollParent": 791
+        },
+        {
+          "w": 791,
+          "min": "0px",
+          "scrollParent": 791
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "route": "profile-kyc",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "activeTabVisible": true
+    },
+    {
+      "label": "after",
+      "route": "deposits",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "queueTabsTop": 547,
+      "viewSwitchTop": 146
+    },
+    {
+      "label": "after",
+      "route": "credit-drawer",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 1704,
+          "t": 1032,
+          "w": 200,
+          "h": 32
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "cancel": {
+        "found": true,
+        "box": {
+          "l": 1496,
+          "t": 1032,
+          "w": 200,
+          "h": 32
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      },
+      "launcher": {
+        "l": 0,
+        "t": 0,
+        "w": 0,
+        "h": 0,
+        "z": "998"
+      },
+      "panel": {
+        "t": 0,
+        "h": 1080,
+        "inner": 1080,
+        "bodyScroll": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "deposit-copies",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "cards": 3,
+      "cardMode": false
+    },
+    {
+      "label": "after",
+      "route": "kyc",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "listTop": 360,
+      "reviewTop": 433
+    },
+    {
+      "label": "after",
+      "route": "kyc-emailed",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "emailed": 1,
+      "reviewInView": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-pdf",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "pdfLink": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-rejected",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "reason": true
+    },
+    {
+      "label": "after",
+      "route": "kyc-missing",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "reupload": 1
+    },
+    {
+      "label": "after",
+      "route": "kyc-confirm",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "modal": {
+        "t": 338,
+        "h": 404,
+        "footerBottom": 741,
+        "inner": 1080,
+        "bodyScrolls": false
+      },
+      "confirm": {
+        "found": true,
+        "box": {
+          "l": 1061,
+          "t": 698,
+          "w": 162,
+          "h": 30
+        },
+        "inViewport": true,
+        "okPoints": 27,
+        "points": 27,
+        "blockedBy": {}
+      }
+    },
+    {
+      "label": "after",
+      "route": "withdrawals",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "firstRowTop": 393
+    },
+    {
+      "label": "after",
+      "route": "withdrawal-reject",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "modal": {
+        "t": 329,
+        "h": 421,
+        "footerBottom": 750,
+        "inner": 1080
+      }
+    },
+    {
+      "label": "after",
+      "route": "listing-form",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "formH": 1211,
+      "save": {
+        "found": true,
+        "box": {
+          "l": 257,
+          "t": 1584,
+          "w": 169,
+          "h": 38
+        },
+        "inViewport": false,
+        "okPoints": 0,
+        "points": 27,
+        "blockedBy": {
+          "offscreen": 27
+        }
+      },
+      "nav": 0
+    },
+    {
+      "label": "after",
+      "route": "listing-form-focused",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "focusedVisible": {
+        "top": 582,
+        "bottom": 628,
+        "barTop": 1584,
+        "clear": true
+      }
+    },
+    {
+      "label": "after",
+      "route": "otc",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "h1": [
+        "OTC-заявки"
+      ]
+    },
+    {
+      "label": "after",
+      "route": "otc-detail",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "pageH": 1311,
+      "composerTop": 1058,
+      "nav": 3
+    },
+    {
+      "label": "after",
+      "route": "otc-detail-chat",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "composerVisible": true
+    },
+    {
+      "label": "after",
+      "route": "audit-log",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "firstEntryTop": 317
+    },
+    {
+      "label": "after",
+      "route": "audit-filtered",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false,
+      "count": null,
+      "hint": null,
+      "entries": 12
+    },
+    {
+      "label": "after",
+      "route": "wallets",
+      "w": 1920,
+      "h": 1080,
+      "docW": 1920,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "support-from-sidebar",
+      "w": 390,
+      "h": 844,
+      "docW": 390,
+      "overflow": false,
+      "panel": 1,
+      "launcherVisible": false,
+      "menuClosed": true
+    },
+    {
+      "label": "after",
+      "route": "edge:users",
+      "w": 700,
+      "h": 900,
+      "docW": 700,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users/qa-user-1?tab=balances",
+      "w": 700,
+      "h": 900,
+      "docW": 700,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:deposits",
+      "w": 700,
+      "h": 900,
+      "docW": 700,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:kyc",
+      "w": 700,
+      "h": 900,
+      "docW": 700,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:withdrawals",
+      "w": 700,
+      "h": 900,
+      "docW": 700,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:audit-log",
+      "w": 700,
+      "h": 900,
+      "docW": 700,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:listings",
+      "w": 700,
+      "h": 900,
+      "docW": 700,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:otc",
+      "w": 700,
+      "h": 900,
+      "docW": 700,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users",
+      "w": 701,
+      "h": 900,
+      "docW": 701,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users/qa-user-1?tab=balances",
+      "w": 701,
+      "h": 900,
+      "docW": 701,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:deposits",
+      "w": 701,
+      "h": 900,
+      "docW": 701,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:kyc",
+      "w": 701,
+      "h": 900,
+      "docW": 701,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:withdrawals",
+      "w": 701,
+      "h": 900,
+      "docW": 701,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:audit-log",
+      "w": 701,
+      "h": 900,
+      "docW": 701,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:listings",
+      "w": 701,
+      "h": 900,
+      "docW": 701,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:otc",
+      "w": 701,
+      "h": 900,
+      "docW": 701,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users",
+      "w": 720,
+      "h": 900,
+      "docW": 720,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users/qa-user-1?tab=balances",
+      "w": 720,
+      "h": 900,
+      "docW": 720,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:deposits",
+      "w": 720,
+      "h": 900,
+      "docW": 720,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:kyc",
+      "w": 720,
+      "h": 900,
+      "docW": 720,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:withdrawals",
+      "w": 720,
+      "h": 900,
+      "docW": 720,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:audit-log",
+      "w": 720,
+      "h": 900,
+      "docW": 720,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:listings",
+      "w": 720,
+      "h": 900,
+      "docW": 720,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:otc",
+      "w": 720,
+      "h": 900,
+      "docW": 720,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users",
+      "w": 721,
+      "h": 900,
+      "docW": 721,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users/qa-user-1?tab=balances",
+      "w": 721,
+      "h": 900,
+      "docW": 721,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:deposits",
+      "w": 721,
+      "h": 900,
+      "docW": 721,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:kyc",
+      "w": 721,
+      "h": 900,
+      "docW": 721,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:withdrawals",
+      "w": 721,
+      "h": 900,
+      "docW": 721,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:audit-log",
+      "w": 721,
+      "h": 900,
+      "docW": 721,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:listings",
+      "w": 721,
+      "h": 900,
+      "docW": 721,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:otc",
+      "w": 721,
+      "h": 900,
+      "docW": 721,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users",
+      "w": 767,
+      "h": 900,
+      "docW": 767,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users/qa-user-1?tab=balances",
+      "w": 767,
+      "h": 900,
+      "docW": 767,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:deposits",
+      "w": 767,
+      "h": 900,
+      "docW": 767,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:kyc",
+      "w": 767,
+      "h": 900,
+      "docW": 767,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:withdrawals",
+      "w": 767,
+      "h": 900,
+      "docW": 767,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:audit-log",
+      "w": 767,
+      "h": 900,
+      "docW": 767,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:listings",
+      "w": 767,
+      "h": 900,
+      "docW": 767,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:otc",
+      "w": 767,
+      "h": 900,
+      "docW": 767,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users",
+      "w": 768,
+      "h": 900,
+      "docW": 768,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users/qa-user-1?tab=balances",
+      "w": 768,
+      "h": 900,
+      "docW": 768,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:deposits",
+      "w": 768,
+      "h": 900,
+      "docW": 768,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:kyc",
+      "w": 768,
+      "h": 900,
+      "docW": 768,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:withdrawals",
+      "w": 768,
+      "h": 900,
+      "docW": 768,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:audit-log",
+      "w": 768,
+      "h": 900,
+      "docW": 768,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:listings",
+      "w": 768,
+      "h": 900,
+      "docW": 768,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:otc",
+      "w": 768,
+      "h": 900,
+      "docW": 768,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users",
+      "w": 900,
+      "h": 900,
+      "docW": 900,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users/qa-user-1?tab=balances",
+      "w": 900,
+      "h": 900,
+      "docW": 900,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:deposits",
+      "w": 900,
+      "h": 900,
+      "docW": 900,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:kyc",
+      "w": 900,
+      "h": 900,
+      "docW": 900,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:withdrawals",
+      "w": 900,
+      "h": 900,
+      "docW": 900,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:audit-log",
+      "w": 900,
+      "h": 900,
+      "docW": 900,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:listings",
+      "w": 900,
+      "h": 900,
+      "docW": 900,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:otc",
+      "w": 900,
+      "h": 900,
+      "docW": 900,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users",
+      "w": 901,
+      "h": 900,
+      "docW": 901,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:users/qa-user-1?tab=balances",
+      "w": 901,
+      "h": 900,
+      "docW": 901,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:deposits",
+      "w": 901,
+      "h": 900,
+      "docW": 901,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:kyc",
+      "w": 901,
+      "h": 900,
+      "docW": 901,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:withdrawals",
+      "w": 901,
+      "h": 900,
+      "docW": 901,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:audit-log",
+      "w": 901,
+      "h": 900,
+      "docW": 901,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:listings",
+      "w": 901,
+      "h": 900,
+      "docW": 901,
+      "overflow": false
+    },
+    {
+      "label": "after",
+      "route": "edge:otc",
+      "w": 901,
+      "h": 900,
+      "docW": 901,
+      "overflow": false
+    }
+  ]
+}
