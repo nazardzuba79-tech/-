@@ -331,6 +331,24 @@
 .vx-wallet .wallet-side-nav::-webkit-scrollbar {
   display: none;
 }
+/* Phone and tablet: the rail is a strip wider than the screen. The fade at
+   its right edge says there is more; the strip ends with 44px of padding so
+   the last item is never under the fade once scrolled to the end. The active
+   item is scrolled into view by WalletSideNav itself. */
+@media (max-width: 1023px) {
+  .vx-wallet .wallet-side-nav {
+    padding-right: 44px;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+  }
+}
+/* Phone: the global header already carries the VOLTEX mark one row above;
+   the rail's own wordmark took 150px of the strip's first screen. */
+@media (max-width: 639px) {
+  .vx-wallet .wallet-brand {
+    display: none;
+  }
+}
 /* The items are grouped (account / analysis / orders + card). Below `lg`
    the groups flow into one horizontal scroller of the same items; on
    desktop each group stacks and the later ones open with a hairline. */
@@ -1210,4 +1228,130 @@
   margin-top: 22px;
   font-size: 12px;
   color: var(--w-ink-3);
+}
+
+/* ── «История операций» on a phone (TransactionHistory) ───────────────── */
+/* The table is 680px wide and scrolled sideways on a phone, keeping the
+   amount and the status past the right edge with nothing to say they were
+   there. Below `md` each row becomes a card: kind and asset on the left,
+   amount and status on the right, the date underneath. TransactionHistory.tsx
+   itself is byte-frozen (walletUxRefinement), so the layout is CSS only, from
+   the host WalletPage wraps it in. The desktop table is unchanged from 768px. */
+@media (max-width: 767px) {
+  .vx-wallet .wallet-history-host table {
+    display: block;
+    min-width: 0;
+  }
+  .vx-wallet .wallet-history-host thead {
+    display: none;
+  }
+  .vx-wallet .wallet-history-host tbody {
+    display: block;
+  }
+  .vx-wallet .wallet-history-host tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'kind amount' 'asset status' 'date date';
+    column-gap: 12px;
+    row-gap: 4px;
+    padding: 10px 16px;
+  }
+  .vx-wallet .wallet-history-host td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    white-space: normal;
+  }
+  .vx-wallet .wallet-history-host td:nth-child(1) { grid-area: kind; }
+  .vx-wallet .wallet-history-host td:nth-child(2) { grid-area: asset; }
+  .vx-wallet .wallet-history-host td:nth-child(3) { grid-area: amount; text-align: right; overflow-wrap: anywhere; }
+  .vx-wallet .wallet-history-host td:nth-child(4) { grid-area: status; text-align: right; }
+  .vx-wallet .wallet-history-host td:nth-child(5) { grid-area: date; text-align: left; }
+}
+
+/* Large OS text: the period label's date and the USD figure wrap inside
+   their columns instead of being cut; the unit next to the total drops
+   under it when the row has no room. */
+.vx-wallet .wallet-period-row-label small,
+.vx-wallet .wallet-period-row-usd {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.vx-wallet .wallet-overview-total {
+  flex-wrap: wrap;
+}
+.vx-wallet .wallet-overview-unit {
+  min-width: 0;
+}
+
+/* Large OS text, overview and recent activity: the total and a recent
+   amount wrap inside their column instead of being cut by the card; the
+   7-day pill drops under its label. */
+.vx-wallet .wallet-overview-amount {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.vx-wallet .wallet-dyn-profit > span {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.vx-wallet .wallet-recent-row {
+  /* The amount column takes what it needs up to 60% of the row, so the
+     kind («Внести») on the left always keeps at least 40%. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 60%);
+}
+.vx-wallet .wallet-recent-row > b,
+.vx-wallet .wallet-recent-row > strong,
+.vx-wallet .wallet-recent-row > small {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 320–359px: the P&L period rows. With a 96px label column the USD figure's
+   track shrank below its text («+$13 420 750,75» was cut after 72px); the
+   label takes a line of its own and the two figures share the next. */
+@media (max-width: 359px) {
+  .vx-wallet .wallet-period-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
+  .vx-wallet .wallet-period-row-label {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Phone asset list (AssetLedger): a long holding («98 765 432 109,87 PEPE»)
+   squeezed the symbol column to a few pixels. The quantity may wrap before
+   its asset code (the figure itself never breaks: its thousands separators
+   are no-break spaces), and the symbol column keeps 64px at least. */
+.vx-wallet .wallet-ledger-mobile-quantity {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.vx-wallet .wallet-ledger-mobile button > :nth-child(2) {
+  min-width: 64px;
+}
+
+/* Withdraw address validation in the body-portalled wallet modal.
+   Large OS text was taller than Tailwind's fixed 16px line-height and the
+   error overlapped the next line at 200% on 320px. Keep the protected shared
+   FieldError component unchanged; only this address message is adjusted. */
+@media (max-width: 767px) {
+  .vx-wallet-modal-root .wallet-withdraw-address-field > p.text-neg {
+    min-width: 0;
+    max-width: 100%;
+    line-height: 1.4;
+    white-space: normal;
+  }
+  .vx-wallet-modal-root .wallet-withdraw-address-field > p.text-neg > span {
+    display: block;
+    flex: 1 1 0%;
+    min-width: 0;
+    max-width: 100%;
+    line-height: inherit;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
 }

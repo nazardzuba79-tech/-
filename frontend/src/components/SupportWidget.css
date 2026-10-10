@@ -42,6 +42,10 @@
 .support-conversation { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:18px; scrollbar-width:thin; scrollbar-color:var(--support-line-strong) transparent; }
 .support-author { display:block; font-size:11px; font-weight:600; color:var(--support-muted); margin-bottom:5px; }
 .support-greeting p, .support-turn p { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; word-break:normal; }
+/* The greeting keeps its line breaks but not the spaces at the end of each
+   wrapped line: with pre-wrap the trailing space hung 3px past the column on
+   a 360px screen. User turns keep pre-wrap (typed spacing is theirs). */
+.support-greeting p { white-space:pre-line; }
 .support-greeting p { color:var(--support-body); font-size:14px; line-height:1.6; }
 .support-suggestions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px; }
 .support-suggestions button { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; min-height:50px; text-align:left; border:1px solid var(--support-line); background:var(--support-soft); color:var(--support-ink); border-radius:10px; font-size:12.5px; font-weight:500; line-height:1.4; transition:background .15s,border-color .15s; }
@@ -106,9 +110,21 @@
 .support-result-ok { color:#0e7a4f; background:#e8f6ef; }.support-result-error { color:#b42318; background:#fdecea; }
 .support-hp { position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden; }
 .support-opening { position:fixed; z-index:1000; inset:auto 16px 16px auto; padding:12px 16px; background:#ffffff; color:#1e2329; border:1px solid #e3e6ea; border-radius:10px; box-shadow:0 10px 30px rgba(15,23,42,.16); color-scheme:only light; }
-@media (max-width:900px) {
+/* 861–900px: the bottom bar is not drawn yet (index.css shows it from 860px
+   down), so the launcher still floats where the bar would begin. */
+@media (max-width:900px) and (min-width:861px) {
   body:has(.bottom-nav) .support-launcher { bottom:calc(72px + env(safe-area-inset-bottom,0px)) !important; right:16px !important; width:50px !important; height:50px !important; }
   body:has(.bottom-nav) .support-panel { bottom:calc(132px + env(safe-area-inset-bottom,0px) + var(--support-keyboard,0px)); max-height:calc(var(--support-viewport,100dvh) - 148px - env(safe-area-inset-bottom,0px)); }
+}
+/* Phones with the bottom bar: the launcher sits right above the bar instead
+   of floating mid-content over the last row of a list or a form's keys. */
+@media (max-width:860px) {
+  /* Above the bar, never on it (scripts/qa-support-form.cjs asserts the
+     launcher's bottom edge stays above the bar at 320–430): a 44px key at
+     the right edge, 4px over the 56px bar. The markets «Аналитика» pill
+     moves left of it (MarketsAnalyticsEmbed.css). */
+  body:has(.bottom-nav) .support-launcher { width:44px !important; height:44px !important; right:10px !important; bottom:calc(60px + env(safe-area-inset-bottom,0px)) !important; }
+  body:has(.bottom-nav) .support-panel { bottom:calc(72px + env(safe-area-inset-bottom,0px) + var(--support-keyboard,0px)); max-height:calc(var(--support-viewport,100dvh) - 88px - env(safe-area-inset-bottom,0px)); }
 }
 @media (max-width:768px) {
   .support-panel { right:16px; bottom:calc(88px + env(safe-area-inset-bottom,0px)); max-height:calc(var(--support-viewport,100dvh) - 116px); }

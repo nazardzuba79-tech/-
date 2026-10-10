@@ -51,7 +51,7 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
 // Mobile terminal, 2026-10-04: «Спот / Фьючерсы» switch, its two notes and the compact order-type selector.
 const MOBILE_TERMINAL_KEYS = ['terminal.marketSwitch', 'terminal.noFuturesContract', 'terminal.noSpotPair', 'trade.orderType'];
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
-const shortCardLabels: Record<string, string> = { ru: 'Crypto-Card', en: 'Crypto-Card', zh: 'Crypto-Card', es: 'Crypto-Card', hi: 'Crypto-Card', ja: 'Crypto-Card', ko: 'Crypto-Card' };
+const shortCardLabels: Record<string, string> = { ru: 'Card', en: 'Card', zh: 'Card', es: 'Card', hi: 'Card', ja: 'Card', ko: 'Card' };
 const KYC_PROFILE_CARD_KEYS = ['kycStepDocumentShort', 'kycStepReview', 'kycStepFilled', 'kycStepNotFilled', 'kycStepAdded', 'kycStepNotAdded',
   'kycStepNotSent', 'kycUploadTitle', 'kycUploadHint', 'kycChooseFile', 'kycReplaceFile', 'kycRemoveFile', 'kycPendingNoReupload',
   'kycRejectedHint', 'kycSubmittedData', 'kycStartCta', 'kycResubmitCta', 'kycOpenStatus', 'cardShortcutTitle'].map(key => `settings.${key}`);
@@ -76,13 +76,13 @@ const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySub
 describe('translation integrity', () => {
   it('localizes the exact two-line card copy and 22+/70+ fiat/crypto counts without an investor claim', () => {
     const approvedCommunityCopy: Record<string, { title: string; subtitle: string }> = {
-      ru: { title: 'Платите и снимайте наличные — 0% комиссии', subtitle: '22+ фиатных валют · 70+ криптовалют' },
-      en: { title: 'Pay and withdraw cash — 0% fees', subtitle: '22+ fiat currencies · 70+ cryptocurrencies' },
-      zh: { title: '支付与取现 — 手续费 0%', subtitle: '22+ 种法定货币 · 70+ 种加密货币' },
-      es: { title: 'Paga y retira efectivo — 0% de comisión', subtitle: '22+ monedas fiduciarias · 70+ criptomonedas' },
-      hi: { title: 'भुगतान करें और नकद निकालें — शुल्क 0%', subtitle: '22+ फ़िएट मुद्राएँ · 70+ क्रिप्टोकरेंसी' },
-      ja: { title: 'お支払いと現金の引き出し — 手数料0%', subtitle: '22+ の法定通貨 · 70+種類の暗号資産' },
-      ko: { title: '결제하고 현금을 인출하세요 — 수수료 0%', subtitle: '22+개 법정화폐 · 70+개 암호화폐' },
+      ru: { title: '0% комиссии за покупки — и снятие наличных', subtitle: '22+ фиатных валют · 70+ криптовалют' },
+      en: { title: '0% fees on purchases — and cash withdrawals', subtitle: '22+ fiat currencies · 70+ cryptocurrencies' },
+      zh: { title: '0% 手续费 — 购物及现金提取', subtitle: '22+ 种法定货币 · 70+ 种加密货币' },
+      es: { title: '0% de comisión en compras — y retiradas de efectivo', subtitle: '22+ monedas fiduciarias · 70+ criptomonedas' },
+      hi: { title: 'खरीदारी पर 0% शुल्क — नकद निकासी पर भी', subtitle: '22+ फ़िएट मुद्राएँ · 70+ क्रिप्टोकरेंसी' },
+      ja: { title: '手数料0% — お買い物と現金引き出し', subtitle: '22+ の法定通貨 · 70+種類の暗号資産' },
+      ko: { title: '수수료 0% — 구매 및 현금 인출', subtitle: '22+개 법정화폐 · 70+개 암호화폐' },
     };
     for (const code of LOCALES) {
       const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
@@ -94,9 +94,9 @@ describe('translation integrity', () => {
       }
       const feeParts = dicts[code]['authShell.communityTitle'].split(' — ');
       expect(feeParts).toHaveLength(2);
-      expect(feeParts[0]).not.toMatch(/\d/);
+      expect(feeParts[0]).toContain('0%');
       expect(feeParts[1]).not.toContain('VOLTEX');
-      expect(feeParts[1]).toContain('0%');
+      expect(feeParts[1]).not.toContain('0%');
       expect(dicts[code]['authShell.communityTitle'].match(/\d+%/g)).toEqual(['0%']);
       expect(dicts[code]['authShell.communityTitle']).toBe(approvedCommunityCopy[code].title);
       expect(dicts[code]['authShell.communitySubtitle']).toBe(approvedCommunityCopy[code].subtitle);
@@ -104,7 +104,7 @@ describe('translation integrity', () => {
       expect(dicts[code]['authShell.communitySubtitle']).toContain(' · ');
     }
     for (const key of AUTH_COMMUNITY_KEYS) expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
-    expect(dicts.ru['authShell.communityTitle']).toBe('Платите и снимайте наличные — 0% комиссии');
+    expect(dicts.ru['authShell.communityTitle']).toBe('0% комиссии за покупки — и снятие наличных');
     expect(dicts.ru['authShell.communitySubtitle']).toBe('22+ фиатных валют · 70+ криптовалют');
   });
   it('clarifies that the displayed currency flags are a partial selection in all seven languages', () => {
@@ -354,7 +354,11 @@ describe('translation integrity', () => {
           // Currency flag selection (2026-10-07): one additive label per language.
           'authShell.moreCurrencies',
           // Bybit 1:1 positions summary line (2026-10-07): `git diff --numstat` over the locales reports `3 0` per language.
-          'futures.allPositions', 'futures.currentPositions', 'futures.totalPnl'];
+          'futures.allPositions', 'futures.currentPositions', 'futures.totalPnl',
+          // Mobile client audit (2026-10-09): the Spot/CFD terminal's third phone
+          // tab reads «Ордера» instead of the wrapping «Открытые ордера»;
+          // `git diff --numstat` over the locales reports `1 0` per language.
+          'trade.mobileTabOrders'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

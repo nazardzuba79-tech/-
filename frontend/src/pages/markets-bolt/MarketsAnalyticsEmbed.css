@@ -12,3 +12,12 @@
 .markets-analytics-embedded .ap-span-3{grid-column:1/-1;min-width:0}
 .markets-analytics-empty{padding:28px;border:1px solid var(--ap-line);background:white;color:var(--ap-muted);text-align:center}
 @media(max-width:760px){.markets-view-tabs{width:100%}.markets-view-tabs a{flex:1;text-align:center}.markets-analytics-launch{right:14px;bottom:76px}.markets-analytics-page .page-intro{align-items:stretch}.markets-analytics-embedded .markets-analytics-head{align-items:flex-start}.markets-analytics-embedded .markets-analytics-head h2{font-size:21px}}
+/* The bottom bar exists from 860px down (index.css), the pill moved above it only from 760px:
+   at 768 and 844×390 it sat under the bar. Left of the support launcher (44px at right:10px
+   above the bar, SupportWidget.css), which used to sit on top of it. */
+@media(max-width:860px){.markets-analytics-launch{right:64px;bottom:76px}}
+/* The pill is rendered outside .markets-bolt-root, where --bg-card-1 is not
+   defined and --text-primary is the dark theme's white: on the light markets
+   page the label «Аналитика» was white on a transparent oval (invisible at
+   every width, in the baseline too). Explicit light-surface colours. */
+.markets-analytics-launch{background:#ffffff;color:#0b0e11;border-color:#d9dde3}

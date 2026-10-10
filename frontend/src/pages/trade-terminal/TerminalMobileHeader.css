@@ -17,8 +17,11 @@
 @media (max-width:900px) {
   :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] {
     gap:6px;
-    height:52px;
+    /* One 52px row; when the row cannot hold its keys (OS text at 200%) it
+       wraps onto a second line instead of the keys running over each other. */
+    height:auto;
     min-height:52px;
+    flex-wrap:wrap;
     padding-inline:10px;
   }
   :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-left {
@@ -26,7 +29,14 @@
     min-width:0;
     gap:6px;
   }
-  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .nav-mobile-menu { top:100%; }
+  /* The drawer hangs under the header and ends above the bottom dock on every
+     terminal, however tall the header is (two rows at 320px or with OS text at
+     200%): 100% is the header's own height, --mobile-nav-space the dock, and
+     --mobile-viewport-height the visual viewport when a keyboard is open. */
+  :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .nav-mobile-menu {
+    top:100%;
+    max-height:calc(var(--mobile-viewport-height,100dvh) - 100% - var(--mobile-nav-space,0px));
+  }
   :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .mobile-menu {
     width:44px;
     height:44px;

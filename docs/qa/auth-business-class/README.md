@@ -21,7 +21,7 @@ unframed, with no shared panel, border, blur, raised shadow, numeric badge,
 carousel or testimonial claim.
 No verified evidence for the previous 1.2 million investor figure was found;
 old copy and comments are not evidence. The owner replaced the neutral community
-copy with “Платите и снимайте наличные — 0% комиссии” and
+copy with “0% комиссии за покупки и снятие наличных” and
 “22+ фиатных валют · 70+ криптовалют”. All seven locales retain the exact 22+/70+ product
 figures, supplied by the owner rather than independently verified coverage.
 See `frontend/public/auth/README.md` for image hashes.
