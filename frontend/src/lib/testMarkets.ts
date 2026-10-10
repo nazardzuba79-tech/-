@@ -57,6 +57,23 @@ export interface TestMarketsSnapshot {
   assets: TestAsset[];
 }
 
+/** Presentation only: the server owns execution permission and market phase.
+ * Every asset in this catalogue is simulated, including tradable listings. */
+export function testMarketPresentation(asset: TestAsset, now: number) {
+  const scheduled = asset.listingArmed && Number.isFinite(Date.parse(asset.listingAt));
+  return {
+    simulationKey: 'listing.simulation' as const,
+    availabilityKey: !asset.isTradable ? 'listing.tradingUnavailable' as const
+      : asset.state.phase === 'live' ? 'listing.marketLive' as const
+      : null,
+    scheduleKey: !scheduled ? 'listing.dateUnconfirmed' as const
+      : asset.state.phase === 'pre-listing' && Date.parse(asset.listingAt) <= now
+        ? 'listing.awaitingStart' as const : null,
+    showDate: scheduled,
+    showCountdown: scheduled && asset.state.phase === 'pre-listing' && Date.parse(asset.listingAt) > now,
+  };
+}
+
 /**
  * Managed listings (Admin → Listings) are not in code: the public catalogue on
  * the market edge names them. Parsing that catalogue registers each pair here,
@@ -120,7 +137,7 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
       quote: String(raw.quote ?? raw.pair.split('/')[1]),
       isTestAsset: true,
       isTradable: raw.isTradable,
-      status: isAith(raw.pair) ? '' : typeof raw.status === 'string' ? raw.status : TEST_ASSET_STATUS_LABEL,
+      status: typeof raw.status === 'string' ? raw.status : TEST_ASSET_STATUS_LABEL,
       listingArmed: typeof raw.listingArmed === 'boolean' ? raw.listingArmed : true,
       listingAt: raw.listingAt,
       initialPrice: finiteOrNull(raw.initialPrice) ?? 0,

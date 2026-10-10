@@ -446,7 +446,7 @@ export function TradePage() {
 
           <div className="chart-area" data-test-market={testPair || undefined}>
             {testPair
-              ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} />
+              ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} error={testMarket.error} />
               : pairResolving
                 ? <div className="chart-resolving" style={{ width: "100%", height: "100%" }} aria-busy="true" data-pair-resolving />
                 : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />}

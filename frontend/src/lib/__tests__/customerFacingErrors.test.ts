@@ -130,7 +130,7 @@ describe('1. injected server junk never reaches the customer', () => {
   it('an unmapped failure is reported to the console, not silently dropped', () => {
     const report = jest.fn();
     customerErrorText(new FakeApiError('kaboom in the widget factory', 500), t, FALLBACK, { report });
-    expect(report).toHaveBeenCalledWith(expect.objectContaining({ message: 'kaboom in the widget factory', status: 500 }));
+    expect(report).toHaveBeenCalledWith({ message: 'Unmapped server failure', status: 500 });
   });
 });
 

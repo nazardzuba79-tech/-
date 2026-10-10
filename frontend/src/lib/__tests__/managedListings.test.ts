@@ -123,9 +123,9 @@ describe('managed catalogue scheduling with the real store', () => {
     status: 'TEST · NOT TRADABLE', initialPrice, version,
     readLease: { protocol: 'aith-prelisting-v1', generation: version, issuedAt: Date.now(), expiresAt: Date.now() + 45_000 } });
 
-  test('AITH alone hides customer labels while retaining the non-tradable classification and actual price', () => {
+  test('all assets retain machine status; presentation translates it without changing price or trading protections', () => {
     const parsed = parseTestMarkets({ serverTime: Date.now(), assets: [aith(2, 2), managed({ isTradable: false, status: 'TEST · NOT TRADABLE' })] })!;
-    expect(parsed.assets[0]).toMatchObject({ initialPrice: 2, version: 2, status: '', isTestAsset: true, isTradable: false });
+    expect(parsed.assets[0]).toMatchObject({ initialPrice: 2, version: 2, status: 'TEST · NOT TRADABLE', isTestAsset: true, isTradable: false });
     expect(parsed.assets[1].status).toBe('TEST · NOT TRADABLE');
     expect(parseTestMarkets({ serverTime: Date.now() + 46_000, assets: [aith()] })!.assets).toEqual([]);
     expect(parseTestMarkets({ serverTime: Date.now(), assets: [{ ...aith(), readLease: undefined }] })!.assets).toEqual([]);

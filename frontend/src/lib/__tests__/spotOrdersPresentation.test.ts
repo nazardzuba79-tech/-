@@ -47,9 +47,9 @@ describe('Spot orders truthful dense presentation', () => {
     expect(spotOrderType(order, t)).toBe('trade.orderType.STOP_LIMIT · trade.orderType.LIMIT');
     expect(spotOrderType({ ...order, type: 'STOP_MARKET' }, t)).toBe('trade.orderType.STOP_MARKET · trade.orderType.MARKET');
     expect(spotOrderType({ ...order, ocoGroupId: 'actual-group' }, t)).toBe('trade.orderType.OCO');
-    expect(spotOrderType({ ...order, type: 'UNKNOWN' }, t)).toBe('UNKNOWN');
+    expect(spotOrderType({ ...order, type: 'UNKNOWN' }, t)).toBe('trade.orderTypeUnavailable');
     expect(spotOrderStatus('PARTIALLY_FILLED', t)).toBe('trade.status.PARTIALLY_FILLED');
-    expect(spotOrderStatus('EXPIRED', t)).toBe('EXPIRED');
+    expect(spotOrderStatus('EXPIRED', t)).toBe('trade.status.EXPIRED');
   });
   it('renders all real columns, precise price/trigger/fill/status, and does not mutate the row', () => {
     const before = JSON.stringify(order);
