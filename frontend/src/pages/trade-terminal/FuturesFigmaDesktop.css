@@ -1,0 +1,88 @@
+/* Figma 9gbmBfp0OSHTzLsnbBUnrZ / 19:103, measured 2026-10-10.
+ * Desktop geometry only. Keep the existing palette, controls and engines.
+ * Reference: 56px ticker, 286px book, 300px ticket, 4px gutters;
+ * chart / account workspace 524:380. The imported frame has unused space
+ * below that workspace; distribute the available viewport height instead.
+ * The mobile cascade and alternative terminal layouts are deliberately scoped out.
+ */
+@media (min-width: 901px) {
+  #archive-terminal-preview.futures-terminal .terminal {
+    --futures-ticker-height: 56px;
+    --reference-book-width: 286px;
+    grid-template-columns: minmax(0, 1fr) var(--reference-book-width) 300px;
+    grid-template-rows: 56px minmax(300px, 524fr) minmax(180px, 380fr);
+    gap: 4px;
+    padding: 4px;
+  }
+
+  /* Preserve the existing user-controlled collapse, including mounted readers. */
+  #archive-terminal-preview.futures-terminal .terminal[data-account-compact=true] {
+    grid-template-rows: 56px minmax(300px, 1fr) 44px;
+  }
+
+  #archive-terminal-preview.futures-terminal .ticker-bar {
+    height: 56px;
+    min-height: 56px;
+    grid-template-columns: max-content minmax(0, 1fr);
+    overflow: hidden;
+  }
+  #archive-terminal-preview.futures-terminal .archive-ticker-metrics {
+    min-width: 0;
+    grid-template-columns: repeat(7, max-content);
+    grid-auto-flow: column;
+    gap: 16px;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  #archive-terminal-preview.futures-terminal .ticker-bar .futures-primary-price {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  #archive-terminal-preview.futures-terminal .bottom-panel:not([data-account-compact=true]) {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  /* The existing Limit/Market fields retain their floating-label behavior. */
+  #archive-terminal-preview.futures-terminal .fo-field {
+    --fo-field-height: 42px;
+  }
+  #archive-terminal-preview.futures-terminal .fo-submitPair button {
+    height: 42px;
+    min-height: 42px;
+  }
+  #archive-terminal-preview.futures-terminal .archive-trading-heading {
+    height: 46px;
+    min-height: 46px;
+  }
+
+  #archive-terminal-preview.futures-terminal .order-family-tabs {
+    gap: 6px;
+  }
+  #archive-terminal-preview.futures-terminal .order-family-tabs button {
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1599px) {
+  #archive-terminal-preview.futures-terminal .archive-ticker-metrics {
+    column-gap: 10px;
+  }
+  #archive-terminal-preview.futures-terminal .ticker-bar .futures-primary-price {
+    padding-right: 4px;
+  }
+  /* Wrap descriptive labels on laptops; never truncate market values. */
+  #archive-terminal-preview.futures-terminal .ticker-bar .ticker-item {
+    grid-template-rows: 24px 14px;
+  }
+  #archive-terminal-preview.futures-terminal .ticker-bar .ticker-item > .label,
+  #archive-terminal-preview.futures-terminal .ticker-bar .ticker-item button .label {
+    max-width: 105px;
+    white-space: normal;
+    line-height: 12px;
+  }
+}
