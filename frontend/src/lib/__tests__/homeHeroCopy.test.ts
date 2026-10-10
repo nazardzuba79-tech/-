@@ -41,6 +41,9 @@ test('header uses Card while other product naming stays unchanged', () => {
 test('homepage desktop and mobile navigation share the existing Card and Academy destinations', () => {
   const header = read('src/pages/home/HomeHeader.tsx');
   expect(header).toContain("{ to: '/card', labelKey: 'nav.card' }");
+  expect(header).toContain("import { Menu, X, CreditCard } from 'lucide-react';");
+  // Card icon is present in both public homepage navigation layouts.
+  expect(header.match(/l\.to === '\/card' && <CreditCard size=\{14\} aria-hidden="true" \/>/g)).toHaveLength(2);
   expect(header).toContain("{ to: '/academy', labelKey: 'nav.academy' }");
   expect(header).not.toContain('nav.knowledgeCenter');
   expect(header.match(/LINKS\.map\(/g)).toHaveLength(2);
