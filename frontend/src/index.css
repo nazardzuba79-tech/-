@@ -869,7 +869,17 @@ body {
    key sat past the right edge). Both rules live here because home.css is
    byte-frozen by cryptoCardVisualConsistency/cryptoCardProductionPromotion. */
 @media (max-width: 359px) {
-  .global-header .header-brand > span > span,
+  .global-header .header-brand > span > span {
+    display: none;
+  }
+}
+/* The home header shows the mark alone below 430px, as the terminal header
+   already does (owner, 2026-10-04): with the wordmark the row «VOLTEX ·
+   Вход · Начать торговлю · menu» is 370px at 360 (the menu key loses 10px)
+   and in Spanish 412px at 360–411 (the menu key is off-screen, the CTA cut).
+   The labels are the product's words and the menu holds no sign-in entry, so
+   the wordmark is the one thing with room to give. */
+@media (max-width: 429px) {
   .home-brand > span > span {
     display: none;
   }

@@ -40,8 +40,14 @@
      The header now scrolls with the page here — the strip is the one row
      that stays, as in every mobile exchange; the bottom bar keeps wallet,
      markets, trade and profile one tap away. Futures (its own inner scroll)
-     is not touched. */
-  .trade-terminal.vx-terminal .global-header { position:static; }
+     is not touched.
+     `relative`, not `static`: the drawer (.nav-mobile-menu) is absolutely
+     positioned at top:100% of the header. A static header stops being its
+     containing block and the drawer drops below the viewport (body-relative
+     top:100% = 844px on a 390×844 phone) — every link off-screen. The header
+     also stays above the sticky strip (z 40 > 35) so the drawer's first row
+     is not painted under it. */
+  .trade-terminal.vx-terminal .global-header { position:relative; z-index:40; }
   /* Same three primary mobile workspaces as Futures: market/chart context,
      order entry, then the account panel. */
   .trade-terminal.vx-terminal .terminal-mobile-tabs {

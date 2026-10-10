@@ -111,7 +111,11 @@ const AUDIT = ({ phone }) => {
     const r = el.getBoundingClientRect();
     if (r.right <= vw + 1 && r.left >= -1) continue;
     if (scroller(el)) continue;
-    const b = clipBox(el); if (b.right <= vw + 1 && b.left >= -1 && (b.right - b.left) < r.width - 1) continue; // clipped by an ancestor, not visible spill
+    const b = clipBox(el);
+    // Clipped by an ancestor (overflow hidden/clip — a scroller was skipped
+    // above): decoration cut by its page is not a visible spill, but a link
+    // or key cut by its own page is unreachable, and that one is reported.
+    if (b.right <= vw + 1 && b.left >= -1 && (b.right - b.left) < r.width - 1 && !el.matches('a[href],button,input,select,textarea,[role=button],[role=tab],[role=menuitem]')) continue;
     spills.add(el);
   }
   for (const el of spills) {
