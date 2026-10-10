@@ -1333,3 +1333,25 @@
 .vx-wallet .wallet-ledger-mobile button > :nth-child(2) {
   min-width: 64px;
 }
+
+/* Withdraw address validation in the body-portalled wallet modal.
+   Large OS text was taller than Tailwind's fixed 16px line-height and the
+   error overlapped the next line at 200% on 320px. Keep the protected shared
+   FieldError component unchanged; only this address message is adjusted. */
+@media (max-width: 767px) {
+  .vx-wallet-modal-root .wallet-withdraw-address-field > p.text-neg {
+    min-width: 0;
+    max-width: 100%;
+    line-height: 1.4;
+    white-space: normal;
+  }
+  .vx-wallet-modal-root .wallet-withdraw-address-field > p.text-neg > span {
+    display: block;
+    flex: 1 1 0%;
+    min-width: 0;
+    max-width: 100%;
+    line-height: inherit;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+}
