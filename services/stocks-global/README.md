@@ -21,6 +21,7 @@ From the repository root, choose a **new, dedicated local ledger path**, not a V
 
 ```powershell
 $env:STOCKS_GLOBAL_DATA='C:/path/to/local-review/ledger-v2.json'
+$env:STOCKS_LEGACY_SINGLE_OWNER_REVIEW='true' # old ownerless ledger only; never a multi-user server
 $env:STOCKS_GLOBAL_PORT='4437'
 node services/stocks-global/server.mjs
 ```

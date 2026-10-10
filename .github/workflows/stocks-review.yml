@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: '22'
       - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
-        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate

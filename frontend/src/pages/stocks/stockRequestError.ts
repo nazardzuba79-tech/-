@@ -8,6 +8,8 @@ export class StockRequestError extends Error {
 }
 
 const messages: Record<string, string> = {
+  AUTH_REQUIRED: 'Войдите, чтобы открыть свой тестовый счёт', AUTH_UNAVAILABLE: 'Проверка сессии временно недоступна',
+  MOEX_UNVERIFIED: 'MOEX: реальные данные пока не подтверждены. Торговля заблокирована', SOURCE_BUSY: 'Источник занят — повторите запрос',
   SOURCE_DNS_UNAVAILABLE: 'Источник котировок сейчас недоступен', SOURCE_UNAVAILABLE: 'Источник данных недоступен',
   QUOTE_UNAVAILABLE: 'Подтверждённой цены нет', QUOTE_STALE: 'Котировка устарела — исполнение приостановлено',
   MARKET_CLOSED: 'Торговая сессия закрыта', FX_UNAVAILABLE: 'Нет подтверждённого курса пересчёта', FX_STALE: 'Курс пересчёта устарел',

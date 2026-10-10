@@ -6109,3 +6109,12 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
 - Strengthened regressions: 26/26 local stock tests pass. Existing full-admission test still asserts HTTP 503 for a genuinely uncached older range; its timestamp now excludes the cached newest candle. Added 100-reader, exact pagination and invalidation tests.
 - CI before image now pins the exact prior #497 head; identical observational SQL/cache metrics are copied into both images. Same three repetitions, concurrency, cadence, timeouts and cgroup/I/O limits. Paired resource evidence is pending.
 - Professional B, Futures/Spot/Admin and Claude #495 preserved. Per-user account work follows separately. No production, merge or deploy.
+
+
+## 2026-10-10 — PR #497 authenticated Stocks review
+
+Added per-principal SQLite paper accounts with a fixed server-side /api/v1/me identity adapter, per-account CSRF/idempotency and browser session-response fences. Legacy ownerless JSON is untouched and requires explicit single-owner CLI review mode. New fixture-only identity preview on 4441/4442 uses separate accounts.sqlite and dist-stocks-accounts; no production auth/DB credentials used. Existing engine/design reused. MOEX quote/history/new-order admission explicitly blocked.
+
+Local evidence: 6 new account/security/persistence tests pass (including actual new-process restart and two repository writers), unchanged simulator regressions pass; frontend 4131/245 passed and separate enabled build passed. First performance candidate 3fcced0 ran the new 100-client regression with Fetch clients in the same 0.05 CPU cgroup and hit its 3s deadline. The regression now uses native HTTP clients, retaining 100 simultaneous connections and the 3s deadline; the external read-load workload and all resource/acceptance limits remain unchanged. Same-condition paired resource CI is still pending; do not infer capacity from job colour.
+
+Official data-rights review in services/stocks-global/DATA-RIGHTS.md does not establish Bybit/Binance commercial redistribution permission. Production publication remains blocked pending rights and deployment architecture review. No merge/deploy, no real balances/orders, no Claude #495 or shared mobile/Futures/Spot/Admin changes.

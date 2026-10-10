@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { get as httpGet } from 'node:http';
 import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -39,7 +40,15 @@ test('100 simultaneous cached HTTP readers are not rejected by idle transport so
   let dropped=0;server.on('drop',()=>dropped++);await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const url='http://127.0.0.1:'+server.address().port+'/stocks/history/'+i.instrumentId;
   try{
-    const results=await Promise.all(Array.from({length:100},async()=>{const r=await fetch(url,{signal:AbortSignal.timeout(3000)});assert.equal(r.status,200);return r.json();}));
+    // Native HTTP keeps this transport regression's client inside the tiny shared
+    // cgroup without charging 100 Fetch/JSON parsers to the server's CPU budget.
+    // Same 100 connections and 3s deadline; external read-load.cjs is unchanged.
+    const results=await Promise.all(Array.from({length:100},()=>new Promise((resolve,reject)=>{
+      const request=httpGet(url,{signal:AbortSignal.timeout(3000)},response=>{
+        if(response.statusCode!==200){response.resume();reject(Error('HTTP '+response.statusCode));return;}
+        response.on('error',reject);response.on('end',()=>resolve(true));response.resume();
+      });request.on('error',reject);
+    })));
     assert.equal(results.length,100);assert.equal(dropped,0);assert.equal(server.maxConnections,128);
     assert.ok(server.stockCache.bytes<=16*1048576);assert.equal(server.stockCache.pending.size,0);
   }finally{server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}
