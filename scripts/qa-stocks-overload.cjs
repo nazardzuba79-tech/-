@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
 const dist = path.resolve(process.env.QA_DIST || path.join(root, 'frontend/dist-stocks-global'));
 const out = path.resolve(process.env.QA_OUT || path.join(root, 'output/stocks-overload'));
 const id = 'BYBIT:AAPLXUSDT', prefix = '/__stocks_global/';
-const report = { fixtureOnly: true, externalApiCalls: 0, productionWrites: 0, assertions: [], views: [], requests: [], pageErrors: [], externalBlocked: [], unexpectedWrites: [] };
+const report = { fixtureOnly: true, externalApiCalls: 0, productionWrites: 0, assertions: [], views: [], requests: [], recoveryTimers: [], pageErrors: [], externalBlocked: [], unexpectedWrites: [] };
 function check(value, name) { assert.ok(value, name); report.assertions.push(name); }
 async function until(predicate, message) {
   const started = Date.now();
@@ -68,7 +68,7 @@ const writeRequests = () => report.requests.filter(r => r.method === 'POST');
       await local(width, 'catalogue'); await local(width, 'refresh', { id }, initial.token);
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 }, serviceWorkers: 'block', locale: 'ru-RU' });
       await context.addInitScript(token => { localStorage.setItem('exchange_token', token); localStorage.setItem('exchange_lang', 'ru'); }, `fixture-overload-${width}`);
-      const faults = { history: null, rejectNextOrder: false, priorStateErrors: 0 };
+      const faults = { history: null, rejectNextOrder: false, priorStateErrors: 0, priorResponseGate: null };
       await context.route('**/*', async route => {
         const request = route.request(), url = new URL(request.url());
         if (url.origin !== origin) {
@@ -83,6 +83,7 @@ const writeRequests = () => report.requests.filter(r => r.method === 'POST');
           if (name === 'orders' && faults.rejectNextOrder) { faults.rejectNextOrder = false; entry.fault = 'ACCOUNT_BUSY'; return route.fulfill({ status: 503, contentType: 'application/json', headers: { 'Retry-After': '3' }, body: '{"error":"ACCOUNT_BUSY","retryAfterMs":3000}' }); }
           if (name === 'state' && faults.priorStateErrors > 0) {
             faults.priorStateErrors--; entry.fault = 'prior-ACCOUNT_BUSY'; const response = await route.fetch(); const body = await response.json(); body.errors = { ...body.errors, [id]: 'ACCOUNT_BUSY' };
+            await faults.priorResponseGate;
             return route.fulfill({ response, contentType: 'application/json', body: JSON.stringify(body) });
           }
           return route.continue();
@@ -100,6 +101,18 @@ const writeRequests = () => report.requests.filter(r => r.method === 'POST');
       await page.locator('.vxg-chart-section canvas').first().waitFor();
       await until(async () => !(await page.locator('.vxg-ohlc').innerText()).includes('Свечи не получены'), 'fixture candles did not reach the actual chart');
       await page.clock.runFor(50); // Flush chart animation frames, not a market-data retry.
+      await page.evaluate(() => {
+        // Observe timer admission only. The application callback, delay, return
+        // handle and Playwright clock implementation are forwarded unchanged.
+        // Recovering UI/request start precede async body parsing, so they cannot
+        // establish when the circuit's3.5s followup delay actually begins.
+        window.__stocksRecoveryTimerArms = [];
+        const original = window.setTimeout;
+        window.setTimeout = function (callback, delay, ...args) {
+          if (delay === 3500) window.__stocksRecoveryTimerArms.push(Date.now());
+          return original.call(window, callback, delay, ...args);
+        };
+      });
       const alert = page.locator('.vxg-center > [role="alert"]').filter({ hasText: 'Автообновление приостановлено' });
       const retry = alert.getByRole('button', { name: 'Повторить загрузку', exact: true });
       const screenshot = async name => { const file = `fixture-${width}-${name}.png`; await page.screenshot({ path: path.join(out, file), fullPage: true }); report.views.push({ width, state: name, screenshot: file, fixtureOnly: true }); };
@@ -138,9 +151,21 @@ const writeRequests = () => report.requests.filter(r => r.method === 'POST');
       const busyReads = countReads(), busyWrites = writeRequests().length;
       await page.clock.runFor(7000); check(countReads() === busyReads, `${width}: account cooldown and expiry do not poll`);
       check(writeRequests().length === busyWrites, `${width}: account cooldown does not replay pending mutation`);
-      faults.priorStateErrors = 1; await retry.click();
-      await until(() => countReads() === busyReads + 2, 'manual account recovery did not issue initial reads');
-      await until(async () => (await alert.innerText()).includes('Проверяем доступность'), 'bounded prior-error probe is not pending');
+      const timerArmsBefore = await page.evaluate(() => window.__stocksRecoveryTimerArms.length);
+      let releasePriorResponse;
+      faults.priorResponseGate = new Promise(resolve => { releasePriorResponse = resolve; });
+      faults.priorStateErrors = 1;
+      try {
+        await retry.click();
+        await until(() => countReads() === busyReads + 2, 'manual account recovery did not issue initial reads');
+        await until(async () => (await alert.innerText()).includes('Проверяем доступность'), 'bounded prior-error probe is not pending');
+        await page.clock.runFor(3501);
+        check(countReads() === busyReads + 2, `${width}: delayed response cannot trigger a premature followup`);
+        check(await page.evaluate(() => window.__stocksRecoveryTimerArms.length) === timerArmsBefore, `${width}: followup timer is not armed before the initial body arrives`);
+      } finally { releasePriorResponse(); faults.priorResponseGate = null; }
+      await until(async () => await page.evaluate(() => window.__stocksRecoveryTimerArms.length) === timerArmsBefore + 1, 'prior-error followup timer was not armed after read completion');
+      const armedAt = await page.evaluate(() => window.__stocksRecoveryTimerArms.at(-1));
+      report.recoveryTimers.push({ width, delayMs: 3500, armedAt, initialResponseHeldForVirtualMs: 3501 });
       await page.clock.runFor(3499); check(countReads() === busyReads + 2, `${width}: prior-error followup waits for server tick`);
       await page.clock.runFor(2); await alert.waitFor({ state: 'hidden' });
       check(countReads() === busyReads + 3, `${width}: prior state error permits exactly one delayed GETstate`);
