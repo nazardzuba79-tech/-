@@ -9,7 +9,7 @@ import {
   computeVWAP, computeWMA, computeWilliamsR, type Candle,
 } from '../indicators';
 import {
-  CHART_INDICATORS_KEY, DEFAULT_CHART_INDICATORS, INDICATOR_CATALOGUE, MAX_CHART_INDICATORS, computeIndicator, getChartIndicators,
+  CHART_INDICATORS_KEY, FUTURES_CHART_INDICATORS_KEY, DEFAULT_CHART_INDICATORS, INDICATOR_CATALOGUE, MAX_CHART_INDICATORS, computeIndicator, getChartIndicators,
   getSavedChartIndicators, indicatorDefinition, indicatorInstanceLabel, newIndicatorInstance, normalizeIndicatorInstances,
   previewChartIndicators, resetChartIndicatorsCache, revertChartIndicators, saveChartIndicators, subscribeChartIndicators,
 } from '../chartIndicators';
@@ -181,4 +181,27 @@ describe('the per-browser indicator store', () => {
     off();
     expect(seen).toEqual([2, 1, 2]);
   });
+  it('keeps Futures and Spot indicators independent, including draft cancel and subscriber updates', () => {
+    const spotEvents: number[] = [], futureEvents: number[] = [];
+    const offSpot = subscribeChartIndicators(list => spotEvents.push(list.length), 'spot');
+    const offFutures = subscribeChartIndicators(list => futureEvents.push(list.length), 'futures');
+    saveChartIndicators([newIndicatorInstance('ema')], 'spot');
+    saveChartIndicators([newIndicatorInstance('rsi'), newIndicatorInstance('macd')], 'futures');
+    expect(JSON.parse(store.get(CHART_INDICATORS_KEY)!)).toHaveLength(1);
+    expect(JSON.parse(store.get(FUTURES_CHART_INDICATORS_KEY)!)).toHaveLength(2);
+    expect(getSavedChartIndicators('spot').map(i => i.type)).toEqual(['ema']);
+    expect(getSavedChartIndicators('futures').map(i => i.type)).toEqual(['rsi', 'macd']);
+    previewChartIndicators([newIndicatorInstance('obv')], 'futures');
+    expect(getChartIndicators('futures').map(i => i.type)).toEqual(['obv']);
+    expect(getChartIndicators('spot').map(i => i.type)).toEqual(['ema']);
+    revertChartIndicators('futures');
+    expect(getChartIndicators('futures').map(i => i.type)).toEqual(['rsi', 'macd']);
+    resetChartIndicatorsCache();
+    expect(getChartIndicators('spot').map(i => i.type)).toEqual(['ema']);
+    expect(getChartIndicators('futures').map(i => i.type)).toEqual(['rsi', 'macd']);
+    expect(spotEvents).toEqual([1]);
+    expect(futureEvents).toEqual([2, 1, 2]);
+    offSpot(); offFutures();
+  });
+
 });
