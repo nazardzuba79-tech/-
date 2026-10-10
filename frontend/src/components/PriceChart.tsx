@@ -27,7 +27,7 @@ import { useLanguage } from '../lib/i18n';
 import { type Candle } from '../lib/indicators';
 import {
   INDICATOR_CATALOGUE, computeIndicator, getChartIndicators, indicatorDefinition, indicatorInstanceLabel, newIndicatorInstance,
-  saveChartIndicators, subscribeChartIndicators, type IndicatorInstance, type IndicatorType,
+  saveChartIndicators, subscribeChartIndicators, type IndicatorInstance, type IndicatorOutput, type IndicatorType,
 } from '../lib/chartIndicators';
 import {
   drawingFlyoutPosition,
@@ -80,7 +80,9 @@ const INDICATOR_COLORS = {
  *  instance appears, taken off the chart with it. `signature` records what
  *  the data was computed from, so colour or width changes never recompute. */
 type IndicatorSeriesSet = {
-  signature: string;
+  signature: string; // mathematical inputs only (not palette)
+  paintSignature: string;
+  computed: IndicatorOutput | null;
   pane: 'price' | 'lower' | 'band';
   lines: Record<string, ISeriesApi<'Line'>>;
   histogram: ISeriesApi<'Histogram'> | null;
@@ -300,10 +302,12 @@ export function PriceChart({
   /** Retries the candle request alone — never a page reload. */
   const retryCandlesRef = useRef<(() => void) | null>(null);
   const [chartType, setChartType] = useState<ChartType>('candles');
-  /** The indicators on the chart: the viewer's instances (lib/chartIndicators),
-   *  shared by every chart that has settings, as the paint settings are. */
-  const [indicatorInstances, setIndicatorInstances] = useState<IndicatorInstance[]>(() => getChartIndicators());
-  useEffect(() => subscribeChartIndicators(setIndicatorInstances), []);
+  /** The viewer's indicator presets are isolated between Spot and Futures. */
+  const [indicatorInstances, setIndicatorInstances] = useState<IndicatorInstance[]>(() => getChartIndicators(market));
+  useEffect(() => {
+    setIndicatorInstances(getChartIndicators(market));
+    return subscribeChartIndicators(setIndicatorInstances, market);
+  }, [market]);
   /** Bumped when the candles change, so every instance recomputes once. */
   const [indicatorDataVersion, setIndicatorDataVersion] = useState(0);
   /** Lower-pane indicators get panes of their own on the futures chart; Spot and
@@ -312,8 +316,8 @@ export function PriceChart({
   const hasType = (type: IndicatorType) => indicatorInstances.some(i => i.type === type && i.visible);
   /** Spot's flat toggles: off → one instance with its defaults, on → every instance of that kind off. */
   const toggleType = (type: IndicatorType) => {
-    const saved = getChartIndicators();
-    saveChartIndicators(saved.some(i => i.type === type) ? saved.filter(i => i.type !== type) : [...saved, newIndicatorInstance(type)]);
+    const saved = getChartIndicators(market);
+    saveChartIndicators(saved.some(i => i.type === type) ? saved.filter(i => i.type !== type) : [...saved, newIndicatorInstance(type)], market);
   };
   const showMA = hasType('ma'), showBollinger = hasType('bollinger'), showRSI = hasType('rsi'), showMACD = hasType('macd');
   /** True when a lower-pane indicator is drawn in the main pane's bottom band (Spot/CFD). */
@@ -710,7 +714,7 @@ export function PriceChart({
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart || !chartReady) return;
-    const map = indicatorSeriesRef.current, candles = candlesRef.current, live = new Set(indicatorInstances.map(i => i.id));
+    const map = indicatorSeriesRef.current, candles = candlesRef.current, live = new Set(indicatorInstances.filter(i => i.visible).map(i => i.id));
     const canRemove = typeof chart.removeSeries === 'function';
     for (const [id, set] of map) {
       if (live.has(id)) continue;
@@ -722,6 +726,9 @@ export function PriceChart({
     const firstLower = volumePane >= 1 ? 2 : 1;
     let lowerIndex = 0;
     for (const inst of indicatorInstances) {
+      // An invisible oscillator must not retain an empty physical pane.
+      // Re-creating its series on show is safe: the instance and settings persist.
+      if (!inst.visible) continue;
       const def = indicatorDefinition(inst.type);
       const pane: IndicatorSeriesSet['pane'] = def.pane === 'price' ? 'price' : paneSupport ? 'lower' : 'band';
       let set = map.get(inst.id);
@@ -736,7 +743,7 @@ export function PriceChart({
           });
         }
         const histogram = def.histogram ? chart.addSeries(HistogramSeries, { priceScaleId, priceLineVisible: false, lastValueVisible: false, visible: false }) : null;
-        set = { signature: '', pane, lines, histogram, levels: [] };
+        set = { signature: '', paintSignature: '', computed: null, pane, lines, histogram, levels: [] };
         map.set(inst.id, set);
         const first = Object.values(lines)[0];
         if (pane === 'band') first?.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 }, visible: false });
@@ -749,18 +756,37 @@ export function PriceChart({
       }
       def.lines.forEach((line, k) => set!.lines[line.key]?.applyOptions({ color: inst.colors[k] ?? line.color, lineWidth: inst.lineWidth, lineStyle: line.dashed ? LineStyle.Dashed : LineStyle.Solid, visible: inst.visible }));
       set.histogram?.applyOptions({ visible: inst.visible });
-      const signature = `${inst.type}|${JSON.stringify(inst.params)}|${inst.colors.join(',')}|${pane}|${indicatorDataVersion}`;
-      if (!inst.visible || set.signature === signature || !candles.length) continue;
-      const out = computeIndicator(inst, candles, { macdWarmupFromValid: spotChartRefinements });
-      for (const line of def.lines) if (out.lines[line.key]) set.lines[line.key]?.setData(out.lines[line.key] as any);
-      if (set.histogram && out.histogram) set.histogram.setData(out.histogram as any);
+      // Preserve expensive indicator math when only a colour or line width changes.
+      // Supertrend direction colours live on data points, so repaint cached points
+      // on palette changes without re-running its ATR/Supertrend calculation.
+      const signature = `${inst.type}|${JSON.stringify(inst.params)}|${pane}|${indicatorDataVersion}|${spotChartRefinements}`;
+      if (!candles.length) continue;
+      if (set.signature !== signature || !set.computed) {
+        set.computed = computeIndicator(inst, candles, { macdWarmupFromValid: spotChartRefinements });
+        set.signature = signature;
+        set.paintSignature = '';
+      }
+      const paintSignature = inst.type === 'supertrend' ? inst.colors.join(',') : 'standard';
+      if (set.paintSignature !== paintSignature) {
+        const out = set.computed;
+        for (const line of def.lines) if (out.lines[line.key]) {
+          const points = inst.type === 'supertrend' && line.key === 'up'
+            ? out.lines[line.key].map(point => ({
+                ...point,
+                color: point.color === '#f6465d' ? (inst.colors[1] ?? '#f6465d') : (inst.colors[0] ?? '#2ebd85'),
+              }))
+            : out.lines[line.key];
+          set.lines[line.key]?.setData(points as any);
+        }
+        if (set.histogram && out.histogram) set.histogram.setData(out.histogram as any);
+        set.paintSignature = paintSignature;
+      }
       if (pane === 'lower' && def.levels && !set.levels.length) {
         const first = Object.values(set.lines)[0];
         if (first && typeof first.createPriceLine === 'function') for (const level of def.levels) {
           set.levels.push(first.createPriceLine({ price: level, color: 'rgba(255,255,255,0.18)', lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: false, title: '' }));
         }
       }
-      set.signature = signature;
     }
     // A pane left with nothing in it would stay as an empty strip.
     if (typeof chart.panes === 'function' && typeof chart.removePane === 'function') {
@@ -1115,7 +1141,7 @@ export function PriceChart({
     const historyEnabled = privateMode || (market === 'futures' && !!candleLoader);
     const clearSeries = () => {
       for (const ref of [seriesRef,volumeSeriesRef,lineSeriesRef,areaSeriesRef]) ref.current?.setData([]);
-      for (const set of indicatorSeriesRef.current.values()) { for (const sr of [...Object.values(set.lines), set.histogram]) sr?.setData([]); set.signature = ''; }
+      for (const set of indicatorSeriesRef.current.values()) { for (const sr of [...Object.values(set.lines), set.histogram]) sr?.setData([]); set.signature = ''; set.paintSignature = ''; set.computed = null; }
       candlesRef.current=[];
       setEmpty(true);
       if (privateMode) setCandlesRevision(value => value + 1);
@@ -1637,14 +1663,14 @@ export function PriceChart({
                 key: def.type, label: t(def.label as never), params: def.params.map(p => String(p.default)).join(' · '),
                 color: def.lines[0].color, pane: def.pane, active: indicatorInstances.some(i => i.type === def.type),
                 onToggle: () => toggleType(def.type),
-                onAdd: () => saveChartIndicators([...getChartIndicators(), newIndicatorInstance(def.type)]),
+                onAdd: () => saveChartIndicators([...getChartIndicators(market), newIndicatorInstance(def.type)], market),
               }))}
               catalogue={{
                 active: indicatorInstances.map(inst => ({
                   id: inst.id, label: indicatorInstanceLabel(inst), color: inst.colors[0], visible: inst.visible,
-                  onToggleVisible: () => saveChartIndicators(getChartIndicators().map(i => (i.id === inst.id ? { ...i, visible: !i.visible } : i))),
+                  onToggleVisible: () => saveChartIndicators(getChartIndicators(market).map(i => (i.id === inst.id ? { ...i, visible: !i.visible } : i)), market),
                   onConfigure: () => { requestChartSettingsView('indicators', inst.id); setSettingsOpen(true); },
-                  onRemove: () => saveChartIndicators(getChartIndicators().filter(i => i.id !== inst.id)),
+                  onRemove: () => saveChartIndicators(getChartIndicators(market).filter(i => i.id !== inst.id), market),
                 })),
                 activeLabel: t('chart.settings.indicatorsActive'), catalogueLabel: t('chart.settings.indicatorsCatalogue'),
                 searchLabel: t('chart.settings.indicatorSearch'), noMatchLabel: t('chart.settings.indicatorNoMatch'),
@@ -1668,7 +1694,7 @@ export function PriceChart({
             </button>}
             {toolbarEnd}
           </div>}
-          {settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} />}
+          {settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} market={market} />}
         </div>
       ) : (
         <div style={styles.topToolbar}>
