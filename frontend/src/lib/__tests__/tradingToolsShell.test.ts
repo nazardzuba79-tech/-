@@ -160,7 +160,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(document.querySelector('a[href="/otc"]')).not.toBeNull();
   });
 
-  test('desktop Tools lives under Markets; Futures stays direct; Trading contains only Spot and CFD', async () => {
+  test('desktop Tools lives under Markets; Futures stays direct; Trading contains Spot, Futures and CFD with Stocks disabled', async () => {
     await mount();
     expect(document.querySelector('.nav-desktop-links > a[href="/tools"]')).toBeNull();
     expect(document.querySelector('.nav-desktop-links > a[href="/futures"]')).not.toBeNull();
@@ -174,7 +174,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
     const trigger = document.querySelector('.nav-desktop-links a[href="/trade"]') as HTMLElement;
     expect(trigger.classList.contains('nav-active')).toBe(false);
     await click('.nav-desktop-links button[aria-label="nav.trade"]');
-    expect(Array.from(document.querySelectorAll('.nav-desktop-links .header-disclosure-panel a')).map(a => a.getAttribute('href'))).toEqual(['/trade', '/trade?market=cfd']);
+    expect(Array.from(document.querySelectorAll('.nav-desktop-links .header-disclosure-panel a')).map(a => a.getAttribute('href'))).toEqual(['/trade', '/futures', '/trade?market=cfd']);
     await React.act(async () => trigger.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.querySelector('.header-disclosure-panel')).toBeNull();
   });
@@ -201,12 +201,12 @@ describe('local trading tools keeps the real authenticated shell without a marke
     }
   });
 
-  test('mobile Trading only exposes Spot and CFD, and selecting CFD closes the drawer', async () => {
+  test('mobile Trading exposes Spot, Futures and CFD with Stocks disabled, and selecting CFD closes the drawer', async () => {
     await mount();
     await click('.nav-burger');
     await click('.nav-mobile-menu button[aria-label="nav.trade"]');
     expect(Array.from(document.querySelectorAll('.nav-mobile-menu .header-disclosure-panel a')).map(a => a.getAttribute('href')))
-      .toEqual(['/trade', '/trade?market=cfd']);
+      .toEqual(['/trade', '/futures', '/trade?market=cfd']);
     expect(document.querySelector('.nav-mobile-menu > a[href="/futures"]')).not.toBeNull();
     await click('.nav-mobile-menu a[href="/trade?market=cfd"]');
     expect(document.querySelector('.nav-mobile-menu.open')).toBeNull();

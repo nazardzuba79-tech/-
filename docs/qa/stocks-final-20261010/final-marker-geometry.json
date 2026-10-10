@@ -1,0 +1,62 @@
+[
+  {
+    "width": 320,
+    "clientWidth": 310,
+    "markers": [
+      {
+        "bottom": 305.69793701171875,
+        "right": 205.11459350585935,
+        "width": 32,
+        "x": 173.11459350585938
+      }
+    ],
+    "overlap": false,
+    "pageWidth": 310,
+    "plotTop": 305.69793701171875
+  },
+  {
+    "width": 360,
+    "clientWidth": 350,
+    "markers": [
+      {
+        "bottom": 304.8958435058594,
+        "right": 245.11459350585935,
+        "width": 32,
+        "x": 213.11459350585935
+      }
+    ],
+    "overlap": false,
+    "pageWidth": 350,
+    "plotTop": 304.8958435058594
+  },
+  {
+    "width": 390,
+    "clientWidth": 380,
+    "markers": [
+      {
+        "bottom": 304.8958435058594,
+        "right": 275.1145935058594,
+        "width": 32,
+        "x": 243.11459350585935
+      }
+    ],
+    "overlap": false,
+    "pageWidth": 380,
+    "plotTop": 304.8958435058594
+  },
+  {
+    "width": 430,
+    "clientWidth": 420,
+    "markers": [
+      {
+        "bottom": 304.8958435058594,
+        "right": 315.1145935058594,
+        "width": 32,
+        "x": 283.1145935058594
+      }
+    ],
+    "overlap": false,
+    "pageWidth": 420,
+    "plotTop": 304.8958435058594
+  }
+]

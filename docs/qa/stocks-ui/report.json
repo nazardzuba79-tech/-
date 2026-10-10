@@ -1,0 +1,2856 @@
+{
+  "checks": [
+    {
+      "name": "panel 1920: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 1920: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 1920: three-column layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 1920: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 1920: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 1920: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 1920: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 1920: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 1707: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 1707: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 1707: three-column layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 1707: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 1707: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 1707: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 1707: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 1707: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 1440: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 1440: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 1440: three-column layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 1440: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 1440: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 1440: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 1440: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 1440: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 1366: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 1366: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 1366: three-column layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 1366: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 1366: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 1366: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 1366: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 1366: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 1280: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 1280: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 1280: three-column layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 1280: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 1280: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 1280: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 1280: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 1280: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 1100: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 1100: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 1100: two-column layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": false,
+        "about": true,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 1100: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 1100: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 1100: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 1100: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 1100: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 900: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 900: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 900: two-column layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": false,
+        "about": true,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 900: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 900: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 900: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 900: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 900: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 861: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 861: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 861: two-column layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": false,
+        "about": true,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 861: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 861: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 861: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 861: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 861: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 860: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 860: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 860: phone layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 860: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 860: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 860: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 860: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 860: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 768: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 768: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 768: phone layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 768: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 768: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 768: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 768: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 768: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 430: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 430: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 430: phone layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 430: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 430: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 430: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 430: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 430: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 390: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 390: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 390: phone layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 390: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 390: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 390: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 390: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 390: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 360: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 360: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 360: phone layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 360: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 360: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 360: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 360: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 360: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "panel 320: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "panel 320: one chart, data drawn",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "panel 320: phone layout",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "panel 320: nothing clipped or pushed out of the strip",
+      "ok": true,
+      "detail": {
+        "clipped": [],
+        "outside": []
+      }
+    },
+    {
+      "name": "overview 320: no horizontal overflow",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "overview 320: no chart mounted behind it",
+      "ok": true,
+      "detail": {
+        "charts": 0,
+        "canvases": 0,
+        "overlay": null
+      }
+    },
+    {
+      "name": "overview 320: nothing clipped",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "overview 320: 250 rows, light root",
+      "ok": true
+    },
+    {
+      "name": "phone 390: about expands without overflow",
+      "ok": true
+    },
+    {
+      "name": "phone 320: about expands without overflow",
+      "ok": true
+    },
+    {
+      "name": "ru panel 1440: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "ru panel 1440: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "ru overview 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "ru overview 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "ru panel 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "ru panel 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "en panel 1440: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "en panel 1440: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "en overview 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "en overview 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "en panel 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "en panel 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "zh panel 1440: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "zh panel 1440: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "zh overview 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "zh overview 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "zh panel 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "zh panel 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "es panel 1440: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "es panel 1440: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "es overview 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "es overview 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "es panel 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "es panel 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "hi panel 1440: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "hi panel 1440: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "hi overview 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "hi overview 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "hi panel 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "hi panel 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "ja panel 1440: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "ja panel 1440: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "ja overview 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "ja overview 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "ja panel 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "ja panel 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "ko panel 1440: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "ko panel 1440: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "ko overview 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "ko overview 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "ko panel 390: translated, no raw keys",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "ko panel 390: no overflow or clipping",
+      "ok": true,
+      "detail": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "name": "cold overview: one catalogue read, no history",
+      "ok": true,
+      "detail": {
+        "catalogue": 1,
+        "history": 0
+      }
+    },
+    {
+      "name": "overview → AAPL: history read once, catalogue reused",
+      "ok": true,
+      "detail": {
+        "catalogue": 1,
+        "history": 1
+      }
+    },
+    {
+      "name": "AAPL panel shows AAPL",
+      "ok": true
+    },
+    {
+      "name": "AAPL → MSFT in the list: one more history read",
+      "ok": true,
+      "detail": {
+        "catalogue": 1,
+        "history": 2
+      }
+    },
+    {
+      "name": "stock → index: same single chart",
+      "ok": true,
+      "detail": {
+        "charts": 1,
+        "canvases": 7,
+        "overlay": null
+      }
+    },
+    {
+      "name": "index → stock (cached within 15 min): no new read",
+      "ok": true,
+      "detail": {
+        "catalogue": 1,
+        "history": 3
+      }
+    },
+    {
+      "name": "chart instances never accumulate",
+      "ok": true,
+      "detail": {
+        "index": {
+          "charts": 1,
+          "canvases": 7,
+          "overlay": null
+        },
+        "canvasesAfter": {
+          "charts": 1,
+          "canvases": 7,
+          "overlay": null
+        }
+      }
+    },
+    {
+      "name": "period switches read nothing and keep the chart drawn",
+      "ok": true
+    },
+    {
+      "name": "Back → N225",
+      "ok": true
+    },
+    {
+      "name": "Back → MSFT",
+      "ok": true
+    },
+    {
+      "name": "Forward → N225",
+      "ok": true
+    },
+    {
+      "name": "panel → overview: no catalogue re-read",
+      "ok": true,
+      "detail": {
+        "catalogue": 1,
+        "history": 3
+      }
+    },
+    {
+      "name": "overview unmounts the chart",
+      "ok": true
+    },
+    {
+      "name": "direct URL to an index opens it",
+      "ok": true
+    },
+    {
+      "name": "reload keeps the instrument",
+      "ok": true,
+      "detail": {
+        "catalogue": 2,
+        "history": 2
+      }
+    },
+    {
+      "name": "main entry restores the last valid instrument (replace)",
+      "ok": true
+    },
+    {
+      "name": "no saved instrument: «Выберите инструмент», no history read, no guessed instrument",
+      "ok": true
+    },
+    {
+      "name": "unknown id: unavailable, no history read",
+      "ok": true
+    },
+    {
+      "name": "an unknown id is never remembered",
+      "ok": true
+    },
+    {
+      "name": "instrument without data: dash price, «История пока недоступна», nothing invented",
+      "ok": true,
+      "detail": {
+        "price": "— USD",
+        "overlay": "История пока недоступна"
+      }
+    },
+    {
+      "name": "sub-cent price keeps its digits",
+      "ok": true,
+      "detail": "0.0013534 USD"
+    },
+    {
+      "name": "session status is neutral, not «closed»",
+      "ok": true
+    },
+    {
+      "name": "data time is the candle close / service fetch, not «now»",
+      "ok": true,
+      "detail": [
+        "OTC Pink · PINX",
+        "Соединенные Штаты",
+        "USD",
+        "Акция",
+        "America/New_York",
+        "PINX:MGNT",
+        "Нет данных о сессии",
+        "0.0013542",
+        "0.0013559",
+        "0.0013526",
+        "0.0013534",
+        "42.2K",
+        "07 окт., 16:00 GMT-4",
+        "07 окт., 16:01 GMT-4",
+        "15 мин",
+        "раз в 15 минут",
+        "без корректировок"
+      ]
+    },
+    {
+      "name": "Asia → Japan → search → name sort",
+      "ok": true,
+      "detail": {
+        "names": [
+          "Fast Retailing Co. Ltd.",
+          "In Holdings Co., Ltd.",
+          "Kaneko Seeds Co., Ltd.",
+          "Keyence Corporation",
+          "Kyokuyo Co., Ltd."
+        ],
+        "exchanges": [
+          "9983 · JPX",
+          "132A · JPX",
+          "1376 · JPX",
+          "6861 · JPX",
+          "1301 · JPX"
+        ]
+      }
+    },
+    {
+      "name": "the URL holds every overview choice",
+      "ok": true,
+      "detail": "?view=overview&tab=Asia&q=co&asia=Japan&sort=name-asc"
+    },
+    {
+      "name": "panel → «Обзор» returns with the same filters and sort",
+      "ok": true,
+      "detail": {
+        "query": "?view=overview&tab=Asia&q=co&asia=Japan&sort=name-asc",
+        "now": "?view=overview&tab=Asia&q=co&asia=Japan&sort=name-asc"
+      }
+    },
+    {
+      "name": "Back from the panel returns to the filtered overview",
+      "ok": true
+    },
+    {
+      "name": "reload keeps overview filters",
+      "ok": true
+    },
+    {
+      "name": "star toggles aria-pressed",
+      "ok": true
+    },
+    {
+      "name": "favourite appears in the panel list",
+      "ok": true,
+      "detail": [
+        "/stocks/MISX%3AGAZP"
+      ]
+    },
+    {
+      "name": "favourite tab state and favourites survive reload",
+      "ok": true
+    },
+    {
+      "name": "catalogue 503 → «Повторить» recovers",
+      "ok": true
+    },
+    {
+      "name": "history 503: chart host kept, error overlay with retry",
+      "ok": true
+    },
+    {
+      "name": "history retry draws the chart",
+      "ok": true
+    },
+    {
+      "name": "stalled history becomes an error after the 12 s deadline",
+      "ok": true,
+      "detail": 12694
+    },
+    {
+      "name": "failed logo → letters fallback, list intact",
+      "ok": true,
+      "detail": {
+        "images": 0,
+        "aapl": "AA",
+        "rows": 250
+      }
+    },
+    {
+      "name": "1440: nothing is read inside the 15-minute window",
+      "ok": true,
+      "detail": {
+        "startReads": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "now": {
+          "catalogue": 1,
+          "history": 1
+        }
+      }
+    },
+    {
+      "name": "1440: at 15 minutes exactly one catalogue and one history read",
+      "ok": true,
+      "detail": {
+        "startReads": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "cadence": {
+          "catalogue": 2,
+          "history": 2
+        }
+      }
+    },
+    {
+      "name": "1440: a successful refresh of the same instrument keeps its zoom and pixels",
+      "ok": true
+    },
+    {
+      "name": "1440: refresh 503 → warning over kept AAPL data, no overlay, one chart",
+      "ok": true,
+      "detail": {
+        "text": "Не удалось обновить данные. Показаны последние полученные значенияПоследняя свеча: 07 окт., 16:00 GMT-4Повторить",
+        "overlay": false,
+        "charts": 1,
+        "symbol": "AAPL",
+        "instrument": "XNGS:AAPL"
+      }
+    },
+    {
+      "name": "1440: retry clicked twice reads once and clears the warning",
+      "ok": true,
+      "detail": {
+        "beforeRetry": 3,
+        "now": 4
+      }
+    },
+    {
+      "name": "1440: after the retry the same data and zoom are on screen",
+      "ok": true
+    },
+    {
+      "name": "1440: a refresh in flight is not an error and keeps the chart",
+      "ok": true
+    },
+    {
+      "name": "1440: refresh timeout → warning over kept data",
+      "ok": true
+    },
+    {
+      "name": "1440: retry after the timeout clears the warning",
+      "ok": true
+    },
+    {
+      "name": "1440: catalogue refresh fails → list rows kept with the warning",
+      "ok": true
+    },
+    {
+      "name": "1440: overview keeps 250 rows with the warning",
+      "ok": true
+    },
+    {
+      "name": "1440: hidden tab: no reads for 45 minutes",
+      "ok": true,
+      "detail": {
+        "hiddenReads": {
+          "catalogue": 5,
+          "history": 7
+        },
+        "now": {
+          "catalogue": 5,
+          "history": 7
+        }
+      }
+    },
+    {
+      "name": "1440: visible again: one catalogue read, warning cleared",
+      "ok": true,
+      "detail": {
+        "hiddenReads": {
+          "catalogue": 5,
+          "history": 7
+        },
+        "now": {
+          "catalogue": 6,
+          "history": 7
+        }
+      }
+    },
+    {
+      "name": "390: nothing is read inside the 15-minute window",
+      "ok": true,
+      "detail": {
+        "startReads": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "now": {
+          "catalogue": 1,
+          "history": 1
+        }
+      }
+    },
+    {
+      "name": "390: at 15 minutes exactly one catalogue and one history read",
+      "ok": true,
+      "detail": {
+        "startReads": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "cadence": {
+          "catalogue": 2,
+          "history": 2
+        }
+      }
+    },
+    {
+      "name": "390: a successful refresh of the same instrument keeps its zoom and pixels",
+      "ok": true
+    },
+    {
+      "name": "390: refresh 503 → warning over kept AAPL data, no overlay, one chart",
+      "ok": true,
+      "detail": {
+        "text": "Не удалось обновить данные. Показаны последние полученные значенияПоследняя свеча: 07 окт., 16:00 GMT-4Повторить",
+        "overlay": false,
+        "charts": 1,
+        "symbol": "AAPL",
+        "instrument": "XNGS:AAPL"
+      }
+    },
+    {
+      "name": "390: retry clicked twice reads once and clears the warning",
+      "ok": true,
+      "detail": {
+        "beforeRetry": 3,
+        "now": 4
+      }
+    },
+    {
+      "name": "390: after the retry the same data and zoom are on screen",
+      "ok": true
+    },
+    {
+      "name": "390: a refresh in flight is not an error and keeps the chart",
+      "ok": true
+    },
+    {
+      "name": "390: refresh timeout → warning over kept data",
+      "ok": true
+    },
+    {
+      "name": "390: retry after the timeout clears the warning",
+      "ok": true
+    },
+    {
+      "name": "390: catalogue refresh fails → list rows kept with the warning",
+      "ok": true
+    },
+    {
+      "name": "390: overview keeps 250 rows with the warning",
+      "ok": true
+    },
+    {
+      "name": "390: hidden tab: no reads for 45 minutes",
+      "ok": true,
+      "detail": {
+        "hiddenReads": {
+          "catalogue": 5,
+          "history": 7
+        },
+        "now": {
+          "catalogue": 5,
+          "history": 7
+        }
+      }
+    },
+    {
+      "name": "390: visible again: one catalogue read, warning cleared",
+      "ok": true,
+      "detail": {
+        "hiddenReads": {
+          "catalogue": 5,
+          "history": 7
+        },
+        "now": {
+          "catalogue": 6,
+          "history": 7
+        }
+      }
+    },
+    {
+      "name": "HTTP 200 with another instrumentId → data error with retry, no candles, no spinner",
+      "ok": true,
+      "detail": {
+        "overlay": "Получен некорректный ответ. Данные не показаныПовторить",
+        "ohlc": false,
+        "spinner": false,
+        "instrument": "XNGS:AAPL"
+      }
+    },
+    {
+      "name": "foreign answer after a valid AAPL page → AAPL kept with the invalid-data warning",
+      "ok": true,
+      "detail": {
+        "text": "Получен некорректный ответ. Показаны последние корректные значенияПоследняя свеча: 07 окт., 16:00 GMT-4Повторить",
+        "symbol": "AAPL"
+      }
+    },
+    {
+      "name": "retry → AAPL again, identical pixels",
+      "ok": true
+    },
+    {
+      "name": "fast AAPL → MSFT → AAPL: AAPL drawn, late MSFT dropped, one chart",
+      "ok": true,
+      "detail": {
+        "symbol": "AAPL",
+        "instrument": "XNGS:AAPL",
+        "overlay": false,
+        "charts": 1
+      }
+    },
+    {
+      "name": "valid empty history → «История пока недоступна», no error, no retry",
+      "ok": true,
+      "detail": {
+        "overlay": "История пока недоступна",
+        "retry": false,
+        "stale": false
+      }
+    },
+    {
+      "name": "drawer opens from the keyboard and focuses search",
+      "ok": true
+    },
+    {
+      "name": "drawer search filters",
+      "ok": true
+    },
+    {
+      "name": "Tab and Shift+Tab stay inside the modal drawer",
+      "ok": true
+    },
+    {
+      "name": "Escape closes the drawer and returns focus",
+      "ok": true
+    },
+    {
+      "name": "tapping outside closes the drawer",
+      "ok": true
+    },
+    {
+      "name": "choosing in the drawer closes it and opens the instrument",
+      "ok": true
+    },
+    {
+      "name": "focus is visible",
+      "ok": true,
+      "detail": "solid"
+    },
+    {
+      "name": "1920: leaving Stocks stops stock reads",
+      "ok": true,
+      "detail": {
+        "readsAtExit": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "now": {
+          "catalogue": 1,
+          "history": 1
+        }
+      }
+    },
+    {
+      "name": "1920: Futures unchanged after Stocks",
+      "ok": true,
+      "detail": {
+        "futures": {
+          "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+          "id": "archive-terminal-preview",
+          "tokens": {
+            "--bg": "#0b0e11",
+            "--panel": "#101014",
+            "--accent": "#f0b90b",
+            "--buy": "#06c167",
+            "--sell": "#f63649",
+            "--text-primary": "#ffffff",
+            "--border": "#222227",
+            "--tile-fill": "#101014"
+          },
+          "chart": "rgb(16, 16, 20)",
+          "header": "rgb(23, 24, 30)",
+          "root": {
+            "--bg": "#0a0c10",
+            "--panel": "#14171d",
+            "--accent": "#f0c964",
+            "--vx-bg": ""
+          },
+          "streams": {
+            "eventSource": 0,
+            "webSocket": 0
+          }
+        },
+        "futuresAfter": {
+          "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+          "id": "archive-terminal-preview",
+          "tokens": {
+            "--bg": "#0b0e11",
+            "--panel": "#101014",
+            "--accent": "#f0b90b",
+            "--buy": "#06c167",
+            "--sell": "#f63649",
+            "--text-primary": "#ffffff",
+            "--border": "#222227",
+            "--tile-fill": "#101014"
+          },
+          "chart": "rgb(16, 16, 20)",
+          "header": "rgb(23, 24, 30)",
+          "root": {
+            "--bg": "#0a0c10",
+            "--panel": "#14171d",
+            "--accent": "#f0c964",
+            "--vx-bg": ""
+          },
+          "streams": {
+            "eventSource": 0,
+            "webSocket": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "1920: Spot unchanged after Stocks",
+      "ok": true
+    },
+    {
+      "name": "1920: CFD unchanged after Stocks",
+      "ok": true
+    },
+    {
+      "name": "1920: shared header identical on Academy, panel and overview",
+      "ok": true,
+      "detail": {
+        "academyBefore": {
+          "bg": "rgb(26, 27, 32)",
+          "height": "68px",
+          "font": "Arial, Helvetica, sans-serif",
+          "border": "rgb(44, 46, 53)"
+        },
+        "stocksHeader": {
+          "bg": "rgb(26, 27, 32)",
+          "height": "68px",
+          "font": "Arial, Helvetica, sans-serif",
+          "border": "rgb(44, 46, 53)"
+        },
+        "overviewHeader": {
+          "bg": "rgb(26, 27, 32)",
+          "height": "68px",
+          "font": "Arial, Helvetica, sans-serif",
+          "border": "rgb(44, 46, 53)"
+        }
+      }
+    },
+    {
+      "name": "1920: Futures opens the same live streams after Stocks",
+      "ok": true,
+      "detail": {
+        "before": {
+          "eventSource": 0,
+          "webSocket": 0
+        },
+        "after": {
+          "eventSource": 0,
+          "webSocket": 0
+        }
+      }
+    },
+    {
+      "name": "1920: Login renders with the global theme after Stocks",
+      "ok": true,
+      "detail": {
+        "path": "/login",
+        "bg": "rgb(10, 12, 16)",
+        "rootBg": "#0a0c10",
+        "stocksRoot": false
+      }
+    },
+    {
+      "name": "390: leaving Stocks stops stock reads",
+      "ok": true,
+      "detail": {
+        "readsAtExit": {
+          "catalogue": 1,
+          "history": 1
+        },
+        "now": {
+          "catalogue": 1,
+          "history": 1
+        }
+      }
+    },
+    {
+      "name": "390: Futures unchanged after Stocks",
+      "ok": true,
+      "detail": {
+        "futures": {
+          "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+          "id": "archive-terminal-preview",
+          "tokens": {
+            "--bg": "#0b0e11",
+            "--panel": "#101014",
+            "--accent": "#f0b90b",
+            "--buy": "#06c167",
+            "--sell": "#f63649",
+            "--text-primary": "#ffffff",
+            "--border": "#222227",
+            "--tile-fill": "#101014"
+          },
+          "chart": "rgba(0, 0, 0, 0)",
+          "header": "rgb(23, 24, 30)",
+          "root": {
+            "--bg": "#0a0c10",
+            "--panel": "#14171d",
+            "--accent": "#f0c964",
+            "--vx-bg": ""
+          },
+          "streams": {
+            "eventSource": 0,
+            "webSocket": 0
+          }
+        },
+        "futuresAfter": {
+          "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+          "id": "archive-terminal-preview",
+          "tokens": {
+            "--bg": "#0b0e11",
+            "--panel": "#101014",
+            "--accent": "#f0b90b",
+            "--buy": "#06c167",
+            "--sell": "#f63649",
+            "--text-primary": "#ffffff",
+            "--border": "#222227",
+            "--tile-fill": "#101014"
+          },
+          "chart": "rgba(0, 0, 0, 0)",
+          "header": "rgb(23, 24, 30)",
+          "root": {
+            "--bg": "#0a0c10",
+            "--panel": "#14171d",
+            "--accent": "#f0c964",
+            "--vx-bg": ""
+          },
+          "streams": {
+            "eventSource": 0,
+            "webSocket": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "390: Spot unchanged after Stocks",
+      "ok": true
+    },
+    {
+      "name": "390: CFD unchanged after Stocks",
+      "ok": true
+    },
+    {
+      "name": "390: shared header identical on Academy, panel and overview",
+      "ok": true,
+      "detail": {
+        "academyBefore": {
+          "bg": "rgb(26, 27, 32)",
+          "height": "56px",
+          "font": "Arial, Helvetica, sans-serif",
+          "border": "rgb(44, 46, 53)"
+        },
+        "stocksHeader": {
+          "bg": "rgb(26, 27, 32)",
+          "height": "56px",
+          "font": "Arial, Helvetica, sans-serif",
+          "border": "rgb(44, 46, 53)"
+        },
+        "overviewHeader": {
+          "bg": "rgb(26, 27, 32)",
+          "height": "56px",
+          "font": "Arial, Helvetica, sans-serif",
+          "border": "rgb(44, 46, 53)"
+        }
+      }
+    },
+    {
+      "name": "390: Futures opens the same live streams after Stocks",
+      "ok": true,
+      "detail": {
+        "before": {
+          "eventSource": 0,
+          "webSocket": 0
+        },
+        "after": {
+          "eventSource": 0,
+          "webSocket": 0
+        }
+      }
+    },
+    {
+      "name": "390: Login renders with the global theme after Stocks",
+      "ok": true,
+      "detail": {
+        "path": "/login",
+        "bg": "rgb(10, 12, 16)",
+        "rootBg": "#0a0c10",
+        "stocksRoot": false
+      }
+    },
+    {
+      "name": "flag OFF: no stock request, no Stocks chunk, no link, no surface",
+      "ok": true,
+      "detail": {
+        "stockRequests": 0,
+        "chunks": [],
+        "links": 0,
+        "surface": 0
+      }
+    }
+  ],
+  "views": [
+    {
+      "width": 1920,
+      "height": 1080,
+      "panel": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 1707,
+      "height": 940,
+      "panel": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "panel": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "panel": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "panel": {
+        "overflow": 0,
+        "list": true,
+        "facts": true,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 1100,
+      "height": 800,
+      "panel": {
+        "overflow": 0,
+        "list": true,
+        "facts": false,
+        "about": true,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 900,
+      "height": 800,
+      "panel": {
+        "overflow": 0,
+        "list": true,
+        "facts": false,
+        "about": true,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 861,
+      "height": 900,
+      "panel": {
+        "overflow": 0,
+        "list": true,
+        "facts": false,
+        "about": true,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 860,
+      "height": 900,
+      "panel": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "panel": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "panel": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "panel": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 360,
+      "height": 780,
+      "panel": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    },
+    {
+      "width": 320,
+      "height": 640,
+      "panel": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": true,
+        "listButton": true,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      },
+      "overview": {
+        "overflow": 0,
+        "list": false,
+        "facts": false,
+        "about": false,
+        "listButton": false,
+        "clipped": [],
+        "outside": [],
+        "rawKeys": []
+      }
+    }
+  ],
+  "measurements": {
+    "transitionReads": {
+      "catalogue": 1,
+      "history": 3,
+      "streamsOpenedByPage": {
+        "eventSource": 0,
+        "webSocket": 0
+      }
+    },
+    "refreshReads1440": {
+      "start": {
+        "catalogue": 1,
+        "history": 1
+      },
+      "atFifteen": {
+        "catalogue": 2,
+        "history": 2
+      },
+      "end": {
+        "catalogue": 6,
+        "history": 7
+      }
+    },
+    "refreshReads390": {
+      "start": {
+        "catalogue": 1,
+        "history": 1
+      },
+      "atFifteen": {
+        "catalogue": 2,
+        "history": 2
+      },
+      "end": {
+        "catalogue": 6,
+        "history": 7
+      }
+    },
+    "routeRun1920": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "id": "archive-terminal-preview",
+        "tokens": {
+          "--bg": "#0b0e11",
+          "--panel": "#101014",
+          "--accent": "#f0b90b",
+          "--buy": "#06c167",
+          "--sell": "#f63649",
+          "--text-primary": "#ffffff",
+          "--border": "#222227",
+          "--tile-fill": "#101014"
+        },
+        "chart": "rgb(16, 16, 20)",
+        "header": "rgb(23, 24, 30)",
+        "root": {
+          "--bg": "#0a0c10",
+          "--panel": "#14171d",
+          "--accent": "#f0c964",
+          "--vx-bg": ""
+        },
+        "streams": {
+          "eventSource": 0,
+          "webSocket": 0
+        }
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "id": "",
+        "tokens": {
+          "--bg": "#0b0e11",
+          "--panel": "#101014",
+          "--accent": "#f0b90b",
+          "--buy": "#06c167",
+          "--sell": "#f63649",
+          "--text-primary": "#ffffff",
+          "--border": "rgba(255,255,255,.08)",
+          "--tile-fill": "#101014"
+        },
+        "chart": "rgb(16, 16, 20)",
+        "header": "rgb(23, 24, 31)",
+        "root": {
+          "--bg": "#0a0c10",
+          "--panel": "#14171d",
+          "--accent": "#f0c964",
+          "--vx-bg": ""
+        },
+        "streams": {
+          "eventSource": 0,
+          "webSocket": 0
+        }
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "id": "",
+        "tokens": {
+          "--bg": "#0b0e11",
+          "--panel": "#101014",
+          "--accent": "#f0b90b",
+          "--buy": "#06c167",
+          "--sell": "#f63649",
+          "--text-primary": "#ffffff",
+          "--border": "rgba(255,255,255,.08)",
+          "--tile-fill": "#101014"
+        },
+        "chart": "rgb(16, 16, 20)",
+        "header": "rgb(23, 24, 31)",
+        "root": {
+          "--bg": "#0a0c10",
+          "--panel": "#14171d",
+          "--accent": "#f0c964",
+          "--vx-bg": ""
+        },
+        "streams": {
+          "eventSource": 0,
+          "webSocket": 0
+        }
+      },
+      "stocksHeader": {
+        "bg": "rgb(26, 27, 32)",
+        "height": "68px",
+        "font": "Arial, Helvetica, sans-serif",
+        "border": "rgb(44, 46, 53)"
+      }
+    },
+    "routeRun390": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "id": "archive-terminal-preview",
+        "tokens": {
+          "--bg": "#0b0e11",
+          "--panel": "#101014",
+          "--accent": "#f0b90b",
+          "--buy": "#06c167",
+          "--sell": "#f63649",
+          "--text-primary": "#ffffff",
+          "--border": "#222227",
+          "--tile-fill": "#101014"
+        },
+        "chart": "rgba(0, 0, 0, 0)",
+        "header": "rgb(23, 24, 30)",
+        "root": {
+          "--bg": "#0a0c10",
+          "--panel": "#14171d",
+          "--accent": "#f0c964",
+          "--vx-bg": ""
+        },
+        "streams": {
+          "eventSource": 0,
+          "webSocket": 0
+        }
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "id": "",
+        "tokens": {
+          "--bg": "#0b0e11",
+          "--panel": "#101014",
+          "--accent": "#f0b90b",
+          "--buy": "#06c167",
+          "--sell": "#f63649",
+          "--text-primary": "#ffffff",
+          "--border": "rgba(255,255,255,.08)",
+          "--tile-fill": "#101014"
+        },
+        "chart": "rgba(0, 0, 0, 0)",
+        "header": "rgb(23, 24, 31)",
+        "root": {
+          "--bg": "#0a0c10",
+          "--panel": "#14171d",
+          "--accent": "#f0c964",
+          "--vx-bg": ""
+        },
+        "streams": {
+          "eventSource": 0,
+          "webSocket": 0
+        }
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "id": "",
+        "tokens": {
+          "--bg": "#0b0e11",
+          "--panel": "#101014",
+          "--accent": "#f0b90b",
+          "--buy": "#06c167",
+          "--sell": "#f63649",
+          "--text-primary": "#ffffff",
+          "--border": "rgba(255,255,255,.08)",
+          "--tile-fill": "#101014"
+        },
+        "chart": "rgba(0, 0, 0, 0)",
+        "header": "rgb(23, 24, 31)",
+        "root": {
+          "--bg": "#0a0c10",
+          "--panel": "#14171d",
+          "--accent": "#f0c964",
+          "--vx-bg": ""
+        },
+        "streams": {
+          "eventSource": 0,
+          "webSocket": 0
+        }
+      },
+      "stocksHeader": {
+        "bg": "rgb(26, 27, 32)",
+        "height": "56px",
+        "font": "Arial, Helvetica, sans-serif",
+        "border": "rgb(44, 46, 53)"
+      }
+    },
+    "after": {
+      "panel": {
+        "requests": 23,
+        "bytes": 1522353,
+        "jsFiles": 11,
+        "jsBytes": 931731,
+        "cssBytes": 271664,
+        "stock": {
+          "catalogue": 1,
+          "history": 1,
+          "bytes": 239618
+        },
+        "chart": 1,
+        "stockChunks": [
+          "StocksPage-OBLD7SfM.js:8874",
+          "StocksPage-ArYStUD_.css:431",
+          "StocksTerminal-BV9StZeh.js:16204",
+          "StockParts-D6rC8kfV.js:4025",
+          "StocksTerminal-D17XjZaq.css:17194"
+        ],
+        "lightweightCharts": true
+      },
+      "overview": {
+        "requests": 19,
+        "bytes": 1206743,
+        "jsFiles": 10,
+        "jsBytes": 737797,
+        "cssBytes": 267973,
+        "stock": {
+          "catalogue": 1,
+          "history": 0,
+          "bytes": 188637
+        },
+        "chart": 0,
+        "stockChunks": [
+          "StocksPage-OBLD7SfM.js:8874",
+          "StocksPage-ArYStUD_.css:431",
+          "StocksOverview-C0borPvQ.js:9343",
+          "StockParts-D6rC8kfV.js:4025",
+          "StocksOverview-B_I8XbP9.css:13503"
+        ],
+        "lightweightCharts": false
+      },
+      "entry": {
+        "requests": 22,
+        "bytes": 1471372,
+        "jsFiles": 11,
+        "jsBytes": 931731,
+        "cssBytes": 271664,
+        "stock": {
+          "catalogue": 1,
+          "history": 0,
+          "bytes": 188637
+        },
+        "chart": 0,
+        "stockChunks": [
+          "StocksPage-OBLD7SfM.js:8874",
+          "StocksPage-ArYStUD_.css:431",
+          "StocksTerminal-BV9StZeh.js:16204",
+          "StockParts-D6rC8kfV.js:4025",
+          "StocksTerminal-D17XjZaq.css:17194"
+        ],
+        "lightweightCharts": true
+      },
+      "memory": {
+        "warm": {
+          "heapMiB": 10.11,
+          "nodes": 5674,
+          "listeners": 780,
+          "charts": 1,
+          "canvases": 7,
+          "overlay": null
+        },
+        "after20Switches": {
+          "heapMiB": 9.36,
+          "nodes": 5672,
+          "listeners": 782,
+          "charts": 1,
+          "canvases": 7,
+          "overlay": null
+        },
+        "heapDeltaMiB": -0.75,
+        "nodesDelta": -2,
+        "listenersDelta": 2,
+        "reads": {
+          "catalogue": 1,
+          "history": 10
+        }
+      }
+    },
+    "before": {
+      "panel": {
+        "requests": 14,
+        "bytes": 1412536,
+        "jsFiles": 5,
+        "jsBytes": 903848,
+        "cssBytes": 256734,
+        "stock": {
+          "catalogue": 1,
+          "history": 1,
+          "bytes": 239618
+        },
+        "chart": 1,
+        "stockChunks": [
+          "StocksPage-BM3AStWK.js:6636",
+          "StocksPage-xqRBCPo8.css:2953"
+        ],
+        "lightweightCharts": true
+      },
+      "overview": {
+        "requests": 13,
+        "bytes": 1361555,
+        "jsFiles": 5,
+        "jsBytes": 903848,
+        "cssBytes": 256734,
+        "stock": {
+          "catalogue": 1,
+          "history": 0,
+          "bytes": 188637
+        },
+        "chart": 0,
+        "stockChunks": [
+          "StocksPage-BM3AStWK.js:6636",
+          "StocksPage-xqRBCPo8.css:2953"
+        ],
+        "lightweightCharts": true
+      },
+      "entry": {
+        "requests": 13,
+        "bytes": 1361555,
+        "jsFiles": 5,
+        "jsBytes": 903848,
+        "cssBytes": 256734,
+        "stock": {
+          "catalogue": 1,
+          "history": 0,
+          "bytes": 188637
+        },
+        "chart": 0,
+        "stockChunks": [
+          "StocksPage-BM3AStWK.js:6636",
+          "StocksPage-xqRBCPo8.css:2953"
+        ],
+        "lightweightCharts": true
+      },
+      "memory": {
+        "warm": {
+          "heapMiB": 5.54,
+          "nodes": 342,
+          "listeners": 250,
+          "charts": 1,
+          "canvases": 7,
+          "overlay": null
+        },
+        "after20Switches": {
+          "heapMiB": 6.75,
+          "nodes": 345,
+          "listeners": 250,
+          "charts": 1,
+          "canvases": 7,
+          "overlay": null
+        },
+        "heapDeltaMiB": 1.21,
+        "nodesDelta": 3,
+        "listenersDelta": 0,
+        "reads": {
+          "catalogue": 1,
+          "history": 10
+        }
+      }
+    }
+  },
+  "pageErrors": [],
+  "startedAt": "2026-10-08T05:41:16.212Z",
+  "fixture": {
+    "instruments": 250,
+    "withData": 227,
+    "candles": 81720
+  },
+  "video": "overview-to-instrument-to-instrument.webm",
+  "flagOff": {
+    "stockRequests": 0,
+    "chunks": [],
+    "links": 0,
+    "surface": 0
+  },
+  "bundle": {
+    "after": {
+      "entry": {
+        "index-L6Z7_A9u.js": {
+          "raw": 648013,
+          "gzip": 203872
+        }
+      },
+      "stocks": {
+        "StockParts-D6rC8kfV.js": {
+          "raw": 4025,
+          "gzip": 1938
+        },
+        "StocksOverview-B_I8XbP9.css": {
+          "raw": 13503,
+          "gzip": 2669
+        },
+        "StocksOverview-C0borPvQ.js": {
+          "raw": 9343,
+          "gzip": 2852
+        },
+        "StocksPage-ArYStUD_.css": {
+          "raw": 431,
+          "gzip": 208
+        },
+        "StocksPage-OBLD7SfM.js": {
+          "raw": 8874,
+          "gzip": 3689
+        },
+        "StocksTerminal-BV9StZeh.js": {
+          "raw": 16204,
+          "gzip": 5264
+        },
+        "StocksTerminal-D17XjZaq.css": {
+          "raw": 17194,
+          "gzip": 3357
+        }
+      }
+    },
+    "before": {
+      "entry": {
+        "index-BTsPV3dy.js": {
+          "raw": 644436,
+          "gzip": 203038
+        }
+      },
+      "stocks": {
+        "StocksPage-BM3AStWK.js": {
+          "raw": 6636,
+          "gzip": 2588
+        },
+        "StocksPage-xqRBCPo8.css": {
+          "raw": 2953,
+          "gzip": 1024
+        }
+      }
+    },
+    "flagOff": {
+      "entry": {
+        "index-CP1MLBRe.js": {
+          "raw": 647476,
+          "gzip": 203749
+        }
+      },
+      "stocks": {
+        "StockParts-B_hf8KU1.js": {
+          "raw": 4025,
+          "gzip": 1938
+        },
+        "StocksOverview-B_I8XbP9.css": {
+          "raw": 13503,
+          "gzip": 2669
+        },
+        "StocksOverview-CTUEmNVV.js": {
+          "raw": 9343,
+          "gzip": 2851
+        },
+        "StocksPage-ArYStUD_.css": {
+          "raw": 431,
+          "gzip": 208
+        },
+        "StocksPage-DgOmSDEJ.js": {
+          "raw": 7398,
+          "gzip": 3038
+        },
+        "StocksTerminal-Bxz-O3aG.js": {
+          "raw": 16204,
+          "gzip": 5262
+        },
+        "StocksTerminal-D17XjZaq.css": {
+          "raw": 17194,
+          "gzip": 3357
+        }
+      }
+    }
+  },
+  "finishedAt": "2026-10-08T05:44:55.303Z",
+  "summary": {
+    "checks": 245,
+    "failed": 0,
+    "pageErrors": 0,
+    "writesBlocked": 0
+  },
+  "screenshots": "curated subset committed beside this report; the run wrote 57",
+  "ranIn": "local (Windows, Playwright 1.63 Chromium); CI runs the same script in stocks-review.yml / stocks-ui-browser"
+}

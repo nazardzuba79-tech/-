@@ -1,13 +1,29 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
+import { TRADING_LINKS } from './HeaderDropdown';
+import '../pages/stocks/stockNavigation.css';
 
 /** Fixed mobile tab bar (v0-derived) — shown only below the same 860px
  * breakpoint the burger menu already uses (see .bottom-nav in index.css).
  * The burger menu still covers every route; this is a faster-access
- * shortcut for the five most-used ones, same role as v0's BottomNav. */
+ * shortcut for four sections; Trading opens the shared market choices. */
 export function BottomNav() {
   const location = useLocation();
   const { t } = useLanguage();
+  const [tradeOpen, setTradeOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const tradeButton = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
+  useEffect(() => setTradeOpen(false), [location.pathname, location.search]);
+  useEffect(() => {
+    if (!tradeOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!navRef.current?.contains(event.target as Node)) setTradeOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    return () => document.removeEventListener('pointerdown', closeOutside);
+  }, [tradeOpen]);
 
   const ITEMS = [
     { to: '/wallet', label: t('nav.wallet'), icon: WalletIcon },
@@ -23,11 +39,39 @@ export function BottomNav() {
     // media query in index.css, and an inline value would beat it (which is
     // exactly why this bar was showing on desktop).
     <nav
+      ref={navRef}
       className="bottom-nav bottom-nav-liquid-glass"
-      style={{ ...styles.nav, gridTemplateColumns: `repeat(${ITEMS.length}, 1fr)` }}
+      style={{ ...styles.nav, zIndex: tradeOpen ? 1001 : styles.nav.zIndex, gridTemplateColumns: `repeat(${ITEMS.length}, 1fr)` }}
+      onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setTradeOpen(false); }}
+      onKeyDown={event => {
+        if (event.key === 'Escape' && tradeOpen) {
+          event.preventDefault(); setTradeOpen(false); tradeButton.current?.focus();
+        }
+      }}
     >
+      {tradeOpen && <div id={panelId} className="bottom-trading-panel" aria-label={t('nav.trade')}>
+        <strong>{t('nav.trade')}</strong>
+        {TRADING_LINKS.map(({ to, label, icon: Icon }) => {
+          const active = to === '/trade?market=cfd'
+            ? location.pathname === '/trade' && new URLSearchParams(location.search).get('market') === 'cfd'
+            : to === '/trade'
+              ? location.pathname === '/trade' && new URLSearchParams(location.search).get('market') !== 'cfd'
+              : location.pathname === to || location.pathname.startsWith(to + '/');
+          return <Link key={to} to={to} aria-current={active ? 'page' : undefined} onClick={() => setTradeOpen(false)}>
+            <Icon size={20} aria-hidden="true"/><span>{t(label)}</span>
+          </Link>;
+        })}
+      </div>}
       {ITEMS.map(({ to, label, icon: Icon }) => {
-        const active = location.pathname === to;
+        const active = to === '/trade'
+          ? ['/trade', '/futures', '/stocks'].some(path => location.pathname === path || location.pathname.startsWith(path + '/'))
+          : location.pathname === to;
+        if (to === '/trade') return <button key={to} ref={tradeButton} type="button"
+          className="bottom-trading-trigger" aria-expanded={tradeOpen} aria-controls={panelId}
+          style={{ ...styles.item, color: active ? 'var(--accent)' : 'var(--text-tertiary)' }}
+          onClick={() => setTradeOpen(open => !open)}>
+          <Icon active={active}/><span style={styles.label}>{label}</span>
+        </button>;
         return (
           <Link key={to} to={to} style={{ ...styles.item, color: active ? 'var(--accent)' : 'var(--text-tertiary)' }}>
             <Icon active={active} />

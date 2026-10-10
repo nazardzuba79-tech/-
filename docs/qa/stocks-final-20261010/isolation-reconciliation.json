@@ -1,0 +1,23 @@
+{
+  "oldFillsUnchanged": true,
+  "oldOrdersUnchanged": true,
+  "fills": 17,
+  "orders": 19,
+  "wallets": {
+    "USDT": {
+      "cash": "9999.75000000",
+      "reserved": "0.00000000"
+    },
+    "USDC": {
+      "cash": "9999.98501157",
+      "reserved": "0.00000000"
+    }
+  },
+  "realized": {
+    "USDT": "-0.25000000",
+    "USDC": "-0.01498843"
+  },
+  "adjustments": 0,
+  "reconciliation": "PASS",
+  "defaultOffEndpointLeaks": []
+}
