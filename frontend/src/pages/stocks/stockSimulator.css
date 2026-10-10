@@ -1,0 +1,50 @@
+.vx-stocks-terminal .vxs-sim-pair { margin-left:auto; color:var(--vxs-label); font-size:11px; }
+.vx-stocks-terminal .vxs-sim-notice { margin:0 0 14px; color:var(--vxs-label); font-size:11px; line-height:1.5; }
+.vx-stocks-terminal .vxs-sim-currencies { display:flex; gap:6px; margin-bottom:16px; }
+.vx-stocks-terminal .vxs-sim-currencies button { flex:1; padding:7px 3px; border:1px solid var(--vxs-border); border-radius:4px; background:none; color:var(--vxs-label); cursor:pointer; }
+.vx-stocks-terminal .vxs-sim-currencies button[aria-pressed=true] { color:var(--vxs-accent); border-color:var(--vxs-accent); background:var(--vxs-accent-row); }
+.vx-stocks-terminal .vxs-sim-ticket .vxs-side-tabs { margin-bottom:15px; }
+.vx-stocks-terminal .vxs-sim-ticket .vxs-order-form { gap:12px; }
+.vx-stocks-terminal .vxs-sim-ticket .vxs-order-submit { margin-top:0; }
+.vx-stocks-terminal .vxs-sim-ticket .vxs-order-submit:not(:disabled) { cursor:pointer; }
+.vx-stocks-terminal .vxs-sim-meta { display:flex; justify-content:space-between; color:var(--vxs-label); font-size:11px; }
+.vx-stocks-terminal .vxs-sim-feedback { padding:9px; margin:10px 0 0; border-radius:4px; background:rgba(6,193,103,.08); color:var(--vxs-up); font-size:12px; }
+.vx-stocks-terminal .vxs-sim-feedback.is-error { color:var(--vxs-down); background:rgba(246,54,73,.08); }
+.vx-stocks-terminal .vxs-sim-source { display:flex; flex-direction:column; gap:5px; padding-top:14px; color:var(--vxs-label); font-size:11px; line-height:1.5; }
+.vx-stocks-terminal .vxs-sim-source strong { color:var(--vxs-text-soft); }
+.vx-stocks-terminal .vxs-sim-source-error { color:var(--vxs-accent); }
+.vx-stocks-terminal :is(.vxs-sim-source,.vxs-sim-settings,.vxs-sim-record,.vxs-sim-position-actions) button { padding:6px 10px; background:var(--vxs-field); border:1px solid var(--vxs-border); border-radius:4px; cursor:pointer; }
+.vx-stocks-terminal .vxs-sim-source button { align-self:flex-start; margin-top:3px; color:var(--vxs-text-soft); }
+.vx-stocks-terminal .vxs-sim-settings { margin-top:16px; border-top:1px solid var(--vxs-border); padding-top:13px; color:var(--vxs-label); }
+.vx-stocks-terminal .vxs-sim-settings summary { cursor:pointer; color:var(--vxs-text-soft); }
+.vx-stocks-terminal .vxs-sim-settings label { display:flex; flex-direction:column; gap:5px; margin:9px 0; }
+.vx-stocks-terminal .vxs-sim-settings input { width:100%; min-width:0; padding:8px; background:var(--vxs-field); border:1px solid var(--vxs-border); border-radius:4px; color:var(--vxs-text); }
+.vx-stocks-terminal .vxs-sim-settings p { font-size:11px; line-height:1.5; }
+.vx-stocks-terminal .vxs-sim-account { flex:0 0 270px; min-height:210px; display:flex; flex-direction:column; overflow:hidden; }
+.vx-stocks-terminal .vxs-sim-wallets { display:flex; padding:10px 14px; gap:28px; border-bottom:1px solid var(--vxs-border); }
+.vx-stocks-terminal .vxs-sim-wallets > div { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.vx-stocks-terminal .vxs-sim-wallets strong { font-size:16px; font-variant-numeric:tabular-nums; }
+.vx-stocks-terminal .vxs-sim-wallets small { font-size:11px; color:var(--vxs-label); }
+.vx-stocks-terminal .vxs-sim-wallets span { color:var(--vxs-label); font-size:10px; }
+.vx-stocks-terminal .vxs-sim-account-tabs { display:flex; flex-wrap:wrap; padding:0 10px; border-bottom:1px solid var(--vxs-border); }
+.vx-stocks-terminal .vxs-sim-account-tabs button { padding:11px 8px; background:none; border:0; border-bottom:2px solid transparent; color:var(--vxs-label); cursor:pointer; font-size:11px; }
+.vx-stocks-terminal .vxs-sim-account-tabs button[aria-selected=true] { border-color:var(--vxs-accent); color:var(--vxs-accent); }
+.vx-stocks-terminal .vxs-sim-records { overflow-y:auto; min-height:0; flex:1; scrollbar-width:thin; }
+.vx-stocks-terminal .vxs-sim-empty { color:var(--vxs-label); text-align:center; padding:24px 10px; }
+.vx-stocks-terminal :is(.vxs-sim-position,.vxs-sim-record) { padding:12px 14px; border-bottom:1px solid var(--vxs-border); }
+.vx-stocks-terminal .vxs-sim-record-title { display:flex; justify-content:space-between; gap:8px; margin-bottom:10px; }
+.vx-stocks-terminal .vxs-sim-position dl { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:0; }
+.vx-stocks-terminal .vxs-sim-position dt { color:var(--vxs-label); font-size:10px; margin-bottom:5px; }
+.vx-stocks-terminal .vxs-sim-position dd { margin:0; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.vx-stocks-terminal .vxs-sim-position-actions { display:flex; justify-content:flex-end; gap:7px; align-items:center; margin-top:12px; font-size:10px; }
+.vx-stocks-terminal .vxs-sim-position-actions > span { margin-right:auto; color:var(--vxs-label); }
+.vx-stocks-terminal .vxs-sim-record > div:not(:first-child) { display:flex; justify-content:space-between; gap:8px; align-items:center; margin-top:7px; color:var(--vxs-label); font-size:11px; }
+.vx-stocks-terminal .vxs-sim-account .gain { color:var(--vxs-up); }
+.vx-stocks-terminal .vxs-sim-account .loss { color:var(--vxs-down); }
+@media(max-width:860px) {
+  .vx-stocks-terminal .vxs-sim-account { flex:none; max-height:450px; min-height:180px; }
+  .vx-stocks-terminal .vxs-sim-wallets { gap:16px; padding:12px; }
+  .vx-stocks-terminal .vxs-sim-wallets span { font-size:9px; }
+  .vx-stocks-terminal .vxs-sim-position dl { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .vx-stocks-terminal .vxs-sim-account-tabs button { padding:12px 5px; font-size:10px; }
+}

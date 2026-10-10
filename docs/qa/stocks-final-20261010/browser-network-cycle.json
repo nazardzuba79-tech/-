@@ -1,0 +1,202 @@
+{
+  "truncated": false,
+  "hasMore": false,
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4438/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4438/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4438/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4438/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4438/__stocks_global/cancel"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4438/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4438/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/stocks/BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/index-CCwzOsDo.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/index-DaNHVcvL.css"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/StocksPage-yiuP4aGH.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/Nav-BeceRhEh.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/DepositModal-DjVBsQeY.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/DepositModal-BMQGS5X7.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/StocksPage-ArYStUD_.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/GlobalStocks-DhZw9uqX.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/bignumber-yEAtxT-w.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/lightweight-charts.production-BkNTc-8v.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/indicators-CwPeoOYh.js"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/assets/GlobalStocks-CzFxgdrx.css"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/favicon.svg"
+    },
+    {
+      "method": "GET",
+      "url": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a3adba' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggexSg.woff2"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7SUc.woff2"
+    },
+    {
+      "method": "GET",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4438/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    }
+  ]
+}
