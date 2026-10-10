@@ -1,0 +1,315 @@
+{
+  "referenceDeltas": {
+    "ticker": {
+      "reference": {
+        "x": 4,
+        "y": 4,
+        "width": 1240.12,
+        "height": 55.99
+      },
+      "voltex": {
+        "x": 4,
+        "y": 4,
+        "width": 1236,
+        "height": 56
+      },
+      "delta": {
+        "x": 0,
+        "y": 0,
+        "width": -4.12,
+        "height": 0.01
+      }
+    },
+    "chart": {
+      "reference": {
+        "x": 4,
+        "y": 63.99,
+        "width": 949,
+        "height": 524
+      },
+      "voltex": {
+        "x": 4,
+        "y": 64,
+        "width": 946,
+        "height": 524
+      },
+      "delta": {
+        "x": 0,
+        "y": 0.01,
+        "width": -3,
+        "height": 0
+      }
+    },
+    "book": {
+      "reference": {
+        "x": 957,
+        "y": 63.99,
+        "width": 285.99,
+        "height": 524
+      },
+      "voltex": {
+        "x": 954,
+        "y": 64,
+        "width": 286,
+        "height": 524
+      },
+      "delta": {
+        "x": -3,
+        "y": 0.01,
+        "width": 0.01,
+        "height": 0
+      }
+    },
+    "bottom": {
+      "reference": {
+        "x": 4,
+        "y": 591.99,
+        "width": 1239,
+        "height": 380
+      },
+      "voltex": {
+        "x": 4,
+        "y": 592,
+        "width": 1236,
+        "height": 380
+      },
+      "delta": {
+        "x": 0,
+        "y": 0.01,
+        "width": -3,
+        "height": 0
+      }
+    }
+  },
+  "beforeAfter": [
+    {
+      "width": 1920,
+      "before": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1608,
+          "height": 56
+        },
+        "chart": {
+          "x": 4,
+          "y": 112,
+          "width": 1284.81,
+          "height": 712
+        },
+        "book": {
+          "x": 1292.81,
+          "y": 112,
+          "width": 319.19,
+          "height": 712
+        },
+        "form": {
+          "x": 1616,
+          "y": 52,
+          "width": 300,
+          "height": 996
+        },
+        "bottom": {
+          "x": 4,
+          "y": 828,
+          "width": 1608,
+          "height": 220
+        }
+      },
+      "after": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1608,
+          "height": 56
+        },
+        "chart": {
+          "x": 4,
+          "y": 112,
+          "width": 1318,
+          "height": 540.22
+        },
+        "book": {
+          "x": 1326,
+          "y": 112,
+          "width": 286,
+          "height": 540.22
+        },
+        "form": {
+          "x": 1616,
+          "y": 52,
+          "width": 300,
+          "height": 996
+        },
+        "bottom": {
+          "x": 4,
+          "y": 656.22,
+          "width": 1608,
+          "height": 391.78
+        }
+      }
+    },
+    {
+      "width": 1440,
+      "before": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1128,
+          "height": 96
+        },
+        "chart": {
+          "x": 4,
+          "y": 152,
+          "width": 874,
+          "height": 492
+        },
+        "book": {
+          "x": 882,
+          "y": 152,
+          "width": 250,
+          "height": 492
+        },
+        "form": {
+          "x": 1136,
+          "y": 52,
+          "width": 300,
+          "height": 816
+        },
+        "bottom": {
+          "x": 4,
+          "y": 648,
+          "width": 1128,
+          "height": 220
+        }
+      },
+      "after": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1128,
+          "height": 56
+        },
+        "chart": {
+          "x": 4,
+          "y": 112,
+          "width": 838,
+          "height": 435.89
+        },
+        "book": {
+          "x": 846,
+          "y": 112,
+          "width": 286,
+          "height": 435.89
+        },
+        "form": {
+          "x": 1136,
+          "y": 52,
+          "width": 300,
+          "height": 816
+        },
+        "bottom": {
+          "x": 4,
+          "y": 551.89,
+          "width": 1128,
+          "height": 316.11
+        }
+      }
+    },
+    {
+      "width": 1366,
+      "before": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1054,
+          "height": 96
+        },
+        "chart": {
+          "x": 4,
+          "y": 152,
+          "width": 800,
+          "height": 360
+        },
+        "book": {
+          "x": 808,
+          "y": 152,
+          "width": 250,
+          "height": 360
+        },
+        "form": {
+          "x": 1062,
+          "y": 52,
+          "width": 300,
+          "height": 684
+        },
+        "bottom": {
+          "x": 4,
+          "y": 516,
+          "width": 1054,
+          "height": 220
+        }
+      },
+      "after": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1054,
+          "height": 56
+        },
+        "chart": {
+          "x": 4,
+          "y": 112,
+          "width": 764,
+          "height": 359.38
+        },
+        "book": {
+          "x": 772,
+          "y": 112,
+          "width": 286,
+          "height": 359.38
+        },
+        "form": {
+          "x": 1062,
+          "y": 52,
+          "width": 300,
+          "height": 684
+        },
+        "bottom": {
+          "x": 4,
+          "y": 475.38,
+          "width": 1054,
+          "height": 260.63
+        }
+      }
+    }
+  ],
+  "unchanged": {
+    "mobile": {
+      "beforeSize": [
+        390,
+        844
+      ],
+      "afterSize": [
+        390,
+        844
+      ],
+      "meanChannelDifference": 0.0,
+      "pixelIdentical": true
+    },
+    "spot1440": {
+      "beforeSize": [
+        1440,
+        852
+      ],
+      "afterSize": [
+        1440,
+        852
+      ],
+      "meanChannelDifference": 0.0,
+      "pixelIdentical": true
+    }
+  },
+  "rawReferenceMeanChannelDifference": 13.95187272313297,
+  "note": "Raw image differences include different market data, branding and existing Limit vs Figma POV controls. Geometry overlay compares only measured panel outlines; original frame cropped, never resized."
+}
