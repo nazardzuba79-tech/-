@@ -1,0 +1,21 @@
+{
+  "main": "e7c6fea3532ea78ff1e3d8287dc592ba2b82641a",
+  "futures494Preserved": true,
+  "claude495": "825f311a2d4acd6a915308c403199b8e9ea43046",
+  "claudeBranchEdited": false,
+  "protectedPaths": [
+    "frontend/src/pages/trade-terminal",
+    "frontend/src/pages/TradePage.tsx",
+    "frontend/src/pages/FuturesPage.tsx",
+    "frontend/src/components/PriceChart.tsx",
+    "frontend/src/components/SpotOrdersView.tsx",
+    "frontend/src/components/FuturesOrdersPanel.tsx",
+    "frontend/src/components/DepositModal.tsx",
+    "frontend/src/index.css",
+    "frontend/src/pages/admin",
+    "prisma"
+  ],
+  "changed": [],
+  "stockEngineAndBDesignChanged": [],
+  "prospective495ConflictOnly": "docs/AI_HANDOFF.md"
+}

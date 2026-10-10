@@ -10,6 +10,7 @@ import { loginPathFor, readNext } from './lib/returnTo';
 import { getToken } from './lib/api';
 import { prefetchCopyMarketplace } from './lib/useCopyMarketplace';
 import { isBrowserInactive } from './lib/browserActivity';
+import './pages/stocks/stockNavigation.css';
 
 const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));

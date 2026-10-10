@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { TRADING_LINKS } from './HeaderDropdown';
-import '../pages/stocks/stockNavigation.css';
 
 /** Fixed mobile tab bar (v0-derived) — shown only below the same 860px
  * breakpoint the burger menu already uses (see .bottom-nav in index.css).
