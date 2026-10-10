@@ -275,3 +275,14 @@ export function ActivityIcon({ size }: IconProps) {
     </svg>
   );
 }
+
+export function HeadsetIcon({ size }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H3z" />
+      <path d="M21 11h-3a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3z" />
+      <path d="M3 11v-1a9 9 0 0 1 18 0v1" />
+      <path d="M21 16v2a4 4 0 0 1-4 4h-5" />
+    </svg>
+  );
+}

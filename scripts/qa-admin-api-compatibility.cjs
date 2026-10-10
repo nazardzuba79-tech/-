@@ -70,6 +70,14 @@ exports.run = async ({ origin, out, state, users, variant }) => {
     await usersLoaded(page, width);
     assert.equal(await rendered().count(), 20, 'Initial page is bounded to20 users');
     const first = rendered().first();
+    // Compact mobile Users cards intentionally keep full balances under a
+    // disclosure. Open that real control before asserting the unchanged
+    // authoritative balances, rather than hiding/removing this safety check.
+    if (width < 768) {
+      const details = first.locator('.admin-user-mobile-details');
+      await details.locator('summary').click();
+      assert.equal(await details.evaluate(node => node.open), true, 'Mobile details expand for the owner');
+    }
     assert.match(await first.innerText(), /USDT/, 'List contains fixture asset balances');
     assert.match(await first.innerText(), /USDT\s+1[\s\u00a0\u202f]500\.25/, 'List shows the exact first fixture balance');
     assert.doesNotMatch(await first.innerText(), /Активен/, 'No account status column: an active account carries no mark');
