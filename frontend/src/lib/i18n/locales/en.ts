@@ -54,7 +54,7 @@ export const EN: Record<Key, string> = {
   'nav.wallet': 'Wallet',
   'nav.markets': 'Markets',
   'nav.products': 'Products',
-  'nav.card': 'Crypto-Card',
+  'nav.card': 'Card',
   'nav.menuToolsDesc': 'Tools for market analysis',
   'nav.menuOtcDesc': 'Crypto and cash through support',
   'nav.menuArbitrageDesc': 'Explore opportunities across markets',
