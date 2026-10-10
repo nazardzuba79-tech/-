@@ -93,7 +93,8 @@ export const DEFAULT_CHART_INDICATORS: readonly IndicatorInstance[] = Object.fre
   Object.freeze({ id: 'ma-200', type: 'ma' as const, params: { period: 200 }, colors: ['#f7d51d'], lineWidth: 1 as const, visible: true }),
 ]);
 
-export const CHART_INDICATORS_KEY = 'voltex.chartIndicators.v1';
+export const CHART_INDICATORS_KEY = 'voltex.chartIndicators.v1'; // Spot's existing key
+export const FUTURES_CHART_INDICATORS_KEY = 'voltex.chartIndicators.futures.v1';
 const HEX = /^#[0-9a-f]{6}$/i;
 const WIDTHS: readonly IndicatorLineWidth[] = [1, 2, 3, 4];
 /** Keep the chart responsive: this many instances is already more than a screen can read. */
@@ -176,7 +177,7 @@ export function computeIndicator(inst: IndicatorInstance, candles: Candle[], opt
     case 'wma': return { lines: { line: computeWMA(candles, p(inst, 'period')) } };
     case 'vwap': return { lines: { line: computeVWAP(candles) } };
     case 'bollinger': { const b = computeBollingerBands(candles, p(inst, 'period'), p(inst, 'mult')); return { lines: { upper: b.upper, middle: b.middle, lower: b.lower } }; }
-    case 'supertrend': return { lines: { up: computeSupertrend(candles, p(inst, 'period'), p(inst, 'mult'), { up: inst.colors[0], down: inst.colors[1] }) } };
+    case 'supertrend': return { lines: { up: computeSupertrend(candles, p(inst, 'period'), p(inst, 'mult')) } }; // Neutral direction colours; rendered palette is applied without re-running ATR.
     case 'rsi': return { lines: { line: computeRSI(candles, p(inst, 'period')) } };
     case 'macd': {
       const m = computeMACD(candles, p(inst, 'fast'), p(inst, 'slow'), p(inst, 'signal'), { warmupFromValidMacd: options.macdWarmupFromValid });
@@ -192,47 +193,74 @@ export function computeIndicator(inst: IndicatorInstance, candles: Candle[], opt
   }
 }
 
-// ── Per-browser store: saved list, a dialog's draft, listeners ─────────────
-
-function read(): IndicatorInstance[] {
+// ── Per-market browser store: Spot and Futures must not alter each other ──
+export type IndicatorMarket = 'spot' | 'futures';
+type IndicatorStore = {
+  saved: IndicatorInstance[] | null;
+  applied: IndicatorInstance[] | null;
+  listeners: Set<(list: IndicatorInstance[]) => void>;
+};
+const stores: Record<IndicatorMarket, IndicatorStore> = {
+  spot: { saved: null, applied: null, listeners: new Set() },
+  futures: { saved: null, applied: null, listeners: new Set() },
+};
+const storageKey = (market: IndicatorMarket) => market === 'futures' ? FUTURES_CHART_INDICATORS_KEY : CHART_INDICATORS_KEY;
+function read(market: IndicatorMarket): IndicatorInstance[] {
   try {
-    const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(CHART_INDICATORS_KEY);
+    const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(storageKey(market));
     return normalizeIndicatorInstances(raw ? JSON.parse(raw) : undefined);
   } catch {
     return normalizeIndicatorInstances(undefined);
   }
 }
-
-let saved: IndicatorInstance[] | null = null;
-let applied: IndicatorInstance[] | null = null;
-const listeners = new Set<(list: IndicatorInstance[]) => void>();
-const emit = () => { const list = getChartIndicators(); listeners.forEach(fn => fn(list)); };
-
-/** What the chart should draw right now (a dialog's draft while it is open). */
-export function getChartIndicators(): IndicatorInstance[] {
-  if (!saved) saved = read();
-  return applied ?? saved;
+const emit = (market: IndicatorMarket) => {
+  const list = getChartIndicators(market);
+  stores[market].listeners.forEach(fn => fn(list));
+};
+/** Spot defaults preserve existing callers; the Futures terminal always passes 'futures'. */
+export function getChartIndicators(market: IndicatorMarket = 'spot'): IndicatorInstance[] {
+  const store = stores[market];
+  if (!store.saved) store.saved = read(market);
+  return store.applied ?? store.saved;
 }
-export function getSavedChartIndicators(): IndicatorInstance[] {
-  if (!saved) saved = read();
-  return saved;
+export function getSavedChartIndicators(market: IndicatorMarket = 'spot'): IndicatorInstance[] {
+  const store = stores[market];
+  if (!store.saved) store.saved = read(market);
+  return store.saved;
 }
-/** Draw a draft without keeping it. */
-export function previewChartIndicators(draft: IndicatorInstance[]): void { applied = normalizeIndicatorInstances(draft); emit(); }
-/** Drop the draft and draw what is kept. */
-export function revertChartIndicators(): void { if (applied === null) return; applied = null; emit(); }
-/** Keep the list in this browser. */
-export function saveChartIndicators(next: IndicatorInstance[]): void {
-  saved = normalizeIndicatorInstances(next); applied = null;
-  try { localStorage.setItem(CHART_INDICATORS_KEY, JSON.stringify(saved)); } catch { /* private mode: the choice lasts this visit */ }
-  emit();
+export function previewChartIndicators(draft: IndicatorInstance[], market: IndicatorMarket = 'spot'): void {
+  stores[market].applied = normalizeIndicatorInstances(draft);
+  emit(market);
 }
-export function subscribeChartIndicators(fn: (list: IndicatorInstance[]) => void): () => void {
-  listeners.add(fn);
-  return () => { listeners.delete(fn); };
+export function revertChartIndicators(market: IndicatorMarket = 'spot'): void {
+  if (stores[market].applied === null) return;
+  stores[market].applied = null;
+  emit(market);
+}
+export function saveChartIndicators(next: IndicatorInstance[], market: IndicatorMarket = 'spot'): void {
+  const store = stores[market];
+  store.saved = normalizeIndicatorInstances(next);
+  store.applied = null;
+  try { localStorage.setItem(storageKey(market), JSON.stringify(store.saved)); } catch { /* private mode */ }
+  emit(market);
+}
+export function subscribeChartIndicators(fn: (list: IndicatorInstance[]) => void, market: IndicatorMarket = 'spot'): () => void {
+  stores[market].listeners.add(fn);
+  return () => { stores[market].listeners.delete(fn); };
 }
 if (typeof window !== 'undefined') {
-  window.addEventListener('storage', e => { if (e.key === CHART_INDICATORS_KEY) { saved = read(); if (!applied) emit(); } });
+  window.addEventListener('storage', e => {
+    const market = e.key === FUTURES_CHART_INDICATORS_KEY ? 'futures' : e.key === CHART_INDICATORS_KEY ? 'spot' : null;
+    if (!market) return;
+    const store = stores[market];
+    store.saved = read(market);
+    if (!store.applied) emit(market);
+  });
 }
-/** For tests only. */
-export function resetChartIndicatorsCache(): void { saved = null; applied = null; }
+/** For tests only: invalidate both browser-market copies (or one selected copy). */
+export function resetChartIndicatorsCache(market?: IndicatorMarket): void {
+  for (const target of market ? [market] : (['spot', 'futures'] as const)) {
+    stores[target].saved = null;
+    stores[target].applied = null;
+  }
+}
