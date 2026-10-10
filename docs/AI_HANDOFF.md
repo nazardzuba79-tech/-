@@ -5977,6 +5977,16 @@ Continues the same branch from `c402024824dc053af4e0704cd69152a4f4bd54d8`; imple
 
 Follow-up from `4d9192ee8b04f4bf919a751b2c9542800d211b8d`; implementation SHA is the commit containing this entry. The owner supplied final visual references: BTC uses a metallic gold bevel with a bronze face and warm white canonical symbol, retaining its existing outer size; its duplicate visible `BTC` label is removed and the symbol enlarged, while the real quote remains. WTI now uses a simple black drop on a light silver badge, replacing the barrel. Changed only `HomeV0Coins.tsx` central label, scoped BTC/WTI styles, local SVG/provenance and review screenshots. All 20 desktop / 12 mobile identities, orbit geometry, speeds, layout and financial/data behavior are preserved. Local checks: TypeScript/build, 179/179 homepage tests, responsive QA at nine widths/seven locales, motion/reference QA, plus independent desktop/mobile glyph and price-clearance review. BTC remains 92.50px at 1920 and 57.83px at 320. No merge/deploy; final exact-head CI and owner visual review remain the publication gate.
 
+
+## 2026-10-10 — Desktop Futures Figma geometry (Draft only)
+
+Branch `codex/futures-figma-desktop-20261010`, based on `1d0fae9c3f3ccd4ec9aa995038e3eb0d4476230b`. Desktop-only stylesheet maps owner Figma 19:103 to 56px ticker / 286px book / 300px ticket / 524:380 chart-account ratio and 4px gutters. Existing mobile, controls and financial behavior retained. Figma MCP unavailable; editable editor properties and exported SVG supplied measurements. Evidence and limitations: [report](evidence/futures-figma-desktop-20261010/README.md). Build and 4064 frontend tests pass; browser QA 1366/1440/1920/reference1548 plus unchanged mobile390 and Spot. No merge/deploy; owner approval required.
+
+
+## 2026-10-10 — Codex: Desktop Futures chart priority follow-up
+
+Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5953d0e03ddc7c125c6e21b7a` (already contains externally merged #493). Implementation SHA: commit containing this entry. CSS only in FuturesBybitParity.css / FuturesFigmaDesktop.css: header40, ticker48, bottom160 empty /200 populated /44 collapsed, chart fills remaining space. Preserves mobile/Spot/Stocks/admin and all trading behavior. Updated desktop browser QA covers populated scroll, tabs and collapse; five-width proportions QA passes, mobile390 and Spot1440 pixel-identical; Spot1707 has a minor 19x11px glyph-rendering difference only. Evidence: [report](evidence/futures-chart-priority-20261010/README.md). Full frontend/exact-head CI status is on Draft PR; no merge or deploy; owner review pending.
+
 ## Claude — 2026-10-10 — Mobile client audit and fixes (Draft only)
 
 - Owner task: full audit of the customer-facing mobile web (home, auth, markets, Spot/Futures/CFD, wallet, Crypto Card, Earn, copy, OTC, arbitrage, tools, bots, settings/KYC, academy/help/legal, support) with root-cause fixes, no production contact. Fresh `origin/main` base `1d0fae9c3f3ccd4ec9aa995038e3eb0d4476230b`; branch `claude/voltex-mobile-audit-7rpjni`; implementation SHA: the commit containing this entry. The admin mobile work on `ui/admin-mobile-compact-20261008` (merged in #484) is untouched; no admin, Stocks, trading/financial, auth, API, Worker, DB or infrastructure change.
