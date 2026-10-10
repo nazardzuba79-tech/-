@@ -235,9 +235,9 @@ export function TextInput({
 
 export function FieldError({ children }: { children: ReactNode }) {
   return (
-    <p className="mt-1.5 flex items-start gap-1.5 text-[11.5px] leading-4 text-neg">
+    <p className="mt-1.5 flex min-w-0 items-start gap-1.5 text-[11.5px] leading-normal text-neg">
       <AlertCircleIcon className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.7} />
-      <span>{children}</span>
+      <span className="min-w-0 flex-1 break-words leading-normal">{children}</span>
     </p>
   );
 }

@@ -7,9 +7,18 @@
 
 @media (max-width:900px) {
   #archive-terminal-preview { --mobile-nav-space:calc(76px + env(safe-area-inset-bottom, 0px)); height:auto; min-height:100dvh; overflow:visible; padding-bottom:calc(var(--mobile-nav-space) + var(--mobile-keyboard-inset,0px)); }
-  #archive-terminal-preview .global-header { height:52px; min-height:52px; padding-inline:12px; z-index:40; }
-  /* Keep navigation above sticky workspace tabs and clear of the bottom dock. */
-  #archive-terminal-preview .global-header .nav-mobile-menu { top:100%; max-height:calc(var(--mobile-viewport-height,100dvh) - 52px - var(--mobile-nav-space)); }
+  /* The header scrolls with the page on a phone: a short viewport (landscape,
+     an open keyboard) makes the page scroll, and the sticky tab strip sat
+     exactly over the sticky header (same as Spot, TerminalMobileParity.css).
+     `relative`, not `static`: the drawer below is absolute at top:100% of the
+     header; a static header is no containing block and the drawer rendered
+     below the viewport (scripts/qa-futures-proportions.cjs: «mobile drawer
+     /markets blocked by null»). z 40 keeps the drawer over the sticky strip. */
+  #archive-terminal-preview .global-header { position:relative; height:52px; min-height:52px; padding-inline:12px; z-index:40; }
+  /* Keep navigation above sticky workspace tabs; its height (clear of the
+     bottom dock, whatever the header's height) is set for all terminals in
+     TerminalMobileHeader.css. */
+  #archive-terminal-preview .global-header .nav-mobile-menu { top:100%; }
   #archive-terminal-preview .global-header :is(button,a) { min-height:44px; }
   #archive-terminal-preview .global-header .header-left { min-width:0; flex:1; }
   #archive-terminal-preview .global-header .header-actions { gap:4px; }
@@ -101,9 +110,26 @@
   #archive-terminal-preview .fo-infoRow > * { min-width:0; overflow-wrap:anywhere; }
   #archive-terminal-preview .bottom-panel { order:1; height:auto; min-height:240px; max-height:none; overflow:visible; }
   #archive-terminal-preview .terminal-account-header { display:flex; flex-wrap:wrap; height:auto; padding:8px 12px; gap:8px; }
-  #archive-terminal-preview .bottom-tabs { width:100%; flex:none; overflow-x:auto; min-height:44px; height:auto; padding:0; }
+  /* All five account tabs in sight: the strip wraps instead of scrolling
+     sideways with «История позиций» and «Активы» hidden past the edge. */
+  #archive-terminal-preview .bottom-tabs { width:100%; flex:none; flex-wrap:wrap; overflow:visible; min-height:44px; height:auto; padding:0; gap:0 16px; }
   #archive-terminal-preview .bottom-tab { min-height:44px; flex:none; }
   #archive-terminal-preview .bottom-content { height:auto; max-height:none; overflow-x:auto; }
+  /* Open orders and order history become cards too: the price, the status
+     and «Отменить» sat past the edge of a sideways-scrolling table. */
+  #archive-terminal-preview .futures-orders-panel { overflow-x:visible; }
+  #archive-terminal-preview .futures-orders-table { display:block; width:100%; min-width:0; white-space:normal; }
+  #archive-terminal-preview .futures-orders-table thead { display:none; }
+  #archive-terminal-preview .futures-orders-table tbody { display:grid; gap:12px; padding:12px; }
+  #archive-terminal-preview .futures-orders-table tbody tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--panel-alt); }
+  #archive-terminal-preview .futures-orders-table tbody tr:has(.futures-orders-empty) { display:block; padding:0; border:0; background:transparent; }
+  #archive-terminal-preview .futures-orders-table td { display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0; padding:0; border:0; font-size:14px; white-space:normal; overflow-wrap:anywhere; }
+  #archive-terminal-preview .futures-orders-table td::before { content:attr(data-mobile-label); font-size:11px; color:var(--text-tertiary); }
+  #archive-terminal-preview .futures-orders-table td.futures-orders-empty { display:block; height:auto; padding:24px 12px; text-align:center; }
+  #archive-terminal-preview .futures-orders-table :is(td.futures-orders-empty,td.futures-order-symbol,td.futures-order-action)::before { display:none; }
+  #archive-terminal-preview .futures-orders-table :is(td.futures-order-symbol,td.futures-order-action) { grid-column:1 / -1; }
+  #archive-terminal-preview .futures-orders-table td.futures-order-symbol { font-size:15px; font-weight:600; }
+  #archive-terminal-preview .futures-orders-table .cancel-btn { width:100%; min-height:44px; }
   #archive-terminal-preview .futures-positions-panel { height:auto !important; overflow:visible; }
   #archive-terminal-preview .futures-positions-scroll { overflow:visible !important; }
   #archive-terminal-preview .futures-positions-table { display:block; width:100%; min-width:0; }
@@ -136,8 +162,14 @@
   #archive-terminal-preview .fc-tabs { flex-wrap:wrap; }
   #archive-terminal-preview .fc-tabs button { min-height:44px; flex:1 1 40%; }
   #archive-terminal-preview :is(.fc-head,.fc-tabs,.fc-foot) { flex-shrink:0; }
-  #archive-terminal-preview .fc-body { display:block; overflow-y:auto; }
+  /* One scrolling sheet, not a clipped body inside a fixed panel: the inputs,
+     then the result, then «Подставить в форму» at the end, in reading order —
+     the result was cut off behind a pinned footer before, and a pinned footer
+     on a 568px-tall screen hid the quantity field until the sheet scrolled. */
+  #archive-terminal-preview .fc-panel { overflow-y:auto; }
+  #archive-terminal-preview .fc-body { display:block; flex:none; min-height:auto; overflow:visible; }
   #archive-terminal-preview :is(.fc-inputs,.fc-results) { overflow:visible; }
+  #archive-terminal-preview .fc-foot { position:static; }
   #archive-terminal-preview .fc-head { flex-wrap:wrap; padding:10px; gap:8px; }
   #archive-terminal-preview .fc-headText { flex-wrap:wrap; flex:1; }
   #archive-terminal-preview .fc-close { width:44px; height:44px; }

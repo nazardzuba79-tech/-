@@ -550,3 +550,14 @@
   .vx-kb-status li { padding: 0 16px; }
   .vx-kb-support { padding: 18px; font-size: 16px; }
 }
+
+/* Phone: the section strip scrolls sideways; the fade at the right edge says
+   so (the strip ends with 32px of padding, so the last tab is never faded
+   once scrolled to the end). */
+@media (max-width: 760px) {
+  .vx-kb-tabs {
+    padding-right: 32px;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
+}

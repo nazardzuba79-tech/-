@@ -27,3 +27,11 @@
   .banking-referral-link .banking-primary{width:100%;justify-content:center}
   .banking-referral .banking-table-wrap table{min-width:520px}
 }
+
+/* Phone: the three summary cards. Two plain 1fr tracks keep a min-content
+   floor from «$1,677,215.78» at 29px, so the row ran 40–150px past the right
+   edge and the whole page scrolled sideways. The tracks may shrink now, the
+   figure wraps rather than overflows, and under 480px each card takes the
+   full width. */
+@media(max-width:800px){.banking-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.banking-summary strong{font-size:24px;overflow-wrap:anywhere}}
+@media(max-width:480px){.banking-summary{grid-template-columns:minmax(0,1fr)}.banking-summary article:last-child{grid-column:auto}}

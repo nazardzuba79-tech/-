@@ -44,16 +44,16 @@ export function FuturesOrdersPanel({ history = false, refreshKey }: { history?: 
       <tbody>{resource.data?.length ? resource.data.map(order => {
         const date = new Date(order.createdAt);
         return <tr key={order.id} data-order-id={order.id}>
-          <td>{Number.isFinite(date.getTime()) ? date.toLocaleString() : '—'}</td>
-          <td>{order.symbol} <small>{order.leverage}x</small></td>
-          <td>{order.type === 'LIMIT' ? t('trade.orderType.LIMIT') : order.type === 'MARKET' ? t('trade.orderType.MARKET') : order.type}</td>
-          <td className={order.side === 'BUY' ? 'text-buy' : 'text-sell'}>{t(order.side === 'BUY' ? 'trade.buy' : 'trade.sell')}</td>
-          <td>{order.price == null ? '—' : formatOrderDecimal(order.price)}</td>
-          <td>{formatOrderDecimal(order.originalQuantity)}</td>
-          <td>{formatOrderDifference(order.originalQuantity, order.remainingQuantity)}</td>
-          <td>{spotOrderStatus(order.status, t)}</td>
-          <td>{order.reduceOnly ? '✓' : '—'}</td>
-          {!history && <td><button className="cancel-btn" type="button" disabled={cancelling !== null} onClick={() => void cancel(order.id)}>
+          <td data-mobile-label={t('trade.time')}>{Number.isFinite(date.getTime()) ? date.toLocaleString() : '—'}</td>
+          <td className="futures-order-symbol" data-mobile-label={t('markets.pair')}>{order.symbol} <small>{order.leverage}x</small></td>
+          <td data-mobile-label={t('trade.orderTypeCol')}>{order.type === 'LIMIT' ? t('trade.orderType.LIMIT') : order.type === 'MARKET' ? t('trade.orderType.MARKET') : order.type}</td>
+          <td className={order.side === 'BUY' ? 'text-buy' : 'text-sell'} data-mobile-label={t('trade.side')}>{t(order.side === 'BUY' ? 'trade.buy' : 'trade.sell')}</td>
+          <td data-mobile-label={t('trade.price')}>{order.price == null ? '—' : formatOrderDecimal(order.price)}</td>
+          <td data-mobile-label={t('trade.quantity')}>{formatOrderDecimal(order.originalQuantity)}</td>
+          <td data-mobile-label={t('trade.filled')}>{formatOrderDifference(order.originalQuantity, order.remainingQuantity)}</td>
+          <td data-mobile-label={t('trade.status')}>{spotOrderStatus(order.status, t)}</td>
+          <td data-mobile-label={t('futures.reduceOnly')}>{order.reduceOnly ? '✓' : '—'}</td>
+          {!history && <td className="futures-order-action"><button className="cancel-btn" type="button" disabled={cancelling !== null} onClick={() => void cancel(order.id)}>
             {t(cancelling === order.id ? 'trade.cancelling' : 'trade.cancel')}
           </button></td>}
         </tr>;

@@ -863,6 +863,49 @@ body {
     display: none;
   }
 }
+/* 320–359px: the wordmark ran under the deposit key. The mark stays, the
+   letters go; the terminals already do the same from 429px down. The home
+   header does the same (its own row was wider than the screen and the menu
+   key sat past the right edge). Both rules live here because home.css is
+   byte-frozen by cryptoCardVisualConsistency/cryptoCardProductionPromotion. */
+@media (max-width: 359px) {
+  .global-header .header-brand > span > span {
+    display: none;
+  }
+}
+/* The home header shows the mark alone below 430px, as the terminal header
+   already does (owner, 2026-10-04): with the wordmark the row «VOLTEX ·
+   Вход · Начать торговлю · menu» is 370px at 360 (the menu key loses 10px)
+   and in Spanish 412px at 360–411 (the menu key is off-screen, the CTA cut).
+   The labels are the product's words and the menu holds no sign-in entry, so
+   the wordmark is the one thing with room to give. */
+@media (max-width: 429px) {
+  .home-brand > span > span {
+    display: none;
+  }
+}
+/* 320–359px, /card: the section titles keep a 3rem+ floor from their
+   clamp(), and one word («Приватность» is 300px at 49.6px) was wider than
+   the column, so the whole page scrolled sideways by 19px. A smaller floor
+   on the narrowest phones, and a word may still wrap rather than push the
+   page. Hosted here because crypto-card.css is byte-frozen by
+   cryptoCardProductionPromotion. */
+@media (max-width: 359px) {
+  .crypto-card-page h2 {
+    font-size: 2.6rem;
+    overflow-wrap: anywhere;
+  }
+}
+/* 768–1023px, /card: the «Информация» tile (md:row-span-1, md:min-h-0) is
+   sized by the grid row alone and came out ~200px tall, so its top label and
+   the bottom block («Решения на фактах» + two rows of chips) met in the
+   middle. A floor keeps the two apart; from 1024px the row is tall enough.
+   Hosted here because the section and crypto-card.css are byte-frozen. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .crypto-card-page article.md\:vc-row-span-1.md\:vc-min-h-0 {
+    min-height: 260px;
+  }
+}
 @media (max-width: 420px) {
   .global-header {
     padding: 0 10px;
@@ -2011,6 +2054,10 @@ a:hover > .nav-card-icon {
   .bottom-nav {
     display: grid !important;
   }
+  /* Large OS text: a label that no longer fits its column is cut with «…»
+     rather than drawn over its neighbour (the icon above still names it). */
+  .bottom-nav a { min-width: 0; }
+  .bottom-nav a > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Dashboard's fixed 2fr/1fr and 4-column grids would otherwise overflow
      horizontally on a phone-width screen — collapse to a single column. */
   .dash-grid-2-1,

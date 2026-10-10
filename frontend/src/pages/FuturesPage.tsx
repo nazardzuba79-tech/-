@@ -68,6 +68,7 @@ import './trade-terminal/FuturesMobileCompact.css';
 // Bybit 1:1 geometry, type and colour (owner, 2026-10-07); TerminalPanelTiles stays last.
 import './trade-terminal/FuturesBybitParity.css';
 import './trade-terminal/FuturesFigmaDesktop.css';
+import './trade-terminal/FuturesMobileLargeText.css';
 import './trade-terminal/TerminalPanelTiles.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.

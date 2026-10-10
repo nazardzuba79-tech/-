@@ -354,7 +354,11 @@ describe('translation integrity', () => {
           // Currency flag selection (2026-10-07): one additive label per language.
           'authShell.moreCurrencies',
           // Bybit 1:1 positions summary line (2026-10-07): `git diff --numstat` over the locales reports `3 0` per language.
-          'futures.allPositions', 'futures.currentPositions', 'futures.totalPnl'];
+          'futures.allPositions', 'futures.currentPositions', 'futures.totalPnl',
+          // Mobile client audit (2026-10-09): the Spot/CFD terminal's third phone
+          // tab reads «Ордера» instead of the wrapping «Открытые ордера»;
+          // `git diff --numstat` over the locales reports `1 0` per language.
+          'trade.mobileTabOrders'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

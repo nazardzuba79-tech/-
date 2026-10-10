@@ -469,6 +469,7 @@ export const RU = {
   'trade.volume24h': 'Объём 24ч',
   'trade.turnover24h': 'Оборот 24ч',
   'trade.tabOpenOrders': 'Открытые ордера',
+  'trade.mobileTabOrders': 'Ордера',
   'futures.noOpenOrders': 'Нет открытых ордеров.',
   'futures.noOrderHistory': 'История ордеров пока пуста.',
   'futures.latestOrders': 'Последние 100 ордеров · Все контракты',

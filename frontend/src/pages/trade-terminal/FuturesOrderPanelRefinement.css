@@ -19,6 +19,10 @@
 #archive-terminal-preview .fo-infoBox .fo-infoRow { min-height:24px; align-items:baseline; flex-wrap:wrap; gap:2px 8px; }
 #archive-terminal-preview .fo-infoBox .fo-infoRow > :first-child { min-width:0; }
 #archive-terminal-preview .fo-infoBox .fo-infoRow > .mono { min-width:0; max-width:100%; margin-left:auto; text-align:right; white-space:normal; overflow-wrap:anywhere; }
+/* The long/short liquidation pair may break between its two figures, never
+   inside one: «135,185,184.0 / 9» is a different number. */
+#archive-terminal-preview .fo-infoBox .fo-infoRow > .fo-sidePair { display:inline-flex; flex-wrap:wrap; justify-content:flex-end; gap:0 5px; }
+#archive-terminal-preview .fo-infoBox .fo-sidePair > span { white-space:nowrap; overflow-wrap:normal; }
 #archive-terminal-preview .fo-positionLimits { border-top:1px solid var(--border); padding-top:10px; color:var(--order-service-label); }
 #archive-terminal-preview .fo-positionLimits summary {
   display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:28px;

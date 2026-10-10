@@ -56,7 +56,7 @@ function LegacyDepositModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div style={styles.overlay} onClick={onClose}>
-      <div className="modal-liquid-glass" style={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-liquid-glass" style={styles.modal} role="dialog" aria-modal="true" aria-label={t('deposit.title')} onClick={(e) => e.stopPropagation()}>
         <div style={styles.headerRow}>
           <h2 style={styles.title}>{t('deposit.title')}</h2>
           <button onClick={onClose} style={styles.closeBtn} aria-label={t('deposit.close')}>

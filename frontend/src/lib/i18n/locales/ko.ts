@@ -464,6 +464,7 @@ export const KO: Record<Key, string> = {
   'trade.volume24h': '24시간 거래량',
   'trade.turnover24h': '24시간 거래대금',
   'trade.tabOpenOrders': '미체결 주문',
+  'trade.mobileTabOrders': '주문',
   'futures.noOpenOrders': '미체결 주문이 없습니다.',
   'futures.noOrderHistory': '아직 주문 내역이 없습니다.',
   'futures.latestOrders': '최근 주문 100개 · 모든 계약',
