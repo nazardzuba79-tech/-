@@ -56,6 +56,15 @@ const KYC_PROFILE_CARD_KEYS = ['kycStepDocumentShort', 'kycStepReview', 'kycStep
   'kycStepNotSent', 'kycUploadTitle', 'kycUploadHint', 'kycChooseFile', 'kycReplaceFile', 'kycRemoveFile', 'kycPendingNoReupload',
   'kycRejectedHint', 'kycSubmittedData', 'kycStartCta', 'kycResubmitCta', 'kycOpenStatus', 'cardShortcutTitle'].map(key => `settings.${key}`);
 const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 'Faq', 'Glossary'].map(name => `nav.menu${name}Desc`);
+// Customer wording audit (2026-10-07): additive labels only. Keep the old
+// dictionary digest intact; do not exempt entire listing/error namespaces.
+const CUSTOMER_PRESENTATION_KEYS = [
+  'trade.statusUnavailable', 'trade.orderTypeUnavailable', 'trade.status.REJECTED', 'trade.status.EXPIRED',
+  'futures.positionStatus.OPEN', 'futures.positionStatus.CLOSED', 'futures.positionStatus.LIQUIDATED',
+  'listing.simulation', 'listing.tradingUnavailable', 'listing.marketLive', 'listing.dateUnconfirmed',
+  'listing.awaitingStart', 'listing.untilListing', 'listing.scheduledAt', 'listing.loadFailed',
+  'listing.dataStale', 'listing.volume24h', 'serverError.forbidden', 'serverError.network', 'serverError.timeout',
+];
 // Aircraft authentication design approved 2026-10-05: eleven existing labels
 // change and nine presentation labels are added. Name only those exact keys;
 // password rules, errors, 2FA, legal and all other auth copy remain frozen.
@@ -74,6 +83,13 @@ const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySub
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('provides the twenty new customer state labels in every locale', () => {
+    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(20);
+    for (const code of LOCALES) for (const key of CUSTOMER_PRESENTATION_KEYS) {
+      expect(dicts[code][key]?.trim()).toBeTruthy();
+      expect(dicts[code][key]).not.toBe(key);
+    }
+  });
   it('localizes the exact two-line card copy and 22+/70+ fiat/crypto counts without an investor claim', () => {
     const approvedCommunityCopy: Record<string, { title: string; subtitle: string }> = {
       ru: { title: '0% комиссии за покупки — и снятие наличных', subtitle: '22+ фиатных валют · 70+ криптовалют' },
@@ -358,7 +374,8 @@ describe('translation integrity', () => {
           // Mobile client audit (2026-10-09): the Spot/CFD terminal's third phone
           // tab reads «Ордера» instead of the wrapping «Открытые ордера»;
           // `git diff --numstat` over the locales reports `1 0` per language.
-          'trade.mobileTabOrders'];
+          'trade.mobileTabOrders',
+           ...CUSTOMER_PRESENTATION_KEYS];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
