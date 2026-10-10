@@ -10,6 +10,10 @@ jobs:
   stocks-performance-profile:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        io: [bounded, host-unrestricted]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,7 +25,7 @@ jobs:
       - name: Build exact before and after fixtures without external services
         run: |
           mkdir -p "$RUNNER_TEMP/profile-before" .ci-output/stock-performance
-          git archive 3c5a6a73d014826c47a89541d4fe85b2fbc41761 services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
+          git archive 0f01070b5d08ff88afa85d7a4a7e81d8eea8cfe2 services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
           cp services/stocks/realistic* services/stocks/profile* "$RUNNER_TEMP/profile-before/services/stocks/"
           cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/profile-before/services/stocks/"
           docker build -t voltex-realistic-before -f "$RUNNER_TEMP/profile-before/services/stocks/realistic.Dockerfile" "$RUNNER_TEMP/profile-before"
@@ -48,23 +52,36 @@ jobs:
           { nproc; free -m; findmnt -T "$RUNNER_TEMP/profile-disk"; lsblk; } > .ci-output/stock-performance/host.txt
           docker run --rm --network none --cpus .05 --memory 256m --memory-swap 256m --read-only --cap-drop ALL --security-opt no-new-privileges --device-read-bps "$device:1048576" --device-write-bps "$device:131072" --mount type=bind,src="$RUNNER_TEMP/profile-disk/probe",dst=/data voltex-strict-after node io-proof.mjs > .ci-output/stock-performance/io-proof.json
       - name: Offline stage profile and harness regressions
+        if: matrix.io == 'bounded'
         run: |
           node services/stocks/profile-stages.mjs > .ci-output/stock-performance/stages.json
-          node --test services/stocks/realistic.test.mjs
+          node --test services/stocks/realistic.test.mjs services/stocks/profile-sqlite-io.test.mjs
           STOCK_PROFILE_MODULE_ROOT="$RUNNER_TEMP/profile-before/services/stocks" STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-before node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-before.json
           STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after.json
           STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after-stages node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after-stages.json
           for mode in http-before http-after http-after-stages; do
             node services/stocks/profile-summary.mjs ".ci-output/stock-performance/$mode/http.cpuprofile" > ".ci-output/stock-performance/$mode/summary.json"
           done
+      - name: Separate aggregate-only SQLite fsync diagnosis on disposable fixtures
+        if: matrix.io == 'bounded'
+        env:
+          STOCK_SQLITE_IO_DIAGNOSTIC: 'true'
+          STOCK_REALISTIC_IMAGES: '{"before":"voltex-realistic-before","after":"voltex-realistic-after"}'
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/sqlite-io
+          STOCK_SQLITE_IO_OUTPUT: .ci-output/stock-performance/sqlite-io
+        run: |
+          if ! command -v strace >/dev/null; then sudo apt-get update && sudo apt-get install -y strace; fi
+          node services/stocks/profile-sqlite-io.mjs
       - name: Authenticated mixed and shared instrument workloads
         env:
           STOCK_REALISTIC_IMAGES: '{"before":"voltex-realistic-before","after":"voltex-realistic-after"}'
           STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/realistic
           STOCK_REALISTIC_OUTPUT: .ci-output/stock-performance/realistic
-          STOCK_REALISTIC_CAPACITY_LADDER: 'true'
+          STOCK_REALISTIC_IO_MODE: ${{ matrix.io }}
+          STOCK_REALISTIC_CAPACITY_LADDER: 'false'
         run: node services/stocks/realistic-run.mjs
       - name: Separate strict latency observation with unchanged three-second deadline
+        if: matrix.io == 'bounded'
         env:
           STOCK_STRICT_IMAGES: '{"before":"voltex-strict-before","after":"voltex-strict-after"}'
           STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/strict
@@ -73,7 +90,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stocks-performance-profile-${{ github.sha }}
+          name: stocks-sqlite-isolation-${{ matrix.io }}-${{ github.sha }}
           path: .ci-output/stock-performance
           if-no-files-found: error
   isolated-simulator:
@@ -90,7 +107,7 @@ jobs:
         with:
           node-version: '22'
       - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
-        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate

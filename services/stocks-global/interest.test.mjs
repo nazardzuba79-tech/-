@@ -17,18 +17,18 @@ test('idle service does no provider work; polling commits only to selected, held
   const post=async(user,path,body)=>{const r=await fetch(base+path,{method:'POST',headers:{'x-fixture-user':user,'X-Stocks-Token':tokens[user],'Content-Type':'application/json'},body:JSON.stringify(body)});assert.equal(r.status,200);return r.json();};
   const settle=async()=>{for(let n=0;n<10;n++)await new Promise(setImmediate);};
   try{
-    tick();await settle();assert.equal(catalogues,0);assert.equal(quotes,0);
+    await tick();await settle();assert.equal(catalogues,0);assert.equal(quotes,0);
     await state('alice',A);await state('bob',N);await state('carol',N);await state('dave',A);await settle();
     await post('carol','orders',{id:'carol-limit-111111111111',instrumentId:A,currency:'USDT',side:'BUY',type:'LIMIT',quantity:'0.1',limitPrice:'90'});
     await post('dave','refresh',{id:A});await post('dave','orders',{id:'dave-buy-111111111111111',instrumentId:A,currency:'USDT',side:'BUY',type:'MARKET',quantity:'0.1'});await state('dave',N);await settle();
     const before=Object.fromEntries(await Promise.all(['alice','bob','carol','dave'].map(async user=>[user,(await state(user)).revision]))),commits=hub.metrics.accountQuoteCommits;
-    time+=3000;tick();await settle();
+    time+=3000;await tick();await settle();
     const after=Object.fromEntries(await Promise.all(['alice','bob','carol','dave'].map(async user=>[user,await state(user)])));
     assert.equal(after.alice.revision,before.alice+1);assert.equal(after.bob.revision,before.bob);
     assert.equal(after.carol.revision,before.carol+1,'active AAPL limit still matches while another chart is selected');
     assert.equal(after.dave.revision,before.dave+1,'held AAPL position still receives marks');
     assert.equal(hub.metrics.accountQuoteCommits-commits,3);assert.equal(after.bob.quotes[A],undefined);
-    const idleCalls=quotes,idleCommits=hub.metrics.accountQuoteCommits;time+=12001;tick();await settle();
+    const idleCalls=quotes,idleCommits=hub.metrics.accountQuoteCommits;time+=12001;await tick();await settle();
     assert.equal(quotes,idleCalls);assert.equal(hub.metrics.accountQuoteCommits,idleCommits);
     // Existing contexts: a candle read neither updates quotes nor loads/writes a ledger.
     const history=await fetch(base+'history?id='+encodeURIComponent(A),{headers:{'x-fixture-user':'alice'}});assert.equal(history.status,200);

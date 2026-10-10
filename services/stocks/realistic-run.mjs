@@ -9,19 +9,22 @@ const output=resolve(process.env.STOCK_REALISTIC_OUTPUT??'.ci-output/stock-reali
 const disk=process.env.STOCK_REALISTIC_DISK,device=process.env.STOCK_BENCH_DEVICE,cpu=process.env.BENCH_CPU,clientCpu=process.env.LOAD_CPU;
 const images=JSON.parse(process.env.STOCK_REALISTIC_IMAGES??'{}');
 const seconds=Number(process.env.STOCK_REALISTIC_SECONDS??30),repeats=Number(process.env.STOCK_REALISTIC_REPEATS??3);
+const ioMode=process.env.STOCK_REALISTIC_IO_MODE??'bounded';
 if(process.platform!=='linux'||!disk||!device||cpu===undefined||clientCpu===undefined||!images.before||!images.after)throw Error('Linux, verified block device/CPU placement, disposable disk and exact before/after images required');
 if(!Number.isSafeInteger(seconds)||seconds<18||seconds>60||!Number.isSafeInteger(repeats)||repeats<1||repeats>3)throw Error('Invalid fixture run length');
+if(!['bounded','host-unrestricted'].includes(ioMode))throw Error('Invalid explicit I/O scenario');
 mkdirSync(output,{recursive:true});mkdirSync(disk,{recursive:true});
 const sleep=ms=>new Promise(ok=>setTimeout(ok,ms));
 const docker=(args)=>{const r=spawnSync('docker',args,{encoding:'utf8',timeout:120000});if(r.status!==0)throw Error(`docker ${args[0]} failed: ${r.stderr}`);return r.stdout.trim();};
-const bounded=(dir,{ports=false,profile=false,quota=.05}={})=>['--cpus',String(quota),'--cpuset-cpus',String(cpu),'--memory','256m','--memory-swap','256m','--pids-limit','32','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--device-read-bps',`${device}:1048576`,'--device-write-bps',`${device}:131072`,'--mount',`type=bind,src=${dir},dst=/data`,...(ports?['--network','host']:['--network','none']),...(profile?['-e','STOCK_REALISTIC_PROFILE=/data/server.cpuprofile']:[])];
+const bounded=(dir,{ports=false,profile=false,quota=.05}={})=>['--cpus',String(quota),'--cpuset-cpus',String(cpu),'--memory','256m','--memory-swap','256m','--pids-limit','32','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',...(ioMode==='bounded'?['--device-read-bps',`${device}:1048576`,'--device-write-bps',`${device}:131072`]:[]),'--mount',`type=bind,src=${dir},dst=/data`,...(ports?['--network','host']:['--network','none']),...(profile?['-e','STOCK_REALISTIC_PROFILE=/data/server.cpuprofile']:[])];
 const client=async(script,args=[],env={})=>new Promise((ok,fail)=>{
   const child=spawn('taskset',['-c',String(clientCpu),process.execPath,join(here,script),...args],{env:{...process.env,...env},stdio:['ignore','pipe','pipe']});let stdout='',stderr='';
   child.stdout.on('data',x=>stdout+=x);child.stderr.on('data',x=>stderr+=x);child.on('error',fail);child.on('close',code=>{if(code!==0)return fail(Error(`Reader exit ${code}: ${stderr}`));try{ok({value:JSON.parse(stdout.trim()),stdout,stderr});}catch(error){fail(Error(`Invalid reader output: ${error.message}\n${stdout}\n${stderr}`));}});
 });
 const waitReady=async(url,name)=>{for(let attempt=0;attempt<120;attempt++){try{const r=await fetch(url,{signal:AbortSignal.timeout(1000)});if(r.ok)return;}catch{}await sleep(250);}throw Error(`Fixture not ready: ${name}: ${docker(['logs',name])}`);};
 const results=[];
-writeFileSync(join(output,'configuration.json'),JSON.stringify({fixture:true,images,seconds,repeats,cpu,clientCpu,limits:{cpuVcpu:.05,memoryBytes:268435456,readBps:1048576,writeBps:131072,deadlineMs:3000},externalApiCalls:0,notes:'Same bounded stock slice as the existing strict test. This is a tested allocation on a shared CI host, not measured production headroom.'},null,2));
+const ioLimits=ioMode==='bounded'?{readBps:1048576,writeBps:131072}:{readBps:null,writeBps:null};
+writeFileSync(join(output,'configuration.json'),JSON.stringify({fixture:true,images,seconds,repeats,cpu,clientCpu,ioMode,limits:{cpuVcpu:.05,memoryBytes:268435456,...ioLimits,deadlineMs:3000},externalApiCalls:0,notes:ioMode==='bounded'?'Same bounded stock slice as the existing strict test. This is a tested allocation on a shared CI host, not measured production headroom.':'Separate CI-host I/O scenario with no synthetic device-bps limit, matching only the previously observed absence of such production quotas. The runner disk is not Hetzner; no production disk performance or free capacity is asserted.'},null,2));
 async function runCase(variant,repeat,users,pattern,quota=.05){
   const label=`${variant}-${users}-${pattern}-${repeat}${quota===.05?'':'-cpu'+quota}`,dir=join(resolve(disk),label),name=`stocks-realistic-${process.pid}`;mkdirSync(dir,{recursive:true,mode:0o777});spawnSync('chmod',['777',dir]);
   let started=false;
@@ -31,8 +34,8 @@ async function runCase(variant,repeat,users,pattern,quota=.05){
     const reset=await fetch('http://127.0.0.1:8093/reset',{method:'POST'});if(!reset.ok)throw Error('Metrics reset failed');
     const reader=await client('realistic-readers.mjs',[],{STOCK_REALISTIC_URL:'http://127.0.0.1:8092',STOCK_REALISTIC_USERS:String(users),STOCK_REALISTIC_PATTERN:pattern,STOCK_REALISTIC_SECONDS:String(seconds)});
     const server=await(await fetch('http://127.0.0.1:8093/metrics')).json();
-    const report={label,variant,repeat,allocationVcpu:quota,memoryBytes:268435456,readBps:1048576,writeBps:131072,capacityLadder:quota!==.05,...combineMetrics(reader.value,server)};results.push(report);writeFileSync(join(output,label+'.json'),JSON.stringify(report,null,2));
-    console.log(JSON.stringify({label,ok:reader.value.ok,errors:reader.value.errors,p95:reader.value.latencyMs.p95,cpu:server.cpuVcpu,rss:server.maxRssBytes,sql:server.sqlCalls,historyFixtureCalls:server.fixtureProviderHistoryCalls,pass:report.acceptance.pass}));
+    const report={label,variant,repeat,allocationVcpu:quota,memoryBytes:268435456,ioMode,...ioLimits,capacityLadder:quota!==.05,...combineMetrics(reader.value,server)};results.push(report);writeFileSync(join(output,label+'.json'),JSON.stringify(report,null,2));
+    console.log(JSON.stringify({label,ioMode,ok:reader.value.ok,errors:reader.value.errors,httpErrorCodes:reader.value.httpErrorCodes,p95:reader.value.latencyMs.p95,cpu:server.cpuVcpu,rss:server.maxRssBytes,sql:server.sqlCalls,historyFixtureCalls:server.fixtureProviderHistoryCalls,pass:report.acceptance.pass}));
   }finally{if(started){docker(['stop','-t','15',name]);writeFileSync(join(output,label+'.log'),docker(['logs',name]));docker(['rm',name]);}}
 }
 for(const variant of ['before','after'])for(let repeat=0;repeat<repeats;repeat++)for(const users of [5,20,50])for(const pattern of ['mixed','shared'])await runCase(variant,repeat,users,pattern);
@@ -57,6 +60,6 @@ for(const variant of ['before','after']){
   copyFileSync(join(dir,'server.cpuprofile'),join(output,label+'.cpuprofile'));
   const r=spawnSync(process.execPath,[join(here,'profile-summary.mjs'),join(output,label+'.cpuprofile')],{encoding:'utf8'});if(r.status!==0)throw Error(r.stderr);writeFileSync(join(output,label+'-summary.json'),r.stdout);
 }
-const minimumTestedAllocation=[5,20,50].flatMap(users=>['mixed','shared'].map(pattern=>{const quotas=[.05,.10,.20].filter(quota=>{const cases=results.filter(r=>r.variant==='after'&&r.allocationVcpu===quota&&r.reader.users===users&&r.reader.pattern===pattern);return cases.length===repeats&&cases.every(r=>r.acceptance.pass);});return{users,pattern,cpuVcpu:quotas[0]??null,memoryBytes:268435456,notes:quotas.length?'Minimum among tested quotas only; not production headroom or an interpolation.':'No passing allocation was confirmed among the tested quotas.'};}));
-writeFileSync(join(output,'results.json'),JSON.stringify({fixture:true,results,acceptanceAtOriginalBudget:results.filter(r=>r.variant==='after'&&r.allocationVcpu===.05).every(r=>r.acceptance.pass),minimumTestedAllocation,externalApiCalls:0},null,2));
+const minimumTestedAllocation=[5,20,50].flatMap(users=>['mixed','shared'].map(pattern=>{const quotas=[.05,.10,.20].filter(quota=>{const cases=results.filter(r=>r.variant==='after'&&r.allocationVcpu===quota&&r.reader.users===users&&r.reader.pattern===pattern);return cases.length===repeats&&cases.every(r=>r.acceptance.pass);});return{users,pattern,cpuVcpu:quotas[0]??null,memoryBytes:268435456,ioMode,...ioLimits,notes:quotas.length?'Minimum among tested quotas in this I/O configuration only; not production headroom or an interpolation.':'No passing allocation was confirmed among the tested quotas in this I/O configuration.'};}));
+writeFileSync(join(output,'results.json'),JSON.stringify({fixture:true,ioMode,...ioLimits,results,acceptanceAtOriginalBudget:ioMode==='bounded'?results.filter(r=>r.variant==='after'&&r.allocationVcpu===.05).every(r=>r.acceptance.pass):null,acceptanceAtTestedIoConfiguration:results.filter(r=>r.variant==='after'&&r.allocationVcpu===.05).every(r=>r.acceptance.pass),minimumTestedAllocation,externalApiCalls:0},null,2));
 console.log(JSON.stringify({cases:results.length,minimumTestedAllocation,output}));
