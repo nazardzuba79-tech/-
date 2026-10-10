@@ -50,7 +50,7 @@ const writeRequests = () => report.requests.filter(r => r.method === 'POST');
     app = await createServer({ port: 0, accountsPath: path.join(scratch, 'accounts.sqlite'), dist, hub, autoPoll: false,
       authenticate: async request => {
         const token = request.headers.authorization?.replace(/^Bearer /, '');
-        if (!/^fixture-overload-(1440|390)$/.test(token || '')) throw new SimError('AUTH_REQUIRED');
+        if (!/^fixture-overload-(1440|390|matrix-(ru|en|zh|es|hi|ja|ko))$/.test(token || '')) throw new SimError('AUTH_REQUIRED');
         return { issuer: 'stocks-overload-browser-fixture', subject: token };
       },
     });
@@ -182,6 +182,7 @@ const writeRequests = () => report.requests.filter(r => r.method === 'POST');
       check(dimensions.document <= dimensions.viewport + 1, `${width}: no horizontal page overflow`);
       await context.close();
     }
+    await require('./qa-stocks-global-matrix.cjs')({browser,origin,id,prefix,local,out,report,check,until});
     check(report.unexpectedWrites.length === 0, 'no non-Stocks financial or application writes');
     check(report.pageErrors.length === 0, 'no uncaught browser errors');
     report.pass = true;

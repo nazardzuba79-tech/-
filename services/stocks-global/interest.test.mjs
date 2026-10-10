@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { createServer } from './server.mjs';
 import { CATALOG } from './catalog.mjs';
 
-test('idle service does no provider work; polling commits only to selected, held or ordered account interests',async t=>{
+test('idle service does no provider work; polling projects selected/held interests and commits active orders',async t=>{
   const dir=await mkdtemp(join(tmpdir(),'stocks-interest-'));let time=1800000000000,tick,catalogues=0,quotes=0;
   t.mock.method(globalThis,'setInterval',fn=>{tick=fn;return 123456;});
   const A='BYBIT:AAPLXUSDT',N='BYBIT:NVDAXUSDT';
@@ -21,13 +21,15 @@ test('idle service does no provider work; polling commits only to selected, held
     await state('alice',A);await state('bob',N);await state('carol',N);await state('dave',A);await settle();
     await post('carol','orders',{id:'carol-limit-111111111111',instrumentId:A,currency:'USDT',side:'BUY',type:'LIMIT',quantity:'0.1',limitPrice:'90'});
     await post('dave','refresh',{id:A});await post('dave','orders',{id:'dave-buy-111111111111111',instrumentId:A,currency:'USDT',side:'BUY',type:'MARKET',quantity:'0.1'});await state('dave',N);await settle();
-    const before=Object.fromEntries(await Promise.all(['alice','bob','carol','dave'].map(async user=>[user,(await state(user)).revision]))),commits=hub.metrics.accountQuoteCommits;
+    const before=Object.fromEntries(await Promise.all(['alice','bob','carol','dave'].map(async user=>[user,(await state(user)).revision]))),commits=hub.metrics.accountQuoteCommits,observations=hub.metrics.accountQuoteObservations;
     time+=3000;await tick();await settle();
     const after=Object.fromEntries(await Promise.all(['alice','bob','carol','dave'].map(async user=>[user,await state(user)])));
-    assert.equal(after.alice.revision,before.alice+1);assert.equal(after.bob.revision,before.bob);
+    assert.equal(after.alice.revision,before.alice);assert.equal(after.bob.revision,before.bob);
     assert.equal(after.carol.revision,before.carol+1,'active AAPL limit still matches while another chart is selected');
-    assert.equal(after.dave.revision,before.dave+1,'held AAPL position still receives marks');
-    assert.equal(hub.metrics.accountQuoteCommits-commits,3);assert.equal(after.bob.quotes[A],undefined);
+    assert.equal(after.dave.revision,before.dave,'held AAPL mark is a read model, not a ledger mutation');
+    assert.equal(after.alice.quotes[A].timestamp,time);assert.equal(after.dave.quotes[A].timestamp,time);
+    assert.equal(after.dave.positions[A+'|USDT'].mark,'100');assert.equal(after.dave.positions[A+'|USDT'].unrealized,'0.00000000');
+    assert.equal(hub.metrics.accountQuoteCommits-commits,1);assert.equal(hub.metrics.accountQuoteObservations-observations,2);assert.equal(after.bob.quotes[A],undefined);
     const idleCalls=quotes,idleCommits=hub.metrics.accountQuoteCommits;time+=12001;await tick();await settle();
     assert.equal(quotes,idleCalls);assert.equal(hub.metrics.accountQuoteCommits,idleCommits);
     // Existing contexts: a candle read neither updates quotes nor loads/writes a ledger.

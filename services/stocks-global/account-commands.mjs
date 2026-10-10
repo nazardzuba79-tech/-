@@ -1,7 +1,7 @@
 import { applyQuote,submit,cancel,setBalances,active,snapshot,check } from './engine.mjs';
 
-export const ACCOUNT_MUTATIONS=new Set(['quote','quoteFailed','submit','cancel','balances']);
-export const ACCOUNT_READS=new Set(['read','interests']);
+export const ACCOUNT_MUTATIONS=new Set(['quote','quoteFailed','submit','cancel','balances','observe','observeFailed','submitObserved']);
+export const ACCOUNT_READS=new Set(['read','readView','interests']);
 
 // Functions stay in this module/worker. No serialized callbacks, eval, SQL or
 // client-selected account identifiers can cross the command boundary.

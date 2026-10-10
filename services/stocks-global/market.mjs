@@ -3,6 +3,10 @@ import { check, units, decimal, SimError } from './engine.mjs';
 import { performance } from 'node:perf_hooks';
 const S=100000000n;
 const HISTORY_CACHE_BYTES=8*1048576, HISTORY_CACHE_PAGES=128;
+const HISTORY_PAGE_ROWS=300, HISTORY_WINDOW_ROWS=600;
+// A range is admitted only from a complete, strictly ordered native response.
+// Timestamps need not be contiguous: missing trading periods are not invented.
+const nativeOrder=(rows,provider)=>Array.isArray(rows)&&rows.every((r,n)=>Number.isSafeInteger(Number(r?.[0]))&&(!n||(provider==='bybit'?Number(rows[n-1][0])>Number(r[0]):Number(rows[n-1][0])<Number(r[0]))));
 const fixed=(v)=>{const n=String(v);check(/^\d+(\.\d+)?$/.test(n),'INVALID_DATA');return decimal(units(n.split('.')[0]+'.'+(n.split('.')[1]||'').padEnd(8,'0').slice(0,8)));};
 const positive=v=>{const d=fixed(v);units(d,true);return d;};
 const tables=(j,name)=>{const t=j[name];check(Array.isArray(t?.columns)&&Array.isArray(t?.data),'INVALID_DATA');return t.data.map(row=>Object.fromEntries(t.columns.map((k,i)=>[k,row[i]])));};
@@ -16,7 +20,7 @@ export function parseCandles(rows,provider,now){
   return [...map.values()].sort((a,b)=>a.time-b.time);
 }
 export class MarketHub {
-  constructor({fetchImpl=fetch,now=Date.now}={}){this.fetch=fetchImpl;this.now=now;this.cache=new Map();this.inflight=new Map();this.starts=new Map();this.errors={};this.metrics={requests:0,bytes:0,cacheHits:0,historyParses:0,historyParseMs:0,historyCacheHits:0,historyCoalesced:0,historyCacheBytes:0,historyCacheExpired:0,historyCacheEvictions:0};this.verified=new Map();this.displays=new Map();this.historyCache=new Map();this.historyFlights=new Map();this.historyActive=0;this.historyQueue=[];}
+  constructor({fetchImpl=fetch,now=Date.now}={}){this.fetch=fetchImpl;this.now=now;this.cache=new Map();this.inflight=new Map();this.starts=new Map();this.errors={};this.metrics={requests:0,bytes:0,cacheHits:0,historyParses:0,historyParseMs:0,historyCacheHits:0,historyCoalesced:0,historyCacheBytes:0,historyCacheExpired:0,historyCacheEvictions:0,historyRangeHits:0,historyRangeInvalidations:0};this.verified=new Map();this.displays=new Map();this.historyCache=new Map();this.historyRanges=new Map();this.historyRetained=new Map();this.historyCandleRefs=new Map();this.historyFlights=new Map();this.historyActive=0;this.historyQueue=[];}
   async request(url,ttl=0,text=false){
     const u=new URL(url);check(['api.binance.com','api.bybit.com','iss.moex.com','www.cbr.ru','api.kraken.com'].includes(u.hostname)&&u.protocol==='https:','SOURCE_FORBIDDEN');
     const old=this.cache.get(url);if(old&&this.now()-old.at<ttl){this.metrics.cacheHits++;return old.value;}if(this.inflight.has(url))return this.inflight.get(url);
@@ -55,30 +59,79 @@ export class MarketHub {
     }else this.historyActive++;
     try{return await fn();}finally{const next=this.historyQueue.shift();if(next){clearTimeout(next.timer);next.resolve();}else this.historyActive--;}
   }
+  dropHistory(entry){
+    entry.store.delete(entry.key);this.historyRetained.delete(entry.retainedKey);this.metrics.historyCacheBytes-=entry.overhead;
+    for(const candle of entry.candles){const refs=this.historyCandleRefs.get(candle)-1;if(refs)this.historyCandleRefs.set(candle,refs);else{this.historyCandleRefs.delete(candle);this.metrics.historyCacheBytes-=248;}}
+  }
+  touchHistory(entry){this.historyRetained.delete(entry.retainedKey);this.historyRetained.set(entry.retainedKey,entry);}
+  retainHistory(store,key,entry){
+    const cacheNow=this.now();
+    for(const old of this.historyRetained.values())if(old.until<=cacheNow){this.dropHistory(old);this.metrics.historyCacheExpired++;}
+    if(store.has(key))this.dropHistory(store.get(key));
+    // Count each immutable candle object once; every owning array/reference and
+    // entry still has an allowance. Raw provider JSON is never retained.
+    const overhead=1024+(entry.candles.length+(entry.extraRefs||0))*8;
+    const cost=()=>overhead+entry.candles.reduce((sum,c)=>sum+(this.historyCandleRefs.has(c)?0:248),0);
+    while(this.historyRetained.size&&(this.metrics.historyCacheBytes+cost()>HISTORY_CACHE_BYTES||this.historyRetained.size>=HISTORY_CACHE_PAGES)){this.dropHistory(this.historyRetained.values().next().value);this.metrics.historyCacheEvictions++;}
+    if(cost()>HISTORY_CACHE_BYTES)return;
+    const retainedKey=(store===this.historyRanges?'range:':'page:')+key;
+    Object.assign(entry,{store,key,retainedKey,overhead});store.set(key,entry);this.historyRetained.set(retainedKey,entry);this.metrics.historyCacheBytes+=overhead;
+    for(const candle of entry.candles){const refs=this.historyCandleRefs.get(candle)||0;if(!refs)this.metrics.historyCacheBytes+=248;this.historyCandleRefs.set(candle,refs+1);}
+  }
+  historyValue(i,interval,candles,receivedAt){return Object.freeze({instrumentId:i.id,interval,currency:i.currency,provider:i.provider,delaySeconds:i.delaySeconds,candles:Object.freeze(candles),receivedAt});}
+  reuseHistory(i,interval,end,key){
+    if(!end)return null;
+    const family=JSON.stringify([i.id,interval]),window=this.historyRanges.get(family);
+    if(!window||window.until<=this.now()||end>window.upper)return null;
+    // Both native endpoints select the most recent rows up to inclusive end.
+    // Select native limit=300 first; the existing public strict-end filter can
+    // then return 299 rows at an aligned boundary. A partial suffix is NOT a page.
+    let right=window.candles.length;while(right&&window.candles[right-1].time*1000>end)right--;
+    if(right<HISTORY_PAGE_ROWS)return null;
+    const candles=window.candles.slice(right-HISTORY_PAGE_ROWS,right).filter(c=>c.time*1000<end);
+    const value=this.historyValue(i,interval,candles,window.receivedAt);
+    this.touchHistory(window);this.retainHistory(this.historyCache,key,{value,candles,until:window.receivedAt+300000,derived:family});this.metrics.historyRangeHits++;
+    return value;
+  }
   async history(id,interval='15m',before=null){
     const i=instrument(id);check(i&&i.timeframes.includes(interval),'UNSUPPORTED_TIMEFRAME');const end=before?Number(before):null;check(end===null||Number.isSafeInteger(end)&&end>0&&end<=this.now(),'INVALID_RANGE');
-    const key=JSON.stringify([id,interval,end]),cached=this.historyCache.get(key);
-    if(cached&&cached.until>this.now()){this.metrics.historyCacheHits++;this.historyCache.delete(key);this.historyCache.set(key,cached);return cached.value;}
+    const key=JSON.stringify([id,interval,end]),cached=this.historyCache.get(key)||(!end&&this.historyRanges.get(JSON.stringify([id,interval])));
+    if(cached&&cached.until>this.now()){this.metrics.historyCacheHits++;cached.store.delete(cached.key);cached.store.set(cached.key,cached);this.touchHistory(cached);return cached.value;}
     if(this.historyFlights.has(key)){this.metrics.historyCoalesced++;return this.historyFlights.get(key);}
+    // Capture only an earlier flight. Looking this up after queue admission
+    // could wait for a later latest request queued behind this cursor itself.
+    const latest=end&&this.historyFlights.get(JSON.stringify([id,interval,null]));
     const pending=this.historySlot(async()=>{
-      let rows;
+      // A concurrent requested latest read may already be obtaining the needed
+      // range. Wait for it once, then use the ordinary bounded exact fallback.
+      if(latest){this.metrics.historyCoalesced++;await latest.catch(()=>{});}
+      const reused=this.reuseHistory(i,interval,end,key);if(reused)return reused;
+      let rows;const upper=this.now(),limit=!end&&i.provider!=='moex'?HISTORY_WINDOW_ROWS:HISTORY_PAGE_ROWS;
       // Cache only the validated, normalized page. The raw provider payload is
       // not retained a second time, and all users share one normalization.
-      if(i.provider==='bybit'){const period={ '1m':'1','5m':'5','15m':'15','30m':'30','1h':'60','4h':'240','1D':'D' }[interval];const j=await this.request(`https://api.bybit.com/v5/market/kline?category=spot&symbol=${i.sourceSymbol}&interval=${period}&limit=300${end?'&end='+end:''}`);check(j.retCode===0&&j.result?.symbol===i.sourceSymbol,'INVALID_CANDLES');rows=j.result.list;}
-      else if(i.provider==='binance'){rows=await this.request(`https://api.binance.com/api/v3/klines?symbol=${i.sourceSymbol}&interval=${interval==='1D'?'1d':interval}&limit=300${end?'&endTime='+end:''}`);}
+      if(i.provider==='bybit'){const period={ '1m':'1','5m':'5','15m':'15','30m':'30','1h':'60','4h':'240','1D':'D' }[interval];const j=await this.request(`https://api.bybit.com/v5/market/kline?category=spot&symbol=${i.sourceSymbol}&interval=${period}&limit=${limit}${end?'&end='+end:''}`);check(j.retCode===0&&j.result?.symbol===i.sourceSymbol,'INVALID_CANDLES');rows=j.result.list;}
+      else if(i.provider==='binance'){rows=await this.request(`https://api.binance.com/api/v3/klines?symbol=${i.sourceSymbol}&interval=${interval==='1D'?'1d':interval}&limit=${limit}${end?'&endTime='+end:''}`);}
       else {const period={'1m':1,'1h':60,'1D':24}[interval];const till=new Date(end||this.now()).toISOString().slice(0,10);const from=new Date((end||this.now())-(interval==='1D'?360:interval==='1h'?14:2)*86400000).toISOString().slice(0,10);const j=await this.request(`https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${i.sourceSymbol}/candles.json?iss.meta=off&interval=${period}&from=${from}&till=${till}`);rows=tables(j,'candles');}
-      const started=performance.now();let candles=parseCandles(rows,i.provider,this.now());if(end)candles=candles.filter(c=>c.time*1000<end);
-      for(const candle of candles)Object.freeze(candle);Object.freeze(candles);
-      const value=Object.freeze({instrumentId:id,interval,currency:i.currency,provider:i.provider,delaySeconds:i.delaySeconds,candles,receivedAt:this.now()});
+      const started=performance.now();const normalized=parseCandles(rows,i.provider,this.now());for(const candle of normalized)Object.freeze(candle);
+      const bounded=i.provider!=='moex'&&rows.length<=limit,ordered=bounded&&nativeOrder(rows,i.provider);
+      // An unordered/duplicate response cannot establish a reusable native range,
+      // but a conforming response cardinality must never enlarge the public page.
+      // Preserve legacy parser handling for over-limit responses separately.
+      let candles=!end&&bounded?normalized.slice(-HISTORY_PAGE_ROWS):normalized;if(end)candles=candles.filter(c=>c.time*1000<end);
+      const receivedAt=this.now(),value=this.historyValue(i,interval,candles,receivedAt);
       this.metrics.historyParses++;this.metrics.historyParseMs+=performance.now()-started;
-      const size=candles.length*256+1024; // Conservative object/array allowance, not only JSON bytes.
-      // Expired current pages must not evict still-valid history. Prune on demand,
-      // with no timer, prefetch, TTL extension or change to exact cursor identity.
-      const cacheNow=this.now();
-      for(const [oldKey,old] of this.historyCache){if(old.until<=cacheNow){this.metrics.historyCacheBytes-=old.size;this.historyCache.delete(oldKey);this.metrics.historyCacheExpired++;}}
-      const previous=this.historyCache.get(key);if(previous){this.metrics.historyCacheBytes-=previous.size;this.historyCache.delete(key);}
-      while(this.historyCache.size&&(this.metrics.historyCacheBytes+size>HISTORY_CACHE_BYTES||this.historyCache.size>=HISTORY_CACHE_PAGES)){const [oldKey,old]=this.historyCache.entries().next().value;this.metrics.historyCacheBytes-=old.size;this.historyCache.delete(oldKey);this.metrics.historyCacheEvictions++;}
-      if(size<=HISTORY_CACHE_BYTES){this.historyCache.set(key,{value,size,until:this.now()+(i.provider==='moex'?10000:end?300000:10000)});this.metrics.historyCacheBytes+=size;}
+      const family=JSON.stringify([id,interval]);
+      if(!end&&bounded){
+        // A new authoritative observation invalidates derived aliases, including
+        // historical corrections/removals and short/unordered native responses.
+        // Already returned frozen data is intact; no cached value is mutated.
+        for(const old of this.historyCache.values())if(old.derived===family){this.dropHistory(old);this.metrics.historyRangeInvalidations++;}
+      }
+      if(!end&&ordered&&normalized.length===HISTORY_WINDOW_ROWS){
+        // The window also owns its latest public view, avoiding a duplicate cache
+        // entry. Account for that view's additional array references explicitly.
+        this.retainHistory(this.historyRanges,family,{value,candles:Object.freeze(normalized),extraRefs:candles.length,receivedAt,upper,until:receivedAt+10000});
+      }else this.retainHistory(this.historyCache,key,{value,candles,until:receivedAt+(i.provider==='moex'?10000:end?300000:10000)});
       return value;
     }).finally(()=>this.historyFlights.delete(key));
     this.historyFlights.set(key,pending);return pending;

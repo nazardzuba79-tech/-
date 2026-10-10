@@ -25,7 +25,7 @@ jobs:
       - name: Build exact before and after fixtures without external services
         run: |
           mkdir -p "$RUNNER_TEMP/profile-before" .ci-output/stock-performance
-          git archive bd97e35020e40bfc48cdc5647b32d5e79b023c05 services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
+          git archive f81f404269bfe4b93c19443ce7fc8b881756a366 services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
           cp services/stocks/realistic* services/stocks/profile* "$RUNNER_TEMP/profile-before/services/stocks/"
           cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/profile-before/services/stocks/"
           docker build -t voltex-realistic-before -f "$RUNNER_TEMP/profile-before/services/stocks/realistic.Dockerfile" "$RUNNER_TEMP/profile-before"
@@ -55,7 +55,7 @@ jobs:
         if: matrix.io == 'bounded'
         run: |
           node services/stocks/profile-stages.mjs > .ci-output/stock-performance/stages.json
-          node --test services/stocks/realistic.test.mjs services/stocks/profile-sqlite-io.test.mjs
+          node --test services/stocks/realistic.test.mjs services/stocks/realistic-provider-fixture.test.mjs services/stocks/profile-sqlite-io.test.mjs
           STOCK_PROFILE_MODULE_ROOT="$RUNNER_TEMP/profile-before/services/stocks" STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-before node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-before.json
           STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after.json
           STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after-stages node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after-stages.json
@@ -87,10 +87,13 @@ jobs:
           STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/strict
           STOCK_STRICT_OUTPUT: .ci-output/stock-performance/strict
         run: node services/stocks/profile-strict-run.mjs
+      - name: Document unchanged criteria and actual measured acceptance
+        if: always()
+        run: node services/stocks/review-evidence.mjs .ci-output/stock-performance performance
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stocks-cache-overload-${{ matrix.io }}-${{ github.sha }}
+          name: stocks-issue505-${{ matrix.io }}-${{ github.sha }}
           path: .ci-output/stock-performance
           if-no-files-found: error
   isolated-simulator:
@@ -107,7 +110,7 @@ jobs:
         with:
           node-version: '22'
       - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
-        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate
@@ -263,6 +266,10 @@ jobs:
   launch-resource-comparison:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        baseline: [original, issue505]
     services:
       postgres:
         image: postgres:16
@@ -286,11 +293,13 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate && npm run build && npx prisma migrate deploy
       - name: Build identical fixtures with before and after stock read implementation
+        env:
+          STOCK_COMPARISON_BASE_SHA: ${{ matrix.baseline == 'original' && '3c5a6a73d014826c47a89541d4fe85b2fbc41761' || 'f81f404269bfe4b93c19443ce7fc8b881756a366' }}
         run: |
           docker build -t voltex-stock-after -f services/stocks/Dockerfile .
           mkdir -p "$RUNNER_TEMP/stock-before"
           # Exact prior #497 head: same workload/budgets, current known timeout baseline.
-          git archive 3c5a6a73d014826c47a89541d4fe85b2fbc41761 services/stocks | tar -x -C "$RUNNER_TEMP/stock-before"
+          git archive "$STOCK_COMPARISON_BASE_SHA" services/stocks | tar -x -C "$RUNNER_TEMP/stock-before"
           cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/stock-before/services/stocks/load-fixture.mjs"
           docker build -t voltex-stock-before -f "$RUNNER_TEMP/stock-before/services/stocks/Dockerfile" "$RUNNER_TEMP/stock-before"
           # CI-only tools must match the container libc; never mount host taskset.
@@ -348,10 +357,15 @@ jobs:
       - name: Summarize without treating completed evidence as acceptance
         if: always()
         run: node services/stocks/summarize-launch.cjs .ci-output/stock-launch
+      - name: Document original paired workload and baseline
+        if: always()
+        env:
+          STOCK_COMPARISON_BASE_SHA: ${{ matrix.baseline == 'original' && '3c5a6a73d014826c47a89541d4fe85b2fbc41761' || 'f81f404269bfe4b93c19443ce7fc8b881756a366' }}
+        run: node services/stocks/review-evidence.mjs .ci-output/stock-launch paired-crypto
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stocks-launch-resource-${{ github.sha }}
+          name: stocks-launch-resource-${{ matrix.baseline }}-${{ github.sha }}
           path: .ci-output/stock-launch
           if-no-files-found: error
       - name: Fail the I/O evidence gate when no block-device proof exists

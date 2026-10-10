@@ -20,14 +20,14 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   const accounts=accountsPath?await openAccountWorker(accountsPath,{...accountWorkerOptions,now,diagnostics:accountDiagnostics}):null;
   const legacy=accounts?null:await openStore(dataPath,{now});
   const contexts=new Map(),contextFlights=new Map(),refreshTasks=new Set(),flights=new Map(),recent=new Map(),historyWire=new WeakMap();
-  Object.assign(hub.metrics,{accountQuoteCommits:0,accountQuoteMs:0,historySerializations:0,historySerializeMs:0});
+  Object.assign(hub.metrics,{accountQuoteCommits:0,accountQuoteObservations:0,accountQuoteMs:0,historySerializations:0,historySerializeMs:0});
   let address,closing=false,cursor=0,catalogueTask=null,lastCatalogue=0;
-  const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,accessed:now(),errors:{},token:randomBytes(32).toString('hex')});
+  const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,accessed:now(),errors:{},observed:new Set(),token:randomBytes(32).toString('hex')});
   if(legacy)contexts.set('legacy',context({read:()=>legacy.read(),execute:(command,input)=>command==='interests'?Promise.resolve(executeAccountCommand(legacy.read(),command,input,now())):legacy.transact((s,t)=>executeAccountCommand(s,command,input,t))},'legacy'));
   const sourceAllowed=id=>{check(instrument(id),'INVALID_PAIR');check(instrument(id).provider!=='moex','MOEX_UNVERIFIED');};
   const blockedCatalogue=list=>list.map(i=>i.provider==='moex'?{...i,online:false,display:null,sourceError:'MOEX_UNVERIFIED'}:i);
   let catalogue=blockedCatalogue(CATALOG.map(i=>({...i,exists:null,online:false})));
-  const status=async(ctx,committed)=>({... (committed??await ctx.store.read()),...(accounts?{account:{id:ctx.id,mode:'isolated-paper'}}:{}),catalogue,errors:{...ctx.errors},metrics:{...hub.metrics,rssBytes:process.memoryUsage().rss,cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}});
+  const status=async(ctx,committed)=>({... (committed??await(accounts?ctx.store.execute('readView'):ctx.store.read())),...(accounts?{account:{id:ctx.id,mode:'isolated-paper',quoteView:'volatile'}}:{}),catalogue,errors:{...ctx.errors},metrics:{...hub.metrics,rssBytes:process.memoryUsage().rss,cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}});
   const loadCatalogue=()=>catalogueTask??=hub.catalogue().then(list=>{catalogue=blockedCatalogue(list);lastCatalogue=now();}).finally(()=>{catalogueTask=null;});
   const getContext=async req=>{
     if(!accounts)return contexts.get('legacy');
@@ -53,8 +53,8 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   };
   async function refreshContext(ctx,id=ctx.selected){
     if(closing)return;
-    try{const q=await quote(id),started=performance.now();const committed=await ctx.store.execute('quote',q);hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;delete ctx.errors[id];return committed.snapshot;}
-    catch(e){ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;await ctx.store.execute('quoteFailed',{id});}
+    try{const q=await quote(id),started=performance.now();const committed=await ctx.store.execute(accounts?'observe':'quote',q);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;ctx.observed.add(id);delete ctx.errors[id];return committed.snapshot;}
+    catch(e){ctx.observed.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;await ctx.store.execute(accounts?'observeFailed':'quoteFailed',{id});}
   }
   const refreshInBackground=ctx=>{const id=ctx.selected,pending=refreshContext(ctx,id).catch(e=>{ctx.errors[id]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>refreshTasks.delete(pending));refreshTasks.add(pending);};
   const send=(res,code,body,headers={})=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers});res.end(JSON.stringify(body));};
@@ -75,7 +75,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
       const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;check(size<=8192,'BODY_TOO_LARGE');chunks.push(chunk);}let input;try{input=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new SimError('INVALID_JSON');}
       check(input&&typeof input==='object'&&!Array.isArray(input),'INVALID_JSON');
       check(!['userId','accountId','owner','subject','issuer','account','user'].some(k=>k in input),'ACCOUNT_SELECTOR_FORBIDDEN');
-      let committed,result;if(u.pathname===API+'orders'){sourceAllowed(input.instrumentId);committed=await ctx.store.execute('submit',input);result=committed.result;}
+      let committed,result;if(u.pathname===API+'orders'){sourceAllowed(input.instrumentId);committed=await ctx.store.execute(accounts?'submitObserved':'submit',accounts?{order:input,sourceBlocked:!ctx.observed.has(input.instrumentId)||!!ctx.errors[input.instrumentId]}:input);result=committed.result;}
       else if(u.pathname===API+'cancel'){committed=await ctx.store.execute('cancel',{id:input.id});result=committed.result;}
       else if(u.pathname===API+'balances')committed=await ctx.store.execute('balances',input);
       else if(u.pathname===API+'refresh'){sourceAllowed(input.id);ctx.selected=input.id;ctx.lease=now();committed={snapshot:await refreshContext(ctx)};}

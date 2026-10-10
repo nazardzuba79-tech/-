@@ -38,9 +38,10 @@ export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, di
     forPrincipal(principal) {
       const id = accountId(principal);
       const initial=JSON.stringify(createState(now()));
-      sql('write','sqlWriteCalls',()=>insert.run(id,initial));
+      const created = sql('write','sqlWriteCalls',()=>insert.run(id,initial)).changes === 1;
       return {
-        id,
+        id, created,
+        readState: () => load(id),
         read: () => snapshot(load(id), now()),
         async transact(fn) {
           sql('begin','sqlExecCalls',()=>db.exec('BEGIN IMMEDIATE'));
