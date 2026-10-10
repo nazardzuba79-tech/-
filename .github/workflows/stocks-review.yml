@@ -55,7 +55,7 @@ jobs:
         if: matrix.io == 'bounded'
         run: |
           node services/stocks/profile-stages.mjs > .ci-output/stock-performance/stages.json
-          node --test services/stocks/realistic.test.mjs services/stocks/realistic-provider-fixture.test.mjs services/stocks/profile-sqlite-io.test.mjs
+          node --test services/stocks/realistic.test.mjs services/stocks/realistic-provider-fixture.test.mjs services/stocks/profile-sqlite-io.test.mjs services/stocks/review-evidence.test.mjs
           STOCK_PROFILE_MODULE_ROOT="$RUNNER_TEMP/profile-before/services/stocks" STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-before node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-before.json
           STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after.json
           STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after-stages node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after-stages.json
@@ -78,7 +78,7 @@ jobs:
           STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/realistic
           STOCK_REALISTIC_OUTPUT: .ci-output/stock-performance/realistic
           STOCK_REALISTIC_IO_MODE: ${{ matrix.io }}
-          STOCK_REALISTIC_CAPACITY_LADDER: 'false'
+          STOCK_REALISTIC_CAPACITY_LADDER: ${{ matrix.io == 'host-unrestricted' && 'true' || 'false' }}
         run: node services/stocks/realistic-run.mjs
       - name: Separate strict latency observation with unchanged three-second deadline
         if: matrix.io == 'bounded'
