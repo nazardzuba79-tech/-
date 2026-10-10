@@ -34,8 +34,9 @@ const NOISE = /bottom-nav|support-launcher|markets-analytics-launch|market-ticke
 // terminal tab strip and the bottom bar sit over mid-page content there; the
 // page scrolls on, so a control under them is not out of reach. A floating
 // launcher under the bottom bar IS out of reach (it cannot scroll), so for
-// those two the bar still counts.
-const STICKY = /header|global-header|terminal-mobile-tabs|market-ticker|bottom-nav|support-launcher/;
+// those two the bar still counts. The support launcher itself is not sticky
+// chrome here: a control it covers at the end of a page is a real finding.
+const STICKY = /header|global-header|language-|terminal-mobile-tabs|futures-mobile-tabs|market-ticker|bottom-nav/;
 const FLOATING = /markets-analytics-launch|support-launcher/;
 // A slider's stop buttons sit on the track by design (they are its tap targets).
 const SIBLING_TARGET = /flc-stop|slider-stop/;
@@ -64,7 +65,11 @@ function judge(c) {
   if (spill.length) issues.push(`spill ×${spill.length}`);
   const clip = (m.clipped || []).filter(x => x.kind !== 'ellipsis' && !NOISE.test(x.sel));
   if (clip.length) issues.push(`clip ×${clip.length}`);
-  const overlaps = (m.overlaps || []).filter(o => !NOISE.test(o.a) && !NOISE.test(o.b) && !TOAST.test(o.aText + o.bText) && sameLayer(o.a, o.b));
+  // Sticky chrome (header, terminal tab strip) is opaque: text that scrolled
+  // under it is not an overlap. Two texts inside the same chrome still are.
+  const CHROME = /global-header|\bheader-|nav-burger|terminal-market-switch|terminal-mobile-tabs|futures-mobile-tabs/;
+  const chromeOver = (a, b) => (CHROME.test(a) !== CHROME.test(b));
+  const overlaps = (m.overlaps || []).filter(o => !NOISE.test(o.a) && !NOISE.test(o.b) && !TOAST.test(o.aText + o.bText) && sameLayer(o.a, o.b) && !chromeOver(o.a, o.b));
   if (overlaps.length) issues.push(`overlap ×${overlaps.length}`);
   // Sticky chrome (header, ticker, bottom bar) over mid-page content at the
   // scrolled-to-end position is not «covered at the end of the page»: the page
@@ -103,7 +108,7 @@ out.push('');
 out.push(`Після: ${after.startedAt} → ${after.finishedAt}, ${after.captures.length} знімків стану.${before ? ` До: ${before.startedAt}, ${before.captures.length} знімків.` : ''}`);
 out.push(`Запити на запис із браузера, відхилені fixture-сервером: ${after.writesAttempted}. Невідомі fixture-ендпоінти: ${after.unknownEndpoints.join(', ') || 'немає'}.`);
 out.push('');
-out.push('Комірка: ✅ — без виміряних дефектів; ❌ — що саме знайдено (page overflow = горизонтальна прокрутка сторінки; spill = блок за краєм екрана; clip = обрізаний текст без «…»; overlap = накладання текстових рядків; covered@end = кнопка накрита шаром наприкінці сторінки); — = стан не існує на цій ширині; «не проверено» = крок до цього стану не виконався (елемент не знайдено) або знімок не вдався; стрілка «до→після» показує зміну відносно базової збірки. Відфільтровано як шум: нижня панель навігації, кнопка підтримки, кнопка «Аналитика» й біжучий рядок котирувань над вмістом на межі екрана; липкі шапка/смужка вкладок/панель над серединою сторінки у положенні «кінець сторінки» (сторінка прокручується далі; плаваюча кнопка під панеллю, навпаки, рахується); тости «Не удалось…»; текст під відкритим меню/чатом підтримки/діалогом (шар поверх сторінки), крім накладань усередині того самого шару; кнопки-упори повзунка над його доріжкою.');
+out.push('Комірка: ✅ — без виміряних дефектів; ❌ — що саме знайдено (page overflow = горизонтальна прокрутка сторінки; spill = блок за краєм екрана; clip = обрізаний текст без «…»; overlap = накладання текстових рядків; covered@end = кнопка накрита шаром наприкінці сторінки); — = стан не існує на цій ширині; «не проверено» = крок до цього стану не виконався (елемент не знайдено) або знімок не вдався; стрілка «до→після» показує зміну відносно базової збірки. Відфільтровано як шум: нижня панель навігації, кнопка підтримки, кнопка «Аналитика» й біжучий рядок котирувань над вмістом на межі екрана; липкі шапка/смужка вкладок/панель над серединою сторінки у положенні «кінець сторінки» (сторінка прокручується далі; плаваюча кнопка під панеллю, навпаки, рахується); тости «Не удалось…»; текст під відкритим меню/чатом підтримки/діалогом (шар поверх сторінки), крім накладань усередині того самого шару; кнопки-упори повзунка над його доріжкою; текст сторінки під липкою шапкою/смужкою вкладок (вони непрозорі).');
 out.push('');
 out.push(`| маршрут | стан | ${widths.join(' | ')} |`);
 out.push(`|---|---|${widths.map(() => '---').join('|')}|`);
@@ -137,6 +142,34 @@ for (const r of rows.values()) {
   for (const [issue, ws] of Object.entries(per)) residual.push(`- ${r.path} · ${r.state}: ${issue} (${ws.join(', ')})`);
 }
 out.push(residual.length ? residual.join('\n') : '- немає');
+// Where the ❌ cells sit: OS text at 200%, desktop regression cells, keyboard states, everything else.
+const classes = { 'стан «200% тексту» (телефони)': 0, 'десктоп 1366/1440/1920': 0, 'стан з відкритою клавіатурою': 0, 'інше (телефон/планшет/ландшафт)': 0 };
+const DESKTOP = /^(1366|1440|1920)x/;
+for (const r of rows.values()) for (const w of widths) {
+  const cell = r.cells[w]; if (!cell || cell.after.verdict !== 'дефект') continue;
+  if (r.state === 'text200') classes['стан «200% тексту» (телефони)']++;
+  else if (DESKTOP.test(w)) classes['десктоп 1366/1440/1920']++;
+  else if (r.state === 'keyboard') classes['стан з відкритою клавіатурою']++;
+  else classes['інше (телефон/планшет/ландшафт)']++;
+}
+out.push('');
+out.push('## Розподіл комірок ❌');
+out.push('');
+for (const [k, v] of Object.entries(classes)) out.push(`- ${k}: ${v}`);
+// Keyboard states: the focused field and the submit key with the viewport shrunk to 55% (an open keyboard).
+const kb = [];
+for (const c of after.captures) {
+  const k = c.metrics?.keyboard; if (!k) continue;
+  const f = k.field, sm = k.submit;
+  const fieldText = !f?.present ? 'поле не у фокусі' : (f.inView && !f.covered) ? 'поле видно, не накрите' : f.covered ? `поле накрите (${f.by})` : 'поле поза екраном';
+  const submitText = !sm?.present ? '—' : (sm.inView && !sm.covered) ? 'кнопка досяжна' : sm.covered ? `кнопка накрита (${sm.by})` : 'кнопка поза екраном';
+  kb.push(`| ${c.path} | ${c.viewport} | ${k.viewport.width}×${k.viewport.height} | ${fieldText} | ${submitText} |`);
+}
+if (kb.length) {
+  out.push(''); out.push('## Відкрита клавіатура (вьюпорт зменшено до 55% висоти, поле у фокусі)'); out.push('');
+  out.push('| маршрут | екран | видима область | поле вводу | кнопка підтвердження |'); out.push('|---|---|---|---|---|');
+  out.push(...kb);
+}
 process.stdout.write(out.join('\n') + '\n');
 if (jsonOut) {
   // Compact per-cell verdicts (the raw report.json carries every measured box and is too large to keep in the repo).

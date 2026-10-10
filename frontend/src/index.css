@@ -886,6 +886,16 @@ body {
     overflow-wrap: anywhere;
   }
 }
+/* 768–1023px, /card: the «Информация» tile (md:row-span-1, md:min-h-0) is
+   sized by the grid row alone and came out ~200px tall, so its top label and
+   the bottom block («Решения на фактах» + two rows of chips) met in the
+   middle. A floor keeps the two apart; from 1024px the row is tall enough.
+   Hosted here because the section and crypto-card.css are byte-frozen. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .crypto-card-page article.md\:vc-row-span-1.md\:vc-min-h-0 {
+    min-height: 260px;
+  }
+}
 @media (max-width: 420px) {
   .global-header {
     padding: 0 10px;
@@ -2034,6 +2044,10 @@ a:hover > .nav-card-icon {
   .bottom-nav {
     display: grid !important;
   }
+  /* Large OS text: a label that no longer fits its column is cut with «…»
+     rather than drawn over its neighbour (the icon above still names it). */
+  .bottom-nav a { min-width: 0; }
+  .bottom-nav a > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Dashboard's fixed 2fr/1fr and 4-column grids would otherwise overflow
      horizontally on a phone-width screen — collapse to a single column. */
   .dash-grid-2-1,

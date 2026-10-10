@@ -3,20 +3,20 @@
  "fonts": "local",
  "browser": "chromium",
  "after": {
-  "startedAt": "2026-10-10T06:16:33.485Z",
-  "finishedAt": "2026-10-10T06:34:25.794Z"
+  "startedAt": "2026-10-10T08:56:58.945Z",
+  "finishedAt": "2026-10-10T09:15:13.368Z"
  },
  "before": {
   "startedAt": "2026-10-09T19:12:04.785Z",
   "finishedAt": "2026-10-09T19:27:06.457Z"
  },
  "summary": {
-  "ok": 926,
-  "bad": 90,
-  "na": 76,
+  "ok": 999,
+  "bad": 49,
+  "na": 92,
   "unchecked": 0,
-  "fixed": 238,
-  "regressed": 4
+  "fixed": 275,
+  "regressed": 0
  },
  "cells": [
   {
@@ -3666,6 +3666,150 @@
   {
    "path": "/markets",
    "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "320x568",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 25,
+    "small": 18,
+    "font": 1,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "320x740",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 25,
+    "small": 18,
+    "font": 1,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "360x800",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 25,
+    "small": 18,
+    "font": 1,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "375x812",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 25,
+    "small": 18,
+    "font": 1,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "390x844",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 25,
+    "small": 18,
+    "font": 1,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "412x915",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 25,
+    "small": 18,
+    "font": 1,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "430x932",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 25,
+    "small": 18,
+    "font": 1,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "844x390",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 27,
+    "small": 18,
+    "font": 1,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "768x1024",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "1366x768",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "1440x900",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
+   "state": "keyboard",
+   "viewport": "1920x1080",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/markets",
+   "scenario": "markets",
    "state": "support",
    "viewport": "320x568",
    "after": "ok",
@@ -3706,10 +3850,8 @@
    "scenario": "markets",
    "state": "support",
    "viewport": "360x800",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -4646,6 +4788,150 @@
     "font": 1,
     "stepError": null
    }
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "320x568",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 0,
+    "small": 26,
+    "font": 3,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "320x740",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 0,
+    "small": 26,
+    "font": 3,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "360x800",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 0,
+    "small": 26,
+    "font": 3,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "375x812",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 0,
+    "small": 26,
+    "font": 3,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "390x844",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 0,
+    "small": 26,
+    "font": 3,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "412x915",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 0,
+    "small": 26,
+    "font": 3,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "430x932",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 0,
+    "small": 27,
+    "font": 3,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "844x390",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 0,
+    "small": 31,
+    "font": 3,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "768x1024",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "1366x768",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "1440x900",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/trade?pair=BTC%2FUSDT",
+   "scenario": "spot",
+   "state": "keyboard",
+   "viewport": "1920x1080",
+   "after": "н/п",
+   "afterIssues": []
   },
   {
    "path": "/trade?pair=BTC%2FUSDT",
@@ -5753,7 +6039,7 @@
    "before": "дефект",
    "beforeIssues": [
     "clip ×1",
-    "overlap ×8",
+    "overlap ×5",
     "covered@end ×6"
    ],
    "notes": {
@@ -5773,7 +6059,7 @@
    "before": "дефект",
    "beforeIssues": [
     "clip ×1",
-    "overlap ×7"
+    "overlap ×4"
    ],
    "notes": {
     "tiny": 1,
@@ -5967,13 +6253,8 @@
    "scenario": "spot",
    "state": "text200",
    "viewport": "320x568",
-   "after": "дефект",
-   "afterIssues": [
-    "page overflow +49px",
-    "spill ×1",
-    "clip ×5",
-    "overlap ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "page overflow +49px",
@@ -5982,8 +6263,8 @@
     "overlap ×3"
    ],
    "notes": {
-    "tiny": 1,
-    "small": 23,
+    "tiny": 0,
+    "small": 19,
     "font": 0,
     "stepError": null
    }
@@ -5993,13 +6274,8 @@
    "scenario": "spot",
    "state": "text200",
    "viewport": "320x740",
-   "after": "дефект",
-   "afterIssues": [
-    "page overflow +49px",
-    "spill ×1",
-    "clip ×5",
-    "overlap ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "page overflow +49px",
@@ -6008,8 +6284,8 @@
     "overlap ×3"
    ],
    "notes": {
-    "tiny": 1,
-    "small": 23,
+    "tiny": 0,
+    "small": 19,
     "font": 0,
     "stepError": null
    }
@@ -6019,12 +6295,8 @@
    "scenario": "spot",
    "state": "text200",
    "viewport": "360x800",
-   "after": "дефект",
-   "afterIssues": [
-    "page overflow +32px",
-    "spill ×1",
-    "clip ×5"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "page overflow +32px",
@@ -6033,8 +6305,8 @@
     "overlap ×1"
    ],
    "notes": {
-    "tiny": 1,
-    "small": 23,
+    "tiny": 0,
+    "small": 19,
     "font": 0,
     "stepError": null
    }
@@ -6044,12 +6316,8 @@
    "scenario": "spot",
    "state": "text200",
    "viewport": "375x812",
-   "after": "дефект",
-   "afterIssues": [
-    "page overflow +24px",
-    "spill ×1",
-    "clip ×5"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "page overflow +24px",
@@ -6059,7 +6327,7 @@
    ],
    "notes": {
     "tiny": 0,
-    "small": 24,
+    "small": 19,
     "font": 0,
     "stepError": null
    }
@@ -6069,12 +6337,8 @@
    "scenario": "spot",
    "state": "text200",
    "viewport": "390x844",
-   "after": "дефект",
-   "afterIssues": [
-    "page overflow +15px",
-    "spill ×1",
-    "clip ×5"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "page overflow +15px",
@@ -6084,7 +6348,7 @@
    ],
    "notes": {
     "tiny": 0,
-    "small": 23,
+    "small": 19,
     "font": 0,
     "stepError": null
    }
@@ -6094,10 +6358,8 @@
    "scenario": "spot",
    "state": "text200",
    "viewport": "412x915",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×5"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×6",
@@ -6105,7 +6367,7 @@
    ],
    "notes": {
     "tiny": 0,
-    "small": 23,
+    "small": 19,
     "font": 0,
     "stepError": null
    }
@@ -6115,10 +6377,8 @@
    "scenario": "spot",
    "state": "text200",
    "viewport": "430x932",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×5"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×6",
@@ -6126,7 +6386,7 @@
    ],
    "notes": {
     "tiny": 0,
-    "small": 24,
+    "small": 20,
     "font": 0,
     "stepError": null
    }
@@ -6136,17 +6396,15 @@
    "scenario": "spot",
    "state": "text200",
    "viewport": "844x390",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×2"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×2"
    ],
    "notes": {
     "tiny": 0,
-    "small": 30,
+    "small": 28,
     "font": 0,
     "stepError": null
    }
@@ -6196,10 +6454,8 @@
    "scenario": "spot-pepe",
    "state": "initial",
    "viewport": "320x568",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "ok",
    "beforeIssues": [],
    "notes": {
@@ -6214,10 +6470,8 @@
    "scenario": "spot-pepe",
    "state": "initial",
    "viewport": "320x740",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "ok",
    "beforeIssues": [],
    "notes": {
@@ -6232,10 +6486,8 @@
    "scenario": "spot-pepe",
    "state": "initial",
    "viewport": "360x800",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -6252,10 +6504,8 @@
    "scenario": "spot-pepe",
    "state": "initial",
    "viewport": "375x812",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -6272,10 +6522,8 @@
    "scenario": "spot-pepe",
    "state": "initial",
    "viewport": "390x844",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -6412,10 +6660,8 @@
    "scenario": "spot-pepe",
    "state": "trade",
    "viewport": "320x568",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "ok",
    "beforeIssues": [],
    "notes": {
@@ -6430,10 +6676,8 @@
    "scenario": "spot-pepe",
    "state": "trade",
    "viewport": "320x740",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "ok",
    "beforeIssues": [],
    "notes": {
@@ -6448,10 +6692,8 @@
    "scenario": "spot-pepe",
    "state": "trade",
    "viewport": "360x800",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -6468,10 +6710,8 @@
    "scenario": "spot-pepe",
    "state": "trade",
    "viewport": "375x812",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -6488,10 +6728,8 @@
    "scenario": "spot-pepe",
    "state": "trade",
    "viewport": "390x844",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -7844,8 +8082,8 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×26",
-    "overlap ×5"
+    "clip ×28",
+    "overlap ×4"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -7866,8 +8104,8 @@
    "viewport": "1440x900",
    "after": "дефект",
    "afterIssues": [
-    "clip ×26",
-    "overlap ×2"
+    "clip ×28",
+    "overlap ×1"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -7888,7 +8126,7 @@
    "viewport": "1920x1080",
    "after": "дефект",
    "afterIssues": [
-    "clip ×26"
+    "clip ×28"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -8070,8 +8308,8 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×26",
-    "overlap ×5"
+    "clip ×28",
+    "overlap ×4"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -8092,8 +8330,8 @@
    "viewport": "1440x900",
    "after": "дефект",
    "afterIssues": [
-    "clip ×26",
-    "overlap ×2"
+    "clip ×28",
+    "overlap ×1"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -8114,7 +8352,7 @@
    "viewport": "1920x1080",
    "after": "дефект",
    "afterIssues": [
-    "clip ×26"
+    "clip ×28"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -8126,6 +8364,150 @@
     "font": 0,
     "stepError": null
    }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "320x568",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 2,
+    "small": 30,
+    "font": 0,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "320x740",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 2,
+    "small": 30,
+    "font": 0,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "360x800",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 2,
+    "small": 30,
+    "font": 0,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "375x812",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 2,
+    "small": 30,
+    "font": 0,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "390x844",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 2,
+    "small": 28,
+    "font": 0,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "412x915",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 2,
+    "small": 26,
+    "font": 0,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "430x932",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 2,
+    "small": 27,
+    "font": 0,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "844x390",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 2,
+    "small": 25,
+    "font": 0,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "768x1024",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "1366x768",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "1440x900",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "keyboard",
+   "viewport": "1920x1080",
+   "after": "н/п",
+   "afterIssues": []
   },
   {
    "path": "/futures",
@@ -8970,8 +9352,8 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×19",
-    "overlap ×5"
+    "clip ×17",
+    "overlap ×4"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -8993,7 +9375,7 @@
    "after": "дефект",
    "afterIssues": [
     "clip ×17",
-    "overlap ×2"
+    "overlap ×1"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -9186,7 +9568,7 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×19"
+    "clip ×17"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -9398,7 +9780,7 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×19"
+    "clip ×17"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -9610,7 +9992,7 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×19"
+    "clip ×17"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -9822,7 +10204,7 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×19"
+    "clip ×17"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -10026,7 +10408,7 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×19"
+    "clip ×17"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -10238,8 +10620,8 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×19",
-    "overlap ×3"
+    "clip ×17",
+    "overlap ×2"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -10447,7 +10829,7 @@
    "after": "дефект",
    "afterIssues": [
     "clip ×30",
-    "overlap ×3"
+    "overlap ×2"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -10663,7 +11045,7 @@
    "viewport": "1366x768",
    "after": "дефект",
    "afterIssues": [
-    "clip ×19"
+    "clip ×17"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -10723,10 +11105,7 @@
    "viewport": "320x568",
    "after": "дефект",
    "afterIssues": [
-    "page overflow +95px",
-    "spill ×12",
-    "clip ×9",
-    "overlap ×8"
+    "overlap ×1"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -10737,7 +11116,7 @@
    ],
    "notes": {
     "tiny": 2,
-    "small": 42,
+    "small": 43,
     "font": 0,
     "stepError": null
    }
@@ -10749,10 +11128,7 @@
    "viewport": "320x740",
    "after": "дефект",
    "afterIssues": [
-    "page overflow +95px",
-    "spill ×9",
-    "clip ×9",
-    "overlap ×8"
+    "overlap ×1"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -10763,7 +11139,7 @@
    ],
    "notes": {
     "tiny": 2,
-    "small": 41,
+    "small": 43,
     "font": 0,
     "stepError": null
    }
@@ -10775,10 +11151,7 @@
    "viewport": "360x800",
    "after": "дефект",
    "afterIssues": [
-    "page overflow +55px",
-    "spill ×8",
-    "clip ×12",
-    "overlap ×7"
+    "overlap ×1"
    ],
    "before": "дефект",
    "beforeIssues": [
@@ -10789,7 +11162,7 @@
    ],
    "notes": {
     "tiny": 2,
-    "small": 41,
+    "small": 43,
     "font": 0,
     "stepError": null
    }
@@ -10799,18 +11172,34 @@
    "scenario": "futures",
    "state": "text200",
    "viewport": "375x812",
-   "after": "дефект",
-   "afterIssues": [
-    "page overflow +45px",
-    "spill ×8",
-    "clip ×10",
-    "overlap ×7"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "page overflow +45px",
     "spill ×8",
     "clip ×10",
+    "overlap ×13"
+   ],
+   "notes": {
+    "tiny": 2,
+    "small": 43,
+    "font": 0,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/futures",
+   "scenario": "futures",
+   "state": "text200",
+   "viewport": "390x844",
+   "after": "ok",
+   "afterIssues": [],
+   "before": "дефект",
+   "beforeIssues": [
+    "page overflow +36px",
+    "spill ×8",
+    "clip ×11",
     "overlap ×13"
    ],
    "notes": {
@@ -10824,20 +11213,15 @@
    "path": "/futures",
    "scenario": "futures",
    "state": "text200",
-   "viewport": "390x844",
-   "after": "дефект",
-   "afterIssues": [
-    "page overflow +36px",
-    "spill ×8",
-    "clip ×11",
-    "overlap ×7"
-   ],
+   "viewport": "412x915",
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
-    "page overflow +36px",
-    "spill ×8",
-    "clip ×11",
-    "overlap ×13"
+    "page overflow +23px",
+    "spill ×7",
+    "clip ×10",
+    "overlap ×12"
    ],
    "notes": {
     "tiny": 2,
@@ -10850,40 +11234,9 @@
    "path": "/futures",
    "scenario": "futures",
    "state": "text200",
-   "viewport": "412x915",
-   "after": "дефект",
-   "afterIssues": [
-    "page overflow +23px",
-    "spill ×7",
-    "clip ×10",
-    "overlap ×7"
-   ],
-   "before": "дефект",
-   "beforeIssues": [
-    "page overflow +23px",
-    "spill ×7",
-    "clip ×10",
-    "overlap ×12"
-   ],
-   "notes": {
-    "tiny": 2,
-    "small": 37,
-    "font": 0,
-    "stepError": null
-   }
-  },
-  {
-   "path": "/futures",
-   "scenario": "futures",
-   "state": "text200",
    "viewport": "430x932",
-   "after": "дефект",
-   "afterIssues": [
-    "page overflow +13px",
-    "spill ×4",
-    "clip ×10",
-    "overlap ×6"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "page overflow +13px",
@@ -10893,7 +11246,7 @@
    ],
    "notes": {
     "tiny": 2,
-    "small": 36,
+    "small": 38,
     "font": 0,
     "stepError": null
    }
@@ -10903,11 +11256,8 @@
    "scenario": "futures",
    "state": "text200",
    "viewport": "844x390",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×2",
-    "overlap ×2"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×2",
@@ -11775,8 +12125,7 @@
    "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
-    "overlap ×1",
-    "covered@end ×1"
+    "overlap ×1"
    ],
    "notes": {
     "tiny": 3,
@@ -12612,6 +12961,150 @@
   {
    "path": "/wallet",
    "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "320x568",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 4,
+    "small": 32,
+    "font": 9,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "320x740",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 4,
+    "small": 32,
+    "font": 9,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "360x800",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 4,
+    "small": 36,
+    "font": 9,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "375x812",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 4,
+    "small": 36,
+    "font": 9,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "390x844",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 4,
+    "small": 36,
+    "font": 9,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "412x915",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 4,
+    "small": 36,
+    "font": 9,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "430x932",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 4,
+    "small": 36,
+    "font": 9,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "844x390",
+   "after": "ok",
+   "afterIssues": [],
+   "notes": {
+    "tiny": 4,
+    "small": 36,
+    "font": 9,
+    "stepError": null
+   }
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "768x1024",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "1366x768",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "1440x900",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
+   "state": "keyboard",
+   "viewport": "1920x1080",
+   "after": "н/п",
+   "afterIssues": []
+  },
+  {
+   "path": "/wallet",
+   "scenario": "wallet",
    "state": "transfer",
    "viewport": "320x568",
    "after": "ok",
@@ -12836,10 +13329,8 @@
    "scenario": "wallet",
    "state": "text200",
    "viewport": "320x568",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×17"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×21",
@@ -12858,10 +13349,8 @@
    "scenario": "wallet",
    "state": "text200",
    "viewport": "320x740",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×17"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×21",
@@ -12880,10 +13369,8 @@
    "scenario": "wallet",
    "state": "text200",
    "viewport": "360x800",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×17"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×17",
@@ -12902,10 +13389,8 @@
    "scenario": "wallet",
    "state": "text200",
    "viewport": "375x812",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×16"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×16",
@@ -12924,10 +13409,8 @@
    "scenario": "wallet",
    "state": "text200",
    "viewport": "390x844",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×15"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×15",
@@ -12946,10 +13429,8 @@
    "scenario": "wallet",
    "state": "text200",
    "viewport": "412x915",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×9"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×9",
@@ -12968,10 +13449,8 @@
    "scenario": "wallet",
    "state": "text200",
    "viewport": "430x932",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×9"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×9",
@@ -12990,10 +13469,8 @@
    "scenario": "wallet",
    "state": "text200",
    "viewport": "844x390",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×4"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×4",
@@ -16223,10 +16700,8 @@
    "scenario": "card",
    "state": "initial",
    "viewport": "768x1024",
-   "after": "дефект",
-   "afterIssues": [
-    "overlap ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "overlap ×2"
@@ -16885,10 +17360,8 @@
    "scenario": "settings",
    "state": "api",
    "viewport": "320x568",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1",
@@ -16906,10 +17379,8 @@
    "scenario": "settings",
    "state": "api",
    "viewport": "320x740",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1",
@@ -16927,10 +17398,8 @@
    "scenario": "settings",
    "state": "api",
    "viewport": "360x800",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -16947,10 +17416,8 @@
    "scenario": "settings",
    "state": "api",
    "viewport": "375x812",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -16967,10 +17434,8 @@
    "scenario": "settings",
    "state": "api",
    "viewport": "390x844",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -16987,10 +17452,8 @@
    "scenario": "settings",
    "state": "api",
    "viewport": "412x915",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -17007,10 +17470,8 @@
    "scenario": "settings",
    "state": "api",
    "viewport": "430x932",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"
@@ -17539,10 +18000,8 @@
    "scenario": "support",
    "state": "open",
    "viewport": "360x800",
-   "after": "дефект",
-   "afterIssues": [
-    "clip ×1"
-   ],
+   "after": "ok",
+   "afterIssues": [],
    "before": "дефект",
    "beforeIssues": [
     "clip ×1"

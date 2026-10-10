@@ -1269,6 +1269,46 @@
   .vx-wallet .wallet-history-host td:nth-child(5) { grid-area: date; text-align: left; }
 }
 
+/* Large OS text: the period label's date and the USD figure wrap inside
+   their columns instead of being cut; the unit next to the total drops
+   under it when the row has no room. */
+.vx-wallet .wallet-period-row-label small,
+.vx-wallet .wallet-period-row-usd {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.vx-wallet .wallet-overview-total {
+  flex-wrap: wrap;
+}
+.vx-wallet .wallet-overview-unit {
+  min-width: 0;
+}
+
+/* Large OS text, overview and recent activity: the total and a recent
+   amount wrap inside their column instead of being cut by the card; the
+   7-day pill drops under its label. */
+.vx-wallet .wallet-overview-amount {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.vx-wallet .wallet-dyn-profit > span {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.vx-wallet .wallet-recent-row {
+  /* The amount column takes what it needs up to 60% of the row, so the
+     kind («Внести») on the left always keeps at least 40%. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 60%);
+}
+.vx-wallet .wallet-recent-row > b,
+.vx-wallet .wallet-recent-row > strong,
+.vx-wallet .wallet-recent-row > small {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* 320–359px: the P&L period rows. With a 96px label column the USD figure's
    track shrank below its text («+$13 420 750,75» was cut after 72px); the
    label takes a line of its own and the two figures share the next. */

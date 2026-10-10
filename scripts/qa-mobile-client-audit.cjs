@@ -149,7 +149,8 @@ const AUDIT = ({ phone }) => {
     if (visW < r.width - 2 && r.width > 4) {
       const ownerClip = (() => { for (let e = el; e && e !== document.body; e = e.parentElement) { if (/hidden|clip/.test(cs(e).overflowX)) return e; } return null; })();
       const ellipsis = ownerClip && cs(ownerClip).textOverflow === 'ellipsis' && cs(ownerClip).whiteSpace === 'nowrap';
-      const inScroller = Boolean(scroller(el));
+      // Inside a sideways scroller, or itself one (a code <pre> with overflow-x:auto): the content scrolls, it is not cut.
+      const inScroller = Boolean(scroller(el)) || (/auto|scroll/.test(c.overflowX) && el.scrollWidth > el.clientWidth + 1);
       if (!inScroller && out.clipped.length < 40) out.clipped.push({ sel: sel(el), kind: ellipsis ? 'ellipsis' : (visW === 0 ? 'hidden' : 'hardClip'), width: Math.round(r.width), visible: Math.round(visW), text: run.s });
     } else if (r.width > 4) {
       // Spills its own box: text wider than the element's padding box (no clipping) — e.g. a word pushed out of a button or cell.
@@ -222,6 +223,32 @@ const textZoom = async (page, factor) => page.evaluate((f) => {
   for (const [el, fs] of sizes) el.style.setProperty('font-size', (fs * f) + 'px', 'important');
   window.dispatchEvent(new Event('resize'));
 }, factor);
+/** On-screen keyboard: a phone keyboard takes ~45% of the height and the
+ * browser scrolls the focused field into the remaining visual viewport. The
+ * emulation shrinks the viewport, focuses the field and measures whether the
+ * field is in view and uncovered, and whether the submit key can still be
+ * scrolled to (a fixed bar or launcher must not sit on it). The viewport is
+ * restored afterwards. */
+const keyboard = async (page, fieldSelector, submitSelector, submitText) => {
+  const vp = page.viewportSize();
+  const field = page.locator(fieldSelector).first();
+  await field.waitFor({ state: 'visible', timeout: 6000 });
+  await page.setViewportSize({ width: vp.width, height: Math.round(vp.height * 0.55) });
+  await field.focus(); await field.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' })); await settle(page, 400);
+  const result = await page.evaluate(([submitSel, submitRe]) => {
+    const vw = innerWidth, vh = innerHeight;
+    const probe = (el) => { if (!el) return { present: false }; const r = el.getBoundingClientRect(); const cx = r.left + r.width / 2, cy = r.top + r.height / 2; const inView = r.top >= 0 && r.bottom <= vh && r.left >= 0 && r.right <= vw; const hit = inView ? document.elementFromPoint(cx, cy) : null; return { present: true, inView, covered: Boolean(inView && hit && !el.contains(hit) && !hit.contains(el)), by: hit && !el.contains(hit) ? (hit.className || hit.tagName).toString().slice(0, 60) : '' }; };
+    const active = document.activeElement;
+    const fieldResult = probe(active && active !== document.body ? active : null);
+    let submit = null; if (submitSel) { const re = submitRe ? new RegExp(submitRe) : null; const list = Array.from(document.querySelectorAll(submitSel)); submit = list.find(e => e.getBoundingClientRect().width > 0 && (!re || re.test(e.textContent || ''))) || null; if (submit) submit.scrollIntoView({ block: 'center' }); }
+    const submitResult = probe(submit);
+    return { viewport: { width: vw, height: vh }, field: fieldResult, submit: submitResult };
+  }, [submitSelector || null, submitText || null]);
+  await settle(page, 200);
+  page.__keyboard = { ...result, restore: vp };
+  return result;
+};
+const keyboardRestore = async (page, vp) => { await page.setViewportSize(vp); await page.evaluate(() => document.activeElement && document.activeElement.blur && document.activeElement.blur()); await settle(page, 300); };
 const closeDialogs = async (page) => {
   for (let i = 0; i < 3; i++) {
     const close = page.locator('[role=dialog] button[aria-label*="акрыть"], dialog[open] button[aria-label*="акрыть"], [role=dialog] button[aria-label*="lose"], dialog[open] button[aria-label*="lose"], .support-panel button[aria-label*="акрыть"], .support-panel button[aria-label*="lose"], button[aria-label="Закрыть"], button[aria-label="Close"], .banking-modal-close, .vb-close').locator('visible=true').first();
@@ -254,12 +281,14 @@ const SCENARIOS = [
   { id: 'markets', path: '/markets', steps: [
     { name: 'menu', run: openMobileMenu },
     { name: 'search', run: async (p) => { await closeDialogs(p); const burger = p.locator('.global-header .mobile-menu[aria-expanded="true"]'); if (await burger.count()) await burger.first().click().catch(() => {}); await settle(p, 300); await type(p, 'input[placeholder="Поиск по рынкам"]', 'Internet Computer Protocol'); } },
+    { name: 'keyboard', phone: true, run: async (p) => keyboard(p, '.search-box input, input[type=search]', null) },
     { name: 'support', run: async (p) => { await p.locator('input[placeholder="Поиск по рынкам"]').first().fill('').catch(() => {}); await openSupport(p); } },
   ] },
   { id: 'markets-analytics', path: '/markets?view=analytics' },
   { id: 'spot', path: '/trade?pair=BTC%2FUSDT', steps: [
     { name: 'trade', phone: true, run: async (p) => tab(p, 'Торговля') },
     { name: 'trade-sell-limit', run: async (p) => { const form = p.locator('.order-form-area'); await click(p, form.getByRole('button', { name: 'Продать', exact: true }).first()); const select = form.locator('select').first(); if (await select.isVisible().catch(() => false)) await select.selectOption({ label: 'Лимит' }).catch(() => {}); else await click(p, form.getByRole('button', { name: 'Лимит', exact: true }).first()).catch(() => {}); await form.getByLabel('Цена', { exact: true }).first().fill('123456789.123456').catch(() => {}); await form.getByLabel('Количество', { exact: true }).first().fill('98765.4321').catch(() => {}); await settle(p); } },
+    { name: 'keyboard', phone: true, run: async (p) => keyboard(p, '.order-form-content input', '.order-form-content .submit-btn') },
     { name: 'chart', phone: true, run: async (p) => tab(p, 'График') },
     { name: 'book', phone: true, run: async (p) => click(p, p.locator('.terminal-mobile-chart-tabs').getByRole('button', { name: 'Стакан' })) },
     { name: 'markets', phone: true, run: async (p) => click(p, p.locator('.terminal-mobile-chart-tabs').getByRole('button', { name: 'Рынки' })) },
@@ -278,6 +307,7 @@ const SCENARIOS = [
   ] },
   { id: 'futures', path: '/futures', steps: [
     { name: 'trade-limit', run: async (p) => { if (await p.getByRole('tab', { name: 'Торговля' }).isVisible().catch(() => false)) await tab(p, 'Торговля'); const form = p.locator('.order-form-area'); await click(p, form.getByRole('button', { name: /^Лимит/ }).or(form.getByRole('tab', { name: /^Лимит/ })).first()).catch(() => {}); const select = form.locator('select').first(); if (await select.isVisible().catch(() => false)) await select.selectOption({ label: 'Лимит' }).catch(() => {}); await form.locator('input[inputmode="decimal"], input[type=number], input[type=text]').first().fill('123456789.12').catch(() => {}); await form.locator('input[inputmode="decimal"], input[type=number], input[type=text]').nth(1).fill('98765.4321').catch(() => {}); await settle(p); } },
+    { name: 'keyboard', phone: true, run: async (p) => keyboard(p, '.fo-form input:not([type=range]):not([type=checkbox])', '.fo-form button', 'Лонг|Шорт|Купить|Продать') },
 
     { name: 'chart', phone: true, run: async (p) => tab(p, 'График') },
     { name: 'book', phone: true, run: async (p) => click(p, p.locator('.futures-mobile-chart-tabs').getByRole('button', { name: 'Стакан' })) },
@@ -302,6 +332,7 @@ const SCENARIOS = [
     { name: 'deposit', run: async (p) => { await click(p, p.locator('.wallet-side-nav').getByRole('button', { name: 'Обзор' })); await click(p, p.locator('main').getByRole('button', { name: 'Внести', exact: true }).first()); } },
     { name: 'withdraw', run: async (p) => { await closeDialogs(p); await click(p, p.locator('main').getByRole('button', { name: 'Вывести', exact: true }).first()); } },
     { name: 'withdraw-filled', run: async (p) => { await type(p, '[role=dialog] input[placeholder*="дрес"], [role=dialog] input:not([type=number]):not([placeholder="0.00"])', LONG_ADDRESS_QA); await type(p, '[role=dialog] input[placeholder="0.00"]', '123456789.123456'); } },
+    { name: 'keyboard', phone: true, run: async (p) => keyboard(p, '[role=dialog] input[inputmode="decimal"], [role=dialog] input[type=number], [role=dialog] input[placeholder="0.00"]', '[role=dialog] button', 'Вывести|Продолжить|Отправить|Подтвердить') },
     { name: 'transfer', run: async (p) => { await closeDialogs(p); await click(p, p.locator('main').getByRole('button', { name: 'Перевести', exact: true }).first()); } },
     { name: 'text200', phone: true, run: async (p) => { await closeDialogs(p); await click(p, p.locator('main').getByRole('button', { name: 'Вывести', exact: true }).first()); await textZoom(p, 2); } },
   ] },
@@ -409,14 +440,17 @@ async function main() {
     const capture = async (state, stepError, skipped) => {
       if (skipped) { report.captures.push({ scenario: scenario.id, path: scenario.path, state, viewport: key, phone, skipped: true }); return; }
       await settle(page, 400);
-      await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
+      const kb = page.__keyboard || null; page.__keyboard = null;
+      if (!kb) await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
       await page.waitForTimeout(150);
       const m = await page.evaluate(AUDIT, { phone }).catch(e => ({ auditError: String(e).slice(0, 200) }));
+      if (kb) m.keyboard = { viewport: kb.viewport, field: kb.field, submit: kb.submit };
       const shot = path.join(dir, `${state}-${key}.jpg`);
-      await page.screenshot({ path: shot, type: 'jpeg', quality: 82, fullPage: (phone || w <= 1024) && !scenario.video, animations: 'disabled', caret: 'hide' }).catch(async () => page.screenshot({ path: shot, type: 'jpeg', quality: 82 }).catch(() => {}));
+      await page.screenshot({ path: shot, type: 'jpeg', quality: 82, fullPage: (phone || w <= 1024) && !scenario.video && !kb, animations: 'disabled', caret: 'hide' }).catch(async () => page.screenshot({ path: shot, type: 'jpeg', quality: 82 }).catch(() => {}));
       // Scrolled to the bottom: what the fixed layers cover down there (last rows, submit buttons).
       let bottom = null;
-      const scrollable = await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 8).catch(() => false);
+      const scrollable = !kb && await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 8).catch(() => false);
+      if (kb) await keyboardRestore(page, kb.restore);
       if (scrollable) {
         await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)).catch(() => {});
         await page.waitForTimeout(250);

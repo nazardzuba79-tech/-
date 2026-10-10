@@ -43,7 +43,11 @@
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(3) .value {
     font-size:11px;
     line-height:15px;
-    white-space:nowrap;
+    /* «+0.00000345591 (+38.90%)» (PEPE) kept one line and took the pair's
+       column, so the pair name ran over its own menu chevron at 320–390;
+       the change may break between the figure and the percentage. */
+    white-space:normal;
+    overflow-wrap:normal;
   }
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .spot-mobile-stats-toggle { grid-column:3; grid-row:1 / 3; }
   /* Expanded: the four secondary figures in two columns under the row. */

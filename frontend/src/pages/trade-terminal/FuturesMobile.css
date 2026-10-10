@@ -7,7 +7,10 @@
 
 @media (max-width:900px) {
   #archive-terminal-preview { --mobile-nav-space:calc(76px + env(safe-area-inset-bottom, 0px)); height:auto; min-height:100dvh; overflow:visible; padding-bottom:calc(var(--mobile-nav-space) + var(--mobile-keyboard-inset,0px)); }
-  #archive-terminal-preview .global-header { height:52px; min-height:52px; padding-inline:12px; z-index:40; }
+  /* The header scrolls with the page on a phone: a short viewport (landscape,
+     an open keyboard) makes the page scroll, and the sticky tab strip sat
+     exactly over the sticky header (same as Spot, TerminalMobileParity.css). */
+  #archive-terminal-preview .global-header { position:static; height:52px; min-height:52px; padding-inline:12px; z-index:40; }
   /* Keep navigation above sticky workspace tabs and clear of the bottom dock. */
   #archive-terminal-preview .global-header .nav-mobile-menu { top:100%; max-height:calc(var(--mobile-viewport-height,100dvh) - 52px - var(--mobile-nav-space)); }
   #archive-terminal-preview .global-header :is(button,a) { min-height:44px; }
