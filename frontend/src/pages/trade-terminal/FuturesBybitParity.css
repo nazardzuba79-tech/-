@@ -48,16 +48,22 @@
 #archive-terminal-preview.futures-terminal .futures-positions-summary b.down { color:#f63649; }
 
 @media (min-width:901px) {
-  /* ── Header: 40px, #17181E, Inter 14/400, pills 32px ─────────────── */
+  /* ── Header: 48px, #17181E, Inter 14/400, pills 32px ─────────────── */
+  /* 48px is the Bybit header above Figma 19:103 (the extracted Container
+     starts at y=47.99). The chart-priority pass (#494) had taken it to 40px;
+     the owner found 40 too dense (2026-10-10): the 34px account controls
+     left 3px above and below, and the row sat on the instrument bar. 48
+     gives the 32–34px controls 7–8px of air, keeps every item centred, and
+     costs the chart 8px — the book, ticket and account panel are untouched. */
   #archive-terminal-preview.futures-terminal > :is(.global-header) {
-    --exchange-header-height:40px; height:40px; min-height:40px; flex:0 0 40px; padding-block:0; padding-inline:16px;
+    --exchange-header-height:48px; height:48px; min-height:48px; flex:0 0 48px; padding-block:0; padding-inline:16px;
     background:#17181e; border-bottom:0; font-family:var(--font-family);
   }
   #archive-terminal-preview.futures-terminal :is(.brand-separator) { display:none; }
   #archive-terminal-preview.futures-terminal :is(.header-brand) { margin-right:12px; }
   #archive-terminal-preview.futures-terminal .global-header :is(.main-nav) { gap:0; }
   #archive-terminal-preview.futures-terminal .global-header :is(.nav-item,.top-nav-link) {
-    font-family:var(--font-family); font-size:14px; font-weight:400; line-height:40px; color:#ffffff;
+    font-family:var(--font-family); font-size:14px; font-weight:400; line-height:48px; color:#ffffff;
     margin:0; padding:0 12px; border-radius:0; letter-spacing:0;
   }
   #archive-terminal-preview.futures-terminal .global-header :is(.header-disclosure-toggle) { width:16px; color:#71757a; }

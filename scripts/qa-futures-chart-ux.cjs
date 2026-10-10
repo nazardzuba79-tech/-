@@ -68,6 +68,8 @@ const TIME_PIXELS = SCALE_PIXELS('time');
       page.on('pageerror', error => { if (!/Invalid language tag/.test(error.message)) report.errors.push(error.message); });
       const open = async () => { await page.goto(`${origin}/futures?pair=BTC%2FUSDT`); await page.locator('.rb-row').first().waitFor(); await page.locator('.chart-view canvas').first().waitFor(); await page.waitForTimeout(900); };
       await open();
+      const integratedHeaderHeight = await page.locator('#archive-terminal-preview.futures-terminal > .global-header').evaluate(el => el.getBoundingClientRect().height);
+      ok(`${width}: combined 503+504 global header is 48px (actual ${integratedHeaderHeight})`, Math.abs(integratedHeaderHeight - 48) <= 0.5);
       const shot = name => page.screenshot({ path: path.join(out, `${LABEL}-${width}-${name}.png`) });
       await shot('initial');
       const item = { width, height };
@@ -182,6 +184,8 @@ const TIME_PIXELS = SCALE_PIXELS('time');
       ok(`${width}: Space expands it again`, (await page.locator('.drawing-rail-toggle').getAttribute('aria-expanded')) === 'true' && (await page.locator('.drawing-rail').isVisible()));
       const chart = await page.locator('.chart-area').boundingBox(), book = await page.locator('.orderbook-area').boundingBox(), form = await page.locator('.order-form-area').boundingBox();
       item.geometry = { chart, book, form };
+      const height48 = ({1366:468,1440:600,1707:600,1920:780})[width];
+      if (height48 !== undefined) ok(`${width}: combined 48px header preserves chart height ${height48}px (actual ${chart.height})`, Math.abs(chart.height - height48) <= 1);
       ok(`${width}: #494 geometry kept — book 286, ticket 300, chart beside the book`, Math.abs(book.width - 286) < 1.5 && Math.abs(form.width - 300) < 1.5 && Math.abs(chart.height - book.height) < 1.5);
       await shot('final');
       // Clean this context's storage for the next width: each context is new anyway.

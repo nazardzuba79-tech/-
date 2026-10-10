@@ -1,7 +1,7 @@
 /* Figma 9gbmBfp0OSHTzLsnbBUnrZ / 19:103, measured 2026-10-10.
  * Desktop geometry only. Keep the existing palette, controls and engines.
  * Follow-up: prioritize the chart over the imported frame's tall idle account area.
- * 40px header, 48px ticker, 160px empty / 200px populated account area;
+ * 48px header (40px in #494; raised 2026-10-10, FuturesBybitParity.css), 48px ticker, 160px empty / 200px populated account area;
  * retain the measured 286px book, 300px ticket and 4px gutters.
  * The mobile cascade and alternative terminal layouts are deliberately scoped out.
  */

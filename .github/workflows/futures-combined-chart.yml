@@ -1,0 +1,51 @@
+name: Combined Futures header and chart QA
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/trade-terminal/FuturesBybitParity.css'
+      - 'frontend/src/pages/trade-terminal/FuturesFigmaDesktop.css'
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'scripts/qa-futures-chart-ux.cjs'
+      - 'scripts/qa-futures-figma-desktop.cjs'
+      - '.github/workflows/futures-combined-chart.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  combined-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install backend and frontend dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Build frontend
+        run: npm run build --prefix frontend
+      - name: Install disposable Playwright Chromium
+        run: |
+          npm install --prefix /tmp/voltex-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Combined Bybit header and indicator browser checks
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-browser/node_modules/playwright
+          LANG: en_US.UTF-8
+        run: |
+          node scripts/qa-futures-chart-ux.cjs
+          node scripts/qa-futures-figma-desktop.cjs
+      - name: Upload combined screenshot and guard evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-futures-browser
+          path: output/futures-chart-ux/**
+          retention-days: 7
+          if-no-files-found: warn
