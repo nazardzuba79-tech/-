@@ -1,6 +1,6 @@
 # Header labels and Futures statistics spacing
 
-**Owner follow-up:** Card navigation now reads **Crypto-Card**, superseding the short-label choice below. Shared icon/description menus, preserved spacing and new review screenshots are documented in [../header-dropdowns/README.md](../header-dropdowns/README.md). The earlier evidence below remains historical.
+**Owner follow-up:** Card navigation now reads **Card**, superseding the short-label choice below. Shared icon/description menus, preserved spacing and new review screenshots are documented in [../header-dropdowns/README.md](../header-dropdowns/README.md). The earlier evidence below remains historical.
 
 Review branch: `codex/header-ticker-spacing-20261003`.
 Base: `7d9ee6fc6bfe76badaac680313e9728e5abd3550`.

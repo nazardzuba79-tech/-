@@ -28,8 +28,8 @@ test('all seven languages retain the approved headline, institutional positionin
   expect(source).not.toContain('с реальными рыночными данными и единым кошельком');
 });
 
-test('header uses Crypto-Card while other product naming stays unchanged', () => {
-  expect(rows('nav.card')).toEqual(Array(7).fill('Crypto-Card'));
+test('header uses Card while other product naming stays unchanged', () => {
+  expect(rows('nav.card')).toEqual(Array(7).fill('Card'));
   expect(rows('home.card.name')).toEqual(Array(7).fill('VOLTEX Crypto Card'));
   for (const key of ['marketing.heroPerk2', 'home.hero.description', 'home.faq.q6']) {
     expect(rows(key)).toHaveLength(7);
@@ -41,6 +41,9 @@ test('header uses Crypto-Card while other product naming stays unchanged', () =>
 test('homepage desktop and mobile navigation share the existing Card and Academy destinations', () => {
   const header = read('src/pages/home/HomeHeader.tsx');
   expect(header).toContain("{ to: '/card', labelKey: 'nav.card' }");
+  expect(header).toContain("import { Menu, X, CreditCard } from 'lucide-react';");
+  // Card icon is present in both public homepage navigation layouts.
+  expect(header.match(/l\.to === '\/card' && <CreditCard size=\{14\} aria-hidden="true" \/>/g)).toHaveLength(2);
   expect(header).toContain("{ to: '/academy', labelKey: 'nav.academy' }");
   expect(header).not.toContain('nav.knowledgeCenter');
   expect(header.match(/LINKS\.map\(/g)).toHaveLength(2);

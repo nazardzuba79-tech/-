@@ -1544,8 +1544,9 @@ export function PriceChart({
       {terminal ? (
         <div className="chart-toolbar" data-mobile-tools={mobileToolsOpen}>
           <div className="chart-tabs" role="group" aria-label={t('chart.group.timeframe')}>{intervalButtons}{privateTrading?.enabled && <button type="button" className="chart-history-now" onClick={() => void privateHistoryRef.current?.(0)}>{lang === 'ru' ? 'Сейчас' : 'Now'}</button>}</div>
-          {market === 'futures' && <button type="button" className="futures-mobile-tools-toggle" aria-label={t('chart.group.indicators')}
-            aria-expanded={mobileToolsOpen} onClick={() => setMobileToolsOpen(open => !open)}>•••</button>}
+          {/* Shown by the phone sheets only (FuturesMobile.css, TerminalMobileParity.css). */}
+          <button type="button" className="futures-mobile-tools-toggle" aria-label={t('chart.group.indicators')}
+            aria-expanded={mobileToolsOpen} onClick={() => setMobileToolsOpen(open => !open)}>•••</button>
           <div className={`chart-tools${chartMenus ? ' has-menus' : ''}`}>
             {chartMenus ? <ChartToolbarMenus
               chartType={chartType}

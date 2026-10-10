@@ -298,6 +298,23 @@
   .markets-bolt-root .markets-table th:nth-child(2) { width: 17%; }
   .markets-bolt-root .markets-table th:nth-child(3) { width: 16%; }
 }
+/* Phone and tablet (≤900px, where the bottom bar is): the three lists stack.
+   Three columns of ~240px at 768 put «PEPE/USDT», its price and the 24h figure
+   on top of each other. In a stacked row the pair takes what the two figures
+   leave (its name truncates), instead of 1.5fr/1fr/.8fr shares that a long
+   price («0.00001234») overran at 320–390. */
+@media (max-width: 900px) {
+  .markets-bolt-root .highlights-grid { display: block; }
+  .markets-bolt-root .highlight-column { border-right: 0; border-bottom: 1px solid var(--border); }
+  .markets-bolt-root .highlight-column:last-child { border-bottom: 0; }
+  .markets-bolt-root .highlight-row { grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 10px; }
+  .markets-bolt-root .highlight-row > :not(:first-child) { white-space: nowrap; }
+}
+/* 320–359px: with «0.00001234 +38.90%» beside it the pair column is ~80px;
+   «PEPE/USDT» may break after the slash instead of losing its last letter. */
+@media (max-width: 359px) {
+  .markets-bolt-root .highlight-row .pair-cell strong { white-space: normal; overflow-wrap: anywhere; }
+}
 @media (max-width: 720px) {
   .markets-bolt-root .markets-page { padding: 28px 16px 48px; }
   .markets-bolt-root .page-intro { align-items: flex-start; gap: 20px; flex-direction: column; }
@@ -311,9 +328,6 @@
   .markets-bolt-root .sector-row { grid-template-columns: minmax(0, 1fr) minmax(0, .9fr) minmax(0, .8fr) minmax(0, 1fr); }
   .markets-bolt-root .section-title-row { display: block; }
   .markets-bolt-root .search-box { margin-top: 18px; width: 100%; }
-  .markets-bolt-root .highlights-grid { display: block; }
-  .markets-bolt-root .highlight-column { border-right: 0; border-bottom: 1px solid var(--border); }
-  .markets-bolt-root .highlight-column:last-child { border-bottom: 0; }
   .markets-bolt-root .filter-bar { gap: 14px; margin-right: -16px; padding-right: 16px; }
   .markets-bolt-root .sector-filter { padding-left: 14px; }
   .markets-bolt-root .filter-more { display: none; }
@@ -437,5 +451,7 @@
 @media (max-width: 640px) {
   .markets-bolt-root .metric-grid { grid-template-columns: 1fr; gap: 14px; }
   .markets-bolt-root .pulse-strip { grid-template-columns: 1fr 1fr; padding: 18px; }
+  /* Two 126px tracks at 320: «Объём по нашим парам» is 128px, so it may wrap. */
+  .markets-bolt-root .pulse-item .muted-label { white-space: normal; }
   .markets-bolt-root .table-caption-actions { flex-wrap: wrap; }
 }

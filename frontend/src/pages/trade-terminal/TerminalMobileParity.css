@@ -33,6 +33,21 @@
     overflow:visible;
   }
 
+  /* The page scrolls on a phone whenever the book, the ticket and the orders
+     panel are taller than the screen. The global header is sticky at top:0
+     and so is the tab strip below (z 35 over z 20): once scrolled, the strip
+     sat exactly over the header and «Меню»/«Депозит» could not be tapped.
+     The header now scrolls with the page here — the strip is the one row
+     that stays, as in every mobile exchange; the bottom bar keeps wallet,
+     markets, trade and profile one tap away. Futures (its own inner scroll)
+     is not touched.
+     `relative`, not `static`: the drawer (.nav-mobile-menu) is absolutely
+     positioned at top:100% of the header. A static header stops being its
+     containing block and the drawer drops below the viewport (body-relative
+     top:100% = 844px on a 390×844 phone) — every link off-screen. The header
+     also stays above the sticky strip (z 40 > 35) so the drawer's first row
+     is not painted under it. */
+  .trade-terminal.vx-terminal .global-header { position:relative; z-index:40; }
   /* Same three primary mobile workspaces as Futures: market/chart context,
      order entry, then the account panel. */
   .trade-terminal.vx-terminal .terminal-mobile-tabs {
@@ -265,17 +280,41 @@
     padding-block:12px;
   }
 
-  .trade-terminal.vx-terminal .bottom-tabs,
-  .trade-terminal.vx-terminal .cfd-tabs {
-    overflow-x:auto;
+  /* Every account tab stays in sight: the strip wraps onto a second line
+     instead of scrolling sideways and leaving «Активы» past the edge with
+     nothing to say it is there. Id weight: TerminalAccountPanel.css pins the
+     strip to one 43px row with a six-class selector. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal .bottom-tabs,
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal .cfd-tabs {
+    flex-wrap:wrap;
+    overflow:visible;
     min-height:44px;
     height:auto;
+    gap:0 16px;
+    padding-inline:12px;
   }
-  .trade-terminal.vx-terminal .bottom-tab,
-  .trade-terminal.vx-terminal .cfd-tab {
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal .bottom-tab,
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal .cfd-tab {
     min-height:44px;
     flex:none;
     white-space:nowrap;
+  }
+
+  /* Chart types and indicators fold behind the same «•••» key the Futures
+     chart already uses on a phone (FuturesMobile.css). The intervals stay in
+     the row; the two tool rows open on demand, and at 320×568 the chart
+     itself is on the first screen again instead of four rows of keys. */
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal .chart-toolbar .chart-tools { display:none; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal .chart-toolbar[data-mobile-tools=true] .chart-tools { display:flex; flex-wrap:wrap; width:100%; gap:8px; padding-block:8px; }
+  :is(#archive-terminal-preview,.trade-terminal).vx-terminal .chart-toolbar .futures-mobile-tools-toggle {
+    display:block;
+    min-width:44px;
+    min-height:44px;
+    margin-left:auto;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel-alt);
+    color:var(--accent);
   }
   .trade-terminal.vx-terminal .bottom-content { overflow-x:auto; }
 

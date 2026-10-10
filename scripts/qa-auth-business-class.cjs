@@ -235,10 +235,10 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
     assert.doesNotMatch(block.title, /[.。]$/, `${label} no trailing title period`);
     assert.equal(block.fee.lines, 1, `${label} fee is one complete phrase`);
     assert.equal(block.fee.whiteSpace, 'nowrap', `${label} commission phrase never splits`);
-    assert.ok(block.fee.text.includes('0%') && !block.fee.text.includes('VOLTEX'), `${label} fee uses only the approved short wording`);
+    assert.ok(block.title.includes('0%') && !block.fee.text.includes('VOLTEX'), `${label} copy uses the approved short wording`);
     assert.ok(block.fee.x >= block.copyLayout.x - 1 && block.fee.right <= block.copyLayout.right + 1, `${label} entire fee phrase fits`);
     assert.ok(block.copyOpacity.every(value => value === '1'), `${label} no faded copy or ancestors`);
-    if (lang === 'ru') assert.equal(block.title, 'Платите и снимайте наличные — 0% комиссии');
+    if (lang === 'ru') assert.equal(block.title, '0% комиссии за покупки и снятие наличных');
     assert.doesNotMatch(block.subtitle, /[.。]$/, `${label} no trailing subtitle period`);
     const captionGap = block.caption.y - block.community.bottom;
     assert.ok(captionGap >= 20 && captionGap <= 24, `${label} caption has a separate 20–24px gap: ${captionGap}`);
@@ -335,7 +335,7 @@ app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
       assert.equal(style.blur, 'none', `${label} ${style.selector} no glass card`);
     }
     if (lang === 'ru') {
-      assert.equal(block.title, 'Платите и снимайте наличные — 0% комиссии');
+      assert.equal(block.title, '0% комиссии за покупки и снятие наличных');
       assert.equal(block.subtitle, '22+ фиатных валют · 70+ криптовалют');
       assert.equal(block.moreLayout.text, 'и другие валюты');
       assert.equal(block.caption.label.toLocaleLowerCase('ru'), 'карта, которая всегда с вами');

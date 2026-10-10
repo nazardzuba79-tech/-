@@ -180,7 +180,7 @@ export function WithdrawModal({ open, onClose, onSubmitted, onTransfer }: {
             </div>
           </div>
 
-          <div>
+          <div className="wallet-withdraw-address-field">
             <InputLabel htmlFor={addressId}>{t('withdraw.address')}</InputLabel>
             <TextInput
               id={addressId}
