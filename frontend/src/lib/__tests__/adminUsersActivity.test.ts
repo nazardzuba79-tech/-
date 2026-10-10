@@ -138,12 +138,28 @@ test('the compact owner filter includes hidden and spam views', async () => {
   await f.mount();
   const options = Array.from(f.host.querySelectorAll('[aria-label="Фильтр пользователей"] option')).map(o => (o as HTMLOptionElement).value);
   expect(options).toEqual(['all', 'new', 'kyc-pending', 'hidden', 'spam']);
-  expect(f.host.querySelector('details')).toBeNull();
+  expect(f.host.querySelector('.admin-users-filters details')).toBeNull();
   expect(f.button('Скрыть')).toBeNull();
   await f.click(f.host.querySelector('[data-user-row] .admin-action-trigger'));
   expect(document.querySelector('[role="menu"]')?.textContent).toContain('Скрыть');
   expect(document.querySelector('[role="menu"]')?.textContent).toContain('Удалить');
 });
+test('phone layout keeps two compact filters and expandable user details without extra reads', async () => {
+  f.api.getAdminUsersPage.mockResolvedValue(page([user('compact', { password: 'FixturePassword123', kycStatus: 'PENDING' })]));
+  await f.mount();
+  const card = f.host.querySelector('[data-user-card="compact"]')!;
+  expect(card.querySelector('.admin-user-mobile-heading .admin-user-email')).not.toBeNull();
+  expect(card.querySelector('.admin-user-mobile-summary .admin-last-login')).not.toBeNull();
+  expect(card.querySelector('.admin-user-mobile-details summary')?.textContent).toBe('Подробнее');
+  expect(card.querySelector('.admin-user-mobile-details dl')?.textContent).toContain('FixturePassword123');
+  expect(card.querySelector('.admin-user-mobile-bottom .admin-open-button')).not.toBeNull();
+  const css = readFileSync(resolve(frontend, 'src/pages/admin/adminPracticality.css'), 'utf8');
+  expect(css).toMatch(/\.admin-page-grid \.admin-users-workspace \.admin-users-filters \{/);
+  expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
+  expect(css).toContain('.admin-users-workspace .admin-users-filters input { grid-column: 1 / -1; }');
+  expect(f.api.getAdminUsersPage).toHaveBeenCalledTimes(1);
+});
+
 test('owner layout: НОВЫЙ beside the email for 24 hours, short dates, KYC pill or dash, no direction control', async () => {
   jest.useFakeTimers({ now: Date.parse('2026-10-03T16:00:00Z'), doNotFake: ['queueMicrotask'] });
   f.api.getAdminUsersPage.mockResolvedValue(page([
