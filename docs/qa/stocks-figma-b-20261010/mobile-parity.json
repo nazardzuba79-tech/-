@@ -1,0 +1,256 @@
+{
+  "before": {
+    "boxes": {
+      ".vxg-account": {
+        "background": "rgb(14, 17, 24)",
+        "box": {
+          "bottom": 0,
+          "height": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "width": 0,
+          "x": 0,
+          "y": 0
+        },
+        "display": "none",
+        "font": "13px"
+      },
+      ".vxg-chart-section": {
+        "background": "rgb(14, 17, 24)",
+        "box": {
+          "bottom": 781,
+          "height": 602,
+          "left": 3,
+          "right": 377,
+          "top": 179,
+          "width": 374,
+          "x": 3,
+          "y": 179
+        },
+        "display": "flex",
+        "font": "13px"
+      },
+      ".vxg-chart-tools": {
+        "background": "rgba(0, 0, 0, 0)",
+        "box": {
+          "bottom": 252.89584350585935,
+          "height": 35.28125,
+          "left": 3,
+          "right": 377,
+          "top": 217.61459350585935,
+          "width": 374,
+          "x": 3,
+          "y": 217.61459350585935
+        },
+        "display": "flex",
+        "font": "11px"
+      },
+      ".vxg-market-head": {
+        "background": "rgb(14, 17, 24)",
+        "box": {
+          "bottom": 131,
+          "height": 72,
+          "left": 3,
+          "right": 377,
+          "top": 59,
+          "width": 374,
+          "x": 3,
+          "y": 59
+        },
+        "display": "flex",
+        "font": "13px"
+      },
+      ".vxg-mobile-tabs": {
+        "background": "rgb(14, 17, 24)",
+        "box": {
+          "bottom": 176,
+          "height": 42,
+          "left": 3,
+          "right": 377,
+          "top": 134,
+          "width": 374,
+          "x": 3,
+          "y": 134
+        },
+        "display": "flex",
+        "font": "13px"
+      },
+      ".vxg-plot": {
+        "background": "rgba(0, 0, 0, 0)",
+        "box": {
+          "bottom": 781.0000305175781,
+          "height": 476.1041870117187,
+          "left": 3,
+          "right": 377,
+          "top": 304.8958435058594,
+          "width": 374,
+          "x": 3,
+          "y": 304.8958435058594
+        },
+        "display": "block",
+        "font": "13px"
+      },
+      ".vxg-terminal": {
+        "background": "rgba(0, 0, 0, 0)",
+        "box": {
+          "bottom": 861,
+          "height": 805,
+          "left": 0,
+          "right": 380,
+          "top": 56,
+          "width": 380,
+          "x": 0,
+          "y": 56
+        },
+        "display": "flex",
+        "font": "13px"
+      },
+      ".vxg-timeframes": {
+        "background": "rgba(0, 0, 0, 0)",
+        "box": {
+          "bottom": 217.61458587646484,
+          "height": 38.61458587646485,
+          "left": 3,
+          "right": 377,
+          "top": 179,
+          "width": 374,
+          "x": 3,
+          "y": 179
+        },
+        "display": "flex",
+        "font": "13px"
+      }
+    },
+    "doc": 380,
+    "scroll": 380,
+    "width": 390
+  },
+  "after": {
+    "boxes": {
+      ".vxg-account": {
+        "background": "rgb(14, 17, 24)",
+        "box": {
+          "bottom": 0,
+          "height": 0,
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "width": 0,
+          "x": 0,
+          "y": 0
+        },
+        "display": "none",
+        "font": "13px"
+      },
+      ".vxg-chart-section": {
+        "background": "rgb(14, 17, 24)",
+        "box": {
+          "bottom": 781,
+          "height": 602,
+          "left": 3,
+          "right": 377,
+          "top": 179,
+          "width": 374,
+          "x": 3,
+          "y": 179
+        },
+        "display": "flex",
+        "font": "13px"
+      },
+      ".vxg-chart-tools": {
+        "background": "rgba(0, 0, 0, 0)",
+        "box": {
+          "bottom": 252.89584350585935,
+          "height": 35.28125,
+          "left": 3,
+          "right": 377,
+          "top": 217.61459350585935,
+          "width": 374,
+          "x": 3,
+          "y": 217.61459350585935
+        },
+        "display": "flex",
+        "font": "11px"
+      },
+      ".vxg-market-head": {
+        "background": "rgb(14, 17, 24)",
+        "box": {
+          "bottom": 131,
+          "height": 72,
+          "left": 3,
+          "right": 377,
+          "top": 59,
+          "width": 374,
+          "x": 3,
+          "y": 59
+        },
+        "display": "flex",
+        "font": "13px"
+      },
+      ".vxg-mobile-tabs": {
+        "background": "rgb(14, 17, 24)",
+        "box": {
+          "bottom": 176,
+          "height": 42,
+          "left": 3,
+          "right": 377,
+          "top": 134,
+          "width": 374,
+          "x": 3,
+          "y": 134
+        },
+        "display": "flex",
+        "font": "13px"
+      },
+      ".vxg-plot": {
+        "background": "rgba(0, 0, 0, 0)",
+        "box": {
+          "bottom": 781.0000305175781,
+          "height": 476.1041870117187,
+          "left": 3,
+          "right": 377,
+          "top": 304.8958435058594,
+          "width": 374,
+          "x": 3,
+          "y": 304.8958435058594
+        },
+        "display": "block",
+        "font": "13px"
+      },
+      ".vxg-terminal": {
+        "background": "rgba(0, 0, 0, 0)",
+        "box": {
+          "bottom": 861,
+          "height": 805,
+          "left": 0,
+          "right": 380,
+          "top": 56,
+          "width": 380,
+          "x": 0,
+          "y": 56
+        },
+        "display": "flex",
+        "font": "13px"
+      },
+      ".vxg-timeframes": {
+        "background": "rgba(0, 0, 0, 0)",
+        "box": {
+          "bottom": 217.61458587646484,
+          "height": 38.61458587646485,
+          "left": 3,
+          "right": 377,
+          "top": 179,
+          "width": 374,
+          "x": 3,
+          "y": 179
+        },
+        "display": "flex",
+        "font": "13px"
+      }
+    },
+    "doc": 380,
+    "scroll": 380,
+    "width": 390
+  }
+}

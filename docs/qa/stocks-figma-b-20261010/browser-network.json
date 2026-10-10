@@ -1,0 +1,194 @@
+{
+  "truncated": false,
+  "hasMore": false,
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4439/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4439/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4439/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4439/__stocks_global/orders"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4439/__stocks_global/cancel"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4439/__stocks_global/orders"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/state?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:4439/__stocks_global/history?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:4439/__stocks_global/orders"
+    }
+  ]
+}

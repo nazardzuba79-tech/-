@@ -1,0 +1,140 @@
+{
+  "desktop1440": {
+    "boxes": {
+      ".vxg-account": {
+        "bottom": 864,
+        "height": 112,
+        "left": 12,
+        "right": 1084,
+        "top": 752,
+        "width": 1072,
+        "x": 12,
+        "y": 752
+      },
+      ".vxg-chart-section": {
+        "bottom": 744,
+        "height": 632,
+        "left": 12,
+        "right": 804,
+        "top": 112,
+        "width": 792,
+        "x": 12,
+        "y": 112
+      },
+      ".vxg-plot": {
+        "bottom": 744,
+        "height": 492,
+        "left": 54,
+        "right": 804,
+        "top": 252,
+        "width": 750,
+        "x": 54,
+        "y": 252
+      },
+      ".vxg-pro-quotes": {
+        "bottom": 744,
+        "height": 632,
+        "left": 812,
+        "right": 1084,
+        "top": 112,
+        "width": 272,
+        "x": 812,
+        "y": 112
+      },
+      ".vxg-submit": {
+        "bottom": 719.34375,
+        "height": 44,
+        "left": 1108,
+        "right": 1402,
+        "top": 675.34375,
+        "width": 294,
+        "x": 1108,
+        "y": 675.34375
+      },
+      ".vxg-ticket": {
+        "bottom": 864,
+        "height": 752,
+        "left": 1092,
+        "right": 1428,
+        "top": 112,
+        "width": 336,
+        "x": 1092,
+        "y": 112
+      }
+    },
+    "overflow": 0,
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "desktop1920": {
+    "boxes": {
+      ".vxg-account": {
+        "bottom": 1046,
+        "height": 120,
+        "left": 12,
+        "right": 1564,
+        "top": 926,
+        "width": 1552,
+        "x": 12,
+        "y": 926
+      },
+      ".vxg-chart-section": {
+        "bottom": 918,
+        "height": 806,
+        "left": 12,
+        "right": 1268,
+        "top": 112,
+        "width": 1256,
+        "x": 12,
+        "y": 112
+      },
+      ".vxg-plot": {
+        "bottom": 918,
+        "height": 666,
+        "left": 54,
+        "right": 1268,
+        "top": 252,
+        "width": 1214,
+        "x": 54,
+        "y": 252
+      },
+      ".vxg-pro-quotes": {
+        "bottom": 918,
+        "height": 806,
+        "left": 1276,
+        "right": 1564,
+        "top": 112,
+        "width": 288,
+        "x": 1276,
+        "y": 112
+      },
+      ".vxg-submit": {
+        "bottom": 719.34375,
+        "height": 44,
+        "left": 1588,
+        "right": 1882,
+        "top": 675.34375,
+        "width": 294,
+        "x": 1588,
+        "y": 675.34375
+      },
+      ".vxg-ticket": {
+        "bottom": 1046,
+        "height": 934,
+        "left": 1572,
+        "right": 1908,
+        "top": 112,
+        "width": 336,
+        "x": 1572,
+        "y": 112
+      }
+    },
+    "overflow": 0,
+    "viewport": {
+      "height": 1080,
+      "width": 1920
+    }
+  }
+}
