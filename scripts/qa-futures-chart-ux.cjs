@@ -100,6 +100,16 @@ const TIME_PIXELS = SCALE_PIXELS('time');
       item.paneRows = panes;
       // Rows: main pane, volume pane, RSI pane, MACD pane, the time axis row.
       ok(`${width}: two lower-pane indicators open two panes (rows ${panes})`, panes >= 5);
+      // Hiding a lower indicator must release its pane; showing it must restore it.
+      await trigger.click(); await menu.waitFor();
+      const rsiEye = menu.locator('[data-chart-active-indicator^="rsi-"] [data-chart-indicator-visible]');
+      await rsiEye.click(); await page.waitForTimeout(250);
+      const hiddenRows = await page.evaluate(() => document.querySelectorAll('.chart-view .tv-lightweight-charts table > tr').length);
+      ok(`${width}: hiding RSI releases an oscillator pane (${panes} → ${hiddenRows})`, hiddenRows < panes);
+      await rsiEye.click(); await page.waitForTimeout(250);
+      const restoredRows = await page.evaluate(() => document.querySelectorAll('.chart-view .tv-lightweight-charts table > tr').length);
+      ok(`${width}: showing RSI restores its pane (${hiddenRows} → ${restoredRows})`, restoredRows >= panes);
+      await page.keyboard.press('Escape');
       const legend = await page.locator('.voltex-indicator-legend').innerText();
       item.legend = legend;
       ok(`${width}: legend names the instances`, /SMA 200/.test(legend) && /EMA 20/.test(legend) && /RSI 14/.test(legend) && /MACD 12/.test(legend));
