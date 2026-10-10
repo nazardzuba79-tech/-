@@ -83,6 +83,16 @@ export class Store {
       CREATE TABLE IF NOT EXISTS checkpoints(instrumentId TEXT PRIMARY KEY,cursor INTEGER NOT NULL,completed INTEGER NOT NULL DEFAULT 0);`);
     }
     this.historyQuery=this.db.prepare("SELECT * FROM candles WHERE instrumentId=? AND interval='15m' AND adjustmentMode='unadjusted' AND openTimeUtc<? ORDER BY openTimeUtc DESC LIMIT ?");
+    // Serialize TEXT decimals inside SQLite: avoid materializing and copying every
+    // candle into two JS object arrays on a cold HTTP page. The public history()
+    // method retains its full-row contract for collectors/catalogue consumers.
+    this.encodedHistoryQuery=this.db.prepare(`SELECT
+      json_group_array(json_object('openTimeUtc',openTimeUtc,'closeTimeUtc',closeTimeUtc,
+        'open',open,'high',high,'low',low,'close',close,'volume',volume,'fetchedAt',fetchedAt)) AS candles,
+      count(*) AS count,min(openTimeUtc) AS first,max(openTimeUtc) AS latest
+      FROM (SELECT * FROM (SELECT openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt
+        FROM candles WHERE instrumentId=? AND interval='15m' AND adjustmentMode='unadjusted'
+        AND openTimeUtc<? ORDER BY openTimeUtc DESC LIMIT ?) ORDER BY openTimeUtc ASC)`);
   }
   write(rows,i,now=Date.now()){
     if(rows.length>limits.MAX_CANDLES_PER_PROVIDER_RESPONSE)throw Error('Provider candle limit');
@@ -92,6 +102,7 @@ export class Store {
     return changes;
   }
   history(id,limit=300,before=Number.MAX_SAFE_INTEGER){return this.historyQuery.all(id,before,limit).reverse();}
+  encodedHistory(id,limit=300,before=Number.MAX_SAFE_INTEGER){return this.encodedHistoryQuery.get(id,before,limit);}
   checkpoint(id,cursor,completed=false){this.db.prepare('INSERT INTO checkpoints VALUES(?,?,?) ON CONFLICT DO UPDATE SET cursor=excluded.cursor,completed=excluded.completed').run(id,cursor,Number(completed));}
   close(){this.db.close();}
 }

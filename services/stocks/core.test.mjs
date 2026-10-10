@@ -12,13 +12,29 @@ const manifest=JSON.parse(readFileSync(new URL('./manifest.json',import.meta.url
 const i={...manifest[0],enabled:true,dataRightsStatus:'confirmed'};
 const now=Date.UTC(2026,9,7,15), row=(n=0)=>({instrumentId:i.instrumentId,interval:'15m',openTimeUtc:now-900000*(n+1),closeTimeUtc:now-900000*n,open:'100.12345678',high:'102',low:'99',close:'101.12345678',volume:null,currency:i.currency,provider:i.provider,providerTimestamp:now,fetchedAt:now,adjustmentMode:'unadjusted'});
 function fixture(){const dir=mkdtempSync(join(tmpdir(),'voltex-stock-'));const store=new Store(join(dir,'s.sqlite'));return {store,dir,close(){this.store.close();rmSync(dir,{recursive:true,force:true});}};}
+
+test('native encoded pages exactly preserve projected history, decimals, nulls and cursor boundaries',()=>{
+  const f=fixture();
+  try{
+    f.store.write(Array.from({length:20},(_,n)=>({...row(19-n),volume:n%2?'1.2300':null,open:'100.12340000'})),i,now);
+    for(const limit of [1,7,20,500])for(const before of [0,now-900000,now-900001,now,Number.MAX_SAFE_INTEGER]){
+      const expected=f.store.history(i.instrumentId,limit,before).map(({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt})=>({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt}));
+      const actual=f.store.encodedHistory(i.instrumentId,limit,before);
+      assert.equal(actual.candles,JSON.stringify(expected));
+      assert.equal(actual.count,expected.length);assert.equal(actual.first,expected[0]?.openTimeUtc??null);assert.equal(actual.latest,expected.at(-1)?.openTimeUtc??null);
+    }
+    assert.equal(f.store.encodedHistory('UNKNOWN').candles,'[]');
+    f.store.write([{...row(),close:'100.5000'}],i,now);
+    assert.equal(JSON.parse(f.store.encodedHistory(i.instrumentId).candles).at(-1).close,'100.5000');
+  }finally{f.close();}
+});
 test('validated configuration cannot relax any budget',()=>{for(const [k,v]of Object.entries(limits)){if(typeof v==='number'&&!['MIN_FREE_DISK','MIN_UPSTREAM_REQUEST_GAP_MS'].includes(k))assert.throws(()=>validateLimits({...limits,[k]:v*2}));}assert.throws(()=>validateLimits({...limits,BACKFILL_ENABLED_BY_DEFAULT:true}));});
 test('250 canonical disabled catalogue records, regional caps, same ticker across venues',()=>{assert.equal(manifest.length,250);validateManifest(manifest);assert.ok(manifest.every(x=>!x.enabled));validateManifest([{...i,instrumentId:'XNAS:SAME'},{...i,instrumentId:'XNYS:SAME'}]);assert.throws(()=>validateManifest([i,i]));assert.throws(()=>validateManifest([{...i,dataRightsStatus:'unconfirmed'}]));});
 test('500 rows in bounded transactions, duplicate replay unchanged, explicit correction and decimal preservation',()=>{const f=fixture();try{const rows=Array.from({length:500},(_,n)=>row(499-n));assert.equal(f.store.write(rows,i,now),500);assert.equal(f.store.write(rows,i,now),0);assert.equal(f.store.history(i.instrumentId,500).length,500);assert.equal(f.store.history(i.instrumentId,1)[0].open,'100.12345678');assert.equal(f.store.write([{...row(),close:'101.5'}],i,now),1);assert.equal(f.store.db.prepare('PRAGMA journal_mode').get().journal_mode,'delete');}finally{f.close();}});
 
 test('equivalent recent cursors share one encoded page; genuine pagination stays exact',async()=>{
   const f=fixture();f.store.write([row(2),row(1),row()],i,now);
-  let reads=0;const history=f.store.history.bind(f.store);f.store.history=(...args)=>{reads++;return history(...args);};
+  let reads=0;const history=f.store.encodedHistory.bind(f.store);f.store.encodedHistory=(...args)=>{reads++;return history(...args);};
   const server=createStockServer({store:f.store,instruments:[i]});await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const url='http://127.0.0.1:'+server.address().port+'/stocks/history/'+i.instrumentId;
   try{

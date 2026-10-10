@@ -7,6 +7,75 @@ on:
 permissions:
   contents: read
 jobs:
+  stocks-performance-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Build exact before and after fixtures without external services
+        run: |
+          mkdir -p "$RUNNER_TEMP/profile-before" .ci-output/stock-performance
+          git archive 3c5a6a73d014826c47a89541d4fe85b2fbc41761 services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
+          cp services/stocks/realistic* services/stocks/profile* "$RUNNER_TEMP/profile-before/services/stocks/"
+          cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/profile-before/services/stocks/"
+          docker build -t voltex-realistic-before -f "$RUNNER_TEMP/profile-before/services/stocks/realistic.Dockerfile" "$RUNNER_TEMP/profile-before"
+          docker build -t voltex-realistic-after -f services/stocks/realistic.Dockerfile .
+          docker build -t voltex-strict-before -f "$RUNNER_TEMP/profile-before/services/stocks/Dockerfile" "$RUNNER_TEMP/profile-before"
+          docker build -t voltex-strict-after -f services/stocks/Dockerfile .
+      - name: Verify runner CPU placement and real block device
+        run: |
+          mkdir -p "$RUNNER_TEMP/profile-disk/probe"
+          chmod 777 "$RUNNER_TEMP/profile-disk/probe"
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+          majmin=$(findmnt -n -o MAJ:MIN -T "$RUNNER_TEMP/profile-disk" | tr -d '[:space:]')
+          device=$(lsblk -nrpo NAME,MAJ:MIN | awk -v mm="$majmin" '$2==mm {print $1; exit}')
+          test -n "$device" && test -b "$device"
+          parent=$(lsblk -ndo PKNAME "$device")
+          if [ -n "$parent" ]; then device="/dev/$parent"; fi
+          printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
+          { nproc; free -m; findmnt -T "$RUNNER_TEMP/profile-disk"; lsblk; } > .ci-output/stock-performance/host.txt
+          docker run --rm --network none --cpus .05 --memory 256m --memory-swap 256m --read-only --cap-drop ALL --security-opt no-new-privileges --device-read-bps "$device:1048576" --device-write-bps "$device:131072" --mount type=bind,src="$RUNNER_TEMP/profile-disk/probe",dst=/data voltex-strict-after node io-proof.mjs > .ci-output/stock-performance/io-proof.json
+      - name: Offline stage profile and harness regressions
+        run: |
+          node services/stocks/profile-stages.mjs > .ci-output/stock-performance/stages.json
+          node --test services/stocks/realistic.test.mjs
+          STOCK_PROFILE_MODULE_ROOT="$RUNNER_TEMP/profile-before/services/stocks" STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-before node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-before.json
+          STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after.json
+          STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after-stages node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after-stages.json
+          for mode in http-before http-after http-after-stages; do
+            node services/stocks/profile-summary.mjs ".ci-output/stock-performance/$mode/http.cpuprofile" > ".ci-output/stock-performance/$mode/summary.json"
+          done
+      - name: Authenticated mixed and shared instrument workloads
+        env:
+          STOCK_REALISTIC_IMAGES: '{"before":"voltex-realistic-before","after":"voltex-realistic-after"}'
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/realistic
+          STOCK_REALISTIC_OUTPUT: .ci-output/stock-performance/realistic
+          STOCK_REALISTIC_CAPACITY_LADDER: 'true'
+        run: node services/stocks/realistic-run.mjs
+      - name: Separate strict latency observation with unchanged three-second deadline
+        env:
+          STOCK_STRICT_IMAGES: '{"before":"voltex-strict-before","after":"voltex-strict-after"}'
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/strict
+          STOCK_STRICT_OUTPUT: .ci-output/stock-performance/strict
+        run: node services/stocks/profile-strict-run.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-performance-profile-${{ github.sha }}
+          path: .ci-output/stock-performance
+          if-no-files-found: error
   isolated-simulator:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -21,7 +90,7 @@ jobs:
         with:
           node-version: '22'
       - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
-        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate
@@ -192,7 +261,7 @@ jobs:
           docker build -t voltex-stock-after -f services/stocks/Dockerfile .
           mkdir -p "$RUNNER_TEMP/stock-before"
           # Exact prior #497 head: same workload/budgets, current known timeout baseline.
-          git archive 727148aab693019b8a831195d8e0328f9e5199b3 services/stocks | tar -x -C "$RUNNER_TEMP/stock-before"
+          git archive 3c5a6a73d014826c47a89541d4fe85b2fbc41761 services/stocks | tar -x -C "$RUNNER_TEMP/stock-before"
           cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/stock-before/services/stocks/load-fixture.mjs"
           docker build -t voltex-stock-before -f "$RUNNER_TEMP/stock-before/services/stocks/Dockerfile" "$RUNNER_TEMP/stock-before"
           # CI-only tools must match the container libc; never mount host taskset.

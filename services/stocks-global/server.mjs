@@ -3,6 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { performance } from 'node:perf_hooks';
 import { openStore } from './store.mjs';
 import { openAccounts, accountId } from './accounts.mjs';
 import { identityResolver } from './identity.mjs';
@@ -16,7 +17,8 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   check(accountsPath||dataPath,'LOCAL_LEDGER_PATH_REQUIRED');
   const accounts=accountsPath?openAccounts(accountsPath,{now}):null;
   const legacy=accounts?null:await openStore(dataPath,{now});
-  const contexts=new Map(),flights=new Map(),recent=new Map();
+  const contexts=new Map(),flights=new Map(),recent=new Map(),historyWire=new WeakMap();
+  Object.assign(hub.metrics,{accountQuoteCommits:0,accountQuoteMs:0,historySerializations:0,historySerializeMs:0});
   let address,closing=false,cursor=0,catalogueTask=null,lastCatalogue=0;
   const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,accessed:now(),errors:{},token:randomBytes(32).toString('hex')});
   if(legacy)contexts.set('legacy',context(legacy,'legacy'));
@@ -46,7 +48,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   };
   async function refreshContext(ctx,id=ctx.selected){
     if(closing)return;
-    try{const q=await quote(id);await ctx.store.transact((s,t)=>applyQuote(s,q,t));delete ctx.errors[id];}
+    try{const q=await quote(id),started=performance.now();await ctx.store.transact((s,t)=>applyQuote(s,q,t));hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;delete ctx.errors[id];}
     catch(e){ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';await ctx.store.transact(s=>{if(s.quotes[id])s.quotes[id].failed=true;}).catch(()=>{});}
   }
   const send=(res,code,body)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
@@ -61,7 +63,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
         const id=u.searchParams.get('id');if(id){check(instrument(id),'INVALID_PAIR');const changed=id!==ctx.selected;ctx.selected=id;ctx.lease=now();if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&changed)void refreshContext(ctx);}
         send(res,200,{...status(ctx),token:ctx.token});return;
       }
-      if(req.method==='GET'&&u.pathname===API+'history'){sourceAllowed(u.searchParams.get('id'));send(res,200,await hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before')));return;}
+      if(req.method==='GET'&&u.pathname===API+'history'){sourceAllowed(u.searchParams.get('id'));const page=await hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'));let body=historyWire.get(page);if(!body){const started=performance.now();body=Buffer.from(JSON.stringify(page));historyWire.set(page,body);hub.metrics.historySerializations++;hub.metrics.historySerializeMs+=performance.now()-started;}res.writeHead(200,{'Content-Type':'application/json','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(body);return;}
       if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();send(res,200,{catalogue});return;}
       check(req.method==='POST','METHOD_NOT_ALLOWED');const supplied=req.headers['x-stocks-token'];check(typeof supplied==='string'&&Buffer.byteLength(supplied)===Buffer.byteLength(ctx.token)&&timingSafeEqual(Buffer.from(supplied),Buffer.from(ctx.token)),'TOKEN_REQUIRED');check(req.headers['content-type']?.startsWith('application/json'),'JSON_REQUIRED');
       const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;check(size<=8192,'BODY_TOO_LARGE');chunks.push(chunk);}let input;try{input=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new SimError('INVALID_JSON');}
@@ -75,17 +77,17 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     }
     check(req.method==='GET'&&!/^\/(api|v1|v2|admin|__stocks_simulator)(\/|$)/.test(u.pathname),'ROUTE_NOT_FOUND');
     let relative;try{relative=decodeURIComponent(u.pathname);}catch{throw new SimError('ROUTE_NOT_FOUND');}let path=resolve(dist,'.'+relative);check(path.startsWith(dist+sep)||path===dist,'ROUTE_NOT_FOUND');if(!extname(path))path=resolve(dist,'index.html');check((await stat(path)).isFile(),'ROUTE_NOT_FOUND');res.writeHead(200,{'Content-Type':MIME[extname(path)]||'application/octet-stream','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(await readFile(path));
-  }catch(e){if(!res.headersSent)send(res,e.code==='AUTH_REQUIRED'?401:e.code==='AUTH_UNAVAILABLE'||e.code==='ACCOUNT_CAPACITY'?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR'});else res.end();}});
+  }catch(e){if(!res.headersSent)send(res,e.code==='AUTH_REQUIRED'?401:['AUTH_UNAVAILABLE','ACCOUNT_CAPACITY','SOURCE_BUSY'].includes(e.code)?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR'});else res.end();}});
   server.requestTimeout=15000;server.headersTimeout=10000;server.keepAliveTimeout=2000;server.maxConnections=128;
   await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,'127.0.0.1',ok);}).catch(async e=>{accounts?.close();await legacy?.close();throw e;});address=server.address();
   let tick=null;
   const timer=autoPoll?setInterval(()=>{
     if(tick||closing)return;const interested=[...contexts.values()].filter(ctx=>now()-ctx.lease<12000);if(!interested.length)return;
     if(now()-lastCatalogue>60000)void loadCatalogue().catch(()=>{});
-    const ids=[...new Set(interested.flatMap(ctx=>{const s=ctx.store.read();return[ctx.selected,...s.orders.filter(active).map(o=>o.instrumentId),...Object.values(s.positions).filter(p=>Number(p.quantity)>0).map(p=>p.instrumentId)];}))].filter(id=>instrument(id)?.provider!=='moex');
-    if(!ids.length)return;const id=ids[cursor++%ids.length];tick=Promise.all(interested.map(ctx=>refreshContext(ctx,id))).finally(()=>{tick=null;});
+    const subscriptions=interested.map(ctx=>{const s=ctx.store.read();return{ctx,ids:new Set([ctx.selected,...s.orders.filter(active).map(o=>o.instrumentId),...Object.values(s.positions).filter(p=>Number(p.quantity)>0).map(p=>p.instrumentId)])};});
+    const ids=[...new Set(subscriptions.flatMap(s=>[...s.ids]))].filter(id=>instrument(id)?.provider!=='moex');
+    if(!ids.length)return;const id=ids[cursor++%ids.length];tick=Promise.all(subscriptions.filter(s=>s.ids.has(id)).map(s=>refreshContext(s.ctx,id))).finally(()=>{tick=null;});
   },3000):null;
-  if(autoPoll)void loadCatalogue().catch(()=>{});
   return{server,store:legacy,port:address.port,refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await Promise.allSettled([...flights.values(),catalogueTask].filter(Boolean));accounts?.close();await legacy?.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){

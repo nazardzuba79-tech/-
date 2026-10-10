@@ -2,15 +2,19 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { Store, ByteCache, ReadGate, limits, validateManifest } from './core.mjs';
 
-export function createStockServer({store,instruments,origin='',readGate=new ReadGate()}){
+export function createStockServer({store,instruments,origin='',readGate=new ReadGate(),profile}){
   validateManifest(instruments);const allowed=new Map(instruments.map(i=>[i.instrumentId,i]));
   // Count encoded bytes plus page metadata against the same 16 MiB budget.
   const cache=new ByteCache(undefined,page=>page.body.length+128),gate=readGate;
-  const encoded=value=>({body:Buffer.from(JSON.stringify(value))});
-  const respond=(res,page)=>{res.setHeader('Content-Length',page.body.length);res.end(page.body);};
+  // Profiling is opt-in for offline fixtures: no runtime clocks by default.
+  const measure=profile?((name,fn)=>profile.measure(name,fn)):((_name,fn)=>fn());
+  const encoded=value=>measure('serialization',()=>({body:Buffer.from(JSON.stringify(value))}));
+  const respond=(res,page)=>measure('httpWrite',()=>{res.setHeader('Content-Length',page.body.length);res.end(page.body);});
+  const cached=key=>measure('cache',()=>cache.peek(key));
   const loadPage=(id,limit,before)=>{
-    const candles=store.history(id,limit,before).map(({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt})=>({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt}));
-    return {...encoded({instrumentId:id,currency:allowed.get(id).currency,provider:allowed.get(id).provider,adjustmentMode:'unadjusted',candles,next:candles.length===limit?candles[0].openTimeUtc:null}),latestTime:candles.at(-1)?.openTimeUtc??-1};
+    const page=store.encodedHistory(id,limit,before);
+    const metadata=measure('candlePreparation',()=>({instrumentId:id,currency:allowed.get(id).currency,provider:allowed.get(id).provider,adjustmentMode:'unadjusted'}));
+    return measure('serialization',()=>({body:Buffer.from(JSON.stringify(metadata).slice(0,-1)+',"candles":'+page.candles+',"next":'+(page.count===limit?page.first:'null')+'}'),latestTime:page.latest??-1}));
   };
   const server=createServer(async(req,res)=>{
     res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('X-Content-Type-Options','nosniff');
@@ -29,12 +33,13 @@ export function createStockServer({store,instruments,origin='',readGate=new Read
       const key=`${id}:${limit}:${before}`;
       // Hits/singleflight followers do not consume scarce database admission.
       // New keys still enter the bounded gate BEFORE growing the pending map.
-      const cached=cache.peek(key);
+      const hit=cached(key);
       let page;
-      if(cached)page=await cached.value;
+      if(hit){profile?.count('cacheHits',1);page=await hit.value;}
       else{
+        profile?.count('cacheMisses',1);
         const latestKey=`${id}:${limit}:${Number.MAX_SAFE_INTEGER}`;
-        const latestHit=cache.peek(latestKey);
+        const latestHit=cached(latestKey);
         const latest=await (latestHit?latestHit.value:gate.run(()=>cache.get(latestKey,()=>loadPage(id,limit,Number.MAX_SAFE_INTEGER))));
         // Reuse only a proven equivalent range, never round a client timestamp
         // or assume exchange/session alignment. Historical pagination stays exact.
