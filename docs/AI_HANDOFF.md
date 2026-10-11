@@ -6249,3 +6249,12 @@ Read-only Hetzner hardware/passive aggregate checks confirmed 2 vCPU / 3.730 GiB
 - Removed the #508 pair/price divider (`FuturesFigmaDesktop.css`). Rail collapse handle (`TerminalChart.css`, ≥901px only): Bybit's 10×26px `#aeb0b5` pill with a `#26292f` chevron, centred on the rail edge, replacing #504's 22×48 dark tab with gold edge; transparent halo keeps a 26×42px target; keyboard, aria-expanded, focus ring, persistence and z 51 unchanged; phone strip untouched.
 - `qa-futures-chart-ux.cjs` handle size/colour assertion changed to the pill spec; hit-area/keyboard/aria/persistence assertions unchanged.
 - Verified on `faa74742`: build PASS; Jest 236/236, 4082/4082; proportions 0 violations; Figma 4/4; chart UX 129/0; Spot/CFD PASS; zoom 16/16; languages 21/21; Spot/CFD/phone/tablet pixel-identical to main. Draft only; no merge, no deploy.
+
+
+## Codex — 2026-10-11 — Stocks Issue505 current-main performance continuation
+
+- Branch codex/stocks-integration-20261010 only; previous head86b4f412, fresh mainc205ca3c integrated in7fafc74d. Onlyhandoff conflict; both histories preserved. All27 otherincomingpaths matched currentmain including Futures/Support/Assistant; Mobile/Card/Auth/Admin preserved.
+- Candidate fixes redundant existing-account INSERT writer locks, same-owner/instrument pending background observations, cached-history HTTP allocations and strictfetch connection churn. Financial transactions, FULL/DELETE/BEGIN IMMEDIATE, source identities, price/FX/PnL, provider limits and queue/acceptance deadlines preserved.
+- Added registration/coalescing/native-budget/HTTP regressions. Immediate-before profile baseline86b4; original3c5/f81 crypto/resource comparisons retained unchanged.
+- Evidence and limitations: docs/qa/stocks/ISSUE-505-CURRENT-MAIN-20261011.md. Exact-head CI/resource acceptance must be verified after push; no production readiness claim. Cold funding I/O and mixed nativequote budget remain measured blockers; MOEX blocked, data rightsNOT CLEARED, Hetzner capacityunconfirmed.
+- No main merge, deploy, production/DB/infrastructure/financial operation. Commit carrying this entry identifies candidate; finalmetrics will be linked in PR497.

@@ -19,7 +19,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   check(accountsPath||dataPath,'LOCAL_LEDGER_PATH_REQUIRED');
   const accounts=accountsPath?await openAccountWorker(accountsPath,{...accountWorkerOptions,now,diagnostics:accountDiagnostics}):null;
   const legacy=accounts?null:await openStore(dataPath,{now});
-  const contexts=new Map(),contextFlights=new Map(),refreshTasks=new Set(),flights=new Map(),recent=new Map(),historyWire=new WeakMap();
+  const contexts=new Map(),contextFlights=new Map(),refreshTasks=new Set(),backgroundFlights=new WeakMap(),flights=new Map(),recent=new Map(),historyWire=new WeakMap();
   Object.assign(hub.metrics,{accountQuoteCommits:0,accountQuoteObservations:0,accountQuoteMs:0,historySerializations:0,historySerializeMs:0});
   let address,closing=false,cursor=0,catalogueTask=null,lastCatalogue=0;
   const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,accessed:now(),errors:{},observed:new Set(),token:randomBytes(32).toString('hex')});
@@ -56,7 +56,14 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     try{const q=await quote(id),started=performance.now();const committed=await ctx.store.execute(accounts?'observe':'quote',q);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;ctx.observed.add(id);delete ctx.errors[id];return committed.snapshot;}
     catch(e){ctx.observed.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;await ctx.store.execute(accounts?'observeFailed':'quoteFailed',{id});}
   }
-  const refreshInBackground=ctx=>{const id=ctx.selected,pending=refreshContext(ctx,id).catch(e=>{ctx.errors[id]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>refreshTasks.delete(pending));refreshTasks.add(pending);};
+  const refreshInBackground=(ctx,id=ctx.selected)=>{
+    let work=backgroundFlights.get(ctx);if(!work){work=new Map();backgroundFlights.set(ctx,work);}
+    // Only background observations share in-flight work. Explicit refreshes and
+    // financial commands retain their own ordered execution and acknowledgements.
+    if(work.has(id)){hub.metrics.accountQuoteCoalesced=(hub.metrics.accountQuoteCoalesced||0)+1;return work.get(id);}
+    const pending=refreshContext(ctx,id).catch(e=>{ctx.errors[id]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>{work.delete(id);refreshTasks.delete(pending);});
+    work.set(id,pending);refreshTasks.add(pending);return pending;
+  };
   const send=(res,code,body,headers={})=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers});res.end(JSON.stringify(body));};
   const server=http.createServer(async(req,res)=>{try{
     check(req.headers.host==='127.0.0.1:'+address.port,'HOST_FORBIDDEN');check(!req.headers.origin||req.headers.origin==='http://127.0.0.1:'+address.port,'ORIGIN_FORBIDDEN');check(!req.headers['sec-fetch-site']||['same-origin','none'].includes(req.headers['sec-fetch-site']),'ORIGIN_FORBIDDEN');
@@ -98,7 +105,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     tick=(async()=>{
       const subscriptions=await Promise.all(interested.map(async ctx=>({ctx,ids:new Set(await ctx.store.execute('interests',{selected:ctx.selected}))})));
       const ids=[...new Set(subscriptions.flatMap(s=>[...s.ids]))].filter(id=>instrument(id)?.provider!=='moex');
-      if(!ids.length)return;const id=ids[cursor++%ids.length];await Promise.all(subscriptions.filter(s=>s.ids.has(id)).map(s=>refreshContext(s.ctx,id)));
+      if(!ids.length)return;const id=ids[cursor++%ids.length];await Promise.all(subscriptions.filter(s=>s.ids.has(id)).map(s=>refreshInBackground(s.ctx,id)));
     })().catch(e=>{for(const ctx of interested)ctx.errors[ctx.selected]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>{tick=null;});
     return tick;
   },3000):null;

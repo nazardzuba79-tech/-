@@ -26,8 +26,18 @@ export function createStockServer({store,instruments,origin='',readGate=new Read
       if(u.pathname==='/stocks'&&!u.search){return respond(res,await cache.get('catalogue',()=>gate.run(()=>encoded({instruments:instruments.map(i=>({...i,latest:i.enabled&&i.dataRightsStatus==='confirmed'?store.history(i.instrumentId,1).at(-1)??null:null,sessionChange:null}))}))));}
       const id=decodeURIComponent(u.pathname.slice('/stocks/history/'.length));
       if(!u.pathname.startsWith('/stocks/history/')||!allowed.has(id)){res.writeHead(404);return res.end('{}');}
-      if([...u.searchParams.keys()].some(k=>!['limit','before'].includes(k))||[...u.searchParams.keys()].length!==new Set(u.searchParams.keys()).size)throw Error('Invalid query');
-      const limit=Number(u.searchParams.get('limit')??limits.CHART_DEFAULT_LIMIT),before=Number(u.searchParams.get('before')??Number.MAX_SAFE_INTEGER);
+      let limit=limits.CHART_DEFAULT_LIMIT,before=Number.MAX_SAFE_INTEGER;
+      // Do not allocate URLSearchParams, arrays and a Set for every cached
+      // query-free read. Keep the same decoded keys, duplicates and Number
+      // conversion rules when a query is present.
+      if(u.search){
+        let seenLimit=false,seenBefore=false;
+        for(const [key,value]of u.searchParams){
+          if(key==='limit'&&!seenLimit){seenLimit=true;limit=Number(value);}
+          else if(key==='before'&&!seenBefore){seenBefore=true;before=Number(value);}
+          else throw Error('Invalid query');
+        }
+      }
       if(!Number.isSafeInteger(limit)||limit<1||limit>limits.CHART_HARD_LIMIT||!Number.isSafeInteger(before)||before<0)throw Error('Invalid range');
       if(!allowed.get(id).enabled||allowed.get(id).dataRightsStatus!=='confirmed')return res.end('{"candles":[],"next":null}');
       const key=`${id}:${limit}:${before}`;
@@ -35,12 +45,19 @@ export function createStockServer({store,instruments,origin='',readGate=new Read
       // New keys still enter the bounded gate BEFORE growing the pending map.
       const hit=cached(key);
       let page;
-      if(hit){profile?.count('cacheHits',1);page=await hit.value;}
+      if(hit){
+        profile?.count('cacheHits',1);
+        // A completed encoded page can be sent in this HTTP turn. Only
+        // singleflight followers need to suspend for the in-flight loader.
+        page=hit.value instanceof Promise?await hit.value:hit.value;
+      }
       else{
         profile?.count('cacheMisses',1);
         const latestKey=`${id}:${limit}:${Number.MAX_SAFE_INTEGER}`;
         const latestHit=cached(latestKey);
-        const latest=await (latestHit?latestHit.value:gate.run(()=>cache.get(latestKey,()=>loadPage(id,limit,Number.MAX_SAFE_INTEGER))));
+        const latest=latestHit
+          ? (latestHit.value instanceof Promise?await latestHit.value:latestHit.value)
+          : await gate.run(()=>cache.get(latestKey,()=>loadPage(id,limit,Number.MAX_SAFE_INTEGER)));
         // Reuse only a proven equivalent range, never round a client timestamp
         // or assume exchange/session alignment. Historical pagination stays exact.
         page=before>latest.latestTime?latest:await gate.run(()=>cache.get(key,()=>loadPage(id,limit,before)));
@@ -52,7 +69,10 @@ export function createStockServer({store,instruments,origin='',readGate=new Read
   // previously caused TCP drops at 50/100 readers before ReadGate could run.
   // Keep a bounded transport while retaining 2 DB reads + 8 pending, CPU/RAM,
   // cache bytes, upstream concurrency, response size and every benchmark limit.
-  server.maxConnections=128;server.requestTimeout=10000;server.headersTimeout=10000;server.keepAliveTimeout=2000;server.timeout=10000;
+  // Fetch clients reserve 2s from the advertised keep-alive interval. A 2s
+  // advertisement therefore forced a new TCP connection for every read.
+  // Retain the same socket cap and request deadlines; allow idle reuse only.
+  server.maxConnections=128;server.requestTimeout=10000;server.headersTimeout=10000;server.keepAliveTimeout=5000;server.timeout=10000;
   server.stockCache=cache;
   server.on('timeout',socket=>socket.destroy());server.on('close',()=>gate.close());return server;
 }

@@ -31,14 +31,19 @@ export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, di
   sql('configure','sqlExecCalls',()=>db.exec('PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA busy_timeout=1000;'));
   sql('configure','sqlExecCalls',()=>db.exec('CREATE TABLE IF NOT EXISTS paper_accounts (id TEXT PRIMARY KEY, ledger TEXT NOT NULL) STRICT'));
   const read = db.prepare('SELECT ledger FROM paper_accounts WHERE id=?');
+  const exists = db.prepare('SELECT 1 FROM paper_accounts WHERE id=?');
   const insert = db.prepare('INSERT OR IGNORE INTO paper_accounts(id,ledger) VALUES (?,?)');
   const update = db.prepare('UPDATE paper_accounts SET ledger=? WHERE id=?');
   const load = id => { const row = sql('read','sqlReadCalls',()=>read.get(id)); check(row, 'ACCOUNT_NOT_FOUND'); const state = JSON.parse(row.ledger); validate(state); return state; };
   return {
     forPrincipal(principal) {
       const id = accountId(principal);
-      const initial=JSON.stringify(createState(now()));
-      const created = sql('write','sqlWriteCalls',()=>insert.run(id,initial)).changes === 1;
+      // Reopening an existing owner must not acquire SQLite's writer lock merely
+      // to ignore an INSERT. A concurrent writer can coexist with this read.
+      // Missing owners still receive their own FULL durable INSERT before ACK;
+      // INSERT OR IGNORE retains correctness if another process creates first.
+      const present=sql('exists','sqlReadCalls',()=>exists.get(id));
+      const created = !present && sql('write','sqlWriteCalls',()=>insert.run(id,JSON.stringify(createState(now())))).changes === 1;
       return {
         id, created,
         readState: () => load(id),

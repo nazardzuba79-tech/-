@@ -25,7 +25,7 @@ jobs:
       - name: Build exact before and after fixtures without external services
         run: |
           mkdir -p "$RUNNER_TEMP/profile-before" .ci-output/stock-performance
-          git archive f81f404269bfe4b93c19443ce7fc8b881756a366 services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
+          git archive 86b4f412c8e9bff26fb6e7ab4a588e95fa26a9ce services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
           cp services/stocks/realistic* services/stocks/profile* "$RUNNER_TEMP/profile-before/services/stocks/"
           cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/profile-before/services/stocks/"
           docker build -t voltex-realistic-before -f "$RUNNER_TEMP/profile-before/services/stocks/realistic.Dockerfile" "$RUNNER_TEMP/profile-before"
@@ -55,7 +55,7 @@ jobs:
         if: matrix.io == 'bounded'
         run: |
           node services/stocks/profile-stages.mjs > .ci-output/stock-performance/stages.json
-          node --test services/stocks/realistic.test.mjs services/stocks/realistic-provider-fixture.test.mjs services/stocks/profile-sqlite-io.test.mjs services/stocks/review-evidence.test.mjs
+          STOCKS_MARKET_BUDGET_REPORT=.ci-output/stock-performance/market-budget.json node --test services/stocks/realistic.test.mjs services/stocks/realistic-provider-fixture.test.mjs services/stocks/profile-sqlite-io.test.mjs services/stocks/review-evidence.test.mjs services/stocks/server.test.mjs services/stocks-global/market-budget.test.mjs
           STOCK_PROFILE_MODULE_ROOT="$RUNNER_TEMP/profile-before/services/stocks" STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-before node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-before.json
           STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after.json
           STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after-stages node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after-stages.json
@@ -110,7 +110,7 @@ jobs:
         with:
           node-version: '22'
       - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
-        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/refresh-coalescing.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate
