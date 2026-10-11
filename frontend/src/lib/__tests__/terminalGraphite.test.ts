@@ -85,7 +85,8 @@ describe('chart settings', () => {
     expect(page).toContain('positionLines={chartPositionLines} chartSettings foldHeading={false} />');
     const chart = read('frontend/src/components/PriceChart.tsx');
     expect(chart).toContain("aria-label={t('chart.settings.open')}");
-    expect(chart).toContain('{settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} />}');
+    // 2026-10-10 (Issue #502): the dialog edits this chart's own market's indicator list (Spot and Futures are stored apart).
+    expect(chart).toContain('{settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} market={market} />}');
     expect(chart).toContain("fontFamily: token('--voltex-chart-font', 'Inter, Arial, sans-serif')");
     // Volume in its own strip under the candles, as Binance draws it (owner, 2026-09-30).
     expect(chart).toContain('const volumePane = s.volume ? 1 : 0;');

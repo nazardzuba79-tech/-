@@ -358,7 +358,12 @@ describe('translation integrity', () => {
           // Mobile client audit (2026-10-09): the Spot/CFD terminal's third phone
           // tab reads «Ордера» instead of the wrapping «Открытые ордера»;
           // `git diff --numstat` over the locales reports `1 0` per language.
-          'trade.mobileTabOrders'];
+          'trade.mobileTabOrders',
+          // Desktop Futures chart indicator catalogue (Issue #502, 2026-10-10):
+          // `git diff --numstat` over the locales reports `12 0` per language
+          // for these names; the settings dialog's `chart.settings.*` keys are
+          // already additive below.
+          ...['sma', 'ema', 'wma', 'vwap', 'atr', 'stochastic', 'stochrsi', 'obv', 'adx', 'supertrend', 'cci', 'williams'].map(name => `chart.indicator.${name}`)];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

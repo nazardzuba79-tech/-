@@ -46,7 +46,7 @@ const selectors = { header: '.global-header', ticker: '.ticker-bar', chart: '.ch
         return { ...parts, tabs, overflow:document.documentElement.scrollWidth-innerWidth };
       }, selectors);
       const near = (a,b,why) => assert.ok(Math.abs(a-b)<1.5, `${width}: ${why}: ${a} vs ${b}`);
-      near(geometry.header.height,40,'40px global header');
+      near(geometry.header.height,48,'48px global header (Bybit header above Figma 19:103; owner 2026-10-10)');
       near(geometry.ticker.height,48,'48px instrument bar');
       near(geometry.bottom.height,160,'160px empty account panel');
       near(geometry.book.width,286,'Figma orderbook width');

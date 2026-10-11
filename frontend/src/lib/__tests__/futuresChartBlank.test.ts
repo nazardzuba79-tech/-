@@ -105,6 +105,7 @@ function mount(props: Record<string, unknown>) {
     if (name === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (name === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (name === '../lib/chartSettings') return require('../chartSettings');
+    if (name === '../lib/chartIndicators') return require('../chartIndicators');
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (c: unknown) => c };
     if (name.endsWith('.css')) return {};
