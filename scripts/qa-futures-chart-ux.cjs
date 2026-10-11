@@ -167,8 +167,10 @@ const TIME_PIXELS = SCALE_PIXELS('time');
       const toggleStyle = await toggle.evaluate(el => { const c = getComputedStyle(el); return { color: c.color, background: c.backgroundColor, border: c.borderRightColor }; });
       item.rail = { width: rail.width, toggle: toggleBox, toggleStyle };
       ok(`${width}: rail is 56px wide (${rail.width})`, Math.abs(rail.width - 56) < 1);
-      ok(`${width}: collapse handle is at least 22×48 (${toggleBox.width}×${toggleBox.height})`, toggleBox.width >= 22 && toggleBox.height >= 48);
-      ok(`${width}: handle is white on a lifted surface`, toggleStyle.color === 'rgb(255, 255, 255)');
+      // Owner 2026-10-11: «скрити панель не має бути таким великим … як у байбіт» —
+      // Bybit's light 10×25px pill with a dark chevron replaces the 22×48 tab of #504.
+      ok(`${width}: collapse handle is Bybit's small pill (${toggleBox.width}×${toggleBox.height})`, toggleBox.width >= 8 && toggleBox.width <= 14 && toggleBox.height >= 22 && toggleBox.height <= 30);
+      ok(`${width}: handle is a light pill with a dark chevron (${toggleStyle.background} / ${toggleStyle.color})`, toggleStyle.background === 'rgb(174, 176, 181)' && toggleStyle.color === 'rgb(38, 41, 47)');
       const hit = await page.evaluate(() => { const el = document.querySelector('.drawing-rail-toggle'); const r = el.getBoundingClientRect(); const probe = document.elementFromPoint(r.right + 12, r.top + r.height / 2); return probe === el || el.contains(probe); });
       ok(`${width}: the handle's hit area reaches 12px past its edge`, hit);
       const plotBefore = (await page.locator('.chart-view .tv-lightweight-charts').boundingBox()).width;
@@ -184,8 +186,10 @@ const TIME_PIXELS = SCALE_PIXELS('time');
       ok(`${width}: Space expands it again`, (await page.locator('.drawing-rail-toggle').getAttribute('aria-expanded')) === 'true' && (await page.locator('.drawing-rail').isVisible()));
       const chart = await page.locator('.chart-area').boundingBox(), book = await page.locator('.orderbook-area').boundingBox(), form = await page.locator('.order-form-area').boundingBox();
       item.geometry = { chart, book, form };
-      const height48 = ({1366:468,1440:600,1707:600,1920:780})[width];
-      if (height48 !== undefined) ok(`${width}: combined 48px header preserves chart height ${height48}px (actual ${chart.height})`, Math.abs(chart.height - height48) <= 1);
+      // 48px header (#503) and the 56px pair row (2026-10-11; 52px on the 768px-tall case):
+      // 1366x768 468 -> 464, others 600/600/780 -> 592/592/772.
+      const height48 = ({1366:464,1440:592,1707:592,1920:772})[width];
+      if (height48 !== undefined) ok(`${width}: 48px header and Bybit pair row leave chart height ${height48}px (actual ${chart.height})`, Math.abs(chart.height - height48) <= 1);
       ok(`${width}: #494 geometry kept — book 286, ticket 300, chart beside the book`, Math.abs(book.width - 286) < 1.5 && Math.abs(form.width - 300) < 1.5 && Math.abs(chart.height - book.height) < 1.5);
       await shot('final');
       // Clean this context's storage for the next width: each context is new anyway.

@@ -58,6 +58,9 @@
   #archive-terminal-preview.futures-terminal > :is(.global-header) {
     --exchange-header-height:48px; height:48px; min-height:48px; flex:0 0 48px; padding-block:0; padding-inline:16px;
     background:#17181e; border-bottom:0; font-family:var(--font-family);
+    /* 2026-10-11: a 1px rule closes the header above the 4px gutter, so it no
+       longer melts into the instrument bar (inset: the 48px box is unchanged). */
+    box-shadow:inset 0 -1px 0 #2a2b31;
   }
   #archive-terminal-preview.futures-terminal :is(.brand-separator) { display:none; }
   #archive-terminal-preview.futures-terminal :is(.header-brand) { margin-right:12px; }

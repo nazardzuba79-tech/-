@@ -644,6 +644,7 @@ export function PriceChart({
     const borderColor = s.scaleBorderColor ?? base?.borderColor ?? '#292c34';
     const STYLE = { solid: LineStyle.Solid, dashed: LineStyle.Dashed, dotted: LineStyle.Dotted } as const;
     const gridColor = rgbaOf(s.gridColor, s.gridOpacity);
+    const desktopFutures = paneSupport && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 901px)').matches;
     chart.applyOptions({
       layout: {
         background: { type: ColorType.Solid, color: s.background ?? base?.background ?? '#101014' },
@@ -660,6 +661,10 @@ export function PriceChart({
       },
       rightPriceScale: {
         textColor: s.priceAxisText ?? textColor,
+        // Desktop Futures (owner, 2026-10-11: text must not look tucked under the
+        // panel above): the top tick label used to be painted half under the
+        // toolbar edge. Lightweight Charts drops a corner label it cannot show whole.
+        entireTextOnly: desktopFutures,
         borderVisible: s.scaleBorders, borderColor, ticksVisible: s.scaleTicks, visible: s.priceScaleVisible,
         mode: priceScaleMode === 'logarithmic' || s.scaleMode === 'logarithmic' ? PriceScaleMode.Logarithmic : PriceScaleMode.Normal,
       },

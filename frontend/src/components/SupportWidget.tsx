@@ -194,6 +194,18 @@ export function SupportWidget() {
         </form>
       </> : <form className="support-form" onSubmit={handleSubmit} noValidate>
         <div className="support-form-body">
+          <section className="support-telegram-option" aria-labelledby="support-telegram-title">
+            <div className="support-telegram-top">
+              <span className="support-telegram-icon" aria-hidden="true"><Send size={19} strokeWidth={1.8} /></span>
+              <div className="support-telegram-description">
+                <strong id="support-telegram-title">Поддержка в Telegram</strong>
+              </div>
+            </div>
+            <a className="support-telegram-link" href="https://t.me/Voltex_SupportBot" target="_blank" rel="noopener noreferrer">
+              Написать в Telegram <ArrowUpRight size={16} aria-hidden="true" />
+            </a>
+          </section>
+          <div className="support-contact-separator"><span>Или напишите через сайт</span></div>
           <p className="support-contact-hint">{handoffNotice ? copy.handoff : copy.contactHint}</p>
           <fieldset className="support-topics" disabled={sending}><legend>{RU['support.formSubject']}</legend><div className="support-topic-grid">
             {SUPPORT_SUBJECTS.map(value => <label key={value} className="support-topic"><input type="radio" name="support-subject" value={value} checked={subject === value} onChange={() => { setSubject(value); edited(); }} /><span>{RU[`support.subject.${value}`]}</span></label>)}

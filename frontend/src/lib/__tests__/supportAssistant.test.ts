@@ -92,6 +92,15 @@ it('describes the manual OTC support enquiry without promising a reservation', (
   expect(answer).not.toMatch(/Резерв создаётся|приватной переписке по заявке/);
 });
 
+it('keeps FAQ answers direct, without unsolicited canned warnings or card solicitation copy', () => {
+  for (const id of Object.keys(copy.questions) as (keyof typeof copy.questions)[]) {
+    expect(assistantAnswer(id)).not.toMatch(/прошлые результаты не гарантируют|показатели стратегии не гарантируют|риском потери средств|индивидуальные условия уточните|не переводите средства в расчёте на карту|сроки выпуска.{0,100}тарифы и лимиты|полный номер карты.{0,50}CVV|коды из SMS/i);
+  }
+  // Important functional steps and a dedicated secret-input guard are retained.
+  expect(assistantAnswer('copy_trading_how')).toContain('профиль трейдера');
+  expect(copy.sensitive).toContain('пароли');
+});
+
 it('bounds memory and has no storage, network, timers, model or dynamic actions', () => {
   let turns: AssistantTurn[] = [];
   for (let id = 0; id < 50; id++) turns = appendAssistantTurn(turns, { id, question: 'test', intent: null });
