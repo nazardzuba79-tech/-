@@ -305,6 +305,9 @@ function walk(dir, files = []) {
       const sb = await send.boundingBox();
       assert.ok(sb && sb.y >= 0 && sb.y + sb.height <= (navBox ? navBox.y : vh) + 1, `@${width} «Отправить» not visible`);
       // Telegram channel: shown first in «Специалист», opens @Voltex_SupportBot in a new tab.
+      // The Telegram card intentionally contains only a heading and an action.
+      const telegramCardCopy = (await panel.locator('.support-telegram-option').innerText()).replace(/\s+/g, ' ').trim();
+      assert.equal(telegramCardCopy, 'Поддержка в Telegram Написать в Telegram', `@${width} Telegram has redundant instructions`);
       const tgLink = panel.getByRole('link', { name: /Написать в Telegram/ });
       assert.equal(await tgLink.getAttribute('href'), 'https://t.me/Voltex_SupportBot');
       assert.equal(await tgLink.getAttribute('target'), '_blank');
