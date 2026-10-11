@@ -93,3 +93,67 @@
     line-height: 12px;
   }
 }
+
+/* Top zone, owner request 2026-10-11 («пустота над графиком», «текст залезает
+ * под панель», «разделение верхних блоков»). Measured on main 9226c30d at
+ * 1366/1440/1548/1707/1920; the outer rows already match Figma 19:103, so only
+ * the placement inside them changes, plus 4px from the «График» row.
+ */
+@media (min-width: 901px) {
+  /* The bar inherited a second, empty grid row and a 16px row gap from the
+     shared ticker: its content was centred in the top 43px of 48, so the stat
+     labels began 2.5px under the edge, right below the header. One row now. */
+  #archive-terminal-preview.futures-terminal .ticker-bar {
+    grid-template-rows: minmax(0, 1fr);
+    row-gap: 0;
+    /* The same 1px rule as the header closes the bar above the workspace. */
+    box-shadow: inset 0 -1px 0 #222227;
+  }
+
+  /* Figma 19:103 «Vertical Divider»: 1 x 32px #222227 between the pair and its
+     price, centred in the 16px gap. The market chooser is positioned from the
+     main grid, so positioning the cluster moves nothing else. */
+  #archive-terminal-preview.futures-terminal .ticker-bar .pair-cluster {
+    position: relative;
+  }
+  #archive-terminal-preview.futures-terminal .ticker-bar .pair-cluster::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -8px;
+    width: 1px;
+    height: 32px;
+    transform: translateY(-50%);
+    background: #222227;
+    pointer-events: none;
+  }
+
+  /* «График»: the label stood 8px above an 8px pad and its underline, a loose
+     band over the toolbar. Figma draws the 2px underline straight under the
+     22px label; the row's idle top pad goes from 16px to 12px, which gives the
+     plot 4px back. */
+  #archive-terminal-preview.futures-terminal .terminal-chart-heading {
+    height: 36px;
+    min-height: 36px;
+    padding-top: 12px;
+  }
+  #archive-terminal-preview.futures-terminal .terminal-chart-heading > span {
+    height: 22px;
+    padding-bottom: 0;
+  }
+  #archive-terminal-preview.futures-terminal .terminal-chart-heading > div {
+    height: 22px;
+  }
+
+  /* Indicator names read as lines under «BTC/USDT · 1h», as Figma and Bybit
+     print them, instead of a boxed chip 32px down the plot. */
+  #archive-terminal-preview.futures-terminal .terminal-chart-shell .voltex-indicator-legend {
+    top: 28px !important;
+    left: 12px !important;
+    gap: 2px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+}
