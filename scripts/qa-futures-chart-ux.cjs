@@ -167,8 +167,10 @@ const TIME_PIXELS = SCALE_PIXELS('time');
       const toggleStyle = await toggle.evaluate(el => { const c = getComputedStyle(el); return { color: c.color, background: c.backgroundColor, border: c.borderRightColor }; });
       item.rail = { width: rail.width, toggle: toggleBox, toggleStyle };
       ok(`${width}: rail is 56px wide (${rail.width})`, Math.abs(rail.width - 56) < 1);
-      ok(`${width}: collapse handle is at least 22×48 (${toggleBox.width}×${toggleBox.height})`, toggleBox.width >= 22 && toggleBox.height >= 48);
-      ok(`${width}: handle is white on a lifted surface`, toggleStyle.color === 'rgb(255, 255, 255)');
+      // Owner 2026-10-11: «скрити панель не має бути таким великим … як у байбіт» —
+      // Bybit's light 10×25px pill with a dark chevron replaces the 22×48 tab of #504.
+      ok(`${width}: collapse handle is Bybit's small pill (${toggleBox.width}×${toggleBox.height})`, toggleBox.width >= 8 && toggleBox.width <= 14 && toggleBox.height >= 22 && toggleBox.height <= 30);
+      ok(`${width}: handle is a light pill with a dark chevron (${toggleStyle.background} / ${toggleStyle.color})`, toggleStyle.background === 'rgb(174, 176, 181)' && toggleStyle.color === 'rgb(38, 41, 47)');
       const hit = await page.evaluate(() => { const el = document.querySelector('.drawing-rail-toggle'); const r = el.getBoundingClientRect(); const probe = document.elementFromPoint(r.right + 12, r.top + r.height / 2); return probe === el || el.contains(probe); });
       ok(`${width}: the handle's hit area reaches 12px past its edge`, hit);
       const plotBefore = (await page.locator('.chart-view .tv-lightweight-charts').boundingBox()).width;

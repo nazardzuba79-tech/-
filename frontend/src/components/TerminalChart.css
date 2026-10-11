@@ -223,6 +223,52 @@
   border-left: 0;
   border-radius: 0 7px 7px 0;
 }
+/* BYBIT'S HANDLE (owner 2026-10-11: «скрити панель не має бути таким
+   великим … як у байбіт»). Measured on the owner's Bybit capture: a light
+   10×25px pill (#aeb0b5) with a dark «‹», centred on the rail's edge. It
+   replaces the 22×48 dark tab with a gold edge from #504 on desktop only;
+   the phone strip below keeps its own column. The transparent halo keeps a
+   26×42px target, Enter/Space, aria-expanded and the focus ring are the
+   button's own, and z 51 still clears the pane-separator handles. */
+@media (min-width: 901px) {
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle,
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
+    width: 10px;
+    min-width: 10px;
+    height: 26px;
+    min-height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: #aeb0b5;
+    color: #26292f;
+    box-shadow: none;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle {
+    left: 100%;
+    transform: translate(-50%, -50%);
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
+    left: 2px;
+    transform: translateY(-50%);
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle:hover {
+    background: #c9cbd0;
+    color: #17181e;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle::before {
+    inset: -8px -14px -8px -2px;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle::after {
+    content: none;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle svg {
+    width: 10px;
+    height: 10px;
+    stroke-width: 3;
+  }
+}
+
 /* Below 900px the rail is a horizontal strip and the toggle is a column at
    its end — the existing adaptive geometry, which this change leaves alone
    rather than forcing the desktop's vertical shape onto a phone. */
