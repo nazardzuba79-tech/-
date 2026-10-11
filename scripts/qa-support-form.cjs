@@ -304,6 +304,15 @@ function walk(dir, files = []) {
       const send = panel.getByRole('button', { name: 'Отправить специалисту', exact: true });
       const sb = await send.boundingBox();
       assert.ok(sb && sb.y >= 0 && sb.y + sb.height <= (navBox ? navBox.y : vh) + 1, `@${width} «Отправить» not visible`);
+      // Telegram channel: shown first in «Специалист», opens @Voltex_SupportBot in a new tab.
+      const tgLink = panel.getByRole('link', { name: /Написать в Telegram/ });
+      assert.equal(await tgLink.getAttribute('href'), 'https://t.me/Voltex_SupportBot');
+      assert.equal(await tgLink.getAttribute('target'), '_blank');
+      assert.match(await tgLink.getAttribute('rel'), /noopener/);
+      const tb = await tgLink.boundingBox();
+      assert.ok(tb && tb.x >= pb.x && tb.x + tb.width <= pb.x + pb.width + 1 && tb.y >= pb.y && tb.height >= 44, `@${width} Telegram button clipped or too small`);
+      assert.ok(await panel.getByText('Или напишите через сайт').isVisible(), `@${width} site-form separator missing`);
+      await page.screenshot({ path: path.join(out, `telegram-${width}.png`) });
       // A long message scrolls inside the textarea; the page does not widen.
       await panel.getByLabel('Сообщение').fill(Array.from({ length: 60 }, (_, i) => `Строка ${i + 1}`).join('\n'));
       const ta = await panel.getByLabel('Сообщение').evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight }));
@@ -333,7 +342,7 @@ function walk(dir, files = []) {
       assert.deepEqual(errors, []);
       await context.close();
     }
-    step('layout: FAQ/form at 320/360/390/430/1366/1440/1920; keyboard-sized mobile viewport; textarea scrolls; no overflow');
+    step('layout: FAQ/form + Telegram button at 320/360/390/430/1366/1440/1920; keyboard-sized mobile viewport; textarea scrolls; no overflow');
 
     report.totals = { workerPosts: supportPosts(), emails: mail.sent.length, supportApiRequests: apiLog.filter((r) => /support/.test(r.path)).length };
     assert.equal(report.totals.supportApiRequests, report.totals.workerPosts + 1, 'one authenticated relay per POST plus rejected guest');
