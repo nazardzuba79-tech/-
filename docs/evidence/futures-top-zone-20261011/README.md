@@ -42,7 +42,14 @@ Nothing else changes: header 48, pair row 48, 4px gutters, book 286, ticket 300,
 
 At 110% and 125% on 1366/1440 the statistics row was already wider than the bar and scrolls sideways inside it (122/55px and 271/212px); unchanged and identical on main. Values are never truncated.
 
-Repository guards and tests on this branch: see the Draft PR and `docs/AI_HANDOFF.md` for the exact results on the head SHA.
+Repository checks on the implementation commit `7a46c644` (build of the same sources), guards with `LANG=en_US.UTF-8`:
+
+- `tsc -b && vite build` — PASS.
+- Jest `frontend/src` — 236/236 suites, 4082/4082 tests PASS (no test changed).
+- `scripts/qa-futures-proportions.cjs --widths 1920,1707,1440,1366,390` — 0 violations.
+- `scripts/qa-futures-figma-desktop.cjs` — 4/4 (header 48, pair row 48, book 286, ticket 300, chart = book height, gutters 4).
+- `scripts/qa-futures-chart-ux.cjs` — 129 assertions, 0 failed (indicator catalogue, white price scale, settings persistence, rail, #494 geometry).
+- `scripts/qa-spot-cfd-terminal.cjs` — PASS.
 
 ## Evidence
 
