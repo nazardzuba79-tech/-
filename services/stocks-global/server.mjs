@@ -51,17 +51,17 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     const pending=hub.quote(id).then(value=>{recent.set(id,{at:now(),value});while(recent.size>80)recent.delete(recent.keys().next().value);return value;}).finally(()=>flights.delete(id));
     flights.set(id,pending);return pending;
   };
-  async function refreshContext(ctx,id=ctx.selected){
+  async function refreshContext(ctx,id=ctx.selected,background=false){
     if(closing)return;
-    try{const q=await quote(id),started=performance.now();const committed=await ctx.store.execute(accounts?'observe':'quote',q);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;ctx.observed.add(id);delete ctx.errors[id];return committed.snapshot;}
-    catch(e){ctx.observed.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;await ctx.store.execute(accounts?'observeFailed':'quoteFailed',{id});}
+    try{const q=await quote(id),started=performance.now();const committed=await ctx.store.execute(accounts?(background?'observeBackground':'observe'):'quote',q);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;ctx.observed.add(id);delete ctx.errors[id];return committed.snapshot;}
+    catch(e){ctx.observed.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;await ctx.store.execute(accounts?(background?'observeFailedBackground':'observeFailed'):'quoteFailed',{id});}
   }
   const refreshInBackground=(ctx,id=ctx.selected)=>{
     let work=backgroundFlights.get(ctx);if(!work){work=new Map();backgroundFlights.set(ctx,work);}
     // Only background observations share in-flight work. Explicit refreshes and
     // financial commands retain their own ordered execution and acknowledgements.
     if(work.has(id)){hub.metrics.accountQuoteCoalesced=(hub.metrics.accountQuoteCoalesced||0)+1;return work.get(id);}
-    const pending=refreshContext(ctx,id).catch(e=>{ctx.errors[id]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>{work.delete(id);refreshTasks.delete(pending);});
+    const pending=refreshContext(ctx,id,true).catch(e=>{ctx.errors[id]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>{work.delete(id);refreshTasks.delete(pending);});
     work.set(id,pending);refreshTasks.add(pending);return pending;
   };
   const send=(res,code,body,headers={})=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers});res.end(JSON.stringify(body));};

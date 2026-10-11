@@ -74,16 +74,22 @@ parentPort.on('message',async message=>{
     else if(type==='read')value=store.read();
     else if(type==='readView')value=observations.view(store.id,store.readState());
     else if(type==='interests')value=executeAccountCommand(store.readState(),type,input,now());
-    else if(type==='observe'||type==='observeFailed'){
-      const state=store.readState(),id=type==='observe'?input?.instrumentId:input?.id;
+    else if(['observe','observeFailed','observeBackground','observeFailedBackground'].includes(type)){
+      const background=type==='observeBackground'||type==='observeFailedBackground';
+      const received=type==='observe'||type==='observeBackground';
+      const state=store.readState(),id=received?input?.instrumentId:input?.id;
       const durable=observations.hasOrders(state,id);
       let observation;
-      if(type==='observe')observation=observations.observe(store.id,state,input);
+      if(received)observation=observations.observe(store.id,state,input);
       else observations.failed(store.id,state,id);
       if(durable){
-        try{value=await mutate((s,t)=>type==='observe'?(observation.quote?executeAccountCommand(s,'quote',observation.quote,t):undefined):executeAccountCommand(s,'quoteFailed',{id},t),id,true);}
+        try{value=await mutate((s,t)=>received?(observation.quote?executeAccountCommand(s,'quote',observation.quote,t):undefined):executeAccountCommand(s,'quoteFailed',{id},t),id,!background);}
         catch(error){observations.failed(store.id,state,id);throw error;}
-      }else value={snapshot:observations.view(store.id,state)};
+      }else value=background?{}:{snapshot:observations.view(store.id,state)};
+      // Background polling needs the acknowledged outcome, not an account view.
+      // Active orders still commit and synchronize the same durable state first;
+      // explicit refresh/order responses keep their complete projected snapshot.
+      if(background)value={};
       observations.count(durable);value.observation={durable,mode:durable?'committed':'volatile'};
     }
     else if(type==='submitObserved')value=await mutate((s,t)=>observations.submit(store.id,s,input,t),input?.order?.instrumentId,true);

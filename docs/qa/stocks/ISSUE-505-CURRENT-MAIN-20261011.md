@@ -57,3 +57,12 @@ Full exact-head CI and original resource results are pending for the commit carr
 
 Current Hetzner capacity/headroom is unconfirmed: no server access or load was performed. MOEX validation and Binance/Bybit commercial data permission remain release blockers. Stocks must stay OFF outside the isolated review environment.
 
+
+## Background observation response follow-up
+
+Background refresh now requests only observation confirmation metadata from the account worker. Previously it built and transferred a full account snapshot that the background caller discarded. Explicit refresh, read, submit and cancel responses retain their full snapshots. Limit matching, FULL durable transactions, observation capacity synchronization, authenticated account mapping and post-COMMIT UNKNOWN handling are unchanged. Both background commands remain mutation-classified because an observation can fill a pending Limit.
+
+Nine regression cases cover explicit/background state equivalence, partial and full position results, reservations, same-event capacity, Alice/Bob isolation, source errors, stale/closed/invalid observations, commit-before-ack, rollback, and crash/replay. The complete Stocks suite now contains 191 tests, including the three CommonJS reader-process tests.
+
+Three rotated local fixture pairs for the actual short-load shape (50 accounts, five observations each, 1,500 updates) measured mean process CPU 307.67 -> 177.00 ms and wall time 285.90 -> 162.97 ms. A separately measured V8-encoded complete worker packet proxy fell from 2,904.8 -> 715 bytes. SQL reads and message count were unchanged; all final projected and durable ledger hashes matched. A retained-history case also improved. These are unrestricted Windows micro-measurements, not physical IPC byte counts, Linux capacity acceptance or production proof. Original resource/crypto tests must be rerun on the resulting exact head.
+

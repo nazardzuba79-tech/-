@@ -6265,3 +6265,11 @@ Read-only Hetzner hardware/passive aggregate checks confirmed 2 vCPU / 3.730 GiB
 - Batch only consecutive already-queued account registrations, maximum32, with FULL/DELETE BEGIN IMMEDIATE/COMMIT before every ACK. Financial/read commands remain FIFO barriers; limits count each member; expired requests are rejected before dispatch; unknown commit/rollback outcomes fence the worker. Existing ledgers, observation capacity, financial engine and actual markets are unchanged.
 - Added15 regression cases; local full Stocks182/182PASS after one preserved random fetch bad-port failure on the initial unchanged run. Independent safety review found no actionable defect. Original resource scripts, three repeats and deadlines remain intact. Smaller SQLite page sizes were measured and rejected pending physical-I/O proof; no DB layout change.
 - Profile build actually archives86b4; fixed the artifact README's missing baseline environment label (previously printed f81 fallback). Exact new-head CI, original bounded5/20/50, strict50/100 and shared-crypto+5% acceptance remain pending. Draft497 stays review-only; no merge, deploy or production access.
+
+### Stocks #497 / #505 — background observation response follow-up (2026-10-11)
+
+- Continue the existing Stocks integration branch; no merge/deploy or production access.
+- Drop only the unused full snapshot from background observation worker responses. Explicit refresh/orders remain unchanged; active Limit observations still commit and synchronize capacity before acknowledgement.
+- New safety regressions cover equivalent final state, isolation, stale/invalid/closed quotes, durable ACK and uncertain outcomes. New test is included in existing CI without removing any old test.
+- Local short-load fixture: mean CPU 307.67 -> 177 ms, V8-encoded packet proxy 2904.8 -> 715 bytes; same SQL/message count and ledger hashes. This is not constrained capacity acceptance.
+- Keep the full edeea301 CI evidence, including its failures. Exact new-head original bounded/crypto reruns are required; do not treat a green artifact-collection job as workload PASS.
