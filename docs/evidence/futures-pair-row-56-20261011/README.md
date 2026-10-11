@@ -40,3 +40,20 @@ The chart tile loses 8px (4px on screens under 800px tall); book, ticket, bottom
 
 - Bybit / VOLTEX main / this branch at the owner's capture scale: [bybit-vs-voltex-1707.png](bybit-vs-voltex-1707.png)
 - Before/after, top 230px: [1366](pair-row-before-after-1366.png) · [1440](pair-row-before-after-1440.png) · [1707](pair-row-before-after-1707.png) · [1920](pair-row-before-after-1920.png); 2x detail at 1440: [pair-row-detail-2x-1440.png](pair-row-detail-2x-1440.png)
+
+## Verification (implementation commit `78ca1096`, read-only loopback fixture, Playwright Chromium)
+
+| Check | Result |
+| --- | --- |
+| Pair-row text air, 1366–1920 × 90/100/110/125% | 16/16 cases ≥ 5px above and below (main: 4.5px); 56px rows give 7–8.5px |
+| Same in 7 languages (ru, en, zh, es, hi, ja, ko) × 1366/1440/1920 | 21/21 pass |
+| Page horizontal overflow | 0 everywhere |
+| Spot 1440, CFD 1440, Futures 390, Spot 390, Futures 768 vs main | 0 differing pixels each |
+| `tsc -b && vite build` | PASS |
+| Jest `frontend/src` | 236/236 suites, 4082/4082 tests |
+| `qa-futures-figma-desktop.cjs` | 4/4 (56px row, 52px at 1366×768; chart > 60% of the screen; book 286, ticket 300) |
+| `qa-futures-chart-ux.cjs` | 129 assertions, 0 failed |
+| `qa-futures-proportions.cjs --widths 1920,1707,1440,1366,390` | 0 violations (a first run, started while Jest and four other browser jobs shared the machine, timed out clicking the «Фьючерсы» header link on /trade; the standalone rerun on the same build passed) |
+| `qa-spot-cfd-terminal.cjs` | PASS |
+
+At 110–125% on 1366/1440 the statistics row still scrolls sideways inside the bar, as on main; values are never truncated.
