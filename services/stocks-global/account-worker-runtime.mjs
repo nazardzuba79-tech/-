@@ -7,6 +7,7 @@ import { createObservations } from './account-observations.mjs';
 const clock=workerData.clock?new BigInt64Array(workerData.clock):null;
 const now=()=>clock?Number(Atomics.load(clock,0)):Date.now();
 const control=workerData.testControl?new Int32Array(workerData.testControl):null;
+const registrationControl=workerData.registrationControl?new Int32Array(workerData.registrationControl):null;
 const beforeCommit=()=>{
   if(!control)return;
   Atomics.add(control,1,1);Atomics.notify(control,1);
@@ -16,20 +17,50 @@ const beforeCommit=()=>{
   }
   if(Atomics.load(control,4))throw new SimError('ACCOUNT_TEST_COMMIT_FAILURE');
 };
-const repo=openAccounts(workerData.path,{now,diagnostics:workerData.diagnostics,beforeCommit}),handles=new Map();
+const beforeRegistrationCommit=()=>{
+  if(!registrationControl)return;
+  Atomics.add(registrationControl,1,1);Atomics.notify(registrationControl,1);
+  if(Atomics.load(registrationControl,0)){
+    while(!Atomics.load(registrationControl,2))Atomics.wait(registrationControl,2,0);
+    Atomics.store(registrationControl,0,0);
+  }
+  if(Atomics.load(registrationControl,4)===2)process.exit(74);
+  if(Atomics.load(registrationControl,4))throw new SimError('ACCOUNT_TEST_REGISTRATION_COMMIT_FAILURE');
+};
+const repo=openAccounts(workerData.path,{now,diagnostics:workerData.diagnostics,beforeCommit,beforeRegistrationCommit}),handles=new Map();
 const observations=createObservations({now});
 const metrics=()=>({...repo.metrics(),...observations.metrics(),observedAt:Date.now()});
-const get=principal=>{
+const get=(principal,registration)=>{
   const id=accountId(principal);let store=handles.get(id);
-  if(!store){store=repo.forPrincipal(principal);handles.set(id,store);observations.register(id,store.created);while(handles.size>512){const first=handles.keys().next().value;handles.delete(first);observations.forget(first);}}
+  if(!store){store=repo.forPrincipal(principal);handles.set(id,store);observations.register(id,registration?.created??store.created);while(handles.size>512){const first=handles.keys().next().value;handles.delete(first);observations.forget(first);}}
   return store;
 };
 let busy=false;
 parentPort.on('message',async message=>{
   if(message.kind==='close'){check(!busy,'ACCOUNT_BUSY');repo.close();parentPort.postMessage({kind:'closed',metrics:metrics()});parentPort.close();return;}
-  if(message.kind!=='command'||busy){parentPort.postMessage({kind:'fatal'});return;}
+  if(!['command','ensureBatch'].includes(message.kind)||busy){parentPort.postMessage({kind:'fatal'});return;}
   busy=true;
+  let registrationCommitted=false;
   try{
+    if(message.kind==='ensureBatch'){
+      const principals=message.principals;
+      check(Array.isArray(principals)&&principals.length>1&&principals.length<=32,'ACCOUNT_COMMAND_INVALID');
+      // Validate the complete authenticated group before touching SQLite. Cached
+      // owners need no write; all newly funded identities become visible at once.
+      const identities=principals.map(principal=>accountId(principal));
+      const uncached=principals.filter((_,index)=>!handles.has(identities[index]));
+      const result=uncached.length?repo.ensurePrincipals(uncached):{owners:[],committed:false};
+      registrationCommitted=result.committed;
+      if(registrationCommitted&&registrationControl){
+        const outcome=Atomics.load(registrationControl,3);
+        if(outcome===2)throw new SimError('ACCOUNT_OUTCOME_UNKNOWN');
+        if(outcome)process.exit(73);
+      }
+      const registrations=new Map(result.owners.map(owner=>[owner.id,owner]));
+      for(let index=0;index<principals.length;index++)get(principals[index],registrations.get(identities[index]));
+      parentPort.postMessage({kind:'result',requestId:message.requestId,value:{ids:identities},metrics:metrics()});
+      return;
+    }
     const {principal,type,input}=message,store=get(principal);let value,financialCommit=false;
     const mutate=async(fn,id,project=false)=>{
       let committedState,syncId=id;
@@ -63,7 +94,7 @@ parentPort.on('message',async message=>{
       if(outcome)process.exit(73);
     }
     parentPort.postMessage({kind:'result',requestId:message.requestId,value,metrics:metrics()});
-  }catch(error){parentPort.postMessage({kind:'result',requestId:message.requestId,error:error instanceof SimError?error.code:'ACCOUNT_STORAGE_ERROR',metrics:metrics()});}
+  }catch(error){parentPort.postMessage({kind:'result',requestId:message.requestId,error:registrationCommitted?'ACCOUNT_OUTCOME_UNKNOWN':error instanceof SimError?error.code:'ACCOUNT_STORAGE_ERROR',metrics:metrics()});}
   finally{busy=false;}
 });
 parentPort.postMessage({kind:'ready',metrics:metrics()});

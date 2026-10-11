@@ -89,6 +89,8 @@ jobs:
         run: node services/stocks/profile-strict-run.mjs
       - name: Document unchanged criteria and actual measured acceptance
         if: always()
+        env:
+          STOCK_COMPARISON_BASE_SHA: '86b4f412c8e9bff26fb6e7ab4a588e95fa26a9ce'
         run: node services/stocks/review-evidence.mjs .ci-output/stock-performance performance
       - uses: actions/upload-artifact@v4
         if: always()
@@ -110,7 +112,7 @@ jobs:
         with:
           node-version: '22'
       - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
-        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/refresh-coalescing.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-registration-batch.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/refresh-coalescing.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate

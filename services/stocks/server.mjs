@@ -69,10 +69,9 @@ export function createStockServer({store,instruments,origin='',readGate=new Read
   // previously caused TCP drops at 50/100 readers before ReadGate could run.
   // Keep a bounded transport while retaining 2 DB reads + 8 pending, CPU/RAM,
   // cache bytes, upstream concurrency, response size and every benchmark limit.
-  // Fetch clients reserve 2s from the advertised keep-alive interval. A 2s
-  // advertisement therefore forced a new TCP connection for every read.
-  // Retain the same socket cap and request deadlines; allow idle reuse only.
-  server.maxConnections=128;server.requestTimeout=10000;server.headersTimeout=10000;server.keepAliveTimeout=5000;server.timeout=10000;
+  // Retain the established idle policy. A 5s candidate reduced connection
+  // churn, but failed the original constrained reader latency gate.
+  server.maxConnections=128;server.requestTimeout=10000;server.headersTimeout=10000;server.keepAliveTimeout=2000;server.timeout=10000;
   server.stockCache=cache;
   server.on('timeout',socket=>socket.destroy());server.on('close',()=>gate.close());return server;
 }

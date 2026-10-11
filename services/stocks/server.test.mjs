@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connect } from 'node:net';
+import { Agent, get } from 'node:http';
 import { Store } from './core.mjs';
 import { createStockServer } from './server.mjs';
 
@@ -75,19 +76,25 @@ test('cached followers await one encoded page and preserve its exact financial s
   });
 });
 
-test('100 cached fetch readers reuse bounded transport without extra SQL reads',async()=>{
+test('100 cached keep-alive readers retain bounded transport without extra SQL reads',async()=>{
   await fixture(async({store,server,base})=>{
     let connections=0,active=0,peak=0,reads=0;
     const original=store.encodedHistory.bind(store);
     store.encodedHistory=(...args)=>{reads++;return original(...args);};
     server.on('connection',socket=>{connections++;peak=Math.max(peak,++active);socket.on('close',()=>active--);});
-    const wave=()=>Promise.all(Array.from({length:100},async()=>{
-      const response=await fetch(base);assert.equal(response.status,200);return response.text();
-    }));
-    const first=await wave();await new Promise(resolve=>setImmediate(resolve));
-    const second=await wave();assert.deepEqual(second,first);
+    // This transport regression explicitly requests reusable sockets. The
+    // unchanged acceptance generator separately measures default fetch clients.
+    const agent=new Agent({keepAlive:true,maxSockets:100});
+    const wave=()=>Promise.all(Array.from({length:100},()=>new Promise((resolve,reject)=>{
+      get(base,{agent},response=>{let body='';response.setEncoding('utf8');response.on('data',chunk=>body+=chunk);response.on('end',()=>{try{assert.equal(response.statusCode,200);resolve(body);}catch(error){reject(error);}});response.on('error',reject);}).on('error',reject);
+    })));
+    try{
+      const first=await wave();await new Promise(resolve=>setImmediate(resolve));
+      const second=await wave();assert.deepEqual(second,first);
+    }finally{agent.destroy();}
     assert.equal(connections,100);assert.equal(peak,100);assert.equal(reads,1);
     assert.equal(server.maxConnections,128);assert.equal(server.requestTimeout,10000);assert.equal(server.headersTimeout,10000);
+    assert.equal(server.keepAliveTimeout,2000);
   });
 });
 

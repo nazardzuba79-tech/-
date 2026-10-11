@@ -12,7 +12,7 @@ export function accountId(principal) {
   return createHash('sha256').update(JSON.stringify([principal.issuer, principal.subject])).digest('hex');
 }
 
-export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, diagnostics = false } = {}) {
+export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, beforeRegistrationCommit = () => {}, diagnostics = false } = {}) {
   check(path?.endsWith('.sqlite'), 'LOCAL_LEDGER_PATH_REQUIRED');
   mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
@@ -36,6 +36,31 @@ export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, di
   const update = db.prepare('UPDATE paper_accounts SET ledger=? WHERE id=?');
   const load = id => { const row = sql('read','sqlReadCalls',()=>read.get(id)); check(row, 'ACCOUNT_NOT_FOUND'); const state = JSON.parse(row.ledger); validate(state); return state; };
   return {
+    ensurePrincipals(principals) {
+      // Only the worker's already-admitted, consecutive registrations may share
+      // this transaction. Existing ledgers and financial commands are excluded.
+      check(Array.isArray(principals)&&principals.length>0&&principals.length<=32,'ACCOUNT_COMMAND_INVALID');
+      const owners=new Map(principals.map(principal=>{const id=accountId(principal);return[id,{id,created:false}];}));
+      const missing=[...owners.values()].filter(owner=>!sql('exists','sqlReadCalls',()=>exists.get(owner.id)));
+      if(!missing.length)return{owners:[...owners.values()],committed:false};
+      sql('begin','sqlExecCalls',()=>db.exec('BEGIN IMMEDIATE'));
+      let committed=false;
+      try{
+        for(const owner of missing){
+          // Another SQLite writer may have created this identity since SELECT.
+          // Never replace its initial balance, history, revision or reservations.
+          owner.created=sql('write','sqlWriteCalls',()=>insert.run(owner.id,JSON.stringify(createState(now())))).changes===1;
+        }
+        beforeRegistrationCommit();
+        sql('commit','sqlExecCalls',()=>db.exec('COMMIT'));committed=true;
+        return{owners:[...owners.values()],committed:true};
+      }catch(error){
+        if(committed)throw new SimError('ACCOUNT_OUTCOME_UNKNOWN');
+        try{sql('rollback','sqlExecCalls',()=>db.exec('ROLLBACK'));}
+        catch{throw new SimError('ACCOUNT_OUTCOME_UNKNOWN');}
+        throw error;
+      }
+    },
     forPrincipal(principal) {
       const id = accountId(principal);
       // Reopening an existing owner must not acquire SQLite's writer lock merely
