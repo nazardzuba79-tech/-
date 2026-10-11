@@ -6060,3 +6060,10 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
 - Preserved: #508 top-zone fixes (single-row centring, separators, «График» row, legend, entireTextOnly), header 48, gutters 4, book 286, ticket 300, account 160/200/44, Spot/CFD/mobile (pixel-identical to main).
 - Verified on `78ca1096`: build PASS; Jest 236/236 suites, 4082/4082 tests; zoom 16/16 and 7 languages 21/21 (text air ≥ 5px); Figma 4/4; chart UX 129/0; Spot/CFD PASS; proportions 0 violations on a standalone run (an earlier run under heavy concurrent load timed out on the /trade → «Фьючерсы» navigation click, unrelated to the bar).
 - Cost: chart tile −8px (−4px under 800px tall). Unresolved: Russian labels still wrap at 1366/1440; stats row scrolls sideways at 110–125% on 1366/1440 (unchanged from main). Draft only; no merge, no deploy.
+
+## Claude — 2026-10-11 — Futures pair-row follow-up: no divider, Bybit-size rail handle (same Draft PR #511)
+
+- Owner on the live /futures: «тут перегородки не має бути, а скрити панель не має бути таким великим … як у байбіт». Commit `faa74742` on `claude/futures-pair-row-56-20261011`.
+- Removed the #508 pair/price divider (`FuturesFigmaDesktop.css`). Rail collapse handle (`TerminalChart.css`, ≥901px only): Bybit's 10×26px `#aeb0b5` pill with a `#26292f` chevron, centred on the rail edge, replacing #504's 22×48 dark tab with gold edge; transparent halo keeps a 26×42px target; keyboard, aria-expanded, focus ring, persistence and z 51 unchanged; phone strip untouched.
+- `qa-futures-chart-ux.cjs` handle size/colour assertion changed to the pill spec; hit-area/keyboard/aria/persistence assertions unchanged.
+- Verified on `faa74742`: build PASS; Jest 236/236, 4082/4082; proportions 0 violations; Figma 4/4; chart UX 129/0; Spot/CFD PASS; zoom 16/16; languages 21/21; Spot/CFD/phone/tablet pixel-identical to main. Draft only; no merge, no deploy.

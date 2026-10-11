@@ -41,19 +41,26 @@ The chart tile loses 8px (4px on screens under 800px tall); book, ticket, bottom
 - Bybit / VOLTEX main / this branch at the owner's capture scale: [bybit-vs-voltex-1707.png](bybit-vs-voltex-1707.png)
 - Before/after, top 230px: [1366](pair-row-before-after-1366.png) · [1440](pair-row-before-after-1440.png) · [1707](pair-row-before-after-1707.png) · [1920](pair-row-before-after-1920.png); 2x detail at 1440: [pair-row-detail-2x-1440.png](pair-row-detail-2x-1440.png)
 
-## Verification (implementation commit `78ca1096`, read-only loopback fixture, Playwright Chromium)
+## Follow-up on the live page (owner, 2026-10-11): «тут перегородки не має бути, а скрити панель не має бути таким великим … як у байбіт»
+
+- Pair row: the 1×32px divider between the pair and its price (added in #508) is removed (`FuturesFigmaDesktop.css`).
+- Drawing-rail collapse handle (`frontend/src/components/TerminalChart.css`, new `@media (min-width: 901px)` block): Bybit's pill measured on the owner's capture — 10×26px, `border-radius: 5px`, `background: #aeb0b5`, chevron `#26292f` (10px, stroke 3), no border, no shadow, no gold edge; centred on the rail edge (`left: 100%; transform: translate(-50%, -50%)`), at the plot's left edge when collapsed (`left: 2px`). Hover `#c9cbd0`. It replaces #504's 22×48 dark tab. A transparent halo (`inset: -8px -14px -8px -2px`) keeps a 26×42px target; Enter/Space, `aria-expanded`, the focus ring, the remembered state and z 51 above the pane separators are unchanged. The phone rail strip (≤900px) keeps its own column.
+- Guard `scripts/qa-futures-chart-ux.cjs`: «at least 22×48, white» → «Bybit's pill, 8–14 × 22–30px, #aeb0b5 with a #26292f chevron». The «hit area reaches 12px past its edge», Enter/Space, aria-expanded, plot +50px on collapse and persistence checks are unchanged.
+- Evidence: [rail-handle-bybit-vs-voltex.png](rail-handle-bybit-vs-voltex.png).
+
+## Verification (final code `faa74742`, read-only loopback fixture, Playwright Chromium)
 
 | Check | Result |
 | --- | --- |
 | Pair-row text air, 1366–1920 × 90/100/110/125% | 16/16 cases ≥ 5px above and below (main: 4.5px); 56px rows give 7–8.5px |
 | Same in 7 languages (ru, en, zh, es, hi, ja, ko) × 1366/1440/1920 | 21/21 pass |
 | Page horizontal overflow | 0 everywhere |
-| Spot 1440, CFD 1440, Futures 390, Spot 390, Futures 768 vs main | 0 differing pixels each |
+| Spot 1440, CFD 1440, Futures 390, Spot 390, Futures 768 vs main | 0 differing pixels each (a second main capture against the new build; main against main itself differs by 14px of a header animation at 390/768) |
 | `tsc -b && vite build` | PASS |
 | Jest `frontend/src` | 236/236 suites, 4082/4082 tests |
 | `qa-futures-figma-desktop.cjs` | 4/4 (56px row, 52px at 1366×768; chart > 60% of the screen; book 286, ticket 300) |
-| `qa-futures-chart-ux.cjs` | 129 assertions, 0 failed |
-| `qa-futures-proportions.cjs --widths 1920,1707,1440,1366,390` | 0 violations (a first run, started while Jest and four other browser jobs shared the machine, timed out clicking the «Фьючерсы» header link on /trade; the standalone rerun on the same build passed) |
+| `qa-futures-chart-ux.cjs` | 129 assertions, 0 failed (incl. the new pill checks) |
+| `qa-futures-proportions.cjs --widths 1920,1707,1440,1366,390` | 0 violations |
 | `qa-spot-cfd-terminal.cjs` | PASS |
 
 At 110–125% on 1366/1440 the statistics row still scrolls sideways inside the bar, as on main; values are never truncated.
