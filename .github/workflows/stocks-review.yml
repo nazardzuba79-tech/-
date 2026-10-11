@@ -1,0 +1,396 @@
+name: Stocks isolated review
+on:
+  pull_request:
+    paths: ['services/stocks/**', 'services/stocks-global/**', 'services/stocks-simulator/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/__tests__/stock*.test.ts', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', '.github/workflows/stocks-review.yml']
+  push:
+    branches: [codex/stocks-bounded-v1-20261007]
+permissions:
+  contents: read
+jobs:
+  stocks-performance-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        io: [bounded, host-unrestricted]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Build exact before and after fixtures without external services
+        run: |
+          mkdir -p "$RUNNER_TEMP/profile-before" .ci-output/stock-performance
+          git archive f81f404269bfe4b93c19443ce7fc8b881756a366 services/stocks services/stocks-global services/stocks-simulator | tar -x -C "$RUNNER_TEMP/profile-before"
+          cp services/stocks/realistic* services/stocks/profile* "$RUNNER_TEMP/profile-before/services/stocks/"
+          cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/profile-before/services/stocks/"
+          docker build -t voltex-realistic-before -f "$RUNNER_TEMP/profile-before/services/stocks/realistic.Dockerfile" "$RUNNER_TEMP/profile-before"
+          docker build -t voltex-realistic-after -f services/stocks/realistic.Dockerfile .
+          docker build -t voltex-strict-before -f "$RUNNER_TEMP/profile-before/services/stocks/Dockerfile" "$RUNNER_TEMP/profile-before"
+          docker build -t voltex-strict-after -f services/stocks/Dockerfile .
+      - name: Verify runner CPU placement and real block device
+        run: |
+          mkdir -p "$RUNNER_TEMP/profile-disk/probe"
+          chmod 777 "$RUNNER_TEMP/profile-disk/probe"
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+          majmin=$(findmnt -n -o MAJ:MIN -T "$RUNNER_TEMP/profile-disk" | tr -d '[:space:]')
+          device=$(lsblk -nrpo NAME,MAJ:MIN | awk -v mm="$majmin" '$2==mm {print $1; exit}')
+          test -n "$device" && test -b "$device"
+          parent=$(lsblk -ndo PKNAME "$device")
+          if [ -n "$parent" ]; then device="/dev/$parent"; fi
+          printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
+          { nproc; free -m; findmnt -T "$RUNNER_TEMP/profile-disk"; lsblk; } > .ci-output/stock-performance/host.txt
+          docker run --rm --network none --cpus .05 --memory 256m --memory-swap 256m --read-only --cap-drop ALL --security-opt no-new-privileges --device-read-bps "$device:1048576" --device-write-bps "$device:131072" --mount type=bind,src="$RUNNER_TEMP/profile-disk/probe",dst=/data voltex-strict-after node io-proof.mjs > .ci-output/stock-performance/io-proof.json
+      - name: Offline stage profile and harness regressions
+        if: matrix.io == 'bounded'
+        run: |
+          node services/stocks/profile-stages.mjs > .ci-output/stock-performance/stages.json
+          node --test services/stocks/realistic.test.mjs services/stocks/realistic-provider-fixture.test.mjs services/stocks/profile-sqlite-io.test.mjs services/stocks/review-evidence.test.mjs
+          STOCK_PROFILE_MODULE_ROOT="$RUNNER_TEMP/profile-before/services/stocks" STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-before node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-before.json
+          STOCK_PROFILE_STAGES=false STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after.json
+          STOCK_PROFILE_OUTPUT=.ci-output/stock-performance/http-after-stages node services/stocks/profile-http.mjs > .ci-output/stock-performance/http-after-stages.json
+          for mode in http-before http-after http-after-stages; do
+            node services/stocks/profile-summary.mjs ".ci-output/stock-performance/$mode/http.cpuprofile" > ".ci-output/stock-performance/$mode/summary.json"
+          done
+      - name: Separate aggregate-only SQLite fsync diagnosis on disposable fixtures
+        if: matrix.io == 'bounded'
+        env:
+          STOCK_SQLITE_IO_DIAGNOSTIC: 'true'
+          STOCK_REALISTIC_IMAGES: '{"before":"voltex-realistic-before","after":"voltex-realistic-after"}'
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/sqlite-io
+          STOCK_SQLITE_IO_OUTPUT: .ci-output/stock-performance/sqlite-io
+        run: |
+          if ! command -v strace >/dev/null; then sudo apt-get update && sudo apt-get install -y strace; fi
+          node services/stocks/profile-sqlite-io.mjs
+      - name: Authenticated mixed and shared instrument workloads
+        env:
+          STOCK_REALISTIC_IMAGES: '{"before":"voltex-realistic-before","after":"voltex-realistic-after"}'
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/realistic
+          STOCK_REALISTIC_OUTPUT: .ci-output/stock-performance/realistic
+          STOCK_REALISTIC_IO_MODE: ${{ matrix.io }}
+          STOCK_REALISTIC_CAPACITY_LADDER: ${{ matrix.io == 'host-unrestricted' && 'true' || 'false' }}
+        run: node services/stocks/realistic-run.mjs
+      - name: Separate strict latency observation with unchanged three-second deadline
+        if: matrix.io == 'bounded'
+        env:
+          STOCK_STRICT_IMAGES: '{"before":"voltex-strict-before","after":"voltex-strict-after"}'
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/profile-disk/strict
+          STOCK_STRICT_OUTPUT: .ci-output/stock-performance/strict
+        run: node services/stocks/profile-strict-run.mjs
+      - name: Document unchanged criteria and actual measured acceptance
+        if: always()
+        run: node services/stocks/review-evidence.mjs .ci-output/stock-performance performance
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-issue505-${{ matrix.io }}-${{ github.sha }}
+          path: .ci-output/stock-performance
+          if-no-files-found: error
+  isolated-simulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://test:test@127.0.0.1:9/stocks_unused
+      DIRECT_URL: postgresql://test:test@127.0.0.1:9/stocks_unused
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
+        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: TypeScript and enabled US/RU preview build
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_WIDGET_PREVIEW: 'true'
+          VITE_STOCKS_GLOBAL_SIMULATOR: 'true'
+          VITE_MARKET_EDGE_ORIGIN: 'http://127.0.0.1:4438'
+  frontend-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://test:test@127.0.0.1:9/frontend_test_unused
+      DIRECT_URL: postgresql://test:test@127.0.0.1:9/frontend_test_unused
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build --prefix frontend
+      - run: node node_modules/jest/bin/jest.js frontend/src --runInBand --json --outputFile=frontend-stock-review.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-frontend-regression-${{ github.sha }}
+          path: frontend-stock-review.json
+  # Stocks panel/overview in a real browser. Isolated fixtures only: the real
+  # read-only stock server over a disposable SQLite file of generated candles
+  # on 127.0.0.1:4431, crypto pages on the terminal QA's read-only Express
+  # fixtures; outside hosts blocked, writes refused. No production endpoint,
+  # account, financial database or market quote.
+  stocks-ui-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Default build (stocks flag OFF)
+        run: npm run build --prefix frontend && cp -r frontend/dist /tmp/stocks-flag-off
+      - name: Review build against the loopback stock fixture
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_ORIGIN: 'http://127.0.0.1:4431'
+      - name: Disposable browser tooling
+        run: |
+          npm install --prefix /tmp/stocks-ui-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/stocks-ui-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Panel/overview browser QA (fixtures only)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_FLAG_OFF_DIST: /tmp/stocks-flag-off
+          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/panel-overview
+        run: node scripts/qa-stocks-ui.cjs
+      - name: Shared Trading navigation and terminal isolation (fixtures only)
+        if: ${{ !cancelled() }}
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/navigation
+        run: node scripts/qa-stocks-navigation.cjs
+      - name: Free widget preview build (no stock service origin)
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_WIDGET_PREVIEW: 'true'
+      - name: Widget lifetime, seven locales, mobile and script errors (no provider data)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/widgets
+        run: |
+          node frontend/node_modules/vite/bin/vite.js preview frontend --host 127.0.0.1 --port 4432 --strictPort > /tmp/widget-preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4432/ > /dev/null && break; sleep 1; done
+          node scripts/qa-stocks-widget.cjs
+      - name: Widget terminal and crypto navigation isolation (fixtures only)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_WIDGET_MODE: 'true'
+          QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/widget-navigation
+        run: node scripts/qa-stocks-navigation.cjs
+      - name: Global Stocks paper terminal build (local fixtures only)
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_WIDGET_PREVIEW: 'true'
+          VITE_STOCKS_GLOBAL_SIMULATOR: 'true'
+      - name: Stocks overload cooldown and manual recovery (isolated paper accounts)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+          QA_DIST: ${{ github.workspace }}/frontend/dist
+          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/overload
+        run: node scripts/qa-stocks-overload.cjs
+      # Not a dot-directory: upload-artifact@v4 skips hidden paths by default.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-ui-browser-${{ github.sha }}
+          path: stocks-ui-evidence
+          if-no-files-found: error
+  crypto-service-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: integration_qa
+          POSTGRES_PASSWORD: ephemeral_ci_only
+          POSTGRES_DB: voltex_stock_qa
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U integration_qa -d voltex_stock_qa" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_stock_qa
+      DIRECT_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_stock_qa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npm run build && npx prisma migrate deploy
+      - run: docker build -t voltex-stock-review -f services/stocks/Dockerfile .
+      - name: Pin crypto and stock to the same CPU; keep load generator on another CPU
+        run: |
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+      - name: Repeat A/B/C/readers/failure/cold cache comparison
+        run: |
+          docker update --cpuset-cpus "$BENCH_CPU" $(docker ps --filter ancestor=postgres:16 -q)
+          taskset -c "$BENCH_CPU" node services/stocks/crypto-comparison.cjs
+          test -s .ci-output/stocks/comparison.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-crypto-comparison-${{ github.sha }}
+          path: .ci-output/stocks
+
+  launch-resource-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        baseline: [original, issue505]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: integration_qa
+          POSTGRES_PASSWORD: ephemeral_ci_only
+          POSTGRES_DB: voltex_stock_qa
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U integration_qa -d voltex_stock_qa" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_stock_qa
+      DIRECT_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_stock_qa
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npm run build && npx prisma migrate deploy
+      - name: Build identical fixtures with before and after stock read implementation
+        env:
+          STOCK_COMPARISON_BASE_SHA: ${{ matrix.baseline == 'original' && '3c5a6a73d014826c47a89541d4fe85b2fbc41761' || 'f81f404269bfe4b93c19443ce7fc8b881756a366' }}
+        run: |
+          docker build -t voltex-stock-after -f services/stocks/Dockerfile .
+          mkdir -p "$RUNNER_TEMP/stock-before"
+          # Exact prior #497 head: same workload/budgets, current known timeout baseline.
+          git archive "$STOCK_COMPARISON_BASE_SHA" services/stocks | tar -x -C "$RUNNER_TEMP/stock-before"
+          cp services/stocks/load-fixture.mjs "$RUNNER_TEMP/stock-before/services/stocks/load-fixture.mjs"
+          docker build -t voltex-stock-before -f "$RUNNER_TEMP/stock-before/services/stocks/Dockerfile" "$RUNNER_TEMP/stock-before"
+          # CI-only tools must match the container libc; never mount host taskset.
+          printf 'FROM voltex-stock-after\nUSER root\nRUN apt-get update && apt-get install -y --no-install-recommends util-linux openssl && rm -rf /var/lib/apt/lists/*\n' | docker build -t voltex-stock-bench -f - .
+      - name: Inventory real block device and two CPU placement (no production access)
+        run: |
+          mkdir -p "$RUNNER_TEMP/stock-disk/seed" .ci-output/stock-launch
+          chmod 777 "$RUNNER_TEMP/stock-disk/seed"
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+          printf 'STOCK_FIXTURE_NOW=%s\n' "$(date +%s)000" >> "$GITHUB_ENV"
+          { nproc; free -m; findmnt -T "$RUNNER_TEMP/stock-disk"; lsblk; docker info; } | tee .ci-output/stock-launch/host.txt
+          majmin=$(findmnt -n -o MAJ:MIN -T "$RUNNER_TEMP/stock-disk" | tr -d '[:space:]')
+          device=$(lsblk -nrpo NAME,MAJ:MIN | awk -v mm="$majmin" '$2==mm {print $1; exit}')
+          if [ -n "$device" ] && [ -b "$device" ]; then
+            parent=$(lsblk -ndo PKNAME "$device")
+            if [ -n "$parent" ]; then device="/dev/$parent"; fi
+          else
+            device=''
+            echo 'BLOCKER: backing block device is not exposed; I/O proof unavailable, paired bind-mount results are not I/O acceptance.' | tee .ci-output/stock-launch/io-blocker.txt
+          fi
+          printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
+      - name: Prove actual read/write throttling without filesystem cache
+        if: env.STOCK_BENCH_DEVICE != ''
+        run: |
+          mkdir -p "$RUNNER_TEMP/stock-disk/probe"
+          chmod 777 "$RUNNER_TEMP/stock-disk/probe"
+          docker run --rm --network none --cpus .05 --memory 256m --memory-swap 256m --pids-limit 32 --read-only --cap-drop ALL --security-opt no-new-privileges --device-read-bps "$STOCK_BENCH_DEVICE:1048576" --device-write-bps "$STOCK_BENCH_DEVICE:131072" --mount type=bind,src="$RUNNER_TEMP/stock-disk/probe",dst=/data voltex-stock-after node io-proof.mjs | tee .ci-output/stock-launch/io-proof.json
+      - name: Seed once under unchanged .05 CPU / 256 MiB; outside measured workload
+        run: |
+          docker run --rm --cpus .05 --memory 256m --memory-swap 256m --pids-limit 32 --network none --read-only --cap-drop ALL --security-opt no-new-privileges --mount type=bind,src="$RUNNER_TEMP/stock-disk/seed",dst=/data -e STOCK_LOAD_DB=/data/load.sqlite -e STOCK_LOAD_SEED_ONLY=true -e STOCK_FIXTURE_NOW voltex-stock-after node load-fixture.mjs
+      - name: Paired before / after / separate CPU experiments on same runner and real disk
+        run: |
+          # Match existing Hetzner hard ceilings; never give crypto a larger budget.
+          docker update --memory 1600m --memory-swap 1600m --cpuset-cpus "$BENCH_CPU" $(docker ps --filter ancestor=postgres:16 -q)
+          export STOCK_BENCH_SEED="$RUNNER_TEMP/stock-disk/seed/load.sqlite"
+          for variant in before after separated; do
+            export STOCK_BENCH_OUTPUT="$PWD/.ci-output/stock-launch/$variant"
+            export STOCK_BENCH_DISK="$RUNNER_TEMP/stock-disk/$variant"
+            export STOCK_BENCH_IMAGE=voltex-stock-after
+            export STOCK_BENCH_CPU="$BENCH_CPU"
+            export STOCK_BENCH_CASES=A,B,C,D10,D50,D100,E,F
+            if [ "$variant" = before ]; then export STOCK_BENCH_IMAGE=voltex-stock-before; fi
+            if [ "$variant" = separated ]; then export STOCK_BENCH_CPU="$LOAD_CPU"; export STOCK_BENCH_CASES=A,C,D100,F; fi
+            mkdir -p "$STOCK_BENCH_OUTPUT"
+            # The financial fixture and its generator share the existing API ceiling.
+            # Only the disposable CI Docker daemon/loopback PostgreSQL are reachable.
+            docker run --rm --network host --cpuset-cpus "$BENCH_CPU,$LOAD_CPU" --memory 1500m --memory-swap 1500m --read-only --tmpfs /tmp:size=64m --workdir "$PWD" --mount type=bind,src="$PWD",dst="$PWD",readonly --mount type=bind,src="$PWD/.ci-output",dst="$PWD/.ci-output" --mount type=bind,src="$RUNNER_TEMP/stock-disk",dst="$RUNNER_TEMP/stock-disk" --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock --mount type=bind,src=/usr/bin/docker,dst=/usr/bin/docker,readonly -e STOCK_BENCH_SEED -e STOCK_BENCH_OUTPUT -e STOCK_BENCH_DISK -e STOCK_BENCH_IMAGE -e STOCK_BENCH_CPU -e STOCK_BENCH_CASES -e STOCK_BENCH_DEVICE -e STOCK_FIXTURE_NOW -e BENCH_CPU -e LOAD_CPU --user 0 voltex-stock-bench taskset -c "$BENCH_CPU" node services/stocks/crypto-comparison.cjs
+          done
+      - name: Summarize without treating completed evidence as acceptance
+        if: always()
+        run: node services/stocks/summarize-launch.cjs .ci-output/stock-launch
+      - name: Document original paired workload and baseline
+        if: always()
+        env:
+          STOCK_COMPARISON_BASE_SHA: ${{ matrix.baseline == 'original' && '3c5a6a73d014826c47a89541d4fe85b2fbc41761' || 'f81f404269bfe4b93c19443ce7fc8b881756a366' }}
+        run: node services/stocks/review-evidence.mjs .ci-output/stock-launch paired-crypto
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-launch-resource-${{ matrix.baseline }}-${{ github.sha }}
+          path: .ci-output/stock-launch
+          if-no-files-found: error
+      - name: Fail the I/O evidence gate when no block-device proof exists
+        if: always()
+        run: test -s .ci-output/stock-launch/io-proof.json
+  bounded-stock-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t voltex-stock-review -f services/stocks/Dockerfile .
+      - name: Unit and actual read-only HTTP tests
+        run: docker run --rm --network none --cpus .05 --memory 256m --memory-swap 256m --pids-limit 32 --cap-drop ALL --security-opt no-new-privileges --read-only --tmpfs /tmp:size=16m voltex-stock-review node --test core.test.mjs reader-process.test.cjs
+      - name: Inspect actual cgroups and bounded private disk failure
+        run: |
+          mkdir -p stock-evidence
+          docker run --rm --network none --cpus .05 --memory 256m --memory-swap 256m --pids-limit 32 --cap-drop ALL --security-opt no-new-privileges --read-only --tmpfs /tmp:size=8m --tmpfs /testdisk:size=8m voltex-stock-review node runtime-proof.mjs > stock-evidence/runtime.json
+          cat stock-evidence/runtime.json
+      - name: Measure full 30-day fixture storage under the same hard budget
+        run: |
+          mkdir -p stock-storage
+          docker run --rm --user "$(id -u):$(id -g)" --network none --cpus .05 --memory 256m --memory-swap 256m --pids-limit 32 --cap-drop ALL --security-opt no-new-privileges --read-only --mount type=bind,src="$PWD/stock-storage",dst=/testdata -e STOCK_STORAGE_PROOF=isolated-ci voltex-stock-review node storage-proof.mjs > stock-evidence/storage.json
+          cat stock-evidence/storage.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-runtime-${{ github.sha }}
+          path: stock-evidence

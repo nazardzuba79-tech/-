@@ -1,0 +1,28 @@
+{
+  "pass": true,
+  "originalFillsPreserved": 22,
+  "originalOrdersPreserved": 25,
+  "newFills": 15,
+  "newOrders": 18,
+  "noOpenPositions": true,
+  "noReserves": true,
+  "moexFills": 0,
+  "cashDeltaUnits": {
+    "USDT": "-1980000",
+    "USDC": "-979190"
+  },
+  "wallets": {
+    "USDT": {
+      "cash": "9999.72020000",
+      "reserved": "0.00000000"
+    },
+    "USDC": {
+      "cash": "9999.96522785",
+      "reserved": "0.00000000"
+    }
+  },
+  "realized": {
+    "USDT": "-0.27980000",
+    "USDC": "-0.03477215"
+  }
+}

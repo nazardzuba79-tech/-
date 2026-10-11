@@ -1,0 +1,27 @@
+# Isolated review only. No production configuration references or dependencies.
+services:
+  stocks:
+    profiles: [stocks-review]
+    build:
+      context: ../..
+      dockerfile: services/stocks/Dockerfile
+    cpus: 0.05
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 32
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    network_mode: none
+    tmpfs: [/tmp:size=8m,noexec,nosuid]
+    volumes: [stock-review-data:/data]
+    environment:
+      STOCKS_ENABLED: 'false'
+    restart: 'no'
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: '3'
+volumes:
+  stock-review-data:

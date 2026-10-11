@@ -1,0 +1,300 @@
+{
+  "frontend": {
+    "success": true,
+    "passed": 4129,
+    "failed": 0,
+    "skipped": 0,
+    "todo": 0,
+    "suites": 244
+  },
+  "simulator": {
+    "passed": 52,
+    "failed": 0
+  },
+  "builds": {
+    "typescript-final": {
+      "exitCode": 0,
+      "elapsedMs": 13432
+    },
+    "build-enabled-final": {
+      "exitCode": 0,
+      "elapsedMs": 6610
+    },
+    "build-default-final": {
+      "exitCode": 0,
+      "elapsedMs": 5941
+    }
+  },
+  "protectedRegressionSuites": [
+    {
+      "name": "futuresColdOpenRecovery.test.ts",
+      "status": "passed",
+      "passed": 25
+    },
+    {
+      "name": "futuresOrderPanel.test.ts",
+      "status": "passed",
+      "passed": 70
+    },
+    {
+      "name": "priceChartMarketOrders.test.ts",
+      "status": "passed",
+      "passed": 31
+    },
+    {
+      "name": "futuresCompactTicketOptions.test.ts",
+      "status": "passed",
+      "passed": 55
+    },
+    {
+      "name": "futuresFinalPolish.test.ts",
+      "status": "passed",
+      "passed": 32
+    },
+    {
+      "name": "futuresChartBlank.test.ts",
+      "status": "passed",
+      "passed": 15
+    },
+    {
+      "name": "futuresAccountUnknownState.test.ts",
+      "status": "passed",
+      "passed": 35
+    },
+    {
+      "name": "futuresTickerHeader.test.ts",
+      "status": "passed",
+      "passed": 39
+    },
+    {
+      "name": "futuresProTerminal.test.ts",
+      "status": "passed",
+      "passed": 27
+    },
+    {
+      "name": "futuresPositionProtection.test.ts",
+      "status": "passed",
+      "passed": 26
+    },
+    {
+      "name": "futuresPairPersistence.test.ts",
+      "status": "passed",
+      "passed": 26
+    },
+    {
+      "name": "futuresPositionClosedCard.test.ts",
+      "status": "passed",
+      "passed": 11
+    },
+    {
+      "name": "spotButtonLabels.test.ts",
+      "status": "passed",
+      "passed": 10
+    },
+    {
+      "name": "sharedHeaderStylesheetOwnership.test.ts",
+      "status": "passed",
+      "passed": 12
+    },
+    {
+      "name": "spotPairList7d.test.ts",
+      "status": "passed",
+      "passed": 7
+    },
+    {
+      "name": "futuresPairSort.test.ts",
+      "status": "passed",
+      "passed": 4
+    },
+    {
+      "name": "stockNavigation.test.ts",
+      "status": "passed",
+      "passed": 4
+    },
+    {
+      "name": "vtaSpotAccount.test.ts",
+      "status": "passed",
+      "passed": 4
+    },
+    {
+      "name": "futuresDepth.test.ts",
+      "status": "passed",
+      "passed": 28
+    },
+    {
+      "name": "spotPairTransition.test.ts",
+      "status": "passed",
+      "passed": 4
+    },
+    {
+      "name": "futuresCandles.test.ts",
+      "status": "passed",
+      "passed": 15
+    },
+    {
+      "name": "futuresUiPolish.test.ts",
+      "status": "passed",
+      "passed": 10
+    },
+    {
+      "name": "futuresConfigDedup.test.ts",
+      "status": "passed",
+      "passed": 23
+    },
+    {
+      "name": "futuresUnrealizedPnl.test.ts",
+      "status": "passed",
+      "passed": 19
+    },
+    {
+      "name": "spotPairList.test.ts",
+      "status": "passed",
+      "passed": 10
+    },
+    {
+      "name": "spotOrderFeedback.test.ts",
+      "status": "passed",
+      "passed": 22
+    },
+    {
+      "name": "spotBookRefresh.test.ts",
+      "status": "passed",
+      "passed": 7
+    },
+    {
+      "name": "directFuturesReference.test.ts",
+      "status": "passed",
+      "passed": 5
+    },
+    {
+      "name": "futuresDemoActivation.test.ts",
+      "status": "passed",
+      "passed": 9
+    },
+    {
+      "name": "spotCfdGraphite.test.ts",
+      "status": "passed",
+      "passed": 4
+    },
+    {
+      "name": "spotOrdersPresentation.test.ts",
+      "status": "passed",
+      "passed": 34
+    },
+    {
+      "name": "spotOrderBook.test.ts",
+      "status": "passed",
+      "passed": 24
+    },
+    {
+      "name": "spotPublicMarket.test.ts",
+      "status": "passed",
+      "passed": 5
+    },
+    {
+      "name": "nativeFuturesTerminal.test.ts",
+      "status": "passed",
+      "passed": 31
+    },
+    {
+      "name": "futuresMarketSearch.test.ts",
+      "status": "passed",
+      "passed": 20
+    },
+    {
+      "name": "futuresVisualPolish.test.ts",
+      "status": "passed",
+      "passed": 35
+    },
+    {
+      "name": "futuresReferenceRow.test.ts",
+      "status": "passed",
+      "passed": 19
+    },
+    {
+      "name": "futuresMobileScope.test.ts",
+      "status": "passed",
+      "passed": 2
+    },
+    {
+      "name": "futuresReference.test.ts",
+      "status": "passed",
+      "passed": 14
+    },
+    {
+      "name": "spotIndicators.test.ts",
+      "status": "passed",
+      "passed": 9
+    },
+    {
+      "name": "futuresDepthReconnectGrace.test.ts",
+      "status": "passed",
+      "passed": 2
+    },
+    {
+      "name": "futuresSingleMoneySource.test.ts",
+      "status": "passed",
+      "passed": 13
+    },
+    {
+      "name": "spotOrderEntry.test.ts",
+      "status": "passed",
+      "passed": 49
+    },
+    {
+      "name": "futuresContract7dAndChartStatus.test.ts",
+      "status": "passed",
+      "passed": 12
+    },
+    {
+      "name": "spotChartPriceFormat.test.ts",
+      "status": "passed",
+      "passed": 12
+    },
+    {
+      "name": "futuresOrderCalculatorRegression.test.ts",
+      "status": "passed",
+      "passed": 4
+    },
+    {
+      "name": "futuresCloseFill.test.ts",
+      "status": "passed",
+      "passed": 4
+    },
+    {
+      "name": "futuresOrderErrors.test.ts",
+      "status": "passed",
+      "passed": 13
+    },
+    {
+      "name": "futuresAccountStore.test.ts",
+      "status": "passed",
+      "passed": 42
+    },
+    {
+      "name": "copyTradingCiCoverage.test.ts",
+      "status": "passed",
+      "passed": 2
+    },
+    {
+      "name": "futuresMarketStats.test.ts",
+      "status": "passed",
+      "passed": 18
+    },
+    {
+      "name": "mobileSpotCascade.test.ts",
+      "status": "passed",
+      "passed": 2
+    },
+    {
+      "name": "futuresDiscovery.test.ts",
+      "status": "passed",
+      "passed": 3
+    },
+    {
+      "name": "futuresRouteLoadAndAdminPagination.test.ts",
+      "status": "passed",
+      "passed": 2
+    }
+  ]
+}

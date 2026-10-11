@@ -1,0 +1,64 @@
+[
+  {
+    "country": "United States",
+    "url": "https://api.twelvedata.com/stocks?country=United%20States",
+    "retrievedAt": "2026-10-07T14:59:33.777Z",
+    "sha256": "cd50b649d0bf09f7c434f7c9f0ae89a8f27523963a3a6533e9f6c9bf7ec1343b",
+    "providerListings": 20418,
+    "prepared": 100
+  },
+  {
+    "country": "Russia",
+    "url": "https://api.twelvedata.com/stocks?country=Russia",
+    "retrievedAt": "2026-10-07T14:59:36.406Z",
+    "sha256": "7d174e7d95e6f8134042885a98604510f3ef0e93d1900e1da8899041d7b8d30f",
+    "providerListings": 206,
+    "prepared": 50
+  },
+  {
+    "country": "Japan",
+    "url": "https://api.twelvedata.com/stocks?country=Japan",
+    "retrievedAt": "2026-10-07T14:59:43.072Z",
+    "sha256": "c1fc1a4530c10aed0dd209e03db265a60b63ade7a757404240e2249a07898b8e",
+    "providerListings": 4042,
+    "prepared": 20
+  },
+  {
+    "country": "Hong Kong",
+    "url": "https://api.twelvedata.com/stocks?country=Hong%20Kong",
+    "retrievedAt": "2026-10-07T14:59:46.532Z",
+    "sha256": "62f2a89287a9ef1d6d33a2deb1f2751be4f0a43abb377ca0030ebb85e1e675e0",
+    "providerListings": 10822,
+    "prepared": 20
+  },
+  {
+    "country": "China",
+    "url": "https://api.twelvedata.com/stocks?country=China",
+    "retrievedAt": "2026-10-07T14:59:49.634Z",
+    "sha256": "6dca9d2946c814ebaf1ab1328898cde5d61b03b2c9d3b0dc0338ff21398222ff",
+    "providerListings": 5686,
+    "prepared": 20
+  },
+  {
+    "country": "South Korea",
+    "url": "https://api.twelvedata.com/stocks?country=South%20Korea",
+    "retrievedAt": "2026-10-07T14:59:52.673Z",
+    "sha256": "3cbff3441cb178347d7bfc97edf2d7666d7112297976f9561e5a203a6da9fdb4",
+    "providerListings": 3252,
+    "prepared": 20
+  },
+  {
+    "country": "India",
+    "url": "https://api.twelvedata.com/stocks?country=India",
+    "retrievedAt": "2026-10-07T14:59:56.033Z",
+    "sha256": "fef7878976189945a60ba0ce02766cd93f8596a1072bb2c8beb428e584f4400b",
+    "providerListings": 8983,
+    "prepared": 20
+  },
+  {
+    "url": "https://api.twelvedata.com/indices",
+    "retrievedAt": "2026-10-07T15:15:02.152Z",
+    "sha256": "6ea64525efb0a78ff1aa5afa2a5f96bc5673bed96ba1b32d5fb7a22cd3962aab",
+    "prepared": 5
+  }
+]

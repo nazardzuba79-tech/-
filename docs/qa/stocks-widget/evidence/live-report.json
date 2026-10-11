@@ -1,0 +1,307 @@
+{
+  "live": true,
+  "checks": 41,
+  "financialRequests": [],
+  "stockReads": [],
+  "pageErrors": [],
+  "views": [
+    {
+      "symbol": "NASDAQ:AAPL",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3AAAPL",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    },
+    {
+      "symbol": "NASDAQ:NVDA",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3ANVDA",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    },
+    {
+      "symbol": "NASDAQ:MSFT",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3AMSFT",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    },
+    {
+      "symbol": "NASDAQ:AMZN",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3AAMZN",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    },
+    {
+      "symbol": "NASDAQ:GOOGL",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3AGOOGL",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    },
+    {
+      "symbol": "NASDAQ:META",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3AMETA",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    },
+    {
+      "symbol": "NASDAQ:TSLA",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3ATSLA",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    },
+    {
+      "symbol": "NASDAQ:AVGO",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3AAVGO",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    },
+    {
+      "symbol": "NASDAQ:COST",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3ACOST",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    },
+    {
+      "symbol": "NASDAQ:NFLX",
+      "frames": [
+        "http://127.0.0.1:4433/stocks/XNGS%3ANFLX",
+        "about:srcdoc",
+        "https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=ru"
+      ],
+      "visualResult": "see screenshot; load is not proof of data availability"
+    }
+  ],
+  "timings": [
+    {
+      "symbol": "AAPL",
+      "ms": 234,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 8234,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 236,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 8250,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 72,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 8084,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "MSFT",
+      "ms": 212,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "MSFT",
+      "ms": 8227,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AMZN",
+      "ms": 231,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AMZN",
+      "ms": 8246,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "GOOGL",
+      "ms": 174,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "GOOGL",
+      "ms": 8185,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "META",
+      "ms": 199,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "META",
+      "ms": 8202,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "TSLA",
+      "ms": 210,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "TSLA",
+      "ms": 8223,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AVGO",
+      "ms": 242,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AVGO",
+      "ms": 8253,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "COST",
+      "ms": 230,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "COST",
+      "ms": 8233,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "NFLX",
+      "ms": 210,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "NFLX",
+      "ms": 8222,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 214,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 8229,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 153,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 84,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 64,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 75,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 61,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 74,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 68,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 74,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 69,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 68,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 74,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 69,
+      "kind": "live SPA host replacement (not quote ready)"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 242,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 8247,
+      "kind": "cold navigation including settling wait"
+    }
+  ],
+  "memory": [
+    {
+      "stage": "live before switches",
+      "documents": 4,
+      "nodes": 1594,
+      "jsEventListeners": 1850,
+      "jsHeapUsedBytes": 26668692
+    },
+    {
+      "stage": "live after 12 switches",
+      "documents": 4,
+      "nodes": 1594,
+      "jsEventListeners": 1863,
+      "jsHeapUsedBytes": 28390056
+    }
+  ]
+}

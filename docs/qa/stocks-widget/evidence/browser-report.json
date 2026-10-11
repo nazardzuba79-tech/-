@@ -1,0 +1,900 @@
+{
+  "live": false,
+  "checks": 253,
+  "financialRequests": [],
+  "stockReads": [],
+  "pageErrors": [],
+  "views": [
+    {
+      "lang": "ru",
+      "width": 1920
+    },
+    {
+      "lang": "ru",
+      "width": 1440
+    },
+    {
+      "lang": "ru",
+      "width": 1366
+    },
+    {
+      "lang": "ru",
+      "width": 430
+    },
+    {
+      "lang": "ru",
+      "width": 390
+    },
+    {
+      "lang": "ru",
+      "width": 360
+    },
+    {
+      "lang": "ru",
+      "width": 320
+    },
+    {
+      "lang": "en",
+      "width": 1920
+    },
+    {
+      "lang": "en",
+      "width": 1440
+    },
+    {
+      "lang": "en",
+      "width": 1366
+    },
+    {
+      "lang": "en",
+      "width": 430
+    },
+    {
+      "lang": "en",
+      "width": 390
+    },
+    {
+      "lang": "en",
+      "width": 360
+    },
+    {
+      "lang": "en",
+      "width": 320
+    },
+    {
+      "lang": "zh",
+      "width": 1920
+    },
+    {
+      "lang": "zh",
+      "width": 1440
+    },
+    {
+      "lang": "zh",
+      "width": 1366
+    },
+    {
+      "lang": "zh",
+      "width": 430
+    },
+    {
+      "lang": "zh",
+      "width": 390
+    },
+    {
+      "lang": "zh",
+      "width": 360
+    },
+    {
+      "lang": "zh",
+      "width": 320
+    },
+    {
+      "lang": "es",
+      "width": 1920
+    },
+    {
+      "lang": "es",
+      "width": 1440
+    },
+    {
+      "lang": "es",
+      "width": 1366
+    },
+    {
+      "lang": "es",
+      "width": 430
+    },
+    {
+      "lang": "es",
+      "width": 390
+    },
+    {
+      "lang": "es",
+      "width": 360
+    },
+    {
+      "lang": "es",
+      "width": 320
+    },
+    {
+      "lang": "hi",
+      "width": 1920
+    },
+    {
+      "lang": "hi",
+      "width": 1440
+    },
+    {
+      "lang": "hi",
+      "width": 1366
+    },
+    {
+      "lang": "hi",
+      "width": 430
+    },
+    {
+      "lang": "hi",
+      "width": 390
+    },
+    {
+      "lang": "hi",
+      "width": 360
+    },
+    {
+      "lang": "hi",
+      "width": 320
+    },
+    {
+      "lang": "ja",
+      "width": 1920
+    },
+    {
+      "lang": "ja",
+      "width": 1440
+    },
+    {
+      "lang": "ja",
+      "width": 1366
+    },
+    {
+      "lang": "ja",
+      "width": 430
+    },
+    {
+      "lang": "ja",
+      "width": 390
+    },
+    {
+      "lang": "ja",
+      "width": 360
+    },
+    {
+      "lang": "ja",
+      "width": 320
+    },
+    {
+      "lang": "ko",
+      "width": 1920
+    },
+    {
+      "lang": "ko",
+      "width": 1440
+    },
+    {
+      "lang": "ko",
+      "width": 1366
+    },
+    {
+      "lang": "ko",
+      "width": 430
+    },
+    {
+      "lang": "ko",
+      "width": 390
+    },
+    {
+      "lang": "ko",
+      "width": 360
+    },
+    {
+      "lang": "ko",
+      "width": 320
+    }
+  ],
+  "timings": [
+    {
+      "symbol": "AAPL",
+      "ms": 173,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 287,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 205,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 319,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 185,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 289,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 173,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 275,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 169,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 272,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 179,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 285,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 173,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 288,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 176,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 290,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 174,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 288,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 195,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 308,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 192,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 300,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 190,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 304,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 192,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 293,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 205,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 311,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 225,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 338,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 223,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 334,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 201,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 303,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 177,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 291,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 171,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 273,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 186,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 293,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 166,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 280,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 163,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 268,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 162,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 275,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 193,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 305,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 176,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 288,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 182,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 293,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 176,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 288,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 185,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 292,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 184,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 297,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 252,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 366,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 169,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 283,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 170,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 282,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 186,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 290,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 179,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 288,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 177,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 291,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 160,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 270,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 236,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 340,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 169,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 273,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 188,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 295,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 176,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 283,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 177,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 284,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 195,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 309,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 187,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 290,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 259,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 369,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 186,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 290,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 163,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 279,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 175,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 280,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 181,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 293,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 181,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 292,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 171,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 284,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 174,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 276,
+      "kind": "cold navigation including settling wait"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 78,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "MSFT",
+      "ms": 69,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AMZN",
+      "ms": 69,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "GOOGL",
+      "ms": 63,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "META",
+      "ms": 73,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "TSLA",
+      "ms": 63,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AVGO",
+      "ms": 69,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "COST",
+      "ms": 64,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "NFLX",
+      "ms": 66,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 66,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 66,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "MSFT",
+      "ms": 68,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AMZN",
+      "ms": 64,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "GOOGL",
+      "ms": 68,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "META",
+      "ms": 67,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "TSLA",
+      "ms": 65,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AVGO",
+      "ms": 68,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "COST",
+      "ms": 68,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "NFLX",
+      "ms": 64,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 66,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "NVDA",
+      "ms": 67,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "MSFT",
+      "ms": 66,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AMZN",
+      "ms": 69,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "GOOGL",
+      "ms": 66,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "META",
+      "ms": 69,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "TSLA",
+      "ms": 65,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AVGO",
+      "ms": 70,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "COST",
+      "ms": 62,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "NFLX",
+      "ms": 66,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 67,
+      "kind": "SPA host replacement"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 274,
+      "kind": "cold navigation to VOLTEX widget host (not quote ready)"
+    },
+    {
+      "symbol": "AAPL",
+      "ms": 380,
+      "kind": "cold navigation including settling wait"
+    }
+  ],
+  "memory": [
+    {
+      "stage": "before switches",
+      "documents": 3,
+      "nodes": 722,
+      "jsEventListeners": 258,
+      "jsHeapUsedBytes": 5370996
+    },
+    {
+      "stage": "after 30 switches",
+      "documents": 3,
+      "nodes": 737,
+      "jsEventListeners": 271,
+      "jsHeapUsedBytes": 6585704
+    },
+    {
+      "stage": "after exit",
+      "documents": 1,
+      "nodes": 77,
+      "jsEventListeners": 174,
+      "jsHeapUsedBytes": 3690760
+    }
+  ]
+}

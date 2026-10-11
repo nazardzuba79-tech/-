@@ -1,0 +1,121 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { get as httpGet } from 'node:http';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { limits,validateLimits,validateManifest,Store,ReadGate,ByteCache,validateCandle } from './core.mjs';
+import { ProviderGateway,closedSessionEnd } from './provider.mjs';
+import { Scheduler } from './scheduler.mjs';
+import { createStockServer } from './server.mjs';
+const manifest=JSON.parse(readFileSync(new URL('./manifest.json',import.meta.url)));
+const i={...manifest[0],enabled:true,dataRightsStatus:'confirmed'};
+const now=Date.UTC(2026,9,7,15), row=(n=0)=>({instrumentId:i.instrumentId,interval:'15m',openTimeUtc:now-900000*(n+1),closeTimeUtc:now-900000*n,open:'100.12345678',high:'102',low:'99',close:'101.12345678',volume:null,currency:i.currency,provider:i.provider,providerTimestamp:now,fetchedAt:now,adjustmentMode:'unadjusted'});
+function fixture(){const dir=mkdtempSync(join(tmpdir(),'voltex-stock-'));const store=new Store(join(dir,'s.sqlite'));return {store,dir,close(){this.store.close();rmSync(dir,{recursive:true,force:true});}};}
+
+test('native encoded pages exactly preserve projected history, decimals, nulls and cursor boundaries',()=>{
+  const f=fixture();
+  try{
+    f.store.write(Array.from({length:20},(_,n)=>({...row(19-n),volume:n%2?'1.2300':null,open:'100.12340000'})),i,now);
+    for(const limit of [1,7,20,500])for(const before of [0,now-900000,now-900001,now,Number.MAX_SAFE_INTEGER]){
+      const expected=f.store.history(i.instrumentId,limit,before).map(({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt})=>({openTimeUtc,closeTimeUtc,open,high,low,close,volume,fetchedAt}));
+      const actual=f.store.encodedHistory(i.instrumentId,limit,before);
+      assert.equal(actual.candles,JSON.stringify(expected));
+      assert.equal(actual.count,expected.length);assert.equal(actual.first,expected[0]?.openTimeUtc??null);assert.equal(actual.latest,expected.at(-1)?.openTimeUtc??null);
+    }
+    assert.equal(f.store.encodedHistory('UNKNOWN').candles,'[]');
+    f.store.write([{...row(),close:'100.5000'}],i,now);
+    assert.equal(JSON.parse(f.store.encodedHistory(i.instrumentId).candles).at(-1).close,'100.5000');
+  }finally{f.close();}
+});
+test('validated configuration cannot relax any budget',()=>{for(const [k,v]of Object.entries(limits)){if(typeof v==='number'&&!['MIN_FREE_DISK','MIN_UPSTREAM_REQUEST_GAP_MS'].includes(k))assert.throws(()=>validateLimits({...limits,[k]:v*2}));}assert.throws(()=>validateLimits({...limits,BACKFILL_ENABLED_BY_DEFAULT:true}));});
+test('250 canonical disabled catalogue records, regional caps, same ticker across venues',()=>{assert.equal(manifest.length,250);validateManifest(manifest);assert.ok(manifest.every(x=>!x.enabled));validateManifest([{...i,instrumentId:'XNAS:SAME'},{...i,instrumentId:'XNYS:SAME'}]);assert.throws(()=>validateManifest([i,i]));assert.throws(()=>validateManifest([{...i,dataRightsStatus:'unconfirmed'}]));});
+test('500 rows in bounded transactions, duplicate replay unchanged, explicit correction and decimal preservation',()=>{const f=fixture();try{const rows=Array.from({length:500},(_,n)=>row(499-n));assert.equal(f.store.write(rows,i,now),500);assert.equal(f.store.write(rows,i,now),0);assert.equal(f.store.history(i.instrumentId,500).length,500);assert.equal(f.store.history(i.instrumentId,1)[0].open,'100.12345678');assert.equal(f.store.write([{...row(),close:'101.5'}],i,now),1);assert.equal(f.store.db.prepare('PRAGMA journal_mode').get().journal_mode,'delete');}finally{f.close();}});
+
+test('equivalent recent cursors share one encoded page; genuine pagination stays exact',async()=>{
+  const f=fixture();f.store.write([row(2),row(1),row()],i,now);
+  let reads=0;const history=f.store.encodedHistory.bind(f.store);f.store.encodedHistory=(...args)=>{reads++;return history(...args);};
+  const server=createStockServer({store:f.store,instruments:[i]});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const url='http://127.0.0.1:'+server.address().port+'/stocks/history/'+i.instrumentId;
+  try{
+    for(let n=0;n<100;n++){
+      const r=await fetch(url+'?limit=2&before='+(now-n));assert.equal(r.status,200);
+      const page=await r.json();assert.deepEqual(page.candles.map(c=>c.openTimeUtc),[now-1800000,now-900000]);assert.equal(page.next,now-1800000);
+    }
+    assert.equal(reads,1);assert.equal(server.stockCache.entries.size,1);
+    const older=await(await fetch(url+'?limit=2&before='+(now-900000))).json();
+    assert.deepEqual(older.candles.map(c=>c.openTimeUtc),[now-2700000,now-1800000]);assert.equal(reads,2);
+    // Correction + invalidation must not return a previously encoded page.
+    f.store.write([{...row(),close:'100.5'}],i,now);server.stockCache.clear();
+    assert.equal((await(await fetch(url)).json()).candles.at(-1).close,'100.5');
+  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}
+});
+
+test('100 simultaneous cached HTTP readers are not rejected by idle transport sockets',async()=>{
+  const f=fixture();f.store.write([row()],i,now);const server=createStockServer({store:f.store,instruments:[i]});
+  let dropped=0;server.on('drop',()=>dropped++);await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const url='http://127.0.0.1:'+server.address().port+'/stocks/history/'+i.instrumentId;
+  try{
+    // Native HTTP keeps this transport regression's client inside the tiny shared
+    // cgroup without charging 100 Fetch/JSON parsers to the server's CPU budget.
+    // Same 100 connections and 3s deadline; external read-load.cjs is unchanged.
+    const results=await Promise.all(Array.from({length:100},()=>new Promise((resolve,reject)=>{
+      const request=httpGet(url,{signal:AbortSignal.timeout(3000)},response=>{
+        if(response.statusCode!==200){response.resume();reject(Error('HTTP '+response.statusCode));return;}
+        response.on('error',reject);response.on('end',()=>resolve(true));response.resume();
+      });request.on('error',reject);
+    })));
+    assert.equal(results.length,100);assert.equal(dropped,0);assert.equal(server.maxConnections,128);
+    assert.ok(server.stockCache.bytes<=16*1048576);assert.equal(server.stockCache.pending.size,0);
+  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}
+});
+
+test('cache invalidation fences in-flight data and LRU stays inside original byte budget',async()=>{
+  const cache=new ByteCache(16);let release;const stale=cache.get('page',()=>new Promise(r=>release=r));await Promise.resolve();
+  cache.clear();await cache.get('page',()=> 'new');release('stale');await stale;
+  assert.equal(cache.peek('page').value,'new');assert.equal(cache.bytes,3);
+  await cache.get('second',()=> '12345678');cache.peek('page');await cache.get('third',()=> '12345678');
+  assert.equal(cache.peek('second'),undefined);assert.equal(cache.peek('page').value,'new');assert.ok(cache.bytes<=16);
+});
+test('invalid currency, open candle, bad OHLC, adjustment mode and unordered duplicates rejected',()=>{for(const patch of [{currency:'BAD'},{closeTimeUtc:now+1},{low:'103'},{high:'99'},{volume:'NaN'},{adjustmentMode:'adjusted'},{instrumentId:'XNAS:OTHER'}])assert.throws(()=>validateCandle({...row(),...patch},i,now));const f=fixture();try{assert.throws(()=>f.store.write([row(),row()],i,now));assert.equal(f.store.history(i.instrumentId).length,0);}finally{f.close();}});
+test('read gate bounded at two active/eight pending and releases after error',async()=>{const g=new ReadGate();let release;const held=new Promise(r=>release=r);const jobs=Array.from({length:10},()=>g.run(()=>held));await assert.rejects(g.run(()=>null));assert.equal(g.active,2);assert.equal(g.queue.length,8);release();await Promise.all(jobs);assert.equal(g.active,0);await assert.rejects(g.run(()=>{throw Error('storage');}));assert.equal(await g.run(()=>3),3);});
+test('singleflight response cache byte cap',async()=>{const c=new ByteCache(16);let calls=0;const load=()=>{calls++;return '12345678';};await Promise.all([c.get('a',load),c.get('a',load)]);assert.equal(calls,1);await c.get('b',load);await c.get('c',load);assert.ok(c.bytes<=16);});
+
+test('cache peek does not create misses; expiry and pending singleflight stay bounded',async()=>{
+  const cache=new ByteCache(16);for(let n=0;n<1000;n++)assert.equal(cache.peek(String(n)),undefined);
+  assert.equal(cache.pending.size,0);let release,calls=0;
+  const job=cache.get('a',()=>{calls++;return new Promise(r=>release=r);},1000);
+  const follower=cache.peek('a',1000);assert.ok(follower);await Promise.resolve();
+  release('12345678');assert.equal(await follower.value,'12345678');await job;
+  assert.equal(calls,1);assert.equal(cache.peek('a',900999).value,'12345678');
+  assert.equal(cache.peek('a',901000),undefined);assert.equal(cache.pending.size,0);
+});
+
+test('cached HTTP history remains available while uncached read admission is full',async()=>{
+  const f=fixture(),gate=new ReadGate();f.store.write([row()],i,now);
+  const server=createStockServer({store:f.store,instruments:[i],readGate:gate});
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const url='http://127.0.0.1:'+server.address().port+'/stocks/history/'+i.instrumentId;
+  let release;const held=new Promise(r=>release=r);let jobs=[];
+  try{
+    const warm=await fetch(url);assert.equal(warm.status,200);const expected=await warm.text();
+    jobs=Array.from({length:10},()=>gate.run(()=>held));
+    const hit=await fetch(url);assert.equal(hit.status,200);assert.equal(await hit.text(),expected);
+    // Exclude the cached newest candle: this is a genuinely uncached page.
+    assert.equal((await fetch(url+'?before='+(now-900000))).status,503);
+    assert.equal(gate.active,2);assert.equal(gate.queue.length,8);
+    assert.equal(server.stockCache.pending.size,0);
+    release();await Promise.all(jobs);assert.equal((await fetch(url+'?before='+(now-900000))).status,200);
+  }finally{release();await Promise.allSettled(jobs);server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}
+});
+test('provider body cap while streaming, no JSON parsing oversized response',async()=>{let cancelled=false;const p=new ProviderGateway({fetchImpl:async()=>({ok:true,body:new ReadableStream({pull(c){c.enqueue(new Uint8Array(600000));},cancel(){cancelled=true;}})})});await assert.rejects(p.request('https://fixture.invalid'),/response limit/);assert.ok(cancelled);assert.ok(p.pausedUntil>Date.now());p.close();});
+test('aborting collector cancels in-flight provider fetch',async()=>{const p=new ProviderGateway({fetchImpl:(_u,{signal})=>new Promise((_r,reject)=>signal.addEventListener('abort',()=>reject(signal.reason)))});const job=p.request('https://fixture.invalid');setTimeout(()=>p.close(),20);await assert.rejects(job);assert.equal(p.busy,false);});
+test('exchange intervals account for publication lag, breaks and absent session; no invented candles',()=>{const s=[{instrumentId:i.instrumentId,open:now-1800000,close:now}];assert.equal(closedSessionEnd(i,s,now,60000),now-900000);assert.equal(closedSessionEnd(i,[],now,0),null);assert.equal(closedSessionEnd(i,s,now+3600000,0),now);});
+test('singleton cycle, bounded backfill yielding and durable checkpoint',async()=>{const f=fixture();let release,calls=0;const adapter={page:async()=>{calls++;await new Promise(r=>release=r);return [];}};const scheduler=new Scheduler({store:f.store,adapter,instruments:[i],sessions:[{instrumentId:i.instrumentId,open:now-86400000,close:now}],dataDir:f.dir,delayMs:0,guard:()=>{}});try{const cycle=scheduler.cycle(now);assert.equal(await scheduler.cycle(now),false);assert.equal(await scheduler.backfill(i.instrumentId,now),false);release();await cycle;const backfill=scheduler.backfill(i.instrumentId,now);await new Promise(r=>setImmediate(r));release();await backfill;assert.ok(f.store.db.prepare('SELECT cursor FROM checkpoints').get().cursor>now-30*86400000);assert.equal(calls,2);scheduler.stop();assert.equal(await scheduler.cycle(now),false);}finally{f.close();}});
+test('real HTTP routes are read only, bounded, no provider and financial dependency',async()=>{const f=fixture();f.store.write([row()],i,now);const server=createStockServer({store:f.store,instruments:[i]});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;try{const total=()=>f.store.db.prepare('SELECT total_changes() n').get().n;const before=total();assert.equal((await fetch(base+'/stocks')).status,200);const h=await(await fetch(base+'/stocks/history/'+i.instrumentId)).json();assert.equal(h.candles.length,1);assert.equal((await fetch(base+'/stocks/history/'+i.instrumentId+'?limit=501')).status,400);assert.equal((await fetch(base+'/stocks/history/'+i.instrumentId+'?random=1')).status,400);assert.equal((await fetch(base+'/stocks',{method:'POST'})).status,405);assert.equal(total(),before);assert.equal((await fetch(base+'/health')).status,200);}finally{server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}});
+for(const visibility of [{enabled:false,dataRightsStatus:'unconfirmed'},{enabled:false,dataRightsStatus:'confirmed'},{enabled:true,dataRightsStatus:'confirmed'}].slice(0,2))test('disabled/unlicensed data cannot escape '+visibility.dataRightsStatus,async()=>{const f=fixture();f.store.write([row()],i,now);const server=createStockServer({store:f.store,instruments:[{...i,...visibility}]});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;try{assert.equal((await(await fetch(base+'/stocks')).json()).instruments[0].latest,null);assert.deepEqual((await(await fetch(base+'/stocks/history/'+i.instrumentId)).json()).candles,[]);}finally{server.closeAllConnections();await new Promise(r=>server.close(r));f.close();}});
+test('Retry-After longer than a minute pauses without issuing early retry',async()=>{let calls=0;const p=new ProviderGateway({fetchImpl:async()=>{calls++;return {ok:false,status:429,headers:new Headers({'retry-after':'120'}),body:null};}});await assert.rejects(p.request('https://fixture.invalid'));assert.equal(calls,1);assert.ok(p.pausedUntil>=Date.now()+119000);await assert.rejects(p.request('https://fixture.invalid'));assert.equal(calls,1);p.close();});
+test('successive provider 500s have bounded attempts and minimum start spacing',async()=>{const starts=[];const p=new ProviderGateway({fetchImpl:async()=>{starts.push(Date.now());return {ok:false,status:500,headers:new Headers(),body:null};}});await assert.rejects(p.request('https://fixture.invalid'));assert.equal(starts.length,3);assert.ok(starts[1]-starts[0]>=1990);assert.ok(starts[2]-starts[1]>=1990);p.close();});
+test('checkpoint survives real SQLite close and reopen',()=>{const f=fixture();try{f.store.checkpoint(i.instrumentId,now-1000);f.store.close();f.store=new Store(join(f.dir,'s.sqlite'));assert.equal(f.store.db.prepare('SELECT cursor FROM checkpoints').get().cursor,now-1000);}finally{f.close();}});
+test('storage-full guard prevents new import without deleting stored rows',async()=>{const f=fixture();f.store.write([row(1)],i,now);const scheduler=new Scheduler({store:f.store,adapter:{page:async()=>[row()]},instruments:[i],sessions:[{instrumentId:i.instrumentId,open:now-1800000,close:now}],dataDir:f.dir,delayMs:0,guard:()=>{throw Error('Stock storage paused');}});try{await assert.rejects(scheduler.cycle(now),/paused/);assert.equal(f.store.history(i.instrumentId).length,1);assert.equal(scheduler.running,false);}finally{f.close();}});
+test('closed session does not re-poll provider when final candle already exists',async()=>{const f=fixture();f.store.write([row()],i,now);let calls=0;const scheduler=new Scheduler({store:f.store,adapter:{page:async()=>{calls++;return[];}},instruments:[i],sessions:[{instrumentId:i.instrumentId,open:now-1800000,close:now}],dataDir:f.dir,delayMs:0,guard:()=>{}});try{await scheduler.cycle(now+86400000);assert.equal(calls,0);}finally{f.close();}});

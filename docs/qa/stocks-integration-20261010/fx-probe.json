@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-10T08:49:32.870Z",
+  "usdcRate": {
+    "status": "PASS",
+    "value": {
+      "rate": "1.00084000",
+      "timestamp": 1791622173583,
+      "maxAgeMs": 180000,
+      "source": "Binance USDC/USDT",
+      "policy": "observed USDT per USDC"
+    }
+  },
+  "rubRate": {
+    "status": "BLOCKED",
+    "error": "SOURCE_UNAVAILABLE"
+  }
+}

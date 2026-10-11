@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-10T08:52:46.058Z",
+  "mode": "loopback state-read smoke, not production capacity acceptance",
+  "requests": 200,
+  "concurrency": 8,
+  "errors": 0,
+  "elapsedMs": 75.47579999999999,
+  "p95Ms": 4.7727,
+  "rssBefore": 90726400,
+  "rssAfter": 90918912,
+  "cpuDeltaUs": {
+    "user": 47000,
+    "system": 16000
+  },
+  "providerRequestsDelta": 0,
+  "ordersUnchanged": true,
+  "fillsUnchanged": true
+}

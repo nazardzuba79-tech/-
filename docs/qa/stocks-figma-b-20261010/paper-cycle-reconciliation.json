@@ -1,0 +1,21 @@
+{
+  "originalFillsPreserved": 17,
+  "originalOrdersPreserved": 19,
+  "newFills": 5,
+  "newOrders": 6,
+  "adjustmentsUnchanged": true,
+  "noOpenPositions": true,
+  "noReserves": true,
+  "deltas": {
+    "USDT": {
+      "cashUnits": "-1000000",
+      "balance": "9999.74000000",
+      "realized": "-0.26000000"
+    },
+    "USDC": {
+      "cashUnits": "-999182",
+      "balance": "9999.97501975",
+      "realized": "-0.02498025"
+    }
+  }
+}

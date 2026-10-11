@@ -1,0 +1,246 @@
+{
+  "before": {
+    ".vxg-notice": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 204,
+        "height": 15,
+        "left": 16,
+        "right": 364,
+        "top": 189,
+        "width": 348,
+        "x": 16,
+        "y": 189
+      },
+      "display": "block",
+      "font": "10px"
+    },
+    ".vxg-order-types": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 360.8646049499512,
+        "height": 37.51041793823242,
+        "left": 16,
+        "right": 364,
+        "top": 323.35418701171875,
+        "width": 348,
+        "x": 16,
+        "y": 323.35418701171875
+      },
+      "display": "flex",
+      "font": "13px"
+    },
+    ".vxg-sides": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 308.3541793823242,
+        "height": 40.17708587646485,
+        "left": 16,
+        "right": 364,
+        "top": 268.1770935058594,
+        "width": 348,
+        "x": 16,
+        "y": 268.1770935058594
+      },
+      "display": "flex",
+      "font": "13px"
+    },
+    ".vxg-submit": {
+      "background": "rgb(27, 157, 121)",
+      "box": {
+        "bottom": 705.3854370117188,
+        "height": 46.84375,
+        "left": 16,
+        "right": 364,
+        "top": 658.5416870117188,
+        "width": 348,
+        "x": 16,
+        "y": 658.5416870117188
+      },
+      "display": "inline-block",
+      "font": "13px"
+    },
+    ".vxg-ticket": {
+      "background": "rgb(14, 17, 24)",
+      "box": {
+        "bottom": 926.3958740234376,
+        "height": 747.3958740234375,
+        "left": 3,
+        "right": 377,
+        "top": 179,
+        "width": 374,
+        "x": 3,
+        "y": 179
+      },
+      "display": "block",
+      "font": "13px"
+    },
+    ".vxg-ticket form": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 711.3854370117188,
+        "height": 306.57293701171875,
+        "left": 16,
+        "right": 364,
+        "top": 404.8125,
+        "width": 348,
+        "x": 16,
+        "y": 404.8125
+      },
+      "display": "block",
+      "font": "13px"
+    },
+    ".vxg-ticket input[aria-label=\"Количество\"]": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 532.0000228881836,
+        "height": 32.645835876464844,
+        "left": 26.666667938232425,
+        "right": 353.3333549499512,
+        "top": 499.3541870117187,
+        "width": 326.66668701171875,
+        "x": 26.666667938232425,
+        "y": 499.3541870117187
+      },
+      "display": "inline-block",
+      "font": "17px"
+    },
+    ".vxg-ticket input[aria-label=\"Цена\"]": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 461.0729293823242,
+        "height": 32.645835876464844,
+        "left": 26.666667938232425,
+        "right": 353.3333549499512,
+        "top": 428.4270935058594,
+        "width": 326.66668701171875,
+        "x": 26.666667938232425,
+        "y": 428.4270935058594
+      },
+      "display": "inline-block",
+      "font": "17px"
+    }
+  },
+  "after": {
+    ".vxg-notice": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 204,
+        "height": 15,
+        "left": 16,
+        "right": 364,
+        "top": 189,
+        "width": 348,
+        "x": 16,
+        "y": 189
+      },
+      "display": "block",
+      "font": "10px"
+    },
+    ".vxg-order-types": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 360.8646049499512,
+        "height": 37.51041793823242,
+        "left": 16,
+        "right": 364,
+        "top": 323.35418701171875,
+        "width": 348,
+        "x": 16,
+        "y": 323.35418701171875
+      },
+      "display": "flex",
+      "font": "13px"
+    },
+    ".vxg-sides": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 308.3541793823242,
+        "height": 40.17708587646485,
+        "left": 16,
+        "right": 364,
+        "top": 268.1770935058594,
+        "width": 348,
+        "x": 16,
+        "y": 268.1770935058594
+      },
+      "display": "flex",
+      "font": "13px"
+    },
+    ".vxg-submit": {
+      "background": "rgb(27, 157, 121)",
+      "box": {
+        "bottom": 705.3854370117188,
+        "height": 46.84375,
+        "left": 16,
+        "right": 364,
+        "top": 658.5416870117188,
+        "width": 348,
+        "x": 16,
+        "y": 658.5416870117188
+      },
+      "display": "inline-block",
+      "font": "13px"
+    },
+    ".vxg-ticket": {
+      "background": "rgb(14, 17, 24)",
+      "box": {
+        "bottom": 926.3958740234376,
+        "height": 747.3958740234375,
+        "left": 3,
+        "right": 377,
+        "top": 179,
+        "width": 374,
+        "x": 3,
+        "y": 179
+      },
+      "display": "block",
+      "font": "13px"
+    },
+    ".vxg-ticket form": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 711.3854370117188,
+        "height": 306.57293701171875,
+        "left": 16,
+        "right": 364,
+        "top": 404.8125,
+        "width": 348,
+        "x": 16,
+        "y": 404.8125
+      },
+      "display": "block",
+      "font": "13px"
+    },
+    ".vxg-ticket input[aria-label=\"Количество\"]": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 532.0000228881836,
+        "height": 32.645835876464844,
+        "left": 26.666667938232425,
+        "right": 353.3333549499512,
+        "top": 499.3541870117187,
+        "width": 326.66668701171875,
+        "x": 26.666667938232425,
+        "y": 499.3541870117187
+      },
+      "display": "inline-block",
+      "font": "17px"
+    },
+    ".vxg-ticket input[aria-label=\"Цена\"]": {
+      "background": "rgba(0, 0, 0, 0)",
+      "box": {
+        "bottom": 461.0729293823242,
+        "height": 32.645835876464844,
+        "left": 26.666667938232425,
+        "right": 353.3333549499512,
+        "top": 428.4270935058594,
+        "width": 326.66668701171875,
+        "x": 26.666667938232425,
+        "y": 428.4270935058594
+      },
+      "display": "inline-block",
+      "font": "17px"
+    }
+  }
+}
