@@ -206,7 +206,7 @@ export function SupportWidget() {
             <a className="support-telegram-link" href="https://t.me/Voltex_SupportBot" target="_blank" rel="noopener noreferrer">
               Написать в Telegram <ArrowUpRight size={16} aria-hidden="true" />
             </a>
-            <p className="support-telegram-note">Бот спросит ваше имя и попросит описать проблему. Ответ придёт прямо в Telegram. Никогда не отправляйте пароли и коды 2FA.</p>
+            <p className="support-telegram-note">Бот поможет описать проблему. Email регистрации специалист запросит только при необходимости. Ответ придёт прямо в Telegram. Не отправляйте пароли и коды 2FA.</p>
           </section>
           <div className="support-contact-separator"><span>Или напишите через сайт</span></div>
           <fieldset className="support-topics" disabled={sending}><legend>{RU['support.formSubject']}</legend><div className="support-topic-grid">
