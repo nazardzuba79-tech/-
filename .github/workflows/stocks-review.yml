@@ -7,7 +7,55 @@ on:
 permissions:
   contents: read
 jobs:
+  stocks-joined-phase-diagnostic:
+    # Opt-in investigation only: this job never certifies capacity or replaces the full gates.
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Diagnostic instrumentation regressions
+        run: node --test services/stocks/phase-trace/*.test.mjs
+      - name: Verify the original bounded disk and distinct load CPU
+        run: |
+          mkdir -p "$RUNNER_TEMP/profile-disk" .ci-output/stocks-phase-trace
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+          majmin=$(findmnt -n -o MAJ:MIN -T "$RUNNER_TEMP/profile-disk" | tr -d '[:space:]')
+          device=$(lsblk -nrpo NAME,MAJ:MIN | awk -v mm="$majmin" '$2==mm {print $1; exit}')
+          test -n "$device" && test -b "$device"
+          parent=$(lsblk -ndo PKNAME "$device")
+          if [ -n "$parent" ]; then device="/dev/$parent"; fi
+          printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
+          { nproc; free -m; findmnt -T "$RUNNER_TEMP/profile-disk"; lsblk; } > .ci-output/stocks-phase-trace/host.txt
+      - name: Joined original 50-mixed trace and matched OFF controls
+        env:
+          STOCK_PHASE_TRACE_OUTPUT: .ci-output/stocks-phase-trace
+          STOCK_PHASE_TRACE_DISK: ${{ runner.temp }}/profile-disk
+        run: node services/stocks/phase-trace/run.mjs
+      - name: Join deadlines and report instrumentation overhead
+        if: always()
+        run: node services/stocks/phase-trace/analyze.mjs .ci-output/stocks-phase-trace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-joined-phase-diagnostic-${{ github.event.pull_request.head.sha }}
+          path: .ci-output/stocks-phase-trace
+          if-no-files-found: error
   stocks-performance-profile:
+    # Explicit diagnosis is not acceptance. Remove the label for the unchanged full gates.
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -223,6 +271,7 @@ jobs:
           path: stocks-ui-evidence
           if-no-files-found: error
   crypto-service-comparison:
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -266,6 +315,7 @@ jobs:
           path: .ci-output/stocks
 
   launch-resource-comparison:
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:

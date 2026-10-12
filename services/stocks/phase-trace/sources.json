@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "files": [
+    "services/stocks-global/account-commands.mjs",
+    "services/stocks-global/account-observations.mjs",
+    "services/stocks-global/account-worker-runtime.mjs",
+    "services/stocks-global/account-worker.mjs",
+    "services/stocks-global/accounts.mjs",
+    "services/stocks-global/catalog.mjs",
+    "services/stocks-global/engine.mjs",
+    "services/stocks-global/identity.mjs",
+    "services/stocks-global/market.mjs",
+    "services/stocks-global/server.mjs",
+    "services/stocks-global/store.mjs",
+    "services/stocks-simulator/engine.mjs",
+    "services/stocks/realistic-global-fixture.mjs",
+    "services/stocks/realistic-readers.mjs",
+    "services/stocks/realistic-provider-fixture.mjs",
+    "services/stocks/io-proof.mjs"
+  ],
+  "revisions": {
+    "de565eac17a8477e0dd4c50c2dc936b2bea21990": {
+      "services/stocks-global/account-commands.mjs": "dd506bc99de33f9572f4b5119d2b670e74eb0bd1e057dfe6b678f58b63a61247",
+      "services/stocks-global/account-observations.mjs": "ac672b140f945f3bcf15c0ac3c71e8ba58fb90a335fd69390110ef02ab249569",
+      "services/stocks-global/account-worker-runtime.mjs": "d9f5e27cb418c742e3d0b0c6788e3f6a12727e3eea1f48b33d620b805ea9c1c2",
+      "services/stocks-global/account-worker.mjs": "601f78d8dfa5af20d6821ce926bdfebb469d22f7f3f01b16559c85cc86d3c647",
+      "services/stocks-global/accounts.mjs": "0ec41914a2e044f1fced392592ef04f0022ac8b57be33cbd08b94fe834ecbcdd",
+      "services/stocks-global/catalog.mjs": "47e873004c8c1b29f8b82a4a474420470cece65c1add074e6016ab794e835e1a",
+      "services/stocks-global/engine.mjs": "eaa4fada1be661d3e29a4102e5573c70bfa8f15a30f0da75aab8812dfe1cfa8c",
+      "services/stocks-global/identity.mjs": "6c4a2bba567b026062c1e9d882bce081862ba5a6ec708f359fb2e2fbdd9c6cc6",
+      "services/stocks-global/market.mjs": "ddf3dae0ba0f440e8fcdfc4c19bfdf88352ec8242b7ca35fb4531f8966bb99fe",
+      "services/stocks-global/server.mjs": "696d08417df962633edb011894c7ae9f1b9efd129d0376a542c4591bf62fbdf4",
+      "services/stocks-global/store.mjs": "aaeb6461547d7478ec9922c06548064553d734c8782926e546eaec21e990de09",
+      "services/stocks-simulator/engine.mjs": "b7125711b5ea91ee99124df2d9bf541a8cea5388d56f0978aa595f74ac4bc2b8",
+      "services/stocks/realistic-global-fixture.mjs": "08502c3b2823218db5b3a5d68dd676f5ec2c09c66125ee415580d4cd565fd966",
+      "services/stocks/realistic-readers.mjs": "e04a8b82213a00ad6704a99ef6a8490f4c3bbfe0609f34ce94477d3e4a26ab67",
+      "services/stocks/realistic-provider-fixture.mjs": "0a7608d9ca10d98cdab01493e94232aed7584862bab346278a9e86f03f244e45",
+      "services/stocks/io-proof.mjs": "224c13911f38f68c0c4e5d9f9e5ddc12ab3e16217b77f81e1ab9234c02e0432e"
+    },
+    "010eb8716755c48aeb62baaf8602fb7ff837859f": {
+      "services/stocks-global/account-commands.mjs": "dd506bc99de33f9572f4b5119d2b670e74eb0bd1e057dfe6b678f58b63a61247",
+      "services/stocks-global/account-observations.mjs": "ac672b140f945f3bcf15c0ac3c71e8ba58fb90a335fd69390110ef02ab249569",
+      "services/stocks-global/account-worker-runtime.mjs": "d9f5e27cb418c742e3d0b0c6788e3f6a12727e3eea1f48b33d620b805ea9c1c2",
+      "services/stocks-global/account-worker.mjs": "7bfaae17f60063e883529818ab18e1d859ef03a889b32656cc51ac91f0f00837",
+      "services/stocks-global/accounts.mjs": "0ec41914a2e044f1fced392592ef04f0022ac8b57be33cbd08b94fe834ecbcdd",
+      "services/stocks-global/catalog.mjs": "47e873004c8c1b29f8b82a4a474420470cece65c1add074e6016ab794e835e1a",
+      "services/stocks-global/engine.mjs": "eaa4fada1be661d3e29a4102e5573c70bfa8f15a30f0da75aab8812dfe1cfa8c",
+      "services/stocks-global/identity.mjs": "6c4a2bba567b026062c1e9d882bce081862ba5a6ec708f359fb2e2fbdd9c6cc6",
+      "services/stocks-global/market.mjs": "ddf3dae0ba0f440e8fcdfc4c19bfdf88352ec8242b7ca35fb4531f8966bb99fe",
+      "services/stocks-global/server.mjs": "f95299647714e14a38185042948473c1efb7cbf10264d54beb65f3269690f829",
+      "services/stocks-global/store.mjs": "aaeb6461547d7478ec9922c06548064553d734c8782926e546eaec21e990de09",
+      "services/stocks-simulator/engine.mjs": "b7125711b5ea91ee99124df2d9bf541a8cea5388d56f0978aa595f74ac4bc2b8",
+      "services/stocks/realistic-global-fixture.mjs": "08502c3b2823218db5b3a5d68dd676f5ec2c09c66125ee415580d4cd565fd966",
+      "services/stocks/realistic-readers.mjs": "e04a8b82213a00ad6704a99ef6a8490f4c3bbfe0609f34ce94477d3e4a26ab67",
+      "services/stocks/realistic-provider-fixture.mjs": "0a7608d9ca10d98cdab01493e94232aed7584862bab346278a9e86f03f244e45",
+      "services/stocks/io-proof.mjs": "224c13911f38f68c0c4e5d9f9e5ddc12ab3e16217b77f81e1ab9234c02e0432e"
+    }
+  }
+}
