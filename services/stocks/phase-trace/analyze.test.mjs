@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { analyzeNormalized, partitionWindow, correlateSamples, compareRuns, decodeTrace, normalizeTrace, parseCgroup, analyzeManifest } from './analyze.mjs';
+import { analyzeNormalized, partitionWindow, correlateSamples, compareRuns, decodeTrace, normalizeTrace, parseCgroup, analyzeManifest, readerTimeouts, readerHttpErrors } from './analyze.mjs';
 import { COLUMNS, EVENTS as E } from './recorder.mjs';
 
 const group = { id: 10, dispatchMs: 30, workerStartMs: 35, workerEndMs: 75, replyMs: 80, workerThreadCpuMs: 6, sqlCalls: 3, sqlWallMs: 32, sqlThreadCpuMs: 2 };
@@ -202,4 +202,33 @@ test('partial manifest emits an explicit incomplete report without fabricated ac
   assert.ok(result.runs[0].issues.includes('READERPATH_TRACE_ARTIFACT_OUTSIDE_ROOT'));
   assert.equal(result.runs[0].reader.requests, null);
   assert.equal(JSON.stringify(result).includes('outside-secret'), false);
+});
+
+test('runner repetitions 0/1/2 form all three OFF/ON pairs without dropping repeat zero', t => {
+  const root = temporary(t);
+  const runs = [0, 1, 2].flatMap(repeat => [false, true].map(traceEnabled => ({
+    runId: `before-r${repeat}-${traceEnabled ? 'on' : 'off'}`, variant: 'before', revision: 'de565eac17a8477e0dd4c50c2dc936b2bea21990',
+    repeat, traceEnabled, workloadSignature: '1'.repeat(64), resourceSignature: '2'.repeat(64),
+  })));
+  const result = analyzeManifest({ schemaVersion: 1, diagnosticOnly: true, acceptance: false, complete: false, revisions: {}, runs }, root, join(root, 'analysis'));
+  assert.equal(result.overhead.conditions[0].matchedRepeats, 3);
+  assert.deepEqual(result.overhead.conditions[0].pairs.map(pair => pair.repeat), [1, 2, 3]);
+  assert.deepEqual(result.overhead.conditions[0].missing, []);
+  assert.equal(result.runs.some(run => run.issues.includes('MATCHED_CONDITIONS_UNCONFIRMED')), false);
+  // Missing artifacts remain a failure; pairing metadata alone is not evidence.
+  assert.equal(result.complete, false);
+  assert.equal(result.acceptance, false);
+});
+
+test('timeouts come from original reader failure codes, not all errors or an absent top-level field', () => {
+  assert.equal(readerTimeouts({ errors: 37, failures: { DEADLINE_3000MS: 32, ECONNRESET: 5 } }), 32);
+  assert.equal(readerTimeouts({ errors: 4, failures: {}, httpErrorCodes: { ACCOUNT_BUSY: 4 } }), 0);
+  assert.equal(readerTimeouts({ failures: { DEADLINE_3000MS: '32' } }), null);
+  assert.equal(readerTimeouts(undefined), null);
+});
+
+test('original HTTP status-prefixed safe error counters remain visible without accepting arbitrary strings', () => {
+  const actual = readerHttpErrors({ httpErrorCodes: { 'HTTP_503:ACCOUNT_BUSY': 17, 'HTTP_422:MOEX_UNVERIFIED': 1, RATE_LIMIT: 2, 'HTTP_503:SECRET_CANARY': 9, 'SECRET_CANARY:ACCOUNT_BUSY': 8 } });
+  assert.deepEqual(actual, { 'HTTP_503:ACCOUNT_BUSY': 17, 'HTTP_422:MOEX_UNVERIFIED': 1, RATE_LIMIT: 2 });
+  assert.equal(JSON.stringify(actual).includes('CANARY'), false);
 });

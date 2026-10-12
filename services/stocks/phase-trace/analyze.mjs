@@ -439,12 +439,25 @@ const KNOWN_REVISIONS = { before: 'de565eac17a8477e0dd4c50c2dc936b2bea21990', af
 const safeCode = error => /^TRACE_[A-Z_]+$/.test(error?.message ?? '') ? error.message : 'TRACE_ARTIFACT_UNREADABLE';
 const numeric = (value, keys) => Object.fromEntries(keys.map(key => [key, nonnegative(value?.[key]) ? value[key] : null]));
 
+export function readerTimeouts(reader) {
+  if (!reader?.failures || typeof reader.failures !== 'object' || Array.isArray(reader.failures)) return null;
+  if (!Object.hasOwn(reader.failures, 'DEADLINE_3000MS')) return 0;
+  return nonnegative(reader.failures.DEADLINE_3000MS) ? reader.failures.DEADLINE_3000MS : null;
+}
+
+export function readerHttpErrors(reader) {
+  return Object.fromEntries(Object.entries(reader?.httpErrorCodes ?? {}).filter(([key, value]) => {
+    const code = /^(?:HTTP_[1-5]\d{2}:)?([A-Z][A-Z0-9_]*)$/.exec(key)?.[1];
+    return (ERROR_NAMES.includes(code) || code === 'UNRECORDED') && nonnegative(value);
+  }));
+}
+
 function readerSummary(reader) {
-  return { ...numeric(reader, ['requests', 'ok', 'errors', 'timeouts', 'users', 'elapsedMs', 'externalApiCalls']),
+  return { ...numeric(reader, ['requests', 'ok', 'errors', 'users', 'elapsedMs', 'externalApiCalls']), timeouts: readerTimeouts(reader),
     successLatencyMs: numeric(reader?.latencyMs, ['p50', 'p95', 'p99', 'max']),
     allAttemptLatencyMs: numeric(reader?.allAttemptLatencyMs, ['p50', 'p95', 'p99', 'max']),
     statuses: Object.fromEntries(Object.entries(reader?.statuses ?? {}).filter(([key, value]) => /^\d{3}$/.test(key) && nonnegative(value))),
-    httpErrorCodes: Object.fromEntries(Object.entries(reader?.httpErrorCodes ?? {}).filter(([key, value]) => (ERROR_NAMES.includes(key) || key === 'UNRECORDED') && nonnegative(value))),
+    httpErrorCodes: readerHttpErrors(reader),
   };
 }
 
@@ -462,7 +475,7 @@ function workloadMetrics(reader, metrics, cgroup) {
     p50Ms: reader?.allAttemptLatencyMs?.p50 ?? null, p95Ms: reader?.allAttemptLatencyMs?.p95 ?? null, p99Ms: reader?.allAttemptLatencyMs?.p99 ?? null,
     successfulP95Ms: reader?.latencyMs?.p95 ?? null,
     sqlCalls: nonnegative(metrics?.sqlCalls) ? metrics.sqlCalls : null,
-    ioWriteBytes, requests: reader?.requests ?? null, timeouts: reader?.timeouts ?? null,
+    ioWriteBytes, requests: reader?.requests ?? null, timeouts: readerTimeouts(reader),
     workloadWindowMs: difference(end, start), cpuWindow: 'cgroup workload.start/end; excludes shutdown and trace flush',
   };
 }
@@ -508,7 +521,8 @@ export function analyzeManifest(manifest, root, output) {
         writeFileSync(join(output, row.runId, 'physical-sql-stages.json'), JSON.stringify(normalized.diagnostics, null, 2) + '\n');
       } catch (error) { row.issues.push(safeCode(error)); }
     } else row.trace = { enabled: false, expectedArtifacts: false, complete: null };
-    if (row.revision && /^[a-f0-9]{64}$/.test(run.workloadSignature ?? '') && /^[a-f0-9]{64}$/.test(run.resourceSignature ?? '') && row.repeat) comparisons.push({ head: row.revision, conditionKey: sha({ workload: run.workloadSignature, resources: run.resourceSignature }), traceMode: row.traceEnabled ? 'on' : 'off', repeat: row.repeat, metrics: row.metrics });
+    // Runner repetitions are zero-based; comparison slots are one-based.
+    if (row.revision && /^[a-f0-9]{64}$/.test(run.workloadSignature ?? '') && /^[a-f0-9]{64}$/.test(run.resourceSignature ?? '') && integer(row.repeat) && row.repeat < 3) comparisons.push({ head: row.revision, conditionKey: sha({ workload: run.workloadSignature, resources: run.resourceSignature }), traceMode: row.traceEnabled ? 'on' : 'off', repeat: row.repeat + 1, metrics: row.metrics });
     else row.issues.push('MATCHED_CONDITIONS_UNCONFIRMED');
     row.complete = row.issues.length === 0;
     runs.push(row);

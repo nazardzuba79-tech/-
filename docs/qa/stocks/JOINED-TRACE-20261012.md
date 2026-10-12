@@ -61,3 +61,32 @@ Sources for execution preflight:
 
 - [GitHub manual workflow dispatch prerequisites](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
 - [Cloudflare Pages GitHub skip markers](https://developers.cloudflare.com/pages/configuration/git-integration/github-integration/)
+
+## Measured capture and analyzer repair
+
+The 12 runs in workflow 38205520141 completed and produced immutable artifact
+11726788451 at diagnostic head bdf8155ee437a3a819124d3dc6daea373ba0107f.
+The first analysis job failed because its adapter treated zero-based repeat 0
+as missing. Two other adapter defects reported deadlines from an absent field
+and filtered out status-prefixed safe HTTP error codes.
+The repair replays those exact raw records; it does not repeat or replace the
+original acceptance tests. The `stocks-phase-replay` label, together with the
+existing diagnostic label, selects this pinned read-only artifact replay.
+Both labels are temporary and removed after investigation. The original
+failed report remains in `analysis`; corrected output is `analysis-current`.
+
+All 278 traced client deadlines are joined without dropped events: 219 are
+dominated by the account queue and 59 by delay before HTTP arrival. CPU quota
+throttles 296–310 of 300–313 observed periods. SQL wall time includes scheduling
+and disk wait; these traces do not separately measure fsync duration. The
+existing cancellation correction removes old post-close read dispatches
+(1/10/2 across three runs) to 0/0/0, without curing original-budget capacity.
+
+Tracing materially changes the workload: CPU per attempt rises 9.293% before
+and 5.831% after. Therefore traced timings cannot certify capacity. OFF
+controls still have 87 errors before versus 116 after across three runs
+(87 deadlines versus 115 deadlines plus one ACCOUNT_BUSY). This comparison
+does not demonstrate a throughput improvement. Across all 12 cases: 480
+deadlines and 27 ACCOUNT_BUSY, no HTTP 422, no external calls.
+
+Original acceptance failures and release blockers below remain unchanged.

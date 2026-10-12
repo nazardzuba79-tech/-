@@ -12,6 +12,9 @@ jobs:
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,6 +26,7 @@ jobs:
       - name: Diagnostic instrumentation regressions
         run: node --test services/stocks/phase-trace/*.test.mjs
       - name: Verify the original bounded disk and distinct load CPU
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'stocks-phase-replay') }}
         run: |
           mkdir -p "$RUNNER_TEMP/profile-disk" .ci-output/stocks-phase-trace
           python3 - <<'PY' >> "$GITHUB_ENV"
@@ -40,13 +44,24 @@ jobs:
           printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
           { nproc; free -m; findmnt -T "$RUNNER_TEMP/profile-disk"; lsblk; } > .ci-output/stocks-phase-trace/host.txt
       - name: Joined original 50-mixed trace and matched OFF controls
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'stocks-phase-replay') }}
         env:
           STOCK_PHASE_TRACE_OUTPUT: .ci-output/stocks-phase-trace
           STOCK_PHASE_TRACE_DISK: ${{ runner.temp }}/profile-disk
         run: node services/stocks/phase-trace/run.mjs
+      - name: Read the immutable diagnostic artifact for analyzer-only repair
+        if: ${{ contains(github.event.pull_request.labels.*.name, 'stocks-phase-replay') }}
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '11726788451'
+          run-id: 38205520141
+          github-token: ${{ github.token }}
+          merge-multiple: true
+          path: .ci-output/stocks-phase-trace
       - name: Join deadlines and report instrumentation overhead
         if: always()
-        run: node services/stocks/phase-trace/analyze.mjs .ci-output/stocks-phase-trace
+        # A replay preserves the failed original report next to the corrected analysis.
+        run: node services/stocks/phase-trace/analyze.mjs --input .ci-output/stocks-phase-trace/manifest.json --output .ci-output/stocks-phase-trace/analysis-current
       - uses: actions/upload-artifact@v4
         if: always()
         with:
