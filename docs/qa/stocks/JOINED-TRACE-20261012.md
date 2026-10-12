@@ -90,3 +90,31 @@ does not demonstrate a throughput improvement. Across all 12 cases: 480
 deadlines and 27 ACCOUNT_BUSY, no HTTP 422, no external calls.
 
 Original acceptance failures and release blockers below remain unchanged.
+
+## Remaining queue architecture constraint
+
+Of the 278 traced deadlines, 270 began within the first five seconds. For 59,
+the server HTTP handler began after the original client deadline; their TCP
+connection had already completed. These must not be labelled SQLite execution
+timeouts. The other 219 are dominated by admitted account-queue waiting.
+Separate ensure/context and readView queue legs can together exceed the HTTP
+deadline while each retains its original admission bound.
+
+Consecutive readView batching could reduce serial worker round trips, but a
+naive 32-snapshot reply is unsafe without a current memory bound: an account
+can contain 10,000 orders and 50,000 fills. A previous small snapshot is not
+a reliable bound after another writer or a quote overlay changes the ledger.
+Of 225 timed-out state requests, 213 had no completed previous readView, so a
+known-small-only optimization would also miss most of the cold bottleneck.
+The runtime was not changed on the strength of this unvalidated proposal.
+Any implementation needs bounded current-size/partial replies, preserved FIFO
+mutation barriers, per-entry results, cancellation and maximum-ledger memory
+tests, followed by the original acceptance workloads. This is unfinished
+architecture validation, not proof of physical impossibility or a requirement
+to buy a server.
+
+The analyzer repair passed 28 diagnostic tests and 224 full local Stocks tests
+at d39bb5ed6cfbebab91768d1a0e1c1535ee888cd0. Its pinned-artifact replay passed
+in GitHub workflow 38206774644 without rerunning the capture. Normal full CI
+and original performance jobs are restored by removing the temporary labels;
+their results must be assessed separately from diagnostic completeness.
