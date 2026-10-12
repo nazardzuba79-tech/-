@@ -20,12 +20,13 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
   updateClock();
   const worker=new Worker(new URL('./account-worker-runtime.mjs',import.meta.url),{workerData:{path,diagnostics:!!diagnostics,clock:clock?.buffer,testControl,registrationControl}});
   let ready=false,dead=false,closing=false,closed=false,closeSent=false,active=null,serial=0,bytes=0;
-  const queue=[],counters={accepted:0,dispatched:0,completed:0,rejected:0,timedOut:0,maxPending:0,maxBytes:0,waitMs:0,maxWaitMs:0,workMs:0,logicalWorkMs:0,registrationGroups:0,groupedRegistrations:0,maxRegistrationGroup:0};
+  const queue=[],counters={accepted:0,dispatched:0,completed:0,rejected:0,timedOut:0,cancelledReads:0,maxPending:0,maxBytes:0,waitMs:0,maxWaitMs:0,workMs:0,logicalWorkMs:0,registrationGroups:0,groupedRegistrations:0,maxRegistrationGroup:0};
   let sqlMetrics={sqlCalls:0,sqlReadCalls:0,sqlWriteCalls:0,sqlExecCalls:0,transactionExecCalls:0,sqlWallMs:0,sqlCpuMs:0,sqlThreadCpuAvailable:0,sqlStages:{},observedAt:0};
   let resolveReady,rejectReady,resolveClose,closePromise;
   const started=new Promise((resolve,reject)=>{resolveReady=resolve;rejectReady=reject;});
   const error=code=>new SimError(code);
-  const settle=(entry,code,value)=>{clearTimeout(entry.timer);bytes-=entry.bytes;if(code)entry.reject(error(code));else entry.resolve(value);};
+  const detachAbort=entry=>entry.signal?.removeEventListener('abort',entry.onAbort);
+  const settle=(entry,code,value)=>{clearTimeout(entry.timer);detachAbort(entry);bytes-=entry.bytes;if(code)entry.reject(error(code));else entry.resolve(value);};
   const fatal=()=>{
     if(dead||closed)return;dead=true;rejectReady(error('ACCOUNT_UNAVAILABLE'));
     if(active){const group=active;active=null;for(const entry of group.entries)settle(entry,group.registrationBatch||ACCOUNT_MUTATIONS.has(entry.type)?'ACCOUNT_OUTCOME_UNKNOWN':'ACCOUNT_UNAVAILABLE');}
@@ -41,7 +42,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
       // become active (and later execute) merely because its callback is late.
       if(waited>=queueTimeoutMs){queue.shift();counters.rejected++;counters.timedOut++;settle(entry,'ACCOUNT_BUSY');continue;}
       if(entries.length&&(entries[0].type!=='ensure'||entry.type!=='ensure'||entries.length>=32))break;
-      queue.shift();clearTimeout(entry.timer);entries.push(entry);
+      queue.shift();clearTimeout(entry.timer);detachAbort(entry);entries.push(entry);
       counters.waitMs+=waited;counters.maxWaitMs=Math.max(counters.maxWaitMs,waited);
       if(entry.type!=='ensure')break;
     }
@@ -79,9 +80,13 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
   worker.on('error',fatal);
   worker.on('exit',()=>{if(!closed)fatal();});
   await started;
-  const dispatch=(principal,type,input)=>{
+  const dispatch=(principal,type,input,options)=>{
     if(dead||closed||closing)return Promise.reject(error('ACCOUNT_UNAVAILABLE'));
     if(type!=='ensure'&&!ACCOUNT_MUTATIONS.has(type)&&!ACCOUNT_READS.has(type))return Promise.reject(error('ACCOUNT_COMMAND_INVALID'));
+    // Only an undispatched projection may be abandoned. Neither a mutation nor
+    // an active command can be cancelled by an HTTP disconnect.
+    const signal=type==='readView'?options?.signal:undefined;
+    if(signal?.aborted)return Promise.reject(error('ACCOUNT_READ_ABORTED'));
     let encoded,payload;
     try{
       // Snapshot the caller's values at admission so later mutation cannot
@@ -91,10 +96,16 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
     const size=Buffer.byteLength(encoded),pending=queue.length+(active?.entries.length??0);
     if(pending>=maxPending||bytes+size>maxQueueBytes){counters.rejected++;return Promise.reject(error('ACCOUNT_BUSY'));}
     return new Promise((resolve,reject)=>{
-      const entry={...payload,requestId:++serial,bytes:size,enqueued:performance.now(),resolve,reject,timer:null};
+      const entry={...payload,requestId:++serial,bytes:size,enqueued:performance.now(),resolve,reject,timer:null,signal,onAbort:null};
       bytes+=size;counters.accepted++;counters.maxPending=Math.max(counters.maxPending,pending+1);counters.maxBytes=Math.max(counters.maxBytes,bytes);
       entry.timer=setTimeout(()=>{const index=queue.indexOf(entry);if(index<0)return;queue.splice(index,1);counters.rejected++;counters.timedOut++;settle(entry,'ACCOUNT_BUSY');pump();},queueTimeoutMs);
-      queue.push(entry);pump();
+      queue.push(entry);
+      if(signal){
+        entry.onAbort=()=>{const index=queue.indexOf(entry);if(index<0)return;queue.splice(index,1);counters.cancelledReads++;settle(entry,'ACCOUNT_READ_ABORTED');pump();};
+        signal.addEventListener('abort',entry.onAbort,{once:true});
+        if(signal.aborted)entry.onAbort();
+      }
+      pump();
     });
   };
   return{
@@ -103,7 +114,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
       // never come from an order body or a client-selected route parameter.
       const owner=structuredClone(principal),id=accountId(owner);
       await dispatch(owner,'ensure');
-      return{id,read:()=>dispatch(owner,'read'),execute:(command,input)=>dispatch(owner,command,input)};
+      return{id,read:()=>dispatch(owner,'read'),execute:(command,input,options)=>dispatch(owner,command,input,options)};
     },
     metrics(){return{...sqlMetrics,sqlStages:Object.fromEntries(Object.entries(sqlMetrics.sqlStages).map(([key,value])=>[key,{...value}])),updatedAt:sqlMetrics.observedAt,metricsAgeMs:sqlMetrics.observedAt?Math.max(0,Date.now()-sqlMetrics.observedAt):0,workerAlive:Number(!dead&&!closed),queue:{...counters,pending:queue.length,active:active?.entries.length??0,bytes,maxPendingLimit:maxPending,maxQueueBytesLimit:maxQueueBytes,queueTimeoutMs}};},
     close(){

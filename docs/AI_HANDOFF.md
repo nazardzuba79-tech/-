@@ -6273,3 +6273,10 @@ Read-only Hetzner hardware/passive aggregate checks confirmed 2 vCPU / 3.730 GiB
 - New safety regressions cover equivalent final state, isolation, stale/invalid/closed quotes, durable ACK and uncertain outcomes. New test is included in existing CI without removing any old test.
 - Local short-load fixture: mean CPU 307.67 -> 177 ms, V8-encoded packet proxy 2904.8 -> 715 bytes; same SQL/message count and ledger hashes. This is not constrained capacity acceptance.
 - Keep the full edeea301 CI evidence, including its failures. Exact new-head original bounded/crypto reruns are required; do not treat a green artifact-collection job as workload PASS.
+
+### Stocks #497 / #505 — queued read disconnect cleanup (2026-10-12)
+
+- Continue codex/stocks-integration-20261010 on fresh de565eac / main c205ca3c. No other module or production change.
+- A controlled phase trace proved a readView dispatched after its HTTP client disconnected. Remove only undispatched readView work; keep active operations, shared registration, financial commands and FULL durability unchanged.
+- Details and causal limits: docs/qa/stocks/READ-DISCONNECT-20261012.md. Regression and exact-head original-gate results must be reported separately. This does not prove the prior 59 deadlines or strict crypto p95 are fixed.
+- Keep Draft #497; no merge or deploy. Unrelated Admin expired-date and backend baseline failures are not changed.

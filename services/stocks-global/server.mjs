@@ -27,7 +27,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   const sourceAllowed=id=>{check(instrument(id),'INVALID_PAIR');check(instrument(id).provider!=='moex','MOEX_UNVERIFIED');};
   const blockedCatalogue=list=>list.map(i=>i.provider==='moex'?{...i,online:false,display:null,sourceError:'MOEX_UNVERIFIED'}:i);
   let catalogue=blockedCatalogue(CATALOG.map(i=>({...i,exists:null,online:false})));
-  const status=async(ctx,committed)=>({... (committed??await(accounts?ctx.store.execute('readView'):ctx.store.read())),...(accounts?{account:{id:ctx.id,mode:'isolated-paper',quoteView:'volatile'}}:{}),catalogue,errors:{...ctx.errors},metrics:{...hub.metrics,rssBytes:process.memoryUsage().rss,cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}});
+  const status=async(ctx,committed,signal)=>({... (committed??await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read())),...(accounts?{account:{id:ctx.id,mode:'isolated-paper',quoteView:'volatile'}}:{}),catalogue,errors:{...ctx.errors},metrics:{...hub.metrics,rssBytes:process.memoryUsage().rss,cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}});
   const loadCatalogue=()=>catalogueTask??=hub.catalogue().then(list=>{catalogue=blockedCatalogue(list);lastCatalogue=now();}).finally(()=>{catalogueTask=null;});
   const getContext=async req=>{
     if(!accounts)return contexts.get('legacy');
@@ -73,8 +73,14 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
       const ctx=await getContext(req);
       check(![...u.searchParams.keys()].some(k=>!['id','interval','before'].includes(k)),'ACCOUNT_SELECTOR_FORBIDDEN');
       if(req.method==='GET'&&u.pathname===API+'state'){
-        const id=u.searchParams.get('id');if(id){check(instrument(id),'INVALID_PAIR');const changed=id!==ctx.selected;ctx.selected=id;ctx.lease=now();if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&changed)refreshInBackground(ctx);}
-        send(res,200,{...await status(ctx),token:ctx.token});return;
+        if(res.destroyed)return;
+        const readAbort=new AbortController(),onClose=()=>{if(!res.writableFinished)readAbort.abort();};
+        res.once('close',onClose);
+        try{
+          const id=u.searchParams.get('id');if(id){check(instrument(id),'INVALID_PAIR');const changed=id!==ctx.selected;ctx.selected=id;ctx.lease=now();if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&changed)refreshInBackground(ctx);}
+          const view=await status(ctx,undefined,readAbort.signal);
+          if(!res.destroyed)send(res,200,{...view,token:ctx.token});return;
+        }finally{res.off('close',onClose);}
       }
       if(req.method==='GET'&&u.pathname===API+'history'){sourceAllowed(u.searchParams.get('id'));const page=await hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'));let body=historyWire.get(page);if(!body){const started=performance.now();body=Buffer.from(JSON.stringify(page));historyWire.set(page,body);hub.metrics.historySerializations++;hub.metrics.historySerializeMs+=performance.now()-started;}res.writeHead(200,{'Content-Type':'application/json','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(body);return;}
       if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();send(res,200,{catalogue});return;}
@@ -90,7 +96,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     }
     check(req.method==='GET'&&!/^\/(api|v1|v2|admin|__stocks_simulator)(\/|$)/.test(u.pathname),'ROUTE_NOT_FOUND');
     let relative;try{relative=decodeURIComponent(u.pathname);}catch{throw new SimError('ROUTE_NOT_FOUND');}let path=resolve(dist,'.'+relative);check(path.startsWith(dist+sep)||path===dist,'ROUTE_NOT_FOUND');if(!extname(path))path=resolve(dist,'index.html');check((await stat(path)).isFile(),'ROUTE_NOT_FOUND');res.writeHead(200,{'Content-Type':MIME[extname(path)]||'application/octet-stream','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(await readFile(path));
-  }catch(e){if(!res.headersSent){
+  }catch(e){if(res.destroyed)return;if(!res.headersSent){
     // Advisory minimum wait for a manual read probe, never permission to replay
     // a trade. Unknown mutation outcomes deliberately have no retry hint.
     const retryAfterMs=e instanceof SimError?(e.code==='RATE_LIMIT'?60000:['SOURCE_BUSY','ACCOUNT_BUSY'].includes(e.code)?3000:null):null;

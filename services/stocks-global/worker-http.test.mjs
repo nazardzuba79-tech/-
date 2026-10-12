@@ -35,7 +35,7 @@ async function fixture(t, { historyError, maxPending } = {}) {
     Atomics.store(control, 2, 1); Atomics.notify(control, 2);
     await app.close(); await rm(dir, { recursive: true, force: true });
   });
-  return { request, control, authCalls: () => authCalls };
+  return { request, control, app, authCalls: () => authCalls };
 }
 
 async function entered(control, after) {
@@ -137,4 +137,74 @@ test('ACCOUNT_BUSY is an undispatched rejection with an advisory wait, never a s
   assert.equal(state.wallets.USDT.cash, '9990.00000000');
   assert.equal((await f.request('orders', { token, body: ORDER })).status, 200);
   assert.equal((await f.request('state')).body.fills.length, 1, 'same-ID reconciliation must not duplicate the committed order');
+});
+
+
+async function reached(check, message) {
+  const deadline = Date.now() + 5000;
+  while (!check()) {
+    assert.ok(Date.now() < deadline, message);
+    await new Promise(resolve => setImmediate(resolve));
+  }
+}
+
+function nextServerResponseClosed(app) {
+  return new Promise(resolve => app.server.once('request', (_req, res) => res.once('close', resolve)));
+}
+
+test('a disconnected state request drops only its queued projection while the held order still commits', async t => {
+  const f = await fixture(t), alice = await f.request('state'), bob = await f.request('state', { user: 'bob' });
+  await f.request('refresh', { token: alice.body.token, body: { id: ID } });
+  const count = Atomics.load(f.control, 1); Atomics.store(f.control, 0, 1); Atomics.store(f.control, 2, 0);
+  const order = f.request('orders', { token: alice.body.token, body: ORDER });
+  await entered(f.control, count);
+  const before = f.app.accountMetrics().queue, abort = new AbortController(), closed = nextServerResponseClosed(f.app);
+  const disconnected = assert.rejects(f.request('state', { user: 'bob', signal: abort.signal }), { name: 'AbortError' });
+  await reached(() => f.app.accountMetrics().queue.accepted === before.accepted + 1, 'state projection must enter the held worker queue');
+  assert.equal(f.app.accountMetrics().queue.pending, 1);
+  abort.abort(); await disconnected; await closed;
+  await reached(() => f.app.accountMetrics().queue.cancelledReads === before.cancelledReads + 1, 'closed response must remove its queued view');
+  assert.equal(f.app.accountMetrics().queue.dispatched, before.dispatched);
+  assert.equal(f.app.accountMetrics().queue.pending, 0);
+  assert.equal(f.app.accountMetrics().queue.bytes, before.bytes);
+  Atomics.store(f.control, 2, 1); Atomics.notify(f.control, 2);
+  const committed = await order;
+  assert.equal(committed.status, 200); assert.equal(committed.body.fills.length, 1);
+  const liveBob = await f.request('state', { user: 'bob' });
+  assert.equal(liveBob.status, 200); assert.equal(liveBob.body.token, bob.body.token);
+  assert.equal(liveBob.body.fills.length, 0);
+  assert.deepEqual(liveBob.body.wallets, bob.body.wallets);
+  const queue = f.app.accountMetrics().queue;
+  assert.equal(queue.dispatched, before.dispatched + 1, 'only the later live Bob view was dispatched');
+  assert.equal(queue.timedOut, before.timedOut); assert.equal(queue.rejected, before.rejected);
+  assert.equal(queue.pending, 0); assert.equal(queue.active, 0); assert.equal(queue.bytes, 0);
+});
+
+test('a disconnected cold-state waiter preserves shared registration and the surviving user context', async t => {
+  const f = await fixture(t), alice = await f.request('state');
+  await f.request('refresh', { token: alice.body.token, body: { id: ID } });
+  const count = Atomics.load(f.control, 1); Atomics.store(f.control, 0, 1); Atomics.store(f.control, 2, 0);
+  const order = f.request('orders', { token: alice.body.token, body: ORDER });
+  await entered(f.control, count);
+  const before = f.app.accountMetrics().queue, authBefore = f.authCalls(), abort = new AbortController(), closed = nextServerResponseClosed(f.app);
+  const disconnected = assert.rejects(f.request('state', { user: 'bob', signal: abort.signal }), { name: 'AbortError' });
+  await reached(() => f.app.accountMetrics().queue.accepted === before.accepted + 1, 'cold Bob registration must queue behind the commit');
+  const surviving = f.request('state', { user: 'bob' });
+  await reached(() => f.authCalls() === authBefore + 2, 'both cold requests must authenticate');
+  assert.equal(f.app.accountMetrics().queue.accepted, before.accepted + 1, 'concurrent Bob requests share one registration');
+  abort.abort(); await disconnected; await closed;
+  assert.equal(f.app.accountMetrics().queue.pending, 1, 'durable registration is not canceled with its first waiter');
+  assert.equal(f.app.accountMetrics().queue.cancelledReads, before.cancelledReads);
+  Atomics.store(f.control, 2, 1); Atomics.notify(f.control, 2);
+  assert.equal((await order).status, 200);
+  const bob = await surviving;
+  assert.equal(bob.status, 200); assert.equal(bob.body.fills.length, 0);
+  assert.equal(f.app.accountMetrics().queue.accepted, before.accepted + 2, 'only shared ensure and surviving readView are admitted');
+  assert.equal(f.app.accountMetrics().queue.dispatched, before.dispatched + 2, 'aborted waiter never creates a projection after ensure');
+  const again = await f.request('state', { user: 'bob' });
+  assert.equal(again.status, 200); assert.equal(again.body.token, bob.body.token);
+  assert.deepEqual(again.body.wallets, bob.body.wallets);
+  const queue = f.app.accountMetrics().queue;
+  assert.equal(queue.pending, 0); assert.equal(queue.active, 0); assert.equal(queue.bytes, 0);
+  assert.equal(queue.cancelledReads, before.cancelledReads);
 });

@@ -4,6 +4,7 @@ import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { getEventListeners } from 'node:events';
 import { openAccountWorker } from './account-worker.mjs';
 import { accountId, openAccounts } from './accounts.mjs';
 import { snapshot, applyQuote, submit } from './engine.mjs';
@@ -251,4 +252,76 @@ test('matching and cancellation races preserve fill history and release each res
   assert.equal(repeated.snapshot.wallets.USDT.cash, '9900.00000000');
   assert.equal(repeated.snapshot.wallets.USDT.reserved, '0.00000000');
   await assert.rejects(alice.execute('submit', order(2, { side: 'SELL', quantity: '1.1' })), /INSUFFICIENT_SHARES/);
+});
+
+
+test('abandoned queued views release admission bytes, abort listeners and their deadline without cancelling a commit', async t => {
+  const f = await fixture(t, { maxPending: 2, queueTimeoutMs: 100 }), alice = await f.repo.forPrincipal(ALICE), bob = await f.repo.forPrincipal(BOB);
+  await alice.execute('quote', quote());
+  const count = Atomics.load(f.control, 1); Atomics.store(f.control, 0, 1); Atomics.store(f.control, 2, 0);
+  const committed = alice.execute('submit', order(1, { type: 'LIMIT', limitPrice: '50' }));
+  await entered(f.control, count);
+  const before = f.repo.metrics().queue, abort = new AbortController();
+  const abandoned = assert.rejects(bob.execute('readView', undefined, { signal: abort.signal }), /ACCOUNT_READ_ABORTED/);
+  assert.equal(f.repo.metrics().queue.pending, 1);
+  assert.equal(getEventListeners(abort.signal, 'abort').length, 1);
+  assert.ok(f.repo.metrics().queue.bytes > before.bytes);
+  abort.abort(); await abandoned;
+  const removed = f.repo.metrics().queue;
+  assert.equal(removed.cancelledReads, before.cancelledReads + 1);
+  assert.equal(removed.dispatched, before.dispatched, 'abandoned projection never reaches the worker');
+  assert.equal(removed.pending, 0); assert.equal(removed.active, 1); assert.equal(removed.bytes, before.bytes);
+  assert.equal(removed.timedOut, before.timedOut); assert.equal(removed.rejected, before.rejected);
+  assert.equal(getEventListeners(abort.signal, 'abort').length, 0);
+  // A later queued command's real deadline is a deterministic barrier beyond
+  // the canceled entry's deadline. Only this live probe may report a timeout.
+  await assert.rejects(bob.execute('readView'), /ACCOUNT_BUSY/);
+  assert.equal(f.repo.metrics().queue.timedOut, before.timedOut + 1);
+  assert.equal(f.repo.metrics().queue.cancelledReads, before.cancelledReads + 1);
+  assert.equal(f.repo.metrics().queue.bytes, before.bytes);
+  release(f.control); await committed;
+  const bobView = await bob.execute('readView'), aliceView = await alice.read();
+  assert.equal(bobView.orders.length, 0); assert.equal(bobView.wallets.USDT.cash, '10000.00000000');
+  assert.deepEqual(aliceView.orders.map(o => o.id), [order(1).id]);
+  assert.equal(aliceView.wallets.USDT.reserved, '5.00000000');
+  assert.equal(f.repo.metrics().queue.pending, 0); assert.equal(f.repo.metrics().queue.active, 0); assert.equal(f.repo.metrics().queue.bytes, 0);
+});
+
+test('an already-aborted view is never admitted while a dispatched view keeps its result and removes its listener', async t => {
+  const f = await fixture(t), alice = await f.repo.forPrincipal(ALICE);
+  const pre = new AbortController(); pre.abort();
+  const before = f.repo.metrics().queue;
+  await assert.rejects(alice.execute('readView', undefined, { signal: pre.signal }), /ACCOUNT_READ_ABORTED/);
+  assert.deepEqual(f.repo.metrics().queue, before, 'pre-admission rejection allocates no queue capacity or timer');
+  assert.equal(getEventListeners(pre.signal, 'abort').length, 0);
+  const active = new AbortController(), view = alice.execute('readView', undefined, { signal: active.signal });
+  assert.equal(f.repo.metrics().queue.active, 1, 'dispatch happens before execute returns');
+  assert.equal(getEventListeners(active.signal, 'abort').length, 0, 'the active command cannot be canceled');
+  active.abort();
+  assert.equal((await view).wallets.USDT.cash, '10000.00000000');
+  assert.equal(f.repo.metrics().queue.cancelledReads, before.cancelledReads);
+  assert.equal(f.repo.metrics().queue.completed, before.completed + 1);
+  assert.equal(f.repo.metrics().queue.bytes, 0);
+});
+
+test('aborted options cannot cancel queued financial commands or duplicate their durable result', async t => {
+  const f = await fixture(t), alice = await f.repo.forPrincipal(ALICE), bob = await f.repo.forPrincipal(BOB);
+  await alice.execute('quote', quote());
+  const count = Atomics.load(f.control, 1); Atomics.store(f.control, 0, 1); Atomics.store(f.control, 2, 0);
+  const first = alice.execute('submit', order(1, { type: 'LIMIT', limitPrice: '50' }));
+  await entered(f.control, count);
+  const abort = new AbortController(); abort.abort();
+  const secondOrder = order(2, { type: 'LIMIT', limitPrice: '50' });
+  const second = alice.execute('submit', secondOrder, { signal: abort.signal });
+  const bobView = bob.execute('readView');
+  assert.equal(f.repo.metrics().queue.pending, 2);
+  assert.equal(getEventListeners(abort.signal, 'abort').length, 0);
+  release(f.control); await first; await second;
+  assert.equal((await bobView).orders.length, 0);
+  await alice.execute('submit', secondOrder, { signal: abort.signal });
+  const state = await alice.read();
+  assert.deepEqual(state.orders.map(o => o.id), [order(1).id, secondOrder.id]);
+  assert.equal(state.wallets.USDT.reserved, '10.00000000');
+  assert.equal(f.repo.metrics().queue.cancelledReads, 0);
+  assert.equal(f.repo.metrics().queue.pending, 0); assert.equal(f.repo.metrics().queue.active, 0); assert.equal(f.repo.metrics().queue.bytes, 0);
 });
