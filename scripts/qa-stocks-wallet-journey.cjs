@@ -251,6 +251,39 @@ async function run() {
         await page.reload();
         await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
         ok(await page.locator('.wallet-asset-tab-row[data-symbol="AAPLX"]').count() === 0, 'other account cannot see owner holdings');
+        const bobOrderRequests = [];
+        page.on('request', request => {
+          if (request.method() === 'POST' && new URL(request.url()).pathname === '/__stocks_global/orders') {
+            bobOrderRequests.push(request.url());
+          }
+        });
+        await page.goto(stockPage);
+        await page.locator('.vxg-ticket form input[aria-label="Количество"]').waitFor();
+        await page.locator('.vxg-ticket form input[aria-label="Количество"]').fill('0.25');
+        const bobSubmit = page.locator('.vxg-ticket form button.vxg-submit');
+        await page.waitForFunction(() => {
+          const button = document.querySelector('.vxg-ticket form button.vxg-submit');
+          return button && !button.disabled;
+        });
+        const beforeSilentClick = await read('bob', 'state');
+        const bobStatusBefore = await page.locator('.vxg-ticket > .vxg-success, .vxg-ticket > .vxg-error').allTextContents();
+        await bobSubmit.click();
+        await page.waitForTimeout(100);
+        const afterSilentClick = await read('bob', 'state');
+        const bobStatusAfter = await page.locator('.vxg-ticket > .vxg-success, .vxg-ticket > .vxg-error').allTextContents();
+        ok(bobOrderRequests.length === 0, 'non-owner buy button is clickable but never sends an order request');
+        ok(JSON.stringify(afterSilentClick.body.orders) === JSON.stringify(beforeSilentClick.body.orders)
+          && JSON.stringify(afterSilentClick.body.wallets) === JSON.stringify(beforeSilentClick.body.wallets),
+          'non-owner order click does not mutate paper positions or balances');
+        ok(JSON.stringify(bobStatusAfter) === JSON.stringify(bobStatusBefore), 'non-owner order click does not add any message or error');
+        await page.locator('.vxg-sides button').filter({ hasText: /^Продать$/ }).click();
+        await page.locator('.vxg-ticket form input[aria-label="Количество"]').fill('0.1');
+        await page.waitForFunction(() => {
+          const button = document.querySelector('.vxg-ticket form button.vxg-submit');
+          return button && !button.disabled;
+        });
+        await bobSubmit.click();
+        ok(bobOrderRequests.length === 0, 'non-owner sell button also remains clickable and issues no request');
         const bobOrder = await read('bob', 'orders', { id: 'qa-bob-denied-order-00001', instrumentId: ID, currency: 'USDT', side: 'BUY', type: 'MARKET', quantity: '0.1' }, blocked.body.token);
         ok(bobOrder.status === 401, 'backend rejects forged non-owner order');
         const finalOwner = await read('alice', 'state'), finalBob = await read('bob', 'state');
