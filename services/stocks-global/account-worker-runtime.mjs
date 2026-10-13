@@ -1,6 +1,6 @@
 import { parentPort,workerData } from 'node:worker_threads';
 import { openAccounts,accountId } from './accounts.mjs';
-import { executeAccountCommand,ACCOUNT_MUTATIONS } from './account-commands.mjs';
+import { executeAccountCommand,portfolioSnapshot,ACCOUNT_MUTATIONS } from './account-commands.mjs';
 import { check,SimError } from './engine.mjs';
 import { createObservations } from './account-observations.mjs';
 
@@ -73,6 +73,7 @@ parentPort.on('message',async message=>{
     if(type==='ensure')value={id:store.id};
     else if(type==='read')value=store.read();
     else if(type==='readView')value=observations.view(store.id,store.readState());
+    else if(type==='portfolioView')value=portfolioSnapshot(store.readState(),now());
     else if(type==='interests')value=executeAccountCommand(store.readState(),type,input,now());
     else if(['observe','observeFailed','observeBackground','observeFailedBackground'].includes(type)){
       const background=type==='observeBackground'||type==='observeFailedBackground';

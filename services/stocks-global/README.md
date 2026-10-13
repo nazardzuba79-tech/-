@@ -87,3 +87,17 @@ node --test services/stocks-global/engine.test.mjs services/stocks-global/server
 ```
 
 Tests use explicit fixtures and disposable local files. Fixture prices are never served by the live preview. Run `node services/stocks-global/probe.mjs <evidence-directory>` for finite, read-only source verification; source availability can change. See the QA report for actual browser cycles, screenshots, source matrix and blockers.
+
+### Owner Wallet and visible chart lifecycle
+
+With the simulator build enabled, Wallet makes one authenticated `GET /__stocks_global/portfolio` on entry, foreground return or explicit refresh. It is independent of VIP tier. This projection contains only positive USDT paper positions, matching quotes and instrument metadata; it omits paper cash, full order/fill history and all real wallet state. Historical USDC remains in the ledger. Quote marks expire after 30 seconds through a browser timer; this does not poll providers. Failed reads retain same-session quantities but remove valuations. Logout/account switch clears the projection.
+
+The portfolio route reads only held instruments, uses the existing shared quote flights (maximum two), and stops admitting work at its 2.5-second request budget. It never observes quotes into the order matcher. Unavailable marks remain unavailable. SQL transactions, FULL durability, rounding and execution rules are unchanged.
+
+In owner-only mode, visible chart requests renew a 12-second lease and observe only the selected instrument. There is no autonomous server timer for orders/holdings. A visit-specific authenticated DELETE releases the lease on hide, switch, unmount and logout. Disconnect cancels pending quote admission, including observations still waiting in the worker queue. A quote timestamp preceding the start of a resumed visit cannot fill pending limits; an expired/released lease blocks new orders. A transaction already dispatched before disconnect completes atomically; order idempotency remains authoritative. Nonowners receive response-only quotes through the shared cache without observing them into their account or matching orders.
+
+`local-proxy.mjs` is an opt-in loopback review adapter, with strict origin, route, method, query and header allowlists. The browser journey uses this adapter and the actual `identityResolver` against a disposable local `/api/v1/me` fixture, with session revocation. This validates the integration boundary, not production login or entitlement configuration. No production reverse proxy or identity secret is installed.
+
+### Acceptance limits
+
+These owner/Wallet fixes do not resolve or replace Issue #505 capacity gates. Original 0.05-vCPU/256-MiB/disk-throttled and crypto-coexistence failures remain release blockers. Windows guarded functional tests and unthrottled browser results are not Linux capacity acceptance. No production capacity/headroom is confirmed. The catalogue remains 40 configured candidates (7 Bybit, 13 Binance, 20 MOEX), not 250 verified instruments; MOEX is blocked and commercial redistribution rights remain unconfirmed.

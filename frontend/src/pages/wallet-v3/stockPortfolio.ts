@@ -1,6 +1,26 @@
 import type { LedgerRow } from './useWalletData';
 import type { State } from '../stocks/global/types';
 
+const record = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+/** The Wallet transport intentionally omits orders, fills and paper cash balances. */
+export function isStockPortfolio(input: unknown): input is Pick<State, 'schema' | 'account' | 'positions' | 'quotes' | 'catalogue'> {
+  return record(input) && input.schema === 2 && record(input.account)
+    && input.account.mode === 'isolated-paper' && typeof input.account.id === 'string' && input.account.id.length > 0
+    && record(input.positions) && record(input.quotes) && Array.isArray(input.catalogue)
+    && input.catalogue.every(asset => record(asset) && typeof asset.id === 'string');
+}
+
+/** One expiry wake-up, not a quote request or a periodic polling loop. */
+export function nextStockPortfolioExpiry(input: unknown, now: number): number | null {
+  if (!isStockPortfolio(input)) return null;
+  const expiries = Object.values(input.quotes)
+    .filter(quote => quote && Number.isFinite(quote.timestamp) && quote.timestamp <= now)
+    .map(quote => quote.timestamp + 30_001).filter(at => at > now);
+  return expiries.length ? Math.min(...expiries) : null;
+}
+
 function amount(value: unknown): number | null {
   if (typeof value !== 'string' || !/^\d+(?:\.\d+)?$/.test(value)) return null;
   const n = Number(value);
@@ -15,10 +35,9 @@ function signedAmount(value: unknown): number | null {
 
 /** Read-only projection. Stocks USDT is never silently treated as USD collateral. */
 export function stockPortfolioRows(input: unknown, receivedAt = Date.now()): LedgerRow[] {
-  if (!input || typeof input !== 'object') return [];
-  const state = input as Partial<State>;
-  if (state.schema !== 2 || state.account?.mode !== 'isolated-paper' || !state.positions) return [];
-  const assets = new Map((state.catalogue ?? []).map(asset => [asset.id, asset]));
+  if (!isStockPortfolio(input)) return [];
+  const state = input;
+  const assets = new Map(state.catalogue.map(asset => [asset.id, asset]));
   const rows: LedgerRow[] = [];
   for (const position of Object.values(state.positions)) {
     if (!position || position.currency !== 'USDT') continue;

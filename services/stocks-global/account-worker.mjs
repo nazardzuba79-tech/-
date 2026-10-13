@@ -20,7 +20,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
   updateClock();
   const worker=new Worker(new URL('./account-worker-runtime.mjs',import.meta.url),{workerData:{path,diagnostics:!!diagnostics,clock:clock?.buffer,testControl,registrationControl}});
   let ready=false,dead=false,closing=false,closed=false,closeSent=false,active=null,serial=0,bytes=0;
-  const queue=[],counters={accepted:0,dispatched:0,completed:0,rejected:0,timedOut:0,cancelledReads:0,maxPending:0,maxBytes:0,waitMs:0,maxWaitMs:0,workMs:0,logicalWorkMs:0,registrationGroups:0,groupedRegistrations:0,maxRegistrationGroup:0};
+  const queue=[],counters={accepted:0,dispatched:0,completed:0,rejected:0,timedOut:0,cancelledReads:0,cancelledObservations:0,maxPending:0,maxBytes:0,waitMs:0,maxWaitMs:0,workMs:0,logicalWorkMs:0,registrationGroups:0,groupedRegistrations:0,maxRegistrationGroup:0};
   let sqlMetrics={sqlCalls:0,sqlReadCalls:0,sqlWriteCalls:0,sqlExecCalls:0,transactionExecCalls:0,sqlWallMs:0,sqlCpuMs:0,sqlThreadCpuAvailable:0,sqlStages:{},observedAt:0};
   let resolveReady,rejectReady,resolveClose,closePromise;
   const started=new Promise((resolve,reject)=>{resolveReady=resolve;rejectReady=reject;});
@@ -83,9 +83,9 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
   const dispatch=(principal,type,input,options)=>{
     if(dead||closed||closing)return Promise.reject(error('ACCOUNT_UNAVAILABLE'));
     if(type!=='ensure'&&!ACCOUNT_MUTATIONS.has(type)&&!ACCOUNT_READS.has(type))return Promise.reject(error('ACCOUNT_COMMAND_INVALID'));
-    // Only an undispatched projection may be abandoned. Neither a mutation nor
-    // an active command can be cancelled by an HTTP disconnect.
-    const signal=type==='readView'?options?.signal:undefined;
+    // Only undispatched projections or optional market observations may be abandoned.
+    // Orders, cancel/balance commands and every active command remain atomic.
+    const signal=['readView','portfolioView','observe'].includes(type)?options?.signal:undefined;
     if(signal?.aborted)return Promise.reject(error('ACCOUNT_READ_ABORTED'));
     let encoded,payload;
     try{
@@ -101,7 +101,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
       entry.timer=setTimeout(()=>{const index=queue.indexOf(entry);if(index<0)return;queue.splice(index,1);counters.rejected++;counters.timedOut++;settle(entry,'ACCOUNT_BUSY');pump();},queueTimeoutMs);
       queue.push(entry);
       if(signal){
-        entry.onAbort=()=>{const index=queue.indexOf(entry);if(index<0)return;queue.splice(index,1);counters.cancelledReads++;settle(entry,'ACCOUNT_READ_ABORTED');pump();};
+        entry.onAbort=()=>{const index=queue.indexOf(entry);if(index<0)return;queue.splice(index,1);if(type==='observe')counters.cancelledObservations++;else counters.cancelledReads++;settle(entry,type==='observe'?'ACCOUNT_OBSERVATION_ABORTED':'ACCOUNT_READ_ABORTED');pump();};
         signal.addEventListener('abort',entry.onAbort,{once:true});
         if(signal.aborted)entry.onAbort();
       }

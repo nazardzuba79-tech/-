@@ -1,3 +1,4 @@
+import { StockChartDemand } from './chartDemand';
 import { useCallback,useEffect,useRef,useState } from 'react';
 import { useNavigate,useParams } from 'react-router-dom';
 import BigNumber from 'bignumber.js';
@@ -44,6 +45,7 @@ export default function GlobalStocks(){
   const [overload,setOverload]=useState<StockOverloadState|null>(null);
   const circuit=useRef(new StockOverloadCircuit(setOverload,()=>document.hidden));
   const reads=useRef(new VisibleStockReads(()=>document.hidden));
+  const demand=useRef(new StockChartDemand());
   const token=useRef(''),gate=useRef(false),selected=useRef(id),historyGeneration=useRef(0);selected.current=id;
   const accept=useCallback((s:State)=>{if(s.token)token.current=s.token;setState(old=>!old||old.account?.id!==s.account?.id||s.revision>=old.revision?s:old);},[]);
   const pause=useCallback((code:unknown,hint?:unknown)=>{const blocked=circuit.current.trip(code,hint);if(blocked)setConnected(false);return blocked;},[]);
@@ -51,23 +53,24 @@ export default function GlobalStocks(){
     if(circuit.current.paused&&!recovery)return Promise.resolve({kind:'failed'});
     return reads.current.run('state:'+id,async():Promise<StockReadResult>=>{
       const request=session.current.capture(()=>selected.current===id);
+      const visit=demand.current.open(id,request.headers);
       try{
-        const r=await fetch(API+'state?id='+encodeURIComponent(id),{headers:request.headers,credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(8000)});
+        const r=await fetch(API+'state?id='+encodeURIComponent(id),{headers:visit.headers,credentials:'omit',cache:'no-store',signal:AbortSignal.any([visit.signal,AbortSignal.timeout(8000)])});
         if(!request.current())return{kind:'failed'};
         if(r.status===401){request.reject(clearToken);token.current='';setState(null);setAuthRequired(true);setConnected(false);return{kind:'failed'};}
         const s=await r.json();if(!request.current())return{kind:'failed'};
         const code=stockOverloadCode(r.ok?s.errors?.[id]:s.error);
         if(!r.ok){if(code){if(!recovery)pause(code,s.retryAfterMs);return{kind:'overload',code,retryAfterMs:s.retryAfterMs};}throw Error();}
-        if(s.schema!==2)throw Error();accept(s);setAuthRequired(false);setConnected(!code);
+        if(s.schema!==2)throw Error();if(s.token)visit.accept(s.token);accept(s);setAuthRequired(false);setConnected(!code);
         if(code){if(!recovery)pause(code);return{kind:'prior-overload',code};}
         return{kind:'ready'};
       }catch{if(request.current())setConnected(false);return{kind:'failed'};}
     })??Promise.resolve({kind:'failed'});
   },[id,accept,pause]);
-  useEffect(()=>onSessionChange(()=>{session.current.invalidate();reads.current.reset();circuit.current.reset();token.current='';setState(null);setConnected(false);setQuantity('');setLimit('');setMessage('');setError('');setChartError('');setBalances({USDT:'10000',USDC:'10000'});void poll();}),[poll]);
-  useEffect(()=>{const stop=startVisibleStockPolling(()=>void poll(),3000);return()=>{session.current.invalidate();reads.current.reset();stop();};},[poll]);
-  useEffect(()=>{const hidden=()=>{if(document.hidden)circuit.current.cancelRecovery();};document.addEventListener('visibilitychange',hidden);return()=>{document.removeEventListener('visibilitychange',hidden);circuit.current.reset(false);};},[]);
-  const act=async(path:string,body:unknown)=>{if(gate.current||circuit.current.paused)return null;const request=session.current.capture();gate.current=true;setBusy(true);setError('');setMessage('');try{const r=await fetch(API+path,{method:'POST',credentials:'omit',headers:{...request.headers,'Content-Type':'application/json','X-Stocks-Token':token.current},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});const s=await r.json();if(!request.current())return null;if(r.status===401){request.reject(clearToken);token.current='';setState(null);setConnected(false);setAuthRequired(true);}if(!r.ok){if(pause(s.error,s.retryAfterMs))return null;throw new StockRequestError(s.error);}accept(s);pause(s.errors?.[selected.current]);return s;}catch(e){if(request.current())setError(errorText(e instanceof StockRequestError?e.code:'LOCAL_SERVICE_ERROR'));return null;}finally{gate.current=false;setBusy(false);}};
+  useEffect(()=>onSessionChange(()=>{demand.current.close();session.current.invalidate();reads.current.reset();circuit.current.reset();token.current='';setState(null);setConnected(false);setQuantity('');setLimit('');setMessage('');setError('');setChartError('');setBalances({USDT:'10000',USDC:'10000'});void poll();}),[poll]);
+  useEffect(()=>{const stop=startVisibleStockPolling(()=>void poll(),3000);return()=>{demand.current.close();session.current.invalidate();reads.current.reset();stop();};},[poll]);
+  useEffect(()=>{const hidden=()=>{if(document.hidden){demand.current.close();circuit.current.cancelRecovery();}};document.addEventListener('visibilitychange',hidden);return()=>{document.removeEventListener('visibilitychange',hidden);circuit.current.reset(false);};},[]);
+  const act=async(path:string,body:unknown)=>{if(gate.current||circuit.current.paused)return null;const request=session.current.capture();gate.current=true;setBusy(true);setError('');setMessage('');try{const r=await fetch(API+path,{method:'POST',credentials:'omit',headers:{...request.headers,...demand.current.headers(),'Content-Type':'application/json','X-Stocks-Token':token.current},body:JSON.stringify(body),signal:path==='refresh'&&demand.current.signal()?AbortSignal.any([demand.current.signal()!,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)});const s=await r.json();if(!request.current())return null;if(r.status===401){request.reject(clearToken);token.current='';setState(null);setConnected(false);setAuthRequired(true);}if(!r.ok){if(pause(s.error,s.retryAfterMs))return null;throw new StockRequestError(s.error);}accept(s);pause(s.errors?.[selected.current]);return s;}catch(e){if(request.current())setError(errorText(e instanceof StockRequestError?e.code:'LOCAL_SERVICE_ERROR'));return null;}finally{gate.current=false;setBusy(false);}};
   const asset=state?.catalogue.find(a=>a.id===id),q=state?.quotes[id],price=type==='LIMIT'?limit:q?.prices[currency]?.[side==='BUY'?'buy':'sell']||'',ready=connected&&q?.status[currency]==='READY'&&now-q.receivedAt<30000&&now-q.timestamp<((asset?.delaySeconds||0)+60)*1000;
   const positions=Object.values(state?.positions||{}).filter(p=>Number(p.quantity)>0&&(!STOCKS_USDT_ONLY||p.currency==='USDT')),open=state?.orders.filter(o=>['OPEN','PARTIAL'].includes(o.status)&&(!STOCKS_USDT_ONLY||o.currency==='USDT'))||[],position=state?.positions[id+'|'+currency],available=side==='BUY'?state?.wallets[currency].available:position?.available||'0';
   const total=valid(price)&&valid(quantity)?new BigNumber(price).times(quantity).toFixed(8,side==='BUY'?BigNumber.ROUND_CEIL:BigNumber.ROUND_FLOOR):null;

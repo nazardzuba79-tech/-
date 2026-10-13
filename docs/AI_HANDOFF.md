@@ -6280,3 +6280,11 @@ Read-only Hetzner hardware/passive aggregate checks confirmed 2 vCPU / 3.730 GiB
 - A controlled phase trace proved a readView dispatched after its HTTP client disconnected. Remove only undispatched readView work; keep active operations, shared registration, financial commands and FULL durability unchanged.
 - Details and causal limits: docs/qa/stocks/READ-DISCONNECT-20261012.md. Regression and exact-head original-gate results must be reported separately. This does not prove the prior 59 deadlines or strict crypto p95 are fixed.
 - Keep Draft #497; no merge or deploy. Unrelated Admin expired-date and backend baseline failures are not changed.
+
+### Stocks PR #512 owner Wallet / visible-demand follow-up (2026-10-13)
+
+- Direct owner authorization limits writes/push to `dot/stocks-owner-usdt-portfolio-20261013`; preserve main `c205ca3c` and PR #497 at `2f6fa3f7`. Source SHA is the commit containing this entry; exact SHA and CI are recorded in PR #512 and local evidence. No merge/deploy/production changes.
+- Compact authenticated Wallet projection, timer-only expiry, isolated holdings and local allowlisted proxy using actual identityResolver against fixture authority. Nonowners receive readonly quotes while all mutations stay blocked.
+- Abort only undispatched observations on visit release; preserve active atomic transactions/idempotency/FULL durability. Fix stale observation acknowledgements and reuse committed snapshots to remove duplicate SQL reads.
+- Local simulator tests: 175/175; final lifecycle: 13/13; typed frontend: 14/14; browser: 43 assertions PASS. Both builds pass. Full frontend Windows run retains newline-sensitive failures; exact-head Linux CI remains separate.
+- Evidence and unresolved original capacity, data-rights and production-auth gates: `docs/qa/stocks/OWNER-WALLET-DEMAND-20261013.md`. No A1/A2 transfer; catalogue: 40 candidates; MOEX blocked. Material files: Stocks server/worker, Wallet projection/hook, GlobalStocks visit controller, local proxy, scoped tests/QA script and explicit Stocks CI test list. Mobile/Card/Auth/Spot/Futures/Admin runtime files are preserved.

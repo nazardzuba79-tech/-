@@ -6,7 +6,7 @@ const { once } = require('node:events'), { pathToFileURL } = require('node:url')
 const express = require('express');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..'), dist = path.join(root, 'frontend/dist');
-const ID = 'BYBIT:AAPLXUSDT', TOKENS = { alice: 'qa-alice', bob: 'qa-bob' };
+const ID = 'BYBIT:AAPLXUSDT', TOKENS = { alice: 'qa-alice-session-0001', bob: 'qa-bob-session-000001' };
 const audit = { fixtureOnly: true, noProductionAccess: true, checks: [], externalRequestsBlocked: [], walletWrites: [], stocksMutations: [] };
 function ok(condition, label) { assert.ok(condition, label); audit.checks.push(label); }
 function fixtureWallet() {
@@ -49,8 +49,13 @@ const overview = { real: { spot, futures: [], spotValueUsd: 205000, futuresValue
 async function run() {
   ok(fs.existsSync(path.join(dist, 'index.html')), 'review frontend build exists');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltex-stocks-wallet-'));
-  let stocks, gateway, browser;
+  let stocks, gateway, browser, authority;
+  const revoked = new Set();
+  const screenshots = process.env.QA_OUTPUT_DIR;
+  if (screenshots) fs.mkdirSync(screenshots, {recursive:true});
   try {
+    const { identityResolver } = await import(pathToFileURL(path.join(root, 'services/stocks-global/identity.mjs')).href);
+    const { createLocalStocksProxy } = await import(pathToFileURL(path.join(root, 'services/stocks-global/local-proxy.mjs')).href);
     const { createServer } = await import(pathToFileURL(path.join(root, 'services/stocks-global/server.mjs')).href);
     const { CATALOG } = await import(pathToFileURL(path.join(root, 'services/stocks-global/catalog.mjs')).href);
     const { SimError } = await import(pathToFileURL(path.join(root, 'services/stocks-global/engine.mjs')).href);
@@ -81,16 +86,27 @@ async function run() {
           })) };
       },
     };
-    stocks = await createServer({
-      port: 0, accountsPath: path.join(dir, 'disposable.sqlite'),
-      autoPoll: false, ownerOnlyMode: true, tradeOwnerSubject: 'alice', hub,
-      authenticate: async req => {
-        const token = req.headers.authorization;
-        if (token !== 'Bearer ' + TOKENS.alice && token !== 'Bearer ' + TOKENS.bob) throw new SimError('AUTH_REQUIRED');
-        return { issuer: 'voltex-wallet-journey-qa-only', subject: token === 'Bearer ' + TOKENS.alice ? 'alice' : 'bob' };
-      },
+    const identify = authorization => {
+      if (revoked.has(authorization)) return null;
+      return authorization === 'Bearer ' + TOKENS.alice ? 'alice' : authorization === 'Bearer ' + TOKENS.bob ? 'bob' : null;
+    };
+    // Actual identityResolver performs an HTTP /api/v1/me request for every read
+    // and mutation. Only its authority is a disposable fixture, never production.
+    authority = http.createServer((req,res)=>{
+      const user=identify(req.headers.authorization);
+      const valid=req.method==='GET'&&req.url==='/api/v1/me';
+      audit.identityChecks=(audit.identityChecks||0)+1;
+      res.writeHead(valid&&user?200:401,{'Content-Type':'application/json'});
+      res.end(JSON.stringify(valid&&user?{id:user}: {error:'AUTH_REQUIRED'}));
     });
-    const stockOrigin = 'http://127.0.0.1:' + stocks.port;
+    authority.listen(0,'127.0.0.1');await once(authority,'listening');
+    const authenticate=identityResolver({endpoint:'http://127.0.0.1:'+authority.address().port+'/api/v1/me',issuer:'voltex-wallet-journey-qa-only'});
+    const startStocks=()=>createServer({
+      port:0,accountsPath:path.join(dir,'disposable.sqlite'),autoPoll:true,
+      ownerOnlyMode:true,tradeOwnerSubject:'alice',hub,authenticate
+    });
+    stocks=await startStocks();
+    const stockOrigin=()=> 'http://127.0.0.1:'+stocks.port;
     const app = express();
     app.disable('x-powered-by');
     let origin = '';
@@ -103,34 +119,14 @@ async function run() {
       res.setHeader('Content-Security-Policy', "default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; base-uri 'self'; frame-ancestors 'none'");
       next();
     });
-    const permitted = {
-      GET: new Set(['state', 'history', 'catalogue', 'health']),
-      POST: new Set(['orders', 'cancel', 'refresh', 'balances']),
-    };
-    app.use('/__stocks_global/', (req, res) => {
-      const route = req.path.slice(1);
-      if (!permitted[req.method]?.has(route)) return res.status(404).json({ error: 'FIXTURE_ROUTE_BLOCKED' });
-      if (req.method === 'POST') audit.stocksMutations.push(route);
-      // The independent Stocks server remains bound to loopback with its own
-      // strict Host/Origin checks. Never forward untrusted cookies or proxy URLs.
-      const upstream = http.request({
-        hostname: '127.0.0.1', port: stocks.port, method: req.method,
-        path: '/__stocks_global/' + route + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''),
-        headers: {
-          Host: '127.0.0.1:' + stocks.port,
-          ...(req.headers.authorization ? { Authorization: req.headers.authorization } : {}),
-          ...(req.headers['content-type'] ? { 'Content-Type': req.headers['content-type'] } : {}),
-          ...(req.headers['x-stocks-token'] ? { 'X-Stocks-Token': req.headers['x-stocks-token'] } : {}),
-          ...(req.headers.origin ? { Origin: stockOrigin } : {}),
-          'Sec-Fetch-Site': 'same-origin',
-        },
-      }, response => { res.status(response.statusCode); for(const k of ['content-type', 'retry-after', 'cache-control']) if (response.headers[k]) res.setHeader(k, response.headers[k]); response.pipe(res); });
-      upstream.on('error', () => { if (!res.headersSent) res.status(502).json({ error: 'FIXTURE_UPSTREAM_FAILED' }); });
-      req.pipe(upstream);
+    const proxy=createLocalStocksProxy({origin:()=>origin,stocksOrigin:stockOrigin});
+    app.use((req,res,next)=>{
+      if(!req.url.startsWith('/__stocks_global/'))return next();
+      if(req.method==='POST')audit.stocksMutations.push(req.url.split('?')[0].slice('/__stocks_global/'.length));
+      proxy(req,res);
     });
     app.use('/api/', (req, res) => {
-      const user = req.headers.authorization === 'Bearer ' + TOKENS.alice ? 'alice'
-        : req.headers.authorization === 'Bearer ' + TOKENS.bob ? 'bob' : null;
+      const user = identify(req.headers.authorization);
       if (!user) return res.status(401).json({ error: 'AUTH_REQUIRED' });
       const route = req.path.slice(1);
       if (req.method === 'POST') {
@@ -180,7 +176,7 @@ async function run() {
     for (const size of [[1440, 900], [390, 844]]) {
       const [width, height] = size;
       const context = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block', locale: 'ru-RU' });
-      await context.addInitScript(t => { if (!localStorage.getItem('exchange_token')) localStorage.setItem('exchange_token', t); localStorage.setItem('exchange_lang', 'ru'); }, TOKENS.alice);
+      await context.addInitScript(t => { if (!localStorage.getItem('qa-session-initialized')) { localStorage.setItem('exchange_token', t);localStorage.setItem('qa-session-initialized','1'); } localStorage.setItem('exchange_lang', 'ru'); }, TOKENS.alice);
       await context.route('**/*', route => {
         const u = new URL(route.request().url());
         if (u.origin === origin) return route.continue();
@@ -196,6 +192,8 @@ async function run() {
       await page.locator('.vxg-ticket form input[aria-label="Количество"]').waitFor({ timeout: 15000 });
       ok(await page.locator('.vxg-ticket .vxg-currency button').count() === 1, width + ': USDT-only trade form');
       ok((await page.locator('.vxg-ticket').innerText()).includes('USDT'), width + ': form displays USDT');
+      ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),width+': Stocks has no page-wide horizontal overflow');
+      if(width===390&&screenshots)await page.screenshot({path:path.join(screenshots,'stocks-mobile.png'),fullPage:true});
       if (width === 1440) {
         await page.goto(origin + '/wallet');
         await page.locator('.wallet-overview').waitFor({ timeout: 15000 });
@@ -215,6 +213,8 @@ async function run() {
         const afterBuy = await read('alice', 'state');
         ok(afterBuy.status === 200 && afterBuy.body.fills.length === 1, 'buy is committed to real disposable SQLite account');
         ok(Number(afterBuy.body.positions[ID + '|USDT']?.quantity) === 0.4, 'owner paper shares credited exactly once');
+        const replay=await read('alice','orders',{id:afterBuy.body.orders[0].id,instrumentId:ID,currency:'USDT',side:'BUY',type:'MARKET',quantity:'0.40000000'},afterBuy.body.token);
+        ok(replay.status===200&&replay.body.fills.length===1,'retry of the same order ID does not debit or fill twice');
 
         await page.goto(origin + '/wallet');
         await page.locator('.wallet-overview').waitFor({ timeout: 15000 });
@@ -230,6 +230,26 @@ async function run() {
         await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
         await page.locator('.wallet-asset-tab-row[data-symbol="AAPLX"]').waitFor();
         ok(true, 'stock holding survives browser reload and new authenticated read');
+        // Same-origin trusted-session revocation is enforced even with old bearer/CSRF.
+        revoked.add('Bearer '+TOKENS.alice);
+        ok((await read('alice','state')).status===401,'revoked owner token rejected by real identity adapter');
+        await page.evaluate(()=>{localStorage.removeItem('exchange_token');window.dispatchEvent(new StorageEvent('storage',{key:'exchange_token'}));}).catch(error=>{if(!error.message.includes('Execution context was destroyed'))throw error;});
+        await page.waitForURL(url=>url.pathname==='/');
+        await page.waitForFunction(()=>!document.querySelector('.wallet-asset-tab-row[data-symbol="AAPLX"]'));
+        ok(true,'logout clears owner holdings without reload');
+        TOKENS.alice='qa-alice-session-0002';
+        await page.evaluate(t=>{localStorage.setItem('exchange_token',t);window.dispatchEvent(new StorageEvent('storage',{key:'exchange_token'}));},TOKENS.alice);
+        await page.goto(origin+'/wallet');
+        await page.locator('.wallet-overview').waitFor();
+        await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
+        await page.locator('.wallet-asset-tab-row[data-symbol="AAPLX"]').waitFor();
+        ok(true,'login restores only authenticated holdings from durable account');
+        await stocks.close();stocks=await startStocks();
+        await page.reload();await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
+        await page.locator('.wallet-asset-tab-row[data-symbol="AAPLX"]').waitFor();
+        ok(true,'held shares survive Stocks worker/server restart');
+        if(screenshots)await page.screenshot({path:path.join(screenshots,'wallet-desktop.png'),fullPage:true});
+
 
         await page.goto(stockPage);
         await page.locator('.vxg-source button').filter({ hasText: 'Обновить котировку' }).click();
@@ -243,6 +263,20 @@ async function run() {
         await page.waitForFunction(() => document.querySelector('.vxg-success')?.textContent?.includes('0.2'));
         const afterSell = await read('alice', 'state');
         ok(Number(afterSell.body.positions[ID + '|USDT']?.quantity) === 0.2 && afterSell.body.fills.length === 2, 'partial sell persists; remaining quantity is correct');
+        await page.locator('.vxg-sides button').filter({hasText:/^Купить$/}).click();
+        await page.locator('.vxg-order-types button').filter({hasText:'Limit'}).click();
+        await page.locator('.vxg-ticket input[aria-label="Цена"]').fill('90');
+        await page.locator('.vxg-ticket input[aria-label="Количество"]').fill('0.1');
+        await page.locator('.vxg-ticket form button.vxg-submit').click();
+        const cancel=page.locator('.vxg-account button').filter({hasText:/^Отменить$/});
+        await cancel.waitFor();
+        const limit=await read('alice','state');
+        ok(limit.body.orders.some(o=>o.type==='LIMIT'&&o.status==='OPEN')&&Number(limit.body.wallets.USDT.reserved)===9,'Limit reserves exact paper funds without premature execution');
+        await cancel.click();await page.waitForFunction(()=>document.querySelector('.vxg-success')?.textContent?.includes('отменён'));
+        const cancelled=await read('alice','state');
+        ok(Number(cancelled.body.wallets.USDT.reserved)===0&&cancelled.body.orders.some(o=>o.type==='LIMIT'&&o.status==='CANCELLED'),'Limit cancellation releases reserve and preserves history');
+        if(screenshots)await page.screenshot({path:path.join(screenshots,'stocks-desktop.png'),fullPage:true});
+
         await page.goto(origin + '/wallet');
         await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
         await page.locator('.wallet-asset-tab-row[data-symbol="AAPLX"]').waitFor();
@@ -260,6 +294,8 @@ async function run() {
         await page.goto(stockPage);
         await page.locator('.vxg-ticket form input[aria-label="Количество"]').waitFor();
         await page.locator('.vxg-ticket form input[aria-label="Количество"]').fill('0.25');
+        await page.waitForFunction(()=>Number(document.querySelector('.vxg-ticket input[aria-label="Цена"]')?.value)>0);
+        ok(true,'non-owner chart receives a verified read-only quote');
         const bobSubmit = page.locator('.vxg-ticket form button.vxg-submit');
         await page.waitForFunction(() => {
           const button = document.querySelector('.vxg-ticket form button.vxg-submit');
@@ -296,16 +332,21 @@ async function run() {
         ok((await page.locator('.wallet-asset-tab-row[data-symbol="BTC"]').count()) > 0, 'mobile wallet shows BTC and held AAPLX');
         ok(await page.locator('.wallet-asset-tab-row[data-symbol="AAPLX"]').count() > 0, 'mobile stock holding persists');
       }
+      ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),width+': Wallet has no page-wide horizontal overflow');
+      if(screenshots)await page.screenshot({path:path.join(screenshots,'wallet-'+width+'.png'),fullPage:true});
       ok(pageErrors.length === 0, width + ': no browser page exceptions: ' + pageErrors.join(', '));
       await context.close();
     }
     ok(audit.walletWrites.every(route => route === 'v1/wallet/portfolio-snapshot'), 'never wrote a real wallet or transferred crypto funds');
     ok(fs.existsSync(path.join(dir, 'disposable.sqlite')), 'all paper mutations belong to an isolated local SQLite file');
+    if(screenshots)fs.writeFileSync(path.join(screenshots,'journey.json'),JSON.stringify({result:'PASS',audit},null,2));
     console.log(JSON.stringify({ result: 'PASS', checks: audit.checks.length, audit }, null, 2));
   } finally {
+    if(screenshots){fs.writeFileSync(path.join(screenshots,'audit-progress.json'),JSON.stringify(audit,null,2));for(const c of browser?.contexts()??[])for(const page of c.pages())await page.screenshot({path:path.join(screenshots,'last-view.png'),fullPage:true}).catch(()=>{});}
     await browser?.close();
     if (gateway) { gateway.closeAllConnections?.(); await new Promise(resolve => gateway.close(resolve)); }
     await stocks?.close();
+    if(authority){authority.closeAllConnections();await new Promise(resolve=>authority.close(resolve));}
     fs.rmSync(dir, { recursive: true, force: true });
   }
 }

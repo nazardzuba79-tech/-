@@ -98,8 +98,8 @@ export function WalletPage() {
     refresh,
   } = useWalletData();
 
-  // This is presentation only. Server-confirmed tier never authorizes a Stocks order.
-  const stockRows = useStockPortfolio(account?.mode === 'CROSS' && account?.clientTier === 'SUPREME_VIP', stockRefreshKey);
+  // Stocks resolves the authenticated paper account independently of the crypto account tier.
+  const stockRows = useStockPortfolio(stockRefreshKey);
   const portfolioRows = useMemo(() => [...rows, ...stockRows], [rows, stockRows]);
 
   // Deep links from elsewhere in the app (Futures' transfer action, the
