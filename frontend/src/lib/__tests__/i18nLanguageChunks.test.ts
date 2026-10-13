@@ -363,7 +363,13 @@ describe('translation integrity', () => {
           // `git diff --numstat` over the locales reports `12 0` per language
           // for these names; the settings dialog's `chart.settings.*` keys are
           // already additive below.
-          ...['sma', 'ema', 'wma', 'vwap', 'atr', 'stochastic', 'stochrsi', 'obv', 'adx', 'supertrend', 'cci', 'williams'].map(name => `chart.indicator.${name}`)];
+          ...['sma', 'ema', 'wma', 'vwap', 'atr', 'stochastic', 'stochrsi', 'obv', 'adx', 'supertrend', 'cci', 'williams'].map(name => `chart.indicator.${name}`),
+          // Futures refusal codes (2026-10-13 audit): the engine's thin-book
+          // and self-match refusals, which reached the trader as the generic
+          // «Не удалось закрыть позицию», named in every language. `git diff
+          // --numstat` over the locales reports `2 0` per language,
+          // additions only; asserted by name below.
+          'futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
@@ -391,6 +397,10 @@ describe('translation integrity', () => {
       expect(dicts[code]['nav.tools'].trim()).not.toBe('');
       expect(dicts[code]['nav.knowledgeCenter'].trim()).not.toBe('');
       expect(dicts[code]['settings.rememberedDevice'].trim()).not.toBe('');
+      for (const key of ['futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch']) {
+        expect({ code, key, text: dicts[code][key]?.trim() !== '' }).toEqual({ code, key, text: true });
+        if (code !== 'ru') expect({ code, key, translated: dicts[code][key] !== dicts.ru[key] }).toEqual({ code, key, translated: true });
+      }
       expect(dicts[code]['nav.card']).toBe(shortCardLabels[code]);
       expect(dicts[code]['wallet.superVip']).toBe(approvedVipCopy[code].label);
       expect(dicts[code]['wallet.superVipTitle']).toBe(approvedVipCopy[code].title);
