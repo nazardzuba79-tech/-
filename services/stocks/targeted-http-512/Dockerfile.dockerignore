@@ -1,0 +1,8 @@
+**
+!services/
+!services/stocks/
+!services/stocks/**
+!services/stocks-global/
+!services/stocks-global/**
+!services/stocks-simulator/
+!services/stocks-simulator/**

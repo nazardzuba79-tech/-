@@ -1,0 +1,40 @@
+✔ last HTTP history reader disconnect removes queued work before it consumes a provider request (100.9964ms)
+✔ disconnecting one HTTP reader preserves a shared queued flight for its live reader (56.1105ms)
+✔ a live HTTP cursor follower keeps its earlier queued latest dependency after that HTTP reader disconnects (57.7336ms)
+✔ cancelling all queued latest/cursor HTTP readers releases the dependency without a native request (59.6566ms)
+✔ a started native flight survives disconnect and serves a new live HTTP reader without another provider call (62.328ms)
+✔ a cancelled queued generation cannot delete a replacement flight for the same key (1.4526ms)
+✔ aborted admission and abort after grant do not call the queued callback or leak slot ownership (0.2515ms)
+✔ delayed timer delivery cannot admit expired history work; the next live waiter retains FIFO and budget (25.3648ms)
+✔ a waiter expiring after slot grant but before its continuation never starts and releases the slot (0.3713ms)
+✔ two active and eight waiting history slots stay bounded; expired queue drain permits later recovery (0.6907ms)
+✔ 100 simultaneous readers share one provider read, normalization and immutable page; quotes use separate cache (28.9051ms)
+✔ history cache preserves exact provider/timeframe/cursor identities, TTL and corrected OHLC (3.1272ms)
+✔ history queue is bounded at two upstream readers plus eight waiters, duplicates share admission, failures are retryable (4.2593ms)
+✔ normalized history retains bounded pages and bytes (97.1376ms)
+✔ expired recent pages are removed before live historical pages face byte-pressure eviction (22.1124ms)
+✔ unexpired byte-pressure victims remain least-recently-used and sparse pages retain an entry bound (26.7564ms)
+✔ TTL-boundary concurrent refresh still fetches and normalizes once without extending history freshness (1.9567ms)
+✔ exact 20-reader mixed fixture reuses all 40 older-page revisits but keeps the unchanged Binance rate-budget failure visible (44.5109ms)
+✔ two-page on-demand native windows exactly match limit300 OHLCV and inclusive-end public projection for both providers (66.7733ms)
+✔ source gaps remain exact and a partial native suffix never masquerades as a complete300 page (11.2705ms)
+✔ unordered or duplicate wider payloads never enlarge public pages or prove ranges; invalid older OHLC fails closed (8.2386ms)
+✔ latest and covered cursor readers singleflight once with no catalogue or speculative interval calls (1.8428ms)
+✔ distinct range followers cannot bypass two-active/eight-queued admission while latest provider read is held (2.0247ms)
+✔ queued historical reads cannot depend on a later latest request behind them in the same bounded queue (4.8579ms)
+✔ latest10s and original-observation historical300s TTL never slide or borrow freshness (3.5939ms)
+✔ authoritative reconnect refresh invalidates derived historical aliases and exposes corrected OHLC without mutating prior pages (5.9424ms)
+✔ failed refresh cannot install a range or erase a previously valid historical page (3.3121ms)
+✔ removed candles and short authoritative refreshes invalidate old derived pages without filling gaps (3.4232ms)
+✔ successfully validated unordered refresh cannot leave an older derived alias with contradictory corrected OHLC (2.9847ms)
+✔ combined windows and shared public pages stay below8MiB and128 entries under catalogue-sized selected demand (364.0377ms)
+✔ unchanged20-reader schedule with native limit/end contract reduces ideal104 Binance starts without raising provider budget (120.4352ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 729.951
+

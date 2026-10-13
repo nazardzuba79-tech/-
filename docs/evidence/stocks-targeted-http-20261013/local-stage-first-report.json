@@ -1,0 +1,300 @@
+{
+  "fixtureOnly": true,
+  "productionAccess": false,
+  "capacityClaim": false,
+  "browserClaim": false,
+  "startedAt": "2026-10-13T21:05:13.026Z",
+  "cases": [
+    {
+      "name": "actual /me authority, policy/session rejection and bounded maximum avatar",
+      "status": "PASS"
+    },
+    {
+      "name": "owner full trading cycle and exact P&L/reservation with viewer isolation",
+      "status": "FAIL",
+      "error": "buy debits exactly 40"
+    }
+  ],
+  "calls": [
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "orders",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 422,
+      "error": "TOKEN_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 400,
+      "error": "QUERY_NOT_ALLOWED"
+    },
+    {
+      "user": "alice",
+      "route": "refresh",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 422,
+      "error": "TOKEN_REQUIRED"
+    }
+  ],
+  "limitations": [
+    "Local actual /me contract with fixture Prisma is not production DB/auth capacity.",
+    "No browser/UI/translation or actual-provider data claim; existing separate browser suites remain required.",
+    "Backup is quiesced fixture-only; no live database, cloud backup, deployment image or old-binary compatibility claim.",
+    "Windows POSIX UID/mode guarantees are not claimed."
+  ],
+  "manifest": {
+    "fixtureOnly": true,
+    "sourceSha": "be610e27dccf4d2c5c161de5c8b683611555808f",
+    "workingTreeChanges": [
+      "M services/stocks-global/market.mjs",
+      " M services/stocks-global/server.mjs",
+      "?? scripts/qa-stocks-local-stage-fixture.cjs",
+      "?? scripts/qa-stocks-local-stage-recovery.cjs",
+      "?? services/stocks-global/history-cancellation.test.mjs"
+    ],
+    "packageEntry": "scripts/qa-stocks-local-stage-fixture.cjs",
+    "accountEntry": "dist/api/routes/account.js",
+    "migration": "NOT_USED",
+    "productionEntrypoint": "NOT_USED",
+    "nodeModulesCopied": false,
+    "dependencies": {
+      "mode": "existing workspace node_modules via explicit child NODE_PATH; not a standalone deployment image",
+      "names": [
+        "bcrypt",
+        "crypto",
+        "express",
+        "jsonwebtoken",
+        "qrcode",
+        "speakeasy",
+        "zod"
+      ]
+    },
+    "files": [
+      {
+        "path": "dist/api/asyncRoute.js",
+        "bytes": 478,
+        "sha256": "30d5ca41c9b3a35cc23b9b21f21906fea8d78c453807aea44484f294d74f293b"
+      },
+      {
+        "path": "dist/api/middleware/auth.js",
+        "bytes": 7148,
+        "sha256": "dcaaf312a5d51a02bf25837b533679302f12f53a485f7ed63d1f1ac9ae37bd2d"
+      },
+      {
+        "path": "dist/api/routes/account.js",
+        "bytes": 15822,
+        "sha256": "6a06d889c1e31a73a017c6aca58c4f6cab20857f4ee1a943b6e334804691440c"
+      },
+      {
+        "path": "dist/services/AdminPasswordVault.js",
+        "bytes": 1778,
+        "sha256": "5b8de70bf420d0c4dd0844c71a972c7d407a5114eb6d10143edcf4b6ca9c1e7b"
+      },
+      {
+        "path": "dist/services/ContactEmailPolicy.js",
+        "bytes": 3118,
+        "sha256": "949972ebda91902df904a503e5fd1ad52ef094c230e99df34a80a283b037abb8"
+      },
+      {
+        "path": "dist/services/TwoFactorService.js",
+        "bytes": 2654,
+        "sha256": "945c25a8a126233e2296cc69c57d65592e0b23bb02a649ec512e1eaabbb7e408"
+      },
+      {
+        "path": "scripts/qa-stocks-local-stage-fixture.cjs",
+        "bytes": 13976,
+        "sha256": "f9624f9fd6d93e1d5c33a3bca4275aafcf70c7ec17879aa474d450183bf0d67c"
+      },
+      {
+        "path": "services/stocks-global/account-commands.mjs",
+        "bytes": 2014,
+        "sha256": "7f91a5c292b07e8afa820832ba6136336135e4037a9c064d1e8026ad2800dd19"
+      },
+      {
+        "path": "services/stocks-global/account-observations.mjs",
+        "bytes": 7207,
+        "sha256": "2984f77c34e256ecd12a0bf942725c5073d2dbf0b3b3b2861e652c8db609e0f9"
+      },
+      {
+        "path": "services/stocks-global/account-worker-runtime.mjs",
+        "bytes": 7122,
+        "sha256": "eaa14e62b1223aee88b888ebe0c556c1181a11491a1bf2ed8e2876d09ed23045"
+      },
+      {
+        "path": "services/stocks-global/account-worker.mjs",
+        "bytes": 9980,
+        "sha256": "95a22f361c8396dd03db6ad3e0a10962e2e7023e9368c86557d4abb701b2f774"
+      },
+      {
+        "path": "services/stocks-global/accounts.mjs",
+        "bytes": 6325,
+        "sha256": "0fb026f1e986671f1a1939a15393e8050b367e0cc375c6bc0a435bd0ae55cd3c"
+      },
+      {
+        "path": "services/stocks-global/catalog.mjs",
+        "bytes": 2198,
+        "sha256": "1bd76716a297ccec2599dd035995060520a855062f94ad3afa83d5ab4d47b0eb"
+      },
+      {
+        "path": "services/stocks-global/engine.mjs",
+        "bytes": 10780,
+        "sha256": "dfd733dd19b7dc6023018a9d183ef66abeeb4adaa15c7bed2004ad330f0ef6c4"
+      },
+      {
+        "path": "services/stocks-global/identity.mjs",
+        "bytes": 4801,
+        "sha256": "a9a38fc77372fd52d89039dd129ad0b4b5cee8c2f875182fd962150cd6153c9b"
+      },
+      {
+        "path": "services/stocks-global/local-proxy.mjs",
+        "bytes": 6610,
+        "sha256": "ad23ace029f5fdbc73dbc3d4aa98152bc4b0d7a76fb331690cbef55182ea90e6"
+      },
+      {
+        "path": "services/stocks-global/market.mjs",
+        "bytes": 22918,
+        "sha256": "3d74c2d1ecff02f4f41af8bea2184ef00e54f2f6ed722c012deafcfb4770e460"
+      },
+      {
+        "path": "services/stocks-global/server.mjs",
+        "bytes": 21458,
+        "sha256": "4ed40c6ab0a769af64a8d71a730abde13f8a4b3d591ee5056c3acbfbcfc4af12"
+      },
+      {
+        "path": "services/stocks-global/store.mjs",
+        "bytes": 1636,
+        "sha256": "fe59b54eb87bf68b571bc476b2df2992631672e678152f894ffa7138e8706237"
+      },
+      {
+        "path": "services/stocks-global/viewer-projection.mjs",
+        "bytes": 1039,
+        "sha256": "3f987e647a0539ed11154919de5972060c297a2517ab2b4ec24aaba23466fd2b"
+      },
+      {
+        "path": "services/stocks-simulator/engine.mjs",
+        "bytes": 12321,
+        "sha256": "d7f10f47690a03c00c67ed4fceb0130e83ece0ef6b6bbaeacef8b17338c01812"
+      },
+      {
+        "path": "src/api/asyncRoute.ts",
+        "bytes": 512,
+        "sha256": "c105c921d6a632c6776fb8a5aa7440e0dd6c7d74ea464d3b071c147ee22da5da"
+      },
+      {
+        "path": "src/api/middleware/auth.ts",
+        "bytes": 6916,
+        "sha256": "a14a605a5643cd1c5c1634cdbcb5a7c8ca845b4fc173c5d10e8dd4d208fafa92"
+      },
+      {
+        "path": "src/api/routes/account.ts",
+        "bytes": 14595,
+        "sha256": "94cf667e7ab599ad8adce669faebdc2785af3b925712ec525e68d45d51a32fe1"
+      },
+      {
+        "path": "src/services/AdminPasswordVault.ts",
+        "bytes": 1590,
+        "sha256": "b08257506f7e7ae4b7d71cdb445082e8d25143ba38c3583e995ae6258122355e"
+      },
+      {
+        "path": "src/services/ContactEmailPolicy.ts",
+        "bytes": 2769,
+        "sha256": "541f68318335879e7532adb71443590c7b1c08634825757c31b71a8befe2aceb"
+      },
+      {
+        "path": "src/services/TwoFactorService.ts",
+        "bytes": 2392,
+        "sha256": "20d91a7fa311137da6fc65be8b34cbe6b129213ba58f8e31ea260f62356434a0"
+      }
+    ]
+  },
+  "manifestSha256": "351ea54e0b543801b1ab36cb36dade5e6ed231808d0be8a64bec2162c96aa789",
+  "assertions": 23,
+  "status": "FAIL",
+  "failure": {
+    "message": "buy debits exactly 40",
+    "stack": "AssertionError [ERR_ASSERTION]: buy debits exactly 40\n    at check (C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\scripts\\qa-stocks-local-stage-recovery.cjs:126:48)\n    at C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\scripts\\qa-stocks-local-stage-recovery.cjs:176:7\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async test (C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\scripts\\qa-stocks-local-stage-recovery.cjs:129:11)\n    at async main (C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\scripts\\qa-stocks-local-stage-recovery.cjs:169:5)"
+  },
+  "child": {
+    "code": 0,
+    "signal": null,
+    "outputBytes": 0
+  },
+  "completedAt": "2026-10-13T21:05:19.718Z"
+}

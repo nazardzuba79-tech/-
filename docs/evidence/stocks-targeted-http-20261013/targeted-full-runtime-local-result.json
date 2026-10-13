@@ -1,0 +1,32 @@
+{
+  "started": "2026-10-13T21:16:26.505Z",
+  "ended": "2026-10-13T21:16:33.948Z",
+  "node": "v24.21.0",
+  "files": [
+    "services/stocks-global/engine.test.mjs",
+    "services/stocks-global/identity.test.mjs",
+    "services/stocks-global/viewer-projection.test.mjs",
+    "services/stocks-global/server.test.mjs",
+    "services/stocks-global/accounts.test.mjs",
+    "services/stocks-global/account-registration.test.mjs",
+    "services/stocks-global/account-registration-batch.test.mjs",
+    "services/stocks-global/account-worker.test.mjs",
+    "services/stocks-global/account-observations.test.mjs",
+    "services/stocks-global/account-background-observations.test.mjs",
+    "services/stocks-global/refresh-coalescing.test.mjs",
+    "services/stocks-global/worker-http.test.mjs",
+    "services/stocks-global/owner-usdt.test.mjs",
+    "services/stocks-global/wallet-fx-scope.test.mjs",
+    "services/stocks-global/demand-lifecycle.test.mjs",
+    "services/stocks-global/local-proxy.test.mjs",
+    "services/stocks-global/market-cache.test.mjs",
+    "services/stocks-global/history-deadline.test.mjs",
+    "services/stocks-global/market-range.test.mjs",
+    "services/stocks-global/interest.test.mjs",
+    "services/stocks-simulator/engine.test.mjs",
+    "services/stocks-simulator/server.test.mjs",
+    "services/stocks/native-transport-proof/binance-offline.test.mjs"
+  ],
+  "status": 0,
+  "stdoutTail": " has one connection; receive cannot submit, duplicate cannot refresh; no demand shuts down (1.5596ms)\n✔ disconnect invalidates generation; bounded reconnect, stale callbacks and cancelled retries stay inert (0.5501ms)\n✔ reject aggregate/ticker/incorrect provider/symbol and invalid or stale native fields (1.4724ms)\n✔ entry/readers are bounded, out-of-order cannot replace current, release is idempotent (0.2544ms)\n✔ synchronous open failure returns releasable demand and retains a bounded retry (0.2658ms)\n✔ synchronous disconnect during open cannot retain the returned obsolete handle (0.8641ms)\n✔ native string price boundaries match unchanged actual REST truncation policy (2.1675ms)\n✔ a throwing close cannot retain generations or prevent cleanup attempts for other entries (0.2361ms)\n✔ last release and obsolete synchronous-open handles report close failures without orphan demand (0.2044ms)\nℹ tests 202\nℹ suites 0\nℹ pass 202\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 7398.5202\n"
+}

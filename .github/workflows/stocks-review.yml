@@ -18,6 +18,7 @@ jobs:
       timeline: ${{ steps.plan.outputs.timeline }}
       registration: ${{ steps.plan.outputs.registration }}
       model: ${{ steps.plan.outputs.model }}
+      targeted: ${{ steps.plan.outputs.targeted }}
       matched: ${{ steps.plan.outputs.matched }}
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +31,57 @@ jobs:
       - run: node --test services/stocks/review-plan.test.mjs
       - id: plan
         run: node services/stocks/review-plan.mjs
+  stocks-pr512-targeted-http:
+    needs: stocks-review-selection
+    if: needs.stocks-review-selection.outputs.targeted == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Narrow harness and scheduling regression
+        run: node --test services/stocks/targeted-http-512/targeted.test.mjs services/stocks/review-plan.test.mjs
+      - name: Verify disposable backing disk and separate load CPU
+        run: |
+          mkdir -p "$RUNNER_TEMP/targeted-http512-disk"
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+          majmin=$(findmnt -n -o MAJ:MIN -T "$RUNNER_TEMP/targeted-http512-disk" | tr -d '[:space:]')
+          device=$(lsblk -nrpo NAME,MAJ:MIN | awk -v mm="$majmin" '$2==mm {print $1; exit}')
+          test -n "$device" && test -b "$device"
+          parent=$(lsblk -ndo PKNAME "$device")
+          if [ -n "$parent" ]; then device="/dev/$parent"; fi
+          printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
+          { git rev-parse HEAD; nproc; free -m; findmnt -T "$RUNNER_TEMP/targeted-http512-disk"; lsblk; } > "$RUNNER_TEMP/targeted-http512-host.txt"
+          docker pull node:24.21.0-bookworm-slim
+      - name: Reviewed thirty target-only diagnostic runs after five-user preflight
+        env:
+          TARGETED_HTTP_512_APPROVED: 'true'
+          TARGETED_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          TARGETED_OUTPUT: .ci-output/stocks-targeted-http512
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/targeted-http512-disk
+        run: node services/stocks/targeted-http-512/run.mjs
+      - name: Preserve host provenance after empty-directory guard
+        if: always()
+        run: |
+          mkdir -p .ci-output/stocks-targeted-http512
+          if [ -f "$RUNNER_TEMP/targeted-http512-host.txt" ]; then cp "$RUNNER_TEMP/targeted-http512-host.txt" .ci-output/stocks-targeted-http512/host.txt; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-pr512-targeted-http-${{ github.event.pull_request.head.sha }}
+          path: .ci-output/stocks-targeted-http512
   stocks-pr512-phase-diagnostic:
     needs: stocks-review-selection
     if: needs.stocks-review-selection.outputs.diagnostic == 'true'
@@ -390,10 +442,22 @@ jobs:
         with:
           node-version: '22'
       - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
-        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/identity.test.mjs services/stocks-global/viewer-projection.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-registration-batch.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/account-background-observations.test.mjs services/stocks-global/refresh-coalescing.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/owner-usdt.test.mjs services/stocks-global/wallet-fx-scope.test.mjs services/stocks-global/demand-lifecycle.test.mjs services/stocks-global/local-proxy.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/history-deadline.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/identity.test.mjs services/stocks-global/viewer-projection.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-registration-batch.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/account-background-observations.test.mjs services/stocks-global/refresh-coalescing.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/owner-usdt.test.mjs services/stocks-global/wallet-fx-scope.test.mjs services/stocks-global/demand-lifecycle.test.mjs services/stocks-global/local-proxy.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/history-deadline.test.mjs services/stocks-global/history-cancellation.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate
+      - name: Offline native transport and targeted-harness guards
+        run: node --test services/stocks/native-transport-proof/binance-offline.test.mjs services/stocks/targeted-http-512/targeted.test.mjs
+      - name: Local staging recovery guards
+        run: node --test scripts/qa-stocks-local-stage.test.cjs
+      - name: Bounded clean-build local authority and SQLite restart recovery
+        timeout-minutes: 5
+        run: node scripts/qa-stocks-local-stage-recovery.cjs --output "$GITHUB_WORKSPACE/output/stocks-local-stage"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-local-stage-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/stocks-local-stage
       - name: TypeScript and enabled US/RU preview build
         run: npm run build --prefix frontend
         env:

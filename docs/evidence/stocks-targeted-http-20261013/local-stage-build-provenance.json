@@ -1,0 +1,2279 @@
+{
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\node_modules\\typescript\\bin\\tsc",
+      "--project",
+      "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\tsconfig.json"
+    ],
+    "cwd": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013"
+  },
+  "startedAt": "2026-10-13T21:16:24.100Z",
+  "endedAt": "2026-10-13T21:16:29.545Z",
+  "exitCode": 0,
+  "signal": null,
+  "compilerVersion": "5.9.3",
+  "compilerFiles": [
+    {
+      "file": "package.json",
+      "sha256": "822ef7ca6452205657b6288b066481ecf508bfbf43455d715cf7d3ec457561e6"
+    },
+    {
+      "file": "bin/tsc",
+      "sha256": "8d5fa5bd883fec0979fc2004f1fe1d99aef40570155d550eadc0b03b55513bf0"
+    },
+    {
+      "file": "lib/tsc.js",
+      "sha256": "2cffde0b8c6760dfb0b5b0382bbb7e00ba6a8b2d981b9205b256a700a481d983"
+    },
+    {
+      "file": "lib/_tsc.js",
+      "sha256": "e8f349eabd48486bdb2bf9dc1a00c89d58297270c54b745838879e2859194419"
+    }
+  ],
+  "node": "v24.21.0",
+  "tsconfig": {
+    "path": "tsconfig.json",
+    "sha256": "9e174d41645c74ad566555b18947244c045213c05788a33f58d8addd3f776208"
+  },
+  "packageLockSha256": "0034715efce793d97b0272f29dd9235d1aa7116b09d4805aff43e07bb9a119a2",
+  "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "sourcesBefore": [
+    {
+      "path": "src/api/asyncRoute.ts",
+      "sha256": "c105c921d6a632c6776fb8a5aa7440e0dd6c7d74ea464d3b071c147ee22da5da"
+    },
+    {
+      "path": "src/api/middleware/admin.ts",
+      "sha256": "88feb3ea40e852e33d849214c4346edb7fe49f4709a7564211ebde5e5fc89a5c"
+    },
+    {
+      "path": "src/api/middleware/apiKeyAuth.ts",
+      "sha256": "2835173655e45c17d981dc2ce3141c79a9131aaa789b6aee53ab2dc4bf798828"
+    },
+    {
+      "path": "src/api/middleware/auth.ts",
+      "sha256": "a14a605a5643cd1c5c1634cdbcb5a7c8ca845b4fc173c5d10e8dd4d208fafa92"
+    },
+    {
+      "path": "src/api/middleware/publicDisplayCache.ts",
+      "sha256": "36c32e3a9280a61ec4f73f30e4f3cd2674d63942f6d800229ddec744386b310d"
+    },
+    {
+      "path": "src/api/routes/account.ts",
+      "sha256": "94cf667e7ab599ad8adce669faebdc2785af3b925712ec525e68d45d51a32fe1"
+    },
+    {
+      "path": "src/api/routes/admin.ts",
+      "sha256": "7fe66f4cf930b1d64f4e84962041c3f3227ccda245d32a7c5819cb0abf309ce6"
+    },
+    {
+      "path": "src/api/routes/adminAuditLog.ts",
+      "sha256": "f9f0284cce5a23e4b15e68a9551cf59dfad4edaf43666ce0c4f5aa62e5b6a58f"
+    },
+    {
+      "path": "src/api/routes/adminBalanceAdjustments.ts",
+      "sha256": "7ea486fdcfcde73840caac48c45f2c7e8531bd130c175c5c27fe33591b2fd193"
+    },
+    {
+      "path": "src/api/routes/adminDepositCopyReview.ts",
+      "sha256": "fd98269b431f9e109c6c11f363f1ca475372d9259b0d7795b233aa31e99f605d"
+    },
+    {
+      "path": "src/api/routes/adminDeposits.ts",
+      "sha256": "d44315fc1fa73e4bcf46e4561acf9de74c7b58bfaceb90d0dccc0374941f6cd2"
+    },
+    {
+      "path": "src/api/routes/adminListings.ts",
+      "sha256": "d549299f8c45cced85df55c1f8a7f2ce3e9f5e0c239a78b362eb0a3c959ad13f"
+    },
+    {
+      "path": "src/api/routes/adminPagedReads.ts",
+      "sha256": "de182aabef77f0786536343c2f4d2b80e368e4b73ab430c38392c74f771f996f"
+    },
+    {
+      "path": "src/api/routes/adminUsers.ts",
+      "sha256": "ceaa095d8663ecb7242281ce5a44fc4049f5d463e02c2dbda3d0d962ffe43a59"
+    },
+    {
+      "path": "src/api/routes/adminWallets.ts",
+      "sha256": "2b2c27fda9875d3c928f9c0e71e0a0fca9a0cf3254ceee99785a5fa442e65a3e"
+    },
+    {
+      "path": "src/api/routes/adminWithdrawals.ts",
+      "sha256": "a5df562fcc983cbcfaec3d9a8273db07505613325e14e35a685c53f2d6ad87bb"
+    },
+    {
+      "path": "src/api/routes/analytics.ts",
+      "sha256": "a63ca652397113e43604f15e623ccf6b76a12a6281ed291fdc42977c39ee2c30"
+    },
+    {
+      "path": "src/api/routes/apiKeys.ts",
+      "sha256": "e87b11a6cd562d104ecb7d2d3c5b2fd152236e6813e3a5a027c6ff13af28868d"
+    },
+    {
+      "path": "src/api/routes/arbitrage.ts",
+      "sha256": "c9ad5608ae9d444ce81377675cbf2bcd47fb5d0561003f71d1a5da1bd216c1ba"
+    },
+    {
+      "path": "src/api/routes/auth.ts",
+      "sha256": "69a29133ff0054614dcd8c9124a2123edd5bd130f309738e11652c4360eca587"
+    },
+    {
+      "path": "src/api/routes/balances.ts",
+      "sha256": "6b7c285a93ceb48c9b5ba721dc4021a6b8fb248e86180820ab99f93e65869899"
+    },
+    {
+      "path": "src/api/routes/banking.ts",
+      "sha256": "621a54ced6d14c949327261b1caf6aedd11e826ce1a2b3c51b94292748b8fd01"
+    },
+    {
+      "path": "src/api/routes/candles.ts",
+      "sha256": "42ddc61938961571a9b85ac21b8a44d953dfcdf3947364f9816163b3cb29e85c"
+    },
+    {
+      "path": "src/api/routes/card.ts",
+      "sha256": "d001ec866115bbc63a101e21f57232b0a328f7b8774d2b56ab42045f38ba5bb6"
+    },
+    {
+      "path": "src/api/routes/cfd.ts",
+      "sha256": "dd70cfad50dc222dc95a28e0e893a83555661b98d877f95b573db60830012f84"
+    },
+    {
+      "path": "src/api/routes/contactPolicy.ts",
+      "sha256": "787690d4835ff9489673b4d992a74fdabffd8f88acd5fecf07b6a17194b64662"
+    },
+    {
+      "path": "src/api/routes/copyPerformance.ts",
+      "sha256": "a00dd53e51ede3ea3cc934ba3e03b1df1c88b2ae5d2bf4739900bbd2f34df9cb"
+    },
+    {
+      "path": "src/api/routes/demoTrading.ts",
+      "sha256": "3416c8eb734b3ad3d4f30d78b909f70b54a69514ffae4fdf40e9bca592c2d69e"
+    },
+    {
+      "path": "src/api/routes/depositAddressCopies.ts",
+      "sha256": "3bc82b88224ab3e75fee12858edd2689f3105e02d5fc74bf588e116252ac9ceb"
+    },
+    {
+      "path": "src/api/routes/depositCatalogue.ts",
+      "sha256": "7ad12ce7b954ade4a330b5aa7003f51f442c9923063aaf7d86872f7abfec9487"
+    },
+    {
+      "path": "src/api/routes/deposits.ts",
+      "sha256": "f2dc68efee20345cd9586223d45a075b2127876df27848afce215742c2d4839c"
+    },
+    {
+      "path": "src/api/routes/depositWatchInternal.ts",
+      "sha256": "72896c0cde83dd1c4108b2107f35ca11d89528ac091de23481ba92eb1a554da3"
+    },
+    {
+      "path": "src/api/routes/displaySnapshots.ts",
+      "sha256": "452f8da663172f85a31d30906d9d0b619de6235d8f5d404fe0723f7e247739ee"
+    },
+    {
+      "path": "src/api/routes/futures.ts",
+      "sha256": "22e9e86dcbc3ccdd5962ebf3df0985e2e97d84dc869b84778e03df73607a41c8"
+    },
+    {
+      "path": "src/api/routes/kyc.ts",
+      "sha256": "6ac777b4a6ca220cbf9e62a2de6fdd17daf146262c8efd11b445c01364ce0224"
+    },
+    {
+      "path": "src/api/routes/market.ts",
+      "sha256": "6411fcf4cdf04183b9968efc27322bff86e455d7e08036d1da660a678de36c15"
+    },
+    {
+      "path": "src/api/routes/marketData.ts",
+      "sha256": "7bf35915cc2b18fbe83dc24654820b0cdeb577ea1501747f4d82f958ac546d32"
+    },
+    {
+      "path": "src/api/routes/marketDepth.ts",
+      "sha256": "90036e5bc3e271f1ca681c2a845f8590a1441fa0801f1ecb28502a23aa51aced"
+    },
+    {
+      "path": "src/api/routes/marketLive.ts",
+      "sha256": "380847bba8afdb4e5768323a454495f4a1c86ce1f873ef193cc0c642208f11ea"
+    },
+    {
+      "path": "src/api/routes/marketOptions.ts",
+      "sha256": "d20099938f746f3ceae1460f882cd85a84653d3b66b0299ea93864b643474122"
+    },
+    {
+      "path": "src/api/routes/orders.ts",
+      "sha256": "59c56df02c5efa81e99930fd45ac4b4be4a798b3409e622f95ffca0b33c5c605"
+    },
+    {
+      "path": "src/api/routes/otcCash.ts",
+      "sha256": "978282ce7a9b0aaaa7197013edfc4e4242cb8c0ad63047d55cf687c7b80df1ab"
+    },
+    {
+      "path": "src/api/routes/portfolio.ts",
+      "sha256": "2ca0760312fcec20d34e464cb8ac71f82b4b54a71c1c3df5668bdbd8cc2d130b"
+    },
+    {
+      "path": "src/api/routes/privateTrading.ts",
+      "sha256": "7d373287a94641ac7646db1dc6492e988ddf0da81d7a67519de11dc1102e5f94"
+    },
+    {
+      "path": "src/api/routes/products.ts",
+      "sha256": "7cac2b23915d0dd3ab196c24a2601659a1dc0b6f954ce0df80bdd66b6df1f6b4"
+    },
+    {
+      "path": "src/api/routes/referral.ts",
+      "sha256": "e3c13b841c3d7f68ed3cd8b92feab1e0b3933fe7248c797b63919ea726dc024c"
+    },
+    {
+      "path": "src/api/routes/reserves.ts",
+      "sha256": "0272c829bc0872272cdb325b3c4c3156f7b7ca61a8af014426c873a70abff3a4"
+    },
+    {
+      "path": "src/api/routes/supportRequest.ts",
+      "sha256": "cdb4f32c00b0748c70acb5bd8fc7fd880444a97d3d3f9d8c9f709f6173181efb"
+    },
+    {
+      "path": "src/api/routes/syntheticCopyTrading.ts",
+      "sha256": "ded53b4015484227f6c2877242fa50ec0844d886ef98f536f97349476e8c1f6d"
+    },
+    {
+      "path": "src/api/routes/testMarkets.ts",
+      "sha256": "6aa2282d87ffecb495418ee3660d6cfe0a24b6a92fe76bfd960f2c1ac7e93008"
+    },
+    {
+      "path": "src/api/routes/trades.ts",
+      "sha256": "988a8ff45f7621f4f091eacbd2b695c9956d61f90cf2671749322ef8f9238b83"
+    },
+    {
+      "path": "src/api/routes/withdrawals.ts",
+      "sha256": "99d7a5aed29fb115ea4a184f2b0e16aa1d76a27d55e936f3095aeee83faab3f4"
+    },
+    {
+      "path": "src/auth/telegramInitData.ts",
+      "sha256": "91fa4068c02ce6b149c920047a6987a446328480fa71a15de9dc1f2f8cae56b6"
+    },
+    {
+      "path": "src/banking/config.ts",
+      "sha256": "ac3de7f505a1127c7b181be00e00700c15b4092cec35adfa4ccbf3f7fa9ec283"
+    },
+    {
+      "path": "src/banking/math.ts",
+      "sha256": "cbe09348743c5833dcd88aa6dc00b15c8c0eaf03fc6e368bdc1d189346588322"
+    },
+    {
+      "path": "src/banking/service.ts",
+      "sha256": "6f633624c276294e06b04c0d37e6b43a6be18eb41d74ed36ee67ad356cd75555"
+    },
+    {
+      "path": "src/buildCommit.ts",
+      "sha256": "c00f2d0cb83bd058e72a00a1302a4d5aeb58e4fddc845e668ba4ea82815cf850"
+    },
+    {
+      "path": "src/cfd/CfdLiquidationEngine.ts",
+      "sha256": "9c2f84e4d628eb97fb8e6262e2ee85af2c354e3ed6dec575074c5bfa3b9ac6ce"
+    },
+    {
+      "path": "src/cfd/CfdPositionService.ts",
+      "sha256": "6e2f2ace0230f5189d46cf983f55b3f27f551a63b3871ba6c747b0bfd73099a8"
+    },
+    {
+      "path": "src/cfd/lockCfdAccount.ts",
+      "sha256": "108b1747536641fb8a3cdfc6944dfd9f8c8d2ec7c45dbd5c2288e9535f3a3f56"
+    },
+    {
+      "path": "src/config/cfdConfig.ts",
+      "sha256": "aef61e3c48f1fe1cc5c1c2b5ce05d49a473b4234c3858518a5ed38ad3a51f52b"
+    },
+    {
+      "path": "src/config/chains.ts",
+      "sha256": "0f6393c278b1782c3e9a0c1191a16e0a943fb3d6595fa18d2cee24dd0436ff49"
+    },
+    {
+      "path": "src/config/futuresConfig.ts",
+      "sha256": "ca2c4878a3ebc397d0f0e69bcfdf91fc52861dffaef0b688cdf5c22f5de26c03"
+    },
+    {
+      "path": "src/config/limits.ts",
+      "sha256": "0e79f22faf0318628e429dddd378861fed0cea0f6a5d627486a7c4d7b469f065"
+    },
+    {
+      "path": "src/futures/auditActiveOrders.ts",
+      "sha256": "9f632755488464af42b6234d97a94da3abbf5a65344e2284c408bc98e21977aa"
+    },
+    {
+      "path": "src/futures/exposureRisk.ts",
+      "sha256": "e388df22c1e8ba8bffb65ac7f0b8b992314fc96c891efc1a853a7db62e480707"
+    },
+    {
+      "path": "src/futures/FundingRateService.ts",
+      "sha256": "1a87bca35ff9124b9df2cccafd3d67b790a2341db7d9b7baa29e68f11f583926"
+    },
+    {
+      "path": "src/futures/FuturesBookTransaction.ts",
+      "sha256": "7798ac89dfd5215689c566016664a55dd836c4dd620e0561f16b49b8d86a03bb"
+    },
+    {
+      "path": "src/futures/FuturesMarketExecution.ts",
+      "sha256": "38550c68e8c1f27a24e86446017e97087570f4f0345e450de642442972bed873"
+    },
+    {
+      "path": "src/futures/FuturesMarketRegistry.ts",
+      "sha256": "2837e8c4455a02c78c58a64838167fd4689ab33dbb4ea18f37ba7f23dc50ed4c"
+    },
+    {
+      "path": "src/futures/FuturesOrderBookRecovery.ts",
+      "sha256": "f884be9d63f71784dc3ff0912829974f5c53f32db55216afe775de525cc8e3fa"
+    },
+    {
+      "path": "src/futures/FuturesPositionService.ts",
+      "sha256": "9c2d8a90f2e4929d9d09da3a106661ecc42ff38e0b4e70df266436523f43d019"
+    },
+    {
+      "path": "src/futures/FuturesProtectionService.ts",
+      "sha256": "cf88b39d5ce5fa7458e418b012e8046d62bdc40c646c334a6f47cc6c1237fce6"
+    },
+    {
+      "path": "src/futures/InsuranceFundService.ts",
+      "sha256": "c38b58ea3f796bc85138932d1de4c60e0e5d8ca441cd76b598cd689af855fb7c"
+    },
+    {
+      "path": "src/futures/LiquidationEngine.ts",
+      "sha256": "f41bc9594216f63749fb433a1f88b11dca77a14c4ddc0193467ead2c6c9cd629"
+    },
+    {
+      "path": "src/futures/marginMath.ts",
+      "sha256": "471f73eb3dfed464f98b46fde6f0baf5add658e5365898e2276a50f4966cbbba"
+    },
+    {
+      "path": "src/futures/MarkPriceService.ts",
+      "sha256": "ecbc899c65834e0fdb5116c648ba154ee0bed3d8cae8cb5347bc779f21f80d7a"
+    },
+    {
+      "path": "src/index.ts",
+      "sha256": "9fb562cc04aa11114cb8d1d26be579f99cf6e56c8797905ab438bde429cf0efa"
+    },
+    {
+      "path": "src/marketDataCollector.ts",
+      "sha256": "20e2e0d9ce4d3a4a07705ca94a17777766f1709a72c30224d3c90cc97ca13e2c"
+    },
+    {
+      "path": "src/matching-engine/MatchingEngine.ts",
+      "sha256": "9a9ddc248fa290821354b485d32231be713b554b477b446ddccfd16e7181b1fe"
+    },
+    {
+      "path": "src/matching-engine/OrderBook.ts",
+      "sha256": "e874abcbcfe25518df5d04538913323d5b666cf6f35ed5a11ed81ea568d427ce"
+    },
+    {
+      "path": "src/matching-engine/types.ts",
+      "sha256": "17d9930c4646c58b5d9b93034e191567d2bfb17e493df9781e0d9313d4f7d7c3"
+    },
+    {
+      "path": "src/otc/auditReserves.ts",
+      "sha256": "ae4e01778c9277d245b34e2c4c332d237a118031e4be20966afb210c75348f1a"
+    },
+    {
+      "path": "src/otc/confirmedTransaction.ts",
+      "sha256": "baa31d06842af544b1016924557ac81a1feefb014b221f643c5e885c85258821"
+    },
+    {
+      "path": "src/otc/geography.ts",
+      "sha256": "7b3b2e0658c357f84afbc4558a5f8527fd4a0ee71085c69da595aa7da8a3af85"
+    },
+    {
+      "path": "src/otc/OtcCashService.ts",
+      "sha256": "94318150455f03d4b1c5ae3a3aae24449e914c5a8051c9a59abb3b684ee66bb5"
+    },
+    {
+      "path": "src/otc/policy.ts",
+      "sha256": "84278dd41c77597d492923230d3ef2c1a721c24a7225ab3b242d117f89680e69"
+    },
+    {
+      "path": "src/otc/reserveCoverage.ts",
+      "sha256": "c3000e0c65a5223dfcb415af337ca8a10f50a4930682089820a70d9a3d8e38da"
+    },
+    {
+      "path": "src/private-trading/access.ts",
+      "sha256": "a1966dc9bfa3f869888005a2b9a73c1a11cdd146842c19ce636757c2abe3a4ad"
+    },
+    {
+      "path": "src/private-trading/crossDemo.ts",
+      "sha256": "f4efa1d94c6c9eab90e2579d18d6e355f10c44f6ab6585a002eeb9530e78e8a6"
+    },
+    {
+      "path": "src/private-trading/liveEngine.ts",
+      "sha256": "a8d8db0f75ca02be98b0435ec04ccff4ecb6b999b7e0027bce946e076d092db4"
+    },
+    {
+      "path": "src/private-trading/marketData.ts",
+      "sha256": "5661d93d1433fee11d338463dcf3e6f26c27222a401e7628538f93065343be43"
+    },
+    {
+      "path": "src/private-trading/math.ts",
+      "sha256": "5a419619efc970ace4c3000c131015ce35d9993417662ce8a6d6c2fe4c78fe06"
+    },
+    {
+      "path": "src/private-trading/native/accountModel.ts",
+      "sha256": "e71d213fb7dae0aee662b5f1dbc55710b719cd288c805f9e411c4c8ddbf0e04f"
+    },
+    {
+      "path": "src/private-trading/native/collateral.ts",
+      "sha256": "0375c557690a3118cb1b7a0db1daa50e62f384b82e054e3982bfc5de76e928fe"
+    },
+    {
+      "path": "src/private-trading/native/commandScope.ts",
+      "sha256": "ff535adb8f24f64fcf97fdda1d520cd7376e063817d537377c5b81c0fbdc2cee"
+    },
+    {
+      "path": "src/private-trading/native/engine.ts",
+      "sha256": "ce239d52f5678daf219a7668e6a3bf0970cef23f3d4f06942ba58e7e54296b7a"
+    },
+    {
+      "path": "src/private-trading/native/historyCache.ts",
+      "sha256": "52c9c4053e85653fa7a347222221d66d575ea56d621eaeb8478623e60bbda485"
+    },
+    {
+      "path": "src/private-trading/native/historyPage.ts",
+      "sha256": "548fa2536ec3539c54444256c235de6d01a650e136d15b9cc092daeed0c9bc38"
+    },
+    {
+      "path": "src/private-trading/native/invariants.ts",
+      "sha256": "c2c121577b17dd63eb13441713373a45c9ec7faa94c1b7a2925c94756f308197"
+    },
+    {
+      "path": "src/private-trading/native/ledger.ts",
+      "sha256": "e3822a3e958948098fc8e48d0a0f9a57b293a20e421d22fa3b61a03ac9ba9bc0"
+    },
+    {
+      "path": "src/private-trading/native/limitPass.ts",
+      "sha256": "74dd84e9c5a2ed7bb1dd6bffc2d0cf52641715e0ce5b7bd6d1bf476365a1bcc0"
+    },
+    {
+      "path": "src/private-trading/native/liveProjection.ts",
+      "sha256": "426c72eaf430ee89bc7788049d3b346117891fa777f4c9c770e7c25df02e27bb"
+    },
+    {
+      "path": "src/private-trading/native/pendingWallet.ts",
+      "sha256": "1663c3008e0bea65db327ee2575e4a05f36396d427f7f2f429f7e454650fe0f1"
+    },
+    {
+      "path": "src/private-trading/native/replay.ts",
+      "sha256": "c956366499fbaf6ee3906edfa8390435f37ff89976d3fd6817d758972bdbf4fc"
+    },
+    {
+      "path": "src/private-trading/native/routes.ts",
+      "sha256": "be56c13b7e0bda69662b3f36bce6bf9e7f158ec0a2c56dfbbcb76e56cde27921"
+    },
+    {
+      "path": "src/private-trading/native/service.ts",
+      "sha256": "d27f463286363c2fd39aa1b990d7b55c9f28d048039294e2eaf898ddf160545c"
+    },
+    {
+      "path": "src/private-trading/native/store.ts",
+      "sha256": "271543e9637c46ae51746a0bace70bf02bab942fb0a7623098f651cf23efb252"
+    },
+    {
+      "path": "src/private-trading/native/testAccess.ts",
+      "sha256": "1b4b71caf9bf06c98dccf80026e78c028755ec4355ef8cc92ae9de8f8d0807af"
+    },
+    {
+      "path": "src/private-trading/native/testAccounts.ts",
+      "sha256": "d6e01fcc48a8979781031ce46ded1aef4df5a98616e3bf9cc1a3d1f8834a6af0"
+    },
+    {
+      "path": "src/private-trading/native/testing/liveFixture.ts",
+      "sha256": "a2622c34c0a22a4b36f542bf5b6fc559a49534505d9298f5d38ce2dce22933d2"
+    },
+    {
+      "path": "src/private-trading/native/testRoutes.ts",
+      "sha256": "996f9d093f2f94af1ff75db7ab2c2616db9196c6e07e9dd43e6c867175bd4c81"
+    },
+    {
+      "path": "src/private-trading/native/walletRows.ts",
+      "sha256": "dd0a35ccc8912f5b6c9cc829ceaa6f9b07911eee55fc0ca05c04a8140c1caf8c"
+    },
+    {
+      "path": "src/private-trading/native/withdrawable.ts",
+      "sha256": "bf5b0d148cd385b20c752a1b8d5f8e84115327c3d1a98d8cd070b6b09cc62822"
+    },
+    {
+      "path": "src/private-trading/replay.ts",
+      "sha256": "882c7362691ac11f91df36c3e4e8c9ac07b3279740a3c48c1c5fbece03501e0f"
+    },
+    {
+      "path": "src/private-trading/service.ts",
+      "sha256": "a56c0bd580e5753b6808afcff062431b65473eeaba7570445cdfd21963433b1c"
+    },
+    {
+      "path": "src/private-trading/serviceTypes.ts",
+      "sha256": "00e689f9a0d6f901e94b415d0268437b0340624318b74c0e8de613d6adc2a6a5"
+    },
+    {
+      "path": "src/private-trading/store.ts",
+      "sha256": "ace9ae4ca1c13260d13f65d17835d23a2de3a83e1d41219396d84d319709d8f2"
+    },
+    {
+      "path": "src/private-trading/types.ts",
+      "sha256": "6bfdee577b6db101a61cafabc1262ced22e838c4a0225bd78526952b37b6c4c4"
+    },
+    {
+      "path": "src/serverBackground.ts",
+      "sha256": "a417c667c517eab1dbd14ee41fb5a72f7279b02c3c0320cb0a591594566028de"
+    },
+    {
+      "path": "src/services/AccountDeletionGate.ts",
+      "sha256": "f71a506c74ee65217469efd03c4f1d822879af207dba9e647ebf9a2bec8d9dce"
+    },
+    {
+      "path": "src/services/AdminPasswordVault.ts",
+      "sha256": "b08257506f7e7ae4b7d71cdb445082e8d25143ba38c3583e995ae6258122355e"
+    },
+    {
+      "path": "src/services/AdminUserDeletionService.ts",
+      "sha256": "3123aead03e8d190b7e13bf99ffc9433151bf64d2a236159c0a488d35a386085"
+    },
+    {
+      "path": "src/services/AdminUserVisibility.ts",
+      "sha256": "cfc3c3e14d250f6197cb138a9bb09ad12ab6a4294502a079538c25a7a28479f9"
+    },
+    {
+      "path": "src/services/analytics/CoinGlassAnalyticsService.ts",
+      "sha256": "f05eb51b2aa4b2455272096f062a413724bc0975931ab589ade0bdcc3c0fb84f"
+    },
+    {
+      "path": "src/services/analytics/DeribitAnalyticsService.ts",
+      "sha256": "1c52573d77991579aa7dfc5a417c041793bb80438120e21038b5814e907a611d"
+    },
+    {
+      "path": "src/services/analytics/DerivedAnalyticsService.ts",
+      "sha256": "fbea049dcacbcb4c7ab965e57a10c51bcb0757a6a502303ad72f765a6645451a"
+    },
+    {
+      "path": "src/services/analytics/HistoricalOpenInterestService.ts",
+      "sha256": "122a9e2ffba8c969100ae7bfdd51a070911d3fab536de84c4b6cf54edf74a3e7"
+    },
+    {
+      "path": "src/services/analytics/LiquidationStreamService.ts",
+      "sha256": "b538fcf9017b20afd7a885c56ef66ca2a242274ccd2a6526ae92a9f9f1307712"
+    },
+    {
+      "path": "src/services/AnalyticsDataService.ts",
+      "sha256": "baa884336d27c55d07db2210946496e7a54dcea56520d2fe1fc90fb27ef14c2a"
+    },
+    {
+      "path": "src/services/ApiKeyService.ts",
+      "sha256": "d3060155d38239d418ddea28a05219359460d64a1abca0cbb4ae79fa62f86e22"
+    },
+    {
+      "path": "src/services/ArbitrageService.ts",
+      "sha256": "3197f0cf26d0309a4e5e6e994134187d3dfe132af64620c96c5cb540428b3d73"
+    },
+    {
+      "path": "src/services/BackgroundWorkCoordinator.ts",
+      "sha256": "5dc46728ffa4393a4f2e96abf454cedd60cc64344296a842d851bc56926c6342"
+    },
+    {
+      "path": "src/services/BalanceAdjustmentService.ts",
+      "sha256": "5ff7ddacd2aa82c84184a0df70b1a584754c9be808c5aa93dec178fa323c245a"
+    },
+    {
+      "path": "src/services/CandleService.ts",
+      "sha256": "cbf9e7b29bf4630a0c241c233e1cb57bb108c09341ec35ab0c389c8a82c96e7c"
+    },
+    {
+      "path": "src/services/CardApplicationService.ts",
+      "sha256": "ecbacf4d1e2b9a70f20d0d4ccd998379f7f94e0eb4430409bce5f00988e983e4"
+    },
+    {
+      "path": "src/services/CfdMarketDataService.ts",
+      "sha256": "08c794373bbcafc1ae5ae2a69e73645faeefcca29d0b609864410ea1aa502020"
+    },
+    {
+      "path": "src/services/CoinGeckoService.ts",
+      "sha256": "0ac00b58f6dbd99466ca2e671876b76ca9c8554f7aac0a31c543a84e7f8ee78b"
+    },
+    {
+      "path": "src/services/ContactEmailPolicy.ts",
+      "sha256": "541f68318335879e7532adb71443590c7b1c08634825757c31b71a8befe2aceb"
+    },
+    {
+      "path": "src/services/copyTrading/analytics.ts",
+      "sha256": "891e2d766e02ea632e1a10f991eb57e1f466e492ca774d85dcbf984cb5385b88"
+    },
+    {
+      "path": "src/services/copyTrading/approvedPerformanceSeeds.ts",
+      "sha256": "7eb4a1c585fdaa5e3ab26abc22b8ce625398790331251a74f6512ae3fdc481af"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/analytics.ts",
+      "sha256": "e16fdfb33192f3d380f62cc9e8bad9d5d18d4ecdb606af6cea225748b3740612"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/dailyProgression.ts",
+      "sha256": "be9e65feebc977d98db3c572d019b67ef5a3cffe4b27469d61e114620d6f48f9"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/kseniaReview.ts",
+      "sha256": "45bd0e44117dd6d80f9e70986b01f227d62b2e19a6c20c6dc396f05e8328a32e"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/reviewEconomics.ts",
+      "sha256": "aca7a4fdb46d41e7da4110a4d7c128e89f7486e22a84ca3b2702a7fa4a3dd5e3"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/reviewEconomicsConfig.ts",
+      "sha256": "a14e79dfa47c09a7a5624d542503c873863441d4cf949a91ab52eca6e1dee60d"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/reviewEconomicsTypes.ts",
+      "sha256": "d3f6beb0c3a9c0b9e3e4fc8ad7a28ec65e0c155649041c2c59ae0d17de7f54a1"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/reviewFollowerLedger.ts",
+      "sha256": "682915ab5a976ec74a4aacf9108c02200a211b1cb77e81ee2c9e8ccde637ccc6"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/reviewMasterLedger.ts",
+      "sha256": "94d38e1afeb23716a6dc9dc0dbb103b2dffd3c1153812a79c48c3e042d1c7cb7"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/reviewPerformanceV8.ts",
+      "sha256": "d9ee72e496083d623bd8eb565edc58b0523638203bf32821928ef3dff9a43c25"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/reviewPerformanceV8Config.ts",
+      "sha256": "8f24add4fdcd143d4be24af2bf1587cedb39f6ae536dfa3aa87d5f1ddc84391a"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/reviewReconciliationReport.ts",
+      "sha256": "cc30f480d0f2e5912e20607250a89ca83aaa7d6707794750c769ce398ddbee88"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/reviewSyntheticHistory.ts",
+      "sha256": "9a38fbb8ef59c0c1bfe8ff39cc22953f29ae681febf3048863693766be850a8d"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/syntheticConfig.ts",
+      "sha256": "3ab2cf8bacb070a4543d2ff502d96d2a1d7033d762a5c9f392a37b32dbe136f9"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/SyntheticCopyTradingEngine.ts",
+      "sha256": "3fbd133e6ebda7985058a48de7872de63d0f13837106c6616bdb0732bc3f0802"
+    },
+    {
+      "path": "src/services/copyTrading/canonical/types.ts",
+      "sha256": "15a3449f018d7ecdf889de23d9bfb9ab7f5a7a29ec646f725185bae81da91a13"
+    },
+    {
+      "path": "src/services/copyTrading/CopyPerformanceService.ts",
+      "sha256": "1ebe5db4899c174f703f7dc17aa3e70987052b40ae4cf5906d562a3af2220d10"
+    },
+    {
+      "path": "src/services/copyTrading/kseniaReportedTrade.ts",
+      "sha256": "1e18477dad7ae68854b4e3d2289e98920b723544b83a9774441c72cc5f07f522"
+    },
+    {
+      "path": "src/services/copyTrading/kseniaReportedWeek.ts",
+      "sha256": "7105d006741a2022f80101d76632cf341dac290e7e930994e93ca70b22232c96"
+    },
+    {
+      "path": "src/services/copyTrading/marketplaceSnapshot.ts",
+      "sha256": "46c1718600a4bdacc9ec164f9adaa42c0e401fdb552efeabe5c098e98ff174a9"
+    },
+    {
+      "path": "src/services/copyTrading/marketplaceSummary.ts",
+      "sha256": "606f8f89cf91a1383f2bb3b9801c8765d3ca155960017f6eecfacad3d755abfb"
+    },
+    {
+      "path": "src/services/copyTrading/nazarPresentation.ts",
+      "sha256": "ff9057b13f1b2e58f3121b99b171dd119c591cb226a89f2ee269ec2a8cb04e7c"
+    },
+    {
+      "path": "src/services/copyTrading/PrismaSyntheticStateStore.ts",
+      "sha256": "e2755dd648663ba0585797f503f8ad6383b81aa30a1e5d17778cd54ba5a883aa"
+    },
+    {
+      "path": "src/services/copyTrading/publishedPerformanceSeedBytes.ts",
+      "sha256": "3c96d3856da782bc29ea1d5efccd113f6a2ab01e921e0f37bcc98fba4c05223c"
+    },
+    {
+      "path": "src/services/copyTrading/publishedQuantityCompatibility.ts",
+      "sha256": "4cc4cd6d78b574a77112ad81f788e15decdf022e84dd8f498ed8bac3d2418b77"
+    },
+    {
+      "path": "src/services/copyTrading/strategyOwner.ts",
+      "sha256": "4a732ff341182874335f82fdb0223a83b210ec41cc6e3391d6b6e0c9e98a0b23"
+    },
+    {
+      "path": "src/services/copyTrading/syntheticConfig.ts",
+      "sha256": "fbf51f27b5ca86792e5a67b2ee2136e119b4eccdf8197143c02047fe614a4cdd"
+    },
+    {
+      "path": "src/services/copyTrading/SyntheticCopyTradingEngine.ts",
+      "sha256": "6cefd5c2312c9b157abaaba2e934a9d9a54abc2f13a9712a24aa01d023aa0564"
+    },
+    {
+      "path": "src/services/copyTrading/SyntheticCopyTradingService.ts",
+      "sha256": "6c87efc2d0115199bd3f7a7ae4649cab6cb77b4de97a3bcc533d9ff1f2bd6937"
+    },
+    {
+      "path": "src/services/copyTrading/tradeHistoryVisibility.ts",
+      "sha256": "b07ecea0da87f00397e4a5fe7a6a6e84f1f5eb2b771a2c9f2ed1f44078071308"
+    },
+    {
+      "path": "src/services/copyTrading/types.ts",
+      "sha256": "0d4f8a75b5ccc4fb01045e076d1d6288df58118adb848a284804e31ed54dfca2"
+    },
+    {
+      "path": "src/services/CountryDetectionService.ts",
+      "sha256": "e75942ec51da5c46b8795d2ec97c2d107ed3679205ff926d6c89ed381aab5dd8"
+    },
+    {
+      "path": "src/services/DemoTradingService.ts",
+      "sha256": "0be6f2f76b171c23af32db204ba7441a437203c3cd472bc977010d2d586d8840"
+    },
+    {
+      "path": "src/services/deposit-verifiers/BitcoinDepositVerifier.ts",
+      "sha256": "3ded5cafcac809d927dc9b0e33bcadf00c0a210a82f71cbc0498300f89996e1a"
+    },
+    {
+      "path": "src/services/deposit-verifiers/errors.ts",
+      "sha256": "6c153acb58a10036168a424ff4584996d1897679a20c310af8fb6e5d37f08f68"
+    },
+    {
+      "path": "src/services/deposit-verifiers/EvmDepositVerifier.ts",
+      "sha256": "5dde7cf1e938b0f7ad27afd63a44464e2cae6318a837d01559ec518d483ec54e"
+    },
+    {
+      "path": "src/services/deposit-verifiers/index.ts",
+      "sha256": "9a9f1ad4637d224c2b3a6ce36b5db06bf4932ef688af5099676490ce1563bdd4"
+    },
+    {
+      "path": "src/services/deposit-verifiers/proof.ts",
+      "sha256": "9fce42994d7f53cad44bc14b28b2b35a084b84d5f3191a813e73ab6ac386572d"
+    },
+    {
+      "path": "src/services/deposit-verifiers/SolanaDepositVerifier.ts",
+      "sha256": "2998574ba3d073e391f81cb3e02cf6b0576cd671a22b1c7fc91a0fec9a4d3ce7"
+    },
+    {
+      "path": "src/services/deposit-verifiers/TonDepositVerifier.ts",
+      "sha256": "ed26b742d45e4ccf6e3152626647c49d51c8cb65d44928464e064f3d73dd253d"
+    },
+    {
+      "path": "src/services/deposit-verifiers/tronAddress.ts",
+      "sha256": "d5c77ef7c09c557b45eda6c19d2838ded8bbcd4e0a8d0fb32778944fb83fae54"
+    },
+    {
+      "path": "src/services/deposit-verifiers/TronDepositVerifier.ts",
+      "sha256": "1a8afbad6b999694f0f085860ecd6941b6a1cb73857f6b3d536d997d368355a4"
+    },
+    {
+      "path": "src/services/deposit-verifiers/types.ts",
+      "sha256": "be625dd4e600e74c81abb788b7a83f37877fa12a1600474ee61f4477e136c866"
+    },
+    {
+      "path": "src/services/depositCatalogue/publicView.ts",
+      "sha256": "ecf6da283ab0ff145c1bed08906d2276af9e7de369ba49b9ef909d2aedd28106"
+    },
+    {
+      "path": "src/services/depositCatalogue/registry.ts",
+      "sha256": "e5e5e540a6cd54a9be60f1d245cbd8b2e132ac2d7eb84600c2b5686f4e6ab412"
+    },
+    {
+      "path": "src/services/depositCatalogue/schema.ts",
+      "sha256": "5d3313b051347f5372bce9f6b1864d602ad0805af8d14c9af2106d5ab708454a"
+    },
+    {
+      "path": "src/services/depositCatalogue/service.ts",
+      "sha256": "b5e4934ac3074bbf91375799ea48dfdfd2534d16f84accb1aed2267fff4cabf9"
+    },
+    {
+      "path": "src/services/depositCatalogue/store.ts",
+      "sha256": "6faf8c86e2a271a9eddc890e7a6a66140a50e5f96f2f3f15444e6f37831a604b"
+    },
+    {
+      "path": "src/services/deposits/DepositAttributionService.ts",
+      "sha256": "be235b17c5667ef1fa0557fd96ed35d3d1c7b300264af4f982131327cc818f24"
+    },
+    {
+      "path": "src/services/deposits/DepositBatchService.ts",
+      "sha256": "fa5d12181be2f65067022f136a235726e7e6e2e68b6b7ba1c789b9964fad4d47"
+    },
+    {
+      "path": "src/services/deposits/depositCopyResolution.ts",
+      "sha256": "7d2bed3474fb735675857d4cc5011d805dc763f57c00dee07fafe9b26a2ee04d"
+    },
+    {
+      "path": "src/services/deposits/DepositIgnoreService.ts",
+      "sha256": "6d5b37548c7b46780e626188f6133cacea065ba51f705d1bf9689ab6c8c626a3"
+    },
+    {
+      "path": "src/services/deposits/depositPolicy.ts",
+      "sha256": "1ec9afbd9781649a377552679c23a5b50fb15eaf4037d7b39d3be631c7c30e3e"
+    },
+    {
+      "path": "src/services/deposits/DepositQueueService.ts",
+      "sha256": "cd424f5afa8124d4f25e6638f38d6a3606f38c3bb63fce3bb4d578fe415eb172"
+    },
+    {
+      "path": "src/services/deposits/depositWatchSchedule.ts",
+      "sha256": "d5c2499174c1299b50b3f3fda76ab473e1dfd04a676f46d88b2574e778cf2d44"
+    },
+    {
+      "path": "src/services/deposits/DepositWatchScheduler.ts",
+      "sha256": "c15b95cd8a8f015e31264b01d70a9b45718ec7632b07a753879e3a4ecb27fc4e"
+    },
+    {
+      "path": "src/services/deposits/DepositWatchService.ts",
+      "sha256": "04c2b2e48deb3a94380ca9fb7f1dd9716bd77bcf670e39d900a50875a3487b7b"
+    },
+    {
+      "path": "src/services/deposits/latestDepositCopiesForUsers.ts",
+      "sha256": "5598b49c47b6a244adeed9de45390bf735380a86bd5ff1e73cd8f5d36fd9eb3f"
+    },
+    {
+      "path": "src/services/deposits/transferProof.ts",
+      "sha256": "2f81eeb6785aebc126e4f44b9553c87b5a9385889b5da5e34cad544a42247e76"
+    },
+    {
+      "path": "src/services/DepositService.ts",
+      "sha256": "37081ff5c91071c09db959490bde1d4e28e0f658b540a0f79c0a942e0f8dd965"
+    },
+    {
+      "path": "src/services/FearGreedService.ts",
+      "sha256": "0576ba1e03d7e1e8093736d8ce3398a243b67f58a91237b5ebdc0e536b4237cf"
+    },
+    {
+      "path": "src/services/FuturesChartCandles.ts",
+      "sha256": "9e60da3132a9946f22132d5c38b8419d5dda21a4839773cad48361bc94cfb0dc"
+    },
+    {
+      "path": "src/services/FuturesDisplayTrades.ts",
+      "sha256": "51621d59f6fbb79b0f4c396530269367f4a10e489420103872efa420405a557d"
+    },
+    {
+      "path": "src/services/IdleBackoffScheduler.ts",
+      "sha256": "d1f7a228a1b514c542b436a5da984aefbf53f6a9bb55d219c15097d9824525d3"
+    },
+    {
+      "path": "src/services/KrakenMarketDataService.ts",
+      "sha256": "6fc48e4d9b47182bda49a1677ab1a9620c3b9cd34cd92a685b95e8ca468b2520"
+    },
+    {
+      "path": "src/services/KycEdgeTrust.ts",
+      "sha256": "9b790cac3ba7ba11be7884c1203dce5c752b70d111e64ffb77d5ca3961bee23f"
+    },
+    {
+      "path": "src/services/listings/aithReplacement.ts",
+      "sha256": "686aaeccdbf276ab67988227e62c205975bd946b61df9aa1fb3a322df1af6ebe"
+    },
+    {
+      "path": "src/services/listings/listingConfig.ts",
+      "sha256": "1fa0cf0a74be00027bcdcef539b4cb7e6bda6ebaa9707f9092744f5bd9b24f26"
+    },
+    {
+      "path": "src/services/listings/listingPreview.ts",
+      "sha256": "4a25765569671a531cbf4f1dde2d7668142f7a59df92af7b21f2de98f799e092"
+    },
+    {
+      "path": "src/services/listings/listingPublic.ts",
+      "sha256": "dccc0195e8447690a0096cac5f57b053b6690fe68346fbbb355d689adaf581f4"
+    },
+    {
+      "path": "src/services/listings/managedSnapshot.ts",
+      "sha256": "c1d9a45de93a2ea350172abf8957d4339b04a4f17e32d299531ef24170083c24"
+    },
+    {
+      "path": "src/services/listings/ownerAllocation.ts",
+      "sha256": "90e21041a23ae53b131b351c63a0b9085c44c22bc533d16fbb4fc930614acdd8"
+    },
+    {
+      "path": "src/services/listings/registry.ts",
+      "sha256": "051963b9276508add86078c174606da0e84bd65c9d6f6b02390796c7a87d8ebc"
+    },
+    {
+      "path": "src/services/listings/store.ts",
+      "sha256": "b4101134bfe6d94d43fe69cbce6afb06165a485d2d01b341921d9d9be047e355"
+    },
+    {
+      "path": "src/services/marketData/AssetRegistry.ts",
+      "sha256": "56870400046067b64b95e01efac3ad75f3f1bfc19679e3a1b29c7faff207f59e"
+    },
+    {
+      "path": "src/services/marketData/bybit/BybitLiveTickerCollector.ts",
+      "sha256": "c472565bdb586e12769d73dbaa430004d56b731a60ffaf549fb97738be8011e2"
+    },
+    {
+      "path": "src/services/marketData/bybit/BybitMarketDataService.ts",
+      "sha256": "46a2a4f6f4c253eba6f0baf4ae1be8bcaf4b2645f971336163e17adb3761ce42"
+    },
+    {
+      "path": "src/services/marketData/bybit/BybitOptions.ts",
+      "sha256": "4ce5fcbe5fad6724dff408581f4684ec03f0186cbac41d737e3165d8baaf004d"
+    },
+    {
+      "path": "src/services/marketData/bybit/BybitTickerBook.ts",
+      "sha256": "6293dad08311f2826ffe34c2e8af2b42dfc01cc449b9ac9b8aca50a8781c8147"
+    },
+    {
+      "path": "src/services/marketData/bybit/MarketUniverse.ts",
+      "sha256": "886fa76afdc3f3ed270b195ba5ac4f6d3d857e2f317858d64f79ab594b8e0da0"
+    },
+    {
+      "path": "src/services/marketData/bybit/types.ts",
+      "sha256": "a1b5570d41708f9bc26708db5f03df4993951cefc8b9ddf4eb28e21334b1f945"
+    },
+    {
+      "path": "src/services/marketData/cfd/BiquoteCfdOhlcSource.ts",
+      "sha256": "7c3ec7f218c2a5601c1fe090ad3b349ebcbe5729b244d46d7b7dabd0f78e9708"
+    },
+    {
+      "path": "src/services/marketData/cfd/BiquoteCfdQuoteSource.ts",
+      "sha256": "afa19692c5bd901d9812b4e88f94f66c08360c00446451a4d6485dca747b8275"
+    },
+    {
+      "path": "src/services/marketData/cfd/catalog.ts",
+      "sha256": "d31f0efc15b674382b11a997bef45f6c9c978e47a8584239782ff9818e154cea"
+    },
+    {
+      "path": "src/services/marketData/cfd/CfdDisplayQuoteRouter.ts",
+      "sha256": "454e7e5bef29cbf2689e0df00861db67917904d5f85f0b7eeccf4563f7b387ac"
+    },
+    {
+      "path": "src/services/marketData/cfd/CfdDisplaySelfTest.ts",
+      "sha256": "9305d87eda98ec7b3a0446ae3ecefce69e92fc6be9b656d6a949f761a11329fc"
+    },
+    {
+      "path": "src/services/marketData/cfd/CfdQuote.ts",
+      "sha256": "ecea2c457e60430465ed0709cc52dcdec7d2778b1287adfc0538abd4615f1fcb"
+    },
+    {
+      "path": "src/services/marketData/cfd/CollectorCfdDisplaySource.ts",
+      "sha256": "970fbc233cd8b543fe8cb76f7376fe683769be5e79108775cc68c4904224ed96"
+    },
+    {
+      "path": "src/services/marketData/cfd/DerivPublicStreamQuoteSource.ts",
+      "sha256": "b0b41e9af1323c2d938b434d587916080f4184e9f3f66e4da313116c124eb291"
+    },
+    {
+      "path": "src/services/marketData/cfd/EiaOilDisplaySource.ts",
+      "sha256": "a89e41f67f77b7f87ea316c25fe6bed10ef334ec82bd4258e84278060a74edf1"
+    },
+    {
+      "path": "src/services/marketData/derivatives/BinanceDerivativesService.ts",
+      "sha256": "34daa13035b49eeb4e7db74135a82abc7f29e3fe94e155c8c8767cea200195d7"
+    },
+    {
+      "path": "src/services/marketData/derivatives/ExternalDerivativesService.ts",
+      "sha256": "ec3ec2759ca2685db7069f9eab8e3ac46b13d95248e0d0df91f5c32e51003cf5"
+    },
+    {
+      "path": "src/services/marketData/derivatives/OkxDerivativesService.ts",
+      "sha256": "3e6269563d04fabca1f865c6966ecb4e0972096abf5d93bcbbb0a1cd4fcd4d5a"
+    },
+    {
+      "path": "src/services/marketData/derivatives/types.ts",
+      "sha256": "1bf676a48cf77ac45d8b10e902043d1bf7de115ba0503674facf127359d7edf5"
+    },
+    {
+      "path": "src/services/marketData/live/collectorServer.ts",
+      "sha256": "e2bcafcbf2cd98182c7886787b530293416e52dceebcbfac24ad05dbf5a93dbe"
+    },
+    {
+      "path": "src/services/marketData/live/contract.ts",
+      "sha256": "c5701da14567de90bd673a8d9eb8a6e0922cd8d66669c55de47e1c6a60c1c678"
+    },
+    {
+      "path": "src/services/marketData/live/MarketDataCollectorClient.ts",
+      "sha256": "c152f1dcb89ca1746b4d6dae449dcde8d966b034edeba90b373c9e25d2904496"
+    },
+    {
+      "path": "src/services/marketData/live/validation.ts",
+      "sha256": "7f46fbc7fdf9576bef35cd11767cd0079124107e7292708724ed48fbddfa42e3"
+    },
+    {
+      "path": "src/services/marketData/MarketDataGateway.ts",
+      "sha256": "60e33b09755f70a6a7c59fd31691426ffe0dae99a09bd13ac8c3df40d7cd22ea"
+    },
+    {
+      "path": "src/services/marketData/numbers.ts",
+      "sha256": "85f6c8dba9cbe93518286182ef921d300efa8c3f1f9bc6d07d68a4b1fa11b18d"
+    },
+    {
+      "path": "src/services/marketData/ProviderCache.ts",
+      "sha256": "040e7c988dae54f63ba947ad17408bd3e5dcbac05e15e9c3fea9866b9de83155"
+    },
+    {
+      "path": "src/services/marketData/ProviderHealth.ts",
+      "sha256": "19f874b3f17aa224240d2f4be39ad2ada361f895779565075603916b6ff0f3fe"
+    },
+    {
+      "path": "src/services/marketData/types.ts",
+      "sha256": "5df1c5c37c5a1c9522f7922c38c5af1715a8386bf9c9d286832f976c470c1967"
+    },
+    {
+      "path": "src/services/OrderBookRecovery.ts",
+      "sha256": "7556c6a2603d9a1b5da79a4a2cf00d50158e1ce9d122d77d5b8d6438d210c83a"
+    },
+    {
+      "path": "src/services/OrderService.ts",
+      "sha256": "c5fd5b5a9733f460eabf4011d98ab731ddf1b1464775fc60f5ca5058da007508"
+    },
+    {
+      "path": "src/services/PortfolioPerformanceEngine.ts",
+      "sha256": "6c9c846ac87e37800f81acf3d1eb14dece82eee778a9ed6186d71d8ae6d15f4a"
+    },
+    {
+      "path": "src/services/PriceWatcherService.ts",
+      "sha256": "b526a78140d3831764693ae12040509a62179663f158bb5616b0a5e847fa6c79"
+    },
+    {
+      "path": "src/services/PurchaseService.ts",
+      "sha256": "adc1462ecdb14e6bf3ffaa6edc1550803d3c8353df9f7800abbb6eb2d62159ac"
+    },
+    {
+      "path": "src/services/referralCode.ts",
+      "sha256": "91b4bf1e6e3e575ae6d6c98f2f4c3849466fe98074f98dba93cca2e282649ea3"
+    },
+    {
+      "path": "src/services/ReservesService.ts",
+      "sha256": "1e3dca3196fc71c1121747ae5439f6ff38d9ae27fef41369b375cd5102c79872"
+    },
+    {
+      "path": "src/services/SpotBookTransaction.ts",
+      "sha256": "8fa5cf22a2fdeb2113a9801058e1b263071fc47dfdcbb223c0c4c4d80b3da868"
+    },
+    {
+      "path": "src/services/TelegramNotifications.ts",
+      "sha256": "0121f563c8db6423b1410fa51754d36977f4e84e7cfdcd307892ea50e0c08fc8"
+    },
+    {
+      "path": "src/services/testMarkets/neurix.ts",
+      "sha256": "9d7d56ff27f739adb6456cee5de718eaef9044c42ef423a7a793538a726b42be"
+    },
+    {
+      "path": "src/services/testMarkets/nrxAllocation.ts",
+      "sha256": "f3716177868fa9cdb119f06adc7428e6d9b6ec541a6fb7f49f78ea99cd639d95"
+    },
+    {
+      "path": "src/services/testMarkets/nrxPublic.ts",
+      "sha256": "67c4c390ad87e4ba5a79ecd69fee8944805bb48d4856bd702aa560a340504752"
+    },
+    {
+      "path": "src/services/testMarkets/nrxSpot.ts",
+      "sha256": "dfeaf323d65413052b77186dda26b3349b59065d533d456947e017b6c87eeea1"
+    },
+    {
+      "path": "src/services/testMarkets/simulationAccumulation.ts",
+      "sha256": "233fd747cad1bd1a4acb957f1d42e366fc832b36cfc2d8682863b8908e955544"
+    },
+    {
+      "path": "src/services/testMarkets/simulationCycles.ts",
+      "sha256": "c658ff264e1861246e96b0f3cc9f416122ff5590893aff7a893f3f4f0c9151de"
+    },
+    {
+      "path": "src/services/testMarkets/simulationNaturalWicks.ts",
+      "sha256": "760e0a7629e8ba8f04a77befb29d57cab5699bedcc8c8c98fcd591fb6eeff9f9"
+    },
+    {
+      "path": "src/services/testMarkets/simulationRandom.ts",
+      "sha256": "c099ad3f9a2c90302ffa3830b7cc8199429ac2878587bd7e1a99641ce8500d67"
+    },
+    {
+      "path": "src/services/testMarkets/simulationRealism.ts",
+      "sha256": "611d752a94958cdc83a61b930e1292d0b51fa594f41d4d21875e65ce1d3a8f23"
+    },
+    {
+      "path": "src/services/testMarkets/simulationScenarioControls.ts",
+      "sha256": "dc261f94644358cbf594f8618502a5e25b7524c8427b53f28b22b38249aa10c1"
+    },
+    {
+      "path": "src/services/testMarkets/simulationSchedule.ts",
+      "sha256": "99cd8d7bd512d39b67c37644976ea34988c1a0f91927cabf023bbc7140e1ce39"
+    },
+    {
+      "path": "src/services/testMarkets/simulationWaves.ts",
+      "sha256": "78e9fc18db78a1c41a66adc13b2cc3bfb7142006258542e9c6d481a73639cbd1"
+    },
+    {
+      "path": "src/services/testMarkets/testAssetConfig.ts",
+      "sha256": "528755ab960fdbb6bc5baf20163a8ce4b9d7ce31789ae217f109fbe17339bdee"
+    },
+    {
+      "path": "src/services/testMarkets/testMarketDepth.ts",
+      "sha256": "d5ffcf0be52cbce3939df3627dcf679f8fe843eaa26a6da21a7d003e2d849c4b"
+    },
+    {
+      "path": "src/services/testMarkets/testMarketService.ts",
+      "sha256": "4158c3df4008a76a358e4b940a8d35fed3ff1fb46ca230ec884e996e7ee3e14d"
+    },
+    {
+      "path": "src/services/testMarkets/testMarketSimulation.ts",
+      "sha256": "de12b093d8c4294087a57ffd4144931b9f3d33df286329a7a4e867a714e410c4"
+    },
+    {
+      "path": "src/services/testMarkets/VtaDemoSales.ts",
+      "sha256": "ff84d5f33d4ace7b8354220d080f5f61685ff65bbd36f552e1449acf7f5ffac6"
+    },
+    {
+      "path": "src/services/TreasuryWalletService.ts",
+      "sha256": "60481e4ad44903020c8e789348ae4bac4b73c04572156f78ff4082f1fd82cebe"
+    },
+    {
+      "path": "src/services/TwoFactorService.ts",
+      "sha256": "20d91a7fa311137da6fc65be8b34cbe6b129213ba58f8e31ea260f62356434a0"
+    },
+    {
+      "path": "src/services/WalletMutation.ts",
+      "sha256": "a0c7efb006ea5b0a66bb9b9995b05ab3a697995788829c111031244a0216b62a"
+    },
+    {
+      "path": "src/services/WalletPortfolioService.ts",
+      "sha256": "01ca68a290bdc787e8ea6c60408bccf8f3fd75b943758b84f8df1e9fc6a986dd"
+    },
+    {
+      "path": "src/services/WalletTransferService.ts",
+      "sha256": "7b9f15270af07c5db6cef3d192ee79963d84963d68490708c77a521ebd4de189"
+    },
+    {
+      "path": "src/services/WithdrawalService.ts",
+      "sha256": "4960b104e5c31b07f149824402f5ab56d4a04edfb2fa595eec49c6887e9c3fa3"
+    },
+    {
+      "path": "src/shared/aithPublication.ts",
+      "sha256": "b0256bfad153a5f19e7a0ddd5aec233027230a8cd8b5bc1130fb7f94ba9b07b9"
+    },
+    {
+      "path": "src/shared/listingScenarioControls.ts",
+      "sha256": "ec187cc821605573dd64ad5e5f9b46c6efc5a6af05265e3e6e42ac579f159149"
+    },
+    {
+      "path": "src/test-utils/walletDelegate.ts",
+      "sha256": "8254bdf031cbf0c15aca128ccc2d1472209a8fa14ec4295921dff4dc37782959"
+    },
+    {
+      "path": "src/wallets/WalletService.ts",
+      "sha256": "28c0284ad1e579574b02e6977cae38d66311e693c22c3c4689ff479e930ddebc"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "dist/api/asyncRoute.js",
+      "sha256": "30d5ca41c9b3a35cc23b9b21f21906fea8d78c453807aea44484f294d74f293b"
+    },
+    {
+      "path": "dist/api/middleware/admin.js",
+      "sha256": "3d6cfa90bea2b1fb4de62bb2eb9196c801ef23aac978a2bde6cb5f202152545d"
+    },
+    {
+      "path": "dist/api/middleware/apiKeyAuth.js",
+      "sha256": "4fcb8d16b3a06fa4c35fcb02b3202323a9c5a1db5f81e2df48e889245b6b374f"
+    },
+    {
+      "path": "dist/api/middleware/auth.js",
+      "sha256": "dcaaf312a5d51a02bf25837b533679302f12f53a485f7ed63d1f1ac9ae37bd2d"
+    },
+    {
+      "path": "dist/api/middleware/publicDisplayCache.js",
+      "sha256": "3da08d53a73bd2e1c5a825844adeeca5e7b41c0083b5d409c39229874b1a89db"
+    },
+    {
+      "path": "dist/api/routes/account.js",
+      "sha256": "6a06d889c1e31a73a017c6aca58c4f6cab20857f4ee1a943b6e334804691440c"
+    },
+    {
+      "path": "dist/api/routes/admin.js",
+      "sha256": "83ca9ab49312ce67674d0b6edc26993ab92a8efaf29f6baeded20dcf60534c62"
+    },
+    {
+      "path": "dist/api/routes/adminAuditLog.js",
+      "sha256": "125d7cefd1066fb250dbf8631b444fac5989ac2886886cc1643020a5e572e498"
+    },
+    {
+      "path": "dist/api/routes/adminBalanceAdjustments.js",
+      "sha256": "4e3a2223c9fd43e36aec1fa6a8dbfbe3fe2bb30e139fa819898b31e4c7b79067"
+    },
+    {
+      "path": "dist/api/routes/adminDepositCopyReview.js",
+      "sha256": "8dacaec154de836dbf358a11216dc2cdb16727762cfb9959977e13f6ef7c8b09"
+    },
+    {
+      "path": "dist/api/routes/adminDeposits.js",
+      "sha256": "1dc4a45cd8b44a08755043ea1392a280310fb5b58fe83188d1147aa329a5481a"
+    },
+    {
+      "path": "dist/api/routes/adminListings.js",
+      "sha256": "86fee1f0bc9e1be9d261ba47f999557dbac6b621bdbf9b9b179064a470c5eef4"
+    },
+    {
+      "path": "dist/api/routes/adminPagedReads.js",
+      "sha256": "ee4084db1e4aedcef20d2b3349637fecf8049086be9d4cc8badbfcb6ff1af7dd"
+    },
+    {
+      "path": "dist/api/routes/adminUsers.js",
+      "sha256": "74ca034fc07b67bc2a38d4e097b77a99a8807253cc7ca522417a9e4d79fa60c8"
+    },
+    {
+      "path": "dist/api/routes/adminWallets.js",
+      "sha256": "dfb62fab0567744268ff8abd4aa0e3f4d83f324964aa4065e138f8e7d259438d"
+    },
+    {
+      "path": "dist/api/routes/adminWithdrawals.js",
+      "sha256": "daf09a6f37a684e1cad17d1e6c7885f31def30b9225e403e87f6cfe4539f4cb5"
+    },
+    {
+      "path": "dist/api/routes/analytics.js",
+      "sha256": "ed9c86b9de06f1ff3c7f6870f747ead5375ee2c5636d05c3ab0257c9a6bdf344"
+    },
+    {
+      "path": "dist/api/routes/apiKeys.js",
+      "sha256": "e85f0c24acddecf69a004e08d77ab2fea613c97554e2188c254aa773fb25465f"
+    },
+    {
+      "path": "dist/api/routes/arbitrage.js",
+      "sha256": "d2f2651270e7520be4d0fc5cfd2fa68f60f1a4a7ad95dad404cdf6bcd45266e5"
+    },
+    {
+      "path": "dist/api/routes/auth.js",
+      "sha256": "6876de6d3515d930347e12a4852fd8ef3fd25a5438911cb83a67a90306ff2256"
+    },
+    {
+      "path": "dist/api/routes/balances.js",
+      "sha256": "179f40c9990b0f402886c816a4e78eb2095d9ac4e20de0f98f9be202bb7f126a"
+    },
+    {
+      "path": "dist/api/routes/banking.js",
+      "sha256": "d21ef7347e6faf021911a80445d5450bb9242aa500ca71ad332c946458005489"
+    },
+    {
+      "path": "dist/api/routes/candles.js",
+      "sha256": "3fd5c5586b6b54d7f9e6963cea75ae39f728f6f617b296deaaf4d97fd8f9cce7"
+    },
+    {
+      "path": "dist/api/routes/card.js",
+      "sha256": "08320eb298c2f30de9efedc8e0adf58dc1a28d1d92f53d7b12a44560fa52d574"
+    },
+    {
+      "path": "dist/api/routes/cfd.js",
+      "sha256": "20418ee89cffbde2b121eb58cd67d02603089c0df875d9507e220b5501661f4c"
+    },
+    {
+      "path": "dist/api/routes/contactPolicy.js",
+      "sha256": "074194119085b4ffa52d7a51722019c9fd86446c735bd7b5bcf282f5a7121024"
+    },
+    {
+      "path": "dist/api/routes/copyPerformance.js",
+      "sha256": "113a617c51bcec36b138c19e893f62ad74b7f9d8b6845a1714c8681c5ea9ab07"
+    },
+    {
+      "path": "dist/api/routes/demoTrading.js",
+      "sha256": "570a1526dcaa732317ad8709342165d0799945662f378398493ec3cd82f1e559"
+    },
+    {
+      "path": "dist/api/routes/depositAddressCopies.js",
+      "sha256": "e5099180fbd50971801edde1e458992b554ee81fd721ba33c41be2bcea834e66"
+    },
+    {
+      "path": "dist/api/routes/depositCatalogue.js",
+      "sha256": "62996324945dc8f6927ff858ea810028aba96da90e064a1cabd3bdf0b12186b4"
+    },
+    {
+      "path": "dist/api/routes/deposits.js",
+      "sha256": "9dd41470e297171c3492936b17e77546bc954839135ba18c76f511bf7d609be3"
+    },
+    {
+      "path": "dist/api/routes/depositWatchInternal.js",
+      "sha256": "73c8c582304d0dcc00a14e3af602b35e85ffbd925e1c09d6c1774528e50e9ed5"
+    },
+    {
+      "path": "dist/api/routes/displaySnapshots.js",
+      "sha256": "a4b4edc5339fac7f78499d5102748ba9f337972477765869c11f304a0a054a71"
+    },
+    {
+      "path": "dist/api/routes/futures.js",
+      "sha256": "c46897542ac8e98542b06f45309773c2dfc03e965eba9acf1ceb4baebaefe29a"
+    },
+    {
+      "path": "dist/api/routes/kyc.js",
+      "sha256": "58abb594d3f5e09e1434385c93d1f30e6c199916ff8d8cf3621278d283d94634"
+    },
+    {
+      "path": "dist/api/routes/market.js",
+      "sha256": "174edfbc68dbbe4e55cce15689818bd31d6c7dfb0210b97e30646306ff270c93"
+    },
+    {
+      "path": "dist/api/routes/marketData.js",
+      "sha256": "8a9c5e9c8b5e196a55b4387cecbbdebb75ee54258eb8491d50b68255052b5431"
+    },
+    {
+      "path": "dist/api/routes/marketDepth.js",
+      "sha256": "a0b78f29e409ba998b205abc22a5e3b418aee57b5eff690a888531d80bce14a7"
+    },
+    {
+      "path": "dist/api/routes/marketLive.js",
+      "sha256": "d9741012a5ecfaaaa6297e59f58f56c6ca92da97f7dd50ca02a13e77193f4f7b"
+    },
+    {
+      "path": "dist/api/routes/marketOptions.js",
+      "sha256": "d3fd36a6a8faaa7734d61750a1fbf463c80e6041ed21f641e8e70525bac07341"
+    },
+    {
+      "path": "dist/api/routes/orders.js",
+      "sha256": "915e23a241cfddbb5bba04a0244866dd03204f8a5b51fa473e3778a0d10b6deb"
+    },
+    {
+      "path": "dist/api/routes/otcCash.js",
+      "sha256": "b1f55ebb6773459908f3ca02d366b547763c4a0bb35fa2d0bf69542696483349"
+    },
+    {
+      "path": "dist/api/routes/portfolio.js",
+      "sha256": "3c0aeabd60e26b5ecfd8b149a5536c713726a020a61f2d290124d990de1edebe"
+    },
+    {
+      "path": "dist/api/routes/privateTrading.js",
+      "sha256": "ca724f6c9bf380dd7d3687571200d6482893826273ee432943c8b1ad59fa0188"
+    },
+    {
+      "path": "dist/api/routes/products.js",
+      "sha256": "8e0bec72112327cb524ac21fd58f7ea13aa50253e2bdbc1e3a69324b1dd6ca3e"
+    },
+    {
+      "path": "dist/api/routes/referral.js",
+      "sha256": "35845885ae5ce30e1a2d8ded1021f66c0b816f325e3c9eed884fcb0ab06bade8"
+    },
+    {
+      "path": "dist/api/routes/reserves.js",
+      "sha256": "bcff80dacfe8cea3c9a91bdb12801380ab7371404aba9cca0a9e9578686d2db5"
+    },
+    {
+      "path": "dist/api/routes/supportRequest.js",
+      "sha256": "1f6312c4b531922bf194b0dc7e523c4e2261029ba42654582fa0ea14a34d1879"
+    },
+    {
+      "path": "dist/api/routes/syntheticCopyTrading.js",
+      "sha256": "cb2caa31050c3205cc93c4ab7104d22fa21e250d080115705af641b55b3a8033"
+    },
+    {
+      "path": "dist/api/routes/testMarkets.js",
+      "sha256": "528ca732fd4c85668261945343f170d7b7eac77f722a6d6f61f825e30031b77f"
+    },
+    {
+      "path": "dist/api/routes/trades.js",
+      "sha256": "a293733ddb7be6dfb5fb3d5a70cc79418f1b983f05748a04083e04df71f25bc0"
+    },
+    {
+      "path": "dist/api/routes/withdrawals.js",
+      "sha256": "1b1c407a36776dbff12b5b054658f5bf2361f7d5cce4ab216feae2d36bf5971e"
+    },
+    {
+      "path": "dist/auth/telegramInitData.js",
+      "sha256": "d0e3db9613326fe01b03ab147c34ccda92d5c1d2bbc403a88e500b9aca3c2e7a"
+    },
+    {
+      "path": "dist/banking/config.js",
+      "sha256": "0f8f2eb269b33fc5a3a6196bc9553d4251abd1ab94e641a26a0438cf872afffa"
+    },
+    {
+      "path": "dist/banking/math.js",
+      "sha256": "05a298dbffafd9f4e28faa81bf05de59d04c5ec3b5871539c8eb3db85ce397ae"
+    },
+    {
+      "path": "dist/banking/service.js",
+      "sha256": "28bbcbb759fc5316e08a5655581ef935f032ec3e3f998a9d5a6c6b028438d04d"
+    },
+    {
+      "path": "dist/buildCommit.js",
+      "sha256": "18a847cfd7f8027fa56a19941ff764d01c88a4bda7c9bd79c0a26d56e64e9ec4"
+    },
+    {
+      "path": "dist/cfd/CfdLiquidationEngine.js",
+      "sha256": "bb5dee4b7015ed525b93104d2ec3b382e99a712ee88f48dbb296834720cd5a0b"
+    },
+    {
+      "path": "dist/cfd/CfdPositionService.js",
+      "sha256": "fba8d42a84c51dfbe4d6073866290e8de3eaa43e521493686fd5482f84d43e2f"
+    },
+    {
+      "path": "dist/cfd/lockCfdAccount.js",
+      "sha256": "d0d69a7d43c7dcc5768cb82a1d3642b6db36b9feb9ce80cf54237cbed4345fdd"
+    },
+    {
+      "path": "dist/config/cfdConfig.js",
+      "sha256": "4df82a9f88661a563a018275bcaa866c3113a0b26e9c621a794f859a6d8bd959"
+    },
+    {
+      "path": "dist/config/chains.js",
+      "sha256": "5ae41a348eedf8c9f3e8c73623dcf928e23939a3d8635e9441d820371dc0bda2"
+    },
+    {
+      "path": "dist/config/futuresConfig.js",
+      "sha256": "b8241711106cec7bca6af9afd5fb7b53e7af95a6881161599a9fc2245be61799"
+    },
+    {
+      "path": "dist/config/limits.js",
+      "sha256": "dd3d3eb751ca4f78a6f405759e6e320b854e4c9ac4de8c73ddb7a7b8d3f7e99e"
+    },
+    {
+      "path": "dist/futures/auditActiveOrders.js",
+      "sha256": "80ae5455e13823d4fa2a37d974d18a41e3901d29e8c3512a81f335f383bf76ec"
+    },
+    {
+      "path": "dist/futures/exposureRisk.js",
+      "sha256": "b5f1eacc6b52f2990aef61f872d7b0472e0cdcebeb6dc6bc4d469e039e20e9a7"
+    },
+    {
+      "path": "dist/futures/FundingRateService.js",
+      "sha256": "71a7e7cbffec5b0051fcd21696ff36adbfe39c153c6dec450d1b697e9124d41d"
+    },
+    {
+      "path": "dist/futures/FuturesBookTransaction.js",
+      "sha256": "08d081d0dbb3a5f503163651d7c37da26a0e7dd1897a2d5ef584d889fc508360"
+    },
+    {
+      "path": "dist/futures/FuturesMarketExecution.js",
+      "sha256": "cc2a81c7d6d4b61e32bc3e6b7568a9059e3d956eb245121818a62f5336377489"
+    },
+    {
+      "path": "dist/futures/FuturesMarketRegistry.js",
+      "sha256": "55822a5079038d6c743f12d3d192f75b67361ea5eb80f5aa2f2603e8357d3b9a"
+    },
+    {
+      "path": "dist/futures/FuturesOrderBookRecovery.js",
+      "sha256": "4af3b19b04157bc4a017b643c523d026bf57ac9e1dc814262751d97bfd848382"
+    },
+    {
+      "path": "dist/futures/FuturesPositionService.js",
+      "sha256": "6f6bd056aaa6778b7dbd775c42c54f422a1bbed84afbf2c4e784c73061068efb"
+    },
+    {
+      "path": "dist/futures/FuturesProtectionService.js",
+      "sha256": "50a757a70e905ac72b0a5713467ae274368d960c7bfb7725531307e1d7e3bada"
+    },
+    {
+      "path": "dist/futures/InsuranceFundService.js",
+      "sha256": "08438d1088bf2c2dc4f72c175abab977b770183caa69df2b1b1877c19361cfa4"
+    },
+    {
+      "path": "dist/futures/LiquidationEngine.js",
+      "sha256": "09978d7a70db59b6aadbb25a4cd5f30c4ff5f9631e1c9256d181443adb590dee"
+    },
+    {
+      "path": "dist/futures/marginMath.js",
+      "sha256": "ee209c18bf73b12489c63308ed5e5239086162f0c080a3ed0bcb1535a016e6c3"
+    },
+    {
+      "path": "dist/futures/MarkPriceService.js",
+      "sha256": "bdf25fde1258415317703f9f691819927a2a0a36042f378bdb56a88371f16bc9"
+    },
+    {
+      "path": "dist/index.js",
+      "sha256": "288ac5aaaee08dba7aa13a83f0b2408133e3cdcb80f6692673429d80868a15eb"
+    },
+    {
+      "path": "dist/marketDataCollector.js",
+      "sha256": "c30ef95380fad1794ae74fb4a20bfcf07ebc7df83a0add39c6c9ce1e148f55df"
+    },
+    {
+      "path": "dist/matching-engine/MatchingEngine.js",
+      "sha256": "f3e62e910142ad3f3fee6456fda491bb47c4ead1c5df2201e7f5f492c01eeae7"
+    },
+    {
+      "path": "dist/matching-engine/OrderBook.js",
+      "sha256": "73880aa8316580f7fe98411b4dfa789a89a54b87615f6dc2af5b88041b0e52fe"
+    },
+    {
+      "path": "dist/matching-engine/types.js",
+      "sha256": "b0d2bc4142d0c62d43f996aaeb64f22c4889ac853f8a3765758b505d972d0149"
+    },
+    {
+      "path": "dist/otc/auditReserves.js",
+      "sha256": "c4517fe7032f4a24f1771f645a411893eed5064456aa345b990a7295fd17dda3"
+    },
+    {
+      "path": "dist/otc/confirmedTransaction.js",
+      "sha256": "7520742e2d160e3d90c1cbc852da755ecb1545bedf4b8587e2031b52c9f9ba0d"
+    },
+    {
+      "path": "dist/otc/geography.js",
+      "sha256": "86f66bfc46890226c8bffa0f457458ec8c51e2b44d43e14157e0dbf82910df03"
+    },
+    {
+      "path": "dist/otc/OtcCashService.js",
+      "sha256": "3b448d45c3ccd7dda1f147a596a650896b03fa6a9f8b1b90ac962e34d67c4b38"
+    },
+    {
+      "path": "dist/otc/policy.js",
+      "sha256": "2933c5c107bad9eacc9b9cda16b8ff359372212c12674e8b0121d727445f4671"
+    },
+    {
+      "path": "dist/otc/reserveCoverage.js",
+      "sha256": "fc081008bcd2a7b4f02073b25d325ff5f6c125ce5065e0a637f05878ddbb3c4f"
+    },
+    {
+      "path": "dist/private-trading/access.js",
+      "sha256": "023f677daa0dd6edb0e7420fa26e1d880f2dc3f8c7196b2d88ccdb0be5e33882"
+    },
+    {
+      "path": "dist/private-trading/crossDemo.js",
+      "sha256": "e606bb772b42697b41b980d45d83a8ac190c4475f0498b2cf3856b7b2ea77ab0"
+    },
+    {
+      "path": "dist/private-trading/liveEngine.js",
+      "sha256": "deb3344262bcfa07b20e3d229fc347cdca0acf84102273432e2b01b458d287fa"
+    },
+    {
+      "path": "dist/private-trading/marketData.js",
+      "sha256": "57c4c66d8860a69b593ba8cf23a374743594fb254252370e3b4999046626f916"
+    },
+    {
+      "path": "dist/private-trading/math.js",
+      "sha256": "3d51333a02d899be4a5b6b3f60e766ea560a4e0c028a958cda6362e2a3d47ae3"
+    },
+    {
+      "path": "dist/private-trading/native/accountModel.js",
+      "sha256": "ac89273f4a88c52601e6f1916997580488e892656940bd4dfed71cba00c34267"
+    },
+    {
+      "path": "dist/private-trading/native/collateral.js",
+      "sha256": "8eac04281dd5573c3126256ef7b3399bbe8225e1e7dba1fd0d4d9c51d51b5fc6"
+    },
+    {
+      "path": "dist/private-trading/native/commandScope.js",
+      "sha256": "d4aa503211bfafa9da54d684862f69b9ad2f93f46ffc3ea14d775ba39771af68"
+    },
+    {
+      "path": "dist/private-trading/native/engine.js",
+      "sha256": "360cb739145581d3ee532c419393a88e3afd425103e956952ed4eb314d9606c5"
+    },
+    {
+      "path": "dist/private-trading/native/historyCache.js",
+      "sha256": "ef7b84470533cc466083935bef9fd16585de471ff93bc32a818258a1905ac864"
+    },
+    {
+      "path": "dist/private-trading/native/historyPage.js",
+      "sha256": "9c556a3f00093b9ac9de83eb2cccd5386f8343b17b9d3041a5fcf51fad9223c8"
+    },
+    {
+      "path": "dist/private-trading/native/invariants.js",
+      "sha256": "311019d664eb226ca5e1dff584196bdded98ce33c348dccddce5876d365f1363"
+    },
+    {
+      "path": "dist/private-trading/native/ledger.js",
+      "sha256": "7f0d7dff63a9c4aa7a7061f5747ef6e8367d83ec7eb77870dae14f999a69d383"
+    },
+    {
+      "path": "dist/private-trading/native/limitPass.js",
+      "sha256": "c52c01d9516ff00adfbda4e36db4df90c748abfa9d427c814a500f1cb9751739"
+    },
+    {
+      "path": "dist/private-trading/native/liveProjection.js",
+      "sha256": "7542210b34c4ff458ff1e7618ef411aa47ee3c3a05285248527b2a719d3b4a9a"
+    },
+    {
+      "path": "dist/private-trading/native/pendingWallet.js",
+      "sha256": "98f5753a35ea9852a9c3981349cf37445106fef094df03ff05d3a5f9c7931038"
+    },
+    {
+      "path": "dist/private-trading/native/replay.js",
+      "sha256": "616ec5e7e2c211a619fadaa77ff8c06a2de718c9b36f5f77617bcbf8e41cad1a"
+    },
+    {
+      "path": "dist/private-trading/native/routes.js",
+      "sha256": "5083dc1ed2d14e86e2dc22b46f7326722d58d7d9c2bc0c01e560bfb544651502"
+    },
+    {
+      "path": "dist/private-trading/native/service.js",
+      "sha256": "883e824db634a40b5429ad02562ca93bd51d78345d4ac051d50b7ce003e8e503"
+    },
+    {
+      "path": "dist/private-trading/native/store.js",
+      "sha256": "4590f7658dc164e49247665172d27f673a897e0f9e4b79ce7d3a9da6582fc5dd"
+    },
+    {
+      "path": "dist/private-trading/native/testAccess.js",
+      "sha256": "c49706403d735a750dc39c8bc39f3b78585b2a9ccc367414adc39cdcac40eb7e"
+    },
+    {
+      "path": "dist/private-trading/native/testAccounts.js",
+      "sha256": "ff47761cd4f0d963a2105d6a8d1c688179e7b2eb334ce6e9c8b01b22027228ed"
+    },
+    {
+      "path": "dist/private-trading/native/testing/liveFixture.js",
+      "sha256": "6577c4235e04519888933107c896e78f46ccaae7adcaf39234a9f51c654b5a5c"
+    },
+    {
+      "path": "dist/private-trading/native/testRoutes.js",
+      "sha256": "3cae34541b8c300f5b45cec8bb447648aa8b618c900cc0e17dc2693502171c37"
+    },
+    {
+      "path": "dist/private-trading/native/walletRows.js",
+      "sha256": "7f9a5b99d8bc33a347e62015735ef689cccb230fff4d6007430a8e743f1c10c8"
+    },
+    {
+      "path": "dist/private-trading/native/withdrawable.js",
+      "sha256": "74bb8e031ba5d4c2cef51abc87187fef390fd95b1c2a5c8f8d79e63db1b3367f"
+    },
+    {
+      "path": "dist/private-trading/replay.js",
+      "sha256": "c284dc52f8ae92a7cea7a9940a0a2ff23d2293647f10c62531794e987cdeb1e0"
+    },
+    {
+      "path": "dist/private-trading/service.js",
+      "sha256": "0d879350fceb88126cb1dbcd0a4d5761c7e664dd4cf8a7c58dd38bd20a8bda5b"
+    },
+    {
+      "path": "dist/private-trading/serviceTypes.js",
+      "sha256": "f0a70dbd1e420cac64a9c10866247259a8c727a853b418f74ce2b32298e13007"
+    },
+    {
+      "path": "dist/private-trading/store.js",
+      "sha256": "01667bee00503d7eab7e245ca0c04b02821fb84ebf36ac28b93f661111a6873c"
+    },
+    {
+      "path": "dist/private-trading/types.js",
+      "sha256": "b0d2bc4142d0c62d43f996aaeb64f22c4889ac853f8a3765758b505d972d0149"
+    },
+    {
+      "path": "dist/serverBackground.js",
+      "sha256": "3a5225fa58480684979323d29f861370b96dc24e3322bbb9ffe4f1f30bfb7a74"
+    },
+    {
+      "path": "dist/services/AccountDeletionGate.js",
+      "sha256": "b334ad1890565b93b7ea1da6cc6751933843f3acf63c0c964da422c0fc2b4e49"
+    },
+    {
+      "path": "dist/services/AdminPasswordVault.js",
+      "sha256": "5b8de70bf420d0c4dd0844c71a972c7d407a5114eb6d10143edcf4b6ca9c1e7b"
+    },
+    {
+      "path": "dist/services/AdminUserDeletionService.js",
+      "sha256": "fc59525497576469e37c8a3fe70ccfb76a9b69e5b4e0033005d09cc6779bf024"
+    },
+    {
+      "path": "dist/services/AdminUserVisibility.js",
+      "sha256": "7948018e07e8fac950c61a0ea1bf2ef98b145439cea3dd4b0dff0d6abb70ded0"
+    },
+    {
+      "path": "dist/services/analytics/CoinGlassAnalyticsService.js",
+      "sha256": "16d62a3422173bd4d62517b4268e97dfa030700c369d72161652ed32de8f1bda"
+    },
+    {
+      "path": "dist/services/analytics/DeribitAnalyticsService.js",
+      "sha256": "2d4403922f519c21489ad44e4fd8946e7cf2190b8fb93de038a7293f3042b7e3"
+    },
+    {
+      "path": "dist/services/analytics/DerivedAnalyticsService.js",
+      "sha256": "721c061313092c75d5639d68ab3c253516480ab767b7b7b2d25bf104beab8006"
+    },
+    {
+      "path": "dist/services/analytics/HistoricalOpenInterestService.js",
+      "sha256": "7a1b63819dd479e4d9a84f070b1492c41cf45a815c36f28d581e3c74562b5a3b"
+    },
+    {
+      "path": "dist/services/analytics/LiquidationStreamService.js",
+      "sha256": "19ff84a61cc8e771d1f08e32028508dd425d5ce1bd885c738b52453e08290684"
+    },
+    {
+      "path": "dist/services/AnalyticsDataService.js",
+      "sha256": "eb74474a4461752817f2cd9c00fbaa88702fd75dd0494065a3f525abd855b8d7"
+    },
+    {
+      "path": "dist/services/ApiKeyService.js",
+      "sha256": "22e411d415fd38a26f71b4568c5f6c3d58acd280a8468a62376ded79bccd56b1"
+    },
+    {
+      "path": "dist/services/ArbitrageService.js",
+      "sha256": "71d97fc2a3281e8022b41bd5b7f046ce580726c928298313160dd28ca4fe0a9c"
+    },
+    {
+      "path": "dist/services/BackgroundWorkCoordinator.js",
+      "sha256": "030a7de3fca283f244451aac2a565243aabdc6d61ef9031177f703382ec735ef"
+    },
+    {
+      "path": "dist/services/BalanceAdjustmentService.js",
+      "sha256": "b041e410d583102a7fd5d52b7e14310ef978e28a64ac78f2df02e48f48ebdcc6"
+    },
+    {
+      "path": "dist/services/CandleService.js",
+      "sha256": "2d02a06935f965b2a899dc6007adf39e1fa669af18d1804a6ba181e563c714dc"
+    },
+    {
+      "path": "dist/services/CardApplicationService.js",
+      "sha256": "5c9aeae593dccefb51eee2d05b182dd8881467f25eacfeedfe57f21eb5ff862f"
+    },
+    {
+      "path": "dist/services/CfdMarketDataService.js",
+      "sha256": "03beaad31d882352000dd472dbf2d9080b81ee2e7890fdf34e5dfc7b304db4c1"
+    },
+    {
+      "path": "dist/services/CoinGeckoService.js",
+      "sha256": "5ae3e4c7dda37f2f2f36c8e79ba03e4628446aad305983e30591ad85a3b5f561"
+    },
+    {
+      "path": "dist/services/ContactEmailPolicy.js",
+      "sha256": "949972ebda91902df904a503e5fd1ad52ef094c230e99df34a80a283b037abb8"
+    },
+    {
+      "path": "dist/services/copyTrading/analytics.js",
+      "sha256": "45c5edb1842b2c912a26f46be5fce4aff931727de0f82a6ec679df844cb3f0df"
+    },
+    {
+      "path": "dist/services/copyTrading/approvedPerformanceSeeds.js",
+      "sha256": "00112d0e9ab91ba62623ec015cde9e3bd5ef1eb902e73b3fff7b878de21429a2"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/analytics.js",
+      "sha256": "e809928410eb4687fc412353a8361ced90f409f50eaee2021d5dc51b816612a8"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/dailyProgression.js",
+      "sha256": "10ffebdfd56f2a8a24f162669a90c28a4fe944cdb6547620cb7a83b844b3bb1a"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/kseniaReview.js",
+      "sha256": "9d448621569f18d9d4313df33b44b4d25162fa6baba3d948286d9db0229a3eb6"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/reviewEconomics.js",
+      "sha256": "81b2162ace99f73a0bd1fa2209f29ef679c063bf7422da36b82dd86c982d464c"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/reviewEconomicsConfig.js",
+      "sha256": "c15effb57ce44d39189c97097b621fc5ec0b5270681a7ffef9f314c0575db93b"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/reviewEconomicsTypes.js",
+      "sha256": "a3fd5b0e6d0f7ca205a3b2c7178b61096f9e9eb011427d942a00436e66100a6d"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/reviewFollowerLedger.js",
+      "sha256": "466a8289e31c8a52f5d453270c5af946fb9d2a1d12a127acc6a18f3ee0c20890"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/reviewMasterLedger.js",
+      "sha256": "e08d3dc10e2af4434abdf943226cc34457bd01bd22413f647130f92f0848c644"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/reviewPerformanceV8.js",
+      "sha256": "fc436bed480d97a06e466d6a47c7d85fa2c8144720fcd1c0e25b661c66c2cc43"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/reviewPerformanceV8Config.js",
+      "sha256": "228c122994a46d45ce6cea1cae1107b6ac435b0e8d9449a8469762906805ebbf"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/reviewReconciliationReport.js",
+      "sha256": "5a3dd03cf6ee8480cc79f0c218db093783173100875f071672e800e648adf498"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/reviewSyntheticHistory.js",
+      "sha256": "3f87744a36fe9bc100cad0c3a7552425e0965156c5ce33b642084867565279ae"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/syntheticConfig.js",
+      "sha256": "8bde360e987a4687f06f462407033697ce53792b148ff9b61577cacafc04e1c6"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/SyntheticCopyTradingEngine.js",
+      "sha256": "a23c57081af51a45fc4b828a4a2f45c7dda50861ce83acc709203ebefa077854"
+    },
+    {
+      "path": "dist/services/copyTrading/canonical/types.js",
+      "sha256": "b0d2bc4142d0c62d43f996aaeb64f22c4889ac853f8a3765758b505d972d0149"
+    },
+    {
+      "path": "dist/services/copyTrading/CopyPerformanceService.js",
+      "sha256": "2372990036e2897c4ea218a5a4a30b13b2cbde2b3543452a9d562a787693fe4b"
+    },
+    {
+      "path": "dist/services/copyTrading/kseniaReportedTrade.js",
+      "sha256": "6d5d37d9718fbdb96c1a901b9597e4ebd03447fe7623c688a553e590be3001d6"
+    },
+    {
+      "path": "dist/services/copyTrading/kseniaReportedWeek.js",
+      "sha256": "2e402d273b1f1b0c0fbda32e3a550d67ccc5f6c1ea933d80fee5bbca1f558918"
+    },
+    {
+      "path": "dist/services/copyTrading/marketplaceSnapshot.js",
+      "sha256": "7de44fd1a4426e5a16e0352fba4b3b848fd1370f8da5e49485fb9a9fc755968c"
+    },
+    {
+      "path": "dist/services/copyTrading/marketplaceSummary.js",
+      "sha256": "9a11e7bb7f9e340cd97e183e69464193cfedb1934070a72b7b47450d02619b7b"
+    },
+    {
+      "path": "dist/services/copyTrading/nazarPresentation.js",
+      "sha256": "8ff549d9f4dc0d5823d152fce4e84422475597f16f302f76bf2d38f52ae572c0"
+    },
+    {
+      "path": "dist/services/copyTrading/PrismaSyntheticStateStore.js",
+      "sha256": "5a98b30d3d0d2d7dd77b523f63cce1cac4584f685e1053f613e06d2a5e43faf5"
+    },
+    {
+      "path": "dist/services/copyTrading/publishedPerformanceSeedBytes.js",
+      "sha256": "b913b743560f19773830f1276ac31fb7f5ebebb458f9d5d0e57773036963d779"
+    },
+    {
+      "path": "dist/services/copyTrading/publishedQuantityCompatibility.js",
+      "sha256": "081aa1f61b0a69b794c941ad5589b8a8901e322ce238484a48aa6e04f0216f79"
+    },
+    {
+      "path": "dist/services/copyTrading/strategyOwner.js",
+      "sha256": "fc146381a5c1f5fb93bb12942b376ee48567103f467b19a07390b5a99ab9ff1c"
+    },
+    {
+      "path": "dist/services/copyTrading/syntheticConfig.js",
+      "sha256": "e77952c6d7a2111e1308fe079ee4ff210b0f43a82b922fcc8ccc5b9f15291cd9"
+    },
+    {
+      "path": "dist/services/copyTrading/SyntheticCopyTradingEngine.js",
+      "sha256": "a5cbf5e71bfd4d5e58586b46fbd01efeec28bfb800f9393eee9ec555b74d1488"
+    },
+    {
+      "path": "dist/services/copyTrading/SyntheticCopyTradingService.js",
+      "sha256": "457500aa28ce9763ad7623ab4d4c39b1935bbcc0150bbec6afb4f22225d2ca4b"
+    },
+    {
+      "path": "dist/services/copyTrading/tradeHistoryVisibility.js",
+      "sha256": "17c18282902d9bc0df1b86bc7c2a9b31fdd4fdf9d632b8ca9885d0567ae41f36"
+    },
+    {
+      "path": "dist/services/copyTrading/types.js",
+      "sha256": "b0d2bc4142d0c62d43f996aaeb64f22c4889ac853f8a3765758b505d972d0149"
+    },
+    {
+      "path": "dist/services/CountryDetectionService.js",
+      "sha256": "1c06a0cde974ba43994a076d12f53b7f3235b65fa99aa4923f8275d315d71a9e"
+    },
+    {
+      "path": "dist/services/DemoTradingService.js",
+      "sha256": "4075e874e5875a5a7106a914a93893c9678938c96b99bce4f0dbf81e0a44ca5b"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/BitcoinDepositVerifier.js",
+      "sha256": "55fba15001a9a0e197d69d001d3c62b1bd5f4b75d082e2eb06a3e23f5fb556a0"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/errors.js",
+      "sha256": "393d7624e865d3ca24c159358465ce9467e572d9809d8dafde25c0a0c208edb6"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/EvmDepositVerifier.js",
+      "sha256": "32d623c3c2828d73b1b0ec680ad7cf1ca4963d812b085a0e401956dceec9204f"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/index.js",
+      "sha256": "bfa3319823c9616651b834d59a2529cfea67885b76b3c9d3503207eddcb12d45"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/proof.js",
+      "sha256": "3c0f4684ba02b93aab365aedf6c317c8742a9dd2864657e7859122224109164b"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/SolanaDepositVerifier.js",
+      "sha256": "634d50490aa1516338b07285ce6996459c3a42259f6a81f1cf8a3dfd1cef2c3d"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/TonDepositVerifier.js",
+      "sha256": "cdb9f7069e591232bbd6ac01c562414f52e1f264d43db79689cbd49129b45bb1"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/tronAddress.js",
+      "sha256": "4780e0184ea798ef7101419fd6a3f41461efab78843bdacc179e4e233ad5a7ee"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/TronDepositVerifier.js",
+      "sha256": "f18629bab14f9eef5c7ba8301c579e3493c8bd736267e40358b39f8315d0afee"
+    },
+    {
+      "path": "dist/services/deposit-verifiers/types.js",
+      "sha256": "b0d2bc4142d0c62d43f996aaeb64f22c4889ac853f8a3765758b505d972d0149"
+    },
+    {
+      "path": "dist/services/depositCatalogue/publicView.js",
+      "sha256": "7d8944344343f5cef7aa7aaae6865b7f86f15d8ebd0bdde91bb358b1949c765c"
+    },
+    {
+      "path": "dist/services/depositCatalogue/registry.js",
+      "sha256": "6b8c664e675b1287266c299e998978f844f2db3f775ff8f75ff008f83f0f0eae"
+    },
+    {
+      "path": "dist/services/depositCatalogue/schema.js",
+      "sha256": "8cc4ad33f33d068ab6fbe65105e5490b8394a8dbdcceb1b8164918b06b0f099c"
+    },
+    {
+      "path": "dist/services/depositCatalogue/service.js",
+      "sha256": "ddf3983ac0f55dd84bcbbd7c1099081ff470d92838b75a87783af50747bb1f01"
+    },
+    {
+      "path": "dist/services/depositCatalogue/store.js",
+      "sha256": "2a8fd4e08d6de988ecb3304f6ab211a28390a24a7156d31c27e525facaa73ac4"
+    },
+    {
+      "path": "dist/services/deposits/DepositAttributionService.js",
+      "sha256": "cbf8d49bb1faaa2b02c9dfd64d5e188c6e92d7c12f919db3f5bc8b291e3600fc"
+    },
+    {
+      "path": "dist/services/deposits/DepositBatchService.js",
+      "sha256": "605d886554e2f5abfbae52dcb98eaefd804a9f696277d4efcf32735165c7f69e"
+    },
+    {
+      "path": "dist/services/deposits/depositCopyResolution.js",
+      "sha256": "dcf611ba9623d578e7be2b2a3c3b2f5eea04bb14378e0b1e6ab536420a06d1cc"
+    },
+    {
+      "path": "dist/services/deposits/DepositIgnoreService.js",
+      "sha256": "89dcd103b0532db81464c4e4a7fc7ac135dc5074e46449a1749155a33042b553"
+    },
+    {
+      "path": "dist/services/deposits/depositPolicy.js",
+      "sha256": "ce7e8ce27c709f86e05348140d90e85b14cf95be4b1f7e5a60d18ae1e929910f"
+    },
+    {
+      "path": "dist/services/deposits/DepositQueueService.js",
+      "sha256": "62889abc842d0095d0a6def0ac75d9df890eeb3cfbecbd5935457bcff4d73c1e"
+    },
+    {
+      "path": "dist/services/deposits/depositWatchSchedule.js",
+      "sha256": "a34d1747cfe069dcd53d0c07a13671ff5bb7d5e5c87af334e4f49e0d543458d3"
+    },
+    {
+      "path": "dist/services/deposits/DepositWatchScheduler.js",
+      "sha256": "05fd595b626cb4af1c743c87de29a180faa47da1c7590758b18904c5fba88864"
+    },
+    {
+      "path": "dist/services/deposits/DepositWatchService.js",
+      "sha256": "0c1c42ad45a3120a0ad55b76736542f676fc02e3f5a39a310333e3b2778612fb"
+    },
+    {
+      "path": "dist/services/deposits/latestDepositCopiesForUsers.js",
+      "sha256": "2c9c8b715c2a9128eecc59c3b0bc2c1db940ef9d0b39ebc444d8d0e8a9309cc3"
+    },
+    {
+      "path": "dist/services/deposits/transferProof.js",
+      "sha256": "298816b004de6b03c012b7c607775668683821aea84041e0ef324ef8a8b0b753"
+    },
+    {
+      "path": "dist/services/DepositService.js",
+      "sha256": "bc9bbd210c8dea3a052bbbb7c32a14cd8d271ca09fdd724c5d4165235ad12ce8"
+    },
+    {
+      "path": "dist/services/FearGreedService.js",
+      "sha256": "fd9f6b6d3efa8441d2f0c9df364eac5810ec6273636379170231b0113c1f5502"
+    },
+    {
+      "path": "dist/services/FuturesChartCandles.js",
+      "sha256": "723df37906af0f79f44fedde818477956581c801875e4369c044ca0693658d97"
+    },
+    {
+      "path": "dist/services/FuturesDisplayTrades.js",
+      "sha256": "008c26d004818927ab2b1c88bdbec2ec13a8e75c60069cea234a145ade939a0a"
+    },
+    {
+      "path": "dist/services/IdleBackoffScheduler.js",
+      "sha256": "754eecc7770c548a28fcb405f776d08205419424ecaf4b79c0f12566686a4c23"
+    },
+    {
+      "path": "dist/services/KrakenMarketDataService.js",
+      "sha256": "296981b2a2deb30fc8cd0edd746edb12f4f1a4dde2ff6cfbb0a59d3c09233e51"
+    },
+    {
+      "path": "dist/services/KycEdgeTrust.js",
+      "sha256": "5a3b767352579010500a5169f9c1199e0622d768a17d8a9c9c9d10be23196cb6"
+    },
+    {
+      "path": "dist/services/listings/aithReplacement.js",
+      "sha256": "4fa3444ff9957fc48392a916f1f4cf3d2bed1742401f19513caec544955d8283"
+    },
+    {
+      "path": "dist/services/listings/listingConfig.js",
+      "sha256": "f1f45d3ac517c93c9a9ecf2e2b221289c7fe32cb9e440d1f313b3a639f661200"
+    },
+    {
+      "path": "dist/services/listings/listingPreview.js",
+      "sha256": "df572e2dc7c5a0ef86ced3fcde637840153779b3ad4b353b2cdc068a377266ca"
+    },
+    {
+      "path": "dist/services/listings/listingPublic.js",
+      "sha256": "892c3823728dee5d186c95fb9c506ef226c084bed8c743b4b0e202a52cb0db8a"
+    },
+    {
+      "path": "dist/services/listings/managedSnapshot.js",
+      "sha256": "dc18c19a644b913b5d43c0bea34abc6e9ccad4f229777c5ae246dc8234412df6"
+    },
+    {
+      "path": "dist/services/listings/ownerAllocation.js",
+      "sha256": "c4f7cf47baeb791bb28814779984d5ffaba160d9191e8a19fc05d5ebf24aab38"
+    },
+    {
+      "path": "dist/services/listings/registry.js",
+      "sha256": "1fa3afa78eb04639af4b31743ebf7502c60f0ef3b0796a42a6f3c11b1d0c6c74"
+    },
+    {
+      "path": "dist/services/listings/store.js",
+      "sha256": "46693dbb915a94f6ca8e9c5c5e3abdf653b187dcd8919468cb1cef26c30c8acd"
+    },
+    {
+      "path": "dist/services/marketData/AssetRegistry.js",
+      "sha256": "49420b6652c2ddb9397326e74d895d59312e8bcdac233f6e935685b1dd2a0eee"
+    },
+    {
+      "path": "dist/services/marketData/bybit/BybitLiveTickerCollector.js",
+      "sha256": "4fac2ebbc2c921ee1aaca3a00fbf9e660f32789a640fff0ec0450fd6fcca705d"
+    },
+    {
+      "path": "dist/services/marketData/bybit/BybitMarketDataService.js",
+      "sha256": "358aa12d53dfa10e77a343675a05cfb805c98257e192cf8fc9966d22df28b991"
+    },
+    {
+      "path": "dist/services/marketData/bybit/BybitOptions.js",
+      "sha256": "d2cd42d3fe24153bb0ab2f750724c5bd820e1d311ae7fd348b3957d500c093bd"
+    },
+    {
+      "path": "dist/services/marketData/bybit/BybitTickerBook.js",
+      "sha256": "39069d9cb4650c9c90632c241329b258234ce744b465c6bd7cb1643ec18ec463"
+    },
+    {
+      "path": "dist/services/marketData/bybit/MarketUniverse.js",
+      "sha256": "677b78176bf34fc25b9556e4029c81c10436e9863d7252309d362561ce786c54"
+    },
+    {
+      "path": "dist/services/marketData/bybit/types.js",
+      "sha256": "4b02782edc030bef140b98100f1f18508ea95027723f360823b80865e7730d5c"
+    },
+    {
+      "path": "dist/services/marketData/cfd/BiquoteCfdOhlcSource.js",
+      "sha256": "a0fc7865a0614a7a56f47d3f24bf32965ef36d805b63931899aa16a040dba185"
+    },
+    {
+      "path": "dist/services/marketData/cfd/BiquoteCfdQuoteSource.js",
+      "sha256": "d5a2f96d1a249b62ef5131d19cb7282d62be17872bef0d106059cd6ba682d1cb"
+    },
+    {
+      "path": "dist/services/marketData/cfd/catalog.js",
+      "sha256": "75dcfe00f9640786cee7fb1696939ad3ffca229254bb9d3d44520a140ac9c30d"
+    },
+    {
+      "path": "dist/services/marketData/cfd/CfdDisplayQuoteRouter.js",
+      "sha256": "85fe47830d7c89bf9a36e2b49a3c9b302a431fb3ed0a9adc748198f1c5775fe0"
+    },
+    {
+      "path": "dist/services/marketData/cfd/CfdDisplaySelfTest.js",
+      "sha256": "d1c2608a8af9344df1e70b43f0388be3beb8b8b8249b5070a7161080ed94c4e9"
+    },
+    {
+      "path": "dist/services/marketData/cfd/CfdQuote.js",
+      "sha256": "ab3134f6725a03ea933e5ba3bcb94e063f542840dc0c0235c1b510508ff143e3"
+    },
+    {
+      "path": "dist/services/marketData/cfd/CollectorCfdDisplaySource.js",
+      "sha256": "60a76458fd1a9911e3aba899aa4007c0400ae54abd56a7344f752dbaf0a196d5"
+    },
+    {
+      "path": "dist/services/marketData/cfd/DerivPublicStreamQuoteSource.js",
+      "sha256": "8011ba2e4746917d7aef6146cd016e7dd5ba0bb02bde441313eb7f8b882ed5c4"
+    },
+    {
+      "path": "dist/services/marketData/cfd/EiaOilDisplaySource.js",
+      "sha256": "13a4c8f7ceaf8c4a79e2ae261faee629b12f243e78fb2b9b184f21ca28221395"
+    },
+    {
+      "path": "dist/services/marketData/derivatives/BinanceDerivativesService.js",
+      "sha256": "5e35db8e165701afd0aff82217819d2c8a26220308ea1ef6cf39c182aa53283d"
+    },
+    {
+      "path": "dist/services/marketData/derivatives/ExternalDerivativesService.js",
+      "sha256": "4ba3a1ffc451a601ccc82396307e2bd07baf374348f1b9ad826d3251df3516c2"
+    },
+    {
+      "path": "dist/services/marketData/derivatives/OkxDerivativesService.js",
+      "sha256": "71a59901528bf69a60d108a4c2b47fbf87565af35130594a371fdbcd2526e8b1"
+    },
+    {
+      "path": "dist/services/marketData/derivatives/types.js",
+      "sha256": "52e1f035ac0e89bfab12a9178b02d0483329ccfefe9c992c3808fb1c24b4cd52"
+    },
+    {
+      "path": "dist/services/marketData/live/collectorServer.js",
+      "sha256": "3de43f6b0a24e3b87e09f417247b2664b667fa1f91a61ba69ec0c9d8012f5fba"
+    },
+    {
+      "path": "dist/services/marketData/live/contract.js",
+      "sha256": "f7daba1bbbd6aa42163bd5422193f075a2656c217c70521df8c3427a0d3f6cf6"
+    },
+    {
+      "path": "dist/services/marketData/live/MarketDataCollectorClient.js",
+      "sha256": "51477ef42161977b52c7b8777a8e7fb513c8bbdaa69d0f29602c92e502234f83"
+    },
+    {
+      "path": "dist/services/marketData/live/validation.js",
+      "sha256": "98a33845f0ff396fce8bbbbf12e0572acd47741259bec0ff72f08630ce9199f6"
+    },
+    {
+      "path": "dist/services/marketData/MarketDataGateway.js",
+      "sha256": "fbb6e3d789046133f0e0bf2f83e90393e62c11b5a3774c5459cf4dba046434fe"
+    },
+    {
+      "path": "dist/services/marketData/numbers.js",
+      "sha256": "8dcc2325adc1a3b05c86efccd80b1c226ef1f42c2f17239c6f2399350bd11180"
+    },
+    {
+      "path": "dist/services/marketData/ProviderCache.js",
+      "sha256": "cf9a57fb94c888af6af2f51ac425a17ba9f91f39fa73e92b55cc283f8f84420f"
+    },
+    {
+      "path": "dist/services/marketData/ProviderHealth.js",
+      "sha256": "36763af70a5939b88fd8d7c1105000d77d17abc734646e466cf059d19e57c56b"
+    },
+    {
+      "path": "dist/services/marketData/types.js",
+      "sha256": "2f5bb8e7cb67d171e18b7eed97aa36ca23d68aad888c11b9cedeed0686c48b3f"
+    },
+    {
+      "path": "dist/services/OrderBookRecovery.js",
+      "sha256": "f5bb7c7391a4d71b96f2fa85a2033457438324104a555c0b7c2fb7b84602c9c7"
+    },
+    {
+      "path": "dist/services/OrderService.js",
+      "sha256": "b4e54262a11f64961cf479f7f3404dce7eb379ae48bb4b3f82a9402433acf31d"
+    },
+    {
+      "path": "dist/services/PortfolioPerformanceEngine.js",
+      "sha256": "c3bbf8ccf06b468e587710f905a7674482bb3e415fa512fcbb0cf9a50bc82d40"
+    },
+    {
+      "path": "dist/services/PriceWatcherService.js",
+      "sha256": "894c624eba15a73f19129d27f57e227d2fdb82dfcb3337160dc1756176bc10af"
+    },
+    {
+      "path": "dist/services/PurchaseService.js",
+      "sha256": "d535e5e92690a9021d9ec002a20c3fb03597de928b706f805bb334ee950a02ea"
+    },
+    {
+      "path": "dist/services/referralCode.js",
+      "sha256": "c16a399f20e3591edde1fedade9376102e96b58c3e7d9eb157e1e4a0f9f431c0"
+    },
+    {
+      "path": "dist/services/ReservesService.js",
+      "sha256": "2601d243137f740a70a55d52645dabe0fa15d60f6ab3221effe8e16e617077d2"
+    },
+    {
+      "path": "dist/services/SpotBookTransaction.js",
+      "sha256": "c2700ac9d47b40cc3f758525ea0930a5dfcf651e89a4fbe13109e6697ccb4bf1"
+    },
+    {
+      "path": "dist/services/TelegramNotifications.js",
+      "sha256": "911d94796f1314e07f7aadc325686a7fffbeaebec04835fb626ff010a5669b2b"
+    },
+    {
+      "path": "dist/services/testMarkets/neurix.js",
+      "sha256": "40a7e07c80e59304aee90fd108ff4bbfb794167c3594f74044ce40a0fd0540e6"
+    },
+    {
+      "path": "dist/services/testMarkets/nrxAllocation.js",
+      "sha256": "d3ba4b823b65d63bb054ad4c97a769e6b4e5f064e9826f6367f804492966ebf2"
+    },
+    {
+      "path": "dist/services/testMarkets/nrxPublic.js",
+      "sha256": "ce47be798cbd8ecbb8527efb54225bbbb7a6370e74ad68dfdb846c2a7565472f"
+    },
+    {
+      "path": "dist/services/testMarkets/nrxSpot.js",
+      "sha256": "556009128f5d2209f427fe63928f1e437fd4b2d534f6f9968bff484f41b19024"
+    },
+    {
+      "path": "dist/services/testMarkets/simulationAccumulation.js",
+      "sha256": "82afe1a969f0bf6d2ba7c6c3edd7f1bc023d389609ebcfc61e9f2c94d3fcd2ed"
+    },
+    {
+      "path": "dist/services/testMarkets/simulationCycles.js",
+      "sha256": "721ea046ea785ce40837574d300bf7e1a81cf561405cee6ece82b6edeeac3412"
+    },
+    {
+      "path": "dist/services/testMarkets/simulationNaturalWicks.js",
+      "sha256": "7f0998b92f8d9e47a95be54d54255c6093f9483e015ff51c7cbe7aa2ff1ca25e"
+    },
+    {
+      "path": "dist/services/testMarkets/simulationRandom.js",
+      "sha256": "e8df52f6bc009af02eda8b018b97f26e049eef76fd31979524fb45089027bbbb"
+    },
+    {
+      "path": "dist/services/testMarkets/simulationRealism.js",
+      "sha256": "0468acc8c9edb6a5f0cae204bac661f87e6618b5a13528853a1cf4afef36154c"
+    },
+    {
+      "path": "dist/services/testMarkets/simulationScenarioControls.js",
+      "sha256": "d7ebe0974f81eae7f32f2168402099091f3159304fc0bc40a51230f26e75533d"
+    },
+    {
+      "path": "dist/services/testMarkets/simulationSchedule.js",
+      "sha256": "4891476040af22e98e068f6d62d9b96029ff2b0a1453d95ee178e0ccfbb5ba59"
+    },
+    {
+      "path": "dist/services/testMarkets/simulationWaves.js",
+      "sha256": "e2778abd3d86d45365861009b052e0d15be2678b389db40790d07167cde1727f"
+    },
+    {
+      "path": "dist/services/testMarkets/testAssetConfig.js",
+      "sha256": "7e67a7f49487a20acc1491f955baecb507bc93700ce4e3f8707684756e8af966"
+    },
+    {
+      "path": "dist/services/testMarkets/testMarketDepth.js",
+      "sha256": "afaecb38634393d7982f1cf0f2a3eed3104bd98176c250ca464d9a8387261b8f"
+    },
+    {
+      "path": "dist/services/testMarkets/testMarketService.js",
+      "sha256": "a7dbac62f914f898dfc98b7d0bb4fc23ca1ecda8532223b778b8a3d71238ff69"
+    },
+    {
+      "path": "dist/services/testMarkets/testMarketSimulation.js",
+      "sha256": "3af7e4418ee2c7b4ecf7226909f441f0c83d88f8601078afa8ef80790cf36a02"
+    },
+    {
+      "path": "dist/services/testMarkets/VtaDemoSales.js",
+      "sha256": "1a0318e65c9913566b05f52e684fa0fa49021648d34a40a7c4947429880488e9"
+    },
+    {
+      "path": "dist/services/TreasuryWalletService.js",
+      "sha256": "cab7b81c9aabf1c57d2dc15dfe76a12936421a6388b6aaa16b8ffcb8930f588d"
+    },
+    {
+      "path": "dist/services/TwoFactorService.js",
+      "sha256": "945c25a8a126233e2296cc69c57d65592e0b23bb02a649ec512e1eaabbb7e408"
+    },
+    {
+      "path": "dist/services/WalletMutation.js",
+      "sha256": "593774ec0d5d3a6ddedfdd3a7edb450bedbcb1ca51c92b17e2bf7ddcec5bb7aa"
+    },
+    {
+      "path": "dist/services/WalletPortfolioService.js",
+      "sha256": "527ff48d7303860d05f73b1c9786584db6fb3b1c91f8ed27de2c2b33827242fb"
+    },
+    {
+      "path": "dist/services/WalletTransferService.js",
+      "sha256": "f06a87ac5e4f1e8100c0331ce8c6784b19659375939f1b07efe488bf3bc1270b"
+    },
+    {
+      "path": "dist/services/WithdrawalService.js",
+      "sha256": "d879261bdb3f3e966bb5663216ce8f9eddd611b5aaca36a80413344d876aee98"
+    },
+    {
+      "path": "dist/shared/aithPublication.js",
+      "sha256": "3ce265e10f6a49f1131daf16f33c9cd7263cfcab6d4aee51ff54ba49dbf26fe7"
+    },
+    {
+      "path": "dist/shared/listingScenarioControls.js",
+      "sha256": "42169cb782c8e755dff7552abe5aad8c09d3427afda60792565689338a18467b"
+    },
+    {
+      "path": "dist/test-utils/walletDelegate.js",
+      "sha256": "ccab7957529c64626da00227a1f3e10f63fe27a62422654e344be2e0d85701af"
+    },
+    {
+      "path": "dist/wallets/WalletService.js",
+      "sha256": "564108b8468b6b5da05c9ea3c5bb58af54ba87088b835b25ccb2a1def9e0625f"
+    }
+  ],
+  "sourcesAfterHash": "41d472bac29cb3f648127d501434b20491f73e8cd08901e10df94030d4c689ac",
+  "sourcesUnchanged": true
+}

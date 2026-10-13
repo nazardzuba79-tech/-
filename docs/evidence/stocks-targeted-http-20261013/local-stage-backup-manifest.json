@@ -1,0 +1,28 @@
+{
+  "issuer": "stocks-local-stage-fixture-only",
+  "owner": "alice",
+  "schema": 2,
+  "journal": "DELETE",
+  "synchronous": "FULL (runtime source; not inferred from a new read-only connection)",
+  "original": {
+    "path": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\local-stage-20261014-r5\\data\\primary.sqlite",
+    "sha256": "599747cef8b69679d4bd1d01c965d9f345f73513fad07f1af8d8f17bc981210b",
+    "bytes": 28672
+  },
+  "restored": {
+    "path": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\local-stage-20261014-r5\\data\\restored.sqlite",
+    "sha256": "599747cef8b69679d4bd1d01c965d9f345f73513fad07f1af8d8f17bc981210b",
+    "bytes": 28672
+  },
+  "integrity": "ok",
+  "accounts": [
+    {
+      "id": "114133957c53d41cc5f7d98f6a1138921bf5b97128547caba86425c0c49ba6a5",
+      "ledgerSha256": "6552380f742a6692cbca10cb80de7ef55a8a773c3243f2ee9e1da464761dc590"
+    },
+    {
+      "id": "2a61d4d111e0b09cab74a3812a57bb6e61bc846d3a915852f0c18859bcc4e270",
+      "ledgerSha256": "108d92866f4f9fa32ece2c36e576050b4ae7bb8c28573f80eb90106962357efd"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "canonical": "LF",
+  "files": [
+    {
+      "file": "services/stocks/targeted-http-512/authority.mjs",
+      "sha256": "b8e5efbfdb03d417016b0524848be78e3fb83d6325d29941a74092c4a19c30f1",
+      "bytes": 3289
+    },
+    {
+      "file": "services/stocks/targeted-http-512/client.mjs",
+      "sha256": "ef20eb6ddc638609957b01f4aef298fcf55444b43bc1f2db603a9a6ab5c98217",
+      "bytes": 15360
+    },
+    {
+      "file": "services/stocks/targeted-http-512/Dockerfile",
+      "sha256": "4500a2e5321f166086019cb3d5f0954f0b70d2fe8efc357e2caa128cb16fabbb",
+      "bytes": 476
+    },
+    {
+      "file": "services/stocks/targeted-http-512/Dockerfile.dockerignore",
+      "sha256": "12fe7a353e0970a987face5b7daf108d93f1370f680b15281b140bca5b10066e",
+      "bytes": 162
+    },
+    {
+      "file": "services/stocks/targeted-http-512/fixture.mjs",
+      "sha256": "80bd8d0c2999067a972ae018fab865aae4c2a9b3c98e6cabad4e6999521440e4",
+      "bytes": 9522
+    },
+    {
+      "file": "services/stocks/targeted-http-512/metrics.mjs",
+      "sha256": "38e614cda6a27b1e6fbba1a129aaf668de85a0878c76c5ca6d925523380556f3",
+      "bytes": 8455
+    },
+    {
+      "file": "services/stocks/targeted-http-512/plan.mjs",
+      "sha256": "258cc65cbee2638265d61bfa7b8f6079fc385520f66af710e324fe4a2a37a1cc",
+      "bytes": 1624
+    },
+    {
+      "file": "services/stocks/targeted-http-512/probe.mjs",
+      "sha256": "0dc0ea274e29d46bbc840b9b78e92696c55e241aa2eb3857d8fa303084799d0b",
+      "bytes": 942
+    },
+    {
+      "file": "services/stocks/targeted-http-512/README.md",
+      "sha256": "9afc2eb7bdd7a26c3712099ccd9a9fbeacd6b3c9347589e694e03d489e3e4faa",
+      "bytes": 7372
+    },
+    {
+      "file": "services/stocks/targeted-http-512/reviewed-sources.json",
+      "sha256": "5cd51c329d63cecf03bbf0ec1d7b8b3d3175fd0c1b48358cad9e2dfb3f093892",
+      "bytes": 228
+    },
+    {
+      "file": "services/stocks/targeted-http-512/run.mjs",
+      "sha256": "8b439b6575417435c6c362dd73b7556f4c357f57c7a1e97d38b411fc91b0f816",
+      "bytes": 21197
+    },
+    {
+      "file": "services/stocks/targeted-http-512/source.mjs",
+      "sha256": "482f34dad9194e2ba7e88e13719acb5bfc8e9bd593df9b987453c9d3d79507ff",
+      "bytes": 4132
+    },
+    {
+      "file": "services/stocks/targeted-http-512/targeted.test.mjs",
+      "sha256": "8bd4c9f4c90bac286297947842c0c942a79681a010f3c08430f538ff1e35100f",
+      "bytes": 11012
+    },
+    {
+      "file": "services/stocks/review-plan.mjs",
+      "sha256": "b61207e0945f718e4cc8ebec86d728ba9c8fd672e504bb4aa46e090b0cf5c6fe",
+      "bytes": 4221
+    },
+    {
+      "file": "services/stocks/review-plan.test.mjs",
+      "sha256": "4e1c32d782a96c6020e5916f80ad6055315f67295c84fb3846702f197c8fdbdd",
+      "bytes": 6832
+    },
+    {
+      "file": ".github/workflows/stocks-review.yml",
+      "sha256": "fcafa908a37b47dc67e0590b6387c4cbc7dcc6440bdfca54b3bd8c6b7683ae81",
+      "bytes": 43311
+    }
+  ]
+}

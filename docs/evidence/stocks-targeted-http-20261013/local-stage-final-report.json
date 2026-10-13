@@ -1,0 +1,579 @@
+{
+  "fixtureOnly": true,
+  "productionAccess": false,
+  "capacityClaim": false,
+  "browserClaim": false,
+  "runtime": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "startedAt": "2026-10-13T21:16:24.033Z",
+  "cases": [
+    {
+      "name": "actual /me authority, policy/session rejection and bounded maximum avatar",
+      "status": "PASS"
+    },
+    {
+      "name": "owner full trading cycle and exact P&L/reservation with viewer isolation",
+      "status": "PASS"
+    },
+    {
+      "name": "lost HTTP acknowledgement, restart, same-ID retry and conflict",
+      "status": "PASS"
+    },
+    {
+      "name": "feature-off rejects cached credentials and CSRF without upstream work",
+      "status": "PASS"
+    },
+    {
+      "name": "quiesced FULL SQLite backup, distinct-path restore and exact ledger reconciliation",
+      "status": "PASS"
+    }
+  ],
+  "calls": [
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "orders",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 422,
+      "error": "TOKEN_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 400,
+      "error": "QUERY_NOT_ALLOWED"
+    },
+    {
+      "user": "alice",
+      "route": "history",
+      "status": 422,
+      "error": "MOEX_UNVERIFIED"
+    },
+    {
+      "user": "alice",
+      "route": "refresh",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "refresh",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "cancel",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "cancel",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 422,
+      "error": "INSUFFICIENT_SHARES"
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 422,
+      "error": "INVALID_ORDER"
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": null,
+      "error": "ECONNRESET"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 422,
+      "error": "IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 503,
+      "error": "LOCAL_STOCKS_UNAVAILABLE"
+    },
+    {
+      "user": "alice",
+      "route": "portfolio",
+      "status": 503,
+      "error": "LOCAL_STOCKS_UNAVAILABLE"
+    },
+    {
+      "user": "alice",
+      "route": "history",
+      "status": 503,
+      "error": "LOCAL_STOCKS_UNAVAILABLE"
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 503,
+      "error": "LOCAL_STOCKS_UNAVAILABLE"
+    },
+    {
+      "user": "alice",
+      "route": "cancel",
+      "status": 503,
+      "error": "LOCAL_STOCKS_UNAVAILABLE"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 200,
+      "error": null
+    }
+  ],
+  "limitations": [
+    "Local actual /me contract with fixture Prisma is not production DB/auth capacity.",
+    "No browser/UI/translation or actual-provider data claim; existing separate browser suites remain required.",
+    "Backup is quiesced fixture-only; no live database, cloud backup, deployment image or old-binary compatibility claim.",
+    "Windows POSIX UID/mode guarantees are not claimed."
+  ],
+  "build": {
+    "command": {
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\node_modules\\typescript\\bin\\tsc",
+        "--project",
+        "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\tsconfig.json"
+      ],
+      "cwd": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013"
+    },
+    "compilerVersion": "5.9.3",
+    "exitCode": 0,
+    "proofSha256": "ce235140f23595dd49b3222f5b979f00c9cdc05dbc9c6c38e2024b1968877bf2",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "manifest": {
+    "fixtureOnly": true,
+    "sourceSha": "be610e27dccf4d2c5c161de5c8b683611555808f",
+    "workingTreeChanges": [
+      "M services/stocks-global/market.mjs",
+      " M services/stocks-global/server.mjs",
+      "?? scripts/qa-stocks-local-stage-fixture.cjs",
+      "?? scripts/qa-stocks-local-stage-recovery.cjs",
+      "?? services/stocks-global/history-cancellation.test.mjs"
+    ],
+    "packageEntry": "scripts/qa-stocks-local-stage-fixture.cjs",
+    "accountEntry": "dist/api/routes/account.js",
+    "buildProvenanceSha256": "ce235140f23595dd49b3222f5b979f00c9cdc05dbc9c6c38e2024b1968877bf2",
+    "migration": "NOT_USED",
+    "productionEntrypoint": "NOT_USED",
+    "nodeModulesCopied": false,
+    "dependencies": {
+      "mode": "existing workspace node_modules via explicit child NODE_PATH; not a standalone deployment image",
+      "names": [
+        "bcrypt",
+        "crypto",
+        "express",
+        "jsonwebtoken",
+        "qrcode",
+        "speakeasy",
+        "zod"
+      ],
+      "packageLockSha256": "0034715efce793d97b0272f29dd9235d1aa7116b09d4805aff43e07bb9a119a2"
+    },
+    "files": [
+      {
+        "path": "dist/api/asyncRoute.js",
+        "bytes": 478,
+        "sha256": "30d5ca41c9b3a35cc23b9b21f21906fea8d78c453807aea44484f294d74f293b"
+      },
+      {
+        "path": "dist/api/middleware/auth.js",
+        "bytes": 7148,
+        "sha256": "dcaaf312a5d51a02bf25837b533679302f12f53a485f7ed63d1f1ac9ae37bd2d"
+      },
+      {
+        "path": "dist/api/routes/account.js",
+        "bytes": 15822,
+        "sha256": "6a06d889c1e31a73a017c6aca58c4f6cab20857f4ee1a943b6e334804691440c"
+      },
+      {
+        "path": "dist/services/AdminPasswordVault.js",
+        "bytes": 1778,
+        "sha256": "5b8de70bf420d0c4dd0844c71a972c7d407a5114eb6d10143edcf4b6ca9c1e7b"
+      },
+      {
+        "path": "dist/services/ContactEmailPolicy.js",
+        "bytes": 3118,
+        "sha256": "949972ebda91902df904a503e5fd1ad52ef094c230e99df34a80a283b037abb8"
+      },
+      {
+        "path": "dist/services/TwoFactorService.js",
+        "bytes": 2654,
+        "sha256": "945c25a8a126233e2296cc69c57d65592e0b23bb02a649ec512e1eaabbb7e408"
+      },
+      {
+        "path": "scripts/qa-stocks-local-stage-fixture.cjs",
+        "bytes": 14223,
+        "sha256": "3c4a90680114297b99d013091c8b27b708bd541dc8eb7579cce770d9597aa6d6"
+      },
+      {
+        "path": "services/stocks-global/account-commands.mjs",
+        "bytes": 2014,
+        "sha256": "7f91a5c292b07e8afa820832ba6136336135e4037a9c064d1e8026ad2800dd19"
+      },
+      {
+        "path": "services/stocks-global/account-observations.mjs",
+        "bytes": 7207,
+        "sha256": "2984f77c34e256ecd12a0bf942725c5073d2dbf0b3b3b2861e652c8db609e0f9"
+      },
+      {
+        "path": "services/stocks-global/account-worker-runtime.mjs",
+        "bytes": 7122,
+        "sha256": "eaa14e62b1223aee88b888ebe0c556c1181a11491a1bf2ed8e2876d09ed23045"
+      },
+      {
+        "path": "services/stocks-global/account-worker.mjs",
+        "bytes": 9980,
+        "sha256": "95a22f361c8396dd03db6ad3e0a10962e2e7023e9368c86557d4abb701b2f774"
+      },
+      {
+        "path": "services/stocks-global/accounts.mjs",
+        "bytes": 6325,
+        "sha256": "0fb026f1e986671f1a1939a15393e8050b367e0cc375c6bc0a435bd0ae55cd3c"
+      },
+      {
+        "path": "services/stocks-global/catalog.mjs",
+        "bytes": 2198,
+        "sha256": "1bd76716a297ccec2599dd035995060520a855062f94ad3afa83d5ab4d47b0eb"
+      },
+      {
+        "path": "services/stocks-global/engine.mjs",
+        "bytes": 10780,
+        "sha256": "dfd733dd19b7dc6023018a9d183ef66abeeb4adaa15c7bed2004ad330f0ef6c4"
+      },
+      {
+        "path": "services/stocks-global/identity.mjs",
+        "bytes": 4801,
+        "sha256": "a9a38fc77372fd52d89039dd129ad0b4b5cee8c2f875182fd962150cd6153c9b"
+      },
+      {
+        "path": "services/stocks-global/local-proxy.mjs",
+        "bytes": 6610,
+        "sha256": "ad23ace029f5fdbc73dbc3d4aa98152bc4b0d7a76fb331690cbef55182ea90e6"
+      },
+      {
+        "path": "services/stocks-global/market.mjs",
+        "bytes": 22918,
+        "sha256": "3d74c2d1ecff02f4f41af8bea2184ef00e54f2f6ed722c012deafcfb4770e460"
+      },
+      {
+        "path": "services/stocks-global/server.mjs",
+        "bytes": 21458,
+        "sha256": "4ed40c6ab0a769af64a8d71a730abde13f8a4b3d591ee5056c3acbfbcfc4af12"
+      },
+      {
+        "path": "services/stocks-global/store.mjs",
+        "bytes": 1636,
+        "sha256": "fe59b54eb87bf68b571bc476b2df2992631672e678152f894ffa7138e8706237"
+      },
+      {
+        "path": "services/stocks-global/viewer-projection.mjs",
+        "bytes": 1039,
+        "sha256": "3f987e647a0539ed11154919de5972060c297a2517ab2b4ec24aaba23466fd2b"
+      },
+      {
+        "path": "services/stocks-simulator/engine.mjs",
+        "bytes": 12321,
+        "sha256": "d7f10f47690a03c00c67ed4fceb0130e83ece0ef6b6bbaeacef8b17338c01812"
+      },
+      {
+        "path": "src/api/asyncRoute.ts",
+        "bytes": 512,
+        "sha256": "c105c921d6a632c6776fb8a5aa7440e0dd6c7d74ea464d3b071c147ee22da5da"
+      },
+      {
+        "path": "src/api/middleware/auth.ts",
+        "bytes": 6916,
+        "sha256": "a14a605a5643cd1c5c1634cdbcb5a7c8ca845b4fc173c5d10e8dd4d208fafa92"
+      },
+      {
+        "path": "src/api/routes/account.ts",
+        "bytes": 14595,
+        "sha256": "94cf667e7ab599ad8adce669faebdc2785af3b925712ec525e68d45d51a32fe1"
+      },
+      {
+        "path": "src/services/AdminPasswordVault.ts",
+        "bytes": 1590,
+        "sha256": "b08257506f7e7ae4b7d71cdb445082e8d25143ba38c3583e995ae6258122355e"
+      },
+      {
+        "path": "src/services/ContactEmailPolicy.ts",
+        "bytes": 2769,
+        "sha256": "541f68318335879e7532adb71443590c7b1c08634825757c31b71a8befe2aceb"
+      },
+      {
+        "path": "src/services/TwoFactorService.ts",
+        "bytes": 2392,
+        "sha256": "20d91a7fa311137da6fc65be8b34cbe6b129213ba58f8e31ea260f62356434a0"
+      }
+    ]
+  },
+  "manifestSha256": "a35fd5c063e38a00cd13124a46cf5ba8c179af7f9dfda8c113e514f1c87dc71d",
+  "assertions": 61,
+  "financialCheckpoint": {
+    "cash": "10004.00000000",
+    "realized": "4.00000000",
+    "shares": "0.00000000",
+    "fills": 3
+  },
+  "quiescedAccountMetrics": {
+    "sqlCalls": 11,
+    "sqlReadCalls": 4,
+    "sqlWriteCalls": 1,
+    "sqlExecCalls": 6,
+    "transactionExecCalls": 4,
+    "sqlWallMs": 3.708799999999883,
+    "sqlCpuMs": 0,
+    "sqlThreadCpuAvailable": 1,
+    "sqlStages": {
+      "configure": {
+        "calls": 2,
+        "wallMs": 0.31430000000045766,
+        "cpuMs": 0
+      },
+      "exists": {
+        "calls": 1,
+        "wallMs": 0.16349999999965803,
+        "cpuMs": 0
+      },
+      "read": {
+        "calls": 3,
+        "wallMs": 0.20709999999962747,
+        "cpuMs": 0
+      },
+      "begin": {
+        "calls": 2,
+        "wallMs": 0.2964999999999236,
+        "cpuMs": 0
+      },
+      "write": {
+        "calls": 1,
+        "wallMs": 0.9502000000002226,
+        "cpuMs": 0
+      },
+      "commit": {
+        "calls": 1,
+        "wallMs": 1.7400000000002365,
+        "cpuMs": 0
+      },
+      "rollback": {
+        "calls": 1,
+        "wallMs": 0.03719999999975698,
+        "cpuMs": 0
+      }
+    },
+    "observationsVolatile": 0,
+    "observationsDurable": 0,
+    "observationEvictions": 0,
+    "observationBytes": 0,
+    "observationMaxBytes": 4194304,
+    "observationOwners": 1,
+    "observationSlots": 0,
+    "observedAt": 1791926193286,
+    "updatedAt": 1791926193286,
+    "metricsAgeMs": 4,
+    "workerAlive": 1,
+    "queue": {
+      "accepted": 4,
+      "dispatched": 4,
+      "completed": 4,
+      "rejected": 0,
+      "timedOut": 0,
+      "cancelledReads": 0,
+      "cancelledObservations": 0,
+      "maxPending": 1,
+      "maxBytes": 282,
+      "waitMs": 0.0615999999995438,
+      "maxWaitMs": 0.024499999999989086,
+      "workMs": 8.632200000000466,
+      "logicalWorkMs": 8.632200000000466,
+      "registrationGroups": 0,
+      "groupedRegistrations": 0,
+      "maxRegistrationGroup": 0,
+      "pending": 0,
+      "active": 0,
+      "bytes": 0,
+      "maxPendingLimit": 128,
+      "maxQueueBytesLimit": 1048576,
+      "queueTimeoutMs": 2500
+    }
+  },
+  "backup": {
+    "integrity": "PASS",
+    "exactCopy": true,
+    "differentPath": true,
+    "originalRetained": true
+  },
+  "audit": {
+    "fixtureOnly": true,
+    "productionAccess": false,
+    "runtime": {
+      "node": "v24.21.0",
+      "platform": "win32",
+      "arch": "x64"
+    },
+    "identityRequests": 37,
+    "prisma": {
+      "sessionReads": 35,
+      "sessionTouches": 1,
+      "userReads": 31,
+      "policyReads": 31,
+      "unexpected": 0
+    },
+    "forwarded": 33,
+    "blockedRoutes": 2,
+    "deniedNetwork": 1,
+    "quotes": 2,
+    "histories": 0,
+    "droppedAcknowledgements": 1,
+    "droppedOrderId": "local-stage-order-lost-ack0000000000"
+  },
+  "child": {
+    "code": 0,
+    "signal": null,
+    "outputBytes": 0
+  },
+  "status": "PASS",
+  "completedAt": "2026-10-13T21:16:33.396Z"
+}

@@ -1,0 +1,15 @@
+✔ offline raw trade mapping equals actual REST adapter event/time/price/capacity; duplicate cannot refill (25.8556ms)
+✔ shared demand has one connection; receive cannot submit, duplicate cannot refresh; no demand shuts down (0.6116ms)
+✔ disconnect invalidates generation; bounded reconnect, stale callbacks and cancelled retries stay inert (0.2546ms)
+✔ reject aggregate/ticker/incorrect provider/symbol and invalid or stale native fields (0.6267ms)
+✔ entry/readers are bounded, out-of-order cannot replace current, release is idempotent (0.3688ms)
+✔ synchronous open failure returns releasable demand and retains a bounded retry (0.1925ms)
+✔ synchronous disconnect during open cannot retain the returned obsolete handle (0.212ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 123.0606

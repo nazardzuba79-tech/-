@@ -12,9 +12,19 @@ const plan = { schema: 1, id: 'controlled-first-stage', baseline: BASELINE, stag
 
 test('only a reviewed new plan launches A diagnostics and B model, not acceptance', () => {
   assert.deepEqual(selectReview({ event, repository, plan }), {
-    legacy: false, diagnostic: true, timeline: false, registration: false, model: true, matched: false,
+    legacy: false, diagnostic: true, timeline: false, registration: false, model: true, targeted: false, matched: false,
     reason: 'Explicit reviewed plan transition: controlled-first-stage',
   });
+});
+test('targeted HTTP requires a new PR512 plan and cannot repeat A or full B matrices', () => {
+  const next = { ...plan, id: 'targeted-http-local-review', stage: 'targeted-http' };
+  const result = selectReview({ event, repository, plan: next, previousPlan: plan });
+  assert.equal(result.targeted, true);
+  for (const key of ['legacy','diagnostic','timeline','registration','model','matched']) assert.equal(result[key], false);
+  assert.equal(selectReview({ event, repository, plan: next, previousPlan: next }).targeted, false);
+  const other = { ...event, pull_request: { ...event.pull_request, number: 497 } };
+  assert.equal(selectReview({ event: other, repository, plan: next }).legacy, true);
+  assert.equal(selectReview({ event: other, repository, plan: next }).targeted, false);
 });
 test('documentation/test follow-ups with unchanged plan cannot launch expensive jobs', () => {
   const result = selectReview({ event, repository, plan, previousPlan: { ...plan } });

@@ -1,0 +1,31 @@
+{
+  "baseHead": "be610e27dccf4d2c5c161de5c8b683611555808f",
+  "runtimeFiles": {
+    "services/stocks-global/market.mjs": "3d74c2d1ecff02f4f41af8bea2184ef00e54f2f6ed722c012deafcfb4770e460",
+    "services/stocks-global/server.mjs": "4ed40c6ab0a769af64a8d71a730abde13f8a4b3d591ee5056c3acbfbcfc4af12",
+    "services/stocks-global/history-cancellation.test.mjs": "60ba1acddf2973b9cd81cac0aa07e68c4c49c39105c6c3cf7694ab452bb18d06"
+  },
+  "before": {
+    "test": "actual HTTP last reader disconnect",
+    "expectedProviderStarts": 0,
+    "actualProviderStarts": 1,
+    "result": "FAIL",
+    "log": "history-cancellation-before.log"
+  },
+  "after": {
+    "tests": 31,
+    "pass": 31,
+    "fail": 0,
+    "log": "history-cancellation-expanded.log"
+  },
+  "preserved": {
+    "activeSlots": 2,
+    "queueSlots": 8,
+    "queueDeadlineMs": 2000,
+    "providerStartsPerHostMinute": 100,
+    "priceMath": true,
+    "candleValues": true,
+    "ttl": true
+  },
+  "scope": "No host, external provider call or financial request; injected local HTTP fixtures only"
+}

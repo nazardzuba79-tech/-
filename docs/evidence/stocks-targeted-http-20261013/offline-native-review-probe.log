@@ -1,0 +1,3 @@
+{"openThrow":{"error":"fixture-open-failed","attempts":1,"size":1,"readers":1,"nextAt":null},"afterRetryRelease":{"attempts":1,"size":1,"readers":1}}
+{"synchronousDisconnect":{"connectionRetained":true,"nextAt":1791925353623,"closed":0}}
+

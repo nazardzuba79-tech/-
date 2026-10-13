@@ -1,0 +1,30 @@
+✖ last HTTP history reader disconnect removes queued work before it consumes a provider request (106.4391ms)
+✔ disconnecting one HTTP reader preserves a shared queued flight for its live reader (66.2121ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 290.3468
+
+✖ failing tests:
+
+test at services\stocks-global\history-cancellation.test.mjs:52:1
+✖ last HTTP history reader disconnect removes queued work before it consumes a provider request (106.4391ms)
+  AssertionError [ERR_ASSERTION]: a disconnected last reader must not spend a provider start
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-owner-portfolio-20261013/services/stocks-global/history-cancellation.test.mjs:60:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+

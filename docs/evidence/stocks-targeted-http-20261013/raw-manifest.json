@@ -1,0 +1,21 @@
+{
+  "description": "Exact raw local fixture evidence. Runtime hashes in the history manifest refer to Windows working-file bytes at capture, not a claim about normalized Git blobs.",
+  "base": "be610e27dccf4d2c5c161de5c8b683611555808f",
+  "files": {
+    "history-cancellation-before.log": "3c89e7dde1dc7406fd4838bdd55266e5a292641a4fe666ca9d6a845bb103d928",
+    "history-cancellation-expanded.log": "d1ab0abc0bcd3b28544471e18d34f46862431c30e991044a4a8dccb9a68a2036",
+    "history-cancellation-manifest.json": "0ba6bf49572c11c248afed33704d37f7aa34676977dc7b9990cfe6cef7c7c6fe",
+    "offline-native-review-probe.log": "fbb16617a266f9b01ec37a575663e15b3cde6a4265524835ce0d054411e94b17",
+    "native-offline-proof-final.log": "1a1a15d8a9d6bc5d2afa498314bb2e19aca4240c05650a3e8c2e5869860fcac5",
+    "native-offline-proof-review2.log": "9397ef3caa5f505f47a91cc4a515f8c982ea47d2c88e9c52d59dbc08233347a2",
+    "targeted-full-runtime-local.log": "11a68c30c37cbadc2214a9a27bc1ad8cf8679e187629a8b3d1091384152021f0",
+    "targeted-full-runtime-local-result.json": "ae5267b9944ca868393a68a82b74d69daf337335d035ce6a40b2d8586b693406",
+    "local-stage-first-report.json": "c1dd62a6b19de7467da93462ce24fa471fe9978c979b42edb78f06eab9cd438f",
+    "local-stage-final-report.json": "f54c0abae3f41020aac79d14801936ac4ceb9ffd9084f33a409b85ad37401e37",
+    "local-stage-build-provenance.json": "ce235140f23595dd49b3222f5b979f00c9cdc05dbc9c6c38e2024b1968877bf2",
+    "local-stage-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-stage-backup-manifest.json": "4712d61e1013f244a6f4844ad34faff245e2219d7718ee3c6a031c03185e017c",
+    "targeted-harness-final-tests.log": "4638fd1de2cacea91eb0cc858efc405c7fb40788c38c1868bc02259ec1480911",
+    "targeted-harness-frozen-hashes.json": "361510f2f3a8716f201f517165ecdb32974662cf87fc308123d6622c10e7786c"
+  }
+}

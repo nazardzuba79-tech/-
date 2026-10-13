@@ -1,0 +1,33 @@
+✔ only a reviewed new plan launches A diagnostics and B model, not acceptance (1.5898ms)
+✔ targeted HTTP requires a new PR512 plan and cannot repeat A or full B matrices (0.3047ms)
+✔ documentation/test follow-ups with unchanged plan cannot launch expensive jobs (0.1689ms)
+✔ timeline follow-up cannot repeat completed phase controls or the running model (0.1429ms)
+✔ registration candidate launches only its targeted pairs and does not repeat other evidence (0.1814ms)
+✔ original criteria run only in explicit matched acceptance stage within PR512 (0.1241ms)
+✔ other PRs, branches and repos retain their existing workflow scheduling (0.1575ms)
+✔ reopen/label events do not relaunch existing measurements (0.1403ms)
+✔ malformed or silently repurposed plan fails closed (0.6143ms)
+✔ actual git transition distinguishes first plan from doc-only change; missing commit is fatal (800.1778ms)
+✔ targeted model evidence v2 launches only model and never repeats on unchanged plan (0.2762ms)
+✔ exact30 runs are three counterbalanced pairs per independent profile (1.8559ms)
+✔ resource validation fails on wrong disk device, missing swap, CPU and I/O instead of assuming limits (0.5707ms)
+✔ incomplete, duplicate or missing timings cannot become zero-errors PASS (0.5705ms)
+✔ control hunks target only their mechanism and reject missing or duplicated callsites (0.9445ms)
+✔ all runtime hashes are verified even for target-first and identity pairs (33.0257ms)
+✔ near1MiB identity is a valid retained whitespace-padded avatar below actual UTF8 byte cap (11.0203ms)
+✔ large /me uses actual HTTP and current resolver; authority does not authorize forged subjects (63.0848ms)
+✔ late HTTP success is a deadline error even if its timer callback has not run (0.2993ms)
+✔ SQL/queue snapshots require complete finite monotonic counters and actual worker provenance (0.7886ms)
+✔ dispatch settlement and response-contract gaps are never silently complete (0.3978ms)
+✔ native trace must reconcile all logical and transport outcomes, including errors (0.4736ms)
+✔ kernel evidence rejects absent counters and accepts real dotted CPU extension names (0.3966ms)
+✔ failed preflight cleanup prevents any measured run even if the HTTP preflight passed (0.1401ms)
+✔ Wallet capacity proof requires both actual used counters and their source event identities (0.2416ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 896.7534

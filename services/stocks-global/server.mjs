@@ -139,7 +139,17 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
         finally{clearTimeout(timer);res.off('close',onClose);}return;
       }
       if(req.method==='DELETE'&&u.pathname===API+'lease'){check(req.headers['x-stocks-token']===ctx.token,'TOKEN_REQUIRED');if(u.searchParams.get('id')===ctx.selected&&(req.headers['x-stocks-view']??'legacy-http')===ctx.demandView)release(ctx);send(res,200,{released:true});return;}
-      if(req.method==='GET'&&u.pathname===API+'history'){sourceAllowed(u.searchParams.get('id'));const page=await hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'));let body=historyWire.get(page);if(!body){const started=performance.now();body=Buffer.from(JSON.stringify(page));historyWire.set(page,body);hub.metrics.historySerializations++;hub.metrics.historySerializeMs+=performance.now()-started;}res.writeHead(200,{'Content-Type':'application/json','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(body);return;}
+      if(req.method==='GET'&&u.pathname===API+'history'){
+        sourceAllowed(u.searchParams.get('id'));
+        const abort=new AbortController(),onClose=()=>{if(!res.writableFinished)abort.abort();};
+        res.once('close',onClose);if(res.destroyed)abort.abort();
+        try{
+          const page=await hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'),{signal:abort.signal});
+          if(abort.signal.aborted||res.destroyed)return;
+          let body=historyWire.get(page);if(!body){const started=performance.now();body=Buffer.from(JSON.stringify(page));historyWire.set(page,body);hub.metrics.historySerializations++;hub.metrics.historySerializeMs+=performance.now()-started;}
+          res.writeHead(200,{'Content-Type':'application/json','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(body);
+        }finally{res.off('close',onClose);}return;
+      }
       if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();send(res,200,{catalogue});return;}
       check(req.method==='POST','METHOD_NOT_ALLOWED');
       if(accounts && ownerOnlyMode && [API+'orders',API+'cancel',API+'balances',API+'refresh'].includes(u.pathname)) check(ctx.ownerMayTrade === true,'AUTH_REQUIRED');

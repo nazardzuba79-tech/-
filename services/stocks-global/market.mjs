@@ -59,14 +59,22 @@ export class MarketHub {
     try{const fx=await this.usdcRate();if(q.prices.USDT){q.prices.USDC=convertPrices(q.prices.USDT.sell,q.prices.USDT.buy,fx.rate);q.fx.USDC=q.nativeCurrency==='RUB'?composeRubUsdcFx(q.fx.USDT,fx):fx;}}catch(e){q.fxError=e.message;}
     return q;
   }
-  async historySlot(fn){
+  async historySlot(fn,{signal}={}){
+    check(!signal?.aborted,'SOURCE_CANCELLED');
     let deadline=null;
     if(this.historyActive>=2){
       check(this.historyQueue.length<8,'SOURCE_BUSY');
       deadline=this.monotonicNow()+2000;
-      await new Promise((resolve,reject)=>{const entry={resolve,reject,deadline};entry.timer=setTimeout(()=>{this.historyQueue=this.historyQueue.filter(x=>x!==entry);reject(new SimError('SOURCE_BUSY'));},2000);this.historyQueue.push(entry);});
+      await new Promise((resolve,reject)=>{
+        const entry={deadline},finish=fn=>{clearTimeout(entry.timer);signal?.removeEventListener('abort',abort);fn();};
+        entry.resolve=()=>finish(resolve);entry.reject=error=>finish(()=>reject(error));
+        const remove=error=>{this.historyQueue=this.historyQueue.filter(x=>x!==entry);entry.reject(error);};
+        const abort=()=>remove(new SimError('SOURCE_CANCELLED'));
+        entry.timer=setTimeout(()=>remove(new SimError('SOURCE_BUSY')),2000);
+        this.historyQueue.push(entry);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
+      });
     }else this.historyActive++;
-    try{if(deadline!==null)check(this.monotonicNow()<deadline,'SOURCE_BUSY');return await fn();}
+    try{check(!signal?.aborted,'SOURCE_CANCELLED');if(deadline!==null)check(this.monotonicNow()<deadline,'SOURCE_BUSY');return await fn();}
     finally{
       // Timer callbacks can be late under CPU pressure. Expired work must not
       // acquire a slot or consume a provider request when that timer is delayed.
@@ -78,6 +86,26 @@ export class MarketHub {
       }
       if(!next)this.historyActive--;
     }
+  }
+  readHistoryFlight(flight,signal){
+    check(!signal?.aborted,'SOURCE_CANCELLED');flight.readers++;
+    return new Promise((resolve,reject)=>{
+      let settled=false;
+      const finish=(error,value)=>{
+        if(settled)return;settled=true;signal?.removeEventListener('abort',abort);flight.readers--;
+        // A cursor follower is a reader too. Only the last reader may cancel
+        // work that has not started a provider request; active reads may cache.
+        if(!flight.readers&&!flight.started&&!flight.finished){
+          if(this.historyFlights.get(flight.key)===flight)this.historyFlights.delete(flight.key);
+          flight.controller.abort();
+        }
+        if(error)reject(error);else resolve(value);
+      };
+      const abort=()=>finish(new SimError('SOURCE_CANCELLED'));
+      signal?.addEventListener('abort',abort,{once:true});
+      flight.pending.then(value=>finish(null,value),error=>finish(error));
+      if(signal?.aborted)abort();
+    });
   }
   dropHistory(entry){
     entry.store.delete(entry.key);this.historyRetained.delete(entry.retainedKey);this.metrics.historyCacheBytes-=entry.overhead;
@@ -113,20 +141,28 @@ export class MarketHub {
     this.touchHistory(window);this.retainHistory(this.historyCache,key,{value,candles,until:window.receivedAt+300000,derived:family});this.metrics.historyRangeHits++;
     return value;
   }
-  async history(id,interval='15m',before=null){
+  async history(id,interval='15m',before=null,{signal}={}){
+    check(!signal?.aborted,'SOURCE_CANCELLED');
     const i=instrument(id);check(i&&i.timeframes.includes(interval),'UNSUPPORTED_TIMEFRAME');const end=before?Number(before):null;check(end===null||Number.isSafeInteger(end)&&end>0&&end<=this.now(),'INVALID_RANGE');
     const key=JSON.stringify([id,interval,end]),cached=this.historyCache.get(key)||(!end&&this.historyRanges.get(JSON.stringify([id,interval])));
     if(cached&&cached.until>this.now()){this.metrics.historyCacheHits++;cached.store.delete(cached.key);cached.store.set(cached.key,cached);this.touchHistory(cached);return cached.value;}
-    if(this.historyFlights.has(key)){this.metrics.historyCoalesced++;return this.historyFlights.get(key);}
+    if(this.historyFlights.has(key)){this.metrics.historyCoalesced++;return this.readHistoryFlight(this.historyFlights.get(key),signal);}
     // Capture only an earlier flight. Looking this up after queue admission
     // could wait for a later latest request queued behind this cursor itself.
     const latest=end&&this.historyFlights.get(JSON.stringify([id,interval,null]));
+    const flight={key,controller:new AbortController(),readers:0,started:false,finished:false,pending:null};
+    const latestRead=latest&&this.readHistoryFlight(latest,flight.controller.signal);
+    // A queued follower may not await this dependency until later. Observe its
+    // rejection immediately, without hiding the fallback/error at execution.
+    if(latestRead)void latestRead.catch(()=>{});
     const pending=this.historySlot(async()=>{
       // A concurrent requested latest read may already be obtaining the needed
       // range. Wait for it once, then use the ordinary bounded exact fallback.
-      if(latest){this.metrics.historyCoalesced++;await latest.catch(()=>{});}
+      if(latestRead){this.metrics.historyCoalesced++;await latestRead.catch(()=>{});}
+      check(!flight.controller.signal.aborted,'SOURCE_CANCELLED');
       const reused=this.reuseHistory(i,interval,end,key);if(reused)return reused;
       let rows;const upper=this.now(),limit=!end&&i.provider!=='moex'?HISTORY_WINDOW_ROWS:HISTORY_PAGE_ROWS;
+      flight.started=true;
       // Cache only the validated, normalized page. The raw provider payload is
       // not retained a second time, and all users share one normalization.
       if(i.provider==='bybit'){const period={ '1m':'1','5m':'5','15m':'15','30m':'30','1h':'60','4h':'240','1D':'D' }[interval];const j=await this.request(`https://api.bybit.com/v5/market/kline?category=spot&symbol=${i.sourceSymbol}&interval=${period}&limit=${limit}${end?'&end='+end:''}`);check(j.retCode===0&&j.result?.symbol===i.sourceSymbol,'INVALID_CANDLES');rows=j.result.list;}
@@ -153,7 +189,7 @@ export class MarketHub {
         this.retainHistory(this.historyRanges,family,{value,candles:Object.freeze(normalized),extraRefs:candles.length,receivedAt,upper,until:receivedAt+10000});
       }else this.retainHistory(this.historyCache,key,{value,candles,until:receivedAt+(i.provider==='moex'?10000:end?300000:10000)});
       return value;
-    }).finally(()=>this.historyFlights.delete(key));
-    this.historyFlights.set(key,pending);return pending;
+    },{signal:flight.controller.signal}).finally(()=>{flight.finished=true;flight.controller.abort();if(this.historyFlights.get(key)===flight)this.historyFlights.delete(key);});
+    flight.pending=pending;this.historyFlights.set(key,flight);return this.readHistoryFlight(flight,signal);
   }
 }
