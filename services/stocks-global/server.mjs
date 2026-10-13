@@ -14,8 +14,9 @@ import { CATALOG, instrument } from './catalog.mjs';
 import { check, SimError } from './engine.mjs';
 const ROOT=resolve(fileURLToPath(new URL('../../',import.meta.url))),API='/__stocks_global/';
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.ico':'image/x-icon'};
-export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountDiagnostics=false,accountWorkerOptions={}}={}){
+export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountDiagnostics=false,accountWorkerOptions={},tradeOwnerSubject=undefined}={}){
   check(Boolean(authenticate)===Boolean(accountsPath),'AUTH_CONFIG_INVALID');
+  check(tradeOwnerSubject === undefined || tradeOwnerSubject === null || (typeof tradeOwnerSubject === 'string' && tradeOwnerSubject.length > 0 && tradeOwnerSubject.length <= 256),'AUTH_CONFIG_INVALID');
   check(accountsPath||dataPath,'LOCAL_LEDGER_PATH_REQUIRED');
   const accounts=accountsPath?await openAccountWorker(accountsPath,{...accountWorkerOptions,now,diagnostics:accountDiagnostics}):null;
   const legacy=accounts?null:await openStore(dataPath,{now});
@@ -41,7 +42,10 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
       const pending=accounts.forPrincipal(principal).then(store=>{const ctx=context(store,id);contexts.set(id,ctx);return ctx;}).finally(()=>contextFlights.delete(id));
       contextFlights.set(id,pending);
     }
-    const ctx=contexts.get(id)??await contextFlights.get(id);ctx.accessed=now();return ctx;
+    const ctx=contexts.get(id)??await contextFlights.get(id);ctx.accessed=now();
+    // Every request rechecks the trusted identity. Client-provided roles never authorize trade.
+    ctx.ownerMayTrade = tradeOwnerSubject !== null && principal.subject === tradeOwnerSubject;
+    return ctx;
   };
   const quote=id=>{
     sourceAllowed(id);
@@ -84,11 +88,13 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
       }
       if(req.method==='GET'&&u.pathname===API+'history'){sourceAllowed(u.searchParams.get('id'));const page=await hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'));let body=historyWire.get(page);if(!body){const started=performance.now();body=Buffer.from(JSON.stringify(page));historyWire.set(page,body);hub.metrics.historySerializations++;hub.metrics.historySerializeMs+=performance.now()-started;}res.writeHead(200,{'Content-Type':'application/json','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(body);return;}
       if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();send(res,200,{catalogue});return;}
-      check(req.method==='POST','METHOD_NOT_ALLOWED');const supplied=req.headers['x-stocks-token'];check(typeof supplied==='string'&&Buffer.byteLength(supplied)===Buffer.byteLength(ctx.token)&&timingSafeEqual(Buffer.from(supplied),Buffer.from(ctx.token)),'TOKEN_REQUIRED');check(req.headers['content-type']?.startsWith('application/json'),'JSON_REQUIRED');
+      check(req.method==='POST','METHOD_NOT_ALLOWED');
+      if(accounts && tradeOwnerSubject !== undefined && [API+'orders',API+'cancel',API+'balances'].includes(u.pathname)) check(ctx.ownerMayTrade === true,'AUTH_REQUIRED');
+      const supplied=req.headers['x-stocks-token'];check(typeof supplied==='string'&&Buffer.byteLength(supplied)===Buffer.byteLength(ctx.token)&&timingSafeEqual(Buffer.from(supplied),Buffer.from(ctx.token)),'TOKEN_REQUIRED');check(req.headers['content-type']?.startsWith('application/json'),'JSON_REQUIRED');
       const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;check(size<=8192,'BODY_TOO_LARGE');chunks.push(chunk);}let input;try{input=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new SimError('INVALID_JSON');}
       check(input&&typeof input==='object'&&!Array.isArray(input),'INVALID_JSON');
       check(!['userId','accountId','owner','subject','issuer','account','user'].some(k=>k in input),'ACCOUNT_SELECTOR_FORBIDDEN');
-      let committed,result;if(u.pathname===API+'orders'){sourceAllowed(input.instrumentId);committed=await ctx.store.execute(accounts?'submitObserved':'submit',accounts?{order:input,sourceBlocked:!ctx.observed.has(input.instrumentId)||!!ctx.errors[input.instrumentId]}:input);result=committed.result;}
+      let committed,result;if(u.pathname===API+'orders'){if(accounts && tradeOwnerSubject !== undefined)check(input.currency==='USDT','INVALID_ORDER');sourceAllowed(input.instrumentId);committed=await ctx.store.execute(accounts?'submitObserved':'submit',accounts?{order:input,sourceBlocked:!ctx.observed.has(input.instrumentId)||!!ctx.errors[input.instrumentId]}:input);result=committed.result;}
       else if(u.pathname===API+'cancel'){committed=await ctx.store.execute('cancel',{id:input.id});result=committed.result;}
       else if(u.pathname===API+'balances')committed=await ctx.store.execute('balances',input);
       else if(u.pathname===API+'refresh'){sourceAllowed(input.id);ctx.selected=input.id;ctx.lease=now();committed={snapshot:await refreshContext(ctx)};}
@@ -121,7 +127,7 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const accountsPath=process.env.STOCKS_ACCOUNTS_DATA;check(accountsPath||process.env.STOCKS_GLOBAL_DATA?.endsWith('.json'),'LOCAL_LEDGER_PATH_REQUIRED');
   check(accountsPath||process.env.STOCKS_LEGACY_SINGLE_OWNER_REVIEW==='true','AUTH_CONFIG_INVALID');
   const authenticate=accountsPath?identityResolver({endpoint:process.env.STOCKS_IDENTITY_ENDPOINT,issuer:process.env.STOCKS_IDENTITY_ISSUER}):undefined;
-  const app=await createServer({port:Number(process.env.STOCKS_GLOBAL_PORT||4437),dataPath:process.env.STOCKS_GLOBAL_DATA?resolve(process.env.STOCKS_GLOBAL_DATA):undefined,accountsPath:accountsPath?resolve(accountsPath):undefined,authenticate,dist:process.env.STOCKS_GLOBAL_DIST?resolve(process.env.STOCKS_GLOBAL_DIST):undefined});
+  const app=await createServer({port:Number(process.env.STOCKS_GLOBAL_PORT||4437),dataPath:process.env.STOCKS_GLOBAL_DATA?resolve(process.env.STOCKS_GLOBAL_DATA):undefined,accountsPath:accountsPath?resolve(accountsPath):undefined,authenticate,tradeOwnerSubject:accountsPath?(process.env.STOCKS_TRADE_OWNER_SUBJECT || null):undefined,dist:process.env.STOCKS_GLOBAL_DIST?resolve(process.env.STOCKS_GLOBAL_DIST):undefined});
   console.log('Stocks local preview http://127.0.0.1:'+app.port+'/stocks/BYBIT%3AAAPLXUSDT');
   let stopping=false;const stop=async()=>{if(stopping)return;stopping=true;await app.close();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);
 }

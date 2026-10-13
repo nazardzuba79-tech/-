@@ -47,6 +47,8 @@ export interface LedgerRow {
    * rather than let the row read as a worthless holding.
    */
   priced: boolean;
+  /** Display-only Stocks holding; never crypto equity, available balance or collateral. */
+  stockPosition?: { instrumentId: string; entryUSDT: number | null; valueUSDT: number | null; markAt: number | null };
 }
 
 /**

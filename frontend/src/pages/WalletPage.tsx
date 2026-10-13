@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Nav } from '../components/Nav';
 import { useLanguage } from '../lib/i18n';
@@ -14,6 +14,7 @@ import { WalletOverview } from './wallet-v3/WalletOverview';
 import { FundingView } from './wallet-v3/FundingView';
 import { PerformancePeriod, useWalletData } from './wallet-v3/useWalletData';
 import { useWalletTheme } from './wallet-v3/useWalletTheme';
+import { useStockPortfolio } from './wallet-v3/useStockPortfolio';
 import './wallet-v3/wallet.css';
 
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
@@ -82,6 +83,7 @@ export function WalletPage() {
   const [period, setPeriod] = useState<PerformancePeriod>('7d');
   const { theme, toggleTheme } = useWalletTheme();
   const historyRef = useRef<HTMLDivElement>(null);
+  const [stockRefreshKey, setStockRefreshKey] = useState(0);
 
   const {
     overview,
@@ -95,6 +97,10 @@ export function WalletPage() {
     setCollateral,
     refresh,
   } = useWalletData();
+
+  // This is presentation only. Server-confirmed tier never authorizes a Stocks order.
+  const stockRows = useStockPortfolio(account?.mode === 'CROSS' && account?.clientTier === 'SUPREME_VIP', stockRefreshKey);
+  const portfolioRows = useMemo(() => [...rows, ...stockRows], [rows, stockRows]);
 
   // Deep links from elsewhere in the app (Futures' transfer action, the
   // header's Пополнить) keep working across a query-string-only navigation,
@@ -134,13 +140,13 @@ export function WalletPage() {
 
           <div className="wallet-content min-w-0">
             <div className="flex justify-end mb-2">
-              <button type="button" className="wallet-btn wallet-btn-secondary" onClick={refresh}>{t('wallet.refreshAccount')}</button>
+              <button type="button" className="wallet-btn wallet-btn-secondary" onClick={() => { refresh(); setStockRefreshKey(k => k + 1); }}>{t('wallet.refreshAccount')}</button>
             </div>
             {section === 'overview' && (
               <WalletOverview
                 account={account}
                 overview={overview}
-                rows={rows}
+                rows={portfolioRows}
                 performance={performance}
                 performanceState={performanceState}
                 btcEquivalent={btcEquivalent}
@@ -189,7 +195,7 @@ export function WalletPage() {
 
                 <div className="wallet-holdings-grid mt-4">
                   <AssetLedger
-                    rows={rows}
+                    rows={portfolioRows}
                     hidden={hidden}
                     unavailable={unavailable}
                     loading={loading}

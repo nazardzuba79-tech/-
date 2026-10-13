@@ -57,6 +57,10 @@ US tokens follow their source's instrument trading status, not an invented NASDA
 - Test capital changes append an audit record, preserve transactions and cannot consume reserved cash. There is no reset endpoint. The preview ledger is not a tamper-proof production accounting system.
 - JSON writes use fsync, rename and an exclusive writer lock. Limits: 10,000 orders, 50,000 fills, 1,000 capital adjustments. Reject limits explicitly; no silent history pruning.
 
+## Owner-only USDT review mode
+
+For authenticated CLI startup, trading mutations `orders`, `cancel`, and `balances` now fail closed unless `STOCKS_TRADE_OWNER_SUBJECT` equals the authenticated user ID returned by the trusted `/api/v1/me` endpoint. This is not an email, browser flag, or editable role. New owner-only order submissions accept **USDT** only. Historical USDC data are preserved without reset or migration. To select only USDT in the owner review UI, build with `VITE_STOCKS_OWNER_USDT_ONLY=true`. Read-only wallet presentation keeps Stocks separate from real crypto balances, equity and collateral. Review remains on loopback; no production gateway, authorization secret or deployment is added.
+
 ## Requests and isolation
 
 Only allowlisted HTTPS **GET** requests to Bybit, Binance, MOEX, CBR and Kraken are implemented. Redirects are rejected; response cap 8 MiB; timeout 6 seconds; budget 100 requests/minute/provider; coalesced cache capped at 80 entries. Binance metadata requests explicitly name only the thirteen configured symbols. The provider budget counts requests, not Binance weights; current adapters remain below the observed 6,000-weight/minute limit.
