@@ -1,4 +1,5 @@
 import { browserFetch as fetch } from './browserActivity';
+import { createReadCoalescer } from './readCoalescer';
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
 import { fetchNrxPublic, isEdgeMarketPair } from './nrxMarket';
 import type { CardApplicationSnapshot, CardProduct } from '../pages/crypto-card-final/cardApplicationState';
@@ -547,6 +548,21 @@ async function vtaRequest<T>(path: string, options: RequestInit = {}): Promise<T
 
 // Like request(), but for multipart/form-data (file uploads) — the browser
 // sets the Content-Type boundary itself, so it must NOT be set manually.
+export interface SpotOrderRecord {
+  id: string;
+  pair: string;
+  side: 'BUY' | 'SELL';
+  type: string;
+  price: string | null;
+  triggerPrice: string | null;
+  ocoGroupId: string | null;
+  originalQuantity: string;
+  remainingQuantity: string;
+  status: string;
+  createdAt: string;
+}
+const readSpotOrders = createReadCoalescer<SpotOrderRecord[]>(1500);
+
 async function requestForm<T>(path: string, formData: FormData): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -1159,22 +1175,18 @@ export const api = {
   disable2FA: (code: string) =>
     request<{ status: string }>('/account/2fa/disable', { method: 'POST', body: JSON.stringify({ code }) }),
 
-  getMyOrders: (status?: string) =>
-    request<
-      {
-        id: string;
-        pair: string;
-        side: 'BUY' | 'SELL';
-        type: string;
-        price: string | null;
-        triggerPrice: string | null;
-        ocoGroupId: string | null;
-        originalQuantity: string;
-        remainingQuantity: string;
-        status: string;
-        createdAt: string;
-      }[]
-    >(`/orders/me${status ? `?status=${status}` : ''}`),
+  /**
+   * The chart and the open-orders panel both poll this every 4 s; identical
+   * reads started within 1.5 s share one request (see lib/readCoalescer).
+   * `fresh` is for reads that must see the server's current state — after a
+   * cancel, a placement or a trigger drag — and never shares.
+   */
+  getMyOrders: (status?: string, options?: { fresh?: boolean }) =>
+    readSpotOrders(
+      `/orders/me${status ? `?status=${status}` : ''}`,
+      () => request<SpotOrderRecord[]>(`/orders/me${status ? `?status=${status}` : ''}`),
+      options?.fresh,
+    ),
 
   getMyTrades: (pair?: string) =>
     request<
