@@ -132,7 +132,7 @@ async function run() {
       const user = req.headers.authorization === 'Bearer ' + TOKENS.alice ? 'alice'
         : req.headers.authorization === 'Bearer ' + TOKENS.bob ? 'bob' : null;
       if (!user) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-      const route = req.path;
+      const route = req.path.slice(1);
       if (req.method === 'POST') {
         audit.walletWrites.push(route);
         if (route === 'v1/wallet/portfolio-snapshot') return res.json({ recorded: false });
@@ -190,10 +190,17 @@ async function run() {
       page.on('pageerror', e => pageErrors.push(e.message));
       const stockPage = origin + '/stocks/' + encodeURIComponent(ID);
       await page.goto(stockPage);
+      if (width === 390) await page.locator('.vxg-mobile-tabs button').filter({ hasText: 'Торговля' }).click();
       await page.locator('.vxg-ticket form input[aria-label="Количество"]').waitFor({ timeout: 15000 });
       ok(await page.locator('.vxg-ticket .vxg-currency button').count() === 1, width + ': USDT-only trade form');
       ok((await page.locator('.vxg-ticket').innerText()).includes('USDT'), width + ': form displays USDT');
       if (width === 1440) {
+        await page.goto(origin + '/wallet');
+        await page.locator('.wallet-overview').waitFor({ timeout: 15000 });
+        await page.waitForFunction(() => !!document.querySelector('.wallet-overview-total')?.textContent?.match(/205/));
+        const balanceBefore = await page.locator('.wallet-overview-total').innerText();
+        await page.goto(stockPage);
+        await page.locator('.vxg-ticket form input[aria-label="Количество"]').waitFor();
         await page.locator('.vxg-ticket form input[aria-label="Количество"]').fill('0.4');
         const buy = page.locator('.vxg-ticket form button.vxg-submit');
         await buy.waitFor({ state: 'visible' });
@@ -215,7 +222,7 @@ async function run() {
         ok((await stockRow.innerText()).includes('0,4') || (await stockRow.innerText()).includes('0.4'), 'purchased AAPLX appears in same Wallet asset list');
         ok(await page.locator('.wallet-asset-tab-row[data-symbol="BTC"]').count() > 0, 'BTC remains alongside Stocks holdings');
         const heading = await page.locator('.wallet-overview-total').innerText();
-        ok(heading.includes('205') && !heading.includes('205040'), 'real crypto wallet headline never adds paper Stocks value');
+        ok(heading === balanceBefore, 'real crypto wallet headline unchanged after Stocks buy');
 
         await page.reload();
         await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
