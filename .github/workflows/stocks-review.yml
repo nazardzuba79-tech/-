@@ -15,6 +15,7 @@ jobs:
     outputs:
       legacy: ${{ steps.plan.outputs.legacy }}
       diagnostic: ${{ steps.plan.outputs.diagnostic }}
+      timeline: ${{ steps.plan.outputs.timeline }}
       model: ${{ steps.plan.outputs.model }}
       matched: ${{ steps.plan.outputs.matched }}
     steps:
@@ -72,6 +73,58 @@ jobs:
         with:
           name: stocks-pr512-phase-diagnostic-${{ github.event.pull_request.head.sha }}
           path: .ci-output/stocks-phase512
+          if-no-files-found: error
+  stocks-pr512-pristine-timeline:
+    needs: stocks-review-selection
+    if: needs.stocks-review-selection.outputs.timeline == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Source guards and phase instrumentation regression
+        run: node --test services/stocks/phase-trace-512/*.test.mjs services/stocks/summarize-launch.test.mjs services/stocks/review-evidence.test.mjs
+      - name: Verify disposable disk and separate load CPU
+        run: |
+          mkdir -p "$RUNNER_TEMP/timeline512-disk" .ci-output/stocks-timeline512
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+          majmin=$(findmnt -n -o MAJ:MIN -T "$RUNNER_TEMP/timeline512-disk" | tr -d '[:space:]')
+          device=$(lsblk -nrpo NAME,MAJ:MIN | awk -v mm="$majmin" '$2==mm {print $1; exit}')
+          test -n "$device" && test -b "$device"
+          parent=$(lsblk -ndo PKNAME "$device")
+          if [ -n "$parent" ]; then device="/dev/$parent"; fi
+          printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
+          { git rev-parse HEAD; nproc; free -m; findmnt -T "$RUNNER_TEMP/timeline512-disk"; lsblk; } > "$RUNNER_TEMP/timeline512-host.txt"
+      - name: Three pristine-service timelines at unchanged original limits
+        env:
+          STOCKS_TIMELINE_512_APPROVED: 'true'
+          STOCKS_TIMELINE_512_OUT: .ci-output/stocks-timeline512
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/timeline512-disk
+        run: node services/stocks/phase-trace-512/timeline-run.mjs
+      - name: Preserve host evidence after runner preparation
+        if: always()
+        run: |
+          mkdir -p .ci-output/stocks-timeline512
+          if [ -f "$RUNNER_TEMP/timeline512-host.txt" ]; then
+            cp "$RUNNER_TEMP/timeline512-host.txt" .ci-output/stocks-timeline512/host.txt
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-pr512-pristine-timeline-${{ github.event.pull_request.head.sha }}
+          path: .ci-output/stocks-timeline512
           if-no-files-found: error
   stocks-pr512-cx23-model:
     needs: stocks-review-selection

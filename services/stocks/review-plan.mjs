@@ -8,7 +8,7 @@ export const PLAN_PATH = 'services/stocks/review-plan-512.json';
 export const BASELINE = '06a0d1a748cd943e45df9aa60d25e4ca5ec1b9cb';
 const BRANCH = 'dot/stocks-owner-usdt-portfolio-20261013';
 const REPOSITORY = 'nazardzuba79-tech/-';
-const idle = reason => ({ legacy: false, diagnostic: false, model: false, matched: false, reason });
+const idle = reason => ({ legacy: false, diagnostic: false, timeline: false, model: false, matched: false, reason });
 
 export function selectReview({ event, repository, plan, previousPlan }) {
   const pr = event.pull_request;
@@ -19,7 +19,7 @@ export function selectReview({ event, repository, plan, previousPlan }) {
   if (!plan || Object.keys(plan).sort().join(',') !== 'baseline,id,schema,stage'
       || plan.schema !== 1 || plan.baseline !== BASELINE
       || !/^[a-z0-9-]{1,80}$/.test(plan.id ?? '')
-      || !['diagnostic', 'model', 'diagnostic-and-model', 'matched-acceptance', 'report-only'].includes(plan.stage)) {
+      || !['diagnostic', 'timeline', 'model', 'diagnostic-and-model', 'matched-acceptance', 'report-only'].includes(plan.stage)) {
     throw Error('Invalid PR512 reviewed performance plan; no heavy jobs may start');
   }
   if (event.action !== 'synchronize' || !/^[0-9a-f]{40}$/.test(event.before ?? '')) {
@@ -31,6 +31,7 @@ export function selectReview({ event, repository, plan, previousPlan }) {
   }
   const result = idle('Explicit reviewed plan transition: ' + plan.id);
   result.diagnostic = ['diagnostic', 'diagnostic-and-model'].includes(plan.stage);
+  result.timeline = plan.stage === 'timeline';
   result.model = ['model', 'diagnostic-and-model'].includes(plan.stage);
   result.matched = plan.stage === 'matched-acceptance';
   // Original scripts, baselines, limits and pass criteria remain unmodified.
@@ -60,5 +61,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const result = selectFromRepository({ event, repository: process.env.GITHUB_REPOSITORY });
   console.log(JSON.stringify({ ...result, capacityAcceptance: 'NOT_EVALUATED_BY_SCHEDULER' }, null, 2));
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT,
-    ['legacy', 'diagnostic', 'model', 'matched'].map(k => `${k}=${result[k]}\n`).join(''));
+    ['legacy', 'diagnostic', 'timeline', 'model', 'matched'].map(k => `${k}=${result[k]}\n`).join(''));
 }

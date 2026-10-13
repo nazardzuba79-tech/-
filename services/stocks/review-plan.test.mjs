@@ -12,15 +12,22 @@ const plan = { schema: 1, id: 'controlled-first-stage', baseline: BASELINE, stag
 
 test('only a reviewed new plan launches A diagnostics and B model, not acceptance', () => {
   assert.deepEqual(selectReview({ event, repository, plan }), {
-    legacy: false, diagnostic: true, model: true, matched: false,
+    legacy: false, diagnostic: true, timeline: false, model: true, matched: false,
     reason: 'Explicit reviewed plan transition: controlled-first-stage',
   });
 });
 test('documentation/test follow-ups with unchanged plan cannot launch expensive jobs', () => {
   const result = selectReview({ event, repository, plan, previousPlan: { ...plan } });
-  for (const key of ['legacy','diagnostic','model','matched']) assert.equal(result[key], false);
+  for (const key of ['legacy','diagnostic','timeline','model','matched']) assert.equal(result[key], false);
   assert.equal(selectReview({ event, repository, plan,
     previousPlan: { stage: plan.stage, baseline: plan.baseline, id: plan.id, schema: plan.schema } }).legacy, false);
+});
+test('timeline follow-up cannot repeat completed phase controls or the running model', () => {
+  const next = { ...plan, id: 'targeted-pristine-timeline', stage: 'timeline' };
+  const result = selectReview({ event, repository, plan: next, previousPlan: plan });
+  assert.equal(result.timeline, true);
+  for (const key of ['legacy','diagnostic','model','matched']) assert.equal(result[key], false);
+  assert.equal(selectReview({ event, repository, plan: next, previousPlan: next }).timeline, false);
 });
 test('original criteria run only in explicit matched acceptance stage within PR512', () => {
   const result = selectReview({ event, repository, plan: { ...plan, stage: 'matched-acceptance' } });
@@ -38,7 +45,7 @@ test('other PRs, branches and repos retain their existing workflow scheduling', 
 test('reopen/label events do not relaunch existing measurements', () => {
   for (const action of ['opened','reopened','labeled','edited']) {
     const result = selectReview({ event: { ...event, action }, repository, plan });
-    assert.equal(result.diagnostic || result.model || result.legacy || result.matched, false);
+    assert.equal(result.diagnostic || result.timeline || result.model || result.legacy || result.matched, false);
   }
 });
 test('malformed or silently repurposed plan fails closed', () => {

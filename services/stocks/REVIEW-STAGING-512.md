@@ -17,6 +17,8 @@ is not the scheduling mechanism.
   phase diagnostic, under the original resource limits.
 - `model`: the separate disposable 2-vCPU / 4-GiB nominal CX23 model.
 - `diagnostic-and-model`: both independent experiments above.
+- `timeline`: three unchanged-service runs with client-only per-attempt timing;
+  no repeat of the nine phase controls or the independent B model.
 - `matched-acceptance`: the unchanged historical acceptance jobs are selected;
   any new candidate comparison must also identify and preserve its exact
   baseline, matching workloads and complete repeats.
