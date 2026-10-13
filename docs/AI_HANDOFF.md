@@ -6329,3 +6329,11 @@ Read-only Hetzner hardware/passive aggregate checks confirmed 2 vCPU / 3.730 GiB
 - Targeted-v2 pre-push combined regression249/249PASS (165safety+25diagnostic/source/selector+43evidence+16model); no runtime/frontend diff from06a. Live account/hub/transport counters prove only the finite3.4s post-release interval. Forced killed-client journal retains unknown dispatch rather than inventing settlement. Measurement overhead/proof reads are labelled; no fresh matched crypto +5 certification.
 
 - Final pre-push fresh-fetch found external main advancec1a9a8d9b1e13b5b22be04ff75fda370db8e2c15 (Spot-only PR513). PR497 remains2f6fa3f7. Read-only merge-tree HEAD/main had no conflicts; no merge performed. NewmainSpotchanges are not overwritten and remain outside this stacked PR512 validation.
+
+### Stocks PR #512 — response-only Wallet FX scope (2026-10-13)
+
+- Codex; source SHA is the commit containing this entry, recorded in PR review metadata. Owner directly approved expanded Stocks/PR515/main integration scope; release remains conditional on all gates.
+- Only the USDT Wallet projection skips unused USDC FX. State, engine observations, legacy USDC orders/holdings and event capacity retain dual-currency behavior. Native/full quote continuations share the original two instrument slots and 80-entry cache; enrichment does not extend the native two-second cache age. Shutdown drains both continuations.
+- Changed market.mjs, server.mjs, wallet-fx-scope.test.mjs and explicit Stocks CI test list. Preserve Professional B, financial arithmetic, FULL durability, provider100/min, existing quote/history TTL, Alice/Bob isolation and all other modules.
+- Focused8/8 PASS, including legacy0.6USDC+0.4USDT sharedcapacity, restart/replay, failedFX TTL recovery and aborted-reader shutdown. Exact49cdf blanket skip and one-factor old shutdown negative controls fail meaningfully. Earlier171-test suite passed before shutdown follow-up; final combined suite/CI is still pending.
+- Fixture Wallet native1/FX0 then full state same native/FX1. This is not a mixed-reader capacity fix. Outside-repo ticker batching remains rejected as a capacity solution; original strict and crypto coexistence failures are unchanged. No production changes or sampler launch.

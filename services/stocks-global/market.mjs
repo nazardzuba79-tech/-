@@ -41,7 +41,8 @@ export class MarketHub {
     const j=await this.request('https://api.kraken.com/0/public/Trades?pair=USDTUSD&count=1',15000);check(j.error?.length===0,'FX_UNAVAILABLE');const rows=Object.entries(j.result).find(([k])=>k!=='last')?.[1];const r=rows?.[0];check(r&&Number.isFinite(r[2])&&this.now()-r[2]*1000<180000&&r[2]*1000<=this.now()+2000,'FX_STALE');
     return {rate:decimal(units(positive(usd[1].replace(',','.')))*units(positive(r[0]))/S),timestamp:at,maxAgeMs:36*3600000,source:'CBR daily USD/RUB × Kraken USDT/USD',policy:'daily official reference, not live RUB FX',stableTimestamp:Math.floor(r[2]*1000)};
   }
-  async quote(id){
+  async quote(id,{includeUsdc=true}={}){
+    check(typeof includeUsdc==='boolean','INVALID_REQUEST');
     const i=instrument(id);check(i,'INVALID_PAIR');if(!this.verified.has(id)||this.now()-this.verified.get(id).checkedAt>600000)await this.catalogue();const meta=this.verified.get(id);check(meta?.exists,this.errors[i.provider]||'INSTRUMENT_UNVERIFIED');check(meta.online,'MARKET_CLOSED');let q;
     if(i.provider==='bybit'){const [book,ticker]=await Promise.all([this.request(`https://api.bybit.com/v5/market/orderbook?category=spot&symbol=${i.sourceSymbol}&limit=1`),this.request(`https://api.bybit.com/v5/market/tickers?category=spot&symbol=${i.sourceSymbol}`,15000)]);check(book.retCode===0&&book.result?.s===i.sourceSymbol&&ticker.retCode===0,'INVALID_DATA');const b=book.result,t=ticker.result.list.find(t=>t.symbol===i.sourceSymbol);check(t&&Number.isSafeInteger(b.ts),'INVALID_DATA');q={bid:positive(b.b?.[0]?.[0]),ask:positive(b.a?.[0]?.[0]),last:positive(t.lastPrice),timestamp:b.cts||b.ts,eventId:String(b.u),change24h:100*Number(t.price24hPcnt),volume:fixed(t.volume24h),marketOpen:true};}
     else if(i.provider==='binance'){const [trades,ticker]=await Promise.all([this.request(`https://api.binance.com/api/v3/trades?symbol=${i.sourceSymbol}&limit=1`),this.request(`https://api.binance.com/api/v3/ticker/24hr?symbol=${i.sourceSymbol}`,15000)]);check(Array.isArray(trades)&&trades.length===1&&ticker.symbol===i.sourceSymbol,'INVALID_DATA');const t=trades[0];q={bid:positive(t.price),ask:positive(t.price),last:positive(t.price),timestamp:t.time,eventId:String(t.id),change24h:Number(ticker.priceChangePercent),volume:fixed(ticker.volume),marketOpen:true};}
@@ -49,7 +50,13 @@ export class MarketHub {
     check(Number.isSafeInteger(q.timestamp)&&units(q.ask)>=units(q.bid),'INVALID_DATA');q={...q,instrumentId:id,provider:i.provider,nativeCurrency:i.currency,receivedAt:this.now(),verified:true,capacity:'1.00000000',multiplier:meta.multiplier,delaySeconds:i.delaySeconds,prices:{},fx:{}};
     if(i.currency==='USDT')q.prices.USDT={buy:q.ask,sell:q.bid};
     else {try{const fx=await this.rubRate();q.fx.USDT=fx;q.prices.USDT=convertPrices(q.bid,q.ask,fx.rate);}catch(e){q.fxError=e.message;}}
-    try{const fx=await this.usdcRate();if(q.prices.USDT){q.prices.USDC=convertPrices(q.prices.USDT.sell,q.prices.USDT.buy,fx.rate);q.fx.USDC=i.currency==='RUB'?composeRubUsdcFx(q.fx.USDT,fx):fx;}}catch(e){q.fxError=e.message;}
+    return includeUsdc?this.withUsdcPrices(q):q;
+  }
+  // Enrich an already admitted native observation without fetching another one.
+  // Never mutate a response-only Wallet quote shared with an in-flight reader.
+  async withUsdcPrices(quote){
+    const q={...quote,prices:{...quote.prices},fx:{...quote.fx}};
+    try{const fx=await this.usdcRate();if(q.prices.USDT){q.prices.USDC=convertPrices(q.prices.USDT.sell,q.prices.USDT.buy,fx.rate);q.fx.USDC=q.nativeCurrency==='RUB'?composeRubUsdcFx(q.fx.USDT,fx):fx;}}catch(e){q.fxError=e.message;}
     return q;
   }
   async historySlot(fn){

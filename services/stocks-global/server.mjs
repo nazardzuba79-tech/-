@@ -47,13 +47,25 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     ctx.ownerMayTrade = !ownerOnlyMode || principal.subject === tradeOwnerSubject;
     return ctx;
   };
-  const quote=id=>{
+  const quote=(id,{includeUsdc=true}={})=>{
     sourceAllowed(id);
-    const cached=recent.get(id);if(cached&&now()-cached.at<2000)return Promise.resolve(cached.value);
-    if(flights.has(id))return flights.get(id);
-    check(flights.size<2,'SOURCE_BUSY');
-    const pending=hub.quote(id).then(value=>{recent.set(id,{at:now(),value});while(recent.size>80)recent.delete(recent.keys().next().value);return value;}).finally(()=>flights.delete(id));
-    flights.set(id,pending);return pending;
+    // A full observation may serve Wallet, but a USDT-only response must never
+    // satisfy a state/engine read without independently checked USDC conversion.
+    const cached=recent.get(id),fresh=cached&&now()-cached.at<2000;
+    if(fresh&&(!includeUsdc||cached.includeUsdc))return Promise.resolve(cached.value);
+    let flight=flights.get(id);
+    if(flight){if(!includeUsdc)return flight.native??flight.full;if(flight.full)return flight.full;}
+    else{check(flights.size<2,'SOURCE_BUSY');flight={native:null,full:null};}
+    const native=includeUsdc?(flight.native??(fresh?Promise.resolve(cached.value):null)):null;
+    let nativeAt;
+    const fetched=native&&typeof hub.withUsdcPrices==='function'?native.then(value=>{nativeAt=recent.get(id)?.at??now();return hub.withUsdcPrices(value);}):hub.quote(id,{includeUsdc});
+    const pending=fetched.then(value=>{recent.set(id,{at:nativeAt??now(),value,includeUsdc});while(recent.size>80)recent.delete(recent.keys().next().value);return value;}).finally(()=>{
+      // Native and FX continuations share one instrument admission. An upgrade
+      // keeps that slot until the full observation settles, including failure.
+      if(flights.get(id)===flight&&(!flight.full||flight.full===pending))flights.delete(id);
+    });
+    if(includeUsdc)flight.full=pending;else flight.native=pending;
+    flights.set(id,flight);return pending;
   };
   const demand=(ctx,id,view)=>{
     view??='legacy-http';check(typeof view==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(view),'INVALID_REQUEST');
@@ -71,7 +83,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     const read=async()=>{while(next<ids.length){const id=ids[next++];try{
       check(!signal.aborted,'SOURCE_BUSY');sourceAllowed(id);
       let abort;
-      try{view.quotes[id]=await Promise.race([quote(id),new Promise((_,reject)=>{
+      try{view.quotes[id]=await Promise.race([quote(id,{includeUsdc:false}),new Promise((_,reject)=>{
         abort=()=>reject(new SimError('SOURCE_BUSY'));
         signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();
       })]);}finally{if(abort)signal.removeEventListener('abort',abort);}
@@ -167,7 +179,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     })().catch(e=>{for(const ctx of interested)ctx.errors[ctx.selected]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>{tick=null;});
     return tick;
   },3000):null;
-  return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await Promise.allSettled([...refreshTasks,...contextFlights.values(),...flights.values(),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
+  return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await Promise.allSettled([...refreshTasks,...contextFlights.values(),...[...flights.values()].flatMap(flight=>[flight.native,flight.full]),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const accountsPath=process.env.STOCKS_ACCOUNTS_DATA;check(accountsPath||process.env.STOCKS_GLOBAL_DATA?.endsWith('.json'),'LOCAL_LEDGER_PATH_REQUIRED');
