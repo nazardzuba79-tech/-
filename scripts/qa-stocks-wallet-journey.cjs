@@ -142,7 +142,9 @@ async function run() {
       if (route === 'v1/me') return res.json({ id: user, email: user + '@fixture.invalid', isAdmin: user === 'alice', role: user === 'alice' ? 'ADMIN' : 'USER', kycStatus: 'NONE' });
       if (route === 'v1/private-trading/native/wallet') return user === 'alice' ? res.json(fixtureWallet()) : res.status(403).json({ error: 'OWNER_ONLY' });
       if (route === 'v1/private-trading/access') return res.json({ allowed: user === 'alice', nativeAvailable: user === 'alice' });
-      if (route === 'v1/wallet/overview') return res.json(overview);
+      if (route === 'v1/wallet/overview') return res.json(user === 'alice'
+        ? { ...overview, real: { spot: [], futures: [], spotValueUsd: 0, futuresValueUsd: 0, totalValueUsd: 0 } }
+        : overview);
       if (route === 'v1/wallet/performance') return res.json(performance);
       if (route === 'v1/market/external/rankings') return res.json({ rankings: [
         { symbol: 'BTC', name: 'Bitcoin', price: 100000, changePercent24h: 0 },
