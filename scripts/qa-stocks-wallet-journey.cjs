@@ -180,7 +180,7 @@ async function run() {
     for (const size of [[1440, 900], [390, 844]]) {
       const [width, height] = size;
       const context = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block', locale: 'ru-RU' });
-      await context.addInitScript(t => { localStorage.setItem('exchange_token', t); localStorage.setItem('exchange_lang', 'ru'); }, TOKENS.alice);
+      await context.addInitScript(t => { if (!localStorage.getItem('exchange_token')) localStorage.setItem('exchange_token', t); localStorage.setItem('exchange_lang', 'ru'); }, TOKENS.alice);
       await context.route('**/*', route => {
         const u = new URL(route.request().url());
         if (u.origin === origin) return route.continue();
