@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs,cpuFields,cpuDelta,memoryFields,pressureFields,parseBytes,parseDockerRow,run } from './cx23-24h-readonly.mjs';
 import {summarise,percentile,validateTrace} from './cx23-24h-report.mjs';
-import { privateMode, privateOutput, safeDockerOptions, createDockerReader, procStat, processIdentity, processInventory, validIoCounters } from './cx23-24h-platform.mjs';
+import { privateMode, privateOutput, safeDockerOptions, createDockerReader, procStat, processIdentity, processInventory, validIoCounters, parseCpuCounters } from './cx23-24h-platform.mjs';
 
 test('validates bounded finite options and does not accept default output path',()=>{
   assert.throws(()=>parseArgs([]),/absolute path/);
@@ -203,7 +203,7 @@ function procFixture({changed=false,taskChanged=false,taskCount=2}={}){
     if(/\/status$/.test(path))return 'VmRSS: 12 kB\nThreads: 2\n';
     if(path==='/proc/42/task/43/children')return '51';
     if(/\/children$/.test(path))return '';
-    if(path.endsWith('cpu.stat'))return 'usage_usec 12\n';if(path.endsWith('io.stat'))return '8:0 rbytes=0 wbytes=10\n';
+    if(path.endsWith('cpu.stat'))return 'usage_usec 12\nuser_usec 8\nsystem_usec 4\n';if(path.endsWith('io.stat'))return '8:0 rbytes=0 wbytes=10\n';
     if(path.endsWith('cgroup.procs'))return '42\n51\n';if(path.startsWith('/sys/fs/cgroup/'))return '24\n';
     throw Error('Unexpected fixture path '+path);
   };
@@ -246,4 +246,33 @@ test('cgroup CPU/I/O grammar, target membership and post-read identity fail clos
     return f.read(path,options);
   }});assert.equal(moved.reason,'PROCESS_IDENTITY_CHANGED');
   assert.equal(validIoCounters('259:0 rbytes=0 wbytes=0 rios=0 wios=0\n'),true);
+});
+test('Linux CPU cgroup dotted extension keys preserve required resource coverage',async()=>{
+  // Actual Linux field shape, with local fixture values; not a production observation.
+  const cpu='usage_usec 120\nuser_usec 90\nsystem_usec 30\nnr_periods 1\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0\ncore_sched.force_idle_usec 0\n';
+  const f=procFixture(),pin=await processIdentity(42,f.read);
+  const inventory=await processInventory(pin,{...f,read:async(path,options)=>path.endsWith('/cpu.stat')?cpu:f.read(path,options)});
+  assert.equal(inventory.cgroup.available,true);
+  const r=await virtual({extra:{pid:42},deps:{doSample:async()=>({counters:{},out:{...hostMetrics(),processes:inventory}})}});
+  assert.equal(r.done.complete,true);assert.equal(summarise(r.content).completion,'complete');
+  assert.equal(Object.values(summarise(r.content).cgroups)[0].cpuUsageMicros.first,120);
+  assert.equal(parseCpuCounters(cpu)['core_sched.force_idle_usec'],0);
+});
+test('CPU counter extensions never permit missing, duplicate or malformed evidence',async()=>{
+  const base='usage_usec 120\nuser_usec 90\nsystem_usec 30\n';
+  assert.equal(parseCpuCounters(base+'future2.namespace_counter 7\n')['future2.namespace_counter'],7);
+  const invalid=[...['usage_usec','user_usec','system_usec'].map(k=>base.replace(new RegExp(k+' \\d+\\n'),'')),
+    ...['usage_usec','user_usec','system_usec'].map(k=>base+k+' 1\n'),
+    base+'future.counter 1\nfuture.counter 2\n',base+'future..counter 1\n',base+'future.counter -1\n',base+'future.counter NaN\n',
+    base+'future.counter 1.5\n',base+'future.counter 9007199254740992\n',base+'private text\n'];
+  const f=procFixture(),pin=await processIdentity(42,f.read),valid=await processInventory(pin,f);
+  for(const cpu of invalid){
+    assert.equal(parseCpuCounters(cpu),null);
+    const inventory=await processInventory(pin,{...f,read:async(path,options)=>path.endsWith('/cpu.stat')?cpu:f.read(path,options)});
+    assert.equal(inventory.cgroup.available,false);
+    // Independently reject a tampered raw artifact whose adapter success flag is forged.
+    const forged={...valid,cgroup:{...valid.cgroup,cpuStat:cpu}};
+    const r=await virtual({extra:{pid:42},deps:{doSample:async()=>({counters:{},out:{...hostMetrics(),processes:forged}})}});
+    assert.equal(r.done.complete,false);assert.equal(summarise(r.content).completion,'incomplete');
+  }
 });

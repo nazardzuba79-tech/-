@@ -6368,3 +6368,9 @@ Read-only Hetzner hardware/passive aggregate checks confirmed 2 vCPU / 3.730 GiB
 
 - Integrated main 055f88a945c8253b2736877b52f32d028c895086 into the existing owner Stocks branch. Only conflict was this append-only handoff; preserved both Stocks and Claude entries.
 - Main Spot/CFD source and evidence remain byte-for-byte unchanged by conflict resolution. Wallet FX scope remains response-only; prior capacity and data-rights release blockers remain open. No deploy or main merge.
+
+### PR #515 — Linux cgroup CPU extension compatibility (2026-10-13)
+
+- Fresh-fetch verified 6edc44cebba9365ff3abb0f79b5a33a42c0f7ca0 before this correction. First actual sample correctly failed coverage because the old CPU-field grammar rejected the valid kernel counter core_sched.force_idle_usec; no successful 24-hour result is claimed. First attempt FAILED/STOPPED: parent verified owned launcher/watchdog/collector absent and cleanup complete. Original failed trace SHA256 d58f1965e5de589fd27a5c4be05ae1dc28bd83ef68ba3f8750f7435425775a2a remains untouched outside Git; its recorded CPU text was separately accepted locally by the new parser without a host call.
+- Added one shared parser for adapter, independent coverage validation and summary. It permits well-formed dotted numeric extension counters while requiring usage_usec, user_usec and system_usec exactly once. Missing, duplicate, malformed, negative, fractional and unsafe counters still fail closed; no metrics are invented or replaced with zero.
+- The actual Linux field-shape regression failed before the fix. Full focused suite passes 26/26 on Windows Node v24.21.0 after it, including forged-artifact rejection. Before/after logs: output/stocks-next-release-20261013/sampler-review/cpu-kernel-fields-{before,after}.log. Node22/Linux and any relaunch require parent verification on the final SHA; implementing agent performed no host access, relaunch or push.

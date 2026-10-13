@@ -3,7 +3,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { validIoCounters } from './cx23-24h-platform.mjs';
+import { validIoCounters, parseCpuCounters } from './cx23-24h-platform.mjs';
 
 const round = (n,d=2)=>n===null||!Number.isFinite(n)?null:Number(n.toFixed(d));
 export const percentile=(a,p)=>{
@@ -28,7 +28,7 @@ export function sampleMetricIssues(start, s, n) {
         || ['userTicks','systemTicks','rssBytes','threads'].some(k => !finite(r[k])))
       || new Set(ps.rows.map(r => r?.pid)).size !== ps.rows.length || !Number.isSafeInteger(ps.tasksRead) || ps.tasksRead < ps.rows.length
       || !ps.cgroup?.available || ps.cgroup.id !== id.cgroupId || ['memoryCurrentBytes','memoryPeakBytes','pidsCurrent'].some(k => !finite(ps.cgroup[k]))
-      || !/^usage_usec\s+\d+$/m.test(ps.cgroup.cpuStat || '') || ps.cgroup.cpuStat.trim().split('\n').some(line=>!/^[a-z_]+\s+\d+\s*$/.test(line)) || !Array.isArray(ps.cgroup.memberPids) || !ps.cgroup.memberPids.includes(start.pid)
+      || !parseCpuCounters(ps.cgroup.cpuStat) || !Array.isArray(ps.cgroup.memberPids) || !ps.cgroup.memberPids.includes(start.pid)
       || ps.cgroup.memberPids.some(p => !Number.isSafeInteger(p) || p < 1) || new Set(ps.cgroup.memberPids).size !== ps.cgroup.memberPids.length) issues.push('PROCESS_COVERAGE_UNAVAILABLE');
     const io = ps?.cgroup?.ioStat;
     if (ps?.cgroup?.ioAvailable !== true || !validIoCounters(io)) issues.push('CGROUP_IO_UNAVAILABLE');
@@ -122,9 +122,9 @@ export function summarise(content) {
     const c = s.processes.cgroup;
     if (c?.available) {
       if (!byCgroup.has(c.id)) byCgroup.set(c.id, []);
-      const usage = c.cpuStat?.match(/^usage_usec\s+(\d+)$/m);
+      const cpu = parseCpuCounters(c.cpuStat);
       const io = field => { const xs = [...(c.ioStat || '').matchAll(new RegExp('(?:^|\\s)' + field + '=(\\d+)', 'g'))].map(m => Number(m[1])); return xs.length ? xs.reduce((a,b) => a+b, 0) : null; };
-      byCgroup.get(c.id).push({...c, cpuUsageMicros:usage ? Number(usage[1]) : null, readBytes:io('rbytes'), writeBytes:io('wbytes')});
+      byCgroup.get(c.id).push({...c, cpuUsageMicros:cpu?.usage_usec??null, readBytes:io('rbytes'), writeBytes:io('wbytes')});
     }
   }
   const counter = (rs, key) => {

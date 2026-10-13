@@ -8,6 +8,18 @@ import { promisify } from 'node:util';
 const execute = promisify(execFile);
 const hash = s => createHash('sha256').update(s).digest('hex');
 export const codeError = code => Object.assign(new Error(code), { code });
+export function parseCpuCounters(text) {
+  if (typeof text !== 'string' || !text.trim() || text.length > 65536) return null;
+  const counters = Object.create(null);
+  for (const line of text.trim().split('\n')) {
+    // Linux may add namespaced counters (e.g. core_sched.force_idle_usec).
+    // Accept well-formed numeric extensions without weakening required fields.
+    const pair = line.match(/^([a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*)\s+(\d+)\s*$/);
+    if (!pair || Object.hasOwn(counters,pair[1]) || !Number.isSafeInteger(Number(pair[2]))) return null;
+    counters[pair[1]] = Number(pair[2]);
+  }
+  return ['usage_usec','user_usec','system_usec'].every(key=>Object.hasOwn(counters,key)) ? counters : null;
+}
 export function validIoCounters(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
   const devices = new Set();
@@ -136,7 +148,7 @@ export async function processInventory(pin, { read = readFile, list = readdir, s
         const values = await Promise.all(names.map(n => read(path + '/' + n, options)));
         if (values.some(v => v.length > 65536)) throw codeError('CGROUP_EVIDENCE_LIMIT');
         const members = values[5].trim().split(/\s+/).filter(Boolean).map(Number);
-        if (!/^usage_usec\s+\d+$/m.test(values[0]) || values[0].trim().split('\n').some(line=>!/^[a-z_]+\s+\d+\s*$/.test(line)) || [1,2,4].some(i => !/^\d+\s*$/.test(values[i]))
+        if (!parseCpuCounters(values[0]) || [1,2,4].some(i => !/^\d+\s*$/.test(values[i]))
           || !members.includes(pin.pid) || new Set(members).size !== members.length || members.some(p => !Number.isSafeInteger(p) || p < 1)) throw codeError('CGROUP_EVIDENCE_INVALID');
         const ioLines = values[3].trim().split('\n').filter(Boolean);
         if (ioLines.length && !validIoCounters(values[3])) throw codeError('CGROUP_EVIDENCE_INVALID');
