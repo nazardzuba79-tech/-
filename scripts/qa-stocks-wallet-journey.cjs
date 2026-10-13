@@ -7,7 +7,7 @@ const express = require('express');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..'), dist = path.join(root, 'frontend/dist');
 const ID = 'BYBIT:AAPLXUSDT', TOKENS = { alice: 'qa-alice-session-0001', bob: 'qa-bob-session-000001' };
-const audit = { fixtureOnly: true, noProductionAccess: true, checks: [], externalRequestsBlocked: [], walletWrites: [], stocksMutations: [] };
+const audit = { fixtureOnly: true, noProductionAccess: true, checks: [], externalRequestsBlocked: [], walletWrites: [], sessionWrites: [], stocksMutations: [] };
 function ok(condition, label) { assert.ok(condition, label); audit.checks.push(label); }
 function fixtureWallet() {
   return {
@@ -130,6 +130,11 @@ async function run() {
       if (!user) return res.status(401).json({ error: 'AUTH_REQUIRED' });
       const route = req.path.slice(1);
       if (req.method === 'POST') {
+        if (route === 'v1/auth/logout') {
+          audit.sessionWrites.push(route);
+          revoked.add(req.headers.authorization);
+          return res.json({ status: 'ok' });
+        }
         audit.walletWrites.push(route);
         if (route === 'v1/wallet/portfolio-snapshot') return res.json({ recorded: false });
         return res.status(403).json({ error: 'FINANCIAL_WRITES_BLOCKED' });
@@ -234,9 +239,11 @@ async function run() {
         revoked.add('Bearer '+TOKENS.alice);
         ok((await read('alice','state')).status===401,'revoked owner token rejected by real identity adapter');
         await page.evaluate(()=>{localStorage.removeItem('exchange_token');window.dispatchEvent(new StorageEvent('storage',{key:'exchange_token'}));}).catch(error=>{if(!error.message.includes('Execution context was destroyed'))throw error;});
-        await page.waitForURL(url=>url.pathname==='/');
+        // A cross-tab storage notification clears account data; it is not the
+        // Nav logout action and does not promise navigation. A pending API 401
+        // can independently redirect, so do not rely on that timing side effect.
         await page.waitForFunction(()=>!document.querySelector('.wallet-asset-tab-row[data-symbol="AAPLX"]'));
-        ok(true,'logout clears owner holdings without reload');
+        ok(await page.evaluate(()=>localStorage.getItem('exchange_token')===null),'cross-tab logout clears token and owner holdings without reload');
         TOKENS.alice='qa-alice-session-0002';
         await page.evaluate(t=>{localStorage.setItem('exchange_token',t);window.dispatchEvent(new StorageEvent('storage',{key:'exchange_token'}));},TOKENS.alice);
         await page.goto(origin+'/wallet');
@@ -244,6 +251,21 @@ async function run() {
         await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
         await page.locator('.wallet-asset-tab-row[data-symbol="AAPLX"]').waitFor();
         ok(true,'login restores only authenticated holdings from durable account');
+        // Separately exercise the real user logout contract, including routing.
+        await page.locator('.top-nav-profile-btn').click();
+        await Promise.all([
+          page.waitForResponse(r=>new URL(r.url()).pathname==='/api/v1/auth/logout'&&r.request().method()==='POST'&&r.status()===200),
+          page.locator('.top-nav-profile-menu button').click(),
+        ]);
+        await page.waitForURL(url=>url.pathname==='/');
+        await page.waitForFunction(()=>!document.querySelector('.wallet-asset-tab-row[data-symbol="AAPLX"]'));
+        ok(await page.evaluate(()=>localStorage.getItem('exchange_token')===null),'Nav logout navigates home and clears token and owner holdings');
+        ok((await read('alice','state')).status===401,'Nav logout revokes the disposable authority session');
+        TOKENS.alice='qa-alice-session-0003';
+        await page.evaluate(t=>{localStorage.setItem('exchange_token',t);window.dispatchEvent(new StorageEvent('storage',{key:'exchange_token'}));},TOKENS.alice);
+        await page.goto(origin+'/wallet');
+        await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
+        await page.locator('.wallet-asset-tab-row[data-symbol="AAPLX"]').waitFor();
         await stocks.close();stocks=await startStocks();
         await page.reload();await page.locator('.wallet-tabs [role="tab"]').nth(1).click();
         await page.locator('.wallet-asset-tab-row[data-symbol="AAPLX"]').waitFor();
@@ -337,10 +359,15 @@ async function run() {
       ok(pageErrors.length === 0, width + ': no browser page exceptions: ' + pageErrors.join(', '));
       await context.close();
     }
+    ok(audit.sessionWrites.length===1&&audit.sessionWrites[0]==='v1/auth/logout','only the expected disposable session logout was submitted');
     ok(audit.walletWrites.every(route => route === 'v1/wallet/portfolio-snapshot'), 'never wrote a real wallet or transferred crypto funds');
     ok(fs.existsSync(path.join(dir, 'disposable.sqlite')), 'all paper mutations belong to an isolated local SQLite file');
     if(screenshots)fs.writeFileSync(path.join(screenshots,'journey.json'),JSON.stringify({result:'PASS',audit},null,2));
     console.log(JSON.stringify({ result: 'PASS', checks: audit.checks.length, audit }, null, 2));
+  } catch (error) {
+    audit.failure = { message: error.message, stack: error.stack,
+      pages: browser?.contexts().flatMap(c=>c.pages().map(page=>({url:page.url()}))) ?? [] };
+    throw error;
   } finally {
     if(screenshots){fs.writeFileSync(path.join(screenshots,'audit-progress.json'),JSON.stringify(audit,null,2));for(const c of browser?.contexts()??[])for(const page of c.pages())await page.screenshot({path:path.join(screenshots,'last-view.png'),fullPage:true}).catch(()=>{});}
     await browser?.close();

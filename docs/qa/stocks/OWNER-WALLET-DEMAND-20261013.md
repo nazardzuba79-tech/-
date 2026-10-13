@@ -57,3 +57,7 @@ No HTTP errors or financial changes occurred. Additional quote work produces a c
 4. Production identity/gateway/deployment, operational backup/recovery and capacity verification require separate authorization/design.
 
 Publish verdict: **BLOCKED**. The code is submitted for review only. Push uses the documented Cloudflare `[CF-Pages-Skip]` prefix, without skipping GitHub CI. Audited repository deploy workflows exclude this branch; external custom webhooks were not inventoried.
+
+## Browser CI logout contract correction
+
+At 8e8f7c2, Linux CI exposed a test-only mistake: synthetic cross-tab StorageEvent clears authenticated caches but does not promise navigation to /. Local success could depend on a concurrent revoked API response taking the separate 401 redirect path. The journey now independently asserts token/holdings removal after StorageEvent, and exercises the real Nav logout button with its home-route and disposable session-revocation assertions. No production auth code or timeout was changed. CI now preserves owner journey progress, failure stack/URL and screenshots under its uploaded evidence directory. Both failed CI attempts remain evidence; original resource acceptance failures remain unchanged.
