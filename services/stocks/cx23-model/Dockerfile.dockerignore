@@ -1,0 +1,23 @@
+# Dedicated Docker build context allowlist; global .dockerignore is unchanged.
+**
+!node_modules/
+!node_modules/**
+!dist/
+!dist/**
+!prisma/
+!prisma/schema.prisma
+!services/
+!services/stocks/
+!services/stocks/**
+!services/stocks-global/
+!services/stocks-global/**
+!services/stocks-simulator/
+!services/stocks-simulator/**
+**/.env
+**/.env.*
+**/*.sqlite
+**/*.sqlite-*
+**/*.db
+**/*.db-*
+**/node_modules/.cache/**
+**/.git/**

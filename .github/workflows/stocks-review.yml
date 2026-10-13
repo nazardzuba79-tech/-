@@ -7,6 +7,106 @@ on:
 permissions:
   contents: read
 jobs:
+  stocks-review-selection:
+    # PR512 stages costly evidence explicitly. Scheduling SKIPs are not PASSes;
+    # all other PRs retain the original gates and criteria below.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      legacy: ${{ steps.plan.outputs.legacy }}
+      diagnostic: ${{ steps.plan.outputs.diagnostic }}
+      model: ${{ steps.plan.outputs.model }}
+      matched: ${{ steps.plan.outputs.matched }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - run: node --test services/stocks/review-plan.test.mjs
+      - id: plan
+        run: node services/stocks/review-plan.mjs
+  stocks-pr512-phase-diagnostic:
+    needs: stocks-review-selection
+    if: needs.stocks-review-selection.outputs.diagnostic == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Source guards and phase instrumentation regression
+        run: node --test services/stocks/phase-trace-512/*.test.mjs services/stocks/summarize-launch.test.mjs services/stocks/review-evidence.test.mjs
+      - name: Verify disposable disk and separate load CPU
+        run: |
+          mkdir -p "$RUNNER_TEMP/phase512-disk" .ci-output/stocks-phase512
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+          majmin=$(findmnt -n -o MAJ:MIN -T "$RUNNER_TEMP/phase512-disk" | tr -d '[:space:]')
+          device=$(lsblk -nrpo NAME,MAJ:MIN | awk -v mm="$majmin" '$2==mm {print $1; exit}')
+          test -n "$device" && test -b "$device"
+          parent=$(lsblk -ndo PKNAME "$device")
+          if [ -n "$parent" ]; then device="/dev/$parent"; fi
+          printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
+          { git rev-parse HEAD; nproc; free -m; findmnt -T "$RUNNER_TEMP/phase512-disk"; lsblk; } > .ci-output/stocks-phase512/host.txt
+      - name: Three matched pristine/OFF/ON controls at unchanged original limits
+        env:
+          STOCKS_PHASE_512_APPROVED: 'true'
+          STOCKS_PHASE_512_OUT: .ci-output/stocks-phase512
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/phase512-disk
+        run: node services/stocks/phase-trace-512/run.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-pr512-phase-diagnostic-${{ github.event.pull_request.head.sha }}
+          path: .ci-output/stocks-phase512
+          if-no-files-found: error
+  stocks-pr512-cx23-model:
+    needs: stocks-review-selection
+    if: needs.stocks-review-selection.outputs.model == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build existing crypto services for fixture-only HTTP adapter
+        run: npx prisma generate && npm run build
+      - name: Nominal CX23 model harness regressions
+        run: node --test services/stocks/cx23-model/*.test.mjs
+      - name: Build disposable aggregate model
+        run: docker build --build-arg SOURCE_SHA=${{ github.event.pull_request.head.sha }} -f services/stocks/cx23-model/Dockerfile -t voltex-cx23-model .
+      - name: Three paired crypto HTTP controls for each owner/viewer profile
+        env:
+          CX23_IMAGE: voltex-cx23-model
+          CX23_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          CX23_DISK: ${{ runner.temp }}/cx23-disk
+          CX23_OUTPUT: ${{ github.workspace }}/.ci-output/stocks-cx23
+        run: node services/stocks/cx23-model/run.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-pr512-cx23-model-${{ github.event.pull_request.head.sha }}
+          path: .ci-output/stocks-cx23
+          if-no-files-found: error
   stocks-joined-phase-diagnostic:
     # Opt-in investigation only: this job never certifies capacity or replaces the full gates.
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace') }}
@@ -70,7 +170,8 @@ jobs:
           if-no-files-found: error
   stocks-performance-profile:
     # Explicit diagnosis is not acceptance. Remove the label for the unchanged full gates.
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace')) }}
+    needs: stocks-review-selection
+    if: ${{ needs.stocks-review-selection.outputs.legacy == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -305,7 +406,8 @@ jobs:
           path: stocks-ui-evidence
           if-no-files-found: error
   crypto-service-comparison:
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace')) }}
+    needs: stocks-review-selection
+    if: ${{ needs.stocks-review-selection.outputs.legacy == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -349,7 +451,8 @@ jobs:
           path: .ci-output/stocks
 
   launch-resource-comparison:
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace')) }}
+    needs: stocks-review-selection
+    if: ${{ needs.stocks-review-selection.outputs.legacy == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.number == 497 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/stocks-integration-20261010' && contains(github.event.pull_request.labels.*.name, 'stocks-phase-trace')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
