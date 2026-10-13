@@ -37,3 +37,22 @@ Unchanged on purpose: layout grid, tile sizes, gutters, every control and its ha
 | CFD ticket at 1440×900 | — | fields 367px natural, summary with all three rows, button at y 638–676 inside the 702px tile, no scroll |
 | CFD ticket at 1366×768 | — | fields box 241px and scrolls on its own; button at y 508–546, visible (tile ends at 570) |
 | Empty state | icon + title + hint (unchanged) | icon + 14px white title |
+
+## Verification (final tree, commit `99e73fda` sources)
+
+- `tsc -b && vite build` PASS.
+- Jest `frontend/src`: 237/237 suites, 4086/4086 tests, 0 failed, 0 skipped.
+- `scripts/qa-spot-cfd-terminal.cjs`: 0 findings.
+- `scripts/qa-futures-proportions.cjs --phase after --widths 1920,1707,1440,1366,390`: 5 cases, 0 violations.
+- `scripts/qa-futures-figma-desktop.cjs`: 4/4 cases, 0 errors.
+- `scripts/qa-futures-chart-ux.cjs`: 4 cases, 129 assertions, 0 failed.
+- Spot/CFD 1366/1440/1707/1920 × 90/100/110/125 % zoom: 32/32 (pair-row text air ≥ 7px, no horizontal overflow, no page errors).
+- Spot toolbar menus functional (catalogue, add indicator, legend, persistence in the Spot store, chart type, settings, rail pill keyboard): 26/26 at 1440 and 1920.
+- Futures 1440/1920: geometry, header shadow, rail handle and ticker text identical to main; pixel diffs vs main within main-vs-main render noise (max 1–2 colour levels).
+- Phones/tablet: 12 captures (Spot/CFD × 390/768 × chart/trade/account tabs) pixel-identical to main except one 25px antialias difference (max 1 level) on the Spot 768 «24h +» chip; `spot-390`, `spot-430`, `futures-390` identical.
+
+## Files
+
+- `spot-before-after-{1366,1440,1920}.png`, `cfd-before-after-{1366,1440,1920}.png` — main `14601fbd` (top) vs this branch (bottom), 1× captures on the read-only loopback fixture.
+- `cfd-ticket-before-after-1366-1440.png` — the CFD ticket column only.
+- `detail-2x-1440.png` — 2× crops of the structured rows (Spot market list head, book head, ticket, account tabs + table head; CFD list head, chart title row, ticket, positions tabs + empty state).
