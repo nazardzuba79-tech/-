@@ -48,7 +48,7 @@ export interface LedgerRow {
    */
   priced: boolean;
   /** Display-only Stocks holding; never crypto equity, available balance or collateral. */
-  stockPosition?: { instrumentId: string; entryUSDT: number | null; valueUSDT: number | null; markAt: number | null };
+  stockPosition?: { instrumentId: string; entryUSDT: number | null; valueUSDT: number | null; unrealizedUSDT: number | null; markAt: number | null };
 }
 
 /**

@@ -7,6 +7,12 @@ function amount(value: unknown): number | null {
   return Number.isFinite(n) && n >= 0 && n <= Number.MAX_SAFE_INTEGER ? n : null;
 }
 
+function signedAmount(value: unknown): number | null {
+  if (typeof value !== 'string' || !/^-?\d+(?:\.\d+)?$/.test(value)) return null;
+  const n = Number(value);
+  return Number.isFinite(n) && Math.abs(n) <= Number.MAX_SAFE_INTEGER ? n : null;
+}
+
 /** Read-only projection. Stocks USDT is never silently treated as USD collateral. */
 export function stockPortfolioRows(input: unknown, receivedAt = Date.now()): LedgerRow[] {
   if (!input || typeof input !== 'object') return [];
@@ -44,7 +50,7 @@ export function stockPortfolioRows(input: unknown, receivedAt = Date.now()): Led
       collateralEnabled: false,
       collateralToggleable: false,
       priced: false,
-      stockPosition: { instrumentId, entryUSDT: amount(position.average), valueUSDT: total, markAt: fresh ? (quote?.timestamp ?? null) : null },
+      stockPosition: { instrumentId, entryUSDT: amount(position.average), valueUSDT: total, unrealizedUSDT: fresh ? signedAmount(position.unrealized) : null, markAt: fresh ? (quote?.timestamp ?? null) : null },
     });
   }
   return rows;

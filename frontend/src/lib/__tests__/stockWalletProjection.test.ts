@@ -16,7 +16,7 @@ test('USDT holdings appear with crypto rows without becoming USD spendable colla
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ symbol: 'AAPLX', total: 2, available: 1, locked: 1,
     spendable: false, collateralEnabled: false, collateralToggleable: false,
-    valueUsd: null, priceUsd: null, stockPosition: { valueUSDT: 218, entryUSDT: 100 } });
+    valueUsd: null, priceUsd: null, stockPosition: { valueUSDT: 218, entryUSDT: 100, unrealizedUSDT: 20 } });
 });
 test('historic USDC positions never enter USDT-only projection', () => {
   expect(stockPortfolioRows(payload('USDC'))).toEqual([]);
@@ -24,6 +24,7 @@ test('historic USDC positions never enter USDT-only projection', () => {
 test('stale prices never enter USD valuation', () => {
   const rows = stockPortfolioRows(payload('USDT', 60000));
   expect(rows[0].stockPosition?.valueUSDT).toBeNull();
+  expect(rows[0].stockPosition?.unrealizedUSDT).toBeNull();
   expect(rows[0].valueUsd).toBeNull();
 });
 test('untrusted, anonymous and malformed responses produce no wallet rows', () => {

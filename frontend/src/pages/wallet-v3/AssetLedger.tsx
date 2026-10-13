@@ -337,6 +337,9 @@ export function AssetLedger({
                               {!r.priced && !r.stockPosition && <span className="wallet-ledger-unpriced ml-1">{t('wallet.noQuote')}</span>}
                             </small>
                           </span>
+                          {r.stockPosition && <span className="num block text-[11px] leading-4 text-ink-4">
+                            {hidden ? MASK : `Вход: ${r.stockPosition.entryUSDT === null ? EM_DASH : formatAmount(r.stockPosition.entryUSDT, lang, 8)} USDT · PnL: ${r.stockPosition.unrealizedUSDT === null ? EM_DASH : formatAmount(r.stockPosition.unrealizedUSDT, lang, 2)} USDT`}
+                          </span>}
                         </td>
                         <td className="num px-3 py-3.5 text-[13px] font-medium text-ink">
                           {/* The wallet row on its own: on a margin account
@@ -385,6 +388,7 @@ export function AssetLedger({
                         <p className="wallet-ledger-mobile-value num text-[12px] leading-4 text-ink-3">
                           {hidden ? MASK : r.stockPosition ? (r.stockPosition.valueUSDT === null ? t('wallet.noQuote') : `≈ ${formatAmount(r.stockPosition.valueUSDT, lang, 2)} USDT`) : r.priced ? `${r.valueUsd !== null ? '≈ ' : ''}${formatUsd(r.valueUsd, lang)}` : t('wallet.noQuote')}
                         </p>
+                        {r.stockPosition && <p className="num text-[11px] leading-4 text-ink-4">{hidden ? MASK : `Вход: ${r.stockPosition.entryUSDT === null ? EM_DASH : formatAmount(r.stockPosition.entryUSDT, lang, 8)} USDT · PnL: ${r.stockPosition.unrealizedUSDT === null ? EM_DASH : formatAmount(r.stockPosition.unrealizedUSDT, lang, 2)} USDT`}</p>}
                       </div>
                       <ChevronDownIcon aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 text-ink-4 transition-transform ${open ? 'rotate-180' : ''}`} />
                     </button>
