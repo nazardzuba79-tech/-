@@ -121,14 +121,25 @@ test.each([
   // Admin Users password column: one additive nullable field in getAdminUsers'
   // response type. Futures/Spot methods and their transport stay unchanged.
   // API lifecycle audit: optional AbortSignals on GETs only; mutation transports are unchanged.
-  ['frontend/src/lib/api.ts', 'ef54b1ccb06e1e2f3440d6c564007275d2a64fa8495cd1f4bd443ca6917acf53'],
+  // Re-taken 2026-10-13 (full audit): `getMyOrders` takes an optional
+  // `{ fresh }` and goes through `readSpotOrders` (lib/readCoalescer) so the
+  // chart and the open-orders panel share one request per tick, and its row
+  // type is named `SpotOrderRecord`. Every futures read this suite protects
+  // — mark price, open interest, funding rate, the book route, `request()`,
+  // the Authorization header, `handleUnauthorized` — is untouched.
+  ['frontend/src/lib/api.ts', 'b1a8322a0d89516fe8d27f3e692610ca5886dc21d88f6b90f4c1813f2f69739b'],
   // 2026-09-30: reviewed Express 4 async-error containment. All fourteen
   // handler bodies are byte-identical to f62d28da; only asyncRoute and the
   // local wrapped auth binding changed. Pin the complete reviewed file;
   // request failures are exercised by futuresAsyncErrors.test.ts.
   // OTC prerequisite: only /transfer delegates to guarded atomic wallet deltas;
   // all other route handlers, authentication, margin and response contracts stay pinned.
-  ['src/api/routes/futures.ts', '1aafaa734a1c182031fbf0842b393ebadfc659cf193adc0b6c9f08c6b2fb9392'],
+  // Re-taken 2026-10-13 (full audit): the three `catch` blocks that answered
+  // a refused order, quick close or transfer with `{ error: err.message }`
+  // now answer `futuresRefusalBody(err)` — the same sentence plus a code for
+  // the two known engine refusals (thin book, self-match). One import, no
+  // route added, no read touched.
+  ['src/api/routes/futures.ts', '35a60abfc6f963cb257b3f3048341e07c21055af8795385e0349d8c5f0787fb5'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
   // getAnalyticsOverview and its response types. Every futures method,
