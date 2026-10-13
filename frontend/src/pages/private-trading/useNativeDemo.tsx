@@ -3,6 +3,7 @@ import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityLis
 import { useCallback,useEffect,useRef,useState,useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getToken,onSessionChange } from '../../lib/api';
+import { bindingAfterAccessFailure } from '../../lib/nativeAccessVerdict';
 import { nativeDemoApi,type NativeState,type NativeDraft,type NativePosition,type NativeEvent } from '../../lib/nativeDemoApi';
 import { PrivateTradingError,privateTradingApi,privateErrorText,type PrivateResultCard } from '../../lib/privateTradingApi';
 import { NativeCommandLane,acceptsRevision } from '../../lib/nativeCommandLane';
@@ -127,10 +128,15 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
         const owner=a.allowed===true&&a.nativeAvailable===true&&a.simulationOnly===true;
         setAllowed(owner);
         setBinding(current=>owner?'owner':current==='owner'?'owner':'ordinary');
-      }catch{
-        // Outage, not a verdict. Keep the last server transcript on screen but
-        // disable every write until access is confirmed again.
-        if(!cancelled)suspend();
+      }catch(e){
+        if(cancelled)return;
+        // Keep the last server transcript on screen but disable every write
+        // until access is confirmed again. An explicit `private_access_denied`
+        // is the server's verdict that this account is ordinary and releases
+        // the real engine; anything else is an outage, not a verdict (see
+        // lib/nativeAccessVerdict).
+        suspend();
+        setBinding(current=>bindingAfterAccessFailure(e,current));
       }finally{if(!cancelled)setChecked(true);}
     }
     const reader=createVisibleRead(check,NATIVE_ACCESS_POLL_MS,true);
