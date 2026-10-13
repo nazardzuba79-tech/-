@@ -72,7 +72,12 @@ export default function GlobalStocks(){
   const positions=Object.values(state?.positions||{}).filter(p=>Number(p.quantity)>0&&(!STOCKS_USDT_ONLY||p.currency==='USDT')),open=state?.orders.filter(o=>['OPEN','PARTIAL'].includes(o.status)&&(!STOCKS_USDT_ONLY||o.currency==='USDT'))||[],position=state?.positions[id+'|'+currency],available=side==='BUY'?state?.wallets[currency].available:position?.available||'0';
   const total=valid(price)&&valid(quantity)?new BigNumber(price).times(quantity).toFixed(8,side==='BUY'?BigNumber.ROUND_CEIL:BigNumber.ROUND_FLOOR):null;
   const admission=state?.errors[id]||(q?.status[currency]&&q.status[currency]!=='READY'?q.status[currency]:'');
-  const canOrder=(!STOCKS_USDT_ONLY || currency === 'USDT')&&state?.account?.canTrade!==false&&connected&&!busy&&!overload&&asset?.provider!=='moex'&&valid(quantity)&&valid(price)&&(type==='LIMIT'||ready)&&!!state&&(side==='BUY'?new BigNumber(total||0).lte(available||0):new BigNumber(quantity).lte(available||0));
+  // Non-owner accounts retain interactive order controls in the review UI but
+  // never create a trading intent. Keep real submissions fully validated for the owner.
+  const readOnlyOrderPreview=state?.account?.canTrade===false;
+  const canOrder=readOnlyOrderPreview
+    ? connected&&!busy&&!overload&&valid(quantity)&&(type==='MARKET'||valid(limit))
+    : (!STOCKS_USDT_ONLY || currency === 'USDT')&&connected&&!busy&&!overload&&asset?.provider!=='moex'&&valid(quantity)&&valid(price)&&(type==='LIMIT'||ready)&&!!state&&(side==='BUY'?new BigNumber(total||0).lte(available||0):new BigNumber(quantity).lte(available||0));
   const history=useCallback((before?:number,recovery=false):Promise<StockReadResult>=>{
     if(circuit.current.paused&&!recovery)return Promise.resolve({kind:'failed'});
     return reads.current.run(`history:${historyGeneration.current}:${id}:${interval}:${before||''}`,async():Promise<StockReadResult>=>{
@@ -91,7 +96,7 @@ export default function GlobalStocks(){
   const recover=()=>void circuit.current.recover(()=>poll(true),()=>history(undefined,true));
   const retrySeconds=overload?Math.max(0,Math.ceil((overload.retryAt-now)/1000)):0;
   const choose=(a:Asset)=>{setMenu(false);setQuantity('');setLimit('');setMessage('');setError('');setIntervalValue(a.timeframes.includes(interval)?interval:a.timeframes[0]);navigate('/stocks/'+encodeURIComponent(a.id));};
-  const submitOrder=async()=>{const body={instrumentId:id,currency,side,type,quantity:new BigNumber(quantity).toFixed(8),...(type==='LIMIT'?{limitPrice:new BigNumber(limit).toFixed(8)}:{})};const pending=rememberStockOrder(sessionStorage,state?.account?.id,JSON.stringify(body),()=>crypto.randomUUID());const result=await act('orders',{...body,id:pending.id});if(result){sessionStorage.removeItem(pending.key);setMessage(`${orderLabel(result.result.status)} · ${fmt(result.result.filled)} ${asset?.asset}`);setQuantity('');setAccountTab(result.result.filled!=='0.00000000'?'positions':'orders');}};
+  const submitOrder=async()=>{if(readOnlyOrderPreview)return;const body={instrumentId:id,currency,side,type,quantity:new BigNumber(quantity).toFixed(8),...(type==='LIMIT'?{limitPrice:new BigNumber(limit).toFixed(8)}:{})};const pending=rememberStockOrder(sessionStorage,state?.account?.id,JSON.stringify(body),()=>crypto.randomUUID());const result=await act('orders',{...body,id:pending.id});if(result){sessionStorage.removeItem(pending.key);setMessage(`${orderLabel(result.result.status)} · ${fmt(result.result.filled)} ${asset?.asset}`);setQuantity('');setAccountTab(result.result.filled!=='0.00000000'?'positions':'orders');}};
   const prepareSell=(p:Position,half:boolean)=>{if (STOCKS_USDT_ONLY && p.currency !== 'USDT') return;const a=state?.catalogue.find(a=>a.id===p.instrumentId);if(a)choose(a);setCurrency(p.currency);setSide('SELL');setType('MARKET');setQuantity(new BigNumber(p.available).div(half?2:1).toFixed(8,BigNumber.ROUND_DOWN));setView('trade');};
   const toggleFavorite=(assetId:string)=>setFavorites(old=>{const n=old.includes(assetId)?old.filter(x=>x!==assetId):[...old,assetId];localStorage.setItem('voltex.stocks.global.favorites',JSON.stringify(n));return n;});
   const filtered=state?.catalogue.filter(a=>(region==='FAV'?favorites.includes(a.id):a.region===region)&&`${a.ticker} ${a.asset} ${a.name} ${a.provider}`.toLowerCase().includes(search.toLowerCase()))||[];
