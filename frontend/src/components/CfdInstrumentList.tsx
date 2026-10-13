@@ -29,6 +29,8 @@ export function CfdInstrumentList({symbol,onChange,tickers,configured,loadError,
   const toggleSort=(field:'price'|'change')=>{setSort(current=>nextMarketColumnSort(current,field));if(listRef.current)listRef.current.scrollTop=0;};
   const arrow=(field:'price'|'change')=>sort?.field===field?(sort.dir===-1?'▼':'▲'):'⇅';
   return <div className="cfd-instruments">
+    {/* The same «Рынки» title row the Spot market list carries (owner 2026-10-13: the CFD panel read as untitled and empty). */}
+    <div className="pairs-header cfd-instruments-header"><span>{t('markets.title')}</span></div>
     <div className="pairs-search"><input aria-label={t('trade.cfdInstrument')} placeholder={t('trade.cfdInstrument')} value={search} onChange={event=>setSearch(event.target.value)}/></div>
     <div className="cfd-columns"><span>{t('trade.cfdInstrument')}</span><button type="button" className="cfd-align-right" aria-pressed={sort?.field==='price'} onClick={()=>toggleSort('price')}>{t('markets.price')} <span aria-hidden>{arrow('price')}</span></button><button type="button" className="cfd-align-right" aria-pressed={sort?.field==='change'} onClick={()=>toggleSort('change')}>{t('markets.change24h')} <span aria-hidden>{arrow('change')}</span></button></div>
     <div className="cfd-list" ref={listRef}>

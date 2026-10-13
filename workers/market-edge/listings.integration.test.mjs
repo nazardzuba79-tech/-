@@ -247,8 +247,10 @@ test('Render registry route returns published configs with the seed only behind 
 
 test('bounded AITH demo stays private until publish and its program survives DO restart and UI saves', async () => {
   const program={kind:'capped-growth-range-v1',first24hGainPercent:1725,maxGainPercent:9247,peakAfterHours:168,rangeFraction:.12};
+  // A listing about to be published must be in the future. Use the existing
+  // rounded-time fixture helper rather than a date that expires in CI.
   const cfg=config({symbol:'AITH',name:'Aitheron AI',initialPrice:'0.80',tradable:false,ownerAllocation:'0',
-    listingAt:'2026-10-11T15:00:00Z',simulationProgram:program});
+    listingAt:iso(3_600_000),simulationProgram:program});
   const saved=await saveDraft('aith-demo',cfg,0);
   assert.equal(saved.status,200);
   assert.ok(!(await catalogue()).assets.some(a=>a.symbol==='AITH'),'no draft countdown');
