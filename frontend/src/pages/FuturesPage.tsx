@@ -812,6 +812,7 @@ export function FuturesPage() {
             {bottomTab === 'positions' && (
               <FuturesPositionsPanel
                 archive={archivePreview}
+                mobile={compact}
                 symbolFilter={archivePreview && onlyCurrentPair ? symbol : undefined}
                 refreshKey={positionsRefreshKey}
                 tab="open"
