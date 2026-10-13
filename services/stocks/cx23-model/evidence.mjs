@@ -61,6 +61,8 @@ export function reconcileJournal(text) {
   for (const event of events.filter(r => r.event === 'dispatch' || r.event === 'settlement')) {
     if (event.evidenceVersion !== EVIDENCE_VERSION || !Number.isSafeInteger(event.requestId) || event.requestId <= 0) { issues.push('INVALID_REQUEST_ID_OR_VERSION'); continue; }
     const map = event.event === 'dispatch' ? starts : ends;
+    if (event.event === 'dispatch' && event.requestId !== starts.size + 1) issues.push('DISPATCH_SEQUENCE_GAP_OR_REORDER');
+    if (event.event === 'settlement' && !starts.has(event.requestId)) issues.push('SETTLEMENT_BEFORE_DISPATCH');
     if (map.has(event.requestId)) issues.push('DUPLICATE_' + event.event.toUpperCase());
     else map.set(event.requestId, event);
   }
@@ -75,4 +77,11 @@ export function reconcileJournal(text) {
     dispatchCoverage: 'RECORDED', dispatched: starts.size, settled: outcomes.length,
     successes: outcomes.filter(r => r.ok === true).length, httpFailures: outcomes.filter(r => r.ok === false).length,
     unknown: unknown.length, unknownAttempts: unknown, issues, malformedLines: malformed };
+}
+export function evidenceCasePass(result) {
+  const w = result?.workload, c = w?.cryptoSchedule;
+  return result?.complete === true && w?.functionalContractsPass === true && result.finiteIdle?.status === 'PASS'
+    && w.stocks?.failures === 0 && w.crypto?.failures === 0 && Array.isArray(w.sourceErrors) && w.sourceErrors.length === 0
+    && Number.isSafeInteger(c?.expectedCycles) && c.expectedCycles > 0 && c.completedCycles === c.expectedCycles
+    && w.crypto.attempts === c.expectedCycles * 14 && w.attemptEvidence?.complete === true;
 }

@@ -77,3 +77,11 @@ test('actual git transition distinguishes first plan from doc-only change; missi
     assert.throws(()=>selectFromRepository({ event: { ...event, before: 'a'.repeat(40) }, repository, cwd }));
   } finally { rmSync(cwd,{recursive:true,force:true}); }
 });
+
+test('targeted model evidence v2 launches only model and never repeats on unchanged plan', () => {
+  const next = { ...plan, id: 'targeted-model-evidence-v2', stage: 'model-evidence-v2' };
+  const result = selectReview({ event, repository, plan: next, previousPlan: plan });
+  assert.equal(result.model, true);
+  for (const key of ['legacy','diagnostic','timeline','registration','matched']) assert.equal(result[key], false);
+  assert.equal(selectReview({ event, repository, plan: next, previousPlan: next }).model, false);
+});

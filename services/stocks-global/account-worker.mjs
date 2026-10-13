@@ -19,7 +19,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
   const updateClock=()=>{if(clock){const time=now();check(Number.isSafeInteger(time)&&time>=0,'ACCOUNT_CONFIG_INVALID');Atomics.store(clock,0,BigInt(time));}};
   updateClock();
   const worker=new Worker(new URL('./account-worker-runtime.mjs',import.meta.url),{workerData:{path,diagnostics:!!diagnostics,clock:clock?.buffer,testControl,registrationControl}});
-  let ready=false,dead=false,closing=false,closed=false,closeSent=false,active=null,serial=0,bytes=0,admissionTurn=null;
+  let ready=false,dead=false,closing=false,closed=false,closeSent=false,active=null,serial=0,bytes=0;
   const queue=[],counters={accepted:0,dispatched:0,completed:0,rejected:0,timedOut:0,cancelledReads:0,cancelledObservations:0,maxPending:0,maxBytes:0,waitMs:0,maxWaitMs:0,workMs:0,logicalWorkMs:0,registrationGroups:0,groupedRegistrations:0,maxRegistrationGroup:0};
   let sqlMetrics={sqlCalls:0,sqlReadCalls:0,sqlWriteCalls:0,sqlExecCalls:0,transactionExecCalls:0,sqlWallMs:0,sqlCpuMs:0,sqlThreadCpuAvailable:0,sqlStages:{},observedAt:0};
   let resolveReady,rejectReady,resolveClose,closePromise;
@@ -27,17 +27,14 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
   const error=code=>new SimError(code);
   const detachAbort=entry=>entry.signal?.removeEventListener('abort',entry.onAbort);
   const settle=(entry,code,value)=>{clearTimeout(entry.timer);detachAbort(entry);bytes-=entry.bytes;if(code)entry.reject(error(code));else entry.resolve(value);};
-  const clearAdmissionTurn=()=>{if(admissionTurn!==null){clearImmediate(admissionTurn);admissionTurn=null;}};
   const fatal=()=>{
     if(dead||closed)return;dead=true;rejectReady(error('ACCOUNT_UNAVAILABLE'));
-    clearAdmissionTurn();
     if(active){const group=active;active=null;for(const entry of group.entries)settle(entry,group.registrationBatch||ACCOUNT_MUTATIONS.has(entry.type)?'ACCOUNT_OUTCOME_UNKNOWN':'ACCOUNT_UNAVAILABLE');}
     for(const entry of queue.splice(0))settle(entry,'ACCOUNT_UNAVAILABLE');
     resolveClose?.();
   };
   const pump=()=>{
     if(!ready||dead||active)return;
-    clearAdmissionTurn();
     const entries=[];
     while(queue.length){
       const entry=queue[0],waited=performance.now()-entry.enqueued;
@@ -108,13 +105,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
         signal.addEventListener('abort',entry.onAbort,{once:true});
         if(signal.aborted)entry.onAbort();
       }
-      // Give an idle registration burst one check-phase opportunity to use the
-      // existing bounded group transaction. Entries keep their admission bytes,
-      // timers and FIFO position until pump performs its normal deadline check.
-      // Completion, cancellation, timeout and close drains remain immediate.
-      if(!active&&queue[0]?.type==='ensure'){
-        if(admissionTurn===null)admissionTurn=setImmediate(()=>{admissionTurn=null;pump();});
-      }else if(admissionTurn===null)pump();
+      pump();
     });
   };
   return{
@@ -129,7 +120,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
     close(){
       if(closePromise)return closePromise;
       if(dead||closed)return Promise.resolve();
-      closing=true;clearAdmissionTurn();closePromise=new Promise(resolve=>{resolveClose=resolve;});pump();return closePromise;
+      closing=true;closePromise=new Promise(resolve=>{resolveClose=resolve;});pump();return closePromise;
     },
   };
 }

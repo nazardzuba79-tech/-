@@ -21,10 +21,17 @@ export function fixtureBody(url, now = Date.now()) {
   throw Error('FIXTURE_TRANSPORT_DENIED');
 }
 export async function startStocks({ path, port = 18092, diagnostics = true } = {}) {
-  let starts = 0; const startsByHost = {};
+  let starts = 0, transportInflight = 0; const startsByHost = {};
   const hub = new MarketHub({ fetchImpl: async url => {
-    const u = new URL(url); const body = fixtureBody(u); starts++; startsByHost[u.hostname] = (startsByHost[u.hostname] || 0) + 1;
-    return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
+    transportInflight++; let finished = false;
+    const finish = () => { if (!finished) { finished = true; transportInflight--; } };
+    try { const u = new URL(url); const body = fixtureBody(u); starts++; startsByHost[u.hostname] = (startsByHost[u.hostname] || 0) + 1;
+      const reader = new Response(JSON.stringify(body)).body.getReader();
+      const stream = new ReadableStream({ async pull(controller) { try { const r = await reader.read();
+        if (r.done) { finish(); controller.close(); } else controller.enqueue(r.value);
+      } catch (error) { finish(); controller.error(error); } }, async cancel() { try { await reader.cancel(); } finally { finish(); } } });
+      return new Response(stream, { headers: { 'Content-Type': 'application/json' } });
+    } catch (error) { finish(); throw error; }
   } });
   // The real quote/history adapters and their TTL, start budgets and queues remain intact.
   // Only discovery is fixture-seeded. Inert metadata never enters this runtime catalogue.
@@ -40,6 +47,7 @@ export async function startStocks({ path, port = 18092, diagnostics = true } = {
     } });
   return { app, metrics: () => ({ pid: process.pid, cpu: process.cpuUsage(), memory: process.memoryUsage(),
     fixtureTransportStarts: starts, startsByHost: { ...startsByHost }, hub: { ...hub.metrics },
+    live: { transportInflight, quoteInflight: hub.inflight.size, historyInflight: hub.historyFlights.size, historyActive: hub.historyActive, historyQueued: hub.historyQueue.length },
     accounts: app.accountMetrics(), externalApiCalls: 0, activeInstrumentCount: IDS.length, inertMetadataCount: INERT.length }) };
 }
 if (process.argv[1]?.endsWith('stocks-fixture.mjs')) {

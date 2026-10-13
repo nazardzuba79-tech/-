@@ -13,7 +13,47 @@ import { installLoopbackDbGuard } from './network-guard.cjs';
 import net from 'node:net';
 import { requireEmptyDirectory, requireFreePorts, requireImageRevision, controlJson, cleanupWithEvidence } from './safety.mjs';
 import { writeFile } from 'node:fs/promises';
-import { validState, validHistory, idleEvidence, createJournal, reconcileJournal } from './evidence.mjs';
+import { validState, validHistory, idleEvidence, createJournal, reconcileJournal, evidenceCasePass } from './evidence.mjs';
+import { modelPlan, expectedAccountRoles } from './plan.mjs';
+import { measureFiniteIdle } from './idle.mjs';
+import { proveForcedInterruption } from './interruption.mjs';
+
+test('targeted mode schedules exactly30 loaded repetitions without inventing crypto controls', () => {
+  const p = modelPlan('evidence-v2');
+  assert.equal(p.labels.length, 30); assert.equal(p.profiles.length, 10); assert.equal(p.overheadLabels.length, 0);
+  assert(p.labels.every(x => x.includes('-loaded-'))); assert.equal(p.cryptoComparison, 'NOT_RUN_NO_MATCHED_CONTROLS');
+  assert.equal(modelPlan().labels.length + modelPlan().overheadLabels.length, 66);
+  assert.deepEqual(expectedAccountRoles({ profile: 'idle', viewers: 0 }), []);
+  assert.deepEqual(expectedAccountRoles({ profile: '5-shared', viewers: 5 }), ['owner', 'viewer-0', 'viewer-1', 'viewer-2', 'viewer-3', 'viewer-4']);
+  assert.throws(() => modelPlan('lighter'), /INVALID_CX23_MODE/);
+});
+test('finite idle gate drains before measuring and rejects new work, stale clocks and missing evidence', async () => {
+  const run = async change => {
+    let time = 0, calls = 0;
+    return measureFiniteIdle({ expectedRoles: ['owner'], interestProof: { expectedAccounts: 1, accounts: [{ role: 'owner', uninterested: true }] }, now: () => time, sleep: async ms => { time += ms; }, drainTimeoutMs: 10, windowMs: 20, intervalMs: 5,
+      sample: async () => { const s = { at: time, stocks: { fixtureTransportStarts: 4, accounts: { workerAlive: 1, queue: { dispatched: 3, pending: 0, active: calls++ === 0 ? 1 : 0 } }, live: { transportInflight: 0, quoteInflight: 0, historyInflight: 0, historyActive: 0, historyQueued: 0 } } }; change?.(s, calls); return s; } });
+  };
+  const good = await run(); assert.equal(good.status, 'PASS'); assert.equal(good.dispatchedDelta, 0); assert.equal(good.providerStartsDelta, 0); assert(good.samples.length >= 6);
+  assert.equal((await run((s,n) => { if(n>2)s.stocks.fixtureTransportStarts++; })).status, 'FAIL');
+  assert.equal((await run((s,n) => { if(n>2)s.stocks.accounts.queue.dispatched++; })).status, 'FAIL');
+  assert.equal((await run(s => { s.stocks.accounts.queue.active = 1; })).reason, 'DRAIN_BARRIER_TIMEOUT');
+  assert.equal((await run(s => { delete s.stocks.live; })).status, 'INCOMPLETE');
+  assert.equal((await run(s => { s.at = 0; })).reason, 'IDLE_SAMPLE_CLOCK_NOT_ADVANCING');
+  assert.equal((await measureFiniteIdle({ expectedRoles: ['owner'], interestProof: { expectedAccounts: 0, accounts: [] } })).reason, 'POST_RELEASE_ACCOUNT_INTEREST_UNVERIFIED');
+});
+test('known HTTP/source failures cannot be hidden behind functional and idle PASS', () => {
+  const good = { complete: true, finiteIdle: { status: 'PASS' }, workload: { functionalContractsPass: true, stocks: { failures: 0 }, crypto: { failures: 0, attempts: 1120 }, cryptoSchedule: { expectedCycles: 80, completedCycles: 80 }, sourceErrors: [], attemptEvidence: { complete: true } } };
+  assert.equal(evidenceCasePass(good), true);
+  for (const patch of [{ stocks: { failures: 1 } }, { sourceErrors: [{ code: 'RATE_LIMIT' }] }, { crypto: { failures: 1, attempts: 1120 } }, { cryptoSchedule: { expectedCycles: 80, completedCycles: 79 } }, { attemptEvidence: { complete: false } }])
+    assert.equal(evidenceCasePass({ ...good, workload: { ...good.workload, ...patch } }), false);
+});
+test('forced child interruption retains dispatched HTTP as UNKNOWN in raw journal', { timeout: 15000 }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'cx23-interrupted-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const result = await proveForcedInterruption(join(dir, 'proof'));
+  assert.equal(result.pass, true); assert.equal(result.reconciliation.unknown, 1); assert.equal(result.reconciliation.complete, false);
+  assert.match(readFileSync(join(dir, 'proof/interrupted.attempts.ndjson'), 'utf8'), /"event":"dispatch"/);
+});
 test('aggregate quota proof fails closed for missing, unbounded and per-container-wrong budgets', () => {
   const correct = { cpuMax: '200000 100000', memoryMax: String(MODEL.memory), memoryPeak: '100', memoryEvents: 'oom 0\noom_kill 0', cpuStat: 'usage_usec 1' };
   assert.equal(verifyBudget(correct), true);
@@ -75,6 +115,8 @@ test('dispatch journal preserves interrupted unknowns, one settlement, bounded p
   assert.equal(reconcileJournal(raw() + '\n' + JSON.stringify({ kind: 'stocks', ok: false, ms: 3000, code: 'DEADLINE_3000MS' })).complete, false);
   assert.equal(reconcileJournal(raw() + '\n' + JSON.stringify({ unexpected: true })).complete, false);
   assert.equal(reconcileJournal(raw() + '\nnull').complete, false);
+  assert.equal(reconcileJournal([{ ...events[0], requestId: 3 }, { ...events[1], requestId: 3 }].map(e => JSON.stringify(e)).join('\n')).complete, false);
+  assert.equal(reconcileJournal([events[1], events[0]].map(e => JSON.stringify(e)).join('\n')).complete, false);
   const auxiliary = [{ evidenceVersion: 2, event: 'graph-validation', requestId: id, valid: true }, { evidenceVersion: 2, event: 'source-observation', kind: 'source-observation', requestId: id, code: 'QUOTE_STALE' }];
   assert.equal(reconcileJournal(raw() + '\n' + auxiliary.map(e => JSON.stringify(e)).join('\n')).complete, true);
   assert.equal(reconcileJournal(JSON.stringify({ kind: 'stocks', ok: true, ms: 1 })).dispatchCoverage, 'UNVERIFIED');
@@ -136,10 +178,14 @@ test('local model owner cycle and readonly viewer lifecycle reuse real Stocks se
   const stub = createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(req.url === '/metadata' ? { catalogue: [...IDS.map(id => ({ id })), ...INERT] } : { ok: true })); });
   await new Promise(ok => stub.listen(0, '127.0.0.1', ok));
   t.after(async () => { await f.app.close(); await new Promise(ok => stub.close(ok)); await rm(dir, { recursive: true, force: true }); });
-  const result = await runWorkload({ profile: 'local-harness-unit', viewers: 1, pattern: 'shared', seconds: 11,
+  const result = await runWorkload({ profile: 'local-harness-unit', viewers: 1, pattern: 'shared', seconds: 11, verifyReleased: true,
     stocksBase: `http://127.0.0.1:${f.app.port}`, cryptoBase: `http://127.0.0.1:${stub.address().port}`, controlBase: `http://127.0.0.1:${stub.address().port}` });
   assert.deepEqual(result.contracts.filter(c => !c.pass), []);
   assert.equal(result.viewerMutationPosts, 0); assert.equal(result.stocks.failures, 0); assert.equal(f.metrics().externalApiCalls, 0);
+  assert.equal(result.interestProof.accounts.length, 2); assert(result.interestProof.accounts.every(r => r.uninterested));
+  assert.equal(result.postReleaseProofHttp.attempts, 2); assert.equal(result.measurementBoundary.postReleaseProofRequests, 2);
+  const idle = await measureFiniteIdle({ interestProof: result.interestProof, expectedRoles: ['owner', 'viewer-0'], sample: async () => ({ at: Date.now(), stocks: f.metrics() }) });
+  assert.equal(idle.status, 'PASS', JSON.stringify(idle)); assert.equal(idle.dispatchedDelta, 0);
   const cat = await (await fetch(`http://127.0.0.1:${f.app.port}/__stocks_global/catalogue`, { headers: { Authorization: 'Bearer cx23-fixture-owner' } })).json();
   assert.equal(cat.catalogue.length, 20); assert(cat.catalogue.every(i => !i.id.startsWith('FIXTURE_METADATA_ONLY:')));
 });

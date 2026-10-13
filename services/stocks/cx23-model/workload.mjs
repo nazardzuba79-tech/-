@@ -7,7 +7,7 @@ export const STEPS = ['spotCreate','spotCancel','spotMaker','spotFill','futuresC
 const sleep = ms => new Promise(ok => setTimeout(ok, Math.max(0, ms)));
 export const viewerCoveragePass = (rows, expected) => rows.length === expected && new Set(rows.map(r => r.viewer)).size === expected
   && rows.every(r => phaseCoveragePass(r.phases) && r.hiddenPhaseEntered === true);
-export async function runWorkload({ profile, viewers = 0, pattern = 'shared', seconds = 30, loaded = true, stocksBase = 'http://127.0.0.1:18092', cryptoBase = 'http://127.0.0.1:18094', controlBase = 'http://127.0.0.1:18093' }) {
+export async function runWorkload({ profile, viewers = 0, pattern = 'shared', seconds = 30, loaded = true, verifyReleased = false, stocksBase = 'http://127.0.0.1:18092', cryptoBase = 'http://127.0.0.1:18094', controlBase = 'http://127.0.0.1:18093' }) {
   const records = [], contracts = [], viewed = new Set(), successfulGraphs = new Set(), viewerCoverage = [], started = performance.now(), deadline = started + seconds * 1000;
   const cpuStart = process.cpuUsage();
   const cryptoSchedule = { expectedCycles: Math.ceil(seconds * 1000 / 250), startedCycles: 0, completedCycles: 0, startLatenessMs: [] };
@@ -138,6 +138,14 @@ export async function runWorkload({ profile, viewers = 0, pattern = 'shared', se
     for (let n = 0; n < viewers; n++) tasks.push(viewer(n));
   }
   await Promise.all(tasks);
+  const timedWorkloadElapsedMs = performance.now() - started;
+  const interestProof = verifyReleased ? { expectedAccounts: loaded && profile !== 'idle' ? viewers + 1 : 0, accounts: [] } : null;
+  if (verifyReleased) for (const role of [...state.keys()]) {
+    // No id: read actual polling/lease state without reacquiring chart demand.
+    const r = await stock(role, 'state', undefined, 'GET', 'idle-proof', { phase: 'postRelease' });
+    interestProof.accounts.push({ role, uninterested: r.ok && r.body?.metrics?.polling === false, requestId: r.requestId });
+  }
+  if (verifyReleased) check('all-post-release-interests-zero', interestProof.accounts.length === interestProof.expectedAccounts && interestProof.accounts.every(r => r.uninterested));
   cryptoSchedule.missedCycles = cryptoSchedule.expectedCycles - cryptoSchedule.completedCycles;
   check('crypto-planned-cycles-completed', cryptoSchedule.completedCycles === cryptoSchedule.expectedCycles, cryptoSchedule);
   if (loaded && viewers) check('all-scheduled-viewers-completed', viewerCoveragePass(viewerCoverage, viewers));
@@ -145,9 +153,13 @@ export async function runWorkload({ profile, viewers = 0, pattern = 'shared', se
   return { evidenceVersion: EVIDENCE_VERSION, fixture: true, profile, viewers, pattern, loaded, seconds, elapsedMs: performance.now() - started,
     attemptedInstrumentCardinality: viewed.size, attemptedInstrumentIds: [...viewed], successfulGraphInstrumentCardinality: successfulGraphs.size,
     successfulGraphInstrumentIds: [...successfulGraphs], viewerCoverage, metadataCatalogueCount: loaded && profile !== 'idle' ? 250 : 0,
-    viewerMutationPosts, records: http, sourceErrors, contracts, cryptoSchedule, functionalContractsPass: contracts.every(x => x.pass),
+    viewerMutationPosts, records: http, sourceErrors, contracts, cryptoSchedule, interestProof, functionalContractsPass: contracts.every(x => x.pass),
     journal: { dispatched: http.length + journal.pending().length, settled: http.length, pending: journal.pending(), complete: journal.pending().length === 0 },
     metadataCoverage: { residentFixtureComponents: 250, runtimeCatalogueCandidates: IDS.length, controlHttpRequests: loaded && profile !== 'idle' ? 1 : 0, browserRendering: 'NOT_TESTED' },
+    measurementBoundary: { timedWorkloadElapsedMs, postReleaseProofRequests: http.filter(r => r.context.phase === 'postRelease').length,
+      aggregateCpuScope: 'Runner initial to activeEnd includes post-release proof HTTP reads; finite idle sampler is measured separately after activeEnd. No separate timed-only server CPU attribution.' },
+    timedStocks: summarizeAttempts(http.filter(r => r.kind === 'stocks' && r.context.phase !== 'postRelease')),
+    postReleaseProofHttp: summarizeAttempts(http.filter(r => r.context.phase === 'postRelease')),
     loadGenerator: { cpu: process.cpuUsage(cpuStart), maxRssKiB: process.resourceUsage().maxRSS, outsideServerBudget: true, rawAttemptJournal: !!process.env.CX23_RAW_LOG },
     stocks: summarizeAttempts(http.filter(r => r.kind === 'stocks')), crypto: summarizeAttempts(http.filter(r => r.kind === 'crypto')),
     notes: ['Each row in records is one actual HTTP attempt. Source errors inside a 200 response are separate and never added again to HTTP failures.', 'Different viewers map to at most 20 existing US fixture instrument IDs, not 50 unique instruments.', 'No browser is driven here; lifecycle HTTP demand/release is modelled. Browser button silence remains separate browser-regression evidence.'] };

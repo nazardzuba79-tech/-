@@ -11,14 +11,15 @@ import { schedule } from './registration-run.mjs';
 import { validateBounds } from './run.mjs';
 const here=dirname(fileURLToPath(import.meta.url)),root=resolve(here,'../../..'),work=mkdtempSync(join(tmpdir(),'stocks-registration-source-test-'));
 const baseline=join(work,'baseline'),candidate=join(work,'candidate'),worker='services/stocks-global/account-worker.mjs';
-const revision='e'.repeat(40),hash=text=>createHash('sha256').update(text.toString('utf8').replace(/\r\n/g,'\n')).digest('hex');
+const revision='28aa7bac5c8a8d2cee53fb1a7c53765e6c9b9441',hash=text=>createHash('sha256').update(text.toString('utf8').replace(/\r\n/g,'\n')).digest('hex');
 function command(bin,args,options={}){const result=spawnSync(bin,args,{encoding:'utf8',timeout:30000,...options});assert.equal(result.status,0,result.stderr||result.error?.message);return result.stdout;}
 mkdirSync(baseline);command('git',['archive','--format=tar','--output='+join(work,'source.tar'),'06a0d1a748cd943e45df9aa60d25e4ca5ec1b9cb','services/stocks','services/stocks-global','services/stocks-simulator'],{cwd:root});command('tar',['-xf',join(work,'source.tar'),'-C',baseline]);cpSync(baseline,candidate,{recursive:true});
-writeFileSync(join(candidate,worker),readFileSync(join(root,worker)));
+// Retain the rejected experiment as historical evidence, never as active runtime.
+writeFileSync(join(candidate,worker),command('git',['show',revision+':'+worker],{cwd:root}));
 writeFileSync(join(candidate,'services/stocks/REVIEW-STAGING-512.md'),'Explicit diagnostic-only fixture content.');
 writeFileSync(join(candidate,'services/stocks/summarize-launch.cjs'),'// changed diagnostic fixture, excluded from images');
 
-test('paired candidate source contains exactly baseline92 files with only reviewed worker replacement',()=>{
+test('archived rejected candidate contains exactly baseline92 files with only reviewed worker replacement',()=>{
  const output=join(work,'verified'),manifest=prepareCandidate(baseline,candidate,output,revision);
  assert.equal(manifest.runtimeChanges.length,1);assert.equal(manifest.runtimeChanges[0].file,worker);assert.equal(manifest.serviceFiles.length,92);
  assert.equal(manifest.excludedNonRuntimeChanges.length,2);assert(!existsSync(join(output,'services/stocks/REVIEW-STAGING-512.md')));

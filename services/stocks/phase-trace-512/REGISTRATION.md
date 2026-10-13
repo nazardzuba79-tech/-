@@ -34,3 +34,7 @@ Tests:
 node --test services/stocks-global/account-registration-turn.test.mjs services/stocks-global/account-registration-batch.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-worker.test.mjs
 node --test services/stocks/phase-trace-512/registration.test.mjs services/stocks/phase-trace-512/timeline.test.mjs services/stocks/phase-trace-512/instrument.test.mjs
 ```
+
+## Measured disposition
+
+The candidate at `28aa7bac5c8a8d2cee53fb1a7c53765e6c9b9441` is REJECTED and removed from active runtime. Run38420023113/artifact11825992910 records baseline88 deadlines versus candidate89; steady p95 worsens in all three pairs. The exact candidate and its safety tests remain in that commit. Source-guard tests read the archived candidate, not the restored worker. Reproduce only by deliberately checking out that exact historical commit and following the original isolated instructions; do not run its experiment against the final restored runtime. Full measured comparison: `docs/qa/stocks/REGISTRATION-PAIR-28AA-20261013.md`.

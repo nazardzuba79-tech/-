@@ -19,7 +19,7 @@ export function selectReview({ event, repository, plan, previousPlan }) {
   if (!plan || Object.keys(plan).sort().join(',') !== 'baseline,id,schema,stage'
       || plan.schema !== 1 || plan.baseline !== BASELINE
       || !/^[a-z0-9-]{1,80}$/.test(plan.id ?? '')
-      || !['diagnostic', 'timeline', 'registration', 'model', 'diagnostic-and-model', 'matched-acceptance', 'report-only'].includes(plan.stage)) {
+      || !['diagnostic', 'timeline', 'registration', 'model', 'model-evidence-v2', 'diagnostic-and-model', 'matched-acceptance', 'report-only'].includes(plan.stage)) {
     throw Error('Invalid PR512 reviewed performance plan; no heavy jobs may start');
   }
   if (event.action !== 'synchronize' || !/^[0-9a-f]{40}$/.test(event.before ?? '')) {
@@ -33,7 +33,7 @@ export function selectReview({ event, repository, plan, previousPlan }) {
   result.diagnostic = ['diagnostic', 'diagnostic-and-model'].includes(plan.stage);
   result.timeline = plan.stage === 'timeline';
   result.registration = plan.stage === 'registration';
-  result.model = ['model', 'diagnostic-and-model'].includes(plan.stage);
+  result.model = ['model', 'model-evidence-v2', 'diagnostic-and-model'].includes(plan.stage);
   result.matched = plan.stage === 'matched-acceptance';
   // Original scripts, baselines, limits and pass criteria remain unmodified.
   result.legacy = result.matched;

@@ -74,6 +74,42 @@ neither A's 128 KiB/s disk budget nor measured Hetzner storage. A remains unchan
 
 ## Workload and interpretation
 
+`CX23_MODE=evidence-v2` selects a targeted follow-up: the ten original loaded
+profiles, three repetitions each (**30 cases**). It schedules no crypto-only
+controls and no instrumentation OFF/ON pairs. Crypto runs concurrently, but its
++5% coexistence comparison is **NOT RUN**. Never pair these rows with v1 controls.
+The default `paired` mode retains the original 66-case plan and limits.
+
+The targeted mode preserves a killed-child HTTP proof under `forced-interruption/`:
+the local fixture sees the dispatched request, the child is terminated, and raw
+journal reconciliation must show one `INTERRUPTED_UNKNOWN` with no settlement.
+That expected failure is a journal regression, not a benchmark success or latency.
+
+For each targeted case, explicit lifecycle releases happen first. Read-only state
+requests without an instrument then verify actual `metrics.polling=false` for the
+exact expected fixture roles from the plan (owner and every viewer; none for idle).
+These reads do **not** release leases themselves. They cause SQL reads, all of
+which finish before the drain barrier. Their HTTP metrics are separate in
+`postReleaseProofHttp`; `timedStocks` excludes them. Aggregate CPU from initial to
+activeEnd includes these proof reads and is labelled accordingly.
+
+The barrier waits at most 5s for the live account queue, provider transport body,
+MarketHub inflight maps and history queue to drain. A 3.4s window then samples fresh
+metrics every 200ms, requiring zero active/pending work, unchanged cumulative queue
+dispatch/provider-start counts, strictly advancing timestamps, and at least 3.4s
+of source-clock coverage. Raw baseline/samples/final and expected-role proof are
+retained in `finiteIdle`. This proves only that finite observed window. Cached SQL
+snapshots remain diagnostic. Idle collector overhead is outside the active CPU
+window and included in the separate idle delta. Missing metrics fail closed.
+
+Execution completeness and functional outcome remain separate: any HTTP/source
+error, missed crypto cycle, invalid journal or failed finite idle proof causes a
+failed targeted outcome even if other contracts pass. Every scheduled row is
+still retained; no criteria or runtime trading rules are relaxed.
+
+Estimated targeted cost is 25–30 minutes on the same CI runner, based on the
+startup-dominated 66-case run. This is a planning estimate, not a runtime guarantee.
+
 Default duration is 20 seconds (same nominal 80 × 250ms crypto cycle schedule as
 the historical comparator; each cycle has 14 HTTP operations). `CX23_SECONDS`
 may explicitly select 20–60; the duration must be reported. Requests have the
