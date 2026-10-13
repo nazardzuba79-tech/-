@@ -1,0 +1,24 @@
+✔ one exact build-memory hostname hunk; actual source is never overwritten (4.4523ms)
+✔ static fixture has manifest-only paths and strict finite read authority context (344.3202ms)
+✔ NSS helper accepts Linux only; never invokes Windows certutil (2.4349ms)
+✔ NSS inventory requires exactly the private server-CA entry (1.7772ms)
+✔ owned browser launch rejects every certificate/security bypass spelling (0.6373ms)
+✔ explicit CA and exact SNI/Host/Origin admit fixture; other trust and authorities fail (43.3811ms)
+✔ trusted fixture issuer with a wrong leaf SAN fails normal hostname verification (4.2184ms)
+✔ raw duplicate headers and caller identity headers never reach upstream (11.6735ms)
+✔ body framing, method, route and bounded response fail closed (16.7646ms)
+✔ incomplete order body disconnected before admission never reaches upstream (30.8642ms)
+✔ HTTP parser bounds and ambiguous or streamed body framing deny before upstream (9.5218ms)
+✔ disconnect cancels only in-flight fixture upstream request (39.3457ms)
+✔ bounded upstream wait returns explicit timeout and drains (64.7016ms)
+✔ feature off denies existing authenticated-looking clients without upstream work (16.5744ms)
+✔ feature off during partial POST denies admission before any upstream request (9.9304ms)
+✔ opt-in public fixture GET requires exact TLS authority and same-origin request context (38.3043ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 709.9283

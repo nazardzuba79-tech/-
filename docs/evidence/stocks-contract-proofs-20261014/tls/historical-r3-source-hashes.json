@@ -1,0 +1,18 @@
+[
+  {
+    "file": "scripts/qa-stocks-tls-ingress.cjs",
+    "sha256": "3f93334e402dc2b47a8b0fd8bb13f0178a518975b2ee47dbcc883d5583cc033d"
+  },
+  {
+    "file": "scripts/qa-stocks-tls-rehearsal.cjs",
+    "sha256": "03e828208dc876d5f25e633d12812abd309e5d64d9499c68fb06711521662a99"
+  },
+  {
+    "file": "scripts/qa-stocks-local-stage-recovery.cjs",
+    "sha256": "17f4aef038e94882a846ab7fc044b07696f8426ca3f165ff00895446daae217d"
+  },
+  {
+    "file": "scripts/qa-stocks-local-stage-fixture.cjs",
+    "sha256": "3c4a90680114297b99d013091c8b27b708bd541dc8eb7579cce770d9597aa6d6"
+  }
+]

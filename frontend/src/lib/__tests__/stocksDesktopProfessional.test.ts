@@ -1,3 +1,4 @@
+import { stockTranslator } from '../../pages/stocks/global/stockText';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -8,8 +9,8 @@ const frontend = resolve(__dirname, '../../..'), req = createRequire(resolve(fro
 const React = req('react'), { createRoot } = req('react-dom/client'), { JSDOM } = req('jsdom');
 const imports: Record<string, unknown> = {
   react: React, 'react/jsx-runtime': req('react/jsx-runtime'),
-  'react-router-dom': req('react-router-dom'), './tradeMarkers': grouping,
-  'bignumber.js': req('bignumber.js'),
+  'react-router-dom': req('react-router-dom'), './useStocksText':{useStocksText:()=>({s:stockTranslator('ru'),lang:'ru',locale:'ru-RU'})}, './tradeMarkers': grouping,
+  'bignumber.js': req('bignumber.js'), '../../../components/LanguageSwitcher': { LanguageSwitcher: () => null },
 };
 const components: any = {};
 new Function('exports', 'require', ts.transpileModule(

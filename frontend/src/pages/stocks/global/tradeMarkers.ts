@@ -1,3 +1,5 @@
+import type { Lang } from '../../../lib/i18n';
+import { stockTranslator } from './stockText';
 import type { Candle, Fill } from './types';
 
 export type TradeGroup = { time: number; fills: Fill[] };
@@ -42,8 +44,9 @@ export function layoutTradeGroups(groups: TradeGroup[], coordinate: (time: numbe
   return positioned;
 }
 
-export function quoteAge(timestamp: number | undefined, now: number): string {
-  if (!timestamp || !Number.isFinite(timestamp)) return 'Время не подтверждено';
+export function quoteAge(timestamp: number | undefined, now: number, lang: Lang = 'ru'): string {
+  const s=stockTranslator(lang);
+  if (!timestamp || !Number.isFinite(timestamp)) return s("Время не подтверждено");
   const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
-  return seconds < 60 ? `${seconds} с назад` : seconds < 3600 ? `${Math.floor(seconds / 60)} мин назад` : `${Math.floor(seconds / 3600)} ч назад`;
+  return seconds < 60 ? s("{value0} с назад", {value0: seconds}) : seconds < 3600 ? s("{value0} мин назад", {value0: Math.floor(seconds / 60)}) : s("{value0} ч назад", {value0: Math.floor(seconds / 3600)});
 }

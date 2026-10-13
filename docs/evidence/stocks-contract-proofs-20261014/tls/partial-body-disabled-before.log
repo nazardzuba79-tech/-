@@ -1,0 +1,29 @@
+✖ feature off during partial POST denies admission before any upstream request (54.7914ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 481.2148
+
+✖ failing tests:
+
+test at scripts\qa-stocks-tls-ingress.test.cjs:73:1
+✖ feature off during partial POST denies admission before any upstream request (54.7914ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 503
+  
+      at TestContext.<anonymous> (C:\Users\nazar\Documents\Codex\2026-10-06\admin-listings-aith-usdt-0-80\work\stocks-owner-portfolio-20261013\scripts\qa-stocks-tls-ingress.test.cjs:83:38)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 503,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

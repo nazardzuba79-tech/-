@@ -1,0 +1,37 @@
+{
+  "fixtureOnly": true,
+  "entries": [
+    {
+      "file": "sanitized-before.log",
+      "bytes": 10330,
+      "sha256": "fdddaa4bb201995970ff2de1f39fc638c883acec76270a97944c766c39919584",
+      "source": "public-wallet-host-before.log",
+      "sourceSha256": "5a494c4bdec92db4718db17a1569fcbce1d41965a8b47a065a3223c844f8f155",
+      "transformation": "Replaced six fixture-only Authorization values with [REDACTED_FIXTURE_AUTHORIZATION]; all failure/count details retained"
+    },
+    {
+      "file": "after-wallet.log",
+      "bytes": 391,
+      "sha256": "699f0760828ca2b807b6a4b00448a86fd5b972e1e65c10d5c9a493896a10788d",
+      "source": "public-wallet-host-after.log",
+      "sourceSha256": "699f0760828ca2b807b6a4b00448a86fd5b972e1e65c10d5c9a493896a10788d",
+      "rawUnchanged": true
+    },
+    {
+      "file": "after-existing-stocks.log",
+      "bytes": 594,
+      "sha256": "224966150c0d848abaffda0351696efbe8422bc60f0611b271396b4e391439da",
+      "source": "public-wallet-host-existing-regression.log",
+      "sourceSha256": "224966150c0d848abaffda0351696efbe8422bc60f0611b271396b4e391439da",
+      "rawUnchanged": true
+    },
+    {
+      "file": "source-manifest.json",
+      "bytes": 1022,
+      "sha256": "523a6dd1904441a9706857f2dfc25a25bcdc78783a3c5f383fc0f2cf5408bf01",
+      "source": "public-wallet-host-manifest.json",
+      "sourceSha256": "523a6dd1904441a9706857f2dfc25a25bcdc78783a3c5f383fc0f2cf5408bf01",
+      "rawUnchanged": true
+    }
+  ]
+}

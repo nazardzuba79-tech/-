@@ -1,0 +1,36 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),http=require('node:http');
+const {once}=require('node:events');
+const {staticFixture,sha}=require('./qa-stocks-public-fixtures.cjs');
+const {certificates,createIngress,request,PREFIX}=require('./qa-stocks-tls-ingress.cjs');
+const {raw}=require('./qa-stocks-tls-rehearsal.cjs');
+test('one exact build-memory hostname hunk; actual source is never overwritten',async()=>{
+  const {shadow,BEFORE,AFTER}=await import('./qa-stocks-public-build.mjs');
+  const source='if ('+BEFORE+') return true;';
+  assert.equal(shadow(source),'if ('+AFTER+') return true;');
+  assert.throws(()=>shadow('no hostname'));assert.throws(()=>shadow(source+source));
+});
+test('static fixture has manifest-only paths and strict finite read authority context',async t=>{
+  assert.ok(process.env.STOCKS_FIXTURE_PYTHON,'Explicit fixture Python executable required');
+  const credentials=certificates(process.env.STOCKS_FIXTURE_PYTHON);
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'stocks-static-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  const bytes=Buffer.from('{"fixtureAsset":true}');fs.writeFileSync(path.join(dir,'index.html'),bytes);
+  let calls=0;const authority=http.createServer((_req,res)=>{calls++;res.setHeader('content-type','application/json');res.end('{"id":"fixture-owner"}');});
+  authority.listen(0,'127.0.0.1');await once(authority,'listening');t.after(()=>new Promise(r=>authority.close(r)));
+  const origin='http://127.0.0.1:'+authority.address().port,audit={denied:[],authorityReads:0,fixtureReads:[],assets:0};
+  const handler=staticFixture({build:{dist:dir,files:[{path:'index.html',sha256:sha(bytes),bytes:bytes.length}]},authorityOrigin:origin,reads:new Map(),audit});
+  const ingress=await createIngress({credentials,upstreamOrigin:origin,allowSameOriginRead:true,staticHandler:handler});t.after(()=>ingress.close());
+  assert.equal((await request(ingress,credentials,{path:'/stocks',headers:{origin:undefined,'sec-fetch-site':'none'}})).status,200);
+  assert.equal((await request(ingress,credentials,{path:'/stocks',headers:{host:'wrong.invalid'}})).status,400);
+  assert.equal((await request(ingress,credentials,{path:'/outside',headers:{origin:undefined}})).status,404);
+  assert.equal((await request(ingress,credentials,{path:'/stocks',headers:{origin:'https://wrong.invalid'}})).status,403);
+  assert.equal((await request(ingress,credentials,{method:'POST',path:'/api/v1/me',body:{}})).status,405);
+  assert.equal((await request(ingress,credentials,{path:'/api/v1/me',headers:{origin:undefined,authorization:'Bearer disposable'}})).status,200);
+  assert.equal((await request(ingress,credentials,{path:'/api/v1/me',headers:{origin:undefined,'sec-fetch-site':'none',authorization:'Bearer disposable'}})).status,403);
+  assert.equal((await request(ingress,credentials,{path:'/api/v1/me',headers:{origin:undefined}})).status,401);
+  assert.equal((await request(ingress,credentials,{path:'/api/v1/orders',headers:{authorization:'Bearer disposable'}})).status,404);
+  assert.equal((await raw(ingress,credentials,'GET /stocks HTTP/1.1\r\nHost: '+ingress.authority+'\r\nOrigin: '+ingress.origin+'\r\nOrigin: '+ingress.origin+'\r\nConnection: close\r\n\r\n')).status,400);
+  assert.equal(calls,1);
+  fs.writeFileSync(path.join(dir,'index.html'),'changed');
+  assert.equal((await request(ingress,credentials,{path:'/stocks'})).status,500);
+});

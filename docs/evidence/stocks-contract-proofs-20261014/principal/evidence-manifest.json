@@ -1,0 +1,69 @@
+{
+  "fixtureOnly": true,
+  "entries": [
+    {
+      "file": "report.json",
+      "bytes": 13934,
+      "sha256": "a41c2c09faa7ec6f8064dfc75a8031161254555bc8dc0d2b9e72dd57c71a2072",
+      "source": "principal-projection-artifact-current/report.json",
+      "sourceSha256": "a41c2c09faa7ec6f8064dfc75a8031161254555bc8dc0d2b9e72dd57c71a2072",
+      "rawUnchanged": true
+    },
+    {
+      "file": "source-manifest.json",
+      "bytes": 609,
+      "sha256": "0289281544fcfe49e4d189233e77231c3cde7f9f62c577533a5539bdf1613c73",
+      "source": "principal-projection-artifact-current/source-manifest.json",
+      "sourceSha256": "0289281544fcfe49e4d189233e77231c3cde7f9f62c577533a5539bdf1613c73",
+      "rawUnchanged": true
+    },
+    {
+      "file": "child.log",
+      "bytes": 92,
+      "sha256": "640708d16ecf9b9bfed4d33d62d52100dcc17d888e6950e40ecb2e89dc7f35ed",
+      "source": "principal-projection-artifact-current/child.log",
+      "sourceSha256": "640708d16ecf9b9bfed4d33d62d52100dcc17d888e6950e40ecb2e89dc7f35ed",
+      "rawUnchanged": true
+    },
+    {
+      "file": "invocation.log",
+      "bytes": 208,
+      "sha256": "260427667bc859d703b66d710236fbe7515a7ebc39222edfdabc1bd76fc62aa3",
+      "source": "principal-projection-artifact-current.log",
+      "sourceSha256": "260427667bc859d703b66d710236fbe7515a7ebc39222edfdabc1bd76fc62aa3",
+      "rawUnchanged": true
+    },
+    {
+      "file": "guard-tests.log",
+      "bytes": 554,
+      "sha256": "f0c3ccf9821c3186a2cbc10750729b8309044071584d5fa6e522ceaf47076f5e",
+      "source": "principal-projection-artifact-tests.log",
+      "sourceSha256": "f0c3ccf9821c3186a2cbc10750729b8309044071584d5fa6e522ceaf47076f5e",
+      "rawUnchanged": true
+    },
+    {
+      "file": "guard-source-manifest.json",
+      "bytes": 596,
+      "sha256": "02ee7aeda78d6bb1a8bcc9abd9b36f9fd6613f219eba135b7905c5825eaa6475",
+      "source": "principal-projection-artifact-manifest.json",
+      "sourceSha256": "02ee7aeda78d6bb1a8bcc9abd9b36f9fd6613f219eba135b7905c5825eaa6475",
+      "rawUnchanged": true
+    },
+    {
+      "file": "build-provenance.json",
+      "bytes": 86800,
+      "sha256": "dc7df0493d844f77353bfea6b5b69d2a5238e474bb8e403481373853173c1d6f",
+      "source": "tls-stage-20261014-r3/local-stage/build-provenance.json",
+      "sourceSha256": "dc7df0493d844f77353bfea6b5b69d2a5238e474bb8e403481373853173c1d6f",
+      "rawUnchanged": true
+    },
+    {
+      "file": "build.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "tls-stage-20261014-r3/local-stage/build.log",
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rawUnchanged": true
+    }
+  ]
+}

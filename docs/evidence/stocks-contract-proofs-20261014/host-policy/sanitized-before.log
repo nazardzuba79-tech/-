@@ -1,0 +1,129 @@
+FAIL frontend/src/lib/__tests__/stockWalletDemand.test.ts
+  Wallet Stocks demand reader
+    √ uses compact authenticated portfolio read and ages valuations without another request (33 ms)
+    √ hidden tabs do no reads, abort demand and read once on return (6 ms)
+    √ session replacement never renders Alice holdings as Bob, including late responses (4 ms)
+    √ a failed explicit refresh retains scoped quantity but removes unavailable valuations without retry (4 ms)
+    √ deadline aborts a stalled read without retry; unauthorized reads clear holdings (4 ms)
+    √ malformed portfolio cannot replace holdings or fabricate a valuation (3 ms)
+    √ disabled Stocks and anonymous users do not call the Stocks service (3 ms)
+    × non-allowlisted host https://stocks-review.invalid never reads or displays Stocks holdings (4 ms)
+    × non-allowlisted host https://voltextech.net never reads or displays Stocks holdings (4 ms)
+    × non-allowlisted host http://localhost never reads or displays Stocks holdings (3 ms)
+    × non-allowlisted host http://127.0.0.1.evil.invalid never reads or displays Stocks holdings (3 ms)
+    × non-allowlisted host http://127.0.0.2 never reads or displays Stocks holdings (3 ms)
+    × non-allowlisted host http://[::1] never reads or displays Stocks holdings (3 ms)
+
+  ● Wallet Stocks demand reader › non-allowlisted host https://stocks-review.invalid never reads or displays Stocks holdings
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 0
+    Received length: 1
+    Received array:  [{"fail": [Function fail], "init": {"cache": "no-store", "credentials": "omit", "headers": {"Authorization": "[REDACTED_FIXTURE_AUTHORIZATION]"}, "signal": {Symbol(kEvents): Map {"abort" => {"next": {"callback": [Function anonymous], "flags": 0, "listener": [Function anonymous], "next": undefined, "previous": [Circular]}, "resistStopPropagation": false, "size": 1}}, Symbol(events.maxEventTargetListeners): 0, Symbol(events.maxEventTargetListenersWarned): false, Symbol(kHandlers): undefined, Symbol(kAborted): false, Symbol(kReason): undefined, Symbol(kComposite): false}}, "ok": [Function ok], "url": "/__stocks_global/portfolio"}]
+
+      144 |   ])('non-allowlisted host %s never reads or displays Stocks holdings', async url => {
+      145 |     dom.reconfigure({ url }); load(true);
+    > 146 |     await render(); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+          |                                     ^
+      147 |     await render(1); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+      148 |     await visibility(true); await visibility(false);
+      149 |     await flush(() => { token = 'bob-token'; listener?.(); });
+
+      at frontend/src/lib/__tests__/stockWalletDemand.test.ts:146:37
+
+  ● Wallet Stocks demand reader › non-allowlisted host https://voltextech.net never reads or displays Stocks holdings
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 0
+    Received length: 1
+    Received array:  [{"fail": [Function fail], "init": {"cache": "no-store", "credentials": "omit", "headers": {"Authorization": "[REDACTED_FIXTURE_AUTHORIZATION]"}, "signal": {Symbol(kEvents): Map {"abort" => {"next": {"callback": [Function anonymous], "flags": 0, "listener": [Function anonymous], "next": undefined, "previous": [Circular]}, "resistStopPropagation": false, "size": 1}}, Symbol(events.maxEventTargetListeners): 0, Symbol(events.maxEventTargetListenersWarned): false, Symbol(kHandlers): undefined, Symbol(kAborted): false, Symbol(kReason): undefined, Symbol(kComposite): false}}, "ok": [Function ok], "url": "/__stocks_global/portfolio"}]
+
+      144 |   ])('non-allowlisted host %s never reads or displays Stocks holdings', async url => {
+      145 |     dom.reconfigure({ url }); load(true);
+    > 146 |     await render(); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+          |                                     ^
+      147 |     await render(1); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+      148 |     await visibility(true); await visibility(false);
+      149 |     await flush(() => { token = 'bob-token'; listener?.(); });
+
+      at frontend/src/lib/__tests__/stockWalletDemand.test.ts:146:37
+
+  ● Wallet Stocks demand reader › non-allowlisted host http://localhost never reads or displays Stocks holdings
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 0
+    Received length: 1
+    Received array:  [{"fail": [Function fail], "init": {"cache": "no-store", "credentials": "omit", "headers": {"Authorization": "[REDACTED_FIXTURE_AUTHORIZATION]"}, "signal": {Symbol(kEvents): Map {"abort" => {"next": {"callback": [Function anonymous], "flags": 0, "listener": [Function anonymous], "next": undefined, "previous": [Circular]}, "resistStopPropagation": false, "size": 1}}, Symbol(events.maxEventTargetListeners): 0, Symbol(events.maxEventTargetListenersWarned): false, Symbol(kHandlers): undefined, Symbol(kAborted): false, Symbol(kReason): undefined, Symbol(kComposite): false}}, "ok": [Function ok], "url": "/__stocks_global/portfolio"}]
+
+      144 |   ])('non-allowlisted host %s never reads or displays Stocks holdings', async url => {
+      145 |     dom.reconfigure({ url }); load(true);
+    > 146 |     await render(); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+          |                                     ^
+      147 |     await render(1); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+      148 |     await visibility(true); await visibility(false);
+      149 |     await flush(() => { token = 'bob-token'; listener?.(); });
+
+      at frontend/src/lib/__tests__/stockWalletDemand.test.ts:146:37
+
+  ● Wallet Stocks demand reader › non-allowlisted host http://127.0.0.1.evil.invalid never reads or displays Stocks holdings
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 0
+    Received length: 1
+    Received array:  [{"fail": [Function fail], "init": {"cache": "no-store", "credentials": "omit", "headers": {"Authorization": "[REDACTED_FIXTURE_AUTHORIZATION]"}, "signal": {Symbol(kEvents): Map {"abort" => {"next": {"callback": [Function anonymous], "flags": 0, "listener": [Function anonymous], "next": undefined, "previous": [Circular]}, "resistStopPropagation": false, "size": 1}}, Symbol(events.maxEventTargetListeners): 0, Symbol(events.maxEventTargetListenersWarned): false, Symbol(kHandlers): undefined, Symbol(kAborted): false, Symbol(kReason): undefined, Symbol(kComposite): false}}, "ok": [Function ok], "url": "/__stocks_global/portfolio"}]
+
+      144 |   ])('non-allowlisted host %s never reads or displays Stocks holdings', async url => {
+      145 |     dom.reconfigure({ url }); load(true);
+    > 146 |     await render(); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+          |                                     ^
+      147 |     await render(1); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+      148 |     await visibility(true); await visibility(false);
+      149 |     await flush(() => { token = 'bob-token'; listener?.(); });
+
+      at frontend/src/lib/__tests__/stockWalletDemand.test.ts:146:37
+
+  ● Wallet Stocks demand reader › non-allowlisted host http://127.0.0.2 never reads or displays Stocks holdings
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 0
+    Received length: 1
+    Received array:  [{"fail": [Function fail], "init": {"cache": "no-store", "credentials": "omit", "headers": {"Authorization": "[REDACTED_FIXTURE_AUTHORIZATION]"}, "signal": {Symbol(kEvents): Map {"abort" => {"next": {"callback": [Function anonymous], "flags": 0, "listener": [Function anonymous], "next": undefined, "previous": [Circular]}, "resistStopPropagation": false, "size": 1}}, Symbol(events.maxEventTargetListeners): 0, Symbol(events.maxEventTargetListenersWarned): false, Symbol(kHandlers): undefined, Symbol(kAborted): false, Symbol(kReason): undefined, Symbol(kComposite): false}}, "ok": [Function ok], "url": "/__stocks_global/portfolio"}]
+
+      144 |   ])('non-allowlisted host %s never reads or displays Stocks holdings', async url => {
+      145 |     dom.reconfigure({ url }); load(true);
+    > 146 |     await render(); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+          |                                     ^
+      147 |     await render(1); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+      148 |     await visibility(true); await visibility(false);
+      149 |     await flush(() => { token = 'bob-token'; listener?.(); });
+
+      at frontend/src/lib/__tests__/stockWalletDemand.test.ts:146:37
+
+  ● Wallet Stocks demand reader › non-allowlisted host http://[::1] never reads or displays Stocks holdings
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 0
+    Received length: 1
+    Received array:  [{"fail": [Function fail], "init": {"cache": "no-store", "credentials": "omit", "headers": {"Authorization": "[REDACTED_FIXTURE_AUTHORIZATION]"}, "signal": {Symbol(kEvents): Map {"abort" => {"next": {"callback": [Function anonymous], "flags": 0, "listener": [Function anonymous], "next": undefined, "previous": [Circular]}, "resistStopPropagation": false, "size": 1}}, Symbol(events.maxEventTargetListeners): 0, Symbol(events.maxEventTargetListenersWarned): false, Symbol(kHandlers): undefined, Symbol(kAborted): false, Symbol(kReason): undefined, Symbol(kComposite): false}}, "ok": [Function ok], "url": "/__stocks_global/portfolio"}]
+
+      144 |   ])('non-allowlisted host %s never reads or displays Stocks holdings', async url => {
+      145 |     dom.reconfigure({ url }); load(true);
+    > 146 |     await render(); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+          |                                     ^
+      147 |     await render(1); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+      148 |     await visibility(true); await visibility(false);
+      149 |     await flush(() => { token = 'bob-token'; listener?.(); });
+
+      at frontend/src/lib/__tests__/stockWalletDemand.test.ts:146:37
+
+Test Suites: 1 failed, 1 total
+Tests:       6 failed, 7 passed, 13 total
+Snapshots:   0 total
+Time:        2.468 s
+Ran all test suites within paths "frontend/src/lib/__tests__/stockWalletDemand.test.ts".

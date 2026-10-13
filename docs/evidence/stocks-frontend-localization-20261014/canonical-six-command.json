@@ -1,0 +1,35 @@
+{
+  "node": "C:\\Program Files\\nodejs\\node.exe",
+  "nodeVersion": "v24.21.0",
+  "args": [
+    "node_modules/jest/bin/jest.js",
+    "--config",
+    "jest.config.js",
+    "--runInBand",
+    "--no-cache",
+    "--runTestsByPath",
+    "frontend/src/lib/__tests__/priceChartMarketOrders.test.ts",
+    "frontend/src/lib/__tests__/spotOrderEntry.test.ts",
+    "frontend/src/lib/__tests__/academyReadingMode.test.ts",
+    "frontend/src/lib/__tests__/cryptoCardVisualConsistency.test.ts",
+    "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+    "--testNamePattern",
+    "D\\. updateOrderTrigger cannot be reached|actual balance reader keeps Retry busy|the owner's colours: paper|form controls on paper take the ink|Homepage uses unchanged official payment branding|all approved masters and the two new presentation assets are byte-exact",
+    "--json",
+    "--outputFile",
+    "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\canonical-frontend-r2\\focused-six.json"
+  ],
+  "cwd": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\canonical-frontend-r2\\source",
+  "env": {
+    "SystemRoot": "C:\\Windows",
+    "PATH": "C:\\Program Files\\nodejs",
+    "TEMP": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\canonical-frontend-r2\\temp",
+    "TMP": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\canonical-frontend-r2\\temp",
+    "NODE_ENV": "test",
+    "CI": "true",
+    "FORCE_COLOR": "0"
+  },
+  "start": "2026-10-13T22:06:32.910Z",
+  "end": "2026-10-13T22:06:36.562Z",
+  "status": 0
+}

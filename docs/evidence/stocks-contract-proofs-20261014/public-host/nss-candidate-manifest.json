@@ -1,0 +1,51 @@
+{
+  "scope": "Normal Linux Chromium TLS implementation; Linux browser execution NOT_RUN, no Windows bypass fallback",
+  "portableTests": {
+    "platform": "win32",
+    "node": "v24.21.0",
+    "pass": 16,
+    "fail": 0,
+    "skipped": 0,
+    "exitCode": 0,
+    "logSha256": "9ee4dac24e2fe4ba0e7a395f19573ef734fb21f14c611d982e7ab92f100c81a5"
+  },
+  "files": [
+    {
+      "path": "scripts/qa-stocks-public-host.cjs",
+      "bytes": 20244,
+      "rawSha256": "16243cea6d4a48ea82f6a516389d1aab672a784cc8711c428de8e019593e8682",
+      "canonicalLfSha256": "16243cea6d4a48ea82f6a516389d1aab672a784cc8711c428de8e019593e8682"
+    },
+    {
+      "path": "scripts/qa-stocks-public-nss.cjs",
+      "bytes": 6511,
+      "rawSha256": "f9a6ec2778406d7beb650b192f3d243f207ebec15e5b6149c0c8c86df678e8a1",
+      "canonicalLfSha256": "f9a6ec2778406d7beb650b192f3d243f207ebec15e5b6149c0c8c86df678e8a1"
+    },
+    {
+      "path": "scripts/qa-stocks-public-nss.test.cjs",
+      "bytes": 1346,
+      "rawSha256": "a23f8e1c801bb766099af770b7b7741381ac120d0938332a30e62305f85347e6",
+      "canonicalLfSha256": "a23f8e1c801bb766099af770b7b7741381ac120d0938332a30e62305f85347e6"
+    },
+    {
+      "path": "scripts/qa-stocks-public-tls-probes.cjs",
+      "bytes": 5547,
+      "rawSha256": "78b929c1f597b7914f6b5210ad4d9ce306f6f3766e332ce0fa8376cbb0230231",
+      "canonicalLfSha256": "78b929c1f597b7914f6b5210ad4d9ce306f6f3766e332ce0fa8376cbb0230231"
+    },
+    {
+      "path": "scripts/qa-stocks-tls-ingress.cjs",
+      "bytes": 12752,
+      "rawSha256": "7f2751ef62cdcace388d19f206d1a73f9dc8d28610009b583e2f658fdb28e26b",
+      "canonicalLfSha256": "7f2751ef62cdcace388d19f206d1a73f9dc8d28610009b583e2f658fdb28e26b"
+    },
+    {
+      "path": "scripts/qa-stocks-tls-ingress.test.cjs",
+      "bytes": 9585,
+      "rawSha256": "9203e93bde41eede77838e8a7b533d689f05c844ecdcdd8b073fa587449cbbbe",
+      "canonicalLfSha256": "9203e93bde41eede77838e8a7b533d689f05c844ecdcdd8b073fa587449cbbbe"
+    }
+  ],
+  "historicalWindowsEvidenceManifestSha256": "7370633a60ef1879629704a430d64a7586c7f1581583d1eaf46b224b40511396"
+}

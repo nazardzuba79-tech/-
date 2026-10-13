@@ -1,3 +1,4 @@
+import { stockTranslator } from '../../pages/stocks/global/stockText';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -17,7 +18,7 @@ test('compact arrows open all original trade details and close without changing 
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   const module: any = {};
-  const imports: Record<string, unknown> = { react: React, 'react/jsx-runtime': req('react/jsx-runtime'), './tradeMarkers': grouping };
+  const imports: Record<string, unknown> = { react: React, 'react/jsx-runtime': req('react/jsx-runtime'), './useStocksText':{useStocksText:()=>({s:stockTranslator('ru'),lang:'ru',locale:'ru-RU'})}, './tradeMarkers': grouping };
   new Function('exports', 'require', code)(module, (name: string) => {
     if (!(name in imports)) throw Error(`Unexpected marker dependency: ${name}`);
     return imports[name];

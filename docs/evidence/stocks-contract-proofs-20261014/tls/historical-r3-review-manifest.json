@@ -1,0 +1,21 @@
+{
+  "root": "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-owner-portfolio-20261013",
+  "files": [
+    {
+      "file": "scripts/qa-stocks-tls-ingress.cjs",
+      "sha256": "3f93334e402dc2b47a8b0fd8bb13f0178a518975b2ee47dbcc883d5583cc033d"
+    },
+    {
+      "file": "scripts/qa-stocks-tls-rehearsal.cjs",
+      "sha256": "03e828208dc876d5f25e633d12812abd309e5d64d9499c68fb06711521662a99"
+    },
+    {
+      "file": "scripts/qa-stocks-tls-ingress.test.cjs",
+      "sha256": "e494e6738407d5f3321d69428b8855e63cbd61be80f162d13792378830229789"
+    },
+    {
+      "file": "docs/qa/stocks/TLS-FIXTURE-REHEARSAL-20261014.md",
+      "sha256": "2d6f74c0a70373c77857bd13585437b13d62a9126461c84d4514f9492a0f3f3a"
+    }
+  ]
+}

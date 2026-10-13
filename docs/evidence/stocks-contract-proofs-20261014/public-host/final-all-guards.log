@@ -1,0 +1,24 @@
+✔ AST closure includes exact literal worker and builtins (64.9367ms)
+✔ external package import and unresolved dynamic worker fail closed (14.2548ms)
+✔ module path escaping Stocks scope fails closed (3.5467ms)
+✔ downloaded immutable authority is verified without root dist; every provenance tamper fails before copy (1927.4417ms)
+✔ one exact build-memory hostname hunk; actual source is never overwritten (4.9023ms)
+✔ static fixture has manifest-only paths and strict finite read authority context (271.6792ms)
+✔ explicit CA and exact SNI/Host/Origin admit fixture; other trust and authorities fail (34.1074ms)
+✔ raw duplicate headers and caller identity headers never reach upstream (11.8584ms)
+✔ body framing, method, route and bounded response fail closed (17.5331ms)
+✔ incomplete order body disconnected before admission never reaches upstream (33.0829ms)
+✔ HTTP parser bounds and ambiguous or streamed body framing deny before upstream (10.1342ms)
+✔ disconnect cancels only in-flight fixture upstream request (37.2353ms)
+✔ bounded upstream wait returns explicit timeout and drains (64.4398ms)
+✔ feature off denies existing authenticated-looking clients without upstream work (17.724ms)
+✔ feature off during partial POST denies admission before any upstream request (31.2921ms)
+✔ opt-in public fixture GET requires exact TLS authority and same-origin request context (44.9099ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2037.0656

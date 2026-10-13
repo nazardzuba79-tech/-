@@ -1,0 +1,476 @@
+{
+  "fixtureOnly": true,
+  "productionAccess": false,
+  "capacityClaim": false,
+  "status": "PASS",
+  "assertions": 57,
+  "startedAt": "2026-10-13T22:01:21.553Z",
+  "calls": [
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "catalogue",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "refresh",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "orders",
+      "status": 401,
+      "error": "AUTH_REQUIRED"
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "portfolio",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": null,
+      "error": "ECONNRESET"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 503,
+      "error": "LOCAL_STOCKS_UNAVAILABLE"
+    },
+    {
+      "user": "alice",
+      "route": "portfolio",
+      "status": 503,
+      "error": "LOCAL_STOCKS_UNAVAILABLE"
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 503,
+      "error": "LOCAL_STOCKS_UNAVAILABLE"
+    },
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "orders",
+      "status": 200,
+      "error": null
+    }
+  ],
+  "checks": [
+    {
+      "label": "AST closure has no npm dependencies",
+      "passed": true
+    },
+    {
+      "label": "SQLite worker URL belongs to package",
+      "passed": true
+    },
+    {
+      "label": "reused actual compiled /me fixture package",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/api/asyncRoute.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/api/middleware/auth.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/api/routes/account.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/services/AdminPasswordVault.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/services/ContactEmailPolicy.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/services/TwoFactorService.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: scripts/qa-stocks-local-stage-fixture.cjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/account-commands.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/account-observations.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/account-worker-runtime.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/account-worker.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/accounts.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/catalog.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/engine.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/identity.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/local-proxy.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/market.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/server.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/store.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/viewer-projection.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-simulator/engine.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/api/asyncRoute.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/api/middleware/auth.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/api/routes/account.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/services/AdminPasswordVault.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/services/ContactEmailPolicy.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/services/TwoFactorService.ts",
+      "passed": true
+    },
+    {
+      "label": "execution directory outside checkout",
+      "passed": true
+    },
+    {
+      "label": "no workspace dependency resolution",
+      "passed": true
+    },
+    {
+      "label": "runtime actually executes external copy",
+      "passed": true
+    },
+    {
+      "label": "owner authenticated by external real /me fixture",
+      "passed": true
+    },
+    {
+      "label": "viewer identity and role preserved",
+      "passed": true
+    },
+    {
+      "label": "actual fixture catalogue identity/currency/provider/name matches quoted instrument",
+      "passed": true
+    },
+    {
+      "label": "fixture observation selected",
+      "passed": true
+    },
+    {
+      "label": "viewer cannot mutate",
+      "passed": true
+    },
+    {
+      "label": "owner fixture order exact",
+      "passed": true
+    },
+    {
+      "label": "Wallet projection from packaged runtime",
+      "passed": true
+    },
+    {
+      "label": "isolated viewer ledger",
+      "passed": true
+    },
+    {
+      "label": "lost ACK is a real transport reset",
+      "passed": true
+    },
+    {
+      "label": "lost ACK occurred only after committed upstream 200",
+      "passed": true
+    },
+    {
+      "label": "worker shutdown and restart persist exact owner ledger",
+      "passed": true
+    },
+    {
+      "label": "same lost-ACK ID after restart not executed twice",
+      "passed": true
+    },
+    {
+      "label": "cached client disabled: state",
+      "passed": true
+    },
+    {
+      "label": "cached client disabled: portfolio",
+      "passed": true
+    },
+    {
+      "label": "cached client disabled: orders",
+      "passed": true
+    },
+    {
+      "label": "feature-off does not reach identity, quote or ledger",
+      "passed": true
+    },
+    {
+      "label": "FULL worker drained before backup",
+      "passed": true
+    },
+    {
+      "label": "consistent byte-exact copy to different path",
+      "passed": true
+    },
+    {
+      "label": "restored separate ledgers exact",
+      "passed": true
+    },
+    {
+      "label": "restore retains request idempotency",
+      "passed": true
+    },
+    {
+      "label": "unadmitted external request denied before transport",
+      "passed": true
+    },
+    {
+      "label": "original retained database unchanged",
+      "passed": true
+    },
+    {
+      "label": "restore/replay preserves every ledger field other than revision",
+      "passed": true
+    },
+    {
+      "label": "same-ID replay increments owner revision once without financial change; viewer revision unchanged",
+      "passed": true
+    }
+  ],
+  "authority": {
+    "sourcePackage": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\tls-stage-20261014-r3\\local-stage\\package",
+    "manifestSha256": "dafee79ce766a086d3b965db242d50893d34b046fc756423679ae171d6bf8cb4",
+    "scope": "Separate real compiled /me QA authority; its dependencies use the existing workspace NODE_PATH, never inherited by Stocks runtime"
+  },
+  "externalDirectory": "C:\\Users\\nazar\\AppData\\Local\\Temp\\voltex-stocks-package-KSlrhZ",
+  "driver": {
+    "source": "scripts/qa-stocks-package-child.mjs",
+    "sha256": "4ac6ef846d488d0a460cfa59a73b7fbd8563d4737d483babeb50cc565c1ea0be",
+    "scope": "QA driver separate from the runtime artifact"
+  },
+  "authorityProcess": {
+    "child": {
+      "code": 0,
+      "signal": null,
+      "outputBytes": 0
+    }
+  },
+  "runtimeProcess": {
+    "child": {
+      "code": 0,
+      "signal": null,
+      "outputBytes": 0
+    }
+  },
+  "runtimeProof": {
+    "gatewayOrigin": "http://127.0.0.1:8028",
+    "path": "C:\\Users\\nazar\\AppData\\Local\\Temp\\voltex-stocks-package-KSlrhZ\\runtime\\data\\primary.sqlite",
+    "node": "v24.21.0",
+    "execArgv": [
+      "--no-global-search-paths"
+    ],
+    "NODE_PATH": "ABSENT",
+    "externalDependencies": "UNRESOLVABLE",
+    "cwd": "C:\\Users\\nazar\\AppData\\Local\\Temp\\voltex-stocks-package-KSlrhZ\\runtime"
+  },
+  "catalogue": {
+    "id": "BYBIT:AAPLXUSDT",
+    "ticker": "AAPL",
+    "asset": "AAPLX",
+    "name": "Apple Inc.",
+    "domain": "apple.com",
+    "provider": "bybit",
+    "sourceSymbol": "AAPLXUSDT",
+    "region": "US",
+    "kind": "token",
+    "currency": "USDT",
+    "delaySeconds": 0,
+    "timeframes": [
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "4h",
+      "1D"
+    ],
+    "online": true,
+    "exists": true
+  },
+  "storage": {
+    "original": {
+      "sha256": "a1a1b6310f202f3fbf052b92f4725d3f6a11a84328381b78900fcb63b817497d",
+      "tables": [
+        "paper_accounts"
+      ],
+      "bytes": 12288,
+      "accounts": [
+        {
+          "id": "114133957c53d41cc5f7d98f6a1138921bf5b97128547caba86425c0c49ba6a5",
+          "revision": 0,
+          "semanticSha256": "fb39e5a0b1cbda2ca75d64f2e90ab674e3d1aaafc0165003ba3ec1227df8b822",
+          "fills": 0
+        },
+        {
+          "id": "2a61d4d111e0b09cab74a3812a57bb6e61bc846d3a915852f0c18859bcc4e270",
+          "revision": 3,
+          "semanticSha256": "381dd3612ca018d22994d6150d2f319a25a47914723687da6543551a33766130",
+          "fills": 2
+        }
+      ]
+    },
+    "restored": {
+      "sha256": "ebb045a04c30cf8af8df3b54a9e842f548bf92ff1c695297b9042e549e76ca18",
+      "tables": [
+        "paper_accounts"
+      ],
+      "bytes": 12288,
+      "accounts": [
+        {
+          "id": "114133957c53d41cc5f7d98f6a1138921bf5b97128547caba86425c0c49ba6a5",
+          "revision": 0,
+          "semanticSha256": "fb39e5a0b1cbda2ca75d64f2e90ab674e3d1aaafc0165003ba3ec1227df8b822",
+          "fills": 0
+        },
+        {
+          "id": "2a61d4d111e0b09cab74a3812a57bb6e61bc846d3a915852f0c18859bcc4e270",
+          "revision": 4,
+          "semanticSha256": "381dd3612ca018d22994d6150d2f319a25a47914723687da6543551a33766130",
+          "fills": 2
+        }
+      ]
+    },
+    "reconciliation": {
+      "status": "PASS",
+      "fields": "entire ledger except revision",
+      "revisions": [
+        {
+          "id": "114133957c53d41cc5f7d98f6a1138921bf5b97128547caba86425c0c49ba6a5",
+          "before": 0,
+          "after": 0,
+          "delta": 0,
+          "expectedDelta": 0
+        },
+        {
+          "id": "2a61d4d111e0b09cab74a3812a57bb6e61bc846d3a915852f0c18859bcc4e270",
+          "before": 3,
+          "after": 4,
+          "delta": 1,
+          "expectedDelta": 1
+        }
+      ],
+      "postReplayBytesIdentical": false
+    },
+    "mode": "same-binary FULL quiesced restore; post-replay revision changes bytes; not historical-binary rollback"
+  },
+  "completedAt": "2026-10-13T22:01:22.563Z",
+  "retainedExternalDirectory": "C:\\Users\\nazar\\AppData\\Local\\Temp\\voltex-stocks-package-KSlrhZ",
+  "limitations": [
+    "External compiled /me QA authority is not part of standalone Stocks runtime",
+    "Local Node/platform binary pinned by hash; no verified container digest or deployment image",
+    "QA fixture driver injects private fixture quotes; no live provider capability/rights claim",
+    "No production DB, public ingress, real trades or capacity test; external temp data retained for inspection"
+  ]
+}

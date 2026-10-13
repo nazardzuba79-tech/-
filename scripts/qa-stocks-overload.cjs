@@ -149,6 +149,19 @@ const writeRequests = () => report.requests.filter(r => r.method === 'POST');
       check(await ticket.locator('.vxg-submit').isDisabled(), `${width}: paused account cannot resubmit automatically`);
       await screenshot('account-busy');
       const busyReads = countReads(), busyWrites = writeRequests().length;
+      // Preserve an actual pending idempotency key across a mounted language
+      // switch. The later explicit retry still has to reuse this rejected ID.
+      const pendingAtLanguageSwitch = orderRequests().at(-1).orderId;
+      const languageButton = page.getByRole('button', { name: 'Language / Язык / 语言', exact: true });
+      await languageButton.click();await page.getByRole('button', { name: 'EN', exact: true }).click();
+      await until(async()=>await ticket.getByLabel('Amount',{exact:true}).count()===1,'pending order English render');
+      check(await ticket.getByLabel('Amount',{exact:true}).inputValue()==='1'&&await ticket.getByLabel('Price',{exact:true}).inputValue()==='90',`${width}: language switch preserves pending order fields`);
+      check(/account.*busy/i.test(await page.locator('.vxg-center > [role="alert"]').innerText()),`${width}: existing account-busy error translates on render`);
+      check(countReads()===busyReads&&writeRequests().length===busyWrites,`${width}: pending language switch never reads or resubmits an order`);
+      await languageButton.click();await page.getByRole('button', { name: 'RU', exact: true }).click();
+      await until(async()=>await ticket.getByLabel('Количество',{exact:true}).count()===1,'pending order Russian render');
+      check((await alert.innerText()).includes('Тестовый счёт занят')&&await ticket.getByLabel('Количество',{exact:true}).inputValue()==='1',`${width}: returning language retains pending state and translated error`);
+      check(orderRequests().at(-1).orderId===pendingAtLanguageSwitch&&countReads()===busyReads&&writeRequests().length===busyWrites,`${width}: unchanged pending mutation is not replayed by localization`);
       await page.clock.runFor(7000); check(countReads() === busyReads, `${width}: account cooldown and expiry do not poll`);
       check(writeRequests().length === busyWrites, `${width}: account cooldown does not replay pending mutation`);
       const timerArmsBefore = await page.evaluate(() => window.__stocksRecoveryTimerArms.length);

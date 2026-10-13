@@ -1,0 +1,18 @@
+{
+  "interface": "verifyBuild(proofFile, base=root, compiledBase=base)",
+  "sourceHashes": {
+    "scripts/qa-stocks-principal-projection.cjs": "2d137a89c4f1ff02e1d18b2366faa4cd0cad0f34c93fbb8407d29cb8f9819379",
+    "scripts/qa-stocks-principal-projection.test.cjs": "f5fe9803f1e2355ab17124624956425c50fd9463bdf9a9a4ab77b009e15a21fd"
+  },
+  "testLogSha256": "f0c3ccf9821c3186a2cbc10750729b8309044071584d5fa6e522ceaf47076f5e",
+  "tests": {
+    "pass": 4,
+    "fail": 0,
+    "preservedContractCases": 26
+  },
+  "runtime": {
+    "node": "v24.21.0",
+    "platform": "win32"
+  },
+  "newBuild": false
+}

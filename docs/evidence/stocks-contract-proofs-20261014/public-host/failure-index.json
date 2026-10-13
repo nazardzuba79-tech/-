@@ -1,0 +1,33 @@
+{
+  "supersededOnly": true,
+  "failures": [
+    {
+      "retainedRawPath": "public-build-20261014-r1.log",
+      "sha256": "5090afb693f3c9ddccade65e09dcc05513cf452fc5bf1dd8ef629d5c22f98038",
+      "bytes": 2397,
+      "verifiedEvidence": "Tailwind CSS configuration is missing or empty",
+      "note": "First QA producer used wrong cwd; later producer uses normal frontend cwd."
+    },
+    {
+      "retainedRawPath": "public-tls-unit-r1.log",
+      "sha256": "f037368669894db00e090a8e4e23b5c23612d1edcc854dfb78cdba0a5feaaef0",
+      "bytes": 13366,
+      "verifiedEvidence": "Explicit fixture Python executable required",
+      "note": "Unit invocation lacked required explicit interpreter; no silent skip."
+    },
+    {
+      "retainedRawPath": "public-tls-unit-r3.log",
+      "sha256": "c6bcc346f9b244f6bdceaf4a17dbf0f5b613381898a8036e89b7398da71bc36a",
+      "bytes": 2038,
+      "verifiedEvidence": "undefined !== 400",
+      "note": "Static Host denial returned empty body; bounded client rejected non-JSON before reading expected status."
+    },
+    {
+      "retainedRawPath": "public-host-20261014-r1/report.json",
+      "sha256": "6bed18ff15fffc7bc10439f28476786fb663ef434933055ed9780ce9cd2496bd",
+      "bytes": 89527,
+      "verifiedEvidence": "\"assertions\": 34",
+      "note": "First browser setup omitted owner-USDT flag; retained as host-only evidence, not final owner UI proof."
+    }
+  ]
+}

@@ -19,6 +19,9 @@
 .vxg-trade-details dt{color:#96a4b8}.vxg-trade-details dd{margin:0;text-align:right;overflow-wrap:anywhere}
 .vxg-page .vxg-quote-age{font-size:9px;color:#8494aa}.vxg-page .vxg-quote-age.stale{color:#dfb878}
 @media(max-width:800px){
+  /* Keep the compact shared trigger, but expose its option labels and menu above Stocks tabs. */
+  .vxg-page .vxg-existing-nav .language-control .row-hover > span{display:inline}
+  .vxg-page .vxg-existing-nav{position:relative;z-index:40}
   .vxg-terminal{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px));max-width:100%}
   .vxg-market-head{height:72px;gap:8px;min-width:0}
   .vxg-active-asset{min-width:0;flex:1}.vxg-active-asset>span:last-child{min-width:0}.vxg-active-asset small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}

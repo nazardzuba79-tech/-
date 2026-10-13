@@ -1,0 +1,83 @@
+{
+  "head": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+  "scope": "Six exact failing strict matcher probes only. Not a rerun of six suites or the full frontend; no source/test file edited. Git blobs remain canonical; checkout core.autocrlf is true.",
+  "provenance": [
+    {
+      "file": "frontend/src/components/PriceChart.tsx",
+      "worktreeSha256": "e0471497cd5f2bf87c295b2178feb0ab05fa54e2566ea6e58c0bbbeeb4a70341",
+      "gitSha256": "5364c150fe1d511d94b9b21f3a4a995a851e3b2ea0f68b2021550b9f452bb5b8",
+      "worktreeCRLF": 2771,
+      "gitCRLF": 0,
+      "normalizedWorktreeEqualsGit": true
+    },
+    {
+      "file": "frontend/src/components/OrderForm.tsx",
+      "worktreeSha256": "aa86e5ce94f20485e7a82ec9d3e05628fc3d39cfdd844682179ff023b8ba66fa",
+      "gitSha256": "d7a52636dc6051ca9950e7bdf7d53b5cc2113ae9e3bc60014db1e506133838b4",
+      "worktreeCRLF": 679,
+      "gitCRLF": 0,
+      "normalizedWorktreeEqualsGit": true
+    },
+    {
+      "file": "frontend/src/pages/knowledge/knowledge.css",
+      "worktreeSha256": "cd958666fbb5c71dd1c5e8ab71f2fb6f247850ed8366d92b951197110deaba5b",
+      "gitSha256": "f551049b40074a68996af0a3d5c3088bd9fa67450732fbc4acc0893b8cf3ef24",
+      "worktreeCRLF": 563,
+      "gitCRLF": 0,
+      "normalizedWorktreeEqualsGit": true
+    },
+    {
+      "file": "frontend/public/cards/crypto-card-final/apple-pay-mark.svg",
+      "worktreeSha256": "2d809247f8ba363a58e3940b8c9b7f23600d00ed57bc72c758a891edbcb4ba0e",
+      "gitSha256": "66baf110b86c1f1ae01a0e28985970d3827465e6aba6be54d5142a6d1eaa803c",
+      "worktreeCRLF": 84,
+      "gitCRLF": 0,
+      "normalizedWorktreeEqualsGit": true
+    }
+  ],
+  "table": [
+    {
+      "test": "priceChartMarketOrders.test.ts:504",
+      "file": "frontend/src/components/PriceChart.tsx",
+      "worktreePass": false,
+      "canonicalGitPass": true,
+      "normalizedWorktreePass": true
+    },
+    {
+      "test": "spotOrderEntry.test.ts:116",
+      "file": "frontend/src/components/OrderForm.tsx",
+      "worktreePass": false,
+      "canonicalGitPass": true,
+      "normalizedWorktreePass": true
+    },
+    {
+      "test": "academyReadingMode.test.ts:27",
+      "file": "frontend/src/pages/knowledge/knowledge.css",
+      "worktreePass": false,
+      "canonicalGitPass": true,
+      "normalizedWorktreePass": true
+    },
+    {
+      "test": "academyReadingMode.test.ts:51",
+      "file": "frontend/src/pages/knowledge/knowledge.css",
+      "worktreePass": false,
+      "canonicalGitPass": true,
+      "normalizedWorktreePass": true
+    },
+    {
+      "test": "cryptoCardVisualConsistency.test.ts:143",
+      "file": "frontend/public/cards/crypto-card-final/apple-pay-mark.svg",
+      "worktreePass": false,
+      "canonicalGitPass": true,
+      "normalizedWorktreePass": true
+    },
+    {
+      "test": "cryptoCardProductionPromotion.test.ts:117 (apple-pay-mark.svg)",
+      "file": "frontend/public/cards/crypto-card-final/apple-pay-mark.svg",
+      "worktreePass": false,
+      "canonicalGitPass": true,
+      "normalizedWorktreePass": true
+    }
+  ],
+  "allSixDemonstrated": true
+}

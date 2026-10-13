@@ -1,0 +1,12 @@
+✔ actual compiled auth and original /me match compact counterfactual across authorization changes and maximum avatar (643.8709ms)
+✔ stale source, altered emitted closure and failed build proofs reject before fixture launch (53.3076ms)
+✔ verified compiled artifact works with a source-only checkout and rejects artifact byte tampering (1227.8735ms)
+✔ existing or relative output and unguarded child execution fail closed (191.9261ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2239.501

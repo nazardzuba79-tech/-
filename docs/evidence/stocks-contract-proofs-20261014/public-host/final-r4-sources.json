@@ -1,0 +1,18 @@
+[
+  {
+    "path": "scripts/qa-stocks-public-host.cjs",
+    "sha256": "0f41b7409435c515f7247c384fef606cb51cc9a2e3d7f510ff908fb8d0487bf2"
+  },
+  {
+    "path": "scripts/qa-stocks-public-build.mjs",
+    "sha256": "7455e3d643d919ee546e9c56f55592989ee18b3a59bf0a14d90437a528dc1e38"
+  },
+  {
+    "path": "scripts/qa-stocks-public-fixtures.cjs",
+    "sha256": "bd37e42703e60c0bcdceff3a5ebd7dd31fea39cf94c4bc0abca2b2a22e318810"
+  },
+  {
+    "path": "scripts/qa-stocks-tls-ingress.cjs",
+    "sha256": "be4fd324cac4b4acaf3dcaa5a66330a2f3aae2b8c73b9da28285df9fd32ed2f4"
+  }
+]

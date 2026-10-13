@@ -1,0 +1,226 @@
+{
+  "fixtureOnly": true,
+  "productionAccess": false,
+  "capacityClaim": false,
+  "status": "FAIL",
+  "assertions": 35,
+  "startedAt": "2026-10-13T21:48:53.243Z",
+  "calls": [
+    {
+      "user": "alice",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "bob",
+      "route": "state",
+      "status": 200,
+      "error": null
+    },
+    {
+      "user": "alice",
+      "route": "catalogue",
+      "status": 200,
+      "error": null
+    }
+  ],
+  "checks": [
+    {
+      "label": "AST closure has no npm dependencies",
+      "passed": true
+    },
+    {
+      "label": "SQLite worker URL belongs to package",
+      "passed": true
+    },
+    {
+      "label": "reused actual compiled /me fixture package",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/api/asyncRoute.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/api/middleware/auth.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/api/routes/account.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/services/AdminPasswordVault.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/services/ContactEmailPolicy.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: dist/services/TwoFactorService.js",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: scripts/qa-stocks-local-stage-fixture.cjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/account-commands.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/account-observations.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/account-worker-runtime.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/account-worker.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/accounts.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/catalog.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/engine.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/identity.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/local-proxy.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/market.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/server.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/store.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-global/viewer-projection.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: services/stocks-simulator/engine.mjs",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/api/asyncRoute.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/api/middleware/auth.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/api/routes/account.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/services/AdminPasswordVault.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/services/ContactEmailPolicy.ts",
+      "passed": true
+    },
+    {
+      "label": "reused authority source unchanged: src/services/TwoFactorService.ts",
+      "passed": true
+    },
+    {
+      "label": "execution directory outside checkout",
+      "passed": true
+    },
+    {
+      "label": "no workspace dependency resolution",
+      "passed": true
+    },
+    {
+      "label": "runtime actually executes external copy",
+      "passed": true
+    },
+    {
+      "label": "owner authenticated by external real /me fixture",
+      "passed": true
+    },
+    {
+      "label": "viewer identity and role preserved",
+      "passed": true
+    },
+    {
+      "label": "actual fixture catalogue identity/currency/provider/name matches quoted instrument",
+      "passed": false
+    }
+  ],
+  "authority": {
+    "sourcePackage": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\tls-stage-20261014-r3\\local-stage\\package",
+    "manifestSha256": "dafee79ce766a086d3b965db242d50893d34b046fc756423679ae171d6bf8cb4",
+    "scope": "Separate real compiled /me QA authority; its dependencies use the existing workspace NODE_PATH, never inherited by Stocks runtime"
+  },
+  "externalDirectory": "C:\\Users\\nazar\\AppData\\Local\\Temp\\voltex-stocks-package-YJRuDl",
+  "driver": {
+    "source": "scripts/qa-stocks-package-child.mjs",
+    "sha256": "02066e2b688bfb2c777887e15ab5eae1b2cf7d8db246ea9711219177a9d2ce04",
+    "scope": "QA driver separate from the runtime artifact"
+  },
+  "authorityProcess": {
+    "child": {
+      "code": 0,
+      "signal": null,
+      "outputBytes": 0
+    }
+  },
+  "runtimeProcess": {
+    "child": {
+      "code": 0,
+      "signal": null,
+      "outputBytes": 0
+    }
+  },
+  "runtimeProof": {
+    "gatewayOrigin": "http://127.0.0.1:8809",
+    "path": "C:\\Users\\nazar\\AppData\\Local\\Temp\\voltex-stocks-package-YJRuDl\\runtime\\data\\primary.sqlite",
+    "node": "v24.21.0",
+    "execArgv": [
+      "--no-global-search-paths"
+    ],
+    "NODE_PATH": "ABSENT",
+    "externalDependencies": "UNRESOLVABLE",
+    "cwd": "C:\\Users\\nazar\\AppData\\Local\\Temp\\voltex-stocks-package-YJRuDl\\runtime"
+  },
+  "catalogue": {
+    "online": true,
+    "exists": true
+  },
+  "failure": {
+    "message": "actual fixture catalogue identity/currency/provider/name matches quoted instrument",
+    "stack": "AssertionError [ERR_ASSERTION]: actual fixture catalogue identity/currency/provider/name matches quoted instrument\n    at check (C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\scripts\\qa-stocks-package-proof.cjs:36:231)\n    at main (C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\stocks-owner-portfolio-20261013\\scripts\\qa-stocks-package-proof.cjs:60:5)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+  },
+  "completedAt": "2026-10-13T21:48:54.471Z",
+  "retainedExternalDirectory": "C:\\Users\\nazar\\AppData\\Local\\Temp\\voltex-stocks-package-YJRuDl",
+  "limitations": [
+    "External compiled /me QA authority is not part of standalone Stocks runtime",
+    "Local Node/platform binary pinned by hash; no verified container digest or deployment image",
+    "QA fixture driver injects private fixture quotes; no live provider capability/rights claim",
+    "No production DB, public ingress, real trades or capacity test; external temp data retained for inspection"
+  ]
+}

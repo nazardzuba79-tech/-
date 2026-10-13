@@ -1,0 +1,11 @@
+✔ AST closure includes exact literal worker and builtins (99.0238ms)
+✔ external package import and unresolved dynamic worker fail closed (29.0743ms)
+✔ module path escaping Stocks scope fails closed (3.7246ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 389.8976

@@ -1,0 +1,26 @@
+[
+  {
+    "file": "frontend/src/components/PriceChart.tsx",
+    "equalsGit": true,
+    "sha256": "5364c150fe1d511d94b9b21f3a4a995a851e3b2ea0f68b2021550b9f452bb5b8",
+    "crlf": 0
+  },
+  {
+    "file": "frontend/src/components/OrderForm.tsx",
+    "equalsGit": true,
+    "sha256": "d7a52636dc6051ca9950e7bdf7d53b5cc2113ae9e3bc60014db1e506133838b4",
+    "crlf": 0
+  },
+  {
+    "file": "frontend/src/pages/knowledge/knowledge.css",
+    "equalsGit": true,
+    "sha256": "f551049b40074a68996af0a3d5c3088bd9fa67450732fbc4acc0893b8cf3ef24",
+    "crlf": 0
+  },
+  {
+    "file": "frontend/public/cards/crypto-card-final/apple-pay-mark.svg",
+    "equalsGit": true,
+    "sha256": "66baf110b86c1f1ae01a0e28985970d3827465e6aba6be54d5142a6d1eaa803c",
+    "crlf": 0
+  }
+]

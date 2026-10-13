@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { getToken, onSessionChange } from '../../lib/api';
 import type { LedgerRow } from './useWalletData';
 import { isStockPortfolio, nextStockPortfolioExpiry, stockPortfolioRows } from './stockPortfolio';
+import { isStocksLocalPreviewHost } from '../stocks/stockHostPolicy';
 
 declare const __VOLTEX_STOCKS_GLOBAL_SIMULATOR__: boolean;
-const enabled = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__;
+const enabled = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__
+  && isStocksLocalPreviewHost(typeof window === 'undefined' ? undefined : window.location.hostname);
 const READ_DEADLINE_MS = 8_000;
 
 type ScopedPortfolio = { token: string; data: unknown };

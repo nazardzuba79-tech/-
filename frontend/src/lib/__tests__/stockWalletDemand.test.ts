@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import * as projection from '../../pages/wallet-v3/stockPortfolio';
+import * as hostPolicy from '../../pages/stocks/stockHostPolicy';
 
 const frontend = resolve(__dirname, '../../..');
 const req = createRequire(resolve(frontend, 'package.json'));
@@ -36,6 +37,7 @@ describe('Wallet Stocks demand reader', () => {
         onSessionChange: (callback: () => void) => { listener = callback; return () => { listener = undefined; }; },
       };
       if (name === './stockPortfolio') return projection;
+      if (name === '../stocks/stockHostPolicy') return hostPolicy;
       throw new Error(name);
     }, enabled);
     hook = exports.useStockPortfolio;
@@ -132,5 +134,36 @@ describe('Wallet Stocks demand reader', () => {
   test('disabled Stocks and anonymous users do not call the Stocks service', async () => {
     load(false); await render(); expect(pending).toHaveLength(0);
     load(true); token = null; await render(); expect(pending).toHaveLength(0);
+  });
+
+  test.each([
+    'https://stocks-review.invalid',
+    'https://voltextech.net',
+    'http://localhost',
+    'http://127.0.0.1.evil.invalid',
+    'http://127.0.0.2',
+    'http://[::1]',
+  ])('non-allowlisted host %s never reads or displays Stocks holdings', async url => {
+    dom.reconfigure({ url }); load(true);
+    await render(); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+    await render(1); expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+    await visibility(true); await visibility(false);
+    await flush(() => { token = 'bob-token'; listener?.(); });
+    await render(2); await flush(() => jest.advanceTimersByTime(60_000));
+    expect(pending).toHaveLength(0); expect(rows).toEqual([]);
+    expect(renders.every(entry => entry.rows.length === 0)).toBe(true);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  test('host policy keeps exactly127.0.0.1 and safely disables a non-browser module load', async () => {
+    expect(hostPolicy.isStocksLocalPreviewHost('127.0.0.1')).toBe(true);
+    for (const hostname of [undefined, '', 'localhost', '127.0.0.2', '127.0.0.1.', '127.0.0.1:4438', '127.0.0.1.evil.invalid', '[::1]', 'stocks-review.invalid', 'voltextech.net']) {
+      expect(hostPolicy.isStocksLocalPreviewHost(hostname)).toBe(false);
+    }
+    const browser = (globalThis as any).window;
+    try { delete (globalThis as any).window; expect(() => load(true)).not.toThrow(); }
+    finally { (globalThis as any).window = browser; }
+    await render(); await render(1);
+    expect(pending).toHaveLength(0); expect(rows).toEqual([]);
   });
 });

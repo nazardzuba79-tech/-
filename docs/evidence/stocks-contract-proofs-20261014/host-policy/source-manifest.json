@@ -1,0 +1,27 @@
+{
+  "head": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+  "files": {
+    "frontend/src/pages/stocks/stockHostPolicy.ts": "a6cbea13918d37c60951cd3fa8e4868b89e77fd9130176b9903102eb70544926",
+    "frontend/src/pages/stocks/StocksPage.tsx": "3c167ad86f8a0bdf0aac2c8f20aa3d26b861d3db019ddef208643c3920308a5f",
+    "frontend/src/pages/wallet-v3/useStockPortfolio.ts": "7fccfb9361f670387ccaaa6495dd7c9e0e9d54da4a8929581bfb7d0b0b2ec88e",
+    "frontend/src/lib/__tests__/stockWalletDemand.test.ts": "bebac9eb50be132770f4076703117cf31e86c7aeaa32f41cc634c13f68436594"
+  },
+  "originalAllowlist": [
+    "127.0.0.1"
+  ],
+  "retainedAllowlist": [
+    "127.0.0.1"
+  ],
+  "before": {
+    "failedForbiddenHosts": 6,
+    "passedExistingLifecycle": 7
+  },
+  "after": {
+    "walletSuites": 2,
+    "walletPassed": 18,
+    "existingStocksSuites": 4,
+    "existingStocksPassed": 37
+  },
+  "buildPerformed": false,
+  "scope": "Stocks-local host fence reused by route and Stocks-only Wallet projection; no Wallet economics or shared UI changes"
+}

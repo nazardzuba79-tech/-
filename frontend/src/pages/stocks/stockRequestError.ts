@@ -1,3 +1,5 @@
+import type { Lang } from '../../lib/i18n';
+import { stockText, type StockMessage } from './global/stockText';
 // The transport carries a bounded code; server text and runtime messages never render.
 export class StockRequestError extends Error {
   readonly code: string;
@@ -7,7 +9,7 @@ export class StockRequestError extends Error {
   }
 }
 
-const messages: Record<string, string> = {
+const messages: Record<string, StockMessage> = {
   AUTH_REQUIRED: 'Войдите, чтобы открыть свой тестовый счёт', AUTH_UNAVAILABLE: 'Проверка сессии временно недоступна',
   MOEX_UNVERIFIED: 'MOEX: реальные данные пока не подтверждены. Торговля заблокирована', SOURCE_BUSY: 'Источник занят — повторите запрос',
   SOURCE_DNS_UNAVAILABLE: 'Источник котировок сейчас недоступен', SOURCE_UNAVAILABLE: 'Источник данных недоступен',
@@ -18,7 +20,7 @@ const messages: Record<string, string> = {
   LOCAL_SERVICE_ERROR: 'Нет связи с тестовым счётом', INVALID_DECIMAL: 'Не более 8 знаков после запятой',
   INVALID_AMOUNT: 'Недопустимая сумма', RATE_LIMIT: 'Лимит запросов источника', TOKEN_REQUIRED: 'Обновите страницу и повторите запрос',
 };
-export function globalStockErrorText(code: unknown): string {
-  return typeof code === 'string' && Object.prototype.hasOwnProperty.call(messages, code)
-    ? messages[code] : 'Не удалось выполнить запрос. Повторите попытку.';
+export function globalStockErrorText(code: unknown, lang: Lang = 'ru'): string {
+  return stockText(lang, typeof code === 'string' && Object.prototype.hasOwnProperty.call(messages, code)
+    ? messages[code] : 'Не удалось выполнить запрос. Повторите попытку.');
 }

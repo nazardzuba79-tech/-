@@ -1,0 +1,570 @@
+{
+  "fixtureOnly": true,
+  "counterfactualProjection": true,
+  "productionEndpointExists": false,
+  "productionReady": false,
+  "capacityTest": false,
+  "note": "No runtime endpoint, resolver, caching or production auth code changed. Projected handler exists only in this local test process. All identities, secrets and profile bytes are disposable fixtures.",
+  "runtime": {
+    "node": "v24.21.0",
+    "platform": "win32"
+  },
+  "provenance": {
+    "proofSha256": "dc7df0493d844f77353bfea6b5b69d2a5238e474bb8e403481373853173c1d6f",
+    "compiled": {
+      "dist/api/routes/account.js": "6a06d889c1e31a73a017c6aca58c4f6cab20857f4ee1a943b6e334804691440c",
+      "dist/api/asyncRoute.js": "30d5ca41c9b3a35cc23b9b21f21906fea8d78c453807aea44484f294d74f293b",
+      "dist/services/AdminPasswordVault.js": "5b8de70bf420d0c4dd0844c71a972c7d407a5114eb6d10143edcf4b6ca9c1e7b",
+      "dist/api/middleware/auth.js": "dcaaf312a5d51a02bf25837b533679302f12f53a485f7ed63d1f1ac9ae37bd2d",
+      "dist/services/ContactEmailPolicy.js": "949972ebda91902df904a503e5fd1ad52ef094c230e99df34a80a283b037abb8",
+      "dist/services/TwoFactorService.js": "945c25a8a126233e2296cc69c57d65592e0b23bb02a649ec512e1eaabbb7e408"
+    },
+    "sourceCount": 279,
+    "compilerVersion": "5.9.3",
+    "sourceBuildStartedAt": "2026-10-13T21:37:47.646Z",
+    "sourceBuildEndedAt": "2026-10-13T21:37:52.596Z",
+    "identityResolverSha256": "a9a38fc77372fd52d89039dd129ad0b4b5cee8c2f875182fd962150cd6153c9b",
+    "fixtureSha256": "2d137a89c4f1ff02e1d18b2366faa4cd0cad0f34c93fbb8407d29cb8f9819379"
+  },
+  "cases": [
+    {
+      "name": "valid-session",
+      "expected": 200,
+      "expectedPrincipal": {
+        "issuer": "compact-principal-counterfactual-fixture",
+        "subject": "alice"
+      },
+      "modes": {
+        "profile": {
+          "status": 200,
+          "bytes": 226,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        },
+        "compact": {
+          "status": 200,
+          "bytes": 14,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        }
+      }
+    },
+    {
+      "name": "valid-bob-forged-owner-role-ignored",
+      "expected": 200,
+      "expectedPrincipal": {
+        "issuer": "compact-principal-counterfactual-fixture",
+        "subject": "bob"
+      },
+      "modes": {
+        "profile": {
+          "status": 200,
+          "bytes": 220,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "bob"
+          },
+          "code": null
+        },
+        "compact": {
+          "status": 200,
+          "bytes": 12,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "bob"
+          },
+          "code": null
+        }
+      }
+    },
+    {
+      "name": "pending-2fa",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "subject-session-mismatch",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 39,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 39,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "expired-jwt",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "invalid-signature",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "revoked-session",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 39,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 39,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "missing-session",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 39,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 39,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "blocked-contact",
+      "expected": 403,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 403,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 403,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "deleted-user-orphan-session",
+      "expected": 404,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 404,
+          "bytes": 26,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 404,
+          "bytes": 26,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "deleted-between-middleware-and-handler",
+      "expected": 404,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 404,
+          "bytes": 26,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 404,
+          "bytes": 26,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "session-backend-unavailable",
+      "expected": 503,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 503,
+          "bytes": 50,
+          "principal": null,
+          "code": "AUTH_UNAVAILABLE"
+        },
+        "compact": {
+          "status": 503,
+          "bytes": 50,
+          "principal": null,
+          "code": "AUTH_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "name": "policy-backend-unavailable",
+      "expected": 503,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 503,
+          "bytes": 50,
+          "principal": null,
+          "code": "AUTH_UNAVAILABLE"
+        },
+        "compact": {
+          "status": 503,
+          "bytes": 50,
+          "principal": null,
+          "code": "AUTH_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "name": "post-auth-user-unavailable",
+      "expected": 503,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 503,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_UNAVAILABLE"
+        },
+        "compact": {
+          "status": 503,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "name": "remembered-admin-valid",
+      "expected": 200,
+      "expectedPrincipal": {
+        "issuer": "compact-principal-counterfactual-fixture",
+        "subject": "alice"
+      },
+      "modes": {
+        "profile": {
+          "status": 200,
+          "bytes": 226,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        },
+        "compact": {
+          "status": 200,
+          "bytes": 14,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        }
+      }
+    },
+    {
+      "name": "remembered-admin-idle-expired",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "remembered-demoted-ordinary-expired",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "stale-session-touch",
+      "expected": 200,
+      "expectedPrincipal": {
+        "issuer": "compact-principal-counterfactual-fixture",
+        "subject": "alice"
+      },
+      "modes": {
+        "profile": {
+          "status": 200,
+          "bytes": 226,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        },
+        "compact": {
+          "status": 200,
+          "bytes": 14,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        }
+      }
+    },
+    {
+      "name": "legacy-valid",
+      "expected": 200,
+      "expectedPrincipal": {
+        "issuer": "compact-principal-counterfactual-fixture",
+        "subject": "alice"
+      },
+      "modes": {
+        "profile": {
+          "status": 200,
+          "bytes": 226,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        },
+        "compact": {
+          "status": 200,
+          "bytes": 14,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        }
+      }
+    },
+    {
+      "name": "legacy-deleted",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 36,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "legacy-blocked",
+      "expected": 403,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 403,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 403,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "legacy-revoked-after-unblock",
+      "expected": 401,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 401,
+          "bytes": 39,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 401,
+          "bytes": 39,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "maximum-avatar-valid",
+      "expected": 200,
+      "expectedPrincipal": {
+        "issuer": "compact-principal-counterfactual-fixture",
+        "subject": "alice"
+      },
+      "modes": {
+        "profile": {
+          "status": 200,
+          "bytes": 1048800,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        },
+        "compact": {
+          "status": 200,
+          "bytes": 14,
+          "principal": {
+            "issuer": "compact-principal-counterfactual-fixture",
+            "subject": "alice"
+          },
+          "code": null
+        }
+      }
+    },
+    {
+      "name": "maximum-avatar-blocked",
+      "expected": 403,
+      "expectedPrincipal": null,
+      "modes": {
+        "profile": {
+          "status": 403,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        },
+        "compact": {
+          "status": 403,
+          "bytes": 27,
+          "principal": null,
+          "code": "AUTH_REQUIRED"
+        }
+      }
+    },
+    {
+      "name": "immediate-authorization-changes-profile",
+      "checks": [
+        "revoke",
+        "block",
+        "delete"
+      ]
+    },
+    {
+      "name": "immediate-authorization-changes-compact",
+      "checks": [
+        "revoke",
+        "block",
+        "delete"
+      ]
+    }
+  ],
+  "audit": {
+    "requests": 104,
+    "deniedNetwork": 0,
+    "unexpectedPrisma": 0,
+    "sessionReads": 84,
+    "sessionTouches": 2,
+    "policyReads": 62,
+    "fullUserReads": 18,
+    "selectedUserReads": 34,
+    "profileAvatarReads": 13,
+    "compactAvatarReads": 0
+  },
+  "pass": true
+}

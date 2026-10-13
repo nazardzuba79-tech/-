@@ -1,0 +1,10 @@
+PASS frontend/src/lib/__tests__/stockNavigation.test.ts
+PASS frontend/src/lib/__tests__/stockWidgetLifecycle.test.ts
+PASS frontend/src/lib/__tests__/stocksReadHook.test.ts
+PASS frontend/src/lib/__tests__/stocksPresentation.test.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       37 passed, 37 total
+Snapshots:   0 total
+Time:        3.505 s
+Ran all test suites within paths "frontend/src/lib/__tests__/stockNavigation.test.ts", "frontend/src/lib/__tests__/stockWidgetLifecycle.test.ts", "frontend/src/lib/__tests__/stocksReadHook.test.ts", "frontend/src/lib/__tests__/stocksPresentation.test.ts".

@@ -1,18 +1,21 @@
+import { stockTranslator } from '../../pages/stocks/global/stockText';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 const frontend=resolve(__dirname,'../../..'),req=createRequire(resolve(frontend,'package.json'));
 const React=req('react'),{createRoot}=req('react-dom/client'),{JSDOM}=req('jsdom');
+const ruTranslator=stockTranslator('ru');
 
 test('account/fill updates do not rebuild unchanged chart or indicators; entry and corrected candles update independently',async()=>{
   const dom=new JSDOM('<div id="root"></div>',{pretendToBeVisual:true});
   Object.assign(globalThis,{window:dom.window,document:dom.window.document,IS_REACT_ACT_ENVIRONMENT:true});
   dom.window.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
-  const setData=jest.fn(),createPriceLine=jest.fn(()=>({})),removePriceLine=jest.fn(),sma=jest.fn(()=>[]);
+  const setData=jest.fn(),createPriceLine=jest.fn(()=>({applyOptions:jest.fn()})),removePriceLine=jest.fn(),sma=jest.fn(()=>[]);
   const chart={addSeries:()=>({setData,applyOptions(){},priceScale:()=>({applyOptions(){}}),createPriceLine,removePriceLine}),
     applyOptions(){},timeScale:()=>({fitContent(){}}),priceScale:()=>({applyOptions(){}}),subscribeCrosshairMove(){},remove(){}};
   const imports:Record<string,unknown>={react:React,'react/jsx-runtime':req('react/jsx-runtime'),
+    './useStocksText':{useStocksText:()=>({s:ruTranslator,lang:'ru',locale:'ru-RU'})},
     'lightweight-charts':{createChart:()=>chart,CandlestickSeries:{},HistogramSeries:{},LineSeries:{},ColorType:{Solid:'solid'},CrosshairMode:{Normal:0}},
     '../../../lib/indicators':{computeSMA:sma},'./TradeMarkerRail':{default:()=>null}};
   const module:any={};

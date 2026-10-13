@@ -1,12 +1,15 @@
+import type { Lang } from '../../../lib/i18n';
+import { stockTranslator } from './stockText';
 export type StockOverloadCode = 'RATE_LIMIT' | 'ACCOUNT_BUSY' | 'SOURCE_BUSY';
 export type StockOverloadState = { code: StockOverloadCode; retryAt: number; recovering: boolean };
 export type StockReadResult = { kind: 'ready' | 'failed' } | { kind: 'overload' | 'prior-overload'; code: StockOverloadCode; retryAfterMs?: unknown };
 export const stockOverloadCode = (value: unknown): StockOverloadCode | null =>
   value === 'RATE_LIMIT' || value === 'ACCOUNT_BUSY' || value === 'SOURCE_BUSY' ? value : null;
-export function stockOverloadText(code: StockOverloadCode) {
-  return code === 'RATE_LIMIT' ? 'Достигнут лимит запросов источника. Автообновление приостановлено.'
-    : code === 'ACCOUNT_BUSY' ? 'Тестовый счёт занят. Автообновление приостановлено.'
-      : 'Источник котировок занят. Автообновление приостановлено.';
+export function stockOverloadText(code: StockOverloadCode, lang: Lang = 'ru') {
+  const s=stockTranslator(lang);
+  return code === 'RATE_LIMIT' ? s("Достигнут лимит запросов источника. Автообновление приостановлено.")
+    : code === 'ACCOUNT_BUSY' ? s("Тестовый счёт занят. Автообновление приостановлено.")
+      : s("Источник котировок занят. Автообновление приостановлено.");
 }
 export function stockCooldownMs(code: StockOverloadCode, hint?: unknown) {
   const minimum = code === 'RATE_LIMIT' ? 60000 : 3000;

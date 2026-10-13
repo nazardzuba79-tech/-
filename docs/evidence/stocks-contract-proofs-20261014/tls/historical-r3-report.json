@@ -1,0 +1,295 @@
+{
+  "fixtureOnly": true,
+  "productionAccess": false,
+  "capacityClaim": false,
+  "browserClaim": false,
+  "publicExposure": false,
+  "startedAt": "2026-10-13T21:37:47.524Z",
+  "runtime": {
+    "node": "v24.21.0",
+    "platform": "win32"
+  },
+  "cases": [
+    {
+      "name": "pinned TLS and actual compiled authority owner/viewer journey",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong authority, untrusted TLS and duplicate header denial",
+      "status": "PASS"
+    },
+    {
+      "name": "route, method, body and caller-identity admission bounds",
+      "status": "PASS"
+    },
+    {
+      "name": "revocation and cached-client feature-off admission",
+      "status": "PASS"
+    },
+    {
+      "name": "frontend source fence retained; publication remains blocked",
+      "status": "PASS"
+    }
+  ],
+  "assertions": 41,
+  "calls": [
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 200,
+      "error": null,
+      "ms": 57.668399999998655
+    },
+    {
+      "route": "state",
+      "user": "bob",
+      "status": 200,
+      "error": null,
+      "ms": 15.945299999999406
+    },
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 200,
+      "error": null,
+      "ms": 11.98320000000058
+    },
+    {
+      "route": "refresh",
+      "user": "alice",
+      "status": 200,
+      "error": null,
+      "ms": 13.784599999999045
+    },
+    {
+      "route": "orders",
+      "user": "bob",
+      "status": 401,
+      "error": "AUTH_REQUIRED",
+      "ms": 9.953400000000329
+    },
+    {
+      "route": "orders",
+      "user": "alice",
+      "status": 422,
+      "error": "TOKEN_REQUIRED",
+      "ms": 9.227699999999459
+    },
+    {
+      "route": "orders",
+      "user": "alice",
+      "status": 200,
+      "error": null,
+      "ms": 13.45010000000002
+    },
+    {
+      "route": "orders",
+      "user": "alice",
+      "status": 200,
+      "error": null,
+      "ms": 12.140900000000329
+    },
+    {
+      "route": "state",
+      "user": "bob",
+      "status": 200,
+      "error": null,
+      "ms": 9.540600000000268
+    },
+    {
+      "route": "../api/v1/orders",
+      "user": "alice",
+      "status": 404,
+      "error": "ROUTE_NOT_ALLOWED",
+      "ms": 3.4133999999994558
+    },
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 405,
+      "error": "METHOD_NOT_ALLOWED",
+      "ms": 3.263699999999517
+    },
+    {
+      "route": "orders",
+      "user": "alice",
+      "status": 413,
+      "error": "BODY_TOO_LARGE",
+      "ms": 3.766200000000026
+    },
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 400,
+      "error": "HEADER_NOT_ALLOWED",
+      "ms": 3.152299999999741
+    },
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 403,
+      "error": "ORIGIN_DENIED",
+      "ms": 3.1129000000000815
+    },
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 400,
+      "error": "QUERY_NOT_ALLOWED",
+      "ms": 3.663699999999153
+    },
+    {
+      "route": "history",
+      "user": "alice",
+      "status": 422,
+      "error": "MOEX_UNVERIFIED",
+      "ms": 6.489000000001397
+    },
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 401,
+      "error": "AUTH_REQUIRED",
+      "ms": 4.983799999999974
+    },
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 200,
+      "error": null,
+      "ms": 6.1296000000002095
+    },
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 200,
+      "error": null,
+      "ms": 7.918900000000576
+    },
+    {
+      "route": "state",
+      "user": "alice",
+      "status": 503,
+      "error": "FIXTURE_STOCKS_DISABLED",
+      "ms": 3.432699999999386
+    },
+    {
+      "route": "portfolio",
+      "user": "alice",
+      "status": 503,
+      "error": "FIXTURE_STOCKS_DISABLED",
+      "ms": 3.314300000000003
+    },
+    {
+      "route": "history",
+      "user": "alice",
+      "status": 503,
+      "error": "FIXTURE_STOCKS_DISABLED",
+      "ms": 3.7039999999997235
+    },
+    {
+      "route": "orders",
+      "user": "alice",
+      "status": 503,
+      "error": "FIXTURE_STOCKS_DISABLED",
+      "ms": 3.2430999999996857
+    },
+    {
+      "route": "cancel",
+      "user": "alice",
+      "status": 503,
+      "error": "FIXTURE_STOCKS_DISABLED",
+      "ms": 3.274599999998827
+    }
+  ],
+  "prerequisite": {
+    "reportSha256": "0e18a253de268f07012f78060dfddea0e7605f0e30e2b2b412de1288d43517b5",
+    "buildProvenanceSha256": "dc7df0493d844f77353bfea6b5b69d2a5238e474bb8e403481373853173c1d6f",
+    "manifestSha256": "dafee79ce766a086d3b965db242d50893d34b046fc756423679ae171d6bf8cb4",
+    "assertions": 61
+  },
+  "tls": {
+    "library": "cryptography 50.0.2",
+    "caFingerprint": "50:01:27:8A:D9:FC:24:49:F6:2E:FE:D6:D9:95:E6:1F:1F:E4:09:EF:13:34:E4:B3:AD:07:73:FE:B5:D4:A6:69",
+    "leafFingerprint": "DE:E7:35:F7:78:6C:5C:EC:3F:33:07:5B:07:0D:76:52:7B:60:FA:B3:DE:A5:86:05:E9:25:A3:3C:46:06:6F:85",
+    "validFrom": "Oct 13 21:32:56 2026 GMT",
+    "validTo": "Oct 14 21:37:56 2026 GMT",
+    "subjectAltName": "DNS:stocks-review.invalid"
+  },
+  "syntheticOrigin": "https://stocks-review.invalid:5900",
+  "tlsDenials": {
+    "untrusted": {
+      "error": "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+      "ms": 3.336200000001554
+    },
+    "wrongSni": {
+      "error": "ECONNRESET",
+      "ms": 2.7076000000015483
+    },
+    "sniRejections": 1
+  },
+  "partialDisable": {
+    "status": 503,
+    "error": "FIXTURE_STOCKS_DISABLED",
+    "ingressForwardedDelta": 0,
+    "backendForwardedDelta": 0,
+    "authorityDelta": 0,
+    "quoteDelta": 0,
+    "ledgerUnchanged": true
+  },
+  "frontend": {
+    "path": "frontend/src/pages/stocks/StocksPage.tsx",
+    "sha256": "7e3a20c3091476fcdc046a5aaa3936e24a9e00f5d7367d702376b4d238b86814",
+    "publicHostSimulator": "BLOCKED_BY_EXISTING_HOSTNAME_FENCE",
+    "browserTest": "NOT_RUN",
+    "buildFlagRehearsal": "NOT_RUN",
+    "meaning": "TLS fixture wrapper is not public frontend wiring or deployment proof"
+  },
+  "audit": {
+    "fixtureOnly": true,
+    "productionAccess": false,
+    "runtime": {
+      "node": "v24.21.0",
+      "platform": "win32",
+      "arch": "x64"
+    },
+    "identityRequests": 13,
+    "prisma": {
+      "sessionReads": 13,
+      "sessionTouches": 0,
+      "userReads": 12,
+      "policyReads": 12,
+      "unexpected": 0
+    },
+    "forwarded": 14,
+    "blockedRoutes": 0,
+    "deniedNetwork": 0,
+    "quotes": 1,
+    "histories": 0,
+    "droppedAcknowledgements": 0
+  },
+  "status": "PASS",
+  "ingress": {
+    "requests": 29,
+    "forwarded": 14,
+    "denied": 15,
+    "active": 0,
+    "disconnected": 0,
+    "upstreamErrors": 0,
+    "tlsErrors": 2,
+    "sniDenied": 1
+  },
+  "child": {
+    "code": 0,
+    "signal": null,
+    "outputBytes": 0
+  },
+  "completedAt": "2026-10-13T21:37:57.313Z",
+  "limitations": [
+    "Synthetic host only; no DNS, system trust, real account, production DB or public deployment",
+    "Fresh compiled /me with fixture Prisma; does not establish production auth/DB throughput",
+    "Fixture gateway is new QA code, not an approved production implementation",
+    "No frontend/browser or translation claim; current public-host simulator fence remains",
+    "No capacity or external-provider source/licensing claim"
+  ]
+}

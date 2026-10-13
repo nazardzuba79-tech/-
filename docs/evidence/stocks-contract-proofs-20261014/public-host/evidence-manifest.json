@@ -1,0 +1,228 @@
+{
+  "scope": "fixture-only local Windows Node24.21.0 evidence, not production or capacity acceptance",
+  "files": [
+    {
+      "path": "package/report.json",
+      "sha256": "e31437cb4637dfa3328c3626cb1b333c1b5e32cf96dd69376b2bdb17f69e0ed6",
+      "bytes": 12678,
+      "source": "package-proof-20261014-r5/report.json"
+    },
+    {
+      "path": "package/runtime-manifest.json",
+      "sha256": "6d84ad4469deee1819cfb02f4d978ce5d172b2380627959037287271163425e6",
+      "bytes": 8849,
+      "source": "package-proof-20261014-r5/runtime-package/runtime-manifest.json"
+    },
+    {
+      "path": "package/source-git-comparison.json",
+      "sha256": "b5eea1fb5e03039aedeb382df554ea50fd720e9d77b6bf9394af5d91526a6527",
+      "bytes": 6780,
+      "source": "package-proof-20261014-r5-review-manifest.json"
+    },
+    {
+      "path": "package/run.log",
+      "sha256": "0fc5396d3db4358ba6ace043bcb63664edbd9777de6e6f1931d66a7f8beb8d0a",
+      "bytes": 203,
+      "source": "package-proof-20261014-r5.log"
+    },
+    {
+      "path": "package/closure-guards.log",
+      "sha256": "cbddbaf0ddcab7a2c8c0c551cfc37c847abbfe3d17068a6f2db33c401a8e1cb3",
+      "bytes": 328,
+      "source": "package-unit-20261014-r4.log"
+    },
+    {
+      "path": "package/catalogue-before-report.json",
+      "sha256": "9ba0dcff4c7d62a2e9ef408e10847ff94666facc98dd1821315494ce7e0eb9b1",
+      "bytes": 7385,
+      "source": "package-proof-catalogue-before/report.json"
+    },
+    {
+      "path": "tls/historical-r3-report.json",
+      "sha256": "d5091795571f1339da1dfa665d17424119f1e8c4e7252ab464f9432be2d589e6",
+      "bytes": 7202,
+      "source": "tls-stage-20261014-r3/report.json"
+    },
+    {
+      "path": "tls/historical-r3-source-hashes.json",
+      "sha256": "60101adb4c9e98e6d5e0d3d3f2fae3f3190218ec57e1d23c67982b8fcc03d298",
+      "bytes": 578,
+      "source": "tls-stage-20261014-r3/sources.json"
+    },
+    {
+      "path": "tls/historical-r3-review-manifest.json",
+      "sha256": "3b9b1d583b66939a4af3721ad8675cdaad053ee251de2e673be411e60b2a94bf",
+      "bytes": 751,
+      "source": "tls-stage-20261014-r3-review-manifest.json"
+    },
+    {
+      "path": "tls/historical-r3-run.log",
+      "sha256": "7229d38e2ffd85159ea6cf60ed66d3ba409afcd0acddcd990c41b140bbc59885",
+      "bytes": 633,
+      "source": "tls-stage-20261014-r3-invocation.log"
+    },
+    {
+      "path": "tls/partial-body-disabled-before.log",
+      "sha256": "19cf1a687befd7e1e47e5147edf44f59bf97158dad90edbba74933dc4b3980cf",
+      "bytes": 1031,
+      "source": "tls-ingress-partial-disable-before.log"
+    },
+    {
+      "path": "tls/initial-response-doublewrite-failure.log",
+      "sha256": "0bfd42536b9ea4305b9f19e5e25bf7cfa88c6ade101549180645f3991e69b157",
+      "bytes": 1814,
+      "source": "tls-ingress-unit-r1.log"
+    },
+    {
+      "path": "public-host/before-wallet-gap-r2-report.json",
+      "sha256": "48fed3e51c54aa0604bdb969e738deff0b42b5b7c68a5ef42a02e06daf27d0b4",
+      "bytes": 86211,
+      "source": "public-host-20261014-r2/report.json"
+    },
+    {
+      "path": "public-host/final-r4-report.json",
+      "sha256": "d1997be2c54b07392d18145d875c7f4e1cab7ed98a816752dae4c2167c39b4f7",
+      "bytes": 88697,
+      "source": "public-host-20261014-r4/report.json"
+    },
+    {
+      "path": "public-host/final-r4-sources.json",
+      "sha256": "9a75691bdd638318efbf073ec8da1cfd848c9eaea34dc0e8dd631ffcbcede601",
+      "bytes": 563,
+      "source": "public-host-20261014-r4/sources.json"
+    },
+    {
+      "path": "public-host/three-builds-r5-manifest.json",
+      "sha256": "cd2cc396324cfd592de9dec079b545c48f95618faad348efec567374fc087274",
+      "bytes": 371368,
+      "source": "public-build-20261014-r5/manifest.json"
+    },
+    {
+      "path": "public-host/final-browser.log",
+      "sha256": "8074ea5b1b90ca6e8e90470dccf44202efd3aff99cc7c8b8f156ce446c53311c",
+      "bytes": 482,
+      "source": "public-host-20261014-r4.log"
+    },
+    {
+      "path": "public-host/final-all-guards.log",
+      "sha256": "4a80531a2f4e728e2b6463201acd31bbaa0680071ec9dc2532d2d4fca58992c6",
+      "bytes": 1530,
+      "source": "package-public-artifact-guards-final.log"
+    },
+    {
+      "path": "public-host/static-denial-before.log",
+      "sha256": "c6bcc346f9b244f6bdceaf4a17dbf0f5b613381898a8036e89b7398da71bc36a",
+      "bytes": 2038,
+      "source": "public-tls-unit-r3.log"
+    },
+    {
+      "path": "public-host/candidate-desktop-1440.png",
+      "sha256": "b3a1f9331ec71275f595b027b9ac1fc15accead82c8e0988f744b8ccfbd72210",
+      "bytes": 76582,
+      "source": "public-host-20261014-r4/candidate-desktop-1440.png"
+    },
+    {
+      "path": "public-host/candidate-mobile-390.png",
+      "sha256": "e51b557472d234eb1f85b91c82b131dfda31c3d6870babc45fb9f390a7e95272",
+      "bytes": 34588,
+      "source": "public-host-20261014-r4/candidate-mobile-390.png"
+    },
+    {
+      "path": "README-package-public.md",
+      "sha256": "a33081a146bc6f45594c815b4302dc478bbfad03c94ef075437640dd8cd819af",
+      "bytes": 7525,
+      "source": "authored evidence explanation/index; verified against retained raw files"
+    },
+    {
+      "path": "public-host/failure-index.json",
+      "sha256": "703ff2ea6db757cc8bfcc7d776779cdb3364cfd72def27f5df92275f043c9658",
+      "bytes": 1406,
+      "source": "authored evidence explanation/index; verified against retained raw files"
+    }
+  ],
+  "currentSources": [
+    {
+      "path": "scripts/qa-stocks-package-builder.cjs",
+      "sha256": "b3f3682219b65c2465fc0d1bdb2569a7fad1df725a98c81b61c4ad4a04db5eb8"
+    },
+    {
+      "path": "scripts/qa-stocks-package-child.mjs",
+      "sha256": "4ac6ef846d488d0a460cfa59a73b7fbd8563d4737d483babeb50cc565c1ea0be"
+    },
+    {
+      "path": "scripts/qa-stocks-package-proof.cjs",
+      "sha256": "d4b8d871f3be6d3654073bbb0b59bafd943a0d6a7274cb6cc91cf103b8cd9bce"
+    },
+    {
+      "path": "scripts/qa-stocks-package-builder.test.cjs",
+      "sha256": "3590a7b72fe67139de70207a63e98e5934e512c67e1f921a3e4da1c21f305209"
+    },
+    {
+      "path": "scripts/qa-stocks-tls-ingress.cjs",
+      "sha256": "be4fd324cac4b4acaf3dcaa5a66330a2f3aae2b8c73b9da28285df9fd32ed2f4"
+    },
+    {
+      "path": "scripts/qa-stocks-tls-ingress.test.cjs",
+      "sha256": "143458ab22566d0eafdc7d20ddab95036d13f4c9657ac9fa8165fbcdd7dfcff9"
+    },
+    {
+      "path": "scripts/qa-stocks-tls-rehearsal.cjs",
+      "sha256": "03e828208dc876d5f25e633d12812abd309e5d64d9499c68fb06711521662a99"
+    },
+    {
+      "path": "scripts/qa-stocks-public-build.mjs",
+      "sha256": "7455e3d643d919ee546e9c56f55592989ee18b3a59bf0a14d90437a528dc1e38"
+    },
+    {
+      "path": "scripts/qa-stocks-public-fixtures.cjs",
+      "sha256": "bd37e42703e60c0bcdceff3a5ebd7dd31fea39cf94c4bc0abca2b2a22e318810"
+    },
+    {
+      "path": "scripts/qa-stocks-public-fixtures.test.cjs",
+      "sha256": "bc5e886ee65927c8b1c12d06e25297364623c0d26ad26018508ee44ecc395a2c"
+    },
+    {
+      "path": "scripts/qa-stocks-public-host.cjs",
+      "sha256": "0f41b7409435c515f7247c384fef606cb51cc9a2e3d7f510ff908fb8d0487bf2"
+    },
+    {
+      "path": "scripts/qa-stocks-public-artifact.test.cjs",
+      "sha256": "ca9e375179b4e8b4f12831bda4d268123dce73bf9684c94f2f1f7ae349006a60"
+    },
+    {
+      "path": "scripts/qa-stocks-principal-projection.cjs",
+      "sha256": "2d137a89c4f1ff02e1d18b2366faa4cd0cad0f34c93fbb8407d29cb8f9819379"
+    },
+    {
+      "path": "frontend/src/pages/stocks/stockHostPolicy.ts",
+      "sha256": "a6cbea13918d37c60951cd3fa8e4868b89e77fd9130176b9903102eb70544926"
+    },
+    {
+      "path": "frontend/src/pages/stocks/StocksPage.tsx",
+      "sha256": "3c167ad86f8a0bdf0aac2c8f20aa3d26b861d3db019ddef208643c3920308a5f"
+    },
+    {
+      "path": "frontend/src/pages/wallet-v3/useStockPortfolio.ts",
+      "sha256": "7fccfb9361f670387ccaaa6495dd7c9e0e9d54da4a8929581bfb7d0b0b2ec88e"
+    },
+    {
+      "path": "docs/qa/stocks/STANDALONE-PACKAGE-PROOF-20261014.md",
+      "sha256": "12e0a51965dbf7eec650a4f0b228d2c2255f5895a60e02991d3f4ae90e73a5f3"
+    },
+    {
+      "path": "docs/qa/stocks/TLS-FIXTURE-REHEARSAL-20261014.md",
+      "sha256": "2d6f74c0a70373c77857bd13585437b13d62a9126461c84d4514f9492a0f3f3a"
+    },
+    {
+      "path": "docs/qa/stocks/PUBLIC-HOST-FIXTURE-20261014.md",
+      "sha256": "ec6be5ca6f00445ffa9728693c35aeb9437c85ae683248e01dda02f63576cfd0"
+    }
+  ],
+  "historicalTlsSourceManifest": "tls/historical-r3-source-hashes.json",
+  "limitations": [
+    "No SQLite, compiled bundles, env, private keys or credentials copied",
+    "TLS41 report is historical strict ingress, not replayed against current opt-in helper",
+    "Current16guards comprise package3,TLS10,public static/shadow2,artifact provenance1",
+    "Public-host before38 ONWallet1; final40 ONWallet0; real host allowlist remains exact127.0.0.1"
+  ]
+}

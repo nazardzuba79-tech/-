@@ -1,0 +1,6121 @@
+{
+  "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+  "artifactId": 11853046247,
+  "githubRun": 38471232697,
+  "artifactDirectory": "targeted-http.zip (extract to a separate evidence directory)",
+  "artifactZipSha256": "6fd9f0b92e9fe0281043afdce31ce725bf39366d4352eca1bd8b8c854679485e",
+  "resultsSha256": "7acbab13297bfcec217ed37bf42f45f1a0827dd2fce3a4b2e2041a585ed56a3d",
+  "rawFilesVerifiedUnchanged": 326,
+  "startedUtc": "2026-10-13T21:34:45.801Z",
+  "endedUtc": "2026-10-13T21:45:52.884Z",
+  "collectionComplete": true,
+  "capacityAcceptance": "NOT_EVALUATED",
+  "status": {
+    "PASS": 27,
+    "FAIL": 3
+  },
+  "independentAuditIssues": [],
+  "preflight": {
+    "status": "PASS",
+    "index": 30,
+    "contracts": [
+      {
+        "name": "preflight-real-resolver-empty-view40",
+        "ok": true
+      },
+      {
+        "name": "preflight-real-resolver-empty-view40",
+        "ok": true
+      },
+      {
+        "name": "preflight-real-resolver-empty-view40",
+        "ok": true
+      },
+      {
+        "name": "preflight-real-resolver-empty-view40",
+        "ok": true
+      },
+      {
+        "name": "preflight-real-resolver-empty-view40",
+        "ok": true
+      }
+    ],
+    "cleanup": []
+  },
+  "resources": {
+    "service": {
+      "cpu": 0.05,
+      "memory": 268435456,
+      "readBps": 1048576,
+      "writeBps": 131072,
+      "deadlineMs": 3000
+    },
+    "authority": {
+      "cpu": 0.5,
+      "memory": 268435456,
+      "swap": 0,
+      "cpuset": "1"
+    },
+    "client": {
+      "cpu": 0.5,
+      "memory": 268435456,
+      "swap": 0,
+      "cpuset": "1"
+    },
+    "serviceCpu": "0",
+    "loadCpu": "1",
+    "backingDevice": {
+      "mounted": "259:1",
+      "chain": [
+        "/dev/nvme0n1p1",
+        "/dev/nvme0n1"
+      ],
+      "device": "/dev/nvme0n1",
+      "deviceNumber": "259:0"
+    },
+    "networkIsolation": "service network=none; authority/client share service network namespace; no external interface or route",
+    "verifiedRuns": 31
+  },
+  "sourceManifests": [
+    {
+      "profile": "projection20",
+      "variant": "control",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [
+        {
+          "file": "services/stocks-global/viewer-projection.mjs",
+          "before": "3f987e647a0539ed11154919de5972060c297a2517ab2b4ec24aaba23466fd2b",
+          "after": "8850704a432cbe7936a4d9342c5000fbbe00e68f8d5cea7f61130bd93ed05e69"
+        }
+      ],
+      "measuredTreeHash": "6d34bfe468b0bc8abee425c482ff5a522b148fb9a7a01d835d687763bb694ec0",
+      "imageId": "sha256:37fc5548a13699661dc712e8eb0ce47a3a075ea7dd9d00577574547bc4557edb",
+      "productionEquivalent": false
+    },
+    {
+      "profile": "projection20",
+      "variant": "target",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [],
+      "measuredTreeHash": "22a48f1bd08f5dbc2a6385a25a0721516cd997023d054f9e0f6b8b0fd7ecb86c",
+      "imageId": "sha256:df12de2045582fc9e9dc9877f125a177228777b471cd1ae6b18390541221f9db",
+      "productionEquivalent": true
+    },
+    {
+      "profile": "projection50",
+      "variant": "control",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [
+        {
+          "file": "services/stocks-global/viewer-projection.mjs",
+          "before": "3f987e647a0539ed11154919de5972060c297a2517ab2b4ec24aaba23466fd2b",
+          "after": "8850704a432cbe7936a4d9342c5000fbbe00e68f8d5cea7f61130bd93ed05e69"
+        }
+      ],
+      "measuredTreeHash": "6d34bfe468b0bc8abee425c482ff5a522b148fb9a7a01d835d687763bb694ec0",
+      "imageId": "sha256:37fc5548a13699661dc712e8eb0ce47a3a075ea7dd9d00577574547bc4557edb",
+      "productionEquivalent": false
+    },
+    {
+      "profile": "projection50",
+      "variant": "target",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [],
+      "measuredTreeHash": "22a48f1bd08f5dbc2a6385a25a0721516cd997023d054f9e0f6b8b0fd7ecb86c",
+      "imageId": "sha256:df12de2045582fc9e9dc9877f125a177228777b471cd1ae6b18390541221f9db",
+      "productionEquivalent": true
+    },
+    {
+      "profile": "wallet",
+      "variant": "control",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [
+        {
+          "file": "services/stocks-global/server.mjs",
+          "before": "e4b58f5d2e95fdaa27ed683380183864d3c03f12d056501dcac5be070f3067a2",
+          "after": "5701c23026d569b94dee1c37e3260c4c76817feb38a7789614a19590b07cc3eb"
+        }
+      ],
+      "measuredTreeHash": "fdef7fafd9747e77de063853579f7c1b215968bf704380495d06c6832c817db6",
+      "imageId": "sha256:8a7d545cb868fd3eb38f368abdaba4f794dc6893a304f9499dd599ab691d81d8",
+      "productionEquivalent": false
+    },
+    {
+      "profile": "wallet",
+      "variant": "target",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [],
+      "measuredTreeHash": "22a48f1bd08f5dbc2a6385a25a0721516cd997023d054f9e0f6b8b0fd7ecb86c",
+      "imageId": "sha256:df12de2045582fc9e9dc9877f125a177228777b471cd1ae6b18390541221f9db",
+      "productionEquivalent": true
+    },
+    {
+      "profile": "history",
+      "variant": "control",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [
+        {
+          "file": "services/stocks-global/server.mjs",
+          "before": "e4b58f5d2e95fdaa27ed683380183864d3c03f12d056501dcac5be070f3067a2",
+          "after": "1a0245c2286af0146b29304c359ac08f9dce4693c2ec4aefd8e10ff978b6b2a6"
+        }
+      ],
+      "measuredTreeHash": "8f1d2948a66f004dc2e5a119d27ab88fd40aa48c58d8b57797a413c61fe3be4e",
+      "imageId": "sha256:9953a37e389558cffcc82c4143b10c8e5db4711e6e178b092f3092850804e0e0",
+      "productionEquivalent": false
+    },
+    {
+      "profile": "history",
+      "variant": "target",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [],
+      "measuredTreeHash": "22a48f1bd08f5dbc2a6385a25a0721516cd997023d054f9e0f6b8b0fd7ecb86c",
+      "imageId": "sha256:df12de2045582fc9e9dc9877f125a177228777b471cd1ae6b18390541221f9db",
+      "productionEquivalent": true
+    },
+    {
+      "profile": "identity",
+      "variant": "control",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [],
+      "measuredTreeHash": "22a48f1bd08f5dbc2a6385a25a0721516cd997023d054f9e0f6b8b0fd7ecb86c",
+      "imageId": "sha256:df12de2045582fc9e9dc9877f125a177228777b471cd1ae6b18390541221f9db",
+      "productionEquivalent": true
+    },
+    {
+      "profile": "identity",
+      "variant": "target",
+      "sourceSha": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+      "files": 153,
+      "changes": [],
+      "measuredTreeHash": "22a48f1bd08f5dbc2a6385a25a0721516cd997023d054f9e0f6b8b0fd7ecb86c",
+      "imageId": "sha256:df12de2045582fc9e9dc9877f125a177228777b471cd1ae6b18390541221f9db",
+      "productionEquivalent": true
+    }
+  ],
+  "originalSourceChecks": [
+    {
+      "file": "services/stocks-global/account-background-observations.test.mjs",
+      "sha256": "dbe1de8805220e93763f0bba64df1c8ce742c1cb65b0b8a04c397c49ca8ae883",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/account-commands.mjs",
+      "sha256": "b318a041b02244d05d61a5011228bb5b01de129106675ad41daa8eecfc52cd32",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/account-observations.mjs",
+      "sha256": "ac672b140f945f3bcf15c0ac3c71e8ba58fb90a335fd69390110ef02ab249569",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/account-observations.test.mjs",
+      "sha256": "5c0cac7abef4dc348e75c34f2f6cdf4aeb45107e1025fbcb97aeb0a8e921a823",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/account-registration-batch.test.mjs",
+      "sha256": "9bc4a7efd17d41b1a1d0f8a25f2c394a13ad22eb84b57564e4ad0d52bf580c07",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/account-registration.test.mjs",
+      "sha256": "61ece11b2f00119dff02029c41e5a248d81c87a86d01c02cdfd03ae1f00d47b7",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/account-worker-runtime.mjs",
+      "sha256": "8e3f156cd22557591b1021e11193c069bbc8e67e2632709ee7e00543b3f69d5e",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/account-worker.mjs",
+      "sha256": "81917463ce8e982eceb384ae4a17f2ad4de150b395637bbf3d30de013b0b4f50",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/account-worker.test.mjs",
+      "sha256": "f16e0f1c07a3fe3aa0f7c6654afbae2e6e8d60288bf178375d96449f8f6d9fc6",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/ACCOUNTS.md",
+      "sha256": "b2795093fc7ff7ae25500f36d9d92016c252d0a1c6c01ed11e5c34a32c1bd5dc",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/accounts.mjs",
+      "sha256": "0ec41914a2e044f1fced392592ef04f0022ac8b57be33cbd08b94fe834ecbcdd",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/accounts.test.mjs",
+      "sha256": "1e0e67a6d8f49da3972fe22af240ccf07331e62ae669d05c770fdc5ed3fd3237",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/catalog.mjs",
+      "sha256": "47e873004c8c1b29f8b82a4a474420470cece65c1add074e6016ab794e835e1a",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/DATA-RIGHTS.md",
+      "sha256": "18102362836419776a746bb3b3f3bf8ab466dab08dd54d6efd34073942864a2a",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/demand-lifecycle.test.mjs",
+      "sha256": "105356dcae0f157c96c68f1c8c8a30446b611a4940c7094f5fa31c4006290433",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/engine.mjs",
+      "sha256": "eaa4fada1be661d3e29a4102e5573c70bfa8f15a30f0da75aab8812dfe1cfa8c",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/engine.test.mjs",
+      "sha256": "ce9be93137538454ff21ae092e6dbb0fd08547c0056073f2adb217ab7649bddb",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/history-cancellation.test.mjs",
+      "sha256": "60ba1acddf2973b9cd81cac0aa07e68c4c49c39105c6c3cf7694ab452bb18d06",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/history-deadline.test.mjs",
+      "sha256": "9c7395416ae20b3eba3f35cf92f8c3285d3cd87aeae22222762e4c1beb859e46",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/identity.mjs",
+      "sha256": "66dce517ebb73540cb3a5a8dbb1dd43ee711706da2505fa3c90c42e21dec67bb",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/identity.test.mjs",
+      "sha256": "4b66c3808574d32e4514550dcb13ef993a47dc07e3d7ea599e590230c14fd382",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/interest.test.mjs",
+      "sha256": "b97fee3748f808fcba41e62ba483dfb03d35b381ee58227a6ac7898ea610a939",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/local-proxy.mjs",
+      "sha256": "ad23ace029f5fdbc73dbc3d4aa98152bc4b0d7a76fb331690cbef55182ea90e6",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/local-proxy.test.mjs",
+      "sha256": "4f146ca36fc6c56b4b69205a7c7142c64e60a043aa9d883a49e2493a5fe543e4",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/market-budget.test.mjs",
+      "sha256": "7a0287f5053a6f75c37b8a92dc5c52c3cf172b1309dbfd63d0086a37a1b0c5ae",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/market-cache.test.mjs",
+      "sha256": "6f26b5f9fa5d10082fba403ee7acc381c95ff5acf9dc3c84b49f362b7ba8e75c",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/market-range.test.mjs",
+      "sha256": "416891d54dc8c7c5f077059209c97fa4b7768ef952603d346bcfec7d2d670e7b",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/market.mjs",
+      "sha256": "9ea4bb555eda95e98b4ee8c9bb32a57a9ff9cb814318ef75495f9e384ed0490e",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/owner-usdt.test.mjs",
+      "sha256": "a6d3b0c86a9ea0312646a370635e9afadd33b92fadabf878b099f5d91776a6bd",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/probe.mjs",
+      "sha256": "83262b08e4c5ec10e2ec5c7982b1b1378857851f6317ff7d864f43561a00d31b",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/README.md",
+      "sha256": "a89d5d2725ea294b58f721709e92f0ffd64eba1db64ffb3f140fae548c6c29d2",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/refresh-coalescing.test.mjs",
+      "sha256": "b26618bc7c7d1011f56bc57661fb553227f3a3568b294559245bcdf672e3ee56",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/server.mjs",
+      "sha256": "e4b58f5d2e95fdaa27ed683380183864d3c03f12d056501dcac5be070f3067a2",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/server.test.mjs",
+      "sha256": "61a4ce532ccc37e2a1cb0c342c7c5a2d350b8675a254fae74195b22d7968bac8",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/store.mjs",
+      "sha256": "aaeb6461547d7478ec9922c06548064553d734c8782926e546eaec21e990de09",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/viewer-projection.mjs",
+      "sha256": "3f987e647a0539ed11154919de5972060c297a2517ab2b4ec24aaba23466fd2b",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/viewer-projection.test.mjs",
+      "sha256": "651ccc7c4dd95ebd685f3e557c8a13f80734cbd60c1db365d127ada5e25557b5",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/wallet-fx-scope.test.mjs",
+      "sha256": "ff3cb434979293c1c662f9b29623f977fe11ab57c82eff3fbb463e5993499811",
+      "match": true
+    },
+    {
+      "file": "services/stocks-global/worker-http.test.mjs",
+      "sha256": "fc5e56a783085252033f6255194d8945a8a25026b46e372d75c80eed13a541d0",
+      "match": true
+    },
+    {
+      "file": "services/stocks-simulator/.env.example",
+      "sha256": "ca0a204ec375185ec6431d785717dd9e2cc6af0f0f753986410fc8cc57bb824c",
+      "match": true
+    },
+    {
+      "file": "services/stocks-simulator/engine.mjs",
+      "sha256": "b7125711b5ea91ee99124df2d9bf541a8cea5388d56f0978aa595f74ac4bc2b8",
+      "match": true
+    },
+    {
+      "file": "services/stocks-simulator/engine.test.mjs",
+      "sha256": "ee88a00b20ed2ea5e2e06f6a21df09e548fc02fb52549c76b3dd801dc70837a0",
+      "match": true
+    },
+    {
+      "file": "services/stocks-simulator/provider.mjs",
+      "sha256": "e9652293e227d4e787a56004f17c5f0ddac4f3b8162c301aebcc0888b8d10e47",
+      "match": true
+    },
+    {
+      "file": "services/stocks-simulator/README.md",
+      "sha256": "e0a2999b898f653838fcee6aed9441dc513308346c93a404983d6614ce96a5af",
+      "match": true
+    },
+    {
+      "file": "services/stocks-simulator/server.mjs",
+      "sha256": "598f32e70751554c7ec71ca3c4d0559e310c9e3664e86b87fa623a313e811a1c",
+      "match": true
+    },
+    {
+      "file": "services/stocks-simulator/server.test.mjs",
+      "sha256": "aec1d54880a6361824e8017466bad6f00bffe4e030c8fb64bc17de295255dc81",
+      "match": true
+    },
+    {
+      "file": "services/stocks-simulator/store.mjs",
+      "sha256": "aaeb6461547d7478ec9922c06548064553d734c8782926e546eaec21e990de09",
+      "match": true
+    },
+    {
+      "file": "services/stocks/catalogue-sources.json",
+      "sha256": "b5ca0000b77b2957daa5928db2eacbd71297c21d987dc6d2bb04834e3df74a03",
+      "match": true
+    },
+    {
+      "file": "services/stocks/compose.review.yaml",
+      "sha256": "d43a60516b331555af31511bb48d2778844ba0b9f9327dc68b10371b0ef93249",
+      "match": true
+    },
+    {
+      "file": "services/stocks/control.mjs",
+      "sha256": "99cd7d3569ba30a9f290e62fce98115b2aed89efc1391e012988e0ec5048860f",
+      "match": true
+    },
+    {
+      "file": "services/stocks/core.mjs",
+      "sha256": "60ce37895f8bf01fd92cf8f2c26387e2612ea6273e8f0ccefb442e6d5633b195",
+      "match": true
+    },
+    {
+      "file": "services/stocks/core.test.mjs",
+      "sha256": "595cfed617140196ebbd58a9925747dffd16a489be3c2f4095e84bf4a6eb0a8d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/crypto-comparison.cjs",
+      "sha256": "0e25d46747815ea09050471aebde1062e6798643cd7bbb9ad6d1488151739c2d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/crypto-fixture.cjs",
+      "sha256": "57a165ee23036f5d57afaab491bb12886c320db5679547c56aeed730edec6faf",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/Dockerfile",
+      "sha256": "c82847301e34eddcd41c2011c6e82c2df8dfa189b8b6570ab49596401cabc212",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/Dockerfile.dockerignore",
+      "sha256": "ebaad8e1cf3d0e8363c6819a8db5a61e748a29cf99b3f7fc2afaf5fe176c04a4",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/evidence.mjs",
+      "sha256": "8a490ae2fa834714cc693b8d2fb1b61ca847ce1d41932ee2b89434e69535b9a5",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/idle.mjs",
+      "sha256": "37898cd1193dbaa64e2e04c09eddceaf9d4d5a0f2afab7310f3de87e13c93f8b",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/interruption.mjs",
+      "sha256": "ffd61963329b125930cf46ddfa7b57f263273c942687cfb8a14bf062425750a0",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/metrics.mjs",
+      "sha256": "199a0b0ac757f577572095e1d050c4a050c7789fa0d6dfea2729a76c39b7857d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/model.test.mjs",
+      "sha256": "a19275a139c6f12d174f3bfa332dd383e5a571c41ee7f5b369b938be3f64eb5b",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/network-guard.cjs",
+      "sha256": "133e7b16405b885485610a46e9096e5ecade05c7edf9c6bc80c3e4e236ea3cb1",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/plan.mjs",
+      "sha256": "11ec445ebe648588c7f96ed6a428be1f169502d167c2d41ea759d08528b5f407",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/README.md",
+      "sha256": "e81765b913af685ff8c12c21e4522a51ef0ce748dbd3c85815ace20177895f73",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/run.mjs",
+      "sha256": "c62be1c9d1f901ab006884cdd2835fb55a6536be7d2e3cc379a5adb1b6df7fc6",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/safety.mjs",
+      "sha256": "f00990677a6dd236a66cf44a4eed80ecaa253452785557e98d5c8c06ec8e4908",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/start.sh",
+      "sha256": "cb933c35aaa298f187037b8f95d38fd05b889aa317d0029ffda338ea461befa4",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/stocks-fixture.mjs",
+      "sha256": "57b06f9ddddc65081b3db1381bf759d95358158dea07c51aa152f382ce10b790",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/supervisor.mjs",
+      "sha256": "ebf07e39e23cd9e62bd97d37780575ebe2b0d4c13198411f6035d18c81cadfe6",
+      "match": true
+    },
+    {
+      "file": "services/stocks/cx23-model/workload.mjs",
+      "sha256": "27b8b84c83b2550e2e45028d1629fe6b084cbf9307febb0effcb2c2c668c74e0",
+      "match": true
+    },
+    {
+      "file": "services/stocks/Dockerfile",
+      "sha256": "37237e56646ea34edf74d2e64ff0cb7f67d1d554788e12ecc7f712dc94d1f3f2",
+      "match": true
+    },
+    {
+      "file": "services/stocks/import-logo.mjs",
+      "sha256": "f0bc006cd0b368747bba23b9c00bf2a69df242893e5297194c16e0e241caa18c",
+      "match": true
+    },
+    {
+      "file": "services/stocks/io-proof.mjs",
+      "sha256": "224c13911f38f68c0c4e5d9f9e5ddc12ab3e16217b77f81e1ab9234c02e0432e",
+      "match": true
+    },
+    {
+      "file": "services/stocks/limits.json",
+      "sha256": "abae763982f5eaa3b4b62a105856abf1690d81c4462253471b8326ff9bc2b9d8",
+      "match": true
+    },
+    {
+      "file": "services/stocks/load-fixture.mjs",
+      "sha256": "116e4f1933241770c27145cabd57ab050cfcba8073f09460686a89074071254d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/manifest.json",
+      "sha256": "23cdae89005201c900230896dbc828592ac7687e38fcfd20eacc2d5c86878fcc",
+      "match": true
+    },
+    {
+      "file": "services/stocks/native-transport-proof/binance-offline.mjs",
+      "sha256": "791fdbe8fcc0dcc5ebfb783f2584323e0780317d531b4a3cb5aaca374894d543",
+      "match": true
+    },
+    {
+      "file": "services/stocks/native-transport-proof/binance-offline.test.mjs",
+      "sha256": "9801883eae27978bc3dafe82406f01cbcb11eba6b9a7ecdc5a0c3f9f92ed93ca",
+      "match": true
+    },
+    {
+      "file": "services/stocks/native-transport-proof/README.md",
+      "sha256": "991511298c30f51f8de32fb99e624bcff249d30a1c852bc350cfaad20331f8f0",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/instrument.mjs",
+      "sha256": "dcc25a97723f004fec1e9d1cf41b6c5185960ca7091a573c9f4fb307797a86a7",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/instrument.test.mjs",
+      "sha256": "8aeb3afbe12f18a9c8ee03b0d932bec247902471087c45183cb648d58b66ce6f",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/README.md",
+      "sha256": "eea83b5347b2e980da8dc5d0226ca6c894f5b2a1805d40e2d9f24dcc8858801b",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/recorder.mjs",
+      "sha256": "7b6f0d5fe86b9d5606b0a226e6f729bc36423aa800434d8041a5661b8bf74cca",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/registration-run.mjs",
+      "sha256": "a86f375b475a5c7bb4d743c9414da817831a451d4b5ce2710b085e926d01e4f3",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/registration-source.mjs",
+      "sha256": "be9c528a55a0b9d4d3c9a902a206678af9953ba26740edf511747b4168f73a57",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/registration-sources.json",
+      "sha256": "957e597b310d5e58c8321f5a40a9593114342f50a6583a8d6528cb0f9ca5da0f",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/REGISTRATION.md",
+      "sha256": "5d1cffe7cb52c67f58e3c0ec5bc41758104dd13d70bf2a362d9f1f8e1b4e775f",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/registration.test.mjs",
+      "sha256": "46c1b8604189bd9bda6a7736169d9ac63669655ab6256d981d77ac0460c85144",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/run.mjs",
+      "sha256": "ec6d1d6236f3e41b6dba49cbc9279345f115fe41ec490cbe91612ed49a99f11d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/sources.json",
+      "sha256": "c4a3d2c203c68bbd07a1cb29f8f024d72e4484cb2f40816627a2c7baf31ebb65",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/timeline-analysis.mjs",
+      "sha256": "d3a5ba168c5ae9edf654a6188774663d182dc9e495565213222055796b397987",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/timeline-install.mjs",
+      "sha256": "be5cbbef9148cef8f345d7606aa468dcffe66ce5d2e3c9bc166dd04e66de83dc",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/timeline-recorder.mjs",
+      "sha256": "ec060a23f5fe1a2774efafb3a9f220e283b19fd81370a3feae6f45a5fd1de4c9",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/timeline-run.mjs",
+      "sha256": "4d6742aaac5e27344c7de50bf1e8ba343945ba29bf195c9221fad63a6e1ed0ce",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/TIMELINE.md",
+      "sha256": "b2bacc3b2acbfe6e31415f060b70beceada4e96f8047e5582fd15d756c284f4c",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace-512/timeline.test.mjs",
+      "sha256": "ea50152bdc6680f954d361384944f2f17b76b46ee9e97fe88bcfc39efccb7d4e",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace/analyze.mjs",
+      "sha256": "917224966c41ccd198feda27cbf0416a56c11e19e70f5e512d7f0bfa1e640910",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace/analyze.test.mjs",
+      "sha256": "28bf4b92ffeee20ee2e5ac939c84b3d53be46c3e0f78c2e5338fddadf61b4f3d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace/Dockerfile",
+      "sha256": "4829183ba5b6538b6b228e5a99590cd7fec2fceeb4472c8c358c1f5a025bbd6d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace/instrument.mjs",
+      "sha256": "8427a9746eefc6dbbedc1941bec3718bdede843c55d86fb717b73b67217b226c",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace/instrument.test.mjs",
+      "sha256": "a63a132198b18f41dafdc1e71eeebaf2895911f672bcefcf886e6dabe3585bdb",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace/recorder.mjs",
+      "sha256": "4450dcb7fc5d1336629e3bc6a78c9b5a8291a34fbbbc9f6f80a686c2016e7a23",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace/run.mjs",
+      "sha256": "13f9cea91b8675b6736233254b942ccfae63b069f36386b0f1cda62d1b2bada2",
+      "match": true
+    },
+    {
+      "file": "services/stocks/phase-trace/sources.json",
+      "sha256": "5b830b639e41c738dc29570c7b33b9126903f6e1bb719ffb115e1a1f40402d83",
+      "match": true
+    },
+    {
+      "file": "services/stocks/prepare-catalogue.mjs",
+      "sha256": "355902dd2b20e0005ca52ca002c5dc18087dbbd806ee4ca6c44c2a5e452c36da",
+      "match": true
+    },
+    {
+      "file": "services/stocks/profile-http.mjs",
+      "sha256": "e04469b1469d0282c2d77f77d73f84b44244c6c79699ca70005412a78d3abb8d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/profile-sqlite-io.md",
+      "sha256": "75e2bb1791b6854f923da9f15ec1a682e9557c74658e6a0b859c2a2e52882069",
+      "match": true
+    },
+    {
+      "file": "services/stocks/profile-sqlite-io.mjs",
+      "sha256": "9e08cf36c51ee4879c6485386191b2a87545d8a1542933bccac041ac0384d15e",
+      "match": true
+    },
+    {
+      "file": "services/stocks/profile-sqlite-io.test.mjs",
+      "sha256": "6d083ce1fde5e692f5c8480f661d8306d2d855335fbbcb1daffc6d2cd0fd8504",
+      "match": true
+    },
+    {
+      "file": "services/stocks/profile-stages.mjs",
+      "sha256": "44fe595890de058c779a847346aa970bbd434cc95b5d3950bdf9e85c921a314e",
+      "match": true
+    },
+    {
+      "file": "services/stocks/profile-strict-readers.cjs",
+      "sha256": "0bc775cb7dfa5ee1982d1d2a48faccaaf325e6dc500117911d400329e8670bf7",
+      "match": true
+    },
+    {
+      "file": "services/stocks/profile-strict-run.mjs",
+      "sha256": "7f462c43a992e44cd4dd5d5465b5fedbc56f2f5ee192a83ee042aa29f5856cf6",
+      "match": true
+    },
+    {
+      "file": "services/stocks/profile-summary.mjs",
+      "sha256": "93ac186100a162bfe4616876e0e0b6ea2f26df0635f2abce2fb906286640ef86",
+      "match": true
+    },
+    {
+      "file": "services/stocks/provider.mjs",
+      "sha256": "55e863e2b805c94dd0899dc614d368f0b2a14c0d5414983d8182dbf3e03e3cd1",
+      "match": true
+    },
+    {
+      "file": "services/stocks/read-load.cjs",
+      "sha256": "699f81d99fbec9034f263b0e539051676a5a27cf5bc1d3e7a436d14e090ab7a8",
+      "match": true
+    },
+    {
+      "file": "services/stocks/reader-process.cjs",
+      "sha256": "e9bb9bda3ee77129e8eba8ae515b4ac5db67aaf502da85a83e95633c52b09397",
+      "match": true
+    },
+    {
+      "file": "services/stocks/reader-process.test.cjs",
+      "sha256": "0fdd613adc87e5df63e8d239de0f07113a83b4dd9f08ca9cdd92702b9c5c893d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/README.md",
+      "sha256": "d6c651a06987ddba69f59e56a9dbcb561d41f5682c1d888ac5dd40875c2c5e9f",
+      "match": true
+    },
+    {
+      "file": "services/stocks/realistic-global-fixture.mjs",
+      "sha256": "08502c3b2823218db5b3a5d68dd676f5ec2c09c66125ee415580d4cd565fd966",
+      "match": true
+    },
+    {
+      "file": "services/stocks/realistic-metrics.mjs",
+      "sha256": "75d13c7184820253e61e60281dfc54115d0b534bb53150cb0497d407b980834c",
+      "match": true
+    },
+    {
+      "file": "services/stocks/realistic-provider-fixture.mjs",
+      "sha256": "0a7608d9ca10d98cdab01493e94232aed7584862bab346278a9e86f03f244e45",
+      "match": true
+    },
+    {
+      "file": "services/stocks/realistic-provider-fixture.test.mjs",
+      "sha256": "ce8e3c4e8a0e817159eeae8dab0f70706198088cb234d7cdcc73dabb107f2775",
+      "match": true
+    },
+    {
+      "file": "services/stocks/realistic-readers.mjs",
+      "sha256": "e04a8b82213a00ad6704a99ef6a8490f4c3bbfe0609f34ce94477d3e4a26ab67",
+      "match": true
+    },
+    {
+      "file": "services/stocks/realistic-run.mjs",
+      "sha256": "09824fa0d80745a22b967e17256330ef302781836b800146fe35d8d49f19b6aa",
+      "match": true
+    },
+    {
+      "file": "services/stocks/realistic.Dockerfile",
+      "sha256": "4829183ba5b6538b6b228e5a99590cd7fec2fceeb4472c8c358c1f5a025bbd6d",
+      "match": true
+    },
+    {
+      "file": "services/stocks/realistic.test.mjs",
+      "sha256": "5fa70c25d39ac87e8bbe532335b08223563bae93cbfb4f110c256cba57b471ce",
+      "match": true
+    },
+    {
+      "file": "services/stocks/review-evidence.mjs",
+      "sha256": "f67c63355ed66859186ffbc401f2963fe2fd3a5a3c452b674ff556c50a4762ef",
+      "match": true
+    },
+    {
+      "file": "services/stocks/review-evidence.test.mjs",
+      "sha256": "a166e5e2a4f512f9efb34a0842e8623db304455c710c3aa286f28cd9e066f1d8",
+      "match": true
+    },
+    {
+      "file": "services/stocks/review-plan-512.json",
+      "sha256": "0206db3fb31120bbbce38d83430e98ceba0c171dcf4187b5732969d765e7e0b5",
+      "match": true
+    },
+    {
+      "file": "services/stocks/review-plan.mjs",
+      "sha256": "b61207e0945f718e4cc8ebec86d728ba9c8fd672e504bb4aa46e090b0cf5c6fe",
+      "match": true
+    },
+    {
+      "file": "services/stocks/review-plan.test.mjs",
+      "sha256": "4e1c32d782a96c6020e5916f80ad6055315f67295c84fb3846702f197c8fdbdd",
+      "match": true
+    },
+    {
+      "file": "services/stocks/REVIEW-STAGING-512.md",
+      "sha256": "d0000d07f057104341926ba60c69e075c9c0c5da10a9e92f472e77afe1df8040",
+      "match": true
+    },
+    {
+      "file": "services/stocks/runtime-proof.mjs",
+      "sha256": "8f63bd84b938f034413a682e754a6ccff5b69b71da652e5c876fbfddc2a9054a",
+      "match": true
+    },
+    {
+      "file": "services/stocks/runtime.mjs",
+      "sha256": "cc211f99c158d930314f345f8d7c5d5943ea741db03c5e89c8151be5a33c710f",
+      "match": true
+    },
+    {
+      "file": "services/stocks/scheduler.mjs",
+      "sha256": "4ffa40b4ba0cd4a1f5e8e61ba93a74a25ae660eefdcf3ef6a9685883afe97dbc",
+      "match": true
+    },
+    {
+      "file": "services/stocks/server.mjs",
+      "sha256": "bdd90baf0f701b7aa2a7546fdf5bf8da3ab11e30ad44b8393867b99b21ee694f",
+      "match": true
+    },
+    {
+      "file": "services/stocks/server.test.mjs",
+      "sha256": "bb58fa3b93fa670a63d2efe66f07a9a6d18b579f8847cd31d42eaedc0c167838",
+      "match": true
+    },
+    {
+      "file": "services/stocks/storage-proof.mjs",
+      "sha256": "09b0284ab02b1dc59f4004a1fbf53bcb44ed90f6ab65bc81d62f9776eb27a99c",
+      "match": true
+    },
+    {
+      "file": "services/stocks/summarize-launch.cjs",
+      "sha256": "10fb37e124051aec9f16dfd51de43536b2e196bb0ff8011ad74e9d8d706b6086",
+      "match": true
+    },
+    {
+      "file": "services/stocks/summarize-launch.test.mjs",
+      "sha256": "fb9ce4353ea59e492cbdd43171ae8d608223196eb04941dc24049d0e9f43642a",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/authority.mjs",
+      "sha256": "b8e5efbfdb03d417016b0524848be78e3fb83d6325d29941a74092c4a19c30f1",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/client.mjs",
+      "sha256": "ef20eb6ddc638609957b01f4aef298fcf55444b43bc1f2db603a9a6ab5c98217",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/Dockerfile",
+      "sha256": "4500a2e5321f166086019cb3d5f0954f0b70d2fe8efc357e2caa128cb16fabbb",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/Dockerfile.dockerignore",
+      "sha256": "12fe7a353e0970a987face5b7daf108d93f1370f680b15281b140bca5b10066e",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/fixture.mjs",
+      "sha256": "80bd8d0c2999067a972ae018fab865aae4c2a9b3c98e6cabad4e6999521440e4",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/metrics.mjs",
+      "sha256": "38e614cda6a27b1e6fbba1a129aaf668de85a0878c76c5ca6d925523380556f3",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/plan.mjs",
+      "sha256": "258cc65cbee2638265d61bfa7b8f6079fc385520f66af710e324fe4a2a37a1cc",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/probe.mjs",
+      "sha256": "0dc0ea274e29d46bbc840b9b78e92696c55e241aa2eb3857d8fa303084799d0b",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/README.md",
+      "sha256": "9afc2eb7bdd7a26c3712099ccd9a9fbeacd6b3c9347589e694e03d489e3e4faa",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/reviewed-sources.json",
+      "sha256": "5cd51c329d63cecf03bbf0ec1d7b8b3d3175fd0c1b48358cad9e2dfb3f093892",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/run.mjs",
+      "sha256": "8b439b6575417435c6c362dd73b7556f4c357f57c7a1e97d38b411fc91b0f816",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/source.mjs",
+      "sha256": "482f34dad9194e2ba7e88e13719acb5bfc8e9bd593df9b987453c9d3d79507ff",
+      "match": true
+    },
+    {
+      "file": "services/stocks/targeted-http-512/targeted.test.mjs",
+      "sha256": "8bd4c9f4c90bac286297947842c0c942a79681a010f3c08430f538ff1e35100f",
+      "match": true
+    }
+  ],
+  "rows": [
+    {
+      "index": 0,
+      "profile": "projection20",
+      "arm": "control",
+      "repeat": 0,
+      "status": "PASS",
+      "attempts": 100,
+      "successes": 100,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 100,
+        "p50": 320.69044499999995,
+        "p95": 724.1094119999998,
+        "p99": 822.3977860000005,
+        "max": 822.586832
+      },
+      "cpuMs": 173.09699999999998,
+      "cpuMsPerAttempt": 1.73097,
+      "cgroupCpuMs": 171.35200000000003,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 171352,
+        "user_usec": 141827,
+        "system_usec": 29525,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 41,
+        "nr_throttled": 31,
+        "throttled_usec": 2510060,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.4609375,
+      "processMaxRssMiB": 101.12109375,
+      "authorityPeakMiB": 38.01953125,
+      "clientPeakMiB": 24.9453125,
+      "clientCpuMs": 71.811,
+      "sql": {
+        "sqlCalls": 100,
+        "sqlReadCalls": 100,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 3.5339720000138186,
+        "sqlCpuMs": 0.2640000000000011
+      },
+      "accountQueue": {
+        "accepted": 100,
+        "dispatched": 100,
+        "completed": 100,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 18,
+        "maxBytes": 1575,
+        "waitMs": 18778.208219000015,
+        "maxWaitMs": 501.12131000000136,
+        "workMs": 2337.8123729999916,
+        "logicalWorkMs": 2337.8123729999916,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 220,
+        "afterAgeMs": 139,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 100,
+        "completed": 100,
+        "closedEarly": 0,
+        "bytes": 23700,
+        "inflightAfter": 0,
+        "processCpuMs": 29.303999999999988,
+        "cgroupCpuMs": 144.68999999999994
+      },
+      "contracts": {
+        "total": 300,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-0-client-stdout.json",
+      "rawSha256": "e7e8775f0c95fcdbe8f302b295b58c6e99dcb25ec3fb3ab6fbbff3fe6a832120"
+    },
+    {
+      "index": 1,
+      "profile": "projection20",
+      "arm": "target",
+      "repeat": 0,
+      "status": "PASS",
+      "attempts": 100,
+      "successes": 100,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 100,
+        "p50": 377.075057,
+        "p95": 874.5213180000001,
+        "p99": 876.9312330000002,
+        "max": 877.0762420000001
+      },
+      "cpuMs": 185.77299999999997,
+      "cpuMsPerAttempt": 1.8577299999999997,
+      "cgroupCpuMs": 184.32500000000005,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 184325,
+        "user_usec": 167299,
+        "system_usec": 17027,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 46,
+        "nr_throttled": 33,
+        "throttled_usec": 2875506,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.19140625,
+      "processMaxRssMiB": 101.296875,
+      "authorityPeakMiB": 37.8359375,
+      "clientPeakMiB": 25.453125,
+      "clientCpuMs": 74.994,
+      "sql": {
+        "sqlCalls": 100,
+        "sqlReadCalls": 100,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 4.106528999996954,
+        "sqlCpuMs": 1.2300000000000004
+      },
+      "accountQueue": {
+        "accepted": 100,
+        "dispatched": 100,
+        "completed": 100,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 17,
+        "maxBytes": 1488,
+        "waitMs": 18985.851722,
+        "maxWaitMs": 599.3274330000004,
+        "workMs": 2712.8598189999975,
+        "logicalWorkMs": 2712.8598189999975,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 236,
+        "afterAgeMs": 101,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 100,
+        "completed": 100,
+        "closedEarly": 0,
+        "bytes": 23700,
+        "inflightAfter": 0,
+        "processCpuMs": 34.81800000000001,
+        "cgroupCpuMs": 158.74599999999998
+      },
+      "contracts": {
+        "total": 300,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-1-client-stdout.json",
+      "rawSha256": "ebff22535438943278e0c4635ffe70bec5e6c76abe8a3e8ef6c61a949c7a2240"
+    },
+    {
+      "index": 2,
+      "profile": "projection20",
+      "arm": "target",
+      "repeat": 1,
+      "status": "PASS",
+      "attempts": 100,
+      "successes": 100,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 100,
+        "p50": 361.63106700000026,
+        "p95": 757.7643549999993,
+        "p99": 759.158547,
+        "max": 759.4304490000001
+      },
+      "cpuMs": 177.168,
+      "cpuMsPerAttempt": 1.7716800000000001,
+      "cgroupCpuMs": 175.25799999999998,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 175258,
+        "user_usec": 156697,
+        "system_usec": 18561,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 42,
+        "nr_throttled": 31,
+        "throttled_usec": 2713470,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.484375,
+      "processMaxRssMiB": 100.609375,
+      "authorityPeakMiB": 37.92578125,
+      "clientPeakMiB": 25.50390625,
+      "clientCpuMs": 74.481,
+      "sql": {
+        "sqlCalls": 100,
+        "sqlReadCalls": 100,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 4.097045999997135,
+        "sqlCpuMs": 0.8100000000000005
+      },
+      "accountQueue": {
+        "accepted": 100,
+        "dispatched": 100,
+        "completed": 100,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 19,
+        "maxBytes": 1662,
+        "waitMs": 18771.195289999996,
+        "maxWaitMs": 498.01372900000024,
+        "workMs": 2455.2054889999854,
+        "logicalWorkMs": 2455.2054889999854,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 261,
+        "afterAgeMs": 152,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 100,
+        "completed": 100,
+        "closedEarly": 0,
+        "bytes": 23700,
+        "inflightAfter": 0,
+        "processCpuMs": 32.554,
+        "cgroupCpuMs": 146.952
+      },
+      "contracts": {
+        "total": 300,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-2-client-stdout.json",
+      "rawSha256": "4d5688d83380b0965560704121c8894850170c4e879c5f77d32113856056310d"
+    },
+    {
+      "index": 3,
+      "profile": "projection20",
+      "arm": "control",
+      "repeat": 1,
+      "status": "PASS",
+      "attempts": 100,
+      "successes": 100,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 100,
+        "p50": 360.8058819999999,
+        "p95": 661.3993939999998,
+        "p99": 762.3176709999998,
+        "max": 762.420746
+      },
+      "cpuMs": 181.19799999999998,
+      "cpuMsPerAttempt": 1.8119799999999997,
+      "cgroupCpuMs": 179.879,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 179879,
+        "user_usec": 159142,
+        "system_usec": 20738,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 45,
+        "nr_throttled": 31,
+        "throttled_usec": 2750817,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.31640625,
+      "processMaxRssMiB": 98.32421875,
+      "authorityPeakMiB": 37.78125,
+      "clientPeakMiB": 25.0625,
+      "clientCpuMs": 67.862,
+      "sql": {
+        "sqlCalls": 100,
+        "sqlReadCalls": 100,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 3.1341749999937747,
+        "sqlCpuMs": 0.07699999999999996
+      },
+      "accountQueue": {
+        "accepted": 100,
+        "dispatched": 100,
+        "completed": 100,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 14,
+        "maxBytes": 1222,
+        "waitMs": 6603.797656999997,
+        "maxWaitMs": 198.09613200000058,
+        "workMs": 1726.1397990000023,
+        "logicalWorkMs": 1726.1397990000023,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 211,
+        "afterAgeMs": 111,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 100,
+        "completed": 100,
+        "closedEarly": 0,
+        "bytes": 23700,
+        "inflightAfter": 0,
+        "processCpuMs": 34.631,
+        "cgroupCpuMs": 149.88
+      },
+      "contracts": {
+        "total": 300,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-3-client-stdout.json",
+      "rawSha256": "68586d7fd54673277aa0b7a6ad6683ac4dad5bdc85b639cf10ebd46a3fe8b44f"
+    },
+    {
+      "index": 4,
+      "profile": "projection20",
+      "arm": "control",
+      "repeat": 2,
+      "status": "PASS",
+      "attempts": 100,
+      "successes": 100,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 100,
+        "p50": 305.4288980000001,
+        "p95": 702.104409,
+        "p99": 799.264014,
+        "max": 799.9674679999999
+      },
+      "cpuMs": 182.284,
+      "cpuMsPerAttempt": 1.82284,
+      "cgroupCpuMs": 180.82500000000002,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 180825,
+        "user_usec": 161118,
+        "system_usec": 19707,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 50,
+        "nr_throttled": 29,
+        "throttled_usec": 2725245,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.17578125,
+      "processMaxRssMiB": 98.45703125,
+      "authorityPeakMiB": 37.74609375,
+      "clientPeakMiB": 25.43359375,
+      "clientCpuMs": 67.932,
+      "sql": {
+        "sqlCalls": 100,
+        "sqlReadCalls": 100,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 3.1396099999928992,
+        "sqlCpuMs": 0.18200000000000038
+      },
+      "accountQueue": {
+        "accepted": 100,
+        "dispatched": 100,
+        "completed": 100,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 15,
+        "maxBytes": 1311,
+        "waitMs": 6752.895665,
+        "maxWaitMs": 200.43064400000003,
+        "workMs": 1904.1519039999857,
+        "logicalWorkMs": 1904.1519039999857,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 253,
+        "afterAgeMs": 192,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 100,
+        "completed": 100,
+        "closedEarly": 0,
+        "bytes": 23700,
+        "inflightAfter": 0,
+        "processCpuMs": 33.61399999999999,
+        "cgroupCpuMs": 151.60300000000007
+      },
+      "contracts": {
+        "total": 300,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-4-client-stdout.json",
+      "rawSha256": "0d2c30058495c5b3b4f6820a5818868cde9fd448ed1bad55fa4f152ede258d08"
+    },
+    {
+      "index": 5,
+      "profile": "projection20",
+      "arm": "target",
+      "repeat": 2,
+      "status": "PASS",
+      "attempts": 100,
+      "successes": 100,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 100,
+        "p50": 310.06708699999945,
+        "p95": 709.6740199999995,
+        "p99": 712.6296699999994,
+        "max": 712.787499
+      },
+      "cpuMs": 163.261,
+      "cpuMsPerAttempt": 1.63261,
+      "cgroupCpuMs": 161.83,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 161830,
+        "user_usec": 131859,
+        "system_usec": 29970,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 41,
+        "nr_throttled": 28,
+        "throttled_usec": 2281692,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.45703125,
+      "processMaxRssMiB": 100.6796875,
+      "authorityPeakMiB": 37.4453125,
+      "clientPeakMiB": 25.76953125,
+      "clientCpuMs": 70.644,
+      "sql": {
+        "sqlCalls": 100,
+        "sqlReadCalls": 100,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 3.320332999999664,
+        "sqlCpuMs": 0.1769999999999996
+      },
+      "accountQueue": {
+        "accepted": 100,
+        "dispatched": 100,
+        "completed": 100,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 18,
+        "maxBytes": 1575,
+        "waitMs": 17368.497637000015,
+        "maxWaitMs": 500.2736139999997,
+        "workMs": 2309.566079999988,
+        "logicalWorkMs": 2309.566079999988,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 235,
+        "afterAgeMs": 132,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 6,
+          "completed": 6,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 731
+        },
+        "logical": {
+          "requested": 12,
+          "completed": 12,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 12,
+        "admission-observed-at-fetch": 6,
+        "native-start": 6,
+        "native-completed": 6,
+        "completed": 12
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 100,
+        "completed": 100,
+        "closedEarly": 0,
+        "bytes": 23700,
+        "inflightAfter": 0,
+        "processCpuMs": 31.10300000000001,
+        "cgroupCpuMs": 147.289
+      },
+      "contracts": {
+        "total": 300,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-5-client-stdout.json",
+      "rawSha256": "69142ec56f993e590b8d6b01fb4079cf10623dd8848584f42c346a5f92b71012"
+    },
+    {
+      "index": 6,
+      "profile": "projection50",
+      "arm": "control",
+      "repeat": 0,
+      "status": "PASS",
+      "attempts": 250,
+      "successes": 250,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 250,
+        "p50": 995.9251210000002,
+        "p95": 1900.480939,
+        "p99": 2098.1501380000004,
+        "max": 2100.460232
+      },
+      "cpuMs": 382.444,
+      "cpuMsPerAttempt": 1.529776,
+      "cgroupCpuMs": 382.34000000000003,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 382340,
+        "user_usec": 332501,
+        "system_usec": 49840,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 81,
+        "nr_throttled": 73,
+        "throttled_usec": 6889145,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.86328125,
+      "processMaxRssMiB": 109.734375,
+      "authorityPeakMiB": 39.66015625,
+      "clientPeakMiB": 32.47265625,
+      "clientCpuMs": 157.734,
+      "sql": {
+        "sqlCalls": 250,
+        "sqlReadCalls": 250,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 8.572204000009151,
+        "sqlCpuMs": 0.8129999999999988
+      },
+      "accountQueue": {
+        "accepted": 250,
+        "dispatched": 250,
+        "completed": 250,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 45,
+        "maxBytes": 3954,
+        "waitMs": 113079.81310599989,
+        "maxWaitMs": 998.9726499999997,
+        "workMs": 6177.61106600003,
+        "logicalWorkMs": 6177.61106600003,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 208,
+        "afterAgeMs": 98,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 250,
+        "completed": 250,
+        "closedEarly": 0,
+        "bytes": 59400,
+        "inflightAfter": 0,
+        "processCpuMs": 60.503,
+        "cgroupCpuMs": 179.0949999999999
+      },
+      "contracts": {
+        "total": 750,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-6-client-stdout.json",
+      "rawSha256": "971222ffc5bcd1486259ccf47564aefac8abbe1b1d581ef8b92575ada6569a2f"
+    },
+    {
+      "index": 7,
+      "profile": "projection50",
+      "arm": "target",
+      "repeat": 0,
+      "status": "PASS",
+      "attempts": 250,
+      "successes": 250,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 250,
+        "p50": 1085.7043230000004,
+        "p95": 1581.855453,
+        "p99": 1779.0181340000001,
+        "max": 1779.6481159999998
+      },
+      "cpuMs": 387.569,
+      "cpuMsPerAttempt": 1.550276,
+      "cgroupCpuMs": 387.335,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 387335,
+        "user_usec": 341104,
+        "system_usec": 46230,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 83,
+        "nr_throttled": 73,
+        "throttled_usec": 6813706,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 55.6484375,
+      "processMaxRssMiB": 108.23828125,
+      "authorityPeakMiB": 38.1796875,
+      "clientPeakMiB": 32.20703125,
+      "clientCpuMs": 172.304,
+      "sql": {
+        "sqlCalls": 250,
+        "sqlReadCalls": 250,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 9.43779599996742,
+        "sqlCpuMs": 0.21099999999999852
+      },
+      "accountQueue": {
+        "accepted": 250,
+        "dispatched": 250,
+        "completed": 250,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 47,
+        "maxBytes": 4128,
+        "waitMs": 115197.44126899996,
+        "maxWaitMs": 798.7040340000003,
+        "workMs": 6194.128441999977,
+        "logicalWorkMs": 6194.128441999977,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 264,
+        "afterAgeMs": 103,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 250,
+        "completed": 250,
+        "closedEarly": 0,
+        "bytes": 59400,
+        "inflightAfter": 0,
+        "processCpuMs": 61.85100000000001,
+        "cgroupCpuMs": 192.49300000000005
+      },
+      "contracts": {
+        "total": 750,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-7-client-stdout.json",
+      "rawSha256": "5fce44c1e4332e838527216a07ca992a885349a39335ec385b499be917503301"
+    },
+    {
+      "index": 8,
+      "profile": "projection50",
+      "arm": "target",
+      "repeat": 1,
+      "status": "PASS",
+      "attempts": 250,
+      "successes": 250,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 250,
+        "p50": 995.3680789999999,
+        "p95": 1948.1074409999999,
+        "p99": 2048.6067040000003,
+        "max": 2049.467486
+      },
+      "cpuMs": 353.773,
+      "cpuMsPerAttempt": 1.415092,
+      "cgroupCpuMs": 353.738,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 353738,
+        "user_usec": 304087,
+        "system_usec": 49651,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 77,
+        "nr_throttled": 66,
+        "throttled_usec": 6174322,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 55.96875,
+      "processMaxRssMiB": 108.27734375,
+      "authorityPeakMiB": 38.79296875,
+      "clientPeakMiB": 32.61328125,
+      "clientCpuMs": 160.94,
+      "sql": {
+        "sqlCalls": 250,
+        "sqlReadCalls": 250,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 8.589768999954686,
+        "sqlCpuMs": 0.477999999999998
+      },
+      "accountQueue": {
+        "accepted": 250,
+        "dispatched": 250,
+        "completed": 250,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 49,
+        "maxBytes": 4302,
+        "waitMs": 117913.28020300006,
+        "maxWaitMs": 998.522589000002,
+        "workMs": 5500.51628000002,
+        "logicalWorkMs": 5500.51628000002,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 259,
+        "afterAgeMs": 100,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 250,
+        "completed": 250,
+        "closedEarly": 0,
+        "bytes": 59400,
+        "inflightAfter": 0,
+        "processCpuMs": 52.44199999999999,
+        "cgroupCpuMs": 175.99300000000005
+      },
+      "contracts": {
+        "total": 750,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-8-client-stdout.json",
+      "rawSha256": "6dead08a9e884f23bd65b16bf1994060e5e34feb8d02505ea160758694f520a8"
+    },
+    {
+      "index": 9,
+      "profile": "projection50",
+      "arm": "control",
+      "repeat": 1,
+      "status": "PASS",
+      "attempts": 250,
+      "successes": 250,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 250,
+        "p50": 1095.6400879999997,
+        "p95": 1994.378115,
+        "p99": 2192.0043739999996,
+        "max": 2193.080022
+      },
+      "cpuMs": 414.281,
+      "cpuMsPerAttempt": 1.657124,
+      "cgroupCpuMs": 414.16900000000004,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 414169,
+        "user_usec": 350496,
+        "system_usec": 63674,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 87,
+        "nr_throttled": 80,
+        "throttled_usec": 7537662,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.43359375,
+      "processMaxRssMiB": 108.25390625,
+      "authorityPeakMiB": 38.51953125,
+      "clientPeakMiB": 32.09375,
+      "clientCpuMs": 184.633,
+      "sql": {
+        "sqlCalls": 250,
+        "sqlReadCalls": 250,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 9.854223999991518,
+        "sqlCpuMs": 0.39799999999999613
+      },
+      "accountQueue": {
+        "accepted": 250,
+        "dispatched": 250,
+        "completed": 250,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 45,
+        "maxBytes": 3954,
+        "waitMs": 113170.45319299994,
+        "maxWaitMs": 899.9952350000021,
+        "workMs": 6298.531602999992,
+        "logicalWorkMs": 6298.531602999992,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 225,
+        "afterAgeMs": 131,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 250,
+        "completed": 250,
+        "closedEarly": 0,
+        "bytes": 59400,
+        "inflightAfter": 0,
+        "processCpuMs": 65.542,
+        "cgroupCpuMs": 190.692
+      },
+      "contracts": {
+        "total": 750,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-9-client-stdout.json",
+      "rawSha256": "803b23ce61b98dc7d174d88fbbf6a7f560ec57edbf2a0eeeeeb081261702882b"
+    },
+    {
+      "index": 10,
+      "profile": "projection50",
+      "arm": "control",
+      "repeat": 2,
+      "status": "PASS",
+      "attempts": 250,
+      "successes": 250,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 250,
+        "p50": 950.2047339999999,
+        "p95": 1846.831509,
+        "p99": 1945.476245,
+        "max": 1946.2019129999999
+      },
+      "cpuMs": 403.902,
+      "cpuMsPerAttempt": 1.615608,
+      "cgroupCpuMs": 403.808,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 403808,
+        "user_usec": 342102,
+        "system_usec": 61705,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 88,
+        "nr_throttled": 77,
+        "throttled_usec": 6997803,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 55.68359375,
+      "processMaxRssMiB": 107.81640625,
+      "authorityPeakMiB": 39.484375,
+      "clientPeakMiB": 32.16796875,
+      "clientCpuMs": 161.476,
+      "sql": {
+        "sqlCalls": 250,
+        "sqlReadCalls": 250,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 104.33256599999731,
+        "sqlCpuMs": 0.7040000000000006
+      },
+      "accountQueue": {
+        "accepted": 250,
+        "dispatched": 250,
+        "completed": 250,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 47,
+        "maxBytes": 4128,
+        "waitMs": 74639.47519800004,
+        "maxWaitMs": 900.6944589999985,
+        "workMs": 6069.6212000000105,
+        "logicalWorkMs": 6069.6212000000105,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 205,
+        "afterAgeMs": 107,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 250,
+        "completed": 250,
+        "closedEarly": 0,
+        "bytes": 59400,
+        "inflightAfter": 0,
+        "processCpuMs": 68.228,
+        "cgroupCpuMs": 186.03200000000004
+      },
+      "contracts": {
+        "total": 750,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-10-client-stdout.json",
+      "rawSha256": "17fe1c4e25e14aa5f26294f70ae9f8e11580ac8756445d6341760d8f5081161b"
+    },
+    {
+      "index": 11,
+      "profile": "projection50",
+      "arm": "target",
+      "repeat": 2,
+      "status": "PASS",
+      "attempts": 250,
+      "successes": 250,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 250,
+        "p50": 729.676301,
+        "p95": 1690.783026,
+        "p99": 1790.966448,
+        "max": 1791.831256
+      },
+      "cpuMs": 319.299,
+      "cpuMsPerAttempt": 1.277196,
+      "cgroupCpuMs": 319.238,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 319238,
+        "user_usec": 269810,
+        "system_usec": 49428,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 70,
+        "nr_throttled": 59,
+        "throttled_usec": 5268696,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.25,
+      "processMaxRssMiB": 109.1796875,
+      "authorityPeakMiB": 38.703125,
+      "clientPeakMiB": 32.66796875,
+      "clientCpuMs": 153.991,
+      "sql": {
+        "sqlCalls": 250,
+        "sqlReadCalls": 250,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 8.079188999998223,
+        "sqlCpuMs": 0.3860000000000028
+      },
+      "accountQueue": {
+        "accepted": 250,
+        "dispatched": 250,
+        "completed": 250,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 47,
+        "maxBytes": 4128,
+        "waitMs": 96057.66705599993,
+        "maxWaitMs": 797.5957890000009,
+        "workMs": 4900.407997999999,
+        "logicalWorkMs": 4900.407997999999,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 237,
+        "afterAgeMs": 151,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 7,
+          "completed": 7,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 866
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 7,
+        "native-start": 7,
+        "native-completed": 7,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 250,
+        "completed": 250,
+        "closedEarly": 0,
+        "bytes": 59400,
+        "inflightAfter": 0,
+        "processCpuMs": 49.90599999999999,
+        "cgroupCpuMs": 172.89900000000011
+      },
+      "contracts": {
+        "total": 750,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-11-client-stdout.json",
+      "rawSha256": "8115a8e6276565603ecfe5c71b158bbddf1f42bd48dca8b4759f875b97bce6a7"
+    },
+    {
+      "index": 12,
+      "profile": "wallet",
+      "arm": "control",
+      "repeat": 0,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 25,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 68.94873100000041,
+        "p95": 170.49810300000001,
+        "p99": 265.235312,
+        "max": 265.235312
+      },
+      "cpuMs": 64.73800000000003,
+      "cpuMsPerAttempt": 2.589520000000001,
+      "cgroupCpuMs": 64.61399999999998,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 64614,
+        "user_usec": 55757,
+        "system_usec": 8857,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 24,
+        "nr_throttled": 9,
+        "throttled_usec": 674931,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 57.34375,
+      "processMaxRssMiB": 97.4140625,
+      "authorityPeakMiB": 36.5,
+      "clientPeakMiB": 19.8828125,
+      "clientCpuMs": 28.854,
+      "sql": {
+        "sqlCalls": 25,
+        "sqlReadCalls": 25,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 0.91391200000362,
+        "sqlCpuMs": 0
+      },
+      "accountQueue": {
+        "accepted": 25,
+        "dispatched": 25,
+        "completed": 25,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 4,
+        "maxBytes": 0,
+        "waitMs": 926.3824439999953,
+        "maxWaitMs": 101.4218990000004,
+        "workMs": 459.00501599999916,
+        "logicalWorkMs": 459.00501599999916,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 15302,
+        "afterAgeMs": 99,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 13,
+          "completed": 13,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 1257
+        },
+        "logical": {
+          "requested": 30,
+          "completed": 30,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 30,
+        "admission-observed-at-fetch": 13,
+        "native-start": 13,
+        "native-completed": 13,
+        "completed": 30
+      },
+      "ledgerUnchanged": true,
+      "walletUsedCapacityUnchanged": true,
+      "walletPostMeasureComplete": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5750,
+        "inflightAfter": 0,
+        "processCpuMs": 18.53200000000001,
+        "cgroupCpuMs": 137.822
+      },
+      "contracts": {
+        "total": 150,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-12-client-stdout.json",
+      "rawSha256": "31bdafed08e20a3544f29c03cb19ea39ad45b720dae1d57cdcbe4a11c68a1279"
+    },
+    {
+      "index": 13,
+      "profile": "wallet",
+      "arm": "target",
+      "repeat": 0,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 25,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 17.92974200000026,
+        "p95": 216.586302,
+        "p99": 216.86665500000004,
+        "max": 216.86665500000004
+      },
+      "cpuMs": 65.09200000000001,
+      "cpuMsPerAttempt": 2.6036800000000007,
+      "cgroupCpuMs": 64.88700000000003,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 64887,
+        "user_usec": 55398,
+        "system_usec": 9488,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 26,
+        "nr_throttled": 8,
+        "throttled_usec": 325008,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 57.3984375,
+      "processMaxRssMiB": 97.28125,
+      "authorityPeakMiB": 36.875,
+      "clientPeakMiB": 20.0234375,
+      "clientCpuMs": 29.429,
+      "sql": {
+        "sqlCalls": 25,
+        "sqlReadCalls": 25,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 0.9956760000022769,
+        "sqlCpuMs": 0
+      },
+      "accountQueue": {
+        "accepted": 25,
+        "dispatched": 25,
+        "completed": 25,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 4,
+        "maxBytes": 0,
+        "waitMs": 518.4024429999954,
+        "maxWaitMs": 197.66015900000093,
+        "workMs": 260.58489900001223,
+        "logicalWorkMs": 260.58489900001223,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 15301,
+        "afterAgeMs": 162,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 12,
+          "completed": 12,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 1198
+        },
+        "logical": {
+          "requested": 20,
+          "completed": 20,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 20,
+        "admission-observed-at-fetch": 12,
+        "native-start": 12,
+        "native-completed": 12,
+        "completed": 20
+      },
+      "ledgerUnchanged": true,
+      "walletUsedCapacityUnchanged": true,
+      "walletPostMeasureComplete": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5750,
+        "inflightAfter": 0,
+        "processCpuMs": 22.491,
+        "cgroupCpuMs": 149.29899999999998
+      },
+      "contracts": {
+        "total": 150,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-13-client-stdout.json",
+      "rawSha256": "c231e114b6887ea81d30a07447a2c3955f9b5e46e61e272a6343b15b59ff2a3d"
+    },
+    {
+      "index": 14,
+      "profile": "wallet",
+      "arm": "target",
+      "repeat": 1,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 25,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 103.05515899999955,
+        "p95": 299.982142,
+        "p99": 300.706067,
+        "max": 300.706067
+      },
+      "cpuMs": 67.47099999999998,
+      "cpuMsPerAttempt": 2.698839999999999,
+      "cgroupCpuMs": 67.299,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 67299,
+        "user_usec": 58232,
+        "system_usec": 9066,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 22,
+        "nr_throttled": 8,
+        "throttled_usec": 751650,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.55859375,
+      "processMaxRssMiB": 97.796875,
+      "authorityPeakMiB": 36.8046875,
+      "clientPeakMiB": 20.4453125,
+      "clientCpuMs": 30.385,
+      "sql": {
+        "sqlCalls": 25,
+        "sqlReadCalls": 25,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 1.174643999995169,
+        "sqlCpuMs": 0.262
+      },
+      "accountQueue": {
+        "accepted": 25,
+        "dispatched": 25,
+        "completed": 25,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 4,
+        "maxBytes": 0,
+        "waitMs": 1183.8878969999896,
+        "maxWaitMs": 195.83531700000003,
+        "workMs": 510.9145860000099,
+        "logicalWorkMs": 510.9145860000099,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 15309,
+        "afterAgeMs": 103,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 12,
+          "completed": 12,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 1198
+        },
+        "logical": {
+          "requested": 20,
+          "completed": 20,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 20,
+        "admission-observed-at-fetch": 12,
+        "native-start": 12,
+        "native-completed": 12,
+        "completed": 20
+      },
+      "ledgerUnchanged": true,
+      "walletUsedCapacityUnchanged": true,
+      "walletPostMeasureComplete": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5750,
+        "inflightAfter": 0,
+        "processCpuMs": 20.857,
+        "cgroupCpuMs": 141.12999999999988
+      },
+      "contracts": {
+        "total": 150,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-14-client-stdout.json",
+      "rawSha256": "c2f95573603c53d0fd3ff149e67cf55a6a8f4b4e8cf932606fb577d08205b05b"
+    },
+    {
+      "index": 15,
+      "profile": "wallet",
+      "arm": "control",
+      "repeat": 1,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 25,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 21.61036899999999,
+        "p95": 216.91109300000002,
+        "p99": 217.075592,
+        "max": 217.075592
+      },
+      "cpuMs": 67.61899999999997,
+      "cpuMsPerAttempt": 2.704759999999999,
+      "cgroupCpuMs": 67.37899999999999,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 67379,
+        "user_usec": 57942,
+        "system_usec": 9436,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 19,
+        "nr_throttled": 10,
+        "throttled_usec": 458930,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.69140625,
+      "processMaxRssMiB": 96.46875,
+      "authorityPeakMiB": 36.5390625,
+      "clientPeakMiB": 19.91015625,
+      "clientCpuMs": 29.727,
+      "sql": {
+        "sqlCalls": 25,
+        "sqlReadCalls": 25,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 1.3499830000000657,
+        "sqlCpuMs": 0.44599999999999973
+      },
+      "accountQueue": {
+        "accepted": 25,
+        "dispatched": 25,
+        "completed": 25,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 4,
+        "maxBytes": 0,
+        "waitMs": 779.6967000000077,
+        "maxWaitMs": 196.38850800000182,
+        "workMs": 446.01021400000536,
+        "logicalWorkMs": 446.01021400000536,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 15347,
+        "afterAgeMs": 132,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 13,
+          "completed": 13,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 1257
+        },
+        "logical": {
+          "requested": 30,
+          "completed": 30,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 30,
+        "admission-observed-at-fetch": 13,
+        "native-start": 13,
+        "native-completed": 13,
+        "completed": 30
+      },
+      "ledgerUnchanged": true,
+      "walletUsedCapacityUnchanged": true,
+      "walletPostMeasureComplete": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5750,
+        "inflightAfter": 0,
+        "processCpuMs": 16.52300000000001,
+        "cgroupCpuMs": 141.27700000000004
+      },
+      "contracts": {
+        "total": 150,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-15-client-stdout.json",
+      "rawSha256": "ae34b614231fc88ce083748f5d44324f5677f7ba592e9724f82200eadb0b68cd"
+    },
+    {
+      "index": 16,
+      "profile": "wallet",
+      "arm": "control",
+      "repeat": 2,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 25,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 83.62576099999933,
+        "p95": 280.637919,
+        "p99": 280.914688,
+        "max": 280.914688
+      },
+      "cpuMs": 74.67599999999999,
+      "cpuMsPerAttempt": 2.9870399999999995,
+      "cgroupCpuMs": 74.582,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 74582,
+        "user_usec": 63270,
+        "system_usec": 11313,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 26,
+        "nr_throttled": 12,
+        "throttled_usec": 983477,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.28515625,
+      "processMaxRssMiB": 96.69921875,
+      "authorityPeakMiB": 36.7890625,
+      "clientPeakMiB": 20.19140625,
+      "clientCpuMs": 31.853,
+      "sql": {
+        "sqlCalls": 25,
+        "sqlReadCalls": 25,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 1.288168000006408,
+        "sqlCpuMs": 0.2859999999999996
+      },
+      "accountQueue": {
+        "accepted": 25,
+        "dispatched": 25,
+        "completed": 25,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 4,
+        "maxBytes": 0,
+        "waitMs": 1203.282519000004,
+        "maxWaitMs": 196.29461300000185,
+        "workMs": 804.6883519999938,
+        "logicalWorkMs": 804.6883519999938,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 15356,
+        "afterAgeMs": 242,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 13,
+          "completed": 13,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 1257
+        },
+        "logical": {
+          "requested": 30,
+          "completed": 30,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 30,
+        "admission-observed-at-fetch": 13,
+        "native-start": 13,
+        "native-completed": 13,
+        "completed": 30
+      },
+      "ledgerUnchanged": true,
+      "walletUsedCapacityUnchanged": true,
+      "walletPostMeasureComplete": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5750,
+        "inflightAfter": 0,
+        "processCpuMs": 22.055999999999997,
+        "cgroupCpuMs": 147.8839999999999
+      },
+      "contracts": {
+        "total": 150,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-16-client-stdout.json",
+      "rawSha256": "380132cd8b04cebbf1fa87e0d1feac61c9dfcb758ca39d83fe6e3328deeb9efa"
+    },
+    {
+      "index": 17,
+      "profile": "wallet",
+      "arm": "target",
+      "repeat": 2,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 25,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 101.87258800000018,
+        "p95": 300.112926,
+        "p99": 300.380931,
+        "max": 300.380931
+      },
+      "cpuMs": 74.04599999999999,
+      "cpuMsPerAttempt": 2.9618399999999996,
+      "cgroupCpuMs": 73.73700000000002,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 73737,
+        "user_usec": 67658,
+        "system_usec": 6079,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 26,
+        "nr_throttled": 10,
+        "throttled_usec": 880632,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 57.203125,
+      "processMaxRssMiB": 96.85546875,
+      "authorityPeakMiB": 36.671875,
+      "clientPeakMiB": 19.93359375,
+      "clientCpuMs": 32.086,
+      "sql": {
+        "sqlCalls": 25,
+        "sqlReadCalls": 25,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 1.2964519999986805,
+        "sqlCpuMs": 0.05699999999999994
+      },
+      "accountQueue": {
+        "accepted": 25,
+        "dispatched": 25,
+        "completed": 25,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 4,
+        "maxBytes": 0,
+        "waitMs": 1555.2248540000037,
+        "maxWaitMs": 196.77084699999796,
+        "workMs": 786.0534490000064,
+        "logicalWorkMs": 786.0534490000064,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 15366,
+        "afterAgeMs": 144,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 12,
+          "completed": 12,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 1198
+        },
+        "logical": {
+          "requested": 20,
+          "completed": 20,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 20,
+        "admission-observed-at-fetch": 12,
+        "native-start": 12,
+        "native-completed": 12,
+        "completed": 20
+      },
+      "ledgerUnchanged": true,
+      "walletUsedCapacityUnchanged": true,
+      "walletPostMeasureComplete": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5750,
+        "inflightAfter": 0,
+        "processCpuMs": 24.433999999999997,
+        "cgroupCpuMs": 148.2360000000001
+      },
+      "contracts": {
+        "total": 150,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-17-client-stdout.json",
+      "rawSha256": "e183c838af7315e718a21d5f8e6f9de30917fd7199cf24095330bc561409589b"
+    },
+    {
+      "index": 18,
+      "profile": "history",
+      "arm": "control",
+      "repeat": 0,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 10,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 15,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 106.21845900000017,
+        "p95": 396.011115,
+        "p99": 400.607721,
+        "max": 400.607721
+      },
+      "cpuMs": 232.504,
+      "cpuMsPerAttempt": 9.30016,
+      "cgroupCpuMs": 232.39999999999998,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 232400,
+        "user_usec": 187217,
+        "system_usec": 45183,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 47,
+        "nr_throttled": 46,
+        "throttled_usec": 4065279,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 57.55859375,
+      "processMaxRssMiB": 100.25390625,
+      "authorityPeakMiB": 36.67578125,
+      "clientPeakMiB": 22.29296875,
+      "clientCpuMs": 130.716,
+      "sql": {
+        "sqlCalls": 0,
+        "sqlReadCalls": 0,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 0,
+        "sqlCpuMs": 0
+      },
+      "accountQueue": {
+        "accepted": 0,
+        "dispatched": 0,
+        "completed": 0,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 0,
+        "maxBytes": 0,
+        "waitMs": 0,
+        "maxWaitMs": 0,
+        "workMs": 0,
+        "logicalWorkMs": 0,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 266,
+        "afterAgeMs": 5059,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 15,
+          "completed": 15,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 369810
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 15,
+        "native-start": 15,
+        "native-completed": 15,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5900,
+        "inflightAfter": 0,
+        "processCpuMs": 20.474000000000004,
+        "cgroupCpuMs": 151.63300000000004
+      },
+      "contracts": {
+        "total": 40,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-18-client-stdout.json",
+      "rawSha256": "b23bfc410753fd953d5e28d34e1cbd6d53ecbec1bbdb3ae48f2a1c9aa721f76d"
+    },
+    {
+      "index": 19,
+      "profile": "history",
+      "arm": "target",
+      "repeat": 0,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 10,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 15,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 100.50955599999998,
+        "p95": 301.463151,
+        "p99": 402.5506199999999,
+        "max": 402.5506199999999
+      },
+      "cpuMs": 197.575,
+      "cpuMsPerAttempt": 7.903,
+      "cgroupCpuMs": 197.287,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 197287,
+        "user_usec": 157617,
+        "system_usec": 39670,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 40,
+        "nr_throttled": 38,
+        "throttled_usec": 3373622,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.62890625,
+      "processMaxRssMiB": 99.46875,
+      "authorityPeakMiB": 36.5,
+      "clientPeakMiB": 22.18359375,
+      "clientCpuMs": 123.328,
+      "sql": {
+        "sqlCalls": 0,
+        "sqlReadCalls": 0,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 0,
+        "sqlCpuMs": 0
+      },
+      "accountQueue": {
+        "accepted": 0,
+        "dispatched": 0,
+        "completed": 0,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 0,
+        "maxBytes": 0,
+        "waitMs": 0,
+        "maxWaitMs": 0,
+        "workMs": 0,
+        "logicalWorkMs": 0,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 257,
+        "afterAgeMs": 4353,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 10,
+          "completed": 10,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 246540
+        },
+        "logical": {
+          "requested": 10,
+          "completed": 10,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 10,
+        "admission-observed-at-fetch": 10,
+        "native-start": 10,
+        "native-completed": 10,
+        "completed": 10
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5900,
+        "inflightAfter": 0,
+        "processCpuMs": 18.88900000000001,
+        "cgroupCpuMs": 154.12300000000005
+      },
+      "contracts": {
+        "total": 40,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-19-client-stdout.json",
+      "rawSha256": "baa58a8e7582bed01e35d8e2b0395bf9c934912bed17dbbe6259f1aefbe3c9fd"
+    },
+    {
+      "index": 20,
+      "profile": "history",
+      "arm": "target",
+      "repeat": 1,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 10,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 15,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 107.61786499999971,
+        "p95": 302.765607,
+        "p99": 499.802646,
+        "max": 499.802646
+      },
+      "cpuMs": 232.781,
+      "cpuMsPerAttempt": 9.31124,
+      "cgroupCpuMs": 232.268,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 232268,
+        "user_usec": 199935,
+        "system_usec": 32333,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 47,
+        "nr_throttled": 45,
+        "throttled_usec": 4064243,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.1796875,
+      "processMaxRssMiB": 99.10546875,
+      "authorityPeakMiB": 34.9140625,
+      "clientPeakMiB": 22.9609375,
+      "clientCpuMs": 139.745,
+      "sql": {
+        "sqlCalls": 0,
+        "sqlReadCalls": 0,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 0,
+        "sqlCpuMs": 0
+      },
+      "accountQueue": {
+        "accepted": 0,
+        "dispatched": 0,
+        "completed": 0,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 0,
+        "maxBytes": 0,
+        "waitMs": 0,
+        "maxWaitMs": 0,
+        "workMs": 0,
+        "logicalWorkMs": 0,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 211,
+        "afterAgeMs": 5169,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 10,
+          "completed": 10,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 246540
+        },
+        "logical": {
+          "requested": 10,
+          "completed": 10,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 10,
+        "admission-observed-at-fetch": 10,
+        "native-start": 10,
+        "native-completed": 10,
+        "completed": 10
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5900,
+        "inflightAfter": 0,
+        "processCpuMs": 23.658999999999992,
+        "cgroupCpuMs": 152.52099999999996
+      },
+      "contracts": {
+        "total": 40,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-20-client-stdout.json",
+      "rawSha256": "bbbbcf70c4101b0cc58a1d99bcd8216af7870b2136193a5731ab755b0464fd0a"
+    },
+    {
+      "index": 21,
+      "profile": "history",
+      "arm": "control",
+      "repeat": 1,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 10,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 15,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 99.89430600000014,
+        "p95": 395.5627220000006,
+        "p99": 400.89973900000007,
+        "max": 400.89973900000007
+      },
+      "cpuMs": 224.66899999999998,
+      "cpuMsPerAttempt": 8.986759999999999,
+      "cgroupCpuMs": 224.086,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 224086,
+        "user_usec": 178137,
+        "system_usec": 45949,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 46,
+        "nr_throttled": 44,
+        "throttled_usec": 3964095,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.94921875,
+      "processMaxRssMiB": 99.86328125,
+      "authorityPeakMiB": 36.578125,
+      "clientPeakMiB": 22.40234375,
+      "clientCpuMs": 126.962,
+      "sql": {
+        "sqlCalls": 0,
+        "sqlReadCalls": 0,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 0,
+        "sqlCpuMs": 0
+      },
+      "accountQueue": {
+        "accepted": 0,
+        "dispatched": 0,
+        "completed": 0,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 0,
+        "maxBytes": 0,
+        "waitMs": 0,
+        "maxWaitMs": 0,
+        "workMs": 0,
+        "logicalWorkMs": 0,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 215,
+        "afterAgeMs": 4942,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 15,
+          "completed": 15,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 369810
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 15,
+        "native-start": 15,
+        "native-completed": 15,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5900,
+        "inflightAfter": 0,
+        "processCpuMs": 22.245000000000005,
+        "cgroupCpuMs": 150.56099999999992
+      },
+      "contracts": {
+        "total": 40,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-21-client-stdout.json",
+      "rawSha256": "d53addd9aa63608fb085fd50def5999a64cd779e968fad3d2d1e5f64d2e3a53f"
+    },
+    {
+      "index": 22,
+      "profile": "history",
+      "arm": "control",
+      "repeat": 2,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 10,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 15,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 105.916244,
+        "p95": 302.53832000000057,
+        "p99": 400.024767,
+        "max": 400.024767
+      },
+      "cpuMs": 242.25399999999996,
+      "cpuMsPerAttempt": 9.690159999999999,
+      "cgroupCpuMs": 241.424,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 241424,
+        "user_usec": 199272,
+        "system_usec": 42152,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 48,
+        "nr_throttled": 47,
+        "throttled_usec": 4288986,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.6796875,
+      "processMaxRssMiB": 100.08984375,
+      "authorityPeakMiB": 36.2109375,
+      "clientPeakMiB": 22.77734375,
+      "clientCpuMs": 131.896,
+      "sql": {
+        "sqlCalls": 0,
+        "sqlReadCalls": 0,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 0,
+        "sqlCpuMs": 0
+      },
+      "accountQueue": {
+        "accepted": 0,
+        "dispatched": 0,
+        "completed": 0,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 0,
+        "maxBytes": 0,
+        "waitMs": 0,
+        "maxWaitMs": 0,
+        "workMs": 0,
+        "logicalWorkMs": 0,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 271,
+        "afterAgeMs": 5355,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 15,
+          "completed": 15,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 369810
+        },
+        "logical": {
+          "requested": 15,
+          "completed": 15,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 15,
+        "admission-observed-at-fetch": 15,
+        "native-start": 15,
+        "native-completed": 15,
+        "completed": 15
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5900,
+        "inflightAfter": 0,
+        "processCpuMs": 21.031999999999996,
+        "cgroupCpuMs": 146.46000000000004
+      },
+      "contracts": {
+        "total": 40,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-22-client-stdout.json",
+      "rawSha256": "ca4d1d7bc153ccb2c39d1983fa68b79e1d5c971a4bc01359bcf431373674535a"
+    },
+    {
+      "index": 23,
+      "profile": "history",
+      "arm": "target",
+      "repeat": 2,
+      "status": "PASS",
+      "attempts": 25,
+      "successes": 10,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 15,
+      "allAttemptLatencyMs": {
+        "n": 25,
+        "p50": 99.98612700000012,
+        "p95": 301.774175,
+        "p99": 497.56660999999997,
+        "max": 497.56660999999997
+      },
+      "cpuMs": 211.113,
+      "cpuMsPerAttempt": 8.44452,
+      "cgroupCpuMs": 210.43800000000002,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 210438,
+        "user_usec": 175336,
+        "system_usec": 35102,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 43,
+        "nr_throttled": 41,
+        "throttled_usec": 3648273,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.1328125,
+      "processMaxRssMiB": 99.5625,
+      "authorityPeakMiB": 36.53125,
+      "clientPeakMiB": 23.04296875,
+      "clientCpuMs": 126.174,
+      "sql": {
+        "sqlCalls": 0,
+        "sqlReadCalls": 0,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 0,
+        "sqlCpuMs": 0
+      },
+      "accountQueue": {
+        "accepted": 0,
+        "dispatched": 0,
+        "completed": 0,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 0,
+        "maxBytes": 0,
+        "waitMs": 0,
+        "maxWaitMs": 0,
+        "workMs": 0,
+        "logicalWorkMs": 0,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 270,
+        "afterAgeMs": 4657,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 10,
+          "completed": 10,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 246540
+        },
+        "logical": {
+          "requested": 10,
+          "completed": 10,
+          "failed": 0
+        }
+      },
+      "traceCounts": {
+        "requested": 10,
+        "admission-observed-at-fetch": 10,
+        "native-start": 10,
+        "native-completed": 10,
+        "completed": 10
+      },
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 25,
+        "completed": 25,
+        "closedEarly": 0,
+        "bytes": 5900,
+        "inflightAfter": 0,
+        "processCpuMs": 20.218000000000004,
+        "cgroupCpuMs": 145.63800000000003
+      },
+      "contracts": {
+        "total": 40,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-23-client-stdout.json",
+      "rawSha256": "acfaa096ecebbdce4036954f25ed82c198938f2b93254b0a256de0b0b7ee74ec"
+    },
+    {
+      "index": 24,
+      "profile": "identity",
+      "arm": "control",
+      "repeat": 0,
+      "status": "PASS",
+      "attempts": 75,
+      "successes": 75,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 75,
+        "p50": 1547.3110720000002,
+        "p95": 1945.6250860000002,
+        "p99": 1946.2122339999999,
+        "max": 1946.2122339999999
+      },
+      "cpuMs": 157.31199999999995,
+      "cpuMsPerAttempt": 2.0974933333333325,
+      "cgroupCpuMs": 157.187,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 157187,
+        "user_usec": 131790,
+        "system_usec": 25396,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 35,
+        "nr_throttled": 30,
+        "throttled_usec": 2587241,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.14453125,
+      "processMaxRssMiB": 101.5,
+      "authorityPeakMiB": 38.35546875,
+      "clientPeakMiB": 23.84765625,
+      "clientCpuMs": 66.48,
+      "sql": {
+        "sqlCalls": 75,
+        "sqlReadCalls": 75,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 3.10503099998823,
+        "sqlCpuMs": 0.2979999999999947
+      },
+      "accountQueue": {
+        "accepted": 75,
+        "dispatched": 75,
+        "completed": 75,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 46,
+        "maxBytes": 4041,
+        "waitMs": 36579.891625,
+        "maxWaitMs": 900.881347999999,
+        "workMs": 2165.8513380000004,
+        "logicalWorkMs": 2165.8513380000004,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 252,
+        "afterAgeMs": 461,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 0,
+          "completed": 0,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 0
+        },
+        "logical": {
+          "requested": 0,
+          "completed": 0,
+          "failed": 0
+        }
+      },
+      "traceCounts": {},
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 75,
+        "completed": 75,
+        "closedEarly": 0,
+        "bytes": 17800,
+        "inflightAfter": 0,
+        "processCpuMs": 30.403999999999996,
+        "cgroupCpuMs": 164.33900000000017
+      },
+      "identityCohorts": [
+        {
+          "users": 5,
+          "attempts": 5,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 5,
+            "p50": 71.950642,
+            "p95": 168.352781,
+            "p99": 168.352781,
+            "max": 168.352781
+          },
+          "serviceCpuMs": 12.014999999999986,
+          "sqlReads": 5,
+          "elapsedMs": 170.512517
+        },
+        {
+          "users": 20,
+          "attempts": 20,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 20,
+            "p50": 448.429059,
+            "p95": 547.684301,
+            "p99": 547.7061640000001,
+            "max": 547.7061640000001
+          },
+          "serviceCpuMs": 34.46199999999999,
+          "sqlReads": 20,
+          "elapsedMs": 550.448621
+        },
+        {
+          "users": 50,
+          "attempts": 50,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 50,
+            "p50": 1744.210632,
+            "p95": 1945.799269,
+            "p99": 1946.2122339999999,
+            "max": 1946.2122339999999
+          },
+          "serviceCpuMs": 106.34699999999998,
+          "sqlReads": 50,
+          "elapsedMs": 2044.8182449999997
+        }
+      ],
+      "contracts": {
+        "total": 75,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-24-client-stdout.json",
+      "rawSha256": "09723892076ab62fba89e163292a4a3069b77e6b5f8f8dc3a651c34616f8b9f2"
+    },
+    {
+      "index": 25,
+      "profile": "identity",
+      "arm": "target",
+      "repeat": 0,
+      "status": "FAIL",
+      "attempts": 75,
+      "successes": 22,
+      "errors": 53,
+      "errorCodes": {
+        "DEADLINE_3000MS": 53
+      },
+      "errorStatuses": {
+        "null": 53
+      },
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 75,
+        "p50": 3001.2156969999996,
+        "p95": 3001.858018,
+        "p99": 3001.884298,
+        "max": 3001.884298
+      },
+      "cpuMs": 435.59900000000005,
+      "cpuMsPerAttempt": 5.807986666666667,
+      "cgroupCpuMs": 435.2370000000001,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 435237,
+        "user_usec": 383435,
+        "system_usec": 51802,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 90,
+        "nr_throttled": 85,
+        "throttled_usec": 7848238,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 111.23046875,
+      "processMaxRssMiB": 153.28515625,
+      "authorityPeakMiB": 111.359375,
+      "clientPeakMiB": 22.3125,
+      "clientCpuMs": 48.902,
+      "sql": {
+        "sqlCalls": 29,
+        "sqlReadCalls": 29,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 97.00520200000028,
+        "sqlCpuMs": 0.4870000000000019
+      },
+      "accountQueue": {
+        "accepted": 29,
+        "dispatched": 29,
+        "completed": 29,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 8,
+        "maxBytes": 699,
+        "waitMs": 13997.839120000004,
+        "maxWaitMs": 1701.2200759999996,
+        "workMs": 5189.930433000005,
+        "logicalWorkMs": 5189.930433000005,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 272,
+        "afterAgeMs": 656,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 0,
+          "completed": 0,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 0
+        },
+        "logical": {
+          "requested": 0,
+          "completed": 0,
+          "failed": 0
+        }
+      },
+      "traceCounts": {},
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 75,
+        "completed": 75,
+        "closedEarly": 0,
+        "bytes": 78616750,
+        "inflightAfter": 0,
+        "processCpuMs": 64.48599999999999,
+        "cgroupCpuMs": 190.3420000000001
+      },
+      "identityCohorts": [
+        {
+          "users": 5,
+          "attempts": 5,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 5,
+            "p50": 917.926235,
+            "p95": 918.6687079999999,
+            "p99": 918.6687079999999,
+            "max": 918.6687079999999
+          },
+          "serviceCpuMs": 55.36500000000001,
+          "sqlReads": 5,
+          "elapsedMs": 1015.699709
+        },
+        {
+          "users": 20,
+          "attempts": 20,
+          "errors": 10,
+          "errorCodes": {
+            "DEADLINE_3000MS": 10
+          },
+          "allAttemptLatencyMs": {
+            "n": 20,
+            "p50": 2648.346549,
+            "p95": 3001.6235890000003,
+            "p99": 3001.63738,
+            "max": 3001.63738
+          },
+          "serviceCpuMs": 174.88599999999997,
+          "sqlReads": 15,
+          "elapsedMs": 3351.49824
+        },
+        {
+          "users": 50,
+          "attempts": 50,
+          "errors": 43,
+          "errorCodes": {
+            "DEADLINE_3000MS": 43
+          },
+          "allAttemptLatencyMs": {
+            "n": 50,
+            "p50": 3001.216649,
+            "p95": 3001.880403,
+            "p99": 3001.884298,
+            "max": 3001.884298
+          },
+          "serviceCpuMs": 198.24300000000017,
+          "sqlReads": 9,
+          "elapsedMs": 3846.190549000001
+        }
+      ],
+      "contracts": {
+        "total": 22,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-25-client-stdout.json",
+      "rawSha256": "b6dc350b6175b1aa136cd998c9cd8c9f10470af6315016d4409d23d7c2cb8b04"
+    },
+    {
+      "index": 26,
+      "profile": "identity",
+      "arm": "target",
+      "repeat": 1,
+      "status": "FAIL",
+      "attempts": 75,
+      "successes": 28,
+      "errors": 47,
+      "errorCodes": {
+        "DEADLINE_3000MS": 47
+      },
+      "errorStatuses": {
+        "null": 47
+      },
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 75,
+        "p50": 3001.0146000000004,
+        "p95": 3001.658944,
+        "p99": 3001.677872,
+        "max": 3001.677872
+      },
+      "cpuMs": 416.116,
+      "cpuMsPerAttempt": 5.548213333333333,
+      "cgroupCpuMs": 416.922,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 416922,
+        "user_usec": 352530,
+        "system_usec": 64392,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 87,
+        "nr_throttled": 80,
+        "throttled_usec": 7448345,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 113.5703125,
+      "processMaxRssMiB": 157.60546875,
+      "authorityPeakMiB": 105.52734375,
+      "clientPeakMiB": 22.609375,
+      "clientCpuMs": 51.452,
+      "sql": {
+        "sqlCalls": 33,
+        "sqlReadCalls": 33,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 1.7034289999864995,
+        "sqlCpuMs": 0.27199999999999847
+      },
+      "accountQueue": {
+        "accepted": 33,
+        "dispatched": 33,
+        "completed": 33,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 9,
+        "maxBytes": 787,
+        "waitMs": 14977.400426999982,
+        "maxWaitMs": 1697.9164489999985,
+        "workMs": 5991.132484999976,
+        "logicalWorkMs": 5991.132484999976,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 211,
+        "afterAgeMs": 484,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 0,
+          "completed": 0,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 0
+        },
+        "logical": {
+          "requested": 0,
+          "completed": 0,
+          "failed": 0
+        }
+      },
+      "traceCounts": {},
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 75,
+        "completed": 75,
+        "closedEarly": 0,
+        "bytes": 78616750,
+        "inflightAfter": 0,
+        "processCpuMs": 58.33000000000004,
+        "cgroupCpuMs": 186.692
+      },
+      "identityCohorts": [
+        {
+          "users": 5,
+          "attempts": 5,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 5,
+            "p50": 880.792542,
+            "p95": 881.361853,
+            "p99": 881.361853,
+            "max": 881.361853
+          },
+          "serviceCpuMs": 48.898000000000025,
+          "sqlReads": 5,
+          "elapsedMs": 883.4220580000001
+        },
+        {
+          "users": 20,
+          "attempts": 20,
+          "errors": 3,
+          "errorCodes": {
+            "DEADLINE_3000MS": 3
+          },
+          "allAttemptLatencyMs": {
+            "n": 20,
+            "p50": 2344.2691990000003,
+            "p95": 3000.6837430000005,
+            "p99": 3000.6902929999997,
+            "max": 3000.6902929999997
+          },
+          "serviceCpuMs": 172.832,
+          "sqlReads": 18,
+          "elapsedMs": 3345.7625439999997
+        },
+        {
+          "users": 50,
+          "attempts": 50,
+          "errors": 44,
+          "errorCodes": {
+            "DEADLINE_3000MS": 44
+          },
+          "allAttemptLatencyMs": {
+            "n": 50,
+            "p50": 3001.0592269999997,
+            "p95": 3001.6771719999997,
+            "p99": 3001.677872,
+            "max": 3001.677872
+          },
+          "serviceCpuMs": 187.90100000000007,
+          "sqlReads": 10,
+          "elapsedMs": 3648.1883179999995
+        }
+      ],
+      "contracts": {
+        "total": 28,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-26-client-stdout.json",
+      "rawSha256": "1b051c56af8dc0d047e7cfc7a0a93aa2e3a52251e7d995af2edea0312f6f5894"
+    },
+    {
+      "index": 27,
+      "profile": "identity",
+      "arm": "control",
+      "repeat": 1,
+      "status": "PASS",
+      "attempts": 75,
+      "successes": 75,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 75,
+        "p50": 545.6048880000001,
+        "p95": 1697.3878359999999,
+        "p99": 1796.6238819999999,
+        "max": 1796.6238819999999
+      },
+      "cpuMs": 153.68200000000002,
+      "cpuMsPerAttempt": 2.0490933333333334,
+      "cgroupCpuMs": 153.72899999999998,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 153729,
+        "user_usec": 135042,
+        "system_usec": 18688,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 35,
+        "nr_throttled": 28,
+        "throttled_usec": 2547968,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 55.80078125,
+      "processMaxRssMiB": 98.15234375,
+      "authorityPeakMiB": 37.68359375,
+      "clientPeakMiB": 24.28125,
+      "clientCpuMs": 68.711,
+      "sql": {
+        "sqlCalls": 75,
+        "sqlReadCalls": 75,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 3.3369669999992766,
+        "sqlCpuMs": 0.6199999999999974
+      },
+      "accountQueue": {
+        "accepted": 75,
+        "dispatched": 75,
+        "completed": 75,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 16,
+        "maxBytes": 1401,
+        "waitMs": 4096.110612999997,
+        "maxWaitMs": 199.42979299999934,
+        "workMs": 1750.4788020000087,
+        "logicalWorkMs": 1750.4788020000087,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 274,
+        "afterAgeMs": 387,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 0,
+          "completed": 0,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 0
+        },
+        "logical": {
+          "requested": 0,
+          "completed": 0,
+          "failed": 0
+        }
+      },
+      "traceCounts": {},
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 75,
+        "completed": 75,
+        "closedEarly": 0,
+        "bytes": 17800,
+        "inflightAfter": 0,
+        "processCpuMs": 31.67800000000001,
+        "cgroupCpuMs": 158.548
+      },
+      "identityCohorts": [
+        {
+          "users": 5,
+          "attempts": 5,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 5,
+            "p50": 61.571231000000004,
+            "p95": 157.52536199999997,
+            "p99": 157.52536199999997,
+            "max": 157.52536199999997
+          },
+          "serviceCpuMs": 12.373000000000047,
+          "sqlReads": 5,
+          "elapsedMs": 159.79992199999998
+        },
+        {
+          "users": 20,
+          "attempts": 20,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 20,
+            "p50": 445.92932900000005,
+            "p95": 545.5692429999999,
+            "p99": 545.6048880000001,
+            "max": 545.6048880000001
+          },
+          "serviceCpuMs": 33.23199999999997,
+          "sqlReads": 20,
+          "elapsedMs": 548.335206
+        },
+        {
+          "users": 50,
+          "attempts": 50,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 50,
+            "p50": 996.547705,
+            "p95": 1794.4070709999999,
+            "p99": 1796.6238819999999,
+            "max": 1796.6238819999999
+          },
+          "serviceCpuMs": 90.44400000000002,
+          "sqlReads": 50,
+          "elapsedMs": 1800.3818860000001
+        }
+      ],
+      "contracts": {
+        "total": 75,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-27-client-stdout.json",
+      "rawSha256": "05161d01d49b201a6a294e7a6645ae8d6a43ec86dd776a444945cd89a74270af"
+    },
+    {
+      "index": 28,
+      "profile": "identity",
+      "arm": "control",
+      "repeat": 2,
+      "status": "PASS",
+      "attempts": 75,
+      "successes": 75,
+      "errors": 0,
+      "errorCodes": {},
+      "errorStatuses": {},
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 75,
+        "p50": 1147.2817469999998,
+        "p95": 1842.6867860000002,
+        "p99": 1843.1330799999998,
+        "max": 1843.1330799999998
+      },
+      "cpuMs": 154.42899999999997,
+      "cpuMsPerAttempt": 2.059053333333333,
+      "cgroupCpuMs": 154.22999999999996,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 154230,
+        "user_usec": 129692,
+        "system_usec": 24537,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 36,
+        "nr_throttled": 28,
+        "throttled_usec": 2512242,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 56.1875,
+      "processMaxRssMiB": 101.82421875,
+      "authorityPeakMiB": 38.76953125,
+      "clientPeakMiB": 23.95703125,
+      "clientCpuMs": 70.587,
+      "sql": {
+        "sqlCalls": 75,
+        "sqlReadCalls": 75,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 3.502926999986812,
+        "sqlCpuMs": 0.38400000000000034
+      },
+      "accountQueue": {
+        "accepted": 75,
+        "dispatched": 75,
+        "completed": 75,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 0,
+        "cancelledObservations": 0,
+        "maxPending": 33,
+        "maxBytes": 2904,
+        "waitMs": 28901.05841400002,
+        "maxWaitMs": 898.7116240000005,
+        "workMs": 2279.352963000005,
+        "logicalWorkMs": 2279.352963000005,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 225,
+        "afterAgeMs": 359,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 0,
+          "completed": 0,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 0
+        },
+        "logical": {
+          "requested": 0,
+          "completed": 0,
+          "failed": 0
+        }
+      },
+      "traceCounts": {},
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 75,
+        "completed": 75,
+        "closedEarly": 0,
+        "bytes": 17800,
+        "inflightAfter": 0,
+        "processCpuMs": 29.313000000000002,
+        "cgroupCpuMs": 157.19000000000005
+      },
+      "identityCohorts": [
+        {
+          "users": 5,
+          "attempts": 5,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 5,
+            "p50": 92.52154200000001,
+            "p95": 189.11886900000002,
+            "p99": 189.11886900000002,
+            "max": 189.11886900000002
+          },
+          "serviceCpuMs": 11.827999999999975,
+          "sqlReads": 5,
+          "elapsedMs": 191.347149
+        },
+        {
+          "users": 20,
+          "attempts": 20,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 20,
+            "p50": 544.7665829999999,
+            "p95": 646.933399,
+            "p99": 646.994542,
+            "max": 646.994542
+          },
+          "serviceCpuMs": 39.08600000000001,
+          "sqlReads": 20,
+          "elapsedMs": 649.7323120000001
+        },
+        {
+          "users": 50,
+          "attempts": 50,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 50,
+            "p50": 1544.24282,
+            "p95": 1842.899207,
+            "p99": 1843.1330799999998,
+            "max": 1843.1330799999998
+          },
+          "serviceCpuMs": 98.88900000000001,
+          "sqlReads": 50,
+          "elapsedMs": 1846.19491
+        }
+      ],
+      "contracts": {
+        "total": 75,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-28-client-stdout.json",
+      "rawSha256": "d98d412a59e2d3e37b16678d4a7cf2cdfe80445ae63e6c4292b473eac5c6ea98"
+    },
+    {
+      "index": 29,
+      "profile": "identity",
+      "arm": "target",
+      "repeat": 2,
+      "status": "FAIL",
+      "attempts": 75,
+      "successes": 15,
+      "errors": 60,
+      "errorCodes": {
+        "DEADLINE_3000MS": 60
+      },
+      "errorStatuses": {
+        "null": 60
+      },
+      "expectedAborts": 0,
+      "allAttemptLatencyMs": {
+        "n": 75,
+        "p50": 3000.2429939999993,
+        "p95": 3001.6158800000003,
+        "p99": 3001.6832219999997,
+        "max": 3001.6832219999997
+      },
+      "cpuMs": 457.0490000000001,
+      "cpuMsPerAttempt": 6.093986666666668,
+      "cgroupCpuMs": 456.68899999999996,
+      "cgroupCpuCountersDelta": {
+        "usage_usec": 456689,
+        "user_usec": 397614,
+        "system_usec": 59075,
+        "nice_usec": 0,
+        "core_sched.force_idle_usec": 0,
+        "nr_periods": 95,
+        "nr_throttled": 89,
+        "throttled_usec": 8294854,
+        "nr_bursts": 0,
+        "burst_usec": 0
+      },
+      "servicePeakMiB": 110.2578125,
+      "processMaxRssMiB": 159.55078125,
+      "authorityPeakMiB": 108.77734375,
+      "clientPeakMiB": 21.51171875,
+      "clientCpuMs": 43.737,
+      "sql": {
+        "sqlCalls": 19,
+        "sqlReadCalls": 19,
+        "sqlWriteCalls": 0,
+        "sqlExecCalls": 0,
+        "transactionExecCalls": 0,
+        "sqlWallMs": 1.2513030000045546,
+        "sqlCpuMs": 0.20199999999999818
+      },
+      "accountQueue": {
+        "accepted": 25,
+        "dispatched": 19,
+        "completed": 19,
+        "rejected": 0,
+        "timedOut": 0,
+        "cancelledReads": 6,
+        "cancelledObservations": 0,
+        "maxPending": 7,
+        "maxBytes": 613,
+        "waitMs": 5201.298984000001,
+        "maxWaitMs": 1900.1339619999999,
+        "workMs": 6209.108697000014,
+        "logicalWorkMs": 6209.108697000014,
+        "registrationGroups": 0,
+        "groupedRegistrations": 0,
+        "maxRegistrationGroup": 0
+      },
+      "workerSnapshot": {
+        "beforeAgeMs": 245,
+        "afterAgeMs": 1170,
+        "alive": 1
+      },
+      "io": {
+        "rbytes": 0,
+        "wbytes": 0,
+        "rios": 0,
+        "wios": 0
+      },
+      "memoryEvents": {
+        "service": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "authority": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "client": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        }
+      },
+      "provider": {
+        "native": {
+          "starts": 0,
+          "completed": 0,
+          "failed": 0,
+          "cancelled": 0,
+          "bytes": 0
+        },
+        "logical": {
+          "requested": 0,
+          "completed": 0,
+          "failed": 0
+        }
+      },
+      "traceCounts": {},
+      "ledgerUnchanged": true,
+      "authority": {
+        "attempts": 75,
+        "completed": 75,
+        "closedEarly": 0,
+        "bytes": 78616750,
+        "inflightAfter": 0,
+        "processCpuMs": 64.57800000000003,
+        "cgroupCpuMs": 279.692
+      },
+      "identityCohorts": [
+        {
+          "users": 5,
+          "attempts": 5,
+          "errors": 0,
+          "errorCodes": {},
+          "allAttemptLatencyMs": {
+            "n": 5,
+            "p50": 776.599402,
+            "p95": 875.5300579999999,
+            "p99": 875.5300579999999,
+            "max": 875.5300579999999
+          },
+          "serviceCpuMs": 50.32899999999995,
+          "sqlReads": 5,
+          "elapsedMs": 972.609334
+        },
+        {
+          "users": 20,
+          "attempts": 20,
+          "errors": 11,
+          "errorCodes": {
+            "DEADLINE_3000MS": 11
+          },
+          "allAttemptLatencyMs": {
+            "n": 20,
+            "p50": 3000.211601,
+            "p95": 3000.566488,
+            "p99": 3000.7834359999997,
+            "max": 3000.7834359999997
+          },
+          "serviceCpuMs": 187.63300000000004,
+          "sqlReads": 11,
+          "elapsedMs": 3648.894185
+        },
+        {
+          "users": 50,
+          "attempts": 50,
+          "errors": 49,
+          "errorCodes": {
+            "DEADLINE_3000MS": 49
+          },
+          "allAttemptLatencyMs": {
+            "n": 50,
+            "p50": 3000.2468,
+            "p95": 3001.627788,
+            "p99": 3001.6832219999997,
+            "max": 3001.6832219999997
+          },
+          "serviceCpuMs": 212.39700000000016,
+          "sqlReads": 3,
+          "elapsedMs": 4147.506994
+        }
+      ],
+      "contracts": {
+        "total": 15,
+        "failed": []
+      },
+      "clientExitCode": 0,
+      "clientStderrBytes": 0,
+      "rawFile": "targeted512-ca8a4f21e0f5-29-client-stdout.json",
+      "rawSha256": "eb8d8ad755336ce54909c273e02e9475f25e71104f323bf66344569438ce2bd8"
+    }
+  ],
+  "aggregates": [
+    {
+      "profile": "projection20",
+      "arm": "control",
+      "status": {
+        "PASS": 3
+      },
+      "attempts": 300,
+      "errors": 0,
+      "expectedAborts": 0,
+      "pooledAllAttemptLatencyMs": {
+        "n": 300,
+        "p50": 320.69044499999995,
+        "p95": 722.1894789999997,
+        "p99": 821.0386699999999,
+        "max": 822.586832
+      },
+      "cpuMs": 536.579,
+      "cpuMsPerAttempt": 1.7885966666666666,
+      "cgroupCpuMs": 532.056,
+      "servicePeakMiBRange": [
+        56.17578125,
+        56.4609375
+      ],
+      "sqlReads": 300,
+      "sqlWrites": 0,
+      "sqlWallMs": 9.807757000000493,
+      "sqlCpuMs": 0.5230000000000015,
+      "nativeStarts": 21,
+      "nativeCompleted": 21,
+      "nativeFailures": 0,
+      "logicalRequests": 45,
+      "nativeBytes": 2598,
+      "authCalls": 300,
+      "authBytes": 71100
+    },
+    {
+      "profile": "projection20",
+      "arm": "target",
+      "status": {
+        "PASS": 3
+      },
+      "attempts": 300,
+      "errors": 0,
+      "expectedAborts": 0,
+      "pooledAllAttemptLatencyMs": {
+        "n": 300,
+        "p50": 362.5381040000002,
+        "p95": 758.7862110000005,
+        "p99": 875.5653070000008,
+        "max": 877.0762420000001
+      },
+      "cpuMs": 526.202,
+      "cpuMsPerAttempt": 1.7540066666666667,
+      "cgroupCpuMs": 521.413,
+      "servicePeakMiBRange": [
+        56.19140625,
+        56.484375
+      ],
+      "sqlReads": 300,
+      "sqlWrites": 0,
+      "sqlWallMs": 11.523907999993753,
+      "sqlCpuMs": 2.2170000000000005,
+      "nativeStarts": 20,
+      "nativeCompleted": 20,
+      "nativeFailures": 0,
+      "logicalRequests": 42,
+      "nativeBytes": 2463,
+      "authCalls": 300,
+      "authBytes": 71100
+    },
+    {
+      "profile": "projection50",
+      "arm": "control",
+      "status": {
+        "PASS": 3
+      },
+      "attempts": 750,
+      "errors": 0,
+      "expectedAborts": 0,
+      "pooledAllAttemptLatencyMs": {
+        "n": 750,
+        "p50": 998.5379549999998,
+        "p95": 1899.568239,
+        "p99": 2095.72653,
+        "max": 2193.080022
+      },
+      "cpuMs": 1200.627,
+      "cpuMsPerAttempt": 1.600836,
+      "cgroupCpuMs": 1200.317,
+      "servicePeakMiBRange": [
+        55.68359375,
+        56.86328125
+      ],
+      "sqlReads": 750,
+      "sqlWrites": 0,
+      "sqlWallMs": 122.75899399999798,
+      "sqlCpuMs": 1.9149999999999956,
+      "nativeStarts": 21,
+      "nativeCompleted": 21,
+      "nativeFailures": 0,
+      "logicalRequests": 45,
+      "nativeBytes": 2598,
+      "authCalls": 750,
+      "authBytes": 178200
+    },
+    {
+      "profile": "projection50",
+      "arm": "target",
+      "status": {
+        "PASS": 3
+      },
+      "attempts": 750,
+      "errors": 0,
+      "expectedAborts": 0,
+      "pooledAllAttemptLatencyMs": {
+        "n": 750,
+        "p50": 924.7690559999996,
+        "p95": 1750.253489,
+        "p99": 1950.104621,
+        "max": 2049.467486
+      },
+      "cpuMs": 1060.641,
+      "cpuMsPerAttempt": 1.414188,
+      "cgroupCpuMs": 1060.311,
+      "servicePeakMiBRange": [
+        55.6484375,
+        56.25
+      ],
+      "sqlReads": 750,
+      "sqlWrites": 0,
+      "sqlWallMs": 26.10675399992033,
+      "sqlCpuMs": 1.0749999999999993,
+      "nativeStarts": 21,
+      "nativeCompleted": 21,
+      "nativeFailures": 0,
+      "logicalRequests": 45,
+      "nativeBytes": 2598,
+      "authCalls": 750,
+      "authBytes": 178200
+    },
+    {
+      "profile": "wallet",
+      "arm": "control",
+      "status": {
+        "PASS": 3
+      },
+      "attempts": 75,
+      "errors": 0,
+      "expectedAborts": 0,
+      "pooledAllAttemptLatencyMs": {
+        "n": 75,
+        "p50": 80.13024899999982,
+        "p95": 277.46711500000004,
+        "p99": 280.914688,
+        "max": 280.914688
+      },
+      "cpuMs": 207.033,
+      "cpuMsPerAttempt": 2.76044,
+      "cgroupCpuMs": 206.57499999999996,
+      "servicePeakMiBRange": [
+        56.28515625,
+        57.34375
+      ],
+      "sqlReads": 75,
+      "sqlWrites": 0,
+      "sqlWallMs": 3.5520630000100937,
+      "sqlCpuMs": 0.7319999999999993,
+      "nativeStarts": 39,
+      "nativeCompleted": 39,
+      "nativeFailures": 0,
+      "logicalRequests": 90,
+      "nativeBytes": 3771,
+      "authCalls": 75,
+      "authBytes": 17250
+    },
+    {
+      "profile": "wallet",
+      "arm": "target",
+      "status": {
+        "PASS": 3
+      },
+      "attempts": 75,
+      "errors": 0,
+      "expectedAborts": 0,
+      "pooledAllAttemptLatencyMs": {
+        "n": 75,
+        "p50": 101.41670999999951,
+        "p95": 299.982142,
+        "p99": 300.706067,
+        "max": 300.706067
+      },
+      "cpuMs": 206.60899999999998,
+      "cpuMsPerAttempt": 2.7547866666666665,
+      "cgroupCpuMs": 205.92300000000006,
+      "servicePeakMiBRange": [
+        56.55859375,
+        57.3984375
+      ],
+      "sqlReads": 75,
+      "sqlWrites": 0,
+      "sqlWallMs": 3.4667719999961264,
+      "sqlCpuMs": 0.31899999999999995,
+      "nativeStarts": 36,
+      "nativeCompleted": 36,
+      "nativeFailures": 0,
+      "logicalRequests": 60,
+      "nativeBytes": 3594,
+      "authCalls": 75,
+      "authBytes": 17250
+    },
+    {
+      "profile": "history",
+      "arm": "control",
+      "status": {
+        "PASS": 3
+      },
+      "attempts": 75,
+      "errors": 0,
+      "expectedAborts": 45,
+      "pooledAllAttemptLatencyMs": {
+        "n": 75,
+        "p50": 105.916244,
+        "p95": 396.011115,
+        "p99": 400.89973900000007,
+        "max": 400.89973900000007
+      },
+      "cpuMs": 699.4269999999999,
+      "cpuMsPerAttempt": 9.325693333333332,
+      "cgroupCpuMs": 697.91,
+      "servicePeakMiBRange": [
+        56.6796875,
+        57.55859375
+      ],
+      "sqlReads": 0,
+      "sqlWrites": 0,
+      "sqlWallMs": 0,
+      "sqlCpuMs": 0,
+      "nativeStarts": 45,
+      "nativeCompleted": 45,
+      "nativeFailures": 0,
+      "logicalRequests": 45,
+      "nativeBytes": 1109430,
+      "authCalls": 75,
+      "authBytes": 17700
+    },
+    {
+      "profile": "history",
+      "arm": "target",
+      "status": {
+        "PASS": 3
+      },
+      "attempts": 75,
+      "errors": 0,
+      "expectedAborts": 45,
+      "pooledAllAttemptLatencyMs": {
+        "n": 75,
+        "p50": 100.50955599999998,
+        "p95": 302.765607,
+        "p99": 499.802646,
+        "max": 499.802646
+      },
+      "cpuMs": 641.469,
+      "cpuMsPerAttempt": 8.55292,
+      "cgroupCpuMs": 639.993,
+      "servicePeakMiBRange": [
+        56.1328125,
+        56.62890625
+      ],
+      "sqlReads": 0,
+      "sqlWrites": 0,
+      "sqlWallMs": 0,
+      "sqlCpuMs": 0,
+      "nativeStarts": 30,
+      "nativeCompleted": 30,
+      "nativeFailures": 0,
+      "logicalRequests": 30,
+      "nativeBytes": 739620,
+      "authCalls": 75,
+      "authBytes": 17700
+    },
+    {
+      "profile": "identity",
+      "arm": "control",
+      "status": {
+        "PASS": 3
+      },
+      "attempts": 225,
+      "errors": 0,
+      "expectedAborts": 0,
+      "pooledAllAttemptLatencyMs": {
+        "n": 225,
+        "p50": 1144.1977129999998,
+        "p95": 1846.866056,
+        "p99": 1945.799269,
+        "max": 1946.2122339999999
+      },
+      "cpuMs": 465.42299999999994,
+      "cpuMsPerAttempt": 2.0685466666666663,
+      "cgroupCpuMs": 465.14599999999996,
+      "servicePeakMiBRange": [
+        55.80078125,
+        56.1875
+      ],
+      "sqlReads": 225,
+      "sqlWrites": 0,
+      "sqlWallMs": 9.944924999974319,
+      "sqlCpuMs": 1.3019999999999925,
+      "nativeStarts": 0,
+      "nativeCompleted": 0,
+      "nativeFailures": 0,
+      "logicalRequests": 0,
+      "nativeBytes": 0,
+      "authCalls": 225,
+      "authBytes": 53400
+    },
+    {
+      "profile": "identity",
+      "arm": "target",
+      "status": {
+        "FAIL": 3
+      },
+      "attempts": 225,
+      "errors": 160,
+      "expectedAborts": 0,
+      "pooledAllAttemptLatencyMs": {
+        "n": 225,
+        "p50": 3000.400818,
+        "p95": 3001.65657,
+        "p99": 3001.880403,
+        "max": 3001.884298
+      },
+      "cpuMs": 1308.7640000000001,
+      "cpuMsPerAttempt": 5.816728888888889,
+      "cgroupCpuMs": 1308.848,
+      "servicePeakMiBRange": [
+        110.2578125,
+        113.5703125
+      ],
+      "sqlReads": 81,
+      "sqlWrites": 0,
+      "sqlWallMs": 99.95993399999134,
+      "sqlCpuMs": 0.9609999999999985,
+      "nativeStarts": 0,
+      "nativeCompleted": 0,
+      "nativeFailures": 0,
+      "logicalRequests": 0,
+      "nativeBytes": 0,
+      "authCalls": 225,
+      "authBytes": 235850250
+    }
+  ],
+  "pairs": [
+    {
+      "profile": "projection20",
+      "repeat": 0,
+      "controlIndex": 0,
+      "targetIndex": 1,
+      "cpuPerAttemptChangePercent": 7.323061635961325,
+      "p95ChangePercent": 20.771986043457247,
+      "nativeStartsDelta": 0,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "projection20",
+      "repeat": 1,
+      "controlIndex": 3,
+      "targetIndex": 2,
+      "cpuPerAttemptChangePercent": -2.224086358569055,
+      "p95ChangePercent": 14.569859282332454,
+      "nativeStartsDelta": 0,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "projection20",
+      "repeat": 2,
+      "controlIndex": 4,
+      "targetIndex": 5,
+      "cpuPerAttemptChangePercent": -10.435913190406188,
+      "p95ChangePercent": 1.0781318138680662,
+      "nativeStartsDelta": -1,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "projection50",
+      "repeat": 0,
+      "controlIndex": 6,
+      "targetIndex": 7,
+      "cpuPerAttemptChangePercent": 1.3400654736379636,
+      "p95ChangePercent": -16.76551863591199,
+      "nativeStartsDelta": 0,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "projection50",
+      "repeat": 1,
+      "controlIndex": 9,
+      "targetIndex": 8,
+      "cpuPerAttemptChangePercent": -14.605545511379958,
+      "p95ChangePercent": -2.3200552418817577,
+      "nativeStartsDelta": 0,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "projection50",
+      "repeat": 2,
+      "controlIndex": 10,
+      "targetIndex": 11,
+      "cpuPerAttemptChangePercent": -20.946417695381548,
+      "p95ChangePercent": -8.449524617678595,
+      "nativeStartsDelta": 0,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "wallet",
+      "repeat": 0,
+      "controlIndex": 12,
+      "targetIndex": 13,
+      "cpuPerAttemptChangePercent": 0.5468194877815025,
+      "p95ChangePercent": 27.031502514722973,
+      "nativeStartsDelta": -1,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "wallet",
+      "repeat": 1,
+      "controlIndex": 15,
+      "targetIndex": 14,
+      "cpuPerAttemptChangePercent": -0.218873393572816,
+      "p95ChangePercent": 38.297280167225,
+      "nativeStartsDelta": -1,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "wallet",
+      "repeat": 2,
+      "controlIndex": 16,
+      "targetIndex": 17,
+      "cpuPerAttemptChangePercent": -0.8436445444319429,
+      "p95ChangePercent": 6.939549391399247,
+      "nativeStartsDelta": -1,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "history",
+      "repeat": 0,
+      "controlIndex": 18,
+      "targetIndex": 19,
+      "cpuPerAttemptChangePercent": -15.022967346798344,
+      "p95ChangePercent": -23.87507835480831,
+      "nativeStartsDelta": -5,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "history",
+      "repeat": 1,
+      "controlIndex": 21,
+      "targetIndex": 20,
+      "cpuPerAttemptChangePercent": 3.6106449933012597,
+      "p95ChangePercent": -23.45951977749826,
+      "nativeStartsDelta": -5,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "history",
+      "repeat": 2,
+      "controlIndex": 22,
+      "targetIndex": 23,
+      "cpuPerAttemptChangePercent": -12.854689705845912,
+      "p95ChangePercent": -0.2525779213689572,
+      "nativeStartsDelta": -5,
+      "errorsDelta": 0
+    },
+    {
+      "profile": "identity",
+      "repeat": 0,
+      "controlIndex": 24,
+      "targetIndex": 25,
+      "cpuPerAttemptChangePercent": 176.90131712774627,
+      "p95ChangePercent": 54.287588066183034,
+      "nativeStartsDelta": 0,
+      "errorsDelta": 53
+    },
+    {
+      "profile": "identity",
+      "repeat": 1,
+      "controlIndex": 27,
+      "targetIndex": 26,
+      "cpuPerAttemptChangePercent": 170.7643055139834,
+      "p95ChangePercent": 76.83989954079063,
+      "nativeStartsDelta": 0,
+      "errorsDelta": 47
+    },
+    {
+      "profile": "identity",
+      "repeat": 2,
+      "controlIndex": 28,
+      "targetIndex": 29,
+      "cpuPerAttemptChangePercent": 195.96060325457017,
+      "p95ChangePercent": 62.893439232596734,
+      "nativeStartsDelta": 0,
+      "errorsDelta": 60
+    }
+  ],
+  "log": {
+    "exitCode1": true,
+    "startupProbeConnectionRefusals": 308,
+    "refusalPorts": {
+      "28001": 10,
+      "28004": 10,
+      "28007": 11,
+      "28010": 8,
+      "28013": 10,
+      "28016": 9,
+      "28019": 9,
+      "28022": 10,
+      "28025": 10,
+      "28028": 9,
+      "28031": 9,
+      "28034": 9,
+      "28037": 10,
+      "28040": 10,
+      "28043": 10,
+      "28046": 10,
+      "28049": 9,
+      "28052": 11,
+      "28055": 10,
+      "28058": 10,
+      "28061": 10,
+      "28064": 11,
+      "28067": 10,
+      "28070": 9,
+      "28073": 10,
+      "28076": 11,
+      "28079": 11,
+      "28082": 10,
+      "28085": 11,
+      "28088": 11,
+      "28091": 10
+    },
+    "interpretation": "Bounded startup /metrics readiness probes; every row subsequently completed setup and measured collection. Separate from measured client failures; no refusal removed from the retained log."
+  },
+  "limitsOfInference": [
+    "Matched local fixture measurements, not real provider availability, rights or production capacity.",
+    "Identity arms use the same current resolver; only authoritative profile body changes small versus legal near-1MiB. This is body-size stress, not old 16KiB code performance.",
+    "No crypto coexistence measurement or original full capacity acceptance was run here.",
+    "Whole-service CPU includes matched fixture diagnostics and drain; physical fsync latency was not instrumented. Measured SQL writes/transactions and disk I/O deltas are zero.",
+    "memory.peak is each fresh container lifetime including setup; process maxRSS differs from cgroup memory accounting.",
+    "Authority CPU cgroup includes short-lived snapshot probes, while authority process CPU is reported separately.",
+    "History control PASS validates the deliberately reintroduced extra-start behavior; it does not mean that behavior is desirable.",
+    "Wallclock provider event IDs differ between paired runs; fixture algorithms, source hashes, prices and contracts match.",
+    "Projection20 repeat2 target has one fewer native start and three fewer logical requests, a cache-timing demand confound.",
+    "Timeouts retain monotonic elapsed time, including values slightly over3000ms due timer delivery. No threshold was relaxed."
+  ],
+  "rawArtifacts": "targeted-http.zip",
+  "actionsUrl": "https://github.com/nazardzuba79-tech/-/actions/runs/38471232697",
+  "summarizedBy": "Independent read-only analysis of retained output; no workload rerun. All absolute measurements and earlier failures preserved."
+}

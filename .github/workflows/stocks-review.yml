@@ -438,6 +438,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -458,6 +459,27 @@ jobs:
         with:
           name: stocks-local-stage-${{ github.event.pull_request.head.sha || github.sha }}
           path: output/stocks-local-stage
+      - name: Isolated package closure and compact principal contract guards
+        shell: bash
+        env:
+          QA_STOCKS_BUILD_PROOF: ${{ github.workspace }}/output/stocks-local-stage/build-provenance.json
+        run: |
+          mkdir -p output/stocks-contract-logs
+          node --test scripts/qa-stocks-package-builder.test.cjs scripts/qa-stocks-principal-projection.test.cjs scripts/qa-stocks-public-artifact.test.cjs | tee output/stocks-contract-logs/guards.log
+      - name: Standalone package restart and semantic restore proof
+        timeout-minutes: 3
+        run: node scripts/qa-stocks-package-proof.cjs --output "$GITHUB_WORKSPACE/output/stocks-package-proof" --authority-package "$GITHUB_WORKSPACE/output/stocks-local-stage/package"
+      - name: Actual middleware compact principal counterfactual
+        timeout-minutes: 2
+        run: node scripts/qa-stocks-principal-projection.cjs --output "$GITHUB_WORKSPACE/output/stocks-principal-projection" --build-proof "$GITHUB_WORKSPACE/output/stocks-local-stage/build-provenance.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-package-principal-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            output/stocks-contract-logs
+            output/stocks-package-proof
+            output/stocks-principal-projection
       - name: TypeScript and enabled US/RU preview build
         run: npm run build --prefix frontend
         env:
@@ -499,12 +521,15 @@ jobs:
   # fixtures; outside hosts blocked, writes refused. No production endpoint,
   # account, financial database or market quote.
   stocks-ui-browser:
+    needs: isolated-simulator
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '24.21.0'
@@ -576,6 +601,49 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
           QA_OUTPUT_DIR: ${{ github.workspace }}/stocks-ui-evidence/owner-wallet
         run: node scripts/qa-stocks-wallet-journey.cjs
+      - name: Reuse this run's verified local authority package
+        uses: actions/download-artifact@v4
+        with:
+          name: stocks-local-stage-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/stocks-local-stage
+      - name: Inspect and provision disposable fixture certificate tooling
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          mkdir -p stocks-ui-evidence/public-contract-logs
+          dpkg-query -W -f='${Package} ${Version} ${Status}\n' libnss3-tools libnss3 python3-cryptography 2>&1 | tee stocks-ui-evidence/public-contract-logs/packages-before.log || true
+          if ! test -x /usr/bin/certutil || ! /usr/bin/python3 -I -c 'import cryptography' >/dev/null 2>&1; then
+            sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=30 update | tee stocks-ui-evidence/public-contract-logs/apt-update.log
+            apt-cache policy libnss3-tools python3-cryptography | tee stocks-ui-evidence/public-contract-logs/apt-policy.log
+            sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=30 install --yes --no-install-recommends libnss3-tools python3-cryptography | tee stocks-ui-evidence/public-contract-logs/apt-install.log
+          fi
+          test -x /usr/bin/certutil
+          readlink -f /usr/bin/certutil | tee stocks-ui-evidence/public-contract-logs/certutil-path.log
+          sha256sum /usr/bin/certutil | tee stocks-ui-evidence/public-contract-logs/certutil-sha256.log
+          dpkg-query -W -f='${Package} ${Version} ${Status}\n' libnss3-tools libnss3 python3-cryptography | tee stocks-ui-evidence/public-contract-logs/packages-after.log
+          /usr/bin/python3 -I -c "import sys,cryptography; print(sys.executable); print(cryptography.__version__); print(cryptography.__file__)" | tee stocks-ui-evidence/public-contract-logs/python-dependency.log
+      - name: Verify fixture certificate and admission guards
+        shell: bash
+        env:
+          STOCKS_FIXTURE_PYTHON: /usr/bin/python3
+        run: |
+          mkdir -p stocks-ui-evidence/public-contract-logs
+          node --test scripts/qa-stocks-tls-ingress.test.cjs scripts/qa-stocks-public-fixtures.test.cjs scripts/qa-stocks-public-nss.test.cjs | tee stocks-ui-evidence/public-contract-logs/guards.log
+      - name: Generate disposable authority client types (no database access)
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://test:test@127.0.0.1:9/stocks_unused
+          DIRECT_URL: postgresql://test:test@127.0.0.1:9/stocks_unused
+      - name: Build untouched OFF/ON and one-hunk reserved-host fixture
+        shell: bash
+        run: |
+          node scripts/qa-stocks-public-build.mjs --output "$RUNNER_TEMP/stocks-public-build" | tee stocks-ui-evidence/public-contract-logs/build.log
+          cp "$RUNNER_TEMP/stocks-public-build/manifest.json" stocks-ui-evidence/public-contract-logs/build-manifest.json
+      - name: Public-host contract and cached feature-off browser proof
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          node scripts/qa-stocks-public-host.cjs --output "$GITHUB_WORKSPACE/stocks-ui-evidence/public-host" --build-root "$RUNNER_TEMP/stocks-public-build" --authority-package "$GITHUB_WORKSPACE/output/stocks-local-stage/package" --python /usr/bin/python3 --certutil /usr/bin/certutil --playwright /tmp/stocks-ui-qa/node_modules/playwright | tee stocks-ui-evidence/public-contract-logs/browser.log
       # Not a dot-directory: upload-artifact@v4 skips hidden paths by default.
       - uses: actions/upload-artifact@v4
         if: always()

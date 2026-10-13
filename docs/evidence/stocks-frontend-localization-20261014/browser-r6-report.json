@@ -1,0 +1,2065 @@
+{
+  "fixtureOnly": true,
+  "externalApiCalls": 0,
+  "productionWrites": 0,
+  "assertions": [
+    "enabled frontend production build exists",
+    "1440: readable rate-limit explanation",
+    "1440: failed refresh preserves last received candle data",
+    "1440: rate cooldown initially disables manual retry",
+    "1440: no state/history polling during rate cooldown",
+    "1440: rate retry stays disabled before60s",
+    "1440: rate retry available after cooldown",
+    "1440: cooldown expiry does not retry automatically",
+    "1440: manual failure probes exactly one state and one history GET",
+    "1440: rate recovery sends no POST",
+    "1440: persistent rate-limit has no infinite retry loop",
+    "1440: successful manual recovery remains two GETs",
+    "1440: successful read recovery does not submit an order",
+    "1440: readable account-busy explanation",
+    "1440: one explicit order attempt reaches fixture rejection",
+    "1440: paused account cannot resubmit automatically",
+    "1440: language switch preserves pending order fields",
+    "1440: existing account-busy error translates on render",
+    "1440: pending language switch never reads or resubmits an order",
+    "1440: returning language retains pending state and translated error",
+    "1440: unchanged pending mutation is not replayed by localization",
+    "1440: account cooldown and expiry do not poll",
+    "1440: account cooldown does not replay pending mutation",
+    "1440: delayed response cannot trigger a premature followup",
+    "1440: followup timer is not armed before the initial body arrives",
+    "1440: prior-error followup waits for server tick",
+    "1440: prior state error permits exactly one delayed GETstate",
+    "1440: prior-error recovery never replays order",
+    "1440: only second explicit click sends second order request",
+    "1440: unchanged pending order reuses its idempotency id",
+    "1440: one isolated limit order survives retry",
+    "1440: rejected attempt creates no duplicate fill or reservation",
+    "1440: no horizontal page overflow",
+    "390: readable rate-limit explanation",
+    "390: failed refresh preserves last received candle data",
+    "390: rate cooldown initially disables manual retry",
+    "390: no state/history polling during rate cooldown",
+    "390: rate retry stays disabled before60s",
+    "390: rate retry available after cooldown",
+    "390: cooldown expiry does not retry automatically",
+    "390: manual failure probes exactly one state and one history GET",
+    "390: rate recovery sends no POST",
+    "390: persistent rate-limit has no infinite retry loop",
+    "390: successful manual recovery remains two GETs",
+    "390: successful read recovery does not submit an order",
+    "390: readable account-busy explanation",
+    "390: one explicit order attempt reaches fixture rejection",
+    "390: paused account cannot resubmit automatically",
+    "390: language switch preserves pending order fields",
+    "390: existing account-busy error translates on render",
+    "390: pending language switch never reads or resubmits an order",
+    "390: returning language retains pending state and translated error",
+    "390: unchanged pending mutation is not replayed by localization",
+    "390: account cooldown and expiry do not poll",
+    "390: account cooldown does not replay pending mutation",
+    "390: delayed response cannot trigger a premature followup",
+    "390: followup timer is not armed before the initial body arrives",
+    "390: prior-error followup waits for server tick",
+    "390: prior state error permits exactly one delayed GETstate",
+    "390: prior-error recovery never replays order",
+    "390: only second explicit click sends second order request",
+    "390: unchanged pending order reuses its idempotency id",
+    "390: one isolated limit order survives retry",
+    "390: rejected attempt creates no duplicate fill or reservation",
+    "390: no horizontal page overflow",
+    "ru/1920: translated tab График",
+    "ru/1920: translated tab Торговля",
+    "ru/1920: translated tab Позиции / заявки",
+    "ru/1920: no page horizontal overflow",
+    "ru/1920: chart stays within viewport",
+    "ru/1920: chart does not cover ticket",
+    "ru/1920: total label is translated",
+    "ru/1920: trade action is reachable",
+    "ru/1920: stale fixture quote cannot admit Market order",
+    "ru/1707: translated tab График",
+    "ru/1707: translated tab Торговля",
+    "ru/1707: translated tab Позиции / заявки",
+    "ru/1707: no page horizontal overflow",
+    "ru/1707: chart stays within viewport",
+    "ru/1707: chart does not cover ticket",
+    "ru/1707: total label is translated",
+    "ru/1707: trade action is reachable",
+    "ru/1707: stale fixture quote cannot admit Market order",
+    "ru/1440: translated tab График",
+    "ru/1440: translated tab Торговля",
+    "ru/1440: translated tab Позиции / заявки",
+    "ru/1440: no page horizontal overflow",
+    "ru/1440: chart stays within viewport",
+    "ru/1440: chart does not cover ticket",
+    "ru/1440: total label is translated",
+    "ru/1440: trade action is reachable",
+    "ru/1440: stale fixture quote cannot admit Market order",
+    "ru/1366: translated tab График",
+    "ru/1366: translated tab Торговля",
+    "ru/1366: translated tab Позиции / заявки",
+    "ru/1366: no page horizontal overflow",
+    "ru/1366: chart stays within viewport",
+    "ru/1366: chart does not cover ticket",
+    "ru/1366: total label is translated",
+    "ru/1366: trade action is reachable",
+    "ru/1366: stale fixture quote cannot admit Market order",
+    "ru/430: translated tab График",
+    "ru/430: translated tab Торговля",
+    "ru/430: translated tab Позиции / заявки",
+    "ru/430: no page horizontal overflow",
+    "ru/430: chart stays within viewport",
+    "ru/430: total label is translated",
+    "ru/430: trade action is reachable",
+    "ru/430: stale fixture quote cannot admit Market order",
+    "ru/430: reachable trade action is not covered by bottom navigation",
+    "ru/430: positions and orders remain reachable",
+    "ru/390: translated tab График",
+    "ru/390: translated tab Торговля",
+    "ru/390: translated tab Позиции / заявки",
+    "ru/390: no page horizontal overflow",
+    "ru/390: chart stays within viewport",
+    "ru/390: total label is translated",
+    "ru/390: trade action is reachable",
+    "ru/390: stale fixture quote cannot admit Market order",
+    "ru/390: reachable trade action is not covered by bottom navigation",
+    "ru/390: positions and orders remain reachable",
+    "ru/360: translated tab График",
+    "ru/360: translated tab Торговля",
+    "ru/360: translated tab Позиции / заявки",
+    "ru/360: no page horizontal overflow",
+    "ru/360: chart stays within viewport",
+    "ru/360: total label is translated",
+    "ru/360: trade action is reachable",
+    "ru/360: stale fixture quote cannot admit Market order",
+    "ru/360: reachable trade action is not covered by bottom navigation",
+    "ru/360: positions and orders remain reachable",
+    "ru/320: translated tab График",
+    "ru/320: translated tab Торговля",
+    "ru/320: translated tab Позиции / заявки",
+    "ru/320: no page horizontal overflow",
+    "ru/320: chart stays within viewport",
+    "ru/320: total label is translated",
+    "ru/320: trade action is reachable",
+    "ru/320: stale fixture quote cannot admit Market order",
+    "ru/320: reachable trade action is not covered by bottom navigation",
+    "ru/320: positions and orders remain reachable",
+    "ru: language switch preserves Limit form values",
+    "ru: language switch retains mounted form and chart",
+    "ru: language switch starts no market or financial requests while hidden",
+    "ru: return language preserves form",
+    "ru: return language starts no market or financial requests",
+    "ru: normal visible polling continues",
+    "ru: hidden visibility fixture performs no state/history polling",
+    "ru: visibility recovery does not submit mutations",
+    "ru: full viewport matrix has no financial mutations",
+    "en/1920: translated tab Chart",
+    "en/1920: translated tab Trade",
+    "en/1920: translated tab Positions / orders",
+    "en/1920: no page horizontal overflow",
+    "en/1920: chart stays within viewport",
+    "en/1920: chart does not cover ticket",
+    "en/1920: total label is translated",
+    "en/1920: trade action is reachable",
+    "en/1920: stale fixture quote cannot admit Market order",
+    "en/1707: translated tab Chart",
+    "en/1707: translated tab Trade",
+    "en/1707: translated tab Positions / orders",
+    "en/1707: no page horizontal overflow",
+    "en/1707: chart stays within viewport",
+    "en/1707: chart does not cover ticket",
+    "en/1707: total label is translated",
+    "en/1707: trade action is reachable",
+    "en/1707: stale fixture quote cannot admit Market order",
+    "en/1440: translated tab Chart",
+    "en/1440: translated tab Trade",
+    "en/1440: translated tab Positions / orders",
+    "en/1440: no page horizontal overflow",
+    "en/1440: chart stays within viewport",
+    "en/1440: chart does not cover ticket",
+    "en/1440: total label is translated",
+    "en/1440: trade action is reachable",
+    "en/1440: stale fixture quote cannot admit Market order",
+    "en/1366: translated tab Chart",
+    "en/1366: translated tab Trade",
+    "en/1366: translated tab Positions / orders",
+    "en/1366: no page horizontal overflow",
+    "en/1366: chart stays within viewport",
+    "en/1366: chart does not cover ticket",
+    "en/1366: total label is translated",
+    "en/1366: trade action is reachable",
+    "en/1366: stale fixture quote cannot admit Market order",
+    "en/430: translated tab Chart",
+    "en/430: translated tab Trade",
+    "en/430: translated tab Positions / orders",
+    "en/430: no page horizontal overflow",
+    "en/430: chart stays within viewport",
+    "en/430: total label is translated",
+    "en/430: trade action is reachable",
+    "en/430: stale fixture quote cannot admit Market order",
+    "en/430: reachable trade action is not covered by bottom navigation",
+    "en/430: positions and orders remain reachable",
+    "en/390: translated tab Chart",
+    "en/390: translated tab Trade",
+    "en/390: translated tab Positions / orders",
+    "en/390: no page horizontal overflow",
+    "en/390: chart stays within viewport",
+    "en/390: total label is translated",
+    "en/390: trade action is reachable",
+    "en/390: stale fixture quote cannot admit Market order",
+    "en/390: reachable trade action is not covered by bottom navigation",
+    "en/390: positions and orders remain reachable",
+    "en/360: translated tab Chart",
+    "en/360: translated tab Trade",
+    "en/360: translated tab Positions / orders",
+    "en/360: no page horizontal overflow",
+    "en/360: chart stays within viewport",
+    "en/360: total label is translated",
+    "en/360: trade action is reachable",
+    "en/360: stale fixture quote cannot admit Market order",
+    "en/360: reachable trade action is not covered by bottom navigation",
+    "en/360: positions and orders remain reachable",
+    "en/320: translated tab Chart",
+    "en/320: translated tab Trade",
+    "en/320: translated tab Positions / orders",
+    "en/320: no page horizontal overflow",
+    "en/320: chart stays within viewport",
+    "en/320: total label is translated",
+    "en/320: trade action is reachable",
+    "en/320: stale fixture quote cannot admit Market order",
+    "en/320: reachable trade action is not covered by bottom navigation",
+    "en/320: positions and orders remain reachable",
+    "en: language switch preserves Limit form values",
+    "en: language switch retains mounted form and chart",
+    "en: language switch starts no market or financial requests while hidden",
+    "en: return language preserves form",
+    "en: return language starts no market or financial requests",
+    "en: normal visible polling continues",
+    "en: hidden visibility fixture performs no state/history polling",
+    "en: visibility recovery does not submit mutations",
+    "en: full viewport matrix has no financial mutations",
+    "zh/1920: translated tab 图表",
+    "zh/1920: translated tab 交易",
+    "zh/1920: translated tab 持仓 / 订单",
+    "zh/1920: no page horizontal overflow",
+    "zh/1920: chart stays within viewport",
+    "zh/1920: chart does not cover ticket",
+    "zh/1920: total label is translated",
+    "zh/1920: trade action is reachable",
+    "zh/1920: stale fixture quote cannot admit Market order",
+    "zh/1707: translated tab 图表",
+    "zh/1707: translated tab 交易",
+    "zh/1707: translated tab 持仓 / 订单",
+    "zh/1707: no page horizontal overflow",
+    "zh/1707: chart stays within viewport",
+    "zh/1707: chart does not cover ticket",
+    "zh/1707: total label is translated",
+    "zh/1707: trade action is reachable",
+    "zh/1707: stale fixture quote cannot admit Market order",
+    "zh/1440: translated tab 图表",
+    "zh/1440: translated tab 交易",
+    "zh/1440: translated tab 持仓 / 订单",
+    "zh/1440: no page horizontal overflow",
+    "zh/1440: chart stays within viewport",
+    "zh/1440: chart does not cover ticket",
+    "zh/1440: total label is translated",
+    "zh/1440: trade action is reachable",
+    "zh/1440: stale fixture quote cannot admit Market order",
+    "zh/1366: translated tab 图表",
+    "zh/1366: translated tab 交易",
+    "zh/1366: translated tab 持仓 / 订单",
+    "zh/1366: no page horizontal overflow",
+    "zh/1366: chart stays within viewport",
+    "zh/1366: chart does not cover ticket",
+    "zh/1366: total label is translated",
+    "zh/1366: trade action is reachable",
+    "zh/1366: stale fixture quote cannot admit Market order",
+    "zh/430: translated tab 图表",
+    "zh/430: translated tab 交易",
+    "zh/430: translated tab 持仓 / 订单",
+    "zh/430: no page horizontal overflow",
+    "zh/430: chart stays within viewport",
+    "zh/430: total label is translated",
+    "zh/430: trade action is reachable",
+    "zh/430: stale fixture quote cannot admit Market order",
+    "zh/430: reachable trade action is not covered by bottom navigation",
+    "zh/430: positions and orders remain reachable",
+    "zh/390: translated tab 图表",
+    "zh/390: translated tab 交易",
+    "zh/390: translated tab 持仓 / 订单",
+    "zh/390: no page horizontal overflow",
+    "zh/390: chart stays within viewport",
+    "zh/390: total label is translated",
+    "zh/390: trade action is reachable",
+    "zh/390: stale fixture quote cannot admit Market order",
+    "zh/390: reachable trade action is not covered by bottom navigation",
+    "zh/390: positions and orders remain reachable",
+    "zh/360: translated tab 图表",
+    "zh/360: translated tab 交易",
+    "zh/360: translated tab 持仓 / 订单",
+    "zh/360: no page horizontal overflow",
+    "zh/360: chart stays within viewport",
+    "zh/360: total label is translated",
+    "zh/360: trade action is reachable",
+    "zh/360: stale fixture quote cannot admit Market order",
+    "zh/360: reachable trade action is not covered by bottom navigation",
+    "zh/360: positions and orders remain reachable",
+    "zh/320: translated tab 图表",
+    "zh/320: translated tab 交易",
+    "zh/320: translated tab 持仓 / 订单",
+    "zh/320: no page horizontal overflow",
+    "zh/320: chart stays within viewport",
+    "zh/320: total label is translated",
+    "zh/320: trade action is reachable",
+    "zh/320: stale fixture quote cannot admit Market order",
+    "zh/320: reachable trade action is not covered by bottom navigation",
+    "zh/320: positions and orders remain reachable",
+    "zh: language switch preserves Limit form values",
+    "zh: language switch retains mounted form and chart",
+    "zh: language switch starts no market or financial requests while hidden",
+    "zh: return language preserves form",
+    "zh: return language starts no market or financial requests",
+    "zh: normal visible polling continues",
+    "zh: hidden visibility fixture performs no state/history polling",
+    "zh: visibility recovery does not submit mutations",
+    "zh: full viewport matrix has no financial mutations",
+    "es/1920: translated tab Gráfico",
+    "es/1920: translated tab Operar",
+    "es/1920: translated tab Posiciones / órdenes",
+    "es/1920: no page horizontal overflow",
+    "es/1920: chart stays within viewport",
+    "es/1920: chart does not cover ticket",
+    "es/1920: total label is translated",
+    "es/1920: trade action is reachable",
+    "es/1920: stale fixture quote cannot admit Market order",
+    "es/1707: translated tab Gráfico",
+    "es/1707: translated tab Operar",
+    "es/1707: translated tab Posiciones / órdenes",
+    "es/1707: no page horizontal overflow",
+    "es/1707: chart stays within viewport",
+    "es/1707: chart does not cover ticket",
+    "es/1707: total label is translated",
+    "es/1707: trade action is reachable",
+    "es/1707: stale fixture quote cannot admit Market order",
+    "es/1440: translated tab Gráfico",
+    "es/1440: translated tab Operar",
+    "es/1440: translated tab Posiciones / órdenes",
+    "es/1440: no page horizontal overflow",
+    "es/1440: chart stays within viewport",
+    "es/1440: chart does not cover ticket",
+    "es/1440: total label is translated",
+    "es/1440: trade action is reachable",
+    "es/1440: stale fixture quote cannot admit Market order",
+    "es/1366: translated tab Gráfico",
+    "es/1366: translated tab Operar",
+    "es/1366: translated tab Posiciones / órdenes",
+    "es/1366: no page horizontal overflow",
+    "es/1366: chart stays within viewport",
+    "es/1366: chart does not cover ticket",
+    "es/1366: total label is translated",
+    "es/1366: trade action is reachable",
+    "es/1366: stale fixture quote cannot admit Market order",
+    "es/430: translated tab Gráfico",
+    "es/430: translated tab Operar",
+    "es/430: translated tab Posiciones / órdenes",
+    "es/430: no page horizontal overflow",
+    "es/430: chart stays within viewport",
+    "es/430: total label is translated",
+    "es/430: trade action is reachable",
+    "es/430: stale fixture quote cannot admit Market order",
+    "es/430: reachable trade action is not covered by bottom navigation",
+    "es/430: positions and orders remain reachable",
+    "es/390: translated tab Gráfico",
+    "es/390: translated tab Operar",
+    "es/390: translated tab Posiciones / órdenes",
+    "es/390: no page horizontal overflow",
+    "es/390: chart stays within viewport",
+    "es/390: total label is translated",
+    "es/390: trade action is reachable",
+    "es/390: stale fixture quote cannot admit Market order",
+    "es/390: reachable trade action is not covered by bottom navigation",
+    "es/390: positions and orders remain reachable",
+    "es/360: translated tab Gráfico",
+    "es/360: translated tab Operar",
+    "es/360: translated tab Posiciones / órdenes",
+    "es/360: no page horizontal overflow",
+    "es/360: chart stays within viewport",
+    "es/360: total label is translated",
+    "es/360: trade action is reachable",
+    "es/360: stale fixture quote cannot admit Market order",
+    "es/360: reachable trade action is not covered by bottom navigation",
+    "es/360: positions and orders remain reachable",
+    "es/320: translated tab Gráfico",
+    "es/320: translated tab Operar",
+    "es/320: translated tab Posiciones / órdenes",
+    "es/320: no page horizontal overflow",
+    "es/320: chart stays within viewport",
+    "es/320: total label is translated",
+    "es/320: trade action is reachable",
+    "es/320: stale fixture quote cannot admit Market order",
+    "es/320: reachable trade action is not covered by bottom navigation",
+    "es/320: positions and orders remain reachable",
+    "es: language switch preserves Limit form values",
+    "es: language switch retains mounted form and chart",
+    "es: language switch starts no market or financial requests while hidden",
+    "es: return language preserves form",
+    "es: return language starts no market or financial requests",
+    "es: normal visible polling continues",
+    "es: hidden visibility fixture performs no state/history polling",
+    "es: visibility recovery does not submit mutations",
+    "es: full viewport matrix has no financial mutations",
+    "hi/1920: translated tab चार्ट",
+    "hi/1920: translated tab ट्रेडिंग",
+    "hi/1920: translated tab पोज़िशन / ऑर्डर",
+    "hi/1920: no page horizontal overflow",
+    "hi/1920: chart stays within viewport",
+    "hi/1920: chart does not cover ticket",
+    "hi/1920: total label is translated",
+    "hi/1920: trade action is reachable",
+    "hi/1920: stale fixture quote cannot admit Market order",
+    "hi/1707: translated tab चार्ट",
+    "hi/1707: translated tab ट्रेडिंग",
+    "hi/1707: translated tab पोज़िशन / ऑर्डर",
+    "hi/1707: no page horizontal overflow",
+    "hi/1707: chart stays within viewport",
+    "hi/1707: chart does not cover ticket",
+    "hi/1707: total label is translated",
+    "hi/1707: trade action is reachable",
+    "hi/1707: stale fixture quote cannot admit Market order",
+    "hi/1440: translated tab चार्ट",
+    "hi/1440: translated tab ट्रेडिंग",
+    "hi/1440: translated tab पोज़िशन / ऑर्डर",
+    "hi/1440: no page horizontal overflow",
+    "hi/1440: chart stays within viewport",
+    "hi/1440: chart does not cover ticket",
+    "hi/1440: total label is translated",
+    "hi/1440: trade action is reachable",
+    "hi/1440: stale fixture quote cannot admit Market order",
+    "hi/1366: translated tab चार्ट",
+    "hi/1366: translated tab ट्रेडिंग",
+    "hi/1366: translated tab पोज़िशन / ऑर्डर",
+    "hi/1366: no page horizontal overflow",
+    "hi/1366: chart stays within viewport",
+    "hi/1366: chart does not cover ticket",
+    "hi/1366: total label is translated",
+    "hi/1366: trade action is reachable",
+    "hi/1366: stale fixture quote cannot admit Market order",
+    "hi/430: translated tab चार्ट",
+    "hi/430: translated tab ट्रेडिंग",
+    "hi/430: translated tab पोज़िशन / ऑर्डर",
+    "hi/430: no page horizontal overflow",
+    "hi/430: chart stays within viewport",
+    "hi/430: total label is translated",
+    "hi/430: trade action is reachable",
+    "hi/430: stale fixture quote cannot admit Market order",
+    "hi/430: reachable trade action is not covered by bottom navigation",
+    "hi/430: positions and orders remain reachable",
+    "hi/390: translated tab चार्ट",
+    "hi/390: translated tab ट्रेडिंग",
+    "hi/390: translated tab पोज़िशन / ऑर्डर",
+    "hi/390: no page horizontal overflow",
+    "hi/390: chart stays within viewport",
+    "hi/390: total label is translated",
+    "hi/390: trade action is reachable",
+    "hi/390: stale fixture quote cannot admit Market order",
+    "hi/390: reachable trade action is not covered by bottom navigation",
+    "hi/390: positions and orders remain reachable",
+    "hi/360: translated tab चार्ट",
+    "hi/360: translated tab ट्रेडिंग",
+    "hi/360: translated tab पोज़िशन / ऑर्डर",
+    "hi/360: no page horizontal overflow",
+    "hi/360: chart stays within viewport",
+    "hi/360: total label is translated",
+    "hi/360: trade action is reachable",
+    "hi/360: stale fixture quote cannot admit Market order",
+    "hi/360: reachable trade action is not covered by bottom navigation",
+    "hi/360: positions and orders remain reachable",
+    "hi/320: translated tab चार्ट",
+    "hi/320: translated tab ट्रेडिंग",
+    "hi/320: translated tab पोज़िशन / ऑर्डर",
+    "hi/320: no page horizontal overflow",
+    "hi/320: chart stays within viewport",
+    "hi/320: total label is translated",
+    "hi/320: trade action is reachable",
+    "hi/320: stale fixture quote cannot admit Market order",
+    "hi/320: reachable trade action is not covered by bottom navigation",
+    "hi/320: positions and orders remain reachable",
+    "hi: language switch preserves Limit form values",
+    "hi: language switch retains mounted form and chart",
+    "hi: language switch starts no market or financial requests while hidden",
+    "hi: return language preserves form",
+    "hi: return language starts no market or financial requests",
+    "hi: normal visible polling continues",
+    "hi: hidden visibility fixture performs no state/history polling",
+    "hi: visibility recovery does not submit mutations",
+    "hi: full viewport matrix has no financial mutations",
+    "ja/1920: translated tab チャート",
+    "ja/1920: translated tab 取引",
+    "ja/1920: translated tab ポジション / 注文",
+    "ja/1920: no page horizontal overflow",
+    "ja/1920: chart stays within viewport",
+    "ja/1920: chart does not cover ticket",
+    "ja/1920: total label is translated",
+    "ja/1920: trade action is reachable",
+    "ja/1920: stale fixture quote cannot admit Market order",
+    "ja/1707: translated tab チャート",
+    "ja/1707: translated tab 取引",
+    "ja/1707: translated tab ポジション / 注文",
+    "ja/1707: no page horizontal overflow",
+    "ja/1707: chart stays within viewport",
+    "ja/1707: chart does not cover ticket",
+    "ja/1707: total label is translated",
+    "ja/1707: trade action is reachable",
+    "ja/1707: stale fixture quote cannot admit Market order",
+    "ja/1440: translated tab チャート",
+    "ja/1440: translated tab 取引",
+    "ja/1440: translated tab ポジション / 注文",
+    "ja/1440: no page horizontal overflow",
+    "ja/1440: chart stays within viewport",
+    "ja/1440: chart does not cover ticket",
+    "ja/1440: total label is translated",
+    "ja/1440: trade action is reachable",
+    "ja/1440: stale fixture quote cannot admit Market order",
+    "ja/1366: translated tab チャート",
+    "ja/1366: translated tab 取引",
+    "ja/1366: translated tab ポジション / 注文",
+    "ja/1366: no page horizontal overflow",
+    "ja/1366: chart stays within viewport",
+    "ja/1366: chart does not cover ticket",
+    "ja/1366: total label is translated",
+    "ja/1366: trade action is reachable",
+    "ja/1366: stale fixture quote cannot admit Market order",
+    "ja/430: translated tab チャート",
+    "ja/430: translated tab 取引",
+    "ja/430: translated tab ポジション / 注文",
+    "ja/430: no page horizontal overflow",
+    "ja/430: chart stays within viewport",
+    "ja/430: total label is translated",
+    "ja/430: trade action is reachable",
+    "ja/430: stale fixture quote cannot admit Market order",
+    "ja/430: reachable trade action is not covered by bottom navigation",
+    "ja/430: positions and orders remain reachable",
+    "ja/390: translated tab チャート",
+    "ja/390: translated tab 取引",
+    "ja/390: translated tab ポジション / 注文",
+    "ja/390: no page horizontal overflow",
+    "ja/390: chart stays within viewport",
+    "ja/390: total label is translated",
+    "ja/390: trade action is reachable",
+    "ja/390: stale fixture quote cannot admit Market order",
+    "ja/390: reachable trade action is not covered by bottom navigation",
+    "ja/390: positions and orders remain reachable",
+    "ja/360: translated tab チャート",
+    "ja/360: translated tab 取引",
+    "ja/360: translated tab ポジション / 注文",
+    "ja/360: no page horizontal overflow",
+    "ja/360: chart stays within viewport",
+    "ja/360: total label is translated",
+    "ja/360: trade action is reachable",
+    "ja/360: stale fixture quote cannot admit Market order",
+    "ja/360: reachable trade action is not covered by bottom navigation",
+    "ja/360: positions and orders remain reachable",
+    "ja/320: translated tab チャート",
+    "ja/320: translated tab 取引",
+    "ja/320: translated tab ポジション / 注文",
+    "ja/320: no page horizontal overflow",
+    "ja/320: chart stays within viewport",
+    "ja/320: total label is translated",
+    "ja/320: trade action is reachable",
+    "ja/320: stale fixture quote cannot admit Market order",
+    "ja/320: reachable trade action is not covered by bottom navigation",
+    "ja/320: positions and orders remain reachable",
+    "ja: language switch preserves Limit form values",
+    "ja: language switch retains mounted form and chart",
+    "ja: language switch starts no market or financial requests while hidden",
+    "ja: return language preserves form",
+    "ja: return language starts no market or financial requests",
+    "ja: normal visible polling continues",
+    "ja: hidden visibility fixture performs no state/history polling",
+    "ja: visibility recovery does not submit mutations",
+    "ja: full viewport matrix has no financial mutations",
+    "ko/1920: translated tab 차트",
+    "ko/1920: translated tab 거래",
+    "ko/1920: translated tab 포지션 / 주문",
+    "ko/1920: no page horizontal overflow",
+    "ko/1920: chart stays within viewport",
+    "ko/1920: chart does not cover ticket",
+    "ko/1920: total label is translated",
+    "ko/1920: trade action is reachable",
+    "ko/1920: stale fixture quote cannot admit Market order",
+    "ko/1707: translated tab 차트",
+    "ko/1707: translated tab 거래",
+    "ko/1707: translated tab 포지션 / 주문",
+    "ko/1707: no page horizontal overflow",
+    "ko/1707: chart stays within viewport",
+    "ko/1707: chart does not cover ticket",
+    "ko/1707: total label is translated",
+    "ko/1707: trade action is reachable",
+    "ko/1707: stale fixture quote cannot admit Market order",
+    "ko/1440: translated tab 차트",
+    "ko/1440: translated tab 거래",
+    "ko/1440: translated tab 포지션 / 주문",
+    "ko/1440: no page horizontal overflow",
+    "ko/1440: chart stays within viewport",
+    "ko/1440: chart does not cover ticket",
+    "ko/1440: total label is translated",
+    "ko/1440: trade action is reachable",
+    "ko/1440: stale fixture quote cannot admit Market order",
+    "ko/1366: translated tab 차트",
+    "ko/1366: translated tab 거래",
+    "ko/1366: translated tab 포지션 / 주문",
+    "ko/1366: no page horizontal overflow",
+    "ko/1366: chart stays within viewport",
+    "ko/1366: chart does not cover ticket",
+    "ko/1366: total label is translated",
+    "ko/1366: trade action is reachable",
+    "ko/1366: stale fixture quote cannot admit Market order",
+    "ko/430: translated tab 차트",
+    "ko/430: translated tab 거래",
+    "ko/430: translated tab 포지션 / 주문",
+    "ko/430: no page horizontal overflow",
+    "ko/430: chart stays within viewport",
+    "ko/430: total label is translated",
+    "ko/430: trade action is reachable",
+    "ko/430: stale fixture quote cannot admit Market order",
+    "ko/430: reachable trade action is not covered by bottom navigation",
+    "ko/430: positions and orders remain reachable",
+    "ko/390: translated tab 차트",
+    "ko/390: translated tab 거래",
+    "ko/390: translated tab 포지션 / 주문",
+    "ko/390: no page horizontal overflow",
+    "ko/390: chart stays within viewport",
+    "ko/390: total label is translated",
+    "ko/390: trade action is reachable",
+    "ko/390: stale fixture quote cannot admit Market order",
+    "ko/390: reachable trade action is not covered by bottom navigation",
+    "ko/390: positions and orders remain reachable",
+    "ko/360: translated tab 차트",
+    "ko/360: translated tab 거래",
+    "ko/360: translated tab 포지션 / 주문",
+    "ko/360: no page horizontal overflow",
+    "ko/360: chart stays within viewport",
+    "ko/360: total label is translated",
+    "ko/360: trade action is reachable",
+    "ko/360: stale fixture quote cannot admit Market order",
+    "ko/360: reachable trade action is not covered by bottom navigation",
+    "ko/360: positions and orders remain reachable",
+    "ko/320: translated tab 차트",
+    "ko/320: translated tab 거래",
+    "ko/320: translated tab 포지션 / 주문",
+    "ko/320: no page horizontal overflow",
+    "ko/320: chart stays within viewport",
+    "ko/320: total label is translated",
+    "ko/320: trade action is reachable",
+    "ko/320: stale fixture quote cannot admit Market order",
+    "ko/320: reachable trade action is not covered by bottom navigation",
+    "ko/320: positions and orders remain reachable",
+    "ko: language switch preserves Limit form values",
+    "ko: language switch retains mounted form and chart",
+    "ko: language switch starts no market or financial requests while hidden",
+    "ko: return language preserves form",
+    "ko: return language starts no market or financial requests",
+    "ko: normal visible polling continues",
+    "ko: hidden visibility fixture performs no state/history polling",
+    "ko: visibility recovery does not submit mutations",
+    "ko: full viewport matrix has no financial mutations",
+    "no non-Stocks financial or application writes",
+    "no uncaught browser errors"
+  ],
+  "views": [
+    {
+      "width": 1440,
+      "state": "before-overload",
+      "screenshot": "fixture-1440-before-overload.png",
+      "fixtureOnly": true
+    },
+    {
+      "width": 1440,
+      "state": "rate-limit",
+      "screenshot": "fixture-1440-rate-limit.png",
+      "fixtureOnly": true
+    },
+    {
+      "width": 1440,
+      "state": "rate-recovered",
+      "screenshot": "fixture-1440-rate-recovered.png",
+      "fixtureOnly": true
+    },
+    {
+      "width": 1440,
+      "state": "account-busy",
+      "screenshot": "fixture-1440-account-busy.png",
+      "fixtureOnly": true
+    },
+    {
+      "width": 1440,
+      "state": "manual-order-recovered",
+      "screenshot": "fixture-1440-manual-order-recovered.png",
+      "fixtureOnly": true
+    },
+    {
+      "width": 390,
+      "state": "before-overload",
+      "screenshot": "fixture-390-before-overload.png",
+      "fixtureOnly": true
+    },
+    {
+      "width": 390,
+      "state": "rate-limit",
+      "screenshot": "fixture-390-rate-limit.png",
+      "fixtureOnly": true
+    },
+    {
+      "width": 390,
+      "state": "rate-recovered",
+      "screenshot": "fixture-390-rate-recovered.png",
+      "fixtureOnly": true
+    },
+    {
+      "width": 390,
+      "state": "account-busy",
+      "screenshot": "fixture-390-account-busy.png",
+      "fixtureOnly": true
+    },
+    {
+      "width": 390,
+      "state": "manual-order-recovered",
+      "screenshot": "fixture-390-manual-order-recovered.png",
+      "fixtureOnly": true
+    }
+  ],
+  "requests": [
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m",
+      "fault": "RATE_LIMIT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m",
+      "fault": "RATE_LIMIT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "width": 1440,
+      "method": "POST",
+      "route": "orders",
+      "query": "",
+      "orderId": "1e9f547d-19a6-4d11-a833-1fbd44f3d358",
+      "fault": "ACCOUNT_BUSY"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT",
+      "fault": "prior-ACCOUNT_BUSY"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 1440,
+      "method": "POST",
+      "route": "orders",
+      "query": "",
+      "orderId": "1e9f547d-19a6-4d11-a833-1fbd44f3d358"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m",
+      "fault": "RATE_LIMIT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m",
+      "fault": "RATE_LIMIT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "width": 390,
+      "method": "POST",
+      "route": "orders",
+      "query": "",
+      "orderId": "e9d2d6b0-e179-4e18-b542-10dee6d15e41",
+      "fault": "ACCOUNT_BUSY"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT",
+      "fault": "prior-ACCOUNT_BUSY"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "history",
+      "query": "?id=BYBIT%3AAAPLXUSDT&interval=15m"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "route": "state",
+      "query": "?id=BYBIT%3AAAPLXUSDT"
+    },
+    {
+      "width": 390,
+      "method": "POST",
+      "route": "orders",
+      "query": "",
+      "orderId": "e9d2d6b0-e179-4e18-b542-10dee6d15e41"
+    }
+  ],
+  "recoveryTimers": [
+    {
+      "width": 1440,
+      "delayMs": 3500,
+      "armedAt": 1791929214153,
+      "initialResponseHeldForVirtualMs": 3501
+    },
+    {
+      "width": 390,
+      "delayMs": 3500,
+      "armedAt": 1791929219823,
+      "initialResponseHeldForVirtualMs": 3501
+    }
+  ],
+  "pageErrors": [],
+  "externalBlocked": [
+    {
+      "width": 1440,
+      "method": "GET",
+      "origin": "https://fonts.googleapis.com",
+      "path": "/css2"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "origin": "https://fonts.googleapis.com",
+      "path": "/css2"
+    },
+    {
+      "width": 1440,
+      "method": "GET",
+      "origin": "https://fonts.googleapis.com",
+      "path": "/css2"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "origin": "https://fonts.googleapis.com",
+      "path": "/css2"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "origin": "https://fonts.googleapis.com",
+      "path": "/css2"
+    },
+    {
+      "width": 390,
+      "method": "GET",
+      "origin": "https://fonts.googleapis.com",
+      "path": "/css2"
+    },
+    {
+      "matrix": true,
+      "lang": "ru",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ru",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ru",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ru",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ru",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ru",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "en",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "en",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "en",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "en",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "en",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "en",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "zh",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "zh",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "zh",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "zh",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "zh",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "zh",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "es",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "es",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "es",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "es",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "es",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "es",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "hi",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "hi",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "hi",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "hi",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "hi",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "hi",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ja",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ja",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ja",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ja",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ja",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ja",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ko",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ko",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ko",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ko",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ko",
+      "type": "http"
+    },
+    {
+      "matrix": true,
+      "lang": "ko",
+      "type": "http"
+    }
+  ],
+  "unexpectedWrites": [],
+  "matrix": [
+    {
+      "lang": "ru",
+      "width": 1920,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ru-1920.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "График",
+        "Торговля",
+        "Позиции / заявки",
+        "Количество",
+        "Итого"
+      ]
+    },
+    {
+      "lang": "ru",
+      "width": 1707,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ru-1707.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "График",
+        "Торговля",
+        "Позиции / заявки",
+        "Количество",
+        "Итого"
+      ]
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ru-1440.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "График",
+        "Торговля",
+        "Позиции / заявки",
+        "Количество",
+        "Итого"
+      ]
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ru-1366.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "График",
+        "Торговля",
+        "Позиции / заявки",
+        "Количество",
+        "Итого"
+      ]
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ru-430.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "График",
+        "Торговля",
+        "Позиции / заявки",
+        "Количество",
+        "Итого"
+      ]
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ru-390.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "График",
+        "Торговля",
+        "Позиции / заявки",
+        "Количество",
+        "Итого"
+      ]
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ru-360.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "График",
+        "Торговля",
+        "Позиции / заявки",
+        "Количество",
+        "Итого"
+      ]
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ru-320.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "График",
+        "Торговля",
+        "Позиции / заявки",
+        "Количество",
+        "Итого"
+      ]
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Chart",
+        "Trade",
+        "Positions / orders",
+        "Amount",
+        "Total"
+      ]
+    },
+    {
+      "lang": "en",
+      "width": 1707,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Chart",
+        "Trade",
+        "Positions / orders",
+        "Amount",
+        "Total"
+      ]
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-en-1440.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "Chart",
+        "Trade",
+        "Positions / orders",
+        "Amount",
+        "Total"
+      ]
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Chart",
+        "Trade",
+        "Positions / orders",
+        "Amount",
+        "Total"
+      ]
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Chart",
+        "Trade",
+        "Positions / orders",
+        "Amount",
+        "Total"
+      ]
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-en-390.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "Chart",
+        "Trade",
+        "Positions / orders",
+        "Amount",
+        "Total"
+      ]
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Chart",
+        "Trade",
+        "Positions / orders",
+        "Amount",
+        "Total"
+      ]
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Chart",
+        "Trade",
+        "Positions / orders",
+        "Amount",
+        "Total"
+      ]
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "图表",
+        "交易",
+        "持仓 / 订单",
+        "数量",
+        "总额"
+      ]
+    },
+    {
+      "lang": "zh",
+      "width": 1707,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "图表",
+        "交易",
+        "持仓 / 订单",
+        "数量",
+        "总额"
+      ]
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-zh-1440.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "图表",
+        "交易",
+        "持仓 / 订单",
+        "数量",
+        "总额"
+      ]
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "图表",
+        "交易",
+        "持仓 / 订单",
+        "数量",
+        "总额"
+      ]
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "图表",
+        "交易",
+        "持仓 / 订单",
+        "数量",
+        "总额"
+      ]
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-zh-390.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "图表",
+        "交易",
+        "持仓 / 订单",
+        "数量",
+        "总额"
+      ]
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "图表",
+        "交易",
+        "持仓 / 订单",
+        "数量",
+        "总额"
+      ]
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "图表",
+        "交易",
+        "持仓 / 订单",
+        "数量",
+        "总额"
+      ]
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Gráfico",
+        "Operar",
+        "Posiciones / órdenes",
+        "Cantidad",
+        "Total"
+      ]
+    },
+    {
+      "lang": "es",
+      "width": 1707,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Gráfico",
+        "Operar",
+        "Posiciones / órdenes",
+        "Cantidad",
+        "Total"
+      ]
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-es-1440.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "Gráfico",
+        "Operar",
+        "Posiciones / órdenes",
+        "Cantidad",
+        "Total"
+      ]
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Gráfico",
+        "Operar",
+        "Posiciones / órdenes",
+        "Cantidad",
+        "Total"
+      ]
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Gráfico",
+        "Operar",
+        "Posiciones / órdenes",
+        "Cantidad",
+        "Total"
+      ]
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-es-390.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "Gráfico",
+        "Operar",
+        "Posiciones / órdenes",
+        "Cantidad",
+        "Total"
+      ]
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Gráfico",
+        "Operar",
+        "Posiciones / órdenes",
+        "Cantidad",
+        "Total"
+      ]
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "Gráfico",
+        "Operar",
+        "Posiciones / órdenes",
+        "Cantidad",
+        "Total"
+      ]
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "चार्ट",
+        "ट्रेडिंग",
+        "पोज़िशन / ऑर्डर",
+        "मात्रा",
+        "कुल"
+      ]
+    },
+    {
+      "lang": "hi",
+      "width": 1707,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "चार्ट",
+        "ट्रेडिंग",
+        "पोज़िशन / ऑर्डर",
+        "मात्रा",
+        "कुल"
+      ]
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-hi-1440.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "चार्ट",
+        "ट्रेडिंग",
+        "पोज़िशन / ऑर्डर",
+        "मात्रा",
+        "कुल"
+      ]
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "चार्ट",
+        "ट्रेडिंग",
+        "पोज़िशन / ऑर्डर",
+        "मात्रा",
+        "कुल"
+      ]
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "चार्ट",
+        "ट्रेडिंग",
+        "पोज़िशन / ऑर्डर",
+        "मात्रा",
+        "कुल"
+      ]
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-hi-390.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "चार्ट",
+        "ट्रेडिंग",
+        "पोज़िशन / ऑर्डर",
+        "मात्रा",
+        "कुल"
+      ]
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "चार्ट",
+        "ट्रेडिंग",
+        "पोज़िशन / ऑर्डर",
+        "मात्रा",
+        "कुल"
+      ]
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "चार्ट",
+        "ट्रेडिंग",
+        "पोज़िशन / ऑर्डर",
+        "मात्रा",
+        "कुल"
+      ]
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "チャート",
+        "取引",
+        "ポジション / 注文",
+        "数量",
+        "合計"
+      ]
+    },
+    {
+      "lang": "ja",
+      "width": 1707,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "チャート",
+        "取引",
+        "ポジション / 注文",
+        "数量",
+        "合計"
+      ]
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ja-1440.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "チャート",
+        "取引",
+        "ポジション / 注文",
+        "数量",
+        "合計"
+      ]
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "チャート",
+        "取引",
+        "ポジション / 注文",
+        "数量",
+        "合計"
+      ]
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "チャート",
+        "取引",
+        "ポジション / 注文",
+        "数量",
+        "合計"
+      ]
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ja-390.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "チャート",
+        "取引",
+        "ポジション / 注文",
+        "数量",
+        "合計"
+      ]
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "チャート",
+        "取引",
+        "ポジション / 注文",
+        "数量",
+        "合計"
+      ]
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "チャート",
+        "取引",
+        "ポジション / 注文",
+        "数量",
+        "合計"
+      ]
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "차트",
+        "거래",
+        "포지션 / 주문",
+        "수량",
+        "총액"
+      ]
+    },
+    {
+      "lang": "ko",
+      "width": 1707,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "차트",
+        "거래",
+        "포지션 / 주문",
+        "수량",
+        "총액"
+      ]
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ko-1440.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "차트",
+        "거래",
+        "포지션 / 주문",
+        "수량",
+        "총액"
+      ]
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "차트",
+        "거래",
+        "포지션 / 주문",
+        "수량",
+        "총액"
+      ]
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "차트",
+        "거래",
+        "포지션 / 주문",
+        "수량",
+        "총액"
+      ]
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "fixtureOnly": true,
+      "screenshot": "fixture-matrix-ko-390.png",
+      "financialWrites": 0,
+      "languageLabels": [
+        "차트",
+        "거래",
+        "포지션 / 주문",
+        "수량",
+        "총액"
+      ]
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "차트",
+        "거래",
+        "포지션 / 주문",
+        "수량",
+        "총액"
+      ]
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "fixtureOnly": true,
+      "screenshot": null,
+      "financialWrites": 0,
+      "languageLabels": [
+        "차트",
+        "거래",
+        "포지션 / 주문",
+        "수량",
+        "총액"
+      ]
+    }
+  ],
+  "languageSwitches": [
+    {
+      "from": "ru",
+      "to": "en",
+      "formPreserved": true,
+      "chartMounted": true,
+      "additionalReads": 0,
+      "additionalWrites": 0
+    },
+    {
+      "from": "en",
+      "to": "ru",
+      "formPreserved": true,
+      "chartMounted": true,
+      "additionalReads": 0,
+      "additionalWrites": 0
+    },
+    {
+      "from": "zh",
+      "to": "en",
+      "formPreserved": true,
+      "chartMounted": true,
+      "additionalReads": 0,
+      "additionalWrites": 0
+    },
+    {
+      "from": "es",
+      "to": "en",
+      "formPreserved": true,
+      "chartMounted": true,
+      "additionalReads": 0,
+      "additionalWrites": 0
+    },
+    {
+      "from": "hi",
+      "to": "en",
+      "formPreserved": true,
+      "chartMounted": true,
+      "additionalReads": 0,
+      "additionalWrites": 0
+    },
+    {
+      "from": "ja",
+      "to": "en",
+      "formPreserved": true,
+      "chartMounted": true,
+      "additionalReads": 0,
+      "additionalWrites": 0
+    },
+    {
+      "from": "ko",
+      "to": "en",
+      "formPreserved": true,
+      "chartMounted": true,
+      "additionalReads": 0,
+      "additionalWrites": 0
+    }
+  ],
+  "pass": true,
+  "notes": [
+    "Screenshots contain synthetic market fixtures for UI regression, not real market prices.",
+    "Real local Stocks account worker, engine and SQLite are used; all accounts are disposable fixture identities.",
+    "Injected503 rejects the first order before dispatch. One user retry reuses the same id and creates one pending limit order.",
+    "Virtual browser clock tests60s cooldowns; no production capacity inference is made."
+  ],
+  "disposableDatabaseRemoved": true
+}

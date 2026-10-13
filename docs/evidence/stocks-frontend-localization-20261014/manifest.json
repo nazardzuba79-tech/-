@@ -1,0 +1,208 @@
+{
+  "scope": "Pre-host-policy-fix localization evidence. Not final-head CI or production proof.",
+  "sourceHead": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+  "sourceTreeHash": "531602cbfd4342b8bd1cff34362a8c36eb2defb3037ee850ac1eb6843fe95ccf",
+  "files": [
+    {
+      "file": "original-windows-fail.json",
+      "source": "localization/frontend-full-final.json",
+      "bytes": 2230155,
+      "sha256": "23a1964ea0d5fae1fd7ce3bf055d39c986abfc5a09d1ae2a51e33642c254df71",
+      "originalBytes": 2230155,
+      "originalSha256": "23a1964ea0d5fae1fd7ce3bf055d39c986abfc5a09d1ae2a51e33642c254df71",
+      "compression": "none"
+    },
+    {
+      "file": "original-windows-fail.log.gz",
+      "source": "localization/frontend-full-final.log",
+      "bytes": 181265,
+      "sha256": "cd9e84027e3f33bbdd5861474904e5af79ee35d5c6f44ab8dbd6235f2c790193",
+      "originalBytes": 10198257,
+      "originalSha256": "81b2bc8c081d7172ff5cc89dda4eb63775afab5e2fec447f59c4392ff0d70868",
+      "compression": "gzip lossless"
+    },
+    {
+      "file": "six-crlf-probes.json",
+      "source": "methodology-frontend-canonical-probe.json",
+      "bytes": 3069,
+      "sha256": "f98ee636631d10c5c023ac1706638779fc0e3709898602b554731f3d65e5f31f",
+      "originalBytes": 3069,
+      "originalSha256": "f98ee636631d10c5c023ac1706638779fc0e3709898602b554731f3d65e5f31f",
+      "compression": "none"
+    },
+    {
+      "file": "archive-crlf-fail.json",
+      "source": "canonical-frontend-r1/focused-six.json",
+      "bytes": 597984,
+      "sha256": "2d4955f146badddbd78f88cac521d38f3b8ff1554adcff08054384f7a2d06923",
+      "originalBytes": 597984,
+      "originalSha256": "2d4955f146badddbd78f88cac521d38f3b8ff1554adcff08054384f7a2d06923",
+      "compression": "none"
+    },
+    {
+      "file": "archive-crlf-fail.log.gz",
+      "source": "canonical-frontend-r1/focused-six.log",
+      "bytes": 50599,
+      "sha256": "a2ea40b40b2047b350d2a8deabaf6d1234546fe8c9f89d59a435a004118fc912",
+      "originalBytes": 187488,
+      "originalSha256": "989a4080d8462ae8ae80a4d40a596f43288a0138297061bb85bdcd8982558a3a",
+      "compression": "gzip lossless"
+    },
+    {
+      "file": "canonical-source-manifest.json",
+      "source": "canonical-frontend-r2/manifest.json",
+      "bytes": 765358,
+      "sha256": "b66d3f44daa09eca9c5d9fbeeb78623687485a27693787eb9c9720344a34bba4",
+      "originalBytes": 765358,
+      "originalSha256": "b66d3f44daa09eca9c5d9fbeeb78623687485a27693787eb9c9720344a34bba4",
+      "compression": "none"
+    },
+    {
+      "file": "canonical-six-source-proof.json",
+      "source": "canonical-frontend-r2/canonical-six-source-proof.json",
+      "bytes": 753,
+      "sha256": "12650f239963aa9472485c6c28ff8181aa085be397d0dfef5fa355bad171b845",
+      "originalBytes": 753,
+      "originalSha256": "12650f239963aa9472485c6c28ff8181aa085be397d0dfef5fa355bad171b845",
+      "compression": "none"
+    },
+    {
+      "file": "canonical-six-pass.json",
+      "source": "canonical-frontend-r2/focused-six.json",
+      "bytes": 48457,
+      "sha256": "8bbbe32d0db10ade75c95a235eebdf6ac4ea0201638172cffcfda1bac589259d",
+      "originalBytes": 48457,
+      "originalSha256": "8bbbe32d0db10ade75c95a235eebdf6ac4ea0201638172cffcfda1bac589259d",
+      "compression": "none"
+    },
+    {
+      "file": "canonical-six-pass.log",
+      "source": "canonical-frontend-r2/focused-six.log",
+      "bytes": 818,
+      "sha256": "d53bb898aee3798d2c1a8baf909b6d9ca4bb2e98cca2affa028e916cc9f65fbf",
+      "originalBytes": 818,
+      "originalSha256": "d53bb898aee3798d2c1a8baf909b6d9ca4bb2e98cca2affa028e916cc9f65fbf",
+      "compression": "none"
+    },
+    {
+      "file": "canonical-six-command.json",
+      "source": "canonical-frontend-r2/focused-six-command.json",
+      "bytes": 1777,
+      "sha256": "44f11378e1b44d511b0bc284cb84be73a6e5a6126319b2f3475f15bac96ed934",
+      "originalBytes": 1777,
+      "originalSha256": "44f11378e1b44d511b0bc284cb84be73a6e5a6126319b2f3475f15bac96ed934",
+      "compression": "none"
+    },
+    {
+      "file": "pre-host-fix-full-summary.json",
+      "source": "canonical-frontend-r2/final-summary.json",
+      "bytes": 640,
+      "sha256": "e759630aac538a33b9f60747bae46806355a2913ef288b6554e511e5707a77fd",
+      "originalBytes": 640,
+      "originalSha256": "e759630aac538a33b9f60747bae46806355a2913ef288b6554e511e5707a77fd",
+      "compression": "none"
+    },
+    {
+      "file": "pre-host-fix-full-jest.json",
+      "source": "canonical-frontend-r2/frontend-full.json",
+      "bytes": 1671798,
+      "sha256": "2f17bd164888ba7269431a8f921eab47807a07a75565cee0f07e5a2335a0659a",
+      "originalBytes": 1671798,
+      "originalSha256": "2f17bd164888ba7269431a8f921eab47807a07a75565cee0f07e5a2335a0659a",
+      "compression": "none"
+    },
+    {
+      "file": "pre-host-fix-full-jest.log.gz",
+      "source": "canonical-frontend-r2/frontend-full-jest.log",
+      "bytes": 93363,
+      "sha256": "d9c7c5f04e6f7580fba2bff617a21487bca30627b813c0baecc5e4b60ace7ee1",
+      "originalBytes": 10652439,
+      "originalSha256": "283ce8d2830cdb52f4419545b41d3a950fb30dece8ca0c8e8230070ebf05e507",
+      "compression": "gzip lossless"
+    },
+    {
+      "file": "pre-host-fix-build.log",
+      "source": "canonical-frontend-r2/frontend-production-build.log",
+      "bytes": 23477,
+      "sha256": "4205509e3f61f32f8fb5d100f85100e184e578b9c39e4d05fb6bf0fd7ad6cd69",
+      "originalBytes": 23477,
+      "originalSha256": "4205509e3f61f32f8fb5d100f85100e184e578b9c39e4d05fb6bf0fd7ad6cd69",
+      "compression": "none"
+    },
+    {
+      "file": "pre-host-fix-typescript.log",
+      "source": "canonical-frontend-r2/frontend-typescript.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalBytes": 0,
+      "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "compression": "none"
+    },
+    {
+      "file": "pre-host-fix-commands.json",
+      "source": "canonical-frontend-r2/full-commands.json",
+      "bytes": 20277,
+      "sha256": "8a63285f757211d5a25b72a05fa027c3412f0706c89734ca3e2e81e2f8088115",
+      "originalBytes": 20277,
+      "originalSha256": "8a63285f757211d5a25b72a05fa027c3412f0706c89734ca3e2e81e2f8088115",
+      "compression": "none"
+    },
+    {
+      "file": "browser-build-provenance.json",
+      "source": "localization/owned-wrapper-build.json",
+      "bytes": 26255,
+      "sha256": "2d1b482bd2f13a79f1d849d8404e35f29ff83fe17e11a8ac69ac68d5eb7536ee",
+      "originalBytes": 26255,
+      "originalSha256": "2d1b482bd2f13a79f1d849d8404e35f29ff83fe17e11a8ac69ac68d5eb7536ee",
+      "compression": "none"
+    },
+    {
+      "file": "browser-r6-report.json",
+      "source": "localization/browser-r6/report.json",
+      "bytes": 61850,
+      "sha256": "298283ce7973f5f9b55505ae84a911509d66823eb3e93c50c6be0d677ca0fc8f",
+      "originalBytes": 61850,
+      "originalSha256": "298283ce7973f5f9b55505ae84a911509d66823eb3e93c50c6be0d677ca0fc8f",
+      "compression": "none"
+    },
+    {
+      "file": "browser-r6-command.json",
+      "source": "localization/browser-r6/command.json",
+      "bytes": 263,
+      "sha256": "89258a2226f7c1df6a09a4153dcfb5c856997b45cc6413a88a9c9730222457a4",
+      "originalBytes": 263,
+      "originalSha256": "89258a2226f7c1df6a09a4153dcfb5c856997b45cc6413a88a9c9730222457a4",
+      "compression": "none"
+    },
+    {
+      "file": "desktop-1440.png",
+      "source": "localization/browser-r6/fixture-1440-before-overload.png",
+      "bytes": 87823,
+      "sha256": "416ad944a77f3d0df0e038005c390a661d89b7932f4c8222cf405bda26b67d58",
+      "originalBytes": 87823,
+      "originalSha256": "416ad944a77f3d0df0e038005c390a661d89b7932f4c8222cf405bda26b67d58",
+      "compression": "none"
+    },
+    {
+      "file": "mobile-390.png",
+      "source": "localization/browser-r6/fixture-390-before-overload.png",
+      "bytes": 38850,
+      "sha256": "05f989bd8235846c6fc223f17bf759c9952e0b5b2feddbc75fe7e20087ab3e44",
+      "originalBytes": 38850,
+      "originalSha256": "05f989bd8235846c6fc223f17bf759c9952e0b5b2feddbc75fe7e20087ab3e44",
+      "compression": "none"
+    }
+  ],
+  "matchingStocksBuildAssets": [
+    {
+      "name": "GlobalStocks-CeZYB9It.js",
+      "sha256": "ba0c8b92da5909e4c10e95d203b152b255dd85859fb76f38c69b2b9e6d43f3ff",
+      "bytes": 91478
+    },
+    {
+      "name": "GlobalStocks-Dm3vIUiz.css",
+      "sha256": "ef2e069aa1ab21ae2134cfb7aced485a6675be4f4979f0126e0b66809dc25e16",
+      "bytes": 23186
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { useLanguage } from '../../lib/i18n';
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Nav } from '../../components/Nav';
@@ -5,6 +6,7 @@ import { isStockCatalogue, useStocks, type StockCatalogue, type StockRead } from
 import { readFavorites, writeFavorites } from './stockModel';
 import './stocks.css';
 import { widgetCatalogue, widgetPreview } from './stockWidgetCatalogue';
+import { isStocksLocalPreviewHost } from './stockHostPolicy';
 
 // Each view is its own chunk: the overview never downloads the chart library,
 // and only the view on screen is mounted.
@@ -21,7 +23,8 @@ const GlobalStocks = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' &
  * Both views read the same cached catalogue; there is one data pipeline.
  */
 export function StocksPage() {
-  if (GlobalStocks && window.location.hostname === '127.0.0.1') return <Suspense fallback={<div>Загрузка Stocks…</div>}><GlobalStocks /></Suspense>;
+  const {t}=useLanguage();
+  if (GlobalStocks && isStocksLocalPreviewHost(typeof window === 'undefined' ? undefined : window.location.hostname)) return <Suspense fallback={<div>{t('stocks.loading')}</div>}><GlobalStocks /></Suspense>;
   return widgetPreview ? <StocksLayout catalogue={widgetCatalogue} /> : <LegacyStocksPage />;
 }
 function LegacyStocksPage() {

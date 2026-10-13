@@ -1,0 +1,2765 @@
+{
+  "schema": 1,
+  "fixtureOnly": true,
+  "publicExposure": false,
+  "productionAccess": false,
+  "capacityClaim": false,
+  "status": "PASS",
+  "assertions": 40,
+  "checks": [
+    "three complete separate builds",
+    "every recorded frontend input unchanged",
+    "explicit owner USDT-only build flag off",
+    "Node per-request fixture CA validates off",
+    "Node rejects untrusted fixture CA off",
+    "private selected quote seed off",
+    "pre-dispatch WebSocket deny API exists",
+    "disabled build mounts no Stocks terminal",
+    "disabled Stocks route makes no GlobalStocks reads",
+    "off Wallet shared host/flag behavior",
+    "off entire untouched public Stocks/Wallet journey makes zero GlobalStocks requests",
+    "off has no uncaught JavaScript errors",
+    "no active service workers off",
+    "explicit owner USDT-only build flag on",
+    "Node per-request fixture CA validates on",
+    "Node rejects untrusted fixture CA on",
+    "private selected quote seed on",
+    "pre-dispatch WebSocket deny API exists",
+    "untouched public-host enabled build retains GlobalStocks fence",
+    "untouched Stocks page makes no GlobalStocks requests",
+    "on Wallet shared host/flag behavior",
+    "on entire untouched public Stocks/Wallet journey makes zero GlobalStocks requests",
+    "on has no uncaught JavaScript errors",
+    "no active service workers on",
+    "explicit owner USDT-only build flag candidate",
+    "Node per-request fixture CA validates candidate",
+    "Node rejects untrusted fixture CA candidate",
+    "private selected quote seed candidate",
+    "pre-dispatch WebSocket deny API exists",
+    "candidate selects only existing GlobalStocks",
+    "candidate exact source instrument",
+    "candidate preserves owner USDT-only interface",
+    "candidate existing chart mounted with private one-candle fixture",
+    "candidate mobile no horizontal page overflow",
+    "candidate Wallet shared host/flag behavior",
+    "cached browser GET/POST denied after backend feature off",
+    "feature-off cached calls perform no authority/ledger/provider admission",
+    "candidate has no uncaught JavaScript errors",
+    "no active service workers candidate",
+    "fixture exits normally"
+  ],
+  "cases": [
+    {
+      "name": "off",
+      "status": "PASS",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/stocks/BYBIT%3AAAPLXUSDT",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DxOHx_3J.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DDwL7zK3.css",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/en-YbWz3z2h.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DxOHx_3J.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DDwL7zK3.css",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/en-YbWz3z2h.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-CtECTP6c.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Nav-dqxMnOE4.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-BWNqOuIX.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-BMQGS5X7.css",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useFuturesAccount-PxmJcciJ.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/balanceInvalidation-CnMV4whP.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/nativeDemoApi-BKFf2Ex-.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/privateTradingError-BML5i_cx.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/chart-column-BVcBqyBF.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/check-JpytLB9k.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/search-DvJVLsi4.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-CqGRuGJm.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-down-j5436qGC.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/ellipsis-DCmSe5Ho.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/info-BImLOX9V.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-down-CJzOzPft.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/crown-DtLa84kO.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useVtaSpotAccount-BIXLDOa2.js",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-DQoV4bbj.css",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/deposits/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/withdrawals/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/wallet/overview",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/wallet/performance",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/market/external/rankings",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/private-trading/native/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/wallet/portfolio-snapshot",
+          "origin": "https://stocks-review.invalid:10321",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/private-trading/native/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/market/assets/icons",
+          "origin": null,
+          "secFetchSite": null
+        }
+      ],
+      "responses": [
+        {
+          "path": "/api/v1/me",
+          "status": 200
+        }
+      ],
+      "externalBlocked": [
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://cdn.jsdelivr.net",
+          "path": "/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+          "type": "image"
+        },
+        {
+          "origin": "https://cdn.jsdelivr.net",
+          "path": "/gh/spothq/cryptocurrency-icons@master/128/color/usdt.png",
+          "type": "image"
+        }
+      ],
+      "webSocketsBlocked": [],
+      "pageErrors": [],
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: the server responded with a status of 405 (Method Not Allowed)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "staticAudit": {
+        "denied": [
+          {
+            "method": "GET",
+            "path": "/api/v1/market/external/rankings",
+            "error": "NO_PRIVATE_FIXTURE"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/wallet/portfolio-snapshot",
+            "error": "STATIC_READ_ONLY"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/market/assets/icons",
+            "error": "NO_PRIVATE_FIXTURE"
+          }
+        ],
+        "authorityReads": 1,
+        "fixtureReads": [
+          "/api/v1/withdrawals/me",
+          "/api/v1/deposits/me",
+          "/api/v1/wallet/performance",
+          "/api/v1/wallet/overview",
+          "/api/v1/private-trading/native/wallet",
+          "/api/v1/private-trading/native/wallet"
+        ],
+        "assets": 27
+      },
+      "selection": "STOCKS_ROUTE_COMPILED_OFF",
+      "walletGlobalRequests": 0,
+      "walletGate": "COMPILED_OFF",
+      "ingress": {
+        "requests": 2,
+        "forwarded": 2,
+        "denied": 0,
+        "active": 0,
+        "disconnected": 0,
+        "upstreamErrors": 0,
+        "tlsErrors": 1,
+        "sniDenied": 0
+      }
+    },
+    {
+      "name": "on",
+      "status": "PASS",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/stocks/BYBIT%3AAAPLXUSDT",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-BKWJFmX4.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DDwL7zK3.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/en-YbWz3z2h.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/StocksPage-DoRKTVDU.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Nav-kGdq-bAP.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-D79gJ0bZ.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-BMQGS5X7.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/stockHostPolicy-OJj92OBP.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/StocksPage-ArYStUD_.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/StocksTerminal-Cxh760cf.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/StockParts-CQeCMSp-.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/rotate-ccw-Qg0eXPI8.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/star-CoVjL34X.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/lightweight-charts.production-BkNTc-8v.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/search-DESHD0jR.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/OrderFamilyPresentation-UuzDC99e.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/bignumber-yEAtxT-w.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/StocksTerminal-uW0PBCPK.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/fonts/inter/latin.woff2",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-nDytBpyG.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useVtaSpotAccount-BbAT1Qmj.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useFuturesAccount-BOS2k-2A.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-DM8ESeAx.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/balanceInvalidation-Ct551e1v.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/chevron-up-DpDLV89s.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-CmiTEDAQ.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-YQCwpCmH.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/indicators-DA6oGBjr.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-Bgu-XAj_.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Skeleton-BgXwdPcX.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-D77qsBHP.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-DUeCozDt.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-FaqDXYEF.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-C_GMTH1z.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/nativeDemoApi-C2AoSND0.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/privateTradingError-C0hfiYa_.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/check-BFDv8ang.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-RByyfazG.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-down-EAmrsBiq.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/ellipsis-BZbyRzgM.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/info-kEPoka4j.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-down-uXbNfveI.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/crown-glm-EbUK.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-DQoV4bbj.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesPage-D6SRn_8T.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesStudio-Dm3SV-Ao.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useLiveMarket-CqjUl--6.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/calculator-uL0Xs73L.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/catalogueStore-Bca5dl2V.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-BKWJFmX4.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DDwL7zK3.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/en-YbWz3z2h.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-C_GMTH1z.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Nav-kGdq-bAP.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-D79gJ0bZ.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-BMQGS5X7.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useFuturesAccount-BOS2k-2A.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/balanceInvalidation-Ct551e1v.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/nativeDemoApi-C2AoSND0.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/privateTradingError-C0hfiYa_.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/check-BFDv8ang.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/search-DESHD0jR.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-RByyfazG.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-down-EAmrsBiq.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/ellipsis-BZbyRzgM.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/info-kEPoka4j.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-down-uXbNfveI.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/crown-glm-EbUK.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useVtaSpotAccount-BbAT1Qmj.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/stockHostPolicy-OJj92OBP.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-DQoV4bbj.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-nDytBpyG.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-DM8ESeAx.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/chevron-up-DpDLV89s.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-CmiTEDAQ.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-YQCwpCmH.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/lightweight-charts.production-BkNTc-8v.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/indicators-DA6oGBjr.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-Bgu-XAj_.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/OrderFamilyPresentation-UuzDC99e.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/star-CoVjL34X.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Skeleton-BgXwdPcX.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-D77qsBHP.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-DUeCozDt.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-FaqDXYEF.css",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesPage-D6SRn_8T.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/deposits/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/withdrawals/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/wallet/overview",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/wallet/performance",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/market/external/rankings",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/private-trading/native/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesStudio-Dm3SV-Ao.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useLiveMarket-CqjUl--6.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/bignumber-yEAtxT-w.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/calculator-uL0Xs73L.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/catalogueStore-Bca5dl2V.js",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/wallet/portfolio-snapshot",
+          "origin": "https://stocks-review.invalid:11232",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/private-trading/native/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/market/assets/icons",
+          "origin": null,
+          "secFetchSite": null
+        }
+      ],
+      "responses": [
+        {
+          "path": "/api/v1/me",
+          "status": 200
+        }
+      ],
+      "externalBlocked": [
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://cdn.jsdelivr.net",
+          "path": "/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+          "type": "image"
+        },
+        {
+          "origin": "https://cdn.jsdelivr.net",
+          "path": "/gh/spothq/cryptocurrency-icons@master/128/color/usdt.png",
+          "type": "image"
+        }
+      ],
+      "webSocketsBlocked": [],
+      "pageErrors": [],
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: the server responded with a status of 405 (Method Not Allowed)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "staticAudit": {
+        "denied": [
+          {
+            "method": "GET",
+            "path": "/api/v1/market/external/rankings",
+            "error": "NO_PRIVATE_FIXTURE"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/wallet/portfolio-snapshot",
+            "error": "STATIC_READ_ONLY"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/market/assets/icons",
+            "error": "NO_PRIVATE_FIXTURE"
+          }
+        ],
+        "authorityReads": 1,
+        "fixtureReads": [
+          "/api/v1/deposits/me",
+          "/api/v1/withdrawals/me",
+          "/api/v1/wallet/overview",
+          "/api/v1/wallet/performance",
+          "/api/v1/private-trading/native/wallet",
+          "/api/v1/private-trading/native/wallet"
+        ],
+        "assets": 93
+      },
+      "selection": "LEGACY_WIDGET_TERMINAL",
+      "publicGlobalStocks": "BLOCKED_BY_EXISTING_HOSTNAME_FENCE",
+      "walletGlobalRequests": 0,
+      "walletGate": "SHARED_EXACT_LOCAL_HOST_FENCE",
+      "ingress": {
+        "requests": 2,
+        "forwarded": 2,
+        "denied": 0,
+        "active": 0,
+        "disconnected": 0,
+        "upstreamErrors": 0,
+        "tlsErrors": 1,
+        "sniDenied": 0
+      }
+    },
+    {
+      "name": "candidate",
+      "status": "PASS",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/stocks/BYBIT%3AAAPLXUSDT",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-D1zq_s9q.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DDwL7zK3.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/en-YbWz3z2h.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/StocksPage-C6O5AacG.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Nav-CmlRcxGy.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-DdgtyERy.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-BMQGS5X7.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/stockHostPolicy-DicElJe4.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/StocksPage-ArYStUD_.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-CLl5kZGg.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useVtaSpotAccount-B41byq71.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useFuturesAccount-CjY1d-P8.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-yfWc0AOG.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/balanceInvalidation-95RpZKoQ.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/chevron-up-DYn0WOqP.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-CmiTEDAQ.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-DIkrw0N6.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/lightweight-charts.production-BkNTc-8v.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/indicators-DA6oGBjr.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-Bgu-XAj_.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/OrderFamilyPresentation-Dk5nRR5K.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/star-B-8wXkq-.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Skeleton-CwUQZ2R0.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-BraByrkI.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-DUeCozDt.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-FaqDXYEF.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-B5vcyJto.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/nativeDemoApi-By4UEgSH.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/privateTradingError-DY28_Adi.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/check-CZSt3KEN.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/search-D9Ju5xCb.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-8mLT14js.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-down-B38uChD7.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/ellipsis-C6jJDO-R.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/info-Cb7A-Zus.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-down-CuQk0i9t.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/crown-YxdOVfXV.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-DQoV4bbj.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/GlobalStocks-Ck6URTgz.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/bignumber-yEAtxT-w.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/GlobalStocks-Dm3vIUiz.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesPage-pEDt_3P3.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesStudio-Br-dWdww.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useLiveMarket-C2Al8WNJ.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/calculator-DA5Gmnsu.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/catalogueStore-DXdmU8n3.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/__stocks_global/state",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/__stocks_global/history",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-D1zq_s9q.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DDwL7zK3.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/en-YbWz3z2h.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-B5vcyJto.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Nav-CmlRcxGy.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-DdgtyERy.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-BMQGS5X7.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useFuturesAccount-CjY1d-P8.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/balanceInvalidation-95RpZKoQ.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/nativeDemoApi-By4UEgSH.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/privateTradingError-DY28_Adi.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/check-CZSt3KEN.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/search-D9Ju5xCb.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-8mLT14js.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-down-B38uChD7.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/ellipsis-C6jJDO-R.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/info-Cb7A-Zus.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-down-CuQk0i9t.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/crown-YxdOVfXV.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useVtaSpotAccount-B41byq71.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/stockHostPolicy-DicElJe4.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-DQoV4bbj.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-CLl5kZGg.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-yfWc0AOG.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/chevron-up-DYn0WOqP.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-CmiTEDAQ.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-DIkrw0N6.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/lightweight-charts.production-BkNTc-8v.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/indicators-DA6oGBjr.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-Bgu-XAj_.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/OrderFamilyPresentation-Dk5nRR5K.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/star-B-8wXkq-.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Skeleton-CwUQZ2R0.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-BraByrkI.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-DUeCozDt.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-FaqDXYEF.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesPage-pEDt_3P3.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/__stocks_global/portfolio",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/deposits/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/withdrawals/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/wallet/overview",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/wallet/performance",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/market/external/rankings",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/private-trading/native/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesStudio-Br-dWdww.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useLiveMarket-C2Al8WNJ.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/bignumber-yEAtxT-w.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/calculator-DA5Gmnsu.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/catalogueStore-DXdmU8n3.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/wallet/portfolio-snapshot",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/private-trading/native/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/market/assets/icons",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/stocks/BYBIT%3AAAPLXUSDT",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-D1zq_s9q.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DDwL7zK3.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/en-YbWz3z2h.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/StocksPage-C6O5AacG.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Nav-CmlRcxGy.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-DdgtyERy.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-BMQGS5X7.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/stockHostPolicy-DicElJe4.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/StocksPage-ArYStUD_.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/GlobalStocks-Ck6URTgz.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/bignumber-yEAtxT-w.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/lightweight-charts.production-BkNTc-8v.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/indicators-DA6oGBjr.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/GlobalStocks-Dm3vIUiz.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-CLl5kZGg.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useVtaSpotAccount-B41byq71.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useFuturesAccount-CjY1d-P8.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-yfWc0AOG.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/balanceInvalidation-95RpZKoQ.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/chevron-up-DYn0WOqP.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-CmiTEDAQ.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-DIkrw0N6.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-Bgu-XAj_.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/OrderFamilyPresentation-Dk5nRR5K.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/star-B-8wXkq-.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Skeleton-CwUQZ2R0.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-BraByrkI.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-DUeCozDt.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-FaqDXYEF.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-B5vcyJto.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/nativeDemoApi-By4UEgSH.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/privateTradingError-DY28_Adi.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/check-CZSt3KEN.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/search-D9Ju5xCb.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-8mLT14js.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-down-B38uChD7.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/ellipsis-C6jJDO-R.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/info-Cb7A-Zus.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-down-CuQk0i9t.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/crown-YxdOVfXV.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-DQoV4bbj.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/__stocks_global/state",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/__stocks_global/history",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesPage-pEDt_3P3.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesStudio-Br-dWdww.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useLiveMarket-C2Al8WNJ.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/calculator-DA5Gmnsu.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/catalogueStore-DXdmU8n3.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-D1zq_s9q.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/index-DDwL7zK3.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/en-YbWz3z2h.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-B5vcyJto.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Nav-CmlRcxGy.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-DdgtyERy.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/DepositModal-BMQGS5X7.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useFuturesAccount-CjY1d-P8.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/balanceInvalidation-95RpZKoQ.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/nativeDemoApi-By4UEgSH.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/privateTradingError-DY28_Adi.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/check-CZSt3KEN.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/search-D9Ju5xCb.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-8mLT14js.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-down-B38uChD7.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/ellipsis-C6jJDO-R.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/info-Cb7A-Zus.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/arrow-up-down-CuQk0i9t.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/crown-YxdOVfXV.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useVtaSpotAccount-B41byq71.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/stockHostPolicy-DicElJe4.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/WalletPage-DQoV4bbj.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-CLl5kZGg.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-yfWc0AOG.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/chevron-up-DYn0WOqP.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalMarketSwitch-CmiTEDAQ.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-DIkrw0N6.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/lightweight-charts.production-BkNTc-8v.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/indicators-DA6oGBjr.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TerminalPremium-Bgu-XAj_.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/OrderFamilyPresentation-Dk5nRR5K.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/star-B-8wXkq-.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/Skeleton-CwUQZ2R0.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-BraByrkI.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useCfdTickers-DUeCozDt.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/TradePage-FaqDXYEF.css",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/__stocks_global/portfolio",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/deposits/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/withdrawals/me",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/wallet/overview",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/wallet/performance",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/market/external/rankings",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/private-trading/native/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesPage-pEDt_3P3.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/wallet/portfolio-snapshot",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/private-trading/native/wallet",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/FuturesStudio-Br-dWdww.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/useLiveMarket-C2Al8WNJ.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/bignumber-yEAtxT-w.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/calculator-DA5Gmnsu.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/assets/catalogueStore-DXdmU8n3.js",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/market/assets/icons",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/__stocks_global/state",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "GET",
+          "path": "/__stocks_global/portfolio",
+          "origin": null,
+          "secFetchSite": null
+        },
+        {
+          "method": "POST",
+          "path": "/__stocks_global/orders",
+          "origin": "https://stocks-review.invalid:5874",
+          "secFetchSite": null
+        }
+      ],
+      "responses": [
+        {
+          "path": "/__stocks_global/history",
+          "status": 200
+        },
+        {
+          "path": "/__stocks_global/state",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/me",
+          "status": 200
+        },
+        {
+          "path": "/__stocks_global/portfolio",
+          "status": 200
+        },
+        {
+          "path": "/__stocks_global/history",
+          "status": 200
+        },
+        {
+          "path": "/__stocks_global/state",
+          "status": 200
+        },
+        {
+          "path": "/api/v1/me",
+          "status": 200
+        },
+        {
+          "path": "/__stocks_global/portfolio",
+          "status": 200
+        },
+        {
+          "path": "/__stocks_global/state",
+          "status": 503
+        },
+        {
+          "path": "/__stocks_global/portfolio",
+          "status": 503
+        },
+        {
+          "path": "/__stocks_global/orders",
+          "status": 503
+        }
+      ],
+      "externalBlocked": [
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://cdn.jsdelivr.net",
+          "path": "/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+          "type": "image"
+        },
+        {
+          "origin": "https://cdn.jsdelivr.net",
+          "path": "/gh/spothq/cryptocurrency-icons@master/128/color/usdt.png",
+          "type": "image"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://fonts.googleapis.com",
+          "path": "/css2",
+          "type": "stylesheet"
+        },
+        {
+          "origin": "https://cdn.jsdelivr.net",
+          "path": "/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+          "type": "image"
+        },
+        {
+          "origin": "https://cdn.jsdelivr.net",
+          "path": "/gh/spothq/cryptocurrency-icons@master/128/color/usdt.png",
+          "type": "image"
+        }
+      ],
+      "webSocketsBlocked": [],
+      "pageErrors": [],
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: the server responded with a status of 405 (Method Not Allowed)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        "Failed to load resource: the server responded with a status of 405 (Method Not Allowed)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ],
+      "staticAudit": {
+        "denied": [
+          {
+            "method": "GET",
+            "path": "/api/v1/market/external/rankings",
+            "error": "NO_PRIVATE_FIXTURE"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/wallet/portfolio-snapshot",
+            "error": "STATIC_READ_ONLY"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/market/assets/icons",
+            "error": "NO_PRIVATE_FIXTURE"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/market/external/rankings",
+            "error": "NO_PRIVATE_FIXTURE"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/wallet/portfolio-snapshot",
+            "error": "STATIC_READ_ONLY"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/market/assets/icons",
+            "error": "NO_PRIVATE_FIXTURE"
+          }
+        ],
+        "authorityReads": 2,
+        "fixtureReads": [
+          "/api/v1/withdrawals/me",
+          "/api/v1/deposits/me",
+          "/api/v1/wallet/overview",
+          "/api/v1/wallet/performance",
+          "/api/v1/private-trading/native/wallet",
+          "/api/v1/private-trading/native/wallet",
+          "/api/v1/deposits/me",
+          "/api/v1/withdrawals/me",
+          "/api/v1/wallet/overview",
+          "/api/v1/wallet/performance",
+          "/api/v1/private-trading/native/wallet",
+          "/api/v1/private-trading/native/wallet"
+        ],
+        "assets": 180
+      },
+      "selection": "QA_ONLY_GLOBAL_STOCKS",
+      "marketData": "private fixture one-candle/quote, not real data",
+      "walletGlobalRequests": 1,
+      "walletGate": "QA_CANDIDATE_ONLY",
+      "featureOff": {
+        "results": [
+          {
+            "route": "state",
+            "status": 503,
+            "error": "FIXTURE_STOCKS_DISABLED"
+          },
+          {
+            "route": "portfolio",
+            "status": 503,
+            "error": "FIXTURE_STOCKS_DISABLED"
+          },
+          {
+            "route": "orders",
+            "status": 503,
+            "error": "FIXTURE_STOCKS_DISABLED"
+          }
+        ],
+        "authorityDelta": 0,
+        "forwardedDelta": 0,
+        "quoteDelta": 0
+      },
+      "ingress": {
+        "requests": 11,
+        "forwarded": 8,
+        "denied": 3,
+        "active": 0,
+        "disconnected": 0,
+        "upstreamErrors": 0,
+        "tlsErrors": 1,
+        "sniDenied": 0
+      }
+    }
+  ],
+  "startedAt": "2026-10-13T22:16:30.675Z",
+  "build": {
+    "manifestSha256": "cd2cc396324cfd592de9dec079b545c48f95618faad348efec567374fc087274",
+    "sourceHash": "5e5f9461acb427fa699e445dfe2934e33d6730519632f0efc2497c359e46d001",
+    "buildRoot": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\public-build-20261014-r5",
+    "cases": [
+      {
+        "name": "off",
+        "env": {
+          "VITE_STOCKS_ENABLED": "false",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "false",
+          "VITE_STOCKS_WIDGET_PREVIEW": "false",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "false",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "a079a781fb560c320b8011c27908b40b48af36ed9a62cde1e252088f1a16157c",
+        "candidateDelta": null
+      },
+      {
+        "name": "on",
+        "env": {
+          "VITE_STOCKS_ENABLED": "true",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "true",
+          "VITE_STOCKS_WIDGET_PREVIEW": "true",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "true",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "487d22d6873ea4abe068da43bc255c61b587a4415ee3f97f53f251f68f0b68e7",
+        "candidateDelta": null
+      },
+      {
+        "name": "candidate",
+        "env": {
+          "VITE_STOCKS_ENABLED": "true",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "true",
+          "VITE_STOCKS_WIDGET_PREVIEW": "true",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "true",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "8fc5c7cc76c1843ed606d94b59c4d4aa2d0cb6b33f2c947f88337d588f2e85f4",
+        "candidateDelta": {
+          "path": "src/pages/stocks/stockHostPolicy.ts",
+          "before": "hostname === '127.0.0.1'",
+          "after": "(hostname === '127.0.0.1' || hostname === 'stocks-review.invalid')",
+          "originalSha256": "a6cbea13918d37c60951cd3fa8e4868b89e77fd9130176b9903102eb70544926",
+          "candidateSha256": "d0bc4cd5cef43bba18e38c099cbe77762bf8537eaf2cc83fab49aa8c4e985ccd",
+          "scope": "build-memory QA shadow only; actual hostname fence is untouched"
+        }
+      }
+    ],
+    "verifiedSourceFiles": 1166
+  },
+  "authority": {
+    "source": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-next-release-20261013\\tls-stage-20261014-r3\\local-stage\\package",
+    "manifestSha256": "dafee79ce766a086d3b965db242d50893d34b046fc756423679ae171d6bf8cb4",
+    "files": 27,
+    "build": {
+      "proofSha256": "dc7df0493d844f77353bfea6b5b69d2a5238e474bb8e403481373853173c1d6f",
+      "compiled": {
+        "dist/api/routes/account.js": "6a06d889c1e31a73a017c6aca58c4f6cab20857f4ee1a943b6e334804691440c",
+        "dist/api/asyncRoute.js": "30d5ca41c9b3a35cc23b9b21f21906fea8d78c453807aea44484f294d74f293b",
+        "dist/services/AdminPasswordVault.js": "5b8de70bf420d0c4dd0844c71a972c7d407a5114eb6d10143edcf4b6ca9c1e7b",
+        "dist/api/middleware/auth.js": "dcaaf312a5d51a02bf25837b533679302f12f53a485f7ed63d1f1ac9ae37bd2d",
+        "dist/services/ContactEmailPolicy.js": "949972ebda91902df904a503e5fd1ad52ef094c230e99df34a80a283b037abb8",
+        "dist/services/TwoFactorService.js": "945c25a8a126233e2296cc69c57d65592e0b23bb02a649ec512e1eaabbb7e408"
+      },
+      "sourceCount": 279,
+      "compilerVersion": "5.9.3",
+      "sourceBuildStartedAt": "2026-10-13T21:37:47.646Z",
+      "sourceBuildEndedAt": "2026-10-13T21:37:52.596Z",
+      "identityResolverSha256": "a9a38fc77372fd52d89039dd129ad0b4b5cee8c2f875182fd962150cd6153c9b",
+      "fixtureSha256": "2d137a89c4f1ff02e1d18b2366faa4cd0cad0f34c93fbb8407d29cb8f9819379"
+    },
+    "scope": "Immutable fresh-build-proven local /me artifact; current source/compiler/config/log verified, compiled closure read from artifact only; strict fixture Prisma and separate private SQLite; no production session"
+  },
+  "walletFixture": {
+    "path": "scripts/qa-stocks-wallet-journey.cjs",
+    "sha256": "f219244dd0ed7a30a970d8e9fd6cc77b5116d8328c321fe7c0dc95f1874d6321",
+    "functionSha256": "cea24cd08c140e7814f548fd2ec81ea194f57f7cfe681e92b1a8ab3b2edb7658",
+    "scope": "private QA values only; not market observations"
+  },
+  "tls": {
+    "library": "cryptography 50.0.2",
+    "caFingerprint": "D2:F5:0F:DD:52:6E:91:F0:F6:01:D8:CA:F7:1A:EB:AF:AA:B9:7F:50:00:27:B0:5F:52:D9:66:E4:D7:6F:84:B7",
+    "leafFingerprint": "BE:6C:1D:52:DB:EF:F0:C0:85:7D:DE:E9:B9:AC:E4:DE:BD:B2:A5:5C:87:A5:37:5B:59:0C:D0:17:79:92:E7:93",
+    "validFrom": "Oct 13 22:11:31 2026 GMT",
+    "validTo": "Oct 14 22:16:31 2026 GMT",
+    "subjectAltName": "DNS:stocks-review.invalid"
+  },
+  "networkBoundary": {
+    "type": "owned Chromium process exact SPKI exception + reserved-host resolver mapping + Playwright pre-dispatch HTTP/WS denial",
+    "osNetworkNamespace": false,
+    "realDNS": false,
+    "systemTrustChanged": false,
+    "serviceWorkers": "blocked",
+    "note": "Browser/Node QA controls; not an OS-level egress barrier or production TLS deployment"
+  },
+  "browser": {
+    "version": "151.0.7922.34",
+    "ownedPid": 22920,
+    "spkiSha256Base64": "fxVvgopYcK/9DalaA+hOQZLAbt02Arkn4FzZGmyJ8TA=",
+    "ignoreHTTPSErrors": false
+  },
+  "publication": "BLOCKED: untouched public host cannot select GlobalStocks; shared Wallet/route fence is retained; QA candidate is not a runtime change",
+  "fixtureAudit": {
+    "fixtureOnly": true,
+    "productionAccess": false,
+    "runtime": {
+      "node": "v24.21.0",
+      "platform": "win32",
+      "arch": "x64"
+    },
+    "identityRequests": 16,
+    "prisma": {
+      "sessionReads": 16,
+      "sessionTouches": 0,
+      "userReads": 16,
+      "policyReads": 16,
+      "unexpected": 0
+    },
+    "forwarded": 12,
+    "blockedRoutes": 0,
+    "deniedNetwork": 0,
+    "quotes": 2,
+    "histories": 2,
+    "droppedAcknowledgements": 0
+  },
+  "child": {
+    "code": 0,
+    "signal": null,
+    "outputBytes": 0
+  },
+  "completedAt": "2026-10-13T22:16:39.055Z",
+  "limitations": [
+    "No production domain, provider traffic, real funds, deploy image or capacity claim",
+    "Exact leaf SPKI bypass in owned browser only; separate Node CA/SAN verification retained",
+    "External request denial is a QA browser routing boundary, not OS network isolation",
+    "Untouched enabled public route still selects legacy; shared exact-localhost Wallet fence intentionally blocks its reads",
+    "Candidate modifies one shared hostname hunk in build memory only and is not publishable"
+  ]
+}

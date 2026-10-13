@@ -1,0 +1,32 @@
+{
+  "head": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+  "sourceTreeHash": "531602cbfd4342b8bd1cff34362a8c36eb2defb3037ee850ac1eb6843fe95ccf",
+  "frontendOverlayFiles": 16,
+  "node": "v24.21.0",
+  "stages": [
+    {
+      "name": "frontend-typescript",
+      "exitCode": 0
+    },
+    {
+      "name": "frontend-production-build",
+      "exitCode": 0
+    },
+    {
+      "name": "frontend-full-jest",
+      "exitCode": 0
+    }
+  ],
+  "tests": {
+    "suites": 255,
+    "passedSuites": 255,
+    "failedSuites": 0,
+    "total": 4185,
+    "passed": 4185,
+    "failed": 0,
+    "pending": 0,
+    "todo": 0
+  },
+  "sourceDrift": [],
+  "pass": true
+}

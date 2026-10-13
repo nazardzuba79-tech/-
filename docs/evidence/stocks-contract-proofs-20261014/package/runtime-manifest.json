@@ -1,0 +1,268 @@
+{
+  "schema": 1,
+  "fixturePackagingProof": true,
+  "hashMeaning": {
+    "sha256": "actual working-copy/package bytes",
+    "canonicalLfSha256": "UTF-8 with CRLF converted to LF; separate canonical content comparison, not substituted for copied-byte validation"
+  },
+  "entrypoints": [
+    "services/stocks-global/server.mjs",
+    "services/stocks-global/local-proxy.mjs"
+  ],
+  "files": [
+    {
+      "path": "services/stocks-global/account-commands.mjs",
+      "sha256": "7f91a5c292b07e8afa820832ba6136336135e4037a9c064d1e8026ad2800dd19",
+      "canonicalLfSha256": "b318a041b02244d05d61a5011228bb5b01de129106675ad41daa8eecfc52cd32",
+      "bytes": 2014
+    },
+    {
+      "path": "services/stocks-global/account-observations.mjs",
+      "sha256": "2984f77c34e256ecd12a0bf942725c5073d2dbf0b3b3b2861e652c8db609e0f9",
+      "canonicalLfSha256": "ac672b140f945f3bcf15c0ac3c71e8ba58fb90a335fd69390110ef02ab249569",
+      "bytes": 7207
+    },
+    {
+      "path": "services/stocks-global/account-worker-runtime.mjs",
+      "sha256": "eaa14e62b1223aee88b888ebe0c556c1181a11491a1bf2ed8e2876d09ed23045",
+      "canonicalLfSha256": "8e3f156cd22557591b1021e11193c069bbc8e67e2632709ee7e00543b3f69d5e",
+      "bytes": 7122
+    },
+    {
+      "path": "services/stocks-global/account-worker.mjs",
+      "sha256": "95a22f361c8396dd03db6ad3e0a10962e2e7023e9368c86557d4abb701b2f774",
+      "canonicalLfSha256": "81917463ce8e982eceb384ae4a17f2ad4de150b395637bbf3d30de013b0b4f50",
+      "bytes": 9980
+    },
+    {
+      "path": "services/stocks-global/accounts.mjs",
+      "sha256": "0fb026f1e986671f1a1939a15393e8050b367e0cc375c6bc0a435bd0ae55cd3c",
+      "canonicalLfSha256": "0ec41914a2e044f1fced392592ef04f0022ac8b57be33cbd08b94fe834ecbcdd",
+      "bytes": 6325
+    },
+    {
+      "path": "services/stocks-global/catalog.mjs",
+      "sha256": "1bd76716a297ccec2599dd035995060520a855062f94ad3afa83d5ab4d47b0eb",
+      "canonicalLfSha256": "47e873004c8c1b29f8b82a4a474420470cece65c1add074e6016ab794e835e1a",
+      "bytes": 2198
+    },
+    {
+      "path": "services/stocks-global/engine.mjs",
+      "sha256": "dfd733dd19b7dc6023018a9d183ef66abeeb4adaa15c7bed2004ad330f0ef6c4",
+      "canonicalLfSha256": "eaa4fada1be661d3e29a4102e5573c70bfa8f15a30f0da75aab8812dfe1cfa8c",
+      "bytes": 10780
+    },
+    {
+      "path": "services/stocks-global/identity.mjs",
+      "sha256": "a9a38fc77372fd52d89039dd129ad0b4b5cee8c2f875182fd962150cd6153c9b",
+      "canonicalLfSha256": "66dce517ebb73540cb3a5a8dbb1dd43ee711706da2505fa3c90c42e21dec67bb",
+      "bytes": 4801
+    },
+    {
+      "path": "services/stocks-global/local-proxy.mjs",
+      "sha256": "ad23ace029f5fdbc73dbc3d4aa98152bc4b0d7a76fb331690cbef55182ea90e6",
+      "canonicalLfSha256": "ad23ace029f5fdbc73dbc3d4aa98152bc4b0d7a76fb331690cbef55182ea90e6",
+      "bytes": 6610
+    },
+    {
+      "path": "services/stocks-global/market.mjs",
+      "sha256": "3d74c2d1ecff02f4f41af8bea2184ef00e54f2f6ed722c012deafcfb4770e460",
+      "canonicalLfSha256": "9ea4bb555eda95e98b4ee8c9bb32a57a9ff9cb814318ef75495f9e384ed0490e",
+      "bytes": 22918
+    },
+    {
+      "path": "services/stocks-global/server.mjs",
+      "sha256": "4ed40c6ab0a769af64a8d71a730abde13f8a4b3d591ee5056c3acbfbcfc4af12",
+      "canonicalLfSha256": "e4b58f5d2e95fdaa27ed683380183864d3c03f12d056501dcac5be070f3067a2",
+      "bytes": 21458
+    },
+    {
+      "path": "services/stocks-global/store.mjs",
+      "sha256": "fe59b54eb87bf68b571bc476b2df2992631672e678152f894ffa7138e8706237",
+      "canonicalLfSha256": "aaeb6461547d7478ec9922c06548064553d734c8782926e546eaec21e990de09",
+      "bytes": 1636
+    },
+    {
+      "path": "services/stocks-global/viewer-projection.mjs",
+      "sha256": "3f987e647a0539ed11154919de5972060c297a2517ab2b4ec24aaba23466fd2b",
+      "canonicalLfSha256": "3f987e647a0539ed11154919de5972060c297a2517ab2b4ec24aaba23466fd2b",
+      "bytes": 1039
+    },
+    {
+      "path": "services/stocks-simulator/engine.mjs",
+      "sha256": "d7f10f47690a03c00c67ed4fceb0130e83ece0ef6b6bbaeacef8b17338c01812",
+      "canonicalLfSha256": "b7125711b5ea91ee99124df2d9bf541a8cea5388d56f0978aa595f74ac4bc2b8",
+      "bytes": 12321
+    }
+  ],
+  "edges": [
+    {
+      "from": "services/stocks-global/server.mjs",
+      "to": "services/stocks-global/store.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/store.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/engine.mjs",
+      "to": "services/stocks-simulator/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/engine.mjs",
+      "to": "services/stocks-global/catalog.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/server.mjs",
+      "to": "services/stocks-global/accounts.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/accounts.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/server.mjs",
+      "to": "services/stocks-global/account-worker.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-worker.mjs",
+      "to": "services/stocks-global/accounts.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-worker.mjs",
+      "to": "services/stocks-global/account-commands.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-commands.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-worker.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-worker.mjs",
+      "to": "services/stocks-global/account-worker-runtime.mjs",
+      "kind": "worker-url"
+    },
+    {
+      "from": "services/stocks-global/account-worker-runtime.mjs",
+      "to": "services/stocks-global/accounts.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-worker-runtime.mjs",
+      "to": "services/stocks-global/account-commands.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-worker-runtime.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-worker-runtime.mjs",
+      "to": "services/stocks-global/account-observations.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-observations.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/account-observations.mjs",
+      "to": "services/stocks-global/catalog.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/server.mjs",
+      "to": "services/stocks-global/account-commands.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/server.mjs",
+      "to": "services/stocks-global/identity.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/identity.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/identity.mjs",
+      "to": "services/stocks-global/accounts.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/server.mjs",
+      "to": "services/stocks-global/market.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/market.mjs",
+      "to": "services/stocks-global/catalog.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/market.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/server.mjs",
+      "to": "services/stocks-global/catalog.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/server.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/server.mjs",
+      "to": "services/stocks-global/viewer-projection.mjs",
+      "kind": "module"
+    },
+    {
+      "from": "services/stocks-global/viewer-projection.mjs",
+      "to": "services/stocks-global/engine.mjs",
+      "kind": "module"
+    }
+  ],
+  "builtins": [
+    "node:crypto",
+    "node:fs",
+    "node:fs/promises",
+    "node:http",
+    "node:path",
+    "node:perf_hooks",
+    "node:sqlite",
+    "node:stream",
+    "node:url",
+    "node:worker_threads"
+  ],
+  "npmDependencies": [],
+  "parser": {
+    "name": "typescript",
+    "version": "5.9.3"
+  },
+  "node": {
+    "version": "v24.21.0",
+    "executableSha256": "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32",
+    "platform": "win32",
+    "arch": "x64"
+  }
+}

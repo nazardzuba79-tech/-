@@ -1,0 +1,17 @@
+{
+  "head": "50b16c1d9e5d07503b84e3d9ac810708847d2a8e",
+  "runtime": {
+    "node": "v24.21.0",
+    "platform": "win32"
+  },
+  "sourceHashes": {
+    "scripts/qa-stocks-principal-projection.cjs": "2d137a89c4f1ff02e1d18b2366faa4cd0cad0f34c93fbb8407d29cb8f9819379",
+    "scripts/qa-stocks-principal-projection.test.cjs": "f5fe9803f1e2355ab17124624956425c50fd9463bdf9a9a4ab77b009e15a21fd"
+  },
+  "reportSha256": "a41c2c09faa7ec6f8064dfc75a8031161254555bc8dc0d2b9e72dd57c71a2072",
+  "fixtureOnly": true,
+  "finiteContractCases": 26,
+  "compiledBaseGuardIncluded": true,
+  "noNewBuild": true,
+  "noLoadTest": true
+}
