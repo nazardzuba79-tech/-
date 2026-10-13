@@ -48,7 +48,7 @@ export function summarise(content) {
   const expected=Math.floor(start.durationHours*3600/start.intervalSeconds)+1;
   return {
     schema:1,tag:start.tag,start:start.startedAt,end:finish?.at??null,
-    completion:finish?.reason==='duration-completed'?'complete':finish?.reason==='interrupted'?'incomplete',
+    completion:finish?.reason==='duration-completed'?'complete':finish?.reason==='interrupted'?'interrupted':'incomplete',
     expectedSamples:expected,recordedSamples:samples.length,
     hostCpuPct:quant('hostCpuPct'),hostIowaitPct:quant('hostIowaitPct'),
     hostMemUsedPct:quant('hostMemUsedPct'),
