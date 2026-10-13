@@ -48,6 +48,11 @@
 :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.text-sell,.down) { color:#f63649; }
 
 @media (min-width:901px) {
+  /* Spot/CFD must not show the mobile indicators overflow key on desktop.
+     TradePage does not load FuturesMobile.css, which hides this key on Futures. */
+  .trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) .chart-toolbar .futures-mobile-tools-toggle {
+    display:none;
+  }
   /* ── Header: 48px, #17181E, Inter 14/400, 32px pills (as on Futures) ──── */
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) > :is(.global-header) {
     --exchange-header-height:48px; height:48px; min-height:48px; padding-inline:16px;
