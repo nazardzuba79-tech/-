@@ -1,2 +1,4 @@
 # Preserve the bytes bound by the evidence manifest across Windows/Linux checkouts.
 * -text
+# Raw test diagnostics intentionally retain the runner's whitespace and final newline.
+*.log -whitespace
