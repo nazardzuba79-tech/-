@@ -59,7 +59,7 @@ US tokens follow their source's instrument trading status, not an invented NASDA
 
 ## Owner-only USDT review mode
 
-For authenticated CLI startup, trading mutations `orders`, `cancel`, and `balances` now fail closed unless `STOCKS_TRADE_OWNER_SUBJECT` equals the authenticated user ID returned by the trusted `/api/v1/me` endpoint. This is not an email, browser flag, or editable role. New owner-only order submissions accept **USDT** only. Historical USDC data are preserved without reset or migration. To select only USDT in the owner review UI, build with `VITE_STOCKS_OWNER_USDT_ONLY=true`. Read-only wallet presentation keeps Stocks separate from real crypto balances, equity and collateral. Review remains on loopback; no production gateway, authorization secret or deployment is added.
+Authenticated CLI startup requires `STOCKS_TRADE_OWNER_SUBJECT` and refuses to start without it. Trading mutations `orders`, `cancel`, `refresh`, and `balances` fail closed unless `STOCKS_TRADE_OWNER_SUBJECT` equals the authenticated user ID returned by the trusted `/api/v1/me` endpoint. This is not an email, browser flag, or editable role. New owner-only order submissions accept **USDT** only. Historical USDC data are preserved without reset or migration. To select only USDT in the owner review UI, build with `VITE_STOCKS_OWNER_USDT_ONLY=true`. Read-only wallet presentation keeps Stocks separate from real crypto balances, equity and collateral. Review remains on loopback; no production gateway, authorization secret or deployment is added.
 
 ## Requests and isolation
 
