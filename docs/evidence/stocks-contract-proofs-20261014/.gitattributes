@@ -1,3 +1,4 @@
 *.json -text
-*.log -text
+# Raw failure logs retain their original bytes, including whitespace.
+*.log -text -whitespace
 *.png binary
