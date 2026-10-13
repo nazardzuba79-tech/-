@@ -1,0 +1,35 @@
+{
+  "sourceSha256": "54970e8197d62fe0194d45d07e9807c46b5ab7034a2438ad1ca92d7fcb91ec5e",
+  "node": "v24.21.0",
+  "scope": "Local held-slot fixture only; no provider, database, HTTP or production calls",
+  "rows": [
+    {
+      "timerPhaseBlocked": false,
+      "configuredQueueDeadlineMs": 2000,
+      "queuedCallbackStartedAtMs": null,
+      "outcome": {
+        "status": "rejected",
+        "code": "SOURCE_BUSY"
+      },
+      "wallMs": 2060.4667,
+      "cpuMs": 0,
+      "activeAfter": 0,
+      "queuedAfter": 0,
+      "externalRequests": 0
+    },
+    {
+      "timerPhaseBlocked": true,
+      "configuredQueueDeadlineMs": 2000,
+      "queuedCallbackStartedAtMs": 2063.1455,
+      "outcome": {
+        "status": "fulfilled",
+        "value": "fixture-admitted"
+      },
+      "wallMs": 2063.2365000000004,
+      "cpuMs": 0,
+      "activeAfter": 0,
+      "queuedAfter": 0,
+      "externalRequests": 0
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "start": "2026-10-13T20:25:51.684Z",
+  "end": "2026-10-13T20:26:42.481Z",
+  "exit": 0,
+  "coordinatedIdle": true,
+  "scope": "Root, B, coordinator held heavy jobs during this new microprofile"
+}

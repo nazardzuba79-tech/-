@@ -20,7 +20,7 @@ export function parseCandles(rows,provider,now){
   return [...map.values()].sort((a,b)=>a.time-b.time);
 }
 export class MarketHub {
-  constructor({fetchImpl=fetch,now=Date.now}={}){this.fetch=fetchImpl;this.now=now;this.cache=new Map();this.inflight=new Map();this.starts=new Map();this.errors={};this.metrics={requests:0,bytes:0,cacheHits:0,historyParses:0,historyParseMs:0,historyCacheHits:0,historyCoalesced:0,historyCacheBytes:0,historyCacheExpired:0,historyCacheEvictions:0,historyRangeHits:0,historyRangeInvalidations:0};this.verified=new Map();this.displays=new Map();this.historyCache=new Map();this.historyRanges=new Map();this.historyRetained=new Map();this.historyCandleRefs=new Map();this.historyFlights=new Map();this.historyActive=0;this.historyQueue=[];}
+  constructor({fetchImpl=fetch,now=Date.now,monotonicNow=()=>performance.now()}={}){this.fetch=fetchImpl;this.now=now;this.monotonicNow=monotonicNow;this.cache=new Map();this.inflight=new Map();this.starts=new Map();this.errors={};this.metrics={requests:0,bytes:0,cacheHits:0,historyParses:0,historyParseMs:0,historyCacheHits:0,historyCoalesced:0,historyCacheBytes:0,historyCacheExpired:0,historyCacheEvictions:0,historyRangeHits:0,historyRangeInvalidations:0};this.verified=new Map();this.displays=new Map();this.historyCache=new Map();this.historyRanges=new Map();this.historyRetained=new Map();this.historyCandleRefs=new Map();this.historyFlights=new Map();this.historyActive=0;this.historyQueue=[];}
   async request(url,ttl=0,text=false){
     const u=new URL(url);check(['api.binance.com','api.bybit.com','iss.moex.com','www.cbr.ru','api.kraken.com'].includes(u.hostname)&&u.protocol==='https:','SOURCE_FORBIDDEN');
     const old=this.cache.get(url);if(old&&this.now()-old.at<ttl){this.metrics.cacheHits++;return old.value;}if(this.inflight.has(url))return this.inflight.get(url);
@@ -60,11 +60,24 @@ export class MarketHub {
     return q;
   }
   async historySlot(fn){
+    let deadline=null;
     if(this.historyActive>=2){
       check(this.historyQueue.length<8,'SOURCE_BUSY');
-      await new Promise((resolve,reject)=>{const entry={resolve};entry.timer=setTimeout(()=>{this.historyQueue=this.historyQueue.filter(x=>x!==entry);reject(new SimError('SOURCE_BUSY'));},2000);this.historyQueue.push(entry);});
+      deadline=this.monotonicNow()+2000;
+      await new Promise((resolve,reject)=>{const entry={resolve,reject,deadline};entry.timer=setTimeout(()=>{this.historyQueue=this.historyQueue.filter(x=>x!==entry);reject(new SimError('SOURCE_BUSY'));},2000);this.historyQueue.push(entry);});
     }else this.historyActive++;
-    try{return await fn();}finally{const next=this.historyQueue.shift();if(next){clearTimeout(next.timer);next.resolve();}else this.historyActive--;}
+    try{if(deadline!==null)check(this.monotonicNow()<deadline,'SOURCE_BUSY');return await fn();}
+    finally{
+      // Timer callbacks can be late under CPU pressure. Expired work must not
+      // acquire a slot or consume a provider request when that timer is delayed.
+      let next;
+      while((next=this.historyQueue.shift())){
+        clearTimeout(next.timer);
+        if(this.monotonicNow()>=next.deadline){next.reject(new SimError('SOURCE_BUSY'));continue;}
+        next.resolve();break;
+      }
+      if(!next)this.historyActive--;
+    }
   }
   dropHistory(entry){
     entry.store.delete(entry.key);this.historyRetained.delete(entry.retainedKey);this.metrics.historyCacheBytes-=entry.overhead;

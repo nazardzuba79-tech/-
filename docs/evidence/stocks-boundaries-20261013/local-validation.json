@@ -1,0 +1,90 @@
+{
+  "baseline": "26e929f03793b8e5a96a5526ecabd31515946234",
+  "main": "055f88a945c8253b2736877b52f32d028c895086",
+  "scope": "Local isolated fixtures only; no production operations or live identity calls",
+  "localByteHashes": {
+    "services/stocks-global/identity.mjs": "a9a38fc77372fd52d89039dd129ad0b4b5cee8c2f875182fd962150cd6153c9b",
+    "services/stocks-global/market.mjs": "26b3d0f55dd63ea4983971f9a2cf73e9bcdf69cca0dd4a6d60d437812c374f34",
+    "services/stocks-global/server.mjs": "910874d36b6d272631db4f0f402b5d2c97dffe05574335b8343b9f41ab15ea22",
+    "services/stocks-global/viewer-projection.mjs": "3f987e647a0539ed11154919de5972060c297a2517ab2b4ec24aaba23466fd2b",
+    "services/stocks-global/identity.test.mjs": "4b66c3808574d32e4514550dcb13ef993a47dc07e3d7ea599e590230c14fd382",
+    "services/stocks-global/history-deadline.test.mjs": "9c7395416ae20b3eba3f35cf92f8c3285d3cd87aeae22222762e4c1beb859e46",
+    "services/stocks-global/viewer-projection.test.mjs": "651ccc7c4dd95ebd685f3e557c8a13f80734cbd60c1db365d127ada5e25557b5",
+    ".github/workflows/stocks-review.yml": "105548a74504c2688c9c32bc1aa2188632b6619527c155b9c5ce920fe7c2bf91"
+  },
+  "tests": {
+    "start": "2026-10-13T20:29:27.216Z",
+    "end": "2026-10-13T20:29:35.003Z",
+    "node": "v24.21.0",
+    "files": [
+      "services/stocks-global/engine.test.mjs",
+      "services/stocks-global/identity.test.mjs",
+      "services/stocks-global/viewer-projection.test.mjs",
+      "services/stocks-global/server.test.mjs",
+      "services/stocks-global/accounts.test.mjs",
+      "services/stocks-global/account-registration.test.mjs",
+      "services/stocks-global/account-registration-batch.test.mjs",
+      "services/stocks-global/account-worker.test.mjs",
+      "services/stocks-global/account-observations.test.mjs",
+      "services/stocks-global/account-background-observations.test.mjs",
+      "services/stocks-global/refresh-coalescing.test.mjs",
+      "services/stocks-global/worker-http.test.mjs",
+      "services/stocks-global/owner-usdt.test.mjs",
+      "services/stocks-global/wallet-fx-scope.test.mjs",
+      "services/stocks-global/demand-lifecycle.test.mjs",
+      "services/stocks-global/local-proxy.test.mjs",
+      "services/stocks-global/market-cache.test.mjs",
+      "services/stocks-global/history-deadline.test.mjs",
+      "services/stocks-global/market-range.test.mjs",
+      "services/stocks-global/interest.test.mjs",
+      "services/stocks-simulator/engine.test.mjs",
+      "services/stocks-simulator/server.test.mjs"
+    ],
+    "exit": 0,
+    "tail": [
+      "✔ conversion and starting-balance edits lock after first submitted order (0.2208ms)",
+      "✔ persisted ledger restores balances, open reservations, idempotency, fills and positions (41.5893ms)",
+      "✔ concurrent submissions serialize and never overspend (88.0861ms)",
+      "✔ failed durable write does not publish a fill or debit (3.765ms)",
+      "✔ eight-decimal parser and formatter preserve boundaries exactly (0.108ms)",
+      "✔ test balance changes are audited, idempotent and cannot consume reserved cash or rewrite trades (0.7581ms)",
+      "✔ provider sends only an allowlisted GET and validates intraday metadata (3.2953ms)",
+      "✔ public trial never invents NVIDIA/Tesla data or attempts order endpoints (0.1457ms)",
+      "✔ provider rejects day-only timestamps, symbol mismatch, non-USD and oversized data (0.98ms)",
+      "✔ provider failures redact private credentials and enforce shared request budget (1.3583ms)",
+      "✔ HTTP simulator supports trading/cancellation and rejects real routes, cross-origin, forged quotes and duplicate execution (164.7543ms)",
+      "ℹ tests 192",
+      "ℹ suites 0",
+      "ℹ pass 192",
+      "ℹ fail 0",
+      "ℹ cancelled 0",
+      "ℹ skipped 0",
+      "ℹ todo 0",
+      "ℹ duration_ms 7711.7858",
+      ""
+    ]
+  },
+  "build": [
+    {
+      "name": "backend-ts",
+      "exit": 0
+    },
+    {
+      "name": "frontend-ts",
+      "exit": 0
+    },
+    {
+      "name": "frontend-build",
+      "exit": 0
+    }
+  ],
+  "logHashes": {
+    "boundary-full-stocks.log": "deac9fbd728e687d89c946779226e92abe849d27fc9dcef1f2efd480a0df0c50",
+    "boundary-backend-ts.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "boundary-frontend-ts.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "boundary-frontend-build.log": "4fb44b25a757d031d0f1da079d55b8bdf2e97751f0f410a5263549a2c73d87a6"
+  },
+  "warning": "Existing Vite chunk >500kB warning retained; no chunk threshold raised",
+  "capacity": "NOT_EVALUATED; original FAILs and skipped heavy CI jobs are not PASS",
+  "ci": "Final head CI is reported in PR512; this file records local candidate validation only"
+}

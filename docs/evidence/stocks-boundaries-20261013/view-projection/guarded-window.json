@@ -1,0 +1,7 @@
+{
+  "start": "2026-10-13T20:28:02.681Z",
+  "end": "2026-10-13T20:28:43.974Z",
+  "exit": 0,
+  "coordinatedIdle": true,
+  "scope": "Root still held heavy jobs; guarded empty optimization plus unchanged historical control"
+}

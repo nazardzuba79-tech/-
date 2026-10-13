@@ -12,6 +12,7 @@ import { identityResolver } from './identity.mjs';
 import { MarketHub } from './market.mjs';
 import { CATALOG, instrument } from './catalog.mjs';
 import { check, SimError, snapshot } from './engine.mjs';
+import { projectViewerQuote } from './viewer-projection.mjs';
 const ROOT=resolve(fileURLToPath(new URL('../../',import.meta.url))),API='/__stocks_global/';
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.ico':'image/x-icon'};
 export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined}={}){
@@ -125,7 +126,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
           // Read-only users share market data, never the owner matcher or ledger.
           if(ownerOnlyMode&&!ctx.ownerMayTrade&&id){
             try{const q=await quote(id);if(readAbort.signal.aborted)return;
-              view=snapshot({...view,quotes:{...view.quotes,[id]:q}},now());delete view.errors[id];
+              view=projectViewerQuote(view,id,q,now());delete view.errors[id];
             }catch(e){if(readAbort.signal.aborted)return;delete view.quotes[id];view.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';}
           }
           if(!res.destroyed)send(res,200,{...view,token:ctx.token});return;

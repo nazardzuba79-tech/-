@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "baseHead": "26e929f03793b8e5a96a5526ecabd31515946234",
+  "files": {
+    "unguarded-clean.json": {
+      "sha256": "734004986fe894da665ec81283b4d3f304746e9b4afd72f5944f4862c3c8f2fc",
+      "bytes": 26197
+    },
+    "guarded-clean.json": {
+      "sha256": "fce4949b19d1d20e2feb0f2110feec28980b4bc2180900e0906f0975627fab73",
+      "bytes": 17923
+    },
+    "unguarded-window.json": {
+      "sha256": "d630a97a0a9c1d274d34605fdc74d9ec17cdc45bf90648ad2742f70b37603ebd",
+      "bytes": 198
+    },
+    "guarded-window.json": {
+      "sha256": "7353e588e2e5aaa01954f0f0a7eb08ed4f12fdb3684b916cce2d4927cf10d3b6",
+      "bytes": 221
+    },
+    "history-deadline-before.json": {
+      "sha256": "e2e0b6a89a67d380bf18f84ea781b5b773ad85fa5e2be61afaf2c490937df27c",
+      "bytes": 915
+    },
+    "history-deadline-negative.log": {
+      "sha256": "5fcb11bded241c28c821a42a1a7e9389bbb13516ccdf23336e8bfc7f670fd17f",
+      "bytes": 3531
+    },
+    "microprofile.mjs": {
+      "sha256": "853bdb2ca6c0fc5e089a4c7a8901e6e2477e4bbe3e02a1cdc43c875e758558f0",
+      "bytes": 9677
+    },
+    "README.md": {
+      "sha256": "b8f5c86dd7681bd25b56b5a5d6a63279b33a8f56307c204745b59ad248c0ded7",
+      "bytes": 6027
+    }
+  },
+  "contaminatedPass": {
+    "excluded": true,
+    "reason": "Independent focused tests overlapped the first exact-helper profile",
+    "rawSha256": "8d0d5db3e91a01a183f3e054b8577165e8c3bc7e82a0dc4cc3b18c4c7f45133c",
+    "retainedOutsideGit": "output/stocks-next-release-20261013/view-metadata-exact-helper/result.json"
+  },
+  "scope": "Offline deterministic fixtures only; not original capacity acceptance",
+  "normalizedRuntimeSourceHashes": {
+    "engine.mjs": "eaa4fada1be661d3e29a4102e5573c70bfa8f15a30f0da75aab8812dfe1cfa8c",
+    "catalog.mjs": "47e873004c8c1b29f8b82a4a474420470cece65c1add074e6016ab794e835e1a",
+    "viewer-projection.mjs": "3f987e647a0539ed11154919de5972060c297a2517ab2b4ec24aaba23466fd2b",
+    "../stocks-simulator/engine.mjs": "b7125711b5ea91ee99124df2d9bf541a8cea5388d56f0978aa595f74ac4bc2b8"
+  }
+}
