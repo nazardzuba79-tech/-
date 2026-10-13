@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const {fixtureProcess}=require('./qa-stocks-local-stage-recovery.cjs');
 const {ID}=require('./qa-stocks-local-stage-fixture.cjs');
 const {certificates,createIngress,request,HOST,PREFIX}=require('./qa-stocks-tls-ingress.cjs');
-const {createNssHome,assertLinux}=require('./qa-stocks-public-nss.cjs');
+const {createNssHome,assertLinux,inspectChrome,inspectBrowserProcess}=require('./qa-stocks-public-nss.cjs');
 const {browserTlsProbes,BAD_SNI}=require('./qa-stocks-public-tls-probes.cjs');
 const {walletFixtures,staticFixture,sha}=require('./qa-stocks-public-fixtures.cjs');
 const {verifyBuild}=require('./qa-stocks-principal-projection.cjs');
@@ -33,8 +33,8 @@ function copyAuthority(source,dest,sourceRoot=root){
   fs.writeFileSync(path.join(dest,'manifest.json'),bytes,{flag:'wx',mode:0o600});
   return {source,manifestSha256:sha(bytes),files:manifest.files.length,build,scope:'Immutable fresh-build-proven local /me artifact; current source/compiler/config/log verified, compiled closure read from artifact only; strict fixture Prisma and separate private SQLite; no production session'};
 }
-async function main({output,buildRoot,authorityPackage,python,playwright,certutil}){
-  for(const p of [output,buildRoot,authorityPackage,python,playwright,certutil])assert.ok(path.isAbsolute(p));
+async function main({output,buildRoot,authorityPackage,python,playwright,certutil,browserExecutable}){
+  for(const p of [output,buildRoot,authorityPackage,python,playwright,certutil,browserExecutable])assert.ok(path.isAbsolute(p));
   assert.ok(!fs.existsSync(output));fs.mkdirSync(path.dirname(output),{recursive:true});fs.mkdirSync(output,{mode:0o700});
   const report={schema:1,fixtureOnly:true,publicExposure:false,productionAccess:false,capacityClaim:false,status:'RUNNING',assertions:0,checks:[],cases:['off','on','candidate'].map(name=>({name,status:'NOT_RUN'})),startedAt:new Date().toISOString()};
   const check=(condition,label)=>{assert.ok(condition,label);report.assertions++;report.checks.push(label);};
@@ -50,18 +50,20 @@ async function main({output,buildRoot,authorityPackage,python,playwright,certuti
     report.authority=copyAuthority(authorityPackage,path.join(output,'package'));
     fixture=fixtureProcess(path.join(output,'package'),path.join(output,'data'),report);const ready=await fixture.ready();
     const credentials=certificates(python);nss=createNssHome({credentials,certutil,forbiddenRoots:[output,buildRoot,authorityPackage]});report.nss=nss.proof;
+    report.installedBrowser=inspectChrome(browserExecutable,nss.env);
     const {chromium}=require(playwright),wallet=walletFixtures(root);report.walletFixture=wallet.provenance;report.tls=credentials.proof;
     report.networkBoundary={type:'normal Chromium TLS + fresh private NSS fixture-CA trust + reserved-host resolver mapping + Playwright pre-dispatch HTTP/WS denial',osNetworkNamespace:false,realDNS:false,systemTrustChanged:false,serviceWorkers:'blocked',note:'Browser/Node QA controls; not an OS-level egress barrier or production TLS deployment'};
     // Playwright creates its own profile using the parent os.tmpdir; pin only this launch to private scratch.
     const previousTmp=process.env.TMPDIR;process.env.TMPDIR=nss.env.TMPDIR;
-    try{browserServer=await chromium.launchServer({headless:true,chromiumSandbox:true,timeout:30000,env:nss.env,args:[
+    try{browserServer=await chromium.launchServer({executablePath:report.installedBrowser.executable,headless:true,chromiumSandbox:true,timeout:30000,env:nss.env,args:[
       '--host-resolver-rules=MAP '+HOST+' 127.0.0.1, MAP '+BAD_SNI+' 127.0.0.1, MAP * ~NOTFOUND',
       '--no-proxy-server','--disable-background-networking','--disable-component-update',
       '--disable-sync','--no-first-run','--disable-default-apps',
     ]});}finally{if(previousTmp===undefined)delete process.env.TMPDIR;else process.env.TMPDIR=previousTmp;}
     nss.verifyProfile(browserServer.process().spawnargs);
-    report.browser={version:null,ownedPid:browserServer.process().pid,normalCertificateValidation:true,chromiumSandbox:true,ignoreHTTPSErrors:false,launchArguments:browserServer.process().spawnargs.slice(1)};
+    report.browser={version:null,ownedPid:browserServer.process().pid,normalCertificateValidation:true,chromiumSandbox:true,ignoreHTTPSErrors:false,launchArguments:browserServer.process().spawnargs.slice(1),process:inspectBrowserProcess(browserServer.process(),report.installedBrowser)};
     browser=await chromium.connect(browserServer.wsEndpoint());report.browser.version=browser.version();
+    assert.equal(report.browser.version,report.installedBrowser.version,'actual browser protocol version matches verified installed executable');
     report.browserTls=await browserTlsProbes({browser,credentials,python,upstreamOrigin:ready.gatewayOrigin,fixture,check});
     for(const build of manifest.builds){
       check(build.env.VITE_STOCKS_OWNER_USDT_ONLY===String(build.name!=='off'),'explicit owner USDT-only build flag '+build.name);
@@ -163,7 +165,7 @@ async function main({output,buildRoot,authorityPackage,python,playwright,certuti
   console.log(JSON.stringify({status:report.status,assertions:report.assertions,cases:report.cases.map(r=>({name:r.name,status:r.status,selection:r.selection,walletGlobalRequests:r.walletGlobalRequests,failure:r.failure?.message})),failure:report.failure?.message,output}));if(report.status!=='PASS')process.exitCode=1;
 }
 if(require.main===module){
-  assert.equal(process.argv.length,14);const args={};for(let i=2;i<14;i+=2){assert.ok(['--output','--build-root','--authority-package','--python','--playwright','--certutil'].includes(process.argv[i]));assert.ok(!(process.argv[i] in args));args[process.argv[i]]=path.resolve(process.argv[i+1]);}
-  main({output:args['--output'],buildRoot:args['--build-root'],authorityPackage:args['--authority-package'],python:args['--python'],playwright:args['--playwright'],certutil:args['--certutil']}).catch(e=>{console.error(e);process.exitCode=1;});
+  assert.equal(process.argv.length,16);const args={};for(let i=2;i<16;i+=2){assert.ok(['--output','--build-root','--authority-package','--python','--playwright','--certutil','--browser-executable'].includes(process.argv[i]));assert.ok(!(process.argv[i] in args));args[process.argv[i]]=path.resolve(process.argv[i+1]);}
+  main({output:args['--output'],buildRoot:args['--build-root'],authorityPackage:args['--authority-package'],python:args['--python'],playwright:args['--playwright'],certutil:args['--certutil'],browserExecutable:args['--browser-executable']}).catch(e=>{console.error(e);process.exitCode=1;});
 }
 module.exports={main,copyAuthority};

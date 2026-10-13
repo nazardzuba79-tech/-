@@ -63,3 +63,9 @@ The artifact and source guard is current-source code. Its Linux CI execution and
 The outside-worktree originals remain unchanged. The failure-index.json binds additional earlier setup issues by raw hashes: incorrect producer cwd/Tailwind discovery, absent explicit Python in one unit invocation, empty static denial body, and omitted owner-USDT flag in the first browser setup. They were corrected in QA and are not hidden or retroactively promoted to final evidence.
 
 Public GlobalStocks intentionally remains unavailable on a real hostname. These checks resolve local contract gaps; they do not remove remaining integration, operational, market-data or capacity release gates.
+
+## Strict Linux launch correction
+
+The first strict Linux execution at commit3fb092dc1475543240059556fb0cf033c7f967b3 failed before browser probes or UI cases. The bundled Playwright headless shell exited with SIGTRAP and `No usable sandbox!` on the Ubuntu runner. All three public-host cases are retained as NOT_RUN in public-host/linux-3fb-sandbox-failure.json; its bytes are copied unchanged from Actions artifact11857047515. The full14,043,835-byte artifact SHA-256 is36a240c60047e98f12d41c0ccf607a75306b189221be009fc8173558986f6609. Run: https://github.com/nazardzuba79-tech/-/actions/runs/38478532375.
+
+The narrow correction explicitly selects the runner existing /opt/google/chrome/chrome executable, selected as a candidate compatible with the runner existing packaged AppArmor policy; support remains unverified until the new strict run succeeds. QA verifies the installed binary and package provenance, keeps chromiumSandbox:true, and retains the fresh private NSS store and all trusted-CA, untrusted-CA, SAN, SNI and Origin controls. It neither installs a browser nor modifies AppArmor, sysctl, system trust or sandbox settings. A new execution is required to prove this changed path; these source changes alone do not turn the retained failure into PASS.

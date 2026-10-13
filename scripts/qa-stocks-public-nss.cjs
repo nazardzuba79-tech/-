@@ -3,7 +3,54 @@
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
 const {spawnSync}=require('node:child_process'),{createHash,X509Certificate}=require('node:crypto');
 const sha=b=>createHash('sha256').update(b).digest('hex');
+const CHROME='/opt/google/chrome/chrome';
 function assertLinux(platform){assert.equal(platform,'linux','NSS_FIXTURE_REQUIRES_LINUX');}
+function chromeIdentity({requested,resolved,owner,uid,mode,regular,symlink}){
+  assert.equal(requested,CHROME,'explicit installed Chrome path required');assert.equal(resolved,CHROME,'Chrome executable path changed');
+  assert.ok(regular&&!symlink,'Chrome must be a regular non-symlink executable');assert.equal(uid,0,'Chrome executable must be root owned');
+  assert.ok(Number.isInteger(mode)&&(mode&0o022)===0&&(mode&0o111)!==0,'Chrome executable permissions');
+  assert.equal(owner,'google-chrome-stable: '+CHROME,'installed Chrome package ownership');
+}
+function chromePackage(value){
+  chromeIdentity(value);const {packageVersion,actualVersion}=value;
+  assert.match(packageVersion,/^\d+\.\d+\.\d+\.\d+-\d+$/,'installed Chrome package version');
+  const match=/^Google Chrome (\d+\.\d+\.\d+\.\d+)\s*$/.exec(actualVersion);assert.ok(match,'actual Google Chrome version required');
+  assert.equal(match[1],packageVersion.replace(/-\d+$/,''),'actual Chrome must match installed package version');return match[1];
+}
+function fileHash(file,maxBytes){
+  const fd=fs.openSync(file,'r');try{const before=fs.fstatSync(fd);assert.ok(before.isFile()&&before.size>0&&before.size<=maxBytes,'bounded Chrome proof file');
+    const hash=createHash('sha256'),buffer=Buffer.alloc(128*1024);let total=0,count;
+    while((count=fs.readSync(fd,buffer,0,buffer.length,null))>0){total+=count;assert.ok(total<=maxBytes);hash.update(buffer.subarray(0,count));}
+    const after=fs.fstatSync(fd);assert.ok(total===before.size&&before.ino===after.ino&&before.size===after.size&&before.mtimeMs===after.mtimeMs,'proof file changed while hashing');return hash.digest('hex');
+  }finally{fs.closeSync(fd);}
+}
+function inspectChrome(executable,env){
+  assertLinux(process.platform);assert.equal(executable,CHROME,'explicit installed Chrome path required');
+  const resolved=fs.realpathSync(executable),st=fs.lstatSync(executable);fs.accessSync(executable,fs.constants.X_OK);
+  const dpkg='/usr/bin/dpkg-query',owner=command(dpkg,['-S',resolved],env).stdout.trim();
+  const packageVersion=command(dpkg,['-W','--showformat=$'+'{Version}','google-chrome-stable'],env).stdout.trim();
+  const identity={requested:executable,resolved,owner,uid:st.uid,mode:st.mode,regular:st.isFile(),symlink:st.isSymbolicLink()};
+  chromeIdentity(identity);assert.match(packageVersion,/^\d+\.\d+\.\d+\.\d+-\d+$/); // Verify ownership before executing any candidate binary.
+  const executableHash=fileHash(executable,1024*1024*1024);
+  const versionCall=command(executable,['--version'],env),actualVersion=versionCall.stdout.trim();
+  const version=chromePackage({...identity,packageVersion,actualVersion});
+  const proof={executable,resolved,sha256:executableHash,bytes:st.size,uid:st.uid,gid:st.gid,mode:(st.mode&0o777).toString(8),owner,packageVersion,actualVersion,version,versionCommand:versionCall,installationPerformed:false};
+  const profile='/etc/apparmor.d/chrome';
+  try{const p=fs.lstatSync(profile);assert.ok(p.isFile()&&!p.isSymbolicLink());
+    const result=spawnSync(dpkg,['-S',profile],{env,encoding:'utf8',timeout:10000,maxBuffer:16384});
+    proof.appArmorProfile={status:'AVAILABLE',path:profile,sha256:fileHash(profile,1024*1024),bytes:p.size,uid:p.uid,gid:p.gid,mode:(p.mode&0o777).toString(8),packageOwner:result.status===0?result.stdout.trim():null,packageOwnerStatus:result.status===0?'AVAILABLE':'UNKNOWN',packageQueryExitCode:result.status,packageQueryError:result.error?.code||null,modified:false};
+  }catch(e){proof.appArmorProfile={status:'UNKNOWN',path:profile,reason:e.code||e.message,modified:false};}
+  return proof;
+}
+function inspectBrowserProcess(child,chrome){
+  assertLinux(process.platform);assert.equal(child.spawnfile,CHROME,'actual spawned executable must be explicit installed Chrome');assert.ok(Number.isSafeInteger(child.pid)&&child.pid>0);
+  const base='/proc/'+child.pid,start=()=>{const text=fs.readFileSync(base+'/stat','utf8'),end=text.lastIndexOf(')');assert.ok(end>0);const value=text.slice(end+2).trim().split(/\s+/)[19];assert.match(value,/^\d+$/);return value;};
+  const before=start(),actual=fs.realpathSync(base+'/exe');assert.equal(actual,chrome.resolved,'actual browser process executable mismatch');
+  const stat=fs.statSync(base);assert.equal(stat.uid,process.getuid());let label;
+  try{const value=fs.readFileSync(base+'/attr/current','utf8').trim();assert.ok(value.length>0&&value.length<=1024);label={status:'AVAILABLE',value};}catch(e){label={status:'UNKNOWN',reason:e.code||e.message};}
+  assert.equal(start(),before,'browser process identity changed during inspection');
+  return {pid:child.pid,startTimeTicks:before,spawnfile:child.spawnfile,actualExecutable:actual,uid:stat.uid,appArmorLabel:label,note:'Observed process label only; not an independent proof of all sandbox layers'};
+}
 function ownedDirectory(dir){
   const st=fs.lstatSync(dir);assert.ok(st.isDirectory()&&!st.isSymbolicLink());assert.equal(st.uid,process.getuid());assert.equal(st.mode&0o777,0o700);
   return {path:dir,mode:'0700',uid:st.uid};
@@ -76,4 +123,4 @@ function createNssHome({credentials,certutil,forbiddenRoots=[]}){
   };
   }catch(e){if(fs.existsSync(home))fs.rmSync(home,{recursive:true,force:false});throw e;}
 }
-module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss};
+module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss,chromePackage,inspectChrome,inspectBrowserProcess,CHROME};

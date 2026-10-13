@@ -1,0 +1,304 @@
+{
+  "schema": 1,
+  "fixtureOnly": true,
+  "publicExposure": false,
+  "productionAccess": false,
+  "capacityClaim": false,
+  "status": "FAIL",
+  "assertions": 3,
+  "checks": [
+    "three complete separate builds",
+    "every recorded frontend input unchanged",
+    "fixture exits normally"
+  ],
+  "cases": [
+    {
+      "name": "off",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "on",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "candidate",
+      "status": "NOT_RUN"
+    }
+  ],
+  "startedAt": "2026-10-13T22:44:20.711Z",
+  "build": {
+    "manifestSha256": "8b42748b251dd18a23cae42f1d0b8a2e2b6e8cef6ada84369d0780ba00ed378b",
+    "sourceHash": "7ff9041a86eb5af43932964ba36b1c4decd00796ea634bfdd8029a5d754aee34",
+    "buildRoot": "/home/runner/work/_temp/stocks-public-build",
+    "cases": [
+      {
+        "name": "off",
+        "env": {
+          "VITE_STOCKS_ENABLED": "false",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "false",
+          "VITE_STOCKS_WIDGET_PREVIEW": "false",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "false",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "4726adc6f25d4aba28758b07ad5c9b5425097c7a2918f66739d37dfa78ee38c5",
+        "candidateDelta": null
+      },
+      {
+        "name": "on",
+        "env": {
+          "VITE_STOCKS_ENABLED": "true",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "true",
+          "VITE_STOCKS_WIDGET_PREVIEW": "true",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "true",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "5b7d9c987b3498f007ea3a19869eb7dfc0d52cf82f5dbde93d9dad1f77b4d5ee",
+        "candidateDelta": null
+      },
+      {
+        "name": "candidate",
+        "env": {
+          "VITE_STOCKS_ENABLED": "true",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "true",
+          "VITE_STOCKS_WIDGET_PREVIEW": "true",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "true",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "e29bed59e675e90ed55b41aee59f38336020aecad3ae61cb3e4df6bdbc818f33",
+        "candidateDelta": {
+          "path": "src/pages/stocks/stockHostPolicy.ts",
+          "before": "hostname === '127.0.0.1'",
+          "after": "(hostname === '127.0.0.1' || hostname === 'stocks-review.invalid')",
+          "originalSha256": "a6cbea13918d37c60951cd3fa8e4868b89e77fd9130176b9903102eb70544926",
+          "candidateSha256": "d0bc4cd5cef43bba18e38c099cbe77762bf8537eaf2cc83fab49aa8c4e985ccd",
+          "scope": "build-memory QA shadow only; actual hostname fence is untouched"
+        }
+      }
+    ],
+    "verifiedSourceFiles": 1166
+  },
+  "authority": {
+    "source": "/home/runner/work/-/-/output/stocks-local-stage/package",
+    "manifestSha256": "fa55166f2c0b9e5af589d65ad4341cfcf5032992db18ebbd914495b437eb45ce",
+    "files": 27,
+    "build": {
+      "proofSha256": "8f000016032fd18ab6ece94cbe906c31c81d8522e008b89cc0b0d81328a474be",
+      "compiled": {
+        "dist/api/routes/account.js": "6a06d889c1e31a73a017c6aca58c4f6cab20857f4ee1a943b6e334804691440c",
+        "dist/api/asyncRoute.js": "30d5ca41c9b3a35cc23b9b21f21906fea8d78c453807aea44484f294d74f293b",
+        "dist/services/AdminPasswordVault.js": "5b8de70bf420d0c4dd0844c71a972c7d407a5114eb6d10143edcf4b6ca9c1e7b",
+        "dist/api/middleware/auth.js": "dcaaf312a5d51a02bf25837b533679302f12f53a485f7ed63d1f1ac9ae37bd2d",
+        "dist/services/ContactEmailPolicy.js": "949972ebda91902df904a503e5fd1ad52ef094c230e99df34a80a283b037abb8",
+        "dist/services/TwoFactorService.js": "945c25a8a126233e2296cc69c57d65592e0b23bb02a649ec512e1eaabbb7e408"
+      },
+      "sourceCount": 279,
+      "compilerVersion": "5.9.3",
+      "sourceBuildStartedAt": "2026-10-13T22:33:57.065Z",
+      "sourceBuildEndedAt": "2026-10-13T22:34:09.650Z",
+      "identityResolverSha256": "66dce517ebb73540cb3a5a8dbb1dd43ee711706da2505fa3c90c42e21dec67bb",
+      "fixtureSha256": "2d137a89c4f1ff02e1d18b2366faa4cd0cad0f34c93fbb8407d29cb8f9819379"
+    },
+    "scope": "Immutable fresh-build-proven local /me artifact; current source/compiler/config/log verified, compiled closure read from artifact only; strict fixture Prisma and separate private SQLite; no production session"
+  },
+  "nss": {
+    "platform": "linux",
+    "tool": {
+      "executable": "/usr/bin/certutil",
+      "executableSha256": "88c077cdfa12818fbbcf1841f1e97f60da587c8ca1fe54630496442f62d4477a",
+      "packageOwner": "libnss3-tools: /usr/bin/certutil",
+      "packages": [
+        "libnss3\t2:3.98-1ubuntu0.2",
+        "libnss3-tools\t2:3.98-1ubuntu0.2"
+      ]
+    },
+    "home": {
+      "path": "/tmp/voltex-stocks-nss-W6aW61",
+      "mode": "0700",
+      "uid": 1001
+    },
+    "directories": [
+      {
+        "path": "/tmp/voltex-stocks-nss-W6aW61/.pki",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-W6aW61/.pki/nssdb",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-W6aW61/config",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-W6aW61/data",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-W6aW61/cache",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-W6aW61/tmp",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-W6aW61/run",
+        "mode": "0700",
+        "uid": 1001
+      }
+    ],
+    "database": "/tmp/voltex-stocks-nss-W6aW61/.pki/nssdb",
+    "nickname": "voltex-fixture-ca-dad7bf323cda13e4",
+    "caFingerprint": "82:8D:B1:E3:A3:D9:07:79:59:75:A1:7F:D7:63:73:9D:B9:BA:AB:E6:C5:E6:5F:AB:F1:51:EC:4C:00:B2:8E:26",
+    "trust": "C,,",
+    "commands": [
+      {
+        "args": [
+          "-N",
+          "--empty-password",
+          "-d",
+          "sql:/tmp/voltex-stocks-nss-W6aW61/.pki/nssdb"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exitCode": 0
+      },
+      {
+        "args": [
+          "-A",
+          "-d",
+          "sql:/tmp/voltex-stocks-nss-W6aW61/.pki/nssdb",
+          "-n",
+          "voltex-fixture-ca-dad7bf323cda13e4",
+          "-t",
+          "C,,",
+          "-i",
+          "/tmp/voltex-stocks-nss-W6aW61/fixture-ca.pem"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exitCode": 0
+      },
+      {
+        "args": [
+          "-L",
+          "-d",
+          "sql:/tmp/voltex-stocks-nss-W6aW61/.pki/nssdb"
+        ],
+        "stdout": "\nCertificate Nickname                                         Trust Attributes\n                                                             SSL,S/MIME,JAR/XPI\n\nvoltex-fixture-ca-dad7bf323cda13e4                           C,,  \n",
+        "stderr": "",
+        "exitCode": 0
+      },
+      {
+        "args": [
+          "-L",
+          "-d",
+          "sql:/tmp/voltex-stocks-nss-W6aW61/.pki/nssdb",
+          "-n",
+          "voltex-fixture-ca-dad7bf323cda13e4",
+          "-a"
+        ],
+        "stdout": "-----BEGIN CERTIFICATE-----\nMIIDAjCCAeqgAwIBAgIUZm/GKm9fLKEtorclle4G/KeqPcIwDQYJKoZIhvcNAQEL\r\nBQAwJzElMCMGA1UEAwwcRGlzcG9zYWJsZSBTdG9ja3MgZml4dHVyZSBDQTAeFw0y\r\nNjEwMTMyMjM5MjBaFw0yNjEwMTQyMjQ0MjBaMCcxJTAjBgNVBAMMHERpc3Bvc2Fi\r\nbGUgU3RvY2tzIGZpeHR1cmUgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\r\nAoIBAQDrwm6bBniUtS44eU7jqWAGmCTOzTr1BDqn2Bzz+O4E61OACYyroOHVz7hS\r\neiiPXcqTHlwFSe3GNqgsM1moJvwEHYNC6o0J8riaVgcaNCoLWuWUKIv3edrnhYm0\r\nIPACthOUslUoIslM+vwTBOtMRusHaJrJODR8lApUaKUC7WqEIzOV/i+Iu9Ue5cVa\r\nFttLTktypUFqYQzGPfsAXQAOHu/BNiV3tQpk2JJtng6pITWh5vNYFjt+CPwBjSft\r\nI2OaypkxxCl5o1JOicBWvALJnCZ/HabpBf2oQ8YRHl4dCQeeMgjcaKCdAeyoB1N3\r\nyyedQsw2FQ2sI+nSOFQoInC4on2nAgMBAAGjJjAkMBIGA1UdEwEB/wQIMAYBAf8C\r\nAQAwDgYDVR0PAQH/BAQDAgEGMA0GCSqGSIb3DQEBCwUAA4IBAQAyWZpbeqptiDIZ\r\n5Gv1BESYdcMrmTYbGvXxapBWKxrctFrJ7IWmrRNceJIzKrTuW4uLcThw5vOY2/X2\r\nxgN1XQ79X+imZ6AFxpffsLDFmz2GElrKz2SeQRiZDPYdpGz4ZZlXpz+/7TAXfa4U\r\nCDdGkW27LzwV6BnpwZFAYGKQLgFtZJng23miE59HaJy7dApjparzWPaOsfymuGJH\r\n/IwJ4aEyQ/F1fjiwd8R+I78i/G4SBO7ho8p6t2lmmfmEjl6SfgpVGewcB3wZfAJf\r\nyVCoFZvKHUWK9KdKSouNrzoLINHY9/jMiqDYL4+J7gCo/OawzDh6hUNrIC83W0tu\r\nuyWrM4Ra\n-----END CERTIFICATE-----\n",
+        "stderr": "",
+        "exitCode": 0
+      }
+    ],
+    "databaseFiles": [
+      {
+        "name": "cert9.db",
+        "mode": "600",
+        "uid": 1001
+      },
+      {
+        "name": "key4.db",
+        "mode": "600",
+        "uid": 1001
+      },
+      {
+        "name": "pkcs11.txt",
+        "mode": "600",
+        "uid": 1001
+      }
+    ],
+    "globalTrustChanged": false,
+    "profile": null,
+    "privateKeyImported": false,
+    "databaseLocationReason": "Fresh private HOME/.pki/nssdb; Chromium documented compatibility location takes precedence, including M146+",
+    "cleaned": true
+  },
+  "walletFixture": {
+    "path": "scripts/qa-stocks-wallet-journey.cjs",
+    "sha256": "8c86c189d500ee9b767854a7353b7720b3a01b0aec52bd244410c1d4dde2a934",
+    "functionSha256": "7d86eefd756d2e9ea401129181d64c955644451efd78b0a100f869a85a1367ec",
+    "scope": "private QA values only; not market observations"
+  },
+  "tls": {
+    "library": "cryptography 41.0.7",
+    "caFingerprint": "82:8D:B1:E3:A3:D9:07:79:59:75:A1:7F:D7:63:73:9D:B9:BA:AB:E6:C5:E6:5F:AB:F1:51:EC:4C:00:B2:8E:26",
+    "leafFingerprint": "43:2A:7F:F8:22:E1:55:B6:87:12:C8:69:2D:18:54:FA:28:40:4F:0A:50:FE:96:0D:FD:E8:30:4F:AF:65:DE:A1",
+    "wrongSanFingerprint": "11:07:80:B2:E9:73:C2:8B:7C:B9:BA:2B:4F:0E:10:BA:D2:5C:10:6C:A1:E0:30:9E:B4:D7:D3:E1:1C:91:6F:B0",
+    "validFrom": "Oct 13 22:39:20 2026 GMT",
+    "validTo": "Oct 14 22:44:20 2026 GMT",
+    "subjectAltName": "DNS:stocks-review.invalid"
+  },
+  "networkBoundary": {
+    "type": "normal Chromium TLS + fresh private NSS fixture-CA trust + reserved-host resolver mapping + Playwright pre-dispatch HTTP/WS denial",
+    "osNetworkNamespace": false,
+    "realDNS": false,
+    "systemTrustChanged": false,
+    "serviceWorkers": "blocked",
+    "note": "Browser/Node QA controls; not an OS-level egress barrier or production TLS deployment"
+  },
+  "failure": {
+    "message": "Protocol error (Browser.getVersion): Internal server error, session closed. Failed to launch browser.\n<launching> /home/runner/.cache/ms-playwright/chromium_headless_shell-1194/chrome-linux/headless_shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --host-resolver-rules=MAP stocks-review.invalid 127.0.0.1, MAP bad-sni.stocks-review.invalid 127.0.0.1, MAP * ~NOTFOUND --no-proxy-server --disable-background-networking --disable-component-update --disable-sync --no-first-run --disable-default-apps --user-data-dir=/tmp/voltex-stocks-nss-W6aW61/tmp/playwright_chromiumdev_profile-TbprmO --remote-debugging-pipe --no-startup-window\n<launched> pid=5088\n[pid=5088][err] [1013/224421.683757:FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:128] No usable sandbox! If you are running on Ubuntu 23.10+ or another Linux distro that has disabled unprivileged user namespaces with AppArmor, see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md. Otherwise see https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md for more information on developing with the (older) SUID sandbox. If you want to live dangerously and need an immediate workaround, you can try using --no-sandbox.\n[pid=5088] <gracefully close start>\n[pid=5088] <kill>\n[pid=5088] <will force kill>\n[pid=5088] <process did exit: exitCode=null, signal=SIGTRAP>\n[pid=5088] starting temporary directories cleanup\n[pid=5088] finished temporary directories cleanup\n[pid=5088] <gracefully close end>",
+    "stack": "Error: Protocol error (Browser.getVersion): Internal server error, session closed. Failed to launch browser.\n<launching> /home/runner/.cache/ms-playwright/chromium_headless_shell-1194/chrome-linux/headless_shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --host-resolver-rules=MAP stocks-review.invalid 127.0.0.1, MAP bad-sni.stocks-review.invalid 127.0.0.1, MAP * ~NOTFOUND --no-proxy-server --disable-background-networking --disable-component-update --disable-sync --no-first-run --disable-default-apps --user-data-dir=/tmp/voltex-stocks-nss-W6aW61/tmp/playwright_chromiumdev_profile-TbprmO --remote-debugging-pipe --no-startup-window\n<launched> pid=5088\n[pid=5088][err] [1013/224421.683757:FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:128] No usable sandbox! If you are running on Ubuntu 23.10+ or another Linux distro that has disabled unprivileged user namespaces with AppArmor, see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md. Otherwise see https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md for more information on developing with the (older) SUID sandbox. If you want to live dangerously and need an immediate workaround, you can try using --no-sandbox.\n[pid=5088] <gracefully close start>\n[pid=5088] <kill>\n[pid=5088] <will force kill>\n[pid=5088] <process did exit: exitCode=null, signal=SIGTRAP>\n[pid=5088] starting temporary directories cleanup\n[pid=5088] finished temporary directories cleanup\n[pid=5088] <gracefully close end>\n    at /tmp/stocks-ui-qa/node_modules/playwright-core/lib/server/chromium/crConnection.js:116:57\n    at new Promise (<anonymous>)\n    at CRSession.send (/tmp/stocks-ui-qa/node_modules/playwright-core/lib/server/chromium/crConnection.js:115:12)\n    at CRBrowser.connect (/tmp/stocks-ui-qa/node_modules/playwright-core/lib/server/chromium/crBrowser.js:76:35)\n    at Chromium.connectToTransport (/tmp/stocks-ui-qa/node_modules/playwright-core/lib/server/chromium/chromium.js:126:47)\n    at Chromium._innerLaunch (/tmp/stocks-ui-qa/node_modules/playwright-core/lib/server/browserType.js:137:48)\n    at async Chromium._innerLaunchWithRetries (/tmp/stocks-ui-qa/node_modules/playwright-core/lib/server/browserType.js:99:14)\n    at async /tmp/stocks-ui-qa/node_modules/playwright-core/lib/browserServerImpl.js:77:18\n    at async ProgressController.run (/tmp/stocks-ui-qa/node_modules/playwright-core/lib/server/progress.js:78:22)\n    at async BrowserServerLauncherImpl.launchServer (/tmp/stocks-ui-qa/node_modules/playwright-core/lib/browserServerImpl.js:68:17)"
+  },
+  "fixtureAudit": {
+    "fixtureOnly": true,
+    "productionAccess": false,
+    "runtime": {
+      "node": "v24.21.0",
+      "platform": "linux",
+      "arch": "x64"
+    },
+    "identityRequests": 0,
+    "prisma": {
+      "sessionReads": 0,
+      "sessionTouches": 0,
+      "userReads": 0,
+      "policyReads": 0,
+      "unexpected": 0
+    },
+    "forwarded": 0,
+    "blockedRoutes": 0,
+    "deniedNetwork": 0,
+    "quotes": 0,
+    "histories": 0,
+    "droppedAcknowledgements": 0
+  },
+  "child": {
+    "code": 0,
+    "signal": null,
+    "outputBytes": 0
+  },
+  "completedAt": "2026-10-13T22:44:21.795Z",
+  "limitations": [
+    "No production domain, provider traffic, real funds, deploy image or capacity claim",
+    "Linux-only fresh private NSS fixture CA; normal browser TLS validation; no global trust change",
+    "External request denial is a QA browser routing boundary, not OS network isolation",
+    "Untouched enabled public route still selects legacy; shared exact-localhost Wallet fence intentionally blocks its reads",
+    "Candidate modifies one shared hostname hunk in build memory only and is not publishable"
+  ]
+}

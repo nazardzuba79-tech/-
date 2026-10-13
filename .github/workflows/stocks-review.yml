@@ -643,7 +643,7 @@ jobs:
         timeout-minutes: 5
         shell: bash
         run: |
-          node scripts/qa-stocks-public-host.cjs --output "$GITHUB_WORKSPACE/stocks-ui-evidence/public-host" --build-root "$RUNNER_TEMP/stocks-public-build" --authority-package "$GITHUB_WORKSPACE/output/stocks-local-stage/package" --python /usr/bin/python3 --certutil /usr/bin/certutil --playwright /tmp/stocks-ui-qa/node_modules/playwright | tee stocks-ui-evidence/public-contract-logs/browser.log
+          node scripts/qa-stocks-public-host.cjs --output "$GITHUB_WORKSPACE/stocks-ui-evidence/public-host" --build-root "$RUNNER_TEMP/stocks-public-build" --authority-package "$GITHUB_WORKSPACE/output/stocks-local-stage/package" --python /usr/bin/python3 --certutil /usr/bin/certutil --browser-executable /opt/google/chrome/chrome --playwright /tmp/stocks-ui-qa/node_modules/playwright | tee stocks-ui-evidence/public-contract-logs/browser.log
       # Not a dot-directory: upload-artifact@v4 skips hidden paths by default.
       - uses: actions/upload-artifact@v4
         if: always()
