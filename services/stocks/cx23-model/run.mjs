@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { MODEL, verifyBudget, keyValues, compareCrypto } from './metrics.mjs';
 import { randomBytes } from 'node:crypto';
 import { requireEmptyDirectory, requireFreePorts, requireImageRevision, controlJson, cleanupWithEvidence } from './safety.mjs';
+import { EVIDENCE_VERSION, idleEvidence, reconcileJournal } from './evidence.mjs';
 const here = fileURLToPath(new URL('.', import.meta.url));
 const output = resolve(process.env.CX23_OUTPUT || '.ci-output/stocks-cx23');
 const disk = process.env.CX23_DISK, image = process.env.CX23_IMAGE, sourceSha = process.env.CX23_SOURCE_SHA;
@@ -20,7 +21,7 @@ requireImageRevision(imageRevision, sourceSha);
 const sleep = ms => new Promise(ok => setTimeout(ok, ms));
 const profiles = [{ profile: 'idle', viewers: 0, pattern: 'shared' }, { profile: 'owner-wallet', viewers: 0, pattern: 'shared' }, ...[5, 10, 20, 50].flatMap(viewers => ['shared', 'distinct'].map(pattern => ({ profile: `${viewers}-${pattern}`, viewers, pattern })))];
 // Snapshot instrumentation OFF/ON pair is a separate diagnostic, never A acceptance.
-const config = { sourceSha, imageRevision, image, imageId: docker(['image', 'inspect', image, '--format', '{{.Id}}']), model: MODEL, seconds, profiles,
+const config = { evidenceVersion: EVIDENCE_VERSION, sourceSha, imageRevision, image, imageId: docker(['image', 'inspect', image, '--format', '{{.Id}}']), model: MODEL, seconds, profiles,
   transport: 'Loopback HTTP per operation, wrapping real OrderService/FuturesPositionService/FuturesProtectionService; disposable PostgreSQL; NOT production API middleware/auth.',
   aggregateBudget: 'Single container cgroup includes supervisor, Stocks main+SQLite worker, crypto Node and all disposable PostgreSQL processes.',
   cpuCaveat: '2 CPU quota is a ceiling on a shared CI host, not guaranteed dedicated cores.',
@@ -34,14 +35,23 @@ writeFileSync(join(output, 'scheduled-cases.json'), JSON.stringify({ expectedPri
   missingResultPolicy: 'Every absent, failed, interrupted or incomplete scheduled result is INCOMPLETE, never PASS.' }, null, 2));
 const runClient = (spec, file) => new Promise((ok, fail) => {
   const child = spawn(process.execPath, [join(here, 'workload.mjs')], { env: { ...process.env, CX23_CASE: JSON.stringify(spec), CX23_RESULT: file, CX23_RAW_LOG: file + '.attempts.ndjson' }, stdio: ['ignore', 'pipe', 'pipe'] });
-  let stdout = '', stderr = ''; child.stdout.on('data', b => stdout += b); child.stderr.on('data', b => stderr += b);
-  const timer = setTimeout(() => { child.kill('SIGTERM'); fail(Error('MODEL_CLIENT_INCOMPLETE')); }, (seconds + 45) * 1000);
+  let stdout = '', stderr = '', watchdog = false, hardStop;
+  child.stdout.on('data', b => stdout += b); child.stderr.on('data', b => stderr += b);
+  // Reconcile only after close: reading immediately after kill() could miss a final settlement.
+  const timer = setTimeout(() => { watchdog = true; child.kill('SIGTERM'); hardStop = setTimeout(() => child.kill('SIGKILL'), 2000); }, (seconds + 45) * 1000);
   child.on('error', fail); child.on('close', code => {
-    clearTimeout(timer);
+    clearTimeout(timer); clearTimeout(hardStop);
+    let attemptEvidence;
     try {
       writeFileSync(file + '.log', stdout + '\n' + stderr);
-      code ? fail(Error(`MODEL_CLIENT_EXIT_${code}`)) : ok(JSON.parse(readFileSync(file, 'utf8')));
-    } catch (error) { fail(error); }
+      try { attemptEvidence = reconcileJournal(readFileSync(file + '.attempts.ndjson', 'utf8')); }
+      catch (error) { attemptEvidence = { evidenceVersion: EVIDENCE_VERSION, complete: false, dispatchCoverage: 'MISSING', error: error.message }; }
+      writeFileSync(file + '.reconciliation.json', JSON.stringify(attemptEvidence, null, 2));
+      if (watchdog || code || !attemptEvidence.complete) throw Error(watchdog ? 'MODEL_CLIENT_INTERRUPTED_UNKNOWN' : code ? `MODEL_CLIENT_EXIT_${code}` : 'MODEL_ATTEMPT_EVIDENCE_INCOMPLETE');
+      const result = JSON.parse(readFileSync(file, 'utf8'));
+      if (attemptEvidence.settled !== result.records?.length) throw Error('MODEL_ATTEMPT_COUNT_MISMATCH');
+      ok({ ...result, attemptEvidence });
+    } catch (error) { fail(Object.assign(error, { attemptEvidence })); }
   });
 });
 async function one(spec, repeat, loaded, diagnostics = true) {
@@ -73,18 +83,17 @@ async function one(spec, repeat, loaded, diagnostics = true) {
       note: initialProcesses.has(p.pid) ? 'Same PID /proc utime+stime delta; threads already included.' : 'Started after initial sample; full-interval delta unavailable.' }));
     const hg = activeEnd.stocks.hub, h0 = initial.stocks.hub;
     const historyHits = hg.historyCacheHits - h0.historyCacheHits, historyParses = hg.historyParses - h0.historyParses;
-    result = { label, runId, repeat, loaded, diagnostics, spec, initial, activeEnd, final, workload, perProcessCpu: processCpu,
+    result = { evidenceVersion: EVIDENCE_VERSION, label, runId, repeat, loaded, diagnostics, spec, initial, activeEnd, final, workload, perProcessCpu: processCpu,
       processCpuLimit: 'Short-lived exited PostgreSQL children may be absent. Aggregate cgroup CPU is authoritative; SQL thread CPU is not added again.',
       historyCache: { hits: historyHits, parses: historyParses, hitRatioAmongHitOrParse: historyHits + historyParses ? historyHits / (historyHits + historyParses) : null,
         coalesced: hg.historyCoalesced - h0.historyCoalesced, note: 'Specific native history hit/(hit+parse) diagnostic, not all HTTP request hit rate.' },
       aggregateCpuMs: (cpuAfter.usage_usec - cpuBefore.usage_usec) / 1000,
       aggregateLifetimeMemoryPeakBytes: Number(final.cgroup.memoryPeak), memoryPeakIncludesSchemaStartup: true,
       oomEvents: events.oom ?? null, oomKills: events.oom_kill ?? null,
-      idle: { elapsedMs: final.at - activeEnd.at, providerStarts: final.stocks.fixtureTransportStarts - activeEnd.stocks.fixtureTransportStarts,
-        accountSql: diagnostics ? final.stocks.accounts.sqlCalls - activeEnd.stocks.accounts.sqlCalls : null,
-        cpuMs: (keyValues(final.cgroup.cpuStat).usage_usec - keyValues(activeEnd.cgroup.cpuStat).usage_usec) / 1000 },
+      idle: { ...idleEvidence(activeEnd, final, diagnostics), cpuMs: (keyValues(final.cgroup.cpuStat).usage_usec - keyValues(activeEnd.cgroup.cpuStat).usage_usec) / 1000 },
+      unverifiedContracts: ['idle-no-new-work'],
       cryptoRecords: crypto, complete: true };
-  } catch (error) { result = { label, runId, repeat, loaded, diagnostics, spec, complete: false, infrastructureFailure: !workloadStarted, error: error.stack }; }
+  } catch (error) { result = { evidenceVersion: EVIDENCE_VERSION, label, runId, repeat, loaded, diagnostics, spec, complete: false, infrastructureFailure: !workloadStarted, error: error.stack, attemptEvidence: error.attemptEvidence ?? null }; }
   finally {
     // Target only this named disposable container. Preserve result before cleanup.
     const actions = started ? [

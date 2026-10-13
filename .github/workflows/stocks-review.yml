@@ -16,6 +16,7 @@ jobs:
       legacy: ${{ steps.plan.outputs.legacy }}
       diagnostic: ${{ steps.plan.outputs.diagnostic }}
       timeline: ${{ steps.plan.outputs.timeline }}
+      registration: ${{ steps.plan.outputs.registration }}
       model: ${{ steps.plan.outputs.model }}
       matched: ${{ steps.plan.outputs.matched }}
     steps:
@@ -125,6 +126,59 @@ jobs:
         with:
           name: stocks-pr512-pristine-timeline-${{ github.event.pull_request.head.sha }}
           path: .ci-output/stocks-timeline512
+          if-no-files-found: error
+  stocks-pr512-registration-pairs:
+    needs: stocks-review-selection
+    if: needs.stocks-review-selection.outputs.registration == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Source guards and phase instrumentation regression
+        run: node --test services/stocks/phase-trace-512/*.test.mjs services/stocks/summarize-launch.test.mjs services/stocks/review-evidence.test.mjs
+      - name: Verify disposable disk and separate load CPU
+        run: |
+          mkdir -p "$RUNNER_TEMP/registration512-disk" .ci-output/stocks-registration512
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          cpus=sorted(os.sched_getaffinity(0))
+          assert len(cpus)>=2
+          print('BENCH_CPU='+str(cpus[0]))
+          print('LOAD_CPU='+str(cpus[1]))
+          PY
+          majmin=$(findmnt -n -o MAJ:MIN -T "$RUNNER_TEMP/registration512-disk" | tr -d '[:space:]')
+          device=$(lsblk -nrpo NAME,MAJ:MIN | awk -v mm="$majmin" '$2==mm {print $1; exit}')
+          test -n "$device" && test -b "$device"
+          parent=$(lsblk -ndo PKNAME "$device")
+          if [ -n "$parent" ]; then device="/dev/$parent"; fi
+          printf 'STOCK_BENCH_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
+          { git rev-parse HEAD; nproc; free -m; findmnt -T "$RUNNER_TEMP/registration512-disk"; lsblk; } > "$RUNNER_TEMP/registration512-host.txt"
+      - name: Three matched registration pairs at unchanged original limits
+        env:
+          STOCKS_REGISTRATION_512_APPROVED: 'true'
+          STOCKS_REGISTRATION_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+          STOCKS_REGISTRATION_512_OUT: .ci-output/stocks-registration512
+          STOCK_REALISTIC_DISK: ${{ runner.temp }}/registration512-disk
+        run: node services/stocks/phase-trace-512/registration-run.mjs
+      - name: Preserve host evidence after runner preparation
+        if: always()
+        run: |
+          mkdir -p .ci-output/stocks-registration512
+          if [ -f "$RUNNER_TEMP/registration512-host.txt" ]; then
+            cp "$RUNNER_TEMP/registration512-host.txt" .ci-output/stocks-registration512/host.txt
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-pr512-registration-pairs-${{ github.event.pull_request.head.sha }}
+          path: .ci-output/stocks-registration512
           if-no-files-found: error
   stocks-pr512-cx23-model:
     needs: stocks-review-selection
@@ -329,7 +383,7 @@ jobs:
         with:
           node-version: '22'
       - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
-        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-registration-batch.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/account-background-observations.test.mjs services/stocks-global/refresh-coalescing.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/owner-usdt.test.mjs services/stocks-global/demand-lifecycle.test.mjs services/stocks-global/local-proxy.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-registration-batch.test.mjs services/stocks-global/account-registration-turn.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/account-background-observations.test.mjs services/stocks-global/refresh-coalescing.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/owner-usdt.test.mjs services/stocks-global/demand-lifecycle.test.mjs services/stocks-global/local-proxy.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate

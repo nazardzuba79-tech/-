@@ -70,3 +70,5 @@ entries are different cardinalities and must be reported as such.
 All measurements use disposable test data and isolated accounts. No production
 database, financial request, deployment or infrastructure change is authorized.
 Provider-data commercial rights and MOEX sources remain NOT CLEARED.
+
+`registration` is a separate targeted candidate stage: three counterbalanced pairs of exact06a baseline and one explicitly guarded registration-dispatch candidate. It does not rerun the nine phase controls, pristine timeline or nominal CX23 matrix. Both sides use the same bounded client timeline and unchanged original resource, disk, cadence and deadline limits. A candidate is retained only after safety regressions and matched evidence; this diagnostic is not full acceptance. Later documentation/test-only commits preserve the plan ID and reuse named artifacts.

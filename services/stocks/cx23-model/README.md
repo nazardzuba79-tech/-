@@ -28,6 +28,10 @@ local test fixture. No real provider, authentication or financial endpoint is us
   described as complete production API capacity evidence.
 - A 250-row **metadata-only** fixture is served by harness control `/metadata`.
   Its 230 inert IDs never enter Stocks' runtime instrument registry or catalogue.
+  The 250 fixture components reside in the harness process even in idle/control
+  cases. Those cases make **zero metadata HTTP reads**; active loaded cases make
+  one control HTTP read. Resident metadata and exercised metadata reads are
+  different measurements, recorded separately in `metadataCoverage`.
   This measures JSON metadata response handling, not browser rendering of 250
   cards or 250 simultaneously traded instruments. The 50-distinct-viewer case
   rotates over **20 unique existing US IDs**; actual cardinality is in each result.
@@ -90,7 +94,10 @@ Owner's initial buy precedes viewers to avoid fabricating pre-visit cached quote
 admission; a later resume explicitly waits for a post-resume quote before trading.
 No mutation retries occur except the deliberate identical-idempotency replay.
 
-After each profile, a 3.4s quiescent window verifies provider/SQL idle deltas.
+After each profile, a 3.4s quiescent window records provider/SQL idle deltas.
+The no-new-work gate is **UNVERIFIED**: these cached counter snapshots cannot
+distinguish newly dispatched work from already-dispatched operations draining
+after chart release. Even zero deltas are observations, not proof of that gate.
 Three additional adjacent OFF/ON diagnostic pairs (20 shared viewers, alternating
 order) measure the cached SQLite diagnostic overhead. Total planned containers:
 60 primary + 6 overhead. Do not blindly rerun this full matrix after a docs change.
@@ -101,7 +108,35 @@ change and the separately labelled original +5% comparison. No result replaces A
 Missing/interrupted scenarios are INCOMPLETE, never zero-error/PASS. HTTP attempts
 equal successes plus HTTP failures; embedded source errors in a 200 response are
 separate and are not added as a second failed HTTP attempt. Both success-only and
-all-attempt p50/p95/p99 are available, and raw NDJSON survives interrupted clients.
+all-settled-attempt p50/p95/p99 are available. Unsettled requests have unknown
+latency and are counted separately, never assigned zero or a fabricated timeout.
+
+### Evidence methodology v2
+
+Viewer success requires independently validated state **and** history before
+hide and after reopen for every scheduled viewer. Validation checks the exact
+instrument, source, currency, requested timeframe and valid chronological OHLC
+rows. A response crossing the hide/reopen boundary cannot satisfy the other
+phase. Linked validation records retain safe identity summaries, not auth or
+private account payloads. Missing post-reopen success is a failed contract.
+V2 also corrects lifecycle dispatch: if a state request crosses into hidden time,
+the viewer issues no new history request, and waiting cannot skip the hide window.
+This changes workload scheduling as well as evidence logging. Do not compare v2
+performance directly with the 342 v1 run as if their workloads were identical.
+
+Every request is journalled on dispatch and settlement with a unique ID and a
+bounded allowlist of fixture context. The controller reconciles only after the
+child exits. Unmatched dispatches are `INTERRUPTED_UNKNOWN`; malformed, duplicate
+or missing evidence makes the case incomplete. Mixed legacy settlement rows and
+unexpected row types fail closed; explicit versioned source-observation and graph
+validation rows remain separate auxiliary evidence. Request deadlines stay unchanged.
+
+The 342fab901c3ac305338b506aa07151f242190e9f run used methodology v1. Preserve
+its original files: its settled latency/error records remain measurements, but
+total viewer success cannot prove post-reopen correctness, response identities
+and OHLC were not retained, and interrupted in-flight counts are unknown. V2 unit
+tests do **not** retroactively validate those missing contracts. Mark them
+UNVERIFIED instead of rerunning or silently reclassifying that matrix as PASS.
 
 ## Measurement limits
 

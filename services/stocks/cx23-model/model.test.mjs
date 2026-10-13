@@ -13,6 +13,7 @@ import { installLoopbackDbGuard } from './network-guard.cjs';
 import net from 'node:net';
 import { requireEmptyDirectory, requireFreePorts, requireImageRevision, controlJson, cleanupWithEvidence } from './safety.mjs';
 import { writeFile } from 'node:fs/promises';
+import { validState, validHistory, idleEvidence, createJournal, reconcileJournal } from './evidence.mjs';
 test('aggregate quota proof fails closed for missing, unbounded and per-container-wrong budgets', () => {
   const correct = { cpuMax: '200000 100000', memoryMax: String(MODEL.memory), memoryPeak: '100', memoryEvents: 'oom 0\noom_kill 0', cpuStat: 'usage_usec 1' };
   assert.equal(verifyBudget(correct), true);
@@ -28,12 +29,55 @@ test('failed HTTP attempts retained once and cannot turn missing crypto into PAS
   assert.equal(compareCrypto([{ ok: true, ms: 1 }], [{ ok: true, ms: 1 }], { expectedOperations: 2 }).originalFivePercentComparison, 'INCOMPLETE_OR_ERROR');
 });
 test('all-failed or missing scheduled viewers cannot produce a functional PASS', () => {
-  const good = { viewer: 0, validStates: 2, validHistories: 2, hiddenPhaseEntered: true };
+  const good = { viewer: 0, phases: { preHide: { validStates: 2, validHistories: 2 }, postReopen: { validStates: 2, validHistories: 2 } }, hiddenPhaseEntered: true };
   assert.equal(viewerCoveragePass([good], 1), true);
   assert.equal(viewerCoveragePass([], 1), false);
-  assert.equal(viewerCoveragePass([{ ...good, validStates: 0, validHistories: 0 }], 1), false);
-  assert.equal(viewerCoveragePass([{ ...good, validHistories: 0 }], 1), false);
+  assert.equal(viewerCoveragePass([{ ...good, phases: { ...good.phases, postReopen: { validStates: 0, validHistories: 0 } } }], 1), false);
+  assert.equal(viewerCoveragePass([{ ...good, phases: { ...good.phases, postReopen: { validStates: 1, validHistories: 0 } } }], 1), false);
+  assert.equal(viewerCoveragePass([{ ...good, phases: undefined, validStates: 20, validHistories: 20 }], 1), false, 'Legacy total counters do not prove post-reopen success');
   assert.equal(viewerCoveragePass([good, good], 2), false);
+});
+test('graph evidence validates exact source identity/timeframe and OHLC before recording success', () => {
+  const id = 'BYBIT:AAPLXUSDT', now = 1791849600000;
+  const q = { instrumentId: id, provider: 'bybit', nativeCurrency: 'USDT', eventId: 'fixture-event', timestamp: now, receivedAt: now,
+    verified: true, marketOpen: true, prices: { USDT: { buy: '100', sell: '100' } }, capacity: '1' };
+  const state = { account: { canTrade: false }, quotes: { [id]: q } };
+  assert.equal(validState(state, id, now), true);
+  assert.equal(validState({ ...state, quotes: { [id]: { ...q, instrumentId: 'BYBIT:NVDAXUSDT' } } }, id, now), false);
+  const candle = { time: now / 1000 - 900, open: 100, high: 102, low: 99, close: 101, volume: 10 };
+  const history = { instrumentId: id, interval: '15m', provider: 'bybit', currency: 'USDT', candles: [candle] };
+  assert.equal(validHistory(history, id, '15m', now), true);
+  for (const patch of [{ instrumentId: 'BYBIT:NVDAXUSDT' }, { interval: '1m' }, { provider: 'binance' }, { currency: 'RUB' }, { candles: [] },
+    { candles: [{ ...candle, high: 90 }] }, { candles: [{ ...candle, volume: -1 }] }, { candles: [candle, candle] }, { candles: [{ ...candle, time: now / 1000 + 60 }] }])
+    assert.equal(validHistory({ ...history, ...patch }, id, '15m', now), false);
+});
+test('idle observations never claim no-new-work proof without dispatch attribution', () => {
+  const start = { at: 1, stocks: { fixtureTransportStarts: 10, accounts: { sqlCalls: 3 } } };
+  const finish = { at: 3401, stocks: { fixtureTransportStarts: 10, accounts: { sqlCalls: 3 } } };
+  assert.equal(idleEvidence(start, finish).providerStarts, 0);
+  assert.equal(idleEvidence(start, finish).noNewWorkGate, 'UNVERIFIED');
+  assert.equal(idleEvidence(start, { ...finish, stocks: { fixtureTransportStarts: 11, accounts: { sqlCalls: 4 } } }).noNewWorkGate, 'UNVERIFIED');
+});
+test('dispatch journal preserves interrupted unknowns, one settlement, bounded pending state and no secrets', () => {
+  const events = [], journal = createJournal({ append: e => events.push(e), maxPending: 1 });
+  const id = journal.dispatch({ kind: 'stocks', route: '/__stocks_global/state', atMs: 0, context: { viewer: 2, phase: 'postReopen', token: 'never-retain-this' } });
+  assert.throws(() => journal.dispatch({ kind: 'stocks', route: '/state', atMs: 1 }), /PENDING_LIMIT/);
+  const raw = () => events.map(e => JSON.stringify(e)).join('\n');
+  assert(!raw().includes('never-retain-this'));
+  const interrupted = reconcileJournal(raw());
+  assert.equal(interrupted.complete, false); assert.equal(interrupted.dispatched, 1); assert.equal(interrupted.unknown, 1);
+  assert.equal(interrupted.unknownAttempts[0].outcome, 'INTERRUPTED_UNKNOWN'); assert.equal(interrupted.unknownAttempts[0].ms, null);
+  journal.settle(id, { ok: true, status: 200, ms: 2, code: null });
+  assert.equal(reconcileJournal(raw()).complete, true); assert.equal(reconcileJournal(raw()).successes, 1);
+  assert.throws(() => journal.settle(id, { ok: true, ms: 2 }), /DOUBLE_SETTLEMENT/);
+  assert.equal(reconcileJournal(raw() + '\n{"broken"').complete, false);
+  assert.equal(reconcileJournal([events[0], { ...events[1], evidenceVersion: 1 }].map(e => JSON.stringify(e)).join('\n')).complete, false);
+  assert.equal(reconcileJournal(raw() + '\n' + JSON.stringify({ kind: 'stocks', ok: false, ms: 3000, code: 'DEADLINE_3000MS' })).complete, false);
+  assert.equal(reconcileJournal(raw() + '\n' + JSON.stringify({ unexpected: true })).complete, false);
+  assert.equal(reconcileJournal(raw() + '\nnull').complete, false);
+  const auxiliary = [{ evidenceVersion: 2, event: 'graph-validation', requestId: id, valid: true }, { evidenceVersion: 2, event: 'source-observation', kind: 'source-observation', requestId: id, code: 'QUOTE_STALE' }];
+  assert.equal(reconcileJournal(raw() + '\n' + auxiliary.map(e => JSON.stringify(e)).join('\n')).complete, true);
+  assert.equal(reconcileJournal(JSON.stringify({ kind: 'stocks', ok: true, ms: 1 })).dispatchCoverage, 'UNVERIFIED');
 });
 test('250-item metadata never registers inert trading IDs and external native fixture paths fail closed', () => {
   assert.equal(IDS.length, 20); assert.equal(IDS.length + INERT.length, 250);
