@@ -6,13 +6,6 @@
 .terminal-mobile-tabs,
 .terminal-mobile-chart-tabs { display:none; }
 
-/* The Spot/CFD bundle does not import FuturesMobile.css, whose desktop rule
-   normally hides this phone-only button. Without an explicit default here,
-   Chrome renders the raw white "•••" button in the desktop chart toolbar. */
-.trade-terminal.vx-terminal .chart-toolbar .futures-mobile-tools-toggle {
-  display: none;
-}
-
 @media (max-width:900px) {
   .trade-terminal.vx-terminal {
     --mobile-nav-space:calc(76px + env(safe-area-inset-bottom, 0px));
