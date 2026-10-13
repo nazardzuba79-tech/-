@@ -1,0 +1,17 @@
+== frontend (jest frontend/src --maxWorkers=2)
+Test Suites: 4 failed, 241 passed, 245 total
+Tests:       5 failed, 4134 passed, 4139 total
+FAIL frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
+FAIL frontend/src/lib/__tests__/futuresTickerHeader.test.ts
+FAIL frontend/src/lib/__tests__/futuresUiPolish.test.ts
+FAIL frontend/src/lib/__tests__/terminalAccountPanel.test.ts
+   (the 4 suites above were re-taken in c2855000 and re-run: 69/69 PASS)
+== both trees (jest src --maxWorkers=2)
+Test Suites: 5 failed, 12 skipped, 479 passed, 484 of 496 total
+Tests:       9 failed, 124 skipped, 7720 passed, 7853 total
+FAIL src/services/__tests__/CfdMarketDataService.test.ts
+FAIL src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts
+FAIL src/services/marketData/__tests__/ProviderFailureMatrix.test.ts (8.079 s)
+FAIL src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts
+FAIL src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts
+   (all 5 fail identically on a pristine origin/main worktree, or need a disposable localhost Postgres)
