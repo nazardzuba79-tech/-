@@ -52,7 +52,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     const cached=recent.get(id);if(cached&&now()-cached.at<2000)return Promise.resolve(cached.value);
     if(flights.has(id))return flights.get(id);
     check(flights.size<2,'SOURCE_BUSY');
-    const pending=hub.quote(id).then(value=>{recent.set(id,{at:now(),value});while(recent.size>80)recent.delete(recent.keys().next().value);return value;}).finally(()=>flights.delete(id));
+    const pending=hub.quote(id,{includeUsdc:!ownerOnlyMode}).then(value=>{recent.set(id,{at:now(),value});while(recent.size>80)recent.delete(recent.keys().next().value);return value;}).finally(()=>flights.delete(id));
     flights.set(id,pending);return pending;
   };
   const demand=(ctx,id,view)=>{
