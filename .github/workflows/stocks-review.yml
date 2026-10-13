@@ -285,6 +285,17 @@ jobs:
           QA_DIST: ${{ github.workspace }}/frontend/dist
           QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/overload
         run: node scripts/qa-stocks-overload.cjs
+      - name: Owner Stocks USDT Wallet integrated review build (fixture-only)
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_WIDGET_PREVIEW: 'true'
+          VITE_STOCKS_GLOBAL_SIMULATOR: 'true'
+          VITE_STOCKS_OWNER_USDT_ONLY: 'true'
+      - name: Owner buys, holds, reloads, sells and account isolation (loopback-only)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
+        run: node scripts/qa-stocks-wallet-journey.cjs
       # Not a dot-directory: upload-artifact@v4 skips hidden paths by default.
       - uses: actions/upload-artifact@v4
         if: always()
