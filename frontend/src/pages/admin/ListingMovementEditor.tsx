@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import BigNumber from 'bignumber.js';
+import { ListingHistoricalEditor } from './ListingHistoricalEditor';
 import {
   MOVEMENT_SCENARIOS, formatMovementPrice, movementDuration, movementGainFromPrice, movementPriceFromGain,
   normalizeMovementDecimal, parseMovementHours, movementStageMoment, selectMovementScenario, type ListingMovement, type MovementFrequency,
@@ -58,8 +60,28 @@ export function ListingMovementEditor({ value, initialPrice, listingAt, locked, 
         setGainText({ price, initial: initialPrice, text }); onChange({ ...value, maxPrice: price });
       }} /><small>Общий верхний предел относительно начальной цены, а не цены первых суток.</small></label>
       <label>Максимальная цена, USDT<input inputMode="decimal" value={value.maxPrice} data-field="maxPrice" onChange={e => { setGainText(null); onChange({ ...value, maxPrice: normalizeMovementDecimal(e.target.value) }); }} /><small>Единственная сохранённая граница, включая верхние тени. Не округляется вверх.</small><strong data-maximum-price>{formatMovementPrice(value.maxPrice)} USDT</strong></label>
-      <label className="listing-wide">Поведение после завершения роста<select value={value.afterGrowth} data-field="afterGrowth" onChange={() => {}}><option value="range">Боковик без дальнейшего направленного роста</option></select><small>Цена продолжает колебаться, но новый этап роста автоматически не начинается. Предусмотрен запас до максимума для теней.</small></label>
+      <label className="listing-wide">Поведение после всех этапов<select value={value.afterGrowth} data-field="afterGrowth" onChange={e => {
+        const next = e.target.value;
+        if (next === 'range') {
+          const { historical: _old, ...rest } = value;
+          onChange({ ...rest, afterGrowth: 'range' });
+          return;
+        }
+        // The owner's sequence is scripted GROWTH → FALL → historic rhythm.
+        // Supply a default 24h, −55% fall if one was not configured.
+        let stages = value.stages;
+        if (stages[stages.length - 1]?.type !== 'pullback' && totalHours <= 696 && stages.length < 24) {
+          const previous = stages[stages.length - 1].targetPrice;
+          const target = new BigNumber(previous).times('.45').decimalPlaces(10, BigNumber.ROUND_DOWN).toFixed();
+          stages = [...stages, { type: 'pullback', durationHours: 24, targetPrice: target }];
+        }
+        onChange({ ...value, afterGrowth: 'historical', historical: value.historical ?? { version: 1, clips: [] }, stages });
+      }}><option value="range">Боковик без дальнейшего направленного роста</option>
+      <option value="historical">Исторический ритм BTC / ETH / SOL (после падения)</option></select>
+      <small>Исторический ритм начинается только после последнего этапа-падения; одна исходная часовая свеча занимает ровно один час, без ускорения. Граница максимальной цены остаётся в силе.</small></label>
     </div>
+    {value.afterGrowth === 'historical' && <ListingHistoricalEditor program={value.historical ?? { version: 1, clips: [] }}
+      onChange={historical => onChange({ ...value, historical })} />}
     <details className="listing-settings-details" data-movement-stages>
       <summary>Этапы движения <span>{value.stages.length} · {formatMovementPrice(totalHours)} ч</span></summary>
       <p className="listing-hint">Цели задаются в USDT. Процент рядом всегда рассчитан от начальной цены. Один этап должен завершаться ровно через 24 часа с целью первых суток.</p>
