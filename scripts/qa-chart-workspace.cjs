@@ -308,16 +308,57 @@ const menuBox = () => {
     inside: r.left >= -1 && r.top >= -1 && r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1 };
 };
 
-/** Open a feature from the row, or from «Ещё» when the row put it there (a menu body is inline in «Ещё»; an action is a list key). */
+/** The row is quiet: measured, and the same keys at the same place across two reads 150 ms apart.
+ *  A layout change re-measures the row (the «Раскладка» badge changes, the row grows or shrinks), moving keys
+ *  into «Ещё» or back; a click that lands while a key moves hits a detached element. */
+async function settleToolbar(page, { timeout = 3000 } = {}) {
+  const read = () => page.evaluate(() => {
+    const row = document.querySelector('[data-cw-toolbar]');
+    if (!row) return null;
+    const r = row.getBoundingClientRect();
+    return { measured: row.classList.contains('is-measured'), menu: !!document.querySelector('[data-cw-menu]'),
+      keys: [...row.querySelectorAll('[data-cw-feature]')].map(el => { const b = el.getBoundingClientRect(); return `${el.getAttribute('data-cw-feature')}@${Math.round(b.left)},${Math.round(b.top)}`; }).join('|'),
+      box: `${Math.round(r.width)}x${Math.round(r.height)}` };
+  });
+  const deadline = Date.now() + timeout;
+  let previous = null;
+  while (Date.now() < deadline) {
+    const now = await read();
+    if (!now) return false;
+    if (now.measured && previous && previous.keys === now.keys && previous.box === now.box) return true;
+    previous = now;
+    await page.waitForTimeout(150);
+  }
+  console.log(`  toolbar did not settle in ${timeout} ms: ${JSON.stringify(previous).slice(0, 300)}`);
+  return false;
+}
+
+/** Open a feature from the row, or from «Ещё» when the row put it there (a menu body is inline in «Ещё»; an action is a list key).
+ *  Menus are portaled, so the row key is looked up under the toolbar; every click is bounded and a key that moved
+ *  under the pointer (the row re-measuring after a layout change) is retried from a quiet row. */
 async function openFeatureOn(page, feature) {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  const ATTEMPTS = 3;
+  for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
     await page.keyboard.press('Escape');
-    const trigger = page.locator(`[data-cw-feature="${feature}"]`).first();
+    await page.waitForFunction(() => !document.querySelector('[data-cw-menu]'), null, { timeout: 1500 }).catch(() => {});
+    await settleToolbar(page);
+    const trigger = page.locator(`[data-cw-toolbar] [data-cw-feature="${feature}"]`).first();
     let action = false;
-    if (!(await trigger.count()) || !(await trigger.isVisible())) {
-      const more = page.locator('[data-cw-feature="more"]');
-      if (await more.count()) { await more.click(); await page.waitForTimeout(150); const item = page.locator(`[data-cw-menu="more"] [data-cw-feature="${feature}"]`).first(); if (await item.count()) { await item.click(); action = true; } }
-    } else { await trigger.click(); action = !(await trigger.getAttribute('aria-haspopup')); }
+    try {
+      if (!(await trigger.count()) || !(await trigger.isVisible())) {
+        const more = page.locator('[data-cw-toolbar] [data-cw-feature="more"]');
+        if (await more.count()) {
+          await more.click({ timeout: 5000 }); await page.waitForTimeout(150);
+          const item = page.locator(`[data-cw-menu="more"] [data-cw-feature="${feature}"]`).first();
+          if (await item.count()) { await item.click({ timeout: 5000 }); action = true; }
+        }
+      } else { await trigger.click({ timeout: 5000 }); action = !(await trigger.getAttribute('aria-haspopup')); }
+    } catch (error) {
+      if (attempt === ATTEMPTS - 1) throw error;
+      console.log(`  retry ${feature}: ${String(error.message || error).split('\n')[0].slice(0, 120)}`);
+      await page.waitForTimeout(300);
+      continue;
+    }
     await page.waitForTimeout(220);
     const box = await page.evaluate(menuBox);
     // An action key (full screen) opens nothing; a menu key must — one retry covers a re-render closing it at once.
