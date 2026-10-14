@@ -281,6 +281,65 @@ async function acceptance() {
   assert.equal(refused.status, 422);
   assert.equal(refused.body.error, 'HISTORY_LOCKED');
   check('Explicit confirmation only; UTC/Kyiv shown; published generator equals preview; history rewrite rejected');
+
+  // Historical continuation is a PRIVATE DRAFT only. Exercise the actual
+  // admin browser, file input, source/date/duration picker, Durable Object
+  // persistence and canonical backend Preview; never publish or trade it.
+  await page.locator('[data-create-listing]').click();
+  await page.fill('[data-field="name"]', 'Исторический ритм');
+  await page.fill('[data-field="symbol"]', 'QHX');
+  await page.fill('[data-field="initialPrice"]', '2');
+  await page.selectOption('[data-field="timeZone"]', 'UTC');
+  await page.fill('[data-field="wallTime"]', new Date(Math.ceil((Date.now()+3*86400000)/60000)*60000).toISOString().slice(0,16));
+  await page.selectOption('[data-field="afterGrowth"]', 'historical');
+  assert.equal(await page.locator('[data-historical-editor]').count(), 1);
+  assert.equal(await page.inputValue('[data-field="afterGrowth"]'), 'historical');
+  await page.selectOption('[data-field="historicalSource"]', 'BTC/USDT');
+  await page.fill('[data-field="historicalStartDate"]', '2018-01-02');
+  await page.selectOption('[data-field="historicalDuration"]', '24');
+  let srcPrice=100;
+  const csv=Array.from({length:72},(_,i)=>{
+    const open=srcPrice,close=open*(i%2===0?1.005:0.995);
+    const high=Math.max(open,close)*1.01,low=Math.min(open,close)*.99;
+    srcPrice=close;
+    return [Math.floor(Date.parse('2018-01-01T00:00:00Z')/1000)+i*3600,open,high,low,close].join(',');
+  }).join('\n');
+  await page.locator('[data-field="historicalCsv"]').setInputFiles({
+    name:'btc-hourly-QA.csv', mimeType:'text/csv', buffer:Buffer.from(csv),
+  });
+  await page.locator('[data-historical-clips] [role="listitem"]').waitFor();
+  assert.match(await page.locator('[data-historical-clips]').innerText(),/2018/);
+  const histResponse=page.waitForResponse(response => response.request().method()==='POST'&&new URL(response.url()).pathname.endsWith('/admin/listings'));
+  await page.locator('[data-save-draft]').click();
+  assert.equal((await histResponse).status(),201);
+  const historyListing=(await api('/admin/listings')).body.listings.find(x=>x.symbol==='QHX');
+  assert.ok(historyListing);
+  assert.equal(historyListing.activeVersion,null);
+  assert.equal(historyListing.draft.tradable,false);
+  assert.equal(historyListing.draft.simulationProgram.afterGrowth,'historical');
+  assert.equal(historyListing.draft.simulationProgram.stages.slice(-1)[0].type,'pullback');
+  assert.equal(historyListing.draft.simulationProgram.historical.clips[0].bars.length,24);
+  assert.equal(historyListing.draft.simulationProgram.historical.clips[0].sourceStart,'2018-01-02T00:00:00.000Z');
+  assert.equal(await page.locator('[data-publish]').isDisabled(),true);
+  await page.selectOption('[data-field="previewHorizon"]','afterGrowth');
+  await page.selectOption('[data-field="previewInterval"]','1h');
+  const previewPromise=page.waitForResponse(response=>response.url().includes('/preview?'));
+  await page.locator('[data-preview]').click();
+  const historyPreview=await previewPromise;
+  assert.equal(historyPreview.status(),200);
+  const histData=await historyPreview.json();
+  assert.ok(histData.candles.length>0);
+  assert.ok(histData.candles.every(c=>c.low>0&&c.high>=c.open&&c.high>=c.close));
+  await capture(page,'historical-draft-preview-1440','[data-listing-preview]');
+  const beforeBlocked=countPublished();
+  assert.equal(await page.locator('[data-publish]').isDisabled(),true);
+  assert.equal(countPublished(),beforeBlocked);
+  await page.setViewportSize({width:390,height:844});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await capture(page,'historical-draft-mobile-390','[data-movement-editor]');
+  const catalogueAfter=await (await mf.dispatchFetch('http://127.0.0.1/market/listings')).json();
+  assert.equal(catalogueAfter.assets.some(x=>x.symbol==='QHX'),false);
+  check('Admin historical source/date/duration CSV → persisted draft → canonical preview; publication disabled; mobile fits');
   await context.close();
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });
