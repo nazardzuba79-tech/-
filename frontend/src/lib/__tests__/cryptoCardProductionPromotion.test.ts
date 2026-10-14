@@ -159,6 +159,12 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
       text = text.replace(current, original);
     }
     if (file === 'frontend/src/components/Footer.tsx' || file === 'frontend/src/pages/home/HomeFooter.tsx') {
+      // The new legal destination is the sole regulatory-page addition.
+      const licenceLink = file === 'frontend/src/components/Footer.tsx'
+        ? "          <Link to=\"/legal/licenses\" style={styles.link}>{t('licenses.title')}</Link>\n"
+        : "      { labelKey: 'licenses.title', to: '/legal/licenses' },\n";
+      expect(text.split(licenceLink)).toHaveLength(2);
+      text = text.replace(licenceLink, '');
       // The knowledge hub adds footer links. Only these exact additions are
       // undone here so the older card-design digest remains comparable; every
       // other byte keeps the original digest.
