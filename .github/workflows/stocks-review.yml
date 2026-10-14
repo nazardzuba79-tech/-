@@ -7,6 +7,167 @@ on:
 permissions:
   contents: read
 jobs:
+  stocks-auth-one-burst:
+    # Disabled source snapshot first; only a reviewed policy-only transition can run.
+    # This diagnostic never clears the retained backend/browser/capacity failures.
+    needs: [stocks-auth-preparation, stocks-auth-http-paired, stocks-backend-admission, isolated-simulator, frontend-regression, bounded-stock-runtime]
+    if: >-
+      always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.number == 512 &&
+      github.event.action == 'synchronize' && github.run_attempt == 1 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'dot/stocks-owner-usdt-portfolio-20261013' &&
+      needs.stocks-backend-admission.result == 'success' && needs.isolated-simulator.result == 'success' &&
+      needs.frontend-regression.result == 'success' && needs.bounded-stock-runtime.result == 'success'
+    concurrency:
+      group: stocks-one-burst-pr512
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      actions: read
+    env:
+      QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+      AUTH_BURST_POLICY_SHA256: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Pure diagnostic guards and one built-in worker handoff guard
+        run: node --test services/stocks/auth-burst-trace-512/*.test.mjs
+      - name: Verify reviewed source transition and complete same-head run history
+        id: trace_source
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs'), path = require('node:path');
+            const { execFileSync } = require('node:child_process');
+            const { pathToFileURL } = require('node:url');
+            const root = process.env.GITHUB_WORKSPACE;
+            const load = p => import(pathToFileURL(path.join(root, p)).href);
+            const gate = await load('services/stocks/auth-burst-trace-512/launch-gate.mjs');
+            const adapter = await load('services/stocks/auth-burst-trace-512/workflow-source.mjs');
+            const directory = path.join(process.env.RUNNER_TEMP, 'stocks-one-burst-input');
+            fs.mkdirSync(directory, { mode: 0o700 });
+            const policy = JSON.parse(fs.readFileSync(path.join(root, gate.POLICY_PATH)));
+            let result = { status: 'NOT_RUN', reason: 'POLICY_DISABLED', preparationEligible: false, eligible: false };
+            if (policy.status !== 'disabled') {
+              const input = await adapter.workflowSourceInput({
+                context: { payload: context.payload, eventName: context.eventName, repo: context.repo,
+                  runId: context.runId, runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT) }, github,
+                approvedPolicySha256: process.env.AUTH_BURST_POLICY_SHA256 });
+              const git = args => execFileSync('/usr/bin/git', args, { cwd: root, timeout: 10000, maxBuffer: 16 * 1024 ** 2 });
+              result = gate.validatePreparationSource(input, policy, { git });
+              fs.writeFileSync(path.join(directory, 'source-input.json'), JSON.stringify(input), { flag: 'wx', mode: 0o600 });
+            }
+            fs.writeFileSync(path.join(directory, 'source-eligibility.json'), JSON.stringify(result, null, 2), { flag: 'wx', mode: 0o600 });
+            core.setOutput('eligible', String(result.preparationEligible === true));
+            core.info(`${result.status}: ${result.reason}; workload acceptance remains false.`);
+            if (policy.status !== 'disabled' && result.preparationEligible !== true) core.setFailed('Reviewed source eligibility was not proven. No preparation or workload started.');
+      - name: Download and verify the actual compiled artifact from this exact run
+        if: steps.trace_source.outputs.eligible == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
+            const { createHash } = require('node:crypto'), { pathToFileURL } = require('node:url');
+            const module = await import(pathToFileURL(path.join(process.env.GITHUB_WORKSPACE, 'services/stocks/auth-burst-trace-512/workflow-source.mjs')).href);
+            const metadata = await module.compiledArtifactMetadata({ context, github, sourceSha: process.env.QA_SOURCE_SHA });
+            const response = await github.rest.actions.downloadArtifact({ ...context.repo, artifact_id: Number(metadata.artifactId),
+              archive_format: 'zip', request: { timeout: 30000 } });
+            const bytes = Buffer.from(response.data);
+            assert.equal(bytes.length, metadata.bytes);
+            const downloadedSha256 = createHash('sha256').update(bytes).digest('hex');
+            assert.equal(downloadedSha256, metadata.archiveSha256);
+            const directory = path.join(process.env.RUNNER_TEMP, 'stocks-one-burst-input');
+            fs.writeFileSync(path.join(directory, 'stage.zip'), bytes, { flag: 'wx', mode: 0o600 });
+            fs.writeFileSync(path.join(directory, 'compiled-artifact.json'), JSON.stringify({ ...metadata, downloadedSha256 }), { flag: 'wx', mode: 0o600 });
+            core.info(`Verified same-run compiled artifact ${metadata.artifactId}, SHA256 ${downloadedSha256}.`);
+      - name: Bind selected compiled bytes and actual local backing device
+        if: steps.trace_source.outputs.eligible == 'true'
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import { execFileSync } from 'node:child_process';
+          import { ZIP_EXTRACTOR } from './services/stocks/auth-http-fixture-512/prepare.mjs';
+          import { COMPILED_PATHS } from './services/stocks/auth-burst-trace-512/prepare-receipts.mjs';
+          const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+          const input = path.join(process.env.RUNNER_TEMP, 'stocks-one-burst-input');
+          const stageDirectory = path.join(input, 'stage-selected'), stageArchivePath = path.join(input, 'stage.zip');
+          const python = fs.realpathSync('/usr/bin/python3');
+          execFileSync(python, ['-I', '-S', '-c', ZIP_EXTRACTOR, stageArchivePath, stageDirectory], { timeout: 30000, maxBuffer: 1024 ** 2 });
+          const selectedMembers = ['report.json', 'package/manifest.json', 'build-provenance.json', 'build.log',
+            ...COMPILED_PATHS.map(p => 'package/' + p)].map(p => {
+              const file = path.join(stageDirectory, p), stat = fs.lstatSync(file);
+              assert.ok(stat.isFile() && !stat.isSymbolicLink() && stat.size > 0 && stat.size <= 16 * 1024 ** 2);
+              assert.equal(fs.realpathSync(file), file);
+              const bytes = fs.readFileSync(file); return { path: p, bytes: bytes.length, sha256: hash(bytes) };
+            });
+          const compiled = JSON.parse(fs.readFileSync(path.join(input, 'compiled-artifact.json')));
+          const write = (name, value) => fs.writeFileSync(path.join(input, name), JSON.stringify(value, null, 2), { flag: 'wx', mode: 0o600 });
+          write('compiled-receipt.json', { ...compiled, selectedMembers });
+          const exec = (tool, args) => execFileSync(tool, args, { encoding: 'utf8', timeout: 30000, maxBuffer: 1024 ** 2 }).trim();
+          const majorMinor = exec('/usr/bin/findmnt', ['-n', '-o', 'MAJ:MIN', '-T', input]);
+          assert.match(majorMinor, /^\d+:\d+$/);
+          const matches = exec('/usr/bin/lsblk', ['-nrpo', 'NAME,MAJ:MIN']).split('\n')
+            .map(line => line.trim().split(/\s+/)).filter(row => row[1] === majorMinor);
+          assert.equal(matches.length, 1);
+          let device = matches[0][0];
+          const parent = exec('/usr/bin/lsblk', ['-ndo', 'PKNAME', device]);
+          if (parent) { assert.match(parent, /^[A-Za-z0-9_-]+$/); device = '/dev/' + parent; }
+          device = fs.realpathSync(device); assert.ok(fs.statSync(device).isBlockDevice());
+          const common = { repository: fs.realpathSync(process.env.GITHUB_WORKSPACE),
+            sourceInputPath: path.join(input, 'source-input.json'), compiledReceiptPath: path.join(input, 'compiled-receipt.json'),
+            stageArchivePath, stageDirectory, device, preparationOutput: path.join(process.env.RUNNER_TEMP, 'stocks-auth-preparation-output') };
+          write('prepare-request.json', { ...common, python: { executable: python, sha256: hash(fs.readFileSync(python)) } });
+          write('run-request.json', { ...common, jobName: process.env.GITHUB_JOB, disk: input,
+            adapterOutput: path.join(process.env.RUNNER_TEMP, 'stocks-one-burst-output'), attemptMarker: path.join(input, 'attempt.json'),
+            resultPath: path.join(input, 'result.json'), dockerConfigDirectory: path.join(input, 'lease-docker-config') });
+          NODE
+          node services/stocks/auth-burst-trace-512/workflow-config.mjs prepare-config "$RUNNER_TEMP/stocks-one-burst-input/prepare-request.json" "$RUNNER_TEMP/stocks-one-burst-input/prepare-config.json"
+      - name: Prepare verified local image and closed seed; derive guarded instrumentation
+        if: steps.trace_source.outputs.eligible == 'true'
+        timeout-minutes: 26
+        run: node services/stocks/auth-burst-trace-512/launcher.mjs --prepare "$RUNNER_TEMP/stocks-one-burst-input/prepare-config.json"
+      - name: Verify actual local preparation receipts and construct the one-attempt config
+        if: steps.trace_source.outputs.eligible == 'true'
+        run: node services/stocks/auth-burst-trace-512/workflow-config.mjs run-config "$RUNNER_TEMP/stocks-one-burst-input/run-request.json" "$RUNNER_TEMP/stocks-one-burst-input/run-config.json"
+      - name: One C50 trace burst within the original resources and three-second deadline
+        if: steps.trace_source.outputs.eligible == 'true'
+        timeout-minutes: 11
+        run: node services/stocks/auth-burst-trace-512/launcher.mjs --run "$RUNNER_TEMP/stocks-one-burst-input/run-config.json"
+      - name: Preserve public diagnostic proofs and raw failures; never upload the image or seed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-one-burst-${{ github.event.pull_request.head.sha }}
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/stocks-one-burst-input/source-eligibility.json
+            ${{ runner.temp }}/stocks-one-burst-input/compiled-artifact.json
+            ${{ runner.temp }}/stocks-one-burst-input/compiled-receipt.json
+            ${{ runner.temp }}/stocks-one-burst-input/attempt.json
+            ${{ runner.temp }}/stocks-one-burst-input/result.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/preparation.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/trace-preparation-result.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/public-context/runtime-source-manifest.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/trace-overlay/*.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/private/runtime-output/inside-proof.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/private/command-logs/*
+            ${{ runner.temp }}/stocks-one-burst-output/adapter-evidence.json
+            ${{ runner.temp }}/stocks-one-burst-output/driver-attempts.jsonl
+            ${{ runner.temp }}/stocks-one-burst-output/driver-cgroups.jsonl
+            ${{ runner.temp }}/stocks-one-burst-output/observer-*.json
   stocks-backend-admission:
     # Scheduling evidence only: NOT_RUN never clears the retained backend FAIL.
     # Missing/unreviewed inputs fail closed to a full backend run.

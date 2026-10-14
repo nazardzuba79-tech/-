@@ -1,0 +1,11 @@
+{
+  "sourceRevision": "f045d7255f1195ef3c7b6cca5a5e63f4c851a2a8",
+  "hashMeaning": "SHA256 of canonical LF UTF8 original Git blob",
+  "files": {
+    "services/stocks-global/server.mjs": "4d771968a7618bb93a113a3191f953f2e166ab56f4465a857a771d9bca1823ba",
+    "services/stocks-global/identity.mjs": "4e0635d44ade1c066bca7eb6d735e4c18c8ff16ea8e4c63d8ca00a4c5dfb823c",
+    "services/stocks-global/account-worker.mjs": "81917463ce8e982eceb384ae4a17f2ad4de150b395637bbf3d30de013b0b4f50",
+    "services/stocks-global/account-worker-runtime.mjs": "8e3f156cd22557591b1021e11193c069bbc8e67e2632709ee7e00543b3f69d5e",
+    "services/stocks-global/accounts.mjs": "0ec41914a2e044f1fced392592ef04f0022ac8b57be33cbd08b94fe834ecbcdd"
+  }
+}

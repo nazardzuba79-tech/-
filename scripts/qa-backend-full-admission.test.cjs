@@ -97,6 +97,20 @@ test('previous finite experiment fixtures are not permitted by the narrow 28 fol
     assert.equal(r.reason, 'UNREVIEWABLE_OR_PROTECTED_PATH', file);
   }
 });
+
+test('named one-burst QA files need exact reviewed bytes; future sibling files never inherit admission', () => {
+  for (const name of ['recorder.mjs', 'instrument.mjs', 'launch-policy.json', 'workflow-config.mjs', 'proxy-correlation.test.mjs']) {
+    const c = candidate([change('services/stocks/auth-burst-trace-512/' + name, 'auth-burst-trace-fixture')]);
+    assert.equal(decide(c).mode, 'not_run');
+    assert.equal(decide(c).releaseGatePass, false);
+    c.changes[0].headSHA256 = 'f'.repeat(64);
+    assert.equal(decide(c).mode, 'full');
+  }
+  for (const name of ['unreviewed.mjs', 'future-test.test.mjs', 'extra-policy.json']) {
+    const r = decide(candidate([change('services/stocks/auth-burst-trace-512/' + name, 'auth-burst-trace-fixture')]));
+    assert.equal(r.mode, 'full'); assert.equal(r.browserMode, 'run');
+  }
+});
 test('outside the exact same-repository PR512 branch and head neither backend nor browser can skip', () => {
   for (const alter of [
     c => c.scope = undefined, c => c.scope.number = 497, c => c.scope.number = 515,

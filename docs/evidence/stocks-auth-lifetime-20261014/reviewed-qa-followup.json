@@ -19,40 +19,250 @@
   "manifestPath": "docs/evidence/stocks-auth-lifetime-20261014/reviewed-qa-followup.json",
   "files": [
     {
-      "path": "scripts/qa-backend-full-admission.cjs",
-      "classification": "admission-control",
-      "baseSHA256": "b374673622ac10bd7df44a30b68a220d99a24e365f6931cf94fb7440d79b6f2d",
-      "headSHA256": "dbe5fb9b8cb99cfed864b7461b87a4247bb530fd9fda0ebd81da452976cc9287"
-    },
-    {
-      "path": "scripts/qa-backend-full-admission.test.cjs",
-      "classification": "admission-control",
-      "baseSHA256": "8b7f35c8b22db113adddd8ef0aae7f72f7949d36d1fbf665d743de5a216c0659",
-      "headSHA256": "5dffcbc0ccb7e4a817bd187fb4e14cd3f1d69de0cd7d4eac32a0d21d5f97ab7c"
-    },
-    {
       "path": ".github/workflows/stocks-review.yml",
       "classification": "workflow-control",
       "baseSHA256": "afea9fc3992fb122719a70d208abaee16efc4aacf5016446574191378c3bf50a",
-      "headSHA256": "8f0052ba6c1025fca0c452b5c744bf9b01ada245fc5b2b50d1c553c261da395d"
-    },
-    {
-      "path": "services/stocks/auth-http-fixture-512/cancellation-barrier.test.mjs",
-      "classification": "auth-fixture-test",
-      "baseSHA256": "5173d248787fd408309e1a6f2a51a4708b6219af66eea5d8e1878650317e117c",
-      "headSHA256": "eb72db5ca1b63091e7adfd38534d34ab4a553406791a4d980c0ee0b08be896d4"
+      "headSHA256": "a126c36c8ae636069e541840be3772050365e9a966ad7db60e406e0412a3c215"
     },
     {
       "path": "docs/AI_HANDOFF.md",
       "classification": "append-only-handoff",
       "baseSHA256": "8d0527e2abf804059a11388469f6edcfdfd0f192511e59434226e328512085b5",
-      "headSHA256": "58c8c6a00966f725de05de454b71971bbc90f8f85ffeec60b9bcbc180d03986f"
+      "headSHA256": "68d6c3c3121ac5bf25c786c6a88496bb3754587f6d68c8a8a4ced2ed9d022835"
+    },
+    {
+      "path": "docs/evidence/stocks-auth-lifetime-20261014/BURST-TRACE.md",
+      "classification": "documentation",
+      "baseSHA256": null,
+      "headSHA256": "6de063a6f87224d55e3a2e78d6484b007b4ad21492423155768986c70475dfc5"
     },
     {
       "path": "docs/evidence/stocks-auth-lifetime-20261014/FOLLOWUP.md",
       "classification": "documentation",
       "baseSHA256": null,
       "headSHA256": "5732dd8bb0afc3e048867d01fe3b6efc791b947488a1586f842bb8e74664d241"
+    },
+    {
+      "path": "scripts/qa-backend-full-admission.cjs",
+      "classification": "admission-control",
+      "baseSHA256": "b374673622ac10bd7df44a30b68a220d99a24e365f6931cf94fb7440d79b6f2d",
+      "headSHA256": "a43db129e3b3b160196464ec0a71f16b27243cdabf420ec28f7b91c1de2ba713"
+    },
+    {
+      "path": "scripts/qa-backend-full-admission.test.cjs",
+      "classification": "admission-control",
+      "baseSHA256": "8b7f35c8b22db113adddd8ef0aae7f72f7949d36d1fbf665d743de5a216c0659",
+      "headSHA256": "4404ec576ed11444a2136b367fc33170d447a5cb1c54bf13d2fda5f54453535c"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/README.md",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "7676ee26f8ac76a28470b765644d5ea98499e5757aa237bcc72e8f3c44917f97"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/adapter.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "d6000fe36f99bec5f7ebd619996044abd79ad4c70236c19940e737819db899b2"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/adapter.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "f674074ef0ae249741d36817dfca1f3a4551ccd5d8c8292a385e11026a8f85ab"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/analyze.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "fde18704c1bfb04093f4bdf550835f57775c925234aaa53c4fb4bdf0da86d36b"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/analyze.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "38d8cd1d543f45a49544f66cd4d366b2ef8cba45d8a1f09ff05e58e4c686fffa"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/build-overlay.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "28f757d63ff02680c74f9f4f5752568f0278453cba008ae2ba8ffb3ffe207f2a"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/build-overlay.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "b42de428d26cc23b56c36bee9d2a69e0c23570618b658b81aed85c55787709bb"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/closure.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "033d2e5e257bbda3fac8568df1a5496a1127613cf04554e8de7247f1644987ed"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/environment-data.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "77caabb5262bf252e89ee4eaa69ed54242a95b62687103f352f36bcc6dc74ff3"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/image-lease.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "7e11cc9949a46f16f8ed69fd6a189e925c0a1e250ae79cf0518225142c7bb3c2"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/image-lease.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "7797fe8ed8574bdef171204a8899aaabccddb0a96cce044fff9753852e9c2a2e"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/instrument.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "e7085ed1d3f5f83150035c1a68b6e684ac8524433293c79f6ed54ded64a2c28b"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/instrument.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "71cddafb6f0f34d53a8bb9f6d9c622477303afeb2dba41e0ca74d8b8fd8b5834"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/launch-gate.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "2927082d96fd0ff764dfebf9b60a905236604e48da70e8128f785ec2c8ca0766"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/launch-gate.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "db7183df43fc5580c80691da0af26a10aafef5a694885bd614c0145fe1595a8e"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/launch-policy.json",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "a315540bf518b63bf6e839cae579901e2b41536d26150803d8756625028ec5b0"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/launcher.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "d1e3b0504c2b83ce07a8e9b3327978eacde642f4d03067950b518abf945599bf"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/launcher.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "b1479ba6bce5cdb3aa50178fb3b6487b3456c236aa773f273619b04328ef0e52"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/prepare-receipts.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "7fd989e53f3af4d51b958c883480898cc6d29600c52e240e23e43f5202fca452"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/prepare-receipts.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "90cdcce7f66f1af4bc8511b912d416eeaffd650ea72c03c86baaa1718f3152bd"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/proxy-correlation.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "0acc6a6a25d388f68e76f8f2a66cb0c3d9428981aa1befaceda4b84ea71ac8b1"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/recorder.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "745e505e42fc6f00dc871c375d90b5319d2cba19ee9860a3ad4d6767db5b19a2"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/service-overlay.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "569671d6f4815403387d49111a3be03f8f817b67c45ba24a1d59a86bb9bdb5d6"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/service-overlay.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "f1be404448858f2791b414e4141fa0a71f323d9361420a5ef95029b4b22208eb"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/sources.json",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "aa1752bb9d324b1b6ba47e208b4adea1a95fbd5aed6e34c23bc7068905f18a78"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/trace-driver.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "9ac9156ebc22230640be8efabfdf191fd1cece089d5ce9b9d745d847122f41b2"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/trace-plan.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "abf9870c128520099af66f4b4630c7e25dd31be4539f8cf683fec1e40fd504e6"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/trace-run.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "6b0b573871fd01aac65879754904bb81a2cc69f556ab308b77d82ec018144241"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/trace-run.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "7b08a591086db266ae35cd9b0e88c223b3d7d07d39bb96949ad16441c16fa62c"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/workflow-config.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "6bf39c2e0a7716d4e0c0b236b4306b41d767c511258eee1766df9bde2d58dbd7"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/workflow-config.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "35c0f1810558ac2f1afece192b47545b888ec87fb136a2ed6a3bb334802c8bc3"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/workflow-source.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "6c9f56e31d61698597d182fcd76341210d407e22ad0c9515864acc7aaa9fbe32"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/workflow-source.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "9e66051c147bca7b9c32a2815decfdd7351d866b6911041d0189357839f44bd9"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/workflow.test.mjs",
+      "classification": "auth-burst-trace-fixture",
+      "baseSHA256": null,
+      "headSHA256": "8081a00ce83222060c5842181ce9207eeea81ad9690817c203207074023ac0de"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/cancellation-barrier.test.mjs",
+      "classification": "auth-fixture-test",
+      "baseSHA256": "5173d248787fd408309e1a6f2a51a4708b6219af66eea5d8e1878650317e117c",
+      "headSHA256": "eb72db5ca1b63091e7adfd38534d34ab4a553406791a4d980c0ee0b08be896d4"
     }
   ]
 }
