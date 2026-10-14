@@ -41,6 +41,9 @@ function DocumentViewer({ document, onClose }: { document: RegulatoryDocument; o
 export function LicencesContent({ documents, review = false }: { documents: readonly RegulatoryDocument[]; review?: boolean }) {
   const { t, lang } = useLanguage();
   const [selected, setSelected] = useState<RegulatoryDocument | null>(null);
+  useEffect(() => {
+    if (selected && !documents.some(document => document.id === selected.id)) setSelected(null);
+  }, [documents, selected]);
   const date = (value: string | null) => value ? new Intl.DateTimeFormat(localeOf(lang), { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`)) : t('licenses.notSpecified');
   return <main className="licences-main" lang={lang}>
     <Link className="licences-back" to="/legal/about"><ArrowLeft size={15} aria-hidden="true" />{t('footer.about')}</Link>

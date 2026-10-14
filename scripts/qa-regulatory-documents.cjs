@@ -86,10 +86,12 @@ async function main() {
   check(await dialog.count()===0,'Escape closes viewer');
   check(await opener.evaluate(element=>element===document.activeElement),'Focus returns to opener');
   await page.goto(production+'/legal/about');
+  await page.locator('a[href="/legal/licenses"]').first().waitFor();
   check(await page.locator('a[href="/legal/licenses"]').count()>0,'About footer links to licences');
   await page.locator('a[href="/legal/licenses"]').first().click();
   await page.locator('.licences-empty').waitFor();
   await page.goto(production+'/');
+  await page.locator('a[href="/legal/licenses"]').first().waitFor();
   check(await page.locator('a[href="/legal/licenses"]').count()>0,'Homepage footer links to licences');
   check(report.errors.length===0,'No JavaScript page errors');
   report.result='PASS';
