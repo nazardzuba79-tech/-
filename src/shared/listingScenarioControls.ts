@@ -1,5 +1,5 @@
 /** Pure, deterministic DTO/math shared by the listing validator and simulation. No IO. */
-import { historicalReplayBounds, validateHistoricalMoveProgram, type HistoricalMoveProgram } from './listingHistoricalReplay';
+import type { HistoricalMoveProgram } from './listingHistoricalReplay';
 export const LISTING_SCENARIOS = ['CALM', 'WAVES', 'FREQUENT_PULLBACKS', 'COMPRESSION_BREAKOUT', 'STAIRCASE', 'SLOW_START', 'FAST_START', 'FALSE_BREAKOUT', 'DEEP_RECOVERY', 'LONG_WICKS'] as const;
 export type ListingScenario = typeof LISTING_SCENARIOS[number];
 export type ScenarioFrequency = 'rare' | 'moderate' | 'often';
@@ -16,6 +16,51 @@ export interface ScenarioControlsProgram {
   pullbacks: { frequency: ScenarioFrequency; minDepthPercent: string; maxDepthPercent: string; durationMinutes: number };
   candles: { intensity: 'low' | 'medium' | 'high'; diversity: number; pauseFrequency: ScenarioFrequency };
   wicks: { length: 'short' | 'normal' | 'pronounced'; longFrequency: ScenarioFrequency };
+}
+
+/**
+ * V2-only historical validator lives in this inert module because the
+ * installed NRX v1 trajectory guard forbids importing runtime code here.
+ * Keep the pure data validation in sync with listingHistoricalReplay.ts.
+ */
+function validateHistoricalMoveProgram(program: HistoricalMoveProgram): void {
+  if (!program || program.version !== 1 || !Array.isArray(program.clips)
+    || program.clips.length < 1 || program.clips.length > 3)
+    throw new Error('Добавьте от одного до трёх исторических отрезков');
+  let count = 0;
+  for (const clip of program.clips) {
+    if (!['BTC/USDT','ETH/USDT','SOL/USDT'].includes(clip.source)
+        || clip.resolution !== '1h' || clip.provenance !== 'USER_SUPPLIED_UNVERIFIED'
+        || !/^\d{4}-\d\d-\d\dT\d\d:00:00\.000Z$/.test(clip.sourceStart)
+        || !Number.isFinite(Date.parse(clip.sourceStart))
+        || new Date(clip.sourceStart).toISOString() !== clip.sourceStart)
+      throw new Error('Неизвестное историческое движение или источник');
+    if (!Array.isArray(clip.bars) || clip.bars.length < 24 || clip.bars.length > 2400)
+      throw new Error('Отрезок должен содержать от 24 до 2400 последовательных часов');
+    count += clip.bars.length;
+    for (const bar of clip.bars) {
+      if (!Array.isArray(bar) || bar.length !== 3 || !bar.every(Number.isSafeInteger))
+        throw new Error('Неправильные исторические коэффициенты OHLC');
+      const [hi,lo,close] = bar;
+      if (hi < Math.max(0,close) || lo > Math.min(0,close) || lo <= -1000000
+          || hi > 4000000 || close <= -1000000 || close > 4000000)
+        throw new Error('Неверные границы исторической свечи');
+    }
+  }
+  if (count > 4800) throw new Error('Не более 4800 часов в цепочке');
+}
+function historicalReplayBounds(program: HistoricalMoveProgram, anchor: number) {
+  validateHistoricalMoveProgram(program);
+  if (!(anchor > 0) || !Number.isFinite(anchor)) throw new Error('Некорректная цена соединения');
+  let close=anchor, min=anchor,max=anchor;
+  for(const clip of program.clips) for(const [h,l,c] of clip.bars) {
+    min=Math.min(min,close*(1+l/1000000));
+    max=Math.max(max,close*(1+h/1000000));
+    close*=1+c/1000000;
+    if (!Number.isFinite(close) || close<1e-8 || close>1e9)
+      throw new Error('Исторический отрезок выходит за поддерживаемую точность цены');
+  }
+  return {min,max,close};
 }
 
 export function normalizeScenarioDecimal(input: string): string {
