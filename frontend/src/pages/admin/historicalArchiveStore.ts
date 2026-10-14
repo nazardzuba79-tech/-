@@ -107,6 +107,8 @@ export async function prepareHistoricalArchive(csv: string, source: HistoricalSo
 export async function verifyHistoricalArchive(archive: HistoricalArchive): Promise<void> {
   if (!archive || archive.version !== 2 || !SOURCES.includes(archive.source)
       || archive.provenance !== 'USER_SUPPLIED_UNVERIFIED'
+      || typeof archive.name !== 'string' || archive.name.length > 120
+      || /[\u0000-\u001f]/.test(archive.name)
       || !/^[a-f0-9]{64}$/.test(archive.sha256)
       || !/^[a-f0-9]{64}$/.test(archive.movementDigest)
       || archive.id !== archive.source.replace('/','-') + ':' + archive.sha256
@@ -164,11 +166,17 @@ async function transact<T>(mode: IDBTransactionMode, op: (store: IDBObjectStore,
 }
 
 export async function listHistoricalArchives(): Promise<HistoricalArchive[]> {
-  return transact('readonly',(store,accept,reject)=>{
+  const archives = await transact<HistoricalArchive[]>('readonly',(store,accept,reject)=>{
     const req=store.getAll();
-    req.onsuccess=()=>accept((req.result as HistoricalArchive[]).sort((a,b)=>a.source.localeCompare(b.source)||a.firstHour.localeCompare(b.firstHour)));
+    // Do not parse/sort untrusted records inside an IndexedDB event callback.
+    req.onsuccess=()=>accept(req.result as HistoricalArchive[]);
     req.onerror=()=>reject(new Error('Не удалось прочитать локальные архивы'));
   });
+  // Verify after the transaction completes: WebCrypto must not keep an IDB
+  // transaction open. A damaged archive must never enable a ready-made preset
+  // or reach React with invalid source/date/name fields. No records are changed.
+  for (const archive of archives) await verifyHistoricalArchive(archive);
+  return archives.sort((a,b)=>a.source.localeCompare(b.source)||a.firstHour.localeCompare(b.firstHour));
 }
 
 export async function saveHistoricalArchive(record: HistoricalArchive): Promise<void> {
