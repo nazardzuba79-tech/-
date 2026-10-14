@@ -1522,6 +1522,8 @@ export const HI: Record<Key, string> = {
   'futures.orderError.tierLeveragePlain': 'इस आकार की पोज़िशन के लिए लीवरेज सीमा से अधिक है।',
   'futures.orderError.insufficientMargin': 'यह ऑर्डर देने के लिए पर्याप्त धनराशि नहीं है।',
   'futures.orderError.insufficientFillMargin': 'यह ऑर्डर पूरा करने के लिए पर्याप्त धनराशि नहीं है।',
+  'futures.orderError.insufficientLiquidity': 'इस मात्रा के लिए ऑर्डर बुक में पर्याप्त लिक्विडिटी नहीं है। मात्रा घटाएँ या लिमिट ऑर्डर लगाएँ।',
+  'futures.orderError.selfMatch': 'यह ऑर्डर दूसरी ओर आपके अपने ऑर्डर से मेल खा जाएगा। उसे रद्द करें या कीमत बदलें।',
   'futures.orderError.orderSize': 'ऑर्डर का आकार कॉन्ट्रैक्ट की सीमाओं से बाहर है।',
   'futures.orderError.invalidLeverage': 'इस कॉन्ट्रैक्ट के लिए यह लीवरेज मान्य नहीं है।',
   'futures.orderError.riskLimit': 'पोज़िशन कॉन्ट्रैक्ट की जोखिम सीमा से अधिक है।',

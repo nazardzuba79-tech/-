@@ -1,0 +1,40 @@
+PASS 1 chart loads with the pair legend and 1h candles — legend="BTC/USDT · 1h" calls=[{"t":1791926909370,"interval":"1h","status":200,"n":520,"sorted":true,"dup":false}]
+PASS 2 5m: candles requested with interval=5m, in order, no duplicates, legend follows — call={"t":1791926911744,"interval":"5m","status":200,"n":520,"sorted":true,"dup":false} legend="BTC/USDT · 5m"
+PASS 2 15m: candles requested with interval=15m, in order, no duplicates, legend follows — call={"t":1791926914437,"interval":"15m","status":200,"n":520,"sorted":true,"dup":false} legend="BTC/USDT · 15m"
+PASS 2 4h: candles requested with interval=4h, in order, no duplicates, legend follows — call={"t":1791926917133,"interval":"4h","status":200,"n":520,"sorted":true,"dup":false} legend="BTC/USDT · 4h"
+PASS 2 1d: candles requested with interval=1d, in order, no duplicates, legend follows — call={"t":1791926920195,"interval":"1d","status":200,"n":520,"sorted":true,"dup":false} legend="BTC/USDT · 1d"
+PASS 2 1w: candles requested with interval=1w, in order, no duplicates, legend follows — call={"t":1791926922941,"interval":"1w","status":200,"n":520,"sorted":true,"dup":false} legend="BTC/USDT · 1w"
+PASS 2 1h: candles requested with interval=1h, in order, no duplicates, legend follows — call={"t":1791926925678,"interval":"1h","status":200,"n":520,"sorted":true,"dup":false} legend="BTC/USDT · 1h"
+PASS 3 chart type switches to Line and the canvas repaints — button="Тип графика: Линия"
+PASS 3b back to candles
+PASS 4 EMA added from the catalogue appears in the chart legend — График VOLTEX TradingView 5m 15m 1h 4h 1d 1w Индикаторы Активных индикаторов: 2 BTC/USDT · 1h SMA 200 EMA 20
+PASS 4b hiding EMA toggles its visibility and repaints — aria-pressed=false
+PASS 4c showing it again
+PASS 4d EMA persists across reload — График VOLTEX TradingView 5m 15m 1h 4h 1d 1w Индикаторы Активных индикаторов: 2 BTC/USDT · 1h SMA 20
+PASS 4e removing EMA clears it from the legend — График VOLTEX TradingView 5m 15m 1h 4h 1d 1w Индикаторы Активных индикаторов: 2 BTC/USDT · 1h SMA 20
+PASS 5 settings dialog opens with its tabs — tabs=4
+PASS 5b Escape closes the settings dialog
+PASS 6 a trend line is stored with time/price anchors — key=voltex.drawings.spot.BTC/USDT {"kind":"trendline","points":[{"time":1791648000,"price":83309.24328911681},{"time":1791756000,"price":83747.88937445177}]}
+PASS 6b after wheel-zoom the anchors are unchanged and the line is redrawn at a new screen position — before=[[490,312,119,41]] after=[[483,308,131,42]]
+PASS 6c after a drag-pan the anchors are unchanged and the line moved with the candles — pan: [[411,301,131,43]]
+PASS 6d after a viewport resize the anchors are unchanged and the line stays inside the plot — plot={"x":64,"y":223,"width":460,"height":271} line=[[137,296,131,28]]
+PASS 6e the rail's delete control clears the drawings — left=0
+PASS 7 collapsing the market list widens the chart and keeps the plot — 612 → 870
+PASS 7b expanding restores the width
+PASS 8 no page/console errors during the chart flow
+
+Candle calls:
+1h 200 n=520 sorted=true dup=false
+5m 200 n=520 sorted=true dup=false
+15m 200 n=520 sorted=true dup=false
+4h 200 n=520 sorted=true dup=false
+1d 200 n=520 sorted=true dup=false
+1w 200 n=520 sorted=true dup=false
+1h 200 n=520 sorted=true dup=false
+1h 200 n=520 sorted=true dup=false
+1h 200 n=520 sorted=true dup=false
+1h 200 n=520 sorted=true dup=false
+1h 200 n=520 sorted=true dup=false
+1h 200 n=520 sorted=true dup=false
+
+Errors:

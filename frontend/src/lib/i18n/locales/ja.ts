@@ -1522,6 +1522,8 @@ export const JA: Record<Key, string> = {
   'futures.orderError.tierLeveragePlain': 'このサイズのポジションでは許容されないレバレッジです。',
   'futures.orderError.insufficientMargin': 'この注文を出すには資金が不足しています。',
   'futures.orderError.insufficientFillMargin': 'この注文を約定するには資金が不足しています。',
+  'futures.orderError.insufficientLiquidity': 'この数量に対して板の流動性が不足しています。数量を減らすか、指値注文を出してください。',
+  'futures.orderError.selfMatch': 'この注文は反対側のご自身の注文と約定してしまいます。その注文を取り消すか、価格を変更してください。',
   'futures.orderError.orderSize': '注文数量が銘柄の制限を超えています。',
   'futures.orderError.invalidLeverage': 'この銘柄では使用できないレバレッジです。',
   'futures.orderError.riskLimit': 'ポジションが銘柄のリスクリミットを超えています。',

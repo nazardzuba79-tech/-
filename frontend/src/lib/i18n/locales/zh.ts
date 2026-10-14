@@ -1545,6 +1545,8 @@ export const ZH: Record<Key, string> = {
   'futures.orderError.tierLeveragePlain': '杠杆高于该仓位规模允许的上限。',
   'futures.orderError.insufficientMargin': '资金不足，无法下单。',
   'futures.orderError.insufficientFillMargin': '资金不足，无法成交该订单。',
+  'futures.orderError.insufficientLiquidity': '订单簿流动性不足，无法成交该数量。请减少数量或改用限价单。',
+  'futures.orderError.selfMatch': '该订单会与您在另一侧的自有订单成交。请撤销该订单或修改价格。',
   'futures.orderError.orderSize': '订单数量超出合约限制。',
   'futures.orderError.invalidLeverage': '该合约不支持此杠杆。',
   'futures.orderError.riskLimit': '仓位超出合约风险限额。',

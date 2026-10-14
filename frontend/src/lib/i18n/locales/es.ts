@@ -1522,6 +1522,8 @@ export const ES: Record<Key, string> = {
   'futures.orderError.tierLeveragePlain': 'El apalancamiento supera el límite para una posición de este tamaño.',
   'futures.orderError.insufficientMargin': 'Fondos insuficientes para colocar esta orden.',
   'futures.orderError.insufficientFillMargin': 'Fondos insuficientes para ejecutar esta orden.',
+  'futures.orderError.insufficientLiquidity': 'No hay suficiente liquidez en el libro para este volumen. Reduce el volumen o coloca una orden límite.',
+  'futures.orderError.selfMatch': 'Esta orden se cruzaría con tu propia orden del otro lado. Cancélala o cambia el precio.',
   'futures.orderError.orderSize': 'El tamaño de la orden está fuera de los límites del contrato.',
   'futures.orderError.invalidLeverage': 'Apalancamiento no válido para este contrato.',
   'futures.orderError.riskLimit': 'La posición supera el límite de riesgo del contrato.',

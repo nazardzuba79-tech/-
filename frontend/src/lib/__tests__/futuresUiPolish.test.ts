@@ -425,7 +425,9 @@ test.each([
     // chart has Bybit's two rows — «График» with the VOLTEX | TradingView
     // switch, then the intervals. Payload, math and every handler unchanged;
     // futuresFinalPolish still mounts the page and counts one chart.
-    "b76b54e9ad5ac9a2aeca45e6d86b5b627be2d5e4d60818cbef325cc2239ab375"
+    // 2026-10-13 audit: one prop, `mobile={compact}`, on FuturesPositionsPanel so the
+    // phone-only compact TP/SL trigger stops following the desktop archive design.
+    "e0f970e3a6b09ce7a788fceaa0f0447e05e81326aae0e3db1d03436a742c74c3"
   ],
   [
     "components/FuturesPairList.tsx",

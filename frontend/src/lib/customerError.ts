@@ -122,6 +122,9 @@ const PHRASE_KEY: Record<string, Key> = {
 const PATTERN_KEY: { shape: RegExp; key: Key; params?: (match: RegExpMatchArray) => Record<string, string> }[] = [
   { shape: /^Insufficient ([A-Z0-9]{2,12}) balance to transfer$/, key: 'serverError.insufficientTransfer', params: (m) => ({ asset: m[1] }) },
   { shape: /^Insufficient ([A-Z0-9]{2,12}) balance$/, key: 'serverError.insufficientBalance', params: (m) => ({ asset: m[1] }) },
+  // WalletMutation's wording when the asset's row cannot cover the lock
+  // (Spot orders, withdrawals) or the margin lock (Futures orders).
+  { shape: /^Insufficient ([A-Z0-9]{2,12}) (?:margin )?balance or reserved funds$/, key: 'serverError.insufficientBalance', params: (m) => ({ asset: m[1] }) },
   { shape: /^Withdrawal request is already \w+$/, key: 'serverError.withdrawalAlreadyHandled' },
   { shape: /^Too many registration attempts/, key: 'register.error.tooManyAttempts' },
   { shape: /^Too many/, key: 'serverError.tooManyAttempts' },

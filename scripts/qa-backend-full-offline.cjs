@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
 const SHA = /^[a-f0-9]{40}$/;
 const MAX_SOURCE = 512 * 1024 * 1024;
 const MAX_LOG = 64 * 1024 * 1024;
-const EXPECTED_TESTS = 249;
+const EXPECTED_TESTS = 251;
 const TMPFS = { '/tmp': 'rw,nosuid,nodev,noexec,size=256m,mode=1777', '/work': 'rw,nosuid,nodev,noexec,size=512m,mode=1777' };
 const CONTAINER_FILES = ['container-provenance.json', 'build-prerequisite.json', 'build.stdout.log', 'build.stderr.log', 'jest-command.json', 'jest-discovery.json', 'jest.json', 'container-result.json'];
 const OPT_INS = ['BANKING_DB_TESTS', 'PRIVATE_TRADING_DB_TESTS', 'VOLTEX_PG_TEST_URL', 'VOLTEX_NRX_TEST_URL', 'VOLTEX_LISTING_TEST_URL', 'KYC_TEST_DATABASE_URL', 'EMAIL_POLICY_TEST_URL', 'ADMIN_PASSWORD_TEST_URL', 'NATIVE_EGRESS_TEST_DATABASE_URL'];

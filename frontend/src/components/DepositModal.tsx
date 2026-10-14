@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDepositWallets, useDepositSelection } from '../lib/useDepositOptions';
 import { MANUAL_DEPOSIT_CATALOGUE } from '../lib/depositCatalogue';
 import { useLanguage } from '../lib/i18n';
@@ -21,6 +21,14 @@ export function DepositModal({ onClose, source = 'header', initialAsset, tone = 
 }
 
 function LegacyDepositModal({ onClose }: { onClose: () => void }) {
+  // Escape closes the dialog, as the overlay click and «✕» do. The
+  // catalogue dialog and the wallet page's modal already listen; this one
+  // (2026-10-13 audit) could only be left by pointer.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.stopPropagation(); onClose(); } };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
   const { t } = useLanguage();
   const CHAIN_LABEL: Record<string, string> = {
     bitcoin: t('deposit.chain.bitcoin'),
