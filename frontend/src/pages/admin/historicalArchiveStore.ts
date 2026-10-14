@@ -1,32 +1,39 @@
 /**
  * Local historical-movement catalogue for the admin's PRIVATE preview only.
  *
- * Import original operator-provided hourly CSV once and reuse 1/7/30/90-day
- * excerpts across multiple listing drafts. No API/network requests, server
- * storage, licensing inference, financial ledgers or automatic publication.
- * A SHA-256 detects changes to LOCAL cached bytes, not source authenticity.
+ * An operator can import CSV once and select 1/7/30/90-day movements later.
+ * Raw source OHLC prices/volume are discarded after import; IndexedDB retains
+ * only signed PPM moves. No network requests or public simulation publishing.
+ * A SHA-256 checks cached MOVEMENTS, never the source's authenticity/license.
  */
-import { importHistoricalCsv, type HistoricalSource, type HistoricalClip, type HistoricalCsvSelection } from './listingHistoricalImport';
+import { parseHistoricalMovementCsv, selectHistoricalMovements, type HistoricalSource, type HistoricalClip, type HistoricalCsvSelection } from './listingHistoricalImport';
 
 export const HISTORICAL_ARCHIVE_MAX_ITEMS = 8;
 export const HISTORICAL_ARCHIVE_MAX_TOTAL_BYTES = 12 * 1024 * 1024;
-const DB_NAME = 'voltex.admin.historical-archives.v1';
+// Never open the experimental v1 raw-CSV database: no production deployment used it.
+const DB_NAME = 'voltex.admin.historical-movements.v2';
 const STORE = 'archives';
 const HOUR = 3_600_000;
 const SOURCES: readonly HistoricalSource[] = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 
 export interface HistoricalArchive {
-  version: 1;
+  version: 2;
   id: string;
   source: HistoricalSource;
   name: string;
   firstHour: string;
   endExclusive: string;
   hours: number;
+  /** Original uploaded CSV byte count, metadata only. Raw bytes are discarded. */
   byteLength: number;
+  /** Actual size of encoded PPM movement array, used for local archive quota. */
+  storedBytes: number;
+  /** Source file SHA-256 as an unverified fingerprint; NOT re-verifiable from PPM. */
   sha256: string;
-  /** Only local IndexedDB retains original OHLC text. Never send this to listings API. */
-  csv: string;
+  /** SHA-256 of the locally stored relative movements; verified on every read. */
+  movementDigest: string;
+  /** Signed PPM, never the source's absolute OHLC prices or volume. */
+  movements: [number,number,number][];
   provenance: 'USER_SUPPLIED_UNVERIFIED';
 }
 
@@ -49,20 +56,13 @@ export const HISTORICAL_PRESETS: readonly HistoricalPreset[] = [
   { id:'sol-2022-apr', label:'Solana · апрель—июнь 2022', source:'SOL/USDT', startDateUtc:'2022-04-01', hours:2160 },
 ] as const;
 
-function rawRows(text: string): string[] {
-  const lines = text.replace(/^\uFEFF/, '').trim().split(/\r?\n/);
-  if (/^timestamp\s*,\s*open\s*,\s*high\s*,\s*low\s*,\s*close/i.test(lines[0] || '')) lines.shift();
-  return lines;
-}
-
-/** Strict inspection: importHistoricalCsv validates ALL rows, not just first 24. */
+/** Validates ALL input CSV rows before reducing them to relative movements. */
 export function historicalArchiveInfo(csv: string, source: HistoricalSource): Pick<HistoricalArchive,'firstHour'|'endExclusive'|'hours'|'byteLength'> {
   const byteLength = new TextEncoder().encode(csv).byteLength;
   if (byteLength > 3 * 1024 * 1024) throw new Error('Исторический архив превышает 3 МБ');
-  const preview = importHistoricalCsv(csv, source, {hours:24});
-  const hours = rawRows(csv).length;
-  const start = Date.parse(preview.sourceStart);
-  return { firstHour: preview.sourceStart, endExclusive: new Date(start + hours * HOUR).toISOString(), hours, byteLength };
+  const parsed = parseHistoricalMovementCsv(csv,source);
+  const hours = parsed.bars.length, start = Date.parse(parsed.sourceStart);
+  return { firstHour: parsed.sourceStart, endExclusive: new Date(start + hours * HOUR).toISOString(), hours, byteLength };
 }
 
 export function coversHistoricalSelection(archive: Pick<HistoricalArchive,'source'|'firstHour'|'endExclusive'>, source: HistoricalSource, startDateUtc: string, hours: number): boolean {
@@ -75,7 +75,7 @@ export function coversHistoricalSelection(archive: Pick<HistoricalArchive,'sourc
 
 export function archiveSelection(archive: HistoricalArchive, selection: HistoricalCsvSelection): HistoricalClip {
   if (!SOURCES.includes(archive.source) || archive.provenance !== 'USER_SUPPLIED_UNVERIFIED') throw new Error('Неизвестный локальный архив');
-  return importHistoricalCsv(archive.csv, archive.source, selection);
+  return selectHistoricalMovements({sourceStart:archive.firstHour,bars:archive.movements}, archive.source, selection);
 }
 
 export async function sha256Text(value: string): Promise<string> {
@@ -84,27 +84,52 @@ export async function sha256Text(value: string): Promise<string> {
   return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** Parse once; source dollar prices and volume do not survive this function. */
 export async function prepareHistoricalArchive(csv: string, source: HistoricalSource, fileName: string): Promise<HistoricalArchive> {
   if (!SOURCES.includes(source)) throw new Error('Неизвестный источник исторических свечей');
-  const meta = historicalArchiveInfo(csv, source);
-  const sha256 = await sha256Text(csv);
+  const byteLength=new TextEncoder().encode(csv).byteLength;
+  if(byteLength>3*1024*1024)throw new Error('Исторический архив превышает 3 МБ');
+  const parsed=parseHistoricalMovementCsv(csv,source);
+  const hours=parsed.bars.length, sourceStart=parsed.sourceStart;
+  const movements=parsed.bars;
+  const storedText=JSON.stringify(movements);
+  const storedBytes=new TextEncoder().encode(storedText).byteLength;
+  const [sha256,movementDigest]=await Promise.all([sha256Text(csv),sha256Text(storedText)]);
   return {
-    version:1, id:source.replace('/','-') + ':' + sha256,
-    source, name:fileName.slice(0,120).replace(/[\u0000-\u001f]/g, ''),
-    ...meta,sha256,csv,provenance:'USER_SUPPLIED_UNVERIFIED',
+    version:2,id:source.replace('/','-')+':'+sha256,
+    source,name:fileName.slice(0,120).replace(/[\u0000-\u001f]/g,''),
+    firstHour:sourceStart,endExclusive:new Date(Date.parse(sourceStart)+hours*HOUR).toISOString(),
+    hours,byteLength,storedBytes,sha256,movementDigest,movements,
+    provenance:'USER_SUPPLIED_UNVERIFIED',
   };
 }
 
 export async function verifyHistoricalArchive(archive: HistoricalArchive): Promise<void> {
-  if (!archive || archive.version !== 1 || !SOURCES.includes(archive.source)
+  if (!archive || archive.version !== 2 || !SOURCES.includes(archive.source)
       || archive.provenance !== 'USER_SUPPLIED_UNVERIFIED'
       || !/^[a-f0-9]{64}$/.test(archive.sha256)
-      || archive.id !== archive.source.replace('/','-') + ':' + archive.sha256)
+      || !/^[a-f0-9]{64}$/.test(archive.movementDigest)
+      || archive.id !== archive.source.replace('/','-') + ':' + archive.sha256
+      || !Number.isSafeInteger(archive.byteLength) || archive.byteLength <= 0 || archive.byteLength > 3*1024*1024
+      || !Number.isSafeInteger(archive.storedBytes) || archive.storedBytes <= 0
+      || !Array.isArray(archive.movements) || archive.movements.length !== archive.hours
+      || archive.hours < 24 || archive.hours > 12000
+      || !/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(archive.firstHour))
     throw new Error('Локальный архив повреждён');
-  const info = historicalArchiveInfo(archive.csv,archive.source);
-  if (info.firstHour !== archive.firstHour || info.endExclusive !== archive.endExclusive
-      || info.hours !== archive.hours || info.byteLength !== archive.byteLength
-      || await sha256Text(archive.csv) !== archive.sha256)
+  const start=Date.parse(archive.firstHour);
+  if (!Number.isFinite(start)||new Date(start).toISOString() !== archive.firstHour
+      || archive.endExclusive !== new Date(start+archive.hours*HOUR).toISOString())
+    throw new Error('Неверные даты локального архива');
+  for (const bar of archive.movements) {
+    if (!Array.isArray(bar) || bar.length !== 3 || bar.some(v=>!Number.isSafeInteger(v))
+        || bar[0] < Math.max(0,bar[2]) || bar[0]>4_000_000
+        || bar[1]>Math.min(0,bar[2]) || bar[1]<=-1_000_000
+        || bar[2]<=-1_000_000 || bar[2]>4_000_000)
+      throw new Error('Локальный архив содержит некорректные движения');
+  }
+  const storedText=JSON.stringify(archive.movements);
+  if (new TextEncoder().encode(storedText).byteLength!==archive.storedBytes
+      || await sha256Text(storedText)!==archive.movementDigest)
     throw new Error('Контрольная сумма локального архива не совпадает');
 }
 
@@ -154,7 +179,7 @@ export async function saveHistoricalArchive(record: HistoricalArchive): Promise<
       const old=get.result as HistoricalArchive[];
       const others=old.filter(x=>x.id!==record.id);
       if(others.length >= HISTORICAL_ARCHIVE_MAX_ITEMS ||
-          others.reduce((sum,x)=>sum+x.byteLength,record.byteLength)>HISTORICAL_ARCHIVE_MAX_TOTAL_BYTES){
+          others.reduce((sum,x)=>sum+x.storedBytes,record.storedBytes)>HISTORICAL_ARCHIVE_MAX_TOTAL_BYTES){
         reject(new Error('Локальная библиотека заполнена: удалите ненужные архивы'));return;
       }
       const put=store.put(record);
