@@ -45,3 +45,21 @@ Before considering any public release: obtain independently documented suitable 
 - Exact PR-head CI, independent TS build and backend/frontend tests must pass before any merge.
 
 This branch is deliberately **draft-only**. Neither merging unrelated PRs nor deploying old candidate branches is authorized by the presence of these files.
+
+## 2026-10-14 — Local reusable historical period library (follow-up)
+
+**Implemented only in Draft PR #518.** The Admin now offers the offline **«Библиотека исторических сценариев»** in `ListingHistoricalEditor`, without changing the shared DTO, backend order routes or publication gate:
+
+- Suggested selections: BTC January/April/October 2018, ETH January/April/October 2021, SOL January/April 2022, each exactly 90 × 24 = **2160 distinct source hours**. These entries have dates and labels ONLY: they do **not** contain imaginary or bundled market candles. An entry is disabled until a corresponding continuous CSV covering its full window is present in the local library.
+- One-time **operator CSV import** validates all 24–12000 source hours using the existing strict client importer (timestamps, OHLC, continuity), computes SHA-256 of raw bytes, and retains the CSV in **this browser's IndexedDB only**; maximum 8 archives and 12 MiB total, 3 MiB per source file. Browser storage deletion or another device loses this library, so it is not a cloud sync. The hash detects local corruption and is verified again before reuse; it is **not proof of exchange provenance or usage rights**.
+- Users can click **«Добавить»** on an available preset or choose a previously saved source archive plus date/duration. The selected `HistoricalClip` still contains only signed relative PPM movements and `USER_SUPPLIED_UNVERIFIED`; its original CSV is never sent to backend.
+- One existing function checks the same limits for both direct CSV imports and library excerpts: at most 3 clips / 4800 replay hours / 65 KiB serialized draft program, with exact 1 source hour = 1 simulated hour. Existing growth/fall and published history are unchanged.
+- Both client and server **continue rejecting PUBLICATION** for this mode with `HISTORICAL_RIGHTS_UNVERIFIED`. No toggle to assert that a CSV is licensed, no false claim of validated BTC/ETH source identity and no route around ledger isolation.
+- The `scripts/qa-listing-controls.cjs` browser regression covers library import → removal of current clip → reuse without CSV; it separately tests that an ETH 2021 90-day preset is disabled until its matching real fixture is imported, then enabled, and public publish remains disabled. Unit tests check 2300-hour integrity, date coverage, digest tampering, and exact 2160-hour clipping. CI runs these tests on PR HEAD.
+
+**External licensing review (2026-10-14):**
+- Binance Vision terms: https://github.com/binance/binance-public-data/blob/master/TERMS_AND_CONDITIONS.md — publicly downloadable OHLC and derived models are subject to non-commercial limitations; there is no blanket production redistribution permission.
+- Kraken historic OHLCVT: https://support.kraken.com/articles/360047124832-downloadable-historical-ohlcvt-open-high-low-close-volume-trades-data — download availability does not itself establish publishing rights.
+- CryptoDataDownload: https://www.cryptodatadownload.com/terms-of-use/ — free samples expressly limit commercial uses.
+
+**Unresolved for public enablement** (must be demonstrated, not silently bypassed): documented suitable rights per archival data source, credible source provenance for each uploaded CSV (a digest alone is not enough), explicit simulation disclosure and separation from ordinary executable Spot balances/orders; end-to-end resource regression on actual target infrastructure. Until then **Draft/review, non-tradable only**.
