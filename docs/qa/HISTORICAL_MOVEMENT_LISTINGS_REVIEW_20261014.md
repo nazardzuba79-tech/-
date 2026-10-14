@@ -17,7 +17,8 @@ timestamp,open,high,low,close[,volume,trades]
 ```
 
 - Timestamp: UTC hour (UNIX seconds, UNIX milliseconds or ISO UTC `Z`), strictly hourly without missing or duplicate timestamps.
-- 24–2400 bars per source clip; up to 3 clips and 4800 hours combined; CSV max 512 KiB; compact draft replay metadata capped independently, whole config max 80 KiB for the existing API size budget.
+- Choose a **start date UTC** and a 1 / 7 / 30 / 90-day window directly in the Admin UI. The file can cover up to **12000 consecutive 1h bars / 3 MiB**, but only the chosen 24–2400-hour excerpt is stored. Blank date starts at the file's first candle.
+- 24–2400 bars per selected source clip; up to 3 clips and 4800 hours combined; compact draft replay metadata capped independently, whole config max 80 KiB for the existing 100KB API size budget.
 - Hourly **relative high/open, low/open and close/open movement**, rounded to signed PPM, is stored. Original source prices, real source volumes and historical timestamps (other than first-source UTC date) are not re-used in public candles.
 - The source string BTC/ETH/SOL is an **admin claim**, not verified against a venue. It is never evidence of source authenticity or redistribution rights.
 
