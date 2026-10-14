@@ -28,7 +28,7 @@ jobs:
       actions: read
     env:
       QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
-      AUTH_BURST_POLICY_SHA256: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+      AUTH_BURST_POLICY_SHA256: 35b9fc7273dae9537f14e321650743906e2e6c2cb9937c57f099b9e18025fd90
     steps:
       - uses: actions/checkout@v4
         with:
