@@ -1,0 +1,19 @@
+== qa-spot-cfd-terminal
+      "cfd": "strip=95px ovf=0 lap=0"
+    }
+  }
+}
+== qa-futures-proportions
+  "cases": 6,
+  "violations": [],
+  "report": "/home/user/-/output/futures-proportions/after-report.json"
+}
+== qa-futures-figma-desktop
+{"cases":4,"errors":[],"external":[],"writeCount":8}
+== qa-futures-chart-ux
+{"cases":4,"assertions":129,"failed":0,"errors":[],"external":[],"writeCount":24}
+== qa-limit-close
+      "passed": true
+    }
+  ]
+}

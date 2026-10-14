@@ -120,7 +120,14 @@
     :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.orderbook-collapsed:not(.market-panel-collapsed) { grid-template-columns:var(--market-panel-width,258px) minmax(0,1fr) 0 264px; }
     :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.market-panel-collapsed.orderbook-collapsed { grid-template-columns:0 minmax(0,1fr) 0 264px; }
   }
-  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-workspace { grid-template-columns:278px minmax(0,1fr) 300px; gap:4px; background:#000000 !important; }
+  /* The three desktop columns only from 1025px: below that CfdTerminal.css
+     stacks the instrument list over a two-column chart + ticket row, and this
+     rule used to override it and leave the chart in a 278px column beside a
+     430px ticket (2026-10-13 audit, 901–1024px). */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-workspace { gap:4px; background:#000000 !important; }
+  @media (min-width:1025px) {
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-workspace { grid-template-columns:278px minmax(0,1fr) 300px; }
+  }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.ticker-bar,.cfd-ticker-bar,.left-panel,.pairs-section,.chart-area,.orderbook-area,.order-form-area,.bottom-panel,.cfd-instruments-area,.cfd-chart-area,.cfd-form-area,.cfd-bottom-panel) {
     background:#101014 !important; border:0 !important; border-radius:0 !important; box-shadow:none !important;
   }
@@ -502,4 +509,65 @@
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.ticker-bar,.cfd-ticker-bar) {
     height:52px; min-height:52px; max-height:52px;
   }
+}
+
+/* ═══ STRUCTURE INSIDE THE TILES (owner 2026-10-13: «спот і CFD виглядають
+   пустими, панелі не розділеними») ══════════════════════════════════════════
+   Figma 19:103 keeps the black 4px gutters and no tile borders (Bybit too),
+   and draws the structure INSIDE a tile with 1px #222227 rules under its
+   header, tab and column rows (HorizontalBorder_9/10/11/12 in the ticket,
+   the book and account headers). The 2026-10-07 port zeroed those borders
+   to copy the bare Futures rows; they return here as inset shadows, so no
+   row changes height. Desktop only; nothing functional moves. */
+@media (min-width:901px) {
+  /* Spot: market list title, its tabs and sort row; book title and columns;
+     ticket order-type tabs; account tabs and table head. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal :is(.pairs-header,.pairs-tabs,.pairs-sort,.orderbook-header,.orderbook-col-headers,.order-type-tabs,.terminal-account-header) {
+    box-shadow:inset 0 -1px 0 #222227;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .orders-table th { box-shadow:inset 0 -1px 0 #222227; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-summary { border-bottom-color:#222227; }
+
+  /* CFD: list title and columns; ticket order-type tabs; positions tabs. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal :is(.cfd-instruments-header,.cfd-columns,.cfd-order-panel .order-family-tabs,.cfd-tabs,.cfd-chart-toolbar) {
+    box-shadow:inset 0 -1px 0 #222227;
+  }
+  /* (.cfd-chart-toolbar is the CFD chart's only header row — title tab plus
+     intervals — so it takes the rule the Spot/Futures «График» row leaves to
+     its toolbar.) */
+  /* The CFD list's «Рынки» title row: the Spot market list's, to the pixel. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-instruments-header {
+    display:flex; align-items:flex-start; height:40px; min-height:40px; padding:12px 12px 0; background:#101014;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-instruments-header > span {
+    box-sizing:content-box; height:18px; padding-bottom:8px; border-bottom:2px solid #f0b90b;
+    font-size:14px; font-weight:500; line-height:18px; color:#ffffff;
+  }
+  /* CFD ticket: the fields box takes its natural height and the action
+     follows it, so the void goes under the button as on Futures instead of
+     between the fields and the floor. At short heights the box still shrinks
+     (min-height:0) and scrolls on its own while the action stays in view, as
+     Codex's 2026-10 premium rule intends. Zero form padding puts the fields on
+     the side tabs' edges, as the Futures ticket has them. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-form { justify-content:flex-start; padding:0; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-form-fields { flex:0 1 auto; }
+  /* Spot ticket: the same edges (the form is its own scroller; the 12px inset
+     comes from the tile, as on Futures). */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .order-form-content { padding:0; }
+  /* CFD empty states: the Spot account panel's icon + title. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-empty {
+    display:flex; flex-direction:row; align-items:center; justify-content:center; gap:11px;
+    min-height:84px; padding:13px 18px; font-size:12px; line-height:18px; color:#6a6e73;
+  }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-empty strong { font-size:14px; font-weight:500; color:#ffffff; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-empty .spot-orders-empty-icon { color:#6a6e73; border-color:#222227; background:transparent; }
+}
+
+/* Phones and tablets (≤900px) keep the CFD list and empty states exactly as
+   before: the «Рынки» title row, the icon tile and the title weight are
+   desktop-only (the phone sheets are not part of this task). */
+@media (max-width:900px) {
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-instruments-header { display:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-empty .spot-orders-empty-icon { display:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-empty strong { font:inherit; color:inherit; }
 }

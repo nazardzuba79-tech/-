@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { History, LayoutList } from 'lucide-react';
 import { cfdMarketCopy, formatCfdPrice } from '../lib/cfdPresentation';
 import { useLanguage } from '../lib/i18n';
 import { useCfdTickers } from '../lib/useCfdTickers';
@@ -38,7 +39,7 @@ export function CfdPositionsPanel({refreshKey,tickers}:{refreshKey:number;ticker
     </div>
     {error&&<div className="cfd-error" role="alert">{error}</div>}
     <div className="cfd-position-content" role="tabpanel">
-      {tab==='open'?(state.open.length===0?<div className="cfd-empty">{t('futures.noPositions')}</div>:
+      {tab==='open'?(state.open.length===0?<div className="cfd-empty" role="status"><span className="spot-orders-empty-icon" aria-hidden="true"><LayoutList size={19} strokeWidth={1.5} /></span><strong>{t('futures.noPositions')}</strong></div>:
         <div className="cfd-tableWrap"><table className="cfd-table"><thead><tr>
           <Th>{t('trade.cfdInstrument')}</Th><Th>{t('futures.side')}</Th><Th>{t('futures.size')}</Th><Th>{t('futures.entryPrice')}</Th><Th>{t('futures.markPrice')}</Th><Th>{t('futures.liqPrice')}</Th><Th>{t('futures.unrealizedPnl')}</Th><Th>{t('futures.roe')}</Th><Th></Th>
         </tr></thead><tbody>{state.open.map(p=>{
@@ -54,7 +55,7 @@ export function CfdPositionsPanel({refreshKey,tickers}:{refreshKey:number;ticker
             <Td><button className="cfd-closeBtn" disabled={closingId===p.id||mark===null} onClick={()=>close(p.id,p.symbol)}>{closingId===p.id?t('futures.closing'):t('futures.close')}</button></Td>
           </tr>;
         })}</tbody></table></div>
-      ):(state.history.length===0?<div className="cfd-empty">{t('futures.noPositionHistory')}</div>:
+      ):(state.history.length===0?<div className="cfd-empty" role="status"><span className="spot-orders-empty-icon" aria-hidden="true"><History size={19} strokeWidth={1.5} /></span><strong>{t('futures.noPositionHistory')}</strong></div>:
         <div className="cfd-tableWrap"><table className="cfd-table"><thead><tr>
           <Th>{t('trade.cfdInstrument')}</Th><Th>{t('futures.side')}</Th><Th>{t('futures.size')}</Th><Th>{t('futures.entryPrice')}</Th><Th>{t('markets.price')}</Th><Th>{t('futures.realizedPnl')}</Th><Th>{t('trade.status')}</Th>
         </tr></thead><tbody>{state.history.map(p=>{const pnl=Number(p.realizedPnl),positive=pnl>=0;return <tr key={p.id}>

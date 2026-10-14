@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { decimalsOf, limitClosePrecision, quantityText, shareOfPosition } from '../lib/futuresLimitClose';
 import { X } from 'lucide-react';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
@@ -57,15 +58,16 @@ export function FuturesLimitCloseDialog({ position: p, marketPrice, rules, onClo
   // Precision follows the figures the position already carries: the price
   // to the finest of entry and market, the quantity to the contract's step
   // when it is known, else to the size's own decimals.
-  const decimalsOf = (value: string | number | null) => value === null ? 0 : (String(value).split('.')[1] ?? '').length;
   const priceDecimals = Math.min(8, Math.max(decimalsOf(p.entryPrice), decimalsOf(p.markPrice), decimalsOf(market)));
-  const qtyDecimals = Math.min(8, rules ? decimalsOf(rules.qtyStep) : decimalsOf(p.size));
+  // Without the contract rules the size's own decimals are only the ± step:
+  // a share of the position may be finer (see lib/futuresLimitClose).
+  const precision = limitClosePrecision(p.size, rules?.qtyStep ?? null);
+  const { qtyDecimals, step, nudgeStep } = precision;
   const tick = Number((10 ** -priceDecimals).toFixed(priceDecimals));
-  const step = rules ? Number(rules.qtyStep) : Number((10 ** -qtyDecimals).toFixed(qtyDecimals));
   const fixed = (value: number, decimals: number) => value.toFixed(decimals);
   /** A quantity the way the engine spells it: `7`, `0.23`, `3750000` — the
    *  step's precision without trailing zeros. */
-  const qtyText = (value: number) => fixed(value, qtyDecimals).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+  const qtyText = (value: number) => quantityText(value, qtyDecimals);
   const grouped = (value: number, decimals: number) => value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
   const [price, setPrice] = useState(market === null ? '' : fixed(market, priceDecimals));
@@ -87,9 +89,7 @@ export function FuturesLimitCloseDialog({ position: p, marketPrice, rules, onClo
    *  50% close of an odd size never asks for more than exists. */
   function applyPercent(pct: number) {
     setPercent(pct);
-    const raw = size * (pct / 100);
-    const stepped = step > 0 ? Math.floor(raw / step + 1e-9) * step : raw;
-    setQuantity(pct === 100 ? p.size : qtyText(stepped));
+    setQuantity(shareOfPosition(p.size, pct, precision));
     setError(null);
   }
   function typeQuantity(next: string) {
@@ -105,7 +105,7 @@ export function FuturesLimitCloseDialog({ position: p, marketPrice, rules, onClo
       setPrice(fixed(Math.max(tick, base + direction * tick), priceDecimals));
     } else {
       const base = qtyPositive ? qtyNumber : 0;
-      const next = Math.min(size, Math.max(step, base + direction * step));
+      const next = Math.min(size, Math.max(nudgeStep, base + direction * nudgeStep));
       typeQuantity(qtyText(next));
     }
   }

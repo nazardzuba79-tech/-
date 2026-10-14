@@ -1502,6 +1502,8 @@ export const RU = {
   'futures.orderError.tierLeveragePlain': 'Плечо выше допустимого для такого размера позиции.',
   'futures.orderError.insufficientMargin': 'Недостаточно средств для размещения этого ордера.',
   'futures.orderError.insufficientFillMargin': 'Недостаточно средств для исполнения этого ордера.',
+  'futures.orderError.insufficientLiquidity': 'В книге недостаточно ликвидности для этого объёма. Уменьшите объём или выставьте лимитный ордер.',
+  'futures.orderError.selfMatch': 'Ордер встретил бы ваш собственный ордер на другой стороне. Отмените его или измените цену.',
   'futures.orderError.orderSize': 'Размер ордера вне лимитов контракта.',
   'futures.orderError.invalidLeverage': 'Недопустимое плечо для этого контракта.',
   'futures.orderError.riskLimit': 'Позиция превышает лимит риска контракта.',

@@ -32,6 +32,7 @@ on:
       # onSessionChange broadcast every session invariant rests on, and a
       # change to it used to run no Copy Trading test at all.
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/readCoalescer.ts'
       - 'frontend/src/lib/nrxMarket.ts'
       - 'src/shared/aithPublication.ts'
       - 'frontend/src/lib/marketEdge.ts'
@@ -130,6 +131,7 @@ on:
       # onSessionChange broadcast every session invariant rests on, and a
       # change to it used to run no Copy Trading test at all.
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/readCoalescer.ts'
       - 'frontend/src/lib/nrxMarket.ts'
       - 'frontend/src/lib/marketEdge.ts'
       - 'frontend/src/lib/displaySnapshotCache.ts'
