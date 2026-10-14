@@ -59,7 +59,9 @@ export async function runTrace({ freeze, adapter, now = () => performance.now(),
   const started = now(), totalDeadline = started + budgetMs;
   let deadline = totalDeadline - TRACE_BOUNDS.cleanupMs, traceActive = false, timer;
   const report = { schema: 1, planId: TRACE_PLAN_ID, sourceSha: freeze.sourceSha, planSha256: freeze.planSha256,
-    status: 'INCOMPLETE', capacityAcceptance: 'NOT_EVALUATED', variant: 'C', countLimits: TRACE_COUNTS,
+    status: 'INCOMPLETE', observedStatus: 'INCOMPLETE', safetyStatus: 'NOT_EVALUATED',
+    captureStatus: 'INCOMPLETE', cleanupStatus: 'INCOMPLETE',
+    capacityAcceptance: 'NOT_EVALUATED', variant: 'C', countLimits: TRACE_COUNTS,
     health: [], safety: [], warmup: [], ordinary: [], phases: [], errors: [], cleanup: null,
     initiated: { directAuthority: 0, gatewaySafety: 0, warmup: 0, ordinary: 0, health: 0 } };
   const remaining = (cap = TRACE_BOUNDS.rpcMs) => {
@@ -97,7 +99,11 @@ export async function runTrace({ freeze, adapter, now = () => performance.now(),
     report.initiated[kind] += rows.length;
     const terminal = await rpc('driver', 'requests', { rows, class: kind });
     verifyUniqueTerminals(terminal, rows.map(r => r.requestId));
-    if (kind === 'ordinary') report.ordinary = terminal;
+    if (kind === 'ordinary') {
+      report.ordinary = terminal;
+      // Preserve observed terminal failures even if later capture/drain work is incomplete.
+      report.observedStatus = classifyRun(terminal);
+    }
     for (const row of terminal) { const code = safetyCode(row.firstEventReason) || safetyCode(row.reason); if (code) assertSafety(false, code); }
     return { terminal, tail: await drain() };
   };
@@ -141,6 +147,7 @@ export async function runTrace({ freeze, adapter, now = () => performance.now(),
     const burst = await window(ordinaryRows(), 'ordinary'); report.ordinary = burst.terminal; report.after = burst.tail;
     assertSafety(writes(report.after.stock).every((value, i) => value === beforeWrites[i]), 'SAFETY_LEDGER_WRITE');
     report.trace = await rpc('service', 'stopTraceWindow'); traceActive = false; validateStoppedTrace(report.trace);
+    report.captureStatus = 'COMPLETE';
     const tailPhase = await phase('tail-drain');
     assert.match(ordinaryPhase.completedMonoNs || '', /^\d+$/); assert.match(tailPhase.snapshot?.observedMonoNs || '', /^\d+$/);
     report.cgroupWindow = { startMonoNs: ordinaryPhase.completedMonoNs, endMonoNs: tailPhase.snapshot.observedMonoNs,
@@ -162,8 +169,12 @@ export async function runTrace({ freeze, adapter, now = () => performance.now(),
     assert.equal(report.driver.health, report.initiated.health); assert.ok(count(report.driver.samples) > 0);
     assert.deepEqual(report.driver.sampleIssues, [], 'TRACE_SAMPLER_INCOMPLETE');
     report.summary = latencySummary(report.ordinary); report.status = classifyRun(report.ordinary);
+    report.observedStatus = report.status; report.safetyStatus = 'PASS';
   } catch (error) {
-    report.errors.push(safeFailure(error)); report.status = failureVerdict(error).status;
+    report.errors.push(safeFailure(error)); report.failureVerdict = failureVerdict(error);
+    if (report.failureVerdict.status === 'FAIL') report.observedStatus = 'FAIL';
+    report.safetyStatus = report.failureVerdict.safetyStatus;
+    report.status = report.observedStatus === 'FAIL' ? 'FAIL' : report.failureVerdict.status;
   } finally {
     clearTimeout(timer);
     // Cleanup gets a separate reserved bound; timed request or wall failures never authorize another burst.
@@ -174,7 +185,11 @@ export async function runTrace({ freeze, adapter, now = () => performance.now(),
     }
     try { report.cleanup = await invoke(ms => adapter.close(ms), TRACE_BOUNDS.cleanupMs);
       assert.ok(report.cleanup && report.cleanup.removed === true && Array.isArray(report.cleanup.errors) && report.cleanup.errors.length === 0, 'TRACE_CLEANUP_INCOMPLETE');
-    } catch (error) { adapter.abort('TRACE_CLEANUP_INCOMPLETE'); report.errors.push(safeFailure(error)); report.status = 'INCOMPLETE'; }
+      report.cleanupStatus = 'COMPLETE';
+    } catch (error) {
+      adapter.abort('TRACE_CLEANUP_INCOMPLETE'); report.errors.push(safeFailure(error)); report.cleanupStatus = 'INCOMPLETE';
+      report.status = report.observedStatus === 'FAIL' ? 'FAIL' : 'INCOMPLETE';
+    }
     report.elapsedMs = now() - started;
   }
   return report;

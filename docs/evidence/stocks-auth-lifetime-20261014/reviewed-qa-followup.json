@@ -22,19 +22,19 @@
       "path": ".github/workflows/stocks-review.yml",
       "classification": "workflow-control",
       "baseSHA256": "afea9fc3992fb122719a70d208abaee16efc4aacf5016446574191378c3bf50a",
-      "headSHA256": "a126c36c8ae636069e541840be3772050365e9a966ad7db60e406e0412a3c215"
+      "headSHA256": "823649d44abb65476d147ad020167415e5bf0af593054ec98bf17e9ba7cd0986"
     },
     {
       "path": "docs/AI_HANDOFF.md",
       "classification": "append-only-handoff",
       "baseSHA256": "8d0527e2abf804059a11388469f6edcfdfd0f192511e59434226e328512085b5",
-      "headSHA256": "68d6c3c3121ac5bf25c786c6a88496bb3754587f6d68c8a8a4ced2ed9d022835"
+      "headSHA256": "29ac740dd2a0ddfc2335a85e9c213292f2b3bb19ddcc64ecc9a736504bb9384c"
     },
     {
       "path": "docs/evidence/stocks-auth-lifetime-20261014/BURST-TRACE.md",
       "classification": "documentation",
       "baseSHA256": null,
-      "headSHA256": "6de063a6f87224d55e3a2e78d6484b007b4ad21492423155768986c70475dfc5"
+      "headSHA256": "54341a4cf0dcd88449711d99b473bdb2fc53df060ba7a77d40a2f3b2e83897af"
     },
     {
       "path": "docs/evidence/stocks-auth-lifetime-20261014/FOLLOWUP.md",
@@ -100,7 +100,7 @@
       "path": "services/stocks/auth-burst-trace-512/closure.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "033d2e5e257bbda3fac8568df1a5496a1127613cf04554e8de7247f1644987ed"
+      "headSHA256": "98d07ea971ee1395b806ef6eb14f8ce2101fdb9eb09ce2caf25eae1e22fd5565"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/environment-data.test.mjs",
@@ -154,25 +154,25 @@
       "path": "services/stocks/auth-burst-trace-512/launcher.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "d1e3b0504c2b83ce07a8e9b3327978eacde642f4d03067950b518abf945599bf"
+      "headSHA256": "1c515364d9fe8001ed8bff1c58f6d9f6da3bd020846ed4616d765d311eb52ffc"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/launcher.test.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "b1479ba6bce5cdb3aa50178fb3b6487b3456c236aa773f273619b04328ef0e52"
+      "headSHA256": "c9c2d69e277bd9640477dce2dceb0df345d716d700c1eef36bd3b289a971d486"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/prepare-receipts.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "7fd989e53f3af4d51b958c883480898cc6d29600c52e240e23e43f5202fca452"
+      "headSHA256": "9f4aa968a140daa5dc24646ee83865208ccc5195640e6a010157b8243564d1c4"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/prepare-receipts.test.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "90cdcce7f66f1af4bc8511b912d416eeaffd650ea72c03c86baaa1718f3152bd"
+      "headSHA256": "39eca3fb61f00e53bd88391aa3160341fa64ab0797592c6ccd5b5ed56a49323b"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/proxy-correlation.test.mjs",
@@ -196,7 +196,7 @@
       "path": "services/stocks/auth-burst-trace-512/service-overlay.test.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "f1be404448858f2791b414e4141fa0a71f323d9361420a5ef95029b4b22208eb"
+      "headSHA256": "90ca92edb2a7c35a68f6c750d3922077ae0e88e068477e8092e9d0cf4bc15839"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/sources.json",
@@ -220,25 +220,25 @@
       "path": "services/stocks/auth-burst-trace-512/trace-run.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "6b0b573871fd01aac65879754904bb81a2cc69f556ab308b77d82ec018144241"
+      "headSHA256": "3154c9608783d2dc90d56cb48f349f726bc3861a889237ebe6631c484ec77afa"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/trace-run.test.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "7b08a591086db266ae35cd9b0e88c223b3d7d07d39bb96949ad16441c16fa62c"
+      "headSHA256": "3c26d04069b6a56cbc4b2dd09fb65e798951caad6aae42e35f1d2401168aa696"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/workflow-config.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "6bf39c2e0a7716d4e0c0b236b4306b41d767c511258eee1766df9bde2d58dbd7"
+      "headSHA256": "a6295abfe54e786163a4d7d8ad71a7891e175e3c7df71ae5dce348f37dec30f8"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/workflow-config.test.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "35c0f1810558ac2f1afece192b47545b888ec87fb136a2ed6a3bb334802c8bc3"
+      "headSHA256": "a3c6c10baadaae9231aa02fd80e4b35d1e553d6aec0b68244954e8d236618d5a"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/workflow-source.mjs",
@@ -256,7 +256,7 @@
       "path": "services/stocks/auth-burst-trace-512/workflow.test.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "8081a00ce83222060c5842181ce9207eeea81ad9690817c203207074023ac0de"
+      "headSHA256": "1a3e550376bf169cc0b9aca2920740ea81a9a1eb66cc69d564d5aad5c3191296"
     },
     {
       "path": "services/stocks/auth-http-fixture-512/cancellation-barrier.test.mjs",

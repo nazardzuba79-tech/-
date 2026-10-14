@@ -5,15 +5,16 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { hash, POLICY_PATH } from './launch-gate.mjs';
 import { MEMBER_PATHS, COMPILED_PATHS, artifactNames } from './prepare-receipts.mjs';
-import { buildPrepareConfig, buildRunConfig, constructConfig, main } from './workflow-config.mjs';
+import { buildPrepareConfig, buildRunConfig, constructConfig, main, validateReadSize } from './workflow-config.mjs';
 
 const h = label => hash(`synthetic config fixture ${label}`), json = value => Buffer.from(JSON.stringify(value));
 const sourceSha = '4444444444444444444444444444444444444444', runId = '888888';
-function fixture() {
+function fixture({ emptyBuildLog = false } = {}) {
   const repository = path.resolve('/synthetic-config/repository'), outside = path.resolve('/synthetic-config/output');
   const sourceInput = { event: { headSha: sourceSha, runId }, approvedPolicySha256: h('policy'), history: {} };
   const policy = { sourceTreeSha256: h('tree') }, members = {};
   for (const key of ['stageReport', 'stageManifest', 'buildProvenance', 'buildLog']) members[key] = json({ unitFixture: key });
+  if (emptyBuildLog) members.buildLog = Buffer.alloc(0);
   members.compiled = Object.fromEntries(COMPILED_PATHS.map(p => [p, Buffer.from('synthetic code ' + p)]));
   const compiledArchive = { artifactId: '100001', runId, sourceSha, name: artifactNames(sourceSha).compiled, expired: false,
     archiveSha256: h('zip'), downloadedSha256: h('zip'), bytes: 1000, selectedMembers: [] };
@@ -98,7 +99,10 @@ function mockIO(f) {
   for (const [p, value] of Object.entries(f.members.compiled)) files.set(path.join(stageDirectory, 'package', p), value);
   measured.set(f.prepare.stageArchivePath, { bytes: 1000, sha256: h('zip') });
   measured.set(f.prepare.python.executable, { bytes: 100, sha256: h('python') });
-  const io = { read(file, max = 16 * 1024 ** 2) { calls.push(['read', file]); assert.ok(files.has(file), 'unexpected read'); assert.ok(files.get(file).length <= max); return files.get(file); },
+  const io = { read(file, max = 16 * 1024 ** 2, allowEmptyBuildLog = false) {
+    calls.push(['read', file]); assert.ok(files.has(file), 'unexpected read');
+    validateReadSize(file, files.get(file).length, max, allowEmptyBuildLog); return files.get(file);
+  },
     measure(file) { calls.push(['measure', file]); assert.ok(measured.has(file), 'unexpected measured file'); return measured.get(file); },
     save(file, value) { calls.push(['save', file]); return { bytes: json(value).length, sha256: hash(json(value)) }; } };
   return { io, calls, files, measured, request: { repository: f.repository, sourceInputPath, compiledReceiptPath,
@@ -112,6 +116,33 @@ test('CLI construction hashes actual selected bytes via injected I/O and writes 
   m.files.set(requestPath, json(m.request)); const result = main(['prepare-config', requestPath, outputPath], { io: m.io });
   assert.ok(result.bytes > 0); assert.deepEqual(m.calls.at(-1), ['save', outputPath]);
   assert.ok(m.calls.every(row => ['read', 'measure', 'save'].includes(row[0])));
+});
+
+test('only the exact build.log read can be empty and still requires its measured ZIP inventory binding', () => {
+  const f = fixture({ emptyBuildLog: true }), m = mockIO(f);
+  assert.equal(constructConfig('prepare-config', m.request, { io: m.io }).mode, 'prepare');
+  assert.doesNotThrow(() => validateReadSize(path.join(f.outside, 'build.log'), 0, 100, true));
+  assert.throws(() => validateReadSize(path.join(f.outside, 'build.log'), 0, 100));
+  for (const name of ['build-provenance.json', 'report.json', 'package/manifest.json', 'auth.js', 'runtime-image.tar', 'accounts.sqlite']) {
+    assert.throws(() => validateReadSize(path.join(f.outside, name), 0, 100, true));
+    assert.throws(() => validateReadSize(path.join(f.outside, name), 0, 100));
+  }
+  for (const change of [
+    value => { value.files.set(path.join(value.request.stageDirectory, 'build.log'), Buffer.from('tampered')); },
+    value => {
+      const receipt = JSON.parse(value.files.get(value.request.compiledReceiptPath));
+      receipt.selectedMembers.find(row => row.path === 'build.log').sha256 = h('wrong empty hash');
+      value.files.set(value.request.compiledReceiptPath, json(receipt));
+    },
+    value => {
+      const receipt = JSON.parse(value.files.get(value.request.compiledReceiptPath));
+      receipt.selectedMembers.find(row => row.path === 'build.log').bytes = 1;
+      value.files.set(value.request.compiledReceiptPath, json(receipt));
+    },
+  ]) {
+    const next = mockIO(fixture({ emptyBuildLog: true })); change(next);
+    assert.throws(() => constructConfig('prepare-config', next.request, { io: next.io }));
+  }
 });
 test('run construction measures local image/seed and uses original preparation paths without archive IDs', () => {
   const f = fixture(), m = mockIO(f), { python, ...common } = m.request;

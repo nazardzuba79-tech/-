@@ -59,3 +59,25 @@ Retained release blockers, unchanged:
 
 No merge, deployment, production access, production DB change or financial
 operation is performed by this source review. Status: BLOCKED.
+
+
+### Narrow source review corrections — 2026-10-14
+
+The retained f045 successful compiler log is exactly zero bytes (SHA256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`).
+Receipt, config, workflow selected-member and derived-closure readers now accept
+only that named size/digest-bound log. Proof JSON, executables, overlays and
+helpers remain nonempty; tampered sizes, hashes and provenance are rejected.
+The actual inline workflow reader is executed by a pure regression.
+
+Observed safety or ordinary FAIL now survives incomplete trace/raw evidence,
+cleanup, image cleanup and launcher-deadline gaps. Evidence completeness is
+reported separately. Before correction the focused tests had 13 PASS / 2 FAIL;
+after correction 16/16 PASS. Original classifiers and financial sources are
+unchanged.
+
+Final complete pure guard set: 139/139 PASS, 0 skipped, 447.2739 ms; log SHA256
+`b7b3927a58a8026854a4cd187261fc18ffb400638aee6da5a791a797d8c703fe`. The separate built-in Worker check above is retained.
+No workload, image preparation, HTTP burst, push or activation occurred during
+these checks. The checked-in source policy remains disabled. All retained
+backend/browser/capacity/coexistence failures and release blockers remain.

@@ -89,6 +89,39 @@ test('missing counters are incomplete while real safety violations remain safety
   }
 });
 
+test('observed safety failure before ordinary survives rejected or incomplete cleanup', async () => {
+  for (const throws of [true, false]) {
+    const { adapter, calls } = fakeAdapter(), rpc = adapter.rpc;
+    adapter.rpc = async (...args) => { const result = await rpc(...args);
+      if (args[0] === 'service' && args[1] === 'drain') result.nativeProviderStarts = 1;
+      return result;
+    };
+    adapter.close = async () => { if (throws) throw Error('CLEANUP_TEST_FAILURE'); return { removed: false, errors: ['UNKNOWN'] }; };
+    const report = await runTrace({ freeze: freeze(), adapter });
+    assert.equal(report.status, 'FAIL'); assert.equal(report.observedStatus, 'FAIL');
+    assert.equal(report.safetyStatus, 'FAIL'); assert.equal(report.failureVerdict.safetyStatus, 'FAIL');
+    assert.equal(report.captureStatus, 'INCOMPLETE'); assert.equal(report.cleanupStatus, 'INCOMPLETE');
+    assert.ok(report.errors.includes('SAFETY_PROVIDER_ACCESS'));
+    assert.equal(report.ordinary.length, 0); assert.ok(!calls.some(row => row.op === 'startTraceWindow'));
+  }
+});
+
+test('capture gaps retain observed ordinary failures while successful terminals do not hide gaps', async () => {
+  for (const failedOrdinary of [true, false]) {
+    const { adapter } = fakeAdapter({ failedOrdinary, incompleteTrace: true });
+    const report = await runTrace({ freeze: freeze(), adapter });
+    assert.equal(report.status, failedOrdinary ? 'FAIL' : 'INCOMPLETE');
+    assert.equal(report.observedStatus, failedOrdinary ? 'FAIL' : 'PASS');
+    assert.equal(report.captureStatus, 'INCOMPLETE'); assert.equal(report.cleanupStatus, 'COMPLETE');
+    assert.equal(report.ordinary.length, 50); assert.equal(report.trace.incomplete, true);
+    assert.deepEqual(report.errors, ['TRACE_DIAGNOSTIC_ERROR']);
+  }
+  const { adapter } = fakeAdapter(); adapter.close = async () => ({ removed: false, errors: ['UNKNOWN'] });
+  const report = await runTrace({ freeze: freeze(), adapter });
+  assert.equal(report.observedStatus, 'PASS'); assert.equal(report.status, 'INCOMPLETE');
+  assert.equal(report.captureStatus, 'COMPLETE'); assert.equal(report.cleanupStatus, 'INCOMPLETE');
+});
+
 test('zero worker commands are valid with explicitly unavailable worker CPU', () => {
   const trace = fakeTrace(); trace.rows = trace.rows.filter(row => row[1] === '0'); trace.counts.worker = 0;
   trace.windowCpu = { worker: { cpuAvailable: false } }; assert.equal(validateStoppedTrace(trace), true);

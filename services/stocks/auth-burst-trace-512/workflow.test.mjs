@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { BASELINE_SHA, WORKFLOW_PATH, normalizedWorkflow } from './launch-gate.mjs';
@@ -43,4 +46,20 @@ test('evidence upload excludes image archive, seed database and Docker configura
   assert.match(upload, /source-eligibility\.json/);
   assert.match(upload, /result\.json/);
   for (const file of ['driver-attempts.jsonl', 'driver-cgroups.jsonl', 'observer-*.json']) assert.ok(upload.includes(file));
+});
+test('actual workflow selected-member reader permits only the digest-bound empty build.log', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stocks-inline-log-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const body = job.match(/\.map\(p => \{\n([\s\S]*?)\n            \}\);/)?.[1];
+  assert.ok(body, 'selected-member inline reader must remain covered');
+  const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+  const read = new Function('p', 'stageDirectory', 'fs', 'path', 'assert', 'hash', body);
+  fs.writeFileSync(path.join(dir, 'build.log'), '');
+  assert.deepEqual(read('build.log', dir, fs, path, assert, hash), { path: 'build.log', bytes: 0,
+    sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' });
+  for (const name of ['report.json', 'build-provenance.json', 'compiled.js', 'nested/build.log']) {
+    fs.mkdirSync(path.dirname(path.join(dir, name)), { recursive: true });
+    fs.writeFileSync(path.join(dir, name), '');
+    assert.throws(() => read(name, dir, fs, path, assert, hash), undefined, name);
+  }
 });

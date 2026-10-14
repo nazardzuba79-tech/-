@@ -109,34 +109,48 @@ export async function launch(config, hooks = {}) {
     const remaining = Math.floor(overallEnd-now()-(lease?30000:0)); assert.ok(remaining>TRACE_BOUNDS.cleanupMs,'TRACE_LAUNCHER_DEADLINE');
     adapter = (hooks.createAdapter || createTraceAdapter)({ ...config.adapter, repository: config.repository, launch: config.gate });
     report = await (hooks.runTrace || runTrace)({ freeze: config.freeze, adapter, budgetMs:remaining });
+    report.observedStatus ??= report.status;
+    if (report.status === 'FAIL') report.observedStatus = 'FAIL';
   }
   catch (error) {
     // runTrace normally retains failures itself. Guard initialization/programming
     // errors without authorizing another attempt, and preserve a bounded failure.
-    report = { status: 'INCOMPLETE', errors: [/^[A-Z][A-Z0-9_]+$/.test(error?.message || '') ? error.message : 'TRACE_LAUNCH_FAILED'],
+    report = { status: 'INCOMPLETE', observedStatus: 'INCOMPLETE', safetyStatus: 'NOT_EVALUATED', captureStatus: 'INCOMPLETE',
+      errors: [/^[A-Z][A-Z0-9_]+$/.test(error?.message || '') ? error.message : 'TRACE_LAUNCH_FAILED'],
       ordinary: [], capacityAcceptance: 'NOT_EVALUATED' };
     if (error?.evidence) report.imageLease = error.evidence;
     if (adapter) try { report.cleanup = await adapter.close(Math.max(1,Math.min(30000,overallEnd-now()))); } catch { report.cleanup = { removed: false, errors: ['TRACE_CLEANUP_INCOMPLETE'] }; }
     else report.cleanup = { removed:true,errors:[],scope:'No adapter created.' };
   } finally {
+    const incomplete = code => {
+      report.errors ||= []; if (!report.errors.includes(code)) report.errors.push(code);
+      report.status = report.observedStatus === 'FAIL' || report.status === 'FAIL' ? 'FAIL' : 'INCOMPLETE';
+    };
+    report.cleanupStatus = report.cleanup?.removed === true && Array.isArray(report.cleanup.errors)
+      && report.cleanup.errors.length === 0 ? 'COMPLETE' : 'INCOMPLETE';
+    if (report.cleanupStatus === 'INCOMPLETE') incomplete('TRACE_CLEANUP_INCOMPLETE');
+    report.imageCleanupStatus = lease ? 'INCOMPLETE' : 'NOT_APPLICABLE';
     if (lease) {
       report.imageLease = lease.evidence;
       if (report.cleanup?.removed === true) {
         try { report.imageCleanup = await lease.release({containersClosed:true});
           assert.ok(['REMOVED','ABSENT','PRESERVED'].includes(report.imageCleanup.status) && report.imageCleanup.errors.length===0,'TRACE_IMAGE_CLEANUP_INCOMPLETE');
-        } catch { report.errors ||= [];report.errors.push('TRACE_IMAGE_CLEANUP_INCOMPLETE');report.status='INCOMPLETE'; }
-      } else { report.errors ||= [];report.errors.push('TRACE_IMAGE_RETAINED_FOR_UNCLOSED_CONTAINERS');report.status='INCOMPLETE'; }
+          report.imageCleanupStatus = 'COMPLETE';
+        } catch { incomplete('TRACE_IMAGE_CLEANUP_INCOMPLETE'); }
+      } else incomplete('TRACE_IMAGE_RETAINED_FOR_UNCLOSED_CONTAINERS');
     }
-    if (now() >= overallEnd) { report.errors ||= [];report.errors.push('TRACE_LAUNCHER_DEADLINE');report.status='INCOMPLETE'; }
+    if (now() >= overallEnd) incomplete('TRACE_LAUNCHER_DEADLINE');
     report.launcherElapsedMs=now()-started;
   }
-  let evidence;
+  let evidence, rawEvidenceAvailable = true;
   try { evidence = (hooks.readEvidence || readJson)(path.join(config.adapter.outputDirectory, 'adapter-evidence.json'), 32 * 1024 ** 2);
     assert.ok(Array.isArray(evidence.events) && evidence.events.length <= 20000); }
-  catch { evidence = { events: [] }; report.errors ||= []; report.errors.push('TRACE_ADAPTER_EVIDENCE_UNAVAILABLE'); report.status = 'INCOMPLETE'; }
+  catch { evidence = { events: [] }; rawEvidenceAvailable = false; report.errors ||= []; report.errors.push('TRACE_ADAPTER_EVIDENCE_UNAVAILABLE'); }
   const authorityEvents = evidence.events.filter(row => /^trace_\d{2}$/.test(row.requestId || ''));
   report.analysis = (hooks.analyzeTrace || analyzeTrace)({ trace: report.trace, ordinary: report.ordinary, authorityEvents, cgroupWindow: report.cgroupWindow });
-  if (report.analysis.captureStatus !== 'COMPLETE') report.status = 'INCOMPLETE';
+  report.captureStatus = rawEvidenceAvailable && report.analysis.captureStatus === 'COMPLETE'
+    && report.captureStatus !== 'INCOMPLETE' ? 'COMPLETE' : 'INCOMPLETE';
+  if (report.captureStatus !== 'COMPLETE') report.status = report.observedStatus === 'FAIL' || report.status === 'FAIL' ? 'FAIL' : 'INCOMPLETE';
   report.launch = { eligibility, attempt, imageOwnership: config.imageOwnership,
     productionAccess: false, capacityAcceptance: false };
   (hooks.save || save)(config.resultPath, report); return report;

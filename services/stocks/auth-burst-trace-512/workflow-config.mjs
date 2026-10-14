@@ -108,13 +108,23 @@ export function buildRunConfig(input, { createReceipts = createLocalLaunchReceip
       archiveBytes: report.imageArchive.bytes, dockerConfigDirectory: outside(input.dockerConfigDirectory, input.repository) } };
 }
 
-function regular(file, maximum) {
+export function validateReadSize(file, size, maximum, allowEmptyBuildLog = false) {
+  assert.equal(typeof allowEmptyBuildLog, 'boolean', 'CONFIG_EMPTY_LOG_FLAG');
+  assert.ok(Number.isSafeInteger(maximum) && maximum > 0, 'CONFIG_FILE_MAXIMUM');
+  if (allowEmptyBuildLog) assert.equal(path.basename(file), MEMBER_PATHS.buildLog, 'CONFIG_EMPTY_LOG_PATH');
+  assert.ok(Number.isSafeInteger(size) && size >= (allowEmptyBuildLog ? 0 : 1)
+    && size <= maximum, 'CONFIG_REGULAR_FILE_BOUND');
+}
+function regular(file, maximum, allowEmptyBuildLog = false) {
   const resolved = absolute(file), stat = fs.lstatSync(resolved);
-  assert.ok(stat.isFile() && !stat.isSymbolicLink() && stat.size > 0 && stat.size <= maximum, 'CONFIG_REGULAR_FILE_BOUND');
+  assert.ok(stat.isFile() && !stat.isSymbolicLink(), 'CONFIG_REGULAR_FILE_BOUND');
+  validateReadSize(resolved, stat.size, maximum, allowEmptyBuildLog);
   assert.equal(fs.realpathSync(resolved), resolved, 'CONFIG_SYMLINK_PARENT'); return { resolved, stat };
 }
 export const fileIO = Object.freeze({
-  read(file, maximum = 16 * 1024 ** 2) { return fs.readFileSync(regular(file, maximum).resolved); },
+  read(file, maximum = 16 * 1024 ** 2, allowEmptyBuildLog = false) {
+    return fs.readFileSync(regular(file, maximum, allowEmptyBuildLog).resolved);
+  },
   measure(file, maximum) {
     const { resolved, stat } = regular(file, maximum), fd = fs.openSync(resolved, 'r');
     const digest = createHash('sha256'), buffer = Buffer.allocUnsafe(1024 ** 2); let total = 0;
@@ -142,7 +152,10 @@ function loadCommon(request, io) {
   assert.equal(measured.sha256, compiledArchive.downloadedSha256, 'CONFIG_STAGE_DOWNLOADED_BYTES');
   assert.equal(measured.bytes, compiledArchive.bytes, 'CONFIG_STAGE_ARCHIVE_LENGTH');
   const stage = absolute(request.stageDirectory), members = {};
-  for (const key of ['stageReport', 'stageManifest', 'buildProvenance', 'buildLog']) members[key] = io.read(path.join(stage, MEMBER_PATHS[key]));
+  // A successful compiler can emit no stdout/stderr. Only its exact log may be
+  // empty; the selected ZIP inventory still binds its actual length and digest.
+  for (const key of ['stageReport', 'stageManifest', 'buildProvenance', 'buildLog'])
+    members[key] = io.read(path.join(stage, MEMBER_PATHS[key]), 16 * 1024 ** 2, key === 'buildLog');
   members.compiled = Object.fromEntries(COMPILED_PATHS.map(p => [p, io.read(path.join(stage, 'package', p))]));
   // Bind the actual selected stage bytes even before preparation's own verifier.
   const byPath = new Map(compiledArchive.selectedMembers.map(row => [row.path, row]));

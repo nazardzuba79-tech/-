@@ -64,7 +64,9 @@ export function verifyDerivedClosure(contextSha256, expectedDigest, {
   for (const row of original.files) {
     relative(row.path); hash(row.sha256);
     assert.ok(!seen.has(row.path), 'TRACE_SOURCE_DUPLICATE'); seen.add(row.path);
-    assert.ok(Number.isSafeInteger(row.bytes) && row.bytes > 0 && row.bytes <= 16 * 1024 * 1024);
+    // A successful silent compiler produces the original, digest-bound empty log.
+    const emptyBuildLog = row.path === 'build.log' && row.bytes === 0 && row.sha256 === digest(Buffer.alloc(0));
+    assert.ok(Number.isSafeInteger(row.bytes) && (row.bytes > 0 || emptyBuildLog) && row.bytes <= 16 * 1024 * 1024);
     const output = regular(path.join(root, row.path));
     const change = overlays.get(row.path);
     if (change) {

@@ -39,6 +39,27 @@ test('missing raw evidence or incomplete analysis cannot be reported as a comple
   const {hooks}=mocks();hooks.runTrace=async()=>({status:'PASS',ordinary:[],errors:[]});hooks.readEvidence=()=>{throw Error('MISSING');};
   const report=await launch(config(),hooks);assert.equal(report.status,'INCOMPLETE');assert.ok(report.errors.includes('TRACE_ADAPTER_EVIDENCE_UNAVAILABLE'));
 });
+
+test('observed safety FAIL survives missing trace/raw evidence and cleanup or deadline gaps',async()=>{
+  for(const gap of ['raw','analysis','cleanup','image','deadline']){
+    const c=config(),{hooks}=mocks();let clock=0,released=false;hooks.now=()=>clock;
+    c.imageOwnership='verified-archive-lease';c.imageLease={archivePath:path.join(outside,'image.tar'),archiveSha256:h,archiveBytes:10,dockerConfigDirectory:path.join(outside,'docker')};
+    hooks.imageExecute=()=>{};
+    hooks.validateRun=()=>({eligible:true,sourceSha:s,policySha256:h,runId:'12345',localFileBindings:{inputs:[{path:'runtime-image.tar',bytes:10,sha256:h}]}});
+    hooks.acquireImageLease=async()=>({owned:true,evidence:{},release:async()=>{released=true;return{status:gap==='image'?'INCOMPLETE':'REMOVED',errors:gap==='image'?['UNKNOWN']:[]};}});
+    hooks.runTrace=async()=>{if(gap==='deadline')clock=600000;return{status:'FAIL',observedStatus:'FAIL',safetyStatus:'FAIL',
+      failureVerdict:{status:'FAIL',safetyStatus:'FAIL',datasetStatus:'INCOMPLETE'},captureStatus:'INCOMPLETE',
+      ordinary:[],errors:['SAFETY_PROVIDER_ACCESS'],cleanupStatus:gap==='cleanup'?'INCOMPLETE':'COMPLETE',cleanup:{removed:gap!=='cleanup',errors:gap==='cleanup'?['UNKNOWN']:[]}};};
+    if(gap==='raw')hooks.readEvidence=()=>{throw Error('MISSING');};
+    hooks.analyzeTrace=()=>({captureStatus:'INCOMPLETE',ordinaryStatus:'INCOMPLETE',issues:['MISSING_TRACE']});
+    const report=await launch(c,hooks);
+    assert.equal(report.status,'FAIL',gap);assert.equal(report.observedStatus,'FAIL');assert.equal(report.safetyStatus,'FAIL');
+    assert.equal(report.failureVerdict.safetyStatus,'FAIL');assert.equal(report.captureStatus,'INCOMPLETE');
+    assert.ok(report.errors.includes('SAFETY_PROVIDER_ACCESS'));assert.equal(report.ordinary.length,0);
+    if(gap==='cleanup'){assert.equal(released,false);assert.equal(report.cleanupStatus,'INCOMPLETE');}
+    if(gap==='image')assert.equal(report.imageCleanupStatus,'INCOMPLETE');
+  }
+});
 test('lease time shrinks the same 600s budget and owned image releases only after container cleanup',async()=>{
   const c=config(),{hooks,calls}=mocks();let clock=0,budget;
   c.imageOwnership='verified-archive-lease';c.imageLease={archivePath:path.join(outside,'image.tar'),archiveSha256:h,archiveBytes:10,dockerConfigDirectory:path.join(outside,'docker')};

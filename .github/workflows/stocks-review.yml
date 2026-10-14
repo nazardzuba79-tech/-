@@ -107,9 +107,10 @@ jobs:
           const selectedMembers = ['report.json', 'package/manifest.json', 'build-provenance.json', 'build.log',
             ...COMPILED_PATHS.map(p => 'package/' + p)].map(p => {
               const file = path.join(stageDirectory, p), stat = fs.lstatSync(file);
-              assert.ok(stat.isFile() && !stat.isSymbolicLink() && stat.size > 0 && stat.size <= 16 * 1024 ** 2);
+              assert.ok(stat.isFile() && !stat.isSymbolicLink() && (stat.size > 0 || (p === 'build.log' && stat.size === 0)) && stat.size <= 16 * 1024 ** 2);
               assert.equal(fs.realpathSync(file), file);
-              const bytes = fs.readFileSync(file); return { path: p, bytes: bytes.length, sha256: hash(bytes) };
+              const bytes = fs.readFileSync(file); assert.equal(bytes.length, stat.size);
+              return { path: p, bytes: bytes.length, sha256: hash(bytes) };
             });
           const compiled = JSON.parse(fs.readFileSync(path.join(input, 'compiled-artifact.json')));
           const write = (name, value) => fs.writeFileSync(path.join(input, name), JSON.stringify(value, null, 2), { flag: 'wx', mode: 0o600 });

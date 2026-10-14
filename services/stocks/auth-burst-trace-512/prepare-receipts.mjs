@@ -45,9 +45,9 @@ function rows(value, maximum = 10000) {
   }
   return map;
 }
-function byteLength(value, maximum) {
+function byteLength(value, maximum, allowEmptyBuildLog = false) {
   check(Buffer.isBuffer(value) || value instanceof Uint8Array, 'RECEIPT_BYTES_REQUIRED');
-  check(value.byteLength > 0 && value.byteLength <= maximum, 'RECEIPT_BYTES_BOUND');
+  check(value.byteLength >= (allowEmptyBuildLog ? 0 : 1) && value.byteLength <= maximum, 'RECEIPT_BYTES_BOUND');
   return Buffer.from(value.buffer, value.byteOffset, value.byteLength);
 }
 function parse(value) {
@@ -75,13 +75,15 @@ function selectedInventory(members, role) {
   const inventory = rows(members, 32);
   for (const member of members) {
     keys(member, ['path', 'bytes', 'sha256']);
-    check(Number.isSafeInteger(member.bytes) && member.bytes > 0
+    const emptyBuildLog = role === 'compiled' && member.path === MEMBER_PATHS.buildLog;
+    check(Number.isSafeInteger(member.bytes) && member.bytes >= (emptyBuildLog ? 0 : 1)
       && member.bytes <= (role === 'inputs' ? 3 * 1024 ** 3 : 16 * 1024 ** 2), 'RECEIPT_MEMBER_SIZE');
+    if (member.bytes === 0) same(member.sha256, hash(Buffer.alloc(0)), 'RECEIPT_EMPTY_BUILD_LOG_DIGEST');
   }
   return inventory;
 }
 function selectedBytes(inventory, memberPath, bytes) {
-  const value = byteLength(bytes, 16 * 1024 ** 2), row = inventory.get(memberPath);
+  const value = byteLength(bytes, 16 * 1024 ** 2, memberPath === MEMBER_PATHS.buildLog), row = inventory.get(memberPath);
   check(Boolean(row), 'RECEIPT_MEMBER_MISSING'); same(value.length, row.bytes, 'RECEIPT_MEMBER_LENGTH');
   same(hash(value), row.sha256, 'RECEIPT_MEMBER_DIGEST'); return value;
 }
@@ -193,6 +195,7 @@ function preparedProofs(input, policy, inv) {
   same(sourceRows.get('package-lock.json')?.sha256, build.packageLockSha256, 'RECEIPT_LOCK');
   same(sourceRows.get('compiled-proof.json')?.sha256, hash(bytes.buildProvenance), 'RECEIPT_CONTEXT_BUILD_PROOF');
   same(sourceRows.get('build.log')?.sha256, hash(bytes.buildLog), 'RECEIPT_CONTEXT_BUILD_LOG');
+  same(sourceRows.get('build.log')?.bytes, bytes.buildLog.length, 'RECEIPT_CONTEXT_BUILD_LOG_SIZE');
   same(report.schema, PREPARE_SCHEMA, 'RECEIPT_PREPARE_SCHEMA'); same(report.status, 'PREPARED_NOT_AUTHORIZED', 'RECEIPT_PREPARE_STATUS');
   same(report.sourceSha, input.sourceSha, 'RECEIPT_PREPARE_SOURCE'); same(report.inside, inside, 'RECEIPT_INSIDE_COPY');
   same(report.contextSha256, manifest.contextSha256, 'RECEIPT_PREPARE_CONTEXT');

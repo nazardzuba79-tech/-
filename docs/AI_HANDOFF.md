@@ -6472,3 +6472,14 @@ ReleaseBLOCKED: capacity/coexistence/authdeadline/backend/browser/data-rights/pa
 ## 2026-10-14 — Codex — PR512 disabled one-burst diagnostic source
 
 Parent/runtime baseline f045d7255f1195ef3c7b6cca5a5e63f4c851a2a8; exact successor SHA is the commit containing this append-only entry, recorded separately in PR512 evidence. Added services/stocks/auth-burst-trace-512, one disabled serial QA workflow job, exact-file backend/browser scheduling manifest bindings, and BURST-TRACE.md. No original product, financial, old auth fixture/matrix/observer or other agent files changed. Local129pure guards PASS; separate tiny built-in Worker handoff guard1PASS. No actual new prep/load result yet. Prior backend/browser, strict capacity/coexistence FAIL and market-data rights/MOEX blockers remain unchanged. Next: independent canonical source review, actual same-job preparation receipts, and at most one explicitly reviewed finite trace; no retries or production readiness claim. No merge/deploy.
+
+
+## 2026-10-14 Stocks PR512 narrow diagnostic-source corrections
+
+Local disabled source 0df1ff had two QA defects: rejection of the valid empty
+compiler build.log across readers, and loss of an observed FAIL when capture
+or cleanup was incomplete. Both are corrected with exact log size/hash binding
+and separate observed/safety/capture/cleanup statuses. 139 pure guards PASS;
+no new workload, no activation, no runtime/financial/classifier changes.
+See docs/evidence/stocks-auth-lifetime-20261014/BURST-TRACE.md. Retained backend,
+browser, capacity and crypto coexistence FAIL remain; release BLOCKED.

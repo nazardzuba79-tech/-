@@ -49,6 +49,39 @@ test('derived closure verifies every original file and only six declared overlay
   const f = fixture(t), result = f.verify();
   assert.equal(result.reviewedOverlays, 6); assert.equal(result.verifiedFiles, 7); assert.equal(result.helpers, 2);
 });
+// Actual f045 compiled artifact 11880234688: successful tsc emitted no output.
+const silentBuildLog = { path: 'build.log', bytes: 0,
+  sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' };
+function addSilentLog(f) {
+  f.original.files.push({ ...silentBuildLog }); f.write('build.log', Buffer.alloc(0));
+  f.original.contextSha256 = digest(JSON.stringify(f.original.files));
+  f.derived.contextSha256 = f.original.contextSha256;
+}
+test('actual silent compiler log row passes only with exact manifest length and digest', t => {
+  const f = fixture(t); addSilentLog(f);
+  assert.equal(f.verify().verifiedFiles, 8);
+  f.write('build.log', 'tampered'); assert.throws(f.verify);
+  f.write('build.log', Buffer.alloc(0)); f.original.files.at(-1).sha256 = 'f'.repeat(64);
+  f.original.contextSha256 = digest(JSON.stringify(f.original.files));
+  f.derived.contextSha256 = f.original.contextSha256;
+  assert.throws(f.verify);
+});
+test('empty log exception does not permit empty source, overlay or helper', t => {
+  for (const kind of ['source', 'overlay', 'helper']) {
+    const f = fixture(t); addSilentLog(f);
+    if (kind === 'source') {
+      const row = f.original.files.find(r => r.path === 'services/stocks-simulator/engine.mjs');
+      row.bytes = 0; row.sha256 = silentBuildLog.sha256; f.write(row.path, Buffer.alloc(0));
+      f.original.contextSha256 = digest(JSON.stringify(f.original.files));
+      f.derived.contextSha256 = f.original.contextSha256;
+    } else {
+      const row = kind === 'overlay' ? f.derived.overlays[0] : f.derived.helpers[0];
+      row.bytes = 0; f.write(row.path, Buffer.alloc(0));
+      row[kind === 'overlay' ? 'outputSha256' : 'sha256'] = silentBuildLog.sha256;
+    }
+    assert.throws(f.verify, undefined, kind);
+  }
+});
 test('independent manifest digest is mandatory', t => {
   const f = fixture(t); f.save();
   assert.throws(() => verifyDerivedClosure(f.original.contextSha256, 'c'.repeat(64), f), /TRACE_DERIVED_MANIFEST_DIGEST/);

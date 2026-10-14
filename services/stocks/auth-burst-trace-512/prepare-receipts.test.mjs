@@ -11,10 +11,10 @@ import { MEMBER_PATHS, COMPILED_PATHS, PREPARE_SCHEMA, artifactNames, nativeBind
 const sourceSha = '3333333333333333333333333333333333333333', runId = '777777';
 const h = name => hash(`synthetic unit only: ${name}`);
 const bytes = object => Buffer.from(JSON.stringify(object));
-function fixture() {
+function fixture({ buildLog = Buffer.from('synthetic compiler log\n') } = {}) {
   const compiled = Object.fromEntries(COMPILED_PATHS.map(p => [p, Buffer.from(`synthetic JS bytes ${p}`)]));
   const compiledHashes = Object.fromEntries(COMPILED_PATHS.map(p => [p, hash(compiled[p])]));
-  const buildLog = Buffer.from('synthetic compiler log\n'), sourcePath = 'src/api/middleware/auth.ts';
+  const sourcePath = 'src/api/middleware/auth.ts';
   const build = { command: { executable: '/synthetic/node', args: ['/synthetic/tsc'], cwd: '/synthetic' },
     startedAt: '2026-01-01T00:00:00.000Z', endedAt: '2026-01-01T00:00:01.000Z', exitCode: 0, signal: null,
     compilerVersion: '5.9.3', compilerFiles: [], node: 'v22.23.3', tsconfig: { path: 'tsconfig.json', sha256: h('tsconfig') },
@@ -105,6 +105,52 @@ test('selected evidence/local receipts do not invent upload IDs, archives, image
     const proof = JSON.parse(local[role].proofText);
     assert.equal(proof.filesSha256, hash(JSON.stringify(local[role].files)));
   }
+});
+
+test('original preparation schema accepts a zero-byte successful build.log with exact provenance and manifest bindings', () => {
+  const f = fixture({ buildLog: Buffer.alloc(0) });
+  const log = f.input.archives.compiled.selectedMembers.find(row => row.path === 'build.log');
+  assert.deepEqual(log, { path: 'build.log', bytes: 0,
+    sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' });
+  assert.equal(JSON.parse(f.input.members.buildProvenance).logSha256, log.sha256);
+  assert.equal(JSON.parse(f.input.members.runtimeManifest).files.find(row => row.path === 'build.log').bytes, 0);
+  assert.equal(f.run().compiled.artifactId, '10001');
+  assert.equal(createLocalLaunchReceipts(f.local(), f.policy).preparation.kind, 'local');
+});
+
+test('empty build.log exception rejects digest, size, provenance and runtime-manifest tampering', () => {
+  const changes = [
+    f => { f.input.archives.compiled.selectedMembers.find(row => row.path === 'build.log').sha256 = h('wrong empty log'); },
+    f => { f.input.archives.compiled.selectedMembers.find(row => row.path === 'build.log').bytes = 1; },
+    f => { f.input.members.buildLog = Buffer.from('unexpected output'); },
+    f => { f.mutate('buildProvenance', build => { build.logSha256 = h('wrong provenance log'); }); },
+    f => { f.mutate('runtimeManifest', manifest => {
+      manifest.files.find(row => row.path === 'build.log').bytes = 1;
+      manifest.contextSha256 = hash(JSON.stringify(manifest.files));
+    }); },
+    f => { f.mutate('runtimeManifest', manifest => {
+      manifest.files.find(row => row.path === 'build.log').sha256 = h('wrong context log');
+      manifest.contextSha256 = hash(JSON.stringify(manifest.files));
+    }); },
+  ];
+  for (const change of changes) {
+    const f = fixture({ buildLog: Buffer.alloc(0) }); change(f);
+    assert.throws(f.run); assert.throws(() => createLocalLaunchReceipts(f.local(), f.policy));
+  }
+});
+
+test('zero bytes remain forbidden for compiled JS, proof JSON, native inputs and overlays', () => {
+  for (const role of ['compiled', 'preparation', 'inputs']) {
+    const f = fixture({ buildLog: Buffer.alloc(0) });
+    const row = f.input.archives[role].selectedMembers.find(row => row.path !== 'build.log');
+    row.bytes = 0; row.sha256 = hash(Buffer.alloc(0)); assert.throws(f.run, /MEMBER_SIZE/);
+  }
+  const f = fixture({ buildLog: Buffer.alloc(0) }), p = COMPILED_PATHS[0];
+  f.input.members.compiled[p] = Buffer.alloc(0);
+  const row = f.input.archives.compiled.selectedMembers.find(row => row.path === `package/${p}`);
+  row.bytes = 0; row.sha256 = hash(Buffer.alloc(0)); assert.throws(f.run, /MEMBER_SIZE/);
+  const g = fixture({ buildLog: Buffer.alloc(0) });
+  g.mutate('derivedManifest', derived => { derived.overlays[0].bytes = 0; }); assert.throws(g.run);
 });
 test('missing/unknown inputs, guessed artifact IDs, expired/wrong-role/cross-run/cross-head archives fail', () => {
   const changes = [f => { f.input.unknown = true; }, f => { f.input.archives.compiled.artifactId = 'pending'; },
