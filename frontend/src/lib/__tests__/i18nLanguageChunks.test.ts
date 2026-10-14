@@ -373,6 +373,12 @@ describe('translation integrity', () => {
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
+        // Chart workspace (2026-10-13): the timeframe labels, the two-row
+        // toolbar, compare, layout, data window, analytics, templates and
+        // shortcuts, plus three more chart types. `git diff --numstat` over
+        // the locales reports additions only for every language.
+        if (key?.startsWith('chart.ws.') || key?.startsWith('chart.tf.')) return false;
+        if (key === 'chart.type.bars' || key === 'chart.type.hollow' || key === 'chart.type.heikin') return false;
         // `otc.*` is the OTC page from the owner's OTC.zip (2026-09-30):
         // `git diff --numstat` over the locales directory reports `63 0` for
         // every language, additions only; asserted by name below.

@@ -427,7 +427,13 @@ test.each([
     // futuresFinalPolish still mounts the page and counts one chart.
     // 2026-10-13 audit: one prop, `mobile={compact}`, on FuturesPositionsPanel so the
     // phone-only compact TP/SL trigger stops following the desktop archive design.
-    "e0f970e3a6b09ce7a788fceaa0f0447e05e81326aae0e3db1d03436a742c74c3"
+    // Re-taken 2026-10-13 (chart workspace). ONE more prop differs: the chart
+    // element gets `onSelectPair={selectSymbol}`, the page's existing
+    // instrument switch, so a second chart pane's «Торговать» moves the
+    // whole terminal through the same path the pair list already uses.
+    // No order, execution, account, depth or layout byte changed.
+    // Re-taken again on the merge of main d694b2a0 (#517): both props above.
+    "623c6a72523b5d6bcd24ddab94c60027715865301c585a03baf7f184a637e536"
   ],
   [
     "components/FuturesPairList.tsx",

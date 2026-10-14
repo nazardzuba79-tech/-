@@ -12,6 +12,14 @@ const root = path.resolve(__dirname, '..'), out = path.join(root, 'docs/qa/nrx-m
 const app = express(); app.use(express.static(path.join(root, 'frontend/dist'), { index: false }));
 app.get('*', (_req, res) => res.sendFile(path.join(root, 'frontend/dist/index.html')));
 const prohibited = /\b(?:demo|simulation|simulated|synthetic|preview|sandbox|not tradable)\b|тестов|симуляц|демонстрацион/i;
+// Chart workspace (2026-10-14): quick timeframe keys carry `data-cw-tf` and a localised label («5м»);
+// a phone strip keeps five of them (then three) and the rest sit in the «▾» menu, as a trader reaches them.
+async function pickTimeframe(page, tf) {
+  const quick = page.locator(`.chart-area [data-cw-tf="${tf}"]`);
+  if (await quick.count()) return quick.first().click();
+  await page.locator('.chart-area [data-cw-feature="timeframes"]').first().click();
+  await page.locator(`[data-cw-tf-option="${tf}"]`).first().click();
+}
 async function screenshot(page, name) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -109,7 +117,7 @@ async function screenshot(page, name) {
       if (width <= 900) await page.locator('#mobile-trade-chart').click();
       await Promise.all([
         page.waitForResponse(response => response.url().includes('NRX-USDT/candles?interval=5m')),
-        page.locator('.chart-area').getByRole('button', { name: '5m', exact: true }).click(),
+        pickTimeframe(page, '5m'),
       ]);
       await screenshot(page, `after-${width}.png`);
 

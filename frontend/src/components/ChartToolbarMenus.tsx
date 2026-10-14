@@ -15,7 +15,8 @@ import './ChartToolbarMenus.css';
  * document.body, like the drawing rail's flyouts, because the toolbar they
  * open from clips its overflow on every terminal design.
  */
-export type ChartKind = 'candles' | 'line' | 'area';
+/** 2026-10-13 (chart workspace): bars, hollow candles and Heikin Ashi join the three paints. */
+export type ChartKind = 'candles' | 'bars' | 'hollow' | 'heikin' | 'line' | 'area';
 
 export interface ChartIndicatorToggle {
   key: string;
@@ -44,7 +45,8 @@ export interface ChartActiveIndicator {
 
 interface Props {
   chartType: ChartKind;
-  typeLabels: Record<ChartKind, string>;
+  /** The paints offered, in menu order; a chart without the workspace passes three. */
+  typeLabels: Partial<Record<ChartKind, string>>;
   onChartType: (next: ChartKind) => void;
   indicators: ChartIndicatorToggle[];
   typeGroupLabel: string;
@@ -58,6 +60,8 @@ interface Props {
     visibleLabel: string; configureLabel: string; removeLabel: string; addLabel: string;
     pricePaneLabel: string; lowerPaneLabel: string;
   };
+  /** A keyboard shortcut asking for a menu (Alt+I opens the indicators). */
+  openRequest?: { which: Which | null; seq: number };
 }
 
 const svg = (children: ReactNode) => (
@@ -69,6 +73,20 @@ const TYPE_ICONS: Record<ChartKind, ReactNode> = {
     <path d="M5 2.5v13M13 3.5v11" />
     <rect x="3" y="5.5" width="4" height="6.5" rx=".6" fill="currentColor" />
     <rect x="11" y="6.5" width="4" height="4.5" rx=".6" />
+  </>),
+  bars: svg(<>
+    <path d="M5 3v12M3 7h2M5 11h2M13 2.5v12M11 6.5h2M13 10h2" />
+  </>),
+  hollow: svg(<>
+    <path d="M5 2.5v13M13 3.5v11" />
+    <rect x="3" y="5.5" width="4" height="6.5" rx=".6" />
+    <rect x="11" y="6.5" width="4" height="4.5" rx=".6" fill="currentColor" />
+  </>),
+  heikin: svg(<>
+    <path d="M4 4v10M9 2.5v13M14 5v9" />
+    <rect x="2.2" y="7" width="3.6" height="4.5" rx=".6" fill="currentColor" />
+    <rect x="7.2" y="5" width="3.6" height="6" rx=".6" fill="currentColor" />
+    <rect x="12.2" y="7.5" width="3.6" height="4" rx=".6" />
   </>),
   line: svg(<path d="M2.5 13 7 7.5l3 3L15.5 4" />),
   area: svg(<>
@@ -110,11 +128,11 @@ const PLUS = (
   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M6 2v8M2 6h8" /></svg>
 );
 
-type Which = 'type' | 'indicators';
+export type Which = 'type' | 'indicators';
 const MENU_WIDTH = 236;
 const CATALOGUE_WIDTH = 312;
 
-export function ChartToolbarMenus({ chartType, typeLabels, onChartType, indicators, typeGroupLabel, indicatorsLabel, catalogue }: Props) {
+export function ChartToolbarMenus({ chartType, typeLabels, onChartType, indicators, typeGroupLabel, indicatorsLabel, catalogue, openRequest }: Props) {
   const [open, setOpen] = useState<Which | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
   const [query, setQuery] = useState('');
@@ -133,7 +151,7 @@ export function ChartToolbarMenus({ chartType, typeLabels, onChartType, indicato
     const button = trigger(which);
     if (!button) return;
     const r = button.getBoundingClientRect();
-    const rows = which === 'type' ? 3 : (catalogue ? Math.min(12, catalogue.active.length + indicators.length) + 2 : indicators.length);
+    const rows = which === 'type' ? Object.keys(typeLabels).length : (catalogue ? Math.min(12, catalogue.active.length + indicators.length) + 2 : indicators.length);
     const height = 44 + rows * 38 + (which === 'indicators' && catalogue ? 48 : 0);
     const left = Math.max(8, Math.min(window.innerWidth - width - 8, r.left));
     const below = r.bottom + 6;
@@ -181,6 +199,12 @@ export function ChartToolbarMenus({ chartType, typeLabels, onChartType, indicato
     const items = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]') ?? []);
     (items.find(i => i.getAttribute('aria-checked') === 'true' && open === 'type') ?? items[0])?.focus();
   }, [open]);
+
+  useEffect(() => {
+    if (!openRequest) return;
+    if (openRequest.which) show(openRequest.which, true); else setOpen(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRequest?.seq]);
 
   const onTriggerKey = (which: Which) => (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {

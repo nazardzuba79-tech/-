@@ -471,7 +471,7 @@ export function TradePage() {
               ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} />
               : pairResolving
                 ? <div className="chart-resolving" style={{ width: "100%", height: "100%" }} aria-busy="true" data-pair-resolving />
-                : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />}
+                : <PriceChart pair={pair} onSelectPair={selectSpotPair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />}
           </div>
 
           <div className="orderbook-area" data-sampled-book="true">
