@@ -53,16 +53,28 @@ describe('offline historical movement library — no bundled prices, no provider
       const archive=await prepareHistoricalArchive(history,'BTC/USDT','btc_2018.csv');
       await expect(verifyHistoricalArchive(archive)).resolves.toBeUndefined();
       expect(archive.id).toContain('BTC-USDT:');
+      expect(archive.version).toBe(2);
       expect(archive.sha256).toHaveLength(64);
       expect(await sha256Text(history)).toBe(archive.sha256);
+      // Price, volume and raw CSV are NOT stored: IndexedDB keeps movement triples only.
+      expect(archive.movements).toHaveLength(3000);
+      expect(archive).not.toHaveProperty('csv');
+      expect(archive).not.toHaveProperty('originalPrices');
+      expect(archive.storedBytes).toBeLessThan(archive.byteLength);
+      expect(archive.movementDigest).toBe(await sha256Text(JSON.stringify(archive.movements)));
       const selected=archiveSelection(archive,{startDateUtc:'2018-01-15',hours:2160});
       expect(selected.bars).toHaveLength(2160);
       expect(selected.sourceStart).toBe('2018-01-15T00:00:00.000Z');
       expect(selected.provenance).toBe('USER_SUPPLIED_UNVERIFIED');
       expect(selected).toEqual(importHistoricalCsv(history,'BTC/USDT',{startDateUtc:'2018-01-15',hours:2160}));
       expect(JSON.stringify(selected)).not.toMatch(/"volume"|"price"/);
-      await expect(verifyHistoricalArchive({...archive,csv:archive.csv.replace(',500,12',',501,12')}))
+      const changed=archive.movements.map(bar=>[...bar] as [number,number,number]);
+      // Tamper the close but leave OHLC valid: SHA-256 must still reject it.
+      changed[0][2] += 1;
+      await expect(verifyHistoricalArchive({...archive,movements:changed}))
         .rejects.toThrow(/Контрольная сумма/);
+      await expect(verifyHistoricalArchive({...archive,movements:archive.movements.slice(1)}))
+        .rejects.toThrow(/повреждён/);
     } finally {
       if(descriptor)Object.defineProperty(globalThis,'crypto',descriptor);
       else Reflect.deleteProperty(globalThis,'crypto');
