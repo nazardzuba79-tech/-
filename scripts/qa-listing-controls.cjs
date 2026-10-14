@@ -309,6 +309,18 @@ async function acceptance() {
   });
   await page.locator('[data-historical-clips] [role="listitem"]').waitFor();
   assert.match(await page.locator('[data-historical-clips]').innerText(),/2018/);
+  // Store original OHLC only in local IndexedDB once; then use another excerpt
+  // from the SAME archive without a new CSV upload or server-side dataset.
+  assert.equal(await page.locator('[data-use-historical-preset="btc-2018-jan"]').isDisabled(),true);
+  await page.locator('[data-field="historicalLibraryFile"]').setInputFiles({
+    name:'btc-hourly-local-library.csv',mimeType:'text/csv',buffer:Buffer.from(csv),
+  });
+  await page.locator('[data-historical-library]').getByText('Архив сохранён на этом устройстве.',{exact:false}).waitFor();
+  assert.equal(await page.locator('[data-field="historicalArchiveChoice"] option').count(),1);
+  await page.locator('[data-remove-historical-clip="0"]').click();
+  await page.locator('[data-use-historical-archive]').click();
+  await page.locator('[data-historical-clips] [role="listitem"]').waitFor();
+  assert.match(await page.locator('[data-historical-clips]').innerText(),/2018-01-02/);
   const histResponse=page.waitForResponse(response => response.request().method()==='POST'&&new URL(response.url()).pathname.endsWith('/admin/listings'));
   await page.locator('[data-save-draft]').click();
   assert.equal((await histResponse).status(),201);
@@ -334,6 +346,25 @@ async function acceptance() {
   const beforeBlocked=countPublished();
   assert.equal(await page.locator('[data-publish]').isDisabled(),true);
   assert.equal(countPublished(),beforeBlocked);
+  // A suggested ETH 2021 quarter becomes genuinely clickable only AFTER
+  // a real contiguous user-supplied local file has been validated and stored.
+  await page.selectOption('[data-field="historicalSource"]','ETH/USDT');
+  let ethPrice=100;
+  const ethCsv=Array.from({length:2160},(_,i)=>{
+    const open=ethPrice,close=open*(i%2===0?1.005:0.995);
+    ethPrice=close;
+    return [Date.parse('2021-01-01T00:00:00Z')/1000+i*3600,
+      open,Math.max(open,close)*1.01,Math.min(open,close)*.99,close].join(',');
+  }).join('\n');
+  await page.locator('[data-field="historicalLibraryFile"]').setInputFiles({
+    name:'eth-2021-local-library.csv',mimeType:'text/csv',buffer:Buffer.from(ethCsv),
+  });
+  await page.locator('[data-use-historical-preset="eth-2021-jan"]').waitFor({state:'visible'});
+  await page.waitForFunction(()=>!(document.querySelector('[data-use-historical-preset="eth-2021-jan"]'))?.hasAttribute('disabled'));
+  await page.locator('[data-use-historical-preset="eth-2021-jan"]').click();
+  assert.match(await page.locator('[data-historical-clips]').innerText(),/2021-01-01/);
+  assert.equal(await page.locator('[data-historical-clips] [role="listitem"]').count(),2);
+  assert.equal(await page.locator('[data-publish]').isDisabled(),true);
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await capture(page,'historical-draft-mobile-390','[data-movement-editor]');
