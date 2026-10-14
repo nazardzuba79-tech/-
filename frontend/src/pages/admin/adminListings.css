@@ -101,3 +101,12 @@
   .listing-preview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .listing-settings-details summary span { display: block; margin: 4px 0 0; }
 }
+
+/* Draft-only historic movement picker: contained, readable on laptop and phone. */
+.listing-historical-editor { display:grid; gap:12px; min-width:0; padding:14px; border:1px solid var(--border); border-radius:9px; background:#f4f7fb; }
+.listing-historical-editor h3 { margin:0; font-size:14px; color:var(--text-primary); }
+.listing-historical-editor input[type=file] { width:100%; max-width:100%; min-width:0; font-size:12px; }
+.listing-historical-editor [data-historical-clips] { display:grid; gap:7px; }
+.listing-historical-clip { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 16px; padding:9px 11px; border:1px solid var(--border); border-radius:7px; background:var(--panel); font-size:12px; overflow-wrap:anywhere; }
+.listing-historical-clip strong { display:inline; }
+.listing-historical-editor [role=alert] { color:#a42b3e; font-size:12px; }
