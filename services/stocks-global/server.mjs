@@ -31,9 +31,11 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   let catalogue=blockedCatalogue(CATALOG.map(i=>({...i,exists:null,online:false})));
   const status=async(ctx,committed,signal)=>({... (committed??await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read())),...(accounts?{account:{id:ctx.id,mode:'isolated-paper',quoteView:'volatile',canTrade:ctx.ownerMayTrade===true}}:{}),catalogue,errors:{...ctx.errors},metrics:{...hub.metrics,rssBytes:process.memoryUsage().rss,cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}});
   const loadCatalogue=()=>catalogueTask??=hub.catalogue().then(list=>{catalogue=blockedCatalogue(list);lastCatalogue=now();}).finally(()=>{catalogueTask=null;});
-  const getContext=async req=>{
+  const getContext=async(req,signal)=>{
     if(!accounts)return contexts.get('legacy');
-    const principal=await authenticate(req),id=accountId(principal);
+    const principal=await authenticate(req,{signal});
+    check(!signal.aborted,'AUTH_UNAVAILABLE');
+    const id=accountId(principal);
     if(!contexts.has(id)&&!contextFlights.has(id)){
       // Bound active sessions; durable ledgers and pending orders are never evicted.
       for(const[key,ctx]of contexts)if(now()-ctx.accessed>60000)contexts.delete(key);
@@ -109,12 +111,18 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     work.set(id,pending);refreshTasks.add(pending);return pending;
   };
   const send=(res,code,body,headers={})=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers});res.end(JSON.stringify(body));};
-  const server=http.createServer(async(req,res)=>{try{
+  const server=http.createServer(async(req,res)=>{let cleanupRequest;try{
     check(req.headers.host==='127.0.0.1:'+address.port,'HOST_FORBIDDEN');check(!req.headers.origin||req.headers.origin==='http://127.0.0.1:'+address.port,'ORIGIN_FORBIDDEN');check(!req.headers['sec-fetch-site']||['same-origin','none'].includes(req.headers['sec-fetch-site']),'ORIGIN_FORBIDDEN');
     const u=new URL(req.url,'http://127.0.0.1:'+address.port);
     if(u.pathname.startsWith(API)){
       if(req.method==='GET'&&u.pathname===API+'health'){const ok=!accounts||accounts.metrics().workerAlive===1;send(res,ok?200:503,{ok,isolated:true,version:2,accounts:!!accounts});return;}
-      const ctx=await getContext(req);if(res.destroyed)return;
+      // Authentication must observe disconnects before any route-specific work.
+      // Do not use req.close: a fully received live request can emit it normally.
+      const requestAbort=new AbortController(),onAborted=()=>requestAbort.abort(),onRequestClose=()=>{if(!res.writableFinished)onAborted();};
+      req.once('aborted',onAborted);res.once('close',onRequestClose);
+      cleanupRequest=()=>{req.off('aborted',onAborted);res.off('close',onRequestClose);};
+      if(req.aborted||res.destroyed)onAborted();
+      const ctx=await getContext(req,requestAbort.signal);if(res.destroyed)return;
       check(![...u.searchParams.keys()].some(k=>!['id','interval','before'].includes(k)),'ACCOUNT_SELECTOR_FORBIDDEN');
       if(req.method==='GET'&&u.pathname===API+'state'){
         if(res.destroyed)return;
@@ -176,7 +184,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     // a trade. Unknown mutation outcomes deliberately have no retry hint.
     const retryAfterMs=e instanceof SimError?(e.code==='RATE_LIMIT'?60000:['SOURCE_BUSY','ACCOUNT_BUSY'].includes(e.code)?3000:null):null;
     send(res,e.code==='AUTH_REQUIRED'?401:['AUTH_UNAVAILABLE','ACCOUNT_CAPACITY','SOURCE_BUSY','ACCOUNT_BUSY','ACCOUNT_UNAVAILABLE','ACCOUNT_STORAGE_ERROR','ACCOUNT_OUTCOME_UNKNOWN'].includes(e.code)?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR',...(retryAfterMs===null?{}:{retryAfterMs})},retryAfterMs===null?{}:{'Retry-After':String(retryAfterMs/1000)});
-  }else res.end();}});
+  }else res.end();}finally{cleanupRequest?.();}});
   server.requestTimeout=15000;server.headersTimeout=10000;server.keepAliveTimeout=2000;server.maxConnections=128;
   await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,'127.0.0.1',ok);}).catch(async e=>{await accounts?.close();await legacy?.close();throw e;});address=server.address();
   let tick=null;

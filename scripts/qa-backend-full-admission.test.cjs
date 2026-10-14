@@ -2,6 +2,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 const { BASELINE_SHA, PRIOR_FAILURE, REVIEW_ID, MANIFEST_PATH, PROTECTED_HELPERS, decide, collectGit, main } = require('./qa-backend-full-admission.cjs');
 const HEAD = 'a'.repeat(40), OLD = 'b'.repeat(64), NEW = 'c'.repeat(64);
 const sha256 = b => crypto.createHash('sha256').update(b).digest('hex');
@@ -25,6 +27,38 @@ test('every backend helper or helper-test edit requires full, including previous
   for (const file of PROTECTED_HELPERS) {
     const r = decide(candidate([change(file, 'report-only')]));
     assert.equal(r.mode, 'full'); assert.equal(r.reason, 'BACKEND_HELPER_OR_PREREQUISITE_CHANGED');
+  }
+});
+test('runtime authentication edits always require full backend even when presented as reviewed QA', () => {
+  for (const file of ['services/stocks-global/identity.mjs', 'services/stocks-global/server.mjs']) {
+    for (const classification of ['documentation', 'auth-fixture', 'report-only']) {
+      const r = decide(candidate([change(file, classification)]));
+      assert.equal(r.mode, 'full', file + ' must not use QA-only admission');
+      assert.equal(r.reason, 'UNREVIEWABLE_OR_PROTECTED_PATH');
+      assert.equal(r.releaseGatePass, false);
+      assert.deepEqual(r.priorFailure, { baselineSHA: BASELINE_SHA, ...PRIOR_FAILURE });
+    }
+  }
+});
+test('completed finite auth jobs cannot automatically launch for a later candidate SHA', () => {
+  const completedHead = 'dc5327b7def5ac4f5b448f820bbd279b7072d7f9';
+  const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/stocks-review.yml'), 'utf8').replace(/\r\n/g, '\n');
+  for (const name of ['stocks-auth-preparation', 'stocks-auth-http-paired']) {
+    const job = workflow.match(new RegExp('^  ' + name + ':\\n([\\s\\S]*?)(?=^  [a-z][a-z0-9-]*:|$(?![\\s\\S]))', 'm'))?.[1];
+    assert.ok(job, name + ' retained as historical diagnostic');
+    const condition = job.match(/^    if: >-?\n([\s\S]*?)(?=^    \S)/m)?.[1].trim().replace(/\s+/g, ' ');
+    assert.ok(condition, name + ' has an explicit job-level condition');
+    assert.ok(!condition.includes('||'), name + ' cannot bypass its completed-head predicate');
+    const terms = condition.split('&&').map(term => term.trim());
+    const expected = "github.event.pull_request.head.sha == '" + completedHead + "'";
+    assert.equal(terms.filter(term => term === expected).length, 1, name + ' is bound to the completed exact head');
+    const predicates = terms.filter(term => /head\.sha/.test(term));
+    assert.deepEqual(predicates, [expected], name + ' has no alternative head selector');
+    // This required conjunct is false on every later candidate. SKIPPED is
+    // scheduling only; prior FAIL and capacity gates remain unchanged.
+    for (const nextHead of [HEAD, '0'.repeat(40), 'f'.repeat(40)]) {
+      assert.notEqual(nextHead, completedHead);
+    }
   }
 });
 test('handoff must preserve its exact canonical prefix and cannot be added, deleted or rewritten', () => {

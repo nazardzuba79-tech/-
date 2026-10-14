@@ -41,9 +41,11 @@ jobs:
           if-no-files-found: error
   stocks-auth-preparation:
     # Preparation only, serial after every Stocks predecessor. Never starts auth HTTP or load.
+    # Retain the completed finite experiment. Later heads need a separately reviewed launch.
     needs: [stocks-backend-admission, stocks-full-backend-offline, isolated-simulator, frontend-regression, bounded-stock-runtime, stocks-ui-browser, stocks-review-selection, stocks-joined-phase-diagnostic, crypto-service-comparison, stocks-performance-profile, launch-resource-comparison, stocks-pr512-pristine-timeline, stocks-pr512-targeted-http, stocks-pr512-cx23-model, stocks-pr512-phase-diagnostic, stocks-pr512-registration-pairs]
     if: >-
       always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.number == 512 &&
+      github.event.pull_request.head.sha == 'dc5327b7def5ac4f5b448f820bbd279b7072d7f9' &&
       needs.stocks-backend-admission.result == 'success' && needs.isolated-simulator.result == 'success' &&
       needs.frontend-regression.result == 'success' && needs.bounded-stock-runtime.result == 'success'
     runs-on: ubuntu-latest
@@ -167,9 +169,11 @@ jobs:
   stocks-auth-http-paired:
     # Finite fixture attribution only. Backend/browser/capacity FAIL remain release blockers.
     # Preparation already waits for every prior Stocks workload; this job never retries one.
+    # NOT_RUN on later heads; do not reuse this frozen source/resource launch policy.
     needs: stocks-auth-preparation
     if: >-
       always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.number == 512 &&
+      github.event.pull_request.head.sha == 'dc5327b7def5ac4f5b448f820bbd279b7072d7f9' &&
       github.event.pull_request.head.repo.full_name == github.repository && needs.stocks-auth-preparation.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -776,7 +780,7 @@ jobs:
         with:
           node-version: '22'
       - name: Local ledgers, identity, stale/session/FX gates, idempotency and HTTP isolation
-        run: node --test services/stocks-global/engine.test.mjs services/stocks-global/identity.test.mjs services/stocks-global/viewer-projection.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-registration-batch.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/account-background-observations.test.mjs services/stocks-global/refresh-coalescing.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/owner-usdt.test.mjs services/stocks-global/wallet-fx-scope.test.mjs services/stocks-global/demand-lifecycle.test.mjs services/stocks-global/local-proxy.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/history-deadline.test.mjs services/stocks-global/history-cancellation.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
+        run: node --test services/stocks/auth-http-fixture-512/cancellation-barrier.test.mjs services/stocks-global/engine.test.mjs services/stocks-global/identity.test.mjs services/stocks-global/viewer-projection.test.mjs services/stocks-global/server.test.mjs services/stocks-global/accounts.test.mjs services/stocks-global/account-registration.test.mjs services/stocks-global/account-registration-batch.test.mjs services/stocks-global/account-worker.test.mjs services/stocks-global/account-observations.test.mjs services/stocks-global/account-background-observations.test.mjs services/stocks-global/refresh-coalescing.test.mjs services/stocks-global/worker-http.test.mjs services/stocks-global/owner-usdt.test.mjs services/stocks-global/wallet-fx-scope.test.mjs services/stocks-global/demand-lifecycle.test.mjs services/stocks-global/local-proxy.test.mjs services/stocks-global/market-cache.test.mjs services/stocks-global/history-deadline.test.mjs services/stocks-global/history-cancellation.test.mjs services/stocks-global/market-range.test.mjs services/stocks-global/interest.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate

@@ -32,16 +32,23 @@ export function identityResolver({ endpoint, issuer, fetchImpl = fetch }) {
   const url = new URL(endpoint);
   check((url.protocol === 'https:' || (url.protocol === 'http:' && url.hostname === '127.0.0.1')) && !url.username && !url.password && !url.search && !url.hash && url.pathname.endsWith('/api/v1/me'), 'AUTH_CONFIG_INVALID');
   check(typeof issuer === 'string' && issuer.length > 0 && issuer.length <= 512, 'AUTH_CONFIG_INVALID');
-  return async req => {
+  return async (req, { signal } = {}) => {
     const authorization = req.headers.authorization;
     check(typeof authorization === 'string' && /^Bearer [A-Za-z0-9._~-]{16,4096}$/.test(authorization), 'AUTH_REQUIRED');
     const controller = new AbortController(), deadline = performance.now() + IDENTITY_TIMEOUT_MS;
     const timer = setTimeout(() => controller.abort(), IDENTITY_TIMEOUT_MS);
+    const onAbort = () => controller.abort();
     const inTime = () => check(!controller.signal.aborted && performance.now() < deadline, 'AUTH_UNAVAILABLE');
     let response, reader;
     try {
+      signal?.addEventListener('abort', onAbort, { once: true });
+      if (signal?.aborted) onAbort();
+      inTime();
       // No identity caching: revocation/expiry is checked on EVERY request, including reads.
-      response = await bounded(Promise.resolve().then(() => fetchImpl(url.href, { method: 'GET', headers: { Authorization: authorization, Accept: 'application/json' }, redirect: 'error', signal: controller.signal })).then(value => {
+      response = await bounded(Promise.resolve().then(() => {
+        inTime();
+        return fetchImpl(url.href, { method: 'GET', headers: { Authorization: authorization, Accept: 'application/json' }, redirect: 'error', signal: controller.signal });
+      }).then(value => {
         response = value;
         if (controller.signal.aborted) cancel(value.body);
         return value;
@@ -75,6 +82,7 @@ export function identityResolver({ endpoint, issuer, fetchImpl = fetch }) {
       const principal = { issuer, subject: user.id }; accountId(principal); return principal;
     } catch (error) { throw error instanceof SimError ? error : new SimError('AUTH_UNAVAILABLE'); }
     finally {
+      signal?.removeEventListener('abort', onAbort);
       clearTimeout(timer); controller.abort(); cancel(reader || response?.body);
       try { reader?.releaseLock(); } catch {}
     }

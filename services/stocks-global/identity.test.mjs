@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { getEventListeners } from 'node:events';
 import { setTimeout as delay } from 'node:timers/promises';
 import { identityResolver, IDENTITY_RESPONSE_MAX_BYTES } from './identity.mjs';
 
@@ -154,5 +155,70 @@ test('a failing or nonsettling cancellation cannot hold an oversized response or
     assert.ok(performance.now() - started < 1000);
     assert.equal(fixture.counts().cancelled, 1);
     assert.equal(fixture.body.locked, false);
+  }
+});
+
+test('pre-aborted and immediately abandoned requests never invoke the identity authority', async () => {
+  for (const alreadyAborted of [true, false]) {
+    const caller = new AbortController(); let calls = 0;
+    const resolve = resolver(async () => { calls++; return Response.json(profile(null)); });
+    if (alreadyAborted) caller.abort();
+    const result = resolve(request, { signal: caller.signal });
+    caller.abort();
+    await assert.rejects(result, authError('AUTH_UNAVAILABLE'));
+    assert.equal(calls, 0);
+    assert.equal(getEventListeners(caller.signal, 'abort').length, 0);
+  }
+});
+
+test('abandoning one pending identity fetch cancels its late body without aborting a live request', { timeout: 2000 }, async () => {
+  const abandoned = new AbortController(), live = new AbortController();
+  const pending = []; let bothEntered;
+  const entered = new Promise(done => { bothEntered = done; });
+  const resolve = resolver((_, options) => new Promise(deliver => {
+    pending.push({ signal: options.signal, deliver });
+    if (pending.length === 2) bothEntered();
+  }));
+  const abandonedResult = assert.rejects(resolve(request, { signal: abandoned.signal }), authError('AUTH_UNAVAILABLE'));
+  const liveResult = resolve(request, { signal: live.signal });
+  await entered;
+  abandoned.abort(Error('private caller reason'));
+  await abandonedResult;
+  assert.equal(pending[0].signal.aborted, true);
+  assert.equal(pending[1].signal.aborted, false);
+  assert.equal(live.signal.aborted, false);
+  const late = streamResponse(JSON.stringify(profile(null)));
+  pending[0].deliver(late.response);
+  pending[1].deliver(Response.json(profile(null)));
+  assert.deepEqual(await liveResult, principal);
+  await delay(0);
+  assert.deepEqual(late.counts(), { reads: 0, cancelled: 1 });
+  assert.equal(late.body.locked, false);
+  assert.equal(getEventListeners(abandoned.signal, 'abort').length, 0);
+  assert.equal(getEventListeners(live.signal, 'abort').length, 0);
+});
+
+test('request cancellation interrupts a stalled identity body and releases its reader', { timeout: 2000 }, async () => {
+  const caller = new AbortController(); let reading, cancelled = 0, upstreamSignal;
+  const entered = new Promise(done => { reading = done; });
+  const body = new ReadableStream({ pull() { reading(); }, cancel() { cancelled++; } }, { highWaterMark: 0 });
+  const resolve = resolver(async (_, options) => { upstreamSignal = options.signal; return new Response(body); });
+  const result = assert.rejects(resolve(request, { signal: caller.signal }), authError('AUTH_UNAVAILABLE'));
+  await entered;
+  assert.equal(body.locked, true);
+  caller.abort();
+  await result;
+  assert.equal(upstreamSignal.aborted, true);
+  assert.equal(cancelled, 1);
+  assert.equal(body.locked, false);
+  assert.equal(getEventListeners(caller.signal, 'abort').length, 0);
+});
+
+test('authentication failures detach the caller lifetime listener without aborting the caller', async () => {
+  const caller = new AbortController();
+  for (const status of [401, 500]) {
+    await assert.rejects(resolver(async () => Response.json({}, { status }))(request, { signal: caller.signal }), authError(status === 401 ? 'AUTH_REQUIRED' : 'AUTH_UNAVAILABLE'));
+    assert.equal(caller.signal.aborted, false);
+    assert.equal(getEventListeners(caller.signal, 'abort').length, 0);
   }
 });
