@@ -16,7 +16,7 @@
  */
 export function createReadCoalescer<T>(windowMs: number, now: () => number = Date.now) {
   const inWindow = new Map<string, { startedAt: number; promise: Promise<T> }>();
-  return function read(key: string, run: () => Promise<T>, fresh = false): Promise<T> {
+  const read = function (key: string, run: () => Promise<T>, fresh = false): Promise<T> {
     const startedAt = now();
     const current = inWindow.get(key);
     if (!fresh && current && startedAt - current.startedAt < windowMs) return current.promise;
@@ -27,4 +27,8 @@ export function createReadCoalescer<T>(windowMs: number, now: () => number = Dat
     });
     return promise;
   };
+  // Authenticated callers invalidate the window when credentials change.
+  // An earlier, still-running promise cannot repopulate the cleared window:
+  // its rejection handler removes entries only if it still owns the slot.
+  return Object.assign(read, { clear: () => inWindow.clear() });
 }
