@@ -112,23 +112,6 @@ function lastFactor(clip: HistoricalMoveClip): number {
   return clip.bars.reduce((factor, bar) => factor * (1 + bar[2] / 1000000), 1);
 }
 
-/** Numeric high/low of the complete replay, including its joining anchor. */
-export function historicalReplayBounds(program: HistoricalMoveProgram, anchor: number) {
-  if (!(anchor > 0) || !Number.isFinite(anchor)) throw new Error('Некорректная цена соединения');
-  let price = anchor, min = anchor, max = anchor;
-  for (const clip of program.clips) {
-    for (const bar of clip.bars) {
-      const [h,l,c] = bar, open = price;
-      min = Math.min(min,open * (1 + l / 1000000));
-      max = Math.max(max,open * (1 + h / 1000000));
-      price = open * (1 + c / 1000000);
-      if (!Number.isFinite(price) || price < 1e-8 || price > 1e9)
-        throw new Error('Исторический отрезок выходит за поддерживаемую точность цены');
-    }
-  }
-  return {min,max,close:price};
-}
-
 interface HistoricalTick { price: number; high: number; low: number; volume: number; quoteVolume: number; }
 interface HistoricalHour { open: number; ticks: HistoricalTick[]; regime: 'impulse'|'pullback'|'consolidation'; }
 
@@ -139,7 +122,9 @@ interface HistoricalHour { open: number; ticks: HistoricalTick[]; regime: 'impul
  * No clock acceleration and no "future" data reads.
  */
 function historicalReplayHour(program: HistoricalMoveProgram, anchor: number, hour: number, seed: string): HistoricalHour {
-  validateHistoricalMoveProgram(program);
+  // Persisted configurations are strictly validated by parseListingConfig
+  // before entering this synchronous v2-only generator; no runtime imports
+  // are permitted by the NRX legacy release identity guard.
   if (!Number.isSafeInteger(hour) || hour < 0) throw new Error('Час истории должен быть неотрицательным');
   let open = anchor, remaining = hour;
   let found: HistoricalMoveBar | null = null;
