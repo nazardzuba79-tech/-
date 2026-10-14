@@ -4,7 +4,7 @@
  */
 import type { ListingScenario, ScenarioControlsProgram } from '../../shared/listingScenarioControls';
 import type { RealismTick } from './simulationRealism';
-import { historicalReplayHour } from '../../shared/listingHistoricalReplay';
+import type { HistoricalMoveClip, HistoricalMoveProgram, HistoricalMoveBar } from '../../shared/listingHistoricalReplay';
 import { seededRandom } from './simulationRandom';
 
 const HOUR = 3_600_000, MINUTE = 60_000, TICK = 10_000;
@@ -103,6 +103,80 @@ function priceAt(config: ControlledScenarioConfig, seed: string, at: number): nu
   // The permanent range has no elapsed-time trend or resetting growth cycle.
   const range = p.regime === 'consolidation' ? noise(seed, label + ':range', t, 137 * MINUTE) * intensity * 2.5 : 0;
   return displaced(base, envelope * (move + range), cap);
+}
+
+/* Inlined PURE v2-only arithmetic: this module is omitted by the NRX v1
+ * source projection, which forbids any new runtime imports here. The
+ * independent shared reference implementation stays regression-tested. */
+function lastFactor(clip: HistoricalMoveClip): number {
+  return clip.bars.reduce((factor, bar) => factor * (1 + bar[2] / 1000000), 1);
+}
+
+/** Numeric high/low of the complete replay, including its joining anchor. */
+export function historicalReplayBounds(program: HistoricalMoveProgram, anchor: number) {
+  if (!(anchor > 0) || !Number.isFinite(anchor)) throw new Error('Некорректная цена соединения');
+  let price = anchor, min = anchor, max = anchor;
+  for (const clip of program.clips) {
+    for (const bar of clip.bars) {
+      const [h,l,c] = bar, open = price;
+      min = Math.min(min,open * (1 + l / 1000000));
+      max = Math.max(max,open * (1 + h / 1000000));
+      price = open * (1 + c / 1000000);
+      if (!Number.isFinite(price) || price < 1e-8 || price > 1e9)
+        throw new Error('Исторический отрезок выходит за поддерживаемую точность цены');
+    }
+  }
+  return {min,max,close:price};
+}
+
+interface HistoricalTick { price: number; high: number; low: number; volume: number; quoteVolume: number; }
+interface HistoricalHour { open: number; ticks: HistoricalTick[]; regime: 'impulse'|'pullback'|'consolidation'; }
+
+/**
+ * Returns canonical 10-second modeled ticks for one HISTORICAL hour.
+ * The source's hourly close, high and low PPM moves are respected; true
+ * intrahour ordering was not in hourly OHLC, and is intentionally modeled.
+ * No clock acceleration and no "future" data reads.
+ */
+function historicalReplayHour(program: HistoricalMoveProgram, anchor: number, hour: number, seed: string): HistoricalHour {
+  validateHistoricalMoveProgram(program);
+  if (!Number.isSafeInteger(hour) || hour < 0) throw new Error('Час истории должен быть неотрицательным');
+  let open = anchor, remaining = hour;
+  let found: HistoricalMoveBar | null = null;
+  for (const clip of program.clips) {
+    if (remaining < clip.bars.length) {
+      for (let i=0; i<remaining; i++) open *= 1 + clip.bars[i][2] / 1000000;
+      found = clip.bars[remaining];
+      break;
+    }
+    open *= lastFactor(clip);
+    remaining -= clip.bars.length;
+  }
+  if (!Number.isFinite(open) || open <= 0) throw new Error('Историческая цена не представима');
+  const ticks: HistoricalTick[] = [];
+  let last = open;
+  const hash = Array.from(seed + ':' + hour).reduce((h,ch)=>((h * 33) ^ ch.charCodeAt(0)) >>> 0, 5381);
+  const upFirst = (hash & 1) === 0;
+  const [high,low,close] = found
+    ? [open * (1 + found[0] / 1000000), open * (1 + found[1] / 1000000), open * (1 + found[2] / 1000000)]
+    : [open * 1.004, open * 0.996, open];
+  const stops: [number,number][] = upFirst
+    ? [[0,open],[120,high],[240,low],[360,close]]
+    : [[0,open],[120,low],[240,high],[360,close]];
+  for (let t=1;t<=360;t++) {
+    const index = t <= 120 ? 0 : t <= 240 ? 1 : 2;
+    const [t0,p0] = stops[index], [t1,p1] = stops[index+1];
+    const fraction = (t - t0)/(t1 - t0);
+    const price = t === 360 ? close : p0 * Math.exp(Math.log(p1/p0) * fraction);
+    const move = Math.abs(Math.log(price/last));
+    // Model-only activity; historical volume is neither imported nor claimed.
+    const quoteVolume = 20 + Math.min(300,move*20000) + (hash%17);
+    ticks.push({price,high:Math.max(last,price),low:Math.min(last,price),
+      quoteVolume,volume:quoteVolume/((price+last)/2)});
+    last = price;
+  }
+  const delta = Math.log(close/open);
+  return {open,ticks,regime:delta > 0.001 ? 'impulse' : delta < -0.001 ? 'pullback' : 'consolidation'};
 }
 
 export function controlledScenarioHour(config: ControlledScenarioConfig, seed: string, hour: number): { open: number; ticks: RealismTick[]; regime: Regime } {
