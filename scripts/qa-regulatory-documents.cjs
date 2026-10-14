@@ -105,8 +105,9 @@ async function main() {
   await page.locator('a[href="/legal/licenses"]').first().click();
   await page.locator('.licences-portfolio').waitFor();
   await page.goto(production+'/');
-  await page.locator('a[href="/legal/licenses"]').first().waitFor();
-  check(await page.locator('a[href="/legal/licenses"]').count()>0,'Homepage footer links to licences');
+  await page.locator('a[href="/legal/licenses"]').first().click();
+  await page.locator('.licences-portfolio').waitFor();
+  check(true,'Homepage footer links to licences');
   check(report.errors.length===0,'No JavaScript page errors');
   report.result='PASS';
 }
