@@ -5,10 +5,11 @@ Prepared 2026-10-14 from freshly fetched main `72f0a5944b01b4d2596957ba6939b397b
 ## Current release state
 
 The owner approved publication of the supplied image and its description on
-`/legal/licenses`. The public page displays the original collage as provided,
-labels the material as unverified, and makes no active-licence assertion. This
-permission is separate from verification. The verified-document catalogue
-remains empty and its publication gate remains in force.
+`/legal/licenses`. The public page displays the original collage as provided
+with neutral copy and makes no active-licence assertion. At the owner’s request,
+the separate public verification-status line was removed. Publication remains
+separate from verification: the verified-document catalogue is empty and its
+publication gate remains in force.
 
 The owner subsequently requested no register hyperlinks in the customer UI.
 No such links are rendered. Internal verification references remain necessary

@@ -66,8 +66,9 @@ async function main() {
     await page.reload();
     await page.locator(`main[lang="${language}"]`).waitFor();
     check(await page.locator('.licences-portfolio').isVisible(),`${language}: public supplied-material section accessible without authentication`);
-    check(await page.locator('.licences-portfolio-image img').evaluate(image=>image.complete&&image.naturalWidth===1536&&image.naturalHeight===1024),`${language}: supplied image renders at original dimensions`);
-    check(await page.locator('.licences-portfolio-status').isVisible(),`${language}: verification status remains visible`);
+    await page.waitForFunction(() => { const image=document.querySelector('.licences-portfolio-image img'); return image?.complete&&image.naturalWidth===1536&&image.naturalHeight===1024; });
+    check(true,`${language}: supplied image renders at original dimensions`);
+    check(await page.locator('.licences-portfolio-status').count()===0,`${language}: removed portfolio label does not render`);
     check(await page.locator('.licence-card').count()===0,`${language}: no unverified public cards`);
     check(await page.locator('meta[name="robots"][content="noindex, nofollow"]').count()===1,`${language}: indexing deferred`);
   }
@@ -105,8 +106,8 @@ async function main() {
   await page.locator('a[href="/legal/licenses"]').first().click();
   await page.locator('.licences-portfolio').waitFor();
   await page.goto(production+'/');
-  await page.locator('a[href="/legal/licenses"]').first().waitFor();
-  check(await page.locator('a[href="/legal/licenses"]').count()>0,'Homepage footer links to licences');
+  await page.waitForFunction(() => Boolean(document.querySelector('a[href="/legal/licenses"]')));
+  check(true,'Homepage footer links to licences');
   check(report.errors.length===0,'No JavaScript page errors');
   report.result='PASS';
 }

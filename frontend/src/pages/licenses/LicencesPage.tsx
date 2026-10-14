@@ -59,7 +59,6 @@ export function LicencesContent({ documents, review = false, portfolio = false }
       <a className="licences-portfolio-image" href="/regulatory-documents/voltex-portfolio.png" target="_blank" rel="noopener noreferrer" aria-label={t('licenses.openOriginal')}>
         <img src="/regulatory-documents/voltex-portfolio.png" alt={t('licenses.portfolioAlt')} width="1536" height="1024" />
       </a>
-      <p className="licences-portfolio-status">{t('licenses.portfolioStatus')}</p>
       <a className="licences-portfolio-open" href="/regulatory-documents/voltex-portfolio.png" target="_blank" rel="noopener noreferrer">{t('licenses.openOriginal')} <ArrowUpRight size={15} aria-hidden="true" /></a>
     </section> : documents.length === 0 ? <section className="licences-empty"><FileText size={32} strokeWidth={1.2} aria-hidden="true" /><h3>{t('licenses.empty')}</h3></section>
       : <div className="licences-grid">{documents.map(document => {
