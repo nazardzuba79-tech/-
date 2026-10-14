@@ -17,7 +17,7 @@ export const ZH: Record<Key, string> = {
   'licenses.intro': "VOLTEX 法律实体的监管文件和相关信息。",
   'licenses.documents': "文件",
   'licenses.empty': "尚未发布文件。",
-  'licenses.portfolioDescription': "VOLTEX 在不同司法管辖区的注册与许可相关文件。",
+  'licenses.portfolioDescription': "有关不同司法管辖区注册与许可的材料。图片的真实性及 VOLTEX 当前的许可状态尚未得到核实。",
   'licenses.portfolioAlt': "提供的七份 VOLTEX 文件图片拼图。",
   'licenses.number': "文件编号",
   'licenses.issueDate': "签发日期",

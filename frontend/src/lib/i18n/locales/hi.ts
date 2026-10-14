@@ -17,7 +17,7 @@ export const HI: Record<Key, string> = {
   'licenses.intro': "VOLTEX की कानूनी संस्थाओं के नियामक दस्तावेज़ और जानकारी।",
   'licenses.documents': "दस्तावेज़",
   'licenses.empty': "अभी तक कोई दस्तावेज़ प्रकाशित नहीं किया गया है।",
-  'licenses.portfolioDescription': "विभिन्न अधिकार क्षेत्रों में पंजीकरण और लाइसेंसिंग से संबंधित VOLTEX दस्तावेज़।",
+  'licenses.portfolioDescription': "विभिन्न क्षेत्रों में पंजीकरण और लाइसेंसिंग से जुड़ी सामग्री। छवियों की प्रामाणिकता और VOLTEX के लाइसेंस की वर्तमान स्थिति सत्यापित नहीं की गई है।",
   'licenses.portfolioAlt': "VOLTEX के सात दस्तावेज़ों की प्रदान की गई संयुक्त छवि।",
   'licenses.number': "दस्तावेज़ संख्या",
   'licenses.issueDate': "जारी करने की तारीख",

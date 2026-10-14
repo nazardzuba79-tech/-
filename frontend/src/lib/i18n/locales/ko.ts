@@ -17,7 +17,7 @@ export const KO: Record<Key, string> = {
   'licenses.intro': "VOLTEX 법인에 관한 규제 문서 및 정보입니다.",
   'licenses.documents': "문서",
   'licenses.empty': "아직 게시된 문서가 없습니다.",
-  'licenses.portfolioDescription': "여러 관할 지역의 등록 및 인허가에 관한 VOLTEX 문서입니다.",
+  'licenses.portfolioDescription': "여러 관할 지역의 등록 및 인허가 관련 자료입니다. 이미지의 진위와 VOLTEX의 현재 라이선스 상태는 확인되지 않았습니다.",
   'licenses.portfolioAlt': "제공된 VOLTEX 문서 이미지 7개를 모은 콜라주.",
   'licenses.number': "문서 번호",
   'licenses.issueDate': "발급일",

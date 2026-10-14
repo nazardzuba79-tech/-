@@ -20,7 +20,7 @@ export const RU = {
   'licenses.intro': "Регуляторные документы и сведения о юридических лицах VOLTEX.",
   'licenses.documents': "Документы",
   'licenses.empty': "Документы ещё не опубликованы.",
-  'licenses.portfolioDescription': "Документы VOLTEX по вопросам регистрации и лицензирования в различных юрисдикциях.",
+  'licenses.portfolioDescription': "Материалы по вопросам регистрации и лицензирования в различных юрисдикциях. Подлинность изображений и действующий статус лицензий VOLTEX не подтверждены.",
   'licenses.portfolioAlt': "Коллаж с семью предоставленными изображениями документов VOLTEX.",
   'licenses.number': "Номер документа",
   'licenses.issueDate': "Дата выдачи",

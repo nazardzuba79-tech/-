@@ -17,7 +17,7 @@ export const JA: Record<Key, string> = {
   'licenses.intro': "VOLTEXの法人に関する規制文書と情報。",
   'licenses.documents': "文書",
   'licenses.empty': "文書はまだ公開されていません。",
-  'licenses.portfolioDescription': "各法域における登録およびライセンスに関するVOLTEXの資料。",
+  'licenses.portfolioDescription': "各法域の登録・ライセンスに関する資料です。画像の真正性およびVOLTEXの現在のライセンス状況は確認されていません。",
   'licenses.portfolioAlt': "提供されたVOLTEXの7つの文書画像をまとめたもの。",
   'licenses.number': "文書番号",
   'licenses.issueDate': "発行日",

@@ -17,7 +17,7 @@ export const EN: Record<Key, string> = {
   'licenses.intro': "Regulatory documents and information about VOLTEX legal entities.",
   'licenses.documents': "Documents",
   'licenses.empty': "No documents have been published yet.",
-  'licenses.portfolioDescription': "VOLTEX documents concerning registration and licensing in various jurisdictions.",
+  'licenses.portfolioDescription': "Materials concerning registration and licensing in various jurisdictions. The authenticity of these images and VOLTEX's current licensing status have not been verified.",
   'licenses.portfolioAlt': "Supplied collage of seven VOLTEX document images.",
   'licenses.number': "Document number",
   'licenses.issueDate': "Issue date",
