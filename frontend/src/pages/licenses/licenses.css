@@ -14,7 +14,6 @@
 .licences-portfolio-description { margin:0; color:#d7dfe9; font-size:15px; line-height:1.7; }
 .licences-portfolio-image { display:block; min-width:0; overflow:hidden; border:1px solid #374252; border-radius:8px; }
 .licences-portfolio-image img { display:block; width:100%; height:auto; }
-.licences-portfolio-status { margin:0; color:#b9c4d2; font-size:13px; line-height:1.6; }
 .licences-portfolio-open { display:inline-flex; align-items:center; gap:8px; justify-self:start; color:#e4cf9f; font-size:13px; text-decoration:none; }
 .licences-portfolio-open:hover { color:#f5dcab; }
 .licences-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
