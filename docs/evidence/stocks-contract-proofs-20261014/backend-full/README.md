@@ -1,5 +1,14 @@
 # Full backend verification — retained attempts
 
+## Latest Linux result after the build prerequisite: FAIL
+
+Commit `03bdc89fa802e958b80d85a8add8a952f522b890`, [run 38512859056 / job 115685235180](https://github.com/nazardzuba79-tech/-/actions/runs/38512859056/job/115685235180), completed naturally: **232 passed, 5 failed, 12 skipped suites; 3575 passed, 9 failed, 124 skipped tests (3708 total)**. The direct locked TypeScript prerequisite passed in 9.771 seconds and recorded 560 emitted files. The formerly missing native-review modules now exist and all seven native-review tests pass. No timeout, OOM, output overflow or cleanup failure occurred.
+
+[Original result](linux-03bd-result.json) is unchanged; [derived review](linux-03bd-review.json) binds raw Jest and build-proof hashes. The nine assertion failures in provider behavior, CFD naming, collector isolation and canonical Copy Trading hashes remain, as does the opted-out PostgreSQL suite constructor failure. All five failing test files match current main bytes; matched-main execution remains **NOT_RUN**. Database acceptance, browser acceptance and production capacity are not established.
+
+Original Windows and `0dd1c1d5` evidence below remains retained. A later exact reviewed preparation-only change may skip repeating this backend workload while preserving this **FAIL**; unknown/runtime/compiler/lock/test changes must require full execution.
+
+
 ## Linux exact-head result: FAIL
 
 Commit `0dd1c1d5edf51593ef28896bfee4af8ed9e56b26`, [run 38507741590 / job 115669010443](https://github.com/nazardzuba79-tech/-/actions/runs/38507741590/job/115669010443), completed naturally with exit 1. All 249 backend filenames have terminal results: **231 passed, 6 failed, 12 skipped**. Tests: **3568 passed, 9 failed, 124 skipped**, 3701 total. No timeout, OOM or log overflow occurred. Database acceptance is **NOT_RUN**; cleanup succeeded and canonical source stayed unchanged.

@@ -2,7 +2,7 @@
 
 **Review implementation, NOT LAUNCH READY. No production endpoint or capacity acceptance is created here.** The existing targeted HTTP workload and its recorded failures remain unchanged. This fixture has no workflow that starts its workload automatically.
 
-The current exact-head baseline (`0dd1c1d5edf51593ef28896bfee4af8ed9e56b26`) passes the finite principal contract, isolated Stocks and frontend tests. It fails full backend and the strict browser prerequisite. Historical 20/50-user capacity and crypto coexistence criteria remain unmet. Cheap fixture guards cannot clear those release gates.
+The current verified baseline (`03bdc89fa802e958b80d85a8add8a952f522b890`) passes the finite principal contract, isolated Stocks and frontend tests. It fails full backend and the strict browser prerequisite. Historical 20/50-user capacity and crypto coexistence criteria remain unmet. Cheap fixture guards cannot clear those release gates.
 
 ## What the comparison measures
 
@@ -42,3 +42,13 @@ No broker, provider quote/history endpoint, real database, production account, s
 `node --test services/stocks/auth-http-fixture-512/authority.test.cjs services/stocks/auth-http-fixture-512/fixture.test.mjs`
 
 These checks exercise pure guards and disposable local fixtures; they do not start the workload, Docker, a compiled authority or an HTTP trading session. Any future load result must carry its own exact source/image/resource manifest and raw failures. Prior evidence is retained separately.
+
+## Separate preparation-only CI
+
+The PR512 preparation job runs only after all existing Stocks jobs terminate and its required admission, isolated-stage, frontend and bounded-runtime prerequisites pass. It does not call the old stage main or the disabled auth runner. It downloads the successful same-run/same-head stage ZIP and checks its artifact digest, source SHA, stage PASS report, original Node22 compiler proof, canonical source bytes and six emitted authority modules. Node24.21.0 runtime/image identity is separate from that compiler provenance.
+
+The explicit `--prepare` command creates an allowlisted context, installs locked dependencies with lifecycle scripts disabled, and creates one closed 50-account SQLite seed through the unchanged account-worker API. This setup is outside the timed auth experiment. It records dependency/native and Node identities, seed integrity/ledger hashes and setup costs. The actual worker connection synchronous pragma remains UNMEASURED; source-configured FULL is not mislabeled as an observed runtime query.
+
+Only new owned context paths receive public read modes; installed browser/system permissions and security policy are untouched. Execution containers are nonroot, read-only, network-none or the owned namespace, with no capabilities, no-new-privileges, explicit CPU/RAM/no-swap and original disk limits. Owned idle cgroup/backing-device evidence is configuration proof and must be rechecked before a later load test. No authority, HTTP request driver, quote provider, broker, browser, production database or financial request runs during preparation.
+
+All operations are bounded and owned containers/images are removed. The immutable image archive, closed fixture seed and hashed reports are retained as QA artifacts; no image is pushed to a registry. The output is **PREPARED_NOT_AUTHORIZED**, never a launch authorization or capacity PASS. A separate review must still freeze the actual prepared image, compiled/npm/native closure, seed, source manifest, request counts, limits and cleanup contract before any auth HTTP measurement. Existing release failures remain failures.

@@ -25,13 +25,13 @@ jobs:
         with:
           node-version: '24.21.0'
       - name: Admission and fixture pure guards (no HTTP, Docker or load)
-        run: node --test scripts/qa-backend-full-admission.test.cjs services/stocks/auth-http-fixture-512/authority.test.cjs services/stocks/auth-http-fixture-512/fixture.test.mjs
+        run: node --test scripts/qa-backend-full-admission.test.cjs services/stocks/auth-http-fixture-512/authority.test.cjs services/stocks/auth-http-fixture-512/fixture.test.mjs services/stocks/auth-http-fixture-512/prepare.test.mjs
       - id: admission
         if: always()
         env:
           QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          node scripts/qa-backend-full-admission.cjs --base 0dd1c1d5edf51593ef28896bfee4af8ed9e56b26 --head "$QA_SOURCE_SHA" --manifest docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json > "$RUNNER_TEMP/backend-admission.json"
+          node scripts/qa-backend-full-admission.cjs --base 03bdc89fa802e958b80d85a8add8a952f522b890 --head "$QA_SOURCE_SHA" --manifest docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json > "$RUNNER_TEMP/backend-admission.json"
           node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/backend-admission.json"));if(!["full","not_run"].includes(r.mode)||r.releaseGatePass!==false||r.priorFailure.status!=="FAIL")throw Error("Invalid admission evidence");fs.appendFileSync(process.env.GITHUB_OUTPUT,"mode="+r.mode+"\n")'
       - uses: actions/upload-artifact@v4
         if: always()
@@ -39,6 +39,131 @@ jobs:
           name: stocks-backend-admission-${{ github.event.pull_request.head.sha }}
           path: ${{ runner.temp }}/backend-admission.json
           if-no-files-found: error
+  stocks-auth-preparation:
+    # Preparation only, serial after every Stocks predecessor. Never starts auth HTTP or load.
+    needs: [stocks-backend-admission, stocks-full-backend-offline, isolated-simulator, frontend-regression, bounded-stock-runtime, stocks-ui-browser, stocks-review-selection, stocks-joined-phase-diagnostic, crypto-service-comparison, stocks-performance-profile, launch-resource-comparison, stocks-pr512-pristine-timeline, stocks-pr512-targeted-http, stocks-pr512-cx23-model, stocks-pr512-phase-diagnostic, stocks-pr512-registration-pairs]
+    if: >-
+      always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.number == 512 &&
+      needs.stocks-backend-admission.result == 'success' && needs.isolated-simulator.result == 'success' &&
+      needs.frontend-regression.result == 'success' && needs.bounded-stock-runtime.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      actions: read
+    env:
+      QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Preparation pure guards (no Docker, HTTP, build or database)
+        run: node --test services/stocks/auth-http-fixture-512/prepare.test.mjs
+      - name: Download and verify this run's immutable stage artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const path = require('node:path');
+            const crypto = require('node:crypto');
+            const assert = require('node:assert/strict');
+            assert.equal(context.repo.owner, 'nazardzuba79-tech');
+            assert.equal(context.repo.repo, '-');
+            assert.equal(context.payload.pull_request.number, 512);
+            const head = process.env.QA_SOURCE_SHA;
+            assert.match(head, /^[a-f0-9]{40}$/);
+            const rows = await github.paginate(github.rest.actions.listWorkflowRunArtifacts,
+              { ...context.repo, run_id: context.runId, per_page: 100 });
+            const matches = rows.filter(row => row.name === `stocks-local-stage-${head}`);
+            assert.equal(matches.length, 1);
+            const artifact = matches[0];
+            assert.equal(artifact.expired, false);
+            assert.equal(artifact.workflow_run.id, context.runId);
+            assert.equal(artifact.workflow_run.head_sha, head);
+            assert.ok(artifact.size_in_bytes > 0 && artifact.size_in_bytes <= 256 * 1024 ** 2);
+            assert.match(artifact.digest, /^sha256:[a-f0-9]{64}$/);
+            const response = await github.rest.actions.downloadArtifact(
+              { ...context.repo, artifact_id: artifact.id, archive_format: 'zip' });
+            const zip = Buffer.from(response.data);
+            assert.equal(zip.length, artifact.size_in_bytes);
+            const digest = crypto.createHash('sha256').update(zip).digest('hex');
+            assert.equal(`sha256:${digest}`, artifact.digest);
+            const input = path.join(process.env.RUNNER_TEMP, 'stocks-auth-preparation-input');
+            assert.ok(!fs.existsSync(input));
+            fs.mkdirSync(input, { mode: 0o700 });
+            fs.writeFileSync(path.join(input, 'stage.zip'), zip, { flag: 'wx', mode: 0o600 });
+            fs.writeFileSync(path.join(input, 'artifact.json'), JSON.stringify({
+              sourceSha: head, runId: String(context.runId), artifactId: String(artifact.id),
+              sha256: digest, bytes: zip.length, producerJob: 'isolated-simulator'
+            }, null, 2), { flag: 'wx', mode: 0o600 });
+            core.info(`Verified same-head stage artifact ${artifact.id}, SHA256 ${digest}; no workload started.`);
+      - name: Bind explicit preparation inputs without executing downloaded code
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import { execFileSync } from 'node:child_process';
+          import { BASE_IMAGE, PREPARE_SCHEMA, validateConfig } from './services/stocks/auth-http-fixture-512/prepare.mjs';
+          const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+          const input = path.join(process.env.RUNNER_TEMP, 'stocks-auth-preparation-input');
+          const artifact = JSON.parse(fs.readFileSync(path.join(input, 'artifact.json')));
+          const python = fs.realpathSync('/usr/bin/python3');
+          const archive = path.join(input, 'stage.zip');
+          const proof = execFileSync(python, ['-I', '-S', '-c',
+            "import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); a=[i for i in z.infolist() if i.filename=='build-provenance.json']; assert len(a)==1 and 0<a[0].file_size<=16777216; sys.stdout.buffer.write(z.read(a[0]))", archive],
+            { timeout: 30000, maxBuffer: 16 * 1024 ** 2 });
+          const exec = (tool, args) => execFileSync(tool, args, { encoding: 'utf8', timeout: 30000 }).trim();
+          const majorMinor = exec('findmnt', ['-n', '-o', 'MAJ:MIN', '-T', input]);
+          assert.match(majorMinor, /^\d+:\d+$/);
+          const matches = exec('lsblk', ['-nrpo', 'NAME,MAJ:MIN']).split('\n')
+            .map(line => line.trim().split(/\s+/)).filter(row => row[1] === majorMinor);
+          assert.equal(matches.length, 1);
+          let device = matches[0][0];
+          const parent = exec('lsblk', ['-ndo', 'PKNAME', device]);
+          if (parent) { assert.match(parent, /^[A-Za-z0-9_-]+$/); device = `/dev/${parent}`; }
+          device = fs.realpathSync(device);
+          assert.ok(fs.statSync(device).isBlockDevice());
+          const config = validateConfig({ schema: PREPARE_SCHEMA, sourceSha: process.env.QA_SOURCE_SHA,
+            stage: { archive, sha256: artifact.sha256, sourceSha: artifact.sourceSha,
+              runId: artifact.runId, artifactId: artifact.artifactId, buildProvenanceSha256: digest(proof) },
+            baseImage: BASE_IMAGE, python: { executable: python, sha256: digest(fs.readFileSync(python)) },
+            output: path.join(process.env.RUNNER_TEMP, 'stocks-auth-preparation-output'), device });
+          fs.writeFileSync(path.join(input, 'config.json'), JSON.stringify(config, null, 2), { flag: 'wx', mode: 0o600 });
+          NODE
+      - name: Prepare immutable image, closed fixture seed and idle resource evidence only
+        run: node services/stocks/auth-http-fixture-512/prepare.mjs --prepare "$RUNNER_TEMP/stocks-auth-preparation-input/config.json"
+      - name: Preserve successfully prepared immutable fixture inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-auth-prepared-inputs-${{ github.event.pull_request.head.sha }}
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/stocks-auth-preparation-output/private/runtime-image.tar
+            ${{ runner.temp }}/stocks-auth-preparation-output/private/runtime-output/private/seed/accounts.sqlite
+      - name: Preserve bounded preparation report and command failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-auth-preparation-${{ github.event.pull_request.head.sha }}
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/stocks-auth-preparation-input/artifact.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/preparation.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/public-context/runtime-source-manifest.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/private/runtime-output/inside-proof.json
+            ${{ runner.temp }}/stocks-auth-preparation-output/private/command-logs/*
+
   stocks-full-backend-offline:
     # One complete backend collection for PR512, with native engines confined
     # to a disposable no-network container. This is not a capacity or DB test.

@@ -1,0 +1,133 @@
+{
+  "sourceSHA": "03bdc89fa802e958b80d85a8add8a952f522b890",
+  "runId": 38512859056,
+  "jobId": 115685235180,
+  "artifactId": 11870024391,
+  "artifactSHA256": "869b44af85693a0ee2fee42fa7c6a3c288320b7bab05c994a746ee6973b326ab",
+  "originalResultSHA256": "285d96ebd8a0c779d7087443ddb7f91ae7360cbc24d870984f3e39db21fbed4a",
+  "rawJestSHA256": "ebeb99d62a60da4b83fdf04a1c053aa7e8e2b389b169613bb1597150ca70f45e",
+  "buildProofSHA256": "a622578880348cfafa2e306440730a32c1a492fdd62b7691ac4edfa285b8030e",
+  "status": "FAIL",
+  "rawResultUnmodified": true,
+  "counts": {
+    "numTotalTestSuites": 249,
+    "numPassedTestSuites": 232,
+    "numFailedTestSuites": 5,
+    "numPendingTestSuites": 12,
+    "numTotalTests": 3708,
+    "numPassedTests": 3575,
+    "numFailedTests": 9,
+    "numPendingTests": 124,
+    "numTodoTests": 0
+  },
+  "build": {
+    "status": "PASS",
+    "exitCode": 0,
+    "sourceUnchanged": true,
+    "compilerVersion": "5.9.3",
+    "compilerSHA256": "8d5fa5bd883fec0979fc2004f1fe1d99aef40570155d550eadc0b03b55513bf0",
+    "outputs": 560,
+    "elapsedMs": 9771
+  },
+  "fixed": {
+    "suite": "src/private-trading/__tests__/nativeReviewHarness.test.ts",
+    "previous": "collection failed: dist modules missing",
+    "current": "7/7 tests PASS after direct locked TypeScript prerequisite"
+  },
+  "failedSuites": [
+    {
+      "name": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+      "failedAssertions": [
+        "provider failure matrix retries a temporary 5xx and succeeds",
+        "provider failure matrix retries a transport timeout within a bounded budget, never unbounded",
+        "provider failure matrix opens the circuit after repeated failures and then stops calling the provider",
+        "provider failure matrix recovers through a HALF_OPEN probe once the cooldown elapses",
+        "provider failure matrix stops serving once the stale budget expires rather than aging a price indefinitely"
+      ],
+      "collectionFailure": null
+    },
+    {
+      "name": "src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts",
+      "failedAssertions": [],
+      "collectionFailure": "  ● Test suite failed to run\n\n    PrismaClientConstructorValidationError: Invalid value undefined for datasource \"db\" provided to PrismaClient constructor.\n    It should have this form: { url: \"CONNECTION_STRING\" }\n    Read more at https://pris.ly/d/client-constructor\n\n      12 | (url ? describe : describe.skip)('VTA Spot and native Futures share the actual disposable database', () => {\n      13 |   if (url && new URL(url).hostname !== '127.0.0.1') throw new Error('Disposable localhost PostgreSQL required');\n    > 14 |   const db = new PrismaClient({ datasources: { db: { url } } });\n         |              ^\n      15 |   const allocated = new BigNumber(50000).div('0.011').decimalPlaces(8, BigNumber.ROUND_DOWN).toFixed();\n      16 |   let actor: {userId: string; sessionId: string; expiresAt: number};\n      17 |   let native: NativeDemoService, repo: PrismaNativeRepository, sales: VtaDemoSales;\n\n      at Object.datasources (../app/node_modules/@prisma/client/runtime/library.js:124:86)\n      at Gl (../app/node_modules/@prisma/client/runtime/library.js:126:2527)\n      at new t (../app/node_modules/@prisma/client/runtime/library.js:130:748)\n      at src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts:14:14\n      at Object.<anonymous> (src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts:12:33)\n"
+    },
+    {
+      "name": "src/services/__tests__/CfdMarketDataService.test.ts",
+      "failedAssertions": [
+        "CfdMarketDataService fetches and normalizes tickers keyed by symbol from a batched quote"
+      ],
+      "collectionFailure": null
+    },
+    {
+      "name": "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+      "failedAssertions": [
+        "live ticker implementation is unreachable from financial services"
+      ],
+      "collectionFailure": null
+    },
+    {
+      "name": "src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+      "failedAssertions": [
+        "kseniaReview.ts is the exact approved mathematical implementation",
+        "reviewPerformanceV8.ts is the exact approved mathematical implementation"
+      ],
+      "collectionFailure": null
+    }
+  ],
+  "skippedSuites": [
+    "src/futures/__tests__/futuresBookLock.pg.test.ts",
+    "src/private-trading/__tests__/nativeDemo.integration.test.ts",
+    "src/__tests__/serverWatcherSleep.pg.test.ts",
+    "src/private-trading/__tests__/nativeCommandAcceptance.integration.test.ts",
+    "src/private-trading/__tests__/nativeLivePostgres.test.ts",
+    "src/banking/__tests__/bankingReferral.integration.test.ts",
+    "src/services/testMarkets/__tests__/nrxSpot.pg.test.ts",
+    "src/services/listings/__tests__/ownerAllocation.pg.test.ts",
+    "src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts",
+    "src/api/routes/__tests__/contactPolicy.pg.test.ts",
+    "src/api/routes/__tests__/kycEdgePostgres.test.ts",
+    "src/api/routes/__tests__/adminPasswordVault.pg.test.ts"
+  ],
+  "partiallySkippedSuites": [
+    {
+      "name": "src/private-trading/__tests__/service.integration.test.ts",
+      "pendingTests": 13
+    }
+  ],
+  "sourceComparison": {
+    "mainSHA": "055f88a945c8253b2736877b52f32d028c895086",
+    "files": [
+      {
+        "path": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "headSHA256": "a5142f3c20a18d724906e4ea5a189aa461c10a68ac225836d563918ebe167136",
+        "mainSHA256": "a5142f3c20a18d724906e4ea5a189aa461c10a68ac225836d563918ebe167136"
+      },
+      {
+        "path": "src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts",
+        "headSHA256": "0017d32605e028b42ed9bd6a2c5b61ef8332e4b21b16be399c4acca41fa86801",
+        "mainSHA256": "0017d32605e028b42ed9bd6a2c5b61ef8332e4b21b16be399c4acca41fa86801"
+      },
+      {
+        "path": "src/services/__tests__/CfdMarketDataService.test.ts",
+        "headSHA256": "514a90b8d6f898cadec4c05686509ed0c975d12b7427c7d22a051d208e7246d3",
+        "mainSHA256": "514a90b8d6f898cadec4c05686509ed0c975d12b7427c7d22a051d208e7246d3"
+      },
+      {
+        "path": "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+        "headSHA256": "06f561f70e76ad0069f0221b3f44fcd11aeb1008b543015ce39f604a046664a3",
+        "mainSHA256": "06f561f70e76ad0069f0221b3f44fcd11aeb1008b543015ce39f604a046664a3"
+      },
+      {
+        "path": "src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+        "headSHA256": "908fecb6c369a06aa54b1ef5cf97d4c448f056de909896790031810afae6fcac",
+        "mainSHA256": "908fecb6c369a06aa54b1ef5cf97d4c448f056de909896790031810afae6fcac"
+      }
+    ],
+    "matchedMainExecution": "NOT_RUN",
+    "scope": "Source equality for five currently failing test files only; not a matched-main execution."
+  },
+  "databaseAcceptance": "NOT_RUN",
+  "releaseGatePass": false,
+  "capacityClaim": false,
+  "explanation": "The missing compiled native-review prerequisite is fixed. Nine existing assertions and the opted-out PG suite construction failure remain FAIL; tests and DB opt-ins were not weakened."
+}

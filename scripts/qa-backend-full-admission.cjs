@@ -4,38 +4,23 @@ const assert = require('node:assert/strict');
 const cp = require('node:child_process');
 const crypto = require('node:crypto');
 const path = require('node:path');
-const BASELINE_SHA = '0dd1c1d5edf51593ef28896bfee4af8ed9e56b26';
-const PRIOR_FAILURE = Object.freeze({ status: 'FAIL', artifactSHA256: '034d6da0590dcda83e155c6d680022a7258d33970cac78a28806a11dc6938c63', runId: 38507741590, jobId: 115669010443 });
-const REVIEW_ID = 'stocks-qa-followup-0dd1c1d5-20261014-v1';
+const BASELINE_SHA = '03bdc89fa802e958b80d85a8add8a952f522b890';
+const PRIOR_FAILURE = Object.freeze({ status: 'FAIL', artifactSHA256: '869b44af85693a0ee2fee42fa7c6a3c288320b7bab05c994a746ee6973b326ab', runId: 38512859056, jobId: 115685235180 });
+const REVIEW_ID = 'stocks-preparation-only-03bdc89f-20261014-v1';
 const MANIFEST_PATH = 'docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json';
 const ALLOWED_PATHS = Object.freeze({
-  'scripts/qa-backend-full-offline.cjs': 'report-only',
-  'scripts/qa-backend-full-offline.test.cjs': 'report-only',
   'scripts/qa-backend-full-admission.cjs': 'admission-control',
   'scripts/qa-backend-full-admission.test.cjs': 'admission-control',
   '.github/workflows/stocks-review.yml': 'workflow-control',
-  'services/stocks/auth-http-fixture-512/authority-entry.cjs': 'auth-fixture',
-  'services/stocks/auth-http-fixture-512/authority.cjs': 'auth-fixture',
-  'services/stocks/auth-http-fixture-512/plan.mjs': 'auth-fixture',
-  'services/stocks/auth-http-fixture-512/probe.mjs': 'auth-fixture',
-  'services/stocks/auth-http-fixture-512/stock-child.mjs': 'auth-fixture',
-  'services/stocks/auth-http-fixture-512/authority.test.cjs': 'auth-fixture',
-  'services/stocks/auth-http-fixture-512/fixture.test.mjs': 'auth-fixture',
-  'services/stocks/auth-http-fixture-512/run.mjs': 'auth-fixture',
-  'services/stocks/auth-http-fixture-512/Dockerfile': 'auth-fixture',
+  'services/stocks/auth-http-fixture-512/prepare.mjs': 'preparation-only',
+  'services/stocks/auth-http-fixture-512/prepare.test.mjs': 'preparation-only',
   'services/stocks/auth-http-fixture-512/README.md': 'documentation',
+  'docs/AI_HANDOFF.md': 'append-only-handoff',
   'docs/evidence/stocks-contract-proofs-20261014/backend-full/README.md': 'documentation',
-  'docs/evidence/stocks-contract-proofs-20261014/backend-full/offline-helper-guards.txt': 'raw-evidence',
-  'docs/evidence/stocks-contract-proofs-20261014/backend-full/offline-helper-source-manifest.json': 'raw-evidence',
-  'docs/evidence/stocks-contract-proofs-20261014/backend-full/windows-r1-incomplete.json': 'raw-evidence',
-  'docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-0dd-result.json': 'raw-evidence',
-  'docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-0dd-review.json': 'raw-evidence',
-  'docs/evidence/stocks-contract-proofs-20261014/public-host/linux-0dd-preflight-failure.json': 'raw-evidence',
+  'docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-result.json': 'raw-evidence',
+  'docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-review.json': 'raw-evidence',
 });
-const REPORT_ONLY_HASHES = Object.freeze({
-  'scripts/qa-backend-full-offline.cjs': '3a81f397b95ff17574f554376befa43b2a812fc47733f3ecc324fadd99f1258b',
-  'scripts/qa-backend-full-offline.test.cjs': 'b8d946492c90e3866ee78dd66db3f2811829a750d1f2281aace293dc38fc01b2',
-});
+const PROTECTED_HELPERS = Object.freeze(['scripts/qa-backend-full-offline.cjs', 'scripts/qa-backend-full-offline.test.cjs']);
 const SHA = /^[a-f0-9]{40}$/, HASH = /^[a-f0-9]{64}$/;
 const sha256 = b => crypto.createHash('sha256').update(b).digest('hex');
 function safePath(p) {
@@ -61,7 +46,6 @@ function validateManifest(m) {
     assert.ok(f.baseSHA256 === null || HASH.test(f.baseSHA256));
     assert.ok(f.headSHA256 === null || HASH.test(f.headSHA256));
     assert.ok(f.baseSHA256 !== f.headSHA256, 'review must bind a changed path');
-    if (Object.hasOwn(REPORT_ONLY_HASHES, f.path)) assert.equal(f.headSHA256, REPORT_ONLY_HASHES[f.path], 'report-only helper bytes changed');
     byPath.set(f.path, f);
   }
   return byPath;
@@ -77,8 +61,9 @@ function decide({ base, head, manifest, changes }) {
     // No wildcard skip. Runtime, tests, locks, schema, compiler/build prerequisites,
     // and any other unknown path require full validation even if a manifest lists them.
     for (const c of changes) {
+      if (PROTECTED_HELPERS.includes(c.path)) { report.reason = 'BACKEND_HELPER_OR_PREREQUISITE_CHANGED'; return report; }
+      if (c.path === 'docs/AI_HANDOFF.md') assert.equal(c.appendOnly, true, 'handoff must preserve the exact prior prefix');
       if (c.path !== MANIFEST_PATH && !Object.hasOwn(ALLOWED_PATHS, c.path)) { report.reason = 'UNREVIEWABLE_OR_PROTECTED_PATH'; return report; }
-      if (Object.hasOwn(REPORT_ONLY_HASHES, c.path) && c.headSHA256 !== REPORT_ONLY_HASHES[c.path]) { report.reason = 'BACKEND_HELPER_OR_PREREQUISITE_CHANGED'; return report; }
       assert.ok([null, '100644', '100755'].includes(c.baseMode) && [null, '100644', '100755'].includes(c.headMode), 'non-regular Git object');
       assert.ok(c.baseSHA256 === null || HASH.test(c.baseSHA256));
       assert.ok(c.headSHA256 === null || HASH.test(c.headSHA256));
@@ -94,7 +79,7 @@ function decide({ base, head, manifest, changes }) {
       assert.equal(c.headSHA256, f.headSHA256, 'reviewed head bytes mismatch: ' + c.path);
     }
     report.mode = 'not_run'; report.reason = 'EXACT_REVIEWED_QA_ONLY_FOLLOWUP';
-    report.note = 'Full backend intentionally NOT_RUN for these exact reviewed QA-only bytes. Prior 0dd1 full backend remains FAIL. Other CI gates are unchanged.';
+    report.note = 'Full backend intentionally NOT_RUN for these exact reviewed QA-only bytes. Prior 03bd full backend remains FAIL (older 0dd evidence is retained). Other CI gates are unchanged.';
   } catch (e) { report.reason = 'ADMISSION_NOT_PROVEN'; report.error = String(e.message).slice(0, 2000); }
   return report;
 }
@@ -113,7 +98,8 @@ function collectGit({ root, base, head, manifestPath, run = (args) => cp.spawnSy
     const bytes = git(['cat-file', 'blob', m[2]]); assert.ok(bytes.length <= 32 * 1024 ** 2, 'review blob too large');
     return { mode: m[1], bytes, hash: sha256(bytes) };
   };
-  const changes = paths.map(f => { const a = blob(base, f), b = blob(head, f); return { path: f, baseMode: a.mode, headMode: b.mode, baseSHA256: a.hash, headSHA256: b.hash }; });
+  const changes = paths.map(f => { const a = blob(base, f), b = blob(head, f); return { path: f, baseMode: a.mode, headMode: b.mode, baseSHA256: a.hash, headSHA256: b.hash,
+    ...(f === 'docs/AI_HANDOFF.md' ? { appendOnly: Boolean(a.bytes && b.bytes && b.bytes.length > a.bytes.length && b.bytes.subarray(0, a.bytes.length).equals(a.bytes)) } : {}) }; });
   const review = blob(head, MANIFEST_PATH); assert.ok(review.bytes && review.bytes.length <= 256 * 1024, 'frozen review manifest unavailable');
   return { base, head, changes, manifest: JSON.parse(review.bytes.toString()) };
 }
@@ -131,5 +117,5 @@ function main(argv = process.argv.slice(2), root = path.resolve(__dirname, '..')
   console.log(JSON.stringify(report, null, 2));
   return report;
 }
-module.exports = { BASELINE_SHA, PRIOR_FAILURE, REVIEW_ID, MANIFEST_PATH, ALLOWED_PATHS, REPORT_ONLY_HASHES, decide, validateManifest, collectGit, main };
+module.exports = { BASELINE_SHA, PRIOR_FAILURE, REVIEW_ID, MANIFEST_PATH, ALLOWED_PATHS, PROTECTED_HELPERS, decide, validateManifest, collectGit, main };
 if (require.main === module) main();

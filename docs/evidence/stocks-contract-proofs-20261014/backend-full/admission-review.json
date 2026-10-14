@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "reviewId": "stocks-preparation-only-03bdc89f-20261014-v1",
+  "baselineSHA": "03bdc89fa802e958b80d85a8add8a952f522b890",
+  "priorFailure": {
+    "status": "FAIL",
+    "artifactSHA256": "869b44af85693a0ee2fee42fa7c6a3c288320b7bab05c994a746ee6973b326ab",
+    "runId": 38512859056,
+    "jobId": 115685235180
+  },
+  "manifestPath": "docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json",
+  "files": [
+    {
+      "path": ".github/workflows/stocks-review.yml",
+      "classification": "workflow-control",
+      "baseSHA256": "55b88fc7061601bac6c6d008bac5f497e6a094c2da692394a74cd08a6f46375c",
+      "headSHA256": "faa66447cd01588b1aadf6698af65eec2baea5a2dc520c1a41b1357b993e52cd"
+    },
+    {
+      "path": "docs/AI_HANDOFF.md",
+      "classification": "append-only-handoff",
+      "baseSHA256": "9a3946eeac8e7f892d3ce8854481dfea2decbebe575b93382c102b8aa99da7f0",
+      "headSHA256": "60e63ce9b9ec1f32fbeab0e127d1629d8b1c5adbec1a86b71e9f64eec4e983c0"
+    },
+    {
+      "path": "docs/evidence/stocks-contract-proofs-20261014/backend-full/README.md",
+      "classification": "documentation",
+      "baseSHA256": "e74f6e02c0eecbf4d9817624f80cf2a3753ba2b74181569b4fedb0ee1dd613a7",
+      "headSHA256": "07b710a22128c0327bcc2ec9440b43e80de790ad2f2101ab4aa2e18264a63ae4"
+    },
+    {
+      "path": "docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-result.json",
+      "classification": "raw-evidence",
+      "baseSHA256": null,
+      "headSHA256": "285d96ebd8a0c779d7087443ddb7f91ae7360cbc24d870984f3e39db21fbed4a"
+    },
+    {
+      "path": "docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-review.json",
+      "classification": "raw-evidence",
+      "baseSHA256": null,
+      "headSHA256": "6fb0849ae9303dd5eca6baff986f75ca6b54146fcb2ab5997a3a180da9933341"
+    },
+    {
+      "path": "scripts/qa-backend-full-admission.cjs",
+      "classification": "admission-control",
+      "baseSHA256": "6af8599e410484ff9b4cf6d14463f0d6533d25abe425f14466c17e85b13d76d5",
+      "headSHA256": "376f69ead06bb4d139284554cb6cbe99cf41ec96797c1c438fd80b98511cfd78"
+    },
+    {
+      "path": "scripts/qa-backend-full-admission.test.cjs",
+      "classification": "admission-control",
+      "baseSHA256": "e4965105691ef2b306403ac34401b1b4d8d95737940f071643a06b694372f727",
+      "headSHA256": "24c7107b5dd24e379bfa752999504667c8d179b99fa68ec16ec725abef491c80"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/README.md",
+      "classification": "documentation",
+      "baseSHA256": "f09fef27a6a1cade41355af38fce1bb668d3940cab00e963774f56404a62038e",
+      "headSHA256": "e8964e75ed9138e1b68e6869de45a3b7429a839b8b9c8c3d00b8695aa0b1edd6"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/prepare.mjs",
+      "classification": "preparation-only",
+      "baseSHA256": null,
+      "headSHA256": "2dec9b44312551eee996438747c5dcb6f2a8ccefda042dc052831a10169e81d8"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/prepare.test.mjs",
+      "classification": "preparation-only",
+      "baseSHA256": null,
+      "headSHA256": "14226d80c0524ba4705b224981269667e21d0ff762d24ce53e8ac1cc9f4e9f76"
+    }
+  ]
+}
