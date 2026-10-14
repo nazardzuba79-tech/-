@@ -95,7 +95,7 @@ export function validateScenarioControls(program: ScenarioControlsProgram, initi
     if (program.stages[program.stages.length - 1]?.type !== 'pullback')
       throw new RangeError('Перед историческим сценарием необходим заключительный этап падения');
     const bounds = historicalReplayBounds(program.historical, Number(program.stages[program.stages.length - 1].targetPrice));
-    if (bounds.max > Number(program.maxPrice) * (1 + 1e-9))
+    if (bounds.max >= Number(program.maxPrice) * 0.995)
       throw new RangeError('Исторический отрезок превышает общий лимит цены: выберите другой фрагмент');
     if (bounds.min < 1e-8)
       throw new RangeError('Историческое движение выходит за точность актива');
