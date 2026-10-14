@@ -1443,6 +1443,8 @@ export const KO: Record<Key, string> = {
   'futures.orderError.tierLeveragePlain': '이 규모의 포지션에 허용되는 레버리지를 초과했습니다.',
   'futures.orderError.insufficientMargin': '이 주문을 넣기에 자금이 부족합니다.',
   'futures.orderError.insufficientFillMargin': '이 주문을 체결하기에 자금이 부족합니다.',
+  'futures.orderError.insufficientLiquidity': '이 수량에 대해 호가창의 유동성이 부족합니다. 수량을 줄이거나 지정가 주문을 사용하세요.',
+  'futures.orderError.selfMatch': '이 주문은 반대편의 본인 주문과 체결됩니다. 해당 주문을 취소하거나 가격을 변경하세요.',
   'futures.orderError.orderSize': '주문 수량이 계약 한도를 벗어났습니다.',
   'futures.orderError.invalidLeverage': '이 계약에서 사용할 수 없는 레버리지입니다.',
   'futures.orderError.riskLimit': '포지션이 계약의 위험 한도를 초과했습니다.',

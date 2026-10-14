@@ -117,9 +117,12 @@ test('Spot empty body stays OPEN, stays mounted and polls, and shows a newly arr
   expect(compact()).toBe(false);
   expect(container.querySelector('#body')!.hasAttribute('hidden')).toBe(false);
   expect(container.querySelector('.spot-orders-panel')).not.toBeNull();
-  expect(getMyOrders).toHaveBeenCalledWith('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED');
+  // The read on becoming visible is FRESH (it never shares a sibling
+  // poller's in-flight answer — lib/readCoalescer); the 4-second poll is not.
+  expect(getMyOrders).toHaveBeenCalledWith('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED', { fresh: true });
   await act(async () => { jest.advanceTimersByTime(4000); await tick(); });
   expect(getMyOrders).toHaveBeenCalledTimes(2);
+  expect(getMyOrders).toHaveBeenNthCalledWith(2, 'PENDING_TRIGGER,OPEN,PARTIALLY_FILLED', { fresh: false });
   expect(compact()).toBe(false);
   expect(container.querySelector('#body')!.hasAttribute('hidden')).toBe(false);
   expect(container.querySelector('[data-order-id="actual-order"]')).not.toBeNull();

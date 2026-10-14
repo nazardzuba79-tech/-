@@ -1,0 +1,120 @@
+cells 117
+## console/page issues (non-noise) (1)
+  console.warning: [priceChange] Suspicious 24h change for WFB/EUR: 323.5769% (raw="323.5769"). Treating as real, but this is abo  ×14 e.g. guest@1440x900 /
+## API 4xx/5xx by path (22)
+  503 /api/v1/admin/listings  in 2 cells e.g. admin@1440x900 /admin/listings
+  403 /api/v1/private-trading/native/wallet  in 6 cells e.g. user@1440x900 /dashboard
+  429 /api/v1/withdrawals/me  in 2 cells e.g. user@1440x900 /dashboard
+  429 /api/v1/wallet/overview  in 2 cells e.g. user@1440x900 /dashboard
+  429 /api/v1/wallet/performance  in 2 cells e.g. user@1440x900 /dashboard
+  429 /api/v1/market/external/rankings  in 8 cells e.g. user@1440x900 /dashboard
+  429 /api/v1/private-trading/native/wallet  in 2 cells e.g. user@1440x900 /dashboard
+  429 /api/v1/me  in 7 cells e.g. user@1440x900 /dashboard
+  429 /api/v1/deposits/me  in 1 cells e.g. user@1440x900 /dashboard
+  503 /api/v1/market/display  in 9 cells e.g. user@1440x900 /futures
+  503 /api/v1/market/futures/candles/BTC-USDT  in 6 cells e.g. user@1440x900 /futures
+  403 /api/v1/private-trading/access  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/market/assets/icons  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/market/display/spot-snapshot  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/futures/config  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/market/display  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/market/futures/candles/BTC-USDT  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/futures/mark-price/BTC-USDT  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/futures/funding-rate/BTC-USDT  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/market/derivatives/BTC  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/market/universe  in 6 cells e.g. user@1440x900 /futures
+  429 /api/v1/private-trading/access  in 6 cells e.g. user@1440x900 /futures
+## horizontal page overflow (0)
+## elements spilling past the viewport (17)
+## clipped text (0)
+## covered controls (27)
+  user@1440x900 /card a "Узнать больше" by tive>div.vc-card-hero-artwork.vc-relative:nth(1)>svg>g>image
+  user@1440x900 /markets a "Аналитика" by div#root>button.support-launcher
+  user@390x844 /academy a "Вопросы и ответыПоиск по вопросамЧитать →" by -page:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(2)
+  user@390x844 /arbitrage button "Разобрать сценарий SOL/USDT" by div#root>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(3)
+  user@390x844 /futures button[tab] "История ордеров" by inal-preview>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(0)
+  user@390x844 /futures button[tab] "История позиций" by -preview>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(2)>svg
+  user@390x844 /futures button[tab] "Активы" by -preview>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(3)>svg
+  user@390x844 /help button "Перевод отправлен, но не зачислен. Что делать?+" by -page:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(2)
+  user@390x844 / button[tab] "История ордеров" by inal-preview>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(0)
+  user@390x844 / button[tab] "История позиций" by -preview>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(2)>svg
+  user@390x844 / button[tab] "Активы" by -preview>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(3)>svg
+  user@390x844 /tools button "Спот" by div#root>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(1)
+  user@390x844 /tools button "Фьючерсы USDT" by div#root>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(2)
+  user@768x1024 /academy a "Что такое криптовалюта и блокчейнПростое объяснение, откуда " by -page:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(1)
+  user@768x1024 /academy a "Стейблкоины: зачем нужен USDTПочему торговля на бирже идёт в" by -page:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(2)
+  user@768x1024 /arbitrage button "Выбрать AVAX/USDT" by oot>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(0)>svg>rect
+  user@768x1024 /dashboard button "Недостаточно истории для этого периода" by allet:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(2)
+  user@768x1024 /dashboard button "Недостаточно истории для этого периода" by allet:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(3)
+  user@768x1024 /dashboard button "Недостаточно истории для этого периода" by :nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(3)>span
+  user@768x1024 /dashboard button "Недостаточно истории для этого периода" by allet:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(3)
+  user@768x1024 /futures button "Скрыть баланс" by hive-terminal-preview>nav.bottom-nav.bottom-nav-liquid-glass
+  user@768x1024 /help button "Какое плечо выбрать?+" by -page:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(2)
+  user@768x1024 / button "Скрыть баланс" by hive-terminal-preview>nav.bottom-nav.bottom-nav-liquid-glass
+  user@768x1024 /wallet button "Недостаточно истории для этого периода" by allet:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(2)
+  user@768x1024 /wallet button "Недостаточно истории для этого периода" by allet:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(3)
+  user@768x1024 /wallet button "Недостаточно истории для этого периода" by :nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(3)>span
+  user@768x1024 /wallet button "Недостаточно истории для этого периода" by allet:nth(0)>nav.bottom-nav.bottom-nav-liquid-glass>a:nth(3)
+## clicks with no effect (100)
+  admin@1440x900 /admin/audit-log "Обновить"
+  admin@1440x900 /admin/deposits "Поступления"
+  admin@1440x900 /admin/deposits "Обновить"
+  admin@1440x900 /admin/kyc "Обновить"
+  admin@1440x900 /admin/listings "Повторить"
+  admin@1440x900 /admin/otc "Обновить"
+  admin@1440x900 /admin/wallets "Обновить"
+  admin@1440x900 /admin/withdrawals "Обновить"
+  admin@390x844 /admin/audit-log "Обновить"
+  admin@390x844 /admin/deposits "Поступления"
+  admin@390x844 /admin/deposits "Обновить"
+  admin@390x844 /admin/kyc "Обновить"
+  admin@390x844 /admin/listings "Повторить"
+  admin@390x844 /admin/otc "Обновить"
+  admin@390x844 /admin/wallets "Обновить"
+  admin@390x844 /admin/withdrawals "Обновить"
+  guest@1440x900 / "Рынки"
+  guest@1440x900 / "Торговля"
+  guest@1440x900 / "OTC"
+  guest@1440x900 / "Академия"
+  guest@1440x900 /login "Служба поддержки"
+  guest@390x844 /login "Служба поддержки"
+  user@1440x900 /analytics "BTC"
+  user@1440x900 /arbitrage "Все"
+  user@1440x900 /copy-trading "Лидерборд"
+  user@1440x900 /copy-trading "Лучший баланс"
+  user@1440x900 /dashboard "Обзор"
+  user@1440x900 /dashboard "Обновить счёт"
+  user@1440x900 /dashboard "Аккаунт"
+  user@1440x900 /dashboard "Активы"
+  user@1440x900 /dashboard "7ДНедостаточно истории——"
+  user@1440x900 /futures "Позиции(—)"
+  user@1440x900 /futures "Активы"
+  user@1440x900 / "Позиции(—)"
+  user@1440x900 / "Активы"
+  user@1440x900 /otc "Выбрать категорию"
+  user@1440x900 /settings "Профиль"
+  user@1440x900 /settings "Изменить фото"
+  user@1440x900 /tools "Long"
+  user@1440x900 /tools "Количество"
+  user@1440x900 /trade "Рынки"
+  user@1440x900 /trade "BBTC/USDTBitcoin"
+  user@1440x900 /trade "VOLTEX"
+  user@1440x900 /trade "Лимит"
+  user@1440x900 /trade "Открытые ордера0"
+  user@1440x900 /trade "История ордеров"
+  user@1440x900 /trade "Активы"
+  user@1440x900 /trade?market=cfd "Позиции 0"
+  user@1440x900 /trading-bots "Все боты 7"
+  user@1440x900 /trading-bots "Все стратегии"
+  user@1440x900 /wallet "Обзор"
+  user@1440x900 /wallet "Аккаунт"
+  user@1440x900 /wallet "Активы"
+  user@1440x900 /wallet "7ДНедостаточно истории——"
+  user@390x844 /analytics "BTC"
+  user@390x844 /arbitrage "Все"
+  user@390x844 /dashboard "Обзор"
+  user@390x844 /dashboard "Обновить счёт"
+  user@390x844 /dashboard "Аккаунт"
+  user@390x844 /futures "Торговля"
+  user@390x844 /futures "Стакан"
+  user@390x844 /futures "Позиции(—)"

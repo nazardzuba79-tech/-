@@ -1361,6 +1361,13 @@ export function PriceChart({
   // Poll this pair's pending SL/TP orders — cheap enough at 4s, same
   // cadence OpenOrdersPanel already polls at. Spot only: see
   // `spotConditionalOrders` above.
+  //
+  // The SAME status set the open-orders panel reads
+  // (`SPOT_OPEN_ORDER_STATUSES`, pinned equal by test), filtered to the
+  // trigger orders here: with one URL the API coalesces the two 4-second
+  // pollers into one request per tick (2026-10-13 audit: 30 → 15 reads a
+  // minute on an idle terminal). Kept as a literal — this component's
+  // imports are enumerated by its test harness.
   useEffect(() => {
     if (!spotConditionalOrders) {
       // No request, no timer. Also drop anything a previous spot context
@@ -1373,12 +1380,12 @@ export function PriceChart({
     let cancelled = false;
     function load() {
       api
-        .getMyOrders('PENDING_TRIGGER')
+        .getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED')
         .then((orders) => {
           if (cancelled) return;
           setConditionalOrders(
             orders
-              .filter((o) => o.pair === pair)
+              .filter((o) => o.pair === pair && o.status === 'PENDING_TRIGGER')
               .map((o) => ({ id: o.id, side: o.side, type: o.type, triggerPrice: o.triggerPrice, price: o.price, ocoGroupId: o.ocoGroupId }))
           );
         })
@@ -1474,7 +1481,7 @@ export function PriceChart({
           // optimistic one.
         }
         api
-          .getMyOrders('PENDING_TRIGGER')
+          .getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED', { fresh: true })
           .then((orders) => {
             // A drag that started on spot can still be resolving when the
             // chart is no longer spot. Dropping it here keeps the same
@@ -1482,7 +1489,7 @@ export function PriceChart({
             if (!spotConditionalOrders) return;
             setConditionalOrders(
               orders
-                .filter((o) => o.pair === pair)
+                .filter((o) => o.pair === pair && o.status === 'PENDING_TRIGGER')
                 .map((o) => ({ id: o.id, side: o.side, type: o.type, triggerPrice: o.triggerPrice, price: o.price, ocoGroupId: o.ocoGroupId }))
             );
           })

@@ -906,6 +906,15 @@ body {
     min-height: 260px;
   }
 }
+/* /card hero, every width: the artwork SVG keeps overflow: visible and a
+   viewBox that starts 440 units into the photo, so its <image> reaches
+   across the copy column and sat on top of the two hero links — at 1440px
+   «Узнать больше» took no clicks at all (2026-10-13 audit). The scene is
+   decorative; it takes no pointer events, the links under it do. Hosted
+   here because crypto-card.css and WatchCardVisual are byte-frozen. */
+.crypto-card-page .vc-card-hero-artwork svg {
+  pointer-events: none;
+}
 @media (max-width: 420px) {
   .global-header {
     padding: 0 10px;

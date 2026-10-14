@@ -18,6 +18,7 @@ import {
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 import { isSimulationOnlyUser } from '../../private-trading/access';
 import { asyncRoute } from '../asyncRoute';
+import { futuresRefusalBody } from '../../futures/refusalCode';
 import { transferWalletBalance } from '../../services/WalletTransferService';
 
 const placeOrderSchema = z
@@ -157,7 +158,8 @@ export function futuresRouter(
         trades: result.trades.map((t) => ({ ...t, price: t.price.toString(), quantity: t.quantity.toString() })),
       });
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      // The engine's sentence, plus a code for the refusals the client can name.
+      res.status(400).json(futuresRefusalBody(err));
     }
   }));
 
@@ -366,7 +368,8 @@ export function futuresRouter(
         trades: result.trades.map((t) => ({ ...t, price: t.price.toString(), quantity: t.quantity.toString() })),
       });
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      // The engine's sentence, plus a code for the refusals the client can name.
+      res.status(400).json(futuresRefusalBody(err));
     }
   }));
 
@@ -434,7 +437,8 @@ export function futuresRouter(
       await transferWalletBalance(prisma, userId, asset, transferAmount, direction);
       res.json({ status: 'ok' });
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      // The engine's sentence, plus a code for the refusals the client can name.
+      res.status(400).json(futuresRefusalBody(err));
     }
   }));
 

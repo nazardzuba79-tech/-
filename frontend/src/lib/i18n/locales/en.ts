@@ -1472,6 +1472,8 @@ export const EN: Record<Key, string> = {
   'futures.orderError.tierLeveragePlain': 'Leverage is above the limit for a position of this size.',
   'futures.orderError.insufficientMargin': 'Not enough funds to place this order.',
   'futures.orderError.insufficientFillMargin': 'Not enough funds to fill this order.',
+  'futures.orderError.insufficientLiquidity': 'Not enough liquidity in the book for this size. Reduce the size or place a limit order.',
+  'futures.orderError.selfMatch': 'This order would match your own order on the other side. Cancel it or change the price.',
   'futures.orderError.orderSize': 'Order size is outside the contract\'s limits.',
   'futures.orderError.invalidLeverage': 'Leverage is not valid for this contract.',
   'futures.orderError.riskLimit': 'The position exceeds the contract\'s risk limit.',
