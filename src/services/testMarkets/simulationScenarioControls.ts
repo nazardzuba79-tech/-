@@ -108,6 +108,52 @@ function priceAt(config: ControlledScenarioConfig, seed: string, at: number): nu
 /* Inlined PURE v2-only arithmetic: this module is omitted by the NRX v1
  * source projection, which forbids any new runtime imports here. The
  * independent shared reference implementation stays regression-tested. */
+/** A bounded index is admitted ONLY for deeply frozen, validated programs.
+ * Mutable editor inputs keep the reference path: never cache stale candles.
+ * Four entries, each at most 4801 Float64 prices; no ticks, clocks or IO.
+ */
+interface HistoricalOpenIndex {
+  program: HistoricalMoveProgram;
+  anchor: number;
+  opens: Float64Array;
+  bars: HistoricalMoveBar[];
+}
+const historicalOpenIndexes: HistoricalOpenIndex[] = [];
+function findHistoricalOpenIndex(program: HistoricalMoveProgram, anchor: number): HistoricalOpenIndex | undefined {
+  const at = historicalOpenIndexes.findIndex(entry => entry.program === program && entry.anchor === anchor);
+  if (at < 0) return undefined;
+  const [entry] = historicalOpenIndexes.splice(at, 1);
+  historicalOpenIndexes.push(entry);
+  return entry;
+}
+function buildHistoricalOpenIndex(program: HistoricalMoveProgram, anchor: number): HistoricalOpenIndex | undefined {
+  if (!Number.isFinite(anchor) || anchor <= 0 || !Object.isFrozen(program)
+      || !Object.isFrozen(program.clips) || !program.clips.every(clip =>
+        Object.isFrozen(clip) && Object.isFrozen(clip.bars) && clip.bars.every(bar => Object.isFrozen(bar)))) return undefined;
+  const total = program.clips.reduce((sum, clip) => sum + clip.bars.length, 0);
+  if (total < 24 || total > 4800) return undefined;
+  const opens = new Float64Array(total + 1), bars: HistoricalMoveBar[] = [];
+  let offset = 0, clipAnchor = anchor;
+  for (const clip of program.clips) {
+    let open = clipAnchor, factor = 1;
+    for (const bar of clip.bars) {
+      opens[offset++] = open;
+      bars.push(bar);
+      const multiplier = 1 + bar[2] / 1000000;
+      open *= multiplier;
+      factor *= multiplier;
+    }
+    // Preserve the reference's exact floating-point grouping across clips.
+    // anchor * product is NOT bit-identical to sequential anchored products.
+    clipAnchor *= factor;
+  }
+  opens[total] = clipAnchor;
+  const entry = { program, anchor, opens, bars };
+  if (historicalOpenIndexes.length === 4) historicalOpenIndexes.shift();
+  historicalOpenIndexes.push(entry);
+  return entry;
+}
+
 function lastFactor(clip: HistoricalMoveClip): number {
   return clip.bars.reduce((factor, bar) => factor * (1 + bar[2] / 1000000), 1);
 }
@@ -126,16 +172,25 @@ function historicalReplayHour(program: HistoricalMoveProgram, anchor: number, ho
   // before entering this synchronous v2-only generator; no runtime imports
   // are permitted by the NRX legacy release identity guard.
   if (!Number.isSafeInteger(hour) || hour < 0) throw new Error('Час истории должен быть неотрицательным');
+  let indexed = findHistoricalOpenIndex(program, anchor);
+  if (!indexed) {
+    indexed = buildHistoricalOpenIndex(program, anchor);
+  }
   let open = anchor, remaining = hour;
   let found: HistoricalMoveBar | null = null;
-  for (const clip of program.clips) {
-    if (remaining < clip.bars.length) {
-      for (let i=0; i<remaining; i++) open *= 1 + clip.bars[i][2] / 1000000;
-      found = clip.bars[remaining];
-      break;
+  if (indexed) {
+    open = indexed.opens[Math.min(hour, indexed.bars.length)];
+    found = indexed.bars[hour] ?? null;
+  } else {
+    for (const clip of program.clips) {
+      if (remaining < clip.bars.length) {
+        for (let i=0; i<remaining; i++) open *= 1 + clip.bars[i][2] / 1000000;
+        found = clip.bars[remaining];
+        break;
+      }
+      open *= lastFactor(clip);
+      remaining -= clip.bars.length;
     }
-    open *= lastFactor(clip);
-    remaining -= clip.bars.length;
   }
   if (!Number.isFinite(open) || open <= 0) throw new Error('Историческая цена не представима');
   const ticks: HistoricalTick[] = [];

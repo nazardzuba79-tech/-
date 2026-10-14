@@ -59,6 +59,24 @@ export function validateHistoricalMoveProgram(program: HistoricalMoveProgram): v
   if (total > HISTORICAL_MAX_TOTAL_HOURS) throw new Error('Не более 4800 часов в цепочке исторических отрезков');
 }
 
+/** Own an immutable movement snapshot without freezing the caller's editor data.
+ * This is an in-memory optimization only; its JSON and source identity are unchanged.
+ */
+export function freezeHistoricalMoveProgram(program: HistoricalMoveProgram): HistoricalMoveProgram {
+  validateHistoricalMoveProgram(program);
+  const clips = program.clips.map(clip => {
+    const bars = clip.bars.map(([h, l, c]): HistoricalMoveBar => {
+      const bar: HistoricalMoveBar = [h, l, c];
+      Object.freeze(bar);
+      return bar;
+    });
+    Object.freeze(bars);
+    return Object.freeze({ ...clip, bars });
+  });
+  Object.freeze(clips);
+  return Object.freeze({ version: 1 as const, clips });
+}
+
 /** Strict CSV importer for Kraken-style timestamp,open,high,low,close[,volume,trades].
  * Must be run on data the operator is authorized to use. Header optional.
  * No gap filling, no future-looking data, no price or source-volume persistence.
@@ -107,6 +125,52 @@ export function historicalSerializedBytes(value: unknown): number {
   return new TextEncoder().encode(JSON.stringify(value)).byteLength;
 }
 
+/** A bounded index is admitted ONLY for deeply frozen, validated programs.
+ * Mutable editor inputs keep the reference path: never cache stale candles.
+ * Four entries, each at most 4801 Float64 prices; no ticks, clocks or IO.
+ */
+interface HistoricalOpenIndex {
+  program: HistoricalMoveProgram;
+  anchor: number;
+  opens: Float64Array;
+  bars: HistoricalMoveBar[];
+}
+const historicalOpenIndexes: HistoricalOpenIndex[] = [];
+function findHistoricalOpenIndex(program: HistoricalMoveProgram, anchor: number): HistoricalOpenIndex | undefined {
+  const at = historicalOpenIndexes.findIndex(entry => entry.program === program && entry.anchor === anchor);
+  if (at < 0) return undefined;
+  const [entry] = historicalOpenIndexes.splice(at, 1);
+  historicalOpenIndexes.push(entry);
+  return entry;
+}
+function buildHistoricalOpenIndex(program: HistoricalMoveProgram, anchor: number): HistoricalOpenIndex | undefined {
+  if (!Number.isFinite(anchor) || anchor <= 0 || !Object.isFrozen(program)
+      || !Object.isFrozen(program.clips) || !program.clips.every(clip =>
+        Object.isFrozen(clip) && Object.isFrozen(clip.bars) && clip.bars.every(bar => Object.isFrozen(bar)))) return undefined;
+  const total = program.clips.reduce((sum, clip) => sum + clip.bars.length, 0);
+  if (total < 24 || total > 4800) return undefined;
+  const opens = new Float64Array(total + 1), bars: HistoricalMoveBar[] = [];
+  let offset = 0, clipAnchor = anchor;
+  for (const clip of program.clips) {
+    let open = clipAnchor, factor = 1;
+    for (const bar of clip.bars) {
+      opens[offset++] = open;
+      bars.push(bar);
+      const multiplier = 1 + bar[2] / HISTORICAL_MOVE_SCALE;
+      open *= multiplier;
+      factor *= multiplier;
+    }
+    // Preserve the reference's exact floating-point grouping across clips.
+    // anchor * product is NOT bit-identical to sequential anchored products.
+    clipAnchor *= factor;
+  }
+  opens[total] = clipAnchor;
+  const entry = { program, anchor, opens, bars };
+  if (historicalOpenIndexes.length === 4) historicalOpenIndexes.shift();
+  historicalOpenIndexes.push(entry);
+  return entry;
+}
+
 function lastFactor(clip: HistoricalMoveClip): number {
   return clip.bars.reduce((factor, bar) => factor * (1 + bar[2] / HISTORICAL_MOVE_SCALE), 1);
 }
@@ -139,18 +203,27 @@ export interface HistoricalHour { open: number; ticks: HistoricalTick[]; regime:
  * No clock acceleration and no "future" data reads.
  */
 export function historicalReplayHour(program: HistoricalMoveProgram, anchor: number, hour: number, seed: string): HistoricalHour {
-  validateHistoricalMoveProgram(program);
   if (!Number.isSafeInteger(hour) || hour < 0) throw new Error('Час истории должен быть неотрицательным');
+  let indexed = findHistoricalOpenIndex(program, anchor);
+  if (!indexed) {
+    validateHistoricalMoveProgram(program);
+    indexed = buildHistoricalOpenIndex(program, anchor);
+  }
   let open = anchor, remaining = hour;
   let found: HistoricalMoveBar | null = null;
-  for (const clip of program.clips) {
-    if (remaining < clip.bars.length) {
-      for (let i=0; i<remaining; i++) open *= 1 + clip.bars[i][2] / HISTORICAL_MOVE_SCALE;
-      found = clip.bars[remaining];
-      break;
+  if (indexed) {
+    open = indexed.opens[Math.min(hour, indexed.bars.length)];
+    found = indexed.bars[hour] ?? null;
+  } else {
+    for (const clip of program.clips) {
+      if (remaining < clip.bars.length) {
+        for (let i=0; i<remaining; i++) open *= 1 + clip.bars[i][2] / HISTORICAL_MOVE_SCALE;
+        found = clip.bars[remaining];
+        break;
+      }
+      open *= lastFactor(clip);
+      remaining -= clip.bars.length;
     }
-    open *= lastFactor(clip);
-    remaining -= clip.bars.length;
   }
   if (!Number.isFinite(open) || open <= 0) throw new Error('Историческая цена не представима');
   const ticks: HistoricalTick[] = [];

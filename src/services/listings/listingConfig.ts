@@ -16,7 +16,7 @@ import { z } from 'zod';
 import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
 import { SIMULATION_PROFILES, profileForOrdinal } from '../testMarkets/simulationRealism';
 import { LISTING_SCENARIOS, normalizeScenarioDecimal, validateScenarioControls } from '../../shared/listingScenarioControls';
-import { historicalSerializedBytes } from '../../shared/listingHistoricalReplay';
+import { historicalSerializedBytes, freezeHistoricalMoveProgram } from '../../shared/listingHistoricalReplay';
 
 export const LISTING_QUOTE = 'USDT' as const;
 export const LISTING_SCHEMA_VERSION = 1 as const;
@@ -255,7 +255,11 @@ export function listingSimulationConfig(config: ListingConfig): TestAssetConfig 
     ...(config.simulationProgram?.kind === 'scenario-controls-v2' ? { scheduledScenario: {
       mode: 'scenario-controls-v2' as const, version: 2 as const,
       from: Date.parse(config.listingAt), initialPrice: config.initialPrice,
-      controls: config.simulationProgram,
+      // Own a frozen snapshot for bounded O(1) historical lookups; leave the
+      // caller's draft and every legacy non-historical scenario untouched.
+      controls: config.simulationProgram.afterGrowth === 'historical' && config.simulationProgram.historical
+        ? { ...config.simulationProgram, historical: freezeHistoricalMoveProgram(config.simulationProgram.historical) }
+        : config.simulationProgram,
     } } : config.simulationProgram ? { scheduledScenario: {
       mode: 'capped-growth-range' as const, version: 1,
       from: Date.parse(config.listingAt),

@@ -27,6 +27,7 @@ on:
       - 'scripts/qa-admin-listings.cjs'
       - 'scripts/qa-aith-replacement.cjs'
       - 'scripts/qa-listing-controls.cjs'
+      - 'scripts/benchmark-historical-replay.cjs'
       - 'frontend/src/lib/__tests__/listingMovement*.test.ts'
       - 'frontend/src/lib/__tests__/listingHistoricalLibrary.test.ts'
       - 'scripts/smoke-market-edge-listings.mjs'
@@ -82,6 +83,11 @@ jobs:
         run: >-
           npx jest --runInBand --silent
           --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary'
+      - name: Historical replay CPU/RAM diagnostic (synthetic fixtures, not CX23)
+        run: |
+          mkdir -p /tmp/listings-qa-report
+          node --expose-gc scripts/benchmark-historical-replay.cjs > /tmp/listings-qa-report/historical-replay-benchmark.json
+          cat /tmp/listings-qa-report/historical-replay-benchmark.json
       - name: Post-deploy smoke script (configured / not configured / token mismatch) on real workerd
         run: npm run test:smoke --prefix workers/market-edge
       - name: Existing Worker contract

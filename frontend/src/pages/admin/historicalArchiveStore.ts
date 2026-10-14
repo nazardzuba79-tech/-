@@ -46,14 +46,14 @@ export interface HistoricalPreset {
 }
 /** Suggested dates, NOT bundled price data. Entries become selectable after a matching import. */
 export const HISTORICAL_PRESETS: readonly HistoricalPreset[] = [
-  { id:'btc-2018-jan', label:'Bitcoin · январь—март 2018', source:'BTC/USDT', startDateUtc:'2018-01-01', hours:2160 },
-  { id:'btc-2018-apr', label:'Bitcoin · апрель—июнь 2018', source:'BTC/USDT', startDateUtc:'2018-04-01', hours:2160 },
-  { id:'btc-2018-oct', label:'Bitcoin · октябрь—декабрь 2018', source:'BTC/USDT', startDateUtc:'2018-10-01', hours:2160 },
-  { id:'eth-2021-jan', label:'Ethereum · январь—март 2021', source:'ETH/USDT', startDateUtc:'2021-01-01', hours:2160 },
-  { id:'eth-2021-apr', label:'Ethereum · апрель—июнь 2021', source:'ETH/USDT', startDateUtc:'2021-04-01', hours:2160 },
-  { id:'eth-2021-oct', label:'Ethereum · октябрь—декабрь 2021', source:'ETH/USDT', startDateUtc:'2021-10-01', hours:2160 },
-  { id:'sol-2022-jan', label:'Solana · январь—март 2022', source:'SOL/USDT', startDateUtc:'2022-01-01', hours:2160 },
-  { id:'sol-2022-apr', label:'Solana · апрель—июнь 2022', source:'SOL/USDT', startDateUtc:'2022-04-01', hours:2160 },
+  { id:'btc-2018-jan', label:'Bitcoin · 90 дней с 2018-01-01 (UTC)', source:'BTC/USDT', startDateUtc:'2018-01-01', hours:2160 },
+  { id:'btc-2018-apr', label:'Bitcoin · 90 дней с 2018-04-01 (UTC)', source:'BTC/USDT', startDateUtc:'2018-04-01', hours:2160 },
+  { id:'btc-2018-oct', label:'Bitcoin · 90 дней с 2018-10-01 (UTC)', source:'BTC/USDT', startDateUtc:'2018-10-01', hours:2160 },
+  { id:'eth-2021-jan', label:'Ethereum · 90 дней с 2021-01-01 (UTC)', source:'ETH/USDT', startDateUtc:'2021-01-01', hours:2160 },
+  { id:'eth-2021-apr', label:'Ethereum · 90 дней с 2021-04-01 (UTC)', source:'ETH/USDT', startDateUtc:'2021-04-01', hours:2160 },
+  { id:'eth-2021-oct', label:'Ethereum · 90 дней с 2021-10-01 (UTC)', source:'ETH/USDT', startDateUtc:'2021-10-01', hours:2160 },
+  { id:'sol-2022-jan', label:'Solana · 90 дней с 2022-01-01 (UTC)', source:'SOL/USDT', startDateUtc:'2022-01-01', hours:2160 },
+  { id:'sol-2022-apr', label:'Solana · 90 дней с 2022-04-01 (UTC)', source:'SOL/USDT', startDateUtc:'2022-04-01', hours:2160 },
 ] as const;
 
 /** Validates ALL input CSV rows before reducing them to relative movements. */
