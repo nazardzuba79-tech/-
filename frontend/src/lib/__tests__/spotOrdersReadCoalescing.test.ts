@@ -127,7 +127,43 @@ describe('the chart and the panel read one URL, so the API answers both with one
     const api = src('lib/api.ts');
     expect(api).toContain("import { createReadCoalescer } from './readCoalescer';");
     expect(api).toContain('const readSpotOrders = createReadCoalescer<SpotOrderRecord[]>(1500);');
-    expect(api).toMatch(/getMyOrders: \(status\?: string, options\?: \{ fresh\?: boolean \}\) =>\s*readSpotOrders\(\s*`\/orders\/me\$\{status \? `\?status=\$\{status\}` : ''\}`,/);
+    expect(api).toContain('if (spotOrdersSessionToken !== token) {');
+    expect(api).toContain('readSpotOrders.clear();');
+    expect(api).toContain('spotOrdersSessionToken = token;');
+    expect(api).toContain('onSessionChange(() => {');
+    expect(api).toContain('if (getToken() !== token) throw new DOMException(\'Session changed\', \'AbortError\')');
+    expect(api).toContain('return readSpotOrders(path, () => request<SpotOrderRecord[]>(path), options?.fresh)');
     expect(api).toContain('options?.fresh,');
+  });
+});
+
+describe('session-scoped Spot order reads', () => {
+  test('clearing the window after a user switch prevents reusing the previous user response', async () => {
+    let clock = 1000;
+    const read = createReadCoalescer<string>(1500, () => clock);
+    const previousUser = jest.fn().mockResolvedValue('alice-orders');
+    const nextUser = jest.fn().mockResolvedValue('bob-orders');
+    await expect(read('/orders/me?status=X', previousUser)).resolves.toBe('alice-orders');
+    clock += 100;
+    read.clear(); // onSessionChange invokes this when credentials change
+    await expect(read('/orders/me?status=X', nextUser)).resolves.toBe('bob-orders');
+    expect(previousUser).toHaveBeenCalledTimes(1);
+    expect(nextUser).toHaveBeenCalledTimes(1);
+  });
+
+  test('an old in-flight rejection cannot remove the next session response', async () => {
+    const read = createReadCoalescer<string>(1500, () => 0);
+    let rejectOld!: (error: Error) => void;
+    const old = read('orders', () => new Promise<string>((_resolve, reject) => { rejectOld = reject; }));
+    read.clear();
+    const newRequest = jest.fn().mockResolvedValue('bob-orders');
+    const next = read('orders', newRequest);
+    expect(next).not.toBe(old);
+    await expect(next).resolves.toBe('bob-orders');
+    rejectOld(new Error('alice-request-aborted'));
+    await expect(old).rejects.toThrow('alice-request-aborted');
+    await flush();
+    await expect(read('orders', newRequest)).resolves.toBe('bob-orders');
+    expect(newRequest).toHaveBeenCalledTimes(1);
   });
 });
