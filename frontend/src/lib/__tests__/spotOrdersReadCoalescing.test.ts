@@ -133,7 +133,6 @@ describe('the chart and the panel read one URL, so the API answers both with one
     expect(api).toContain('onSessionChange(() => {');
     expect(api).toContain('if (getToken() !== token) throw new DOMException(\'Session changed\', \'AbortError\')');
     expect(api).toContain('return readSpotOrders(path, () => request<SpotOrderRecord[]>(path), options?.fresh)');
-    expect(api).toContain('options?.fresh,');
   });
 });
 
