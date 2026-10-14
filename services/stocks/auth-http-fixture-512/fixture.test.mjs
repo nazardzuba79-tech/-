@@ -13,7 +13,7 @@ import { validateRequest, validatePublicState, readCgroup } from './probe.mjs';
 import { authorityInitArgs, validateContainerInspect, validateCgroupPath, boundedRpcLines, safeRpcFailure,
   remainingBudget, waitForServiceReady, drainWithinBudget, fixtureCommand, createObserverBinding, validateWorkerObservation,
   validatePrecheckServiceAudit, validatePrecheckClosedSeed, validateKernelResources, observedInitialization, precheckServices,
-  validateFunctionalContract, validateGatewayContract } from './run.mjs';
+  validateFunctionalContract, validateGatewayContract, collectObserverFailure } from './run.mjs';
 
 const seed = () => ({ schema: 2, revision: 0, settings: { feeBps: 0 }, wallets: structuredClone(SEED.wallets),
   positions: {}, quotes: {}, orders: [], fills: [], adjustments: [], realized: { USDT: '0.00000000', USDC: '0.00000000' } });
@@ -285,6 +285,46 @@ test('missing/failing/late proof or worker initialization failure cannot admit H
     });
     assert.equal(admitted, false); assert.equal(evidence.status, 'INCOMPLETE'); assert.equal(typeof evidence.failure, 'string');
   }
+});
+test('failed init retains observer evidence before cleanup, without replacing the original failure or admitting HTTP', async () => {
+  const f = observerFixture(), evidence = {}, events = [], original = Error('FIXTURE_COMMAND_FAILED'); let admitted = false;
+  const failure = { status: 'COLLECTED', failure: { present: true, projection: { schema: 1, status: 'FAIL', code: 'OBSERVER_ROLE_INVALID' } } };
+  await assert.rejects(async () => {
+    try {
+      await observedInitialization({ ...f, evidence, inspect: () => f.info, snapshot: () => ({}),
+        init: async () => { events.push('init'); throw original; }, readProof: () => { throw Error('must not read success proof'); },
+        readFailure: () => { events.push('capture'); return failure; } });
+      admitted = true;
+    } finally { events.push('cleanup'); }
+  }, error => error === original);
+  assert.equal(admitted, false); assert.deepEqual(events, ['init', 'capture', 'cleanup']);
+  assert.equal(evidence.status, 'INCOMPLETE'); assert.deepEqual(evidence.observerFailureEvidence, failure);
+  const missingEvidence = {};
+  await assert.rejects(observedInitialization({ ...f, evidence: missingEvidence, inspect: () => f.info, snapshot: () => ({}),
+    init: async () => { throw original; }, readFailure: () => { throw Object.assign(Error('private error text'), { code: 'ENOENT' }); } }), error => error === original);
+  assert.equal(missingEvidence.observerFailureEvidence.status, 'UNAVAILABLE');
+  assert.equal(missingEvidence.observerFailureEvidence.error.nativeCode, 'ENOENT');
+  assert.ok(!JSON.stringify(missingEvidence).includes('private error text'));
+});
+test('owned observer failure capture is bounded and projects only known-safe proof fields', () => {
+  const directory = path.resolve('fake-owned-observation'), binding = Buffer.from('{}'), bindingSha256 = sha256(binding);
+  const failure = { schema: 1, status: 'FAIL', code: 'OBSERVER_NATIVE_FAILURE', errorName: 'Error', nativeCode: 'ERR_SQLITE_ERROR', nativeErrcode: 5,
+    token: 'private', stack: 'private stack', message: 'private body', env: { SECRET: 'private' } };
+  const files = new Map([['binding.json', binding], ['worker-connection-failure.json', Buffer.from(JSON.stringify(failure))]]);
+  const io = { realpathSync: value => value, existsSync: value => files.has(path.basename(value)), readFileSync: value => files.get(path.basename(value)),
+    lstatSync: value => ({ isDirectory: () => value === directory, isFile: () => files.has(path.basename(value)), isSymbolicLink: () => false,
+      uid: 10001, gid: 10001, mode: value === directory ? 0o700 : 0o600, ino: 1, dev: 2, size: files.get(path.basename(value))?.length || 0 }) };
+  const input = { directory, uid: 10001, gid: 10001, bindingSha256 }, result = collectObserverFailure(input, io);
+  assert.equal(result.status, 'COLLECTED'); assert.equal(result.bindingMatches, true); assert.equal(result.failure.present, true);
+  assert.equal(result.failure.sha256, sha256(files.get('worker-connection-failure.json')));
+  assert.deepEqual(result.failure.projection, { schema: 1, status: 'FAIL', code: 'OBSERVER_NATIVE_FAILURE', errorName: 'Error', nativeCode: 'ERR_SQLITE_ERROR', nativeErrcode: 5 });
+  assert.deepEqual(result.observation, { present: false }); assert.ok(!JSON.stringify(result).includes('private'));
+  files.set('worker-connection-failure.json', Buffer.from(JSON.stringify({ ...failure, code: 'OBSERVER_TOKEN_PRIVATE' })));
+  assert.throws(() => collectObserverFailure(input, io));
+  files.set('worker-connection-failure.json', Buffer.alloc(durabilityObserver.LIMITS.proofBytes + 1));
+  assert.throws(() => collectObserverFailure(input, io));
+  files.delete('worker-connection-failure.json'); assert.deepEqual(collectObserverFailure(input, io).failure, { present: false });
+  assert.throws(() => collectObserverFailure({ ...input, uid: 0 }, io));
 });
 test('paired precheck service admits no extra HTTP, provider access or pending account work', () => {
   const audit = { nativeProviderStarts: 0, deniedNetwork: 0, requests: 0, health: 0, active: 0, activeHandlers: 0,

@@ -178,7 +178,7 @@ jobs:
       actions: read
     env:
       QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
-      AUTH_POLICY_SHA256: 0bc78b33f47370efbb289b820198d01ec63c402c906a4652c897922aaf7b70f7
+      AUTH_POLICY_SHA256: 045603548ad6422416c9ad20b70da2e5970b9796accc0ada54419495ecd0c133
     steps:
       - uses: actions/checkout@v4
         with:

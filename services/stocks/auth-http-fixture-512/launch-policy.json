@@ -429,7 +429,7 @@
       {
         "path": "docs/AI_HANDOFF.md",
         "mode": "100644",
-        "blob": "d40f9480b78f7cdf0a008d940478913e38e7e22b"
+        "blob": "d0ab511f2f76d0473dcf7601cfc935739d8a0c4f"
       },
       {
         "path": "docs/AI_HANDOFF_COPY141.md",
@@ -19359,7 +19359,7 @@
       {
         "path": "scripts/qa-backend-full-admission.cjs",
         "mode": "100644",
-        "blob": "25544180908cf180cbc621629e0ae9987e5c5d0f"
+        "blob": "56e50cd2afbcd1bbc802bb16e8ae0ce8c5e248ed"
       },
       {
         "path": "scripts/qa-backend-full-admission.test.cjs",
@@ -20604,7 +20604,7 @@
       {
         "path": "services/stocks/auth-http-fixture-512/README.md",
         "mode": "100644",
-        "blob": "da27992dc167f8a151e8ddc27a193e3677b62900"
+        "blob": "85ec5e524ccbbe8cd68f028565e6f249f371ec10"
       },
       {
         "path": "services/stocks/auth-http-fixture-512/authority-entry.cjs",
@@ -20624,17 +20624,17 @@
       {
         "path": "services/stocks/auth-http-fixture-512/durability-observer.cjs",
         "mode": "100644",
-        "blob": "aef11209115ef2431011e7f5d2f3986f0f4b7324"
+        "blob": "05585511ee8af4c5f58a44c856f625b5da8f139d"
       },
       {
         "path": "services/stocks/auth-http-fixture-512/durability-observer.test.cjs",
         "mode": "100644",
-        "blob": "7bff9c0239435bb728efe8318bcc6907620613a3"
+        "blob": "a7e285a882657949ff8379cd9971625474c9ff47"
       },
       {
         "path": "services/stocks/auth-http-fixture-512/fixture.test.mjs",
         "mode": "100644",
-        "blob": "559e168eda8ee5e1d0ff6425d592171314aedbaa"
+        "blob": "0013f56e0f2ad107f61e0a49700c75a7c38cac8f"
       },
       {
         "path": "services/stocks/auth-http-fixture-512/launcher.mjs",
@@ -20669,7 +20669,7 @@
       {
         "path": "services/stocks/auth-http-fixture-512/run.mjs",
         "mode": "100644",
-        "blob": "c40b3d1d1c1abd4d716b3c3cd509fa9124ff731e"
+        "blob": "4ff30a25a8763850db689ff3bcd264a75eb455aa"
       },
       {
         "path": "services/stocks/auth-http-fixture-512/stock-child.mjs",
@@ -24102,7 +24102,7 @@
         "blob": "6f0b579baae99410dfcea1280794a4abd2742055"
       }
     ],
-    "entriesSha256": "a01eec2b7cc40a001b7a3cfbb37deff4360f9d763edd39524fce17bb6ef3555a"
+    "entriesSha256": "a9f669d165cdc436dda7075d55e0cbc71b1283e3c0b97e47c1c36fe085d3d7ec"
   },
   "dependencyBaseline": {
     "baseImage": "docker.io/library/node@sha256:51b1100cc2a83d370c6a60952e3f2989c8a43159d0e38586e090f3b3326efefd",

@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const BASELINE_SHA = 'a9d5b9bd85fe96e8dcb31ec7a6b315f9730d2900';
 const PRIOR_FAILURE = Object.freeze({ status: 'FAIL', artifactSHA256: '5fd75f0efc2cb1fc1cb1328fa077add416a791a5c304b9dd563c99a52485e029', runId: 38516409918, jobId: 115698882650 });
-const REVIEW_ID = 'stocks-finite-auth-a9d5b9bd-20261014-v1';
+const REVIEW_ID = 'stocks-finite-auth-a9d5b9bd-20261014-v2';
 const MANIFEST_PATH = 'docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json';
 const ALLOWED_PATHS = Object.freeze({
   'scripts/qa-backend-full-admission.cjs': 'admission-control',

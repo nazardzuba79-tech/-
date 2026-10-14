@@ -1,17 +1,21 @@
 'use strict';
-// Pure guards only: fake DatabaseSync methods, in-memory proof I/O, and reads of
-// existing source. No SQLite connection, seed, worker, HTTP, Docker or workload.
+// Fake DatabaseSync/proof guards plus one real Node worker bootstrap regression.
+// The latter runs only tiny temporary scripts: no SQLite, seed, application
+// worker, HTTP, Docker or workload.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
+const { Worker } = require('node:worker_threads');
+const { pathToFileURL } = require('node:url');
 const vm = require('node:vm');
 const observer = require('./durability-observer.cjs');
 const { installObserver, validateBinding, validateInvocation, sameDescriptor, ownedDirectory, boundedFile, writeExclusive,
   CONFIG_SQL, OBSERVER, SERVICE, WORKER, DIRECTORY, PROOF, LEDGER, EXECUTABLE, PLAN_ID, LIMITS } = observer;
 const fails = (fn, code) => assert.throws(fn, error => error.code === code);
 
-function fakeDatabase({ sync = 2, journal = 'delete', nativeError, readError, recordError } = {}) {
+function fakeDatabase({ sync = 2, journal = 'delete', nativeError, readError, recordError, beforeConfiguration } = {}) {
   const calls = [], records = [], failures = [], nativeResult = Object.freeze({ native: true });
   class FakeDatabase {
     constructor() { throw Error('A pure guard must never open a database'); }
@@ -26,7 +30,7 @@ function fakeDatabase({ sync = 2, journal = 'delete', nativeError, readError, re
   const descriptor = Object.getOwnPropertyDescriptor(FakeDatabase.prototype, 'exec');
   const receiver = Object.create(FakeDatabase.prototype);
   let time = 100n;
-  const installed = installObserver({ DatabaseSync: FakeDatabase, clock: () => time++,
+  const installed = installObserver({ DatabaseSync: FakeDatabase, clock: () => time++, beforeConfiguration,
     record(value) {
       assert.ok(sameDescriptor(Object.getOwnPropertyDescriptor(FakeDatabase.prototype, 'exec'), descriptor));
       if (recordError) throw recordError;
@@ -45,7 +49,7 @@ function binding(variant = 'P') {
 
 function invocation(main = false) {
   return { platform: 'linux', version: 'v24.21.0', arch: 'x64', uid: 10001, gid: 10001, execPath: EXECUTABLE,
-    execArgv: ['--require', OBSERVER], argv: [EXECUTABLE, main ? SERVICE : WORKER],
+    execArgv: ['--require', OBSERVER], argv: main ? [EXECUTABLE, SERVICE] : [EXECUTABLE],
     env: { PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', NODE_VERSION: '24.21.0', AUTH_HTTP_FIXTURE_512: 'true' },
     filename: OBSERVER, isMainThread: main, threadId: main ? 0 : 1,
     workerData: main ? null : { path: LEDGER, diagnostics: true, clock: undefined, testControl: undefined, registrationControl: undefined } };
@@ -136,6 +140,11 @@ test('fresh P and C bindings use the same strict contract and reject unknown, mi
 
 test('fixed main/worker invocation rejects extra preloads, environment injection, roles and frozen clocks', () => {
   assert.equal(validateInvocation(invocation()), true); assert.equal(validateInvocation(invocation(true)), true);
+  assert.equal(validateInvocation({ ...invocation(), argv: [EXECUTABLE, WORKER] }, 'configuration'), true);
+  fails(() => validateInvocation({ ...invocation(), argv: [EXECUTABLE, WORKER] }), 'OBSERVER_ROLE_INVALID');
+  fails(() => validateInvocation(invocation(), 'configuration'), 'OBSERVER_ROLE_INVALID');
+  fails(() => validateInvocation(invocation(true), 'configuration'), 'OBSERVER_PHASE_INVALID');
+  fails(() => validateInvocation({ ...invocation(true), argv: [EXECUTABLE] }), 'OBSERVER_ROLE_INVALID');
   for (const [patch, code] of [
     [{ execArgv: ['--require', OBSERVER, '--require', '/other.cjs'] }, 'OBSERVER_PRELOAD_INVALID'],
     [{ execArgv: [] }, 'OBSERVER_PRELOAD_INVALID'], [{ filename: '/tmp/observer.cjs' }, 'OBSERVER_PRELOAD_INVALID'],
@@ -150,6 +159,58 @@ test('fixed main/worker invocation rejects extra preloads, environment injection
   for (const patch of [{ clock: null }, { clock: new ArrayBuffer(8) }, { diagnostics: false }, { testControl: {} }, { registrationControl: {} }]) {
     fails(() => validateInvocation({ ...invocation(), workerData: { ...invocation().workerData, ...patch } }), 'OBSERVER_WORKER_INVALID');
   }
+});
+
+test('deferred worker entry validation runs before native exec; rejection restores without any SQLite work', () => {
+  const good = fakeDatabase({ beforeConfiguration: () => validateInvocation({ ...invocation(), argv: [EXECUTABLE, WORKER] }, 'configuration') });
+  good.receiver.exec(CONFIG_SQL); good.installed.assertComplete(); good.assertRestored();
+  assert.equal(good.calls.filter(c => c.kind === 'exec').length, 1);
+  for (const patch of [{ argv: [EXECUTABLE] }, { argv: [EXECUTABLE, SERVICE] }, { argv: [EXECUTABLE, WORKER, 'extra'] },
+    { workerData: { ...invocation().workerData, path: '/other.sqlite' } }, { env: { ...invocation().env, NODE_OPTIONS: '--require other' } }]) {
+    const f = fakeDatabase({ beforeConfiguration: () => validateInvocation({ ...invocation(), argv: [EXECUTABLE, WORKER], ...patch }, 'configuration') });
+    assert.throws(() => f.receiver.exec(CONFIG_SQL)); f.assertRestored();
+    assert.equal(f.calls.length, 0); assert.equal(f.records.length, 0); assert.equal(f.failures.length, 1);
+  }
+});
+
+test('real Node file-worker preload precedes argv entry insertion; both observed phases satisfy exact guards', { timeout: 10000 }, async t => {
+  assert.equal(process.version, 'v24.21.0', 'bootstrap regression must use the frozen runtime version');
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'voltex-observer-bootstrap-'));
+  const preload = path.join(directory, 'preload.cjs'), entry = path.join(directory, 'entry.mjs');
+  let worker;
+  try {
+    fs.writeFileSync(preload, `const {parentPort,workerData}=require('node:worker_threads'); parentPort.postMessage({phase:'preload',argv:process.argv,execArgv:process.execArgv,workerData});\n`, { flag: 'wx', mode: 0o600 });
+    fs.writeFileSync(entry, `import {parentPort,workerData} from 'node:worker_threads'; parentPort.postMessage({phase:'entry',argv:process.argv,execArgv:process.execArgv,workerData});\n`, { flag: 'wx', mode: 0o600 });
+    const messages = await new Promise((resolve, reject) => {
+      const rows = [], timer = setTimeout(() => reject(Error('BOOTSTRAP_REGRESSION_TIMEOUT')), 5000);
+      worker = new Worker(pathToFileURL(entry), { execArgv: ['--require', preload], workerData: invocation().workerData });
+      worker.on('message', value => { rows.push(value); if (rows.length > 2) { clearTimeout(timer); reject(Error('BOOTSTRAP_MESSAGE_BOUND')); } });
+      worker.once('error', error => { clearTimeout(timer); reject(error); });
+      worker.once('exit', code => { clearTimeout(timer); code === 0 ? resolve(rows) : reject(Error('BOOTSTRAP_EXIT_' + code)); });
+    });
+    assert.deepEqual(messages.map(m => m.phase), ['preload', 'entry']);
+    assert.deepEqual(messages[0].argv, [process.execPath]);
+    assert.deepEqual(messages[1].argv, [process.execPath, entry]);
+    for (const message of messages) {
+      assert.deepEqual(message.execArgv, ['--require', preload]);
+      assert.deepEqual(message.workerData, invocation().workerData);
+      const argv = message.argv.map(value => value === process.execPath ? EXECUTABLE : value === entry ? WORKER : value);
+      validateInvocation({ ...invocation(), argv, workerData: message.workerData }, message.phase === 'preload' ? 'preload' : 'configuration');
+    }
+    t.diagnostic(`Observed genuine ${process.version} ${process.platform} worker bootstrap: argv1 preload, argv2 entry; no database/network application code`);
+  } finally {
+    if (worker) await worker.terminate();
+    const actual = fs.realpathSync(directory);
+    assert.equal(actual, directory); assert.equal(path.dirname(actual), fs.realpathSync(os.tmpdir()));
+    fs.rmSync(actual, { recursive: true });
+  }
+});
+
+test('failure proof retains only bounded observer/native metadata and no message, stack, token or arbitrary properties', () => {
+  const error = Object.assign(Error('private token body'), { code: 'ERR_SQLITE_ERROR', errcode: 5, token: 'private' });
+  assert.deepEqual(observer.safeFailure(error, 'OBSERVER_NATIVE_FAILURE'), { schema: 1, status: 'FAIL', code: 'OBSERVER_NATIVE_FAILURE', errorName: 'Error', nativeCode: 'ERR_SQLITE_ERROR', nativeErrcode: 5 });
+  const malicious = { code: 'TOKEN_PRIVATE', name: 'private body', message: 'secret', stack: 'secret', errcode: -1 };
+  assert.deepEqual(observer.safeFailure(malicious), { schema: 1, status: 'FAIL', code: 'OBSERVER_SETUP_FAILED', errorName: 'Error', nativeCode: null });
 });
 
 test('guard is bound to the actual unchanged worker optional clock and exact account configuration SQL', () => {

@@ -60,6 +60,34 @@ export function validateWorkerObservation(proof, { binding, bindingSha256, init,
   assert.ok(BigInt(proof.nativeConfigurationDurationNs) + BigInt(proof.restoreAndReadObservationDurationNs) <= elapsed);
   return true;
 }
+export function collectObserverFailure({ directory, uid, gid, bindingSha256 }, io = fs) {
+  durabilityObserver.ownedDirectory(directory, uid, gid, io);
+  assert.match(bindingSha256 || '', /^[a-f0-9]{64}$/);
+  const read = name => durabilityObserver.boundedFile(path.join(directory, name), durabilityObserver.LIMITS.proofBytes,
+    { uid, gid, privateFile: true }, io).bytes;
+  const result = { status: 'COLLECTED', bindingMatches: sha256(read('binding.json')) === bindingSha256 };
+  for (const [key, name] of [['failure', 'worker-connection-failure.json'], ['observation', 'worker-connection.json']]) {
+    if (!io.existsSync(path.join(directory, name))) { result[key] = { present: false }; continue; }
+    const bytes = read(name), value = JSON.parse(bytes);
+    assert.equal(value?.schema, 1); assert.equal(value.status, key === 'failure' ? 'FAIL' : 'PASS');
+    // Retain only the known-safe proof fields. Arbitrary extra JSON properties,
+    // error messages/stacks and environment values never enter this report.
+    const projection = { schema: 1, status: value.status };
+    if (key === 'failure') {
+      assert.equal(durabilityObserver.safeFailure({ code: value.code }).code, value.code); projection.code = value.code;
+      if (['Error', 'TypeError', 'RangeError', 'AssertionError', 'SyntaxError'].includes(value.errorName)) projection.errorName = value.errorName;
+      if (value.nativeCode === null || (typeof value.nativeCode === 'string' && durabilityObserver.safeFailure({ code: value.nativeCode }).nativeCode === value.nativeCode)) projection.nativeCode = value.nativeCode;
+      if (Number.isSafeInteger(value.nativeErrcode) && value.nativeErrcode >= 0 && value.nativeErrcode <= 65535) projection.nativeErrcode = value.nativeErrcode;
+    } else {
+      assert.match(value.bindingSha256 || '', /^[a-f0-9]{64}$/); projection.bindingMatches = value.bindingSha256 === bindingSha256;
+      for (const field of ['synchronous', 'nativeConfigurationCalls', 'readOnlyPragmas']) if (Number.isSafeInteger(value[field]) && value[field] >= 0) projection[field] = value[field];
+      if (value.journalMode === 'delete') projection.journalMode = value.journalMode;
+      if (typeof value.descriptorRestored === 'boolean') projection.descriptorRestored = value.descriptorRestored;
+    }
+    result[key] = { present: true, bytes: bytes.length, sha256: sha256(bytes), projection };
+  }
+  return result;
+}
 export function validatePrecheckServiceAudit(value) {
   for (const field of ['nativeProviderStarts', 'deniedNetwork']) {
     assert.ok(Number.isSafeInteger(value?.[field]) && value[field] >= 0, 'PRECHECK_SAFETY_COUNTER_MISSING');
@@ -110,7 +138,7 @@ export function validateGatewayContract(terminal, expected, { beforeAuthorityReq
 // This span includes normal worker/HTTP initialization and the observer proof
 // write/read. It is not isolated observer CPU or fsync time and never changes a
 // timed request window. Injected functions let pure guards prove ordering.
-export async function observedInitialization({ init, inspect, snapshot, readProof, binding, bindingSha256,
+export async function observedInitialization({ init, inspect, snapshot, readProof, readFailure, binding, bindingSha256,
   now = () => performance.now(), timeoutMs = LIMITS.drainMs + 5000, evidence = {} }) {
   assert.ok(Number.isInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= LIMITS.drainMs + 5000);
   const started = now(), deadline = started + timeoutMs, before = snapshot(inspect(remainingBudget(deadline, now(), 'OBSERVER_INIT_INCOMPLETE')));
@@ -126,7 +154,14 @@ export async function observedInitialization({ init, inspect, snapshot, readProo
       workerReadiness: 'stock init resolved after unchanged createServer awaited account worker ready; matching proof and no failure marker verified' });
     Object.assign(evidence.wholeInit, { elapsedMs: ended - started, after }); return evidence;
   } catch (error) {
-    evidence.wholeInit.elapsedMs = now() - started; evidence.failure = String(error.message).slice(0, 500); throw error;
+    evidence.wholeInit.elapsedMs = now() - started; evidence.failure = String(error.message).slice(0, 500);
+    // The init RPC can fail before readProof. Collect bounded diagnostics while
+    // the owned bind directory still exists, before outer lifecycle cleanup.
+    if (readFailure) {
+      try { evidence.observerFailureEvidence = readFailure(); }
+      catch (diagnosticError) { evidence.observerFailureEvidence = { status: 'UNAVAILABLE', error: durabilityObserver.safeFailure(diagnosticError) }; }
+    }
+    throw error;
   }
 }
 export function remainingBudget(deadline, now, code = 'TAIL_DRAIN_INCOMPLETE') {
@@ -386,13 +421,13 @@ export async function main(options) {
       },
       init: timeout => service.rpc.request('init', { issuer: ISSUER, authority: 'http://127.0.0.1:29301', gatewayPort: 29302, servicePort: 29303,
         seedSha256: freeze.seed.sha256, contextSha256: freeze.contextSha256 }, timeout),
+      readFailure: () => collectObserverFailure({ directory, uid, gid: uid, bindingSha256 }),
       readProof: () => {
         durabilityObserver.ownedDirectory(directory, uid, uid);
         const files = fs.readdirSync(directory).sort(), failurePresent = files.includes('worker-connection-failure.json');
         const read = name => durabilityObserver.boundedFile(path.join(directory, name), durabilityObserver.LIMITS.proofBytes, { uid, gid: uid, privateFile: true }).bytes;
         if (failurePresent) {
-          const bytes = read('worker-connection-failure.json');
-          return { failurePresent, failure: { sha256: sha256(bytes), bytes: bytes.length, proof: JSON.parse(bytes) } };
+          return { failurePresent, failure: collectObserverFailure({ directory, uid, gid: uid, bindingSha256 }).failure };
         }
         assert.deepEqual(files, ['binding.json', 'worker-connection.json'], 'OBSERVER_MISSING_OR_EXTRA_PROOF');
         assert.equal(sha256(read('binding.json')), bindingSha256, 'OBSERVER_BINDING_CHANGED');
