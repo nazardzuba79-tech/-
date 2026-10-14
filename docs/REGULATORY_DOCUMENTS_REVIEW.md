@@ -4,10 +4,11 @@ Prepared 2026-10-14 from freshly fetched main `72f0a5944b01b4d2596957ba6939b397b
 
 ## Current release state
 
-The owner approved publication of the supplied image. This permission is
-recorded separately from verification. No record is marked verified on that
-basis. The production catalogue is empty; the page says no documents have
-been published. Do not promote this draft as a completed licensing gallery.
+The owner approved publication of the supplied image and its description on
+`/legal/licenses`. The public page displays the original collage as provided,
+labels the material as unverified, and makes no active-licence assertion. This
+permission is separate from verification. The verified-document catalogue
+remains empty and its publication gate remains in force.
 
 The owner subsequently requested no register hyperlinks in the customer UI.
 No such links are rendered. Internal verification references remain necessary
@@ -50,7 +51,11 @@ fabricated evidence. Original legal designations retain their original language.
 The separate Vite dev entry is `/review/licences/index.html`. It displays the
 review status explicitly, opens the entire supplied collage and supports zoom.
 The original is locally present as ignored `frontend/review/licences/portfolio.png`.
-It is not copied to `public/`, committed, or included in production build inputs.
+The same unmodified image is committed at
+`frontend/public/regulatory-documents/voltex-portfolio.png` for the public
+presentation block. Both copies have SHA-256
+`275f0610d81e672728b9bcb1189c4dc93855e4497738094ff23ee412f81804cb`.
+The image does not pass through the verified-document catalogue.
 
 Production uses the existing `/legal/:doc` route, language provider and seven
 locale dictionaries. Shared Footer and HomeFooter expose `/legal/licenses`;
@@ -59,13 +64,16 @@ Search indexing and licensing structured data remain deferred.
 
 CI runs publication-gate tests, existing locale/navigation regressions, a
 production build and isolated Chromium checks at 320, 360, 390, 430, 768, 1366,
-1440 and 1920 px in all seven languages. The image-viewer CI test uses a
-neutral one-pixel fixture; it does not claim to verify any licence document.
+1440 and 1920 px in all seven languages. The public-page QA verifies that the
+supplied image renders and retains its original bytes. The isolated review
+image-viewer test uses a neutral one-pixel fixture; neither check verifies a
+licence document.
 
 ## Publication still requires
 
 Exact official entity/number/current-status evidence and operator linkage for
 each candidate, permitted activities and restrictions, authorised originals,
 and documented reproduction rights. After those checks, add approved original
-assets and catalogue entries together, then complete publication and SEO review.
-No production deployment or main merge has been performed by this task.
+assets and catalogue entries together, then complete the verified catalogue and
+SEO review. Public availability of the supplied collage is not regulatory
+verification.
