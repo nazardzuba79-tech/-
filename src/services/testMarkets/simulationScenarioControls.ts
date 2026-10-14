@@ -4,6 +4,7 @@
  */
 import type { ListingScenario, ScenarioControlsProgram } from '../../shared/listingScenarioControls';
 import type { RealismTick } from './simulationRealism';
+import { historicalReplayHour } from '../../shared/listingHistoricalReplay';
 import { seededRandom } from './simulationRandom';
 
 const HOUR = 3_600_000, MINUTE = 60_000, TICK = 10_000;
@@ -105,6 +106,14 @@ function priceAt(config: ControlledScenarioConfig, seed: string, at: number): nu
 }
 
 export function controlledScenarioHour(config: ControlledScenarioConfig, seed: string, hour: number): { open: number; ticks: RealismTick[]; regime: Regime } {
+  const stagesEnd = config.controls.stages.reduce((total, stage) => total + stage.durationHours, 0);
+  if (config.controls.afterGrowth === 'historical' && config.controls.historical && hour >= stagesEnd) {
+    // A 10-second synthetic tick is drawn once per real 10 seconds. Hour N
+    // reproduces source hour N's relative OHLC; no replay speed control.
+    // The preceding growth and final pullback are NOT modified.
+    const anchor = Number(config.controls.stages[config.controls.stages.length - 1].targetPrice);
+    return historicalReplayHour(config.controls.historical, anchor, hour - stagesEnd, seed);
+  }
   const start = config.from + hour * HOUR, cap = Number(config.controls.maxPrice);
   const open = priceAt(config, seed, start), ticks: RealismTick[] = [];
   let previous = open;
