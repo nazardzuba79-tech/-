@@ -45,7 +45,11 @@ describe('Historical hourly movement after the planned growth and fall',()=>{
     expect(first.open).toBe(10);
     expect(first.ticks[359].price).toBeCloseTo(10*1.015,9);
     expect(second.open).toBeCloseTo(first.ticks[359].price,9);
-    expect(first.ticks[119].price).toBeGreaterThanOrEqual(first.ticks[0].low);
+    // Hourly OHLC has NO temporal order for high vs low. Assert each source
+    // bound is reproduced exactly, regardless of the modeled order.
+    const sourceBar = source().bars[0];
+    expect(Math.max(...first.ticks.map(t => t.high))).toBeCloseTo(anchor * (1 + sourceBar[0] / 1000000), 9);
+    expect(Math.min(...first.ticks.map(t => t.low))).toBeCloseTo(anchor * (1 + sourceBar[1] / 1000000), 9);
     expect(first.ticks.every(t=>t.price>0&&t.high>=t.price&&t.low<=t.price)).toBe(true);
     expect(historicalReplayHour(p,anchor,0,'qax')).toEqual(first);
     expect(historicalReplayHour(p,anchor,72,'qax').open).toBeCloseTo(historicalReplayBounds(p,anchor).close,7);
