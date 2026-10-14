@@ -16,6 +16,7 @@ import { z } from 'zod';
 import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
 import { SIMULATION_PROFILES, profileForOrdinal } from '../testMarkets/simulationRealism';
 import { LISTING_SCENARIOS, normalizeScenarioDecimal, validateScenarioControls } from '../../shared/listingScenarioControls';
+import { historicalSerializedBytes } from '../../shared/listingHistoricalReplay';
 
 export const LISTING_QUOTE = 'USDT' as const;
 export const LISTING_SCHEMA_VERSION = 1 as const;
@@ -57,7 +58,17 @@ export const scenarioControlsSchema = z.object({
     durationHours: z.number().int().min(1).max(720),
     targetPrice: scenarioDecimal,
   }).strict()).min(1).max(24),
-  afterGrowth: z.literal('range'),
+  afterGrowth: z.enum(['range', 'historical']),
+  historical: z.object({
+    version: z.literal(1),
+    clips: z.array(z.object({
+      source: z.enum(['BTC/USDT', 'ETH/USDT', 'SOL/USDT']),
+      sourceStart: z.string().max(30),
+      resolution: z.literal('1h'),
+      provenance: z.literal('USER_SUPPLIED_UNVERIFIED'),
+      bars: z.array(z.tuple([z.number().int(), z.number().int(), z.number().int()])).min(24).max(2400),
+    }).strict()).min(1).max(3),
+  }).strict().optional(),
   pullbacks: z.object({ frequency, minDepthPercent: scenarioDecimal.refine(v => Number(v) <= 60, 'Глубина отката должна быть не выше 60%'), maxDepthPercent: scenarioDecimal.refine(v => Number(v) <= 60, 'Глубина отката должна быть не выше 60%'), durationMinutes: z.number().int().min(5).max(360) }).strict(),
   candles: z.object({ intensity: z.enum(['low', 'medium', 'high']), diversity: z.number().min(0).max(1), pauseFrequency: frequency }).strict(),
   wicks: z.object({ length: z.enum(['short', 'normal', 'pronounced']), longFrequency: frequency }).strict(),
@@ -138,6 +149,8 @@ export function parseListingConfig(input: unknown): ListingConfig {
   const config = parsed.data;
   if (config.simulationProgram?.kind === 'scenario-controls-v2') {
     if (Date.parse(config.listingAt) % 10_000 !== 0) throw new ListingValidationError('INVALID_SCENARIO', 'Время запуска должно совпадать с границей 10 секунд');
+    if (config.simulationProgram.afterGrowth === 'historical' && historicalSerializedBytes(config) > 132 * 1024)
+      throw new ListingValidationError('HISTORICAL_DATA_TOO_LARGE', 'Файл движения слишком большой для сохранения в листинге (132 КБ с логотипом)');
     try { validateScenarioControls(config.simulationProgram, config.initialPrice); }
     catch (error) { throw new ListingValidationError('INVALID_SCENARIO', error instanceof Error ? error.message : 'Проверьте настройки движения цены'); }
   }
@@ -197,6 +210,14 @@ export function withStableProfile(next: ListingConfig, previous: ListingConfig |
  * shapes that history can change.
  */
 export function checkPublishable(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs = MIN_LEAD_MS): void {
+  // Administrative draft+private preview are functional, but a user-provided
+  // historical dataset has no independently verified redistribution rights.
+  // Never publish it to a market whose synthetic reference can affect Spot.
+  // A future license-approved rollout must explicitly replace this gate
+  // after legal review, isolated paper accounting and full QA.
+  if (next.simulationProgram?.kind === 'scenario-controls-v2' && next.simulationProgram.afterGrowth === 'historical')
+    throw new ListingValidationError('HISTORICAL_RIGHTS_UNVERIFIED',
+      'Историческое движение доступно для сохранённого черновика и приватного предпросмотра. Публикация запрещена до проверки прав на данные и изоляции торговли.');
   const at = Date.parse(next.listingAt);
   if (!active) {
     if (at < now + minLeadMs) throw new ListingValidationError('LISTING_TIME_PAST', 'The listing time must be at least one minute in the future');
