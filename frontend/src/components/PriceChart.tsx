@@ -1,6 +1,6 @@
 import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 
-import { useEffect, useRef, useState, useCallback, useId, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback, useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   createChart,
@@ -9,6 +9,7 @@ import {
   HistogramSeries,
   LineSeries,
   AreaSeries,
+  BarSeries,
   IChartApi,
   ISeriesApi,
   IPriceLine,
@@ -26,7 +27,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { type Candle } from '../lib/indicators';
 import {
-  INDICATOR_CATALOGUE, computeIndicator, getChartIndicators, indicatorDefinition, indicatorInstanceLabel, newIndicatorInstance,
+  DEFAULT_CHART_INDICATORS, INDICATOR_CATALOGUE, computeIndicator, getChartIndicators, indicatorDefinition, indicatorInstanceLabel, newIndicatorInstance,
   saveChartIndicators, subscribeChartIndicators, type IndicatorInstance, type IndicatorOutput, type IndicatorType,
 } from '../lib/chartIndicators';
 import {
@@ -46,11 +47,27 @@ import type { DrawingView } from '../lib/drawingGeometry';
 import { ChartDrawingLayer, CURSOR_TOOLS, newDrawingId, type ChartDrawing, type DrawingTool, type TextRequest } from './ChartDrawingLayer';
 import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
 import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_INTERVAL_MS, type ChartCandleLoader, type ChartTradingInteraction, type ChartPositionLine } from '../lib/chartTrading';
+import { CHART_TIMEFRAMES, LEGACY_TIMEFRAMES, isChartTimeframe, timeframeDurationMs, timeframeLabelKey, timeframePlan, timeframeSpec, type CandleSourceKind, type ChartTimeframe, type TimeframePlan } from '../lib/chartTimeframes';
+import { loadChartCandles, workspaceCandleLoader } from '../lib/chartCandleSource';
+import {
+  BUILT_IN_PRESETS, DEFAULT_WORKSPACE, MAX_WORKSPACE_PRESETS, deleteWorkspacePreset, getChartWorkspace, getWorkspacePresets, presetFromWorkspace, renameWorkspacePreset,
+  saveWorkspacePreset, subscribeChartWorkspace, subscribeWorkspacePresets, updateChartWorkspace, type ChartWorkspaceState, type CompareEntry, type ComparePeriod, type WorkspaceLayout, type WorkspacePreset,
+} from '../lib/chartWorkspace';
+import { heikinAshi, hollowCandles, ohlcBars, type ChartBarType } from '../lib/chartDerivedBars';
+import { COMPARE_COLORS, MAX_COMPARE_SERIES, formatPercent, lineValueAt, percentSeries, type CompareLine } from '../lib/chartCompare';
+import { barAt, barStats, lineValueAtTime, type AnalyticsPeriod } from '../lib/chartCandleStats';
+import { canvasToBlob, composeChartSnapshot, copyBlobToClipboard, downloadBlob, snapshotFileName, snapshotSubtitle } from '../lib/chartSnapshot';
+import type { ChartSyncBus } from '../lib/chartSyncBus';
+import type { CompareStatus } from './chart-workspace/ChartComparePanel';
+import { ChartWorkspaceControls } from './chart-workspace/ChartWorkspaceControls';
+import { ChartDataWindow } from './chart-workspace/ChartDataWindow';
+import { ChartAnalyticsPanel } from './chart-workspace/ChartAnalyticsPanel';
+import './chart-workspace/ChartWorkspace.css';
 import './DrawingTools.css';
 import { PrivatePositionLines } from './PrivatePositionLines';
 import { ChartToolbarMenus } from './ChartToolbarMenus';
 import { ChartSettingsDialog, requestChartSettingsView } from './ChartSettingsDialog';
-import { DEFAULT_CHART_SETTINGS, getChartSettings, rgbaOf, subscribeChartSettings, type ChartSettings } from '../lib/chartSettings';
+import { DEFAULT_CHART_SETTINGS, getChartSettings, rgbaOf, saveChartSettings, subscribeChartSettings, type ChartSettings } from '../lib/chartSettings';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
@@ -65,7 +82,7 @@ const SETTINGS_VISIBLE_CANDLES = 120;
 // first 200 loaded candles).
 const CANDLE_FETCH_LIMIT = VISIBLE_CANDLES + MA_PERIOD + 20;
 
-type ChartType = 'candles' | 'line' | 'area';
+type ChartType = ChartBarType;
 
 // Kept in sync with the actual series colors set at chart-init time below —
 // used both for the toolbar toggle dots and the on-chart legend.
@@ -103,16 +120,17 @@ interface ConditionalOrder {
   ocoGroupId: string | null;
 }
 
-const INTERVALS = ['5m', '15m', '1h', '4h', '1d', '1w'] as const;
-type Interval = (typeof INTERVALS)[number];
-const INTERVAL_SECONDS: Record<Interval, number> = {
-  '5m': 300,
-  '15m': 900,
-  '1h': 3600,
-  '4h': 14400,
-  '1d': 86400,
-  '1w': 604800,
-};
+/** The plain (non-terminal) chart keeps the six intervals it always had; the
+ *  workspace toolbar offers the whole catalogue (lib/chartTimeframes). */
+const INTERVALS = LEGACY_TIMEFRAMES;
+type Interval = ChartTimeframe;
+const INTERVAL_SECONDS = Object.fromEntries(CHART_TIMEFRAMES.map(tf => [tf, timeframeSpec(tf).seconds])) as Record<Interval, number>;
+/** Stable empties, so effect dependencies do not churn. */
+const NO_COMPARE: CompareEntry[] = [];
+const MAIN_COMPARE_COLOR = '#f0b90b';
+/** Compared instruments refresh at a calmer pace than the main chart's 5 s. */
+const COMPARE_REFRESH_MS = 30000;
+type SeriesOnPrice = ISeriesApi<'Candlestick'> | ISeriesApi<'Line'> | ISeriesApi<'Area'>;
 
 /**
  * Where the chart currently puts one price, its double and the first two
@@ -170,6 +188,14 @@ export function PriceChart({
   priceFormatter,
   chartSettings = false,
   toolbarEnd,
+  candleSource,
+  onSelectPair,
+  syncBus,
+  syncId = 'main',
+  compactLayout = false,
+  fullscreen = false,
+  onFullscreen,
+  paused = false,
 }: {
   pair: string;
   chrome?: 'default' | 'terminal';
@@ -214,6 +240,19 @@ export function PriceChart({
   /** Placed at the right end of the toolbar (the terminal's VOLTEX /
    *  TradingView switch, when the heading row is folded into the toolbar). */
   toolbarEnd?: ReactNode;
+  /** What the candle loader serves natively (lib/chartTimeframes); derived from the market when absent. */
+  candleSource?: CandleSourceKind;
+  /** The terminal's own instrument switch, for «Торговать …» on a second pane. */
+  onSelectPair?: (pair: string) => void;
+  /** Cursor / time synchronisation with the other panes of the workspace. */
+  syncBus?: ChartSyncBus;
+  syncId?: string;
+  /** Phone layout: the toolbar's phone row and sheet, panels docked at the foot. */
+  compactLayout?: boolean;
+  fullscreen?: boolean;
+  onFullscreen?: () => void;
+  /** Parked behind another pane: no refresh, no compare request. */
+  paused?: boolean;
 }) {
   const { t, lang } = useLanguage();
   const terminal = chrome === 'terminal';
@@ -250,6 +289,39 @@ export function PriceChart({
   const spotConditionalOrders = market === 'spot';
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  /**
+   * The chart workspace (2026-10-13): the two-row toolbar, the extended
+   * timeframes, compare, the data window and analytics. It lives on the
+   * terminal charts with a drawing rail (Spot and Futures); every other
+   * chart keeps the toolbar it had. Its state is the per-market store in
+   * lib/chartWorkspace, so a template, another tab or a synced pane can
+   * change it and this chart follows.
+   */
+  const workspaceOn = terminal && drawingTools;
+  const [workspace, setWorkspace] = useState<ChartWorkspaceState>(() => getChartWorkspace(market));
+  useEffect(() => { setWorkspace(getChartWorkspace(market)); return subscribeChartWorkspace(market, setWorkspace); }, [market]);
+  const patchWorkspace = useCallback((patch: Partial<ChartWorkspaceState> | ((s: ChartWorkspaceState) => Partial<ChartWorkspaceState>)) => updateChartWorkspace(market, patch), [market]);
+  const compareEntries = workspaceOn ? workspace.compare : NO_COMPARE;
+  const compareOn = workspaceOn && compareEntries.length > 0;
+  const sourceKind: CandleSourceKind = candleSource ?? (candleLoader ? (market === 'futures' ? 'futures-public' : 'spot-public') : 'legacy');
+  const plans = useMemo(() => Object.fromEntries(CHART_TIMEFRAMES.map(tf => [tf, timeframePlan(sourceKind, tf)])) as Record<ChartTimeframe, TimeframePlan>, [sourceKind]);
+  // One loader identity for the chart's whole life: it reads the market's
+  // loader and source through refs, so the candle effect never re-runs for
+  // a swap of the function it calls (see paintedSeriesRef below). Native
+  // intervals go straight to the market loader; derived ones are built from
+  // real lower bars (lib/chartCandleSource).
+  const loaderRef = useRef(candleLoader); loaderRef.current = candleLoader;
+  const sourceRef = useRef(sourceKind); sourceRef.current = sourceKind;
+  const marketRef = useRef(market); marketRef.current = market;
+  const pausedRef = useRef(paused); pausedRef.current = paused;
+  const workspaceLoaderRef = useRef<ChartCandleLoader | null>(null);
+  if (!workspaceLoaderRef.current) {
+    workspaceLoaderRef.current = (p, i, limit, signal, endTime) => {
+      const loader = loaderRef.current;
+      if (!loader) return Promise.reject(new Error('no_candle_loader'));
+      return workspaceCandleLoader(loader, sourceRef.current, marketRef.current)(p, i, limit, signal, endTime);
+    };
+  }
   const [viewSettings, setViewSettings] = useState<ChartSettings | null>(() => (chartSettings ? getChartSettings() : null));
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => (chartSettings ? subscribeChartSettings(setViewSettings) : undefined), [chartSettings]);
@@ -269,6 +341,13 @@ export function PriceChart({
   const lineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const areaSeriesRef = useRef<ISeriesApi<'Area'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  /** Bars, hollow candles and Heikin Ashi (lib/chartDerivedBars): three more paints of the same real bars. */
+  const barsSeriesRef = useRef<ISeriesApi<'Bar'> | null>(null);
+  const hollowSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const heikinSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const paletteRef = useRef<{ up: string; down: string; hollow: string }>({ up: '#eaecef', down: '#f7a600', hollow: '#101014' });
+  const chartTypeRef = useRef<ChartType>('candles');
+  const chartAreaRef = useRef<HTMLDivElement>(null);
   /** Series per indicator instance id (lib/chartIndicators). */
   const indicatorSeriesRef = useRef<Map<string, IndicatorSeriesSet>>(new Map());
   const priceLinesRef = useRef<IPriceLine[]>([]);
@@ -287,7 +366,7 @@ export function PriceChart({
   const privateHistoryRef = useRef<((time: number) => Promise<void>) | null>(null);
   const [candlesRevision, setCandlesRevision] = useState(0);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
-  const [interval, setInterval_] = useState<Interval>('1h');
+  const [interval, setInterval_] = useState<Interval>(() => (terminal && drawingTools ? getChartWorkspace(market).timeframe : '1h'));
   const [empty, setEmpty] = useState(false);
   /**
    * The instrument whose candles are currently ON SCREEN — "market|pair|interval".
@@ -301,7 +380,9 @@ export function PriceChart({
   const [loadFailed, setLoadFailed] = useState(false);
   /** Retries the candle request alone — never a page reload. */
   const retryCandlesRef = useRef<(() => void) | null>(null);
-  const [chartType, setChartType] = useState<ChartType>('candles');
+  const [chartType, setChartType] = useState<ChartType>(() => (terminal && drawingTools ? getChartWorkspace(market).barType : 'candles'));
+  /** Jump the chart to an instant, loading older bars where the source pages (set by the candle effect). */
+  const goToTimeRef = useRef<((ms: number) => Promise<'ok' | 'missing' | 'future'>) | null>(null);
   /** The viewer's indicator presets are isolated between Spot and Futures. */
   const [indicatorInstances, setIndicatorInstances] = useState<IndicatorInstance[]>(() => getChartIndicators(market));
   useEffect(() => {
@@ -485,6 +566,14 @@ export function PriceChart({
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
+    // Bars, hollow candles and Heikin Ashi: hidden until picked. The
+    // candlestick series above stays the coordinate authority for every
+    // overlay, and the trading paths read it alone (lib/chartDerivedBars).
+    const barsSeries = typeof BarSeries !== 'undefined' ? chart.addSeries(BarSeries, { upColor: candleUp, downColor: candleDown, thinBars: false, visible: false, priceLineVisible: false, lastValueVisible: false }) : null;
+    const hollowSeries = chart.addSeries(CandlestickSeries, { upColor: 'rgba(0,0,0,0)', downColor: candleDown, borderVisible: true, borderUpColor: candleUp, borderDownColor: candleDown, wickUpColor: candleUp, wickDownColor: candleDown, visible: false, priceLineVisible: false, lastValueVisible: false });
+    const heikinSeries = chart.addSeries(CandlestickSeries, { upColor: candleUp, downColor: candleDown, borderVisible: false, wickUpColor: candleUp, wickDownColor: candleDown, visible: false, priceLineVisible: false, lastValueVisible: false });
+    paletteRef.current = { up: candleUp, down: candleDown, hollow: plotBackground || '#101014' };
+
     // Indicator series are created per instance by the indicator effect below
     // (lib/chartIndicators), not here: the chart opens with whatever the viewer
     // kept, and each instance's lines come and go with it.
@@ -503,6 +592,9 @@ export function PriceChart({
     lineSeriesRef.current = lineSeries;
     areaSeriesRef.current = areaSeries;
     volumeSeriesRef.current = volumeSeries;
+    barsSeriesRef.current = barsSeries;
+    hollowSeriesRef.current = hollowSeries;
+    heikinSeriesRef.current = heikinSeries;
 
     const redraw = () => forceRedraw((n) => n + 1);
     chart.timeScale().subscribeVisibleTimeRangeChange(redraw);
@@ -601,9 +693,22 @@ export function PriceChart({
   /** Every series on the right price scale: the candles, their line/area twins and the price-pane indicators. */
   const priceScaleSeries = (): ISeriesApi<'Candlestick' | 'Line' | 'Area'>[] => {
     const out: ISeriesApi<'Candlestick' | 'Line' | 'Area'>[] = [];
-    for (const ref of [seriesRef, lineSeriesRef, areaSeriesRef]) if (ref.current) out.push(ref.current as ISeriesApi<'Candlestick' | 'Line' | 'Area'>);
+    for (const ref of [seriesRef, lineSeriesRef, areaSeriesRef, barsSeriesRef, hollowSeriesRef, heikinSeriesRef]) if (ref.current) out.push(ref.current as unknown as ISeriesApi<'Candlestick' | 'Line' | 'Area'>);
     for (const set of indicatorSeriesRef.current.values()) if (set.pane === 'price') out.push(...Object.values(set.lines));
     return out;
+  };
+  /** The series painted for a bar type — the one markers and price lines must sit on. */
+  const visibleSeriesFor = (type: ChartType): SeriesOnPrice | null => {
+    const picked = type === 'line' ? lineSeriesRef.current : type === 'area' ? areaSeriesRef.current
+      : type === 'bars' ? barsSeriesRef.current : type === 'hollow' ? hollowSeriesRef.current : type === 'heikin' ? heikinSeriesRef.current : seriesRef.current;
+    return (picked ?? seriesRef.current) as unknown as SeriesOnPrice | null;
+  };
+  /** Repaint the alternative series of the active bar type from the chart's own candles; the others wait until picked. */
+  const paintAlternative = (type: ChartType) => {
+    const candles = candlesRef.current, palette = paletteRef.current;
+    if (type === 'bars') barsSeriesRef.current?.setData(ohlcBars(candles, palette).map(b => ({ time: b.time as Time, open: b.open, high: b.high, low: b.low, close: b.close, color: b.color })));
+    else if (type === 'hollow') hollowSeriesRef.current?.setData(hollowCandles(candles, palette).map(b => ({ time: b.time as Time, open: b.open, high: b.high, low: b.low, close: b.close, color: b.color, borderColor: b.borderColor, wickColor: b.wickColor })));
+    else if (type === 'heikin') heikinSeriesRef.current?.setData(heikinAshi(candles).map(b => ({ time: b.time as Time, open: b.open, high: b.high, low: b.low, close: b.close })));
   };
   /** Pane heights: the candles keep most of the chart, volume a fifth of it,
    *  every lower-pane indicator a strip under them. Stretch factors are
@@ -624,13 +729,19 @@ export function PriceChart({
   useEffect(() => {
     const chart = chartRef.current, series = seriesRef.current, volume = volumeSeriesRef.current;
     if (!viewSettings || !chart || !series || !volume) return;
-    const s = viewSettings, clear = 'rgba(0,0,0,0)', base = basePaintRef.current;
+    // In compare mode the candles and their volume give way to the percentage lines.
+    const s = compareOn ? { ...viewSettings, volume: false } : viewSettings, clear = 'rgba(0,0,0,0)', base = basePaintRef.current;
     series.applyOptions({
       upColor: s.body ? s.bodyUp : clear, downColor: s.body ? s.bodyDown : clear,
       borderVisible: s.border, borderUpColor: s.borderUp, borderDownColor: s.borderDown,
       wickVisible: s.wick, wickUpColor: s.wickUp, wickDownColor: s.wickDown,
       priceLineVisible: s.lastPriceLine,
     });
+    paletteRef.current = { up: s.bodyUp, down: s.bodyDown, hollow: s.background ?? base?.background ?? '#101014' };
+    barsSeriesRef.current?.applyOptions({ upColor: s.bodyUp, downColor: s.bodyDown });
+    hollowSeriesRef.current?.applyOptions({ downColor: s.bodyDown, borderUpColor: s.bodyUp, borderDownColor: s.bodyDown, wickUpColor: s.wickUp, wickDownColor: s.wickDown });
+    heikinSeriesRef.current?.applyOptions({ upColor: s.bodyUp, downColor: s.bodyDown, wickUpColor: s.wickUp, wickDownColor: s.wickDown });
+    paintAlternative(chartTypeRef.current);
     // Scales (Issue #502). Lightweight Charts paints the time axis, the
     // crosshair labels and any price scale without a colour of its own in
     // `layout.textColor`; the right price scale takes its own `textColor`.
@@ -666,7 +777,7 @@ export function PriceChart({
         // under the panel above): the top tick label used to be painted half under
         // the toolbar edge. Lightweight Charts drops a corner label it cannot show whole.
         entireTextOnly: desktopTerminal,
-        borderVisible: s.scaleBorders, borderColor, ticksVisible: s.scaleTicks, visible: s.priceScaleVisible,
+        borderVisible: s.scaleBorders, borderColor, ticksVisible: s.scaleTicks, visible: s.priceScaleVisible && !compareOn,
         mode: priceScaleMode === 'logarithmic' || s.scaleMode === 'logarithmic' ? PriceScaleMode.Logarithmic : PriceScaleMode.Normal,
       },
       timeScale: { borderVisible: s.scaleBorders, borderColor, ticksVisible: s.scaleTicks, visible: s.timeScaleVisible },
@@ -712,7 +823,7 @@ export function PriceChart({
       else watermarkRef.current = createTextWatermark(chart.panes()[0], { horzAlign: 'center', vertAlign: 'center', lines }) as unknown as { detach: () => void; applyOptions: (o: object) => void };
     } else if (watermarkRef.current) { watermarkRef.current.detach(); watermarkRef.current = null; }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewSettings, pair, interval, bandOscillators, priceScaleMode, priceFormatter, indicatorInstances]);
+  }, [viewSettings, pair, interval, bandOscillators, priceScaleMode, priceFormatter, indicatorInstances, compareOn]);
 
   // The indicators on the chart (Issue #502): one set of series per instance,
   // created when it appears, removed with it; data computed from the chart's
@@ -720,7 +831,7 @@ export function PriceChart({
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart || !chartReady) return;
-    const map = indicatorSeriesRef.current, candles = candlesRef.current, live = new Set(indicatorInstances.filter(i => i.visible).map(i => i.id));
+    const map = indicatorSeriesRef.current, candles = candlesRef.current, live = new Set(compareOn ? [] : indicatorInstances.filter(i => i.visible).map(i => i.id));
     const canRemove = typeof chart.removeSeries === 'function';
     for (const [id, set] of map) {
       if (live.has(id)) continue;
@@ -734,7 +845,7 @@ export function PriceChart({
     for (const inst of indicatorInstances) {
       // An invisible oscillator must not retain an empty physical pane.
       // Re-creating its series on show is safe: the instance and settings persist.
-      if (!inst.visible) continue;
+      if (!inst.visible || compareOn) continue;
       const def = indicatorDefinition(inst.type);
       const pane: IndicatorSeriesSet['pane'] = def.pane === 'price' ? 'price' : paneSupport ? 'lower' : 'band';
       let set = map.get(inst.id);
@@ -801,17 +912,20 @@ export function PriceChart({
     }
     layoutPanes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indicatorInstances, indicatorDataVersion, chartReady, paneSupport, viewSettings?.volume, spotChartRefinements]);
+  }, [indicatorInstances, indicatorDataVersion, chartReady, paneSupport, viewSettings?.volume, spotChartRefinements, compareOn]);
 
   useEffect(() => {
     if (!tradingSelection) return;
     cancelGestureRef.current?.();
     setTool('cursor'); setChartType('candles'); setSelectedDrawing(null); setDrawDialog(null);
+    // A derived paint or a percentage overlay cannot be picked from: back to the real bars.
+    if (workspaceOn) patchWorkspace({ barType: 'candles', compare: [] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tradingSelection]);
 
   useEffect(() => {
     if (!privateTrading?.enabled || !chartReady || !seriesRef.current) return;
-    const series = chartType === 'line' ? lineSeriesRef.current : chartType === 'area' ? areaSeriesRef.current : seriesRef.current;
+    const series = visibleSeriesFor(chartType);
     if (!series) return;
     const plugin = createSeriesMarkers(series, [], { autoScale: false });
     privateMarkersRef.current = plugin;
@@ -848,7 +962,7 @@ export function PriceChart({
     privateMarkersRef.current.setMarkers(markers);
     for (const line of privateLinesRef.current) privateLineOwnerRef.current?.removePriceLine(line);
     privateLinesRef.current = [];
-    const visibleSeries = chartType === 'line' ? lineSeriesRef.current : chartType === 'area' ? areaSeriesRef.current : series;
+    const visibleSeries = visibleSeriesFor(chartType) ?? series;
     privateLineOwnerRef.current = visibleSeries;
     for (const trade of relevant.filter(t => t.status === 'OPEN')) {
       if (visibleSeries && Number.isFinite(trade.entryPrice) && trade.entryPrice > 0) {
@@ -996,13 +1110,12 @@ export function PriceChart({
    * the chart objects and the data can never drift apart.
    */
   useEffect(() => {
-    const visible = chartType === 'line' ? lineSeriesRef.current
-      : chartType === 'area' ? areaSeriesRef.current : seriesRef.current;
+    const visible = visibleSeriesFor(chartType);
     const previousOwner = positionLineOwnerRef.current;
     for (const line of positionLinesRef.current) previousOwner?.removePriceLine(line);
     positionLinesRef.current = [];
     positionLineOwnerRef.current = visible;
-    if (!chartReady || !visible || !positionLines?.length) return;
+    if (!chartReady || !visible || !positionLines?.length || compareOn) return;
 
     const here = positionLines.filter(p => chartSymbol(p.symbol) === chartSymbol(pair));
     const add = (raw: string | null, title: string, color: string, style: LineStyle) => {
@@ -1026,7 +1139,7 @@ export function PriceChart({
       for (const line of positionLinesRef.current) positionLineOwnerRef.current?.removePriceLine(line);
       positionLinesRef.current = [];
     };
-  }, [positionLines, chartReady, chartType, pair]);
+  }, [positionLines, chartReady, chartType, pair, compareOn]);
 
   /**
    * Native price lines, derived from `horizontals`.
@@ -1146,7 +1259,7 @@ export function PriceChart({
     // replay chart. This is user-driven only: no extra idle polling.
     const historyEnabled = privateMode || (market === 'futures' && !!candleLoader);
     const clearSeries = () => {
-      for (const ref of [seriesRef,volumeSeriesRef,lineSeriesRef,areaSeriesRef]) ref.current?.setData([]);
+      for (const ref of [seriesRef,volumeSeriesRef,lineSeriesRef,areaSeriesRef,barsSeriesRef,hollowSeriesRef,heikinSeriesRef]) ref.current?.setData([]);
       for (const set of indicatorSeriesRef.current.values()) { for (const sr of [...Object.values(set.lines), set.histogram]) sr?.setData([]); set.signature = ''; set.paintSignature = ''; set.computed = null; }
       candlesRef.current=[];
       setEmpty(true);
@@ -1212,6 +1325,7 @@ export function PriceChart({
         // Cache for the line/area chart-type swap; the indicators recompute
         // from this list in their own effect once per candle change.
         candlesRef.current = res.candles;
+        paintAlternative(chartTypeRef.current);
         const closeLine = res.candles.map((c) => ({ time: c.time as any, value: c.close }));
         lineSeriesRef.current?.setData(closeLine as any);
         areaSeriesRef.current?.setData(closeLine as any);
@@ -1238,7 +1352,7 @@ export function PriceChart({
     }
 
     async function load() {
-      if (loading || historyLoading || historicalWindow || (typeof document !== 'undefined' && isBrowserInactive())) return;
+      if (loading || historyLoading || historicalWindow || pausedRef.current || (typeof document !== 'undefined' && isBrowserInactive())) return;
       loading=true;
       const requestController = new AbortController();
       controller=requestController;
@@ -1248,7 +1362,7 @@ export function PriceChart({
       let timedOut = false;
       const timeout=setTimeout(()=>{timedOut=true;requestController.abort();},12000);
       try {
-        const res = candleLoader ? await candleLoader(pair, interval, CANDLE_FETCH_LIMIT,requestController.signal)
+        const res = candleLoader ? await workspaceLoaderRef.current!(pair, interval, CANDLE_FETCH_LIMIT,requestController.signal)
           : await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
         // `controller` is the newest request. If it is no longer this one, a
         // later request owns the chart and this answer is history.
@@ -1271,8 +1385,8 @@ export function PriceChart({
       }
     }
 
-    async function history(targetTime?: number) {
-      if (!historyEnabled || !candleLoader || cancelled || !chartRef.current) return;
+    async function history(targetTime?: number): Promise<boolean> {
+      if (!historyEnabled || !candleLoader || cancelled || !chartRef.current) return false;
       const scale = chartRef.current.timeScale();
       if (targetTime !== undefined) {
         const existing = chartEventBar(candlesRef.current, targetTime, interval);
@@ -1281,11 +1395,11 @@ export function PriceChart({
           suppressBackfill = true;
           scale.setVisibleLogicalRange({ from: Math.max(0, index - 70), to: index + 90 });
           suppressBackfill = false;
-          return;
+          return true;
         }
         historyController?.abort();
       } else if (historyLoading || historyEnd || !candlesRef.current.length || (privateMode && candlesRef.current.length >= 10000)) {
-        return;
+        return false;
       }
       controller?.abort();
       const requestController = new AbortController();
@@ -1294,30 +1408,32 @@ export function PriceChart({
       const timeout = setTimeout(() => requestController.abort(), 12000);
       const range = scale.getVisibleLogicalRange();
       const firstTime = candlesRef.current[0]?.time;
-      const endTime = targetTime === undefined ? firstTime * 1000 - 1 : Math.min(Date.now(), targetTime + CHART_INTERVAL_MS[interval] * 120);
+      const endTime = targetTime === undefined ? firstTime * 1000 - 1 : Math.min(Date.now(), targetTime + timeframeDurationMs(interval) * 120);
       try {
-        const res = await candleLoader(pair, interval, CANDLE_FETCH_LIMIT, requestController.signal, endTime);
-        if (cancelled || requestController.signal.aborted) return;
-        if (!res.candles.length) { historyEnd = true; return; }
+        const res = await workspaceLoaderRef.current!(pair, interval, CANDLE_FETCH_LIMIT, requestController.signal, endTime);
+        if (cancelled || requestController.signal.aborted) return false;
+        if (!res.candles.length) { historyEnd = true; return false; }
         const data = targetTime === undefined
           ? mergeChartCandles(res.candles, candlesRef.current, privateMode ? 10000 : Number.MAX_SAFE_INTEGER)
           : res.candles;
         const added = firstTime === undefined ? 0 : data.filter(candle => candle.time < firstTime).length;
-        if (targetTime === undefined && added === 0) { historyEnd = true; return; }
+        if (targetTime === undefined && added === 0) { historyEnd = true; return false; }
         suppressBackfill = true;
         hasSetInitialRange = true;
         display({ candles: data });
         if (targetTime !== undefined) {
-          historicalWindow = data[data.length - 1].time * 1000 + CHART_INTERVAL_MS[interval] < Date.now();
+          historicalWindow = data[data.length - 1].time * 1000 + timeframeDurationMs(interval, data[data.length - 1].time) < Date.now();
           historyEnd = false;
           const time = chartEventBar(data, targetTime, interval);
-          if (time === null) return;
+          if (time === null) return false;
           const index = data.findIndex(candle => candle.time === time);
           scale.setVisibleLogicalRange({ from: Math.max(0, index - 70), to: index + 90 });
         } else if (range) scale.setVisibleLogicalRange({ from: range.from + added, to: range.to + added });
+        return true;
       } catch {
         // Nothing older to show is not an error worth words. The initial
         // load has its own visible failure state; this is only backfill.
+        return false;
       } finally {
         suppressBackfill = false;
         clearTimeout(timeout);
@@ -1338,11 +1454,27 @@ export function PriceChart({
     if (historyEnabled) chartRef.current?.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange);
 
     retryCandlesRef.current = () => { setLoadFailed(false); void load(); };
+    // «К дате»: a loaded bar is scrolled to; a source that pages back is
+    // asked for that window; nothing is ever drawn for a date nobody has.
+    goToTimeRef.current = async (targetMs: number) => {
+      if (targetMs > Date.now()) return 'future';
+      const existing = chartEventBar(candlesRef.current, targetMs, interval);
+      if (existing !== null && chartRef.current) {
+        const index = candlesRef.current.findIndex(candle => candle.time === existing);
+        suppressBackfill = true;
+        chartRef.current.timeScale().setVisibleLogicalRange({ from: Math.max(0, index - 70), to: index + 90 });
+        suppressBackfill = false;
+        return 'ok';
+      }
+      if (!historyEnabled) return 'missing';
+      return (await history(targetMs)) ? 'ok' : 'missing';
+    };
     load();
     const poll = browserSetInterval(load, 5000);
     return () => {
       cancelled = true;
       retryCandlesRef.current = null;
+      goToTimeRef.current = null;
       controller?.abort();
       historyController?.abort();
       clearTimeout(backfillTimer);
@@ -1406,10 +1538,229 @@ export function PriceChart({
   // coordinate-conversion authority (see the comment on seriesRef above),
   // this only flips which one is drawn.
   useEffect(() => {
-    seriesRef.current?.applyOptions({ visible: chartType === 'candles' });
-    lineSeriesRef.current?.applyOptions({ visible: chartType === 'line' });
-    areaSeriesRef.current?.applyOptions({ visible: chartType === 'area' });
-  }, [chartType]);
+    chartTypeRef.current = chartType;
+    // Compare mode shows the percentage lines alone (see the compare effects below).
+    const shown = compareOn ? null : chartType;
+    seriesRef.current?.applyOptions({ visible: shown === 'candles' });
+    lineSeriesRef.current?.applyOptions({ visible: shown === 'line' });
+    areaSeriesRef.current?.applyOptions({ visible: shown === 'area' });
+    barsSeriesRef.current?.applyOptions({ visible: shown === 'bars' });
+    hollowSeriesRef.current?.applyOptions({ visible: shown === 'hollow' });
+    heikinSeriesRef.current?.applyOptions({ visible: shown === 'heikin' });
+    paintAlternative(chartType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartType, compareOn]);
+
+  // ── Workspace: timeframe and bar type follow the store ─────────────────
+  const selectTimeframe = useCallback((tf: Interval) => {
+    if (tradingRef.current?.selecting) tradingRef.current.onCancelSelection();
+    setInterval_(tf);
+    if (workspaceOn) updateChartWorkspace(market, { timeframe: tf });
+  }, [workspaceOn, market]);
+  useEffect(() => { if (workspaceOn && workspace.timeframe !== interval) setInterval_(workspace.timeframe); }, [workspaceOn, workspace.timeframe]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (workspaceOn && workspace.barType !== chartType) setChartType(workspace.barType); }, [workspaceOn, workspace.barType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Workspace: the cursor, the visible range and the pane sync bus ─────
+  const hoverTimeRef = useRef<number | null>(null);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const hoverWantedRef = useRef(false);
+  const [visibleLogical, setVisibleLogical] = useState<{ from: number; to: number } | null>(null);
+  const visibleWantedRef = useRef(false);
+  const syncRef = useRef({ bus: syncBus, id: syncId, cursor: workspace.syncCursor, time: workspace.syncTime, timeframe: workspace.syncTimeframe });
+  syncRef.current = { bus: syncBus, id: syncId, cursor: workspace.syncCursor, time: workspace.syncTime, timeframe: workspace.syncTimeframe };
+  hoverWantedRef.current = workspaceOn && (workspace.view === 'data' || compareOn);
+  visibleWantedRef.current = workspaceOn && (workspace.view === 'analytics' || (compareOn && workspace.comparePeriod === 'visible'));
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || !chartReady || !workspaceOn || typeof chart.subscribeCrosshairMove !== 'function') return;
+    let frame: number | null = null;
+    const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (cb: () => void) => setTimeout(cb, 16) as unknown as number;
+    const schedule = (fn: () => void) => { if (frame !== null) return; frame = raf(() => { frame = null; fn(); }); };
+    // Pointer moves never request anything: the hovered bar is looked up in
+    // the bars already loaded, once per animation frame, only while a panel
+    // or a compare legend wants it.
+    const onCrosshair = (param: MouseEventParams<Time>) => {
+      const time = typeof param.time === 'number' && param.point ? param.time : null;
+      hoverTimeRef.current = time;
+      if (hoverWantedRef.current) schedule(() => setHoverTime(hoverTimeRef.current));
+      const sync = syncRef.current;
+      if (sync.bus && sync.cursor) sync.bus.publish(sync.id, { kind: 'crosshair', time });
+    };
+    let rangeTimer: ReturnType<typeof setTimeout> | undefined;
+    const onRange = () => {
+      if (visibleWantedRef.current) schedule(() => { const logical = chart.timeScale().getVisibleLogicalRange(); if (logical) setVisibleLogical({ from: logical.from, to: logical.to }); });
+      const sync = syncRef.current;
+      if (sync.bus && sync.time) {
+        clearTimeout(rangeTimer);
+        rangeTimer = setTimeout(() => {
+          const visible = chart.timeScale().getVisibleRange();
+          if (visible) sync.bus!.publish(sync.id, { kind: 'range', from: Number(visible.from), to: Number(visible.to) });
+        }, 60);
+      }
+    };
+    chart.subscribeCrosshairMove(onCrosshair);
+    chart.timeScale().subscribeVisibleTimeRangeChange(onRange);
+    return () => {
+      clearTimeout(rangeTimer);
+      chart.unsubscribeCrosshairMove(onCrosshair);
+      chart.timeScale().unsubscribeVisibleTimeRangeChange(onRange);
+    };
+  }, [chartReady, workspaceOn]);
+  // Incoming sync from the other panes of the workspace.
+  useEffect(() => {
+    if (!syncBus || !workspaceOn) return;
+    return syncBus.subscribe((event, from) => {
+      const chart = chartRef.current, series = seriesRef.current, sync = syncRef.current;
+      if (from === sync.id || !chart || !series) return;
+      if (event.kind === 'crosshair' && sync.cursor && typeof chart.setCrosshairPosition === 'function') {
+        if (event.time === null) { chart.clearCrosshairPosition(); return; }
+        const bar = barAt(candlesRef.current, event.time);
+        if (bar) chart.setCrosshairPosition(bar.close, event.time as Time, series); else chart.clearCrosshairPosition();
+      } else if (event.kind === 'range' && sync.time) {
+        try { chart.timeScale().setVisibleRange({ from: event.from as Time, to: event.to as Time }); } catch { /* no bars there */ }
+      } else if (event.kind === 'timeframe' && sync.timeframe && isChartTimeframe(event.timeframe)) {
+        selectTimeframe(event.timeframe);
+      }
+    });
+  }, [syncBus, workspaceOn, selectTimeframe]);
+
+  // ── Workspace: compared instruments ─────────────────────────────────────
+  const compareDataRef = useRef<Map<string, Candle[]>>(new Map());
+  const [compareStatus, setCompareStatus] = useState<Record<string, CompareStatus>>({});
+  const [compareRevision, setCompareRevision] = useState(0);
+  const compareSeriesRef = useRef<Map<string, ISeriesApi<'Line'>>>(new Map());
+  const compareLinesRef = useRef<CompareLine[]>([]);
+  const [compareLast, setCompareLast] = useState<Record<string, number | null>>({});
+  const [compareBase, setCompareBase] = useState<number | null>(null);
+  const compareKey = compareEntries.map(e => e.pair).join(',');
+  const comparePaintKey = compareEntries.map(e => `${e.pair}:${e.color}:${e.visible ? 1 : 0}`).join(',');
+  // Load each compared instrument through the same source as the chart
+  // (native or derived), once now and every 30 s while the tab is active;
+  // an instrument taken off the list is aborted and forgotten at once.
+  useEffect(() => {
+    const entries = compareEntries;
+    for (const key of [...compareDataRef.current.keys()]) if (!entries.some(e => e.pair === key)) compareDataRef.current.delete(key);
+    if (!compareOn || !loaderRef.current) { setCompareStatus({}); return; }
+    let cancelled = false;
+    const controllers = new Map<string, AbortController>();
+    const loadOne = async (p: string) => {
+      const loader = loaderRef.current;
+      if (!loader || cancelled) return;
+      controllers.get(p)?.abort();
+      const own = new AbortController();
+      controllers.set(p, own);
+      try {
+        const answer = await loadChartCandles(loader, sourceRef.current, { market, pair: p, timeframe: interval, limit: CANDLE_FETCH_LIMIT, signal: own.signal });
+        if (cancelled || controllers.get(p) !== own) return;
+        compareDataRef.current.set(p, answer.candles);
+        setCompareStatus(current => (current[p] === 'ok' ? current : { ...current, [p]: 'ok' }));
+        setCompareRevision(v => v + 1);
+      } catch (error) {
+        if (cancelled || (error as { name?: string })?.name === 'AbortError') return;
+        setCompareStatus(current => ({ ...current, [p]: 'failed' }));
+      }
+    };
+    const loadAll = () => { if (pausedRef.current || (typeof document !== 'undefined' && isBrowserInactive())) return; for (const e of entries) void loadOne(e.pair); };
+    setCompareStatus(Object.fromEntries(entries.map(e => [e.pair, compareDataRef.current.has(e.pair) ? 'ok' : 'loading'])) as Record<string, CompareStatus>);
+    loadAll();
+    const poll = browserSetInterval(loadAll, COMPARE_REFRESH_MS);
+    return () => { cancelled = true; controllers.forEach(c => c.abort()); browserClearInterval(poll); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compareKey, compareOn, interval, market]);
+  // Paint: one percentage line per instrument on the LEFT scale (the right
+  // one belongs to the hidden candles), all measured from one common base
+  // bar (lib/chartCompare). Leaving compare mode removes the lines and
+  // every hidden series comes back exactly as it was.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || !chartReady) return;
+    const map = compareSeriesRef.current;
+    const canRemove = typeof chart.removeSeries === 'function';
+    if (!compareOn) {
+      if (map.size) { for (const sr of map.values()) if (canRemove) chart.removeSeries(sr); map.clear(); }
+      compareLinesRef.current = [];
+      setCompareLast(current => (Object.keys(current).length ? {} : current));
+      setCompareBase(null);
+      chart.applyOptions({ leftPriceScale: { visible: false } });
+      return;
+    }
+    const wanted = [{ pair, color: MAIN_COMPARE_COLOR }, ...compareEntries.filter(e => e.visible)];
+    for (const [p, sr] of map) if (!wanted.some(w => w.pair === p)) { if (canRemove) chart.removeSeries(sr); map.delete(p); }
+    for (const w of wanted) {
+      const existing = map.get(w.pair);
+      if (existing) { existing.applyOptions({ color: w.color }); continue; }
+      map.set(w.pair, chart.addSeries(LineSeries, {
+        priceScaleId: 'left', color: w.color, lineWidth: w.pair === pair ? 2 : 1, priceLineVisible: false, lastValueVisible: true, crosshairMarkerVisible: true,
+        priceFormat: { type: 'custom', formatter: (value: number) => formatPercent(value, lang), minMove: 0.01 },
+      }));
+    }
+    const last = candlesRef.current[candlesRef.current.length - 1]?.time;
+    const period = workspace.comparePeriod;
+    const from = period === 'visible' && visibleLogical && candlesRef.current.length ? candlesRef.current[Math.max(0, Math.min(candlesRef.current.length - 1, Math.round(visibleLogical.from)))]?.time
+      : period === '1d' && last ? last - 86400 : period === '1w' && last ? last - 7 * 86400 : period === '1M' && last ? last - 30 * 86400 : undefined;
+    const result = percentSeries(wanted.map(w => ({ id: w.pair, candles: w.pair === pair ? candlesRef.current : compareDataRef.current.get(w.pair) ?? [] })), { from });
+    compareLinesRef.current = result.lines;
+    for (const line of result.lines) map.get(line.id)?.setData(line.points.map(point => ({ time: point.time as Time, value: point.value })));
+    setCompareLast(Object.fromEntries(result.lines.map(l => [l.id, l.last])));
+    setCompareBase(result.baseTime);
+    chart.applyOptions({ leftPriceScale: { visible: true, borderColor: basePaintRef.current?.borderColor ?? '#292c34', scaleMargins: { top: 0.1, bottom: 0.1 } } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compareOn, comparePaintKey, compareRevision, indicatorDataVersion, workspace.comparePeriod, visibleLogical, chartReady, pair, lang]);
+
+  // ── Workspace: templates, keyboard, the toolbar's own state ─────────────
+  const [customPresets, setCustomPresets] = useState<WorkspacePreset[]>(() => getWorkspacePresets(market));
+  useEffect(() => { setCustomPresets(getWorkspacePresets(market)); return subscribeWorkspacePresets(market, setCustomPresets); }, [market]);
+  const [appliedPreset, setAppliedPreset] = useState<string | null>(null);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>('visible');
+  const [railCollapsed, setRailCollapsed] = useState<boolean>(() => (terminal && drawingTools ? readRailCollapsed() : false));
+  const [openRequest, setOpenRequest] = useState<{ id: string | null; seq: number }>({ id: null, seq: 0 });
+  const [menusRequest, setMenusRequest] = useState<{ which: 'type' | 'indicators' | null; seq: number }>({ which: null, seq: 0 });
+  const [autoScale, setAutoScale] = useState(true);
+  const requestFeature = useCallback((id: string | null) => setOpenRequest(current => ({ id, seq: current.seq + 1 })), []);
+  const applyPreset = useCallback((preset: WorkspacePreset) => {
+    updateChartWorkspace(market, { timeframe: preset.timeframe, quickTimeframes: preset.quickTimeframes, barType: preset.barType, compare: [], layout: 1 });
+    saveChartIndicators(preset.indicators.map(inst => ({ ...inst, id: `${inst.id}-${Date.now().toString(36)}`, params: { ...inst.params }, colors: [...inst.colors] })), market);
+    if (chartSettings && (preset.volume !== undefined || preset.indicatorLegend !== undefined)) {
+      const current = getChartSettings();
+      saveChartSettings({ ...current, volume: preset.volume ?? current.volume, indicatorLegend: preset.indicatorLegend ?? current.indicatorLegend });
+    }
+    setAppliedPreset(preset.id);
+  }, [market, chartSettings]);
+  useEffect(() => {
+    if (!workspaceOn) return;
+    const typing = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null;
+      return !!el && (/INPUT|TEXTAREA|SELECT/.test(el.tagName) || el.isContentEditable === true);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (typing(event.target) || event.ctrlKey || event.metaKey) return;
+      const quick = workspace.quickTimeframes;
+      if (!event.altKey && !event.shiftKey) {
+        if (/^[1-9]$/.test(event.key)) { const tf = quick[Number(event.key) - 1]; if (tf && plans[tf].kind !== 'unavailable') { event.preventDefault(); selectTimeframe(tf); } return; }
+        if (event.key === ',' || event.key === '.') {
+          const index = quick.indexOf(interval);
+          const next = quick[(index < 0 ? 0 : index + (event.key === '.' ? 1 : quick.length - 1)) % quick.length];
+          if (next && plans[next].kind !== 'unavailable') { event.preventDefault(); selectTimeframe(next); }
+          return;
+        }
+        return;
+      }
+      if (event.shiftKey && !event.altKey && event.code === 'KeyF') { if (onFullscreen) { event.preventDefault(); onFullscreen(); } return; }
+      if (!event.altKey || event.shiftKey) return;
+      switch (event.code) {
+        case 'KeyI': event.preventDefault(); setMenusRequest(current => ({ which: 'indicators', seq: current.seq + 1 })); break;
+        case 'KeyK': event.preventDefault(); requestFeature('compare'); break;
+        case 'KeyD': event.preventDefault(); updateChartWorkspace(market, s => ({ view: s.view === 'data' ? 'chart' : 'data' })); break;
+        case 'KeyA': event.preventDefault(); updateChartWorkspace(market, s => ({ view: s.view === 'analytics' ? 'chart' : 'analytics' })); break;
+        case 'KeyN': event.preventDefault(); chartRef.current?.timeScale().scrollToRealTime(); break;
+        case 'KeyR': event.preventDefault(); chartRef.current?.timeScale().resetTimeScale(); chartRef.current?.priceScale('right').applyOptions({ autoScale: true }); setAutoScale(true); break;
+        case 'KeyX': event.preventDefault(); updateChartWorkspace(market, { compare: [] }); break;
+        default: break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [workspaceOn, workspace.quickTimeframes, interval, plans, selectTimeframe, market, onFullscreen, requestFeature]);
 
 
   const priceToY = useCallback((price: number): number | null => {
@@ -1592,7 +1943,7 @@ export function PriceChart({
       key={i}
       type="button"
       aria-pressed={interval === i}
-      onClick={() => { if (tradingRef.current?.selecting) tradingRef.current.onCancelSelection(); setInterval_(i); }}
+      onClick={() => selectTimeframe(i)}
       className={terminal ? `chart-tab ${interval === i ? 'active' : ''}` : undefined}
       style={terminal ? undefined : { ...styles.intervalBtn, ...(interval === i ? styles.intervalBtnActive : {}) }}
     >
@@ -1604,6 +1955,7 @@ export function PriceChart({
   const selectChartType = (ct: ChartType) => {
     if (tradingRef.current?.selecting && ct !== 'candles') tradingRef.current.onCancelSelection();
     setChartType(ct);
+    if (workspaceOn) updateChartWorkspace(market, { barType: ct });
   };
   /** Futures reaches the same types and indicators through two menus
    *  (ChartToolbarMenus). Desktop Spot follows the Futures design (owner,
@@ -1611,7 +1963,7 @@ export function PriceChart({
    *  1366–1920px, so «Свечи» and the indicators were out of reach. The phone
    *  Spot sheet keeps the flat buttons. */
   const desktopViewport = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 901px)').matches;
-  const chartMenus = terminal && (market === 'futures' || (market === 'spot' && desktopViewport));
+  const chartMenus = workspaceOn || (terminal && (market === 'futures' || (market === 'spot' && desktopViewport)));
 
   const typeButtons = (
     [
@@ -1661,56 +2013,172 @@ export function PriceChart({
     </button>
   ));
 
+  // ── Workspace: what the panels read, the snapshot, the toolbar menus ────
+  const formatPriceValue = (value: number): string => {
+    if (priceFormatter) return priceFormatter(value);
+    const series = seriesRef.current;
+    const formatter = series && typeof series.priceFormatter === 'function' ? series.priceFormatter() : null;
+    return formatter ? formatter.format(value) : String(value);
+  };
+  const formatVolumeValue = (value: number): string => value.toLocaleString(lang === 'ru' ? 'ru-RU' : lang, { maximumFractionDigits: 2 });
+  const hoveredBar = workspaceOn && hoverTime !== null ? barAt(candlesRef.current, hoverTime) : null;
+  const hoverStats = hoveredBar ? barStats(hoveredBar, interval) : null;
+  const hoverIndicators = hoveredBar && !compareOn ? indicatorInstances.filter(i => i.visible).map(inst => {
+    const set = indicatorSeriesRef.current.get(inst.id), def = indicatorDefinition(inst.type);
+    return { id: inst.id, label: indicatorInstanceLabel(inst), color: inst.colors[0],
+      lines: def.lines.filter(l => !l.colorOnly).map(l => ({ label: l.label.includes('.') ? t(l.label as never) : l.label, value: set?.computed?.lines[l.key] ? lineValueAtTime(set.computed.lines[l.key], hoveredBar.time) : null })) };
+  }) : [];
+  const compareLegend = compareOn ? compareLinesRef.current.map(line => ({
+    pair: line.id, main: line.id === pair, color: line.id === pair ? MAIN_COMPARE_COLOR : compareEntries.find(e => e.pair === line.id)?.color ?? '#ffffff',
+    value: hoverTime !== null ? lineValueAt(line, hoverTime) : line.last,
+  })) : [];
+  /** «Снимок графика»: the chart's own canvas, the drawings and the legend; personal lines only on request. */
+  const takeSnapshot = async ({ includePrivate, copy }: { includePrivate: boolean; copy: boolean }): Promise<'ok' | 'copied' | 'failed'> => {
+    const chart = chartRef.current, host = containerRef.current;
+    if (!chart || !host || typeof chart.takeScreenshot !== 'function') return 'failed';
+    const hidden = includePrivate ? [] : [...positionLinesRef.current, ...privateLinesRef.current];
+    const restore = () => { for (const line of hidden) line.applyOptions({ lineVisible: true, axisLabelVisible: true }); };
+    try {
+      for (const line of hidden) line.applyOptions({ lineVisible: false, axisLabelVisible: false });
+      const canvas = chart.takeScreenshot();
+      restore();
+      const overlay = chartAreaRef.current?.querySelector<SVGSVGElement>('svg:not(.order-overlay)') ?? null;
+      const legend = [
+        ...(compareOn ? [] : indicatorInstances.filter(i => i.visible).map(i => ({ color: i.colors[0], label: indicatorInstanceLabel(i) }))),
+        ...(compareOn ? [{ color: MAIN_COMPARE_COLOR, label: pair }, ...compareEntries.filter(e => e.visible).map(e => ({ color: e.color, label: e.pair }))] : []),
+      ];
+      const composed = await composeChartSnapshot({ chart: canvas, overlay, title: pair, subtitle: snapshotSubtitle(t(timeframeLabelKey(interval))), legend,
+        width: host.clientWidth || undefined, height: host.clientHeight || undefined, scale: host.clientWidth ? canvas.width / host.clientWidth : 1 });
+      const blob = await canvasToBlob(composed);
+      if (copy) return (await copyBlobToClipboard(blob)) ? 'copied' : 'failed';
+      downloadBlob(blob, snapshotFileName(pair, interval));
+      return 'ok';
+    } catch {
+      restore();
+      return 'failed';
+    }
+  };
+  const typeLabels: Partial<Record<ChartType, string>> = workspaceOn
+    ? { candles: t('chart.type.candles'), bars: t('chart.type.bars'), hollow: t('chart.type.hollow'), heikin: t('chart.type.heikin'), line: t('chart.type.line'), area: t('chart.type.area') }
+    : { candles: t('chart.type.candles'), line: t('chart.type.line'), area: t('chart.type.area') };
+  const menusNode = chartMenus ? <ChartToolbarMenus
+    chartType={chartType}
+    onChartType={selectChartType}
+    typeLabels={typeLabels}
+    typeGroupLabel={t('chart.group.type')}
+    indicatorsLabel={t('chart.group.indicators')}
+    indicators={INDICATOR_CATALOGUE.map(def => ({
+      key: def.type, label: t(def.label as never), params: def.params.map(p => String(p.default)).join(' · '),
+      color: def.lines[0].color, pane: def.pane, active: indicatorInstances.some(i => i.type === def.type),
+      onToggle: () => toggleType(def.type),
+      onAdd: () => saveChartIndicators([...getChartIndicators(market), newIndicatorInstance(def.type)], market),
+    }))}
+    catalogue={{
+      active: indicatorInstances.map(inst => ({
+        id: inst.id, label: indicatorInstanceLabel(inst), color: inst.colors[0], visible: inst.visible,
+        onToggleVisible: () => saveChartIndicators(getChartIndicators(market).map(i => (i.id === inst.id ? { ...i, visible: !i.visible } : i)), market),
+        onConfigure: () => { requestChartSettingsView('indicators', inst.id); setSettingsOpen(true); },
+        onRemove: () => saveChartIndicators(getChartIndicators(market).filter(i => i.id !== inst.id), market),
+      })),
+      activeLabel: t('chart.settings.indicatorsActive'), catalogueLabel: t('chart.settings.indicatorsCatalogue'),
+      searchLabel: t('chart.settings.indicatorSearch'), noMatchLabel: t('chart.settings.indicatorNoMatch'),
+      activeCountLabel: count => t('chart.settings.activeCount', { count: String(count) }),
+      visibleLabel: t('chart.settings.indicatorVisible'), configureLabel: t('chart.settings.indicatorSettings'),
+      removeLabel: t('chart.settings.indicatorRemove'), addLabel: t('chart.settings.indicatorAdd'),
+      pricePaneLabel: t('chart.settings.pricePane'), lowerPaneLabel: t('chart.settings.lowerPane'),
+    }}
+    openRequest={menusRequest}
+  /> : null;
+  const settingsGear = chartSettings ? <button type="button" className="chart-tool-btn chart-settings-trigger" aria-haspopup="dialog" aria-expanded={settingsOpen}
+      aria-label={t('chart.settings.open')} title={t('chart.settings.open')} onClick={() => setSettingsOpen(true)}>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" />
+      </svg>
+    </button> : null;
+  const historyNow = privateTrading?.enabled ? <button type="button" className="chart-history-now" onClick={() => void privateHistoryRef.current?.(0)}>{lang === 'ru' ? 'Сейчас' : 'Now'}</button> : null;
+
   return (
     <div className={drawingToolsOn ? 'drawing-tools' : undefined} data-chart-trade-selecting={tradingSelection || undefined} style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
       {terminal ? (
-        <div className="chart-toolbar" data-mobile-tools={mobileToolsOpen}>
-          <div className="chart-tabs" role="group" aria-label={t('chart.group.timeframe')}>{intervalButtons}{privateTrading?.enabled && <button type="button" className="chart-history-now" onClick={() => void privateHistoryRef.current?.(0)}>{lang === 'ru' ? 'Сейчас' : 'Now'}</button>}</div>
-          {/* Shown by the phone sheets only (FuturesMobile.css, TerminalMobileParity.css). */}
-          <button type="button" className="futures-mobile-tools-toggle" aria-label={t('chart.group.indicators')}
-            aria-expanded={mobileToolsOpen} onClick={() => setMobileToolsOpen(open => !open)}>•••</button>
-          <div className={`chart-tools${chartMenus ? ' has-menus' : ''}`}>
-            {chartMenus ? <ChartToolbarMenus
-              chartType={chartType}
-              onChartType={selectChartType}
-              typeLabels={{ candles: t('chart.type.candles'), line: t('chart.type.line'), area: t('chart.type.area') }}
-              typeGroupLabel={t('chart.group.type')}
-              indicatorsLabel={t('chart.group.indicators')}
-              indicators={INDICATOR_CATALOGUE.map(def => ({
-                key: def.type, label: t(def.label as never), params: def.params.map(p => String(p.default)).join(' · '),
-                color: def.lines[0].color, pane: def.pane, active: indicatorInstances.some(i => i.type === def.type),
-                onToggle: () => toggleType(def.type),
-                onAdd: () => saveChartIndicators([...getChartIndicators(market), newIndicatorInstance(def.type)], market),
-              }))}
-              catalogue={{
-                active: indicatorInstances.map(inst => ({
-                  id: inst.id, label: indicatorInstanceLabel(inst), color: inst.colors[0], visible: inst.visible,
-                  onToggleVisible: () => saveChartIndicators(getChartIndicators(market).map(i => (i.id === inst.id ? { ...i, visible: !i.visible } : i)), market),
-                  onConfigure: () => { requestChartSettingsView('indicators', inst.id); setSettingsOpen(true); },
-                  onRemove: () => saveChartIndicators(getChartIndicators(market).filter(i => i.id !== inst.id), market),
+        <div className={`chart-toolbar${workspaceOn ? ' cw-toolbar' : ''}`} data-mobile-tools={mobileToolsOpen}>
+          {workspaceOn ? (
+            <ChartWorkspaceControls
+              market={market === 'futures' ? 'futures' : 'spot'}
+              mainPair={pair}
+              compact={compactLayout}
+              t={t}
+              lang={lang}
+              timeframe={interval}
+              quickTimeframes={workspace.quickTimeframes}
+              plans={plans}
+              onTimeframe={selectTimeframe}
+              onQuickTimeframes={list => updateChartWorkspace(market, { quickTimeframes: list })}
+              tradable={privateTrading?.enabled ? Object.keys(CHART_INTERVAL_MS) : undefined}
+              menus={menusNode}
+              compare={{
+                entries: compareEntries, period: workspace.comparePeriod, status: compareStatus, last: compareLast, baseTime: compareBase,
+                onAdd: p => updateChartWorkspace(market, s => (s.compare.length >= MAX_COMPARE_SERIES || s.compare.some(e => e.pair === p) || p === pair ? {} : {
+                  compare: [...s.compare, { pair: p, color: COMPARE_COLORS.find(c => !s.compare.some(e => e.color === c)) ?? COMPARE_COLORS[s.compare.length % COMPARE_COLORS.length], visible: true }],
                 })),
-                activeLabel: t('chart.settings.indicatorsActive'), catalogueLabel: t('chart.settings.indicatorsCatalogue'),
-                searchLabel: t('chart.settings.indicatorSearch'), noMatchLabel: t('chart.settings.indicatorNoMatch'),
-                activeCountLabel: count => t('chart.settings.activeCount', { count: String(count) }),
-                visibleLabel: t('chart.settings.indicatorVisible'), configureLabel: t('chart.settings.indicatorSettings'),
-                removeLabel: t('chart.settings.indicatorRemove'), addLabel: t('chart.settings.indicatorAdd'),
-                pricePaneLabel: t('chart.settings.pricePane'), lowerPaneLabel: t('chart.settings.lowerPane'),
+                onRemove: p => updateChartWorkspace(market, s => ({ compare: s.compare.filter(e => e.pair !== p) })),
+                onToggle: p => updateChartWorkspace(market, s => ({ compare: s.compare.map(e => (e.pair === p ? { ...e, visible: !e.visible } : e)) })),
+                onPeriod: period => updateChartWorkspace(market, { comparePeriod: period }),
+                onExit: () => updateChartWorkspace(market, { compare: [] }),
               }}
-            /> : <>
-              <div className="chart-type-group" role="group" aria-label={t('chart.group.type')}>{typeButtons}</div>
-              <div className="chart-indicator-group" role="group" aria-label={t('chart.group.indicators')}>{indicatorButtons}</div>
-            </>}
-          </div>
-          {(chartSettings || toolbarEnd) && <div className="chart-toolbar-end">
-            {chartSettings && <button type="button" className="chart-tool-btn chart-settings-trigger" aria-haspopup="dialog" aria-expanded={settingsOpen}
-              aria-label={t('chart.settings.open')} title={t('chart.settings.open')} onClick={() => setSettingsOpen(true)}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" />
-              </svg>
-            </button>}
-            {toolbarEnd}
-          </div>}
+              layout={{
+                value: workspace.layout, onChange: value => updateChartWorkspace(market, { layout: value, activePane: 0 }),
+                syncCursor: workspace.syncCursor, syncTime: workspace.syncTime, syncTimeframe: workspace.syncTimeframe, onSync: patch => updateChartWorkspace(market, patch),
+                twoAllowed: true, fourAllowed: !compactLayout && (typeof window === 'undefined' || window.innerWidth >= 1200),
+              }}
+              tools={{
+                ruler: tool === 'ruler', onRuler: () => setTool(tool === 'ruler' ? 'cursor' : 'ruler'),
+                railCollapsed, onRail: () => { setRailCollapsed(!railCollapsed); writeRailCollapsed(!railCollapsed); },
+                crosshair: tool !== 'dot' && tool !== 'arrowcursor', onCrosshair: () => setTool(tool === 'arrowcursor' ? 'cursor' : 'arrowcursor'),
+                onClearDrawings: clearAll, drawingCount: drawings.length,
+              }}
+              presets={{
+                builtIn: BUILT_IN_PRESETS, custom: customPresets, onApply: applyPreset, max: MAX_WORKSPACE_PRESETS, applied: appliedPreset,
+                onSave: name => !!saveWorkspacePreset(market, presetFromWorkspace(workspace, indicatorInstances, { volume: viewSettings?.volume ?? true, indicatorLegend: viewSettings?.indicatorLegend ?? true }, name)),
+                onRename: (id, name) => renameWorkspacePreset(market, id, name),
+                onDelete: id => deleteWorkspacePreset(market, id),
+                onReset: () => {
+                  updateChartWorkspace(market, { timeframe: DEFAULT_WORKSPACE.timeframe, quickTimeframes: [...DEFAULT_WORKSPACE.quickTimeframes], barType: 'candles', compare: [], layout: 1 });
+                  saveChartIndicators(DEFAULT_CHART_INDICATORS.map(i => ({ ...i, params: { ...i.params }, colors: [...i.colors] })), market);
+                  setAppliedPreset(null);
+                },
+              }}
+              goTo={{ onGo: ms => (goToTimeRef.current ? goToTimeRef.current(ms) : Promise.resolve('missing' as const)), lastTime: candlesRef.current[candlesRef.current.length - 1]?.time ?? null }}
+              quick={{
+                onReset: () => { chartRef.current?.timeScale().resetTimeScale(); chartRef.current?.priceScale('right').applyOptions({ autoScale: true }); setAutoScale(true); },
+                onFit: fitContent,
+                onLatest: () => chartRef.current?.timeScale().scrollToRealTime(),
+                autoScale, onAutoScale: () => { chartRef.current?.priceScale('right').applyOptions({ autoScale: !autoScale }); setAutoScale(!autoScale); },
+                logScale: (viewSettings?.scaleMode ?? 'normal') === 'logarithmic' || priceScaleMode === 'logarithmic',
+                onLogScale: () => { if (!chartSettings) return; const current = getChartSettings(); saveChartSettings({ ...current, scaleMode: current.scaleMode === 'logarithmic' ? 'normal' : 'logarithmic' }); },
+              }}
+              snapshot={{ available: true, hasPrivate: !!(positionLines?.length || conditionalOrders.length || privateTrading?.trades?.length), onTake: takeSnapshot }}
+              fullscreen={{ active: fullscreen, onToggle: () => onFullscreen?.() }}
+              settings={settingsGear}
+              end={<>{historyNow}{toolbarEnd}</>}
+              openRequest={openRequest}
+            />
+          ) : (<>
+            <div className="chart-tabs" role="group" aria-label={t('chart.group.timeframe')}>{intervalButtons}{historyNow}</div>
+            {/* Shown by the phone sheets only (FuturesMobile.css, TerminalMobileParity.css). */}
+            <button type="button" className="futures-mobile-tools-toggle" aria-label={t('chart.group.indicators')}
+              aria-expanded={mobileToolsOpen} onClick={() => setMobileToolsOpen(open => !open)}>•••</button>
+            <div className={`chart-tools${chartMenus ? ' has-menus' : ''}`}>
+              {chartMenus ? menusNode : <>
+                <div className="chart-type-group" role="group" aria-label={t('chart.group.type')}>{typeButtons}</div>
+                <div className="chart-indicator-group" role="group" aria-label={t('chart.group.indicators')}>{indicatorButtons}</div>
+              </>}
+            </div>
+            {(chartSettings || toolbarEnd) && <div className="chart-toolbar-end">
+              {settingsGear}
+              {toolbarEnd}
+            </div>}
+          </>)}
           {settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} market={market} />}
         </div>
       ) : (
@@ -1738,13 +2206,15 @@ export function PriceChart({
       {privateTrading?.enabled && tradingSelection && <div className="chart-trade-status" role="status">
         <span>{lang === 'ru'
           ? (privateTrading.selecting === 'exit' ? 'Выберите свечу выхода' : 'Выберите завершённую свечу')
-          : 'Select a completed candle'}</span>
+          : 'Select a completed candle'}{!CHART_INTERVAL_MS[interval] && ` · ${t('chart.ws.tf.selectionNote')}`}</span>
         <button type="button" aria-label={lang === 'ru' ? 'Отменить выбор' : 'Cancel selection'} onClick={() => privateTrading.onCancelSelection()}>×</button>
       </div>}
 
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
         <DrawToolbar
           compactTools={compactTools}
+          collapsed={workspaceOn ? railCollapsed : undefined}
+          onCollapsedChange={workspaceOn ? (next) => { setRailCollapsed(next); writeRailCollapsed(next); } : undefined}
           onCollapse={() => { cancelGestureRef.current?.(); setTool('cursor'); }}
           tool={tool}
           onSelect={(next) => { if (tradingRef.current?.selecting) tradingRef.current.onCancelSelection(); setTool(next); }}
@@ -1771,14 +2241,29 @@ export function PriceChart({
           * "time to first visible candle" against the real page instead of
           * guessing at canvas pixels.
           */}
-        <div style={styles.chartArea} data-chart-state={loadFailed ? 'error' : empty ? 'empty' : 'candles'}>
+        <div ref={chartAreaRef} style={styles.chartArea} data-chart-state={loadFailed ? 'error' : empty ? 'empty' : 'candles'} data-cw-view={workspaceOn ? workspace.view : undefined} data-cw-compare={compareOn ? compareEntries.length : undefined}>
           <div ref={containerRef} style={styles.chart} />
           {privateTrading?.enabled && chartReady && <PrivatePositionLines chart={chartRef.current} series={seriesRef.current} interaction={privateTrading} pair={pair}/>}
           {terminal && <div className="voltex-plot-title">{pair} · {interval}</div>}
 
           {terminal && <div className="chart-watermark">{pair.split('/')[0]}</div>}
 
-          {drawingToolsOn && <ChartDrawingLayer
+          {workspaceOn && compareOn && <div className="cw-compare-legend" data-cw-compare-legend aria-hidden="true">
+            {compareLegend.map(item => <span key={item.pair} className={item.main ? 'is-main' : undefined}><i style={{ background: item.color }} />{item.pair}<em>{formatPercent(item.value, lang)}</em></span>)}
+          </div>}
+          {workspaceOn && workspace.view === 'data' && <ChartDataWindow
+            stats={hoverStats} indicators={hoverIndicators}
+            compare={compareOn ? compareLegend.filter(i => !i.main).map(i => ({ pair: i.pair, color: i.color, value: i.value })) : null}
+            formatPrice={formatPriceValue} formatVolume={formatVolumeValue} lang={lang} t={t} touch={compactLayout}
+            onClose={() => updateChartWorkspace(market, { view: 'chart' })} />}
+          {workspaceOn && workspace.view === 'analytics' && <ChartAnalyticsPanel
+            candles={candlesRef.current} timeframe={interval} period={analyticsPeriod} onPeriod={setAnalyticsPeriod} visibleRange={visibleLogical}
+            mainPair={pair} compare={compareEntries.filter(e => e.visible).map(e => ({ pair: e.pair, color: e.color, candles: compareDataRef.current.get(e.pair) ?? [] }))}
+            sameQuote={compareEntries.every(e => e.pair.split('/')[1] === pair.split('/')[1])}
+            formatPrice={formatPriceValue} formatVolume={formatVolumeValue} lang={lang} t={t} nowMs={Date.now()}
+            onClose={() => updateChartWorkspace(market, { view: 'chart' })} />}
+
+          {drawingToolsOn && !compareOn && <ChartDrawingLayer
             drawings={drawings}
             setDrawings={(update) => setDrawings(update)}
             tool={tool}
@@ -1849,7 +2334,7 @@ export function PriceChart({
             </div>
           )}
 
-          {(viewSettings?.indicatorLegend ?? true) && indicatorInstances.some(i => i.visible) && (
+          {(viewSettings?.indicatorLegend ?? true) && !compareOn && !(workspaceOn && workspace.view === 'data') && indicatorInstances.some(i => i.visible) && (
             <div className="voltex-indicator-legend" style={styles.legend}>
               {indicatorInstances.filter(i => i.visible).map(i => <LegendItem key={i.id} color={i.colors[0]} label={indicatorInstanceLabel(i)} />)}
             </div>
@@ -2018,6 +2503,8 @@ function DrawToolbar({
   onToggleLock,
   onCollapse,
   drawingCount = 0,
+  collapsed: controlledCollapsed,
+  onCollapsedChange,
 }: {
   tool: Tool;
   onSelect: (t: Tool) => void;
@@ -2032,11 +2519,16 @@ function DrawToolbar({
   onToggleLock?: () => void;
   onCollapse?: () => void;
   drawingCount?: number;
+  /** The workspace toolbar can open and close the rail too; the rail stays the authority otherwise. */
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }) {
   const { t } = useLanguage();
   // Presentation state only: keep the rail mounted so each group's
   // last-used tool survives collapse. Drawings and preferences live above.
-  const [collapsed, setCollapsed] = useState(drawingTools ? readRailCollapsed() : false);
+  const [localCollapsed, setLocalCollapsed] = useState(drawingTools ? readRailCollapsed() : false);
+  const collapsed = controlledCollapsed ?? localCollapsed;
+  const setCollapsed = (next: boolean) => { setLocalCollapsed(next); onCollapsedChange?.(next); };
   const railId = useId();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [toolHint, setToolHint] = useState<{ label:string; left:number; top:number } | null>(null);

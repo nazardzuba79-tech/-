@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   stocks-auth-one-burst:
-    # Disabled source snapshot first; only a reviewed policy-only transition can run.
+    # Consumed at exact head 75e2453e; later integration heads cannot attempt this diagnostic.
     # This diagnostic never clears the retained backend/browser/capacity failures.
     needs: [stocks-auth-preparation, stocks-auth-http-paired, stocks-backend-admission, isolated-simulator, frontend-regression, bounded-stock-runtime]
     if: >-
@@ -16,6 +16,7 @@ jobs:
       github.event.action == 'synchronize' && github.run_attempt == 1 &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'dot/stocks-owner-usdt-portfolio-20261013' &&
+      github.event.pull_request.head.sha == '75e2453ed85c03d12114f2e29ba9acf0f6e6f31f' &&
       needs.stocks-backend-admission.result == 'success' && needs.isolated-simulator.result == 'success' &&
       needs.frontend-regression.result == 'success' && needs.bounded-stock-runtime.result == 'success'
     concurrency:

@@ -103,7 +103,8 @@ async function shot(page, name) {
         assert.equal(await page.getByLabel('Order quantity').inputValue(),'0.01','Telegram reactivation discarded the draft');
         await page.evaluate(()=>window.__mobileReview.sdk.back());
         await page.locator('.review-chart canvas').first().waitFor();
-        assert.equal(await page.getByRole('tab',{name:'Chart',exact:true}).getAttribute('aria-selected'),'true','Back from ticket skipped the chart');
+        // The client's own workspace tab, not the chart heading's «Chart | Data | Analytics» view tab (chart workspace 2026-10-14).
+        assert.equal(await page.getByRole('tablist',{name:'Trading workspace',exact:true}).getByRole('tab',{name:'Chart',exact:true}).getAttribute('aria-selected'),'true','Back from ticket skipped the chart');
       }
       await page.getByRole('navigation').getByRole('button',{name:'Spot',exact:true}).click();
       await page.locator('.review-chart canvas').first().waitFor();

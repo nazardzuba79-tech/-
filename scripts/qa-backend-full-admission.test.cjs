@@ -46,9 +46,13 @@ test('runtime authentication edits always require full backend even when present
   }
 });
 test('completed finite auth jobs cannot automatically launch for a later candidate SHA', () => {
-  const completedHead = 'dc5327b7def5ac4f5b448f820bbd279b7072d7f9';
+  const completedJobs = {
+    'stocks-auth-preparation': 'dc5327b7def5ac4f5b448f820bbd279b7072d7f9',
+    'stocks-auth-http-paired': 'dc5327b7def5ac4f5b448f820bbd279b7072d7f9',
+    'stocks-auth-one-burst': '75e2453ed85c03d12114f2e29ba9acf0f6e6f31f',
+  };
   const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/stocks-review.yml'), 'utf8').replace(/\r\n/g, '\n');
-  for (const name of ['stocks-auth-preparation', 'stocks-auth-http-paired']) {
+  for (const [name, completedHead] of Object.entries(completedJobs)) {
     const job = workflow.match(new RegExp('^  ' + name + ':\\n([\\s\\S]*?)(?=^  [a-z][a-z0-9-]*:|$(?![\\s\\S]))', 'm'))?.[1];
     assert.ok(job, name + ' retained as historical diagnostic');
     const condition = job.match(/^    if: >-?\n([\s\S]*?)(?=^    \S)/m)?.[1].trim().replace(/\s+/g, ' ');

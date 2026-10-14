@@ -116,6 +116,15 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (name === '../lib/chartSettings') return require('../chartSettings');
     if (name === '../lib/chartIndicators') return require('../chartIndicators');
+    // Chart workspace (2026-10-13): the pure modules are real, the toolbar and panels are stubs.
+    if (name === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (name === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (name === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (name === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (name === '../lib/chartCompare') return require('../chartCompare');
+    if (name === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (name === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (name.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (children: unknown) => children };
     if (name.endsWith('.css')) return {};
@@ -241,9 +250,13 @@ function windowStub() {
   };
 }
 
+/** 2026-10-13 (chart workspace): the toolbar hands its menus, timeframe
+ *  strip and end slots to ChartWorkspaceControls as props, so the walk
+ *  follows those slots as well as `children`. */
+const SLOTS = ['children', 'menus', 'start', 'end', 'settings'];
 function nodes(tree: any): any[] {
   if (Array.isArray(tree)) return tree.flatMap(nodes);
-  return tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
+  return tree && typeof tree === 'object' ? [tree, ...SLOTS.flatMap(slot => nodes(tree.props?.[slot]))] : [];
 }
 /** The conditional-order overlay is a dashed <line> stroked with the
  *  stop/take colours — nothing else on the chart uses those. */
@@ -419,13 +432,14 @@ describe('clean terminal chart presentation preserves chart behavior', () => {
     const tree = chart.render();
     expect(chart.chartOptions[0].grid).toEqual({ vertLines: { visible: false }, horzLines: { visible: false } });
     expect(chart.chartOptions[0].crosshair.horzLine.color).toBe('#f0b90b');
-    // Spot keeps the flat toggle; Futures reaches the same state through its
-    // «Индикаторы» menu (ChartToolbarMenus), which receives it as a prop.
+    // Both terminals reach the state through the «Индикаторы» menu
+    // (ChartToolbarMenus), which receives it as a prop; the chart workspace
+    // (2026-10-13) gave Spot the same menus as Futures.
     const ma = nodes(tree).find(node => node.type === 'button' && node.key === 'ma');
     const menus = nodes(tree).find(node => Array.isArray(node.props?.indicators));
     const maOn = ma ? ma.props['aria-pressed'] : menus.props.indicators.find((i: any) => i.key === 'ma').active;
     expect(maOn).toBe(true);
-    expect(Boolean(menus)).toBe(props.market === 'futures');
+    expect(Boolean(menus)).toBe(true);
     chart.unmount();
   });
   test('collapsing the rail leaves conditional order lines and indicator settings intact and exits the active drawing tool', async () => {
@@ -439,7 +453,7 @@ describe('clean terminal chart presentation preserves chart behavior', () => {
     const tree = chart.render();
     expect(toolbar(tree).props.tool).toBe('cursor');
     expect(conditionalLines(tree)).toHaveLength(1);
-    expect(nodes(tree).find(node => node.type === 'button' && node.key === 'ma').props['aria-pressed']).toBe(true);
+    expect(nodes(tree).find(node => Array.isArray(node.props?.indicators)).props.indicators.find((i: any) => i.key === 'ma').active).toBe(true);
     expect(chart.updateOrderTrigger).not.toHaveBeenCalled();
     chart.unmount();
   });

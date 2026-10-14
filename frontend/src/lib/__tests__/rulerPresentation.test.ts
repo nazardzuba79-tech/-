@@ -1,5 +1,5 @@
 import { drawingRange, type StoredDrawing } from '../chartDrawings';
-import { drawingGeometry, geometryDistance, labelBox, rulerToolbarTop, type DrawingView, type Primitive } from '../drawingGeometry';
+import { drawingGeometry, geometryDistance, labelBox, rulerToolbarTop, HIT_RADIUS, type DrawingView, type Primitive } from '../drawingGeometry';
 
 const view = (width = 300): DrawingView => ({
   x: time => time,
@@ -31,6 +31,8 @@ describe('compact ruler card', () => {
       expect(geometryDistance(geometry, { x: bounds.x + bounds.w - 1, y: bounds.y + 1 })).toBe(0);
       const toolbarTop = rulerToolbarTop(geometry);
       expect(toolbarTop >= bounds.y + bounds.h + 8 || toolbarTop + 38 <= bounds.y - 8).toBe(true);
+      // 2026-10-14: the dock also leaves every anchor handle reachable.
+      for (const anchor of geometry.anchors) expect(anchor.y + HIT_RADIUS <= toolbarTop || anchor.y - HIT_RADIUS >= toolbarTop + 38).toBe(true);
       expect(bounds.y).toBeGreaterThan(geometry.anchors[1].y + 5);
     }
   });
