@@ -562,6 +562,14 @@ export interface SpotOrderRecord {
   createdAt: string;
 }
 const readSpotOrders = createReadCoalescer<SpotOrderRecord[]>(1500);
+// This promise window holds authenticated order data. A URL alone is not an
+// account identity: logout/login can switch users without reloading this module.
+// Clear immediately on session notifications AND guard direct token changes.
+let spotOrdersSessionToken: string | null | undefined;
+onSessionChange(() => {
+  readSpotOrders.clear();
+  spotOrdersSessionToken = undefined;
+});
 
 async function requestForm<T>(path: string, formData: FormData): Promise<T> {
   const token = getToken();
@@ -1181,12 +1189,20 @@ export const api = {
    * `fresh` is for reads that must see the server's current state — after a
    * cancel, a placement or a trigger drag — and never shares.
    */
-  getMyOrders: (status?: string, options?: { fresh?: boolean }) =>
-    readSpotOrders(
-      `/orders/me${status ? `?status=${status}` : ''}`,
-      () => request<SpotOrderRecord[]>(`/orders/me${status ? `?status=${status}` : ''}`),
-      options?.fresh,
-    ),
+  getMyOrders: (status?: string, options?: { fresh?: boolean }) => {
+    const token = getToken();
+    if (spotOrdersSessionToken !== token) {
+      readSpotOrders.clear();
+      spotOrdersSessionToken = token;
+    }
+    const path = `/orders/me${status ? `?status=${status}` : ''}`;
+    return readSpotOrders(path, () => request<SpotOrderRecord[]>(path), options?.fresh).then(orders => {
+      // A request may settle after a logout or account switch. Never deliver
+      // a previous account's order list, even if JSON parsing finished late.
+      if (getToken() !== token) throw new DOMException('Session changed', 'AbortError');
+      return orders;
+    });
+  },
 
   getMyTrades: (pair?: string) =>
     request<
