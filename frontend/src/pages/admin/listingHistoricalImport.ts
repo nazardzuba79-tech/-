@@ -18,7 +18,9 @@ export interface HistoricalCsvSelection {
   /** 24, 168, 720 or 2160 real hours; no acceleration/compression of time. */
   hours?: 24 | 168 | 720 | 2160;
 }
-export function importHistoricalCsv(text: string, source: HistoricalSource, selection: HistoricalCsvSelection = {}): HistoricalClip {
+export interface ParsedHistoricalMovementCsv { sourceStart: string; bars: [number,number,number][]; }
+/** Converts the ENTIRE CSV into model-relative PPM movements; original prices are discarded. */
+export function parseHistoricalMovementCsv(text: string, source: HistoricalSource): ParsedHistoricalMovementCsv {
   if (!['BTC/USDT','ETH/USDT','SOL/USDT'].includes(source)) throw Error('Неверный источник');
   if (new TextEncoder().encode(text).byteLength > 3*1024*1024) throw Error('CSV больше 3 МБ');
   const rows = text.replace(/^\uFEFF/,'').trim().split(/\r?\n/);
@@ -51,6 +53,18 @@ export function importHistoricalCsv(text: string, source: HistoricalSource, sele
     if (i===0) { first=new Date(at).toISOString();firstMs=at; }
     previousTime=at;previousClose=close;
   }
+  return {sourceStart:first,bars};
+}
+
+/** Slices validated, price-free movements. One source hour = one simulation hour. */
+export function selectHistoricalMovements(parsed: ParsedHistoricalMovementCsv, source: HistoricalSource, selection: HistoricalCsvSelection = {}): HistoricalClip {
+  if (!['BTC/USDT','ETH/USDT','SOL/USDT'].includes(source)) throw Error('Неверный источник');
+  if (!parsed || !Array.isArray(parsed.bars) || parsed.bars.length<24 || parsed.bars.length>12000
+      || !/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(parsed.sourceStart)) throw Error('Некорректная история движений');
+  const bars=parsed.bars;
+  const firstMs=Date.parse(parsed.sourceStart);
+  if (!Number.isFinite(firstMs) || new Date(firstMs).toISOString()!==parsed.sourceStart) throw Error('Неверная дата архива');
+  let first=parsed.sourceStart;
   let offset=0;
   if(selection.startDateUtc) {
     if(!/^\d{4}-\d\d-\d\d$/.test(selection.startDateUtc))
@@ -68,4 +82,9 @@ export function importHistoricalCsv(text: string, source: HistoricalSource, sele
     throw Error('Выбранный период отсутствует полностью либо длиннее 100 дней');
   first=new Date(firstMs+offset*3600000).toISOString();
   return {source,sourceStart:first,resolution:'1h',provenance:'USER_SUPPLIED_UNVERIFIED',bars:selected};
+}
+
+/** Existing direct-import contract stays byte-for-byte equivalent to library selection. */
+export function importHistoricalCsv(text:string,source:HistoricalSource,selection:HistoricalCsvSelection={}):HistoricalClip {
+  return selectHistoricalMovements(parseHistoricalMovementCsv(text,source),source,selection);
 }
