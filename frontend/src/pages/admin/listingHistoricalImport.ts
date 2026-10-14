@@ -12,13 +12,19 @@ export interface HistoricalClip {
 }
 export interface HistoricalProgram { version:1; clips:HistoricalClip[]; }
 
-export function importHistoricalCsv(text: string, source: HistoricalSource): HistoricalClip {
+export interface HistoricalCsvSelection {
+  /** Date at 00:00 UTC. The selected candle must actually exist in the CSV. */
+  startDateUtc?: string;
+  /** 24, 168, 720 or 2160 real hours; no acceleration/compression of time. */
+  hours?: 24 | 168 | 720 | 2160;
+}
+export function importHistoricalCsv(text: string, source: HistoricalSource, selection: HistoricalCsvSelection = {}): HistoricalClip {
   if (!['BTC/USDT','ETH/USDT','SOL/USDT'].includes(source)) throw Error('Неверный источник');
-  if (new TextEncoder().encode(text).byteLength > 512*1024) throw Error('CSV слишком большой (максимум 512 КБ)');
+  if (new TextEncoder().encode(text).byteLength > 3*1024*1024) throw Error('CSV больше 3 МБ');
   const rows = text.replace(/^\uFEFF/,'').trim().split(/\r?\n/);
   if (/^timestamp\s*,\s*open\s*,\s*high\s*,\s*low\s*,\s*close/i.test(rows[0] ?? '')) rows.shift();
-  if (rows.length < 24 || rows.length > 2400) throw Error('Нужны 24–2400 последовательных часовых свечей');
-  let first = '', previousTime = -1, previousClose = 0;
+  if (rows.length < 24 || rows.length > 12000) throw Error('Исходный файл: 24–12000 последовательных часовых свечей');
+  let first = '', firstMs=0, previousTime = -1, previousClose = 0;
   const bars: [number,number,number][] = [];
   for (let i=0;i<rows.length;i++){
     const parts = rows[i].trim().split(',');
@@ -42,8 +48,24 @@ export function importHistoricalCsv(text: string, source: HistoricalSource): His
     if (l<=-1000000 || h>4000000 || c<=-1000000 || c>4000000)
       throw Error('Свеча выходит за допустимый диапазон в строке '+(i+1));
     bars.push([Math.max(h,c),Math.min(l,c),c]);
-    if (i===0) first=new Date(at).toISOString();
+    if (i===0) { first=new Date(at).toISOString();firstMs=at; }
     previousTime=at;previousClose=close;
   }
-  return {source,sourceStart:first,resolution:'1h',provenance:'USER_SUPPLIED_UNVERIFIED',bars};
+  let offset=0;
+  if(selection.startDateUtc) {
+    if(!/^\d{4}-\d\d-\d\d$/.test(selection.startDateUtc))
+      throw Error('Выберите дату в формате ГГГГ-ММ-ДД');
+    const startMs=Date.parse(selection.startDateUtc+'T00:00:00.000Z');
+    if(!Number.isFinite(startMs)||new Date(startMs).toISOString().slice(0,10)!==selection.startDateUtc)
+      throw Error('Указана несуществующая дата');
+    offset=(startMs-firstMs)/3600000;
+    if(!Number.isSafeInteger(offset)||offset<0||offset>=bars.length)
+      throw Error('Выбранная дата не входит в исходную историю');
+  }
+  const end=selection.hours?offset+selection.hours:bars.length;
+  const selected=bars.slice(offset,end);
+  if(selected.length<24 ||selected.length>2400 || (selection.hours && selected.length!==selection.hours))
+    throw Error('Выбранный период отсутствует полностью либо длиннее 100 дней');
+  first=new Date(firstMs+offset*3600000).toISOString();
+  return {source,sourceStart:first,resolution:'1h',provenance:'USER_SUPPLIED_UNVERIFIED',bars:selected};
 }
