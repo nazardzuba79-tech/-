@@ -1,4 +1,4 @@
-import { loadChartCandles, rawStoreSize, resetChartCandleSource, workspaceCandleLoader } from '../chartCandleSource';
+import { loadChartCandles, RAW_STORE_MAX_KEYS, rawStoreEntryCount, rawStoreSize, resetChartCandleSource, workspaceCandleLoader } from '../chartCandleSource';
 import type { Candle } from '../indicators';
 
 const start = Date.UTC(2026, 1, 18) / 1000;
@@ -87,5 +87,27 @@ describe('derived intervals', () => {
     expect(out.candles.map(c => c.time)).toEqual([start, start + 7200]);
     await wrapped('BTC/USDT', 'weird', 5);
     expect(loader).toHaveBeenLastCalledWith('BTC/USDT', 'weird', 5, undefined, undefined);
+  });
+});
+
+
+describe('bounded derived history retention', () => {
+  it('evicts the least recently used symbol while preserving active history', async () => {
+    const loader = jest.fn(async () => ({ candles: hourly(start, 24) }));
+    const load = (symbol: string) => loadChartCandles(loader, 'spot-public', {
+      market: 'spot', pair: symbol + '/USDT', timeframe: '6h', limit: 10,
+    });
+    for (let i = 0; i < RAW_STORE_MAX_KEYS; i++) await load('ASSET' + i);
+    expect(rawStoreEntryCount()).toBe(RAW_STORE_MAX_KEYS);
+    expect(rawStoreSize('spot', 'ASSET0/USDT', '1h')).toBe(24);
+    await load('ASSET0'); // Refresh its recency without retaining another entry.
+    await load('NEW');
+    expect(rawStoreEntryCount()).toBe(RAW_STORE_MAX_KEYS);
+    expect(rawStoreSize('spot', 'ASSET0/USDT', '1h')).toBe(24);
+    expect(rawStoreSize('spot', 'ASSET1/USDT', '1h')).toBe(0);
+    expect((await load('ASSET1')).candles).toHaveLength(4);
+    expect(rawStoreEntryCount()).toBe(RAW_STORE_MAX_KEYS);
+    resetChartCandleSource();
+    expect(rawStoreEntryCount()).toBe(0);
   });
 });

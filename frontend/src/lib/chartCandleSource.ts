@@ -47,6 +47,8 @@ export interface CandleAnswer {
 export const CANDLE_SHARE_MS = 2500;
 /** Raw base bars kept per series for derived timeframes. */
 export const RAW_STORE_CAP = 20000;
+/** Limit retained series as well as bars per series: visitors may switch through hundreds of assets. */
+export const RAW_STORE_MAX_KEYS = 12;
 
 const abortError = () => (typeof DOMException === 'function' ? new DOMException('Aborted', 'AbortError') : Object.assign(new Error('Aborted'), { name: 'AbortError' }));
 const isAbort = (error: unknown) => (error as { name?: string } | null)?.name === 'AbortError';
@@ -131,7 +133,11 @@ async function loadDerived(loader: ChartCandleLoader, source: CandleSourceKind, 
   const page = await fetchShared(key, inner => loader(pair, plan.base, rawLimit, inner, endTime), signal);
   const storeKey = `${market}|${pair}|${plan.base}`;
   const merged = mergeRows(rawStore.get(storeKey) ?? [], page.candles, RAW_STORE_CAP);
+  // Move an accessed series to the MRU end; evict a dormant series on overflow.
+  // Reopening it fetches the source again, never reuses another instrument's bars.
+  if (rawStore.has(storeKey)) rawStore.delete(storeKey);
   rawStore.set(storeKey, merged);
+  if (rawStore.size > RAW_STORE_MAX_KEYS) rawStore.delete(rawStore.keys().next().value!);
   const built = aggregateCandles(merged, plan.base, timeframe);
   let candles = built.candles;
   if (endTime !== undefined) {
@@ -162,3 +168,5 @@ export function resetChartCandleSource(): void {
 
 /** How many raw base bars are kept for a series (diagnostics and tests). */
 export const rawStoreSize = (market: 'spot' | 'futures', pair: string, base: ChartTimeframe): number => rawStore.get(`${market}|${pair}|${base}`)?.length ?? 0;
+/** Expose only the aggregate entry count for deterministic retention tests. */
+export const rawStoreEntryCount = (): number => rawStore.size;
