@@ -48,9 +48,11 @@ function drawingLayer() {
 }
 
 const ORDER = [{
-  id: 'o1', pair: 'BTC/USDT', side: 'SELL', type: 'STOP_LIMIT',
+  id: 'o1', pair: 'BTC/USDT', side: 'SELL', type: 'STOP_LIMIT', status: 'PENDING_TRIGGER',
   triggerPrice: '99000.00000000', price: '98900.00000000', ocoGroupId: null,
 }];
+/** One URL for the chart and the open-orders panel, so the API can answer both pollers with one request. */
+const OPEN_STATUSES = 'PENDING_TRIGGER,OPEN,PARTIALLY_FILLED';
 
 function mount(props: Record<string, unknown>, overrides: Record<string, any> = {}) {
   let index = 0;
@@ -513,7 +515,7 @@ describe('spot behaviour is unchanged', () => {
     chart.render();
     await flush();
     expect(chart.getMyOrders).toHaveBeenCalledTimes(1);
-    expect(chart.getMyOrders).toHaveBeenCalledWith('PENDING_TRIGGER');
+    expect(chart.getMyOrders).toHaveBeenCalledWith(OPEN_STATUSES);
   });
 
   test('F. the 4-second cadence is unchanged', async () => {
@@ -533,7 +535,7 @@ describe('spot behaviour is unchanged', () => {
   test('G. pair filtering is unchanged — only this pair draws a line', async () => {
     const getMyOrders = jest.fn().mockResolvedValue([
       ...ORDER,
-      { id: 'o2', pair: 'ETH/USDT', side: 'BUY', type: 'TAKE_PROFIT_LIMIT', triggerPrice: '4000', price: '4010', ocoGroupId: null },
+      { id: 'o2', pair: 'ETH/USDT', side: 'BUY', type: 'TAKE_PROFIT_LIMIT', status: 'PENDING_TRIGGER', triggerPrice: '4000', price: '4010', ocoGroupId: null },
     ]);
     const chart = mount(SPOT, { getMyOrders });
     chart.render();
@@ -545,7 +547,7 @@ describe('spot behaviour is unchanged', () => {
   test('G2. changing pair re-requests and re-filters', async () => {
     const getMyOrders = jest.fn().mockResolvedValue([
       ...ORDER,
-      { id: 'o2', pair: 'ETH/USDT', side: 'BUY', type: 'TAKE_PROFIT_LIMIT', triggerPrice: '4000', price: '4010', ocoGroupId: null },
+      { id: 'o2', pair: 'ETH/USDT', side: 'BUY', type: 'TAKE_PROFIT_LIMIT', status: 'PENDING_TRIGGER', triggerPrice: '4000', price: '4010', ocoGroupId: null },
     ]);
     const chart = mount(SPOT, { getMyOrders });
     chart.render();
@@ -604,7 +606,20 @@ describe('spot behaviour is unchanged', () => {
     await handlers.get('mouseup')!({ clientY: 200 });
     await flush();
 
-    expect(chart.getMyOrders).toHaveBeenCalledWith('PENDING_TRIGGER');
+    // A read after the trader's own change must see the server's state, never a sibling poller's in-flight answer.
+    expect(chart.getMyOrders).toHaveBeenCalledWith(OPEN_STATUSES, { fresh: true });
+  });
+
+  test('G3. the chart draws trigger orders only — an OPEN limit in the same payload is the panel\'s, not a line', async () => {
+    const getMyOrders = jest.fn().mockResolvedValue([
+      ...ORDER,
+      { id: 'o3', pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', status: 'OPEN', triggerPrice: null, price: '90000', ocoGroupId: null },
+      { id: 'o4', pair: 'BTC/USDT', side: 'BUY', type: 'STOP_LIMIT', status: 'PARTIALLY_FILLED', triggerPrice: '95000', price: '95100', ocoGroupId: null },
+    ]);
+    const chart = mount(SPOT, { getMyOrders });
+    chart.render();
+    await flush();
+    expect(conditionalLines(chart.render())).toHaveLength(1);
   });
 
   test.each(['sleep', 'unmount', 'pair-change'])('an unfinished conditional-order drag is cancelled on %s without a later PATCH', async boundary => {
@@ -691,8 +706,12 @@ describe('the change is a removal, not a replacement', () => {
   test('no futures conditional-order endpoint was invented', () => {
     expect(source).not.toContain('getMyFuturesOrders');
     expect(source).not.toContain('futures/orders');
-    // The only conditional-order reads are the spot ones, both gated.
-    expect(source.match(/getMyOrders\('PENDING_TRIGGER'\)/g)).toHaveLength(2);
+    // The only conditional-order reads are the spot ones, both gated — the
+    // poll, and the fresh read after a drag — on the status set the panel
+    // shares, filtered to the trigger orders.
+    expect(source.match(/getMyOrders\('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED'\)/g)).toHaveLength(1);
+    expect(source.match(/getMyOrders\('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED', \{ fresh: true \}\)/g)).toHaveLength(1);
+    expect(source.match(/o\.pair === pair && o\.status === 'PENDING_TRIGGER'/g)).toHaveLength(2);
   });
 
   test('both call sites still pass an explicit market', () => {

@@ -144,6 +144,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
    */
   const request = useRef(0);
 
+  /**
+   * The document speaks the language on screen. `<html lang="ru">` is the
+   * shell's default, and screen readers pick their voice and browsers their
+   * translate prompt from it — so once a dictionary is committed the
+   * attribute follows the COMMITTED language, never a stored preference
+   * whose chunk has not arrived. 2026-10-13 audit: every locale rendered
+   * under `lang="ru"`.
+   */
+  useEffect(() => {
+    if (!state.dict || typeof document === 'undefined') return;
+    document.documentElement.lang = state.lang;
+  }, [state.dict, state.lang]);
+
   useEffect(() => {
     if (state.dict) return;
     const id = ++request.current;

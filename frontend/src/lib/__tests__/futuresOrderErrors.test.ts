@@ -148,6 +148,13 @@ describe('futures order error messages', () => {
     }
   });
 
+  it('names a thin book and a self-match on the real engine (2026-10-13: a quick close read «Не удалось закрыть позицию»)', () => {
+    const refusal = (code: string) => Object.assign(new Error('Insufficient market liquidity for requested quantity'), { body: { error: 'Insufficient market liquidity for requested quantity', code } });
+    expect(futuresOrderErrorMessage(refusal('INSUFFICIENT_LIQUIDITY'), t, 'generic')).toBe(RU['futures.orderError.insufficientLiquidity']);
+    expect(futuresOrderErrorMessage(refusal('SELF_MATCH'), t, 'generic')).toBe(RU['futures.orderError.selfMatch']);
+    expect(RU['futures.orderError.insufficientLiquidity']).toMatch(/ликвидност/i);
+  });
+
   it('is translated in every language the interface offers', () => {
     const keys = Object.keys(RU).filter((key) => key.startsWith('futures.orderError.'));
     expect(keys.length).toBeGreaterThanOrEqual(30);

@@ -1,6 +1,7 @@
 import { ArrowRight, BadgeCheck, CalendarDays, Copy, Fingerprint, Mail, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../../lib/i18n';
+import { copyToClipboard } from '../../lib/clipboard';
 import { Panel, PanelHeader } from './Panel';
 import { StatusBadge } from './StatusBadge';
 import type { KycStatus } from '../../lib/kycSteps';
@@ -41,8 +42,10 @@ export function AccountOverview({
 
   function handleCopy(row: Row) {
     if (!row.copy) return;
-    navigator.clipboard?.writeText(row.copy);
-    toast.success(t('deposit.copied'));
+    void copyToClipboard(row.copy).then(
+      () => toast.success(t('deposit.copied')),
+      () => toast.error(t('deposit.ui.copyError')),
+    );
   }
 
   return (

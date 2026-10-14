@@ -2,6 +2,14 @@ import { VtaSpotPanels } from '../components/VtaSpotPanels';
 import { NrxBookTabs } from '../components/NrxBookTabs';
 import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 
+/** The market list starts folded on desktops narrower than 1366px, where the
+ *  four-column grid cannot give the chart a readable plot. */
+const NARROW_DESKTOP_QUERY = '(min-width: 1025px) and (max-width: 1365px)';
+function startsWithMarketListFolded(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(NARROW_DESKTOP_QUERY).matches;
+}
+
 import { readSpotPublicBook } from '../lib/spotPublicMarket';
 import { SampledDataNote } from '../components/SampledDataNote';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -132,7 +140,21 @@ export function TradePage() {
   const openOrdersRef = useRef<OpenOrdersHandle>(null);
   const pairListRef = useRef<PairListHandle>(null);
   const [marketPanelWidth, setMarketPanelWidth] = useState(258);
-  const [marketPanelCollapsed, setMarketPanelCollapsed] = useState(false);
+  // Desktop below 1366px (1280×720 laptops, 1366px at 110–125 % zoom): the
+  // four columns left the plot 126–316px wide and pushed the toolbar's gear
+  // under the chart, so the market list starts folded there and the «Рынки»
+  // key brings it back (2026-10-13 audit). Phones and tablets (≤1024px) have
+  // their own stacked layout and keep it open.
+  const [marketPanelCollapsed, setMarketPanelCollapsed] = useState(() => startsWithMarketListFolded());
+  // Zooming or resizing across that edge folds or unfolds the list the same
+  // way; a toggle by hand stays until the next crossing.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const narrow = window.matchMedia(NARROW_DESKTOP_QUERY);
+    const onChange = (event: MediaQueryListEvent) => setMarketPanelCollapsed(event.matches);
+    narrow.addEventListener('change', onChange);
+    return () => narrow.removeEventListener('change', onChange);
+  }, []);
   const [orderBookCollapsed, setOrderBookCollapsed] = useState(false);
   const [ordersHeight, setOrdersHeight] = useState(172);
   const bookPairRef = useRef(pair);

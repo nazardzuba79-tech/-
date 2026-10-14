@@ -58,11 +58,23 @@ export function FuturesPositionsPanel({
   onEditLeverage,
   leverageBusy = false,
   archive = false,
+  mobile = false,
   symbolFilter,
   onSelectSymbol,
   onShowHistory,
 }: {
   archive?: boolean;
+  /**
+   * The phone layout (≤900px, `MOBILE_TERMINAL_QUERY`). There the TP/SL
+   * cell is a «+ TP/SL» touch target with the armed levels listed under it
+   * (`.futures-mobile-protection-values`, shown by the mobile sheet only).
+   * 2026-10-13 audit: that compact trigger used to follow `archive`, which
+   * is the DESKTOP design too — so on a 1440px screen the levels block
+   * stayed `display:none` and a saved stop showed as «+ TP/SL», as if
+   * nothing were armed. Desktop rows carry the chips in the trigger, which
+   * the archive sheet styles (`.fut-tpslChip`).
+   */
+  mobile?: boolean;
   symbolFilter?: string;
   /** Open this position's contract in the terminal — chart, book and order
    *  form all follow. Selecting a contract NEVER touches the position: it
@@ -636,7 +648,7 @@ export function FuturesPositionsPanel({
                            extra endpoint and no extra timer. */
                         const protection = (
                           <FuturesPositionProtectionCell
-                            compactTrigger={archive}
+                            compactTrigger={archive && mobile}
                             compactLabel={narrow}
                             positionId={p.id}
                             protection={p.protection ?? null}

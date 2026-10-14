@@ -120,7 +120,14 @@
     :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.orderbook-collapsed:not(.market-panel-collapsed) { grid-template-columns:var(--market-panel-width,258px) minmax(0,1fr) 0 264px; }
     :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.spot-terminal .main-grid.market-panel-collapsed.orderbook-collapsed { grid-template-columns:0 minmax(0,1fr) 0 264px; }
   }
-  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-workspace { grid-template-columns:278px minmax(0,1fr) 300px; gap:4px; background:#000000 !important; }
+  /* The three desktop columns only from 1025px: below that CfdTerminal.css
+     stacks the instrument list over a two-column chart + ticket row, and this
+     rule used to override it and leave the chart in a 278px column beside a
+     430px ticket (2026-10-13 audit, 901–1024px). */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-workspace { gap:4px; background:#000000 !important; }
+  @media (min-width:1025px) {
+    :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal .cfd-workspace { grid-template-columns:278px minmax(0,1fr) 300px; }
+  }
   :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal:is(.spot-terminal,.cfd-terminal) :is(.ticker-bar,.cfd-ticker-bar,.left-panel,.pairs-section,.chart-area,.orderbook-area,.order-form-area,.bottom-panel,.cfd-instruments-area,.cfd-chart-area,.cfd-form-area,.cfd-bottom-panel) {
     background:#101014 !important; border:0 !important; border-radius:0 !important; box-shadow:none !important;
   }

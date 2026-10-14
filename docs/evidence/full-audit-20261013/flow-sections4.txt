@@ -1,0 +1,28 @@
+PASS M1 markets search box present
+PASS M2 search narrows the table to SOL — 5 rows:  7 S SOL Solana $106.87 -1.11% $62.98B $ /  — J JITOSOL JITOSOL — — — — Торговать /  — L LSSOL LSSOL — — — — Торговать
+PASS M2b clearing the search restores the list — 50 rows
+PASS M3 the star toggles a favourite and the Favourites tab count follows — star false→true count 0→1
+PASS M3b favourites persist in localStorage — exchange_favorite_pairs=["BTC/USDT"]
+PASS M4 Spot/Futures/CFD tabs switch without errors and the Spot table is back — rows=50 errors=
+PASS M5 a market row's «Торговать» opens that market in a terminal — /trade?pair=BTC%2FUSDT
+PASS C1 CFD terminal loads with the instrument list and the ticket
+PASS C1b the ticket is labelled as practice (SIM) — SIM
+PASS C2 instrument search filters the list — 13 instruments, "XAU" → 1: XAUUSD Gold Spot 4,160.68 -0.7
+PASS C3 a SIM market order opens a CFD position row — rows 0→1 err=""
+PASS C4 closing it removes the row — rows=0
+PASS C5 no page errors on the CFD terminal
+PASS L1 a language control is present on the settings page
+PASS L2 choosing English switches the interface and persists — stored=en lang=en text="Settings Manage your account, security and personal preferen"
+PASS L2b the language survives a reload
+PASS L3 back to Russian
+PASS L4 no page errors on settings
+PASS W1 support launcher present
+PASS W2 the assistant panel opens as a dialog
+PASS W2b it has a message input
+PASS W3 Escape or the close button closes it — Escape
+PASS W4 no page errors
+PASS H1 help page has expandable entries — 25 entries
+PASS H2 the first entry expands — tag=button
+PASS H3 no page errors on help
+PASS R1 the referral tab shows the personal link — link="http://127.0.0.1:4600/G4CGE7WC"
+PASS R2 no page errors on referral

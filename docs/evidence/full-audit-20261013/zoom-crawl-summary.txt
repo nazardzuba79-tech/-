@@ -1,0 +1,23 @@
+cells 152
+## console/page issues (non-noise) (1)
+  console.warning: [priceChange] Suspicious 24h change for WFB/EUR: 323.5769% (raw="323.5769"). Treating as real, but this is abo  ×9 e.g. user@1280x720@125pct /markets
+## API 4xx/5xx by path (4)
+  403 /api/v1/private-trading/native/wallet  in 16 cells e.g. user@1280x720@125pct /dashboard
+  503 /api/v1/market/display  in 24 cells e.g. user@1280x720@125pct /futures
+  503 /api/v1/market/futures/candles/BTC-USDT  in 16 cells e.g. user@1280x720@125pct /futures
+  403 /api/v1/private-trading/access  in 16 cells e.g. user@1280x720@125pct /futures
+## horizontal page overflow (0)
+## elements spilling past the viewport (44)
+## clipped text (0)
+## covered controls (7)
+  user@1280x720@125pct /futures button "1w" by ls>div.chart-toolbar:nth(0)>div.chart-tools.has-menus:nth(1)
+  user@1280x720@125pct / button "1w" by ls>div.chart-toolbar:nth(0)>div.chart-tools.has-menus:nth(1)
+  user@1280x720@125pct /settings button "Copy Email" by div#root>button.support-launcher
+  user@1366x768@110pct /trade button "Текст и заметки" by h(1)>div.bottom-panel:nth(5)>div.orders-resize-handle:nth(0)
+  user@1536x864@125pct /trade button "Текст и заметки" by h(1)>div.bottom-panel:nth(5)>div.orders-resize-handle:nth(0)
+  user@1920x1080@90pct /tools input "Комиссия входа" by section#tt-work-panel>details.tt-method
+  user@1920x1080@90pct /tools input "Комиссия выхода" by section#tt-work-panel>details.tt-method
+## clicks with no effect (0)
+## not clickable (0)
+## Escape does not close (0)
+## fatal (0)
