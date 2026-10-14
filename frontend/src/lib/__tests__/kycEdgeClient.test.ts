@@ -121,7 +121,12 @@ describe('submitKycToEdge — browser → Cloudflare, never Render', () => {
     await submitKycToEdge({ requestId: 'r-2', country: 'UA', fullName: 'Synthetic Person', dateOfBirth: '1990-01-01', documentType: 'PASSPORT', document: jpegFile(10) },
       jest.fn().mockResolvedValue(new Response(JSON.stringify({ status: 'PENDING', submissionId: 's-2', confirmed: false, receipt }), { status: 202 })));
     const stored = storage.getItem('voltex_kyc_receipt')!;
-    expect(stored).not.toMatch(/Synthetic|1990/);
+    // A whole-string /1990/ check is unsound: the valid numeric `at` timestamp
+    // can contain those digits by chance. A strict key/value contract is stronger:
+    // no identity, birth date, document type, image or file can enter storage.
+    expect(JSON.parse(stored)).toEqual({ submissionId: 's-2', receipt, at: expect.any(Number) });
+    expect(stored).not.toContain('Synthetic Person');
+    expect(stored).not.toContain('1990-01-01');
     expect(readKycReceipt()).toMatchObject({ submissionId: 's-2', receipt });
 
     const confirmFetch = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }));

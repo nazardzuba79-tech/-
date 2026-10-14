@@ -70,6 +70,22 @@ const GAP = 4;
 export const ToolbarDensity = createContext(0);
 const MAX_DENSE = 3;
 
+/** The width a row part needs, not the width it was squeezed to: its box plus whatever its first child (the
+ *  timeframe strip, a shrinkable scroll box whose keys keep their width) holds beyond its own box. */
+function naturalWidth(part: HTMLElement | null): number {
+  if (!part) return 0;
+  const box = part.getBoundingClientRect().width;
+  const inner = part.firstElementChild as HTMLElement | null;
+  if (!inner || typeof getComputedStyle === 'undefined') return box;
+  const style = getComputedStyle(inner);
+  const px = (value: string) => parseFloat(value) || 0;
+  let content = px(style.paddingLeft) + px(style.paddingRight) + px(style.borderLeftWidth) + px(style.borderRightWidth);
+  const kids = Array.from(inner.children) as HTMLElement[];
+  for (const kid of kids) { const ks = getComputedStyle(kid); content += kid.getBoundingClientRect().width + px(ks.marginLeft) + px(ks.marginRight); }
+  content += px(style.columnGap) * Math.max(0, kids.length - 1);
+  return Math.max(box, box - inner.getBoundingClientRect().width + content);
+}
+
 export function ChartWorkspaceToolbar({ features, start, end, menus, compact, moreLabel, phoneLabel, closeLabel, onOpenChange, openRequest }: ChartWorkspaceToolbarProps) {
   const rowRef = useRef<HTMLDivElement>(null);
   const startRef = useRef<HTMLDivElement>(null);
@@ -77,6 +93,8 @@ export function ChartWorkspaceToolbar({ features, start, end, menus, compact, mo
   const menusRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef(new Map<string, HTMLElement>());
   const widths = useRef(new Map<string, number>());
+  const foldAt = useRef({ width: -1, dense: 0 });
+  const moreSeen = useRef(0);
   const [hidden, setHidden] = useState<Set<string>>(() => new Set());
   const [measured, setMeasured] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
@@ -92,9 +110,13 @@ export function ChartWorkspaceToolbar({ features, start, end, menus, compact, mo
   const ids = features.map(f => f.id).join('|');
   const labels = features.map(f => `${f.label}:${f.badge ?? ''}`).join('|');
 
-  // Widths are read while an item is on the row; a hidden item keeps the
-  // last width it had. Labels or the language changing re-measures everything.
-  useEffect(() => { widths.current.clear(); setMeasured(false); setHidden(new Set()); }, [labels, compact]);
+  // Widths are read while an item is on the row (never from its copy in a list, which shows the label);
+  // a hidden item keeps the last width it had. Labels or the language changing re-measures everything —
+  // in the same commit as the change (a layout effect, before the fold below): run after paint, the old
+  // fold was painted once more with the new labels and then re-folded (a key showing for a frame).
+  useLayoutEffect(() => { widths.current.clear(); setMeasured(false); setHidden(new Set()); }, [labels, compact]);
+  // Switching between the phone row and the desktop row starts from the full strip, as any outside width change does.
+  useLayoutEffect(() => { denseRef.current = 0; foldAt.current = { width: -1, dense: 0 }; setDense(0); }, [compact]);
 
   const compute = useCallback(() => {
     const row = rowRef.current;
@@ -106,10 +128,31 @@ export function ChartWorkspaceToolbar({ features, start, end, menus, compact, mo
       if ((overflows(start) || overflows(strip)) && denseRef.current < 2) setDense(denseRef.current + 1);
       return;
     }
+    // One fold per width. A width change from outside (a layout change, a resize) starts from the full strip
+    // BEFORE anything is folded: folding against the previous level's narrower strip put keys on the row for
+    // a frame and took them away in the next passes (seen as «К дате» appearing and vanishing after 2 → 1
+    // charts). Run from the layout effect, the dense change re-renders at once, so the row paints once. A width
+    // change that came with our own density change is not a restart, or a row whose width follows its content
+    // would never settle.
+    const width = row.clientWidth;
+    const external = foldAt.current.dense === denseRef.current && Math.abs(width - foldAt.current.width) >= 1;
+    foldAt.current = { width, dense: denseRef.current };
+    if (external && denseRef.current) { denseRef.current = 0; foldAt.current = { width, dense: 0 }; setDense(0); return; }
     for (const [id, el] of itemRefs.current) if (el.isConnected) widths.current.set(id, el.getBoundingClientRect().width + GAP);
-    const fixed = (startRef.current?.getBoundingClientRect().width ?? 0) + (endRef.current?.getBoundingClientRect().width ?? 0) + (menusRef.current?.getBoundingClientRect().width ?? 0);
-    const moreWidth = (moreRef.current?.getBoundingClientRect().width || 44) + GAP;
-    const total = row.clientWidth - 24;
+    // Nothing is decided from a partial row: a key whose width was cleared by a label change and is not on
+    // the row yet is measured by the re-measuring render that follows, which computes again. Treating it as
+    // zero-width would show every key until the next measurement.
+    if (features.some(f => !widths.current.has(f.id))) return;
+    // The strip is a shrinkable scroll box: while keys share the row it gives way first, and its squeezed box
+    // let keys through that its own keys pushed out again on the next passes (seen as «К дате», then
+    // «Раскладка», then «Во весь экран» on the row for a frame each after 2 → 1 charts). Its keys keep their
+    // width inside it, so what it needs is the sum of its keys. «Ещё» keeps the width it last had on the row
+    // while it is not there (a guess of 44 px let one more key through on the measuring pass).
+    const fixed = naturalWidth(startRef.current) + (endRef.current?.getBoundingClientRect().width ?? 0) + (menusRef.current?.getBoundingClientRect().width ?? 0);
+    const moreNow = moreRef.current?.isConnected ? moreRef.current.getBoundingClientRect().width : 0;
+    if (moreNow) moreSeen.current = moreNow;
+    const moreWidth = (moreSeen.current || 44) + GAP;
+    const total = width - 24;
     const sorted = [...features].sort((a, b) => a.priority - b.priority);
     const next = new Set<string>();
     let used = fixed;
@@ -129,16 +172,16 @@ export function ChartWorkspaceToolbar({ features, start, end, menus, compact, mo
   useEffect(() => {
     const row = rowRef.current;
     if (!row || typeof ResizeObserver === 'undefined') return;
-    // The row growing or shrinking starts a fresh pass from the full strip; the strip itself changing size
-    // (its buttons arriving, the chart tab being revealed on a phone) re-checks at the current level.
-    // Only a WIDTH change restarts from the full strip: a height change (a scrollbar appearing under an
-    // overflowing row) must not, or the row would oscillate between its levels.
+    // The row growing or shrinking starts a fresh pass from the full strip (compute sees the new width);
+    // the strip itself changing size (its buttons arriving, the chart tab being revealed on a phone)
+    // re-checks at the current level. Only a WIDTH change counts: a height change (a scrollbar appearing
+    // under an overflowing row) must not, or the row would oscillate between its levels.
     const lastWidth = { value: -1 };
     const rowObserver = new ResizeObserver(entries => {
       const width = entries[0]?.contentRect.width ?? row.clientWidth;
       if (Math.abs(width - lastWidth.value) < 1) return;
       lastWidth.value = width;
-      if (denseRef.current) { denseRef.current = 0; setDense(0); } else compute();
+      compute();
     });
     rowObserver.observe(row);
     const strip = startRef.current?.firstElementChild;
@@ -179,7 +222,7 @@ export function ChartWorkspaceToolbar({ features, start, end, menus, compact, mo
     return (
       <button
         key={feature.id}
-        ref={node => { if (node) { itemRefs.current.set(feature.id, node); if (!listMode) anchors.current.set(feature.id, node); } }}
+        ref={node => { if (node && !listMode) { itemRefs.current.set(feature.id, node); anchors.current.set(feature.id, node); } }}
         type="button"
         className={`chart-tool-btn cw-feature${feature.iconOnly ? ' is-icon' : ''}${feature.active ? ' active' : ''}${listMode ? ' is-list' : ''}`}
         aria-label={title}

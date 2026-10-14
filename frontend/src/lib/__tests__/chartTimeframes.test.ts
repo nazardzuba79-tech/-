@@ -59,9 +59,13 @@ describe('what each source serves natively', () => {
     expect(timeframePlan('spot-public', '6h')).toEqual({ kind: 'derived', base: '1h', factor: 6 });
     expect(timeframePlan('spot-public', '12h')).toEqual({ kind: 'derived', base: '4h', factor: 3 });
     expect(timeframePlan('spot-public', '1M')).toEqual({ kind: 'derived', base: '1d', factor: 30 });
-    expect(timeframePlan('test-market', '1m')).toEqual({ kind: 'unavailable' });
-    expect(timeframePlan('test-market', '3m')).toEqual({ kind: 'unavailable' });
+    // The simulation serves 1m from its ticks (verified on the API host for VTA and the market
+    // edge for NRX/AITH, 2026-10-14), so 1m is native and 3m is built from it; 30m from 15m.
+    expect(timeframePlan('test-market', '1m')).toEqual({ kind: 'native' });
+    expect(timeframePlan('test-market', '3m')).toEqual({ kind: 'derived', base: '1m', factor: 3 });
     expect(timeframePlan('test-market', '30m')).toEqual({ kind: 'derived', base: '15m', factor: 2 });
+    expect(availableTimeframes('test-market')).toEqual(CHART_TIMEFRAMES);
+    expect(timeframePlan('legacy', '1m')).toEqual({ kind: 'unavailable' });
     expect(availableTimeframes('legacy')).toEqual(['5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d', '1w', '1M']);
   });
   it('never derives a week or a month from a calendar bar, nor from an uneven divisor', () => {
@@ -103,6 +107,27 @@ describe('aggregation builds real bars from real bars', () => {
     // A forming bucket that starts mid-way (its open is unknown) is not emitted either.
     const lateStart = aggregateCandles([...series(start, 900, 4), ...series(start + 3600 + 900, 900, 2)], '15m', '1h', start + 3600 + 2700);
     expect(lateStart.candles.map(c => c.time)).toEqual([start]);
+  });
+  it('emits a listing\'s first bucket from its first bar when told where the history starts, and only then', () => {
+    // Listed on the 13th at 15:00: two daily bars under a calendar month, as a managed listing's second day looks.
+    const oct13 = Date.UTC(2026, 9, 13) / 1000, oct1 = Date.UTC(2026, 9, 1) / 1000;
+    const days = [bar(oct13, 2, 9, 2, 8, 100), bar(oct13 + 86400, 8, 22, 7, 21, 150)];
+    const now = oct13 + 86400 + 40000;
+    expect(aggregateCandles(days, '1d', '1M', now).candles).toEqual([]);
+    const listed = aggregateCandles(days, '1d', '1M', now, { historyStart: oct13 + 15 * 3600 });
+    expect(listed.candles).toEqual([{ time: oct1, open: 2, high: 22, low: 2, close: 21, volume: 250 }]);
+    expect(listed.partialLast).toBe(true);
+    expect(listed.dropped).toBe(0);
+    // A history that starts before the first bar on hand is a page cut, not a listing: nothing is invented.
+    expect(aggregateCandles(days, '1d', '1M', now, { historyStart: oct13 - 86400 }).candles).toEqual([]);
+    // A closed first bucket from the listing is real once it reaches the bucket's end.
+    const week = Date.UTC(2026, 9, 12) / 1000; // Monday
+    const sixDays = Array.from({ length: 6 }, (_, i) => bar(week + (i + 1) * 86400, 2 + i, 3 + i, 1 + i, 2.5 + i, 10));
+    const closed = aggregateCandles(sixDays, '1d', '1w', week + 8 * 86400, { historyStart: week + 86400 + 15 * 3600 });
+    expect(closed.candles.map(c => c.time)).toEqual([week]);
+    expect(closed.partialLast).toBe(false);
+    const gap = aggregateCandles(sixDays.filter((_, i) => i !== 3), '1d', '1w', week + 8 * 86400, { historyStart: week + 86400 + 15 * 3600 });
+    expect(gap.candles).toEqual([]);
   });
   it('builds Monday-based weeks from seven daily bars and calendar months from their real day counts', () => {
     const monday = Date.UTC(2026, 1, 9) / 1000;

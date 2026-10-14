@@ -205,6 +205,14 @@ export const MANAGED_LISTING_DISCOVERY_INTERVAL_MS = 15 * 60_000;
 
 const storeForPair = (pair: string) => (isNrxPair(pair) ? nrxMarketStore : isManagedListingPair(pair) ? managedListingStore : testMarketStore);
 
+/** The listing instant of a test market the tab has already read (epoch ms), or null: the chart's derived first bucket may open there. */
+export function testMarketListingAt(pair: string): number | null {
+  const wanted = pair.toUpperCase();
+  const asset = storeForPair(pair).getState().assets.find(candidate => candidate.pair === wanted);
+  const at = asset ? Date.parse(asset.listingAt) : NaN;
+  return Number.isFinite(at) ? at : null;
+}
+
 export function refreshTestMarket(pair: string): Promise<void> {
   return storeForPair(pair).refresh();
 }

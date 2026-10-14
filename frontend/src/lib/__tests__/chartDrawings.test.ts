@@ -126,6 +126,9 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === '../lib/chartCompare') return require('../chartCompare');
     if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
     if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (id === '../lib/chartViewport') return require('../chartViewport');
+    if (id === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
     if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (id === './ChartDrawingLayer') return layer;
     if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
@@ -270,6 +273,9 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === '../lib/chartCompare') return require('../chartCompare');
     if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
     if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (id === '../lib/chartViewport') return require('../chartViewport');
+    if (id === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
     if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
@@ -408,6 +414,9 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === '../lib/chartCompare') return require('../chartCompare');
     if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
     if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (id === '../lib/chartViewport') return require('../chartViewport');
+    if (id === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
     if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);

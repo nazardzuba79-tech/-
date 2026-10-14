@@ -5,14 +5,12 @@ import { TradingViewRulerLayer } from './TradingViewRulerLayer';
 import { ChartMultiLayout } from './chart-workspace/ChartMultiLayout';
 import { ChartMiniPane } from './chart-workspace/ChartMiniPane';
 import { useCompareInstruments } from './chart-workspace/useCompareInstruments';
-import { getFuturesCandles } from '../lib/futuresCandles';
-import { getSpotPublicCandles } from '../lib/spotPublicMarket';
-import { isEdgeMarketPair } from '../lib/nrxMarket';
+import { chartCapabilities } from '../lib/chartCapabilities';
+import { CHART_CANDLE_LOADERS } from '../lib/chartCandleLoaders';
 import { useLanguage } from '../lib/i18n';
 import { useMediaQuery } from '../lib/useMediaQuery';
 import { createChartSyncBus } from '../lib/chartSyncBus';
 import { getChartWorkspace, subscribeChartWorkspace, updateChartWorkspace, type ChartWorkspaceState, type WorkspaceView } from '../lib/chartWorkspace';
-import type { CandleSourceKind } from '../lib/chartTimeframes';
 import type { ChartCandleLoader, ChartPositionLine, ChartTradingInteraction } from '../lib/chartTrading';
 import './TerminalChart.css';
 
@@ -61,8 +59,10 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
   const compact = useMediaQuery('(max-width: 900px)');
   const wide = useMediaQuery('(min-width: 1200px)');
   const syncBus = useMemo(() => createChartSyncBus(), []);
-  const loader = candleLoader ?? (market==='futures'?getFuturesCandles:getSpotPublicCandles);
-  const source: CandleSourceKind = market === 'futures' ? 'futures-public' : isEdgeMarketPair(pair) ? 'test-market' : 'spot-public';
+  // What the main chart can do for its instrument (lib/chartCapabilities, 2026-10-14): its
+  // source, its loader and its intervals. Each extra pane and each compared instrument asks
+  // the same function for its own pair, so a BTC pane beside a listing reads Spot, not the listing.
+  const mainCaps = useMemo(() => chartCapabilities({ market, pair, loaders: CHART_CANDLE_LOADERS, loader: candleLoader ?? null }), [market, pair, candleLoader]);
   const instruments = useCompareInstruments(market, [pair]);
   /** A pane nobody has set yet opens on another liquid instrument, so a 2- or 4-chart layout is useful at once; a choice in the pane overrides it. */
   const paneDefaults = useMemo(() => {
@@ -109,13 +109,16 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
     <PriceChart key={`${market}:${pair}`} pair={pair} chrome="terminal" drawingTools market={market} compactTools={compactTools}
       privateTrading={privateTrading} positionLines={positionLines} priceScaleMode={priceScaleMode} priceFormatter={priceFormatter}
       chartSettings={chartSettings} toolbarEnd={folded ? <>{viewTabs}{switcher}</> : undefined}
-      candleLoader={loader} candleSource={source} onSelectPair={onSelectPair} syncBus={syncBus} syncId="main"
+      candleLoader={mainCaps.loader} candleSource={mainCaps.source} onSelectPair={onSelectPair} syncBus={syncBus} syncId="main"
       compactLayout={compact} fullscreen={fullscreen} onFullscreen={toggleFullscreen} paused={parked || (expanded !== null && expanded !== 0)} />
   </TradingViewRulerLayer>;
   const panes = effectiveLayout > 1 ? workspace.panes.slice(0, effectiveLayout - 1).map((pane, i) => (
-    <ChartMiniPane key={`pane-${i}`} index={i + 1} market={market} source={source} loader={loader}
-      pair={pane.pair ?? paneDefaults[i] ?? null} timeframe={pane.timeframe ?? workspace.timeframe} instruments={instruments}
-      onChange={patch => updateChartWorkspace(market, s => ({ panes: s.panes.map((p, k) => (k === i ? { ...p, ...patch } : p)) }))}
+    <ChartMiniPane key={`pane-${i}`} index={i + 1} market={market}
+      pair={pane.pair ?? paneDefaults[i] ?? null} timeframe={workspace.syncTimeframe ? workspace.timeframe : (pane.timeframe ?? workspace.timeframe)} instruments={instruments}
+      // «Синхронизировать таймфрейм» (2026-10-14): one interval for every chart — a pane's pick moves the main chart, and the panes follow it.
+      onChange={patch => (patch.timeframe && workspace.syncTimeframe
+        ? updateChartWorkspace(market, { timeframe: patch.timeframe })
+        : updateChartWorkspace(market, s => ({ panes: s.panes.map((p, k) => (k === i ? { ...p, ...patch } : p)) })))}
       onTrade={onSelectPair ? p => { onSelectPair(p); updateChartWorkspace(market, s => ({ panes: s.panes.map((x, k) => (k === i ? { ...x, pair } : x)), activePane: 0 })); setExpanded(null); } : undefined}
       syncBus={syncBus} sync={{ cursor: workspace.syncCursor, time: workspace.syncTime }}
       expanded={expanded === i + 1} onExpand={value => setExpanded(value ? i + 1 : null)} t={t} formatPrice={priceFormatter} />

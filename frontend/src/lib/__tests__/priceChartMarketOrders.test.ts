@@ -124,6 +124,9 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === '../lib/chartCompare') return require('../chartCompare');
     if (name === '../lib/chartCandleStats') return require('../chartCandleStats');
     if (name === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (name === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (name === '../lib/chartViewport') return require('../chartViewport');
+    if (name === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
     if (name.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (children: unknown) => children };
@@ -175,8 +178,9 @@ function fakeCharts(chartOptions: any[] = [], harness: any) {
     options: () => ({ barSpacing: 10 }),
     subscribeVisibleTimeRangeChange: () => {},
     unsubscribeVisibleTimeRangeChange: () => {},
-    subscribeVisibleLogicalRangeChange: (callback: unknown) => { harness.rangeChange = callback; },
-    unsubscribeVisibleLogicalRangeChange: () => { harness.rangeChange = undefined; },
+    // The chart subscribes more than once (the history pager and the price-scale clamp): every subscriber hears a range change.
+    subscribeVisibleLogicalRangeChange: (callback: unknown) => { (harness.rangeSubscribers ||= new Set()).add(callback); harness.rangeChange = (range: unknown) => { for (const fn of [...harness.rangeSubscribers]) (fn as (r: unknown) => void)(range); }; },
+    unsubscribeVisibleLogicalRangeChange: (callback: unknown) => { harness.rangeSubscribers?.delete(callback); if (!harness.rangeSubscribers?.size) harness.rangeChange = undefined; },
     coordinateToTime: () => 0,
     timeToCoordinate: () => 100,
     // The drawing layer's projection: logical bar ↔ x, and the plot width.

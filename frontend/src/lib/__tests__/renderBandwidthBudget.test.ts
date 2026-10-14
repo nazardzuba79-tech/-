@@ -13,7 +13,12 @@ describe('Render free-tier bandwidth guardrails', () => {
   test('Futures display candles stay on the public market edge, including native-bound accounts', () => {
     const terminal = read('frontend/src/components/TerminalChart.tsx');
     const page = read('frontend/src/pages/FuturesPage.tsx');
-    expect(terminal).toContain('getFuturesCandles');
+    // Chart workspace follow-up (2026-10-14): the terminal takes its loaders from the one table in
+    // lib/chartCandleLoaders, which binds Futures to getFuturesCandles; lib/chartCapabilities hands
+    // a Futures chart that loader unless the page bound its own (the native replay), as before.
+    expect(terminal).toContain('CHART_CANDLE_LOADERS');
+    expect(read('frontend/src/lib/chartCandleLoaders.ts')).toContain('futures: getFuturesCandles');
+    expect(read('frontend/src/lib/chartCapabilities.ts')).toContain("if (market === 'futures') return own ?? loaders.futures;");
     expect(page).not.toContain('candleLoader={nativeExecution?native.loader:undefined}');
     expect(page).not.toContain('candleLoader={nativeExecution ? native.loader : undefined}');
   });
