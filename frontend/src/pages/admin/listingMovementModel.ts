@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import type { HistoricalProgram } from './listingHistoricalImport';
 
 export const MOVEMENT_SCENARIOS = [
   { id: 'CALM', name: 'Спокойный рост', description: 'Плавное движение с небольшими откатами и короткими тенями.' },
@@ -20,7 +21,8 @@ export interface ListingMovement {
   first24hGainPercent: string;
   maxPrice: string;
   stages: { type: 'growth' | 'range' | 'pullback' | 'recovery'; durationHours: number; targetPrice: string }[];
-  afterGrowth: 'range';
+  afterGrowth: 'range' | 'historical';
+  historical?: HistoricalProgram;
   pullbacks: { frequency: MovementFrequency; minDepthPercent: string; maxDepthPercent: string; durationMinutes: number };
   candles: { intensity: 'low' | 'medium' | 'high'; diversity: number; pauseFrequency: MovementFrequency };
   wicks: { length: 'short' | 'normal' | 'pronounced'; longFrequency: MovementFrequency };
@@ -116,5 +118,22 @@ export function validateListingMovement(initial: string, program: ListingMovemen
     }
   }
   if (!hasDayOne) return 'Один из этапов должен завершаться ровно через 24 часа, с целью первых суток.';
+  if (program.afterGrowth === 'historical') {
+    if (!program.historical?.clips.length) return 'Загрузите хотя бы один исторический CSV для продолжения.';
+    if (program.stages[program.stages.length - 1]?.type !== 'pullback') return 'История может начаться только после заключительного отката.';
+    const hours = program.historical.clips.reduce((n,clip)=>n+clip.bars.length,0);
+    if (hours > 4800 || program.historical.clips.length > 3) return 'Максимум 4800 часов в трёх отрезках.';
+    let anchor = decimal(program.stages[program.stages.length-1].targetPrice);
+    let top = anchor;
+    for (const clip of program.historical.clips) {
+      for (const [h,l,close] of clip.bars) {
+        if (!Number.isSafeInteger(h) || !Number.isSafeInteger(l) || !Number.isSafeInteger(close)) return 'Некорректные исторические свечи.';
+        top=BigNumber.max(top,anchor.times(new BigNumber(1).plus(h/1000000)));
+        anchor=anchor.times(new BigNumber(1).plus(close/1000000));
+        if (!anchor.isFinite() || !anchor.isGreaterThan(0)) return 'Исторический отрезок выводит цену за допустимые пределы.';
+      }
+    }
+    if (top.isGreaterThanOrEqualTo(decimal(program.maxPrice).times('.995'))) return 'Историческое движение превышает лимит цены или не оставляет запас для теней.';
+  } else if (program.historical) return 'Исторический набор должен быть выключен вместе с историческим режимом.';
   return null;
 }
