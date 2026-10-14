@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { importHistoricalCsv } from '../../pages/admin/listingHistoricalImport';
 import { archiveSelection, coversHistoricalSelection, historicalArchiveInfo,
-  HISTORICAL_PRESETS, prepareHistoricalArchive, sha256Text, verifyHistoricalArchive } from '../../pages/admin/listingHistoricalLibrary';
+  HISTORICAL_PRESETS, prepareHistoricalArchive, sha256Text, verifyHistoricalArchive } from '../../pages/admin/historicalArchiveStore';
 
 function csv(hours=2300, start='2018-01-01T00:00:00Z'): string {
   const epoch=Date.parse(start)/1000;
