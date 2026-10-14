@@ -1,0 +1,1132 @@
+{
+ "result": {
+  "tag": "old-futures-x4-1920-1",
+  "mode": "old",
+  "market": "futures",
+  "stress": false,
+  "throttle": 4,
+  "width": 1920,
+  "pair": "BTC/USDT",
+  "timeout": 12000,
+  "rowAtLayout1": [
+   "compare",
+   "layout",
+   "tools",
+   "presets",
+   "goto",
+   "scale",
+   "snapshot",
+   "fullscreen"
+  ],
+  "rowAtLayout2": [
+   "scale",
+   "fullscreen",
+   "more"
+  ],
+  "gotoOpenMs": 1054,
+  "gotoMenu": {
+   "id": "goto",
+   "x": 930,
+   "y": 188,
+   "w": 280,
+   "h": 148
+  },
+  "gotoError": null,
+  "dialogOpen": true,
+  "gotoStatus": null,
+  "lifecycle": {
+   "paintedStatesAfterLayout1": [
+    "compare layout tools presets goto scale snapshot fullscreen"
+   ],
+   "keysShownThenHidden": [],
+   "roCallbacksAfterLayout1": 14,
+   "mutationsAfterLayout1": 1,
+   "lastMutationMsAfterLayout1": 364,
+   "framesAfterLayout1": 2,
+   "framesWithGotoOnRow": 0,
+   "firstGotoFrameMs": null,
+   "lastGotoFrameMs": null,
+   "keySequence": [
+    "388ms: [compare layout tools presets goto scale snapshot fullscreen] w=1294 cell=1318 measured=true more=null dense=null menu=null goto=930,154,28,28",
+    "1178ms: [compare layout tools presets goto scale snapshot fullscreen] w=1294 cell=1318 measured=true more=null dense=null menu=goto goto=930,154,28,28"
+   ]
+  },
+  "errors": []
+ },
+ "life": {
+  "ro": [
+   {
+    "t": 2779,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 2779,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 2781,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 2786,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     "rb-body.rb-both"
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2787,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2788,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3040,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 3276,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 3276,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 3987,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3988,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 4164,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 4167,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 4393,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 4393,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 4393,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 4744,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 5267,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 5270,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7429,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7430,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7430,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7436,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7438,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7438,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7438,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7438,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7438,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7438,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7438,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7438,
+    "targets": [
+     "cw-pane-chart"
+    ]
+   },
+   {
+    "t": 7443,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7443,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7443,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7443,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7443,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7443,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7443,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7646,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7646,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7646,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7646,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7646,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7646,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7646,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7646,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7887,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7887,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 8216,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8216,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8216,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8216,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8216,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8216,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8216,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8590,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 8592,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 9271,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 9272,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11799,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11799,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11799,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11807,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11915,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11915,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11915,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11915,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11915,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11915,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11915,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11915,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11989,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11990,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 13995,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13997,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 14291,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14291,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   }
+  ],
+  "mutations": [
+   {
+    "t": 7326,
+    "added": [
+     "more"
+    ],
+    "removed": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "snapshot"
+    ],
+    "attrs": [
+     "class",
+     "data-cw-more"
+    ],
+    "keys": "scale fullscreen more",
+    "measured": true,
+    "more": "6",
+    "dense": null,
+    "width": 634,
+    "menu": null,
+    "goto": null,
+    "cell": 658,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "scale": 28,
+      "fullscreen": 28
+     },
+     "features": 146.9
+    }
+   },
+   {
+    "t": 9956,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "scale fullscreen more",
+    "measured": true,
+    "more": "6",
+    "dense": null,
+    "width": 634,
+    "menu": "more",
+    "goto": null,
+    "cell": 658,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "scale": 28,
+      "fullscreen": 28
+     },
+     "features": 146.9
+    }
+   },
+   {
+    "t": 11774,
+    "added": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "snapshot"
+    ],
+    "removed": [
+     "more"
+    ],
+    "attrs": [
+     "class",
+     "data-cw-more"
+    ],
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": null,
+    "width": 1294,
+    "menu": null,
+    "goto": [
+     930,
+     154,
+     28,
+     28
+    ],
+    "cell": 1318,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": null,
+     "keys": {
+      "compare": 110,
+      "layout": 90.6,
+      "tools": 134.3,
+      "presets": 107.8,
+      "goto": 28,
+      "scale": 28,
+      "snapshot": 28,
+      "fullscreen": 28
+     },
+     "features": 806.9
+    }
+   }
+  ],
+  "frames": [
+   {
+    "t": 5602,
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": null,
+    "width": 1294,
+    "menu": null,
+    "goto": [
+     930,
+     154,
+     28,
+     28
+    ],
+    "cell": 1318,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": null,
+     "keys": {
+      "compare": 110,
+      "layout": 90.6,
+      "tools": 134.3,
+      "presets": 107.8,
+      "goto": 28,
+      "scale": 28,
+      "snapshot": 28,
+      "fullscreen": 28
+     },
+     "features": 806.9
+    }
+   },
+   {
+    "t": 6150,
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": null,
+    "width": 1294,
+    "menu": "layout",
+    "goto": [
+     930,
+     154,
+     28,
+     28
+    ],
+    "cell": 1318,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": null,
+     "keys": {
+      "compare": 110,
+      "layout": 90.6,
+      "tools": 134.3,
+      "presets": 107.8,
+      "goto": 28,
+      "scale": 28,
+      "snapshot": 28,
+      "fullscreen": 28
+     },
+     "features": 806.9
+    }
+   },
+   {
+    "t": 7368,
+    "keys": "scale fullscreen more",
+    "measured": true,
+    "more": "6",
+    "dense": null,
+    "width": 634,
+    "menu": null,
+    "goto": null,
+    "cell": 658,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "scale": 28,
+      "fullscreen": 28
+     },
+     "features": 146.9
+    }
+   },
+   {
+    "t": 10054,
+    "keys": "scale fullscreen more",
+    "measured": true,
+    "more": "6",
+    "dense": null,
+    "width": 634,
+    "menu": "more",
+    "goto": null,
+    "cell": 658,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "scale": 28,
+      "fullscreen": 28
+     },
+     "features": 146.9
+    }
+   },
+   {
+    "t": 11798,
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": null,
+    "width": 1294,
+    "menu": null,
+    "goto": [
+     930,
+     154,
+     28,
+     28
+    ],
+    "cell": 1318,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": null,
+     "keys": {
+      "compare": 110,
+      "layout": 90.6,
+      "tools": 134.3,
+      "presets": 107.8,
+      "goto": 28,
+      "scale": 28,
+      "snapshot": 28,
+      "fullscreen": 28
+     },
+     "features": 806.9
+    }
+   },
+   {
+    "t": 12588,
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": null,
+    "width": 1294,
+    "menu": "goto",
+    "goto": [
+     930,
+     154,
+     28,
+     28
+    ],
+    "cell": 1318,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": null,
+     "keys": {
+      "compare": 110,
+      "layout": 90.6,
+      "tools": 134.3,
+      "presets": 107.8,
+      "goto": 28,
+      "scale": 28,
+      "snapshot": 28,
+      "fullscreen": 28
+     },
+     "features": 806.9
+    }
+   },
+   {
+    "t": 13975,
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": null,
+    "width": 1294,
+    "menu": null,
+    "goto": [
+     930,
+     154,
+     28,
+     28
+    ],
+    "cell": 1318,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": null,
+     "keys": {
+      "compare": 110,
+      "layout": 90.6,
+      "tools": 134.3,
+      "presets": 107.8,
+      "goto": 28,
+      "scale": 28,
+      "snapshot": 28,
+      "fullscreen": 28
+     },
+     "features": 806.9
+    }
+   }
+  ],
+  "marks": [
+   {
+    "t": 5597,
+    "name": "installed"
+   },
+   {
+    "t": 6853,
+    "name": "layout-menu-open"
+   },
+   {
+    "t": 6913,
+    "name": "layout2-click"
+   },
+   {
+    "t": 8661,
+    "name": "pane-settled"
+   },
+   {
+    "t": 11330,
+    "name": "layout-menu-open-2"
+   },
+   {
+    "t": 11410,
+    "name": "layout1-click"
+   },
+   {
+    "t": 12212,
+    "name": "escape"
+   },
+   {
+    "t": 13267,
+    "name": "goto-open-done"
+   },
+   {
+    "t": 15019,
+    "name": "goto-applied"
+   }
+  ],
+  "toolbar": []
+ }
+}

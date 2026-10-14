@@ -1,0 +1,1163 @@
+{
+ "result": {
+  "tag": "old-spot-x1-1440-2",
+  "mode": "old",
+  "market": "spot",
+  "stress": false,
+  "throttle": 1,
+  "width": 1440,
+  "pair": "AITH/USDT",
+  "timeout": 12000,
+  "rowAtLayout1": [
+   "more"
+  ],
+  "rowAtLayout2": [
+   "fullscreen",
+   "more"
+  ],
+  "gotoOpenMs": 809,
+  "gotoMenu": {
+   "id": "more",
+   "x": 485,
+   "y": 188,
+   "w": 300,
+   "h": 704
+  },
+  "gotoError": null,
+  "dialogOpen": true,
+  "gotoStatus": "История за эту дату не загружена",
+  "lifecycle": {
+   "paintedStatesAfterLayout1": [
+    "compare layout goto scale fullscreen more",
+    "compare scale fullscreen more",
+    "layout more",
+    "fullscreen more",
+    "more"
+   ],
+   "keysShownThenHidden": [
+    "compare",
+    "layout",
+    "goto",
+    "scale",
+    "fullscreen"
+   ],
+   "roCallbacksAfterLayout1": 19,
+   "mutationsAfterLayout1": 6,
+   "lastMutationMsAfterLayout1": 487,
+   "framesAfterLayout1": 6,
+   "framesWithGotoOnRow": 1,
+   "firstGotoFrameMs": 130,
+   "lastGotoFrameMs": 130,
+   "keySequence": [
+    "130ms: [compare layout goto scale fullscreen more] w=588 cell=612 measured=true more=3 dense=3 menu=null goto=630,154,28,28",
+    "171ms: [compare scale fullscreen more] w=588 cell=612 measured=true more=5 dense=null menu=null goto=-",
+    "203ms: [layout more] w=588 cell=612 measured=true more=7 dense=null menu=null goto=-",
+    "232ms: [fullscreen more] w=588 cell=612 measured=true more=7 dense=null menu=null goto=-",
+    "255ms: [more] w=588 cell=612 measured=true more=8 dense=null menu=null goto=-",
+    "495ms: [more] w=588 cell=612 measured=true more=8 dense=null menu=more goto=-"
+   ]
+  },
+  "errors": []
+ },
+ "life": {
+  "ro": [
+   {
+    "t": 440,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 440,
+    "targets": [
+     "orderbook-asks"
+    ]
+   },
+   {
+    "t": 635,
+    "targets": [
+     "orderbook-asks"
+    ]
+   },
+   {
+    "t": 635,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 636,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 693,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 693,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 693,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 727,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 727,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 845,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 866,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 866,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 954,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 954,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 3105,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3105,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3105,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3105,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3105,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3105,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3105,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3105,
+    "targets": [
+     "cw-pane-chart"
+    ]
+   },
+   {
+    "t": 3106,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3106,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3106,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3106,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3106,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3106,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3106,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3129,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3129,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3129,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3129,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3129,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3129,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3167,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 3167,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 3300,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3300,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3300,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3300,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3300,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3300,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3300,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3400,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 3400,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 4592,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 4592,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 5006,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 5006,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 5006,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 5006,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 5023,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 5023,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 5023,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 5023,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 5023,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 5023,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 5051,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 5051,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 5079,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 5108,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 5108,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 5518,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 5519,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 5657,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 5657,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   }
+  ],
+  "mutations": [
+   {
+    "t": 2262,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 3087,
+    "added": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen"
+    ],
+    "removed": [
+     "more"
+    ],
+    "attrs": [
+     "class",
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": "1",
+    "width": 281,
+    "menu": null,
+    "goto": [
+     903,
+     224,
+     28,
+     28
+    ],
+    "cell": 305
+   },
+   {
+    "t": 3154,
+    "added": [
+     "more",
+     "fullscreen"
+    ],
+    "removed": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 3195,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 3427,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 4207,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 4631,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 5001,
+    "added": [
+     "compare",
+     "layout",
+     "goto",
+     "scale"
+    ],
+    "removed": [],
+    "attrs": [
+     "class",
+     "data-cw-more"
+    ],
+    "keys": "compare layout goto scale fullscreen more",
+    "measured": true,
+    "more": "3",
+    "dense": "3",
+    "width": 588,
+    "menu": null,
+    "goto": [
+     630,
+     154,
+     28,
+     28
+    ],
+    "cell": 612
+   },
+   {
+    "t": 5039,
+    "added": [
+     "tools",
+     "presets",
+     "snapshot",
+     "more"
+    ],
+    "removed": [
+     "more",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "snapshot"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "compare scale fullscreen more",
+    "measured": true,
+    "more": "5",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 5060,
+    "added": [
+     "layout"
+    ],
+    "removed": [
+     "compare",
+     "scale",
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-more"
+    ],
+    "keys": "layout more",
+    "measured": true,
+    "more": "7",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 5101,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "layout"
+    ],
+    "attrs": [],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 5113,
+    "added": [],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-more"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 5363,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612
+   }
+  ],
+  "frames": [
+   {
+    "t": 1835,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 2270,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 3098,
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": "1",
+    "width": 281,
+    "menu": null,
+    "goto": [
+     903,
+     224,
+     28,
+     28
+    ],
+    "cell": 305
+   },
+   {
+    "t": 3159,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 4216,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 5006,
+    "keys": "compare layout goto scale fullscreen more",
+    "measured": true,
+    "more": "3",
+    "dense": "3",
+    "width": 588,
+    "menu": null,
+    "goto": [
+     630,
+     154,
+     28,
+     28
+    ],
+    "cell": 612
+   },
+   {
+    "t": 5047,
+    "keys": "compare scale fullscreen more",
+    "measured": true,
+    "more": "5",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 5079,
+    "keys": "layout more",
+    "measured": true,
+    "more": "7",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 5108,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 5131,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 5371,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612
+   }
+  ],
+  "marks": [
+   {
+    "t": 1831,
+    "name": "installed"
+   },
+   {
+    "t": 2882,
+    "name": "layout-menu-open"
+   },
+   {
+    "t": 2924,
+    "name": "layout2-click"
+   },
+   {
+    "t": 3432,
+    "name": "pane-settled"
+   },
+   {
+    "t": 4827,
+    "name": "layout-menu-open-2"
+   },
+   {
+    "t": 4876,
+    "name": "layout1-click"
+   },
+   {
+    "t": 5148,
+    "name": "escape"
+   },
+   {
+    "t": 5949,
+    "name": "goto-open-done"
+   },
+   {
+    "t": 7151,
+    "name": "goto-applied"
+   }
+  ]
+ }
+}

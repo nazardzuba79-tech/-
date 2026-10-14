@@ -3,28 +3,27 @@
 Continuation of #519 on `main` `72f0a594`. Script: `scripts/qa-chart-workspace.cjs` (production bundle, loopback read-only fixture, Chromium). The fixture now serves the three test markets with the limits verified read-only on the real hosts the same day: AITH (managed listing on the market edge, ~21 h of history, 2 → ~22 USDT, a live 45 s lease on every read), NRX (edge, listed weeks ago), VTA (API host, 0.01 → ~10). Native `1m 5m 15m 1h 4h 1d 1w` (Monday-anchored week), HTTP 400 for every other code, at most 1000 bars, nothing before the listing.
 
 - `before/` — the `main` `72f0a594` build, AITH/USDT at 1440: the owner's screenshots reproduced (`REPORT-before.md`, `report-before.json`).
-- `after/` — this branch, every section: **220 passed, 0 failed** (`REPORT-after.md`, `report-after.json`, 2026-10-14T12:36Z–12:41Z): desktop 1366/1440/1707/1920 × Spot/Futures, AITH desktop + phone, the four contexts, panes, layout identity, sync, templates, go-to, snapshot, full screen, keyboard, menus, 1920 four panes, phones 320/360/390/430 + 844×390, zoom 90–125 %, scenarios A/B/C and the hidden tab.
-- `after-widths/` — the same build at 1600 (desktop) and 768×1024 (tablet): **32 passed, 0 failed**.
-- `after-panes/` — the `panes` section re-run on the final tree after one cosmetic change to the pane header (the dated «not updating» note takes the analysis tag's place): the checks are the same.
+- `after/` — this branch on the final tree, every section: **266 passed, 0 failed; 13 sections completed, 0 FATAL, 0 NOT_RUN** (`REPORT-after.md`, `report-after.json`, `manifest.json` with the sha256 of every file, 2026-10-14T14:30Z–14:36Z): desktop 1366/1440/1600/1707/1920 × Spot/Futures, AITH desktop + phone, the four contexts, panes, layout identity, sync, the 2 → 1 transition (Spot AITH 1440/1366, Futures BTC 1440, phone 390, CPU ×4), templates, go-to, snapshot, full screen, keyboard, menus, 1920 four panes, phones 320/360/390/430 + 768×1024 + 844×390, zoom 90–125 %, scenarios A/B/C and the hidden tab. Run on the working tree that is the commit carrying this folder, before it was committed (its `checkout` field shows the parent `fa76e844`). The four transition traces and videos are listed in the manifest and uploaded by CI; the Spot 1440 pair is kept in `transition/regression/on-fix/`. Evidence names never differ by case alone (`1min`, `1month`).
+- `transition/` — the 2 → 1 → «К дате» failure of the CI `browser` job on `9a112675` (owner review 5518558556): reproduction on the original and the fixed toolbar with every painted frame, mutation and ResizeObserver pass recorded, the pass-by-pass trace of the fold, and the `transition` regression on a bundle with the original toolbar (25/28, the three `row-paints-once` FAIL) and on the fix (28/28). Cause and fix in `transition/README.md`.
 
 ## Performance counters (15 s windows, loopback fixture, Chromium)
 
 | scenario | candle requests | all requests | new sockets | heap MB | canvases |
 |---|---|---|---|---|---|
 | A · one chart | 3 | 3 | 0 | 15 | 11 |
-| B · chart + 3 compares | 3 | 4 | 0 | 16 | 7 |
+| B · chart + 3 compares | 3 | 4 | 0 | 15 | 7 |
 | C · two charts | 4 | 4 | 0 | 17 | 18 |
-| C · four charts (1920) | 7 | 17 | 0 | 19 | 32 |
+| C · four charts (1920) | 7 | 18 | 0 | 19 | 32 |
 | hidden tab · four charts | 0 | 0 | 0 | 19 | 32 |
-| A · back to one chart | 3 | 3 | 0 | 16 | 11 |
+| A · back to one chart | 3 | 3 | 0 | 17 | 11 |
 
 | timing, ms | Futures 1440 | Spot 1440 |
 |---|---|---|
-| chart open (goto → candles) | 710 | — |
-| timeframe switch 1m → 4h | 106 | 116 |
-| first compare line | 1197 | 1206 |
-| two charts open | 146 | 226 |
-| four charts open (1920) | 257 | — |
+| chart open (goto → candles) | 732 | — |
+| timeframe switch 1m → 4h | 104 | 97 |
+| first compare line | 1175 | 1195 |
+| two charts open | 203 | 243 |
+| four charts open (1920) | 285 | — |
 
 Local numbers on this container; they say nothing about the Hetzner host.
 
@@ -43,6 +42,7 @@ Local numbers on this container; they say nothing about the Hetzner host.
 | 9 | Futures, layout 2, «Синхронизировать таймфрейм» | every chart follows one interval | a checkbox with no effect (nobody published the event) | — | panes follow the main interval; a pane's pick moves the main chart | `synctf.futures.1440.sync-timeframe-is-real` |
 | 10 | AITH 1w, time axis | a date under the lone weekly bar | «00:00:00» | the library picks a time-of-day label with no neighbouring tick | `timeTickLabel()`: a date for bars ≥ 1 day, HH:MM intraday | screenshot `after-aith-1440-1w.png` |
 | 11 | Spot panes / compare | a listing can be opened beside BTC | test markets missing from the instrument list | the list read the venue snapshot only | live test markets added from the stores already held | `panes.spot.1440.late-answer-dropped` (SOL slow → AITH fast) |
+| 12 | Spot AITH 1440 (and 1366, Futures 1440), 2 charts → 1 chart | the row settles once and «К дате» stays where it is | the row painted 3–5 different key sets over 0.3–1.6 s; «К дате» showed for a frame and moved into «Ещё»; the CI click timed out on it (found after the PR went up, owner review 5518558556) | the fold measured the squeezed strip, guessed «Ещё», relabelled after paint and restarted from a ResizeObserver callback | one fold per width in `ChartWorkspaceToolbar` (see `transition/README.md`) | `transition.*.row-paints-once` (fails 3/28 on the original toolbar, passes on the fix) |
 
 Investigated and kept as correct: AITH 1d = 2 bars, 1w = 1 bar — the asset is one day old; the chart now shows that honestly instead of stretching it.
 
@@ -72,7 +72,7 @@ A built interval carries a dot and a tooltip naming its base bars; the menu expl
 | I scale / full screen | reset, fit, latest, auto, log; full screen + Esc | Spot, Futures | works; clamp re-applied after reset | works | `*.menus.inside-viewport`, `*.fullscreen.toggle-escape` |
 | K snapshot | PNG download / copy | Spot, Futures, AITH | real PNG > 10 KB | works | `*.snapshot.png`, `aith.spot.1440.snapshot.png` |
 | L hotkeys | digits 1–9, , and ., Alt+…, Shift+F, Esc | Spot, Futures, AITH | digit 1 is 1m on a listing; keys ignored in inputs | works | `*.keyboard.*`, `aith.spot.1440.keyboard.digit-1-is-1m` |
-| layout | 1/2/4, expand, phone tabs, «Торговать», sync cursor/time/timeframe | Spot, Futures | main chart never remounted; pane's own instrument; sync timeframe real | fixed (sync), works | `*.layout.*`, `keep.futures.1440.*`, `synctf.futures.1440.*`, `futures.1920.layout.*` |
+| layout | 1/2/4, expand, phone tabs, «Торговать», sync cursor/time/timeframe | Spot, Futures, AITH, phone | main chart never remounted; pane's own instrument; sync timeframe real; 2 → 1 settles in one paint and «К дате» opens and answers | fixed (sync, transition), works | `*.layout.*`, `keep.futures.1440.*`, `synctf.futures.1440.*`, `futures.1920.layout.*`, `transition.*` |
 | panes | loading / ok / empty / error+retry / stale | Spot (SOL slow → AITH, DOGE abort, NRX empty) | cleared at once, late answer dropped, retry recovers, stale dated | fixed | `panes.spot.1440.*` |
 
 Hidden in a specific context and why: nothing in the workspace — every source serves all thirteen intervals natively or built; the plain (non-workspace) chart keeps its six and never shows 1m/3m. Blockers: Spot «К дате» cannot page history (the public Spot candle path ignores `endTime`, pre-existing, says so); compare and the data views do not apply to the TradingView iframe or the CFD chart (unchanged).

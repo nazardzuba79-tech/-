@@ -99,12 +99,26 @@ jobs:
         run: |
           npm install --prefix /tmp/voltex-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/voltex-browser/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Chart workspace browser QA (AITH, every context, panes, layout, sync, tools, phones, zoom, counters)
+      - name: Chart workspace browser QA (AITH, every context, panes, layout transitions, sync, tools, phones, zoom, counters)
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-browser/node_modules/playwright
           LANG: en_US.UTF-8
+          # What was tested: the PR head and the commit checked out (GitHub's merge of the head into the base).
+          QA_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          QA_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+        # Exit 1: a check failed. Exit 2: a section stopped (FATAL), a planned section never ran (NOT_RUN),
+        # or the evidence is incomplete — the report and manifest are written in every case.
         run: node scripts/qa-chart-workspace.cjs --dist frontend/dist --out output/chart-workspace --phase after --widths 1366,1440,1920 --phones 360,390 --perf-window 6000
-      - name: Upload screenshots and the report
+      - name: Sections and verdict
+        if: always()
+        run: >-
+          node -e "const fs=require('fs');const f='output/chart-workspace/report-after.json';
+          if(!fs.existsSync(f)){console.log('No report was written');process.exit(1);}
+          const r=JSON.parse(fs.readFileSync(f,'utf8'));
+          const rows=r.sections.map(s=>'| '+s.id+' | '+s.status.toUpperCase()+' | '+(s.checks??'')+' | '+((s.failedChecks||[]).join(' '))+' | '+(s.error?String(s.error).split('\\n')[0].replace(/[|]/g,'/'):'')+' |');
+          const md=['### Chart workspace QA: '+r.verdict,'','PR head '+r.git.prHead+' · checkout '+r.git.checkout,'','Checks: '+r.summary.passed+' passed, '+r.summary.failed+' failed; evidence files: '+r.manifest.count,'','| section | status | checks | failed checks | error |','|---|---|---|---|---|',...rows].join('\\n');
+          console.log(md); if(process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md+'\\n');"
+      - name: Upload screenshots, traces, videos, the report and the manifest
         if: always()
         uses: actions/upload-artifact@v4
         with:

@@ -22,6 +22,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const express = require('express');
 const { once } = require('node:events');
+const crypto = require('node:crypto');
+const { execSync } = require('node:child_process');
 
 const args = process.argv.slice(2);
 const arg = (key, fallback) => (args.includes(key) ? args[args.indexOf(key) + 1] : fallback);
@@ -253,10 +255,36 @@ function start() {
 }
 
 // ── Checks ────────────────────────────────────────────────────────────────
-const report = { phase: PHASE, dist: DIST, startedAt: new Date().toISOString(), checks: [], perf: {}, screenshots: [], environment: 'LOCAL QA ONLY — production bundle, loopback read-only fixture' };
-const check = (id, ok, detail) => { report.checks.push({ id, ok: !!ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'} ${id}${detail ? ' — ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)) : ''}`); return !!ok; };
+const git = command => { try { return execSync(command, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || null; } catch { return null; } };
+const report = { phase: PHASE, dist: DIST, startedAt: new Date().toISOString(), checks: [], perf: {}, screenshots: [], environment: 'LOCAL QA ONLY — production bundle, loopback read-only fixture',
+  // What was tested: the PR head and the commit actually checked out (on a pull_request run that is GitHub's
+  // synthetic merge of the head into the base, so both are recorded).
+  git: { prHead: process.env.QA_PR_HEAD_SHA || null, base: process.env.QA_BASE_SHA || null, checkout: git('git rev-parse HEAD'), ref: process.env.GITHUB_REF || git('git rev-parse --abbrev-ref HEAD'), run: process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}/${process.env.GITHUB_RUN_ATTEMPT || 1}` : null,
+    // Tracked files changed on top of the checkout: a local run of an uncommitted tree says so.
+    uncommitted: (git('git status --porcelain --untracked-files=no') || '').split('\n').filter(Boolean).length },
+  args: process.argv.slice(2), sections: [], plan: [], pageErrors: [], fatal: null };
+/** The section running now: page errors and fatal evidence are filed under it. */
+let currentSection = null;
+/** Evidence names never differ by case alone (artifact uploads are case-insensitive): 1m → 1min, 1M → 1month. */
+const tfSlug = tf => (tf === '1M' ? '1month' : /^\d+m$/.test(tf) ? tf.replace(/m$/, 'min') : tf);
+// Harness self-test only (never set in CI): QA_INJECT_FAULT=<check id> throws right after that check, inside
+// its section; QA_INJECT_FAULT=run throws outside every section. Both must still end in a full report, the
+// section FATAL or every planned section NOT_RUN, and exit code 2.
+const FAULT = process.env.QA_INJECT_FAULT || '';
+const check = (id, ok, detail) => { report.checks.push({ id, ok: !!ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'} ${id}${detail ? ' — ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)) : ''}`); if (FAULT && FAULT === id) throw new Error(`injected fault after ${id} (QA_INJECT_FAULT)`); return !!ok; };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const wants = id => !ONLY.length || ONLY.some(prefix => id.startsWith(prefix));
+const INTERACTIONS = ['timeframes', 'types', 'compare', 'data', 'analytics', 'layout', 'presets', 'goto', 'snapshot', 'fullscreen', 'keyboard', 'menus', 'regression', 'interactions'];
+const AFTER = PHASE === 'after';
+const SELECT = {
+  geometry: DESKTOP.some(w => ['futures', 'spot'].some(m => wants('geometry') || wants(`geometry.${m}.${w}`))),
+  aith: wants('aith'), contexts: AFTER && wants('contexts'), panes: AFTER && wants('panes'), keep: AFTER && wants('keep'), synctf: AFTER && wants('synctf'), transition: AFTER && wants('transition'),
+  'interactions.futures': AFTER && (INTERACTIONS.some(k => wants(k)) || wants('futures')), 'interactions.spot': AFTER && (INTERACTIONS.some(k => wants(k)) || wants('spot')),
+  layout4: AFTER && wants('layout4'), mobile: AFTER && wants('mobile'), zoom: AFTER && wants('zoom'), perf: wants('perf'),
+};
+// The plan is fixed before the fixture or the browser start, so a run that stops early still lists every
+// planned section — as NOT_RUN, never as passed.
+report.plan = (PHASE === 'after' ? Object.keys(SELECT) : ['geometry', 'aith', 'perf']).map(id => ({ id, selected: !!SELECT[id] }));
 
 /** Candle geometry from the main pane's own pixels (no chart internals): the widest body on the
  *  middle rows, the lowest and highest painted candle rows, and — through the read-only handle the
@@ -308,71 +336,104 @@ const menuBox = () => {
     inside: r.left >= -1 && r.top >= -1 && r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1 };
 };
 
-/** The row is quiet: measured, and the same keys at the same place across two reads 150 ms apart.
- *  A layout change re-measures the row (the «Раскладка» badge changes, the row grows or shrinks), moving keys
- *  into «Ещё» or back; a click that lands while a key moves hits a detached element. */
-async function settleToolbar(page, { timeout = 3000 } = {}) {
+/** The row is quiet: measured, no menu open, and the same keys at the same place over two reads 120 ms apart.
+ *  A layout change used to re-fold the row over several frames (fixed in the toolbar, 2026-10-14); a quiet row
+ *  is still what a click waits for, as a trader's eye does. */
+async function settleToolbar(page, { timeout = 4000 } = {}) {
   const read = () => page.evaluate(() => {
     const row = document.querySelector('[data-cw-toolbar]');
     if (!row) return null;
     const r = row.getBoundingClientRect();
-    return { measured: row.classList.contains('is-measured'), menu: !!document.querySelector('[data-cw-menu]'),
-      keys: [...row.querySelectorAll('[data-cw-feature]')].map(el => { const b = el.getBoundingClientRect(); return `${el.getAttribute('data-cw-feature')}@${Math.round(b.left)},${Math.round(b.top)}`; }).join('|'),
-      box: `${Math.round(r.width)}x${Math.round(r.height)}` };
+    return { measured: row.classList.contains('is-measured'), menu: !!document.querySelector('[data-cw-menu]'), box: `${Math.round(r.width)}x${Math.round(r.height)}`,
+      keys: [...row.querySelectorAll('[data-cw-feature], [data-cw-tf]')].map(el => { const b = el.getBoundingClientRect(); return `${el.getAttribute('data-cw-feature') || el.getAttribute('data-cw-tf')}@${Math.round(b.left)},${Math.round(b.top)}`; }).join('|') };
   });
   const deadline = Date.now() + timeout;
   let previous = null;
   while (Date.now() < deadline) {
     const now = await read();
     if (!now) return false;
-    if (now.measured && previous && previous.keys === now.keys && previous.box === now.box) return true;
+    if (now.measured && !now.menu && previous && previous.keys === now.keys && previous.box === now.box) return true;
     previous = now;
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(120);
   }
   console.log(`  toolbar did not settle in ${timeout} ms: ${JSON.stringify(previous).slice(0, 300)}`);
   return false;
 }
 
-/** Open a feature from the row, or from «Ещё» when the row put it there (a menu body is inline in «Ещё»; an action is a list key).
- *  Menus are portaled, so the row key is looked up under the toolbar; every click is bounded and a key that moved
- *  under the pointer (the row re-measuring after a layout change) is retried from a quiet row. */
-async function openFeatureOn(page, feature) {
-  const ATTEMPTS = 3;
-  for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
+/** Open a toolbar feature the way a trader does, and prove it opened.
+ *  The key is looked up on a quiet row each time: on the row (a menu key must open its own menu, an action
+ *  key just runs), or folded into «Ещё» / the phone «•••» sheet (a menu body sits inline in its section, an
+ *  action is a list key that is clicked). Every click is bounded; a key that moved or was replaced under the
+ *  pointer is found again from a quiet row. Past the deadline it throws with what it saw — never a silent
+ *  pass, never `force`, never a DOM dispatch instead of a click. Returns the open menu's box (null for an action). */
+async function openFeatureOn(page, feature, { deadline = 12000 } = {}) {
+  const until = Date.now() + deadline;
+  let attempts = 0, last = null;
+  while (Date.now() < until) {
+    attempts += 1;
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.querySelector('[data-cw-menu]'), null, { timeout: 1500 }).catch(() => {});
-    await settleToolbar(page);
-    const trigger = page.locator(`[data-cw-toolbar] [data-cw-feature="${feature}"]`).first();
-    let action = false;
+    const quiet = await settleToolbar(page, { timeout: Math.max(600, Math.min(4000, until - Date.now())) });
     try {
-      if (!(await trigger.count()) || !(await trigger.isVisible())) {
-        const more = page.locator('[data-cw-toolbar] [data-cw-feature="more"]');
-        if (await more.count()) {
-          await more.click({ timeout: 5000 }); await page.waitForTimeout(150);
-          const item = page.locator(`[data-cw-menu="more"] [data-cw-feature="${feature}"]`).first();
-          if (await item.count()) { await item.click({ timeout: 5000 }); action = true; }
-        }
-      } else { await trigger.click({ timeout: 5000 }); action = !(await trigger.getAttribute('aria-haspopup')); }
+      const rowKey = page.locator(`[data-cw-toolbar] [data-cw-feature="${feature}"]`).first();
+      if ((await rowKey.count()) && (await rowKey.isVisible())) {
+        const menuKey = !!(await rowKey.getAttribute('aria-haspopup'));
+        await rowKey.click({ timeout: 3000 });
+        if (!menuKey) return null;
+        await page.locator(`[data-cw-menu="${feature}"]`).waitFor({ state: 'visible', timeout: 3000 });
+        return { ...(await page.evaluate(menuBox)), via: 'row' };
+      }
+      for (const [trigger, list] of [['more', 'more'], ['phone-more', 'phone-sheet']]) {
+        const key = page.locator(`[data-cw-toolbar] [data-cw-feature="${trigger}"]`);
+        if (!(await key.count()) || !(await key.isVisible())) continue;
+        await key.click({ timeout: 3000 });
+        const menu = page.locator(`[data-cw-menu="${list}"]`);
+        await menu.waitFor({ state: 'visible', timeout: 3000 });
+        const part = menu.locator(`[data-cw-section="${feature}"]`).first();
+        await part.waitFor({ state: 'visible', timeout: 2000 });
+        const listKey = part.locator(`[data-cw-feature="${feature}"]`);
+        if (await listKey.count()) { await listKey.first().click({ timeout: 3000 }); return null; }
+        return { ...(await page.evaluate(menuBox)), via: list };
+      }
+      last = { quiet, reason: 'neither the key nor «Ещё» is on screen' };
     } catch (error) {
-      if (attempt === ATTEMPTS - 1) throw error;
-      console.log(`  retry ${feature}: ${String(error.message || error).split('\n')[0].slice(0, 120)}`);
-      await page.waitForTimeout(300);
-      continue;
+      last = { quiet, reason: String((error && error.message) || error).split('\n')[0].slice(0, 180) };
+      console.log(`  retry ${feature} (${attempts}): ${last.reason}`);
     }
-    await page.waitForTimeout(220);
-    const box = await page.evaluate(menuBox);
-    // An action key (full screen) opens nothing; a menu key must — one retry covers a re-render closing it at once.
-    if (box || action) return box;
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(250);
   }
-  return page.evaluate(menuBox);
+  throw new Error(`openFeatureOn(${feature}): not open after ${deadline} ms and ${attempts} attempts — ${JSON.stringify(last)}`);
+}
+
+/** The layout is complete: the grid carries the value, every extra pane is mounted (a phone mounts the one it
+ *  shows) and has an answer (ok, empty, error or stale — not loading), no menu is open and the row is quiet. */
+async function waitLayout(page, value, { timeout = 15000 } = {}) {
+  await page.waitForFunction(n => {
+    const grid = document.querySelector('[data-cw-layout]');
+    if (!grid || grid.getAttribute('data-cw-layout') !== String(n)) return false;
+    const panes = [...document.querySelectorAll('[data-cw-pane]')];
+    if (!grid.classList.contains('is-compact') && panes.length !== n - 1) return false;
+    return panes.every(p => ['ok', 'empty', 'error', 'stale'].includes(p.getAttribute('data-cw-pane-state')));
+  }, value, { timeout });
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('[data-cw-menu]'), null, { timeout: 2000 }).catch(() => {});
+  if (!(await settleToolbar(page))) throw new Error(`layout ${value}: the toolbar did not settle`);
+}
+
+/** Pick a layout from its menu (on the row, in «Ещё» or in the phone sheet) and wait until it is complete. */
+async function selectLayout(page, value, { timeout = 15000, beforeClick } = {}) {
+  if (!(await openFeatureOn(page, 'layout'))) throw new Error('the layout menu did not open');
+  if (beforeClick) await beforeClick();
+  await page.locator(`[data-cw-menu] [data-cw-layout-option="${value}"]`).first().click({ timeout: 3000 });
+  await waitLayout(page, value, { timeout });
 }
 
 async function openTerminal(ctx, origin, market, { width, height, mobile, pair = 'BTC/USDT' }) {
   const page = await ctx.newPage();
   const errors = [];
-  page.on('pageerror', e => errors.push(String(e).slice(0, 200)));
-  page.on('console', m => { if (m.type() === 'error' && !/favicon|net::ERR|External network/.test(m.text())) errors.push('console: ' + m.text().slice(0, 160)); });
+  const file = message => report.pageErrors.push({ section: currentSection?.id ?? null, url: page.url().replace(/^https?:\/\/[^/]+/, ''), message });
+  page.on('pageerror', e => { errors.push(String(e).slice(0, 200)); file(String(e).slice(0, 300)); });
+  page.on('console', m => { if (m.type() === 'error' && !/favicon|net::ERR|External network/.test(m.text())) { errors.push('console: ' + m.text().slice(0, 160)); file('console: ' + m.text().slice(0, 300)); } });
   const t0 = Date.now();
   await page.goto(`${origin}${market === 'futures' ? '/futures' : '/trade'}?pair=${encodeURIComponent(pair)}`, { waitUntil: 'domcontentloaded' });
   if (mobile) {
@@ -396,11 +457,16 @@ async function run() {
   const server = start(); await once(server, 'listening');
   const origin = `http://127.0.0.1:${server.address().port}`;
   if (SERVE) { console.log(`Fixture: ${origin}/futures  ${origin}/trade  (Ctrl+C to stop)`); return new Promise(() => {}); }
+  let browser = null;
+  try {
   const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-precise-memory-info'] });
+  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-precise-memory-info'] });
+  if (FAULT === 'run') throw new Error('injected run-level fault (QA_INJECT_FAULT)');
+  const openContexts = new Set();
   const shot = async (page, name, clip) => { const file = path.join(OUT, `${name}.png`); await page.screenshot({ path: file, clip, fullPage: false }); report.screenshots.push(path.basename(file)); return file; };
   const context = async (width, height, extra = {}) => {
     const ctx = await browser.newContext({ viewport: { width, height }, locale: 'ru-RU', acceptDownloads: true, ...extra });
+    openContexts.add(ctx); ctx.on('close', () => openContexts.delete(ctx));
     await ctx.route('**/*', route => { const url = new URL(route.request().url()); return url.origin === origin && ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort(); });
     return ctx;
   };
@@ -410,7 +476,63 @@ async function run() {
     return { x: Math.max(0, r.left - x), y: Math.max(0, r.top - x), width: Math.min(window.innerWidth, r.width + 2 * x), height: Math.min(window.innerHeight - Math.max(0, r.top - x), r.height + 2 * x) };
   }, extra);
 
+
+  // ── Sections: what was planned, what ran, where a run stopped (owner review 5518558556, P2) ──
+  // Each block runs as a section. An exception ends that section only: its open pages are photographed and
+  // their toolbar/layout written down, its contexts are closed, the remaining sections still run, and the
+  // report — written in `finally` whatever happens — names the section FATAL with the error and stack, the
+  // last check it reached and every planned section that never ran (NOT_RUN). The exit code is non-zero.
+  const fatalEvidence = async entry => {
+    entry.evidence = [...(entry.evidence || [])];
+    let n = entry.evidence.length;
+    for (const ctx of [...openContexts]) for (const page of ctx.pages()) {
+      n += 1;
+      entry.evidence.push(await pageEvidence(page, `fatal-${entry.id.replace(/[^a-z0-9.-]/gi, '_')}-${n}`));
+    }
+    fs.writeFileSync(path.join(OUT, `fatal-${entry.id.replace(/[^a-z0-9.-]/gi, '_')}.json`), JSON.stringify(entry, null, 2));
+  };
+  /** A photo of the page and what its toolbar, layout and chart were doing, for a section that stopped. */
+  const pageEvidence = async (page, name) => {
+      const item = { url: page.url().replace(/^https?:\/\/[^/]+/, '') };
+      try { await page.screenshot({ path: path.join(OUT, `${name}.png`), timeout: 8000 }); item.screenshot = `${name}.png`; report.screenshots.push(item.screenshot); } catch (e) { item.screenshotError = String(e.message || e).split('\n')[0]; }
+      try {
+        item.dom = await Promise.race([page.evaluate(() => ({
+          layout: document.querySelector('[data-cw-layout]')?.getAttribute('data-cw-layout') ?? null,
+          panes: [...document.querySelectorAll('[data-cw-pane]')].map(p => p.getAttribute('data-cw-pane-state')),
+          menu: document.querySelector('[data-cw-menu]')?.getAttribute('data-cw-menu') ?? null,
+          toolbar: (() => { const row = document.querySelector('[data-cw-toolbar]'); if (!row) return null; return { measured: row.classList.contains('is-measured'), dense: row.getAttribute('data-cw-dense'), more: row.getAttribute('data-cw-more'), width: row.clientWidth,
+            keys: [...row.querySelectorAll('[data-cw-feature], [data-cw-tf]')].map(el => { const r = el.getBoundingClientRect(); return `${el.getAttribute('data-cw-feature') || el.getAttribute('data-cw-tf')}@${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)}`; }) }; })(),
+          chart: document.querySelector('[data-chart-state]')?.getAttribute('data-chart-state') ?? null,
+        })), new Promise(resolve => setTimeout(() => resolve('timeout'), 8000))]);
+      } catch (e) { item.domError = String(e.message || e).split('\n')[0]; }
+      return item;
+  };
+  const section = async (id, selected, body) => {
+    if (!selected) { report.sections.push({ id, status: 'not_selected' }); return; }
+    const entry = { id, status: 'running', startedAt: new Date().toISOString(), firstCheck: report.checks.length };
+    report.sections.push(entry); currentSection = entry;
+    console.log(`── ${id}`);
+    try { await body(); entry.status = 'completed'; }
+    catch (error) {
+      entry.status = 'fatal';
+      entry.error = String((error && error.message) || error).split('\n').slice(0, 16).join('\n');
+      entry.stack = String((error && error.stack) || '').split('\n').filter(l => /^\s+at /.test(l)).slice(0, 12).join('\n');
+      entry.lastCheck = report.checks.at(-1)?.id ?? null;
+      if (error && Array.isArray(error.qaEvidence)) entry.evidence = error.qaEvidence;
+      console.log(`FATAL ${id} — ${entry.error.split('\n')[0]}${entry.lastCheck ? ` (last check: ${entry.lastCheck})` : ''}`);
+      await fatalEvidence(entry).catch(e => { entry.evidenceError = String(e.message || e); });
+      for (const ctx of [...openContexts]) await ctx.close().catch(() => {});
+    } finally {
+      entry.finishedAt = new Date().toISOString();
+      entry.checks = report.checks.length - entry.firstCheck;
+      entry.failedChecks = report.checks.slice(entry.firstCheck).filter(c => !c.ok).map(c => c.id);
+      delete entry.firstCheck;
+      currentSection = null;
+    }
+  };
+
   // ── Desktop: geometry + screenshots for every width, both markets ───────
+  await section('geometry', SELECT.geometry, async () => {
   for (const width of DESKTOP) {
     for (const market of ['futures', 'spot']) {
       const id = `geometry.${market}.${width}`;
@@ -434,11 +556,12 @@ async function run() {
       await ctx.close();
     }
   }
+  });
 
   // ── AITH: a managed listing with ~21 h of history on the Spot desktop (the owner's screenshots, 2026-10-14) ──
   // Runs in both phases: `before` records the defects as shipped (1m shown unavailable, one weekly
   // candle stretched over the plot, a price scale below zero), `after` asserts the fixes.
-  if (wants('aith')) {
+  await section('aith', SELECT.aith, async () => {
     const ctx = await context(1440, 900);
     const { page, errors, opened } = await openTerminal(ctx, origin, 'spot', { width: 1440, height: 900, pair: 'AITH/USDT' });
     const P = 'aith.spot.1440';
@@ -478,7 +601,7 @@ async function run() {
       const state = await page.getAttribute('[data-chart-state]', 'data-chart-state');
       const g = await geometry();
       report.perf[`${P}.${tf}`] = { request: last, state, bars: fixtureBars[tf], ...g };
-      await shot(page, `${PHASE}-aith-1440-${tf}`, await chartClip(page, 4));
+      await shot(page, `${PHASE}-aith-1440-${tfSlug(tf)}`, await chartClip(page, 4));
       if (PHASE === 'after') {
         check(`${P}.${tf}.native-request`, last.interval === tf && state === 'candles', { last, state });
         // A young asset's few bars are drawn at a readable width at the right of the plot — never one bar stretched over it.
@@ -501,7 +624,7 @@ async function run() {
       await page.waitForTimeout(700);
       const month = { last: await lastRequest(), state: await page.getAttribute('[data-chart-state]', 'data-chart-state'), g: await geometry(), partial: await page.evaluate(() => document.querySelector('[data-cw-tf-partial]')?.textContent || null) };
       check(`${P}.1M.derived-from-1d-forming`, month.last.interval === '1d' && month.state === 'candles' && month.g && month.g.widestBodyPx <= 40 && month.g.prices && month.g.prices.bottom >= 0, { last: month.last, state: month.state, widest: month.g?.widestBodyPx, prices: month.g?.prices, partial: month.partial });
-      await shot(page, `${PHASE}-aith-1440-1M`, await chartClip(page, 4));
+      await shot(page, `${PHASE}-aith-1440-1month`, await chartClip(page, 4));
       await page.locator('[data-cw-tf="1h"]').click(); await page.waitForTimeout(600);
     } else console.log('BEFORE', P, 'extras', JSON.stringify(extras));
     // Compare with BTC and a second pane on BTC: both must read Spot's own source, never the listing's.
@@ -518,19 +641,17 @@ async function run() {
     await openFeatureOn(page, 'compare');
     if (await page.locator('[data-cw-compare-exit]').count()) await page.locator('[data-cw-compare-exit]').click();
     await page.keyboard.press('Escape'); await page.waitForTimeout(300);
-    await openFeatureOn(page, 'layout');
-    await page.locator('[data-cw-layout-option="2"]').click();
-    await page.waitForFunction(() => document.querySelectorAll('[data-cw-pane]').length === 1 && ['ok', 'failed', 'empty', 'error'].includes(document.querySelector('[data-cw-pane]')?.getAttribute('data-cw-pane-state')), null, { timeout: 12000 }).catch(() => {});
-    await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+    await selectLayout(page, 2);
     const pane = await page.evaluate(() => ({ state: document.querySelector('[data-cw-pane]')?.getAttribute('data-cw-pane-state') || null, pair: document.querySelector('[data-cw-pane] [data-cw-pane-symbol]')?.value || null, options: [...document.querySelectorAll('[data-cw-pane] [data-cw-pane-timeframe] option')].map(o => o.value), last: document.querySelector('[data-cw-pane-last]')?.textContent || null, requests: window.__qa.fetches.filter(f => /candles/.test(f.url) && !/AITH/.test(f.url)).map(f => f.url.split('?')[0]).slice(-3) }));
     await shot(page, `${PHASE}-aith-1440-layout2`, await chartClip(page, 4));
     report.perf[`${P}.pane`] = pane;
     if (PHASE === 'after') check(`${P}.layout.pane-own-source`, pane.state === 'ok' && pane.pair && !/AITH/.test(pane.pair) && pane.requests.length > 0 && pane.requests.every(u => !/test-assets/.test(u)), pane);
     else console.log('BEFORE', P, 'pane', JSON.stringify(pane));
-    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="1"]').click(); await page.keyboard.press('Escape');
+    await selectLayout(page, 1);
     if (PHASE === 'after') {
       // Go to a date before the listing: an honest "not loaded", no request for bars that never existed.
-      await openFeatureOn(page, 'goto');
+      if (!(await openFeatureOn(page, 'goto'))) throw new Error('«К дате» did not open');
+      await page.locator('[data-cw-goto]').waitFor({ state: 'visible', timeout: 4000 });
       await page.locator('[data-cw-goto-input]').fill('2026-01-05T10:00');
       await page.locator('[data-cw-goto-apply]').click(); await page.waitForTimeout(900);
       const goto = await page.evaluate(() => ({ open: !!document.querySelector('[data-cw-goto]'), status: document.querySelector('[data-cw-goto] [role="status"]')?.textContent || null, paged: window.__qa.fetches.filter(f => /AITH-USDT\/candles/.test(f.url) && /end/.test(f.url)).length }));
@@ -580,10 +701,10 @@ async function run() {
       await shot(m.page, 'after-aith-mobile-390');
       await mctx.close();
     }
-  }
+  });
 
   // ── Every context offers exactly what its source serves: Futures BTC, Spot BTC, NRX, VTA ──
-  if (PHASE === 'after' && wants('contexts')) {
+  await section('contexts', SELECT.contexts, async () => {
     for (const [market, pair] of [['futures', 'BTC/USDT'], ['spot', 'BTC/USDT'], ['spot', 'NRX/USDT'], ['spot', 'VTA/USDT']]) {
       const ctx = await context(1440, 900);
       const { page, errors, opened } = await openTerminal(ctx, origin, market, { width: 1440, height: 900, pair });
@@ -603,21 +724,21 @@ async function run() {
           await page.waitForTimeout(900);
           const g = await geometryOf(page);
           check(`${id}.${tf}.scale-non-negative`, !!g && !!g.prices && typeof g.prices.bottom === 'number' && g.prices.bottom >= 0 && g.widestBodyPx >= 2 && g.widestBodyPx <= 40, { prices: g?.prices, widest: g?.widestBodyPx });
-          await shot(page, `after-spot-VTA-${tf}`, await chartClip(page, 4));
+          await shot(page, `after-spot-VTA-${tfSlug(tf)}`, await chartClip(page, 4));
         }
       }
       await ctx.close();
     }
-  }
+  });
 
   // ── Second pane: its own source, cleared on change, late answers dropped, honest states ──
-  if (PHASE === 'after' && wants('panes')) {
+  await section('panes', SELECT.panes, async () => {
     const ctx = await context(1440, 900);
     const { page, errors } = await openTerminal(ctx, origin, 'spot', { width: 1440, height: 900 });
     const P = 'panes.spot.1440';
     const paneState = () => page.evaluate(PANE_STATE);
     const waitState = (wanted, timeout = 8000) => page.waitForFunction(w => document.querySelector('[data-cw-pane]')?.getAttribute('data-cw-pane-state') === w, wanted, { timeout }).catch(() => {});
-    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="2"]').click(); await page.keyboard.press('Escape');
+    await selectLayout(page, 2);
     await waitState('ok', 12000);
     const initial = await paneState();
     check(`${P}.opens-on-another-instrument`, initial.state === 'ok' && !!initial.pair && initial.pair !== 'BTC/USDT' && initial.bars > 0, initial);
@@ -662,27 +783,27 @@ async function run() {
     check(`${P}.empty-answer-is-not-success`, empty.state === 'empty' && empty.bars === 0 && !!empty.note, empty);
     check(`${P}.errors`, errors.filter(e => !/ResizeObserver|Failed to load resource|net::ERR/.test(e)).length === 0, errors.slice(0, 6));
     await ctx.close();
-  }
+  });
 
   // ── The main chart is never remounted by a layout change; the ticket stays ──
-  if (PHASE === 'after' && wants('keep')) {
+  await section('keep', SELECT.keep, async () => {
     const ctx = await context(1440, 900);
     const { page } = await openTerminal(ctx, origin, 'futures', { width: 1440, height: 900 });
     const P = 'keep.futures.1440';
     const before = await page.evaluate(() => { const host = document.querySelector('[data-chart-state] > div'); host.dataset.qaMark = 'main'; host.__voltexChart.token = 'kept'; const form = document.querySelector('.order-form-area'); if (form) form.dataset.qaMark = 'form'; const range = host.__voltexChart.chart.timeScale().getVisibleLogicalRange(); return { from: Math.round(range.from), to: Math.round(range.to) }; });
-    for (const value of [2, 4, 1]) { await openFeatureOn(page, 'layout'); await page.locator(`[data-cw-layout-option="${value}"]`).click(); await page.keyboard.press('Escape'); await page.waitForTimeout(900); }
+    for (const value of [2, 4, 1]) await selectLayout(page, value);
     const after = await page.evaluate(() => { const host = document.querySelector('[data-qa-mark="main"]'); const api = host && host.__voltexChart; const range = api?.chart.timeScale().getVisibleLogicalRange(); return { kept: !!host, token: api?.token || null, form: !!document.querySelector('[data-qa-mark="form"]'), from: range ? Math.round(range.from) : null, to: range ? Math.round(range.to) : null, panes: document.querySelectorAll('[data-cw-pane]').length }; });
     check(`${P}.main-chart-never-remounted`, after.kept && after.token === 'kept' && after.form && after.panes === 0 && Math.abs((after.to ?? -99) - before.to) <= 2, { before, after });
     await ctx.close();
-  }
+  });
 
   // ── «Синхронизировать таймфрейм» moves every chart, both ways ──
-  if (PHASE === 'after' && wants('synctf')) {
+  await section('synctf', SELECT.synctf, async () => {
     const ctx = await context(1440, 900);
     const { page } = await openTerminal(ctx, origin, 'futures', { width: 1440, height: 900 });
     const P = 'synctf.futures.1440';
     const store = () => page.evaluate(() => JSON.parse(localStorage.getItem('voltex.chartWorkspace.futures.v1') || 'null'));
-    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="2"]').click(); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+    await selectLayout(page, 2);
     await openFeatureOn(page, 'layout'); await page.locator('[data-cw-sync="timeframe"]').check(); await page.keyboard.press('Escape');
     await page.waitForFunction(() => document.querySelector('[data-cw-pane]')?.getAttribute('data-cw-pane-state') === 'ok', null, { timeout: 12000 }).catch(() => {});
     await page.locator('[data-cw-tf="15m"]').click(); await page.waitForTimeout(800);
@@ -693,13 +814,108 @@ async function run() {
     await page.selectOption('[data-cw-pane="1"] [data-cw-pane-timeframe]', '1h'); await page.waitForTimeout(700);
     const own = { main: (await store())?.timeframe, pane: (await store())?.panes?.[0]?.timeframe };
     check(`${P}.sync-timeframe-is-real`, follows === '15m' && leads.main === '4h' && leads.pressed === 'true' && own.main === '4h' && own.pane === '1h', { follows, leads, own });
-    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="1"]').click(); await page.keyboard.press('Escape');
+    await selectLayout(page, 1);
     await ctx.close();
-  }
-  if (PHASE !== 'after') { await perf(browser, origin, context, chartClip, shot); await finish(browser, server); return; }
+  });
+
+  // ── 2 charts → 1 chart → «К дате» (owner review 5518558556, P1: the CI failure on 9a112675) ──
+  // A layout change used to re-fold the row over 3–5 painted frames: keys («К дате» among them) showed for a
+  // frame and moved into «Ещё», and a click landed on a key being replaced. Every painted frame of the row is
+  // sampled (requestAnimationFrame) from the click on «1» until the row is quiet, with the CPU slowed ×4 as on
+  // a busy runner; then «К дате» is opened the way a trader does and its answer is checked. Desktop Spot (the
+  // owner's AITH at 1440 and 1366), Futures BTC 1440 and the phone sheet at 390. Trace (DOM snapshots) and
+  // video of each case are kept next to the report.
+  await section('transition', SELECT.transition, async () => {
+    const SAMPLER = () => {
+      const life = window.__cwTransition = { frames: [], armed: false };
+      const read = () => {
+        const row = document.querySelector('[data-cw-toolbar]');
+        if (!row) return null;
+        return { keys: [...row.querySelectorAll('.cw-features [data-cw-feature]')].map(e => e.getAttribute('data-cw-feature')).join(' '),
+          quick: [...row.querySelectorAll('[data-cw-tf]')].map(e => e.getAttribute('data-cw-tf')).join(' '),
+          layout: document.querySelector('[data-cw-layout]')?.getAttribute('data-cw-layout') ?? null };
+      };
+      const tick = () => {
+        if (life.armed) { const s = read(); const last = life.frames.at(-1); if (s && (!last || last.keys !== s.keys || last.quick !== s.quick || last.layout !== s.layout)) life.frames.push({ t: Math.round(performance.now()), ...s }); }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    };
+    const cases = [
+      { id: 'spot.AITH.1440', market: 'spot', pair: 'AITH/USDT', width: 1440, height: 900 },
+      { id: 'spot.AITH.1366', market: 'spot', pair: 'AITH/USDT', width: 1366, height: 900 },
+      { id: 'futures.BTC.1440', market: 'futures', pair: 'BTC/USDT', width: 1440, height: 900 },
+      { id: 'phone.spot.AITH.390', market: 'spot', pair: 'AITH/USDT', width: 390, height: 844, mobile: true },
+    ];
+    const videoDir = path.join(OUT, '.transition-video');
+    for (const c of cases) {
+      const P = `transition.${c.id}`;
+      const ctx = await context(c.width, c.height, { ...(c.mobile ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}), recordVideo: { dir: videoDir, size: { width: Math.min(c.width, 1280), height: Math.min(c.height, 900) } } });
+      await ctx.tracing.start({ snapshots: true, screenshots: false });
+      const { page, errors, opened } = await openTerminal(ctx, origin, c.market, { width: c.width, height: c.height, mobile: c.mobile, pair: c.pair });
+      try {
+        check(`${P}.loaded`, opened !== null, { opened, errors: errors.slice(0, 3) });
+        await page.evaluate(SAMPLER);
+        await page.evaluate(() => { const host = document.querySelector('[data-chart-state] > div'); if (host) { host.dataset.qaMark = 'main'; if (host.__voltexChart) host.__voltexChart.token = 'kept'; } });
+        const cdp = await ctx.newCDPSession(page);
+        await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+        await selectLayout(page, 2);
+        const two = await page.evaluate(() => ({ layout: document.querySelector('[data-cw-layout]')?.getAttribute('data-cw-layout'), panes: [...document.querySelectorAll('[data-cw-pane]')].map(p => p.getAttribute('data-cw-pane-state')), tabs: document.querySelectorAll('[data-cw-layout-tab]').length }));
+        check(`${P}.layout-2-complete`, two.layout === '2' && (c.mobile ? two.tabs >= 2 : two.panes.length === 1 && two.panes[0] === 'ok'), two);
+        // The click on «1» arms the sampler; waitLayout returns once the row has been quiet for two reads.
+        await selectLayout(page, 1, { beforeClick: () => page.evaluate(() => { window.__cwTransition.frames = []; window.__cwTransition.armed = true; }) });
+        const painted = (await page.evaluate(() => { const l = window.__cwTransition; l.armed = false; return l.frames; })).filter(f => f.layout === '1');
+        const one = await page.evaluate(() => { const host = document.querySelector('[data-qa-mark="main"]'); return { layout: document.querySelector('[data-cw-layout]')?.getAttribute('data-cw-layout'), panes: document.querySelectorAll('[data-cw-pane]').length, kept: !!host && host.__voltexChart?.token === 'kept', chart: document.querySelector('[data-chart-state]')?.getAttribute('data-chart-state') }; });
+        check(`${P}.layout-1-complete`, one.layout === '1' && one.panes === 0 && one.kept && one.chart === 'candles', one);
+        const states = [...new Set(painted.map(f => `[${f.keys}] [${f.quick}]`))];
+        const settled = (painted.at(-1)?.keys || '').split(' ').filter(Boolean);
+        const flickered = [...new Set(painted.flatMap(f => f.keys.split(' ').filter(Boolean)))].filter(k => !settled.includes(k));
+        check(`${P}.row-paints-once`, painted.length >= 1 && states.length === 1 && flickered.length === 0, { painted: painted.map(f => `+${f.t - painted[0].t}ms [${f.keys}] [${f.quick}]`), flickered });
+        // «К дате», wherever the row put it: the dialog must really open, and must really answer.
+        const box = await openFeatureOn(page, 'goto');
+        const dialog = page.locator('[data-cw-goto]');
+        await dialog.waitFor({ state: 'visible', timeout: 4000 });
+        check(`${P}.goto-opens`, !!box && (await dialog.isVisible()), { via: box?.via ?? null, menu: box?.id ?? null });
+        if (c.market === 'futures') {
+          // A loaded bar a third of the way into the history: the chart moves there and the dialog closes.
+          const target = await page.evaluate(() => { const api = document.querySelector('[data-qa-mark="main"]')?.__voltexChart; const data = api?.series.data() || []; return data.length ? data[Math.floor(data.length / 3)].time : null; });
+          await page.locator('[data-cw-goto-input]').fill(new Date(target * 1000).toISOString().slice(0, 16));
+          await page.locator('[data-cw-goto-apply]').click({ timeout: 3000 });
+          await dialog.waitFor({ state: 'detached', timeout: 6000 }).catch(() => {});
+          const range = await page.evaluate(() => { const api = document.querySelector('[data-qa-mark="main"]')?.__voltexChart; const r = api?.chart.timeScale().getVisibleRange(); return r ? { from: r.from, to: r.to } : null; });
+          const stillOpen = await dialog.count();
+          check(`${P}.goto-answers`, target !== null && stillOpen === 0 && !!range && range.from <= target && target <= range.to, { target, range, stillOpen });
+        } else {
+          // Before the listing: an honest «not loaded», and no request for bars that never existed.
+          const pagedBefore = await page.evaluate(() => window.__qa.fetches.filter(f => /AITH-USDT\/candles/.test(f.url) && /end/.test(f.url)).length);
+          await page.locator('[data-cw-goto-input]').fill('2026-01-05T10:00');
+          await page.locator('[data-cw-goto-apply]').click({ timeout: 3000 });
+          const status = page.locator('[data-cw-goto] [role="status"]');
+          await status.waitFor({ state: 'visible', timeout: 6000 });
+          const text = await status.textContent();
+          const paged = await page.evaluate(n => window.__qa.fetches.filter(f => /AITH-USDT\/candles/.test(f.url) && /end/.test(f.url)).length - n, pagedBefore);
+          check(`${P}.goto-answers`, !!text && paged === 0, { status: text, paged });
+        }
+        await shot(page, `after-transition-${c.id}`);
+        check(`${P}.errors`, errors.filter(e => !/ResizeObserver/.test(e)).length === 0, errors.slice(0, 6));
+      } catch (error) {
+        if (error && typeof error === 'object') error.qaEvidence = [await pageEvidence(page, `fatal-transition-${c.id}`).catch(e => ({ error: String(e) }))];
+        throw error;
+      } finally {
+        await ctx.tracing.stop({ path: path.join(OUT, `transition-${c.id}.zip`) }).catch(() => {});
+        const video = page.video();
+        await ctx.close();
+        if (video) { try { fs.renameSync(await video.path(), path.join(OUT, `transition-${c.id}.webm`)); } catch { /* no video on this platform */ } }
+        report.artifacts = [...(report.artifacts || []), `transition-${c.id}.zip`, `transition-${c.id}.webm`];
+      }
+    }
+    fs.rmSync(videoDir, { recursive: true, force: true });
+  });
+
+  if (PHASE !== 'after') { await section('perf', SELECT.perf, () => perf(browser, origin, context, chartClip, shot)); return; }
 
   // ── Interactions at 1440 (Futures and Spot) and 1920 (layout 4) ────────
-  for (const market of ['futures', 'spot']) {
+  for (const market of ['futures', 'spot']) await section(`interactions.${market}`, SELECT[`interactions.${market}`], async () => {
     const ctx = await context(1440, 900);
     const { page, errors } = await openTerminal(ctx, origin, market, { width: 1440, height: 900 });
     const P = `${market}.1440`;
@@ -741,7 +957,7 @@ async function run() {
       await page.waitForTimeout(500);
       const lastMonth = new URL((await candleRequests()).at(-1), origin);
       check(`${P}.timeframes.1M`, lastMonth.searchParams.get('interval') === (market === 'futures' ? '1M' : '1d') && (await page.getAttribute('[data-chart-state]', 'data-chart-state')) === 'candles', { url: lastMonth.pathname + lastMonth.search });
-      await shot(page, `after-${market}-1440-1M`, await chartClip(page, 4));
+      await shot(page, `after-${market}-1440-1month`, await chartClip(page, 4));
       // favourites: star 30m into the quick list, then reset
       await openFeature('timeframes');
       await page.locator('[data-cw-tf-star="30m"]').click();
@@ -892,10 +1108,8 @@ async function run() {
       const after = { url: page.url(), hits: hits.filter(h => h.method !== 'GET' && h.method !== 'HEAD').length };
       check(`${P}.layout.pane-trade-switches-terminal`, /pair=ETH/.test(decodeURIComponent(after.url)) && after.hits === 0, { before: urlBefore, ...after });
       await page.waitForSelector('[data-chart-state="candles"]', { timeout: 10000 }).catch(() => {});
-      await openFeature('layout');
-      await page.locator('[data-cw-layout-option="1"]').click(); await page.waitForTimeout(400);
+      await selectLayout(page, 1);
       check(`${P}.layout.back-to-one`, (await page.locator('[data-cw-pane]').count()) === 0, {});
-      await page.keyboard.press('Escape');
     }
 
     // Presets -----------------------------------------------------------
@@ -1019,10 +1233,10 @@ async function run() {
     }
     check(`${P}.errors`, errors.filter(e => !/ResizeObserver/.test(e)).length === 0, errors.slice(0, 6));
     await ctx.close();
-  }
+  });
 
   // ── 1920: four panes ──────────────────────────────────────────────────
-  if (wants('layout4')) {
+  await section('layout4', SELECT.layout4, async () => {
     const ctx = await context(1920, 1000);
     const { page } = await openTerminal(ctx, origin, 'futures', { width: 1920, height: 1000 });
     await openFeatureOn(page, 'layout');
@@ -1043,10 +1257,11 @@ async function run() {
     check('futures.1920.layout.pane-expand', expanded.expanded === '2' && expanded.width > 900, expanded);
     await page.locator('[data-cw-pane="2"] [data-cw-pane-expand]').click(); await page.waitForTimeout(300);
     await ctx.close();
-  }
+  });
 
   // ── Mobile ────────────────────────────────────────────────────────────
   const phones = [...PHONES.map(w => [w, w === 320 ? 568 : w === 360 ? 740 : w === 390 ? 844 : w === 768 ? 1024 : 932]), [844, 390]];
+  await section('mobile', SELECT.mobile, async () => {
   for (const [w, h] of phones) {
     if (!wants('mobile')) break;
     for (const market of ['futures', 'spot']) {
@@ -1094,9 +1309,10 @@ async function run() {
       await ctx.close();
     }
   }
+  });
 
   // ── Browser zoom 90 / 100 / 110 / 125 % at a 1440 window ───────────────
-  if (wants('zoom')) {
+  await section('zoom', SELECT.zoom, async () => {
     for (const zoom of [0.9, 1, 1.1, 1.25]) {
       const width = Math.round(1440 / zoom), height = Math.round(900 / zoom);
       const ctx = await context(width, height, { deviceScaleFactor: zoom });
@@ -1106,10 +1322,16 @@ async function run() {
       await shot(page, `after-futures-zoom-${Math.round(zoom * 100)}`, await chartClip(page, 4));
       await ctx.close();
     }
-  }
+  });
 
-  await perf(browser, origin, context, chartClip, shot);
-  await finish(browser, server);
+  await section('perf', SELECT.perf, () => perf(browser, origin, context, chartClip, shot));
+  } catch (error) {
+    // Anything outside a section (the browser not starting, the fixture failing) still ends in a report.
+    report.fatal = { error: String((error && error.message) || error).split('\n').slice(0, 16).join('\n'), stack: String((error && error.stack) || '').split('\n').filter(l => /^\s+at /.test(l)).slice(0, 12).join('\n'), section: currentSection?.id ?? null };
+    console.log(`FATAL (run) — ${report.fatal.error.split('\n')[0]}`);
+  } finally {
+    await finish(browser, server);
+  }
 }
 
 /** Scenario counters: A one chart, B chart + 3 compares, C 2 and 4 charts, plus a hidden tab. */
@@ -1135,11 +1357,11 @@ async function perf(browser, origin, context, chartClip, shot) {
     await page.waitForFunction(() => document.querySelectorAll('[data-cw-compare-entry]').length === 3, null, { timeout: 8000 }).catch(() => {});
     const B = await snapshot('after.B.three-compares');
     await openFeatureOn(page, 'compare'); await page.locator('[data-cw-compare-exit]').click(); await page.keyboard.press('Escape'); await page.waitForTimeout(400);
-    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="2"]').click(); await page.keyboard.press('Escape');
+    await selectLayout(page, 2);
     await page.waitForFunction(() => document.querySelectorAll('[data-cw-pane][data-cw-pane-state="ok"]').length === 1, null, { timeout: 12000 }).catch(() => {});
     const C2 = await snapshot('after.C.two-charts');
     await page.setViewportSize({ width: 1920, height: 1000 }); await page.waitForTimeout(400);
-    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="4"]').click(); await page.keyboard.press('Escape');
+    await selectLayout(page, 4);
     await page.waitForFunction(() => document.querySelectorAll('[data-cw-pane][data-cw-pane-state="ok"]').length === 3, null, { timeout: 15000 }).catch(() => {});
     const C4 = await snapshot('after.C.four-charts');
     // hidden tab: the chart, the panes and the compares all stop asking
@@ -1148,7 +1370,7 @@ async function perf(browser, origin, context, chartClip, shot) {
     const H = await snapshot('after.hidden-tab.four-charts');
     await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')); });
     await page.waitForTimeout(800);
-    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="1"]').click(); await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+    await selectLayout(page, 1); await page.waitForTimeout(600);
     const back = await snapshot('after.A.after-collapse');
     const budget = PERF_WINDOW_MS / 5000 + 2; // the 5 s tail poll plus slack
     check('perf.A.one-chart-requests', A.candleRequests <= budget && A.newSockets === 0, A);
@@ -1164,16 +1386,45 @@ async function cpu(page) {
   try { const session = await page.context().newCDPSession(page); await session.send('Performance.enable'); const { metrics } = await session.send('Performance.getMetrics'); await session.detach(); return metrics.find(m => m.name === 'TaskDuration')?.value ?? null; } catch { return null; }
 }
 async function finish(browser, server) {
-  await browser.close(); server.close();
+  if (browser) await browser.close().catch(() => {});
+  try { server.close(); } catch { /* already closed */ }
   report.finishedAt = new Date().toISOString();
-  report.summary = { passed: report.checks.filter(c => c.ok).length, failed: report.checks.filter(c => !c.ok).length };
+  // A planned section that never started is NOT_RUN — never counted as passed.
+  for (const planned of report.plan) if (!report.sections.some(x => x.id === planned.id)) report.sections.push({ id: planned.id, status: planned.selected ? 'not_run' : 'not_selected' });
+  const by = status => report.sections.filter(x => x.status === status).map(x => x.id);
+  report.summary = { passed: report.checks.filter(c => c.ok).length, failed: report.checks.filter(c => !c.ok).length,
+    sections: { completed: by('completed'), fatal: by('fatal'), notRun: by('not_run'), notSelected: by('not_selected') }, pageErrors: report.pageErrors.length };
+  // Evidence manifest: every file this run wrote, with its size and sha256. Names that differ by case alone
+  // would overwrite each other in a case-insensitive upload, so they fail the run.
+  const startedMs = Date.parse(report.startedAt) - 1000;
+  const written = fs.existsSync(OUT) ? fs.readdirSync(OUT).filter(f => { const st = fs.statSync(path.join(OUT, f)); return st.isFile() && st.mtimeMs >= startedMs && !/^(report-|REPORT-|manifest\.json$)/.test(f); }).sort() : [];
+  const files = written.map(f => { const b = fs.readFileSync(path.join(OUT, f)); return { file: f, bytes: b.length, sha256: crypto.createHash('sha256').update(b).digest('hex') }; });
+  const seen = new Map(), clashes = [];
+  for (const f of written) { const k = f.toLowerCase(); if (seen.has(k)) clashes.push([seen.get(k), f]); else seen.set(k, f); }
+  const missingShots = [...new Set(report.screenshots)].filter(f => !written.includes(f));
+  report.manifest = { count: files.length, bytes: files.reduce((n, f) => n + f.bytes, 0), caseClashes: clashes, missingScreenshots: missingShots };
+  fs.mkdirSync(OUT, { recursive: true });
+  fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify({ generatedAt: report.finishedAt, git: report.git, files, caseClashes: clashes, missingScreenshots: missingShots }, null, 2));
+  const incomplete = !!report.fatal || report.summary.sections.fatal.length > 0 || report.summary.sections.notRun.length > 0 || clashes.length > 0 || missingShots.length > 0;
+  report.verdict = incomplete ? 'INCOMPLETE' : report.summary.failed ? 'FAILED' : 'PASSED';
   fs.writeFileSync(path.join(OUT, `report-${PHASE}.json`), JSON.stringify(report, null, 2));
-  const lines = [`# Chart workspace QA — ${PHASE}`, '', `Build: ${DIST}`, `Checks: ${report.summary.passed} passed, ${report.summary.failed} failed`, '', '| check | result | detail |', '|---|---|---|',
-    ...report.checks.map(c => `| ${c.id} | ${c.ok ? 'PASS' : 'FAIL'} | ${typeof c.detail === 'string' ? c.detail : JSON.stringify(c.detail).replace(/\|/g, '\\|').slice(0, 300)} |`), '', '## Performance', '', '| measure | value |', '|---|---|',
-    ...Object.entries(report.perf).map(([k, v]) => `| ${k} | ${typeof v === 'object' ? JSON.stringify(v).replace(/\|/g, '\\|') : v} |`), ''];
+  const cell = v => String(v ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  const lines = [`# Chart workspace QA — ${PHASE}`, '',
+    `Verdict: **${report.verdict}** · checks ${report.summary.passed} passed, ${report.summary.failed} failed · sections ${report.summary.sections.completed.length} completed, ${report.summary.sections.fatal.length} fatal, ${report.summary.sections.notRun.length} not run, ${report.summary.sections.notSelected.length} not selected`, '',
+    `Build: ${DIST}`, `PR head: ${report.git.prHead ?? '—'} · checkout: ${report.git.checkout ?? '—'}${report.git.uncommitted ? ` + ${report.git.uncommitted} uncommitted tracked file(s)` : ''} · base: ${report.git.base ?? '—'} · ref: ${report.git.ref ?? '—'} · run: ${report.git.run ?? 'local'}`,
+    `Started ${report.startedAt} · finished ${report.finishedAt} · args: ${cell(report.args.join(' '))}`, '',
+    '## Sections', '', '| section | status | checks | failed | where it stopped |', '|---|---|---|---|---|',
+    ...report.sections.map(x => `| ${x.id} | ${x.status.toUpperCase()} | ${x.checks ?? '—'} | ${(x.failedChecks || []).length || (x.checks !== undefined ? 0 : '—')} | ${x.status === 'fatal' ? cell(`${x.error.split('\n')[0]} (last check: ${x.lastCheck ?? 'none'})`) : ''} |`),
+    ...(report.fatal ? ['', `Run-level FATAL: ${cell(report.fatal.error)}`] : []), '',
+    '## Checks', '', '| check | result | detail |', '|---|---|---|',
+    ...report.checks.map(c => `| ${c.id} | ${c.ok ? 'PASS' : 'FAIL'} | ${typeof c.detail === 'string' ? cell(c.detail) : cell(JSON.stringify(c.detail)).slice(0, 300)} |`), '',
+    '## Performance', '', '| measure | value |', '|---|---|',
+    ...Object.entries(report.perf).map(([k, v]) => `| ${k} | ${typeof v === 'object' ? cell(JSON.stringify(v)) : v} |`), '',
+    '## Page errors', '', report.pageErrors.length ? report.pageErrors.slice(0, 30).map(e => `- ${e.section ?? '—'} · ${cell(e.url)} · ${cell(e.message)}`).join('\n') : 'None.', '',
+    '## Evidence', '', `${files.length} files, ${(report.manifest.bytes / 1048576).toFixed(1)} MB, sha256 per file in \`manifest.json\`. Case clashes: ${clashes.length ? cell(JSON.stringify(clashes)) : 'none'}. Screenshots reported but missing: ${missingShots.length ? cell(missingShots.join(', ')) : 'none'}.`, ''];
   fs.writeFileSync(path.join(OUT, `REPORT-${PHASE}.md`), lines.join('\n'));
-  console.log(`\n${report.summary.passed} passed, ${report.summary.failed} failed → ${OUT}`);
-  process.exitCode = report.summary.failed ? 1 : 0;
+  console.log(`\n${report.verdict}: ${report.summary.passed} passed, ${report.summary.failed} failed; sections fatal [${report.summary.sections.fatal}] not run [${report.summary.sections.notRun}] → ${OUT}`);
+  process.exitCode = incomplete ? 2 : report.summary.failed ? 1 : 0;
 }
 
 run().catch(error => { console.error(error); process.exit(2); });
