@@ -11,7 +11,7 @@ const MAX_SOURCE = 512 * 1024 * 1024;
 const MAX_LOG = 64 * 1024 * 1024;
 const EXPECTED_TESTS = 249;
 const TMPFS = { '/tmp': 'rw,nosuid,nodev,noexec,size=256m,mode=1777', '/work': 'rw,nosuid,nodev,noexec,size=512m,mode=1777' };
-const CONTAINER_FILES = ['container-provenance.json', 'jest-command.json', 'jest-discovery.json', 'jest.json', 'container-result.json'];
+const CONTAINER_FILES = ['container-provenance.json', 'build-prerequisite.json', 'build.stdout.log', 'build.stderr.log', 'jest-command.json', 'jest-discovery.json', 'jest.json', 'container-result.json'];
 const OPT_INS = ['BANKING_DB_TESTS', 'PRIVATE_TRADING_DB_TESTS', 'VOLTEX_PG_TEST_URL', 'VOLTEX_NRX_TEST_URL', 'VOLTEX_LISTING_TEST_URL', 'KYC_TEST_DATABASE_URL', 'EMAIL_POLICY_TEST_URL', 'ADMIN_PASSWORD_TEST_URL', 'NATIVE_EGRESS_TEST_DATABASE_URL'];
 const hash = b => crypto.createHash('sha256').update(b).digest('hex');
 const json = (p, value) => fs.writeFileSync(p, JSON.stringify(value, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
@@ -95,6 +95,88 @@ function terminalInventory(j, tests) {
   assert.equal(j.numTotalTestSuites, EXPECTED_TESTS, 'terminal Jest suite inventory mismatch');
   assert.deepEqual(j.testResults.map(t => { assert.ok(t.name.startsWith('/work/src/')); return t.name.slice('/work/'.length); }).sort(), tests, 'terminal Jest filename inventory mismatch');
 }
+function summarizeJestOutcomes(j) {
+  const keys = ['numTotalTestSuites', 'numPassedTestSuites', 'numFailedTestSuites', 'numPendingTestSuites', 'numTotalTests', 'numPassedTests', 'numFailedTests', 'numPendingTests', 'numTodoTests'];
+  const counts = Object.fromEntries(keys.map(k => { assert.ok(Number.isSafeInteger(j[k]) && j[k] >= 0, 'invalid Jest count: ' + k); return [k, j[k]]; }));
+  const suites = { passed: 0, focused: 0, failed: 0, skipped: 0 };
+  const tests = { passed: 0, failed: 0, pending: 0, todo: 0 };
+  const skippedSuites = [], partiallySkippedSuites = [];
+  for (const suite of j.testResults) {
+    assert.ok(Object.hasOwn(suites, suite.status), 'unrecognized terminal Jest suite status: ' + suite.status);
+    suites[suite.status]++;
+    const name = suite.name.replace('/work/', '');
+    if (suite.status === 'skipped') skippedSuites.push(name);
+    let pendingTests = 0;
+    for (const test of suite.assertionResults) {
+      assert.ok(Object.hasOwn(tests, test.status), 'unrecognized terminal Jest assertion status: ' + test.status);
+      tests[test.status]++;
+      if (test.status === 'pending') pendingTests++;
+    }
+    // Jest29 calls a non-failing suite with skipped assertions "focused".
+    // It is counted as passed by Jest, but its pending assertions remain NOT_RUN.
+    if (suite.status === 'focused') {
+      assert.ok(pendingTests > 0, 'focused Jest suite has no pending assertions');
+      partiallySkippedSuites.push({ name, pendingTests });
+    }
+  }
+  assert.equal(j.numTotalTestSuites, j.testResults.length, 'Jest suite count mismatch');
+  assert.equal(j.numPassedTestSuites, suites.passed + suites.focused, 'Jest passed suite count mismatch');
+  assert.equal(j.numFailedTestSuites, suites.failed, 'Jest failed suite count mismatch');
+  assert.equal(j.numPendingTestSuites, suites.skipped, 'Jest skipped suite count mismatch');
+  assert.equal(j.numTotalTests, Object.values(tests).reduce((a, n) => a + n, 0), 'Jest assertion count mismatch');
+  for (const [key, status] of [['numPassedTests', 'passed'], ['numFailedTests', 'failed'], ['numPendingTests', 'pending'], ['numTodoTests', 'todo']]) assert.equal(j[key], tests[status], 'Jest assertion status count mismatch: ' + key);
+  return { counts, skippedSuites, partiallySkippedSuites };
+}
+function compiledInventory(work) {
+  const dir = path.join(work, 'dist'), result = []; let total = 0;
+  const walk = (base, prefix) => {
+    const st = fs.lstatSync(base); assert.ok(st.isDirectory() && !st.isSymbolicLink(), 'compiled directory is not regular');
+    for (const entry of fs.readdirSync(base, { withFileTypes: true })) {
+      const file = path.join(base, entry.name), relative = prefix + '/' + entry.name;
+      assert.ok(!entry.isSymbolicLink(), 'compiled output symlink');
+      if (entry.isDirectory()) walk(file, relative);
+      else {
+        assert.ok(entry.isFile() && /\.(?:js|js\.map|json)$/.test(entry.name), 'unexpected compiled output');
+        const size = fs.lstatSync(file).size; total += size;
+        assert.ok(size <= 4 * 1024 ** 2 && total <= MAX_LOG && result.length < 10000, 'compiled output bound');
+        result.push({ path: relative, bytes: size, sha256: hash(fs.readFileSync(file)) });
+      }
+    }
+  };
+  walk(dir, 'dist');
+  for (const relative of ['private-trading/native/engine.js', 'private-trading/native/store.js', 'private-trading/native/liveProjection.js', 'private-trading/native/historyPage.js', 'private-trading/native/testing/liveFixture.js', 'private-trading/serviceTypes.js'])
+    assert.ok(result.some(f => f.path === 'dist/' + relative), 'required native-review compiled prerequisite missing: ' + relative);
+  return result.sort((a, b) => a.path.localeCompare(b.path));
+}
+function buildPrerequisite(manifest) {
+  // Compile canonical source inside the already inspected, network=none test container.
+  // No npm hooks, host dist reuse, server startup, database operation or migration.
+  assert.ok(!fs.existsSync('/work/dist'), 'fresh compiled output required');
+  const compiler = '/app/node_modules/typescript/bin/tsc';
+  const compilerFiles = ['package.json', 'bin/tsc', 'lib/tsc.js', 'lib/_tsc.js'].map(relative => {
+    const file = '/app/node_modules/typescript/' + relative, st = fs.lstatSync(file);
+    assert.ok(st.isFile() && !st.isSymbolicLink() && st.size <= MAX_LOG, 'compiler provenance requires regular bounded files');
+    return { path: 'node_modules/typescript/' + relative, bytes: st.size, sha256: hash(fs.readFileSync(file)) };
+  });
+  const args = [compiler, '--project', '/work/tsconfig.json', '--pretty', 'false', '--listEmittedFiles'];
+  const proof = { sourceSHA: manifest.sha, executable: process.execPath, args, cwd: '/work', timeoutMs: 120000,
+    compilerVersion: require('/app/node_modules/typescript/package.json').version,
+    compilerFiles, compilerSHA256: hash(fs.readFileSync(compiler)), configSHA256: hash(fs.readFileSync('/work/tsconfig.json')),
+    packageLockSHA256: hash(fs.readFileSync('/work/package-lock.json')), frontendLockSHA256: hash(fs.readFileSync('/work/frontend/package-lock.json')),
+    startedAt: new Date().toISOString(), status: 'INCOMPLETE' };
+  const result = cp.spawnSync(process.execPath, args, { cwd: '/work', env: process.env, encoding: 'utf8', timeout: proof.timeoutMs, maxBuffer: MAX_LOG });
+  fs.writeFileSync('/evidence/build.stdout.log', result.stdout || '', { flag: 'wx', mode: 0o600 });
+  fs.writeFileSync('/evidence/build.stderr.log', result.stderr || '', { flag: 'wx', mode: 0o600 });
+  Object.assign(proof, { code: result.status, signal: result.signal, errorCode: result.error?.code || null, finishedAt: new Date().toISOString(),
+    stdout: { bytes: Buffer.byteLength(result.stdout || ''), sha256: hash(result.stdout || '') },
+    stderr: { bytes: Buffer.byteLength(result.stderr || ''), sha256: hash(result.stderr || '') } });
+  try {
+    verifyFiles('/work', manifest.files); proof.sourceUnchanged = true;
+    assert.ok(!result.error && result.status === 0 && result.signal === null, 'backend build prerequisite failed; Jest NOT_RUN');
+    proof.outputs = compiledInventory('/work'); proof.status = 'PASS';
+  } catch (error) { proof.failure = error.message; throw error; }
+  finally { json('/evidence/build-prerequisite.json', proof); }
+}
 function finishEvidence(evidence, result) {
   let artifacts = null;
   try {
@@ -118,6 +200,7 @@ async function containerMain() {
   fs.symlinkSync('/app/node_modules', '/work/node_modules', 'dir');
   fs.symlinkSync('/app/frontend/node_modules', '/work/frontend/node_modules', 'dir');
   fs.mkdirSync('/tmp/home', { recursive: true }); process.chdir('/work');
+  buildPrerequisite(manifest);
   const discovery = cp.spawnSync(process.execPath, ['/app/node_modules/jest/bin/jest.js', '--listTests', '--json', '--runInBand'], { cwd: '/work', env: process.env, encoding: 'utf8', timeout: 60000, maxBuffer: 4 * 1024 ** 2 });
   assert.ok(!discovery.error && discovery.status === 0, 'same-config Jest discovery failed');
   const discovered = JSON.parse(discovery.stdout).filter(p => p.startsWith('/work/src/')).map(p => p.slice('/work/'.length)).sort();
@@ -218,8 +301,7 @@ async function main(argv = process.argv.slice(2)) {
     assert.ok(fs.existsSync(path.join(evidence, 'jest.json')), 'no terminal Jest JSON: incomplete');
     const j = boundedJSON(path.join(evidence, 'jest.json')); terminalInventory(j, tests);
     const cr = boundedJSON(path.join(evidence, 'container-result.json')); assert.equal(cr.sourceUnchanged, true, 'tests modified canonical source');
-    result.counts = Object.fromEntries(['numTotalTestSuites', 'numPassedTestSuites', 'numFailedTestSuites', 'numPendingTestSuites', 'numTotalTests', 'numPassedTests', 'numFailedTests', 'numPendingTests', 'numTodoTests'].map(k => [k, j[k]]));
-    result.skippedSuites = j.testResults.filter(t => t.status === 'pending').map(t => t.name.replace('/work/', ''));
+    Object.assign(result, summarizeJestOutcomes(j));
     result.status = attachResult.code === 0 && !attachResult.signal && state.ExitCode === 0 && cr.code === 0 && j.success && j.numFailedTestSuites === 0 ? 'PASS_WITH_REPORTED_DATABASE_SKIPS' : 'FAIL';
   } catch (e) { failure = e.message; result.failure = failure; }
   finally {
@@ -234,5 +316,5 @@ async function main(argv = process.argv.slice(2)) {
   console.log(JSON.stringify({ status: result.status, evidence, counts: result.counts || null, failure, cleanupErrors }));
   process.exitCode = result.status === 'PASS_WITH_REPORTED_DATABASE_SKIPS' ? 0 : 1;
 }
-module.exports = { safePath, excluded, parseTree, backendTests, assertContainer, verifyFiles, artifactFiles, boundedJSON, collectContainerEvidence, terminalInventory, finishEvidence, main, TMPFS };
+module.exports = { safePath, excluded, parseTree, backendTests, assertContainer, verifyFiles, artifactFiles, boundedJSON, collectContainerEvidence, terminalInventory, summarizeJestOutcomes, compiledInventory, finishEvidence, main, TMPFS };
 if (require.main === module) (process.argv[2] === '--container-run' ? containerMain() : main()).catch(e => { console.error(e.stack); process.exitCode = 1; });

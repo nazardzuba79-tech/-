@@ -1,0 +1,31 @@
+{
+  "sourceSHA": "0dd1c1d5edf51593ef28896bfee4af8ed9e56b26",
+  "startedAt": "2026-10-14T03:50:11.544Z",
+  "status": "FAIL",
+  "originalCriteriaUnchanged": true,
+  "databaseAcceptance": "NOT_RUN",
+  "capacityClaim": false,
+  "attachResult": {
+    "code": 1,
+    "signal": null
+  },
+  "containerExitCode": 1,
+  "oomKilled": false,
+  "timedOut": false,
+  "logOverflow": false,
+  "logBytes": 6531055,
+  "counts": {
+    "numTotalTestSuites": 249,
+    "numPassedTestSuites": 231,
+    "numFailedTestSuites": 6,
+    "numPendingTestSuites": 12,
+    "numTotalTests": 3701,
+    "numPassedTests": 3568,
+    "numFailedTests": 9,
+    "numPendingTests": 124,
+    "numTodoTests": 0
+  },
+  "skippedSuites": [],
+  "cleanupErrors": [],
+  "finishedAt": "2026-10-14T04:04:56.041Z"
+}

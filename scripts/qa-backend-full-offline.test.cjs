@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path'), crypto = require('node:crypto');
-const { safePath, excluded, parseTree, backendTests, assertContainer, verifyFiles, artifactFiles, boundedJSON, collectContainerEvidence, terminalInventory, finishEvidence, TMPFS } = require('./qa-backend-full-offline.cjs');
+const { safePath, excluded, parseTree, backendTests, assertContainer, verifyFiles, artifactFiles, boundedJSON, collectContainerEvidence, terminalInventory, summarizeJestOutcomes, compiledInventory, finishEvidence, TMPFS } = require('./qa-backend-full-offline.cjs');
 const blob = b => crypto.createHash('sha1').update('blob ' + b.length + '\0').update(b).digest('hex');
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
 function isolated() {
@@ -75,4 +75,40 @@ test('an artifact validation failure cannot persist a PASS-looking result', () =
     assert.equal(boundedJSON(path.join(d, 'artifact-validation-error.json')).status, 'INCOMPLETE');
     assert.equal(fs.existsSync(path.join(d, 'artifact-manifest.json')), false);
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
+
+test('Jest skipped suites and partially skipped focused suites reconcile without hiding NOT_RUN assertions', () => {
+  const suite = (name, status, statuses) => ({ name: '/work/src/' + name + '.test.ts', status, assertionResults: statuses.map(status => ({ status })) });
+  const testResults = [
+    ...Array.from({ length: 230 }, (_, i) => suite('pass-' + i, 'passed', ['passed'])),
+    suite('partly-skipped', 'focused', ['passed', 'passed', ...Array(13).fill('pending')]),
+    ...Array.from({ length: 6 }, (_, i) => suite('fail-' + i, 'failed', ['failed'])),
+    ...Array.from({ length: 12 }, (_, i) => suite('skip-' + i, 'skipped', ['pending'])),
+  ];
+  const j = { numTotalTestSuites: 249, numPassedTestSuites: 231, numFailedTestSuites: 6, numPendingTestSuites: 12, numTotalTests: 263, numPassedTests: 232, numFailedTests: 6, numPendingTests: 25, numTodoTests: 0, testResults };
+  const summary = summarizeJestOutcomes(j);
+  assert.equal(summary.skippedSuites.length, 12);
+  assert.deepEqual(summary.partiallySkippedSuites, [{ name: 'src/partly-skipped.test.ts', pendingTests: 13 }]);
+  assert.equal(summary.skippedSuites.includes('src/partly-skipped.test.ts'), false);
+  assert.deepEqual(summary.counts, Object.fromEntries(Object.entries(j).filter(([k]) => k !== 'testResults')));
+  for (const key of ['numTotalTestSuites', 'numPassedTestSuites', 'numFailedTestSuites', 'numPendingTestSuites', 'numTotalTests', 'numPassedTests', 'numFailedTests', 'numPendingTests', 'numTodoTests']) assert.throws(() => summarizeJestOutcomes({ ...j, [key]: j[key] + 1 }), /mismatch/);
+  assert.throws(() => summarizeJestOutcomes({ ...j, testResults: testResults.map((s, i) => i === 248 ? { ...s, status: 'pending' } : s) }), /unrecognized terminal Jest suite status/);
+});
+
+test('native-review build prerequisite rejects absent modules and non-code output, retaining output hashes', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'stocks-qa-compiled-'));
+  const files = ['native/engine.js', 'native/store.js', 'native/liveProjection.js', 'native/historyPage.js', 'native/testing/liveFixture.js', 'serviceTypes.js'];
+  try {
+    assert.throws(() => compiledInventory(temp), /ENOENT/);
+    for (const file of files) {
+      const dest = path.join(temp, 'dist/private-trading', file); fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, 'module.exports = {};\n');
+    }
+    const inventory = compiledInventory(temp);
+    assert.equal(inventory.length, 6); assert.ok(inventory.every(x => x.sha256 === sha(Buffer.from('module.exports = {};\n'))));
+    const required = path.join(temp, 'dist/private-trading/native/engine.js');
+    fs.unlinkSync(required); assert.throws(() => compiledInventory(temp), /required native-review compiled prerequisite missing/);
+    fs.writeFileSync(required, 'module.exports = {};\n');
+    fs.writeFileSync(path.join(temp, 'dist/unexpected.txt'), 'not compiler output');
+    assert.throws(() => compiledInventory(temp), /unexpected compiled output/);
+  } finally { fs.rmSync(temp, { recursive: true, force: true }); }
 });

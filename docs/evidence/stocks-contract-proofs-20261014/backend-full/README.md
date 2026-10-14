@@ -1,4 +1,16 @@
-# Full backend verification — retained first attempt
+# Full backend verification — retained attempts
+
+## Linux exact-head result: FAIL
+
+Commit `0dd1c1d5edf51593ef28896bfee4af8ed9e56b26`, [run 38507741590 / job 115669010443](https://github.com/nazardzuba79-tech/-/actions/runs/38507741590/job/115669010443), completed naturally with exit 1. All 249 backend filenames have terminal results: **231 passed, 6 failed, 12 skipped**. Tests: **3568 passed, 9 failed, 124 skipped**, 3701 total. No timeout, OOM or log overflow occurred. Database acceptance is **NOT_RUN**; cleanup succeeded and canonical source stayed unchanged.
+
+[Original result](linux-0dd-result.json) is copied byte-for-byte. Its empty `skippedSuites` list is a reporting bug, not an absence of skips. [Derived review](linux-0dd-review.json) binds the raw Jest and artifact hashes, lists all 12 skipped suites, and separately records 13 pending assertions in the partly skipped `service.integration.test.ts` suite. The original counters and failures are retained.
+
+The six failing suites are ProviderFailureMatrix (5 assertions), CfdMarketDataService (1), LiveFinancialIsolation (1), CanonicalSourcePreservation (2), vtaNativeCoexistence.pg (Prisma construction during skipped-suite collection), and nativeReviewHarness (missing compiled `dist` prerequisite). The six failing test files and 13 inspected source files are byte-identical to main `055f88a945c8253b2736877b52f32d028c895086`. This is a source comparison; a matched-main full-backend execution was **NOT_RUN**.
+
+The follow-up QA helper corrects skipped-result classification and prepares a direct locked TypeScript compilation of canonical source in the inspected offline container before Jest. It requires fresh `dist`, bounds output and execution, verifies required native-review modules and unchanged source, and preserves raw compiler diagnostics. It runs no npm lifecycle hook, server, migration or database opt-in. This changes a build prerequisite, so full-backend admission must remain **FULL**, never a report-only skip. The compiler and full Jest execution of this follow-up are **NOT_RUN** until the reviewed change reaches CI. It does not repair or waive the nine assertion failures in unrelated modules.
+
+## Retained Windows first attempt
 
 Source: `3fb092dc1475543240059556fb0cf033c7f967b3`. This is additional backend coverage work, not a Stocks capacity test.
 

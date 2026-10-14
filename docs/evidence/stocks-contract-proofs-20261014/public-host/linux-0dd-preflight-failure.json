@@ -1,0 +1,164 @@
+{
+  "schema": 1,
+  "status": "FAIL",
+  "startedAt": "2026-10-14T03:52:04.208Z",
+  "node": "v24.21.0",
+  "platform": "linux",
+  "browserLaunched": false,
+  "installationPerformed": false,
+  "permissionChanges": false,
+  "globalTrustChanged": false,
+  "chrome": null,
+  "cleanup": {
+    "status": "REMOVED",
+    "ownedPathVerified": true,
+    "existsAfter": false
+  },
+  "scratch": {
+    "path": "/tmp/voltex-stocks-chrome-preflight-T3cQ71",
+    "uid": 1001,
+    "mode": "700",
+    "outsideEvidence": true
+  },
+  "failure": {
+    "message": "Chrome executable permissions",
+    "code": "ERR_ASSERTION",
+    "stack": "AssertionError [ERR_ASSERTION]: Chrome executable permissions\n    at chromeIdentity (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:11:10)\n    at /home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:53:3\n    at retainChromePreflight (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:28:14)\n    at inspectChrome (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:45:10)\n    at main (/home/runner/work/-/-/scripts/qa-stocks-chrome-preflight.cjs:39:21)\n    at Object.<anonymous> (/home/runner/work/-/-/scripts/qa-stocks-chrome-preflight.cjs:63:94)\n    at Module._compile (node:internal/modules/cjs/loader:1929:14)\n    at Object..js (node:internal/modules/cjs/loader:2060:10)\n    at Module.load (node:internal/modules/cjs/loader:1651:32)\n    at Module._load (node:internal/modules/cjs/loader:1443:12)"
+  },
+  "chromePreflight": {
+    "status": "REJECTED",
+    "stage": "identity",
+    "executable": "/opt/google/chrome/chrome",
+    "installationPerformed": false,
+    "binaryExecuted": false,
+    "process": {
+      "uid": 1001,
+      "euid": 1001,
+      "gid": 1001,
+      "egid": 1001,
+      "groups": [
+        4,
+        100,
+        118,
+        999,
+        1001
+      ],
+      "groupsTruncated": false
+    },
+    "file": {
+      "path": "/opt/google/chrome/chrome",
+      "status": "AVAILABLE",
+      "uid": 0,
+      "gid": 0,
+      "mode": "777",
+      "regular": true,
+      "directory": false,
+      "symlink": false,
+      "bytes": 294411584,
+      "read": {
+        "allowed": true
+      },
+      "write": {
+        "allowed": true
+      },
+      "executeOrSearch": {
+        "allowed": true
+      }
+    },
+    "parents": [
+      {
+        "path": "/opt/google/chrome",
+        "status": "AVAILABLE",
+        "uid": 0,
+        "gid": 0,
+        "mode": "777",
+        "regular": false,
+        "directory": true,
+        "symlink": false,
+        "bytes": 4096,
+        "read": {
+          "allowed": true
+        },
+        "write": {
+          "allowed": true
+        },
+        "executeOrSearch": {
+          "allowed": true
+        }
+      },
+      {
+        "path": "/opt/google",
+        "status": "AVAILABLE",
+        "uid": 0,
+        "gid": 0,
+        "mode": "777",
+        "regular": false,
+        "directory": true,
+        "symlink": false,
+        "bytes": 4096,
+        "read": {
+          "allowed": true
+        },
+        "write": {
+          "allowed": true
+        },
+        "executeOrSearch": {
+          "allowed": true
+        }
+      },
+      {
+        "path": "/opt",
+        "status": "AVAILABLE",
+        "uid": 0,
+        "gid": 0,
+        "mode": "777",
+        "regular": false,
+        "directory": true,
+        "symlink": false,
+        "bytes": 4096,
+        "read": {
+          "allowed": true
+        },
+        "write": {
+          "allowed": true
+        },
+        "executeOrSearch": {
+          "allowed": true
+        }
+      },
+      {
+        "path": "/",
+        "status": "AVAILABLE",
+        "uid": 0,
+        "gid": 0,
+        "mode": "755",
+        "regular": false,
+        "directory": true,
+        "symlink": false,
+        "bytes": 4096,
+        "read": {
+          "allowed": true
+        },
+        "write": {
+          "allowed": false,
+          "code": "EACCES"
+        },
+        "executeOrSearch": {
+          "allowed": true
+        }
+      }
+    ],
+    "resolved": "/opt/google/chrome/chrome",
+    "executableBound": {
+      "maximumBytes": 1073741824,
+      "withinBound": true
+    },
+    "packageOwner": "google-chrome-stable: /opt/google/chrome/chrome",
+    "packageVersion": "154.0.8037.97-1",
+    "rejection": {
+      "message": "Chrome executable permissions",
+      "code": "ERR_ASSERTION"
+    }
+  },
+  "finishedAt": "2026-10-14T03:52:05.382Z"
+}

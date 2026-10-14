@@ -7,10 +7,43 @@ on:
 permissions:
   contents: read
 jobs:
+  stocks-backend-admission:
+    # Scheduling evidence only: NOT_RUN never clears the retained backend FAIL.
+    # Missing/unreviewed inputs fail closed to a full backend run.
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 512
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.admission.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Admission and fixture pure guards (no HTTP, Docker or load)
+        run: node --test scripts/qa-backend-full-admission.test.cjs services/stocks/auth-http-fixture-512/authority.test.cjs services/stocks/auth-http-fixture-512/fixture.test.mjs
+      - id: admission
+        if: always()
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node scripts/qa-backend-full-admission.cjs --base 0dd1c1d5edf51593ef28896bfee4af8ed9e56b26 --head "$QA_SOURCE_SHA" --manifest docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json > "$RUNNER_TEMP/backend-admission.json"
+          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/backend-admission.json"));if(!["full","not_run"].includes(r.mode)||r.releaseGatePass!==false||r.priorFailure.status!=="FAIL")throw Error("Invalid admission evidence");fs.appendFileSync(process.env.GITHUB_OUTPUT,"mode="+r.mode+"\n")'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-backend-admission-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/backend-admission.json
+          if-no-files-found: error
   stocks-full-backend-offline:
     # One complete backend collection for PR512, with native engines confined
     # to a disposable no-network container. This is not a capacity or DB test.
-    if: github.event_name == 'pull_request' && github.event.pull_request.number == 512
+    needs: stocks-backend-admission
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.number == 512 && (needs.stocks-backend-admission.result != 'success' || needs.stocks-backend-admission.outputs.mode != 'not_run')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:

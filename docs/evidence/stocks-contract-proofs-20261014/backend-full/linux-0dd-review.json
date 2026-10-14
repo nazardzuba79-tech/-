@@ -1,0 +1,91 @@
+{
+  "sourceSHA": "0dd1c1d5edf51593ef28896bfee4af8ed9e56b26",
+  "runId": 38507741590,
+  "jobId": 115669010443,
+  "artifactId": 11869451019,
+  "artifactSHA256": "034d6da0590dcda83e155c6d680022a7258d33970cac78a28806a11dc6938c63",
+  "originalResultSHA256": "c928b6431884632b126f70d712536eddb44f29c3d84c061c0a0b0d8b5b013341",
+  "rawJestSHA256": "0599b9cf0d7ff177d8369d59ce2b8887056e73c43181eba4ec5566153c5d5415",
+  "status": "FAIL",
+  "rawResultUnmodified": true,
+  "reportingCorrection": {
+    "derivedOnly": true,
+    "originalRawSHA256": "0599b9cf0d7ff177d8369d59ce2b8887056e73c43181eba4ec5566153c5d5415",
+    "counts": {
+      "numTotalTestSuites": 249,
+      "numPassedTestSuites": 231,
+      "numFailedTestSuites": 6,
+      "numPendingTestSuites": 12,
+      "numTotalTests": 3701,
+      "numPassedTests": 3568,
+      "numFailedTests": 9,
+      "numPendingTests": 124,
+      "numTodoTests": 0
+    },
+    "skippedSuites": [
+      "src/futures/__tests__/futuresBookLock.pg.test.ts",
+      "src/private-trading/__tests__/nativeDemo.integration.test.ts",
+      "src/__tests__/serverWatcherSleep.pg.test.ts",
+      "src/private-trading/__tests__/nativeCommandAcceptance.integration.test.ts",
+      "src/private-trading/__tests__/nativeLivePostgres.test.ts",
+      "src/banking/__tests__/bankingReferral.integration.test.ts",
+      "src/services/testMarkets/__tests__/nrxSpot.pg.test.ts",
+      "src/services/listings/__tests__/ownerAllocation.pg.test.ts",
+      "src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts",
+      "src/api/routes/__tests__/contactPolicy.pg.test.ts",
+      "src/api/routes/__tests__/kycEdgePostgres.test.ts",
+      "src/api/routes/__tests__/adminPasswordVault.pg.test.ts"
+    ],
+    "partiallySkippedSuites": [
+      {
+        "name": "src/private-trading/__tests__/service.integration.test.ts",
+        "pendingTests": 13
+      }
+    ]
+  },
+  "failedSuites": [
+    {
+      "name": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+      "assertionFailures": 5,
+      "collectionFailure": false
+    },
+    {
+      "name": "src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts",
+      "assertionFailures": 0,
+      "collectionFailure": true
+    },
+    {
+      "name": "src/private-trading/__tests__/nativeReviewHarness.test.ts",
+      "assertionFailures": 0,
+      "collectionFailure": true
+    },
+    {
+      "name": "src/services/__tests__/CfdMarketDataService.test.ts",
+      "assertionFailures": 1,
+      "collectionFailure": false
+    },
+    {
+      "name": "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+      "assertionFailures": 1,
+      "collectionFailure": false
+    },
+    {
+      "name": "src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+      "assertionFailures": 2,
+      "collectionFailure": false
+    }
+  ],
+  "assertionFailures": 9,
+  "suiteFailures": 6,
+  "collectionFailures": 2,
+  "sourceComparison": {
+    "mainSHA": "055f88a945c8253b2736877b52f32d028c895086",
+    "sameFailingTestFiles": 6,
+    "sameCheckedSourceFiles": 13,
+    "matchedMainExecution": "NOT_RUN",
+    "evidenceSHA256": "a427213c06bdd7a2aa9bd8fdfbbdaabe99498fbd4982d6e0b5c979a589b8754c"
+  },
+  "databaseAcceptance": "NOT_RUN",
+  "releaseGatePass": false,
+  "explanation": "Original skippedSuites array is an empty reporting bug. Counts and raw Jest still include 12 skipped suites/124 pending tests. Derived classification preserves those and the focused suite with 13 pending tests. No runtime/business logic or expected assertion changed."
+}
