@@ -149,8 +149,8 @@ export function parseListingConfig(input: unknown): ListingConfig {
   const config = parsed.data;
   if (config.simulationProgram?.kind === 'scenario-controls-v2') {
     if (Date.parse(config.listingAt) % 10_000 !== 0) throw new ListingValidationError('INVALID_SCENARIO', 'Время запуска должно совпадать с границей 10 секунд');
-    if (config.simulationProgram.afterGrowth === 'historical' && historicalSerializedBytes(config) > 132 * 1024)
-      throw new ListingValidationError('HISTORICAL_DATA_TOO_LARGE', 'Файл движения слишком большой для сохранения в листинге (132 КБ с логотипом)');
+    if (config.simulationProgram.afterGrowth === 'historical' && historicalSerializedBytes(config) > 80 * 1024)
+      throw new ListingValidationError('HISTORICAL_DATA_TOO_LARGE', 'Файл движения слишком большой для сохранения в листинге (80 КБ с логотипом)');
     try { validateScenarioControls(config.simulationProgram, config.initialPrice); }
     catch (error) { throw new ListingValidationError('INVALID_SCENARIO', error instanceof Error ? error.message : 'Проверьте настройки движения цены'); }
   }
