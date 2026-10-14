@@ -4,6 +4,7 @@ on:
     paths:
       - 'src/services/listings/**'
       - 'src/shared/listingScenarioControls.ts'
+      - 'src/shared/listingHistoricalReplay.ts'
       - 'src/shared/aithPublication.ts'
       - 'config/test-markets/aith.draft.json'
       - 'src/services/testMarkets/**'
@@ -79,7 +80,7 @@ jobs:
       - name: Saved scenario controls, bounds and legacy-history preservation
         run: >-
           npx jest --runInBand --silent
-          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing'
+          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement'
       - name: Post-deploy smoke script (configured / not configured / token mismatch) on real workerd
         run: npm run test:smoke --prefix workers/market-edge
       - name: Existing Worker contract
