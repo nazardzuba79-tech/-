@@ -225,6 +225,11 @@ export function AdminListingsPage() {
 
   function openPublish() {
     if (!current || busy || !draftIsSaved) return;
+    if (current.draft.simulationProgram?.kind === 'scenario-controls-v2'
+      && current.draft.simulationProgram.afterGrowth === 'historical') {
+      setFormError('Историческое движение пока только для закрытого предпросмотра. Публикация требует проверки прав на источник и отдельного торгового счёта.');
+      return;
+    }
     setPublishing({ listing: current, key: newPublishKey() });
   }
 
@@ -348,7 +353,9 @@ export function AdminListingsPage() {
           <div className="listing-buttons">
             <button type="submit" className="listing-primary" disabled={busy || logoReading} data-save-draft>Сохранить черновик</button>
             {editing.id && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
-            {current && <button type="button" disabled={busy || !draftIsSaved} onClick={openPublish} data-publish>Опубликовать</button>}
+            {form.simulationProgram?.kind === 'scenario-controls-v2' && form.simulationProgram.afterGrowth === 'historical'
+              && <p className="listing-hint" role="status" data-historical-publish-gate>Историческая модель: сохранение черновика и предпросмотр доступны, публичный запуск заблокирован до подтверждения прав и полной изоляции симуляционных счетов.</p>}
+            {current && <button type="button" disabled={busy || !draftIsSaved || (form.simulationProgram?.kind === 'scenario-controls-v2' && form.simulationProgram.afterGrowth === 'historical')} onClick={openPublish} data-publish>Опубликовать</button>}
             <button type="button" onClick={() => { cancelLogoRead(); setEditing(null); setPublishing(null); invalidatePreview(); }}>Закрыть</button>
           </div>
           {editing.id && form.simulationProgram?.kind === 'scenario-controls-v2' && <div className="listing-preview-selectors listing-grid">
