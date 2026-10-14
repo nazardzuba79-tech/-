@@ -1,4 +1,5 @@
 /** Pure, deterministic DTO/math shared by the listing validator and simulation. No IO. */
+import { historicalReplayBounds, validateHistoricalMoveProgram, type HistoricalMoveProgram } from './listingHistoricalReplay';
 export const LISTING_SCENARIOS = ['CALM', 'WAVES', 'FREQUENT_PULLBACKS', 'COMPRESSION_BREAKOUT', 'STAIRCASE', 'SLOW_START', 'FAST_START', 'FALSE_BREAKOUT', 'DEEP_RECOVERY', 'LONG_WICKS'] as const;
 export type ListingScenario = typeof LISTING_SCENARIOS[number];
 export type ScenarioFrequency = 'rare' | 'moderate' | 'often';
@@ -9,7 +10,9 @@ export interface ScenarioControlsProgram {
   /** The only persisted upper boundary. Percentage is derived, never a second limit. */
   maxPrice: string;
   stages: Array<{ type: 'growth' | 'range' | 'pullback' | 'recovery'; durationHours: number; targetPrice: string }>;
-  afterGrowth: 'range';
+  afterGrowth: 'range' | 'historical';
+  /** Offline, source-attributed 1-hour shape, never live provider prices. */
+  historical?: HistoricalMoveProgram;
   pullbacks: { frequency: ScenarioFrequency; minDepthPercent: string; maxDepthPercent: string; durationMinutes: number };
   candles: { intensity: 'low' | 'medium' | 'high'; diversity: number; pauseFrequency: ScenarioFrequency };
   wicks: { length: 'short' | 'normal' | 'pronounced'; longFrequency: ScenarioFrequency };
@@ -86,4 +89,17 @@ export function validateScenarioControls(program: ScenarioControlsProgram, initi
   }
   if (!foundDayOne) throw new RangeError('Один из этапов должен заканчиваться ровно через 24 часа с целью первых суток');
   if (elapsed < 24 || elapsed > 720) throw new RangeError('Общая продолжительность роста должна быть от 24 до 720 часов');
+  if (program.afterGrowth === 'historical') {
+    if (!program.historical) throw new RangeError('Для истории загрузите CSV с проверенными часовыми свечами');
+    validateHistoricalMoveProgram(program.historical);
+    if (program.stages[program.stages.length - 1]?.type !== 'pullback')
+      throw new RangeError('Перед историческим сценарием необходим заключительный этап падения');
+    const bounds = historicalReplayBounds(program.historical, Number(program.stages[program.stages.length - 1].targetPrice));
+    if (bounds.max > Number(program.maxPrice) * (1 + 1e-9))
+      throw new RangeError('Исторический отрезок превышает общий лимит цены: выберите другой фрагмент');
+    if (bounds.min < 1e-8)
+      throw new RangeError('Историческое движение выходит за точность актива');
+  } else if (program.historical) {
+    throw new RangeError('Исторические свечи должны сохраняться только в историческом режиме');
+  }
 }
