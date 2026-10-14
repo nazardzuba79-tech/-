@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateTraceContainer, verifyOverlay, verifyPreparedInputs, traceCommand, trackContainerCreation, reconcileOwnedContainer } from './adapter.mjs';
+import { validateTraceContainer, verifyOverlay, verifyPreparedInputs, traceCommand, trackContainerCreation, reconcileOwnedContainer, readGateGit } from './adapter.mjs';
 import { buildOverlay } from './build-overlay.mjs';
 import { OVERLAYS, HELPERS, digest } from './closure.mjs';
 import { TRACE_PLAN_ID, tracePlanHash } from './trace-plan.mjs';
@@ -15,6 +15,28 @@ import { MEMBER_PATHS, COMPILED_PATHS } from './prepare-receipts.mjs';
 const hash = 'a'.repeat(64), sourceSha = 'b'.repeat(40);
 const freeze = () => ({ schema:1, planId:TRACE_PLAN_ID, planSha256:tracePlanHash(), sourceSha,
   contextSha256:hash, imageId:'sha256:'+hash,nodeSha256:hash,bcryptSha256:hash,seedSha256:hash,reviewedPacketSha256:hash,device:'8:0' });
+
+test('gate Git reader preserves exact approved blob bytes including trailing LF', () => {
+  for (const bytes of [Buffer.from('{"approved":true}\n'), Buffer.from('\n{"approved":true}\r\n'), Buffer.from([0xff, 0, 10])]) {
+    const args = ['cat-file', 'blob', sourceSha + ':services/stocks/auth-burst-trace-512/launch-policy.json'];
+    const result = readGateGit(args, { repository: '/reviewed', env: { LANG: 'C' }, timeoutMs: 1000, now: () => 0,
+      execute(binary, actual, options) {
+        assert.equal(binary, '/usr/bin/git'); assert.deepEqual(actual, args); assert.equal(options.cwd, '/reviewed');
+        assert.equal(options.timeout, 1000); assert.equal(options.maxBuffer, 8 * 1024 ** 2);
+        return options.encoding === 'utf8' ? bytes.toString('utf8') : Buffer.from(bytes);
+      } });
+    assert.ok(Buffer.isBuffer(result), 'Gate receives bytes, not normalized text');
+    assert.deepEqual(result, bytes); assert.equal(digest(result), digest(bytes));
+  }
+});
+
+test('gate Git reader retains the absolute command deadline and rejects non-byte stdout', () => {
+  let clock = 0;
+  assert.throws(() => readGateGit(['rev-parse', 'HEAD'], { repository: '/reviewed', env: {}, timeoutMs: 10,
+    now: () => clock, execute: () => { clock = 10; return Buffer.from(sourceSha + '\n'); } }), /TRACE_ADAPTER_DEADLINE/);
+  assert.throws(() => readGateGit(['cat-file', 'blob', 'fixture'], { repository: '/reviewed', env: {}, timeoutMs: 10,
+    now: () => 0, execute: () => 'normalized output' }), /TRACE_GIT_STDOUT_BYTES_REQUIRED/);
+});
 function inspectFixture(role = 'service') {
   const id='c'.repeat(64), serviceId='d'.repeat(64), runId='auth-http512-pure',uid=1001,command=traceCommand(role);
   const binds=role==='service'?[{source:'/owned/data',target:'/data',ro:false},{source:'/owned/observation',target:observer.DIRECTORY,ro:false},

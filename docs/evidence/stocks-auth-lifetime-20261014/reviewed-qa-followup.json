@@ -22,19 +22,19 @@
       "path": ".github/workflows/stocks-review.yml",
       "classification": "workflow-control",
       "baseSHA256": "afea9fc3992fb122719a70d208abaee16efc4aacf5016446574191378c3bf50a",
-      "headSHA256": "3784f10a191f806b31a7bdb9371da1ba364a1594a9a4fc4d498f0ad13b1457f0"
+      "headSHA256": "823649d44abb65476d147ad020167415e5bf0af593054ec98bf17e9ba7cd0986"
     },
     {
       "path": "docs/AI_HANDOFF.md",
       "classification": "append-only-handoff",
       "baseSHA256": "8d0527e2abf804059a11388469f6edcfdfd0f192511e59434226e328512085b5",
-      "headSHA256": "29ac740dd2a0ddfc2335a85e9c213292f2b3bb19ddcc64ecc9a736504bb9384c"
+      "headSHA256": "506d609f8973eb6d3696ea8e870521001841d831336816f36fe50bedaec9a188"
     },
     {
       "path": "docs/evidence/stocks-auth-lifetime-20261014/BURST-TRACE.md",
       "classification": "documentation",
       "baseSHA256": null,
-      "headSHA256": "54341a4cf0dcd88449711d99b473bdb2fc53df060ba7a77d40a2f3b2e83897af"
+      "headSHA256": "66e46c5a3cabccd68f4256d67e2032b743ae2ef4450aab28faf428abcef1c290"
     },
     {
       "path": "docs/evidence/stocks-auth-lifetime-20261014/FOLLOWUP.md",
@@ -64,13 +64,13 @@
       "path": "services/stocks/auth-burst-trace-512/adapter.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "d6000fe36f99bec5f7ebd619996044abd79ad4c70236c19940e737819db899b2"
+      "headSHA256": "ab8ea17255a3414cbe18c72d95f122fbc7046e34ce03e7e98308400e09175f15"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/adapter.test.mjs",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "f674074ef0ae249741d36817dfca1f3a4551ccd5d8c8292a385e11026a8f85ab"
+      "headSHA256": "98cd9b7dd0f97ecd1ac0333b3215f3fb96246443e7546e9e9c4138fbd0c4fc77"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/analyze.mjs",
@@ -148,7 +148,7 @@
       "path": "services/stocks/auth-burst-trace-512/launch-policy.json",
       "classification": "auth-burst-trace-fixture",
       "baseSHA256": null,
-      "headSHA256": "35b9fc7273dae9537f14e321650743906e2e6c2cb9937c57f099b9e18025fd90"
+      "headSHA256": "a315540bf518b63bf6e839cae579901e2b41536d26150803d8756625028ec5b0"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/launcher.mjs",

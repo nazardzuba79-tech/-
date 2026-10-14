@@ -6483,3 +6483,17 @@ and separate observed/safety/capture/cleanup statuses. 139 pure guards PASS;
 no new workload, no activation, no runtime/financial/classifier changes.
 See docs/evidence/stocks-auth-lifetime-20261014/BURST-TRACE.md. Retained backend,
 browser, capacity and crypto coexistence FAIL remain; release BLOCKED.
+
+
+## 2026-10-14 Stocks one-attempt 8d25 result retained
+
+Run38551215547/job115815125337 ended INCOMPLETE before any HTTP or workload
+containers. Source/artifact/native preparation passed; inner adapter trimmed Git
+blob bytes and rejected approved policy digest (POLICY_BYTES_NOT_APPROVED).
+The exact-byte cause is reproduced read-only; the failed 8d25 head will not be
+rerun. No actual C50 measurement occurred. Owned image removed, cleanup COMPLETE.
+37 other workflows PASS;
+frontend263suites/4247tests PASS. See BURST-TRACE.md for artifact hashes and
+retained backend/browser/capacity failures. Freeze the narrow raw-byte reader correction disabled, then review exact
+existing-policy activation for the one actual C50 measurement. No new policy
+architecture, limits, merge, deploy, production or funds changes.

@@ -81,3 +81,46 @@ Final complete pure guard set: 139/139 PASS, 0 skipped, 447.2739 ms; log SHA256
 No workload, image preparation, HTTP burst, push or activation occurred during
 these checks. The checked-in source policy remains disabled. All retained
 backend/browser/capacity/coexistence failures and release blockers remain.
+
+
+### Actual one-attempt result at 8d25df9d — 2026-10-14
+
+Commit `8d25df9d7d5bd107497626e738d65fbca5bf3790`, run 38551215547,
+job 115815125337: **INCOMPLETE**, CI job FAIL, no HTTP workload initiated.
+Source, compiled artifact, device, image/native/closed-seed preparation and
+local-receipt gates passed. Initialization stopped after 14.203113 ms; direct
+authority, health, safety, warmup and ordinary request counts were all zero.
+No workload containers were created. Cleanup was COMPLETE; the locally loaded
+owned image was removed. This is neither a C50 PASS nor a new latency sample.
+
+Exact blocker: the adapter command helper trimmed `git cat-file blob` stdout.
+The reviewed 18,897-byte policy ends with LF; trimming changed its approved
+SHA256 from `35b9fc7273dae9537f14e321650743906e2e6c2cb9937c57f099b9e18025fd90`
+to `c94fef312fd389796cd027d03b732cdb1a45a28ef077b53a12c44e24ac671d86`.
+The inner source gate consequently rejected `POLICY_BYTES_NOT_APPROVED`; its
+assertion was retained as the bounded generic `TRACE_DIAGNOSTIC_ERROR`.
+A read-only pure replay of the actual Git bytes reproduces the rejection with
+the trimmed reader and accepts only the raw reader. It starts no workload.
+
+Public failure artifact 11886819587 (3,797,217 bytes), SHA256
+`ec2aa8e7bd9aef20a645058654aed41a196a3fff95c643fe8050f97e304ac748`.
+Pure replay evidence SHA256
+`9a5c2fb15f20184edb49c332950c2c93bead2b59a85aa34f094fc01b69bc3135`.
+All 37 other exact-head workflows succeeded. Stocks runtime guards 207/207 PASS;
+the new diagnostic guards 124/124 PASS. Full frontend: 263 suites / 4247 tests
+PASS, verified from artifact 11887597089, SHA256
+`bd376b2a0ef4f623c3df7cad51318a1e73eca2f0d7c10c0c66d034c03f017ddd`.
+Market-edge deploy job was skipped. The existing full backend/browser gates
+remain NOT_RUN here with their earlier FAIL evidence retained.
+
+The 8d25 initialization attempt is consumed and will not be rerun. No actual
+C50 measurement occurred. The causal raw-byte prerequisite correction is
+verified with pure guards and frozen again through the existing disabled-source
+to exact-policy transition before the one actual diagnostic workload. This is
+not a retry of an unchanged failed head or a replay of a completed measurement.
+No limits or criteria change. Performance and publication stay BLOCKED.
+
+Raw Git-byte correction verification: all 141 pure guards PASS, 0 skipped,
+411.2776 ms; log SHA256 `66a84d8601054ec730e3410d2c90f8c17c47a2874711812427e63823a5966392`.
+The new reader retains Buffer bytes and the absolute timeout/post-return
+deadline. Non-Git command behavior and all product sources remain unchanged.

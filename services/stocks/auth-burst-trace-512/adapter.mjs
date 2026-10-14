@@ -51,6 +51,15 @@ function checkRows(rows, allowLinks = false) {
 }
 function cross(a, b) { assert.deepEqual(a, b, 'TRACE_PREPARATION_BINDING_MISMATCH'); }
 
+export function readGateGit(args, { repository, env, timeoutMs, execute = execFileSync, now = () => performance.now() }) {
+  assert.ok(Number.isInteger(timeoutMs) && timeoutMs > 0, 'TRACE_ADAPTER_DEADLINE');
+  const end = now() + timeoutMs;
+  // The gate hashes Git blobs byte-for-byte; text-command whitespace normalization corrupts that binding.
+  const value = execute('/usr/bin/git', args, { env, cwd: repository, timeout: timeoutMs, maxBuffer: 8 * 1024 ** 2 });
+  assert.ok(now() < end, 'TRACE_ADAPTER_DEADLINE');
+  assert.ok(Buffer.isBuffer(value), 'TRACE_GIT_STDOUT_BYTES_REQUIRED'); return value;
+}
+
 // Complete prepared bytes + successful compiler + dependency inventory, independently
 // cross-bound to reviewed same-run receipts. Preparation by itself never authorizes HTTP.
 export function verifyPreparedInputs(options, freeze, eligibility) {
@@ -309,7 +318,8 @@ export function createTraceAdapter(options) {
       assert.ok(os.availableParallelism() >= 2);
       // No Docker call before exact same-run source/artifact eligibility and local byte verification.
       env = { PATH: '/usr/bin:/bin', LANG: 'C' };
-      const eligibility = validateLocalLaunch(options.launch.input, options.launch.policy, { git: args => execute('/usr/bin/git', args) });
+      const eligibility = validateLocalLaunch(options.launch.input, options.launch.policy,
+        { git: args => readGateGit(args, { repository: options.repository, env, timeoutMs: remaining(30000) }) });
       assert.equal(eligibility.eligible, true, 'TRACE_LAUNCH_NOT_ELIGIBLE');
       // The gate verifies Git objects; additionally reject dirty host QA files before loading them into containers.
       for (const name of fs.readdirSync(HERE)) {
