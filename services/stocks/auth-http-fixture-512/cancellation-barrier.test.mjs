@@ -4,8 +4,10 @@ import http from 'node:http';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { createServer } from '../../stocks-global/server.mjs';
 import { identityResolver } from '../../stocks-global/identity.mjs';
+import { accountId } from '../../stocks-global/accounts.mjs';
 import { createCancellationBarrier, cancellationEvidence } from './cancellation-barrier.mjs';
 
 // This exercises the actual Stocks server/resolver over real loopback HTTP.
@@ -34,8 +36,15 @@ function request(url, authorization) {
 
 test('actual admitted authority closes after client abort; live Bob remains isolated and every barrier cleans', { timeout: 8000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'stocks-cancel-barrier-'));
+  const accountsPath = join(dir, 'accounts.sqlite');
+  const bobAccountId = accountId({ issuer: 'cancel-barrier-fixture', subject: 'bob' });
+  const aliceAccountId = accountId({ issuer: 'cancel-barrier-fixture', subject: 'alice' });
   const barrier = createCancellationBarrier({ caseId: 'actual-http-alice', timeoutMs: 1000 });
-  const subjects = [], handlerErrors = []; let app, authority, alice, bob, providerCalls = 0;
+  const subjects = [], handlerErrors = []; let app, appClose, authority, alice, bob, providerCalls = 0;
+  const closeApp = () => {
+    if (!app) return Promise.resolve();
+    return appClose ??= (async () => { app.server.closeAllConnections(); await app.close(); })();
+  };
   let resolveBobAdmitted;
   const bobAdmitted = new Promise(resolve => { resolveBobAdmitted = resolve; });
   const handlerTasks = new Set();
@@ -59,7 +68,7 @@ test('actual admitted authority closes after client abort; live Bob remains isol
     });
     const authPort = await listen(authority);
     const forbidden = async () => { providerCalls++; throw new Error('PROVIDER_NOT_ALLOWED'); };
-    app = await createServer({ port: 0, accountsPath: join(dir, 'accounts.sqlite'), autoPoll: false,
+    app = await createServer({ port: 0, accountsPath, autoPoll: false,
       hub: { metrics: {}, catalogue: forbidden, quote: forbidden, history: forbidden },
       authenticate: identityResolver({ endpoint: `http://127.0.0.1:${authPort}/api/v1/me`, issuer: 'cancel-barrier-fixture' }) });
     app.server.prependListener('request', (req, res) => { if (req.headers.authorization === TOKENS.alice) barrier.observeStocksResponse(res); });
@@ -74,14 +83,25 @@ test('actual admitted authority closes after client abort; live Bob remains isol
     assert.deepEqual(await deadline(alice.result), { aborted: true });
     const live = await deadline(bob.result);
     assert.equal(live.status, 200); assert.equal(live.body.account.mode, 'isolated-paper');
+    assert.equal(live.body.account.id, bobAccountId);
     assert.equal(live.body.wallets.USDT.cash, '10000.00000000'); assert.equal(live.body.orders.length, 0); assert.equal(live.body.fills.length, 0);
     assert.deepEqual(subjects.sort(), ['alice', 'bob']); assert.equal(providerCalls, 0); assert.deepEqual(handlerErrors, []);
     await Promise.all([...handlerTasks]); assert.equal(handlerTasks.size, 0);
+    // Read only this test's private ledger, after HTTP and the worker have
+    // quiesced. A cancelled Alice authentication must not register an account.
+    await closeApp();
+    const db = new DatabaseSync(accountsPath, { readOnly: true });
+    try {
+      const persistedIds = db.prepare('SELECT id FROM paper_accounts ORDER BY id').all().map(row => row.id);
+      assert.deepEqual(persistedIds, [bobAccountId]);
+      assert.equal(persistedIds.includes(aliceAccountId), false);
+      t.diagnostic(JSON.stringify({ fixtureAccountIsolation: true, readOnly: true, workerClosed: true, rows: persistedIds.length, bobMatched: true, aliceAbsent: true }));
+    } finally { db.close(); }
   } finally {
     barrier.dispose(); alice?.client.destroy(); bob?.client.destroy();
     await Promise.allSettled([...handlerTasks]);
-    if (app) { app.server.closeAllConnections(); await app.close(); }
-    await close(authority); await rm(dir, { recursive: true, force: true });
+    try { await closeApp(); }
+    finally { try { await close(authority); } finally { await rm(dir, { recursive: true, force: true }); } }
   }
   assert.deepEqual(barrier.snapshot().cleanup, { timerActive: false, authorityListenersActive: false, stocksListenerActive: false, handlerSettled: true });
 });

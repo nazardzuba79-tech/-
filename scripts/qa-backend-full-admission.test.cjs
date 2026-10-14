@@ -4,23 +4,28 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { BASELINE_SHA, PRIOR_FAILURE, REVIEW_ID, MANIFEST_PATH, PROTECTED_HELPERS, decide, collectGit, main } = require('./qa-backend-full-admission.cjs');
+const os = require('node:os');
+const { BASELINE_SHA, PRIOR_FAILURE, PRIOR_BROWSER_FAILURE, REVIEW_ID, MANIFEST_PATH, REPOSITORY, BRANCH, PROTECTED_HELPERS, decide, readScope, collectGit, main } = require('./qa-backend-full-admission.cjs');
 const HEAD = 'a'.repeat(40), OLD = 'b'.repeat(64), NEW = 'c'.repeat(64);
+const scope = () => ({ eventName: 'pull_request', repository: REPOSITORY, number: 512, headRepository: REPOSITORY, headRef: BRANCH, headSHA: HEAD });
 const sha256 = b => crypto.createHash('sha256').update(b).digest('hex');
 function change(path, classification = 'documentation', headSHA256 = NEW) {
   return { path, classification, baseSHA256: OLD, headSHA256 };
 }
-function candidate(files = [change('docs/evidence/stocks-contract-proofs-20261014/backend-full/README.md')]) {
+function candidate(files = [change('docs/evidence/stocks-auth-lifetime-20261014/FOLLOWUP.md')]) {
   return {
-    base: BASELINE_SHA, head: HEAD,
-    manifest: { schemaVersion: 1, reviewId: REVIEW_ID, baselineSHA: BASELINE_SHA, priorFailure: { ...PRIOR_FAILURE }, manifestPath: MANIFEST_PATH, files },
+    base: BASELINE_SHA, head: HEAD, scope: scope(),
+    manifest: { schemaVersion: 2, reviewId: REVIEW_ID, baselineSHA: BASELINE_SHA, priorFailure: { ...PRIOR_FAILURE }, priorBrowserFailure: { ...PRIOR_BROWSER_FAILURE }, manifestPath: MANIFEST_PATH, files },
     changes: [...files.map(({ classification, ...f }) => ({ ...f, baseMode: f.baseSHA256 ? '100644' : null, headMode: f.headSHA256 ? '100644' : null })), { path: MANIFEST_PATH, baseMode: null, headMode: '100644', baseSHA256: null, headSHA256: 'd'.repeat(64) }],
   };
 }
 test('exact reviewed documentation retains prior FAIL and never presents NOT_RUN as PASS', () => {
   const r = decide(candidate());
   assert.equal(r.mode, 'not_run'); assert.equal(r.currentFullBackendResult, 'NOT_RUN');
+  assert.equal(r.browserMode, 'not_run'); assert.equal(r.currentBrowserResult, 'NOT_RUN');
   assert.equal(r.priorFailure.status, 'FAIL'); assert.equal(r.priorFailure.artifactSHA256, PRIOR_FAILURE.artifactSHA256);
+  assert.deepEqual(r.priorBrowserFailure, { baselineSHA: BASELINE_SHA, ...PRIOR_BROWSER_FAILURE });
+  assert.equal(r.previousBrowserFailurePreserved, true);
   assert.equal(r.previousFailurePreserved, true); assert.equal(r.releaseGatePass, false); assert.equal(r.manifestIsCryptographicSignature, false);
 });
 test('every backend helper or helper-test edit requires full, including previously report-only edits', () => {
@@ -67,13 +72,9 @@ test('handoff must preserve its exact canonical prefix and cannot be added, dele
   c.changes[0].appendOnly = false; assert.equal(decide(c).mode, 'full');
   c.changes[0].appendOnly = true; assert.equal(decide(c).mode, 'not_run');
 });
-test('known preparation and selector/workflow controls require exact individually reviewed bytes', () => {
+test('only named barrier test and admission/workflow controls can use exact individually reviewed bytes', () => {
   for (const [file, classification] of [
-    ['services/stocks/auth-http-fixture-512/prepare.mjs', 'preparation-only'],
-    ['services/stocks/auth-http-fixture-512/prepare.test.mjs', 'preparation-only'],
-    ...['run.mjs', 'fixture.test.mjs', 'authority-entry.cjs', 'authority.test.cjs', 'durability-observer.cjs',
-      'durability-observer.test.cjs', 'launcher.mjs', 'launcher.test.mjs', 'launch-policy.json']
-      .map(file => ['services/stocks/auth-http-fixture-512/' + file, 'auth-fixture']),
+    ['services/stocks/auth-http-fixture-512/cancellation-barrier.test.mjs', 'auth-fixture-test'],
     ['scripts/qa-backend-full-admission.cjs', 'admission-control'],
     ['scripts/qa-backend-full-admission.test.cjs', 'admission-control'],
     ['.github/workflows/stocks-review.yml', 'workflow-control'],
@@ -85,8 +86,49 @@ test('known preparation and selector/workflow controls require exact individuall
 test('runtime/test/lock/schema/compiler/build and unknown paths always demand full even if claimed reviewed', () => {
   for (const file of ['services/stocks/auth-http-fixture-512/authority.cjs', 'services/stocks/auth-http-fixture-512/unreviewed.mjs', 'services/stocks/auth-http-fixture-512/plan.mjs', 'src/index.ts', 'src/foo.test.ts', 'frontend/src/App.tsx', 'services/stocks/server.mjs', 'services/stocks-global/accounts.mjs', 'services/stocks-global/account-worker-runtime.mjs', 'package.json', 'package-lock.json', 'frontend/package-lock.json', 'prisma/schema.prisma', 'tsconfig.json', 'jest.config.js', 'scripts/qa-backend-full-offline.Dockerfile', 'Dockerfile', 'scripts/unreviewed.cjs', 'docs/unreviewed.md', '.github/workflows/other.yml']) {
     const r = decide(candidate([change(file, 'documentation')]));
-    assert.equal(r.mode, 'full', file); assert.equal(r.reason, 'UNREVIEWABLE_OR_PROTECTED_PATH', file);
+    assert.equal(r.mode, 'full', file); assert.equal(r.browserMode, 'run', file); assert.equal(r.reason, 'UNREVIEWABLE_OR_PROTECTED_PATH', file);
   }
+});
+test('previous finite experiment fixtures are not permitted by the narrow 28 followup', () => {
+  for (const file of ['prepare.mjs', 'prepare.test.mjs', 'run.mjs', 'fixture.test.mjs', 'authority-entry.cjs',
+    'authority.test.cjs', 'durability-observer.cjs', 'durability-observer.test.cjs', 'launcher.mjs', 'launcher.test.mjs', 'launch-policy.json']) {
+    const r = decide(candidate([change('services/stocks/auth-http-fixture-512/' + file, 'auth-fixture')]));
+    assert.equal(r.mode, 'full', file); assert.equal(r.browserMode, 'run', file);
+    assert.equal(r.reason, 'UNREVIEWABLE_OR_PROTECTED_PATH', file);
+  }
+});
+test('outside the exact same-repository PR512 branch and head neither backend nor browser can skip', () => {
+  for (const alter of [
+    c => c.scope = undefined, c => c.scope.number = 497, c => c.scope.number = 515,
+    c => c.scope.number = '512', c => c.scope.eventName = 'push', c => c.scope.repository = 'fork/-',
+    c => c.scope.headRepository = 'fork/-', c => c.scope.headRef = 'main',
+    c => c.scope.headSHA = BASELINE_SHA, c => c.scope.unreviewedField = true,
+  ]) {
+    const c = candidate(); alter(c); const r = decide(c);
+    assert.equal(r.mode, 'full'); assert.equal(r.browserMode, 'run'); assert.equal(r.releaseGatePass, false);
+  }
+});
+test('browser workflow requires successful exact scoped admission and retains ordinary execution elsewhere', () => {
+  const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/stocks-review.yml'), 'utf8').replace(/\r\n/g, '\n');
+  const browser = workflow.match(/^  stocks-ui-browser:\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:|$(?![\s\S]))/m)?.[1];
+  assert.ok(browser);
+  assert.match(browser, /^    needs: \[isolated-simulator, stocks-backend-admission\]$/m);
+  const condition = browser.match(/^    if: >-?\n([\s\S]*?)(?=^    \S)/m)?.[1].trim().replace(/\s+/g, ' ');
+  assert.equal(condition, "always() && !cancelled() && !(github.event_name == 'pull_request' && github.event.pull_request.number == 512 && github.repository == 'nazardzuba79-tech/-' && github.event.pull_request.head.repo.full_name == github.repository && needs.stocks-backend-admission.result == 'success' && needs.stocks-backend-admission.outputs.mode == 'not_run' && needs.stocks-backend-admission.outputs.browser_mode == 'not_run')");
+  assert.match(workflow, /browser_mode: \$\{\{ steps\.admission\.outputs\.browser_mode \}\}/);
+  assert.match(workflow, /r\.browserMode!==\(r\.mode==="not_run"\?"not_run":"run"\)/);
+  assert.match(workflow, /needs\.stocks-backend-admission\.result != 'success' \|\| needs\.stocks-backend-admission\.outputs\.mode != 'not_run'/);
+});
+test('GitHub event scope is read without using untrusted event data as output or commands', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stocks-admission-scope-'));
+  t.after(() => { assert.equal(path.dirname(path.resolve(dir)), path.resolve(os.tmpdir())); fs.rmSync(dir, { recursive: true, force: true }); });
+  const eventPath = path.join(dir, 'event.json');
+  const event = { pull_request: { number: 512, head: { repo: { full_name: REPOSITORY }, ref: BRANCH, sha: HEAD } }, ignored: 'not copied' };
+  fs.writeFileSync(eventPath, JSON.stringify(event));
+  const env = { GITHUB_EVENT_NAME: 'pull_request', GITHUB_REPOSITORY: REPOSITORY, GITHUB_EVENT_PATH: eventPath };
+  assert.deepEqual(readScope(env), scope());
+  fs.writeFileSync(eventPath, '{'); assert.throws(() => readScope(env));
+  assert.throws(() => readScope({}));
 });
 test('missing, expanded, stale, malformed or tampered review metadata cannot skip', () => {
   for (const alter of [
@@ -95,6 +137,18 @@ test('missing, expanded, stale, malformed or tampered review metadata cannot ski
     c => c.manifest.reviewId += '-other',
     c => c.manifest.priorFailure.status = 'PASS',
     c => c.manifest.priorFailure.artifactSHA256 = NEW,
+    c => c.manifest.priorFailure.artifactId++,
+    c => c.manifest.priorFailure.runId++,
+    c => c.manifest.priorFailure.jobId++,
+    c => c.manifest.priorFailure.extra = true,
+    c => c.manifest.priorBrowserFailure = undefined,
+    c => c.manifest.priorBrowserFailure.status = 'PASS',
+    c => c.manifest.priorBrowserFailure.artifactSHA256 = NEW,
+    c => c.manifest.priorBrowserFailure.artifactId++,
+    c => c.manifest.priorBrowserFailure.runId++,
+    c => c.manifest.priorBrowserFailure.jobId++,
+    c => c.manifest.priorBrowserFailure.extra = true,
+    c => c.manifest.schemaVersion = 1,
     c => c.manifest.baselineSHA = HEAD,
     c => c.manifest.files = [],
     c => c.manifest.files[0].baseSHA256 = NEW,
@@ -106,10 +160,10 @@ test('missing, expanded, stale, malformed or tampered review metadata cannot ski
     c => c.changes[0].headMode = '100755',
     c => c.changes[0].path = '../README.md',
     c => c.changes.push({ ...c.changes[0] }),
-  ]) { const c = candidate(); alter(c); assert.equal(decide(c).mode, 'full'); }
+  ]) { const c = candidate(); alter(c); const r = decide(c); assert.equal(r.mode, 'full'); assert.equal(r.browserMode, 'run'); }
 });
 function gitFixture({ badGit = false, badHead = false, missingManifest = false, tamperBlob = false, nonAncestor = false, handoff = false, rewriteHandoff = false } = {}) {
-  const file = handoff ? 'docs/AI_HANDOFF.md' : 'docs/evidence/stocks-contract-proofs-20261014/backend-full/README.md';
+  const file = handoff ? 'docs/AI_HANDOFF.md' : 'docs/evidence/stocks-auth-lifetime-20261014/FOLLOWUP.md';
   const old = Buffer.from('old reviewed text'), fresh = Buffer.from(handoff && !rewriteHandoff ? 'old reviewed text\nnew evidence' : 'new reviewed text');
   const m = candidate([change(file, handoff ? 'append-only-handoff' : 'documentation', sha256(fresh))]).manifest; m.files[0].baseSHA256 = sha256(old);
   const blobs = new Map([['1'.repeat(40), old], ['2'.repeat(40), tamperBlob ? Buffer.from('tampered') : fresh], ['3'.repeat(40), Buffer.from(JSON.stringify(m))]]);
@@ -129,15 +183,15 @@ function gitFixture({ badGit = false, badHead = false, missingManifest = false, 
   return { root: '/unused', base: BASELINE_SHA, head: HEAD, manifestPath: MANIFEST_PATH, run };
 }
 test('admission hashes canonical Git blobs and loads the review manifest from exact head', () => {
-  assert.equal(decide(collectGit(gitFixture())).mode, 'not_run');
-  assert.equal(decide(collectGit(gitFixture({ tamperBlob: true }))).mode, 'full');
+  assert.equal(decide({ ...collectGit(gitFixture()), scope: scope() }).mode, 'not_run');
+  assert.equal(decide({ ...collectGit(gitFixture({ tamperBlob: true })), scope: scope() }).mode, 'full');
   for (const flag of ['badGit', 'badHead', 'missingManifest', 'nonAncestor']) assert.throws(() => collectGit(gitFixture({ [flag]: true })));
 });
 test('canonical collector computes append-only from actual Git blob bytes', () => {
   const append = collectGit(gitFixture({ handoff: true }));
-  assert.equal(append.changes[0].appendOnly, true); assert.equal(decide(append).mode, 'not_run');
+  assert.equal(append.changes[0].appendOnly, true); assert.equal(decide({ ...append, scope: scope() }).mode, 'not_run');
   const rewrite = collectGit(gitFixture({ handoff: true, rewriteHandoff: true }));
-  assert.equal(rewrite.changes[0].appendOnly, false); assert.equal(decide(rewrite).mode, 'full');
+  assert.equal(rewrite.changes[0].appendOnly, false); assert.equal(decide({ ...rewrite, scope: scope() }).mode, 'full');
 });
 test('missing Git/input fails closed to full without claiming current backend success', () => {
   const logs = [], prior = console.log;

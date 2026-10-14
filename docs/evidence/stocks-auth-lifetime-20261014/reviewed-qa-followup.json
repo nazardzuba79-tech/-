@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 2,
+  "reviewId": "stocks-auth-lifetime-28e6f3ba-20261014-v1",
+  "baselineSHA": "28e6f3bab18bad777f9b02e31851dfe8874f2b0e",
+  "priorFailure": {
+    "status": "FAIL",
+    "artifactSHA256": "621f2f054bdf1227cbcdb0f38e1c24296cf28c98c6fa297dcc643894a2c846c2",
+    "artifactId": 11880028341,
+    "runId": 38533286576,
+    "jobId": 115752113535
+  },
+  "priorBrowserFailure": {
+    "status": "FAIL",
+    "artifactSHA256": "5eee6f0a485202ba84f9cf5260f2cd1511f1f66c7dd9ab6eb141ccf9c2888f26",
+    "artifactId": 11879126370,
+    "runId": 38533286576,
+    "jobId": 115750950411
+  },
+  "manifestPath": "docs/evidence/stocks-auth-lifetime-20261014/reviewed-qa-followup.json",
+  "files": [
+    {
+      "path": "scripts/qa-backend-full-admission.cjs",
+      "classification": "admission-control",
+      "baseSHA256": "b374673622ac10bd7df44a30b68a220d99a24e365f6931cf94fb7440d79b6f2d",
+      "headSHA256": "dbe5fb9b8cb99cfed864b7461b87a4247bb530fd9fda0ebd81da452976cc9287"
+    },
+    {
+      "path": "scripts/qa-backend-full-admission.test.cjs",
+      "classification": "admission-control",
+      "baseSHA256": "8b7f35c8b22db113adddd8ef0aae7f72f7949d36d1fbf665d743de5a216c0659",
+      "headSHA256": "5dffcbc0ccb7e4a817bd187fb4e14cd3f1d69de0cd7d4eac32a0d21d5f97ab7c"
+    },
+    {
+      "path": ".github/workflows/stocks-review.yml",
+      "classification": "workflow-control",
+      "baseSHA256": "afea9fc3992fb122719a70d208abaee16efc4aacf5016446574191378c3bf50a",
+      "headSHA256": "8f0052ba6c1025fca0c452b5c744bf9b01ada245fc5b2b50d1c553c261da395d"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/cancellation-barrier.test.mjs",
+      "classification": "auth-fixture-test",
+      "baseSHA256": "5173d248787fd408309e1a6f2a51a4708b6219af66eea5d8e1878650317e117c",
+      "headSHA256": "eb72db5ca1b63091e7adfd38534d34ab4a553406791a4d980c0ee0b08be896d4"
+    },
+    {
+      "path": "docs/AI_HANDOFF.md",
+      "classification": "append-only-handoff",
+      "baseSHA256": "8d0527e2abf804059a11388469f6edcfdfd0f192511e59434226e328512085b5",
+      "headSHA256": "58c8c6a00966f725de05de454b71971bbc90f8f85ffeec60b9bcbc180d03986f"
+    },
+    {
+      "path": "docs/evidence/stocks-auth-lifetime-20261014/FOLLOWUP.md",
+      "classification": "documentation",
+      "baseSHA256": null,
+      "headSHA256": "5732dd8bb0afc3e048867d01fe3b6efc791b947488a1586f842bb8e74664d241"
+    }
+  ]
+}
