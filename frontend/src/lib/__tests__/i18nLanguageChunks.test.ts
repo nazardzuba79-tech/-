@@ -373,6 +373,8 @@ describe('translation integrity', () => {
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
+        // New regulatory-document UI keys; all pre-existing copy stays frozen.
+        if (key?.startsWith('licenses.')) return false;
         // Chart workspace (2026-10-13): the timeframe labels, the two-row
         // toolbar, compare, layout, data window, analytics, templates and
         // shortcuts, plus three more chart types. `git diff --numstat` over
@@ -406,6 +408,10 @@ describe('translation integrity', () => {
       expect(dicts[code]['futures.positionLimits'].trim()).not.toBe('');
       expect(dicts[code]['nav.tools'].trim()).not.toBe('');
       expect(dicts[code]['nav.knowledgeCenter'].trim()).not.toBe('');
+      for (const key of Object.keys(dicts.ru).filter(key => key.startsWith('licenses.'))) {
+        expect({ code, key, translated: Boolean(dicts[code][key]?.trim()) }).toEqual({ code, key, translated: true });
+        if (code !== 'ru') expect(dicts[code][key]).not.toBe(dicts.ru[key]);
+      }
       expect(dicts[code]['settings.rememberedDevice'].trim()).not.toBe('');
       for (const key of ['futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch']) {
         expect({ code, key, text: dicts[code][key]?.trim() !== '' }).toEqual({ code, key, text: true });
