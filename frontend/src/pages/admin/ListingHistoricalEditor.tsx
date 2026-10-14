@@ -28,8 +28,8 @@ export function ListingHistoricalEditor({ program, onChange }: {
       if(count>4800)throw Error('Максимум 4800 часов без ускорения');
       // The 160 KiB Durable Object body also contains other draft fields.
       // Leave room for a logo and other metadata; backend enforces an
-      // independent full-config 132-KiB maximum.
-      if(new TextEncoder().encode(JSON.stringify(next)).byteLength>85*1024)
+      // independent full-config 80-KiB maximum.
+      if(new TextEncoder().encode(JSON.stringify(next)).byteLength>65*1024)
         throw Error('Отрезки превышают допустимый размер. Загрузите более короткий период.');
       if(run!==loadId.current)return;
       onChange(next);
