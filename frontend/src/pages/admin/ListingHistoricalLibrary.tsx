@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { archiveSelection, coversHistoricalSelection, deleteHistoricalArchive,
   HISTORICAL_PRESETS, listHistoricalArchives, loadHistoricalArchive, prepareHistoricalArchive,
-  saveHistoricalArchive, type HistoricalArchive } from './listingHistoricalLibrary';
+  saveHistoricalArchive, type HistoricalArchive } from './historicalArchiveStore';
 import type { HistoricalClip, HistoricalSource } from './listingHistoricalImport';
 
 type Duration = 'all'|'24'|'168'|'720'|'2160';
