@@ -1,0 +1,114 @@
+name: Chart workspace regression
+
+# The chart workspace's own gate (2026-10-14): the pure timeframe, capability,
+# viewport, candle-source and workspace suites under Jest, then the browser
+# QA on the production bundle against the loopback fixture that mirrors the
+# verified source limits (Futures: every interval; Spot and the test-market
+# simulation: 1m 5m 15m 1h 4h 1d 1w natively, the rest built from them;
+# 400 for anything else). No production host, account or secret is used.
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/components/TerminalChart.tsx'
+      - 'frontend/src/components/TestMarketTerminal.tsx'
+      - 'frontend/src/components/chart-workspace/**'
+      - 'frontend/src/lib/chart*.ts'
+      - 'frontend/src/lib/spotPublicMarket.ts'
+      - 'frontend/src/lib/futuresCandles.ts'
+      - 'frontend/src/lib/testMarketCandles.ts'
+      - 'frontend/src/lib/testMarketStore.ts'
+      - 'frontend/src/lib/testMarkets.ts'
+      - 'frontend/src/lib/__tests__/chart*.test.ts'
+      - 'frontend/src/lib/__tests__/futuresChartBlank.test.ts'
+      - 'frontend/src/lib/__tests__/priceChartMarketOrders.test.ts'
+      - 'scripts/qa-chart-workspace.cjs'
+      - '.github/workflows/chart-workspace.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chart-workspace-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  pure-suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://test:test@127.0.0.1:9/chart_workspace_unused
+      DIRECT_URL: postgresql://test:test@127.0.0.1:9/chart_workspace_unused
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Timeframes, capabilities, viewport, candle source, workspace, compare, indicators and the chart harnesses
+        run: |
+          mkdir -p .ci-output
+          node node_modules/jest/bin/jest.js --runInBand --json --outputFile=.ci-output/chart-workspace.json \
+            frontend/src/lib/__tests__/chartTimeframes.test.ts \
+            frontend/src/lib/__tests__/chartCapabilities.test.ts \
+            frontend/src/lib/__tests__/chartViewport.test.ts \
+            frontend/src/lib/__tests__/chartCandleSource.test.ts \
+            frontend/src/lib/__tests__/chartWorkspace.test.ts \
+            frontend/src/lib/__tests__/chartCompare.test.ts \
+            frontend/src/lib/__tests__/chartIndicators.test.ts \
+            frontend/src/lib/__tests__/chartCandleStats.test.ts \
+            frontend/src/lib/__tests__/futuresChartBlank.test.ts \
+            frontend/src/lib/__tests__/priceChartMarketOrders.test.ts \
+            frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+      - name: Reject skipped or unfinished checks
+        run: >-
+          node -e "const r=require('./.ci-output/chart-workspace.json');
+          if(r.numPendingTests || r.numTodoTests) throw new Error('Chart workspace gate requires every check to run');
+          if(!r.numPassedTests || !r.success) throw new Error('Chart workspace gate did not pass');
+          console.log(r.numPassedTests + ' chart workspace checks passed, none skipped');"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chart-workspace-jest
+          path: .ci-output/chart-workspace.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install backend and frontend dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Build the production bundle
+        run: npm run build --prefix frontend
+      - name: Install disposable Playwright Chromium
+        run: |
+          npm install --prefix /tmp/voltex-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Chart workspace browser QA (AITH, every context, panes, layout, sync, tools, phones, zoom, counters)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-browser/node_modules/playwright
+          LANG: en_US.UTF-8
+        run: node scripts/qa-chart-workspace.cjs --dist frontend/dist --out output/chart-workspace --phase after --widths 1366,1440,1920 --phones 360,390 --perf-window 6000
+      - name: Upload screenshots and the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chart-workspace-browser
+          path: output/chart-workspace/**
+          retention-days: 7
+          if-no-files-found: warn

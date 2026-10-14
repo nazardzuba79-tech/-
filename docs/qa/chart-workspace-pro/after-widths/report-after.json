@@ -1,0 +1,463 @@
+{
+  "phase": "after",
+  "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cw2/frontend/dist",
+  "startedAt": "2026-10-14T12:42:11.003Z",
+  "checks": [
+    {
+      "id": "geometry.futures.1600.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 897,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.futures.1600.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1600,
+        "scrollWidth": 1600
+      }
+    },
+    {
+      "id": "geometry.futures.1600.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 974,
+          "h": 28
+        },
+        "heading": {
+          "x": 4,
+          "y": 112,
+          "w": 998,
+          "h": 36
+        },
+        "views": {
+          "x": 20,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.futures.1600.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "tools",
+          "scale",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.futures.1600.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.spot.1600.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 908,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.spot.1600.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1600,
+        "scrollWidth": 1600
+      }
+    },
+    {
+      "id": "geometry.spot.1600.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 278,
+          "y": 154,
+          "w": 748,
+          "h": 28
+        },
+        "heading": {
+          "x": 266,
+          "y": 112,
+          "w": 772,
+          "h": 36
+        },
+        "views": {
+          "x": 282,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.spot.1600.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "scale",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.spot.1600.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "futures.1440.regression.terminal-intact",
+      "ok": true,
+      "detail": {
+        "form": true,
+        "formVisible": true,
+        "book": true,
+        "rail": true,
+        "tv": [
+          "VOLTEX",
+          "TradingView"
+        ]
+      }
+    },
+    {
+      "id": "futures.1440.regression.tradingview-switch",
+      "ok": true,
+      "detail": {
+        "iframe": false,
+        "dataDisabled": true,
+        "form": true,
+        "back": "candles"
+      }
+    },
+    {
+      "id": "futures.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "spot.1440.regression.terminal-intact",
+      "ok": true,
+      "detail": {
+        "form": true,
+        "formVisible": true,
+        "book": true,
+        "rail": true,
+        "tv": [
+          "VOLTEX",
+          "TradingView"
+        ]
+      }
+    },
+    {
+      "id": "spot.1440.regression.tradingview-switch",
+      "ok": true,
+      "detail": {
+        "iframe": false,
+        "dataDisabled": true,
+        "form": true,
+        "back": "candles"
+      }
+    },
+    {
+      "id": "spot.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "mobile.futures.768x1024.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.768x1024.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 7,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.768x1024.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 384,
+          "w": 768,
+          "h": 640,
+          "vw": 768,
+          "vh": 1024,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.768x1024.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.768x1024.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.768x1024.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 7,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.768x1024.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 384,
+          "w": 768,
+          "h": 640,
+          "vw": 768,
+          "vh": 1024,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.768x1024.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 7,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 70,
+          "w": 844,
+          "h": 320,
+          "vw": 844,
+          "vh": 390,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 7,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 70,
+          "w": 844,
+          "h": 320,
+          "vw": 844,
+          "vh": 390,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    }
+  ],
+  "perf": {
+    "geometry.futures.1600.chart": {
+      "x": 60,
+      "y": 188,
+      "w": 862,
+      "h": 390
+    },
+    "geometry.spot.1600.chart": {
+      "x": 322,
+      "y": 188,
+      "w": 636,
+      "h": 412
+    }
+  },
+  "screenshots": [
+    "after-futures-1600.png",
+    "after-futures-1600-page.png",
+    "after-spot-1600.png",
+    "after-spot-1600-page.png",
+    "after-futures-mobile-768x1024.png",
+    "after-spot-mobile-768x1024.png",
+    "after-futures-mobile-844x390.png",
+    "after-spot-mobile-844x390.png"
+  ],
+  "environment": "LOCAL QA ONLY — production bundle, loopback read-only fixture",
+  "finishedAt": "2026-10-14T12:42:33.392Z",
+  "summary": {
+    "passed": 32,
+    "failed": 0
+  }
+}

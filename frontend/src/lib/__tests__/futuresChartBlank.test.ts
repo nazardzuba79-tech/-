@@ -60,7 +60,9 @@ function fakeCharts(chartOptions: any[], harness: any) {
       removePriceLine: () => {} }; harness.series.push(r); return r; };
   const timeScale = { fitContent: () => {}, setVisibleLogicalRange: (r: unknown) => { harness.ranges.push(r); }, getVisibleLogicalRange: () => ({ from: 100, to: 200 }),
     options: () => ({ barSpacing: 10 }), subscribeVisibleTimeRangeChange: () => {}, unsubscribeVisibleTimeRangeChange: () => {},
-    subscribeVisibleLogicalRangeChange: (c: unknown) => { harness.rangeChange = c; }, unsubscribeVisibleLogicalRangeChange: () => { harness.rangeChange = undefined; },
+    // More than one subscriber (the history pager and the price-scale clamp): every one hears a range change.
+    subscribeVisibleLogicalRangeChange: (c: unknown) => { (harness.rangeSubscribers ||= new Set()).add(c); harness.rangeChange = (range: unknown) => { for (const fn of [...harness.rangeSubscribers]) (fn as (r: unknown) => void)(range); }; },
+    unsubscribeVisibleLogicalRangeChange: (c: unknown) => { harness.rangeSubscribers?.delete(c); if (!harness.rangeSubscribers?.size) harness.rangeChange = undefined; },
     coordinateToTime: () => 0, timeToCoordinate: () => 100, applyOptions: () => {},
     coordinateToLogical: () => 0, logicalToCoordinate: () => 100, width: () => 1000 };
   const chart = { addSeries: () => series(), priceScale: () => ({ applyOptions: () => {} }), timeScale: () => timeScale,
@@ -114,6 +116,9 @@ function mount(props: Record<string, unknown>) {
     if (name === '../lib/chartCompare') return require('../chartCompare');
     if (name === '../lib/chartCandleStats') return require('../chartCandleStats');
     if (name === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (name === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (name === '../lib/chartViewport') return require('../chartViewport');
+    if (name === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
     if (name.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (c: unknown) => c };

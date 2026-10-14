@@ -7,7 +7,8 @@
 
 /* ── Row 1: the view tabs in the chart heading ─────────────────────────── */
 .cw-views { display:flex; align-items:stretch; gap:16px; min-width:0; height:100%; }
-.cw-view-tab { position:relative; display:inline-flex; align-items:center; padding:0; border:0; background:none; color:#6a6e73; font:500 12px/1 Inter,Arial,sans-serif; cursor:pointer; white-space:nowrap; }
+/* A working tab reads as a tab, not as a disabled key (owner, 2026-10-14): rest #a0a6ad, hover and selected white, disabled #44474d. */
+.cw-view-tab { position:relative; display:inline-flex; align-items:center; padding:0; border:0; background:none; color:#a0a6ad; font:500 12px/1 Inter,Arial,sans-serif; cursor:pointer; white-space:nowrap; }
 .cw-view-tab:hover { color:#ffffff; }
 .cw-view-tab[aria-selected=true] { color:#ffffff; }
 .cw-view-tab[aria-selected=true]::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:#f0b90b; border-radius:1px; }
@@ -91,7 +92,8 @@
 .cw-item-tick svg { width:14px; height:14px; }
 .cw-tf-row { display:flex; align-items:center; gap:2px; }
 .cw-tf-row > .cw-item { flex:1; min-width:0; }
-.cw-tf-row.is-off .cw-item-label { color:#6f7f94; }
+.cw-tf-row.is-derived .cw-item-label::after { content:''; display:inline-block; width:3px; height:3px; margin:0 0 6px 3px; border-radius:50%; background:currentColor; opacity:.6; vertical-align:top; }
+.cw-tf-note { margin:2px 10px 0; }
 .cw-star { display:inline-grid; place-items:center; width:30px; height:30px; flex:none; padding:0; border:0; border-radius:5px; background:transparent; color:#6f7f94; cursor:pointer; }
 .cw-star svg { width:14px; height:14px; }
 .cw-star:hover, .cw-star:focus-visible { background:#253246; color:#fff; outline:none; }
@@ -185,12 +187,16 @@
 
 /* ── Multi-chart layout ────────────────────────────────────────────────── */
 .cw-layout { display:grid; flex:1; min-height:0; min-width:0; gap:2px; background:#1c1d22; }
+/* One grid for every layout (2026-10-14): a single cell fills the shell as the bare chart did. */
+.cw-layout.is-grid-1 { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); gap:0; background:transparent; }
 .cw-layout.is-grid-2 { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
 .cw-layout.is-grid-4 { grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-rows:minmax(0,1fr) minmax(0,1fr); }
 .cw-layout.is-expanded, .cw-layout.is-compact { grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); }
 .cw-layout.is-expanded { grid-template-rows:minmax(0,1fr); }
+.cw-layout.is-compact { grid-template-rows:auto auto minmax(0,1fr); }
 .cw-layout-cell { display:flex; flex-direction:column; min-width:0; min-height:0; background:#101014; position:relative; }
-.cw-layout-cell.is-parked { position:absolute; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none; }
+/* A cell that is not shown keeps its chart mounted: parked off-screen (the main chart) or hidden (a pane behind an expanded one). */
+.cw-layout-cell.is-parked, .cw-layout-cell.is-hidden { position:absolute; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none; }
 .cw-layout-tabs { display:flex; gap:6px; padding:6px 8px 2px; overflow-x:auto; background:#101014; }
 .cw-layout-tab { flex:none; min-height:36px; padding:0 12px; border:1px solid #2a2d35; border-radius:8px; background:transparent; color:#aab0b8; font:500 12px Inter,Arial,sans-serif; cursor:pointer; white-space:nowrap; }
 .cw-layout-tab.active { color:#f0c964; border-color:#f0c964; }
@@ -206,13 +212,25 @@
 .cw-pane-select { height:26px; max-width:160px; padding:0 6px; border:1px solid #2a2d35; border-radius:5px; background:#15161b; color:#eaecef; font:12px Inter,Arial,sans-serif; }
 .cw-pane-select.is-tf { max-width:84px; }
 .cw-pane-last { font:600 12px Inter,Arial,sans-serif; color:#ffffff; font-variant-numeric:tabular-nums; }
-.cw-pane-tag { margin-left:auto; font:10px Inter,Arial,sans-serif; color:#6a6e73; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap; }
+/* A narrow pane (two charts beside the Spot rail at 1440): the header wraps instead of clipping, the analysis tag steps aside, «Торговать» keeps its icon and tooltip. */
+@container (max-width: 480px) {
+  .cw-pane-head { flex-wrap:wrap; row-gap:2px; }
+  .cw-pane-head .cw-pane-tag { display:none; }
+  .cw-pane-head .cw-pane-button span { display:none; }
+  .cw-pane-head .cw-pane-select { max-width:124px; }
+}
+.cw-pane-tag { margin-left:auto; font:10px Inter,Arial,sans-serif; color:#8b9098; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap; }
+.cw-pane-stale { margin-left:auto; font:500 10px Inter,Arial,sans-serif; color:#f0c964; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cw-pane-note.is-loading { color:#8b9098; }
+.cw-pane-note.is-error { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; pointer-events:auto; }
+.cw-pane-note .cw-button { height:28px; }
+.voltex-plot-title .voltex-plot-note { color:#8b9098; font-weight:400; }
 .cw-pane-button { display:inline-flex; align-items:center; gap:4px; height:26px; padding:0 8px; border:1px solid #2a2d35; border-radius:5px; background:transparent; color:#f0c964; font:500 11px Inter,Arial,sans-serif; cursor:pointer; white-space:nowrap; }
 .cw-pane-button svg { width:14px; height:14px; }
 .cw-pane-button:hover { border-color:#f0c964; }
 .cw-pane-plot { position:relative; flex:1; min-height:160px; }
 .cw-pane-chart { position:absolute; inset:0; }
-.cw-pane-note { position:absolute; inset:0; display:grid; place-items:center; color:#6a6e73; font:12px Inter,Arial,sans-serif; pointer-events:none; }
+.cw-pane-note { position:absolute; inset:0; z-index:3; display:grid; place-items:center; color:#6a6e73; font:12px Inter,Arial,sans-serif; pointer-events:none; }
 @media (max-width:900px) {
   .cw-pane-head { flex-wrap:wrap; min-height:44px; }
   .cw-pane-select, .cw-pane-button { height:36px; }

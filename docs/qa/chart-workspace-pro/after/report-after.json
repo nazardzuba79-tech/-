@@ -1,0 +1,3780 @@
+{
+  "phase": "after",
+  "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cw2/frontend/dist",
+  "startedAt": "2026-10-14T12:36:32.692Z",
+  "checks": [
+    {
+      "id": "geometry.futures.1366.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 800,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.futures.1366.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1366,
+        "scrollWidth": 1366
+      }
+    },
+    {
+      "id": "geometry.futures.1366.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 740,
+          "h": 28
+        },
+        "heading": {
+          "x": 4,
+          "y": 112,
+          "w": 764,
+          "h": 36
+        },
+        "views": {
+          "x": 20,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.futures.1366.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "scale",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.futures.1366.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.spot.1366.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 705,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.spot.1366.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1366,
+        "scrollWidth": 1366
+      }
+    },
+    {
+      "id": "geometry.spot.1366.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 278,
+          "y": 154,
+          "w": 514,
+          "h": 28
+        },
+        "heading": {
+          "x": 266,
+          "y": 112,
+          "w": 538,
+          "h": 36
+        },
+        "views": {
+          "x": 282,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.spot.1366.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "layout",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.spot.1366.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "15m",
+          "1h",
+          "4h",
+          "1d"
+        ],
+        "dense": "1"
+      }
+    },
+    {
+      "id": "geometry.futures.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 656,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.futures.1440.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1440,
+        "scrollWidth": 1440
+      }
+    },
+    {
+      "id": "geometry.futures.1440.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 814,
+          "h": 28
+        },
+        "heading": {
+          "x": 4,
+          "y": 112,
+          "w": 838,
+          "h": 36
+        },
+        "views": {
+          "x": 20,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.futures.1440.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.futures.1440.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.spot.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 622,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.spot.1440.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1440,
+        "scrollWidth": 1440
+      }
+    },
+    {
+      "id": "geometry.spot.1440.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 278,
+          "y": 154,
+          "w": 588,
+          "h": 28
+        },
+        "heading": {
+          "x": 266,
+          "y": 112,
+          "w": 612,
+          "h": 36
+        },
+        "views": {
+          "x": 282,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.spot.1440.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.spot.1440.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.futures.1707.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 644,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.futures.1707.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1707,
+        "scrollWidth": 1707
+      }
+    },
+    {
+      "id": "geometry.futures.1707.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 1081,
+          "h": 28
+        },
+        "heading": {
+          "x": 4,
+          "y": 112,
+          "w": 1105,
+          "h": 36
+        },
+        "views": {
+          "x": 20,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.futures.1707.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "tools",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.futures.1707.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.spot.1707.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 713,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.spot.1707.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1707,
+        "scrollWidth": 1707
+      }
+    },
+    {
+      "id": "geometry.spot.1707.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 278,
+          "y": 154,
+          "w": 852,
+          "h": 28
+        },
+        "heading": {
+          "x": 266,
+          "y": 112,
+          "w": 876,
+          "h": 36
+        },
+        "views": {
+          "x": 282,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.spot.1707.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "scale",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.spot.1707.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.futures.1920.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 660,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.futures.1920.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1920,
+        "scrollWidth": 1920
+      }
+    },
+    {
+      "id": "geometry.futures.1920.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 1294,
+          "h": 28
+        },
+        "heading": {
+          "x": 4,
+          "y": 112,
+          "w": 1318,
+          "h": 36
+        },
+        "views": {
+          "x": 20,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.futures.1920.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.futures.1920.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.spot.1920.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 825,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.spot.1920.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1920,
+        "scrollWidth": 1920
+      }
+    },
+    {
+      "id": "geometry.spot.1920.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 278,
+          "y": 154,
+          "w": 999,
+          "h": 28
+        },
+        "heading": {
+          "x": 266,
+          "y": 112,
+          "w": 1023,
+          "h": 36
+        },
+        "views": {
+          "x": 282,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.spot.1920.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "tools",
+          "scale",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.spot.1920.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "aith.spot.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 698,
+        "errors": [],
+        "last": {
+          "path": "/market/test-assets/AITH-USDT/candles",
+          "interval": "1h",
+          "limit": 520
+        },
+        "fixtureBars": {
+          "1m": 1000,
+          "5m": 260,
+          "15m": 87,
+          "1h": 22,
+          "4h": 7,
+          "1d": 2,
+          "1w": 1
+        }
+      }
+    },
+    {
+      "id": "aith.spot.1440.timeframes.nothing-disabled",
+      "ok": true,
+      "detail": {
+        "strip": [
+          {
+            "tf": "1m",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "5m",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "15m",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "1h",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "4h",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "1d",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "1w",
+            "plan": "native",
+            "off": false
+          }
+        ],
+        "options": [
+          {
+            "tf": "1m",
+            "disabled": false,
+            "title": "",
+            "hint": ""
+          },
+          {
+            "tf": "3m",
+            "disabled": false,
+            "title": "Строится из свечей 1м",
+            "hint": ""
+          },
+          {
+            "tf": "5m",
+            "disabled": false,
+            "title": "",
+            "hint": ""
+          },
+          {
+            "tf": "15m",
+            "disabled": false,
+            "title": "",
+            "hint": ""
+          },
+          {
+            "tf": "30m",
+            "disabled": false,
+            "title": "Строится из свечей 15м",
+            "hint": ""
+          },
+          {
+            "tf": "1h",
+            "disabled": false,
+            "title": "",
+            "hint": ""
+          },
+          {
+            "tf": "2h",
+            "disabled": false,
+            "title": "Строится из свечей 1ч",
+            "hint": ""
+          },
+          {
+            "tf": "4h",
+            "disabled": false,
+            "title": "",
+            "hint": ""
+          },
+          {
+            "tf": "6h",
+            "disabled": false,
+            "title": "Строится из свечей 1ч",
+            "hint": ""
+          },
+          {
+            "tf": "12h",
+            "disabled": false,
+            "title": "Строится из свечей 4ч",
+            "hint": ""
+          },
+          {
+            "tf": "1d",
+            "disabled": false,
+            "title": "",
+            "hint": ""
+          },
+          {
+            "tf": "1w",
+            "disabled": false,
+            "title": "",
+            "hint": ""
+          },
+          {
+            "tf": "1M",
+            "disabled": false,
+            "title": "Строится из свечей 1Д",
+            "hint": ""
+          }
+        ],
+        "unavailableOnStrip": [],
+        "disabledInMenu": []
+      }
+    },
+    {
+      "id": "aith.spot.1440.timeframes.1m-native-3m-derived",
+      "ok": true,
+      "detail": {
+        "strip": [
+          {
+            "tf": "1m",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "5m",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "15m",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "1h",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "4h",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "1d",
+            "plan": "native",
+            "off": false
+          },
+          {
+            "tf": "1w",
+            "plan": "native",
+            "off": false
+          }
+        ],
+        "hints": []
+      }
+    },
+    {
+      "id": "aith.spot.1440.1w.native-request",
+      "ok": true,
+      "detail": {
+        "last": {
+          "path": "/market/test-assets/AITH-USDT/candles",
+          "interval": "1w",
+          "limit": 520
+        },
+        "state": "candles"
+      }
+    },
+    {
+      "id": "aith.spot.1440.1w.readable-bars",
+      "ok": true,
+      "detail": {
+        "widestBodyPx": 5,
+        "bodiesOnRow": 1,
+        "bars": 1
+      }
+    },
+    {
+      "id": "aith.spot.1440.1w.scale-non-negative",
+      "ok": true,
+      "detail": {
+        "top": 24.14612005767829,
+        "bottom": 0.616221617089892,
+        "paneHeight": 412,
+        "logical": {
+          "from": -55,
+          "to": 4
+        },
+        "barSpacing": 7.933333333333334
+      }
+    },
+    {
+      "id": "aith.spot.1440.1d.native-request",
+      "ok": true,
+      "detail": {
+        "last": {
+          "path": "/market/test-assets/AITH-USDT/candles",
+          "interval": "1d",
+          "limit": 520
+        },
+        "state": "candles"
+      }
+    },
+    {
+      "id": "aith.spot.1440.1d.readable-bars",
+      "ok": true,
+      "detail": {
+        "widestBodyPx": 5,
+        "bodiesOnRow": 1,
+        "bars": 2
+      }
+    },
+    {
+      "id": "aith.spot.1440.1d.scale-non-negative",
+      "ok": true,
+      "detail": {
+        "top": 24.14612005767829,
+        "bottom": 0.616221617089892,
+        "paneHeight": 412,
+        "logical": {
+          "from": -54,
+          "to": 5
+        },
+        "barSpacing": 7.933333333333334
+      }
+    },
+    {
+      "id": "aith.spot.1440.1h.native-request",
+      "ok": true,
+      "detail": {
+        "last": {
+          "path": "/market/test-assets/AITH-USDT/candles",
+          "interval": "1h",
+          "limit": 520
+        },
+        "state": "candles"
+      }
+    },
+    {
+      "id": "aith.spot.1440.1h.readable-bars",
+      "ok": true,
+      "detail": {
+        "widestBodyPx": 5,
+        "bodiesOnRow": 1,
+        "bars": 22
+      }
+    },
+    {
+      "id": "aith.spot.1440.1h.scale-non-negative",
+      "ok": true,
+      "detail": {
+        "top": 24.14612005767829,
+        "bottom": 0.616221617089892,
+        "paneHeight": 412,
+        "logical": {
+          "from": -34,
+          "to": 25
+        },
+        "barSpacing": 7.933333333333334
+      }
+    },
+    {
+      "id": "aith.spot.1440.5m.native-request",
+      "ok": true,
+      "detail": {
+        "last": {
+          "path": "/market/test-assets/AITH-USDT/candles",
+          "interval": "5m",
+          "limit": 520
+        },
+        "state": "candles"
+      }
+    },
+    {
+      "id": "aith.spot.1440.5m.readable-bars",
+      "ok": true,
+      "detail": {
+        "widestBodyPx": 3,
+        "bodiesOnRow": 2,
+        "bars": 260
+      }
+    },
+    {
+      "id": "aith.spot.1440.5m.scale-non-negative",
+      "ok": true,
+      "detail": {
+        "top": 23.504793663398292,
+        "bottom": 6.3725929909914285,
+        "paneHeight": 412,
+        "logical": {
+          "from": 140,
+          "to": 259
+        },
+        "barSpacing": 4.1
+      }
+    },
+    {
+      "id": "aith.spot.1440.1m.native-request",
+      "ok": true,
+      "detail": {
+        "last": {
+          "path": "/market/test-assets/AITH-USDT/candles",
+          "interval": "1m",
+          "limit": 520
+        },
+        "state": "candles"
+      }
+    },
+    {
+      "id": "aith.spot.1440.1m.readable-bars",
+      "ok": true,
+      "detail": {
+        "widestBodyPx": 3,
+        "bodiesOnRow": 25,
+        "bars": 1000
+      }
+    },
+    {
+      "id": "aith.spot.1440.1m.scale-non-negative",
+      "ok": true,
+      "detail": {
+        "top": 22.425212603938323,
+        "bottom": 16.062619102357864,
+        "paneHeight": 412,
+        "logical": {
+          "from": 400,
+          "to": 519
+        },
+        "barSpacing": 4.166666666666667
+      }
+    },
+    {
+      "id": "aith.spot.1440.settings-gear",
+      "ok": true,
+      "detail": {
+        "gear": true,
+        "legend": "SMA 200мало данных: 22 из 200 свечей",
+        "insufficient": 1
+      }
+    },
+    {
+      "id": "aith.spot.1440.indicator-insufficient-state",
+      "ok": true,
+      "detail": {
+        "gear": true,
+        "legend": "SMA 200мало данных: 22 из 200 свечей",
+        "insufficient": 1
+      }
+    },
+    {
+      "id": "aith.spot.1440.1M.derived-from-1d-forming",
+      "ok": true,
+      "detail": {
+        "last": {
+          "path": "/market/test-assets/AITH-USDT/candles",
+          "interval": "1d",
+          "limit": 1000
+        },
+        "state": "candles",
+        "widest": 5,
+        "prices": {
+          "top": 24.14612005767829,
+          "bottom": 0.616221617089892,
+          "paneHeight": 412,
+          "logical": {
+            "from": -55,
+            "to": 4
+          },
+          "barSpacing": 7.933333333333334
+        },
+        "partial": " · Последняя свеча ещё формируется"
+      }
+    },
+    {
+      "id": "aith.spot.1440.compare.btc-from-spot-source",
+      "ok": true,
+      "detail": {
+        "entry": "BTC/USDT+2,38%",
+        "value": "+2,38%",
+        "requests": [
+          "/api/v1/market/external/candles/BTC-USDT"
+        ]
+      }
+    },
+    {
+      "id": "aith.spot.1440.layout.pane-own-source",
+      "ok": true,
+      "detail": {
+        "state": "ok",
+        "pair": "BTC/USDT",
+        "options": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "6h",
+          "12h",
+          "1d",
+          "1w",
+          "1M"
+        ],
+        "last": "85,745.09",
+        "requests": [
+          "/api/v1/market/external/candles/BTC-USDT",
+          "/api/v1/market/external/candles/BTC-USDT"
+        ]
+      }
+    },
+    {
+      "id": "aith.spot.1440.goto.before-listing-honest",
+      "ok": true,
+      "detail": {
+        "open": true,
+        "status": "История за эту дату не загружена",
+        "paged": 0
+      }
+    },
+    {
+      "id": "aith.spot.1440.data.window",
+      "ok": true,
+      "detail": {
+        "rows": 12,
+        "text": "Данные свечиЗавершённая свечаВремя (UTC)2026-10-14 05:00Открытие11.79Максимум12.71Минимум11.73Закрытие12.48Объём19 410Изменение+0.688111Изменение, %+5,84%Тело0."
+      }
+    },
+    {
+      "id": "aith.spot.1440.analytics.all-history",
+      "ok": true,
+      "detail": {
+        "blocks": 3,
+        "text": "Аналитика периодаВидимый диапазонВся история1 день1 неделя1 месяцИзменение цены+19.58 (+958,82%)Максимум21.79Минимум2.0315Размах High–Low19.76 (972,50%)Сумма объёмов413 749Завершённых свечей21 + текущая (не завершена)Наибольший рост+30,56% · 2026-10-13 15:00На"
+      }
+    },
+    {
+      "id": "aith.spot.1440.presets.scalping-offers-1m-3m",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h"
+        ],
+        "pressed": "5m",
+        "state": "candles"
+      }
+    },
+    {
+      "id": "aith.spot.1440.keyboard.digit-1-is-1m",
+      "ok": true,
+      "detail": {
+        "pressed": "1m",
+        "last": "/market/test-assets/AITH-USDT/candles?interval=1m&limit=520&listingVersion=7"
+      }
+    },
+    {
+      "id": "aith.spot.1440.snapshot.png",
+      "ok": true,
+      "detail": {
+        "size": 25004
+      }
+    },
+    {
+      "id": "aith.spot.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "aith.mobile.390.sheet-nothing-disabled",
+      "ok": true,
+      "detail": {
+        "opened": 968,
+        "disabled": [],
+        "count": 13,
+        "inside": true
+      }
+    },
+    {
+      "id": "contexts.futures.BTC.nothing-disabled",
+      "ok": true,
+      "detail": {
+        "opened": 762,
+        "strip": [
+          "1m:native",
+          "5m:native",
+          "15m:native",
+          "1h:native",
+          "4h:native",
+          "1d:native",
+          "1w:native"
+        ],
+        "options": [
+          "1m:native",
+          "3m:native",
+          "5m:native",
+          "15m:native",
+          "30m:native",
+          "1h:native",
+          "2h:native",
+          "4h:native",
+          "6h:native",
+          "12h:native",
+          "1d:native",
+          "1w:native",
+          "1M:native"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "contexts.spot.BTC.nothing-disabled",
+      "ok": true,
+      "detail": {
+        "opened": 767,
+        "strip": [
+          "1m:native",
+          "5m:native",
+          "15m:native",
+          "1h:native",
+          "4h:native",
+          "1d:native",
+          "1w:native"
+        ],
+        "options": [
+          "1m:native",
+          "3m:derived",
+          "5m:native",
+          "15m:native",
+          "30m:derived",
+          "1h:native",
+          "2h:derived",
+          "4h:native",
+          "6h:derived",
+          "12h:derived",
+          "1d:native",
+          "1w:native",
+          "1M:derived"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "contexts.spot.NRX.nothing-disabled",
+      "ok": true,
+      "detail": {
+        "opened": 697,
+        "strip": [
+          "1m:native",
+          "5m:native",
+          "15m:native",
+          "1h:native",
+          "4h:native",
+          "1d:native",
+          "1w:native"
+        ],
+        "options": [
+          "1m:native",
+          "3m:derived",
+          "5m:native",
+          "15m:native",
+          "30m:derived",
+          "1h:native",
+          "2h:derived",
+          "4h:native",
+          "6h:derived",
+          "12h:derived",
+          "1d:native",
+          "1w:native",
+          "1M:derived"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "contexts.spot.VTA.nothing-disabled",
+      "ok": true,
+      "detail": {
+        "opened": 793,
+        "strip": [
+          "1m:native",
+          "5m:native",
+          "15m:native",
+          "1h:native",
+          "4h:native",
+          "1d:native",
+          "1w:native"
+        ],
+        "options": [
+          "1m:native",
+          "3m:derived",
+          "5m:native",
+          "15m:native",
+          "30m:derived",
+          "1h:native",
+          "2h:derived",
+          "4h:native",
+          "6h:derived",
+          "12h:derived",
+          "1d:native",
+          "1w:native",
+          "1M:derived"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "id": "contexts.spot.VTA.1d.scale-non-negative",
+      "ok": true,
+      "detail": {
+        "prices": {
+          "top": 11.561522587768373,
+          "bottom": 0.010157252725976772,
+          "paneHeight": 412,
+          "logical": {
+            "from": -39,
+            "to": 20
+          },
+          "barSpacing": 7.933333333333334
+        },
+        "widest": 5
+      }
+    },
+    {
+      "id": "contexts.spot.VTA.1w.scale-non-negative",
+      "ok": true,
+      "detail": {
+        "prices": {
+          "top": 11.561522587768373,
+          "bottom": 0.010157252725976772,
+          "paneHeight": 412,
+          "logical": {
+            "from": -53,
+            "to": 6
+          },
+          "barSpacing": 7.933333333333334
+        },
+        "widest": 5
+      }
+    },
+    {
+      "id": "panes.spot.1440.opens-on-another-instrument",
+      "ok": true,
+      "detail": {
+        "state": "ok",
+        "source": "spot-public",
+        "pair": "ETH/USDT",
+        "tf": "1h",
+        "shown": "3235.68",
+        "stale": null,
+        "note": null,
+        "bars": 300,
+        "last": 3235.684228063357
+      }
+    },
+    {
+      "id": "panes.spot.1440.switch-clears-at-once",
+      "ok": true,
+      "detail": {
+        "state": "loading",
+        "source": "spot-public",
+        "pair": "SOL/USDT",
+        "tf": "1h",
+        "shown": null,
+        "stale": null,
+        "note": "Загрузка…",
+        "bars": 0,
+        "last": null
+      }
+    },
+    {
+      "id": "panes.spot.1440.late-answer-dropped",
+      "ok": true,
+      "detail": {
+        "quick": {
+          "state": "ok",
+          "source": "test-market",
+          "pair": "AITH/USDT",
+          "tf": "1h",
+          "shown": "21.6176",
+          "stale": null,
+          "note": null,
+          "bars": 22,
+          "last": 21.617552829840008
+        },
+        "late": {
+          "state": "ok",
+          "source": "test-market",
+          "pair": "AITH/USDT",
+          "tf": "1h",
+          "shown": "21.6176",
+          "stale": null,
+          "note": null,
+          "bars": 22,
+          "last": 21.617552829840008
+        }
+      }
+    },
+    {
+      "id": "panes.spot.1440.error-then-retry",
+      "ok": true,
+      "detail": {
+        "failed": {
+          "state": "error",
+          "source": "spot-public",
+          "pair": "DOGE/USDT",
+          "tf": "1h",
+          "shown": null,
+          "stale": null,
+          "note": "Не удалось загрузитьПовторить",
+          "bars": 0,
+          "last": null
+        },
+        "recovered": {
+          "state": "ok",
+          "source": "spot-public",
+          "pair": "DOGE/USDT",
+          "tf": "1h",
+          "shown": "0.119803",
+          "stale": null,
+          "note": null,
+          "bars": 300,
+          "last": 0.11980258147698568
+        }
+      }
+    },
+    {
+      "id": "panes.spot.1440.refresh-failure-is-stale-not-blank",
+      "ok": true,
+      "detail": {
+        "state": "stale",
+        "source": "spot-public",
+        "pair": "DOGE/USDT",
+        "tf": "1h",
+        "shown": "0.119803",
+        "stale": "Не обновляется с 12:37",
+        "note": null,
+        "bars": 300,
+        "last": 0.11980258147698568
+      }
+    },
+    {
+      "id": "panes.spot.1440.empty-answer-is-not-success",
+      "ok": true,
+      "detail": {
+        "state": "empty",
+        "source": "test-market",
+        "pair": "NRX/USDT",
+        "tf": "1h",
+        "shown": null,
+        "stale": null,
+        "note": "Нет истории",
+        "bars": 0,
+        "last": null
+      }
+    },
+    {
+      "id": "panes.spot.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "keep.futures.1440.main-chart-never-remounted",
+      "ok": true,
+      "detail": {
+        "before": {
+          "from": 400,
+          "to": 519
+        },
+        "after": {
+          "kept": true,
+          "token": "kept",
+          "form": true,
+          "from": 221,
+          "to": 519,
+          "panes": 0
+        }
+      }
+    },
+    {
+      "id": "synctf.futures.1440.sync-timeframe-is-real",
+      "ok": true,
+      "detail": {
+        "follows": "15m",
+        "leads": {
+          "main": "4h",
+          "pressed": "true"
+        },
+        "own": {
+          "main": "4h",
+          "pane": "1h"
+        }
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.1m-native",
+      "ok": true,
+      "detail": {
+        "interval": "1m",
+        "store": "1m"
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.4h",
+      "ok": true,
+      "detail": {
+        "ms": 108,
+        "t1": 1791981471873
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.menu",
+      "ok": true,
+      "detail": {
+        "menu": {
+          "id": "timeframes",
+          "x": 254,
+          "y": 188,
+          "w": 300,
+          "h": 701,
+          "vw": 1440,
+          "vh": 900,
+          "inside": true
+        },
+        "options": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "6h",
+          "12h",
+          "1d",
+          "1w",
+          "1M"
+        ]
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.3m-native",
+      "ok": true,
+      "detail": {
+        "url": "/api/v1/market/futures/candles/BTC-USDT?interval=3m&limit=520",
+        "plan3m": "native"
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.3m-chart",
+      "ok": true,
+      "detail": {
+        "version": 1,
+        "timeframe": "3m",
+        "quickTimeframes": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "barType": "candles",
+        "compare": [],
+        "comparePeriod": "all",
+        "layout": 1,
+        "panes": [
+          {
+            "pair": null,
+            "timeframe": null
+          },
+          {
+            "pair": null,
+            "timeframe": null
+          },
+          {
+            "pair": null,
+            "timeframe": null
+          }
+        ],
+        "syncCursor": true,
+        "syncTime": true,
+        "syncTimeframe": false,
+        "activePane": 0
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.1M",
+      "ok": true,
+      "detail": {
+        "url": "/api/v1/market/futures/candles/BTC-USDT?interval=1M&limit=520"
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.favourites",
+      "ok": true,
+      "detail": {
+        "quickPlus": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "shownPlus": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "4h",
+          "1d",
+          "1w",
+          "1M"
+        ],
+        "denseRow": false,
+        "quickReset": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ]
+      }
+    },
+    {
+      "id": "futures.1440.types.bars",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "bars"
+      }
+    },
+    {
+      "id": "futures.1440.types.hollow",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "hollow"
+      }
+    },
+    {
+      "id": "futures.1440.types.heikin",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "heikin"
+      }
+    },
+    {
+      "id": "futures.1440.types.line",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "line"
+      }
+    },
+    {
+      "id": "futures.1440.types.candles",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "candles"
+      }
+    },
+    {
+      "id": "futures.1440.compare.menu",
+      "ok": true,
+      "detail": {
+        "id": "compare",
+        "x": 468,
+        "y": 188,
+        "w": 340,
+        "h": 464,
+        "vw": 1440,
+        "vh": 900,
+        "inside": true
+      }
+    },
+    {
+      "id": "futures.1440.compare.one",
+      "ok": true,
+      "detail": {
+        "entries": 1,
+        "attr": "1",
+        "legend": true,
+        "value": "+5,43%",
+        "main": "+1,71%",
+        "leftScale": true
+      }
+    },
+    {
+      "id": "futures.1440.compare.three-max",
+      "ok": true,
+      "detail": {
+        "three": {
+          "entries": 3,
+          "options": 0,
+          "values": [
+            "+1,71%",
+            "+5,43%",
+            "−0,19%",
+            "+8,15%"
+          ]
+        },
+        "searchDisabled": true,
+        "fourthOffered": 0,
+        "stillThree": 3
+      }
+    },
+    {
+      "id": "futures.1440.compare.period-hide-remove",
+      "ok": true,
+      "detail": {
+        "period": "1w",
+        "hidden": true,
+        "two": 2
+      }
+    },
+    {
+      "id": "futures.1440.compare.relative-strength",
+      "ok": true,
+      "detail": {
+        "panel": true,
+        "rs": true,
+        "text": "BTC/USDT · Доходность+1,71%SOL/USDT · Доходность−0,19%Разница, п.п.+1,90Корреляция доходностей0,64Соотношение цен520,9222Не прогноз. По 520 общим точкам, доходности свеча к свече"
+      }
+    },
+    {
+      "id": "futures.1440.compare.exit-restores",
+      "ok": true,
+      "detail": {
+        "attr": null,
+        "entries": 0,
+        "legend": false,
+        "state": "candles"
+      }
+    },
+    {
+      "id": "futures.1440.data.window",
+      "ok": true,
+      "detail": {
+        "rows": 12,
+        "requestsDuringHover": 0,
+        "sample": "Данные свечиЗавершённая свечаВремя (UTC)2026-10-12 22:00Открытие83834.63Максимум84042.38Минимум83735.94Закрытие83922.20Объём11Изменение+87.56Изменение, %+0,10%Т"
+      }
+    },
+    {
+      "id": "futures.1440.analytics.panel",
+      "ok": true,
+      "detail": {
+        "blocks": 3,
+        "periods": [
+          "visible",
+          "all",
+          "1d",
+          "1w",
+          "1M"
+        ],
+        "pressed": "true",
+        "sample": "Аналитика периодаВидимый диапазонВся история1 день1 неделя1 месяцИзменение цены+1230.41 (+1,46%)Максимум89502.05Минимум7"
+      }
+    },
+    {
+      "id": "futures.1440.layout.two",
+      "ok": true,
+      "detail": {
+        "panes": [
+          "ok"
+        ],
+        "layout": "2",
+        "tickets": 1,
+        "canvases": 18,
+        "ms": 146
+      }
+    },
+    {
+      "id": "futures.1440.layout.pane-own-instrument",
+      "ok": true,
+      "detail": {
+        "paneReq": [
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "15m"
+        ],
+        "store": {
+          "pair": "ETH/USDT",
+          "timeframe": "15m"
+        }
+      }
+    },
+    {
+      "id": "futures.1440.layout.sync-cursor",
+      "ok": true,
+      "detail": {
+        "syncCursor": true
+      }
+    },
+    {
+      "id": "futures.1440.layout.pane-trade-switches-terminal",
+      "ok": true,
+      "detail": {
+        "before": "http://127.0.0.1:42653/futures?pair=BTC%2FUSDT",
+        "url": "http://127.0.0.1:42653/futures?pair=ETH%2FUSDT",
+        "hits": 0
+      }
+    },
+    {
+      "id": "futures.1440.layout.back-to-one",
+      "ok": true,
+      "detail": {}
+    },
+    {
+      "id": "futures.1440.presets.builtin-scalping",
+      "ok": true,
+      "detail": {
+        "timeframe": "5m",
+        "indicators": [
+          "ema",
+          "ema",
+          "vwap",
+          "rsi"
+        ]
+      }
+    },
+    {
+      "id": "futures.1440.presets.custom-save-rename-delete",
+      "ok": true,
+      "detail": {
+        "saved": 1,
+        "renamed": "QA 25m · 4",
+        "afterDelete": 0,
+        "version": 1
+      }
+    },
+    {
+      "id": "futures.1440.presets.reset",
+      "ok": true,
+      "detail": {
+        "timeframe": "1h"
+      }
+    },
+    {
+      "id": "futures.1440.goto.loaded-bar",
+      "ok": true,
+      "detail": {
+        "closedOk": true,
+        "range": 330
+      }
+    },
+    {
+      "id": "futures.1440.goto.future-refused",
+      "ok": true,
+      "detail": {
+        "futureWarn": "Дата в будущем"
+      }
+    },
+    {
+      "id": "futures.1440.goto.history-honest",
+      "ok": true,
+      "detail": {
+        "pagedRequests": 1,
+        "requestsBefore": 26,
+        "dialogStillOpen": 0
+      }
+    },
+    {
+      "id": "futures.1440.snapshot.png",
+      "ok": true,
+      "detail": {
+        "file": "voltex_ETHUSDT_1h_2026-10-14_12-38.png",
+        "size": 45053
+      }
+    },
+    {
+      "id": "futures.1440.fullscreen.toggle-escape",
+      "ok": true,
+      "detail": {
+        "attr": true,
+        "shell": 1440,
+        "ticket": true,
+        "afterEscape": false
+      }
+    },
+    {
+      "id": "futures.1440.keyboard.escape-digits-inputs",
+      "ok": true,
+      "detail": {
+        "closed": {
+          "menu": false,
+          "focus": "compare"
+        },
+        "digit": "15m",
+        "typed": "15m",
+        "focusVisible": {
+          "tag": "BUTTON",
+          "feature": "fullscreen",
+          "outline": true
+        }
+      }
+    },
+    {
+      "id": "futures.1440.menus.inside-viewport",
+      "ok": true,
+      "detail": {
+        "timeframes": {
+          "inside": true,
+          "x": 254,
+          "y": 188,
+          "w": 300,
+          "h": 701
+        },
+        "compare": {
+          "inside": true,
+          "x": 468,
+          "y": 188,
+          "w": 340,
+          "h": 464
+        },
+        "layout": {
+          "inside": true,
+          "x": 580,
+          "y": 188,
+          "w": 280,
+          "h": 254
+        },
+        "tools": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "presets": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "goto": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "scale": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "snapshot": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        }
+      }
+    },
+    {
+      "id": "futures.1440.menus.indicators",
+      "ok": true,
+      "detail": {
+        "inside": true,
+        "w": 312
+      }
+    },
+    {
+      "id": "futures.1440.regression.terminal-intact",
+      "ok": true,
+      "detail": {
+        "form": true,
+        "formVisible": true,
+        "book": true,
+        "rail": true,
+        "tv": [
+          "VOLTEX",
+          "TradingView"
+        ]
+      }
+    },
+    {
+      "id": "futures.1440.regression.tradingview-switch",
+      "ok": true,
+      "detail": {
+        "iframe": false,
+        "dataDisabled": true,
+        "form": true,
+        "back": "candles"
+      }
+    },
+    {
+      "id": "futures.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "spot.1440.timeframes.1m-native",
+      "ok": true,
+      "detail": {
+        "interval": "1m",
+        "store": "1m"
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.4h",
+      "ok": true,
+      "detail": {
+        "ms": 117,
+        "t1": 1791981511090
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.menu",
+      "ok": true,
+      "detail": {
+        "menu": {
+          "id": "timeframes",
+          "x": 516,
+          "y": 188,
+          "w": 300,
+          "h": 704,
+          "vw": 1440,
+          "vh": 900,
+          "inside": true
+        },
+        "options": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "6h",
+          "12h",
+          "1d",
+          "1w",
+          "1M"
+        ]
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.3m-derived-from-1m",
+      "ok": true,
+      "detail": {
+        "url": "/api/v1/market/external/candles/BTC-USDT?interval=1m&limit=720",
+        "plan3m": "derived"
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.3m-chart",
+      "ok": true,
+      "detail": {
+        "version": 1,
+        "timeframe": "3m",
+        "quickTimeframes": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "barType": "candles",
+        "compare": [],
+        "comparePeriod": "all",
+        "layout": 1,
+        "panes": [
+          {
+            "pair": null,
+            "timeframe": null
+          },
+          {
+            "pair": null,
+            "timeframe": null
+          },
+          {
+            "pair": null,
+            "timeframe": null
+          }
+        ],
+        "syncCursor": true,
+        "syncTime": true,
+        "syncTimeframe": false,
+        "activePane": 0
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.1M",
+      "ok": true,
+      "detail": {
+        "url": "/api/v1/market/external/candles/BTC-USDT?interval=1d&limit=720"
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.favourites",
+      "ok": true,
+      "detail": {
+        "quickPlus": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "shownPlus": [
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1M"
+        ],
+        "denseRow": true,
+        "quickReset": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ]
+      }
+    },
+    {
+      "id": "spot.1440.types.bars",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "bars"
+      }
+    },
+    {
+      "id": "spot.1440.types.hollow",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "hollow"
+      }
+    },
+    {
+      "id": "spot.1440.types.heikin",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "heikin"
+      }
+    },
+    {
+      "id": "spot.1440.types.line",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "line"
+      }
+    },
+    {
+      "id": "spot.1440.types.candles",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "candles"
+      }
+    },
+    {
+      "id": "spot.1440.compare.menu",
+      "ok": true,
+      "detail": {
+        "id": "more",
+        "x": 485,
+        "y": 188,
+        "w": 300,
+        "h": 704,
+        "vw": 1440,
+        "vh": 900,
+        "inside": true
+      }
+    },
+    {
+      "id": "spot.1440.compare.one",
+      "ok": true,
+      "detail": {
+        "entries": 1,
+        "attr": "1",
+        "legend": true,
+        "value": "+5,43%",
+        "main": "+1,71%",
+        "leftScale": true
+      }
+    },
+    {
+      "id": "spot.1440.compare.three-max",
+      "ok": true,
+      "detail": {
+        "three": {
+          "entries": 3,
+          "options": 0,
+          "values": [
+            "+1,71%",
+            "+5,43%",
+            "−0,19%",
+            "+8,15%"
+          ]
+        },
+        "searchDisabled": true,
+        "fourthOffered": 0,
+        "stillThree": 3
+      }
+    },
+    {
+      "id": "spot.1440.compare.period-hide-remove",
+      "ok": true,
+      "detail": {
+        "period": "1w",
+        "hidden": true,
+        "two": 2
+      }
+    },
+    {
+      "id": "spot.1440.compare.relative-strength",
+      "ok": true,
+      "detail": {
+        "panel": true,
+        "rs": true,
+        "text": "BTC/USDT · Доходность+1,71%SOL/USDT · Доходность−0,19%Разница, п.п.+1,90Корреляция доходностей0,64Соотношение цен520,9222Не прогноз. По 520 общим точкам, доходности свеча к свече"
+      }
+    },
+    {
+      "id": "spot.1440.compare.exit-restores",
+      "ok": true,
+      "detail": {
+        "attr": null,
+        "entries": 0,
+        "legend": false,
+        "state": "candles"
+      }
+    },
+    {
+      "id": "spot.1440.data.window",
+      "ok": true,
+      "detail": {
+        "rows": 12,
+        "requestsDuringHover": 0,
+        "sample": "Данные свечиЗавершённая свечаВремя (UTC)2026-10-12 22:00Открытие83834.63Максимум84042.38Минимум83735.94Закрытие83922.20Объём11Изменение+87.56Изменение, %+0,10%Т"
+      }
+    },
+    {
+      "id": "spot.1440.analytics.panel",
+      "ok": true,
+      "detail": {
+        "blocks": 3,
+        "periods": [
+          "visible",
+          "all",
+          "1d",
+          "1w",
+          "1M"
+        ],
+        "pressed": "true",
+        "sample": "Аналитика периодаВидимый диапазонВся история1 день1 неделя1 месяцИзменение цены+1230.41 (+1,46%)Максимум89502.05Минимум7"
+      }
+    },
+    {
+      "id": "spot.1440.layout.two",
+      "ok": true,
+      "detail": {
+        "panes": [
+          "ok"
+        ],
+        "layout": "2",
+        "tickets": 1,
+        "canvases": 18,
+        "ms": 226
+      }
+    },
+    {
+      "id": "spot.1440.layout.pane-own-instrument",
+      "ok": true,
+      "detail": {
+        "paneReq": [
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "15m"
+        ],
+        "store": {
+          "pair": "ETH/USDT",
+          "timeframe": "15m"
+        }
+      }
+    },
+    {
+      "id": "spot.1440.layout.sync-cursor",
+      "ok": true,
+      "detail": {
+        "syncCursor": true
+      }
+    },
+    {
+      "id": "spot.1440.layout.pane-trade-switches-terminal",
+      "ok": true,
+      "detail": {
+        "before": "http://127.0.0.1:42653/trade?pair=BTC%2FUSDT",
+        "url": "http://127.0.0.1:42653/trade?pair=ETH%2FUSDT",
+        "hits": 0
+      }
+    },
+    {
+      "id": "spot.1440.layout.back-to-one",
+      "ok": true,
+      "detail": {}
+    },
+    {
+      "id": "spot.1440.presets.builtin-scalping",
+      "ok": true,
+      "detail": {
+        "timeframe": "5m",
+        "indicators": [
+          "ema",
+          "ema",
+          "vwap",
+          "rsi"
+        ]
+      }
+    },
+    {
+      "id": "spot.1440.presets.custom-save-rename-delete",
+      "ok": true,
+      "detail": {
+        "saved": 1,
+        "renamed": "QA 25m · 4",
+        "afterDelete": 0,
+        "version": 1
+      }
+    },
+    {
+      "id": "spot.1440.presets.reset",
+      "ok": true,
+      "detail": {
+        "timeframe": "1h"
+      }
+    },
+    {
+      "id": "spot.1440.goto.loaded-bar",
+      "ok": true,
+      "detail": {
+        "closedOk": true,
+        "range": 317
+      }
+    },
+    {
+      "id": "spot.1440.goto.future-refused",
+      "ok": true,
+      "detail": {
+        "futureWarn": "Дата в будущем"
+      }
+    },
+    {
+      "id": "spot.1440.goto.history-honest",
+      "ok": true,
+      "detail": {
+        "pagedRequests": 0,
+        "requestsBefore": 25,
+        "dialogStillOpen": 1
+      }
+    },
+    {
+      "id": "spot.1440.snapshot.png",
+      "ok": true,
+      "detail": {
+        "file": "voltex_ETHUSDT_1h_2026-10-14_12-39.png",
+        "size": 32913
+      }
+    },
+    {
+      "id": "spot.1440.fullscreen.toggle-escape",
+      "ok": true,
+      "detail": {
+        "attr": true,
+        "shell": 1440,
+        "ticket": true,
+        "afterEscape": false
+      }
+    },
+    {
+      "id": "spot.1440.keyboard.escape-digits-inputs",
+      "ok": true,
+      "detail": {
+        "closed": {
+          "menu": false,
+          "focus": "more"
+        },
+        "digit": "15m",
+        "typed": "15m",
+        "focusVisible": {
+          "tag": "A",
+          "feature": "header-brand",
+          "outline": true
+        }
+      }
+    },
+    {
+      "id": "spot.1440.menus.inside-viewport",
+      "ok": true,
+      "detail": {
+        "timeframes": {
+          "inside": true,
+          "x": 516,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "compare": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "layout": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "tools": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "presets": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "goto": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "scale": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "snapshot": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        }
+      }
+    },
+    {
+      "id": "spot.1440.menus.indicators",
+      "ok": true,
+      "detail": {
+        "inside": true,
+        "w": 312
+      }
+    },
+    {
+      "id": "spot.1440.regression.terminal-intact",
+      "ok": true,
+      "detail": {
+        "form": true,
+        "formVisible": true,
+        "book": true,
+        "rail": true,
+        "tv": [
+          "VOLTEX",
+          "TradingView"
+        ]
+      }
+    },
+    {
+      "id": "spot.1440.regression.tradingview-switch",
+      "ok": true,
+      "detail": {
+        "iframe": false,
+        "dataDisabled": true,
+        "form": true,
+        "back": "candles"
+      }
+    },
+    {
+      "id": "spot.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "futures.1920.layout.four",
+      "ok": true,
+      "detail": {
+        "panes": [
+          "ok",
+          "ok",
+          "ok"
+        ],
+        "overflow": false,
+        "tickets": 1,
+        "ms": 257,
+        "heapBefore": 15288813,
+        "heapAfter": 21952929
+      }
+    },
+    {
+      "id": "futures.1920.layout.pane-expand",
+      "ok": true,
+      "detail": {
+        "expanded": "2",
+        "width": 1318
+      }
+    },
+    {
+      "id": "mobile.futures.320x568.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.320x568.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.320x568.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 102,
+          "w": 320,
+          "h": 466,
+          "vw": 320,
+          "vh": 568,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.320x568.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.320x568.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.320x568.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.320x568.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 102,
+          "w": 320,
+          "h": 466,
+          "vw": 320,
+          "vh": 568,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.320x568.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.futures.360x740.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.360x740.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.360x740.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 133,
+          "w": 360,
+          "h": 607,
+          "vw": 360,
+          "vh": 740,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.360x740.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.360x740.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.360x740.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.360x740.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 133,
+          "w": 360,
+          "h": 607,
+          "vw": 360,
+          "vh": 740,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.360x740.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 204,
+          "w": 390,
+          "h": 640,
+          "vw": 390,
+          "vh": 844,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.compare-sheet",
+      "ok": true,
+      "detail": {
+        "entries": 1,
+        "box": {
+          "inside": true
+        }
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.layout-tabs",
+      "ok": true,
+      "detail": {
+        "tabs": 2,
+        "panes": 0,
+        "overflow": false
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 5,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 204,
+          "w": 390,
+          "h": 640,
+          "vw": 390,
+          "vh": 844,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.compare-sheet",
+      "ok": true,
+      "detail": {
+        "entries": 1,
+        "box": {
+          "inside": true
+        }
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.layout-tabs",
+      "ok": true,
+      "detail": {
+        "tabs": 2,
+        "panes": 0,
+        "overflow": false
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.futures.430x932.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.430x932.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 5,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.430x932.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 292,
+          "w": 430,
+          "h": 640,
+          "vw": 430,
+          "vh": 932,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.430x932.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.430x932.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.430x932.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 5,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.430x932.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 292,
+          "w": 430,
+          "h": 640,
+          "vw": 430,
+          "vh": 932,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.430x932.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 7,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 70,
+          "w": 844,
+          "h": 320,
+          "vw": 844,
+          "vh": 390,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 7,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 70,
+          "w": 844,
+          "h": 320,
+          "vw": 844,
+          "vh": 390,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "zoom.90",
+      "ok": true,
+      "detail": {
+        "cssWidth": 1600,
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 974,
+          "h": 28
+        },
+        "clipped": [],
+        "features": 7
+      }
+    },
+    {
+      "id": "zoom.100",
+      "ok": true,
+      "detail": {
+        "cssWidth": 1440,
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 814,
+          "h": 28
+        },
+        "clipped": [],
+        "features": 5
+      }
+    },
+    {
+      "id": "zoom.110",
+      "ok": true,
+      "detail": {
+        "cssWidth": 1309,
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 683,
+          "h": 28
+        },
+        "clipped": [],
+        "features": 3
+      }
+    },
+    {
+      "id": "zoom.125",
+      "ok": true,
+      "detail": {
+        "cssWidth": 1152,
+        "toolbar": {
+          "x": 16,
+          "y": 150,
+          "w": 526,
+          "h": 28
+        },
+        "clipped": [],
+        "features": 3
+      }
+    },
+    {
+      "id": "perf.A.one-chart-requests",
+      "ok": true,
+      "detail": {
+        "candleRequests": 3,
+        "allRequests": 3,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 15,
+        "canvases": 11,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.B.compares-bounded",
+      "ok": true,
+      "detail": {
+        "candleRequests": 3,
+        "allRequests": 4,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 16,
+        "canvases": 7,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.C.two-charts-bounded",
+      "ok": true,
+      "detail": {
+        "candleRequests": 4,
+        "allRequests": 4,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 17,
+        "canvases": 18,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.C.four-charts-bounded",
+      "ok": true,
+      "detail": {
+        "candleRequests": 7,
+        "allRequests": 17,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 19,
+        "canvases": 32,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.hidden-tab-silent",
+      "ok": true,
+      "detail": {
+        "candleRequests": 0,
+        "allRequests": 0,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 19,
+        "canvases": 32,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.collapse-stops-panes",
+      "ok": true,
+      "detail": {
+        "candleRequests": 3,
+        "allRequests": 3,
+        "newSockets": 0,
+        "socketsTotal": 2,
+        "heapMb": 16,
+        "canvases": 11,
+        "cpuTaskMs": 0,
+        "windowMs": 15000,
+        "canvasesBefore": 11
+      }
+    }
+  ],
+  "perf": {
+    "geometry.futures.1366.chart": {
+      "x": 60,
+      "y": 188,
+      "w": 628,
+      "h": 390
+    },
+    "geometry.spot.1366.chart": {
+      "x": 322,
+      "y": 188,
+      "w": 402,
+      "h": 412
+    },
+    "geometry.futures.1440.chart": {
+      "x": 60,
+      "y": 188,
+      "w": 702,
+      "h": 390
+    },
+    "geometry.spot.1440.chart": {
+      "x": 322,
+      "y": 188,
+      "w": 476,
+      "h": 412
+    },
+    "geometry.futures.1707.chart": {
+      "x": 60,
+      "y": 188,
+      "w": 968,
+      "h": 390
+    },
+    "geometry.spot.1707.chart": {
+      "x": 322,
+      "y": 188,
+      "w": 738,
+      "h": 412
+    },
+    "geometry.futures.1920.chart": {
+      "x": 60,
+      "y": 188,
+      "w": 1182,
+      "h": 390
+    },
+    "geometry.spot.1920.chart": {
+      "x": 322,
+      "y": 188,
+      "w": 886,
+      "h": 412
+    },
+    "aith.spot.1440.timeframes": {
+      "strip": [
+        {
+          "tf": "1m",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "5m",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "15m",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "1h",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "4h",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "1d",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "1w",
+          "plan": "native",
+          "off": false
+        }
+      ],
+      "options": [
+        {
+          "tf": "1m",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "3m",
+          "disabled": false,
+          "title": "Строится из свечей 1м",
+          "hint": ""
+        },
+        {
+          "tf": "5m",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "15m",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "30m",
+          "disabled": false,
+          "title": "Строится из свечей 15м",
+          "hint": ""
+        },
+        {
+          "tf": "1h",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "2h",
+          "disabled": false,
+          "title": "Строится из свечей 1ч",
+          "hint": ""
+        },
+        {
+          "tf": "4h",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "6h",
+          "disabled": false,
+          "title": "Строится из свечей 1ч",
+          "hint": ""
+        },
+        {
+          "tf": "12h",
+          "disabled": false,
+          "title": "Строится из свечей 4ч",
+          "hint": ""
+        },
+        {
+          "tf": "1d",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "1w",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "1M",
+          "disabled": false,
+          "title": "Строится из свечей 1Д",
+          "hint": ""
+        }
+      ],
+      "unavailableOnStrip": [],
+      "disabledInMenu": []
+    },
+    "aith.spot.1440.1w": {
+      "request": {
+        "path": "/market/test-assets/AITH-USDT/candles",
+        "interval": "1w",
+        "limit": 520
+      },
+      "state": "candles",
+      "bars": 1,
+      "widthCss": 476,
+      "heightCss": 412,
+      "widestBodyPx": 5,
+      "bodiesOnRow": 1,
+      "lowestCandleRatio": 0.937,
+      "highestCandleRatio": 0.117,
+      "prices": {
+        "top": 24.14612005767829,
+        "bottom": 0.616221617089892,
+        "paneHeight": 412,
+        "logical": {
+          "from": -55,
+          "to": 4
+        },
+        "barSpacing": 7.933333333333334
+      }
+    },
+    "aith.spot.1440.1d": {
+      "request": {
+        "path": "/market/test-assets/AITH-USDT/candles",
+        "interval": "1d",
+        "limit": 520
+      },
+      "state": "candles",
+      "bars": 2,
+      "widthCss": 476,
+      "heightCss": 412,
+      "widestBodyPx": 5,
+      "bodiesOnRow": 1,
+      "lowestCandleRatio": 0.937,
+      "highestCandleRatio": 0.117,
+      "prices": {
+        "top": 24.14612005767829,
+        "bottom": 0.616221617089892,
+        "paneHeight": 412,
+        "logical": {
+          "from": -54,
+          "to": 5
+        },
+        "barSpacing": 7.933333333333334
+      }
+    },
+    "aith.spot.1440.1h": {
+      "request": {
+        "path": "/market/test-assets/AITH-USDT/candles",
+        "interval": "1h",
+        "limit": 520
+      },
+      "state": "candles",
+      "bars": 22,
+      "widthCss": 476,
+      "heightCss": 412,
+      "widestBodyPx": 5,
+      "bodiesOnRow": 1,
+      "lowestCandleRatio": 0.937,
+      "highestCandleRatio": 0.117,
+      "prices": {
+        "top": 24.14612005767829,
+        "bottom": 0.616221617089892,
+        "paneHeight": 412,
+        "logical": {
+          "from": -34,
+          "to": 25
+        },
+        "barSpacing": 7.933333333333334
+      }
+    },
+    "aith.spot.1440.5m": {
+      "request": {
+        "path": "/market/test-assets/AITH-USDT/candles",
+        "interval": "5m",
+        "limit": 520
+      },
+      "state": "candles",
+      "bars": 260,
+      "widthCss": 492,
+      "heightCss": 412,
+      "widestBodyPx": 3,
+      "bodiesOnRow": 2,
+      "lowestCandleRatio": 0.83,
+      "highestCandleRatio": 0.107,
+      "prices": {
+        "top": 23.504793663398292,
+        "bottom": 6.3725929909914285,
+        "paneHeight": 412,
+        "logical": {
+          "from": 140,
+          "to": 259
+        },
+        "barSpacing": 4.1
+      }
+    },
+    "aith.spot.1440.1m": {
+      "request": {
+        "path": "/market/test-assets/AITH-USDT/candles",
+        "interval": "1m",
+        "limit": 520
+      },
+      "state": "candles",
+      "bars": 1000,
+      "widthCss": 500,
+      "heightCss": 412,
+      "widestBodyPx": 3,
+      "bodiesOnRow": 25,
+      "lowestCandleRatio": 0.558,
+      "highestCandleRatio": 0.102,
+      "prices": {
+        "top": 22.425212603938323,
+        "bottom": 16.062619102357864,
+        "paneHeight": 412,
+        "logical": {
+          "from": 400,
+          "to": 519
+        },
+        "barSpacing": 4.166666666666667
+      }
+    },
+    "aith.spot.1440.extras": {
+      "gear": true,
+      "legend": "SMA 200мало данных: 22 из 200 свечей",
+      "insufficient": 1
+    },
+    "aith.spot.1440.compare": {
+      "entry": "BTC/USDT+2,38%",
+      "value": "+2,38%",
+      "requests": [
+        "/api/v1/market/external/candles/BTC-USDT"
+      ]
+    },
+    "aith.spot.1440.pane": {
+      "state": "ok",
+      "pair": "BTC/USDT",
+      "options": [
+        "1m",
+        "3m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "4h",
+        "6h",
+        "12h",
+        "1d",
+        "1w",
+        "1M"
+      ],
+      "last": "85,745.09",
+      "requests": [
+        "/api/v1/market/external/candles/BTC-USDT",
+        "/api/v1/market/external/candles/BTC-USDT"
+      ]
+    },
+    "contexts.futures.BTC.timeframes": {
+      "native": [
+        "1m",
+        "3m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "4h",
+        "6h",
+        "12h",
+        "1d",
+        "1w",
+        "1M"
+      ],
+      "derived": []
+    },
+    "contexts.spot.BTC.timeframes": {
+      "native": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ],
+      "derived": [
+        "3m",
+        "30m",
+        "2h",
+        "6h",
+        "12h",
+        "1M"
+      ]
+    },
+    "contexts.spot.NRX.timeframes": {
+      "native": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ],
+      "derived": [
+        "3m",
+        "30m",
+        "2h",
+        "6h",
+        "12h",
+        "1M"
+      ]
+    },
+    "contexts.spot.VTA.timeframes": {
+      "native": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ],
+      "derived": [
+        "3m",
+        "30m",
+        "2h",
+        "6h",
+        "12h",
+        "1M"
+      ]
+    },
+    "futures.1440.timeframeSwitchMs": 106,
+    "futures.1440.compareFirstLineMs": 1197,
+    "futures.1440.layout2OpenMs": 146,
+    "spot.1440.timeframeSwitchMs": 116,
+    "spot.1440.compareFirstLineMs": 1206,
+    "spot.1440.layout2OpenMs": 226,
+    "futures.1920.layout4OpenMs": 257,
+    "after.chartOpenMs": 710,
+    "after.A.one-chart": {
+      "candleRequests": 3,
+      "allRequests": 3,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 15,
+      "canvases": 11,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.B.three-compares": {
+      "candleRequests": 3,
+      "allRequests": 4,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 16,
+      "canvases": 7,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.C.two-charts": {
+      "candleRequests": 4,
+      "allRequests": 4,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 17,
+      "canvases": 18,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.C.four-charts": {
+      "candleRequests": 7,
+      "allRequests": 17,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 19,
+      "canvases": 32,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.hidden-tab.four-charts": {
+      "candleRequests": 0,
+      "allRequests": 0,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 19,
+      "canvases": 32,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.A.after-collapse": {
+      "candleRequests": 3,
+      "allRequests": 3,
+      "newSockets": 0,
+      "socketsTotal": 2,
+      "heapMb": 16,
+      "canvases": 11,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    }
+  },
+  "screenshots": [
+    "after-futures-1366.png",
+    "after-futures-1366-page.png",
+    "after-spot-1366.png",
+    "after-spot-1366-page.png",
+    "after-futures-1440.png",
+    "after-futures-1440-page.png",
+    "after-spot-1440.png",
+    "after-spot-1440-page.png",
+    "after-futures-1707.png",
+    "after-futures-1707-page.png",
+    "after-spot-1707.png",
+    "after-spot-1707-page.png",
+    "after-futures-1920.png",
+    "after-futures-1920-page.png",
+    "after-spot-1920.png",
+    "after-spot-1920-page.png",
+    "after-aith-1440.png",
+    "after-aith-1440-page.png",
+    "after-aith-1440-tf-menu.png",
+    "after-aith-1440-1w.png",
+    "after-aith-1440-1d.png",
+    "after-aith-1440-1h.png",
+    "after-aith-1440-5m.png",
+    "after-aith-1440-1m.png",
+    "after-aith-1440-1M.png",
+    "after-aith-1440-compare.png",
+    "after-aith-1440-layout2.png",
+    "after-aith-1440-data.png",
+    "after-aith-1440-analytics.png",
+    "snapshot-aith.png",
+    "after-aith-mobile-390-tf-sheet.png",
+    "after-aith-mobile-390.png",
+    "after-futures-BTC-tf-menu.png",
+    "after-spot-BTC-tf-menu.png",
+    "after-spot-NRX-tf-menu.png",
+    "after-spot-VTA-tf-menu.png",
+    "after-spot-VTA-1d.png",
+    "after-spot-VTA-1w.png",
+    "after-spot-1440-pane-aith.png",
+    "after-spot-1440-pane-error.png",
+    "after-spot-1440-pane-stale.png",
+    "after-futures-1440-1M.png",
+    "after-futures-1440-hollow.png",
+    "after-futures-1440-heikin.png",
+    "after-futures-1440-compare.png",
+    "after-futures-1440-compare-page.png",
+    "after-futures-1440-analytics-rs.png",
+    "after-futures-1440-data.png",
+    "after-futures-1440-analytics.png",
+    "after-futures-1440-layout2.png",
+    "after-futures-1440-layout2-page.png",
+    "snapshot-futures.png",
+    "after-futures-1440-fullscreen.png",
+    "after-spot-1440-1M.png",
+    "after-spot-1440-hollow.png",
+    "after-spot-1440-heikin.png",
+    "after-spot-1440-compare.png",
+    "after-spot-1440-compare-page.png",
+    "after-spot-1440-analytics-rs.png",
+    "after-spot-1440-data.png",
+    "after-spot-1440-analytics.png",
+    "after-spot-1440-layout2.png",
+    "after-spot-1440-layout2-page.png",
+    "snapshot-spot.png",
+    "after-spot-1440-fullscreen.png",
+    "after-futures-1920-layout4.png",
+    "after-futures-1920-layout4-page.png",
+    "after-futures-mobile-320x568.png",
+    "after-spot-mobile-320x568.png",
+    "after-futures-mobile-360x740.png",
+    "after-spot-mobile-360x740.png",
+    "after-futures-mobile-390x844.png",
+    "after-futures-mobile-390-sheet.png",
+    "after-futures-mobile-390-compare.png",
+    "after-futures-mobile-390-layout2.png",
+    "after-spot-mobile-390x844.png",
+    "after-spot-mobile-390-sheet.png",
+    "after-spot-mobile-390-compare.png",
+    "after-spot-mobile-390-layout2.png",
+    "after-futures-mobile-430x932.png",
+    "after-spot-mobile-430x932.png",
+    "after-futures-mobile-844x390.png",
+    "after-spot-mobile-844x390.png",
+    "after-futures-zoom-90.png",
+    "after-futures-zoom-100.png",
+    "after-futures-zoom-110.png",
+    "after-futures-zoom-125.png"
+  ],
+  "environment": "LOCAL QA ONLY — production bundle, loopback read-only fixture",
+  "finishedAt": "2026-10-14T12:41:47.398Z",
+  "summary": {
+    "passed": 220,
+    "failed": 0
+  }
+}

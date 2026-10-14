@@ -155,6 +155,29 @@ export function normalizeIndicatorInstances(raw: unknown): IndicatorInstance[] {
 }
 
 /** «SMA 200», «BB 20 · 2», «MACD 12 · 26 · 9» — the name the legend and menus print. */
+/**
+ * How many candles an indicator needs before it draws its first value — the
+ * honest "not enough data" line of the legend on a short history (a young
+ * listing with twenty bars under an SMA 200). Mirrors the warm-up of the
+ * math in ./indicators: a moving average its period, MACD the slow EMA plus
+ * the signal, a stochastic its lookback plus both smoothings.
+ */
+export function indicatorMinBars(inst: IndicatorInstance): number {
+  const def = indicatorDefinition(inst.type);
+  const p = (key: string) => { const spec = def.params.find(x => x.key === key); const value = inst.params[key]; return Number.isFinite(value) && spec ? Math.max(spec.min, Math.min(spec.max, value)) : spec?.default ?? 1; };
+  switch (inst.type) {
+    case 'ma': case 'ema': case 'wma': case 'bollinger': case 'cci': case 'williams': return p('period');
+    case 'rsi': case 'atr': case 'supertrend': return p('period') + 1;
+    case 'adx': return 2 * p('period');
+    case 'macd': return p('slow') + p('signal') - 1;
+    case 'stochastic': return p('kPeriod') + p('kSmooth') + p('dPeriod') - 2;
+    case 'stochrsi': return p('rsiPeriod') + p('stochPeriod') + p('kSmooth') + p('dPeriod') - 2;
+    case 'obv': return 2;
+    case 'vwap': return 1;
+    default: return 1;
+  }
+}
+
 export function indicatorInstanceLabel(inst: IndicatorInstance): string {
   const def = indicatorDefinition(inst.type);
   const values = def.params.map(p => String(inst.params[p.key] ?? p.default));

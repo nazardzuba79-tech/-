@@ -31,14 +31,14 @@ const OUT = path.resolve(arg('--out', path.join(ROOT, 'docs/qa/chart-workspace')
 const PHASE = arg('--phase', 'after');
 const PORT = Number(arg('--port', '0'));
 const ONLY = arg('--only', '').split(',').filter(Boolean);
-const DESKTOP = arg('--widths', '1366,1440,1707,1920').split(',').map(Number);
-const PHONES = arg('--phones', '320,360,390,430').split(',').map(Number);
+const DESKTOP = arg('--widths', '1366,1440,1600,1707,1920').split(',').map(Number);
+const PHONES = arg('--phones', '320,360,390,430,768').split(',').map(Number);
 const SERVE = args.includes('--serve');
 const PERF_WINDOW_MS = Number(arg('--perf-window', '15000'));
 
 // ── Fixture data ──────────────────────────────────────────────────────────
 const SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT'];
-const PRICES = { BTCUSDT: 85421.3, ETHUSDT: 3211.42, SOLUSDT: 178.44, XRPUSDT: 0.5312, DOGEUSDT: 0.1234 };
+const PRICES = { BTCUSDT: 85421.3, ETHUSDT: 3211.42, SOLUSDT: 178.44, XRPUSDT: 0.5312, DOGEUSDT: 0.1234, AITHUSDT: 21.93, NRXUSDT: 0.62, VTAUSDT: 10.1 };
 const STEP = { '1m': 60, '3m': 180, '5m': 300, '15m': 900, '30m': 1800, '1h': 3600, '2h': 7200, '4h': 14400, '6h': 21600, '12h': 43200, '1d': 86400, '1w': 604800, '1M': 2592000 };
 const BYBIT_CODES = { 1: '1m', 3: '3m', 5: '5m', 15: '15m', 30: '30m', 60: '1h', 120: '2h', 240: '4h', 360: '6h', 720: '12h', D: '1d', W: '1w', M: '1M' };
 const key = s => s.replace(/[-/]/g, '');
@@ -94,6 +94,64 @@ function book(symbol) {
   const levels = side => Array.from({ length: 35 }, (_, i) => ({ price: String(p + side * (i + 1) * tick), quantity: String(0.027 + (i % 9) * 0.048) }));
   return { available: true, symbol, pair: symbol.replace('-', '/'), timestamp: NOW_TICKER, fetchedAt: NOW_TICKER, providerTime: NOW_TICKER, updateId: 1, bids: levels(-1), asks: levels(1), stale: false };
 }
+// ── Test markets (VOLTEX simulated assets) ───────────────────────────────
+// Mirrors what the market edge (AITH, NRX) and the API host (VTA) were verified
+// to serve on 2026-10-14 (read-only probes): native 1m, 5m, 15m, 1h, 4h, 1d and
+// a Monday-anchored 1w; HTTP 400 for any other code; at most 1000 bars; no bar
+// before `listingAt`; 1m straight from ticks, the rest aggregated. AITH is a
+// managed listing (~21 h of history, 2 → ~22 USDT, as in production on
+// 2026-10-14), NRX and VTA listed weeks ago. Nothing here is production data.
+const TEST_INTERVALS = ['1m', '5m', '15m', '1h', '4h', '1d', '1w'];
+const FIXTURE_NOW = Date.now();
+const hourFloor = ms => Math.floor(ms / 3600000) * 3600000;
+const TEST_ASSETS = {
+  'AITH/USDT': { symbol: 'AITH', name: 'AITH', managed: true, tradable: false, version: 7, listingAt: hourFloor(FIXTURE_NOW) - 21 * 3600000, initialPrice: 2, lastPrice: 21.93, catalogue: 'listings' },
+  'NRX/USDT': { symbol: 'NRX', name: 'NEURIX', managed: false, tradable: true, listingAt: Date.UTC(2026, 8, 20, 12), initialPrice: 0.1, lastPrice: 0.62, catalogue: 'nrx' },
+  'VTA/USDT': { symbol: 'VTA', name: 'VOLTORA', managed: false, tradable: false, listingAt: Date.UTC(2026, 8, 28, 12), initialPrice: 0.01, lastPrice: 10.1, catalogue: 'test-assets' },
+};
+const testAssetBySlug = slug => { const pair = String(slug).toUpperCase().replace('-', '/'); return TEST_ASSETS[pair] ? { pair, asset: TEST_ASSETS[pair] } : null; };
+/** One deterministic minute bar: a log ramp from the listing price to today's with bounded noise; the same minute always gets the same bar. */
+function testBar1m(asset, timeSec) {
+  const i = Math.floor((timeSec * 1000 - asset.listingAt) / 60000);
+  const total = Math.max(1, Math.floor((FIXTURE_NOW - asset.listingAt) / 60000));
+  const ramp = Math.min(1.2, i / total);
+  const trend = asset.initialPrice * Math.pow(asset.lastPrice / asset.initialPrice, Math.pow(ramp, 0.7));
+  const noise = 1 + Math.sin(i / 7) * 0.012 + Math.sin(i / 31 + 1) * 0.02 + Math.cos(i / 3.3) * 0.004;
+  const open = trend * noise, close = open * (1 + Math.sin(i * 1.9) * 0.006);
+  const high = Math.max(open, close) * (1 + 0.002 + Math.abs(Math.sin(i * 0.7)) * 0.003), low = Math.min(open, close) * (1 - 0.002 - Math.abs(Math.cos(i * 0.9)) * 0.003);
+  return { time: timeSec, open, high, low, close, volume: 120 + ((i * 13) % 400) };
+}
+/** The server's candle list for an interval: the last `limit` buckets (≤ 1000), the first one cut at the listing, 1m from the ticks. */
+function testCandles(asset, interval, limit) {
+  const size = STEP[interval];
+  const nowSec = Math.floor(Date.now() / 1000), listingSec = Math.floor(asset.listingAt / 1000);
+  const count = Math.max(1, Math.min(1000, Math.floor(limit) || 300));
+  const current = bucketStart(interval, nowSec);
+  const from = Math.max(listingSec, current - (count - 1) * size);
+  const buckets = new Map();
+  for (let t = Math.ceil(from / 60) * 60; t <= nowSec; t += 60) {
+    const bar = testBar1m(asset, t);
+    const start = interval === '1m' ? t : bucketStart(interval, t);
+    const b = buckets.get(start);
+    if (!b) buckets.set(start, { time: start, open: bar.open, high: bar.high, low: bar.low, close: bar.close, volume: bar.volume });
+    else { b.high = Math.max(b.high, bar.high); b.low = Math.min(b.low, bar.low); b.close = bar.close; b.volume += bar.volume; }
+  }
+  return [...buckets.values()].filter(c => c.time >= current - (count - 1) * size).slice(-count);
+}
+const testAssetState = (asset, serverTime) => {
+  const dayAgo = testCandles(asset, '1h', 24);
+  const last = testBar1m(asset, Math.floor(serverTime / 60000) * 60).close;
+  const open24 = dayAgo[0]?.open ?? asset.initialPrice;
+  return { phase: 'live', lastPrice: last, openPrice24h: open24, change24hPercent: (last / open24 - 1) * 100, high24h: Math.max(...dayAgo.map(c => c.high), last), low24h: Math.min(...dayAgo.map(c => c.low), last), volume24h: dayAgo.reduce((s, c) => s + c.volume, 0), quoteVolume24h: dayAgo.reduce((s, c) => s + c.volume * c.close, 0), serverTime };
+};
+/** The public row of a test asset, in the shape lib/testMarkets parses (a live AITH lease every time it is read). */
+const testAssetRow = (pair, asset, serverTime) => ({
+  pair, symbol: asset.symbol, name: asset.name, quote: 'USDT', isTestAsset: true, isTradable: asset.tradable, status: asset.managed ? '' : 'TEST · NOT TRADABLE', listingArmed: true,
+  listingAt: new Date(asset.listingAt).toISOString(), initialPrice: asset.initialPrice, state: testAssetState(asset, serverTime),
+  ...(asset.managed ? { managed: true, version: asset.version, readLease: { protocol: 'aith-prelisting-v1', generation: asset.version, issuedAt: serverTime, expiresAt: serverTime + 45000 }, logo: null, displayTimeZone: 'UTC' } : {}),
+});
+const testCatalogue = catalogue => { const serverTime = Date.now(); return { serverTime, assets: Object.entries(TEST_ASSETS).filter(([, a]) => a.catalogue === catalogue).map(([pair, a]) => testAssetRow(pair, a, serverTime)) }; };
+
 const CONTRACT = { symbol: 'BTCUSDT', tickSize: '0.1', qtyStep: '0.001', minOrderQty: '0.001', maxOrderQty: '1190', maxMarketOrderQty: '119', minNotionalValue: '5', minLeverage: '1', maxLeverage: '100', leverageStep: '1', riskTiers: [{ maxNotional: '2000000000', maintenanceRate: '.005', deduction: '0', maxLeverage: '100' }], takerFeeRate: '.00055', makerFeeRate: '.0002' };
 
 const bootstrap = `(() => {
@@ -169,7 +227,20 @@ function start() {
   app.get(['/api/v1/futures/positions', '/api/v1/futures/positions/history', '/api/v1/futures/orders', '/api/v1/futures/orders/me', '/api/v1/orders', '/api/v1/orders/me', '/api/v1/orders/history', '/api/v1/deposit-chains', '/api/v1/wallet/history', '/api/v1/balances', '/api/v1/futures/balances'], (_q, r) => r.json([]));
   app.get('/api/v1/wallet/overview', (_q, r) => r.json({ balances: { spot: [], futures: [], spotValueUsd: 0, futuresValueUsd: 0, totalValueUsd: 0 }, valuationComplete: true, unpricedAssets: [], btcPriceUsd: 85421 }));
   app.get('/api/v1/market/external/rankings', (_q, r) => r.json({ source: 'local-fixture', rankings: SYMBOLS.map((pair, i) => ({ symbol: pair.split('/')[0], name: pair.split('/')[0], rank: i + 1, price: price(pair), categories: [], marketCap: 1.6e12 / (i + 1), volume24h: 1555469980.54, image: `/__qa/icon/${pair.split('/')[0]}`, changePercent24h: 1.25, changePercent7d: 2.5, changePercent30d: 3.5, sparkline: [1, 1.1, 1.2] })) }));
-  app.get(['/api/v1/market/test-assets', '/api/v1/market/nrx', '/api/v1/market/listings'], (_q, r) => r.json({ serverTime: NOW_TICKER, assets: [] }));
+  // Test markets: the three catalogues (VTA on the API host, NRX and the managed listings on the market edge, which the bootstrap routes here) and their candles with the real interval limits.
+  app.get('/api/v1/market/test-assets', (_q, r) => r.json(testCatalogue('test-assets')));
+  app.get('/api/v1/market/nrx', (_q, r) => r.json(testCatalogue('nrx')));
+  app.get('/api/v1/market/listings', (_q, r) => r.json(testCatalogue('listings')));
+  app.get('/api/v1/market/test-assets/:slug/candles', (q, r) => {
+    const found = testAssetBySlug(q.params.slug);
+    if (!found) return r.status(404).json({ error: 'unknown_test_asset' });
+    const interval = String(q.query.interval || '5m');
+    // The edge answers `unsupported_interval`, the API host `Unsupported interval: <code>` (both verified 2026-10-14); the client reads neither.
+    if (!TEST_INTERVALS.includes(interval)) return r.status(400).json({ error: found.asset.catalogue === 'test-assets' ? `Unsupported interval: ${interval}` : 'unsupported_interval' });
+    r.json({ source: 'simulation', pair: found.pair, interval, isTestAsset: true, serverTime: Date.now(), candles: testCandles(found.asset, interval, Number(q.query.limit) || 300) });
+  });
+  app.get('/api/v1/market/test-assets/:slug', (q, r) => { const found = testAssetBySlug(q.params.slug); if (!found) return r.status(404).json({ error: 'unknown_test_asset' }); r.json(testAssetRow(found.pair, found.asset, Date.now())); });
+  app.get('/__qa/test-assets', (_q, r) => r.json(Object.fromEntries(Object.entries(TEST_ASSETS).map(([pair, a]) => [pair, { listingAt: a.listingAt, bars: Object.fromEntries(TEST_INTERVALS.map(tf => [tf, testCandles(a, tf, 1000).length])) }]))));
   app.get('/__qa/icon/:symbol', (q, r) => r.type('svg').send(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="16" fill="#f7931a"/><text x="16" y="23" fill="white" font-size="20" font-family="Arial" text-anchor="middle">${q.params.symbol[0]}</text></svg>`));
   app.get('/api/v1/market/assets/icons', (q, r) => r.json({ assets: Object.fromEntries(String(q.query.symbols || '').split(',').filter(Boolean).map(s => [s, { id: 'fixture:' + s, name: s, logoUrl: `/__qa/icon/${s}` }])) }));
   app.get('/api/v1/support/conversations/mine', (_q, r) => r.json({ conversation: null, messages: [] }));
@@ -187,6 +258,35 @@ const check = (id, ok, detail) => { report.checks.push({ id, ok: !!ok, detail })
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const wants = id => !ONLY.length || ONLY.some(prefix => id.startsWith(prefix));
 
+/** Candle geometry from the main pane's own pixels (no chart internals): the widest body on the
+ *  middle rows, the lowest and highest painted candle rows, and — through the read-only handle the
+ *  chart exposes for acceptance tooling — the prices at the pane's top and bottom edges. */
+const GEOMETRY_PIXELS = () => {
+  const canvases = [...document.querySelectorAll('.terminal-chart-shell canvas')].filter(c => c.width > 200 && c.height > 120);
+  const canvas = canvases.sort((a, b) => b.width * b.height - a.width * a.height)[0];
+  if (!canvas) return null;
+  const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+  const isCandle = (r, g, b) => (g > 150 && r < 110 && b < 160) || (r > 200 && g < 120 && b < 140);
+  const widest = (y) => { const row = ctx.getImageData(0, y, W, 1).data; let run = 0, best = 0, runs = 0; for (let x = 0; x < W; x += 1) { const i = x * 4; if (isCandle(row[i], row[i + 1], row[i + 2])) { run += 1; } else { if (run) { runs += 1; best = Math.max(best, run); } run = 0; } } if (run) { runs += 1; best = Math.max(best, run); } return { best, runs }; };
+  const rows = [0.3, 0.45, 0.6].map(f => widest(Math.round(H * f)));
+  let lowest = -1, highest = -1;
+  for (let y = 0; y < H; y += 2) { const row = ctx.getImageData(0, y, W, 1).data; for (let x = 0; x < W; x += 3) { const i = x * 4; if (isCandle(row[i], row[i + 1], row[i + 2])) { if (highest < 0) highest = y; lowest = y; break; } } }
+  const scale = window.devicePixelRatio || 1;
+  const host = document.querySelector('[data-chart-state] > div');
+  const api = host && host.__voltexChart;
+  let prices = null;
+  if (api && api.series && api.chart) { try { const h = api.chart.paneSize(0).height; prices = { top: api.series.coordinateToPrice(0), bottom: api.series.coordinateToPrice(h - 1), paneHeight: h, logical: api.chart.timeScale().getVisibleLogicalRange(), barSpacing: api.chart.timeScale().options().barSpacing }; } catch (e) { prices = { error: String(e).slice(0, 80) }; } }
+  return { widthCss: Math.round(W / scale), heightCss: Math.round(H / scale), widestBodyPx: Math.round(Math.max(...rows.map(r => r.best)) / scale), bodiesOnRow: Math.max(...rows.map(r => r.runs)), lowestCandleRatio: lowest < 0 ? null : Number((lowest / H).toFixed(3)), highestCandleRatio: highest < 0 ? null : Number((highest / H).toFixed(3)), prices };
+};
+const geometryOf = page => page.evaluate(GEOMETRY_PIXELS);
+/** The second pane's state, instrument, interval and — through its handle — the bars it holds. */
+const PANE_STATE = () => {
+  const pane = document.querySelector('[data-cw-pane]'); const host = pane?.querySelector('.cw-pane-chart'); const api = host && host.__voltexChart;
+  let last = null, bars = 0;
+  try { const data = api?.series?.data?.() || []; bars = data.length; last = data.length ? data[data.length - 1].close : null; } catch { /* no series yet */ }
+  return { state: pane?.getAttribute('data-cw-pane-state') || null, source: pane?.getAttribute('data-cw-pane-source') || null, pair: pane?.querySelector('[data-cw-pane-symbol]')?.value || null, tf: pane?.querySelector('[data-cw-pane-timeframe]')?.value || null,
+    shown: pane?.querySelector('[data-cw-pane-last]')?.textContent || null, stale: pane?.querySelector('[data-cw-pane-stale]')?.textContent || null, note: pane?.querySelector('.cw-pane-note')?.textContent || null, bars, last };
+};
 const GEOMETRY = () => {
   const vw = window.innerWidth, doc = document.scrollingElement || document.documentElement;
   const rect = el => { const r = el.getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) }; };
@@ -227,13 +327,13 @@ async function openFeatureOn(page, feature) {
   return page.evaluate(menuBox);
 }
 
-async function openTerminal(ctx, origin, market, { width, height, mobile }) {
+async function openTerminal(ctx, origin, market, { width, height, mobile, pair = 'BTC/USDT' }) {
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(String(e).slice(0, 200)));
   page.on('console', m => { if (m.type() === 'error' && !/favicon|net::ERR|External network/.test(m.text())) errors.push('console: ' + m.text().slice(0, 160)); });
   const t0 = Date.now();
-  await page.goto(`${origin}${market === 'futures' ? '/futures' : '/trade'}?pair=BTC/USDT`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${origin}${market === 'futures' ? '/futures' : '/trade'}?pair=${encodeURIComponent(pair)}`, { waitUntil: 'domcontentloaded' });
   if (mobile) {
     // The phone opens on the trading workspace; the chart is one tap away.
     const tab = page.locator(market === 'futures' ? '#mobile-futures-chart' : '#mobile-trade-chart');
@@ -292,6 +392,268 @@ async function run() {
       await shot(page, `${PHASE}-${market}-${width}-page`);
       await ctx.close();
     }
+  }
+
+  // ── AITH: a managed listing with ~21 h of history on the Spot desktop (the owner's screenshots, 2026-10-14) ──
+  // Runs in both phases: `before` records the defects as shipped (1m shown unavailable, one weekly
+  // candle stretched over the plot, a price scale below zero), `after` asserts the fixes.
+  if (wants('aith')) {
+    const ctx = await context(1440, 900);
+    const { page, errors, opened } = await openTerminal(ctx, origin, 'spot', { width: 1440, height: 900, pair: 'AITH/USDT' });
+    const P = 'aith.spot.1440';
+    const fixtureBars = (await (await fetch(`${origin}/__qa/test-assets`)).json())['AITH/USDT'].bars;
+    const candleRequests = () => page.evaluate(() => window.__qa.fetches.filter(f => /candles/.test(f.url)).map(f => f.url));
+    const lastRequest = async () => { const list = await candleRequests(); const last = list.at(-1) || ''; const url = new URL(last, origin); return { path: url.pathname, interval: url.searchParams.get('interval'), limit: Number(url.searchParams.get('limit')) }; };
+    check(`${P}.loaded`, opened !== null && /test-assets\/AITH-USDT\/candles/.test((await lastRequest()).path), { opened, errors: errors.slice(0, 4), last: await lastRequest(), fixtureBars });
+    await shot(page, `${PHASE}-aith-1440`, await chartClip(page, 4));
+    await shot(page, `${PHASE}-aith-1440-page`);
+    // What the strip and the full menu offer, and what they show as unavailable.
+    const strip = await page.evaluate(() => [...document.querySelectorAll('[data-cw-tf]')].map(el => ({ tf: el.getAttribute('data-cw-tf'), plan: el.getAttribute('data-cw-tf-plan'), off: el.getAttribute('aria-disabled') === 'true' })));
+    await openFeatureOn(page, 'timeframes');
+    const options = await page.evaluate(() => [...document.querySelectorAll('[data-cw-tf-option]')].map(el => ({ tf: el.getAttribute('data-cw-tf-option'), disabled: el.disabled, title: el.getAttribute('title') || '', hint: el.querySelector('.cw-item-hint')?.textContent || '' })));
+    await shot(page, `${PHASE}-aith-1440-tf-menu`);
+    await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+    report.perf[`${P}.timeframes`] = { strip, options, unavailableOnStrip: strip.filter(x => x.off).map(x => x.tf), disabledInMenu: options.filter(o => o.disabled).map(o => o.tf) };
+    if (PHASE === 'after') {
+      check(`${P}.timeframes.nothing-disabled`, strip.length > 0 && strip.every(x => !x.off) && options.length === 13 && options.every(o => !o.disabled), report.perf[`${P}.timeframes`]);
+      check(`${P}.timeframes.1m-native-3m-derived`, strip.find(x => x.tf === '1m')?.plan === 'native' && options.some(o => o.tf === '3m') && options.every(o => !o.hint), { strip, hints: options.filter(o => o.hint).map(o => o.tf) });
+    } else console.log('BEFORE', P, 'unavailable on strip:', JSON.stringify(report.perf[`${P}.timeframes`].unavailableOnStrip), 'disabled in menu:', JSON.stringify(report.perf[`${P}.timeframes`].disabledInMenu));
+    const geometry = () => geometryOf(page);
+    for (const tf of ['1w', '1d', '1h', '5m', '1m']) {
+      const before = (await candleRequests()).length;
+      const key = page.locator(`[data-cw-tf="${tf}"]`);
+      const onStrip = (await key.count()) > 0;
+      const offStrip = onStrip && (await key.getAttribute('aria-disabled')) === 'true';
+      if (offStrip) {
+        // BEFORE only: the key is shown but refuses the click — recorded as the defect, then the menu path is tried.
+        await openFeatureOn(page, 'timeframes');
+        const option = page.locator(`[data-cw-tf-option="${tf}"]`);
+        if (await option.isDisabled()) { await page.keyboard.press('Escape'); report.perf[`${P}.${tf}`] = { unavailable: true, bars: fixtureBars[tf] }; console.log('BEFORE', P, tf, 'unavailable on strip and in menu, bars in fixture:', fixtureBars[tf]); if (PHASE === 'after') check(`${P}.${tf}.native-request`, false, { unavailable: true }); continue; }
+        await option.click();
+      } else if (onStrip) await key.click(); else { await openFeatureOn(page, 'timeframes'); await page.locator(`[data-cw-tf-option="${tf}"]`).click(); }
+      await page.waitForFunction(n => window.__qa.fetches.filter(f => /candles/.test(f.url)).length > n, before, { timeout: 8000 }).catch(() => {});
+      await page.waitForTimeout(900);
+      const last = await lastRequest();
+      const state = await page.getAttribute('[data-chart-state]', 'data-chart-state');
+      const g = await geometry();
+      report.perf[`${P}.${tf}`] = { request: last, state, bars: fixtureBars[tf], ...g };
+      await shot(page, `${PHASE}-aith-1440-${tf}`, await chartClip(page, 4));
+      if (PHASE === 'after') {
+        check(`${P}.${tf}.native-request`, last.interval === tf && state === 'candles', { last, state });
+        // A young asset's few bars are drawn at a readable width at the right of the plot — never one bar stretched over it.
+        check(`${P}.${tf}.readable-bars`, g && g.widestBodyPx >= 2 && g.widestBodyPx <= 40, { widestBodyPx: g?.widestBodyPx, bodiesOnRow: g?.bodiesOnRow, bars: fixtureBars[tf] });
+        // A positive-price chart never autoscales below zero.
+        check(`${P}.${tf}.scale-non-negative`, g && g.prices && typeof g.prices.bottom === 'number' && g.prices.bottom >= 0 && g.prices.top > g.prices.bottom, g?.prices);
+      } else console.log('BEFORE', P, tf, JSON.stringify({ request: last, state, bars: fixtureBars[tf], widestBodyPx: g?.widestBodyPx, lowestCandleRatio: g?.lowestCandleRatio }));
+    }
+    // The chart settings gear, the indicator legend's honest state (22 hourly bars under an SMA 200) and the derived month on 2 days of history.
+    await page.locator('[data-cw-tf="1h"]').click(); await page.waitForTimeout(900);
+    const extras = await page.evaluate(() => ({ gear: !!document.querySelector('.chart-settings-trigger'), legend: document.querySelector('.voltex-indicator-legend')?.textContent?.trim() || null, insufficient: document.querySelectorAll('[data-indicator-insufficient]').length }));
+    report.perf[`${P}.extras`] = extras;
+    if (PHASE === 'after') {
+      check(`${P}.settings-gear`, extras.gear, extras);
+      check(`${P}.indicator-insufficient-state`, extras.insufficient >= 1 && /200/.test(extras.legend || ''), extras);
+      await openFeatureOn(page, 'timeframes');
+      const monthBefore = (await candleRequests()).length;
+      await page.locator('[data-cw-tf-option="1M"]').click();
+      await page.waitForFunction(n => window.__qa.fetches.filter(f => /candles/.test(f.url)).length > n, monthBefore, { timeout: 8000 }).catch(() => {});
+      await page.waitForTimeout(700);
+      const month = { last: await lastRequest(), state: await page.getAttribute('[data-chart-state]', 'data-chart-state'), g: await geometry(), partial: await page.evaluate(() => document.querySelector('[data-cw-tf-partial]')?.textContent || null) };
+      check(`${P}.1M.derived-from-1d-forming`, month.last.interval === '1d' && month.state === 'candles' && month.g && month.g.widestBodyPx <= 40 && month.g.prices && month.g.prices.bottom >= 0, { last: month.last, state: month.state, widest: month.g?.widestBodyPx, prices: month.g?.prices, partial: month.partial });
+      await shot(page, `${PHASE}-aith-1440-1M`, await chartClip(page, 4));
+      await page.locator('[data-cw-tf="1h"]').click(); await page.waitForTimeout(600);
+    } else console.log('BEFORE', P, 'extras', JSON.stringify(extras));
+    // Compare with BTC and a second pane on BTC: both must read Spot's own source, never the listing's.
+    await openFeatureOn(page, 'compare');
+    await page.locator('[data-cw-compare-search]').fill('BTC'); await page.waitForTimeout(150);
+    if (await page.locator('[data-cw-compare-option="BTC/USDT"]').count()) await page.locator('[data-cw-compare-option="BTC/USDT"]').first().click();
+    await page.waitForFunction(() => /%|Не удалось|failed/i.test(document.querySelector('[data-cw-compare-entry="BTC/USDT"]')?.textContent || ''), null, { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(400);
+    const compare = await page.evaluate(() => ({ entry: document.querySelector('[data-cw-compare-entry="BTC/USDT"]')?.textContent?.trim() || null, value: document.querySelector('[data-cw-compare-value="BTC/USDT"]')?.textContent || null, requests: window.__qa.fetches.filter(f => /candles/.test(f.url) && /BTC/.test(f.url)).map(f => f.url.split('?')[0]) }));
+    await shot(page, `${PHASE}-aith-1440-compare`, await chartClip(page, 4));
+    report.perf[`${P}.compare`] = compare;
+    if (PHASE === 'after') check(`${P}.compare.btc-from-spot-source`, /%/.test(compare.value || '') && compare.requests.length > 0 && compare.requests.every(u => !/test-assets/.test(u)), compare);
+    else console.log('BEFORE', P, 'compare', JSON.stringify(compare));
+    await openFeatureOn(page, 'compare');
+    if (await page.locator('[data-cw-compare-exit]').count()) await page.locator('[data-cw-compare-exit]').click();
+    await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+    await openFeatureOn(page, 'layout');
+    await page.locator('[data-cw-layout-option="2"]').click();
+    await page.waitForFunction(() => document.querySelectorAll('[data-cw-pane]').length === 1 && ['ok', 'failed', 'empty', 'error'].includes(document.querySelector('[data-cw-pane]')?.getAttribute('data-cw-pane-state')), null, { timeout: 12000 }).catch(() => {});
+    await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+    const pane = await page.evaluate(() => ({ state: document.querySelector('[data-cw-pane]')?.getAttribute('data-cw-pane-state') || null, pair: document.querySelector('[data-cw-pane] [data-cw-pane-symbol]')?.value || null, options: [...document.querySelectorAll('[data-cw-pane] [data-cw-pane-timeframe] option')].map(o => o.value), last: document.querySelector('[data-cw-pane-last]')?.textContent || null, requests: window.__qa.fetches.filter(f => /candles/.test(f.url) && !/AITH/.test(f.url)).map(f => f.url.split('?')[0]).slice(-3) }));
+    await shot(page, `${PHASE}-aith-1440-layout2`, await chartClip(page, 4));
+    report.perf[`${P}.pane`] = pane;
+    if (PHASE === 'after') check(`${P}.layout.pane-own-source`, pane.state === 'ok' && pane.pair && !/AITH/.test(pane.pair) && pane.requests.length > 0 && pane.requests.every(u => !/test-assets/.test(u)), pane);
+    else console.log('BEFORE', P, 'pane', JSON.stringify(pane));
+    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="1"]').click(); await page.keyboard.press('Escape');
+    if (PHASE === 'after') {
+      // Go to a date before the listing: an honest "not loaded", no request for bars that never existed.
+      await openFeatureOn(page, 'goto');
+      await page.locator('[data-cw-goto-input]').fill('2026-01-05T10:00');
+      await page.locator('[data-cw-goto-apply]').click(); await page.waitForTimeout(900);
+      const goto = await page.evaluate(() => ({ open: !!document.querySelector('[data-cw-goto]'), status: document.querySelector('[data-cw-goto] [role="status"]')?.textContent || null, paged: window.__qa.fetches.filter(f => /AITH-USDT\/candles/.test(f.url) && /end/.test(f.url)).length }));
+      check(`${P}.goto.before-listing-honest`, goto.open && !!goto.status && goto.paged === 0, goto);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+      // The data window and the analytics over 22 hourly bars: real rows, the whole short history.
+      await page.locator('[data-cw-view="data"]').click(); await page.waitForTimeout(300);
+      const box = await page.locator('.terminal-chart-shell canvas').first().boundingBox();
+      for (let i = 0; i < 12; i += 1) await page.mouse.move(box.x + box.width * (0.66 + i * 0.02), box.y + box.height * 0.4);
+      await page.waitForTimeout(400);
+      const data = await page.evaluate(() => { const el = document.querySelector('[data-cw-data-window]'); return el ? { rows: el.querySelectorAll('dt').length, text: el.textContent.slice(0, 160) } : null; });
+      check(`${P}.data.window`, !!data && data.rows >= 8, data);
+      await shot(page, 'after-aith-1440-data', await chartClip(page, 4));
+      await page.locator('[data-cw-view="analytics"]').click(); await page.waitForTimeout(400);
+      await page.locator('[data-cw-analytics-period="all"]').click(); await page.waitForTimeout(300);
+      const analytics = await page.evaluate(() => ({ blocks: document.querySelectorAll('[data-cw-analytics-block]').length, text: document.querySelector('[data-cw-analytics]')?.textContent?.slice(0, 260) }));
+      check(`${P}.analytics.all-history`, analytics.blocks >= 2 && /2[012]/.test(analytics.text || ''), analytics);
+      await shot(page, 'after-aith-1440-analytics', await chartClip(page, 4));
+      await page.locator('[data-cw-view="chart"]').click(); await page.waitForTimeout(200);
+      // The scalping template on a listing: 5m, with 1m and 3m on the row since the source serves them; digit 1 is 1m.
+      await openFeatureOn(page, 'presets'); await page.locator('[data-cw-preset="builtin-scalping"]').click(); await page.waitForTimeout(900);
+      const preset = await page.evaluate(() => ({ quick: [...document.querySelectorAll('[data-cw-tf]')].map(el => el.getAttribute('data-cw-tf')), pressed: document.querySelector('[data-cw-tf][aria-pressed="true"]')?.getAttribute('data-cw-tf'), state: document.querySelector('[data-chart-state]')?.getAttribute('data-chart-state') }));
+      check(`${P}.presets.scalping-offers-1m-3m`, preset.pressed === '5m' && preset.quick.includes('1m') && preset.quick.includes('3m') && preset.state === 'candles', preset);
+      await page.evaluate(() => document.body.focus()); await page.keyboard.press('1'); await page.waitForTimeout(800);
+      const digit = await page.evaluate(() => ({ pressed: document.querySelector('[data-cw-tf][aria-pressed="true"]')?.getAttribute('data-cw-tf'), last: window.__qa.fetches.filter(f => /AITH-USDT\/candles/.test(f.url)).at(-1)?.url || '' }));
+      check(`${P}.keyboard.digit-1-is-1m`, digit.pressed === '1m' && /interval=1m/.test(digit.last), digit);
+      await openFeatureOn(page, 'presets'); await page.locator('[data-cw-preset-reset]').click(); await page.waitForTimeout(500); await page.keyboard.press('Escape');
+      // A snapshot of a short history is still a real PNG.
+      await openFeatureOn(page, 'snapshot');
+      const [download] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }).catch(() => null), page.locator('[data-cw-snapshot-download]').click()]);
+      let size = 0;
+      if (download) { const file = path.join(OUT, 'snapshot-aith.png'); await download.saveAs(file); size = fs.statSync(file).size; report.screenshots.push('snapshot-aith.png'); }
+      check(`${P}.snapshot.png`, !!download && size > 10000, { size });
+      await page.keyboard.press('Escape');
+    }
+    check(`${P}.errors`, errors.filter(e => !/ResizeObserver/.test(e)).length === 0, errors.slice(0, 6));
+    await ctx.close();
+    if (PHASE === 'after') {
+      // The phone: the strip's sheet offers the same intervals, none greyed, inside the screen.
+      const mctx = await context(390, 844, { isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+      const m = await openTerminal(mctx, origin, 'spot', { width: 390, height: 844, mobile: true, pair: 'AITH/USDT' });
+      await m.page.locator('[data-cw-feature="timeframes"]').click(); await m.page.waitForTimeout(400);
+      const sheet = await m.page.evaluate(() => ({ options: [...document.querySelectorAll('[data-cw-tf-option]')].map(el => ({ tf: el.getAttribute('data-cw-tf-option'), disabled: el.disabled })), inside: (() => { const el = document.querySelector('[data-cw-menu]'); const r = el?.getBoundingClientRect(); return r ? r.bottom <= innerHeight + 1 && r.left >= -1 && r.right <= innerWidth + 1 : false; })() }));
+      await shot(m.page, 'after-aith-mobile-390-tf-sheet');
+      check('aith.mobile.390.sheet-nothing-disabled', m.opened !== null && sheet.options.length === 13 && sheet.options.every(o => !o.disabled) && sheet.inside, { opened: m.opened, disabled: sheet.options.filter(o => o.disabled).map(o => o.tf), count: sheet.options.length, inside: sheet.inside });
+      await m.page.keyboard.press('Escape'); await m.page.waitForTimeout(200);
+      await shot(m.page, 'after-aith-mobile-390');
+      await mctx.close();
+    }
+  }
+
+  // ── Every context offers exactly what its source serves: Futures BTC, Spot BTC, NRX, VTA ──
+  if (PHASE === 'after' && wants('contexts')) {
+    for (const [market, pair] of [['futures', 'BTC/USDT'], ['spot', 'BTC/USDT'], ['spot', 'NRX/USDT'], ['spot', 'VTA/USDT']]) {
+      const ctx = await context(1440, 900);
+      const { page, errors, opened } = await openTerminal(ctx, origin, market, { width: 1440, height: 900, pair });
+      const id = `contexts.${market}.${pair.split('/')[0]}`;
+      const strip = await page.evaluate(() => [...document.querySelectorAll('[data-cw-tf]')].map(el => ({ tf: el.getAttribute('data-cw-tf'), plan: el.getAttribute('data-cw-tf-plan'), off: el.getAttribute('aria-disabled') === 'true' || el.disabled })));
+      await openFeatureOn(page, 'timeframes');
+      const options = await page.evaluate(() => [...document.querySelectorAll('[data-cw-tf-option]')].map(el => { const tf = el.getAttribute('data-cw-tf-option'); return { tf, plan: el.getAttribute('data-cw-tf-plan'), disabled: el.disabled, star: !!document.querySelector(`[data-cw-tf-star="${tf}"]`)?.disabled }; }));
+      await shot(page, `after-${market}-${pair.split('/')[0]}-tf-menu`);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+      report.perf[`${id}.timeframes`] = { native: options.filter(o => o.plan === 'native').map(o => o.tf), derived: options.filter(o => o.plan === 'derived').map(o => o.tf) };
+      check(`${id}.nothing-disabled`, opened !== null && strip.length >= 3 && strip.every(x => !x.off) && options.length === 13 && options.every(o => !o.disabled && !o.star), { opened, strip: strip.map(x => `${x.tf}:${x.plan}`), options: options.map(o => `${o.tf}:${o.plan}${o.disabled ? '!' : ''}`), errors: errors.slice(0, 3) });
+      if (pair === 'VTA/USDT') {
+        // A thousandfold mover (0.01 → 10): the axis never goes below zero on the long intervals either.
+        for (const tf of ['1d', '1w']) {
+          await page.locator(`[data-cw-tf="${tf}"]`).click();
+          await page.waitForFunction(t => (window.__qa.fetches.filter(f => /candles/.test(f.url)).at(-1) || { url: '' }).url.includes(`interval=${t}`), tf, { timeout: 8000 }).catch(() => {});
+          await page.waitForTimeout(900);
+          const g = await geometryOf(page);
+          check(`${id}.${tf}.scale-non-negative`, !!g && !!g.prices && typeof g.prices.bottom === 'number' && g.prices.bottom >= 0 && g.widestBodyPx >= 2 && g.widestBodyPx <= 40, { prices: g?.prices, widest: g?.widestBodyPx });
+          await shot(page, `after-spot-VTA-${tf}`, await chartClip(page, 4));
+        }
+      }
+      await ctx.close();
+    }
+  }
+
+  // ── Second pane: its own source, cleared on change, late answers dropped, honest states ──
+  if (PHASE === 'after' && wants('panes')) {
+    const ctx = await context(1440, 900);
+    const { page, errors } = await openTerminal(ctx, origin, 'spot', { width: 1440, height: 900 });
+    const P = 'panes.spot.1440';
+    const paneState = () => page.evaluate(PANE_STATE);
+    const waitState = (wanted, timeout = 8000) => page.waitForFunction(w => document.querySelector('[data-cw-pane]')?.getAttribute('data-cw-pane-state') === w, wanted, { timeout }).catch(() => {});
+    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="2"]').click(); await page.keyboard.press('Escape');
+    await waitState('ok', 12000);
+    const initial = await paneState();
+    check(`${P}.opens-on-another-instrument`, initial.state === 'ok' && !!initial.pair && initial.pair !== 'BTC/USDT' && initial.bars > 0, initial);
+    // Out of order: SOL answers slowly, the listing fast; the pane must end on the listing and never paint SOL over it.
+    await ctx.route('**/candles/SOL*', async route => { await sleep(2500); await route.continue(); });
+    await page.selectOption('[data-cw-pane="1"] [data-cw-pane-symbol]', 'SOL/USDT');
+    await page.waitForTimeout(150);
+    const mid = await paneState();
+    await page.selectOption('[data-cw-pane="1"] [data-cw-pane-symbol]', 'AITH/USDT');
+    await waitState('ok');
+    const quick = await paneState();
+    await page.waitForTimeout(3200);
+    const late = await paneState();
+    await ctx.unroute('**/candles/SOL*');
+    await shot(page, 'after-spot-1440-pane-aith', await chartClip(page, 4));
+    check(`${P}.switch-clears-at-once`, mid.state === 'loading' && mid.bars === 0 && mid.shown === null, mid);
+    check(`${P}.late-answer-dropped`, quick.pair === 'AITH/USDT' && quick.source === 'test-market' && quick.state === 'ok' && quick.last !== null && quick.last < 30 && late.pair === 'AITH/USDT' && late.last !== null && late.last < 30 && late.state === 'ok', { quick, late });
+    // A failing source: the first request fails → an error with a retry; after the source is back the retry recovers.
+    await ctx.route('**/candles/DOGE*', route => route.abort());
+    await page.selectOption('[data-cw-pane="1"] [data-cw-pane-symbol]', 'DOGE/USDT');
+    await waitState('error');
+    const failed = await paneState();
+    await shot(page, 'after-spot-1440-pane-error', await chartClip(page, 4));
+    await ctx.unroute('**/candles/DOGE*');
+    if (await page.locator('[data-cw-pane-retry]').count()) await page.locator('[data-cw-pane-retry]').click();
+    await waitState('ok');
+    const recovered = await paneState();
+    check(`${P}.error-then-retry`, failed.state === 'error' && failed.bars === 0 && recovered.state === 'ok' && recovered.bars > 0 && recovered.pair === 'DOGE/USDT', { failed, recovered });
+    // A refresh that fails keeps the bars and dates them; it is never a blank or an error over good bars.
+    await ctx.route('**/candles/DOGE*', route => route.abort());
+    await waitState('stale', 16000);
+    const stale = await paneState();
+    await shot(page, 'after-spot-1440-pane-stale', await chartClip(page, 4));
+    await ctx.unroute('**/candles/DOGE*');
+    check(`${P}.refresh-failure-is-stale-not-blank`, stale.state === 'stale' && stale.bars > 0 && !!stale.stale, stale);
+    // An empty answer is not a success: a listing whose source answers no bars shows "no history", not a chart of nothing.
+    await ctx.route('**/test-assets/NRX-USDT/candles*', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ source: 'simulation', pair: 'NRX/USDT', interval: '1h', isTestAsset: true, serverTime: Date.now(), candles: [] }) }));
+    await page.selectOption('[data-cw-pane="1"] [data-cw-pane-symbol]', 'NRX/USDT');
+    await waitState('empty');
+    const empty = await paneState();
+    await ctx.unroute('**/test-assets/NRX-USDT/candles*');
+    check(`${P}.empty-answer-is-not-success`, empty.state === 'empty' && empty.bars === 0 && !!empty.note, empty);
+    check(`${P}.errors`, errors.filter(e => !/ResizeObserver|Failed to load resource|net::ERR/.test(e)).length === 0, errors.slice(0, 6));
+    await ctx.close();
+  }
+
+  // ── The main chart is never remounted by a layout change; the ticket stays ──
+  if (PHASE === 'after' && wants('keep')) {
+    const ctx = await context(1440, 900);
+    const { page } = await openTerminal(ctx, origin, 'futures', { width: 1440, height: 900 });
+    const P = 'keep.futures.1440';
+    const before = await page.evaluate(() => { const host = document.querySelector('[data-chart-state] > div'); host.dataset.qaMark = 'main'; host.__voltexChart.token = 'kept'; const form = document.querySelector('.order-form-area'); if (form) form.dataset.qaMark = 'form'; const range = host.__voltexChart.chart.timeScale().getVisibleLogicalRange(); return { from: Math.round(range.from), to: Math.round(range.to) }; });
+    for (const value of [2, 4, 1]) { await openFeatureOn(page, 'layout'); await page.locator(`[data-cw-layout-option="${value}"]`).click(); await page.keyboard.press('Escape'); await page.waitForTimeout(900); }
+    const after = await page.evaluate(() => { const host = document.querySelector('[data-qa-mark="main"]'); const api = host && host.__voltexChart; const range = api?.chart.timeScale().getVisibleLogicalRange(); return { kept: !!host, token: api?.token || null, form: !!document.querySelector('[data-qa-mark="form"]'), from: range ? Math.round(range.from) : null, to: range ? Math.round(range.to) : null, panes: document.querySelectorAll('[data-cw-pane]').length }; });
+    check(`${P}.main-chart-never-remounted`, after.kept && after.token === 'kept' && after.form && after.panes === 0 && Math.abs((after.to ?? -99) - before.to) <= 2, { before, after });
+    await ctx.close();
+  }
+
+  // ── «Синхронизировать таймфрейм» moves every chart, both ways ──
+  if (PHASE === 'after' && wants('synctf')) {
+    const ctx = await context(1440, 900);
+    const { page } = await openTerminal(ctx, origin, 'futures', { width: 1440, height: 900 });
+    const P = 'synctf.futures.1440';
+    const store = () => page.evaluate(() => JSON.parse(localStorage.getItem('voltex.chartWorkspace.futures.v1') || 'null'));
+    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="2"]').click(); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-sync="timeframe"]').check(); await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.querySelector('[data-cw-pane]')?.getAttribute('data-cw-pane-state') === 'ok', null, { timeout: 12000 }).catch(() => {});
+    await page.locator('[data-cw-tf="15m"]').click(); await page.waitForTimeout(800);
+    const follows = await page.evaluate(() => document.querySelector('[data-cw-pane-timeframe]')?.value);
+    await page.selectOption('[data-cw-pane="1"] [data-cw-pane-timeframe]', '4h'); await page.waitForTimeout(900);
+    const leads = { main: (await store())?.timeframe, pressed: await page.getAttribute('[data-cw-tf="4h"]', 'aria-pressed') };
+    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-sync="timeframe"]').uncheck(); await page.keyboard.press('Escape');
+    await page.selectOption('[data-cw-pane="1"] [data-cw-pane-timeframe]', '1h'); await page.waitForTimeout(700);
+    const own = { main: (await store())?.timeframe, pane: (await store())?.panes?.[0]?.timeframe };
+    check(`${P}.sync-timeframe-is-real`, follows === '15m' && leads.main === '4h' && leads.pressed === 'true' && own.main === '4h' && own.pane === '1h', { follows, leads, own });
+    await openFeatureOn(page, 'layout'); await page.locator('[data-cw-layout-option="1"]').click(); await page.keyboard.press('Escape');
+    await ctx.close();
   }
   if (PHASE !== 'after') { await perf(browser, origin, context, chartClip, shot); await finish(browser, server); return; }
 
@@ -643,7 +1005,7 @@ async function run() {
   }
 
   // ── Mobile ────────────────────────────────────────────────────────────
-  const phones = [...PHONES.map(w => [w, w === 320 ? 568 : w === 360 ? 740 : w === 390 ? 844 : 932]), [844, 390]];
+  const phones = [...PHONES.map(w => [w, w === 320 ? 568 : w === 360 ? 740 : w === 390 ? 844 : w === 768 ? 1024 : 932]), [844, 390]];
   for (const [w, h] of phones) {
     if (!wants('mobile')) break;
     for (const market of ['futures', 'spot']) {
