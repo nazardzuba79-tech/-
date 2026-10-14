@@ -10,6 +10,8 @@ export function ListingHistoricalEditor({ program, onChange }: {
   onChange: (next: HistoricalProgram) => void;
 }) {
   const [source,setSource] = useState<HistoricalSource>('BTC/USDT');
+  const [startDateUtc,setStartDateUtc] = useState('');
+  const [hours,setHours] = useState<'all'|'24'|'168'|'720'|'2160'>('2160');
   const [error,setError] = useState<string|null>(null);
   const [busy,setBusy] = useState(false);
   const loadId=useRef(0);
@@ -17,12 +19,15 @@ export function ListingHistoricalEditor({ program, onChange }: {
     const file=event.target.files?.[0];
     event.target.value='';
     if(!file)return;
-    if(file.size>512*1024){setError('CSV больше 512 КБ');return;}
+    if(file.size>3*1024*1024){setError('CSV больше 3 МБ');return;}
     if(program.clips.length>=3){setError('Максимум три последовательных исторических отрезка');return;}
     const run=++loadId.current;
     setBusy(true);setError(null);
     try {
-      const clip=importHistoricalCsv(await file.text(),source);
+      const clip=importHistoricalCsv(await file.text(),source,{
+        ...(startDateUtc ? {startDateUtc} : {}),
+        ...(hours === 'all' ? {} : {hours:Number(hours) as 24|168|720|2160}),
+      });
       const next:HistoricalProgram={version:1,clips:[...program.clips,clip]};
       const count=next.clips.reduce((n,c)=>n+c.bars.length,0);
       if(count>4800)throw Error('Максимум 4800 часов без ускорения');
@@ -48,8 +53,17 @@ export function ListingHistoricalEditor({ program, onChange }: {
         <option value="ETH/USDT">Ethereum (ETH)</option>
         <option value="SOL/USDT">Solana (SOL)</option>
       </select><small>Название источника указывается вручную; достоверность CSV автоматически не подтверждается.</small></label>
-      <label>Загрузить часовые свечи (CSV)<input type="file" accept=".csv,text/csv,text/plain" data-field="historicalCsv" disabled={busy} onChange={e=>{void upload(e);}} />
-        <small>UTC: timestamp,open,high,low,close[,volume,trades]. Строго 1 час без пропусков, 24–2400 строк. Дата начала берётся из файла.</small></label>
+      <label>Начало исторического отрезка, UTC<input type="date" data-field="historicalStartDate" value={startDateUtc} disabled={busy} onChange={e=>setStartDateUtc(e.target.value)} />
+        <small>Оставьте пустым, чтобы выбрать с первой свечи CSV.</small></label>
+      <label>Продолжительность<select data-field="historicalDuration" value={hours} onChange={e=>setHours(e.target.value as typeof hours)} disabled={busy}>
+        <option value="24">1 день (24 часа)</option>
+        <option value="168">7 дней</option>
+        <option value="720">30 дней</option>
+        <option value="2160">90 дней — примерно 3 месяца</option>
+        <option value="all">Весь файл до 100 дней</option>
+      </select><small>Каждый исходный час остаётся одним реальным часом симуляции.</small></label>
+      <label>Файл с историческими часовыми свечами<input type="file" accept=".csv,text/csv,text/plain" data-field="historicalCsv" disabled={busy} onChange={e=>{void upload(e);}} />
+        <small>UTC: timestamp,open,high,low,close[,volume,trades]. До 3 МБ / 12 000 часов; сохранится только выбранный фрагмент.</small></label>
     </div>
     {busy&&<p role="status">Проверка файла…</p>}
     {error&&<p role="alert" className="listing-error">{error}</p>}
