@@ -1,0 +1,97 @@
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, ArrowUpRight, FileText, Globe2, Minus, Plus, X } from 'lucide-react';
+import { useLanguage, localeOf } from '../../lib/i18n';
+import { REGULATORY_DOCUMENTS, publishedDocuments, type RegulatoryDocument } from '../../lib/regulatoryDocuments';
+import { HomeHeader } from '../home/HomeHeader';
+import { HomeFooter } from '../home/HomeFooter';
+import './licenses.css';
+
+function DocumentViewer({ document, onClose }: { document: RegulatoryDocument; onClose: () => void }) {
+  const { t } = useLanguage();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [zoom, setZoom] = useState(100);
+  useEffect(() => {
+    const element = dialog.current;
+    const opener = window.document.activeElement as HTMLElement | null;
+    element?.showModal();
+    return () => { element?.close(); opener?.focus(); };
+  }, []);
+  return <dialog ref={dialog} className="licence-viewer" aria-labelledby="licence-viewer-title" onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="licence-viewer-bar">
+      <div><h2 id="licence-viewer-title">{document.legalEntity}</h2><p>{document.documentNumber}</p></div>
+      <div className="licence-viewer-tools">
+        {document.documentFormat === 'image' && <>
+          <button type="button" onClick={() => setZoom(value => Math.max(50, value - 25))} disabled={zoom <= 50} aria-label={t('licenses.zoomOut')}><Minus size={18} /></button>
+          <output aria-live="polite">{zoom}%</output>
+          <button type="button" onClick={() => setZoom(value => Math.min(300, value + 25))} disabled={zoom >= 300} aria-label={t('licenses.zoomIn')}><Plus size={18} /></button>
+        </>}
+        <button type="button" autoFocus onClick={onClose} aria-label={t('licenses.close')}><X size={20} /></button>
+      </div>
+    </div>
+    <div className="licence-viewer-body">
+      {document.documentFormat === 'pdf' ? <object data={document.documentUrl!} type="application/pdf" aria-label={document.documentType}><a href={document.documentUrl!} target="_blank" rel="noopener noreferrer">{t('licenses.openOriginal')}</a></object>
+        : <img src={document.documentUrl!} alt={`${document.regulator} — ${document.legalEntity} — ${document.documentNumber}`} style={{ width: `${zoom}%`, maxWidth: 'none' }} />}
+    </div>
+    <a className="licence-original" href={document.documentUrl!} target="_blank" rel="noopener noreferrer">{t('licenses.openOriginal')} <ArrowUpRight size={15} aria-hidden="true" /></a>
+  </dialog>;
+}
+
+/** Shared presentation. The production wrapper only passes gated records. */
+export function LicencesContent({ documents, review = false }: { documents: readonly RegulatoryDocument[]; review?: boolean }) {
+  const { t, lang } = useLanguage();
+  const [selected, setSelected] = useState<RegulatoryDocument | null>(null);
+  useEffect(() => {
+    if (selected && !documents.some(document => document.id === selected.id)) setSelected(null);
+  }, [documents, selected]);
+  const date = (value: string | null) => value ? new Intl.DateTimeFormat(localeOf(lang), { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`)) : t('licenses.notSpecified');
+  return <main className="licences-main" lang={lang}>
+    <Link className="licences-back" to="/legal/about"><ArrowLeft size={15} aria-hidden="true" />{t('footer.about')}</Link>
+    {review && <p className="licences-review" role="status">{t('licenses.reviewNotice')}</p>}
+    <header className="licences-heading">
+      <span className="licences-eyebrow">VOLTEX · {t('licenses.eyebrow')}</span>
+      <h1>{t('licenses.title')}</h1>
+      <p>{t('licenses.intro')}</p>
+    </header>
+    <div className="licences-section-head"><h2>{t('licenses.documents')}</h2><span><Globe2 size={16} aria-hidden="true" />{documents.length.toLocaleString(localeOf(lang))}</span></div>
+    {documents.length === 0 ? <section className="licences-empty"><FileText size={32} strokeWidth={1.2} aria-hidden="true" /><h3>{t('licenses.empty')}</h3></section>
+      : <div className="licences-grid">{documents.map(document => {
+        const translated = document.translations[lang];
+        return <article className="licence-card" key={document.id}>
+          <div className="licence-card-top"><span className="licence-regulator">{document.regulator}</span><span className={`licence-status${review ? ' is-review' : ''}`}>{t(review ? 'licenses.reviewStatus' : 'licenses.active')}</span></div>
+          <p className="licence-jurisdiction">{translated?.jurisdiction ?? document.jurisdiction}</p>
+          <h3>{document.legalEntity}</h3>
+          <p className="licence-type">{translated?.documentType ?? document.documentType}</p>
+          <dl className="licence-details">
+            <div className="licence-number"><dt>{t('licenses.number')}</dt><dd>{document.documentNumber}</dd></div>
+            <div><dt>{t('licenses.issueDate')}</dt><dd>{date(document.issueDate)}</dd></div>
+            <div><dt>{t('licenses.expiryDate')}</dt><dd>{date(document.expiryDate)}</dd></div>
+          </dl>
+          <div className="licence-activities"><h4>{t('licenses.activities')}</h4><ul>{(translated?.permittedActivities ?? document.permittedActivities).map(activity => <li key={activity}>{activity}</li>)}</ul></div>
+          {(translated?.restrictions ?? document.restrictions) && <p className="licence-restrictions">{translated?.restrictions ?? document.restrictions}</p>}
+          <button className="licence-document-button" type="button" disabled={!document.documentUrl} onClick={() => setSelected(document)}><FileText size={17} aria-hidden="true" />{t('licenses.viewDocument')}<ArrowUpRight size={17} aria-hidden="true" /></button>
+        </article>;
+      })}</div>}
+    {selected && <DocumentViewer document={selected} onClose={() => setSelected(null)} />}
+  </main>;
+}
+
+export function LicencesPage() {
+  const { t } = useLanguage();
+  const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10));
+  useEffect(() => {
+    const refresh = () => setDay(new Date().toISOString().slice(0, 10));
+    const timer = window.setInterval(refresh, 60_000);
+    window.addEventListener('focus', refresh);
+    return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, []);
+  useEffect(() => {
+    const originalTitle = document.title;
+    document.title = `${t('licenses.title')} | VOLTEX`;
+    const robots = document.createElement('meta');
+    robots.name = 'robots'; robots.content = 'noindex, nofollow';
+    document.head.append(robots);
+    return () => { document.title = originalTitle; robots.remove(); };
+  }, [t]);
+  return <div className="licences-page"><div className="vx-home"><HomeHeader /></div><LicencesContent documents={publishedDocuments(REGULATORY_DOCUMENTS, new Date(`${day}T00:00:00Z`))} /><div className="vx-home"><HomeFooter /></div></div>;
+}
