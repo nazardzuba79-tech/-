@@ -127,7 +127,10 @@ test.each([
   // type is named `SpotOrderRecord`. Every futures read this suite protects
   // — mark price, open interest, funding rate, the book route, `request()`,
   // the Authorization header, `handleUnauthorized` — is untouched.
-  ['frontend/src/lib/api.ts', 'b1a8322a0d89516fe8d27f3e692610ca5886dc21d88f6b90f4c1813f2f69739b'],
+  // 2026-10-14: exact source re-reviewed after account-scoped Spot order
+  // coalescing and a post-session-response guard. Financial writes and
+  // Futures/Spot trading endpoints are unchanged; keep the byte-pin active.
+  ['frontend/src/lib/api.ts', 'adae38b50ae173bb9a537bbbabff275a7065275fda66663f090089ab8ed6b8d2'],
   // 2026-09-30: reviewed Express 4 async-error containment. All fourteen
   // handler bodies are byte-identical to f62d28da; only asyncRoute and the
   // local wrapped auth binding changed. Pin the complete reviewed file;
