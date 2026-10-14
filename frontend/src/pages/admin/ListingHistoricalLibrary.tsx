@@ -97,7 +97,7 @@ export function ListingHistoricalLibrary({source,startDateUtc,hours,clipCount,on
     <div className="listing-grid">
       <label>Сохранить исходный CSV в библиотеку (один раз)
         <input type="file" accept=".csv,text/csv,text/plain" data-field="historicalLibraryFile" disabled={busy} onChange={e=>{void uploadArchive(e);}} />
-        <small>До 12 000 последовательных часов / 3 МБ. Исходные абсолютные цены хранятся только локально; в черновик передаётся относительное движение. Всего до 8 архивов / 12 МБ.</small>
+        <small>До 12 000 последовательных часов / 3 МБ. После проверки CSV абсолютные цены и объёмы отбрасываются: в локальной библиотеке и черновике хранятся только относительные движения. Всего до 8 архивов / 12 МБ.</small>
       </label>
       <label>Использовать ранее сохранённый архив
         <select value={matchingSelected?.id??''} data-field="historicalArchiveChoice" disabled={busy||own.length===0}
@@ -120,6 +120,6 @@ export function ListingHistoricalLibrary({source,startDateUtc,hours,clipCount,on
     {busy&&<p role="status">Проверка локальной библиотеки…</p>}
     {notice&&<p role="status" className="listing-hint">{notice}</p>}
     {error&&<p role="alert" className="listing-error">{error}</p>}
-    <p className="listing-hint">SHA-256 проверяет целостность локального CSV, но не подлинность биржевых данных и не право на коммерческое использование. Публикация исторического режима по-прежнему заблокирована.</p>
+    <p className="listing-hint">SHA-256 исходного CSV сохраняется как отпечаток источника; отдельный SHA-256 проверяет целостность сохранённых движений. Оригинальные цены не сохраняются. Ни один хеш не подтверждает происхождение данных или право на коммерческое использование. Публикация исторического режима по-прежнему заблокирована.</p>
   </section>;
 }
