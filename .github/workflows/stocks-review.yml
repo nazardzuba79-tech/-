@@ -31,7 +31,7 @@ jobs:
         env:
           QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          node scripts/qa-backend-full-admission.cjs --base 03bdc89fa802e958b80d85a8add8a952f522b890 --head "$QA_SOURCE_SHA" --manifest docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json > "$RUNNER_TEMP/backend-admission.json"
+          node scripts/qa-backend-full-admission.cjs --base a9d5b9bd85fe96e8dcb31ec7a6b315f9730d2900 --head "$QA_SOURCE_SHA" --manifest docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json > "$RUNNER_TEMP/backend-admission.json"
           node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/backend-admission.json"));if(!["full","not_run"].includes(r.mode)||r.releaseGatePass!==false||r.priorFailure.status!=="FAIL")throw Error("Invalid admission evidence");fs.appendFileSync(process.env.GITHUB_OUTPUT,"mode="+r.mode+"\n")'
       - uses: actions/upload-artifact@v4
         if: always()
@@ -163,6 +163,154 @@ jobs:
             ${{ runner.temp }}/stocks-auth-preparation-output/public-context/runtime-source-manifest.json
             ${{ runner.temp }}/stocks-auth-preparation-output/private/runtime-output/inside-proof.json
             ${{ runner.temp }}/stocks-auth-preparation-output/private/command-logs/*
+
+  stocks-auth-http-paired:
+    # Finite fixture attribution only. Backend/browser/capacity FAIL remain release blockers.
+    # Preparation already waits for every prior Stocks workload; this job never retries one.
+    needs: stocks-auth-preparation
+    if: >-
+      always() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.number == 512 &&
+      github.event.pull_request.head.repo.full_name == github.repository && needs.stocks-auth-preparation.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    env:
+      QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+      AUTH_POLICY_SHA256: 0bc78b33f47370efbb289b820198d01ec63c402c906a4652c897922aaf7b70f7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Pure launch and connection-observation guards
+        run: node --test services/stocks/auth-http-fixture-512/launcher.test.mjs services/stocks/auth-http-fixture-512/durability-observer.test.cjs
+      - name: Download and bind three immutable same-run fixture artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs'), path = require('node:path');
+            const { createHash } = require('node:crypto'), assert = require('node:assert/strict');
+            assert.equal(context.repo.owner, 'nazardzuba79-tech'); assert.equal(context.repo.repo, '-');
+            assert.equal(context.payload.pull_request.number, 512);
+            assert.equal(context.payload.pull_request.head.ref, 'dot/stocks-owner-usdt-portfolio-20261013');
+            const head = process.env.QA_SOURCE_SHA; assert.match(head, /^[a-f0-9]{40}$/);
+            assert.match(process.env.AUTH_POLICY_SHA256, /^[a-f0-9]{64}$/);
+            const { data: run } = await github.rest.actions.getWorkflowRun({ ...context.repo, run_id: context.runId });
+            assert.equal(run.head_sha, head);
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts,
+              { ...context.repo, run_id: context.runId, per_page: 100 });
+            const input = path.join(process.env.RUNNER_TEMP, 'stocks-auth-launch-input');
+            assert.ok(!fs.existsSync(input)); fs.mkdirSync(input, { mode: 0o700 });
+            const receipts = {};
+            for (const [key, prefix, limit] of [
+              ['stage', 'stocks-local-stage-', 256 * 1024 ** 2],
+              ['preparation', 'stocks-auth-preparation-', 256 * 1024 ** 2],
+              ['inputs', 'stocks-auth-prepared-inputs-', 512 * 1024 ** 2],
+            ]) {
+              const matches = artifacts.filter(a => a.name === prefix + head && !a.expired);
+              assert.equal(matches.length, 1); const artifact = matches[0];
+              assert.equal(artifact.workflow_run.id, context.runId); assert.equal(artifact.workflow_run.head_sha, head);
+              assert.ok(artifact.size_in_bytes > 0 && artifact.size_in_bytes <= limit);
+              assert.match(artifact.digest, /^sha256:[a-f0-9]{64}$/);
+              const response = await github.rest.actions.downloadArtifact({ ...context.repo, artifact_id: artifact.id, archive_format: 'zip' });
+              const bytes = Buffer.from(response.data); assert.equal(bytes.length, artifact.size_in_bytes);
+              const hash = createHash('sha256').update(bytes).digest('hex'); assert.equal('sha256:' + hash, artifact.digest);
+              fs.writeFileSync(path.join(input, key + '.zip'), bytes, { flag: 'wx', mode: 0o600 });
+              receipts[key] = { artifactId: String(artifact.id), runId: String(context.runId), sourceSha: head,
+                sha256: hash, bytes: bytes.length, name: artifact.name };
+            }
+            fs.writeFileSync(path.join(input, 'receipts.json'), JSON.stringify(receipts, null, 2), { flag: 'wx', mode: 0o600 });
+      - name: Extract only fixed fixture inputs and derive this runner's backing device
+        run: |
+          python3 -I -S - <<'PY'
+          import os,pathlib,zipfile,stat
+          os.umask(0o077)
+          base=pathlib.Path(os.environ['RUNNER_TEMP'])/'stocks-auth-launch-input'
+          out=base/'extracted';out.mkdir(mode=0o700)
+          specs={
+            'preparation':{'stocks-auth-preparation-output/preparation.json':'report.json',
+              'stocks-auth-preparation-output/public-context/runtime-source-manifest.json':'manifest.json',
+              'stocks-auth-preparation-output/private/runtime-output/inside-proof.json':'inside.json'},
+            'inputs':{'runtime-image.tar':'image.tar','runtime-output/private/seed/accounts.sqlite':'seed.sqlite'}}
+          for kind,selected in specs.items():
+            with zipfile.ZipFile(base/(kind+'.zip')) as z:
+              rows=z.infolist();assert 0<len(rows)<=128;seen=set();total=0
+              for i in rows:
+                p=pathlib.PurePosixPath(i.filename)
+                assert not p.is_absolute() and '..' not in p.parts and ':' not in i.filename and chr(92) not in i.filename
+                mode=i.external_attr>>16
+                assert i.filename==i.orig_filename and not (i.flag_bits&1)
+                assert stat.S_IFMT(mode) in (0,stat.S_IFREG,stat.S_IFDIR) and i.filename.lower() not in seen
+                seen.add(i.filename.lower());total+=i.file_size
+              assert total <= (512*1024**2 if kind=='inputs' else 256*1024**2)
+              if kind=='inputs': assert set(i.filename for i in rows)==set(selected)
+              for member,target in selected.items():
+                matches=[i for i in rows if i.filename==member];assert len(matches)==1 and not matches[0].is_dir()
+                assert 0<matches[0].file_size<=(3*1024**3 if target=='image.tar' else 16*1024**2)
+                with z.open(matches[0]) as src,open(out/target,'xb') as dst:
+                  written=0
+                  while True:
+                    b=src.read(1024*1024)
+                    if not b:break
+                    written+=len(b);assert written<=matches[0].file_size
+                    dst.write(b)
+                assert (out/target).stat().st_size==matches[0].file_size
+          PY
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'; import path from 'node:path'; import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto'; import { execFileSync } from 'node:child_process';
+          import { SCHEMA, validateConfig } from './services/stocks/auth-http-fixture-512/launcher.mjs';
+          const input = path.join(process.env.RUNNER_TEMP, 'stocks-auth-launch-input'), extracted = path.join(input, 'extracted');
+          const receipts = JSON.parse(fs.readFileSync(path.join(input, 'receipts.json')));
+          const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+          const file = name => path.join(extracted, name);
+          const python = '/usr/bin/python3', archive = path.join(input, 'stage.zip');
+          const proof = execFileSync(python, ['-I', '-S', '-c',
+            "import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); a=[i for i in z.infolist() if i.filename=='build-provenance.json']; assert len(a)==1 and 0<a[0].file_size<=16777216; sys.stdout.buffer.write(z.read(a[0]))", archive],
+            { timeout: 30000, maxBuffer: 16 * 1024 ** 2 });
+          const exec = (bin, args) => execFileSync(bin, args, { encoding: 'utf8', timeout: 30000 }).trim();
+          const disk = path.join(process.env.RUNNER_TEMP, 'stocks-auth-launch-disk');
+          assert.ok(!fs.existsSync(disk)); fs.mkdirSync(disk, { mode: 0o700 });
+          const majorMinor = exec('findmnt', ['-n', '-o', 'MAJ:MIN', '-T', disk]); assert.match(majorMinor, /^\d+:\d+$/);
+          const matches = exec('lsblk', ['-nrpo', 'NAME,MAJ:MIN']).split('\n').map(line => line.trim().split(/\s+/)).filter(row => row[1] === majorMinor);
+          assert.equal(matches.length, 1); let device = matches[0][0];
+          const parent = exec('lsblk', ['-ndo', 'PKNAME', device]);
+          if (parent) { assert.match(parent, /^[A-Za-z0-9_-]+$/); device = '/dev/' + parent; }
+          device = fs.realpathSync(device); assert.ok(fs.statSync(device).isBlockDevice());
+          const config = validateConfig({ schema: SCHEMA, sourceSha: process.env.QA_SOURCE_SHA, policySha256: process.env.AUTH_POLICY_SHA256,
+            stage: { archive, sha256: receipts.stage.sha256, sourceSha: receipts.stage.sourceSha, runId: receipts.stage.runId,
+              artifactId: receipts.stage.artifactId, buildProvenanceSha256: hash(proof) },
+            prepared: { report: file('report.json'), reportSha256: hash(fs.readFileSync(file('report.json'))),
+              manifest: file('manifest.json'), manifestSha256: hash(fs.readFileSync(file('manifest.json'))),
+              inside: file('inside.json'), insideSha256: hash(fs.readFileSync(file('inside.json'))), image: file('image.tar'), seed: file('seed.sqlite'),
+              publicArchive: path.join(input, 'preparation.zip'), inputsArchive: path.join(input, 'inputs.zip'), runId: receipts.preparation.runId,
+              publicArtifactId: receipts.preparation.artifactId, inputsArtifactId: receipts.inputs.artifactId },
+            receipts, python: { executable: python, sha256: hash(fs.readFileSync(fs.realpathSync(python))) },
+            output: path.join(process.env.RUNNER_TEMP, 'stocks-auth-launch-output'), disk, device });
+          fs.writeFileSync(path.join(input, 'config.json'), JSON.stringify(config, null, 2), { flag: 'wx', mode: 0o600 });
+          NODE
+      - name: One reviewed finite paired auth diagnostic (no production or providers)
+        env:
+          AUTH_HTTP_FIXTURE_512_LAUNCH_APPROVED: 'true'
+        run: node services/stocks/auth-http-fixture-512/launcher.mjs --launch "$RUNNER_TEMP/stocks-auth-launch-input/config.json"
+      - name: Preserve diagnostic verdict and bounded measurement reports only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-auth-http-paired-${{ github.event.pull_request.head.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/stocks-auth-launch-input/receipts.json
+            ${{ runner.temp }}/stocks-auth-launch-output/launcher-report.json
+            ${{ runner.temp }}/stocks-auth-launch-output/private/failure.txt
+            ${{ runner.temp }}/stocks-auth-launch-output/workload/*.json
 
   stocks-full-backend-offline:
     # One complete backend collection for PR512, with native engines confined

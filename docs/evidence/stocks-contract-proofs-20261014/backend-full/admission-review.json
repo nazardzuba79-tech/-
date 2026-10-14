@@ -1,74 +1,128 @@
 {
   "schemaVersion": 1,
-  "reviewId": "stocks-preparation-only-03bdc89f-20261014-v1",
-  "baselineSHA": "03bdc89fa802e958b80d85a8add8a952f522b890",
+  "reviewId": "stocks-finite-auth-a9d5b9bd-20261014-v1",
+  "baselineSHA": "a9d5b9bd85fe96e8dcb31ec7a6b315f9730d2900",
   "priorFailure": {
     "status": "FAIL",
-    "artifactSHA256": "869b44af85693a0ee2fee42fa7c6a3c288320b7bab05c994a746ee6973b326ab",
-    "runId": 38512859056,
-    "jobId": 115685235180
+    "artifactSHA256": "5fd75f0efc2cb1fc1cb1328fa077add416a791a5c304b9dd563c99a52485e029",
+    "runId": 38516409918,
+    "jobId": 115698882650
   },
   "manifestPath": "docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json",
   "files": [
     {
       "path": ".github/workflows/stocks-review.yml",
       "classification": "workflow-control",
-      "baseSHA256": "55b88fc7061601bac6c6d008bac5f497e6a094c2da692394a74cd08a6f46375c",
-      "headSHA256": "faa66447cd01588b1aadf6698af65eec2baea5a2dc520c1a41b1357b993e52cd"
+      "baseSHA256": "faa66447cd01588b1aadf6698af65eec2baea5a2dc520c1a41b1357b993e52cd",
+      "headSHA256": "0cba97eb7975745dd688fb833c70844137d8ea58293754d39e1d259ec8bf6f6d"
     },
     {
       "path": "docs/AI_HANDOFF.md",
       "classification": "append-only-handoff",
-      "baseSHA256": "9a3946eeac8e7f892d3ce8854481dfea2decbebe575b93382c102b8aa99da7f0",
-      "headSHA256": "60e63ce9b9ec1f32fbeab0e127d1629d8b1c5adbec1a86b71e9f64eec4e983c0"
+      "baseSHA256": "aa6ed61b1887deb4d94cbfdb9a273faef0986673268d975f25ff4bbc1cdc6458",
+      "headSHA256": "1bf5f77075104596763d1aaa655501dd83ab055cf3959c965bd291fbc8f2f9b3"
     },
     {
       "path": "docs/evidence/stocks-contract-proofs-20261014/backend-full/README.md",
       "classification": "documentation",
-      "baseSHA256": "e74f6e02c0eecbf4d9817624f80cf2a3753ba2b74181569b4fedb0ee1dd613a7",
-      "headSHA256": "07b710a22128c0327bcc2ec9440b43e80de790ad2f2101ab4aa2e18264a63ae4"
+      "baseSHA256": "07b710a22128c0327bcc2ec9440b43e80de790ad2f2101ab4aa2e18264a63ae4",
+      "headSHA256": "1f3db830a158f8ec90484b285120dda33db99254afc22a8dac0850a1228669db"
     },
     {
-      "path": "docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-result.json",
+      "path": "docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-a9d5-result.json",
       "classification": "raw-evidence",
       "baseSHA256": null,
-      "headSHA256": "285d96ebd8a0c779d7087443ddb7f91ae7360cbc24d870984f3e39db21fbed4a"
+      "headSHA256": "c41a3fb09895b5a2e2984eff6d17988eff61e40528570bfdfb0185df66593d0f"
     },
     {
-      "path": "docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-review.json",
+      "path": "docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-a9d5-review.json",
       "classification": "raw-evidence",
       "baseSHA256": null,
-      "headSHA256": "6fb0849ae9303dd5eca6baff986f75ca6b54146fcb2ab5997a3a180da9933341"
+      "headSHA256": "c4921b5bc44e12785324facea2f472c292d3f57ee2c88ac1454825a2816d9d4f"
     },
     {
       "path": "scripts/qa-backend-full-admission.cjs",
       "classification": "admission-control",
-      "baseSHA256": "6af8599e410484ff9b4cf6d14463f0d6533d25abe425f14466c17e85b13d76d5",
-      "headSHA256": "376f69ead06bb4d139284554cb6cbe99cf41ec96797c1c438fd80b98511cfd78"
+      "baseSHA256": "376f69ead06bb4d139284554cb6cbe99cf41ec96797c1c438fd80b98511cfd78",
+      "headSHA256": "5ba694239d77b9967855b7392aad26da99b6cdedc5e5a3b14cdc05562bfbdc23"
     },
     {
       "path": "scripts/qa-backend-full-admission.test.cjs",
       "classification": "admission-control",
-      "baseSHA256": "e4965105691ef2b306403ac34401b1b4d8d95737940f071643a06b694372f727",
-      "headSHA256": "24c7107b5dd24e379bfa752999504667c8d179b99fa68ec16ec725abef491c80"
+      "baseSHA256": "24c7107b5dd24e379bfa752999504667c8d179b99fa68ec16ec725abef491c80",
+      "headSHA256": "ff53ded76c0b1f65784e9bf6fa74eb3c138f9a4808444dff660e4f6c2f9d21ce"
     },
     {
       "path": "services/stocks/auth-http-fixture-512/README.md",
       "classification": "documentation",
-      "baseSHA256": "f09fef27a6a1cade41355af38fce1bb668d3940cab00e963774f56404a62038e",
-      "headSHA256": "e8964e75ed9138e1b68e6869de45a3b7429a839b8b9c8c3d00b8695aa0b1edd6"
+      "baseSHA256": "e8964e75ed9138e1b68e6869de45a3b7429a839b8b9c8c3d00b8695aa0b1edd6",
+      "headSHA256": "18cc548e461e05527230b8a58064427769cd8a8b92cd2bcf0d3c6c9b57f57d48"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/authority-entry.cjs",
+      "classification": "auth-fixture",
+      "baseSHA256": "94e6ddc2d13cef5ea1fccaf1c5f846430309e4aa6ad2dd44abe6471fe7aa7743",
+      "headSHA256": "46916dc4a7339e39df1e4b862f556b873dcef017f0414f53fe5db027b00e20f7"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/authority.test.cjs",
+      "classification": "auth-fixture",
+      "baseSHA256": "24e8d8926fdcbb2623a19e13c4204cb60c1b7f61855866331d53ba154cce2ac9",
+      "headSHA256": "008593327bedcdd723f2ddcb4f2e31df405d086841699fc84496a753911885dd"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/durability-observer.cjs",
+      "classification": "auth-fixture",
+      "baseSHA256": null,
+      "headSHA256": "0f4e1732d56e98acb0faa575a028b7dcca007b6e20753682cfb80bf97f8b9dc1"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/durability-observer.test.cjs",
+      "classification": "auth-fixture",
+      "baseSHA256": null,
+      "headSHA256": "11c3be082b44b261ad516f7d775990a858ce9b8a8238c223d3ee19f3c81c7ad9"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/fixture.test.mjs",
+      "classification": "auth-fixture",
+      "baseSHA256": "d4587648427dd042351042822cee8a74a999890d122fccb96b62174619a8bcf7",
+      "headSHA256": "a655816125076f533fb1a1cb8f2c1c2696a2ec9d327ca650d8bd2d39e6144620"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/launch-policy.json",
+      "classification": "auth-fixture",
+      "baseSHA256": null,
+      "headSHA256": "0bc78b33f47370efbb289b820198d01ec63c402c906a4652c897922aaf7b70f7"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/launcher.mjs",
+      "classification": "auth-fixture",
+      "baseSHA256": null,
+      "headSHA256": "3470300b0dc2d48e985e1356d82796bb1b6e1f1043404ff9fdaf755589c1d78b"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/launcher.test.mjs",
+      "classification": "auth-fixture",
+      "baseSHA256": null,
+      "headSHA256": "646015af847e462edefbfbd4370f760f1c7ad5a8b7971530bde94b0ec4fa3fd3"
     },
     {
       "path": "services/stocks/auth-http-fixture-512/prepare.mjs",
       "classification": "preparation-only",
-      "baseSHA256": null,
-      "headSHA256": "2dec9b44312551eee996438747c5dcb6f2a8ccefda042dc052831a10169e81d8"
+      "baseSHA256": "2dec9b44312551eee996438747c5dcb6f2a8ccefda042dc052831a10169e81d8",
+      "headSHA256": "6665baa7510659f8245d69be9ecbc636f33e09f15f00ff89abf0deb0b5f64cfb"
     },
     {
       "path": "services/stocks/auth-http-fixture-512/prepare.test.mjs",
       "classification": "preparation-only",
-      "baseSHA256": null,
-      "headSHA256": "14226d80c0524ba4705b224981269667e21d0ff762d24ce53e8ac1cc9f4e9f76"
+      "baseSHA256": "14226d80c0524ba4705b224981269667e21d0ff762d24ce53e8ac1cc9f4e9f76",
+      "headSHA256": "7810eb0c9964d92597e1ab32ee3e4262330d9fe2645e7051513b1d701f83bb0a"
+    },
+    {
+      "path": "services/stocks/auth-http-fixture-512/run.mjs",
+      "classification": "auth-fixture",
+      "baseSHA256": "a531546e69822998c17da0a738ec0d41de5b1156bd3eee5e9ff2e61df4c235f2",
+      "headSHA256": "842c1c87f32fcf00ee4dc0ccfef049b0bc74b00c0e5c0cfef3fdd4517da90218"
     }
   ]
 }

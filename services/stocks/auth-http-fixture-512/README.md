@@ -1,6 +1,6 @@
 # Compiled-auth HTTP diagnostic for PR512
 
-**Review implementation, NOT LAUNCH READY. No production endpoint or capacity acceptance is created here.** The existing targeted HTTP workload and its recorded failures remain unchanged. This fixture has no workflow that starts its workload automatically.
+**Finite CI diagnostic; no production endpoint or capacity acceptance is created here.** The existing targeted HTTP workload and its recorded failures remain unchanged. A separate serial job can invoke the explicit launcher only after same-head preparation and exact source, policy, image, seed and resource admission. A preparation PASS alone does not authorize execution or establish capacity.
 
 The current verified baseline (`03bdc89fa802e958b80d85a8add8a952f522b890`) passes the finite principal contract, isolated Stocks and frontend tests. It fails full backend and the strict browser prerequisite. Historical 20/50-user capacity and crypto coexistence criteria remain unmet. Cheap fixture guards cannot clear those release gates.
 
@@ -18,7 +18,7 @@ The only account operations are registration and state reads for 50 disposable p
 
 Three paired repeats use P/C, C/P, P/C order. Cohorts rotate 5/20/50, 50/5/20, 20/50/5. Each cohort has three waves; the next starts only after all requests terminate and all handler, authority and account work drains. Both sets of 52 direct/resolver contract requests must pass before either timed variant in each pair. Each timed variant also passes 17 gateway safety requests.
 
-The paired prechecks use a separately measured idle namespace keeper and sequential fresh P/C authorities. The keeper opens neither Stocks nor SQLite, has the original service resource limits, adds no HTTP requests, and is removed before timed variants. Its cost is retained as prerequisite overhead. Each timed variant then gets a fresh service, authority/session map and closed seed copy.
+The paired prechecks use six additional fresh seeded service lifecycles (P/C for each pair), each with its own authority, closed seed copy and observed account-worker connection. Both prechecks complete before either timed variant. They retain exactly 52 authority/resolver cases per variant, 104 per pair; no health, provider or other HTTP cases are added. Their whole-initialization wall/cgroup costs and cleanup are reported separately, within the original overall time cap. Each of the six timed variants subsequently gets a different fresh service, authority/session map and seed copy.
 
 - Ordinary attempts: 225 per variant run, **1,350 total**, three-second deadline, no retries.
 - Separate scheduled abort attempts: 5 per run, **30 total**, scheduled at 250 ms. Completion before an abort is reported honestly; no actual admitted abort means coverage is not proven.
@@ -29,7 +29,7 @@ This is a finite closed-loop diagnostic, not fixed-rate capacity or 20/50 active
 
 ## Safety and freeze requirements
 
-The runner requires Linux, reviewed exact source/build/lock/native-library hashes, an immutable official image reference, and a reviewed launch manifest. These inputs are not supplied by this directory. A marker or locally invented manifest is not approval.
+The runner requires Linux, reviewed exact source/build/lock/native-library hashes, an immutable official image reference, and a reviewed launch manifest. `launch-policy.json` pins the canonical Git inventory and observed immutable dependency/native baseline. The independently reviewed workflow pins the policy SHA256 literal and supplies same-run/head GitHub artifact receipts. Review metadata is not a cryptographic signature or a substitute for source review.
 
 Before execution, independently verify the compiled dependency closure, exact seed principal IDs and balances, container identity/environment, no-network namespace, non-root identity, read-only filesystem, capabilities, quotas and actual backing-device I/O limits. Only owned service/authority cgroup subtrees may be mounted read-only for measurement; no whole-host cgroup mount is allowed. Fixture tokens stay in a private file and private IPC; headers, tokens and profile bodies are excluded from evidence.
 
@@ -37,9 +37,21 @@ The source and pure-guard review must also prove monotonic deadline classificati
 
 No broker, provider quote/history endpoint, real database, production account, server, collector or deployment is accessed. MOEX/SBER remain blocked and commercial redistribution rights are unresolved. The fixture must not be used to waive those release blockers.
 
-## Cheap checks only
+## Finite launcher and actual durability observation
 
-`node --test services/stocks/auth-http-fixture-512/authority.test.cjs services/stocks/auth-http-fixture-512/fixture.test.mjs`
+The launcher consumes one immutable image and one closed seed from the separate preparation job. It never builds, installs dependencies or seeds again. It hashes the exact GitHub ZIPs and fixed members, reconstructs canonical source from clean Git plus the same-head compiled-stage bytes, and verifies the entire prepared context before the first Docker call. Runtime Node 24.21.0 and compiler Node 22.23.3 remain distinct. Any provenance drift, unknown source or incomplete image/native inventory stops execution.
+
+Three exact review/control files are excluded from the mutually dependent policy inventory: the policy itself, `stocks-review.yml`, and the backend admission review manifest. Their final canonical bytes are independently reviewed before push. The workflow contains executable inline orchestration and is a reviewed trust-root exception, not a policy-pinned file. The executable admission controller and every runtime/QA source file remain pinned; the scheduling manifest is never a runtime configuration input.
+
+The consumer derives its own backing device, UID and cgroups. Preparation's idle resource proof is not reused as proof for another runner. Before any functional, health or timed HTTP request, actual service/authority limits and a fresh connection proof must pass. The fixed Node preload observes the original SQLite configuration once, restores its exact descriptor, and reads `synchronous=2` and `journal_mode=delete` on that same worker connection. It does not alter account logic. A private proof binds the run, variant, service container, image, source/context, runtime and closed seed. Missing, duplicate, mismatched or failure proofs stop admission.
+
+Whole-init wall/cgroup accounting begins before stock initialization and includes proof writing/fsync and validation. It is not presented as isolated observer CPU or fsync cost. Original timed request windows, quotas, deadlines, request counts and all trading rules remain unchanged. PRAGMA/schema setup calls are distinct from ledger writes; every instance must close with the same seed and zero ledger/transaction mutations.
+
+The direct `run.mjs` CLI remains disabled. Only `launcher.mjs --launch <absolute-config>` may call its exported entry after the reviewed checks. It invokes the three pairs once, with no automatic retry or fallback, preserves safety FAIL over cleanup/reporting errors, and retains INCOMPLETE for missing evidence. Strict browser, original capacity/coexistence, full-backend and data-rights failures remain independent release blockers.
+
+## Pure checks
+
+`node --test services/stocks/auth-http-fixture-512/authority.test.cjs services/stocks/auth-http-fixture-512/fixture.test.mjs services/stocks/auth-http-fixture-512/prepare.test.mjs services/stocks/auth-http-fixture-512/durability-observer.test.cjs services/stocks/auth-http-fixture-512/launcher.test.mjs`
 
 These checks exercise pure guards and disposable local fixtures; they do not start the workload, Docker, a compiled authority or an HTTP trading session. Any future load result must carry its own exact source/image/resource manifest and raw failures. Prior evidence is retained separately.
 

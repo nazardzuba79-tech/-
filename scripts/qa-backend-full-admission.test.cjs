@@ -37,6 +37,9 @@ test('known preparation and selector/workflow controls require exact individuall
   for (const [file, classification] of [
     ['services/stocks/auth-http-fixture-512/prepare.mjs', 'preparation-only'],
     ['services/stocks/auth-http-fixture-512/prepare.test.mjs', 'preparation-only'],
+    ...['run.mjs', 'fixture.test.mjs', 'authority-entry.cjs', 'authority.test.cjs', 'durability-observer.cjs',
+      'durability-observer.test.cjs', 'launcher.mjs', 'launcher.test.mjs', 'launch-policy.json']
+      .map(file => ['services/stocks/auth-http-fixture-512/' + file, 'auth-fixture']),
     ['scripts/qa-backend-full-admission.cjs', 'admission-control'],
     ['scripts/qa-backend-full-admission.test.cjs', 'admission-control'],
     ['.github/workflows/stocks-review.yml', 'workflow-control'],
@@ -46,7 +49,7 @@ test('known preparation and selector/workflow controls require exact individuall
   }
 });
 test('runtime/test/lock/schema/compiler/build and unknown paths always demand full even if claimed reviewed', () => {
-  for (const file of ['services/stocks/auth-http-fixture-512/authority.cjs', 'services/stocks/auth-http-fixture-512/run.mjs', 'services/stocks/auth-http-fixture-512/plan.mjs', 'src/index.ts', 'src/foo.test.ts', 'frontend/src/App.tsx', 'services/stocks/server.mjs', 'package.json', 'package-lock.json', 'frontend/package-lock.json', 'prisma/schema.prisma', 'tsconfig.json', 'jest.config.js', 'scripts/qa-backend-full-offline.Dockerfile', 'Dockerfile', 'scripts/unreviewed.cjs', 'docs/unreviewed.md', '.github/workflows/other.yml']) {
+  for (const file of ['services/stocks/auth-http-fixture-512/authority.cjs', 'services/stocks/auth-http-fixture-512/unreviewed.mjs', 'services/stocks/auth-http-fixture-512/plan.mjs', 'src/index.ts', 'src/foo.test.ts', 'frontend/src/App.tsx', 'services/stocks/server.mjs', 'services/stocks-global/accounts.mjs', 'services/stocks-global/account-worker-runtime.mjs', 'package.json', 'package-lock.json', 'frontend/package-lock.json', 'prisma/schema.prisma', 'tsconfig.json', 'jest.config.js', 'scripts/qa-backend-full-offline.Dockerfile', 'Dockerfile', 'scripts/unreviewed.cjs', 'docs/unreviewed.md', '.github/workflows/other.yml']) {
     const r = decide(candidate([change(file, 'documentation')]));
     assert.equal(r.mode, 'full', file); assert.equal(r.reason, 'UNREVIEWABLE_OR_PROTECTED_PATH', file);
   }

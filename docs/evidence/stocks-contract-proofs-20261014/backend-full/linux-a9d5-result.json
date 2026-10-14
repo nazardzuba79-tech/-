@@ -1,0 +1,50 @@
+{
+  "sourceSHA": "a9d5b9bd85fe96e8dcb31ec7a6b315f9730d2900",
+  "startedAt": "2026-10-14T05:34:30.165Z",
+  "status": "FAIL",
+  "originalCriteriaUnchanged": true,
+  "databaseAcceptance": "NOT_RUN",
+  "capacityClaim": false,
+  "attachResult": {
+    "code": 1,
+    "signal": null
+  },
+  "containerExitCode": 1,
+  "oomKilled": false,
+  "timedOut": false,
+  "logOverflow": false,
+  "logBytes": 6586140,
+  "counts": {
+    "numTotalTestSuites": 251,
+    "numPassedTestSuites": 234,
+    "numFailedTestSuites": 5,
+    "numPendingTestSuites": 12,
+    "numTotalTests": 3714,
+    "numPassedTests": 3581,
+    "numFailedTests": 9,
+    "numPendingTests": 124,
+    "numTodoTests": 0
+  },
+  "skippedSuites": [
+    "src/futures/__tests__/futuresBookLock.pg.test.ts",
+    "src/private-trading/__tests__/nativeDemo.integration.test.ts",
+    "src/__tests__/serverWatcherSleep.pg.test.ts",
+    "src/private-trading/__tests__/nativeCommandAcceptance.integration.test.ts",
+    "src/private-trading/__tests__/nativeLivePostgres.test.ts",
+    "src/banking/__tests__/bankingReferral.integration.test.ts",
+    "src/services/testMarkets/__tests__/nrxSpot.pg.test.ts",
+    "src/services/listings/__tests__/ownerAllocation.pg.test.ts",
+    "src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts",
+    "src/api/routes/__tests__/contactPolicy.pg.test.ts",
+    "src/api/routes/__tests__/kycEdgePostgres.test.ts",
+    "src/api/routes/__tests__/adminPasswordVault.pg.test.ts"
+  ],
+  "partiallySkippedSuites": [
+    {
+      "name": "src/private-trading/__tests__/service.integration.test.ts",
+      "pendingTests": 13
+    }
+  ],
+  "cleanupErrors": [],
+  "finishedAt": "2026-10-14T05:49:47.579Z"
+}

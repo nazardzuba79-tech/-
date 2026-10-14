@@ -66,6 +66,17 @@ function safeCommandError(error) {
   }
   return result;
 }
+async function drainAuthority(authority, remainingMs, { now = () => performance.now(), pause = ms => new Promise(resolve => setTimeout(resolve, ms)) } = {}) {
+  assert.ok(Number.isInteger(remainingMs) && remainingMs > 0 && remainingMs <= 10000, 'FIXTURE_DRAIN_BUDGET_INVALID');
+  const began = now(), end = began + remainingMs;
+  while (true) {
+    assert.ok(now() < end, 'FIXTURE_DRAIN_TIMEOUT'); const snapshot = authority.snapshot(), observed = now();
+    assert.ok(observed < end, 'FIXTURE_DRAIN_TIMEOUT');
+    if (snapshot.active === 0 && snapshot.settlement.pending.handlers === 0 && snapshot.settlement.pending.operations === 0)
+      return { quiescent: true, elapsedMs: observed - began, snapshot };
+    await pause(Math.min(25, Math.max(1, Math.ceil(end - now()))));
+  }
+}
 async function main() {
   safeEnvironment(); assert.deepEqual(process.argv.slice(2), ['--stdio'], 'FIXTURE_STDIO_INVOCATION_REQUIRED');
   let authority, importedBoundary, stopping = false, commands = 0, buffer = '', busy = false;
@@ -93,16 +104,10 @@ async function main() {
     if (op === 'mutate') {
       assert.ok(Object.keys(args).every(k => ['action', 'subject', 'enabled'].includes(k))); return authority.control(args);
     }
+    if (op === 'drain') { ownKeys(args, ['remainingMs']); return drainAuthority(authority, args.remainingMs); }
     ownKeys(args, []);
     if (op === 'functional') return authority.runContractCases();
     if (op === 'audit') return { ...authority.snapshot(), boundary: importedBoundary.snapshot() };
-    if (op === 'drain') {
-      const began = performance.now();
-      const drained = () => { const s = authority.snapshot(); return s.active === 0 && s.settlement.pending.handlers === 0 && s.settlement.pending.operations === 0; };
-      while (!drained() && performance.now() - began < 10000) await new Promise(resolve => setTimeout(resolve, 25));
-      assert.ok(drained(), 'FIXTURE_DRAIN_TIMEOUT');
-      return { quiescent: true, elapsedMs: performance.now() - began, snapshot: authority.snapshot() };
-    }
     if (op === 'stop') { stopping = true; const result = await authority.close(); process.stdin.pause(); return result; }
     throw Error('FIXTURE_COMMAND_INVALID');
   }
@@ -138,5 +143,5 @@ async function main() {
   });
   process.stdin.on('end', () => { if (!stopping) { process.exitCode = 1; process.stderr.write('FIXTURE_UNEXPECTED_IPC_EOF\n'); } });
 }
-module.exports = { assertEnvelope, assertInitArgs, safeCommandError, boundary };
+module.exports = { assertEnvelope, assertInitArgs, safeCommandError, drainAuthority, boundary };
 if (require.main === module) main().catch(error => { process.stderr.write(/^FIXTURE_[A-Z_]+$/.test(error.message || '') ? error.message + '\n' : 'FIXTURE_START_FAILED\n'); process.exitCode = 1; });

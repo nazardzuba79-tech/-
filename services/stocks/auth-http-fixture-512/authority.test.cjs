@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
 const { createFixtureState, SUBJECTS, maxAvatar, writePrivateCredentials } = require('./authority.cjs');
-const { assertEnvelope } = require('./authority-entry.cjs');
+const { assertEnvelope, drainAuthority } = require('./authority-entry.cjs');
 const time = 1791936000000;
 const hash = value => createHash('sha256').update(value).digest('hex');
 const fixture = mode => createFixtureState({ mode, startedAtMs: time, contactEmailHash: hash });
@@ -154,4 +154,26 @@ test('explicit auth contract mismatch keeps a safe FAIL code while transport and
   assert.equal(safeCommandError(Error('FIXTURE_SOURCE_PROOF_FAILED')).code, 'FIXTURE_SOURCE_PROOF_FAILED');
   tagged.fixtureContract.authorization = 'must not be retained';
   assert.equal(Object.hasOwn(safeCommandError(tagged).contract, 'authorization'), false);
+});
+
+test('authority drain uses only caller remaining budget and waits for actual handler and operation tails', async () => {
+  let clock = 0, calls = 0;
+  const snapshots = [
+    { active: 0, settlement: { pending: { handlers: 1, operations: 0 } } },
+    { active: 0, settlement: { pending: { handlers: 0, operations: 1 } } },
+    { active: 0, settlement: { pending: { handlers: 0, operations: 0 } } },
+  ];
+  const result = await drainAuthority({ snapshot: () => snapshots[calls++] }, 80,
+    { now: () => clock, pause: async ms => { clock += ms; } });
+  assert.equal(result.quiescent, true); assert.equal(result.elapsedMs, 50); assert.equal(calls, 3);
+  for (const invalid of [undefined, 0, -1, 10001, 1.5]) await assert.rejects(drainAuthority({}, invalid), /FIXTURE_DRAIN_BUDGET_INVALID/);
+});
+
+test('authority rejects quiescence observed after the deadline including delayed timer delivery', async () => {
+  let clock = 0; const ready = { active: 0, settlement: { pending: { handlers: 0, operations: 0 } } };
+  await assert.rejects(drainAuthority({ snapshot: () => { clock = 80; return ready; } }, 80, { now: () => clock }), /FIXTURE_DRAIN_TIMEOUT/);
+  clock = 0; let calls = 0;
+  await assert.rejects(drainAuthority({ snapshot: () => { calls++; return calls === 1 ? { active: 1, settlement: ready.settlement } : ready; } }, 80,
+    { now: () => clock, pause: async () => { clock = 81; } }), /FIXTURE_DRAIN_TIMEOUT/);
+  assert.equal(calls, 1, 'late callback cannot return a fresh successful snapshot');
 });

@@ -67,7 +67,8 @@ export function sourceAllowed(p) {
     'services/stocks-simulator/engine.mjs'].includes(p)
     || (p.startsWith('src/') && p.endsWith('.ts') && !p.endsWith('.test.ts'))
     || /^services\/stocks-global\/[A-Za-z0-9_-]+\.mjs$/.test(p)
-    || [ 'authority.cjs', 'authority-entry.cjs', 'plan.mjs', 'run.mjs', 'probe.mjs', 'stock-child.mjs', 'prepare.mjs', 'Dockerfile' ].some(n => p === FIXTURE + n);
+    || [ 'authority.cjs', 'authority-entry.cjs', 'plan.mjs', 'run.mjs', 'probe.mjs', 'stock-child.mjs', 'prepare.mjs',
+      'durability-observer.cjs', 'launcher.mjs', 'Dockerfile' ].some(n => p === FIXTURE + n);
 }
 export function validateLock(lock) {
   assert.ok([2, 3].includes(lock.lockfileVersion) && lock.packages);
@@ -319,10 +320,15 @@ export async function prepare(config, { root = ROOT } = {}) {
     assert.equal(sha(regular(path.join(context, 'package-lock.json'))), build.packageLockSha256);
     for (const [p, bytes] of [...compiled, ['compiled-proof.json', proofBytes], ['build.log', log]]) { write(path.join(context, p), bytes, 0o644); sourceRows.push({ path: p, bytes: bytes.length, sha256: sha(bytes) }); }
     sourceRows.sort((a, b) => a.path.localeCompare(b.path));
+    const observerSource = sourceRows.find(row => row.path === FIXTURE + 'durability-observer.cjs');
+    assert.ok(observerSource && sourceRows.some(row => row.path === FIXTURE + 'launcher.mjs'), 'PREPARE_OBSERVER_LAUNCHER_SOURCE_MISSING');
     const contextSha256 = sha(JSON.stringify(sourceRows));
     const sourceManifest = { schema: PREPARE_SCHEMA, sourceSha: c.sourceSha, sourceTree: git(['rev-parse', c.sourceSha + '^{tree}']), files: sourceRows, contextSha256 };
     const contextBytes = Buffer.from(JSON.stringify(sourceManifest, null, 2) + '\n'); assert.ok(contextBytes.length < 1024 * 1024);
     write(path.join(context, 'runtime-source-manifest.json'), contextBytes, 0o644); report.contextSha256 = contextSha256;
+    report.durabilityObserver = { source: observerSource, includedInCanonicalContext: true,
+      executedDuringPreparation: false, actualWorkerConnectionPragma: 'UNMEASURED',
+      requiredAtLaunch: 'fresh per-service private binding and proof for both P/C precheck and timed lifecycles; worker-ready plus matching proof and no failure marker' };
     // umask077 protects all private evidence. Normalize only this fresh public
     // build context, never original source, extracted artifact or host tooling.
     const normalizePublic = dir => {

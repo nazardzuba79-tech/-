@@ -26,10 +26,12 @@ test('canonical context admits only exact QA/runtime source families and rejects
   for (const p of ['src/api/routes/account.ts', 'src/types/shared.d.ts', 'package-lock.json', 'frontend/package-lock.json',
     'services/stocks-global/account-worker.mjs', 'services/stocks-simulator/engine.mjs',
     'services/stocks/targeted-http-512/plan.mjs',
-    'scripts/qa-stocks-principal-projection.cjs', 'services/stocks/auth-http-fixture-512/prepare.mjs']) assert.equal(sourceAllowed(p), true, p);
+    'scripts/qa-stocks-principal-projection.cjs', 'services/stocks/auth-http-fixture-512/prepare.mjs',
+    'services/stocks/auth-http-fixture-512/durability-observer.cjs', 'services/stocks/auth-http-fixture-512/launcher.mjs']) assert.equal(sourceAllowed(p), true, p);
   for (const p of ['.env', '.env.production', '.git/config', '.npmrc', 'private/key.pem', 'accounts.sqlite',
     'src/a.test.ts', 'src/api/routes/account.js', 'node_modules/bcrypt/index.js',
-    'services/stocks/auth-http-fixture-512/prepare.test.mjs', 'scripts/qa-stocks-local-stage-recovery.cjs',
+    'services/stocks/auth-http-fixture-512/prepare.test.mjs', 'services/stocks/auth-http-fixture-512/durability-observer.test.cjs',
+    'services/stocks/auth-http-fixture-512/launcher.test.mjs', 'services/stocks/auth-http-fixture-512/observer-extra.cjs', 'scripts/qa-stocks-local-stage-recovery.cjs',
     'frontend/src/App.tsx', '../package.json', '/etc/passwd', 'C:/key', 'src/../../key.ts']) assert.equal(sourceAllowed(p), false, p);
   for (const p of ['x/../y', 'x//y', 'a\\b', '.env', 'private/db.sqlite']) assert.throws(() => safeRelative(p));
 });

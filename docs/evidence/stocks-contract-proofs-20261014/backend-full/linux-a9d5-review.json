@@ -1,0 +1,952 @@
+{
+  "schema": 1,
+  "auditStatus": "INTEGRITY_AND_RESULT_AUDIT_PASS",
+  "backendResult": "FAIL",
+  "head": "a9d5b9bd85fe96e8dcb31ec7a6b315f9730d2900",
+  "priorHead": "03bdc89fa802e958b80d85a8add8a952f522b890",
+  "artifact": {
+    "id": 11872862433,
+    "runId": 38516409918,
+    "zipBytes": 757612,
+    "zipSha256": "5fd75f0efc2cb1fc1cb1328fa077add416a791a5c304b9dd563c99a52485e029",
+    "entries": 21,
+    "resultSha256": "c41a3fb09895b5a2e2984eff6d17988eff61e40528570bfdfb0185df66593d0f",
+    "jestSha256": "9bee3895ba524386b9212083e52a7851c692943297390e724240df08c05fde0a"
+  },
+  "checkCounts": {
+    "total": 109,
+    "passed": 109,
+    "failed": 0
+  },
+  "counts": {
+    "before": {
+      "numTotalTestSuites": 249,
+      "numPassedTestSuites": 232,
+      "numFailedTestSuites": 5,
+      "numPendingTestSuites": 12,
+      "numTotalTests": 3708,
+      "numPassedTests": 3575,
+      "numFailedTests": 9,
+      "numPendingTests": 124,
+      "numTodoTests": 0
+    },
+    "after": {
+      "numTotalTestSuites": 251,
+      "numPassedTestSuites": 234,
+      "numFailedTestSuites": 5,
+      "numPendingTestSuites": 12,
+      "numTotalTests": 3714,
+      "numPassedTests": 3581,
+      "numFailedTests": 9,
+      "numPendingTests": 124,
+      "numTodoTests": 0
+    }
+  },
+  "build": {
+    "status": "PASS",
+    "compilerVersion": "5.9.3",
+    "outputs": 562,
+    "jsOutputs": 280,
+    "sourceMaps": 280,
+    "jsonAssets": 2,
+    "nativeInputs": [
+      "dist/private-trading/native/engine.js",
+      "dist/private-trading/native/store.js",
+      "dist/private-trading/native/liveProjection.js",
+      "dist/private-trading/native/historyPage.js"
+    ],
+    "sourceUnchanged": true,
+    "proofSha256": "7a0c72a8fcfda96c8763ccfb30c355e26839f07a9364e04022e6fb0e7b083a1a"
+  },
+  "source": {
+    "files": 4811,
+    "bytes": 362071878,
+    "gitObjectBindingsVerified": 4811,
+    "criticalSources": [
+      {
+        "path": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "sha256": "a5142f3c20a18d724906e4ea5a189aa461c10a68ac225836d563918ebe167136",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts",
+        "sha256": "0017d32605e028b42ed9bd6a2c5b61ef8332e4b21b16be399c4acca41fa86801",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/private-trading/__tests__/nativeReviewHarness.test.ts",
+        "sha256": "53063dcef2a91230afd6787e984a3180dcd93b9473d751298447ddbe32d2c094",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/services/__tests__/CfdMarketDataService.test.ts",
+        "sha256": "514a90b8d6f898cadec4c05686509ed0c975d12b7427c7d22a051d208e7246d3",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+        "sha256": "06f561f70e76ad0069f0221b3f44fcd11aeb1008b543015ce39f604a046664a3",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+        "sha256": "908fecb6c369a06aa54b1ef5cf97d4c448f056de909896790031810afae6fcac",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/services/CfdMarketDataService.ts",
+        "sha256": "5051f747aae28d0a6953ddf5a96a0e3c619ba17cb2dc9e68ca3b50aa13c82e03",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/services/marketData/ProviderHealth.ts",
+        "sha256": "7a0dba9430ef95715bce4ff6b587ad57d680a2af9f6bbf72ba023be5f7f06471",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/index.ts",
+        "sha256": "e44f41653a39dd53b6304002e1fa8ef11c2f458837157da0d3a4a3788993e756",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/services/copyTrading/canonical/kseniaReview.ts",
+        "sha256": "08657a73d154b3bdb5849b22f46bffa4c6d738ec2d99df0583fef49cb1478eba",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/services/copyTrading/canonical/reviewPerformanceV8.ts",
+        "sha256": "30fae740432aecc27d4e939ef224c60023bf5942e91fde3163c329d61d6d0a41",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "scripts/native-demo-review-repository.cjs",
+        "sha256": "daede0bcd62078de64b387227db61bf5541b274bcf0773d7d787c62cfd3c6512",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "src/private-trading/native/engine.ts",
+        "sha256": "17149bedd631205999571b04655f3b0b23d619675f26e48defca8beee7776d83",
+        "unchangedFrom03bd": true
+      },
+      {
+        "path": "scripts/qa-backend-full-offline.cjs",
+        "sha256": "f31fd67c6adda486841fe1dbc5ff2f78765dc3e441f85a8fae4e2e1d6414d297",
+        "unchangedFrom03bd": null
+      },
+      {
+        "path": "scripts/qa-backend-full-offline.test.cjs",
+        "sha256": "79a45737e49253c4f991f49c3aaf56f3be6f347503d634e9e03c0b71d69c7a27",
+        "unchangedFrom03bd": null
+      },
+      {
+        "path": "tsconfig.json",
+        "sha256": "27dca8bee4d9647f32f73fc4d938a57e4e79f180c58fd39de409706f1236eeb3",
+        "unchangedFrom03bd": null
+      },
+      {
+        "path": "package-lock.json",
+        "sha256": "2cb6d79adad11b0158d13d1041f01039bea7f059d38b6f7d62a0e2b5aa37352d",
+        "unchangedFrom03bd": null
+      },
+      {
+        "path": "frontend/package-lock.json",
+        "sha256": "94c0532d80390e27ceac5374aafe4899fe24f95b329f4a0a11eb556899f8c449",
+        "unchangedFrom03bd": null
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "sha256": "88568b821a480ac8858275b5f61253dd661cbd8804be5bfc2cbe1e37b70c663d",
+        "unchangedFrom03bd": null
+      }
+    ],
+    "all13FailureRelatedSourcesUnchanged": true,
+    "changedPaths": [
+      ".github/workflows/copy-trading-card-regression.yml",
+      ".github/workflows/stocks-review.yml",
+      "docs/AI_HANDOFF.md",
+      "docs/evidence/full-audit-20261013/cfd-sim-1440.png",
+      "docs/evidence/full-audit-20261013/chart-drawings-1440.png",
+      "docs/evidence/full-audit-20261013/chart-timeframes-1440.png",
+      "docs/evidence/full-audit-20261013/coverage-matrix.md",
+      "docs/evidence/full-audit-20261013/flow-account5.txt",
+      "docs/evidence/full-audit-20261013/flow-chart6.txt",
+      "docs/evidence/full-audit-20261013/flow-futures7.txt",
+      "docs/evidence/full-audit-20261013/flow-locales2.txt",
+      "docs/evidence/full-audit-20261013/flow-mobile2.txt",
+      "docs/evidence/full-audit-20261013/flow-sections4.txt",
+      "docs/evidence/full-audit-20261013/flow-spot2.txt",
+      "docs/evidence/full-audit-20261013/futures-position-tpsl-1440.png",
+      "docs/evidence/full-audit-20261013/guards-summary.txt",
+      "docs/evidence/full-audit-20261013/interactive-crawl-summary.txt",
+      "docs/evidence/full-audit-20261013/jest-summary.txt",
+      "docs/evidence/full-audit-20261013/markets-1440.png",
+      "docs/evidence/full-audit-20261013/phone-futures-orders-390.png",
+      "docs/evidence/full-audit-20261013/phone-futures-trade-390.png",
+      "docs/evidence/full-audit-20261013/phone-spot-trade-390.png",
+      "docs/evidence/full-audit-20261013/spot-1100-before-fold.png",
+      "docs/evidence/full-audit-20261013/zoom-crawl-summary.txt",
+      "docs/evidence/stocks-contract-proofs-20261014/backend-full/README.md",
+      "docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json",
+      "docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-result.json",
+      "docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-review.json",
+      "docs/qa/full-audit-20261013.md",
+      "docs/qa/limit-close/dialog-long-1440.png",
+      "docs/qa/limit-close/dialog-long-1600.png",
+      "docs/qa/limit-close/dialog-long-390.png",
+      "docs/qa/limit-close/dialog-short-1440.png",
+      "docs/qa/limit-close/dialog-short-1600.png",
+      "docs/qa/limit-close/dialog-short-390.png",
+      "docs/qa/limit-close/filled-long-1440.png",
+      "docs/qa/limit-close/filled-long-1600.png",
+      "docs/qa/limit-close/filled-long-390.png",
+      "docs/qa/limit-close/filled-short-1440.png",
+      "docs/qa/limit-close/filled-short-1600.png",
+      "docs/qa/limit-close/filled-short-390.png",
+      "docs/qa/limit-close/report.json",
+      "docs/qa/limit-close/resting-long-1440.png",
+      "docs/qa/limit-close/resting-long-1600.png",
+      "docs/qa/limit-close/resting-long-390.png",
+      "docs/qa/limit-close/resting-short-1440.png",
+      "docs/qa/limit-close/resting-short-1600.png",
+      "docs/qa/limit-close/resting-short-390.png",
+      "docs/qa/spot-cfd-terminal/cfd-1366x768.png",
+      "docs/qa/spot-cfd-terminal/cfd-1440x900.png",
+      "docs/qa/spot-cfd-terminal/cfd-1600x900.png",
+      "docs/qa/spot-cfd-terminal/cfd-1920x1080.png",
+      "docs/qa/spot-cfd-terminal/cfd-320x740-trade.png",
+      "docs/qa/spot-cfd-terminal/cfd-320x740.png",
+      "docs/qa/spot-cfd-terminal/cfd-360x800-trade.png",
+      "docs/qa/spot-cfd-terminal/cfd-360x800.png",
+      "docs/qa/spot-cfd-terminal/cfd-390x844-trade.png",
+      "docs/qa/spot-cfd-terminal/cfd-390x844.png",
+      "docs/qa/spot-cfd-terminal/cfd-430x932-trade.png",
+      "docs/qa/spot-cfd-terminal/cfd-430x932.png",
+      "docs/qa/spot-cfd-terminal/futures-1366x768.png",
+      "docs/qa/spot-cfd-terminal/futures-1440x900.png",
+      "docs/qa/spot-cfd-terminal/futures-1600x900.png",
+      "docs/qa/spot-cfd-terminal/futures-1920x1080.png",
+      "docs/qa/spot-cfd-terminal/futures-320x740.png",
+      "docs/qa/spot-cfd-terminal/futures-360x800.png",
+      "docs/qa/spot-cfd-terminal/futures-390x844.png",
+      "docs/qa/spot-cfd-terminal/futures-430x932.png",
+      "docs/qa/spot-cfd-terminal/report.json",
+      "docs/qa/spot-cfd-terminal/spot-1366x768.png",
+      "docs/qa/spot-cfd-terminal/spot-1440x900.png",
+      "docs/qa/spot-cfd-terminal/spot-1600x900.png",
+      "docs/qa/spot-cfd-terminal/spot-1920x1080.png",
+      "docs/qa/spot-cfd-terminal/spot-320x740-trade.png",
+      "docs/qa/spot-cfd-terminal/spot-320x740.png",
+      "docs/qa/spot-cfd-terminal/spot-360x800-trade.png",
+      "docs/qa/spot-cfd-terminal/spot-360x800.png",
+      "docs/qa/spot-cfd-terminal/spot-390x844-trade.png",
+      "docs/qa/spot-cfd-terminal/spot-390x844.png",
+      "docs/qa/spot-cfd-terminal/spot-430x932-trade.png",
+      "docs/qa/spot-cfd-terminal/spot-430x932.png",
+      "frontend/src/components/DepositModal.tsx",
+      "frontend/src/components/FuturesLimitCloseDialog.tsx",
+      "frontend/src/components/FuturesPositionsPanel.tsx",
+      "frontend/src/components/OpenOrdersPanel.tsx",
+      "frontend/src/components/PriceChart.tsx",
+      "frontend/src/components/spotOrderPresentation.ts",
+      "frontend/src/index.css",
+      "frontend/src/lib/__tests__/cardHeroLinksReachable.test.ts",
+      "frontend/src/lib/__tests__/clipboardCopy.test.ts",
+      "frontend/src/lib/__tests__/customerFacingErrors.test.ts",
+      "frontend/src/lib/__tests__/futuresLimitClosePrecision.test.ts",
+      "frontend/src/lib/__tests__/futuresOrderErrors.test.ts",
+      "frontend/src/lib/__tests__/futuresProtectionVisibleOnDesktop.test.ts",
+      "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+      "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+      "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+      "frontend/src/lib/__tests__/i18nLanguageRace.test.ts",
+      "frontend/src/lib/__tests__/indicatorsReference.test.ts",
+      "frontend/src/lib/__tests__/nativeAccessVerdict.test.ts",
+      "frontend/src/lib/__tests__/nativeLiveHook.test.ts",
+      "frontend/src/lib/__tests__/priceChartMarketOrders.test.ts",
+      "frontend/src/lib/__tests__/spotLaptopMarketList.test.ts",
+      "frontend/src/lib/__tests__/spotOrdersPresentation.test.ts",
+      "frontend/src/lib/__tests__/spotOrdersReadCoalescing.test.ts",
+      "frontend/src/lib/__tests__/terminalAccountPanel.test.ts",
+      "frontend/src/lib/api.ts",
+      "frontend/src/lib/clipboard.ts",
+      "frontend/src/lib/customerError.ts",
+      "frontend/src/lib/futuresLimitClose.ts",
+      "frontend/src/lib/futuresOrderErrors.ts",
+      "frontend/src/lib/i18n.tsx",
+      "frontend/src/lib/i18n/locales/en.ts",
+      "frontend/src/lib/i18n/locales/es.ts",
+      "frontend/src/lib/i18n/locales/hi.ts",
+      "frontend/src/lib/i18n/locales/ja.ts",
+      "frontend/src/lib/i18n/locales/ko.ts",
+      "frontend/src/lib/i18n/locales/ru.ts",
+      "frontend/src/lib/i18n/locales/zh.ts",
+      "frontend/src/lib/nativeAccessVerdict.ts",
+      "frontend/src/lib/readCoalescer.ts",
+      "frontend/src/pages/FuturesPage.tsx",
+      "frontend/src/pages/TradePage.tsx",
+      "frontend/src/pages/markets-bolt/MarketsAnalyticsEmbed.css",
+      "frontend/src/pages/private-trading/useNativeDemo.tsx",
+      "frontend/src/pages/settings-arctic/AccountOverview.tsx",
+      "frontend/src/pages/settings-arctic/ApiSection.tsx",
+      "frontend/src/pages/settings-arctic/ReferralSection.tsx",
+      "frontend/src/pages/trade-terminal/SpotCfdParity.css",
+      "scripts/qa-backend-full-admission.cjs",
+      "scripts/qa-backend-full-admission.test.cjs",
+      "scripts/qa-backend-full-offline.cjs",
+      "scripts/qa-backend-full-offline.test.cjs",
+      "services/stocks/auth-http-fixture-512/README.md",
+      "services/stocks/auth-http-fixture-512/prepare.mjs",
+      "services/stocks/auth-http-fixture-512/prepare.test.mjs",
+      "src/api/routes/__tests__/futuresRefusalCodes.test.ts",
+      "src/api/routes/futures.ts",
+      "src/futures/__tests__/refusalCode.test.ts",
+      "src/futures/refusalCode.ts"
+    ]
+  },
+  "skipInventoryReportingFix": {
+    "oldReportedSkipped": [
+      "src/futures/__tests__/futuresBookLock.pg.test.ts",
+      "src/private-trading/__tests__/nativeDemo.integration.test.ts",
+      "src/__tests__/serverWatcherSleep.pg.test.ts",
+      "src/private-trading/__tests__/nativeCommandAcceptance.integration.test.ts",
+      "src/private-trading/__tests__/nativeLivePostgres.test.ts",
+      "src/banking/__tests__/bankingReferral.integration.test.ts",
+      "src/services/testMarkets/__tests__/nrxSpot.pg.test.ts",
+      "src/services/listings/__tests__/ownerAllocation.pg.test.ts",
+      "src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts",
+      "src/api/routes/__tests__/contactPolicy.pg.test.ts",
+      "src/api/routes/__tests__/kycEdgePostgres.test.ts",
+      "src/api/routes/__tests__/adminPasswordVault.pg.test.ts"
+    ],
+    "oldReportedPartial": [
+      {
+        "name": "src/private-trading/__tests__/service.integration.test.ts",
+        "pendingTests": 13
+      }
+    ],
+    "newReports12FullAnd13Partial": true,
+    "rawSkipPopulationUnchanged": true,
+    "jestFocusedSuiteHas2Passed13Pending": true
+  },
+  "fixed": {
+    "addedSuites": [
+      {
+        "path": "src/api/routes/__tests__/futuresRefusalCodes.test.ts",
+        "tests": 3,
+        "status": "passed"
+      },
+      {
+        "path": "src/futures/__tests__/refusalCode.test.ts",
+        "tests": 3,
+        "status": "passed"
+      }
+    ],
+    "nativePrerequisite": "7 PASS unchanged",
+    "interpretation": "Complete251 inventory includes both new upstream Futures refusal suites; all prior failures remain unchanged"
+  },
+  "remainingFailures": [
+    {
+      "path": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+      "failedTests": [
+        {
+          "name": "provider failure matrix retries a temporary 5xx and succeeds",
+          "failureMessages": [
+            "Error: Failed to reach Twelve Data\n    at HttpProviderClient.wrapError (/work/src/services/CfdMarketDataService.ts:94:31)\n    at HttpProviderClient.getJson (/work/src/services/marketData/ProviderHealth.ts:277:26)\n    at CfdMarketDataService.fetchBatch (/work/src/services/CfdMarketDataService.ts:155:19)\n    at CfdMarketDataService.fetchTickers (/work/src/services/CfdMarketDataService.ts:140:11)\n    at CfdMarketDataService.getTickersWithMeta (/work/src/services/CfdMarketDataService.ts:125:11)\n    at CfdMarketDataService.getTickers (/work/src/services/CfdMarketDataService.ts:107:13)\n    at Object.<anonymous> (/work/src/services/marketData/__tests__/ProviderFailureMatrix.test.ts:51:21)"
+          ]
+        },
+        {
+          "name": "provider failure matrix retries a transport timeout within a bounded budget, never unbounded",
+          "failureMessages": [
+            "Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)\n\nExpected number of calls: 3\nReceived number of calls: 1\n    at Object.<anonymous> (/work/src/services/marketData/__tests__/ProviderFailureMatrix.test.ts:72:21)"
+          ]
+        },
+        {
+          "name": "provider failure matrix opens the circuit after repeated failures and then stops calling the provider",
+          "failureMessages": [
+            "Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)\n\nExpected number of calls: 4\nReceived number of calls: 1\n    at Object.<anonymous> (/work/src/services/marketData/__tests__/ProviderFailureMatrix.test.ts:84:21)"
+          ]
+        },
+        {
+          "name": "provider failure matrix recovers through a HALF_OPEN probe once the cooldown elapses",
+          "failureMessages": [
+            "Error: expect(received).rejects.toBeInstanceOf(expected)\n\nExpected constructor: ProviderUnavailableError\nReceived constructor: ExternalCfdDataError\n\n    at Object.toBeInstanceOf (/app/node_modules/expect/build/index.js:218:22)\n    at Object.<anonymous> (/work/src/services/marketData/__tests__/ProviderFailureMatrix.test.ts:108:50)"
+          ]
+        },
+        {
+          "name": "provider failure matrix stops serving once the stale budget expires rather than aging a price indefinitely",
+          "failureMessages": [
+            "Error: expect(received).rejects.toThrow()\n\nReceived promise resolved instead of rejected\nResolved to value: [{\"changePercent24h\": \"0.42\", \"name\": \"Gold Spot\", \"price\": \"2400.10\", \"symbol\": \"XAUUSD\"}]\n    at expect (/app/node_modules/expect/build/index.js:113:15)\n    at Object.<anonymous> (/work/src/services/marketData/__tests__/ProviderFailureMatrix.test.ts:152:13)"
+          ]
+        }
+      ],
+      "runtimeError": null,
+      "messageSha256": "0930c32980c1f1e48883e0629416c486e74bc844f2d1e4ac96a0116a4291699b",
+      "sameMessageAs03bd": true
+    },
+    {
+      "path": "src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts",
+      "failedTests": [],
+      "runtimeError": "  ● Test suite failed to run\n\n    PrismaClientConstructorValidationError: Invalid value undefined for datasource \"db\" provided to PrismaClient constructor.\n    It should have this form: { url: \"CONNECTION_STRING\" }\n    Read more at https://pris.ly/d/client-constructor\n\n      12 | (url ? describe : describe.skip)('VTA Spot and native Futures share the actual disposable database', () => {\n      13 |   if (url && new URL(url).hostname !== '127.0.0.1') throw new Error('Disposable localhost PostgreSQL required');\n    > 14 |   const db = new PrismaClient({ datasources: { db: { url } } });\n         |              ^\n      15 |   const allocated = new BigNumber(50000).div('0.011').decimalPlaces(8, BigNumber.ROUND_DOWN).toFixed();\n      16 |   let actor: {userId: string; sessionId: string; expiresAt: number};\n      17 |   let native: NativeDemoService, repo: PrismaNativeRepository, sales: VtaDemoSales;\n\n      at Object.datasources (../app/node_modules/@prisma/client/runtime/library.js:124:86)\n      at Gl (../app/node_modules/@prisma/client/runtime/library.js:126:2527)\n      at new t (../app/node_modules/@prisma/client/runtime/library.js:130:748)\n      at src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts:14:14\n      at Object.<anonymous> (src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts:12:33)\n",
+      "messageSha256": "49a684bb590e6b63e650b0095b060f2914e0193b90f16ed2283b12d3b9e7c053",
+      "sameMessageAs03bd": true
+    },
+    {
+      "path": "src/services/__tests__/CfdMarketDataService.test.ts",
+      "failedTests": [
+        {
+          "name": "CfdMarketDataService fetches and normalizes tickers keyed by symbol from a batched quote",
+          "failureMessages": [
+            "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 1\n\n  Object {\n    \"changePercent24h\": \"0.05\",\n-   \"name\": \"Gold US Dollar\",\n+   \"name\": \"Gold Spot\",\n    \"price\": \"4628.20\",\n    \"symbol\": \"XAUUSD\",\n  }\n    at Object.<anonymous> (/work/src/services/__tests__/CfdMarketDataService.test.ts:26:18)"
+          ]
+        }
+      ],
+      "runtimeError": null,
+      "messageSha256": "a6b9cca2c2c011c49fba72bbd33dbaf17dac9ac0c8fd8e67e5d8b9e2579d1a8f",
+      "sameMessageAs03bd": true
+    },
+    {
+      "path": "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+      "failedTests": [
+        {
+          "name": "live ticker implementation is unreachable from financial services",
+          "failureMessages": [
+            "Error: expect(received).toHaveLength(expected)\n\nExpected length: 5\nReceived length: 8\nReceived array:  [\"const liveReferenceCollector = collectorFromEnv();\", \"const venueUniverseSource = liveReferenceCollector\", \"  ? new CollectorUniverseProvider(liveReferenceCollector)\", \"  liveReferenceCollector?.feed ?? null\", \"app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, marketDataService, marketUniverse));\", \"app.use('/api/v1', marketOptionsRouter(liveReferenceCollector));\", \"  liveReferenceCollector?.start();\", \"  liveReferenceCollector?.stop();\"]\n    at Object.<anonymous> (/work/src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts:18:21)\n    at Promise.then.completed (/app/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/app/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/app/node_modules/jest-circus/build/run.js:316:40)\n    at _runTest (/app/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/app/node_modules/jest-circus/build/run.js:126:9)\n    at run (/app/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/app/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/app/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/app/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/app/node_modules/jest-runner/build/runTest.js:444:34)"
+          ]
+        }
+      ],
+      "runtimeError": null,
+      "messageSha256": "f502f9651a68f41adb96d1f8e1917d80e0531e8bad9c5b222e0db3ac7dd34baa",
+      "sameMessageAs03bd": true
+    },
+    {
+      "path": "src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+      "failedTests": [
+        {
+          "name": "kseniaReview.ts is the exact approved mathematical implementation",
+          "failureMessages": [
+            "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: \"4c59579e22f46d684fe314c315a82f553313dbc13f254ac7b3765efe709b8700\"\nReceived: \"08657a73d154b3bdb5849b22f46bffa4c6d738ec2d99df0583fef49cb1478eba\"\n    at /work/src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts:27:61\n    at Object.<anonymous> (/app/node_modules/jest-each/build/bind.js:81:13)\n    at Promise.then.completed (/app/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/app/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/app/node_modules/jest-circus/build/run.js:316:40)\n    at _runTest (/app/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/app/node_modules/jest-circus/build/run.js:126:9)\n    at run (/app/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/app/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/app/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/app/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/app/node_modules/jest-runner/build/runTest.js:444:34)"
+          ]
+        },
+        {
+          "name": "reviewPerformanceV8.ts is the exact approved mathematical implementation",
+          "failureMessages": [
+            "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: \"2664b5ca4ddf4b8f07e25a2df0c6879d0740b881c87d7a0a406b27c3b29e0795\"\nReceived: \"17bc3b0be30fde337c81a588ba8513e9580a315bf2f6b4f3177af3069ef218c4\"\n    at /work/src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts:27:61\n    at Object.<anonymous> (/app/node_modules/jest-each/build/bind.js:81:13)\n    at Promise.then.completed (/app/node_modules/jest-circus/build/utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (/app/node_modules/jest-circus/build/utils.js:231:10)\n    at _callCircusTest (/app/node_modules/jest-circus/build/run.js:316:40)\n    at _runTest (/app/node_modules/jest-circus/build/run.js:252:3)\n    at _runTestsForDescribeBlock (/app/node_modules/jest-circus/build/run.js:126:9)\n    at run (/app/node_modules/jest-circus/build/run.js:71:3)\n    at runAndTransformResultsToJestFormat (/app/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)\n    at jestAdapter (/app/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)\n    at runTestInternal (/app/node_modules/jest-runner/build/runTest.js:367:16)\n    at runTest (/app/node_modules/jest-runner/build/runTest.js:444:34)"
+          ]
+        }
+      ],
+      "runtimeError": null,
+      "messageSha256": "ad15369ba4ba478ce68119d65b5ed3baea50fd373199c3cc596b508351d2a268",
+      "sameMessageAs03bd": true
+    }
+  ],
+  "skippedSuites": [
+    "src/futures/__tests__/futuresBookLock.pg.test.ts",
+    "src/private-trading/__tests__/nativeDemo.integration.test.ts",
+    "src/__tests__/serverWatcherSleep.pg.test.ts",
+    "src/private-trading/__tests__/nativeCommandAcceptance.integration.test.ts",
+    "src/private-trading/__tests__/nativeLivePostgres.test.ts",
+    "src/banking/__tests__/bankingReferral.integration.test.ts",
+    "src/services/testMarkets/__tests__/nrxSpot.pg.test.ts",
+    "src/services/listings/__tests__/ownerAllocation.pg.test.ts",
+    "src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts",
+    "src/api/routes/__tests__/contactPolicy.pg.test.ts",
+    "src/api/routes/__tests__/kycEdgePostgres.test.ts",
+    "src/api/routes/__tests__/adminPasswordVault.pg.test.ts"
+  ],
+  "partiallySkippedSuites": [
+    {
+      "name": "src/private-trading/__tests__/service.integration.test.ts",
+      "pendingTests": 13
+    }
+  ],
+  "isolation": {
+    "id": "d0e0321729a97399933c7f7aeb0ce66911d9f3ee5e75d19212e18b5821ac8fd0",
+    "image": "sha256:8c2bf12b714ea7b760cb6a3d6af8a6937288097b8f36ceae021214b9411c154c",
+    "networkMode": "none",
+    "networkNames": [
+      "none"
+    ],
+    "readOnly": true,
+    "user": "1001:1001",
+    "pidsLimit": 128,
+    "memoryBytes": 4294967296,
+    "cpuLimit": 2,
+    "binds": [
+      {
+        "source": "/home/runner/work/_temp/voltex-backend-full/test-output",
+        "target": "/evidence"
+      }
+    ],
+    "noHostPidIpc": true,
+    "verifiedBeforeStart": true,
+    "environmentKeys": [
+      "PATH",
+      "NODE_VERSION",
+      "YARN_VERSION",
+      "NODE_ENV",
+      "TZ",
+      "CI",
+      "FORCE_COLOR",
+      "HOME",
+      "TMPDIR",
+      "DATABASE_URL",
+      "DIRECT_URL",
+      "JWT_SECRET",
+      "EMAIL_VERIFICATION_SECRET",
+      "API_KEY_ENCRYPTION_SECRET"
+    ],
+    "dbOptInsAbsent": true
+  },
+  "cleanup": {
+    "errors": [],
+    "containerAndImageRemovalRecorded": true
+  },
+  "limitations": [
+    "No test/compiler/archived code/network/provider/observer workload execution or database access during this audit.",
+    "4811 canonical Git blob bindings verified;362MB source copy and compiled bytes are not archived here.280JS hashes match separately retained stage compiler manifest; only6 emitted closure files are archived there for direct byte verification.",
+    "Compiler install/generated Prisma client bytes were not independently rebuilt.",
+    "12 fully skipped suites and13 tests in one partly skipped suite remain skipped; databaseAcceptance NOT_RUN. VTA PG suite still fails before tests because explicit test URL is undefined.",
+    "Remaining5 suite failures/9 failed test messages unchanged from03bd; no claim these failures are harmless.",
+    "2CPU/4GiB offline regression evidence is not Stocks capacity or production readiness.",
+    "Cleanup success is recorded by command results; removed resources were not re-inspected in this audit."
+  ],
+  "checks": [
+    {
+      "name": "ZIP exact digest/size/HEAD",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC artifact-manifest.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC build-prerequisite.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC base-image.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC build.stderr.log",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC build.stdout.log",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC commands.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC container-provenance.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC container-result.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC image-build.stderr.log",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC image-build.stdout.log",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC image-pull.stderr.log",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC image-pull.stdout.log",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC jest-command.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC jest-discovery.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC jest.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC jest.stderr.log",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC jest.stdout.log",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC prestart-isolation.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC result.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC source-manifest.json",
+      "pass": true
+    },
+    {
+      "name": "ZIP bytes/CRC test-image.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest base-image.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest build-prerequisite.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest build.stderr.log",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest build.stdout.log",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest commands.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest container-provenance.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest container-result.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest image-build.stderr.log",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest image-build.stdout.log",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest image-pull.stderr.log",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest image-pull.stdout.log",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest jest-command.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest jest-discovery.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest jest.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest jest.stderr.log",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest jest.stdout.log",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest prestart-isolation.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest source-manifest.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest test-image.json",
+      "pass": true
+    },
+    {
+      "name": "artifact manifest result.json",
+      "pass": true
+    },
+    {
+      "name": "all4811 source canonical Git blob bindings",
+      "pass": true,
+      "details": []
+    },
+    {
+      "name": "complete source selection except3 env examples",
+      "pass": true
+    },
+    {
+      "name": "source bytes",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/private-trading/__tests__/nativeReviewHarness.test.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/private-trading/__tests__/nativeReviewHarness.test.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/services/__tests__/CfdMarketDataService.test.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/services/__tests__/CfdMarketDataService.test.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/services/CfdMarketDataService.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/services/CfdMarketDataService.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/services/marketData/ProviderHealth.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/services/marketData/ProviderHealth.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/index.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/index.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/services/copyTrading/canonical/kseniaReview.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/services/copyTrading/canonical/kseniaReview.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/services/copyTrading/canonical/reviewPerformanceV8.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/services/copyTrading/canonical/reviewPerformanceV8.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash scripts/native-demo-review-repository.cjs",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged scripts/native-demo-review-repository.cjs",
+      "pass": true
+    },
+    {
+      "name": "critical source hash src/private-trading/native/engine.ts",
+      "pass": true
+    },
+    {
+      "name": "failure-related input unchanged src/private-trading/native/engine.ts",
+      "pass": true
+    },
+    {
+      "name": "critical source hash scripts/qa-backend-full-offline.cjs",
+      "pass": true
+    },
+    {
+      "name": "critical source hash scripts/qa-backend-full-offline.test.cjs",
+      "pass": true
+    },
+    {
+      "name": "critical source hash tsconfig.json",
+      "pass": true
+    },
+    {
+      "name": "critical source hash package-lock.json",
+      "pass": true
+    },
+    {
+      "name": "critical source hash frontend/package-lock.json",
+      "pass": true
+    },
+    {
+      "name": "critical source hash prisma/schema.prisma",
+      "pass": true
+    },
+    {
+      "name": "build prerequisite PASS source-bound",
+      "pass": true
+    },
+    {
+      "name": "build exact command",
+      "pass": true
+    },
+    {
+      "name": "build frozen tsconfig.json",
+      "pass": true
+    },
+    {
+      "name": "build frozen package-lock.json",
+      "pass": true
+    },
+    {
+      "name": "build frozen frontend/package-lock.json",
+      "pass": true
+    },
+    {
+      "name": "compiler raw stdout",
+      "pass": true
+    },
+    {
+      "name": "compiler raw stderr",
+      "pass": true
+    },
+    {
+      "name": "562 emitted paths match raw compiler stdout",
+      "pass": true
+    },
+    {
+      "name": "native prerequisites present",
+      "pass": true
+    },
+    {
+      "name": "280JS output hashes match separate stage build",
+      "pass": true
+    },
+    {
+      "name": "compiler file/version hashes match stage build",
+      "pass": true
+    },
+    {
+      "name": "all251 backend files discovered/run/reported",
+      "pass": true
+    },
+    {
+      "name": "Jest options unchanged; all249 old suites retained plus2",
+      "pass": true
+    },
+    {
+      "name": "suite count passed",
+      "pass": true
+    },
+    {
+      "name": "suite count failed",
+      "pass": true
+    },
+    {
+      "name": "suite count pending",
+      "pass": true
+    },
+    {
+      "name": "test count passed",
+      "pass": true
+    },
+    {
+      "name": "test count failed",
+      "pass": true
+    },
+    {
+      "name": "test count pending",
+      "pass": true
+    },
+    {
+      "name": "test count todo",
+      "pass": true
+    },
+    {
+      "name": "total counts reconcile",
+      "pass": true
+    },
+    {
+      "name": "terminal FAIL no timeout/OOM/truncation",
+      "pass": true
+    },
+    {
+      "name": "source unchanged during test",
+      "pass": true
+    },
+    {
+      "name": "all5 remaining failure messages identical03bd",
+      "pass": true
+    },
+    {
+      "name": "2 new suites6 tests all PASS",
+      "pass": true
+    },
+    {
+      "name": "native prerequisite remains7 PASS",
+      "pass": true
+    },
+    {
+      "name": "12 skipped and13 partially skipped unchanged in RAW Jest",
+      "pass": true
+    },
+    {
+      "name": "prestart isolation",
+      "pass": true
+    },
+    {
+      "name": "database acceptance NOT_RUN",
+      "pass": true
+    },
+    {
+      "name": "resource/security flags",
+      "pass": true
+    },
+    {
+      "name": "no migration seed reset deploy commands",
+      "pass": true
+    },
+    {
+      "name": "successful owned cleanup recorded",
+      "pass": true
+    }
+  ]
+}

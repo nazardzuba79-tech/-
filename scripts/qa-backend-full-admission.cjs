@@ -4,9 +4,9 @@ const assert = require('node:assert/strict');
 const cp = require('node:child_process');
 const crypto = require('node:crypto');
 const path = require('node:path');
-const BASELINE_SHA = '03bdc89fa802e958b80d85a8add8a952f522b890';
-const PRIOR_FAILURE = Object.freeze({ status: 'FAIL', artifactSHA256: '869b44af85693a0ee2fee42fa7c6a3c288320b7bab05c994a746ee6973b326ab', runId: 38512859056, jobId: 115685235180 });
-const REVIEW_ID = 'stocks-preparation-only-03bdc89f-20261014-v1';
+const BASELINE_SHA = 'a9d5b9bd85fe96e8dcb31ec7a6b315f9730d2900';
+const PRIOR_FAILURE = Object.freeze({ status: 'FAIL', artifactSHA256: '5fd75f0efc2cb1fc1cb1328fa077add416a791a5c304b9dd563c99a52485e029', runId: 38516409918, jobId: 115698882650 });
+const REVIEW_ID = 'stocks-finite-auth-a9d5b9bd-20261014-v1';
 const MANIFEST_PATH = 'docs/evidence/stocks-contract-proofs-20261014/backend-full/admission-review.json';
 const ALLOWED_PATHS = Object.freeze({
   'scripts/qa-backend-full-admission.cjs': 'admission-control',
@@ -14,11 +14,20 @@ const ALLOWED_PATHS = Object.freeze({
   '.github/workflows/stocks-review.yml': 'workflow-control',
   'services/stocks/auth-http-fixture-512/prepare.mjs': 'preparation-only',
   'services/stocks/auth-http-fixture-512/prepare.test.mjs': 'preparation-only',
+  'services/stocks/auth-http-fixture-512/run.mjs': 'auth-fixture',
+  'services/stocks/auth-http-fixture-512/fixture.test.mjs': 'auth-fixture',
+  'services/stocks/auth-http-fixture-512/authority-entry.cjs': 'auth-fixture',
+  'services/stocks/auth-http-fixture-512/authority.test.cjs': 'auth-fixture',
+  'services/stocks/auth-http-fixture-512/durability-observer.cjs': 'auth-fixture',
+  'services/stocks/auth-http-fixture-512/durability-observer.test.cjs': 'auth-fixture',
+  'services/stocks/auth-http-fixture-512/launcher.mjs': 'auth-fixture',
+  'services/stocks/auth-http-fixture-512/launcher.test.mjs': 'auth-fixture',
+  'services/stocks/auth-http-fixture-512/launch-policy.json': 'auth-fixture',
   'services/stocks/auth-http-fixture-512/README.md': 'documentation',
   'docs/AI_HANDOFF.md': 'append-only-handoff',
   'docs/evidence/stocks-contract-proofs-20261014/backend-full/README.md': 'documentation',
-  'docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-result.json': 'raw-evidence',
-  'docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-03bd-review.json': 'raw-evidence',
+  'docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-a9d5-result.json': 'raw-evidence',
+  'docs/evidence/stocks-contract-proofs-20261014/backend-full/linux-a9d5-review.json': 'raw-evidence',
 });
 const PROTECTED_HELPERS = Object.freeze(['scripts/qa-backend-full-offline.cjs', 'scripts/qa-backend-full-offline.test.cjs']);
 const SHA = /^[a-f0-9]{40}$/, HASH = /^[a-f0-9]{64}$/;
@@ -79,7 +88,7 @@ function decide({ base, head, manifest, changes }) {
       assert.equal(c.headSHA256, f.headSHA256, 'reviewed head bytes mismatch: ' + c.path);
     }
     report.mode = 'not_run'; report.reason = 'EXACT_REVIEWED_QA_ONLY_FOLLOWUP';
-    report.note = 'Full backend intentionally NOT_RUN for these exact reviewed QA-only bytes. Prior 03bd full backend remains FAIL (older 0dd evidence is retained). Other CI gates are unchanged.';
+    report.note = 'Full backend intentionally NOT_RUN for these exact reviewed QA-only bytes. Prior a9d5 full backend remains FAIL (older 03bd and 0dd evidence is retained). Other CI gates are unchanged.';
   } catch (e) { report.reason = 'ADMISSION_NOT_PROVEN'; report.error = String(e.message).slice(0, 2000); }
   return report;
 }

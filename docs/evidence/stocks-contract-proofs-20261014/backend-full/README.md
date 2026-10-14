@@ -1,6 +1,14 @@
 # Full backend verification — retained attempts
 
-## Latest Linux result after the build prerequisite: FAIL
+## Main integration, a9d5: FAIL
+
+Commit `a9d5b9bd85fe96e8dcb31ec7a6b315f9730d2900` integrates main `d694b2a0c493c0fad7d496ae47a15ad8eb0429a6`. [Run 38516409918 / job 115698882650](https://github.com/nazardzuba79-tech/-/actions/runs/38516409918/job/115698882650) executed the full inventory: **251 suites: 234 passed, 5 failed, 12 skipped; 3,714 tests: 3,581 passed, 9 failed, 124 skipped**. No assertion or test was removed. The original 249 test blobs are unchanged; two upstream Futures refusal-code suites add six passing tests.
+
+[Raw result](linux-a9d5-result.json) and [independent audit](linux-a9d5-review.json) preserve the terminal failure. Artifact `11872862433` has SHA256 `5fd75f0efc2cb1fc1cb1328fa077add416a791a5c304b9dd563c99a52485e029`; raw Jest SHA256 is `9bee3895ba524386b9212083e52a7851c692943297390e724240df08c05fde0a`. All five failure messages and 13 related source files match the prior 03bd attempt byte-for-byte. The TypeScript prerequisite passed and recorded 562 outputs. All 4,811 canonical source bindings, complete inventory, isolated execution and owned cleanup were audited. No OOM, timeout or log truncation occurred. Matched-main execution and database acceptance remain **NOT_RUN**.
+
+The next scheduling manifest may reuse this result only for the exact individually reviewed QA fixture, workflow and evidence bytes. Any runtime/backend/auth/financial code, original test, schema, lockfile, compiler, build prerequisite, unknown path or unreviewed byte change still requires FULL. A reused result means **NOT_RUN with prior FAIL preserved**, never a release PASS. This does not waive the separate browser, durability, capacity, coexistence or data-rights blockers.
+
+## Prior Linux result after the build prerequisite: FAIL
 
 Commit `03bdc89fa802e958b80d85a8add8a952f522b890`, [run 38512859056 / job 115685235180](https://github.com/nazardzuba79-tech/-/actions/runs/38512859056/job/115685235180), completed naturally: **232 passed, 5 failed, 12 skipped suites; 3575 passed, 9 failed, 124 skipped tests (3708 total)**. The direct locked TypeScript prerequisite passed in 9.771 seconds and recorded 560 emitted files. The formerly missing native-review modules now exist and all seven native-review tests pass. No timeout, OOM, output overflow or cleanup failure occurred.
 
