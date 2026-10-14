@@ -106,6 +106,15 @@ function mount(props: Record<string, unknown>) {
     if (name === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (name === '../lib/chartSettings') return require('../chartSettings');
     if (name === '../lib/chartIndicators') return require('../chartIndicators');
+    // Chart workspace (2026-10-13): the pure modules are real, the toolbar and panels are stubs.
+    if (name === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (name === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (name === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (name === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (name === '../lib/chartCompare') return require('../chartCompare');
+    if (name === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (name === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (name.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (c: unknown) => c };
     if (name.endsWith('.css')) return {};
@@ -344,9 +353,11 @@ describe('futures chart never goes blank on a loader or binding change', () => {
 
     // Drive the component's real interval state. Passing an `interval` prop
     // is not an interval switch: PriceChart owns this state internally.
-    const quarter = nodes(tree).find(node => node.type === 'button' && node.props?.children === '15m');
-    expect(quarter).toBeTruthy();
-    quarter.props.onClick();
+    // The chart workspace (2026-10-13) draws the timeframe strip in a
+    // component this harness stubs, so its callback is driven directly.
+    const strip = nodes(tree).find(node => typeof node.props?.onTimeframe === 'function');
+    expect(strip).toBeTruthy();
+    strip.props.onTimeframe('15m');
     chart.render();
     await flushAll();
 

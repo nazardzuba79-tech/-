@@ -61,12 +61,20 @@ export function labelBox(p: Extract<Primitive, { t: 'label' }>) {
   return { x, y, w, h };
 }
 
-/** Dock the 38px object toolbar clear of the ruler result; never move its anchors. */
+/** Dock the 38px object toolbar clear of the ruler result AND of every
+ *  anchor handle; never move the anchors. The first clear dock wins: the top
+ *  band, then under the result card, then under a handle it would have
+ *  covered (2026-10-14: on a 390px phone the dock under the card landed on
+ *  the end handle, which could no longer be dragged). */
 export function rulerToolbarTop(geometry: DrawingGeometry | undefined): number {
   const card = geometry?.prims.find((p) => p.t === 'label' && p.variant === 'measurement');
-  if (!card || card.t !== 'label') return 8;
-  const box = labelBox(card);
-  return box.y < 8 + 38 + 8 && box.y + box.h > 0 ? box.y + box.h + 8 : 8;
+  const box = card && card.t === 'label' ? labelBox(card) : null;
+  const height = 38, gap = 8;
+  const clearOfCard = (top: number) => !box || box.y + box.h <= 0 || top + height <= box.y - gap || top >= box.y + box.h + gap;
+  const clearOfHandles = (top: number) => !geometry || geometry.anchors.every((a) => a.y + HIT_RADIUS <= top || a.y - HIT_RADIUS >= top + height);
+  const candidates = [gap, ...(box ? [box.y + box.h + gap] : []), ...(geometry?.anchors.map((a) => a.y + HIT_RADIUS + 2) ?? [])]
+    .filter((top) => top >= gap).sort((x, y) => x - y);
+  return candidates.find((top) => clearOfCard(top) && clearOfHandles(top)) ?? candidates.find(clearOfCard) ?? gap;
 }
 
 function extendLine(a: ScreenPoint, b: ScreenPoint, view: DrawingView, back: boolean, forward: boolean): [ScreenPoint, ScreenPoint] {

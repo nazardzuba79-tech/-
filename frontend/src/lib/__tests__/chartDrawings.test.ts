@@ -118,6 +118,15 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
     if (id === '../lib/chartIndicators') return require('../chartIndicators');
+    // Chart workspace (2026-10-13): pure modules are real, the panels are stubs.
+    if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (id === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (id === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (id === '../lib/chartCompare') return require('../chartCompare');
+    if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (id === './ChartDrawingLayer') return layer;
     if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
     return localRequire(id);
@@ -254,6 +263,14 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
     if (id === '../lib/chartIndicators') return require('../chartIndicators');
+    if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (id === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (id === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (id === '../lib/chartCompare') return require('../chartCompare');
+    if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, output);
@@ -384,6 +401,14 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
     if (id === '../lib/chartIndicators') return require('../chartIndicators');
+    if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (id === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (id === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (id === '../lib/chartCompare') return require('../chartCompare');
+    if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, bindings);
@@ -665,7 +690,10 @@ describe('the rail is shared, and every button does something', () => {
     expect(futures).not.toContain('DrawToolbar');
     expect(futures.match(/<PriceChart\b/g)).toHaveLength(1);
     // 2026-10-07: Spot's chart carries the viewer's chart settings like Futures (Spot/CFD parity).
-    expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />');
+    // 2026-10-13 (chart workspace): both pages also hand the chart their
+    // instrument switch, so a second pane's «Торговать» moves the terminal.
+    expect(trade).toContain('<PriceChart pair={pair} onSelectPair={selectSpotPair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />');
+    expect(futures).toContain('compactTools={studio} onSelectPair={selectSymbol}');
     // One implementation, not two: there is a single chart component and a
     // single rail, and both pages reach it through the same prop.
     expect(fs.existsSync(path.resolve(__dirname, '../../components/FuturesPriceChart.tsx'))).toBe(false);

@@ -677,7 +677,7 @@ export function FuturesPage() {
                 setChartMenu({ x: event.clientX, y: event.clientY });
               } : undefined}
             >
-              <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
+              <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} onSelectPair={selectSymbol}
                 privateTrading={nativeExecution ? native.interaction : undefined}
                 positionLines={chartPositionLines} chartSettings foldHeading={false} />
               {nativeExecution && <button

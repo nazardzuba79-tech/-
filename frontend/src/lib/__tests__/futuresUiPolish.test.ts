@@ -425,7 +425,12 @@ test.each([
     // chart has Bybit's two rows — «График» with the VOLTEX | TradingView
     // switch, then the intervals. Payload, math and every handler unchanged;
     // futuresFinalPolish still mounts the page and counts one chart.
-    "b76b54e9ad5ac9a2aeca45e6d86b5b627be2d5e4d60818cbef325cc2239ab375"
+    // Re-taken 2026-10-13 (chart workspace). ONE prop differs: the chart
+    // element gets `onSelectPair={selectSymbol}`, the page's existing
+    // instrument switch, so a second chart pane's «Торговать» moves the
+    // whole terminal through the same path the pair list already uses.
+    // No order, execution, account, depth or layout byte changed.
+    "9b10bb6a91e517b522f167f5d39b23e7cbc0801ecfe98a29458d642e4dda4671"
   ],
   [
     "components/FuturesPairList.tsx",
