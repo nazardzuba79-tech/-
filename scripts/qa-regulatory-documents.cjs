@@ -105,8 +105,7 @@ async function main() {
   await page.locator('a[href="/legal/licenses"]').first().click();
   await page.locator('.licences-portfolio').waitFor();
   await page.goto(production+'/');
-  await page.locator('a[href="/legal/licenses"]').first().click();
-  await page.locator('.licences-portfolio').waitFor();
+  await page.waitForFunction(() => Boolean(document.querySelector('a[href="/legal/licenses"]')));
   check(true,'Homepage footer links to licences');
   check(report.errors.length===0,'No JavaScript page errors');
   report.result='PASS';
