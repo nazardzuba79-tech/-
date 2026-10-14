@@ -38,7 +38,7 @@ function DocumentViewer({ document, onClose }: { document: RegulatoryDocument; o
 }
 
 /** Shared presentation. The production wrapper only passes gated records. */
-export function LicencesContent({ documents, review = false }: { documents: readonly RegulatoryDocument[]; review?: boolean }) {
+export function LicencesContent({ documents, review = false, portfolio = false }: { documents: readonly RegulatoryDocument[]; review?: boolean; portfolio?: boolean }) {
   const { t, lang } = useLanguage();
   const [selected, setSelected] = useState<RegulatoryDocument | null>(null);
   useEffect(() => {
@@ -53,8 +53,15 @@ export function LicencesContent({ documents, review = false }: { documents: read
       <h1>{t('licenses.title')}</h1>
       <p>{t('licenses.intro')}</p>
     </header>
-    <div className="licences-section-head"><h2>{t('licenses.documents')}</h2><span><Globe2 size={16} aria-hidden="true" />{documents.length.toLocaleString(localeOf(lang))}</span></div>
-    {documents.length === 0 ? <section className="licences-empty"><FileText size={32} strokeWidth={1.2} aria-hidden="true" /><h3>{t('licenses.empty')}</h3></section>
+    <div className="licences-section-head"><h2>{t('licenses.documents')}</h2><span><Globe2 size={16} aria-hidden="true" />{(portfolio && documents.length === 0 ? 1 : documents.length).toLocaleString(localeOf(lang))}</span></div>
+    {portfolio && documents.length === 0 ? <section className="licences-portfolio">
+      <p className="licences-portfolio-description">{t('licenses.portfolioDescription')}</p>
+      <a className="licences-portfolio-image" href="/regulatory-documents/voltex-portfolio.png" target="_blank" rel="noopener noreferrer" aria-label={t('licenses.openOriginal')}>
+        <img src="/regulatory-documents/voltex-portfolio.png" alt={t('licenses.portfolioAlt')} width="1536" height="1024" />
+      </a>
+      <p className="licences-portfolio-status">{t('licenses.portfolioStatus')}</p>
+      <a className="licences-portfolio-open" href="/regulatory-documents/voltex-portfolio.png" target="_blank" rel="noopener noreferrer">{t('licenses.openOriginal')} <ArrowUpRight size={15} aria-hidden="true" /></a>
+    </section> : documents.length === 0 ? <section className="licences-empty"><FileText size={32} strokeWidth={1.2} aria-hidden="true" /><h3>{t('licenses.empty')}</h3></section>
       : <div className="licences-grid">{documents.map(document => {
         const translated = document.translations[lang];
         return <article className="licence-card" key={document.id}>
@@ -93,5 +100,5 @@ export function LicencesPage() {
     document.head.append(robots);
     return () => { document.title = originalTitle; robots.remove(); };
   }, [t]);
-  return <div className="licences-page"><div className="vx-home"><HomeHeader /></div><LicencesContent documents={publishedDocuments(REGULATORY_DOCUMENTS, new Date(`${day}T00:00:00Z`))} /><div className="vx-home"><HomeFooter /></div></div>;
+  return <div className="licences-page"><div className="vx-home"><HomeHeader /></div><LicencesContent documents={publishedDocuments(REGULATORY_DOCUMENTS, new Date(`${day}T00:00:00Z`))} portfolio /><div className="vx-home"><HomeFooter /></div></div>;
 }

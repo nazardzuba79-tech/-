@@ -1,4 +1,5 @@
 .licences-page { min-height:100vh; background:#080c12; color:#eff1f5; }
+.licences-page > .vx-home { min-height:0; }
 .licences-main { max-width:1408px; margin:0 auto; padding:36px 32px 96px; }
 .licences-back { display:inline-flex; align-items:center; gap:8px; color:#aeb8c6; font-size:13px; text-decoration:none; }
 .licences-back:hover { color:#e6cd90; }
@@ -9,6 +10,13 @@
 .licences-section-head { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:0 0 22px; border-bottom:1px solid #29313d; margin-bottom:24px; }
 .licences-section-head h2 { margin:0; font-size:18px; font-weight:500; }
 .licences-section-head>span { display:flex; align-items:center; gap:10px; color:#cbb47d; font-size:14px; }
+.licences-portfolio { display:grid; gap:20px; min-width:0; padding:28px; background:#0e141e; border:1px solid #29313d; border-radius:12px; }
+.licences-portfolio-description { margin:0; color:#d7dfe9; font-size:15px; line-height:1.7; }
+.licences-portfolio-image { display:block; min-width:0; overflow:hidden; border:1px solid #374252; border-radius:8px; }
+.licences-portfolio-image img { display:block; width:100%; height:auto; }
+.licences-portfolio-status { margin:0; color:#b9c4d2; font-size:13px; line-height:1.6; }
+.licences-portfolio-open { display:inline-flex; align-items:center; gap:8px; justify-self:start; color:#e4cf9f; font-size:13px; text-decoration:none; }
+.licences-portfolio-open:hover { color:#f5dcab; }
 .licences-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
 .licence-card { min-width:0; display:flex; flex-direction:column; background:#0e141e; border:1px solid #29313d; border-radius:12px; padding:26px; overflow-wrap:anywhere; }
 .licence-card-top { display:flex; gap:12px; align-items:center; justify-content:space-between; }
@@ -50,4 +58,4 @@
 .licence-viewer-body object { width:100%; height:100%; }
 .licence-original { display:flex; gap:8px; align-items:center; justify-content:center; padding:14px; color:#e4cf9f; font-size:12px; }
 @media(max-width:1100px) { .licences-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media(max-width:600px) { .licences-main { padding:24px 16px 64px; } .licences-heading { padding:40px 0 34px; } .licences-heading p { font-size:14px; } .licences-grid { grid-template-columns:1fr; gap:16px; } .licence-card { padding:23px; } .licence-viewer-bar { flex-wrap:wrap; padding:12px; } .licence-viewer-tools { margin-left:auto; } }
+@media(max-width:600px) { .licences-main { padding:24px 16px 64px; } .licences-heading { padding:40px 0 34px; } .licences-heading p { font-size:14px; } .licences-portfolio { padding:16px; gap:16px; } .licences-portfolio-description { font-size:14px; } .licences-grid { grid-template-columns:1fr; gap:16px; } .licence-card { padding:23px; } .licence-viewer-bar { flex-wrap:wrap; padding:12px; } .licence-viewer-tools { margin-left:auto; } }
