@@ -28,7 +28,6 @@ export interface HistoricalMoveProgram {
 }
 
 const HOUR_MS = 3_600_000;
-const isNumber = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 function utcHour(text: string): number {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(text)) throw new Error('Ожидается точное время UTC с началом часа');
   const time = Date.parse(text);
