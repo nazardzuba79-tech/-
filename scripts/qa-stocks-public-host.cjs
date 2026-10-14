@@ -151,7 +151,7 @@ async function main({output,buildRoot,authorityPackage,python,playwright,certuti
       finally{await bounded(context.close(),5000,'CONTEXT_CLOSE_TIMEOUT');activeContext=null;await bounded(ingress.close(),5000,'INGRESS_CLOSE_TIMEOUT');activeIngress=null;save();}
     }
     report.status='PASS';report.publication='BLOCKED: untouched public host cannot select GlobalStocks; shared Wallet/route fence is retained; QA candidate is not a runtime change';
-  }catch(e){report.status='FAIL';report.failure={message:e.message,stack:e.stack};if(e.tlsProbeProof)report.browserTls=e.tlsProbeProof;}
+  }catch(e){report.status='FAIL';report.failure={message:e.message,stack:e.stack};if(e.tlsProbeProof)report.browserTls=e.tlsProbeProof;if(e.chromePreflight)report.browserPreflight=e.chromePreflight;}
   finally{
     if(activeContext)await bounded(activeContext.close(),5000,'CONTEXT_CLOSE_TIMEOUT').catch(e=>{report.status='FAIL';report.contextCleanupError=e.message;});
     if(activeIngress)await bounded(activeIngress.close(),5000,'INGRESS_CLOSE_TIMEOUT').catch(e=>{report.status='FAIL';report.ingressCleanupError=e.message;});

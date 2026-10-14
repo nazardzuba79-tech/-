@@ -24,14 +24,36 @@ function fileHash(file,maxBytes){
     const after=fs.fstatSync(fd);assert.ok(total===before.size&&before.ino===after.ino&&before.size===after.size&&before.mtimeMs===after.mtimeMs,'proof file changed while hashing');return hash.digest('hex');
   }finally{fs.closeSync(fd);}
 }
+function retainChromePreflight(observation,check){
+  try{return check();}catch(error){
+    observation.status='REJECTED';observation.rejection={message:error.message,code:error.code||null};
+    error.chromePreflight=observation;throw error;
+  }
+}
+function accessObservation(file,mode){
+  try{fs.accessSync(file,mode);return {allowed:true};}catch(error){return {allowed:false,code:error.code||'UNKNOWN'};}
+}
+function pathObservation(file){
+  const row={path:file};
+  try{const st=fs.lstatSync(file);Object.assign(row,{status:'AVAILABLE',uid:st.uid,gid:st.gid,mode:(st.mode&0o7777).toString(8),regular:st.isFile(),directory:st.isDirectory(),symlink:st.isSymbolicLink(),bytes:st.size,read:accessObservation(file,fs.constants.R_OK),write:accessObservation(file,fs.constants.W_OK),executeOrSearch:accessObservation(file,fs.constants.X_OK)});}
+  catch(error){Object.assign(row,{status:'UNKNOWN',code:error.code||'UNKNOWN'});}
+  return row;
+}
 function inspectChrome(executable,env){
   assertLinux(process.platform);assert.equal(executable,CHROME,'explicit installed Chrome path required');
-  const resolved=fs.realpathSync(executable),st=fs.lstatSync(executable);fs.accessSync(executable,fs.constants.X_OK);
+  const groups=process.getgroups(),observation={status:'IN_PROGRESS',stage:'filesystem',executable,installationPerformed:false,binaryExecuted:false,process:{uid:process.getuid(),euid:process.geteuid(),gid:process.getgid(),egid:process.getegid(),groups:groups.slice(0,128),groupsTruncated:groups.length>128},file:pathObservation(executable),parents:['/opt/google/chrome','/opt/google','/opt','/'].map(pathObservation)};
+  return retainChromePreflight(observation,()=>{
+  const resolved=fs.realpathSync(executable),st=fs.lstatSync(executable);observation.resolved=resolved;observation.executableBound={maximumBytes:1024*1024*1024,withinBound:st.size>0&&st.size<=1024*1024*1024};fs.accessSync(executable,fs.constants.X_OK);
+  observation.stage='package';
   const dpkg='/usr/bin/dpkg-query',owner=command(dpkg,['-S',resolved],env).stdout.trim();
+  observation.packageOwner=owner;
   const packageVersion=command(dpkg,['-W','--showformat=$'+'{Version}','google-chrome-stable'],env).stdout.trim();
+  observation.packageVersion=packageVersion;observation.stage='identity';
   const identity={requested:executable,resolved,owner,uid:st.uid,mode:st.mode,regular:st.isFile(),symlink:st.isSymbolicLink()};
   chromeIdentity(identity);assert.match(packageVersion,/^\d+\.\d+\.\d+\.\d+-\d+$/); // Verify ownership before executing any candidate binary.
+  observation.stage='hash';
   const executableHash=fileHash(executable,1024*1024*1024);
+  observation.sha256=executableHash;observation.stage='version';observation.binaryExecuted=true;
   const versionCall=command(executable,['--version'],env),actualVersion=versionCall.stdout.trim();
   const version=chromePackage({...identity,packageVersion,actualVersion});
   const proof={executable,resolved,sha256:executableHash,bytes:st.size,uid:st.uid,gid:st.gid,mode:(st.mode&0o777).toString(8),owner,packageVersion,actualVersion,version,versionCommand:versionCall,installationPerformed:false};
@@ -40,7 +62,8 @@ function inspectChrome(executable,env){
     const result=spawnSync(dpkg,['-S',profile],{env,encoding:'utf8',timeout:10000,maxBuffer:16384});
     proof.appArmorProfile={status:'AVAILABLE',path:profile,sha256:fileHash(profile,1024*1024),bytes:p.size,uid:p.uid,gid:p.gid,mode:(p.mode&0o777).toString(8),packageOwner:result.status===0?result.stdout.trim():null,packageOwnerStatus:result.status===0?'AVAILABLE':'UNKNOWN',packageQueryExitCode:result.status,packageQueryError:result.error?.code||null,modified:false};
   }catch(e){proof.appArmorProfile={status:'UNKNOWN',path:profile,reason:e.code||e.message,modified:false};}
-  return proof;
+  observation.status='VERIFIED';observation.stage='complete';proof.preflight=observation;return proof;
+  });
 }
 function inspectBrowserProcess(child,chrome){
   assertLinux(process.platform);assert.equal(child.spawnfile,CHROME,'actual spawned executable must be explicit installed Chrome');assert.ok(Number.isSafeInteger(child.pid)&&child.pid>0);
@@ -123,4 +146,4 @@ function createNssHome({credentials,certutil,forbiddenRoots=[]}){
   };
   }catch(e){if(fs.existsSync(home))fs.rmSync(home,{recursive:true,force:false});throw e;}
 }
-module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss,chromePackage,inspectChrome,inspectBrowserProcess,CHROME};
+module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss,chromePackage,inspectChrome,inspectBrowserProcess,retainChromePreflight,CHROME};

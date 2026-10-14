@@ -1,0 +1,13 @@
+# Full backend verification — retained first attempt
+
+Source: `3fb092dc1475543240059556fb0cf033c7f967b3`. This is additional backend coverage work, not a Stocks capacity test.
+
+The single Windows canonical-source attempt exited naturally after 90.444s (exit 1). It logged 29 PASS and 10 FAIL suite lines; 210 of the 249 backend suites had no terminal result. No terminal Jest JSON was produced. **INCOMPLETE; no full-backend PASS claim.** All canonical source hashes remained unchanged.
+
+Two QA-boundary compatibility problems were observed: explicit loopback binding made Supertest's immediate server.address() unavailable, and the strict native-addon path guard rejected bcrypt. Separately, module-scope PrismaClient construction initialized its native engine asynchronously even in an opted-out database suite. The native-engine fence rejected that load and the unhandled initialization rejection terminated the combined run. The rejection was not suppressed; the database/engine was not mocked into success. Four passing finite guard selftests did not prove full Jest compatibility.
+
+The shared generated Prisma 5.22.0 client was not regenerated for this exact schema. Its provenance and the full raw stdout/stderr, command, guard, source manifest and denied-operation journal remain outside Git at the relative evidence location in windows-r1-incomplete.json. That file binds their SHA-256 values. Logged PASS/FAIL lines are partial observations, not aggregate Jest counts or proof of database integration. No process was manually killed and no product/test source was changed to obtain a pass.
+
+The proposed replacement is a separate Linux QA image with fresh lockfile dependencies and schema generation, followed by an inspected Docker network=none test container. It preserves the original Jest config and all 249 backend filenames, permits real native libraries only inside that network namespace, supplies test-only environment values, and leaves all database opt-ins disabled. Native library loading is not database acceptance. Its implementation/guard tests are review evidence; a genuine terminal CI result is still required.
+
+The final finite helper guard suite passed 10/10 on local Windows Node24.21.0 (139.5886ms); zero skips. `offline-helper-guards.txt` is the raw result and `offline-helper-source-manifest.json` binds the reviewed helper, Dockerfile and tests. These checks cover source/path identity, exact249 inventory, namespace/egress/mount/env boundaries, output isolation, and the false-PASS artifact edge. They do not execute Docker or substitute for the pending Linux backend workload.

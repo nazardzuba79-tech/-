@@ -1,12 +1,39 @@
 name: Stocks isolated review
 on:
   pull_request:
-    paths: ['services/stocks/**', 'services/stocks-global/**', 'services/stocks-simulator/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/__tests__/stock*.test.ts', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', '.github/workflows/stocks-review.yml']
+    paths: ['services/stocks/**', 'services/stocks-global/**', 'services/stocks-simulator/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/__tests__/stock*.test.ts', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', 'scripts/qa-backend-full*', '.github/workflows/stocks-review.yml']
   push:
     branches: [codex/stocks-bounded-v1-20261007]
 permissions:
   contents: read
 jobs:
+  stocks-full-backend-offline:
+    # One complete backend collection for PR512, with native engines confined
+    # to a disposable no-network container. This is not a capacity or DB test.
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 512
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Offline backend boundary guards
+        run: node --test scripts/qa-backend-full-offline.test.cjs
+      - name: Full backend in a verified no-network container
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/qa-backend-full-offline.cjs --sha "$QA_SOURCE_SHA" --out "$RUNNER_TEMP/voltex-backend-full"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-full-backend-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/voltex-backend-full/evidence
+          if-no-files-found: error
   stocks-review-selection:
     # PR512 stages costly evidence explicitly. Scheduling SKIPs are not PASSes;
     # all other PRs retain the original gates and criteria below.
@@ -533,6 +560,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24.21.0'
+      - name: Read-only installed Chrome prerequisite before dependencies and builds
+        id: chrome-preflight
+        timeout-minutes: 1
+        shell: bash
+        run: |
+          mkdir -p stocks-ui-evidence
+          node --test scripts/qa-stocks-chrome-preflight.test.cjs scripts/qa-stocks-public-nss.test.cjs | tee stocks-ui-evidence/chrome-preflight-guards.log
+          node scripts/qa-stocks-chrome-preflight.cjs --output "$GITHUB_WORKSPACE/stocks-ui-evidence/chrome-preflight"
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Default build (stocks flag OFF)
@@ -553,7 +588,7 @@ jobs:
           QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/panel-overview
         run: node scripts/qa-stocks-ui.cjs
       - name: Shared Trading navigation and terminal isolation (fixtures only)
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.chrome-preflight.outcome == 'success' }}
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
           QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/navigation

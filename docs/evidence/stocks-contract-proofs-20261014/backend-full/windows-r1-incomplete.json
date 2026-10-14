@@ -1,0 +1,58 @@
+{
+  "sourceSHA": "3fb092dc1475543240059556fb0cf033c7f967b3",
+  "status": "INCOMPLETE",
+  "platform": "Windows",
+  "node": "24.21.0",
+  "durationSeconds": 90.444,
+  "processExitCode": 1,
+  "attemptedInventory": 249,
+  "observedSuiteLines": {
+    "pass": 29,
+    "fail": 10,
+    "notObserved": 210
+  },
+  "terminalJestJSON": false,
+  "sourceMutations": [],
+  "auditCounts": {
+    "guard-start": 1,
+    "QA_UNREVIEWED_CHILD_DENIED": 1,
+    "owned-listener": 113,
+    "QA_NATIVE_LIBRARY_DENIED": 4,
+    "allowed-readonly-grep": 1,
+    "guard-exit": 1
+  },
+  "failedSuiteNames": [
+    "src/futures/__tests__/FuturesPositionService.test.ts",
+    "src/api/routes/__tests__/auth.test.ts",
+    "src/private-trading/__tests__/marketData.test.ts",
+    "src/services/copyTrading/__tests__/marketplaceSnapshot.test.ts",
+    "src/api/routes/__tests__/bcryptAuthRegression.test.ts",
+    "src/api/routes/__tests__/adminUsers.test.ts",
+    "src/api/routes/__tests__/cardApplications.test.ts",
+    "src/api/routes/__tests__/account.test.ts",
+    "src/api/routes/__tests__/kyc.test.ts",
+    "src/api/routes/__tests__/deposits.test.ts"
+  ],
+  "terminal": "Unhandled PrismaClientInitializationError from native engine initialization; native loading denied, no DB connection admitted",
+  "limitations": [
+    "Module-scope PrismaClient construction begins async native initialization even when a DB suite opts out. Native engine remains denied.",
+    "Supertest synchronous listen/address contract incompatible with explicit-host guard binding.",
+    "Pinned bcrypt native allowlist refusal needs read-only diagnosis.",
+    "Shared Prisma generated client5.22.0 not regenerated for exact3fb schema.",
+    "No full backend PASS; no original test/source changes or suppressed rejections."
+  ],
+  "guardSelftest": "Four finite guard selftests passed; they did not establish Jest compatibility or OS-level egress isolation.",
+  "rawLocation": "output/stocks-next-release-20261013/backend-full-3fb092dc-r1",
+  "rawHashes": {
+    "network-guard.cjs": "c7a70729e800dc7be608421937d2b8f23ad631e37bcea927b3012fa12f252b0f",
+    "run.cjs": "51d07f8c149374bbd5bb8b9cec2a4d219ae30c21c6c55eb31eed5c7cd596cde9",
+    "full-command.json": "cea3760a7bc91f25d4a7e2e05d0acac551ad2bf061218cc09c1317b45b45484a",
+    "full-result.json": "3183e1ceee2428e72accc5f3c683349ba59f7a5ea6b83ed424d4377e39370bbe",
+    "full.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "full.stderr.log": "7e305a26c0314d880c8a91b62dcd769f219025037ec7c4e6706c2c4ad598b0f1",
+    "source-manifest.json": "bb19091cc7417aad07ab37db19dac4a24873ad72ba806f47ec956c717d5665ef"
+  },
+  "backendInventorySHA256": "31f6de1e7be30252e35b5f0cab986aabefe159460018574e711ed4fda4fe29fd",
+  "noManualTermination": true,
+  "sourceOrTestsChanged": false
+}

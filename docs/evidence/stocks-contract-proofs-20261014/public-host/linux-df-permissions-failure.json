@@ -1,0 +1,281 @@
+{
+  "schema": 1,
+  "fixtureOnly": true,
+  "publicExposure": false,
+  "productionAccess": false,
+  "capacityClaim": false,
+  "status": "FAIL",
+  "assertions": 3,
+  "checks": [
+    "three complete separate builds",
+    "every recorded frontend input unchanged",
+    "fixture exits normally"
+  ],
+  "cases": [
+    {
+      "name": "off",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "on",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "candidate",
+      "status": "NOT_RUN"
+    }
+  ],
+  "startedAt": "2026-10-13T23:02:51.048Z",
+  "build": {
+    "manifestSha256": "e7ace518da77f71e8c47069279fab8c140aaf0bde180c85ffc6d22662114dd24",
+    "sourceHash": "7ff9041a86eb5af43932964ba36b1c4decd00796ea634bfdd8029a5d754aee34",
+    "buildRoot": "/home/runner/work/_temp/stocks-public-build",
+    "cases": [
+      {
+        "name": "off",
+        "env": {
+          "VITE_STOCKS_ENABLED": "false",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "false",
+          "VITE_STOCKS_WIDGET_PREVIEW": "false",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "false",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "4726adc6f25d4aba28758b07ad5c9b5425097c7a2918f66739d37dfa78ee38c5",
+        "candidateDelta": null
+      },
+      {
+        "name": "on",
+        "env": {
+          "VITE_STOCKS_ENABLED": "true",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "true",
+          "VITE_STOCKS_WIDGET_PREVIEW": "true",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "true",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "5b7d9c987b3498f007ea3a19869eb7dfc0d52cf82f5dbde93d9dad1f77b4d5ee",
+        "candidateDelta": null
+      },
+      {
+        "name": "candidate",
+        "env": {
+          "VITE_STOCKS_ENABLED": "true",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "true",
+          "VITE_STOCKS_WIDGET_PREVIEW": "true",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "true",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "e29bed59e675e90ed55b41aee59f38336020aecad3ae61cb3e4df6bdbc818f33",
+        "candidateDelta": {
+          "path": "src/pages/stocks/stockHostPolicy.ts",
+          "before": "hostname === '127.0.0.1'",
+          "after": "(hostname === '127.0.0.1' || hostname === 'stocks-review.invalid')",
+          "originalSha256": "a6cbea13918d37c60951cd3fa8e4868b89e77fd9130176b9903102eb70544926",
+          "candidateSha256": "d0bc4cd5cef43bba18e38c099cbe77762bf8537eaf2cc83fab49aa8c4e985ccd",
+          "scope": "build-memory QA shadow only; actual hostname fence is untouched"
+        }
+      }
+    ],
+    "verifiedSourceFiles": 1166
+  },
+  "authority": {
+    "source": "/home/runner/work/-/-/output/stocks-local-stage/package",
+    "manifestSha256": "3c89ec5ea7b2870ffe75a438608c5aa645b689462a2f7c57c4736e8825a0fcb6",
+    "files": 27,
+    "build": {
+      "proofSha256": "fea0402f12758055dba12b54b5c6c4c09e5f8c10b35c05e806aa92fa169b276e",
+      "compiled": {
+        "dist/api/routes/account.js": "6a06d889c1e31a73a017c6aca58c4f6cab20857f4ee1a943b6e334804691440c",
+        "dist/api/asyncRoute.js": "30d5ca41c9b3a35cc23b9b21f21906fea8d78c453807aea44484f294d74f293b",
+        "dist/services/AdminPasswordVault.js": "5b8de70bf420d0c4dd0844c71a972c7d407a5114eb6d10143edcf4b6ca9c1e7b",
+        "dist/api/middleware/auth.js": "dcaaf312a5d51a02bf25837b533679302f12f53a485f7ed63d1f1ac9ae37bd2d",
+        "dist/services/ContactEmailPolicy.js": "949972ebda91902df904a503e5fd1ad52ef094c230e99df34a80a283b037abb8",
+        "dist/services/TwoFactorService.js": "945c25a8a126233e2296cc69c57d65592e0b23bb02a649ec512e1eaabbb7e408"
+      },
+      "sourceCount": 279,
+      "compilerVersion": "5.9.3",
+      "sourceBuildStartedAt": "2026-10-13T22:52:20.336Z",
+      "sourceBuildEndedAt": "2026-10-13T22:52:32.311Z",
+      "identityResolverSha256": "66dce517ebb73540cb3a5a8dbb1dd43ee711706da2505fa3c90c42e21dec67bb",
+      "fixtureSha256": "2d137a89c4f1ff02e1d18b2366faa4cd0cad0f34c93fbb8407d29cb8f9819379"
+    },
+    "scope": "Immutable fresh-build-proven local /me artifact; current source/compiler/config/log verified, compiled closure read from artifact only; strict fixture Prisma and separate private SQLite; no production session"
+  },
+  "nss": {
+    "platform": "linux",
+    "tool": {
+      "executable": "/usr/bin/certutil",
+      "executableSha256": "88c077cdfa12818fbbcf1841f1e97f60da587c8ca1fe54630496442f62d4477a",
+      "packageOwner": "libnss3-tools: /usr/bin/certutil",
+      "packages": [
+        "libnss3\t2:3.98-1ubuntu0.2",
+        "libnss3-tools\t2:3.98-1ubuntu0.2"
+      ]
+    },
+    "home": {
+      "path": "/tmp/voltex-stocks-nss-1YDZ8S",
+      "mode": "0700",
+      "uid": 1001
+    },
+    "directories": [
+      {
+        "path": "/tmp/voltex-stocks-nss-1YDZ8S/.pki",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-1YDZ8S/.pki/nssdb",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-1YDZ8S/config",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-1YDZ8S/data",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-1YDZ8S/cache",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-1YDZ8S/tmp",
+        "mode": "0700",
+        "uid": 1001
+      },
+      {
+        "path": "/tmp/voltex-stocks-nss-1YDZ8S/run",
+        "mode": "0700",
+        "uid": 1001
+      }
+    ],
+    "database": "/tmp/voltex-stocks-nss-1YDZ8S/.pki/nssdb",
+    "nickname": "voltex-fixture-ca-a07a83d80867a3c0",
+    "caFingerprint": "FE:AA:BC:E6:80:0C:6E:F9:08:A6:27:60:EE:8F:D4:BA:25:81:6B:51:65:2E:FB:22:EF:F7:44:6A:A3:CB:FA:27",
+    "trust": "C,,",
+    "commands": [
+      {
+        "args": [
+          "-N",
+          "--empty-password",
+          "-d",
+          "sql:/tmp/voltex-stocks-nss-1YDZ8S/.pki/nssdb"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exitCode": 0
+      },
+      {
+        "args": [
+          "-A",
+          "-d",
+          "sql:/tmp/voltex-stocks-nss-1YDZ8S/.pki/nssdb",
+          "-n",
+          "voltex-fixture-ca-a07a83d80867a3c0",
+          "-t",
+          "C,,",
+          "-i",
+          "/tmp/voltex-stocks-nss-1YDZ8S/fixture-ca.pem"
+        ],
+        "stdout": "",
+        "stderr": "",
+        "exitCode": 0
+      },
+      {
+        "args": [
+          "-L",
+          "-d",
+          "sql:/tmp/voltex-stocks-nss-1YDZ8S/.pki/nssdb"
+        ],
+        "stdout": "\nCertificate Nickname                                         Trust Attributes\n                                                             SSL,S/MIME,JAR/XPI\n\nvoltex-fixture-ca-a07a83d80867a3c0                           C,,  \n",
+        "stderr": "",
+        "exitCode": 0
+      },
+      {
+        "args": [
+          "-L",
+          "-d",
+          "sql:/tmp/voltex-stocks-nss-1YDZ8S/.pki/nssdb",
+          "-n",
+          "voltex-fixture-ca-a07a83d80867a3c0",
+          "-a"
+        ],
+        "stdout": "-----BEGIN CERTIFICATE-----\nMIIDAjCCAeqgAwIBAgIUM9AxumIyaf7c7mF08UK1kvFoHiUwDQYJKoZIhvcNAQEL\r\nBQAwJzElMCMGA1UEAwwcRGlzcG9zYWJsZSBTdG9ja3MgZml4dHVyZSBDQTAeFw0y\r\nNjEwMTMyMjU3NTFaFw0yNjEwMTQyMzAyNTFaMCcxJTAjBgNVBAMMHERpc3Bvc2Fi\r\nbGUgU3RvY2tzIGZpeHR1cmUgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\r\nAoIBAQDQG8crIPaIIuPT///OGrEnNzaNzw2zVEnc8O+27tjDhFSQ8twaxU/s9PBI\r\nZr6tK5m0qmAEY/V2A/2bjuv6Pk/d62RZWBeL7NSn3eSV85XWDvhO2r3X5MF5KWaH\r\nktnIeiDPgB+twcWc/5dm6sAqG+vVuHIA2cq6bdIw/1n3KWYseICler+kVbSPKpJz\r\nq7lprgmBEqssU46m6yA7J0ELAPNPF/5/DDFS5y/CIJQgrIDpj82W/i6A6hsXFvEX\r\nLjYigbU2xCSuFm9/x6pmV/GPlnzoabavoDWFZJ5nlW8sc4IPihu6Kyj0GJjTL4RR\r\nJA5A/GgJJhJ5lVZ+N+f0+EwmpFc3AgMBAAGjJjAkMBIGA1UdEwEB/wQIMAYBAf8C\r\nAQAwDgYDVR0PAQH/BAQDAgEGMA0GCSqGSIb3DQEBCwUAA4IBAQAbf54aoGxC3r7S\r\nmULNR6Jwnadzi6OFN6pFZUyX0lkLfKaPjPCLdJDqHj0CbYblle3UrCE5VT2Aerio\r\nOtBS6APFRNwP+z5S7npCU1l5UwGvX1a4Dzk4ruR8hHtKTk7Gsr2Qg7phbn6Zr6Lo\r\nOEqDCgk+o7JTei3cIJ8aULBlFAq/yBDgSO0fsymCTqHahl9RR5D6XpYehVqYPEZv\r\nUkiXGE8Fxiy7//0DEUSkWrEW/xmmqMPE5cySzV02pM2k7eAeBvrGtCVOKAPjlATu\r\nOYfxkyMZfrUuxCCQz/wLQwXfcJFTe9FZIbFenaFJTrJaQQRY2dnoIEatSq6fYXKI\r\nVDo10Eoz\n-----END CERTIFICATE-----\n",
+        "stderr": "",
+        "exitCode": 0
+      }
+    ],
+    "databaseFiles": [
+      {
+        "name": "cert9.db",
+        "mode": "600",
+        "uid": 1001
+      },
+      {
+        "name": "key4.db",
+        "mode": "600",
+        "uid": 1001
+      },
+      {
+        "name": "pkcs11.txt",
+        "mode": "600",
+        "uid": 1001
+      }
+    ],
+    "globalTrustChanged": false,
+    "profile": null,
+    "privateKeyImported": false,
+    "databaseLocationReason": "Fresh private HOME/.pki/nssdb; Chromium documented compatibility location takes precedence, including M146+",
+    "cleaned": true
+  },
+  "failure": {
+    "message": "Chrome executable permissions",
+    "stack": "AssertionError [ERR_ASSERTION]: Chrome executable permissions\n    at chromeIdentity (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:11:10)\n    at inspectChrome (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:33:3)\n    at main (/home/runner/work/-/-/scripts/qa-stocks-public-host.cjs:53:29)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+  },
+  "fixtureAudit": {
+    "fixtureOnly": true,
+    "productionAccess": false,
+    "runtime": {
+      "node": "v24.21.0",
+      "platform": "linux",
+      "arch": "x64"
+    },
+    "identityRequests": 0,
+    "prisma": {
+      "sessionReads": 0,
+      "sessionTouches": 0,
+      "userReads": 0,
+      "policyReads": 0,
+      "unexpected": 0
+    },
+    "forwarded": 0,
+    "blockedRoutes": 0,
+    "deniedNetwork": 0,
+    "quotes": 0,
+    "histories": 0,
+    "droppedAcknowledgements": 0
+  },
+  "child": {
+    "code": 0,
+    "signal": null,
+    "outputBytes": 0
+  },
+  "completedAt": "2026-10-13T23:02:52.089Z",
+  "limitations": [
+    "No production domain, provider traffic, real funds, deploy image or capacity claim",
+    "Linux-only fresh private NSS fixture CA; normal browser TLS validation; no global trust change",
+    "External request denial is a QA browser routing boundary, not OS network isolation",
+    "Untouched enabled public route still selects legacy; shared exact-localhost Wallet fence intentionally blocks its reads",
+    "Candidate modifies one shared hostname hunk in build memory only and is not publishable"
+  ]
+}

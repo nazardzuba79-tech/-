@@ -1,0 +1,19 @@
+{
+  "note": "Pure guard10 tests only; Linux/fullbackend NOT RUN locally",
+  "node": "v24.21.0",
+  "exit": 0,
+  "files": [
+    {
+      "path": "scripts/qa-backend-full-offline.cjs",
+      "sha256": "ee6c54afddc13d270bda6fe71a3572f73b238650c3ccd456497b6fc456d9a04d"
+    },
+    {
+      "path": "scripts/qa-backend-full-offline.Dockerfile",
+      "sha256": "9b283c24a5e8cd4f8172055ac5259b573221ab3419476fbc31861c4608fcc03e"
+    },
+    {
+      "path": "scripts/qa-backend-full-offline.test.cjs",
+      "sha256": "358fe2248f056b00483e5da4f7d987969cedfadd7eb5ceeee8244821bca364dc"
+    }
+  ]
+}

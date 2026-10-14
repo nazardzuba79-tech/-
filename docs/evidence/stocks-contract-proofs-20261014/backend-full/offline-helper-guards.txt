@@ -1,0 +1,18 @@
+✔ Git source inventory admits only exact regular blobs and safe relative names (3.4096ms)
+✔ env/private material is excluded while the full source audit closure remains (0.1613ms)
+✔ backend discovery requires the full reviewed249, not frontend or arbitrary fixture files (1.6672ms)
+✔ prestart inspection rejects network, namespace, entrypoint, mount and identity drift (6.9118ms)
+✔ test container cannot inherit credentials, database opt-ins or change resource guardrails (0.7437ms)
+✔ canonical source proof rejects byte mutation independently of path and size (4.8232ms)
+✔ artifact manifest binds exact retained bytes and does not include external paths (2.8358ms)
+✔ terminal suite count cannot hide a missing, duplicated or substituted backend file (1.5437ms)
+✔ container export accepts only bounded flat regular reports and never overwrites host proofs (7.0655ms)
+✔ an artifact validation failure cannot persist a PASS-looking result (12.8177ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 139.5886
