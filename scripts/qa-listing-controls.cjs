@@ -362,6 +362,16 @@ async function acceptance() {
   await page.locator('[data-use-historical-preset="eth-2021-jan"]').waitFor({state:'visible'});
   await page.waitForFunction(()=>!(document.querySelector('[data-use-historical-preset="eth-2021-jan"]'))?.hasAttribute('disabled'));
   await page.locator('[data-use-historical-preset="eth-2021-jan"]').click();
+  // IndexedDB read + SHA-256 verification + React state commit are asynchronous.
+  // A click resolving only means the handler started; never inspect the old
+  // single-clip DOM synchronously and mistake the pending operation for failure.
+  await page.waitForFunction(() =>
+    document.querySelector('[data-historical-clips]')?.textContent?.includes('2021-01-01')
+    || document.querySelector('[data-historical-library] [role="alert"]'),
+    undefined, { timeout: 15_000 },
+  );
+  const libraryError=await page.locator('[data-historical-library] [role="alert"]').allTextContents();
+  assert.deepEqual(libraryError,[],'The historical library must import ETH without an error');
   assert.match(await page.locator('[data-historical-clips]').innerText(),/2021-01-01/);
   assert.equal(await page.locator('[data-historical-clips] [role="listitem"]').count(),2);
   assert.equal(await page.locator('[data-publish]').isDisabled(),true);
