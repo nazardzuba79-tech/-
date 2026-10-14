@@ -30,6 +30,18 @@ describe('Historical hourly movement after the planned growth and fall',()=>{
     expect(server.sourceStart).toBe('2018-01-01T00:00:00.000Z');
     expect(server.bars[0][2]).toBe(15000);
   });
+  test('a 90-day date selection from a longer historical CSV equals exactly the same 2160 real source hours',()=>{
+    const raw=csv(3000);
+    const selected=raw.split('\n').slice(14*24,14*24+2160).join('\n');
+    const fromBrowser=importHistoricalCsv(raw,'BTC/USDT',{startDateUtc:'2018-01-15',hours:2160});
+    const fromServer=importHistoricalHourlyCsv(selected,'BTC/USDT');
+    expect(fromBrowser).toEqual(fromServer);
+    expect(fromBrowser.sourceStart).toBe('2018-01-15T00:00:00.000Z');
+    expect(fromBrowser.bars).toHaveLength(2160);
+    expect(()=>importHistoricalCsv(csv(72),'BTC/USDT',{hours:2160})).toThrow(/период/);
+    expect(()=>importHistoricalCsv(raw,'BTC/USDT',{startDateUtc:'2017-01-01',hours:24})).toThrow(/дат/);
+  });
+
   test('CSV gaps, malformed OHLC and sub-hour timestamps fail closed',()=>{
     const lines=csv().split('\n');
     expect(()=>importHistoricalHourlyCsv(lines.filter((_,i)=>i!==6).join('\n'),'BTC/USDT')).toThrow(/Пропущенный/);
