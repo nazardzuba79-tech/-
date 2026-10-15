@@ -239,7 +239,7 @@ async function main() {
         rail: !!document.querySelector('.cfd-chart-area [data-drawing-tool]'), quick: [...document.querySelectorAll('.cfd-chart-area [data-cw-tf]')].map(b => b.getAttribute('data-cw-tf')),
         settings: !!document.querySelector('.cfd-chart-area .chart-settings-trigger'), old: document.querySelectorAll('.cfd-owned-chart, .cfd-chart-toolbar').length,
       }));
-      const notes = await page.evaluate(() => ({ insufficient: document.querySelectorAll('.cfd-chart-area [data-indicator-insufficient]').length, orderNote: document.querySelectorAll('.cfd-order-type-note').length, legend: [...document.querySelectorAll('.cfd-chart-area .voltex-indicator-legend > *')].map(e => e.textContent.trim()) }));
+      const notes = await page.evaluate(() => ({ insufficient: document.querySelectorAll('.cfd-chart-area [data-indicator-insufficient]').length, orderNote: document.querySelectorAll('.cfd-order-type-note, .cfd-tabs-note, .terminal-practice-label[title], .cfd-order-type[title]').length, legend: [...document.querySelectorAll('.cfd-chart-area .voltex-indicator-legend > *')].map(e => e.textContent.trim()) }));
       check(`${P}.no-notes`, notes.insufficient === 0 && notes.orderNote === 0, notes);
       check(`${P}.workspace.present`, base.toolbar && base.views.join(',') === 'chart,data,analytics' && base.rail && base.settings && base.old === 0 && base.quick.length >= 5, base);
 

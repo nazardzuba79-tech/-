@@ -63,7 +63,6 @@ export function CfdPositionsPanel({refreshKey,tickers}:{refreshKey:number;ticker
     <div className="cfd-tabs" role="tablist" aria-label={t('futures.positions')}>
       <button onClick={()=>setTab('open')} className={`cfd-tab${tab==='open'?' active':''}`} role="tab" aria-selected={tab==='open'}>{t('futures.positions')} <span className="cfd-tab-count">{openCount}</span></button>
       <button onClick={()=>setTab('history')} className={`cfd-tab${tab==='history'?' active':''}`} role="tab" aria-selected={tab==='history'}>{t('futures.positionHistory')} <span className="cfd-tab-count">{historyCount}</span></button>
-      <span className="cfd-tabs-note">{copy.quoteCurrencyNote}</span>
     </div>
     {error&&<div className="cfd-error" role="alert">{error}</div>}
     <div className="cfd-position-content" role="tabpanel">

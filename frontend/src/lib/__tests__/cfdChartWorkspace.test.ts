@@ -320,6 +320,15 @@ describe('the stats bar and the market list read only real figures', () => {
     expect(indicators.defaultChartIndicators('spot').map(i => i.id)).toEqual(['ma-200']);
     expect(indicators.defaultChartIndicators('futures').map(i => i.id)).toEqual(['ma-200']);
   });
+  it('shows no explanatory hover notes: SIM, order type, quote currency, 52-week range (owner, 2026-10-15)', () => {
+    const form = readFileSync(resolve(frontend, 'src/components/CfdOrderForm.tsx'), 'utf8');
+    expect(form).toMatch(/<span className="terminal-practice-label" aria-label=\{copy\.practice\}>SIM<\/span>/);
+    expect(form).not.toMatch(/practiceNote|marketOnlyNote/);
+    expect(readFileSync(resolve(frontend, 'src/components/CfdPositionsPanel.tsx'), 'utf8')).not.toMatch(/quoteCurrencyNote|cfd-tabs-note/);
+    expect(readFileSync(resolve(frontend, 'src/components/CfdTickerBar.tsx'), 'utf8')).not.toContain('closedSessionsOnly');
+    const copy = readFileSync(resolve(frontend, 'src/lib/cfdDisplayCopy.ts'), 'utf8');
+    for (const phrase of ['отображаемой котировке', 'не отправляются на внешний рынок', 'Суммы в валюте котировки', 'только закрытые сессии', 'Лимитные, стоп-ордера']) expect(copy).not.toContain(phrase);
+  });
   it('lists the order-time estimates honestly and has no TP/SL column', () => {
     const panel = read('src/components/CfdPositionsPanel.tsx');
     expect(panel).toContain('copy.liqEstimate');

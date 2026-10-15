@@ -73,7 +73,6 @@
 :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-order-type > span { font-size:13px; line-height:20px; font-weight:600; color:#f0b90b; }
 
 /* ── Positions: compact empty state, actions, partial close ─────────────── */
-:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-tabs-note { margin-left:auto; font-size:10px; color:#6a6e73; white-space:nowrap; }
 :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-empty { flex-direction:row; min-height:0; padding:14px 16px; gap:8px; font-size:12px; }
 @media (min-width:1025px) {
   /* No position: the panel keeps its tabs and one line, the chart gets the rest. */

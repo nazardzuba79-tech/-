@@ -118,11 +118,11 @@ export function CfdOrderForm({
           that went nowhere and a disabled button: the practice fills at the snapshot quote and cannot
           fill a resting or conditional order honestly, so it no longer offers one. No note under it
           (owner, 2026-10-15); the reason stays in the tooltip. */}
-      <div className="order-family-tabs cfd-order-type" role="group" aria-label={t('trade.orderType')} title={copy.marketOnlyNote}>
+      <div className="order-family-tabs cfd-order-type" role="group" aria-label={t('trade.orderType')}>
         <span className="active" aria-current="true">{copy.marketOrder}</span>
       </div>
       <div className="cfd-product-terms">
-        <span className="terminal-practice-label" title={copy.practiceNote} aria-label={copy.practice}>SIM</span>
+        <span className="terminal-practice-label" aria-label={copy.practice}>SIM</span>
         <span>{t('futures.isolated')}</span>
       </div>
       <form onSubmit={handleSubmit} className="cfd-form">
