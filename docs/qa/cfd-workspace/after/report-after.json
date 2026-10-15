@@ -1,7 +1,7 @@
 {
   "phase": "after",
   "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/frontend/dist",
-  "startedAt": "2026-10-15T09:29:01.464Z",
+  "startedAt": "2026-10-15T10:08:16.112Z",
   "environment": "LOCAL QA ONLY — loopback host, real public CFD display sources, no database, no production writes",
   "checks": [
     {
@@ -783,7 +783,7 @@
         "updated",
         "status"
       ],
-      "text": "AuXAUUSDЗолотоЦена4,159.84Изм. за день+47.87 (+1.16%)Закрытие пред. сессии4,111.97Макс. дня4,161.90Мин. дня4,111.24Bid / Ask4,159.75 / 4,159.92Спред0.17Котировка09:29 UTCСтатусОткрытадо закрытия 11ч 30мин",
+      "text": "XAUUSDЗолотоЦена4,157.52Изм. за день+45.55 (+1.11%)Закрытие пред. сессии4,111.97Макс. дня4,161.90Мин. дня4,111.24Bid / Ask4,157.43 / 4,157.60Спред0.17Котировка10:08 UTCСтатусОткрытадо закрытия 10ч 51мин",
       "status": "open"
     },
     {
@@ -797,7 +797,7 @@
       "id": "cfd.1440.timeframe.1m",
       "pass": true,
       "state": "candles",
-      "ms": 1228,
+      "ms": 1024,
       "asked": [
         "1m"
       ],
@@ -807,7 +807,7 @@
       "id": "cfd.1440.timeframe.3m",
       "pass": true,
       "state": "candles",
-      "ms": 956,
+      "ms": 848,
       "asked": [],
       "stored": "3m"
     },
@@ -815,7 +815,7 @@
       "id": "cfd.1440.timeframe.5m",
       "pass": true,
       "state": "candles",
-      "ms": 716,
+      "ms": 703,
       "asked": [
         "5m"
       ],
@@ -825,7 +825,7 @@
       "id": "cfd.1440.timeframe.15m",
       "pass": true,
       "state": "candles",
-      "ms": 700,
+      "ms": 582,
       "asked": [
         "15m"
       ],
@@ -835,7 +835,7 @@
       "id": "cfd.1440.timeframe.30m",
       "pass": true,
       "state": "candles",
-      "ms": 949,
+      "ms": 810,
       "asked": [
         "30m"
       ],
@@ -845,7 +845,7 @@
       "id": "cfd.1440.timeframe.1h",
       "pass": true,
       "state": "candles",
-      "ms": 622,
+      "ms": 597,
       "asked": [],
       "stored": "1h"
     },
@@ -853,7 +853,7 @@
       "id": "cfd.1440.timeframe.2h",
       "pass": true,
       "state": "candles",
-      "ms": 857,
+      "ms": 784,
       "asked": [],
       "stored": "2h"
     },
@@ -861,7 +861,7 @@
       "id": "cfd.1440.timeframe.4h",
       "pass": true,
       "state": "candles",
-      "ms": 627,
+      "ms": 598,
       "asked": [
         "4h"
       ],
@@ -871,7 +871,7 @@
       "id": "cfd.1440.timeframe.6h",
       "pass": true,
       "state": "candles",
-      "ms": 829,
+      "ms": 781,
       "asked": [],
       "stored": "6h"
     },
@@ -879,7 +879,7 @@
       "id": "cfd.1440.timeframe.12h",
       "pass": true,
       "state": "candles",
-      "ms": 879,
+      "ms": 825,
       "asked": [],
       "stored": "12h"
     },
@@ -887,7 +887,7 @@
       "id": "cfd.1440.timeframe.1d",
       "pass": true,
       "state": "candles",
-      "ms": 732,
+      "ms": 690,
       "asked": [
         "1d"
       ],
@@ -897,7 +897,7 @@
       "id": "cfd.1440.timeframe.1w",
       "pass": true,
       "state": "candles",
-      "ms": 615,
+      "ms": 578,
       "asked": [],
       "stored": "1w"
     },
@@ -905,7 +905,7 @@
       "id": "cfd.1440.timeframe.1M",
       "pass": true,
       "state": "candles",
-      "ms": 859,
+      "ms": 782,
       "asked": [],
       "stored": "1M"
     },
@@ -973,12 +973,12 @@
       "present": 1,
       "barType": "bars",
       "priceBefore": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       },
       "price": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       }
     },
     {
@@ -987,12 +987,12 @@
       "present": 1,
       "barType": "hollow",
       "priceBefore": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       },
       "price": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       }
     },
     {
@@ -1001,12 +1001,12 @@
       "present": 1,
       "barType": "heikin",
       "priceBefore": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       },
       "price": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       }
     },
     {
@@ -1015,12 +1015,12 @@
       "present": 1,
       "barType": "line",
       "priceBefore": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       },
       "price": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       }
     },
     {
@@ -1029,12 +1029,12 @@
       "present": 1,
       "barType": "area",
       "priceBefore": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       },
       "price": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       }
     },
     {
@@ -1043,12 +1043,12 @@
       "present": 1,
       "barType": "candles",
       "priceBefore": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       },
       "price": {
-        "ticker": "4,159.84",
-        "ticket": "≈ 4,159.84"
+        "ticker": "4,157.52",
+        "ticket": "≈ 4,157.52"
       }
     },
     {
@@ -1102,7 +1102,7 @@
       "id": "cfd.1440.analytics.panel",
       "pass": true,
       "blocks": 3,
-      "text": "Аналитика периодаВидимый диапазонВся история1 день1 неделя1 месяцИзменение цены+29.60 (+0,72%)Максимум4217.45Минимум4066.42Размах High–Low151.03 (3,71%)Завершённых свечей168 + текущая (не завершена)На"
+      "text": "Аналитика периодаВидимый диапазонВся история1 день1 неделя1 месяцИзменение цены+27.02 (+0,65%)Максимум4217.45Минимум4066.42Размах High–Low151.03 (3,71%)Завершённых свечей168 + текущая (не завершена)На"
     },
     {
       "id": "cfd.1440.compare.cfd-instruments",
@@ -1122,9 +1122,9 @@
       ],
       "entries": 2,
       "values": [
-        "XAUUSD +0,18%",
-        "EURUSD −0,15%",
-        "XAGUSD −7,14%"
+        "XAUUSD −0,03%",
+        "EURUSD −0,25%",
+        "XAGUSD −7,11%"
       ]
     },
     {
@@ -1228,8 +1228,8 @@
     {
       "id": "cfd.1440.snapshot.png",
       "pass": true,
-      "file": "voltex_XAUUSD_1h_2026-10-15_09-30.png",
-      "size": 43995
+      "file": "voltex_XAUUSD_1h_2026-10-15_10-09.png",
+      "size": 42409
     },
     {
       "id": "cfd.1440.fullscreen",
@@ -1272,7 +1272,7 @@
       ],
       "overflow": false,
       "tickets": 1,
-      "ms": 1107,
+      "ms": 1186,
       "heapBefore": 13400000,
       "heapAfter": 13400000
     },
@@ -1326,14 +1326,14 @@
         "USDCHF:CHF",
         "NZDUSD:NZD"
       ],
-      "flags": 14,
+      "flags": 26,
       "broken": []
     },
     {
       "id": "cfd.list.change-matches-strip",
       "pass": true,
-      "list": "+1.16%",
-      "bar": "+47.87 (+1.16%)"
+      "list": "+1.11%",
+      "bar": "+45.55 (+1.11%)"
     },
     {
       "id": "cfd.list.search",
@@ -1351,8 +1351,8 @@
       "url": "?market=cfd&symbol=GBPUSD",
       "active": "GBPUSD",
       "bar": "GBPUSD",
-      "ticket": "≈ 1.32670",
-      "ms": 1682
+      "ticket": "≈ 1.32581",
+      "ms": 1555
     },
     {
       "id": "cfd.list.sort-flattens-groups",
@@ -1379,13 +1379,13 @@
       "id": "cfd.trade.1440.open-long-and-short",
       "pass": true,
       "rows": [
-        "AuXAUUSD 10xШорт0.14,159.844,159.84+0.00 USD+0.00%41.60 USD4,559.1815.10, 09:30ЗакрытьЗакрыть часть",
-        "AuXAUUSD 10xЛонг0.24,159.844,159.84+0.00 USD+0.00%83.20 USD3,760.4915.10, 09:30ЗакрытьЗакрыть часть"
+        "XAUUSD 10xШорт0.14,157.524,157.52+0.00 USD+0.00%41.58 USD4,556.6415.10, 10:09ЗакрытьЗакрыть часть",
+        "XAUUSD 10xЛонг0.24,157.524,157.52+0.00 USD+0.00%83.15 USD3,758.4015.10, 10:09ЗакрытьЗакрыть часть"
       ],
       "preview": [
-        "Стоимость позиции831.97 USD",
-        "Маржа83.20 USD",
-        "Прим. цена ликвидации3,760.49"
+        "Стоимость позиции831.50 USD",
+        "Маржа83.15 USD",
+        "Прим. цена ликвидации3,758.40"
       ]
     },
     {
@@ -1429,13 +1429,13 @@
       "id": "cfd.trade.390.open-long-and-short",
       "pass": true,
       "rows": [
-        "AuXAUUSD 10xШорт0.14,159.844,159.84+0.00 USD+0.00%41.60 USD4,559.1815.10, 09:30ЗакрытьЗакрыть часть",
-        "AuXAUUSD 10xЛонг0.24,159.844,159.84+0.00 USD+0.00%83.20 USD3,760.4915.10, 09:30ЗакрытьЗакрыть часть"
+        "XAUUSD 10xШорт0.14,157.524,157.52+0.00 USD+0.00%41.58 USD4,556.6415.10, 10:09ЗакрытьЗакрыть часть",
+        "XAUUSD 10xЛонг0.24,157.524,157.52+0.00 USD+0.00%83.15 USD3,758.4015.10, 10:09ЗакрытьЗакрыть часть"
       ],
       "preview": [
-        "Стоимость позиции831.97 USD",
-        "Маржа83.20 USD",
-        "Прим. цена ликвидации3,760.49"
+        "Стоимость позиции831.50 USD",
+        "Маржа83.15 USD",
+        "Прим. цена ликвидации3,758.40"
       ]
     },
     {
@@ -2275,8 +2275,8 @@
         "1d"
       ]
     },
-    "cfd.1440.openToCandlesMs": 2256,
-    "cfd.1440.layout2Ms": 550,
+    "cfd.1440.openToCandlesMs": 1948,
+    "cfd.1440.layout2Ms": 518,
     "cfd.1440.requests": {
       "total": 30,
       "candles": 23,
@@ -2291,9 +2291,9 @@
         "4h": 2
       }
     },
-    "cfd.1440.heapMB": 20,
-    "cfd.1920.layout4Ms": 1107,
-    "cfd.list.fiveSwitchesMs": 1682
+    "cfd.1440.heapMB": 15,
+    "cfd.1920.layout4Ms": 1186,
+    "cfd.list.fiveSwitchesMs": 1555
   },
   "screenshots": [
     "cfd-after-1920.png",
@@ -2321,2197 +2321,2197 @@
   ],
   "requests": [
     {
-      "at": 1792056544802,
+      "at": 1792058897041,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056544809,
+      "at": 1792058897043,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056544810,
+      "at": 1792058897044,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792058897045,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056544815,
-      "method": "GET",
-      "path": "/api/v1/market/display/spot-snapshot",
-      "query": ""
-    },
-    {
-      "at": 1792056544817,
+      "at": 1792058897046,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056545092,
+      "at": 1792058897087,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056545096,
+      "at": 1792058897091,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056548459,
+      "at": 1792058900370,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548462,
+      "at": 1792058900373,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548477,
+      "at": 1792058900374,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548635,
+      "at": 1792058900512,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548636,
+      "at": 1792058900516,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548638,
+      "at": 1792058900520,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548803,
+      "at": 1792058900648,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548804,
+      "at": 1792058900653,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548807,
+      "at": 1792058900670,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548955,
+      "at": 1792058900784,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548960,
+      "at": 1792058900806,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056548963,
+      "at": 1792058900818,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056550793,
-      "method": "GET",
-      "path": "/api/v1/market/display/spot-snapshot",
-      "query": ""
-    },
-    {
-      "at": 1792056550796,
+      "at": 1792058902230,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056550798,
+      "at": 1792058902230,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056550801,
+      "at": 1792058902232,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056550802,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056550806,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1h&limit=500"
-    },
-    {
-      "at": 1792056550806,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/tickers",
-      "query": ""
-    },
-    {
-      "at": 1792056551143,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAGUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551144,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XPTUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551145,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XPDUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551236,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/WTIUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551255,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XBRUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551270,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/EURUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551285,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/GBPUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551330,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/USDJPY",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551331,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/AUDUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551332,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/USDCAD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551363,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/USDCHF",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056551376,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/NZDUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056553319,
+      "at": 1792058902232,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056553320,
+      "at": 1792058902233,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553324,
-      "method": "GET",
-      "path": "/api/v1/me",
-      "query": ""
-    },
-    {
-      "at": 1792056553332,
-      "method": "GET",
-      "path": "/api/v1/futures/config",
-      "query": ""
-    },
-    {
-      "at": 1792056553332,
-      "method": "GET",
-      "path": "/api/v1/cfd/config",
-      "query": ""
-    },
-    {
-      "at": 1792056553334,
+      "at": 1792058902234,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056553335,
+      "at": 1792058902235,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056553575,
+      "at": 1792058902426,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553577,
+      "at": 1792058902427,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553579,
+      "at": 1792058902428,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553685,
+      "at": 1792058902476,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553695,
+      "at": 1792058902477,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553696,
+      "at": 1792058902481,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553704,
+      "at": 1792058902494,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553726,
+      "at": 1792058902504,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553726,
+      "at": 1792058902508,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553738,
+      "at": 1792058902518,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553747,
+      "at": 1792058902531,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056553753,
+      "at": 1792058902534,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056555715,
+      "at": 1792058904238,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056555721,
+      "at": 1792058904239,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056555730,
+      "at": 1792058904240,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056555730,
+      "at": 1792058904240,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056555765,
+      "at": 1792058904241,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056555767,
+      "at": 1792058904243,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056555769,
+      "at": 1792058904244,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056556071,
+      "at": 1792058904478,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556077,
+      "at": 1792058904479,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556078,
+      "at": 1792058904479,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556152,
+      "at": 1792058904528,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556152,
+      "at": 1792058904534,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556153,
+      "at": 1792058904535,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556170,
+      "at": 1792058904545,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556171,
+      "at": 1792058904551,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556171,
+      "at": 1792058904553,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556187,
+      "at": 1792058904569,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556200,
+      "at": 1792058904575,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056556203,
+      "at": 1792058904582,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558536,
+      "at": 1792058906313,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792058906315,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792058906317,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792058906319,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056558546,
+      "at": 1792058906320,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558581,
+      "at": 1792058906322,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056558584,
-      "method": "GET",
-      "path": "/api/v1/me",
-      "query": ""
-    },
-    {
-      "at": 1792056558585,
+      "at": 1792058906322,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056558586,
-      "method": "GET",
-      "path": "/api/v1/futures/config",
-      "query": ""
-    },
-    {
-      "at": 1792056558586,
-      "method": "GET",
-      "path": "/api/v1/cfd/config",
-      "query": ""
-    },
-    {
-      "at": 1792056558758,
+      "at": 1792058906541,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558759,
+      "at": 1792058906542,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558759,
+      "at": 1792058906542,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558807,
+      "at": 1792058906596,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558826,
+      "at": 1792058906600,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558826,
+      "at": 1792058906601,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558837,
+      "at": 1792058906610,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558842,
+      "at": 1792058906622,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558853,
+      "at": 1792058906623,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558873,
+      "at": 1792058906635,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558875,
+      "at": 1792058906645,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056558880,
+      "at": 1792058906647,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056560755,
+      "at": 1792058908458,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056560757,
+      "at": 1792058908460,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056560757,
+      "at": 1792058908463,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056560758,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056560759,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1h&limit=500"
-    },
-    {
-      "at": 1792056560759,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/tickers",
-      "query": ""
-    },
-    {
-      "at": 1792056560760,
+      "at": 1792058908464,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056560996,
+      "at": 1792058908464,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058908465,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792058908466,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792058908688,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056560997,
+      "at": 1792058908688,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056560997,
+      "at": 1792058908691,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056561024,
+      "at": 1792058908727,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056561033,
+      "at": 1792058908728,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056561040,
+      "at": 1792058908731,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056561043,
+      "at": 1792058908742,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056561056,
+      "at": 1792058908745,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056561061,
+      "at": 1792058908749,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056561065,
+      "at": 1792058908758,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056561078,
+      "at": 1792058908758,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056561080,
+      "at": 1792058908769,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056562921,
+      "at": 1792058910465,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792058910466,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792058910466,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792058910467,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056562923,
+      "at": 1792058910467,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056562953,
+      "at": 1792058910468,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056562953,
-      "method": "GET",
-      "path": "/api/v1/me",
-      "query": ""
-    },
-    {
-      "at": 1792056562960,
-      "method": "GET",
-      "path": "/api/v1/futures/config",
-      "query": ""
-    },
-    {
-      "at": 1792056562960,
-      "method": "GET",
-      "path": "/api/v1/cfd/config",
-      "query": ""
-    },
-    {
-      "at": 1792056562962,
+      "at": 1792058910468,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056563147,
+      "at": 1792058910589,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563156,
+      "at": 1792058910590,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563158,
+      "at": 1792058910590,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563202,
+      "at": 1792058910651,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563210,
+      "at": 1792058910655,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563210,
+      "at": 1792058910655,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563217,
+      "at": 1792058910664,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563225,
+      "at": 1792058910676,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563225,
+      "at": 1792058910677,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563233,
+      "at": 1792058910687,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563241,
+      "at": 1792058910691,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056563255,
+      "at": 1792058910692,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565178,
+      "at": 1792058912437,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056565179,
+      "at": 1792058912437,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056565179,
+      "at": 1792058912438,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056565186,
+      "at": 1792058912442,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056565189,
+      "at": 1792058912442,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565190,
+      "at": 1792058912443,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056565190,
+      "at": 1792058912444,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056565460,
+      "at": 1792058912658,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565461,
+      "at": 1792058912659,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565461,
+      "at": 1792058912660,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565488,
+      "at": 1792058912687,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565497,
+      "at": 1792058912693,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565497,
+      "at": 1792058912694,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565519,
+      "at": 1792058912704,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565539,
+      "at": 1792058912711,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565549,
+      "at": 1792058912715,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565572,
+      "at": 1792058912725,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565592,
+      "at": 1792058912733,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056565603,
+      "at": 1792058912739,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567387,
+      "at": 1792058914422,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056567389,
-      "method": "GET",
-      "path": "/api/v1/futures/config",
-      "query": ""
-    },
-    {
-      "at": 1792056567392,
-      "method": "GET",
-      "path": "/api/v1/cfd/config",
-      "query": ""
-    },
-    {
-      "at": 1792056567396,
+      "at": 1792058914423,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056567397,
+      "at": 1792058914424,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792058914425,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567397,
+      "at": 1792058914426,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792058914427,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056567398,
+      "at": 1792058914427,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056567814,
+      "at": 1792058914617,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567814,
+      "at": 1792058914618,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567815,
+      "at": 1792058914618,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567896,
+      "at": 1792058914654,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567908,
+      "at": 1792058914655,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567911,
+      "at": 1792058914657,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567918,
+      "at": 1792058914666,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567925,
+      "at": 1792058914669,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567933,
+      "at": 1792058914685,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567939,
+      "at": 1792058914693,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567945,
+      "at": 1792058914694,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056567956,
+      "at": 1792058914704,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056569859,
+      "at": 1792058916375,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056569863,
-      "method": "GET",
-      "path": "/api/v1/futures/config",
-      "query": ""
-    },
-    {
-      "at": 1792056569868,
-      "method": "GET",
-      "path": "/api/v1/cfd/config",
-      "query": ""
-    },
-    {
-      "at": 1792056569869,
+      "at": 1792058916376,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056569875,
+      "at": 1792058916377,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792058916377,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056569876,
+      "at": 1792058916378,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056569877,
+      "at": 1792058916381,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056570273,
+      "at": 1792058916381,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792058916578,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570274,
+      "at": 1792058916579,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570274,
+      "at": 1792058916579,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570336,
+      "at": 1792058916610,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570346,
+      "at": 1792058916616,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570348,
+      "at": 1792058916618,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570360,
+      "at": 1792058916620,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570360,
+      "at": 1792058916626,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570373,
+      "at": 1792058916633,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570432,
+      "at": 1792058916633,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570433,
+      "at": 1792058916638,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056570434,
+      "at": 1792058916647,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056571806,
+      "at": 1792058918344,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792058918345,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792058918347,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792058918348,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792058918348,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918349,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792058918349,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792058918621,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918622,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918622,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918678,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918679,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918680,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918695,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918700,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918701,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918718,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918719,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058918722,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058920004,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1m&limit=500"
     },
     {
-      "at": 1792056573879,
+      "at": 1792058921828,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=5m&limit=500"
     },
     {
-      "at": 1792056574647,
+      "at": 1792058922532,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=15m&limit=500"
     },
     {
-      "at": 1792056575520,
+      "at": 1792058923333,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=30m&limit=500"
     },
     {
-      "at": 1792056577717,
+      "at": 1792058925308,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=4h&limit=500"
     },
     {
-      "at": 1792056580057,
+      "at": 1792058927506,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=500"
     },
     {
-      "at": 1792056591687,
+      "at": 1792058937124,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056592948,
+      "at": 1792058938305,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056595724,
+      "at": 1792058940779,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=4h&limit=500"
     },
     {
-      "at": 1792056597560,
+      "at": 1792058942415,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056599218,
+      "at": 1792058944122,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056609303,
-      "method": "GET",
-      "path": "/api/v1/market/display/spot-snapshot",
-      "query": ""
-    },
-    {
-      "at": 1792056609322,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056609323,
+      "at": 1792058952946,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056609324,
+      "at": 1792058952946,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056609324,
+      "at": 1792058952947,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056609325,
+      "at": 1792058952947,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792058952949,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058952950,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056609325,
+      "at": 1792058952950,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056609688,
+      "at": 1792058953630,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609689,
+      "at": 1792058953631,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609691,
+      "at": 1792058953631,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609761,
+      "at": 1792058953660,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609770,
+      "at": 1792058953662,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609771,
+      "at": 1792058953665,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609792,
+      "at": 1792058953670,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609801,
+      "at": 1792058953675,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609802,
+      "at": 1792058953681,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609811,
+      "at": 1792058953685,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609825,
+      "at": 1792058953706,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056609831,
+      "at": 1792058953710,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056611364,
+      "at": 1792058955260,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056611364,
+      "at": 1792058955260,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056611374,
+      "at": 1792058955261,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056614032,
-      "method": "GET",
-      "path": "/api/v1/market/display/spot-snapshot",
-      "query": ""
-    },
-    {
-      "at": 1792056614043,
+      "at": 1792058957164,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056614043,
+      "at": 1792058957164,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056614044,
+      "at": 1792058957171,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056614044,
+      "at": 1792058957172,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792058957173,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614045,
+      "at": 1792058957173,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056614045,
+      "at": 1792058957174,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056614317,
+      "at": 1792058957413,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614328,
+      "at": 1792058957413,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614332,
+      "at": 1792058957414,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614388,
+      "at": 1792058957473,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614396,
+      "at": 1792058957474,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614396,
+      "at": 1792058957474,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614416,
+      "at": 1792058957485,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614416,
+      "at": 1792058957489,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614425,
+      "at": 1792058957496,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614439,
+      "at": 1792058957507,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614441,
+      "at": 1792058957508,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056614457,
+      "at": 1792058957515,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056617862,
+      "at": 1792058960910,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056617863,
+      "at": 1792058960912,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056618175,
+      "at": 1792058961164,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056618182,
+      "at": 1792058961164,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056618445,
+      "at": 1792058961414,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056618446,
+      "at": 1792058961415,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056618680,
+      "at": 1792058961598,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056618685,
+      "at": 1792058961599,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056618864,
+      "at": 1792058961826,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056618866,
+      "at": 1792058961826,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056620492,
-      "method": "GET",
-      "path": "/api/v1/me",
-      "query": ""
-    },
-    {
-      "at": 1792056620492,
-      "method": "GET",
-      "path": "/api/v1/futures/config",
-      "query": ""
-    },
-    {
-      "at": 1792056620493,
-      "method": "GET",
-      "path": "/api/v1/cfd/config",
-      "query": ""
-    },
-    {
-      "at": 1792056620493,
+      "at": 1792058963343,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056620497,
+      "at": 1792058963346,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792058963346,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620499,
+      "at": 1792058963347,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056620500,
+      "at": 1792058963347,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056620818,
+      "at": 1792058963354,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792058963355,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792058963594,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620818,
+      "at": 1792058963602,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620819,
+      "at": 1792058963604,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620886,
+      "at": 1792058963735,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620901,
+      "at": 1792058963737,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620905,
+      "at": 1792058963742,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620917,
+      "at": 1792058963775,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620923,
+      "at": 1792058963779,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620934,
+      "at": 1792058963813,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620941,
+      "at": 1792058963830,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620961,
+      "at": 1792058963836,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056620968,
+      "at": 1792058963836,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629654,
+      "at": 1792058971549,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056629655,
+      "at": 1792058971550,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056629657,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056629657,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1h&limit=500"
-    },
-    {
-      "at": 1792056629660,
+      "at": 1792058971552,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056629660,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/tickers",
-      "query": ""
-    },
-    {
-      "at": 1792056629660,
+      "at": 1792058971553,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056629844,
+      "at": 1792058971556,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058971556,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792058971557,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792058971766,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629844,
+      "at": 1792058971767,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629845,
+      "at": 1792058971767,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629915,
+      "at": 1792058971796,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629928,
+      "at": 1792058971799,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629929,
+      "at": 1792058971799,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629938,
+      "at": 1792058971806,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629952,
+      "at": 1792058971818,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629960,
+      "at": 1792058971823,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629972,
+      "at": 1792058971832,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629985,
+      "at": 1792058971839,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056629989,
+      "at": 1792058971842,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056635794,
-      "method": "GET",
-      "path": "/api/v1/market/display/spot-snapshot",
-      "query": ""
-    },
-    {
-      "at": 1792056635796,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056635804,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1h&limit=500"
-    },
-    {
-      "at": 1792056635840,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/tickers",
-      "query": ""
-    },
-    {
-      "at": 1792056635841,
+      "at": 1792058977451,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056635841,
+      "at": 1792058977451,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056635842,
+      "at": 1792058977452,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056636034,
+      "at": 1792058977453,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792058977453,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058977453,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792058977454,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792058977650,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636035,
+      "at": 1792058977651,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636035,
+      "at": 1792058977651,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636049,
+      "at": 1792058977694,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636061,
+      "at": 1792058977696,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636062,
+      "at": 1792058977698,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636074,
+      "at": 1792058977701,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636076,
+      "at": 1792058977707,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636077,
+      "at": 1792058977713,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636092,
+      "at": 1792058977718,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636094,
+      "at": 1792058977721,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056636110,
+      "at": 1792058977728,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639200,
+      "at": 1792058980578,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056639200,
+      "at": 1792058980580,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056639201,
+      "at": 1792058980581,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056639201,
+      "at": 1792058980582,
       "method": "GET",
       "path": "/api/v1/market/display/spot-snapshot",
       "query": ""
     },
     {
-      "at": 1792056639201,
+      "at": 1792058980582,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639202,
+      "at": 1792058980583,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAUUSD",
       "query": "interval=1h&limit=500"
     },
     {
-      "at": 1792056639207,
+      "at": 1792058980583,
       "method": "GET",
       "path": "/api/v1/cfd/display/tickers",
       "query": ""
     },
     {
-      "at": 1792056639418,
+      "at": 1792058980727,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639436,
+      "at": 1792058980727,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639437,
+      "at": 1792058980728,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639446,
+      "at": 1792058980757,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639457,
+      "at": 1792058980757,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639458,
+      "at": 1792058980763,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639470,
+      "at": 1792058980765,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639480,
+      "at": 1792058980794,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639484,
+      "at": 1792058980799,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639489,
+      "at": 1792058980804,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639494,
+      "at": 1792058980810,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056639506,
+      "at": 1792058980811,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642415,
-      "method": "GET",
-      "path": "/api/v1/market/display/spot-snapshot",
-      "query": ""
-    },
-    {
-      "at": 1792056642416,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056642416,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1h&limit=500"
-    },
-    {
-      "at": 1792056642417,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/tickers",
-      "query": ""
-    },
-    {
-      "at": 1792056642446,
+      "at": 1792058983693,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056642447,
+      "at": 1792058983694,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792058983696,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056642448,
+      "at": 1792058983696,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058983713,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792058983716,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056642663,
+      "at": 1792058983719,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792058983870,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642664,
+      "at": 1792058983870,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642664,
+      "at": 1792058983871,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642717,
+      "at": 1792058983927,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642717,
+      "at": 1792058983927,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642718,
+      "at": 1792058983929,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642736,
+      "at": 1792058983938,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642748,
+      "at": 1792058983941,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642754,
+      "at": 1792058983944,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642767,
+      "at": 1792058983951,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642792,
+      "at": 1792058983956,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056642794,
+      "at": 1792058983961,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056645866,
+      "at": 1792058986746,
       "method": "GET",
       "path": "/api/v1/me",
       "query": ""
     },
     {
-      "at": 1792056645867,
+      "at": 1792058986747,
       "method": "GET",
       "path": "/api/v1/futures/config",
       "query": ""
     },
     {
-      "at": 1792056645867,
-      "method": "GET",
-      "path": "/api/v1/market/display/spot-snapshot",
-      "query": ""
-    },
-    {
-      "at": 1792056645868,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1d&limit=20"
-    },
-    {
-      "at": 1792056645896,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/candles/XAUUSD",
-      "query": "interval=1h&limit=500"
-    },
-    {
-      "at": 1792056645906,
-      "method": "GET",
-      "path": "/api/v1/cfd/display/tickers",
-      "query": ""
-    },
-    {
-      "at": 1792056645915,
+      "at": 1792058986753,
       "method": "GET",
       "path": "/api/v1/cfd/config",
       "query": ""
     },
     {
-      "at": 1792056646025,
+      "at": 1792058986753,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792058986754,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792058986754,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792058986754,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792058986899,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XAGUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646026,
+      "at": 1792058986900,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPTUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646026,
+      "at": 1792058986900,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XPDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646094,
+      "at": 1792058986968,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/WTIUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646094,
+      "at": 1792058986969,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/XBRUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646094,
+      "at": 1792058986974,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/EURUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646114,
+      "at": 1792058986981,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/GBPUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646125,
+      "at": 1792058986982,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDJPY",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646125,
+      "at": 1792058986993,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/AUDUSD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646132,
+      "at": 1792058987001,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCAD",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646148,
+      "at": 1792058987004,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/USDCHF",
       "query": "interval=1d&limit=20"
     },
     {
-      "at": 1792056646148,
+      "at": 1792058987015,
       "method": "GET",
       "path": "/api/v1/cfd/display/candles/NZDUSD",
       "query": "interval=1d&limit=20"
@@ -4522,5 +4522,5 @@
     "fonts.googleapis.com"
   ],
   "pageErrors": [],
-  "completedAt": "2026-10-15T09:30:49.012Z"
+  "completedAt": "2026-10-15T10:09:49.479Z"
 }

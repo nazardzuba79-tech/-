@@ -29,6 +29,7 @@ on:
       - 'frontend/src/lib/useCfdPracticePositions.ts'
       - 'frontend/src/lib/chartSessions.ts'
       - 'frontend/src/assets/cfd-flags/**'
+      - 'frontend/src/assets/cfd-marks/**'
       - 'frontend/src/pages/trade-terminal/CfdWorkspace.css'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/home/**'
