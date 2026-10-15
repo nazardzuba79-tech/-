@@ -19,6 +19,7 @@ function fixture() {
     order: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
     purchase: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
     kycSubmission: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
+    kycMaterialRequest: { findMany: jest.fn(async () => []) },
     futuresOrder: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
     futuresPosition: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
     cfdPosition: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
@@ -86,12 +87,28 @@ test('processed withdrawal queue means sent or rejected; unsupported status reje
 
 test('KYC reads only a page of users and their latest submission', async () => {
   const { prisma, app, auth } = fixture();
+  prisma.$queryRaw.mockResolvedValueOnce([{ id: 'sub-21', userId: 'u21', status: 'PENDING', country: 'UA', fullName: 'Synthetic', documentType: 'PASSPORT', createdAt: new Date('2026-10-01') }]);
   const r = await request(app).get('/api/v1/admin/clients/page?pageSize=20&status=PENDING').set('Authorization', auth);
   expect(r.status).toBe(200);
   expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 20 }));
   expect(prisma.user.findMany.mock.calls[0][0].include).toBeUndefined();
   expect(prisma.$queryRaw.mock.calls[0][0].sql).toContain('LIMIT 1');
   expect(prisma.kycSubmission.findMany).not.toHaveBeenCalled();
+  // Additional-materials history: one bounded read, scoped to this page's latest submissions.
+  expect(prisma.kycMaterialRequest.findMany).toHaveBeenCalledTimes(1);
+  expect(prisma.kycMaterialRequest.findMany.mock.calls[0][0].where).toEqual({ submissionId: { in: ['sub-21'] } });
+  expect(prisma.kycMaterialRequest.findMany.mock.calls[0][0].take).toBeLessThanOrEqual(2000);
+  expect(r.body.items[0].latestKyc).toMatchObject({ reviewStage: 'UNDER_REVIEW', activeMaterialRequestId: null, materialRequests: [] });
+});
+test('KYC queue filters by received or awaited additional materials without a new enum value', async () => {
+  const { prisma, app, auth } = fixture();
+  expect((await request(app).get('/api/v1/admin/clients/page?status=MATERIALS_RECEIVED').set('Authorization', auth)).status).toBe(200);
+  expect(prisma.user.findMany.mock.calls[0][0].where).toMatchObject({ kycStatus: 'PENDING',
+    kycSubmissions: { some: { status: 'PENDING', materialRequests: { some: { status: 'RECEIVED', closedAt: null } } } } });
+  expect((await request(app).get('/api/v1/admin/clients/page?status=AWAITING_MATERIALS').set('Authorization', auth)).status).toBe(200);
+  expect(prisma.user.findMany.mock.calls[1][0].where).toMatchObject({ kycStatus: 'PENDING',
+    kycSubmissions: { some: { materialRequests: { some: { status: 'OPEN', closedAt: null } } } } });
+  expect((await request(app).get('/api/v1/admin/clients/page?status=SOMETHING_ELSE').set('Authorization', auth)).status).toBe(400);
 });
 test('KYC date range applies to the latest submission, and malformed or inverted ranges fail', async () => {
   const { prisma, app, auth } = fixture();

@@ -194,3 +194,18 @@ test('duplicate signed copy notification makes at most one Telegram call', async
   assert.equal(count, 1);
   assert.deepEqual(Object.keys(s.snapshot().record).sort(), ['eventId', 'eventType', 'status', 'timestamp']);
 });
+test('KYC materials event: part + completion only, no file, no ID; unknown fields and bad parts refused', async () => {
+  const e = { eventId: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', eventType: 'KYC_MATERIALS_RECEIVED', timestamp: now, email: 'synthetic@example.test', fullName: 'Test Synthetic Person', part: 'SELFIE', complete: true };
+  assert.equal(validEvent(e, 'KYC_MATERIALS_RECEIVED', now), true);
+  assert.equal(validEvent({ ...e, part: 'PASSPORT' }, 'KYC_MATERIALS_RECEIVED', now), false);
+  assert.equal(validEvent({ ...e, complete: 'yes' }, 'KYC_MATERIALS_RECEIVED', now), false);
+  assert.equal(validEvent(e, 'KYC_SUBMITTED', now), false, 'a materials event is not a new application');
+  assert.match(message(e), /получены дополнительные материалы[\s\S]*Материал: селфи для подтверждения личности\nСтатус: повторная проверка/);
+  assert.match(message({ ...e, part: 'DOCUMENT', complete: false }), /новое фото документа\nСтатус: ожидается остальная часть запроса/);
+  let calls = 0;
+  const bound = { ...env, EVENTS: { idFromName: name => name, get: () => ({ fetch: async () => { calls++; return Response.json({ status: 'SENT' }); } }) } };
+  assert.equal((await acceptEvent(e, 'KYC_MATERIALS_RECEIVED', bound)).status, 200);
+  assert.equal((await acceptEvent({ ...e, fileBase64: '/9j/' }, 'KYC_MATERIALS_RECEIVED', bound)).status, 400);
+  assert.equal((await acceptEvent({ ...e, userId: 'user-1' }, 'KYC_MATERIALS_RECEIVED', bound)).status, 400);
+  assert.equal(calls, 1);
+});

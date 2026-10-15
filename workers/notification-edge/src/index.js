@@ -15,6 +15,17 @@ export class KycNotifications extends WorkerEntrypoint {
       return { status: 'UNAVAILABLE' };
     }
   }
+
+  // A requested KYC document photo or selfie arrived (file itself goes by email only).
+  async notifyMaterials(event) {
+    try {
+      const res = await acceptEvent(event, 'KYC_MATERIALS_RECEIVED', this.env);
+      return { status: res.status, ...(await res.json()) };
+    } catch {
+      logFailure('UNAVAILABLE');
+      return { status: 'UNAVAILABLE' };
+    }
+  }
 }
 
 export class NotificationEvent extends Delivery {}

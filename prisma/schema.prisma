@@ -831,9 +831,67 @@ model KycSubmission {
   reviewedBy        String?
   reviewedAt        DateTime?
   createdAt         DateTime  @default(now())
+  /// Additional materials the reviewing admin asked for (see KycMaterialRequest).
+  materialRequests  KycMaterialRequest[]
 
   @@index([userId])
   @@index([status])
+}
+
+/// An admin's request for additional KYC materials on a submission that is
+/// still under review — a new photo of the document, an ordinary selfie for a
+/// manual face comparison, or both — without rejecting the submission.
+///
+/// Same storage model as the submission itself: the files travel
+/// browser → Cloudflare KYC edge → admin mailbox and are never stored here.
+/// This row keeps only the request, what arrived (size, type, Message-ID),
+/// the selfie consent and who decided what, for the audit trail.
+///
+/// status: OPEN (something requested is still missing) → RECEIVED (everything
+/// requested arrived) → CLOSED (the admin decided, or replaced it with a new
+/// request: closedOutcome APPROVED | REJECTED | SUPERSEDED). The user's
+/// User.kycStatus stays PENDING throughout, so nothing gated on it changes.
+model KycMaterialRequest {
+  id                   String        @id @default(uuid())
+  submissionId         String
+  submission           KycSubmission @relation(fields: [submissionId], references: [id])
+  userId               String
+  /// DOCUMENT | SELFIE | DOCUMENT_AND_SELFIE
+  kind                 String
+  /// BLURRY | UNREADABLE | CROPPED | LOW_LIGHT | OTHER (document part only)
+  documentReason       String?
+  /// The admin's own wording, only for documentReason OTHER; shown to the user.
+  documentReasonText   String?
+  /// Optional admin note added to the selfie request; shown to the user.
+  selfieComment        String?
+  status               String        @default("OPEN")
+  requestedBy          String
+  /// The admin page's idempotency key: a repeated click returns the same row.
+  clientRequestId      String?       @unique
+  createdAt            DateTime      @default(now())
+  /// Server-derived id of the delivery that carried the part (one per attempt).
+  documentDeliveryId   String?
+  documentReceivedAt   DateTime?
+  documentMessageId    String?
+  documentMimeType     String?
+  documentSizeBytes    Int?
+  selfieDeliveryId     String?
+  selfieReceivedAt     DateTime?
+  selfieMessageId      String?
+  selfieMimeType       String?
+  selfieSizeBytes      Int?
+  /// The user's explicit consent to the selfie's collection and use for this check.
+  selfieConsentAt      DateTime?
+  selfieConsentVersion String?
+  /// First time an admin opened the received materials (MATERIALS_RECEIVED → RE_REVIEW).
+  acknowledgedAt       DateTime?
+  acknowledgedBy       String?
+  closedAt             DateTime?
+  closedBy             String?
+  closedOutcome        String?
+
+  @@index([submissionId])
+  @@index([userId, status])
 }
 
 /// A programmatic API key for connecting a trading bot/script (see
