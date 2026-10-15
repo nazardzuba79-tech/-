@@ -1,7 +1,7 @@
 name: Stocks isolated review
 on:
   pull_request:
-    paths: ['services/stocks/**', 'services/stocks-global/**', 'services/stocks-simulator/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/__tests__/stock*.test.ts', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', 'scripts/qa-backend-full*', '.github/workflows/stocks-review.yml', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.discovery.test.ts', 'src/services/marketData/__tests__/ProviderFailureMatrix.test.ts', 'src/services/__tests__/CfdMarketDataService.test.ts', 'src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts', 'src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts']
+    paths: ['services/stocks/**', 'services/stocks-global/**', 'services/stocks-simulator/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/__tests__/stock*.test.ts', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', 'scripts/stocks-browser-native/**', 'scripts/stocks-browser-native-*', 'scripts/qa-backend-full*', '.github/workflows/stocks-review.yml', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.discovery.test.ts', 'src/services/marketData/__tests__/ProviderFailureMatrix.test.ts', 'src/services/__tests__/CfdMarketDataService.test.ts', 'src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts', 'src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts']
   push:
     branches: [codex/stocks-bounded-v1-20261007]
 permissions:
@@ -51,7 +51,7 @@ jobs:
           path: stocks-pg-discovery-evidence
           if-no-files-found: error
   stocks-correctness-result:
-    needs: [stocks-pg-discovery, stocks-review-selection, isolated-simulator, frontend-regression, bounded-stock-runtime, stocks-full-backend-offline, stocks-ui-browser]
+    needs: [stocks-pg-discovery, stocks-review-selection, isolated-simulator, frontend-regression, bounded-stock-runtime, stocks-full-backend-offline, stocks-ui-browser, stocks-native-backend-admission]
     # Even a wrong base or fork with this exact branch name must fail closed.
     if: >-
       always() && !cancelled() && github.event_name == 'pull_request' &&
@@ -63,6 +63,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+          fetch-depth: 0
       - name: Verify exact source head
         env:
           QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -70,9 +71,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24.21.0'
+      - name: Read this run's backend inheritance decision
+        if: always()
+        uses: actions/download-artifact@v4
+        with:
+          name: stocks-native-admission-${{ github.event.pull_request.head.sha || github.sha }}
+          path: stocks-native-admission-evidence
       - name: Require actual correctness results; preserve capacity and release blockers
         env:
           STOCKS_CORRECTNESS_NEEDS: ${{ toJSON(needs) }}
+          STOCKS_NATIVE_ADMISSION: stocks-native-admission-evidence
         shell: bash
         run: |
           mkdir -p stocks-correctness-evidence
@@ -556,17 +564,60 @@ jobs:
             ${{ runner.temp }}/stocks-auth-launch-output/private/failure.txt
             ${{ runner.temp }}/stocks-auth-launch-output/workload/*.json
 
+  stocks-native-backend-admission:
+    # Exact reviewed PR528 browser-only inputs may reuse successful db67 backend evidence.
+    # Missing/unknown proof returns FULL. It never substitutes for current-head browser QA.
+    if: >-
+      github.event_name == 'pull_request' && github.repository == 'nazardzuba79-tech/-' &&
+      github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'codex/stocks-review-20261015' &&
+      github.event.pull_request.base.ref == 'dot/stocks-owner-usdt-portfolio-20261013'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      mode: ${{ steps.admission.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact source head
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Pure native scheduling guards
+        run: node --test scripts/stocks-browser-native-admission.test.cjs
+      - name: Verify retained backend evidence and exhaustive input equality
+        id: admission
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/stocks-browser-native-admission.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-native-admission-${{ github.event.pull_request.head.sha || github.sha }}
+          path: stocks-native-admission-evidence
+          if-no-files-found: error
   stocks-full-backend-offline:
     # Full backend for PR512 and the exact stacked correctness review, confined
     # to a disposable no-network container. This is not a capacity or DB test.
-    needs: stocks-backend-admission
+    needs: [stocks-backend-admission, stocks-native-backend-admission]
     if: >-
       always() && github.event_name == 'pull_request' &&
       ((github.event.pull_request.number == 512 && (needs.stocks-backend-admission.result != 'success' || needs.stocks-backend-admission.outputs.mode != 'not_run')) ||
       (github.repository == 'nazardzuba79-tech/-' && github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'codex/stocks-review-20261015' &&
-      github.event.pull_request.base.ref == 'dot/stocks-owner-usdt-portfolio-20261013'))
+      github.event.pull_request.base.ref == 'dot/stocks-owner-usdt-portfolio-20261013' &&
+      (needs.stocks-native-backend-admission.result != 'success' || needs.stocks-native-backend-admission.outputs.mode != 'inherited_db67')))
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -1132,9 +1183,16 @@ jobs:
       github.repository == 'nazardzuba79-tech/-' && github.event.pull_request.head.repo.full_name == github.repository &&
       needs.stocks-backend-admission.result == 'success' && needs.stocks-backend-admission.outputs.mode == 'not_run' &&
       needs.stocks-backend-admission.outputs.browser_mode == 'not_run')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
+    env:
+      VOLTEX_STOCKS_NATIVE_BROWSER: '1'
+      QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      QA_PLAYWRIGHT_MODULE: /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/playwright/node_modules/playwright
     steps:
+      - name: Record original shared browser budget
+        shell: bash
+        run: echo "QA_BROWSER_DEADLINE_MS=$(( $(date +%s%3N) + 1680000 ))" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -1146,87 +1204,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24.21.0'
-      - name: Read-only installed Chrome prerequisite before dependencies and builds
-        id: chrome-preflight
-        timeout-minutes: 1
+      - name: Verify native environment and scheduling guard sources
         shell: bash
         run: |
-          mkdir -p stocks-ui-evidence
-          node --test scripts/qa-stocks-chrome-preflight.test.cjs scripts/qa-stocks-public-nss.test.cjs | tee stocks-ui-evidence/chrome-preflight-guards.log
-          node scripts/qa-stocks-chrome-preflight.cjs --output "$GITHUB_WORKSPACE/stocks-ui-evidence/chrome-preflight"
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
-      - name: Default build (stocks flag OFF)
-        run: npm run build --prefix frontend && cp -r frontend/dist /tmp/stocks-flag-off
-      - name: Review build against the loopback stock fixture
-        run: npm run build --prefix frontend
-        env:
-          VITE_STOCKS_ENABLED: 'true'
-          VITE_STOCKS_ORIGIN: 'http://127.0.0.1:4431'
-      - name: Disposable browser tooling
-        run: |
-          npm install --prefix /tmp/stocks-ui-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
-          node /tmp/stocks-ui-qa/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Panel/overview browser QA (fixtures only)
-        env:
-          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
-          QA_FLAG_OFF_DIST: /tmp/stocks-flag-off
-          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/panel-overview
-        run: node scripts/qa-stocks-ui.cjs
-      - name: Shared Trading navigation and terminal isolation (fixtures only)
-        if: ${{ !cancelled() && steps.chrome-preflight.outcome == 'success' }}
-        env:
-          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
-          QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/navigation
-        run: node scripts/qa-stocks-navigation.cjs
-      - name: Free widget preview build (no stock service origin)
-        run: npm run build --prefix frontend
-        env:
-          VITE_STOCKS_ENABLED: 'true'
-          VITE_STOCKS_WIDGET_PREVIEW: 'true'
-      - name: Widget lifetime, seven locales, mobile and script errors (no provider data)
-        env:
-          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
-          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/widgets
-        run: |
-          node frontend/node_modules/vite/bin/vite.js preview frontend --host 127.0.0.1 --port 4432 --strictPort > /tmp/widget-preview.log 2>&1 &
-          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4432/ > /dev/null && break; sleep 1; done
-          node scripts/qa-stocks-widget.cjs
-      - name: Widget terminal and crypto navigation isolation (fixtures only)
-        env:
-          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
-          QA_WIDGET_MODE: 'true'
-          QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/widget-navigation
-        run: node scripts/qa-stocks-navigation.cjs
-      - name: Global Stocks paper terminal build (local fixtures only)
-        run: npm run build --prefix frontend
-        env:
-          VITE_STOCKS_ENABLED: 'true'
-          VITE_STOCKS_WIDGET_PREVIEW: 'true'
-          VITE_STOCKS_GLOBAL_SIMULATOR: 'true'
-      - name: Stocks overload cooldown and manual recovery (isolated paper accounts)
-        env:
-          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
-          QA_DIST: ${{ github.workspace }}/frontend/dist
-          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/overload
-        run: node scripts/qa-stocks-overload.cjs
-      - name: Owner Stocks USDT Wallet integrated review build (fixture-only)
-        run: npm run build --prefix frontend
-        env:
-          VITE_STOCKS_ENABLED: 'true'
-          VITE_STOCKS_WIDGET_PREVIEW: 'true'
-          VITE_STOCKS_GLOBAL_SIMULATOR: 'true'
-          VITE_STOCKS_OWNER_USDT_ONLY: 'true'
-      - name: Owner buys, holds, reloads, sells and account isolation (loopback-only)
-        env:
-          QA_PLAYWRIGHT_MODULE: /tmp/stocks-ui-qa/node_modules/playwright
-          QA_OUTPUT_DIR: ${{ github.workspace }}/stocks-ui-evidence/owner-wallet
-        run: node scripts/qa-stocks-wallet-journey.cjs
-      - name: Reuse this run's verified local authority package
-        uses: actions/download-artifact@v4
-        with:
-          name: stocks-local-stage-${{ github.event.pull_request.head.sha || github.sha }}
-          path: output/stocks-local-stage
+          node --test scripts/stocks-browser-native/native.test.cjs scripts/stocks-browser-native-admission.test.cjs scripts/qa-stocks-browser-launch.test.cjs
+          /usr/bin/python3 -I scripts/stocks-browser-native/provision_test.py
       - name: Inspect and provision disposable fixture certificate tooling
         shell: bash
         timeout-minutes: 5
@@ -1243,6 +1225,101 @@ jobs:
           sha256sum /usr/bin/certutil | tee stocks-ui-evidence/public-contract-logs/certutil-sha256.log
           dpkg-query -W -f='${Package} ${Version} ${Status}\n' libnss3-tools libnss3 python3-cryptography | tee stocks-ui-evidence/public-contract-logs/packages-after.log
           /usr/bin/python3 -I -c "import sys,cryptography; print(sys.executable); print(cryptography.__version__); print(cryptography.__file__)" | tee stocks-ui-evidence/public-contract-logs/python-dependency.log
+      - name: Fresh authenticated native browser installation
+        id: native-provision
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          mkdir -p stocks-ui-evidence
+          sudo /usr/bin/env -i PATH=/usr/bin:/bin LANG=C LC_ALL=C /usr/bin/python3 -I scripts/stocks-browser-native/provision.py --source-sha "$QA_SOURCE_SHA" --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" | tee stocks-ui-evidence/native-provision.log
+      - name: Read-only installed Chrome prerequisite before dependencies and builds
+        id: chrome-preflight
+        timeout-minutes: 1
+        shell: bash
+        run: |
+          mkdir -p stocks-ui-evidence
+          node --test scripts/qa-stocks-chrome-preflight.test.cjs scripts/qa-stocks-public-nss.test.cjs | tee stocks-ui-evidence/chrome-preflight-guards.log
+          node scripts/qa-stocks-chrome-preflight.cjs --output "$GITHUB_WORKSPACE/stocks-ui-evidence/chrome-preflight"
+      - name: Actual native Chrome namespace and renderer qualification
+        id: native-qualification
+        timeout-minutes: 2
+        shell: bash
+        run: node scripts/stocks-browser-native/qualification.cjs --output "$GITHUB_WORKSPACE/stocks-ui-evidence/native-qualification"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Default build (stocks flag OFF)
+        run: npm run build --prefix frontend && cp -r frontend/dist /tmp/stocks-flag-off
+      - name: Review build against the loopback stock fixture
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_ORIGIN: 'http://127.0.0.1:4431'
+      - name: Panel/overview browser QA (fixtures only)
+        id: panel-overview
+        env:
+          QA_PLAYWRIGHT_MODULE: /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/playwright/node_modules/playwright
+          QA_FLAG_OFF_DIST: /tmp/stocks-flag-off
+          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/panel-overview
+        run: node scripts/qa-stocks-ui.cjs
+      - name: Shared Trading navigation and terminal isolation (fixtures only)
+        id: navigation
+        if: ${{ success() && steps.native-qualification.outcome == 'success' }}
+        env:
+          QA_PLAYWRIGHT_MODULE: /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/playwright/node_modules/playwright
+          QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/navigation
+        run: node scripts/qa-stocks-navigation.cjs
+      - name: Free widget preview build (no stock service origin)
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_WIDGET_PREVIEW: 'true'
+      - name: Widget lifetime, seven locales, mobile and script errors (no provider data)
+        id: widgets
+        env:
+          QA_PLAYWRIGHT_MODULE: /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/playwright/node_modules/playwright
+          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/widgets
+        run: |
+          node frontend/node_modules/vite/bin/vite.js preview frontend --host 127.0.0.1 --port 4432 --strictPort > /tmp/widget-preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4432/ > /dev/null && break; sleep 1; done
+          node scripts/qa-stocks-widget.cjs
+      - name: Widget terminal and crypto navigation isolation (fixtures only)
+        id: widget-navigation
+        env:
+          QA_PLAYWRIGHT_MODULE: /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/playwright/node_modules/playwright
+          QA_WIDGET_MODE: 'true'
+          QA_OUTPUT: ${{ github.workspace }}/stocks-ui-evidence/widget-navigation
+        run: node scripts/qa-stocks-navigation.cjs
+      - name: Global Stocks paper terminal build (local fixtures only)
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_WIDGET_PREVIEW: 'true'
+          VITE_STOCKS_GLOBAL_SIMULATOR: 'true'
+      - name: Stocks overload cooldown and manual recovery (isolated paper accounts)
+        id: overload
+        env:
+          QA_PLAYWRIGHT_MODULE: /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/playwright/node_modules/playwright
+          QA_DIST: ${{ github.workspace }}/frontend/dist
+          QA_OUT: ${{ github.workspace }}/stocks-ui-evidence/overload
+        run: node scripts/qa-stocks-overload.cjs
+      - name: Owner Stocks USDT Wallet integrated review build (fixture-only)
+        run: npm run build --prefix frontend
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_WIDGET_PREVIEW: 'true'
+          VITE_STOCKS_GLOBAL_SIMULATOR: 'true'
+          VITE_STOCKS_OWNER_USDT_ONLY: 'true'
+      - name: Owner buys, holds, reloads, sells and account isolation (loopback-only)
+        id: owner-wallet
+        env:
+          QA_PLAYWRIGHT_MODULE: /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/playwright/node_modules/playwright
+          QA_OUTPUT_DIR: ${{ github.workspace }}/stocks-ui-evidence/owner-wallet
+        run: node scripts/qa-stocks-wallet-journey.cjs
+      - name: Reuse this run's verified local authority package
+        uses: actions/download-artifact@v4
+        with:
+          name: stocks-local-stage-${{ github.event.pull_request.head.sha || github.sha }}
+          path: output/stocks-local-stage
       - name: Verify fixture certificate and admission guards
         shell: bash
         env:
@@ -1261,10 +1338,24 @@ jobs:
           node scripts/qa-stocks-public-build.mjs --output "$RUNNER_TEMP/stocks-public-build" | tee stocks-ui-evidence/public-contract-logs/build.log
           cp "$RUNNER_TEMP/stocks-public-build/manifest.json" stocks-ui-evidence/public-contract-logs/build-manifest.json
       - name: Public-host contract and cached feature-off browser proof
+        id: public-host
         timeout-minutes: 5
         shell: bash
         run: |
-          node scripts/qa-stocks-public-host.cjs --output "$GITHUB_WORKSPACE/stocks-ui-evidence/public-host" --build-root "$RUNNER_TEMP/stocks-public-build" --authority-package "$GITHUB_WORKSPACE/output/stocks-local-stage/package" --python /usr/bin/python3 --certutil /usr/bin/certutil --browser-executable /opt/google/chrome/chrome --playwright /tmp/stocks-ui-qa/node_modules/playwright | tee stocks-ui-evidence/public-contract-logs/browser.log
+          node scripts/qa-stocks-public-host.cjs --output "$GITHUB_WORKSPACE/stocks-ui-evidence/public-host" --build-root "$RUNNER_TEMP/stocks-public-build" --authority-package "$GITHUB_WORKSPACE/output/stocks-local-stage/package" --python /usr/bin/python3 --certutil /usr/bin/certutil --browser-executable /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/chrome/chrome --playwright /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/playwright/node_modules/playwright | tee stocks-ui-evidence/public-contract-logs/browser.log
+      - name: Remove only this run's verified native installation
+        id: native-cleanup
+        if: always()
+        timeout-minutes: 2
+        shell: bash
+        run: |
+          mkdir -p stocks-ui-evidence
+          sudo /usr/bin/env -i PATH=/usr/bin:/bin LANG=C LC_ALL=C /usr/bin/python3 -I scripts/stocks-browser-native/provision.py --cleanup --source-sha "$QA_SOURCE_SHA" --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" | tee stocks-ui-evidence/native-cleanup.log
+      - name: Require every current-head browser case and owned cleanup
+        if: always()
+        env:
+          NATIVE_BROWSER_STEPS: ${{ toJSON(steps) }}
+        run: node scripts/stocks-browser-native-admission.cjs --browser-result
       # Not a dot-directory: upload-artifact@v4 skips hidden paths by default.
       - uses: actions/upload-artifact@v4
         if: always()

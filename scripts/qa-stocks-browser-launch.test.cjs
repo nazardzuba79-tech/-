@@ -1,11 +1,21 @@
 'use strict';
+// Fixed native-path selection is exercised without launching a browser.
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {launchOptions,sandboxTable,rendererStatus}=require('./qa-stocks-browser-launch.cjs');
 const {CHROME}=require('./qa-stocks-public-nss.cjs');
 test('Stocks launch options bind installed Chrome and enable sandbox without arbitrary overrides',()=>{
+  const previous=process.env.VOLTEX_STOCKS_NATIVE_BROWSER;delete process.env.VOLTEX_STOCKS_NATIVE_BROWSER;try{
   assert.deepEqual(launchOptions(),{headless:true,executablePath:CHROME,chromiumSandbox:true,timeout:30000});
   assert.deepEqual(launchOptions({headless:true,executablePath:CHROME}),launchOptions());
   for(const value of [{headless:false},{executablePath:'/tmp/chromium'},{chromiumSandbox:false},{args:['--no-sandbox']},{env:{}},{ignoreDefaultArgs:true},[],null])assert.throws(()=>launchOptions(value));
+  }finally{if(previous===undefined)delete process.env.VOLTEX_STOCKS_NATIVE_BROWSER;else process.env.VOLTEX_STOCKS_NATIVE_BROWSER=previous;}
+});
+test('explicit native selection retains sandbox and rejects legacy/arbitrary executable overrides',()=>{
+  const previous=process.env.VOLTEX_STOCKS_NATIVE_BROWSER;const {EXECUTABLE}=require('./stocks-browser-native/installation.cjs');try{
+    process.env.VOLTEX_STOCKS_NATIVE_BROWSER='1';assert.deepEqual(launchOptions(),{headless:true,executablePath:EXECUTABLE,chromiumSandbox:true,timeout:30000});
+    assert.throws(()=>launchOptions({executablePath:CHROME}));assert.throws(()=>launchOptions({executablePath:'/tmp/chrome'}));assert.throws(()=>launchOptions({chromiumSandbox:false}));
+    process.env.VOLTEX_STOCKS_NATIVE_BROWSER='0';assert.throws(()=>launchOptions());
+  }finally{if(previous===undefined)delete process.env.VOLTEX_STOCKS_NATIVE_BROWSER;else process.env.VOLTEX_STOCKS_NATIVE_BROWSER=previous;}
 });
 const rows=[['Layer 1 Sandbox','Namespace'],['PID namespaces','Yes'],['Network namespaces','Yes'],['Seccomp-BPF sandbox','Yes'],['Seccomp-BPF sandbox supports TSYNC','Yes']];
 test('browser-reported sandbox requires namespace, seccomp, TSYNC and positive evaluation',()=>{

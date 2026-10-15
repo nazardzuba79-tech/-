@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "purpose": "Source-only ordinary GitHub Ubuntu22 native browser qualification; no policy changes",
+  "platform": "linux/amd64",
+  "nodeVersion": "v24.21.0",
+  "runnerLabel": "ubuntu-22.04",
+  "runnerInventoryCommit": "573fa3ad959907712ce8bf6a5f91ab82b03e7f2d",
+  "prefix": "/usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc",
+  "googlePrimaryFingerprint": "EB4C1BFD4F042F6DDDCCEC917721F63BD38B4796",
+  "key": {
+    "url": "https://dl.google.com/linux/linux_signing_key.pub",
+    "bytes": 19640,
+    "sha256": "54dea5f6c2a26091578cf52a999cebc6b64df478d37ad4dce96376b711e3b27c"
+  },
+  "inRelease": {
+    "url": "https://dl.google.com/linux/chrome/deb/dists/stable/InRelease",
+    "bytes": 2548,
+    "sha256": "165c0c3c9fa9dd2e89d1b7879d0dccaa6cf717006e281ab8e24a2dbcb2cd57dd"
+  },
+  "packages": {
+    "url": "https://dl.google.com/linux/chrome/deb/dists/stable/main/binary-amd64/Packages.gz",
+    "path": "main/binary-amd64/Packages.gz",
+    "bytes": 1411,
+    "sha256": "b14b2a882410b13ef6f912f328ebae0588fe2a0a92b8d936019489bb2390b4c5"
+  },
+  "chrome": {
+    "name": "google-chrome-stable",
+    "version": "155.0.8059.79-1",
+    "architecture": "amd64",
+    "filename": "pool/main/g/google-chrome-stable/google-chrome-stable_155.0.8059.79-1_amd64.deb",
+    "bytes": 143638568,
+    "sha256": "b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc"
+  },
+  "metadataMaximumAgeMs": 259200000,
+  "metadataFutureToleranceMs": 300000,
+  "playwrightVersion": "1.56.1",
+  "runtimeSelectionVariable": "VOLTEX_STOCKS_NATIVE_BROWSER",
+  "runtimeSelectionValue": "1",
+  "playwrightPackage": {
+    "bytes": 111,
+    "sha256": "3d3a5678221a88d7083009f9d5be5e9463150e6922a738d935a1fa344229a6bd"
+  },
+  "playwrightLock": {
+    "bytes": 1344,
+    "sha256": "6c6726a18479802cd5cd485bec3c4705381247de8d90aa13f799c2eb9df105a9"
+  }
+}

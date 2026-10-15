@@ -2,7 +2,7 @@
 'use strict';
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
 const assert = require('node:assert/strict'), { randomUUID } = require('node:crypto');
-const { assertLinux, inspectChrome, CHROME } = require('./qa-stocks-public-nss.cjs');
+const { assertLinux, inspectChrome, CHROME, selectedChrome } = require('./qa-stocks-public-nss.cjs');
 
 function assertScratch(actual, expected) {
   assert.equal(actual.resolved, expected.path, 'scratch path changed');
@@ -36,7 +36,7 @@ function main(output) {
     for (const name of ['config', 'data', 'cache', 'run', 'tmp']) fs.mkdirSync(path.join(home, name), { mode: 0o700 });
     report.scratch = { path: home, uid: st.uid, mode: (st.mode & 0o777).toString(8), outsideEvidence: true };
     report.cleanup.status = 'PENDING';
-    report.chrome = inspectChrome(CHROME, privateEnvironment(home));
+    report.chrome = inspectChrome(selectedChrome(), privateEnvironment(home));
     report.status = 'PASS';
   } catch (error) {
     report.status = 'FAIL'; report.failure = { message: error.message, code: error.code || null, stack: error.stack };

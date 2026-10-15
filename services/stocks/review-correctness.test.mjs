@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { CORRECTNESS_BRANCH, CORRECTNESS_BASE, HEAVY_FLAGS } from './review-plan.mjs';
 import { REQUIRED_JOBS, DISCOVERY_PATH, verifyCorrectness, verifyDiscoveryReport } from './review-correctness.mjs';
+import nativeAdmission from '../../scripts/stocks-browser-native-admission.cjs';
 
 const repository = 'nazardzuba79-tech/-', head = 'a'.repeat(40);
 const input = () => ({ repository, eventName: 'pull_request', headRef: CORRECTNESS_BRANCH, head,
@@ -105,9 +106,9 @@ test('exact-head targeted discovery and required jobs cannot inherit merge-ref e
     assert.ok(job(name).includes(CORRECTNESS_BRANCH));
   }
 });
-test('new stacked branch always runs full backend without expanding the PR512 exemption', () => {
+test('new stacked branch requires full backend unless exact independently successful db67 inheritance is proven', () => {
   const backend = job('stocks-full-backend-offline');
-  assert.equal(condition(backend), "always() && github.event_name == 'pull_request' && ((github.event.pull_request.number == 512 && (needs.stocks-backend-admission.result != 'success' || needs.stocks-backend-admission.outputs.mode != 'not_run')) || (github.repository == 'nazardzuba79-tech/-' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/stocks-review-20261015' && github.event.pull_request.base.ref == 'dot/stocks-owner-usdt-portfolio-20261013'))");
+  assert.equal(condition(backend), "always() && github.event_name == 'pull_request' && ((github.event.pull_request.number == 512 && (needs.stocks-backend-admission.result != 'success' || needs.stocks-backend-admission.outputs.mode != 'not_run')) || (github.repository == 'nazardzuba79-tech/-' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/stocks-review-20261015' && github.event.pull_request.base.ref == 'dot/stocks-owner-usdt-portfolio-20261013' && (needs.stocks-native-backend-admission.result != 'success' || needs.stocks-native-backend-admission.outputs.mode != 'inherited_db67')))");
   assert.ok(backend.includes(CORRECTNESS_BRANCH));
   assert.ok(backend.includes(CORRECTNESS_BASE));
   assert.match(backend, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
@@ -120,6 +121,53 @@ test('new stacked branch always runs full backend without expanding the PR512 ex
   assert.match(gate, /always\(\) && !cancelled\(\)/);
   assert.match(gate, /STOCKS_CORRECTNESS_NEEDS: \$\{\{ toJSON\(needs\) \}\}/);
   for (const name of REQUIRED_JOBS) assert.ok(gate.includes(name));
+});
+
+function inheritedInput() {
+  const value = input(); value.event.number = 528; value.event.pull_request.number = 528;
+  value.needs['stocks-full-backend-offline'].result = 'skipped';
+  value.needs['stocks-native-backend-admission'].outputs.mode = 'inherited_db67';
+  value.inheritedInputs = { baseTreeSha256: 'a'.repeat(64), protectedTreeSha256: 'b'.repeat(64),
+    protectedFiles: 5075, reviewedChanges: ['scripts/qa-stocks-public-nss.cjs'], sourceManifestSha256: nativeAdmission.PIN.sourceManifestSha256 };
+  value.inherited = { ...value.inheritedInputs, sourceSHA: head, mode: 'inherited_db67', backendExecution: 'NOT_RUN_CURRENT_HEAD',
+    inheritedSourceSHA: nativeAdmission.BASE_SHA, artifactId: nativeAdmission.PIN.artifact, artifactSha256: nativeAdmission.PIN.zipSha256,
+    runId: nativeAdmission.PIN.run, jobId: nativeAdmission.PIN.job, counts: nativeAdmission.COUNTS,
+    databaseAcceptance: 'NOT_RUN', capacityAcceptance: 'NOT_RUN' };
+  return value;
+}
+test('verified inherited backend retains all reported skips and still requires fresh head browser', () => {
+  const result = verifyCorrectness(inheritedInput());
+  assert.equal(result.backendEvidence.execution, 'NOT_RUN_CURRENT_HEAD');
+  assert.equal(result.backendEvidence.inheritedFrom, nativeAdmission.BASE_SHA);
+  assert.equal(result.backendEvidence.counts.numPendingTests, 132);
+  assert.equal(result.backendEvidence.counts.numPendingTestSuites, 13);
+  for (const change of [x => { delete x.inherited; }, x => { delete x.inheritedInputs; },
+    x => x.inheritedInputs.protectedTreeSha256 = 'c'.repeat(64), x => x.inheritedInputs.protectedFiles--,
+    x => x.inheritedInputs.reviewedChanges = [], x => x.inherited.sourceSHA = nativeAdmission.BASE_SHA,
+    x => x.inherited.artifactSha256 = 'd'.repeat(64), x => x.inherited.counts = { ...nativeAdmission.COUNTS, numPendingTests: 0 },
+    x => x.event.number = 512, x => x.needs['stocks-ui-browser'].result = 'skipped',
+    x => x.needs['stocks-ui-browser'].result = 'failure', x => x.needs['stocks-native-backend-admission'].result = 'failure',
+    x => x.needs['stocks-native-backend-admission'].outputs.mode = 'full']) {
+    const value = inheritedInput(); change(value); assert.throws(() => verifyCorrectness(value));
+  }
+});
+test('native browser workflow preserves the seven cases and does not change sandbox or host security policy', () => {
+  const browser = job('stocks-ui-browser');
+  assert.match(browser, /^    runs-on: ubuntu-22\.04$/m); assert.match(browser, /^    timeout-minutes: 30$/m);
+  for (const name of nativeAdmission.BROWSER_STEPS) assert.match(browser, new RegExp('^        id: ' + name + '$', 'm'));
+  assert.match(browser, /VOLTEX_STOCKS_NATIVE_BROWSER: '1'/);
+  assert.match(browser, /sudo \/usr\/bin\/env -i PATH=\/usr\/bin:\/bin LANG=C LC_ALL=C \/usr\/bin\/python3 -I scripts\/stocks-browser-native\/provision\.py/);
+  assert.ok(browser.indexOf('id: native-qualification') < browser.indexOf('npm ci'));
+  assert.ok(browser.indexOf('id: native-cleanup') < browser.indexOf('--browser-result'));
+  assert.match(browser, /id: native-cleanup\n        if: always\(\)/);
+  assert.match(browser, /NATIVE_BROWSER_STEPS: \$\{\{ toJSON\(steps\) \}\}/);
+  assert.doesNotMatch(browser, /seccomp|--no-sandbox|apparmor=|sysctl|continue-on-error|\/tmp\/stocks-ui-qa/);
+  assert.match(browser, /--browser-executable \/usr\/lib\/voltex-stocks-browser-[a-f0-9]{64}\/chrome\/chrome/);
+  const admission = job('stocks-native-backend-admission');
+  assert.match(admission, /actions: read/); assert.match(admission, /contents: read/);
+  assert.match(admission, /fetch-depth: 0/); assert.match(admission, /node scripts\/stocks-browser-native-admission\.cjs/);
+  assert.match(job('stocks-correctness-result'), /STOCKS_NATIVE_ADMISSION: stocks-native-admission-evidence/);
+  assert.match(workflow.split('\n')[3], /'scripts\/stocks-browser-native\/\*\*', 'scripts\/stocks-browser-native-\*'/);
 });
 test('consumed diagnostic pins and unchanged plan identity cannot be expanded by the review branch', () => {
   assert.match(job('stocks-auth-one-burst'), /head\.sha == '75e2453ed85c03d12114f2e29ba9acf0f6e6f31f'/);

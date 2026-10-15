@@ -4,12 +4,16 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),asse
 const {spawnSync}=require('node:child_process'),{createHash,X509Certificate}=require('node:crypto');
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const CHROME='/opt/google/chrome/chrome';
+const native=require('./stocks-browser-native/installation.cjs');
+const selectedChrome=()=>native.selectExecutable();
 function assertLinux(platform){assert.equal(platform,'linux','NSS_FIXTURE_REQUIRES_LINUX');}
-function chromeIdentity({requested,resolved,owner,uid,mode,regular,symlink}){
-  assert.equal(requested,CHROME,'explicit installed Chrome path required');assert.equal(resolved,CHROME,'Chrome executable path changed');
+function chromeIdentity({requested,resolved,owner,uid,mode,regular,symlink,installation}){
+  const expected=installation?native.EXECUTABLE:CHROME;
+  assert.equal(requested,expected,'explicit installed Chrome path required');assert.equal(resolved,expected,'Chrome executable path changed');
   assert.ok(regular&&!symlink,'Chrome must be a regular non-symlink executable');assert.equal(uid,0,'Chrome executable must be root owned');
   assert.ok(Number.isInteger(mode)&&(mode&0o022)===0&&(mode&0o111)!==0,'Chrome executable permissions');
-  assert.equal(owner,'google-chrome-stable: '+CHROME,'installed Chrome package ownership');
+  if(installation){native.validateProof(installation);assert.equal(installation.kind,'authenticated-extracted-google-deb-v1');assert.equal(owner,'authenticated-google-deb: '+native.manifest.chrome.sha256);}
+  else assert.equal(owner,'google-chrome-stable: '+CHROME,'installed Chrome package ownership');
 }
 function chromePackage(value){
   chromeIdentity(value);const {packageVersion,actualVersion}=value;
@@ -42,8 +46,9 @@ function pathObservation(file){
 function assertChromePath(observation){
   const {process:identity,file,parents}=observation;
   assert.ok(identity&&Number.isInteger(identity.uid)&&identity.uid>0&&identity.uid===identity.euid,'Chrome QA must run as a non-root identity');
-  assert.deepEqual(parents.map(row=>row.path),['/opt/google/chrome','/opt/google','/opt','/'],'complete Chrome ancestry required');
-  assert.equal(file.path,CHROME);
+  const expected=observation.installationKind==='authenticated-extracted-google-deb-v1'?native.EXECUTABLE:CHROME;
+  assert.deepEqual(parents.map(row=>row.path),native.ancestors(expected),'complete Chrome ancestry required');
+  assert.equal(file.path,expected);
   for(const row of [file,...parents]){
     assert.equal(row.status,'AVAILABLE','Chrome path observation unavailable');
     assert.equal(row.uid,0,'Chrome path must be root owned');assert.equal(row.symlink,false,'Chrome path symlink prohibited');
@@ -55,24 +60,25 @@ function assertChromePath(observation){
   }
 }
 function inspectChrome(executable,env){
-  assertLinux(process.platform);assert.equal(executable,CHROME,'explicit installed Chrome path required');
-  const groups=process.getgroups(),observation={status:'IN_PROGRESS',stage:'filesystem',executable,installationPerformed:false,binaryExecuted:false,process:{uid:process.getuid(),euid:process.geteuid(),gid:process.getgid(),egid:process.getegid(),groups:groups.slice(0,128),groupsTruncated:groups.length>128},file:pathObservation(executable),parents:['/opt/google/chrome','/opt/google','/opt','/'].map(pathObservation)};
+  assertLinux(process.platform);assert.equal(executable,selectedChrome(),'explicit installed Chrome path required');
+  const isNative=native.requested(),groups=process.getgroups(),observation={status:'IN_PROGRESS',stage:'filesystem',executable,installationKind:isNative?'authenticated-extracted-google-deb-v1':'dpkg-installed',installationPerformed:false,binaryExecuted:false,process:{uid:process.getuid(),euid:process.geteuid(),gid:process.getgid(),egid:process.getegid(),groups:groups.slice(0,128),groupsTruncated:groups.length>128},file:pathObservation(executable),parents:native.ancestors(executable).map(pathObservation)};
   return retainChromePreflight(observation,()=>{
   assertChromePath(observation); // Includes actual-UID denial and every parent, before any candidate execution.
   const resolved=fs.realpathSync(executable),st=fs.lstatSync(executable);observation.resolved=resolved;observation.executableBound={maximumBytes:1024*1024*1024,withinBound:st.size>0&&st.size<=1024*1024*1024};fs.accessSync(executable,fs.constants.X_OK);
   observation.stage='package';
-  const dpkg='/usr/bin/dpkg-query',owner=command(dpkg,['-S',resolved],env).stdout.trim();
+  const dpkg='/usr/bin/dpkg-query',installation=isNative?native.verifyInstallation(env):undefined;
+  const owner=isNative?'authenticated-google-deb: '+installation.package.sha256:command(dpkg,['-S',resolved],env).stdout.trim();
   observation.packageOwner=owner;
-  const packageVersion=command(dpkg,['-W','--showformat=$'+'{Version}','google-chrome-stable'],env).stdout.trim();
+  const packageVersion=isNative?installation.package.version:command(dpkg,['-W','--showformat=$'+'{Version}','google-chrome-stable'],env).stdout.trim();
   observation.packageVersion=packageVersion;observation.stage='identity';
-  const identity={requested:executable,resolved,owner,uid:st.uid,mode:st.mode,regular:st.isFile(),symlink:st.isSymbolicLink()};
+  const identity={requested:executable,resolved,owner,uid:st.uid,mode:st.mode,regular:st.isFile(),symlink:st.isSymbolicLink(),installation};
   chromeIdentity(identity);assert.match(packageVersion,/^\d+\.\d+\.\d+\.\d+-\d+$/); // Verify ownership before executing any candidate binary.
   observation.stage='hash';
   const executableHash=fileHash(executable,1024*1024*1024);
   observation.sha256=executableHash;observation.stage='version';observation.binaryExecuted=true;
   const versionCall=command(executable,['--version'],env),actualVersion=versionCall.stdout.trim();
   const version=chromePackage({...identity,packageVersion,actualVersion});
-  const proof={executable,resolved,sha256:executableHash,bytes:st.size,uid:st.uid,gid:st.gid,mode:(st.mode&0o777).toString(8),owner,packageVersion,actualVersion,version,versionCommand:versionCall,installationPerformed:false};
+  const proof={executable,resolved,sha256:executableHash,bytes:st.size,uid:st.uid,gid:st.gid,mode:(st.mode&0o777).toString(8),owner,packageVersion,actualVersion,version,versionCommand:versionCall,installationPerformed:false,...(installation?{installation}: {})};
   const profile='/etc/apparmor.d/chrome';
   try{const p=fs.lstatSync(profile);assert.ok(p.isFile()&&!p.isSymbolicLink());
     const result=spawnSync(dpkg,['-S',profile],{env,encoding:'utf8',timeout:10000,maxBuffer:16384});
@@ -82,7 +88,7 @@ function inspectChrome(executable,env){
   });
 }
 function inspectBrowserProcess(child,chrome){
-  assertLinux(process.platform);assert.equal(child.spawnfile,CHROME,'actual spawned executable must be explicit installed Chrome');assert.ok(Number.isSafeInteger(child.pid)&&child.pid>0);
+  assertLinux(process.platform);assert.equal(chrome.resolved,selectedChrome());assert.equal(child.spawnfile,chrome.resolved,'actual spawned executable must be explicit installed Chrome');assert.ok(Number.isSafeInteger(child.pid)&&child.pid>0);
   const base='/proc/'+child.pid,start=()=>{const text=fs.readFileSync(base+'/stat','utf8'),end=text.lastIndexOf(')');assert.ok(end>0);const value=text.slice(end+2).trim().split(/\s+/)[19];assert.match(value,/^\d+$/);return value;};
   const before=start(),actual=fs.realpathSync(base+'/exe');assert.equal(actual,chrome.resolved,'actual browser process executable mismatch');
   const stat=fs.statSync(base);assert.equal(stat.uid,process.getuid());let label;
@@ -162,4 +168,4 @@ function createNssHome({credentials,certutil,forbiddenRoots=[]}){
   };
   }catch(e){if(fs.existsSync(home))fs.rmSync(home,{recursive:true,force:false});throw e;}
 }
-module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss,chromePackage,inspectChrome,inspectBrowserProcess,retainChromePreflight,assertChromePath,CHROME};
+module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss,chromePackage,inspectChrome,inspectBrowserProcess,retainChromePreflight,assertChromePath,CHROME,selectedChrome};

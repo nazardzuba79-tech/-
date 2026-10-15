@@ -2,7 +2,7 @@
 'use strict';
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict');
 const {randomUUID}=require('node:crypto');
-const {assertLinux,inspectChrome,inspectBrowserProcess,safeLaunch,CHROME}=require('./qa-stocks-public-nss.cjs');
+const {assertLinux,inspectChrome,inspectBrowserProcess,safeLaunch,CHROME,selectedChrome}=require('./qa-stocks-public-nss.cjs');
 const {privateEnvironment}=require('./qa-stocks-chrome-preflight.cjs');
 
 function sandboxTable(rows,evaluation){
@@ -62,8 +62,8 @@ function launchOptions(options={}){
   assert.ok(options&&typeof options==='object'&&!Array.isArray(options));
   for(const key of Object.keys(options))assert.ok(['headless','executablePath'].includes(key),'unreviewed browser launch option: '+key);
   assert.ok(options.headless===undefined||options.headless===true,'headless QA only');
-  assert.ok(options.executablePath===undefined||options.executablePath===CHROME,'unverified browser override prohibited');
-  return {headless:true,executablePath:CHROME,chromiumSandbox:true,timeout:30000};
+  const executablePath=selectedChrome();assert.ok(options.executablePath===undefined||options.executablePath===executablePath,'unverified browser override prohibited');
+  return {headless:true,executablePath,chromiumSandbox:true,timeout:30000};
 }
 async function launchStocksBrowser(chromium,options={}){
   assertLinux(process.platform);const settings=launchOptions(options);
@@ -79,7 +79,7 @@ async function launchStocksBrowser(chromium,options={}){
   let server,browser;
   try{
     for(const name of ['config','data','cache','run','tmp'])fs.mkdirSync(path.join(home,name),{mode:0o700});
-    const env=privateEnvironment(home),chrome=inspectChrome(CHROME,env),previousTmp=process.env.TMPDIR;
+    const env=privateEnvironment(home),chrome=inspectChrome(settings.executablePath,env),previousTmp=process.env.TMPDIR;
     process.env.TMPDIR=env.TMPDIR;
     try{server=await chromium.launchServer({...settings,env,args:['--no-proxy-server','--disable-background-networking','--disable-component-update','--disable-sync','--no-first-run','--disable-default-apps']});}
     finally{if(previousTmp===undefined)delete process.env.TMPDIR;else process.env.TMPDIR=previousTmp;}

@@ -32,6 +32,15 @@ test('Chrome path rejects root identity, missing/reordered parents and path subs
   }
 });
 const installed={requested:CHROME,resolved:CHROME,owner:'google-chrome-stable: '+CHROME,packageVersion:'123.0.4567.89-1',actualVersion:'Google Chrome 123.0.4567.89',uid:0,mode:0o100755,regular:true,symlink:false};
+test('native Chrome ancestry uses the same actual-UID non-writability gate',()=>{
+  const {EXECUTABLE,ancestors}=require('./stocks-browser-native/installation.cjs');
+  const row=(path,file)=>({path,status:'AVAILABLE',uid:0,gid:0,mode:'755',regular:file,directory:!file,symlink:false,write:{allowed:false,code:'EACCES'},executeOrSearch:{allowed:true}});
+  const observation={installationKind:'authenticated-extracted-google-deb-v1',process:{uid:1001,euid:1001},file:row(EXECUTABLE,true),parents:ancestors(EXECUTABLE).map(path=>row(path,false))};
+  assertChromePath(observation);
+  for(let index=0;index<observation.parents.length;index++){const changed=structuredClone(observation);changed.parents[index].write={allowed:true};assert.throws(()=>assertChromePath(changed));}
+  for(const delta of [{process:{uid:0,euid:0}},{parents:observation.parents.slice(1)},{file:{...observation.file,path:CHROME}},{file:{...observation.file,symlink:true}}])assert.throws(()=>assertChromePath({...observation,...delta}));
+  assert.throws(()=>chromePackage({...installed,requested:EXECUTABLE,resolved:EXECUTABLE}),'native path cannot claim legacy dpkg ownership');
+});
 test('installed Chrome requires exact path, package, root ownership and non-writable executable',()=>{
   assert.equal(chromePackage(installed),'123.0.4567.89');
   for(const delta of [{requested:'/tmp/chrome'},{resolved:'/tmp/chrome'},{owner:'chromium: '+CHROME},{uid:1001},{mode:0o100777},{mode:0o100644},{regular:false},{symlink:true}])assert.throws(()=>chromePackage({...installed,...delta}));

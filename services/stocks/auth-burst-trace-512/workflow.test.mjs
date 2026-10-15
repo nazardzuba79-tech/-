@@ -199,6 +199,21 @@ const REVIEWED_TRANSITION = {
     }
   ]
 };
+// Separate native-VM transition; the original historical/correctness chain above
+// remains immutable. These exact candidate bytes require independent review.
+const NATIVE_TRANSITION = {
+  sourceCommit: 'db67cc02ed82eea6b2cfdfdc30599592357bbe68',
+  sourceSha256: 'dec3661742d5510668d0762c7494a2f09c16ff97f36519e3d19d808c59f9e71c',
+  reviewedSha256: '8e934cae128c396867df2632c549b6866b868ffab5c6965e41518ca2a38437d1',
+  headerBefore: 'd2198228c2371b157663d77a3f8201922cfb2373ddc0cf0fcc9f4e98caf6031a',
+  headerAfter: '88726b9660bf3fc88277f2cca532aaaa5239f9a0950230598bdcccb8a1d6bc14',
+  blocks: [
+    ['stocks-correctness-result', '1fb7ba770a17a8fa500f1191bfa04acfea78961968bf625bbedf144e8d5dfe99', 'e2ae92ff7418f3ed255d1bd384a02121b4188ae10d3eb74e323af203fb9f1b5e'],
+    ['stocks-native-backend-admission', null, 'f14b6147c910d4d10a412132b692f14b5810569dc4b6f33d4bbda45b36212983'],
+    ['stocks-full-backend-offline', 'c3dccbafa40a82f73bfba8a0d22879ee9d500b57477fd3e689fb6498ec4a4555', 'e1d090cb747df9e9ccec3f86ce0d7d934d78d383927a7ed39fbf82db99d18e47'],
+    ['stocks-ui-browser', '6874d6c4a18b224f271cbb499f4cf06d2d410acf98566329879e5047c0d3628d', 'c53c259c66669d8e2d5f4bdcad15f173c979129c1d007c4800ee248f7cce6349'],
+  ],
+};
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 function workflowParts(value) {
   const marker = value.indexOf('\njobs:\n');
@@ -242,18 +257,42 @@ function assertReviewedTransition(current, parent, original) {
   assert.equal(sha256(current), REVIEWED_TRANSITION.reviewedSha256, 'unreviewed complete workflow source');
   return 'REVIEWED_CORRECTNESS_V2';
 }
+function assertNativeTransition(current, source, parent, original) {
+  assert.equal(assertReviewedTransition(source, parent, original), 'REVIEWED_CORRECTNESS_V2');
+  assert.equal(sha256(source), NATIVE_TRANSITION.sourceSha256);
+  assert.equal(NATIVE_TRANSITION.sourceSha256, REVIEWED_TRANSITION.reviewedSha256);
+  const prior = workflowParts(source), candidate = workflowParts(current);
+  const order = [...prior.order]; order.splice(order.indexOf('stocks-full-backend-offline'), 0, 'stocks-native-backend-admission');
+  assert.equal(prior.order.length, 21); assert.deepEqual(candidate.order, order);
+  assert.equal(sha256(prior.header), NATIVE_TRANSITION.headerBefore); assert.equal(sha256(candidate.header), NATIVE_TRANSITION.headerAfter);
+  const trigger = "'scripts/qa-stocks*'"; assert.equal(prior.header.split(trigger).length, 2);
+  assert.equal(candidate.header, prior.header.replace(trigger,
+    trigger + ", 'scripts/stocks-browser-native/**', 'scripts/stocks-browser-native-*'"));
+  const modified = new Set(NATIVE_TRANSITION.blocks.map(row => row[0]));
+  const unchanged = prior.order.filter(name => !modified.has(name)); assert.equal(unchanged.length, 18);
+  for (const name of unchanged) assert.equal(candidate.blocks[name], prior.blocks[name], 'unrelated job changed: ' + name);
+  for (const [name, before, after] of NATIVE_TRANSITION.blocks) {
+    if (before === null) assert.equal(prior.blocks[name], undefined);
+    else assert.equal(sha256(prior.blocks[name]), before);
+    assert.equal(sha256(candidate.blocks[name]), after, 'unreviewed native job: ' + name);
+  }
+  const backendBody = block => block.slice(block.indexOf('    runs-on:'));
+  assert.equal(backendBody(candidate.blocks['stocks-full-backend-offline']), backendBody(prior.blocks['stocks-full-backend-offline']));
+  assert.equal(sha256(current), NATIVE_TRANSITION.reviewedSha256);
+  return 'REVIEWED_NATIVE_BROWSER_V1';
+}
 let frozenWorkflowInputs;
 function frozenInputs() {
   if (!frozenWorkflowInputs) {
     const read = commit => execFileSync('git', ['show', commit + ':' + WORKFLOW_PATH], {
       cwd: root, encoding: 'utf8', timeout: 10000, maxBuffer: 1024 ** 2 }).replace(/\r\n/g, '\n');
-    frozenWorkflowInputs = { parent: read(REVIEWED_TRANSITION.parentCommit), original: read(BASELINE_SHA) };
+    frozenWorkflowInputs = { parent: read(REVIEWED_TRANSITION.parentCommit), original: read(BASELINE_SHA), nativeSource: read(NATIVE_TRANSITION.sourceCommit) };
   }
   return frozenWorkflowInputs;
 }
 function checkTransition(candidate) {
-  const { parent, original } = frozenInputs();
-  return assertReviewedTransition(candidate, parent, original);
+  const { parent, original, nativeSource } = frozenInputs();
+  return assertNativeTransition(candidate, nativeSource, parent, original);
 }
 function changedBlock(name, transform) {
   const block = workflowParts(text).blocks[name];
@@ -265,9 +304,19 @@ function changedBlock(name, transform) {
 
 test('reviewed correctness transition retains whole historical provenance and exact 13 untouched jobs', () => {
   assert.ok(job);
-  const { parent, original } = frozenInputs();
+  const { parent, original, nativeSource } = frozenInputs();
   assert.equal(assertReviewedTransition(parent, parent, original), 'ORIGINAL_PARENT');
-  assert.equal(checkTransition(text), 'REVIEWED_CORRECTNESS_V2');
+  assert.equal(assertReviewedTransition(nativeSource, parent, original), 'REVIEWED_CORRECTNESS_V2');
+  assert.equal(checkTransition(text), 'REVIEWED_NATIVE_BROWSER_V1');
+});
+test('native-only transition cannot mutate unrelated jobs, its exact source or reviewed scheduling', () => {
+  const { parent, original, nativeSource } = frozenInputs();
+  assert.throws(() => assertNativeTransition(text, nativeSource + '\n', parent, original));
+  assert.throws(() => assertNativeTransition(text, text, parent, original));
+  for (const name of workflowParts(text).order) assert.throws(() => checkTransition(changedBlock(name, block => block.replace(/\n$/, ' \n'))), undefined, name);
+  for (const needle of ['inherited_db67', 'ubuntu-22.04', 'scripts/stocks-browser-native/**', 'timeout-minutes: 30']) {
+    assert.ok(text.includes(needle)); assert.throws(() => checkTransition(text.replace(needle, needle + 'x')));
+  }
 });
 test('one-byte mutations in every untouched workflow block are rejected', () => {
   for (const row of REVIEWED_TRANSITION.blocks.filter(row => row.change === 'unchanged')) {

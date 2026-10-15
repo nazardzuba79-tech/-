@@ -13,3 +13,11 @@ test('Chrome version command receives only the explicit private environment', ()
   assert.equal(env.HOME, '/private-fixture'); assert.equal(env.PATH, '/usr/bin:/bin');
   for (const key of ['NODE_OPTIONS', 'NODE_PATH', 'LD_PRELOAD', 'HTTPS_PROXY', 'DISPLAY', 'DBUS_SESSION_BUS_ADDRESS']) assert.equal(env[key], undefined);
 });
+test('trusted native source selection stays outside the sanitized browser child environment',()=>{
+  const {selectedChrome}=require('./qa-stocks-public-nss.cjs'),{EXECUTABLE}=require('./stocks-browser-native/installation.cjs');
+  const previous=process.env.VOLTEX_STOCKS_NATIVE_BROWSER,source=process.env.QA_SOURCE_SHA;
+  try{process.env.VOLTEX_STOCKS_NATIVE_BROWSER='1';process.env.QA_SOURCE_SHA='a'.repeat(40);const env=privateEnvironment('/private-fixture');
+    assert.equal(env.VOLTEX_STOCKS_NATIVE_BROWSER,undefined);assert.equal(env.QA_SOURCE_SHA,undefined);assert.equal(selectedChrome(),EXECUTABLE);
+    for(const key of ['LD_PRELOAD','LD_LIBRARY_PATH','NODE_OPTIONS','NODE_PATH','PYTHONPATH'])assert.equal(env[key],undefined);
+  }finally{if(previous===undefined)delete process.env.VOLTEX_STOCKS_NATIVE_BROWSER;else process.env.VOLTEX_STOCKS_NATIVE_BROWSER=previous;if(source===undefined)delete process.env.QA_SOURCE_SHA;else process.env.QA_SOURCE_SHA=source;}
+});

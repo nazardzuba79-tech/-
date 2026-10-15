@@ -1,0 +1,176 @@
+{
+  "schema": 1,
+  "reviewId": "pr528-native-browser-db67-inputs-20261015",
+  "baseSHA": "db67cc02ed82eea6b2cfdfdc30599592357bbe68",
+  "baseTreeSha256": "50fea449d324f037105dd03a18ffde17eb181b2dd91aac13196c868a20b3cecb",
+  "changes": [
+    {
+      "path": ".github/workflows/stocks-review.yml",
+      "beforeBlob": "2a304bef6996ee942f1862dcd9e9bcfa807ba093",
+      "beforeMode": "100644",
+      "afterSha256": "8e934cae128c396867df2632c549b6866b868ffab5c6965e41518ca2a38437d1",
+      "afterMode": "100644"
+    },
+    {
+      "path": "docs/AI_HANDOFF.md",
+      "beforeBlob": "1d41e848459b935a509c8c6e67c7262876998c70",
+      "beforeMode": "100644",
+      "afterSha256": "fc7fd88a54238f33fcd3400d4b8930de90997024a81598e6820563e4f71c60a4",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/qa-stocks-browser-launch.cjs",
+      "beforeBlob": "b23c8d3db86dd1e5d5554460076d8f317d63b459",
+      "beforeMode": "100644",
+      "afterSha256": "53fe21c8d2394f8b441a596965894efc738eef8e374844a00497958d4446df89",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/qa-stocks-browser-launch.test.cjs",
+      "beforeBlob": "dc2f67173524c779c590c6c7b45bb0fc5da8723c",
+      "beforeMode": "100644",
+      "afterSha256": "648860844e0607fe571a330c3ffa5211dc5e63ab01333a3428d941fb309960f0",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/qa-stocks-chrome-preflight.cjs",
+      "beforeBlob": "5fbef230542b86fd725e2804e1e2efff09816c0d",
+      "beforeMode": "100644",
+      "afterSha256": "56a203d2aae08a30d00d06533863b6d79677d7452d9aa2acb0eccf4e18c2583e",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/qa-stocks-chrome-preflight.test.cjs",
+      "beforeBlob": "34291d44e450fe52ce49e6b427c67b51a4b9912e",
+      "beforeMode": "100644",
+      "afterSha256": "cef70dd8775ce6f2daeb39d57d2245f572ce4536ec2af9793fbe292e3f7e3cd0",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/qa-stocks-public-nss.cjs",
+      "beforeBlob": "1124aa46f1d70974e66992536ea57f45cbe4ac81",
+      "beforeMode": "100644",
+      "afterSha256": "251a61b1a4dbb7e9a4fe1cc4b8c09f7925eab403dfc46fd57060b203c3784e10",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/qa-stocks-public-nss.test.cjs",
+      "beforeBlob": "d1c5eb6fde7fe93b1e553cec8987b08c93ed2fa0",
+      "beforeMode": "100644",
+      "afterSha256": "30c0cdb81de8b7d3ae675dff1b1019c08b25e3d7dbd4f4bd81409fb86f867bf7",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native-admission.cjs",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "d507b5d1727def456ad69423c97fc2c4d07fd2ee936c44bc4762ceb8e612cd8f",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native-admission.test.cjs",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "c381fae33d30360167539486cd4eda2316c0039a0e3364df560bd546a923d762",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/README.md",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "c10afd6ff680d9c82c8b4a0920ed1c338f1ec878f1c21e6877064e743df62e2d",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/chain.cjs",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "a1b811d655502a0858ce2586f506e85195d8ba404471d998c6b1c1607ad3e5b9",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/extract.py",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "a6317feb47cde11a91f7b22ee8b9dc4bdb91612bfcabe8c16c82baf1b5e8e347",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/installation.cjs",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "cd9070df75bf73987c1c2822a0d46e43855e730fe117d64ab80fad1cf6afb14b",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/manifest.json",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "9fd241f5d28a2cac5d7d52cc56517956fb3d2d4032530e0ec79283512bf47bc5",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/native.test.cjs",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "33455438451def7fc66ab532a2ae33425740a67821fe70988898f9b2e7ef9319",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/playwright/package-lock.json",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "6c6726a18479802cd5cd485bec3c4705381247de8d90aa13f799c2eb9df105a9",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/playwright/package.json",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "3d3a5678221a88d7083009f9d5be5e9463150e6922a738d935a1fa344229a6bd",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/provision.py",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "37b42c13a406498d41b701b0b19161fbbf8094b1e2ba827d44db56c02418f755",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/provision_test.py",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "fe57bc0d541290e7c9f12a99c520c3290cd7e2421406c98ff7f43e78edf02030",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/qualification.cjs",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "e854888610c10f8c32a825da44ed7c2551ce540789098beb2b7f728c320bbad4",
+      "afterMode": "100644"
+    },
+    {
+      "path": "services/stocks/auth-burst-trace-512/workflow.test.mjs",
+      "beforeBlob": "ca4dd5a24c67b04bc2d87489c221698f4be7e777",
+      "beforeMode": "100644",
+      "afterSha256": "db16f943ce68ee147015ed91e8729921c12df0fbd60e55b9a3a939c538790dc3",
+      "afterMode": "100644"
+    },
+    {
+      "path": "services/stocks/review-correctness.mjs",
+      "beforeBlob": "ed01c3edfd86beffbb5c4cf55d0e23a7fc2f82ca",
+      "beforeMode": "100644",
+      "afterSha256": "c99f15e221fad493f647941d45e4a9f945d441d1e60e5983d459a0053e842d7c",
+      "afterMode": "100644"
+    },
+    {
+      "path": "services/stocks/review-correctness.test.mjs",
+      "beforeBlob": "68e62266955fb7f80a52cb289d23add7a0e0ac16",
+      "beforeMode": "100644",
+      "afterSha256": "fd812a4754442f37d7128f0b87ee42ef36f065c2c5cb6458b20fa05861874ab4",
+      "afterMode": "100644"
+    }
+  ]
+}
