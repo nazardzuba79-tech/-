@@ -18,6 +18,7 @@ function load(file: string): any {
   const exports: any = {}; modules.set(file, exports);
   const code = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   new Function('exports', 'require', code)(exports, (name: string) => {
+    if (name.endsWith('.css')) return {};
     if (name.endsWith('/api')) return {
       api, getToken: () => token,
       onSessionChange: (listener: () => void) => { sessionListeners.add(listener); return () => sessionListeners.delete(listener); },
@@ -180,4 +181,143 @@ test('logout removes protected document, cancels confirmation and rejects its pe
   expect(host.querySelector('[data-kyc-document] img')).toBeNull();
   expect(revoke).toHaveBeenCalledWith('blob:private-document');
   expect(api.reviewKyc).not.toHaveBeenCalled();
+});
+
+// ---------------------------------------------------------------- additional materials (2026-10-15)
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const receivedRequest = {
+  id: 'material-1', kind: 'DOCUMENT_AND_SELFIE', status: 'RECEIVED', documentReason: 'BLURRY', documentReasonText: null, selfieComment: 'Снимите очки',
+  requestedBy: 'admin-1', createdAt: '2026-10-15T09:00:00.000Z',
+  document: { receivedAt: '2026-10-15T09:10:00.000Z', messageId: 'doc-msg@voltextech.net', mimeType: 'image/jpeg', sizeBytes: 1_200_000 },
+  selfie: { receivedAt: '2026-10-15T09:12:00.000Z', messageId: 'selfie-msg@voltextech.net', mimeType: 'image/jpeg', sizeBytes: 800_000, consentAt: '2026-10-15T09:12:00.000Z', consentVersion: 'kyc-selfie-v1' },
+  acknowledgedAt: null, closedAt: null, closedOutcome: null,
+};
+async function renderMaterials(extra: Record<string, unknown> = {}, onChanged = jest.fn()) {
+  const { KycSubmissionReview } = load(resolve(frontend, 'src/pages/admin/KycSubmissionReview'));
+  await act(async () => { root.render(React.createElement(KycSubmissionReview, { submission: { ...submission, documentDelivery: 'EMAIL', ...extra }, email: 'client@example.invalid', onReviewed, onChanged })); await flush(); });
+  return onChanged;
+}
+async function change(node: HTMLElement, value: string) {
+  await act(async () => {
+    const proto = node instanceof dom.window.HTMLSelectElement ? dom.window.HTMLSelectElement.prototype : node instanceof dom.window.HTMLTextAreaElement ? dom.window.HTMLTextAreaElement.prototype : dom.window.HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(node, value);
+    node.dispatchEvent(new dom.window.Event(node instanceof dom.window.HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
+    await flush();
+  });
+}
+
+test('materials: a document re-request shows the exact user text, sends one request per click burst and never rejects', async () => {
+  api.requestKycMaterials = jest.fn(() => new Promise(done => setTimeout(() => done({ materialRequest: {}, reviewStage: 'DOCUMENT_REQUIRED' }), 5)));
+  const onChanged = await renderMaterials({ reviewStage: 'UNDER_REVIEW' });
+  expect(host.querySelector('[data-kyc-stage]')?.textContent).toBe('На проверке');
+  await click(button('Запросить дополнительные материалы'));
+  const send = button('Отправить запрос');
+  expect(send.disabled).toBe(true); // no reason yet
+  await change(host.querySelector('[data-kyc-request-reason]') as HTMLElement, 'BLURRY');
+  const preview = host.querySelector('[data-kyc-request-preview]')!.textContent!;
+  expect(preview).toContain('Необходимо повторно загрузить документ');
+  expect(preview).toContain('К сожалению, фотография вашего документа недостаточно чёткая для проверки.');
+  expect(preview).toContain('Причина: Фото размыто');
+  expect(preview).toContain('«Загрузить новое фото»');
+  expect(preview).not.toContain('Требуется дополнительное подтверждение личности');
+  await act(async () => { send.click(); send.click(); send.click(); await flush(); });
+  await act(async () => { await new Promise(done => setTimeout(done, 20)); });
+  expect(api.requestKycMaterials).toHaveBeenCalledTimes(1);
+  const [id, body] = api.requestKycMaterials.mock.calls[0];
+  expect(id).toBe('submission-1');
+  expect(body).toEqual({ clientRequestId: expect.stringMatching(UUID), kind: 'DOCUMENT', documentReason: 'BLURRY' });
+  expect(onChanged).toHaveBeenCalledTimes(1);
+  expect(onReviewed).not.toHaveBeenCalled();
+  expect(api.reviewKyc).not.toHaveBeenCalled();
+});
+
+test('materials: «Другая причина» needs its own text; a failed send keeps the same key for the retry', async () => {
+  api.requestKycMaterials = jest.fn().mockRejectedValueOnce(new Error('network down')).mockResolvedValue({ materialRequest: {}, reviewStage: 'DOCUMENT_REQUIRED' });
+  await renderMaterials();
+  await click(button('Запросить дополнительные материалы'));
+  await change(host.querySelector('[data-kyc-request-reason]') as HTMLElement, 'OTHER');
+  expect(button('Отправить запрос').disabled).toBe(true);
+  await change(host.querySelector('[data-kyc-request-other]') as HTMLElement, 'Блик закрывает номер');
+  expect(host.querySelector('[data-kyc-request-preview]')!.textContent).toContain('Причина: Блик закрывает номер');
+  await click(button('Отправить запрос'));
+  expect(host.querySelector('[data-kyc-request-form] [role="alert"]')?.textContent).toContain('повторное нажатие не создаст второй запрос');
+  await click(button('Отправить запрос'));
+  const [first, second] = api.requestKycMaterials.mock.calls.map((call: any[]) => call[1]);
+  expect(second.clientRequestId).toBe(first.clientRequestId);
+  expect(second).toEqual({ clientRequestId: first.clientRequestId, kind: 'DOCUMENT', documentReason: 'OTHER', documentReasonText: 'Блик закрывает номер' });
+});
+
+test('materials: a selfie request carries only the optional comment; the preview explains the selfie without a document in hand', async () => {
+  api.requestKycMaterials = jest.fn().mockResolvedValue({ materialRequest: {}, reviewStage: 'SELFIE_REQUIRED' });
+  await renderMaterials();
+  await click(button('Запросить дополнительные материалы'));
+  await click(host.querySelector('input[value="SELFIE"]') as HTMLElement);
+  expect(host.querySelector('[data-kyc-request-reason]')).toBeNull();
+  await change(host.querySelector('[data-kyc-request-comment]') as HTMLElement, 'Снимите очки');
+  const preview = host.querySelector('[data-kyc-request-preview]')!.textContent!;
+  expect(preview).toContain('Требуется дополнительное подтверждение личности');
+  expect(preview).toContain('Комментарий администратора: Снимите очки');
+  expect(preview).toContain('Держать документ в руках не нужно');
+  expect(preview).not.toContain('Необходимо повторно загрузить документ');
+  await click(button('Отправить запрос'));
+  expect(api.requestKycMaterials.mock.calls[0][1]).toEqual({ clientRequestId: expect.stringMatching(UUID), kind: 'SELFIE', selfieComment: 'Снимите очки' });
+});
+
+test('materials: history shows what arrived (type, size, Message-ID, consent) and «Начать повторную проверку» acknowledges once', async () => {
+  api.acknowledgeKycMaterials = jest.fn().mockResolvedValue({ acknowledged: true });
+  const onChanged = await renderMaterials({ reviewStage: 'MATERIALS_RECEIVED', activeMaterialRequestId: 'material-1', materialRequests: [receivedRequest] });
+  expect(host.querySelector('[data-kyc-stage]')?.textContent).toBe('Дополнительные материалы получены');
+  const history = host.querySelector('[data-kyc-material-history]')!.textContent!;
+  for (const text of ['Документ и селфи', 'Материалы получены', 'Причина: Фото размыто', 'Комментарий к селфи: Снимите очки', 'Message-ID: doc-msg@voltextech.net',
+    'Message-ID: selfie-msg@voltextech.net', 'Согласие на использование селфи', 'kyc-selfie-v1', '1.1 МБ', '[KYC] Селфи для подтверждения личности — Тестовый Клиент — client@example.invalid']) {
+    expect({ text, present: history.includes(text) }).toEqual({ text, present: true });
+  }
+  const ack = button('Начать повторную проверку');
+  await act(async () => { ack.click(); ack.click(); await flush(); });
+  expect(api.acknowledgeKycMaterials.mock.calls).toEqual([['material-1']]);
+  expect(onChanged).toHaveBeenCalledTimes(1);
+});
+
+test('materials: the comparison screen is view-only, starts the re-review, and its four buttons lead to the real flows', async () => {
+  api.acknowledgeKycMaterials = jest.fn().mockResolvedValue({ acknowledged: true });
+  api.requestKycMaterials = jest.fn().mockResolvedValue({ materialRequest: {}, reviewStage: 'SELFIE_REQUIRED' });
+  await renderMaterials({ reviewStage: 'MATERIALS_RECEIVED', activeMaterialRequestId: 'material-1', materialRequests: [receivedRequest] });
+  await click(button('Сравнить документ и селфи'));
+  const compare = host.querySelector('[data-kyc-compare]') as HTMLElement;
+  expect(compare).not.toBeNull();
+  expect(api.acknowledgeKycMaterials).toHaveBeenCalledWith('material-1');
+  expect(compare.querySelector('[data-kyc-compare-pane="document"]')).not.toBeNull();
+  expect(compare.querySelector('[data-kyc-compare-pane="selfie"]')).not.toBeNull();
+  expect(compare.textContent).toContain('Автоматическое распознавание лиц не используется');
+  expect(compare.textContent).not.toMatch(/\d+\s*%\s*(совпад|сходств|похож)/i);
+  expect(api.getKycDocument).not.toHaveBeenCalled(); // emailed: nothing fetched from the server
+  for (const label of ['Подтвердить', 'Запросить новое селфи', 'Запросить новый документ', 'Отклонить']) button(label, compare);
+
+  await click(button('Запросить новое селфи', compare));
+  expect(host.querySelector('[data-kyc-compare]')).toBeNull();
+  expect((host.querySelector('input[value="SELFIE"]') as HTMLInputElement).checked).toBe(true);
+  expect(host.textContent).toContain('будет закрыт и заменён новым');
+  await click(button('Отмена', host.querySelector('[data-kyc-request-form]')!));
+
+  await click(button('Сравнить документ и селфи'));
+  await click(button('Запросить новый документ', host.querySelector('[data-kyc-compare]')!));
+  expect((host.querySelector('input[value="DOCUMENT"]') as HTMLInputElement).checked).toBe(true);
+  await click(button('Отмена', host.querySelector('[data-kyc-request-form]')!));
+
+  await click(button('Сравнить документ и селфи'));
+  await click(button('Подтвердить', host.querySelector('[data-kyc-compare]')!));
+  const dialog = host.querySelector('dialog.admin-modal')!;
+  expect(dialog.textContent).toContain('Подтвердить проверку личности');
+  expect(dialog.textContent).toContain('будет закрыт этим решением');
+  expect(api.reviewKyc).not.toHaveBeenCalled();
+  await click(button('Подтвердить решение', dialog));
+  expect(api.reviewKyc).toHaveBeenCalledWith('submission-1', true, undefined);
+  expect(api.requestKycMaterials).not.toHaveBeenCalled();
+});
+
+test('materials: a decided submission offers no request or comparison', async () => {
+  await renderMaterials({ status: 'APPROVED', reviewStage: 'APPROVED' });
+  expect(host.querySelector('[data-kyc-request-open]')).toBeNull();
+  expect(host.querySelector('[data-kyc-compare-open]')).toBeNull();
 });
