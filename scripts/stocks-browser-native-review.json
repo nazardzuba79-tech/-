@@ -15,7 +15,7 @@
       "path": "docs/AI_HANDOFF.md",
       "beforeBlob": "1d41e848459b935a509c8c6e67c7262876998c70",
       "beforeMode": "100644",
-      "afterSha256": "687f80d42159545608d9858e81e5fc3092d0979edf63a8a7f15711a6e979c5b4",
+      "afterSha256": "d12b183051ecad502a593782f5c65af78242b08c21d67dbdb147135332856f23",
       "afterMode": "100644"
     },
     {
@@ -78,7 +78,7 @@
       "path": "scripts/stocks-browser-native/README.md",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "0b306584641610c732c49a13ae20c647056ba93de10785371b5d39cb5c8b7e21",
+      "afterSha256": "97b741a42df847e11a916b41e56019dd497c5ea772c2662dac4c5ec3bca5fe6b",
       "afterMode": "100644"
     },
     {
@@ -162,14 +162,14 @@
       "path": "scripts/stocks-browser-native/provision.py",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "3d5b9b02d0f2bac05380972d0ffb21d21a6298f66a68baa87755da308ee3403d",
+      "afterSha256": "156b94caa9561727c3b838737d505c5bf800aa3207054c3d3123996375a354ef",
       "afterMode": "100644"
     },
     {
       "path": "scripts/stocks-browser-native/provision_test.py",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "b60dd69976318e170ad91673a926b02a093f1d59b509ed1c5f4e962dbf87a12b",
+      "afterSha256": "6abffce719bb3e0829a264fb0ceeff858f2461db2bd277df49d0d0aed96285b8",
       "afterMode": "100644"
     },
     {

@@ -16,6 +16,70 @@ SPEC.loader.exec_module(P)
 
 
 class NativePureTests(unittest.TestCase):
+    def test_public_gpg_witness_precedes_unchanged_signature_rejection(self):
+        status = '[GNUPG:] KEYEXPIRED 123\n'
+        listing = 'pub:e:fixture-public-key\n'
+        stderr, stdout = io.StringIO(), io.StringIO()
+        with mock.patch.object(P.sys, 'stderr', stderr), mock.patch.object(P.sys, 'stdout', stdout):
+            with self.assertRaisesRegex(ValueError, '^GPG rejected signature$'):
+                P.signing_proof_with_witness(status, listing, 123456789, 'a' * 40, '123-1')
+        witness = P.json.loads(stderr.getvalue())
+        self.assertEqual(stdout.getvalue(), '')
+        self.assertTrue(witness['complete'])
+        self.assertEqual(witness['streams']['status']['text'], status)
+        self.assertEqual(witness['streams']['keyListing']['text'], listing)
+        self.assertEqual(witness['sourceSha'], 'a' * 40)
+        self.assertEqual(witness['runId'], '123-1')
+        self.assertEqual(witness['observedAtUnixMs'], 123456789)
+        self.assertEqual(witness['commandExitCodes'], {'listKeys': 0, 'decrypt': 0})
+        self.assertEqual(witness['metadataSha256'], {
+            'google-key.asc': P.M['key']['sha256'], 'InRelease': P.M['inRelease']['sha256'],
+            'Packages.gz': P.M['packages']['sha256']})
+        self.assertEqual(witness['googlePrimaryFingerprint'], P.M['googlePrimaryFingerprint'])
+
+    def test_public_gpg_witness_success_is_stderr_only_complete_and_escaped(self):
+        status = '[GNUPG:] PUBLIC_FIXTURE \x1b\x00\r\n"\\\u2603\n'
+        listing = 'pub:fixture-public-key\n'
+        stderr, stdout = io.StringIO(), io.StringIO()
+        result = object()
+
+        def verified(actual_status, actual_listing, now):
+            witness = P.json.loads(stderr.getvalue())  # Must exist before parser invocation.
+            self.assertEqual((actual_status, actual_listing, now), (status, listing, 123456789))
+            for name, original in [('status', status), ('keyListing', listing)]:
+                self.assertEqual(witness['streams'][name], {
+                    'text': original, 'bytes': len(original.encode('utf-8')),
+                    'sha256': P.digest(original.encode('utf-8'))})
+            return result
+
+        with mock.patch.object(P.sys, 'stderr', stderr), mock.patch.object(P.sys, 'stdout', stdout), \
+                mock.patch.object(P, 'signing_proof', side_effect=verified) as parser:
+            self.assertIs(P.signing_proof_with_witness(status, listing, 123456789, 'a' * 40, '123-1'), result)
+        parser.assert_called_once()
+        self.assertEqual(stdout.getvalue(), '')
+        self.assertEqual(stderr.getvalue().count('\n'), 1)
+        self.assertNotIn('\x1b', stderr.getvalue())
+        self.assertNotIn('\x00', stderr.getvalue())
+        self.assertLessEqual(len(stderr.getvalue().encode('ascii')), 128 * 1024)
+
+    def test_public_gpg_witness_oversize_fails_with_hashes_and_no_truncation(self):
+        # Escaping can expand raw bytes: the emitted JSON bound is authoritative.
+        for status in ['x' * (128 * 1024), '\x00' * (24 * 1024)]:
+            stderr = io.StringIO()
+            with self.subTest(raw_bytes=len(status)), mock.patch.object(P.sys, 'stderr', stderr), \
+                    mock.patch.object(P, 'signing_proof') as parser:
+                with self.assertRaisesRegex(ValueError, 'exceeds 128 KiB; signature validation not run'):
+                    P.signing_proof_with_witness(status, '', 123456789, 'a' * 40, '123-1')
+            parser.assert_not_called()
+            summary = P.json.loads(stderr.getvalue())
+            self.assertFalse(summary['complete'])
+            self.assertEqual(summary['failure'], 'PUBLIC_GPG_WITNESS_TOO_LARGE')
+            self.assertGreater(summary['encodedBytes'], summary['maximumBytes'])
+            self.assertEqual(summary['streams']['status'], {
+                'bytes': len(status.encode('utf-8')), 'sha256': P.digest(status.encode('utf-8'))})
+            self.assertNotIn('text', summary['streams']['keyListing'])
+            self.assertLessEqual(len(stderr.getvalue().encode('ascii')), 128 * 1024)
+
     def metadata_blobs(self):
         return {'scripts/stocks-browser-native/metadata/' + name: (HERE / 'metadata' / name).read_bytes()
                 for name in ['google-key.asc', 'InRelease', 'Packages.gz']}

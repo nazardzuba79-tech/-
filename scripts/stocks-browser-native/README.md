@@ -99,6 +99,16 @@ it does not import or activate that proposal. The Python verifier mirrors these
 checks before extraction. Retained GPG status is installer-produced, immutable
 evidence of actual verification, not an independent signature on handwritten JSON.
 
+After the public-key listing and signature-decrypt commands both return zero,
+the provisioner emits a JSON-escaped public GPG witness to stderr immediately
+before the unchanged signature parser. It binds the exact source/run/time,
+original key/index hashes, command exit codes, and complete public status/listing
+bytes and digests. It is diagnostic evidence, not signature acceptance, and
+survives cleanup through the CI log. The entire emitted JSON line is bounded to
+128 KiB; an oversized witness emits only lengths/digests and fails explicitly
+without running signature validation. Nothing is silently truncated, written to
+stdout, or accepted on the strength of this witness.
+
 Actual CI kernel/user namespace availability, `/proc` readability after sandbox
 dumpability changes, library compatibility, and seven-case acceptance remain
 unproven until execution. A native VM has normal network access; existing fixture

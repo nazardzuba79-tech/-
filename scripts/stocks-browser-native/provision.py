@@ -234,6 +234,43 @@ def field(text, name):
     return rows[0]
 
 
+def signing_proof_with_witness(status, listing, now, source_sha, run_id):
+    # Called only after both public GPG commands returned zero. This witness is
+    # diagnostic evidence, not signature acceptance, and survives prefix cleanup.
+    require(re.fullmatch('[a-f0-9]{40}', source_sha) and re.fullmatch(r'\d+-\d+', run_id), 'exact public GPG witness identity')
+    require(isinstance(now, int) and now > 0, 'public GPG witness timestamp')
+    streams = {}
+    for name, text in [('status', status), ('keyListing', listing)]:
+        raw = text.encode('utf-8')
+        streams[name] = {'bytes': len(raw), 'sha256': digest(raw), 'text': text}
+    witness = {
+        'schema': 1, 'kind': 'VOLTEX_PUBLIC_GPG_WITNESS',
+        'phase': 'BEFORE_SIGNATURE_VALIDATION', 'sourceSha': source_sha,
+        'runId': run_id, 'observedAtUnixMs': now, 'complete': True,
+        'commandExitCodes': {'listKeys': 0, 'decrypt': 0},
+        'googlePrimaryFingerprint': M['googlePrimaryFingerprint'],
+        'metadataSha256': {'google-key.asc': M['key']['sha256'],
+                           'InRelease': M['inRelease']['sha256'],
+                           'Packages.gz': M['packages']['sha256']},
+        'streams': streams,
+    }
+    payload = json.dumps(witness, ensure_ascii=True, sort_keys=True, separators=(',', ':'))
+    maximum = 128 * 1024
+    encoded_bytes = len(payload.encode('ascii')) + 1  # Include the emitted newline.
+    if encoded_bytes > maximum:
+        # Do not silently truncate raw evidence or proceed without its witness.
+        witness.update({'complete': False, 'failure': 'PUBLIC_GPG_WITNESS_TOO_LARGE',
+                        'encodedBytes': encoded_bytes, 'maximumBytes': maximum})
+        witness['streams'] = {name: {key: value for key, value in stream.items() if key != 'text'}
+                              for name, stream in streams.items()}
+        summary = json.dumps(witness, ensure_ascii=True, sort_keys=True, separators=(',', ':'))
+        require(len(summary.encode('ascii')) + 1 <= maximum, 'public GPG witness summary too large')
+        print(summary, file=sys.stderr, flush=True)
+        raise ValueError('public GPG witness exceeds 128 KiB; signature validation not run')
+    print(payload, file=sys.stderr, flush=True)
+    return signing_proof(status, listing, now)
+
+
 def signing_proof(status, listing, now):
     rows = [line.split() for line in status.splitlines() if line]
     bad = {'BADSIG', 'ERRSIG', 'NO_PUBKEY', 'EXPSIG', 'EXPKEYSIG', 'REVKEYSIG', 'KEYEXPIRED', 'SIGEXPIRED', 'FAILURE', 'ERROR', 'NODATA'}
@@ -439,7 +476,7 @@ def provision(source_sha, run_id):
             command(trusted + ['--import'], data=exported)
             listing = command(trusted + ['--with-colons', '--fingerprint', '--fingerprint', '--list-keys']).decode()
             status = command(trusted + ['--status-fd', '1', '--output', str(verification / 'Release'), '--decrypt', str(verification / 'InRelease')]).decode()
-            signature = signing_proof(status, listing, int(time.time() * 1000))
+            signature = signing_proof_with_witness(status, listing, int(time.time() * 1000), source_sha, run_id)
             release = release_proof((verification / 'Release').read_text(), (verification / 'Packages.gz').read_bytes(), int(time.time() * 1000))
             os.chmod(verification / 'Release', 0o644)  # New authenticated plaintext output only.
             (verification / 'gpg-status.txt').write_text(status)
