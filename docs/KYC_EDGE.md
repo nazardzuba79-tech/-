@@ -195,3 +195,51 @@ document in hand; optional comment), or both.
   on start), the Worker (`deploy-kyc-edge.yml` deploys the notification Worker
   first, then this one — both on a push to `main` touching `workers/**`), and
   the frontend. All three come with a merge to `main`; none was done here.
+
+### Release order, compatibility and rollback (plan only — nothing was run)
+
+A merge to `main` starts three deploys at once: Render (runs
+`prisma migrate deploy`, then the API), `deploy-kyc-edge.yml` (notification
+Worker first, then the KYC edge), and the frontend. Every piece is additive, so
+any arrival order is safe:
+
+| Arrives first | Effect until the rest arrives |
+|---|---|
+| API + migration | Old frontend ignores the new optional fields; old Workers never call the new routes. |
+| Frontend | No user can have a request yet, so the user page looks as before; in the admin, «Отправить запрос» and the two new queue filters fail with an error (old API) — nothing is written. |
+| KYC edge Worker | `/v1/materials` answers 404/503 (old API has no authorize route); nothing calls it yet; the submission path is unchanged. |
+| KYC edge before notification Worker | `notifyMaterials` is missing → one `[notifications] DELIVERY_UNAVAILABLE` warning, upload unaffected (the workflow deploys notifications first anyway). |
+
+Preflight for the owner, read-only: `npx prisma migrate status` against
+production (no pending/failed migration besides this one); the KYC Worker's
+`KYC_EDGE_SIGNING_JWK` and Render's `KYC_EDGE_PUBLIC_KEY` unchanged; the
+mailbox still a verified Email Routing destination; CI green on the exact head.
+Smoke after deploy: `/health` of both Workers, `/v1/materials` without a
+session → 401, `GET /kyc/me` has `reviewStage`.
+
+Rollback: revert the merge commit (the three deploys run again with the old
+code). Keep the table — dropping it would erase the audit trail of requests;
+old code never reads it. Users with an open request then see the ordinary
+«На рассмотрении», and the admin can still approve or reject as before.
+
+### Retention, access, consent withdrawal — owner/legal decision
+
+What is kept where: the pictures only in the KYC mailbox (as the original
+documents already are); in PostgreSQL only metadata (type, size, Message-ID,
+times, consent version) and the audit log; nothing at the edge beyond a 24 h
+"email accepted" marker. This change adds no storage, no paid service and no
+biometric processing. Open points to settle before release:
+
+1. How long document photos and selfies stay in the mailbox (the period the
+   company's AML obligations require; a selfie may warrant a shorter one once
+   the decision is made), and who deletes them.
+2. Who can open the mailbox (2FA, named people only) — the access control for
+   these files is the mailbox's.
+3. Withdrawing selfie consent: today a manual procedure — the user writes to
+   support; the admin finds the letter by `rfc822msgid:<Message-ID>` from the
+   request history, deletes it and records it; the request can be closed by a
+   new request or a decision. An in-app button would be a separate change.
+4. If the owner wants the comparison screen to open the files without saving
+   attachments, that needs server-side storage (encrypted, access-checked,
+   with deletion) — a separate architecture decision; until then the screen
+   is honestly a manual one: the admin saves the attachments and opens them.

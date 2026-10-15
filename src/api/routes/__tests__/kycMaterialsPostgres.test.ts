@@ -120,4 +120,44 @@ pg('KYC additional materials on real PostgreSQL', () => {
     expect(row.selfieReceivedAt).not.toBeNull();
     expect((await db.user.findUniqueOrThrow({ where: { id: f.user.id } })).kycStatus).toBe('APPROVED');
   });
+
+  it('a decision and a new request racing (×10, two admins): never an open request after the decision', async () => {
+    for (let i = 0; i < 10; i++) {
+      const f = await fixture(`race-${i}`);
+      const other = await db.user.create({ data: { email: `kyc-mat-admin2-${i}-${randomUUID()}@example.invalid`, passwordHash: 'QA_ONLY', referralCode: `KMB${randomUUID().slice(0, 8)}`, role: 'ADMIN' } });
+      const otherAuth = await session(other.id);
+      const approve = i % 2 === 0;
+      const [review, asked] = await Promise.all([
+        request(app).post(`/api/v1/kyc/${f.submission.id}/review`).set('Authorization', f.adminAuth).send({ approve, reason: approve ? undefined : 'Synthetic race' }),
+        request(app).post(`/api/v1/kyc/${f.submission.id}/material-requests`).set('Authorization', otherAuth).send({ clientRequestId: randomUUID(), kind: 'DOCUMENT', documentReason: 'BLURRY' }),
+      ]);
+      expect(review.status).toBe(200);
+      expect([201, 409]).toContain(asked.status);
+      expect(await db.kycMaterialRequest.count({ where: { submissionId: f.submission.id, closedAt: null } })).toBe(0);
+      const submission = await db.kycSubmission.findUniqueOrThrow({ where: { id: f.submission.id } });
+      expect(submission.status).toBe(approve ? 'APPROVED' : 'REJECTED');
+      if (asked.status === 201) {
+        expect(await db.kycMaterialRequest.findUniqueOrThrow({ where: { id: asked.body.materialRequest.id } }))
+          .toMatchObject({ status: 'CLOSED', closedOutcome: approve ? 'APPROVED' : 'REJECTED' });
+      }
+    }
+  });
+
+  it('after a decision: a new request is refused and a late file cannot reopen the closed request', async () => {
+    const f = await fixture('late');
+    const created = await request(app).post(`/api/v1/kyc/${f.submission.id}/material-requests`).set('Authorization', f.adminAuth)
+      .send({ clientRequestId: randomUUID(), kind: 'DOCUMENT_AND_SELFIE', documentReason: 'LOW_LIGHT' });
+    const id = created.body.materialRequest.id;
+    expect((await request(app).post(`/api/v1/kyc/${f.submission.id}/review`).set('Authorization', f.adminAuth).send({ approve: false, reason: 'Synthetic' })).status).toBe(200);
+    const again = await request(app).post(`/api/v1/kyc/${f.submission.id}/material-requests`).set('Authorization', f.adminAuth)
+      .send({ clientRequestId: randomUUID(), kind: 'SELFIE' });
+    expect(again.status).toBe(409);
+    // The edge had already emailed this file when the decision landed: it is recorded, the request stays closed.
+    expect((await confirm(f.user.id, id, 'DOCUMENT')()).status).toBe(201);
+    const row = await db.kycMaterialRequest.findUniqueOrThrow({ where: { id } });
+    expect(row).toMatchObject({ status: 'CLOSED', closedOutcome: 'REJECTED' });
+    expect(row.documentReceivedAt).not.toBeNull();
+    expect((await db.auditLog.findFirstOrThrow({ where: { userId: f.user.id, action: 'KYC_MATERIAL_RECEIVED' } })).metadata).toMatchObject({ afterClose: true });
+    expect((await db.user.findUniqueOrThrow({ where: { id: f.user.id } })).kycStatus).toBe('REJECTED');
+  });
 });
