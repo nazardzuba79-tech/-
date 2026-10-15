@@ -1,12 +1,88 @@
 name: Stocks isolated review
 on:
   pull_request:
-    paths: ['services/stocks/**', 'services/stocks-global/**', 'services/stocks-simulator/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/__tests__/stock*.test.ts', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', 'scripts/qa-backend-full*', '.github/workflows/stocks-review.yml']
+    paths: ['services/stocks/**', 'services/stocks-global/**', 'services/stocks-simulator/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/__tests__/stock*.test.ts', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', 'scripts/qa-backend-full*', '.github/workflows/stocks-review.yml', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.discovery.test.ts', 'src/services/marketData/__tests__/ProviderFailureMatrix.test.ts', 'src/services/__tests__/CfdMarketDataService.test.ts', 'src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts', 'src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts']
   push:
     branches: [codex/stocks-bounded-v1-20261007]
 permissions:
   contents: read
 jobs:
+  stocks-pg-discovery:
+    # Only the new, same-repository stacked review; no database or performance run.
+    if: >-
+      github.event_name == 'pull_request' && github.repository == 'nazardzuba79-tech/-' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'codex/stocks-review-20261015' &&
+      github.event.pull_request.base.ref == 'dot/stocks-owner-usdt-portfolio-20261013'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://test:test@127.0.0.1:9/stocks_discovery_unused
+      DIRECT_URL: postgresql://test:test@127.0.0.1:9/stocks_discovery_unused
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact source head
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Pure scheduling and correctness guards
+        run: node --test services/stocks/review-plan.test.mjs services/stocks/review-correctness.test.mjs scripts/qa-backend-full-admission.test.cjs services/stocks/auth-burst-trace-512/workflow.test.mjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Actual Jest collection without PostgreSQL opt-in
+        shell: bash
+        run: |
+          mkdir -p stocks-pg-discovery-evidence
+          unset VOLTEX_PG_TEST_URL
+          node node_modules/jest/bin/jest.js --runTestsByPath src/services/testMarkets/__tests__/vtaNativeCoexistence.discovery.test.ts --runInBand --json --outputFile=stocks-pg-discovery-evidence/jest.json 2>&1 | tee stocks-pg-discovery-evidence/jest.log
+          node services/stocks/review-correctness.mjs --discovery-report stocks-pg-discovery-evidence/jest.json | tee stocks-pg-discovery-evidence/proof.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-pg-discovery-${{ github.event.pull_request.head.sha || github.sha }}
+          path: stocks-pg-discovery-evidence
+          if-no-files-found: error
+  stocks-correctness-result:
+    needs: [stocks-pg-discovery, stocks-review-selection, isolated-simulator, frontend-regression, bounded-stock-runtime, stocks-full-backend-offline, stocks-ui-browser]
+    # Even a wrong base or fork with this exact branch name must fail closed.
+    if: >-
+      always() && !cancelled() && github.event_name == 'pull_request' &&
+      (github.event.pull_request.head.ref == 'codex/stocks-review-20261015' || github.head_ref == 'codex/stocks-review-20261015')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact source head
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Require actual correctness results; preserve capacity and release blockers
+        env:
+          STOCKS_CORRECTNESS_NEEDS: ${{ toJSON(needs) }}
+        shell: bash
+        run: |
+          mkdir -p stocks-correctness-evidence
+          node services/stocks/review-correctness.mjs | tee stocks-correctness-evidence/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stocks-correctness-${{ github.event.pull_request.head.sha || github.sha }}
+          path: stocks-correctness-evidence
+          if-no-files-found: error
   stocks-auth-one-burst:
     # Consumed at exact head 75e2453e; later integration heads cannot attempt this diagnostic.
     # This diagnostic never clears the retained backend/browser/capacity failures.
@@ -481,10 +557,16 @@ jobs:
             ${{ runner.temp }}/stocks-auth-launch-output/workload/*.json
 
   stocks-full-backend-offline:
-    # One complete backend collection for PR512, with native engines confined
+    # Full backend for PR512 and the exact stacked correctness review, confined
     # to a disposable no-network container. This is not a capacity or DB test.
     needs: stocks-backend-admission
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.number == 512 && (needs.stocks-backend-admission.result != 'success' || needs.stocks-backend-admission.outputs.mode != 'not_run')
+    if: >-
+      always() && github.event_name == 'pull_request' &&
+      ((github.event.pull_request.number == 512 && (needs.stocks-backend-admission.result != 'success' || needs.stocks-backend-admission.outputs.mode != 'not_run')) ||
+      (github.repository == 'nazardzuba79-tech/-' && github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'codex/stocks-review-20261015' &&
+      github.event.pull_request.base.ref == 'dot/stocks-owner-usdt-portfolio-20261013'))
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -493,6 +575,10 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Verify exact source head
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '22.23.3'
@@ -510,7 +596,7 @@ jobs:
           if-no-files-found: error
   stocks-review-selection:
     # PR512 stages costly evidence explicitly. Scheduling SKIPs are not PASSes;
-    # all other PRs retain the original gates and criteria below.
+    # The exact stacked review runs correctness only; other PRs retain policy.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -524,8 +610,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Verify exact source head
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '24.21.0'
@@ -940,6 +1031,10 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source head
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -1003,6 +1098,13 @@ jobs:
       DIRECT_URL: postgresql://test:test@127.0.0.1:9/frontend_test_unused
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact source head
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -1014,7 +1116,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stock-frontend-regression-${{ github.sha }}
+          name: stock-frontend-regression-${{ github.event.pull_request.head.sha || github.sha }}
           path: frontend-stock-review.json
   # Stocks panel/overview in a real browser. Isolated fixtures only: the real
   # read-only stock server over a disposable SQLite file of generated candles
@@ -1037,6 +1139,10 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source head
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '24.21.0'
@@ -1163,7 +1269,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stocks-ui-browser-${{ github.sha }}
+          name: stocks-ui-browser-${{ github.event.pull_request.head.sha || github.sha }}
           path: stocks-ui-evidence
           if-no-files-found: error
   crypto-service-comparison:
@@ -1326,6 +1432,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact source head
+        env:
+          QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$QA_SOURCE_SHA"
       - run: docker build -t voltex-stock-review -f services/stocks/Dockerfile .
       - name: Unit and actual read-only HTTP tests
         run: docker run --rm --network none --cpus .05 --memory 256m --memory-swap 256m --pids-limit 32 --cap-drop ALL --security-opt no-new-privileges --read-only --tmpfs /tmp:size=16m voltex-stock-review node --test core.test.mjs reader-process.test.cjs
@@ -1342,5 +1455,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stocks-runtime-${{ github.sha }}
+          name: stocks-runtime-${{ github.event.pull_request.head.sha || github.sha }}
           path: stock-evidence

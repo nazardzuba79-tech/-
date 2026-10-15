@@ -6592,3 +6592,12 @@ Local targeted evidence: ProviderFailureMatrix, CfdMarketDataService, ProviderHe
 QA-only launchers now require a verified Linux Google Chrome installation: executable and every ancestor must be root-owned, non-symlinked and not writable by the runner before executable inspection. Six ordinary Stocks QA scripts share sandbox-enabled launch and actual renderer namespace/seccomp proof; the public-host path preserves private NSS/TLS controls and adds the same renderer proof. There is no Windows fallback and no permission/sandbox/TLS bypass. The current GitHub runner Chrome previously failed path admission; these source changes do not repair or certify that installation.
 
 Local pure tests covering browser admission and the explicit 251-plus-one backend inventory: 25 passed, 0 failed (193.7886 ms). Actual Linux browser/sandbox acceptance remains NOT_RUN; a separate authenticated immutable environment is being prepared. No runtime app, real financial path, production setting, merge or deployment changed.
+
+
+## 2026-10-15 — Separate exact-head correctness review scope
+
+The new codex/stocks-review-20261015 branch targets the existing PR512 branch only. Correctness selection requires the same repository, exact trusted/payload branch identity, base and SHA; malformed scope fails closed before legacy scheduling. All seven prior heavy/performance flags remain false for this review. The aggregate requires actual success from discovery, selection, simulator, frontend, bounded runtime, full offline backend and browser jobs. Prior finite jobs/policy pins remain unchanged; no skipped or failed job can yield correctness PASS, and correctness never certifies capacity/publication.
+
+Discovery JSON validation follows the pinned Jest formatter: the actual successful mixed suite status is focused with exactly one passed assertion plus four pending opt-in PostgreSQL assertions. The original raw report is retained; failed, interrupted, malformed or mismatched inventories are rejected. Full-backend inventory increases from251 to252 solely for the exact new discovery test; arbitrary additions/removals/substitutions fail.
+
+Local evidence at this stage: new CI pure guards37PASS0FAIL (1177.2287ms); actual retained discovery JSON verifier PASS; backend TypeScript PASS (8187ms), frontend TypeScript PASS (23151ms), production frontend build PASS (27237ms), existing >500kB chunk warning retained. Exact-head remote CI is NOT_RUN until branch publication. Existing canonical/browser/capacity/data-rights gates remain separate and unresolved.

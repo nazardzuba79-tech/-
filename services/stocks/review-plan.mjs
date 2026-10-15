@@ -8,10 +8,27 @@ export const PLAN_PATH = 'services/stocks/review-plan-512.json';
 export const BASELINE = '06a0d1a748cd943e45df9aa60d25e4ca5ec1b9cb';
 const BRANCH = 'dot/stocks-owner-usdt-portfolio-20261013';
 const REPOSITORY = 'nazardzuba79-tech/-';
+export const CORRECTNESS_BRANCH = 'codex/stocks-review-20261015';
+export const CORRECTNESS_BASE = 'dot/stocks-owner-usdt-portfolio-20261013';
+export const HEAVY_FLAGS = ['legacy', 'diagnostic', 'timeline', 'registration', 'model', 'targeted', 'matched'];
 const idle = reason => ({ legacy: false, diagnostic: false, timeline: false, registration: false, model: false, targeted: false, matched: false, reason });
 
-export function selectReview({ event, repository, plan, previousPlan }) {
+export function validateCorrectnessScope({ event, repository, headRef }) {
   const pr = event.pull_request;
+  if (repository !== REPOSITORY || !Number.isSafeInteger(pr?.number) || pr.number <= 0
+      || headRef !== CORRECTNESS_BRANCH || pr.head?.ref !== CORRECTNESS_BRANCH || pr.head?.repo?.full_name !== REPOSITORY
+      || pr.base?.ref !== CORRECTNESS_BASE || pr.base?.repo?.full_name !== REPOSITORY
+      || !/^[0-9a-f]{40}$/.test(pr.head?.sha ?? '')) {
+    throw Error('Invalid Stocks correctness-review scope; no evidence jobs may be certified');
+  }
+}
+
+export function selectReview({ event, repository, headRef, plan, previousPlan }) {
+  const pr = event.pull_request;
+  if (pr?.head?.ref === CORRECTNESS_BRANCH || headRef === CORRECTNESS_BRANCH) {
+    validateCorrectnessScope({ event, repository, headRef });
+    return idle('Owner-scoped correctness review only; consumed performance evidence is NOT_RUN, not PASS');
+  }
   if (repository !== REPOSITORY || pr?.number !== 512 || pr.head?.ref !== BRANCH
       || pr.head?.repo?.full_name !== REPOSITORY) {
     return { ...idle('Existing workflow policy; outside owner-scoped PR512'), legacy: true };
@@ -41,7 +58,12 @@ export function selectReview({ event, repository, plan, previousPlan }) {
   return result;
 }
 
-export function selectFromRepository({ event, repository, cwd = process.cwd() }) {
+export function selectFromRepository({ event, repository, headRef, cwd = process.cwd() }) {
+  // The trusted Actions context still identifies this branch if event metadata
+  // is missing or inconsistent. Never fall back to legacy performance in that case.
+  if (headRef === CORRECTNESS_BRANCH || event.pull_request?.head?.ref === CORRECTNESS_BRANCH) {
+    return selectReview({ event, repository, headRef });
+  }
   const scoped = repository === REPOSITORY && event.pull_request?.number === 512
     && event.pull_request?.head?.ref === BRANCH
     && event.pull_request?.head?.repo?.full_name === REPOSITORY;
@@ -60,7 +82,7 @@ export function selectFromRepository({ event, repository, cwd = process.cwd() })
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
-  const result = selectFromRepository({ event, repository: process.env.GITHUB_REPOSITORY });
+  const result = selectFromRepository({ event, repository: process.env.GITHUB_REPOSITORY, headRef: process.env.GITHUB_HEAD_REF });
   console.log(JSON.stringify({ ...result, capacityAcceptance: 'NOT_EVALUATED_BY_SCHEDULER' }, null, 2));
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT,
     ['legacy', 'diagnostic', 'timeline', 'registration', 'model', 'targeted', 'matched'].map(k => `${k}=${result[k]}\n`).join(''));

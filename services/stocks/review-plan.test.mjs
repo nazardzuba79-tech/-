@@ -1,14 +1,74 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { execFileSync } from 'node:child_process';
-import { selectReview, selectFromRepository, PLAN_PATH, BASELINE } from './review-plan.mjs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { selectReview, selectFromRepository, PLAN_PATH, BASELINE, CORRECTNESS_BRANCH, CORRECTNESS_BASE, HEAVY_FLAGS } from './review-plan.mjs';
 const repository = 'nazardzuba79-tech/-';
 const event = { action: 'synchronize', before: BASELINE, pull_request: { number: 512,
   head: { ref: 'dot/stocks-owner-usdt-portfolio-20261013', repo: { full_name: repository } } } };
 const plan = { schema: 1, id: 'controlled-first-stage', baseline: BASELINE, stage: 'diagnostic-and-model' };
+const correctnessEvent = { action: 'opened', pull_request: { number: 525,
+  head: { ref: CORRECTNESS_BRANCH, sha: 'a'.repeat(40), repo: { full_name: repository } },
+  base: { ref: CORRECTNESS_BASE, repo: { full_name: repository } } } };
+
+test('exact stacked correctness branch never replays performance on any ordinary PR event', () => {
+  for (const action of ['opened', 'synchronize', 'reopened', 'edited', 'labeled']) {
+    const result = selectReview({ event: { ...correctnessEvent, action }, repository, headRef: CORRECTNESS_BRANCH, plan });
+    for (const flag of HEAVY_FLAGS) assert.equal(result[flag], false);
+    assert.match(result.reason, /NOT_RUN, not PASS/);
+  }
+  // This branch must not read, mutate or reinterpret the consumed PR512 plan.
+  const result = selectFromRepository({ event: correctnessEvent, repository, headRef: CORRECTNESS_BRANCH, cwd: '/does-not-exist/stocks-review' });
+  for (const flag of HEAVY_FLAGS) assert.equal(result[flag], false);
+});
+test('correctness branch fails closed for forks, wrong base/repository and malformed identity', () => {
+  const changes = [
+    input => { input.repository = 'fork/-'; },
+    input => { input.event.pull_request.head.repo.full_name = 'fork/-'; },
+    input => { input.event.pull_request.base.repo.full_name = 'fork/-'; },
+    input => { input.event.pull_request.base.ref = 'main'; },
+    input => { delete input.event.pull_request.base; },
+    input => { input.event.pull_request.number = '525'; },
+    input => { input.event.pull_request.head.sha = 'HEAD'; },
+    input => { delete input.event.pull_request.head.ref; },
+    input => { delete input.event.pull_request.head; },
+    input => { delete input.event.pull_request; },
+    input => { input.headRef = 'other'; },
+    input => { delete input.headRef; },
+  ];
+  for (const change of changes) {
+    const input = { event: structuredClone(correctnessEvent), repository, headRef: CORRECTNESS_BRANCH };
+    change(input);
+    assert.throws(() => selectReview(input), /Invalid Stocks correctness-review scope/);
+    assert.throws(() => selectFromRepository({ ...input, cwd: '/does-not-exist/stocks-review' }), /Invalid Stocks correctness-review scope/);
+  }
+});
+test('actual CLI trusts Actions head context and rejects missing payload identity before legacy fallback', () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'stocks-review-context-'));
+  const eventPath = join(cwd, 'event.json'), outputPath = join(cwd, 'output.txt');
+  const executable = fileURLToPath(new URL('./review-plan.mjs', import.meta.url));
+  try {
+    for (const alter of [
+      event => { delete event.pull_request.head; },
+      event => { delete event.pull_request.head.ref; },
+      event => { event.pull_request.head.ref = 'other'; },
+    ]) {
+      const payload = structuredClone(correctnessEvent); payload.action = 'synchronize';
+      payload.before = 'a'.repeat(40); alter(payload);
+      writeFileSync(eventPath, JSON.stringify(payload)); writeFileSync(outputPath, '');
+      const result = spawnSync(process.execPath, [executable], { cwd, encoding: 'utf8', timeout: 10000,
+        env: { GITHUB_EVENT_PATH: eventPath, GITHUB_OUTPUT: outputPath, GITHUB_REPOSITORY: repository,
+          GITHUB_EVENT_NAME: 'pull_request', GITHUB_HEAD_REF: CORRECTNESS_BRANCH } });
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /Invalid Stocks correctness-review scope/);
+      assert.equal(result.stdout, '');
+      assert.equal(readFileSync(outputPath, 'utf8'), '', 'failed selection must not emit any heavy outputs');
+    }
+  } finally { rmSync(cwd, { recursive: true, force: true }); }
+});
 
 test('only a reviewed new plan launches A diagnostics and B model, not acceptance', () => {
   assert.deepEqual(selectReview({ event, repository, plan }), {

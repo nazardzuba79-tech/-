@@ -24,10 +24,12 @@ test('env/private material is excluded while the full source audit closure remai
   for (const p of ['.env', '.env.production', 'x/.env.example', 'x/secret.key', 'x/test.sqlite', 'x/key.PEM', 'node_modules/a.js']) assert.equal(excluded(p), true);
   for (const p of ['frontend/src/App.tsx', 'workers/market-edge/src/index.ts', 'docs/release.md', 'scripts/fixture.cjs', 'prisma/schema.prisma', 'package-lock.json']) assert.equal(excluded(p), false);
 });
-test('backend discovery requires the full reviewed251, not frontend or arbitrary fixture files', () => {
-  const files = Array.from({ length: 251 }, (_, i) => ({ path: `src/x/${i}.test.ts` }));
-  assert.equal(backendTests([...files, { path: 'frontend/src/ui.test.tsx' }, { path: 'src/__tests__/fixtures/server.cjs' }]).length, 251);
+test('backend discovery requires reviewed251 plus the exact PG discovery regression, not frontend or arbitrary fixture files', () => {
+  const original = Array.from({ length: 251 }, (_, i) => ({ path: `src/x/${i}.test.ts` }));
+  const files = [...original, { path: 'src/services/testMarkets/__tests__/vtaNativeCoexistence.discovery.test.ts' }];
+  assert.equal(backendTests([...files, { path: 'frontend/src/ui.test.tsx' }, { path: 'src/__tests__/fixtures/server.cjs' }]).length, 252);
   assert.throws(() => backendTests(files.slice(1))); assert.throws(() => backendTests([...files, { path: 'src/new.test.ts' }]));
+  assert.throws(() => backendTests([...original, { path: 'src/unreviewed-replacement.test.ts' }]));
 });
 test('prestart inspection rejects network, namespace, entrypoint, mount and identity drift', () => {
   assert.doesNotThrow(() => assertContainer(isolated(), expected));
@@ -50,10 +52,10 @@ test('artifact manifest binds exact retained bytes and does not include external
   finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
 test('terminal suite count cannot hide a missing, duplicated or substituted backend file', () => {
-  const tests = Array.from({ length: 251 }, (_, i) => `src/${String(i).padStart(3, '0')}.test.ts`);
-  const j = { numTotalTestSuites: 251, testResults: tests.map(t => ({ name: '/work/' + t })) }; terminalInventory(j, tests);
-  j.testResults[250].name = j.testResults[0].name; assert.throws(() => terminalInventory(j, tests));
-  j.testResults[250].name = '/work/frontend/src/replacement.test.ts'; assert.throws(() => terminalInventory(j, tests));
+  const tests = Array.from({ length: 252 }, (_, i) => `src/${String(i).padStart(3, '0')}.test.ts`);
+  const j = { numTotalTestSuites: 252, testResults: tests.map(t => ({ name: '/work/' + t })) }; terminalInventory(j, tests);
+  j.testResults[251].name = j.testResults[0].name; assert.throws(() => terminalInventory(j, tests));
+  j.testResults[251].name = '/work/frontend/src/replacement.test.ts'; assert.throws(() => terminalInventory(j, tests));
 });
 test('container export accepts only bounded flat regular reports and never overwrites host proofs', () => {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'backend-offline-export-')), raw = path.join(d, 'raw'), out = path.join(d, 'evidence'); fs.mkdirSync(raw); fs.mkdirSync(out);
