@@ -1,31 +1,40 @@
+/* CFD instrument marks (2026-10-15): one round mark per instrument, the same
+   size everywhere it appears. Currency pairs: the base currency's flag over
+   the quote's; metals: the element symbol on the metal's tone; oil: the
+   benchmark. Colours are the materials', not a brand's. */
 .cfd-instrumentIcon{
-  --cfd-icon-primary:#dce5ee;--cfd-icon-secondary:#8fa0b1;--cfd-icon-glow:rgba(143,160,177,.16);
-  position:relative;display:inline-grid;place-items:center;flex:0 0 34px;width:34px;height:34px;overflow:hidden;
-  border:1px solid rgba(255,255,255,.11);border-radius:11px;
-  background:radial-gradient(circle at 28% 20%,var(--cfd-icon-glow),transparent 58%),linear-gradient(145deg,rgba(31,38,47,.96),rgba(10,13,18,.98));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.34),0 5px 13px rgba(0,0,0,.24);
-  vertical-align:middle;
+  --cfd-mark-size:30px;
+  position:relative;display:inline-block;flex:0 0 var(--cfd-mark-size);width:var(--cfd-mark-size);height:var(--cfd-mark-size);
+  border-radius:50%;vertical-align:middle;user-select:none;
 }
-.cfd-instrumentIcon::after{content:"";position:absolute;inset:1px;border-radius:9px;border:1px solid rgba(255,255,255,.025);pointer-events:none}
-.cfd-instrumentIcon svg{width:23px;height:23px;overflow:visible;filter:drop-shadow(0 2px 3px rgba(0,0,0,.32))}
-.cfd-instrumentIcon path,.cfd-instrumentIcon circle{vector-effect:non-scaling-stroke}
-.cfd-icon-primary{fill:none;stroke:var(--cfd-icon-primary);stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
-.cfd-icon-secondary{fill:none;stroke:var(--cfd-icon-secondary);stroke-width:1.25;stroke-linecap:round;stroke-linejoin:round}
-.cfd-icon-shine{fill:none;stroke:rgba(255,255,255,.8);stroke-width:1.1;stroke-linecap:round}
-.cfd-icon-fill-soft{fill:var(--cfd-icon-glow)}
-.cfd-instrumentIcon-XAUUSD{--cfd-icon-primary:#f6c453;--cfd-icon-secondary:#b9852d;--cfd-icon-glow:rgba(246,196,83,.24)}
-.cfd-instrumentIcon-XAGUSD{--cfd-icon-primary:#e7edf4;--cfd-icon-secondary:#9daab7;--cfd-icon-glow:rgba(217,228,239,.18)}
-.cfd-instrumentIcon-XPTUSD{--cfd-icon-primary:#d6e8f7;--cfd-icon-secondary:#89a5ba;--cfd-icon-glow:rgba(178,211,235,.18)}
-.cfd-instrumentIcon-XPDUSD{--cfd-icon-primary:#b9c9db;--cfd-icon-secondary:#7189a5;--cfd-icon-glow:rgba(145,168,197,.2)}
-.cfd-instrumentIcon-WTIUSD{--cfd-icon-primary:#e2a25f;--cfd-icon-secondary:#9f6d3e;--cfd-icon-glow:rgba(226,162,95,.2)}
-.cfd-instrumentIcon-XBRUSD{--cfd-icon-primary:#76c9e7;--cfd-icon-secondary:#4b91b0;--cfd-icon-glow:rgba(118,201,231,.19)}
-.cfd-instrumentIcon-EURUSD{--cfd-icon-primary:#6ea8ff;--cfd-icon-secondary:#7fd3b6;--cfd-icon-glow:rgba(110,168,255,.18)}
-.cfd-instrumentIcon-GBPUSD{--cfd-icon-primary:#b899ff;--cfd-icon-secondary:#f0c66d;--cfd-icon-glow:rgba(184,153,255,.18)}
-.cfd-instrumentIcon-USDJPY{--cfd-icon-primary:#7da8ff;--cfd-icon-secondary:#ef7d83;--cfd-icon-glow:rgba(125,168,255,.17)}
-.cfd-instrumentIcon-AUDUSD{--cfd-icon-primary:#67c7a2;--cfd-icon-secondary:#dcbf67;--cfd-icon-glow:rgba(103,199,162,.17)}
-.cfd-instrumentIcon-USDCAD{--cfd-icon-primary:#78a8ff;--cfd-icon-secondary:#ef8585;--cfd-icon-glow:rgba(120,168,255,.17)}
-.cfd-instrumentIcon-USDCHF{--cfd-icon-primary:#7da8ff;--cfd-icon-secondary:#e46c72;--cfd-icon-glow:rgba(125,168,255,.17)}
-.cfd-instrumentIcon-NZDUSD{--cfd-icon-primary:#6bd3d8;--cfd-icon-secondary:#779bff;--cfd-icon-glow:rgba(107,211,216,.17)}
-.cfd-instrumentIcon--compact{flex-basis:24px;width:24px;height:24px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 3px 8px rgba(0,0,0,.2)}
-.cfd-instrumentIcon--compact::after{border-radius:6px}
-.cfd-instrumentIcon--compact svg{width:17px;height:17px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.28))}
+.cfd-instrumentIcon--compact{--cfd-mark-size:24px}
+
+/* Currency pair: two overlapping round flags, base top-left, quote bottom-right. */
+.cfd-flag{position:absolute;width:66%;height:66%;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1.5px var(--cfd-mark-ring,#101217)}
+.cfd-flag-base{left:0;top:0;z-index:1}
+.cfd-flag-quote{right:0;bottom:0}
+.cfd-flag-fallback{display:grid;place-items:center;background:#2a2f38;color:#dfe5ec;font:700 7px/1 Inter,Arial,sans-serif;letter-spacing:.02em}
+.cfd-instrumentIcon--compact .cfd-flag-fallback{font-size:6px}
+
+/* Metals: the element symbol (Au, Ag, Pt, Pd) on a coin of the metal's tone. */
+.cfd-mark-metals,.cfd-mark-unknown{display:inline-grid;place-items:center;
+  background:radial-gradient(circle at 32% 26%,var(--cfd-metal-hi),var(--cfd-metal-mid) 55%,var(--cfd-metal-lo));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),inset 0 -2px 3px rgba(0,0,0,.28)}
+.cfd-element{font:800 11px/1 Inter,Arial,sans-serif;letter-spacing:-.01em;color:var(--cfd-metal-ink,#1b1406)}
+.cfd-instrumentIcon--compact .cfd-element{font-size:9px}
+.cfd-mark-unknown{--cfd-metal-hi:#4a515c;--cfd-metal-mid:#343a43;--cfd-metal-lo:#252a31;--cfd-metal-ink:#e3e8ee}
+.cfd-instrumentIcon-XAUUSD{--cfd-metal-hi:#ffe9a6;--cfd-metal-mid:#e3b448;--cfd-metal-lo:#9c6f1c;--cfd-metal-ink:#3a2705}
+.cfd-instrumentIcon-XAGUSD{--cfd-metal-hi:#ffffff;--cfd-metal-mid:#c9d1da;--cfd-metal-lo:#8995a2;--cfd-metal-ink:#27303a}
+.cfd-instrumentIcon-XPTUSD{--cfd-metal-hi:#f3f7fa;--cfd-metal-mid:#b7c4ce;--cfd-metal-lo:#73838f;--cfd-metal-ink:#1f2a33}
+.cfd-instrumentIcon-XPDUSD{--cfd-metal-hi:#e9ecf1;--cfd-metal-mid:#a3abb7;--cfd-metal-lo:#626b78;--cfd-metal-ink:#1d232b}
+
+/* Oil benchmarks: a barrel (WTI) or a drop (Brent) over the benchmark's code. */
+.cfd-mark-energy{display:inline-grid;place-items:center;align-content:center;gap:0;
+  background:radial-gradient(circle at 32% 26%,#4a3a26,#2a2116 62%,#1a140d);box-shadow:inset 0 0 0 1px rgba(232,170,92,.35)}
+.cfd-instrumentIcon-XBRUSD.cfd-mark-energy{background:radial-gradient(circle at 32% 26%,#24434d,#152a31 62%,#0d1b20);box-shadow:inset 0 0 0 1px rgba(110,196,224,.35)}
+.cfd-energy-glyph{width:58%;height:58%;margin-top:-3px;fill:none;stroke:#e8aa5c;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.cfd-instrumentIcon-XBRUSD .cfd-energy-glyph{stroke:#7cc9e3;fill:rgba(124,201,227,.16)}
+.cfd-energy-label{margin-top:-4px;font:800 6.5px/1 Inter,Arial,sans-serif;letter-spacing:.04em;color:#f1c98f}
+.cfd-instrumentIcon-XBRUSD .cfd-energy-label{color:#a9def0}
+.cfd-instrumentIcon--compact .cfd-energy-label{display:none}
+.cfd-instrumentIcon--compact .cfd-energy-glyph{width:66%;height:66%;margin-top:0}

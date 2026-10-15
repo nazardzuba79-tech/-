@@ -1,0 +1,94 @@
+/* CFD workspace (2026-10-15): the instrument bar's figures, the two-line
+   market list with asset groups, the market-only ticket and the practice
+   positions table. Scoped to the CFD terminal and loaded after
+   SpotCfdParity.css; the selectors repeat `.cfd-terminal` once to sit above
+   that sheet's rules for the same elements. Spot and Futures do not load it. */
+
+/* ── Instrument bar ─────────────────────────────────────────────────────── */
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-state-line { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-session-countdown { font-size:11px; line-height:14px; font-weight:400; color:#8a8f96; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-state-pill.cfd-state-live { color:#06c167; background:rgba(6,193,103,.12); }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-state-pill.cfd-state-closed { color:#f0b90b; background:rgba(240,185,11,.12); }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-state-pill.cfd-state-off { color:#8a8f96; background:rgba(138,143,150,.12); }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bid-ask .text-buy { color:#06c167; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bid-ask .text-sell { color:#f63649; }
+@media (min-width:901px) {
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar { gap:24px; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar > .cfd-ticker-metric { flex:0 0 auto; }
+  /* The quote's time and the status close the row on the right, as on the Futures bar. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-updated { margin-left:auto; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-updated + .cfd-market-state { margin-left:0; }
+}
+@media (min-width:901px) and (max-width:1180px) {
+  /* Narrow desktop: the spread stays, the bid / ask pair gives way. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal :is(.cfd-ticker-bid-ask,.cfd-ticker-prev-close) { display:none; }
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar { gap:16px; }
+}
+@media (max-width:900px) {
+  /* Phone: two rows within the 112 px the compact header allows (scripts/qa-spot-cfd-terminal.cjs):
+     identity | price, then day change · day high · day low · spread. The market-state block stays
+     hidden on phones (TerminalMobileParity.css); the list's status dot carries it. */
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar {
+    display:grid !important; grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,1fr)); grid-auto-flow:row dense;
+    gap:6px 8px !important; padding:8px 12px !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:hidden !important;
+  }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar > * { grid-column:auto / span 1 !important; text-align:left !important; min-width:0; margin:0 !important; }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar > .cfd-pair-cluster { grid-column:1 / span 2 !important; grid-row:1; width:auto; }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar > .cfd-ticker-last { grid-column:3 / span 2 !important; grid-row:1; text-align:right !important; justify-items:end; }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar > .cfd-ticker-last > :first-child { display:none; }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar > .cfd-ticker-day-change { grid-row:2; }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar > :is(.cfd-ticker-day-high,.cfd-ticker-day-low,.cfd-ticker-spread) { grid-row:2; }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-bar > :is(.cfd-market-state,.cfd-ticker-updated,.cfd-ticker-bid-ask,.cfd-ticker-prev-close,.cfd-ticker-week-range,.cfd-ticker-event) { display:none !important; }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-metric > :first-child { font-size:10px !important; line-height:13px !important; color:#6a6e73; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-metric > :last-child { font-size:11px !important; line-height:14px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-ticker-metric > .cfd-ticker-price { font-size:18px !important; line-height:22px !important; font-weight:600; }
+}
+
+/* ── Market list: groups, two-line rows, status dot ─────────────────────── */
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-instruments-header { display:flex; align-items:center; gap:8px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-list-count { min-width:18px; padding:0 5px; border-radius:9px; background:#1c1d22; color:#8a8f96; font-size:10px; line-height:16px; text-align:center; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-list-stale { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:4px 12px 6px; padding:6px 8px; border-radius:4px; background:rgba(240,185,11,.08); color:#f0c964; font-size:11px; line-height:14px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-list-stale button { flex:0 0 auto; padding:3px 8px; border:1px solid rgba(240,185,11,.35); border-radius:4px; background:transparent; color:#f0c964; font-size:11px; cursor:pointer; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-columns { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-column-sorts { display:inline-flex; gap:10px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-columns button { white-space:nowrap; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-group-title { padding:10px 12px 4px; font-size:10px; line-height:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#6a6e73; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-option {
+  display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto auto; column-gap:8px; row-gap:1px; align-items:center;
+  width:100%; min-height:48px; padding:6px 12px; text-align:left;
+}
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-option > .cfd-optionLeft { grid-column:1; grid-row:1 / span 2; min-width:0; gap:8px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-option > .cfd-price { grid-column:2; grid-row:1; justify-self:end; align-self:end; line-height:16px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-option > .cfd-change { grid-column:2; grid-row:2; justify-self:end; align-self:start; font-size:11px; line-height:14px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-optionTitle { gap:1px; min-width:0; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-optionSymbolLine { display:flex; align-items:center; gap:6px; min-width:0; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-optionName { display:block; font-size:11px; line-height:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-row-state { flex:0 0 6px; width:6px; height:6px; border-radius:50%; background:#4a4f57; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-row-state-open { background:#06c167; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-row-state-closed { background:#f0b90b; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-option.is-stale .cfd-price { color:#b8bcc2; }
+
+/* ── Ticket: one order type, said plainly ───────────────────────────────── */
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-order-type { display:flex; align-items:center; gap:12px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-order-type > span { font-size:13px; line-height:20px; font-weight:600; color:#f0b90b; }
+
+/* ── Positions: compact empty state, actions, partial close ─────────────── */
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-tabs-note { margin-left:auto; font-size:10px; color:#6a6e73; white-space:nowrap; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-empty { flex-direction:row; min-height:0; padding:14px 16px; gap:8px; font-size:12px; }
+@media (min-width:1025px) {
+  /* No position: the panel keeps its tabs and one line, the chart gets the rest. */
+  :is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-bottom-panel:has(.cfd-empty) { flex-basis:96px !important; height:96px; min-height:96px; }
+}
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-align-right { text-align:right; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-cell-instrument { display:inline-flex; align-items:center; gap:6px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-pnl { display:inline-flex; flex-direction:column; align-items:flex-end; line-height:15px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-pnl small { font-size:10px; opacity:.85; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-row-actions { display:inline-flex; gap:6px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-partial-row > td { padding:8px 13px; background:#15151a; border-top:1px solid #222227; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-partial-form { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; font-size:11px; color:#d2dbe3; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-partial-form label { display:inline-flex; align-items:center; gap:6px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-partial-form .cfd-input { width:110px; padding:5px 8px; font-size:12px; line-height:16px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-partial-chips { display:inline-flex; gap:4px; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-partial-chips button { padding:3px 7px; border:1px solid #2b2e36; border-radius:4px; background:transparent; color:#b8bcc2; font-size:11px; cursor:pointer; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-partial-chips button:hover { color:#ffffff; border-color:#4a4f57; }
+:is(#archive-terminal-preview,.vx-terminal).trade-terminal.vx-terminal.cfd-terminal.cfd-terminal .cfd-partialSubmit { color:#f0b90b; border-color:rgba(240,185,11,.45); }

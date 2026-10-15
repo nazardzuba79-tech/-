@@ -58,7 +58,8 @@ export const DEFAULT_WORKSPACE: Readonly<ChartWorkspaceState> = Object.freeze({
 const VIEWS: readonly WorkspaceView[] = ['chart', 'data', 'analytics'];
 const PERIODS: readonly ComparePeriod[] = ['visible', 'all', '1d', '1w', '1M'];
 const HEX = /^#[0-9a-f]{6}$/i;
-const PAIR = /^[A-Z0-9]{1,32}\/[A-Z0-9]{2,12}$/;
+/** A venue pair (BTC/USDT) or a CFD symbol (XAUUSD, EURUSD). */
+const PAIR = /^(?:[A-Z0-9]{1,32}\/[A-Z0-9]{2,12}|[A-Z]{6})$/;
 
 const fresh = (): ChartWorkspaceState => ({ ...DEFAULT_WORKSPACE, quickTimeframes: [...DEFAULT_WORKSPACE.quickTimeframes], compare: [], panes: DEFAULT_WORKSPACE.panes.map(p => ({ ...p })) });
 
@@ -111,7 +112,7 @@ export type WorkspaceMarket = IndicatorMarket;
 export const workspaceStorageKey = (market: WorkspaceMarket) => `voltex.chartWorkspace.${market}.v1`;
 
 type Store = { state: ChartWorkspaceState | null; listeners: Set<(s: ChartWorkspaceState) => void> };
-const stores: Record<WorkspaceMarket, Store> = { spot: { state: null, listeners: new Set() }, futures: { state: null, listeners: new Set() } };
+const stores: Record<WorkspaceMarket, Store> = { spot: { state: null, listeners: new Set() }, futures: { state: null, listeners: new Set() }, cfd: { state: null, listeners: new Set() } };
 
 function read(market: WorkspaceMarket): ChartWorkspaceState {
   try {
@@ -151,7 +152,7 @@ export function subscribeChartWorkspace(market: WorkspaceMarket, fn: (s: ChartWo
 
 /** For tests: forget the cached copies. */
 export function resetChartWorkspaceCache(): void {
-  for (const market of ['spot', 'futures'] as const) stores[market].state = null;
+  for (const market of ['spot', 'futures', 'cfd'] as const) stores[market].state = null;
 }
 
 // ── Presets («Шаблоны») ────────────────────────────────────────────────
@@ -220,7 +221,7 @@ export function normalizePresetsFile(raw: unknown): WorkspacePresetsFile {
 }
 
 const presetStores: Record<WorkspaceMarket, { file: WorkspacePresetsFile | null; listeners: Set<(p: WorkspacePreset[]) => void> }> = {
-  spot: { file: null, listeners: new Set() }, futures: { file: null, listeners: new Set() },
+  spot: { file: null, listeners: new Set() }, futures: { file: null, listeners: new Set() }, cfd: { file: null, listeners: new Set() },
 };
 
 function readPresets(market: WorkspaceMarket): WorkspacePresetsFile {
@@ -279,7 +280,7 @@ export function subscribeWorkspacePresets(market: WorkspaceMarket, fn: (p: Works
 }
 
 export function resetWorkspacePresetsCache(): void {
-  for (const market of ['spot', 'futures'] as const) presetStores[market].file = null;
+  for (const market of ['spot', 'futures', 'cfd'] as const) presetStores[market].file = null;
 }
 
 /** The workspace fields a preset carries, as a snapshot of the current state. */
@@ -294,7 +295,7 @@ export function presetFromWorkspace(state: ChartWorkspaceState, indicators: Indi
 if (typeof window !== 'undefined') {
   // Another tab saved: follow it.
   window.addEventListener('storage', e => {
-    for (const market of ['spot', 'futures'] as const) {
+    for (const market of ['spot', 'futures', 'cfd'] as const) {
       if (e.key === workspaceStorageKey(market)) {
         const previous = stores[market].state;
         stores[market].state = { ...read(market), view: previous?.view ?? 'chart' };

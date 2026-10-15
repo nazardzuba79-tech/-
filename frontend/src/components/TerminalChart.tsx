@@ -5,7 +5,7 @@ import { TradingViewRulerLayer } from './TradingViewRulerLayer';
 import { ChartMultiLayout } from './chart-workspace/ChartMultiLayout';
 import { ChartMiniPane } from './chart-workspace/ChartMiniPane';
 import { useCompareInstruments } from './chart-workspace/useCompareInstruments';
-import { chartCapabilities } from '../lib/chartCapabilities';
+import { chartCapabilities, type ChartMarket } from '../lib/chartCapabilities';
 import { CHART_CANDLE_LOADERS } from '../lib/chartCandleLoaders';
 import { useLanguage } from '../lib/i18n';
 import { useMediaQuery } from '../lib/useMediaQuery';
@@ -15,8 +15,8 @@ import type { ChartCandleLoader, ChartPositionLine, ChartTradingInteraction } fr
 import './TerminalChart.css';
 
 /** Switch only the chart subtree: tickets, order families and books keep their state. */
-export function TerminalChart({ pair, market='spot', compactTools=false, privateTrading, positionLines, candleLoader, tradingView=true, priceScaleMode, priceFormatter, chartSettings=false, foldHeading=false, onSelectPair }: {
-  pair:string; market?:'spot'|'futures'; chrome?:'default'|'terminal'; drawingTools?:boolean;
+export function TerminalChart({ pair, market='spot', compactTools=false, privateTrading, positionLines, candleLoader, tradingView=true, priceScaleMode, priceFormatter, pairFormatter, chartSettings=false, foldHeading=false, onSelectPair }: {
+  pair:string; market?:ChartMarket; chrome?:'default'|'terminal'; drawingTools?:boolean;
   compactTools?:boolean;
   privateTrading?:ChartTradingInteraction;
   /** Open positions to draw on the price scale. See PriceChart. */
@@ -28,6 +28,10 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
   /** See PriceChart. */
   priceScaleMode?:'normal'|'logarithmic';
   priceFormatter?:(price:number)=>string;
+  /** The price format of ANOTHER instrument (a second pane's), where one
+   *  market's instruments differ in precision (CFD: gold 2, EURUSD 5
+   *  decimals). Must return a stable function per pair. */
+  pairFormatter?:(pair:string)=>((price:number)=>string)|undefined;
   /** The viewer's chart settings and their gear (see PriceChart). */
   chartSettings?:boolean;
   /** Fold the «График» heading into the chart's own toolbar: one row, with
@@ -66,9 +70,11 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
   const instruments = useCompareInstruments(market, [pair]);
   /** A pane nobody has set yet opens on another liquid instrument, so a 2- or 4-chart layout is useful at once; a choice in the pane overrides it. */
   const paneDefaults = useMemo(() => {
-    const preferred = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT', 'DOGE/USDT'].filter(p => p !== pair && instruments.includes(p));
+    // CFD: one of each kind first — the other benchmark metal, the most traded pair, oil.
+    const liquid = market === 'cfd' ? ['XAGUSD', 'EURUSD', 'WTIUSD', 'XAUUSD', 'GBPUSD', 'USDJPY'] : ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT', 'DOGE/USDT'];
+    const preferred = liquid.filter(p => p !== pair && instruments.includes(p));
     return [...preferred, ...instruments.filter(p => p !== pair && !preferred.includes(p))];
-  }, [instruments, pair]);
+  }, [instruments, pair, market]);
   const [expanded, setExpanded] = useState<number | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   /**
@@ -121,7 +127,8 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
         : updateChartWorkspace(market, s => ({ panes: s.panes.map((p, k) => (k === i ? { ...p, ...patch } : p)) })))}
       onTrade={onSelectPair ? p => { onSelectPair(p); updateChartWorkspace(market, s => ({ panes: s.panes.map((x, k) => (k === i ? { ...x, pair } : x)), activePane: 0 })); setExpanded(null); } : undefined}
       syncBus={syncBus} sync={{ cursor: workspace.syncCursor, time: workspace.syncTime }}
-      expanded={expanded === i + 1} onExpand={value => setExpanded(value ? i + 1 : null)} t={t} formatPrice={priceFormatter} />
+      expanded={expanded === i + 1} onExpand={value => setExpanded(value ? i + 1 : null)} t={t}
+      formatPrice={pairFormatter?.(pane.pair ?? paneDefaults[i] ?? pair) ?? priceFormatter} />
   )) : [];
   return <div ref={shellRef} className={`terminal-chart-shell${folded ? ' is-heading-folded' : ''}${pseudoFullscreen ? ' is-pseudo-fullscreen' : ''}`} data-cw-fullscreen={fullscreen || undefined}>
     {!folded && <div className="terminal-chart-heading">

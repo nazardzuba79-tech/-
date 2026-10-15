@@ -41,8 +41,8 @@ it('keeps market-specific tracks, visibility, click targets and data untouched',
   expect(css).toContain(':not(:disabled)');
   expect(css).toContain(':focus-within');
   expect(css).toContain('[aria-invalid=true]');
-  // CFD chart only consumes a font token, retaining its original fallback.
-  expect(read('frontend/src/components/CfdChart.tsx')).toContain("fontFamily:token('--voltex-chart-font','Inter, Arial, sans-serif')");
+  // The CFD chart (the shared terminal chart since 2026-10-15) only consumes a font token, retaining its fallback.
+  expect(read('frontend/src/components/PriceChart.tsx')).toContain("fontFamily: token('--voltex-chart-font', 'Inter, Arial, sans-serif')");
 });
 
 it('adds desktop tile spacing without changing the mobile workspace layout', () => {

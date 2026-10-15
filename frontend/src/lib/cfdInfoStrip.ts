@@ -145,6 +145,27 @@ export function cfdSessionSegment(symbol:string, at:number):string|null {
   return `${cls}:${newYorkClock(at + shift * 3_600_000).date}`;
 }
 
+/**
+ * The next instant the weekly calendar above changes state (an open market
+ * closes, a closed one opens), within the coming eight days; null without a
+ * calendar. Boundaries fall on whole hours in New York, so a 15-minute scan
+ * refined to the minute finds them exactly. Like the calendar itself it does
+ * not know exchange holidays, so the strip shows it only when the shown
+ * status agrees with the calendar (see CfdTickerBar).
+ */
+export function cfdNextSessionChange(symbol:string, now:number):{ at:number; opens:boolean }|null {
+  const current = cfdSessionOpenAt(symbol, now);
+  if (current === null) return null;
+  const STEP = 15 * 60_000, LIMIT = now + 8 * CFD_DAILY_SESSION_MS;
+  for (let at = Math.floor(now / 60_000) * 60_000 + STEP; at <= LIMIT; at += STEP) {
+    if (cfdSessionOpenAt(symbol, at) === current) continue;
+    let low = at - STEP, high = at;
+    while (high - low > 60_000) { const mid = Math.floor((low + high) / 120_000) * 60_000; if (cfdSessionOpenAt(symbol, mid) === current) low = mid; else high = mid; }
+    return { at: high, opens: !current };
+  }
+  return null;
+}
+
 export type CfdMarketStatus = 'open'|'closed'|'unknown';
 export interface CfdStatusRow { price?:string|null; status?:string; marketClosed?:boolean; asOf?:number|null }
 

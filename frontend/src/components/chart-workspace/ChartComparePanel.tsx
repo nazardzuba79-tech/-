@@ -3,11 +3,12 @@ import { ICONS } from './chartWorkspaceIcons';
 import { COMPARE_COLORS, MAX_COMPARE_SERIES, formatPercent } from '../../lib/chartCompare';
 import type { CompareEntry, ComparePeriod } from '../../lib/chartWorkspace';
 import type { Key } from '../../lib/i18n';
+import type { ChartMarket } from '../../lib/chartCapabilities';
 
 export type CompareStatus = 'loading' | 'ok' | 'failed';
 
 export interface ChartComparePanelProps {
-  market: 'spot' | 'futures';
+  market: ChartMarket;
   mainPair: string;
   entries: CompareEntry[];
   period: ComparePeriod;
@@ -54,7 +55,7 @@ export function ChartComparePanel({ market, mainPair, entries, period, status, l
           {results.map(pair => (
             <button key={pair} type="button" role="option" aria-selected={false} className="cw-item" data-cw-compare-option={pair} onClick={() => { onAdd(pair); setQuery(''); }}>
               <span className="cw-item-label">{pair}</span>
-              <span className="cw-item-hint">{t(market === 'spot' ? 'chart.ws.compare.spot' : 'chart.ws.compare.futures')}</span>
+              <span className="cw-item-hint">{t(market === 'spot' ? 'chart.ws.compare.spot' : market === 'cfd' ? 'chart.ws.compare.cfd' : 'chart.ws.compare.futures')}</span>
               <span className="cw-item-tick" aria-hidden="true">{ICONS.plus}</span>
             </button>
           ))}

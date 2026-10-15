@@ -93,8 +93,18 @@ export const DEFAULT_CHART_INDICATORS: readonly IndicatorInstance[] = Object.fre
   Object.freeze({ id: 'ma-200', type: 'ma' as const, params: { period: 200 }, colors: ['#f7d51d'], lineWidth: 1 as const, visible: true }),
 ]);
 
+/**
+ * A market's first indicator list (2026-10-15). CFD opens on clean candles, as
+ * its chart always did: the provider keeps about a week of hourly bars, so a
+ * default SMA 200 could not be drawn there and would only carry a note.
+ */
+export function defaultChartIndicators(market: IndicatorMarket = 'spot'): IndicatorInstance[] {
+  return market === 'cfd' ? [] : DEFAULT_CHART_INDICATORS.map(i => ({ ...i, params: { ...i.params }, colors: [...i.colors] }));
+}
+
 export const CHART_INDICATORS_KEY = 'voltex.chartIndicators.v1'; // Spot's existing key
 export const FUTURES_CHART_INDICATORS_KEY = 'voltex.chartIndicators.futures.v1';
+export const CFD_CHART_INDICATORS_KEY = 'voltex.chartIndicators.cfd.v1';
 const HEX = /^#[0-9a-f]{6}$/i;
 const WIDTHS: readonly IndicatorLineWidth[] = [1, 2, 3, 4];
 /** Keep the chart responsive: this many instances is already more than a screen can read. */
@@ -216,8 +226,12 @@ export function computeIndicator(inst: IndicatorInstance, candles: Candle[], opt
   }
 }
 
-// ── Per-market browser store: Spot and Futures must not alter each other ──
-export type IndicatorMarket = 'spot' | 'futures';
+/** Indicators computed from traded volume: meaningless on a source without it (CFD, lib/chartTimeframes SOURCE_HAS_VOLUME). */
+export const VOLUME_INDICATORS: ReadonlySet<IndicatorType> = new Set<IndicatorType>(['vwap', 'obv']);
+export const indicatorNeedsVolume = (type: IndicatorType): boolean => VOLUME_INDICATORS.has(type);
+
+// ── Per-market browser store: Spot, Futures and CFD must not alter each other ──
+export type IndicatorMarket = 'spot' | 'futures' | 'cfd';
 type IndicatorStore = {
   saved: IndicatorInstance[] | null;
   applied: IndicatorInstance[] | null;
@@ -226,14 +240,16 @@ type IndicatorStore = {
 const stores: Record<IndicatorMarket, IndicatorStore> = {
   spot: { saved: null, applied: null, listeners: new Set() },
   futures: { saved: null, applied: null, listeners: new Set() },
+  cfd: { saved: null, applied: null, listeners: new Set() },
 };
-const storageKey = (market: IndicatorMarket) => market === 'futures' ? FUTURES_CHART_INDICATORS_KEY : CHART_INDICATORS_KEY;
+const storageKey = (market: IndicatorMarket) => market === 'futures' ? FUTURES_CHART_INDICATORS_KEY : market === 'cfd' ? CFD_CHART_INDICATORS_KEY : CHART_INDICATORS_KEY;
 function read(market: IndicatorMarket): IndicatorInstance[] {
   try {
     const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(storageKey(market));
-    return normalizeIndicatorInstances(raw ? JSON.parse(raw) : undefined);
+    const parsed = raw ? JSON.parse(raw) : undefined;
+    return Array.isArray(parsed) ? normalizeIndicatorInstances(parsed) : defaultChartIndicators(market);
   } catch {
-    return normalizeIndicatorInstances(undefined);
+    return defaultChartIndicators(market);
   }
 }
 const emit = (market: IndicatorMarket) => {
@@ -273,7 +289,7 @@ export function subscribeChartIndicators(fn: (list: IndicatorInstance[]) => void
 }
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', e => {
-    const market = e.key === FUTURES_CHART_INDICATORS_KEY ? 'futures' : e.key === CHART_INDICATORS_KEY ? 'spot' : null;
+    const market = e.key === FUTURES_CHART_INDICATORS_KEY ? 'futures' : e.key === CFD_CHART_INDICATORS_KEY ? 'cfd' : e.key === CHART_INDICATORS_KEY ? 'spot' : null;
     if (!market) return;
     const store = stores[market];
     store.saved = read(market);
@@ -282,7 +298,7 @@ if (typeof window !== 'undefined') {
 }
 /** For tests only: invalidate both browser-market copies (or one selected copy). */
 export function resetChartIndicatorsCache(market?: IndicatorMarket): void {
-  for (const target of market ? [market] : (['spot', 'futures'] as const)) {
+  for (const target of market ? [market] : (['spot', 'futures', 'cfd'] as const)) {
     stores[target].saved = null;
     stores[target].applied = null;
   }

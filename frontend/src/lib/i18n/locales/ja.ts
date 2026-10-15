@@ -1994,6 +1994,7 @@ export const JA: Record<Key, string> = {
   'chart.ws.compare.source': "{market}データ",
   'chart.ws.compare.spot': "現物",
   'chart.ws.compare.futures': "先物",
+  'chart.ws.compare.cfd': "CFD",
   'chart.ws.layout': "レイアウト",
   'chart.ws.layout.one': "1チャート",
   'chart.ws.layout.two': "2チャート",

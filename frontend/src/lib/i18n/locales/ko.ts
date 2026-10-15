@@ -1994,6 +1994,7 @@ export const KO: Record<Key, string> = {
   'chart.ws.compare.source': "{market} 데이터",
   'chart.ws.compare.spot': "현물",
   'chart.ws.compare.futures': "선물",
+  'chart.ws.compare.cfd': "CFD",
   'chart.ws.layout': "레이아웃",
   'chart.ws.layout.one': "차트 1개",
   'chart.ws.layout.two': "차트 2개",

@@ -7,7 +7,6 @@ import { LeverageSlider } from './LeverageSlider';
 import { getLeverageTier, previewLiquidationPrice } from '../lib/futuresMath';
 import { openCfdPaperPosition } from '../lib/cfdPaperStore';
 import type { CfdTickerRow } from './CfdInstrumentList';
-import { OrderFamilyTabs, OrderFamilyFields, type OrderFamily } from './OrderFamilyPresentation';
 import '../pages/trade-terminal/CfdPractice.css';
 
 export function CfdOrderForm({
@@ -25,7 +24,6 @@ export function CfdOrderForm({
   const copy = cfdMarketCopy(lang);
   const toast = useToast();
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
-  const [family, setFamily] = useState<OrderFamily>('MARKET');
   const [quantity, setQuantity] = useState('');
   const [leverage, setLeverage] = useState(10);
   const [config, setConfig] = useState<Awaited<ReturnType<typeof api.getCfdConfig>> | null>(null);
@@ -45,7 +43,9 @@ export function CfdOrderForm({
 
   const price = ticker?.price != null && Number.isFinite(Number(ticker.price)) && Number(ticker.price) > 0 ? Number(ticker.price) : null;
   const qty = quantity.trim() !== '' && Number.isFinite(Number(quantity)) && Number(quantity) > 0 ? Number(quantity) : null;
-  const notional = family === 'MARKET' && price !== null && qty !== null ? price * qty : 0;
+  const notional = price !== null && qty !== null ? price * qty : 0;
+  /** The practice books value, margin and P&L in the instrument's quote currency (JPY for USDJPY), and says so. */
+  const currency = cfdQuoteCurrency(symbol);
   const requiredMargin = leverage > 0 ? notional / leverage : 0;
   const state = cfdDisplayState(ticker, lang);
   const minLeverage = config?.minLeverage ?? 1;
@@ -59,7 +59,7 @@ export function CfdOrderForm({
   }, [leverage, maxForOrder]);
 
   const liqPreview = useMemo(() => {
-    if (family !== 'MARKET' || !tier || price === null || qty === null || requiredMargin <= 0) return null;
+    if (!tier || price === null || qty === null || requiredMargin <= 0) return null;
     return previewLiquidationPrice({
       entryPrice: price,
       side: side === 'BUY' ? 'LONG' : 'SHORT',
@@ -69,10 +69,9 @@ export function CfdOrderForm({
       notional,
       freeBalance: 0,
     });
-  }, [family, tier, price, qty, requiredMargin, side, leverage, notional]);
+  }, [tier, price, qty, requiredMargin, side, leverage, notional]);
 
   async function submitOrder() {
-    if (family !== 'MARKET') return;
     if (price === null) { setError(copy.priceUnavailable); return; }
     if (qty === null) { setError(t('trade.quantity')); return; }
     if (leverage < minLeverage || leverage > maxForOrder) { setError(`${minLeverage}x–${maxForOrder}x`); return; }
@@ -115,7 +114,13 @@ export function CfdOrderForm({
         </button>
       </div>
 
-      <OrderFamilyTabs value={family} onChange={next => { setFamily(next); setError(null); }} />
+      {/* Market orders only (2026-10-15). The limit / stop / take-profit / OCO tabs used to show fields
+          that went nowhere and a disabled button: the practice fills at the snapshot quote and cannot
+          fill a resting or conditional order honestly, so it no longer offers one. No note under it
+          (owner, 2026-10-15); the reason stays in the tooltip. */}
+      <div className="order-family-tabs cfd-order-type" role="group" aria-label={t('trade.orderType')} title={copy.marketOnlyNote}>
+        <span className="active" aria-current="true">{copy.marketOrder}</span>
+      </div>
       <div className="cfd-product-terms">
         <span className="terminal-practice-label" title={copy.practiceNote} aria-label={copy.practice}>SIM</span>
         <span>{t('futures.isolated')}</span>
@@ -130,8 +135,7 @@ export function CfdOrderForm({
           warningThreshold={warningThreshold}
         />
 
-        <OrderFamilyFields key={`${symbol}-${family}`} family={family} quote={cfdQuoteCurrency(symbol)} includeLimit />
-        {family === 'MARKET' && <label className="cfd-label">
+        <label className="cfd-label">
           {t('trade.cfdMarketPrice')}
           <div className="cfd-reference-wrap">
             <div className="mono cfd-input cfd-referencePrice">
@@ -139,7 +143,7 @@ export function CfdOrderForm({
             </div>
             <span className={`cfd-order-state cfd-state-${state.tone}`}>{state.label}</span>
           </div>
-        </label>}
+        </label>
 
         <label className="cfd-label">
           {t('trade.quantity')}
@@ -159,11 +163,11 @@ export function CfdOrderForm({
         <div className="cfd-infoBox">
           <div className="cfd-infoRow">
             <span className="cfd-muted">{t('futures.orderValue')}</span>
-            <span className="mono">{notional > 0 ? `${notional.toFixed(2)} USDT` : '—'}</span>
+            <span className="mono">{notional > 0 ? `${notional.toFixed(2)} ${currency}` : '—'}</span>
           </div>
           <div className="cfd-infoRow">
             <span className="cfd-muted">{t('futures.margin')}</span>
-            <span className="mono">{requiredMargin > 0 ? `${requiredMargin.toFixed(2)} USDT` : '—'}</span>
+            <span className="mono">{requiredMargin > 0 ? `${requiredMargin.toFixed(2)} ${currency}` : '—'}</span>
           </div>
           <div className="cfd-infoRow">
             <span className="cfd-muted">{t('futures.estLiqPrice')}</span>
@@ -178,7 +182,7 @@ export function CfdOrderForm({
 
         <button
           type="submit"
-          disabled={family !== 'MARKET' || submitting || price === null || qty === null}
+          disabled={submitting || price === null || qty === null}
           className={`cfd-submit ${side === 'BUY' ? 'buy' : 'sell'}`}
         >
           {submitting ? t('auth.wait') : side === 'BUY' ? t('futures.buyLong') : t('futures.sellShort')}

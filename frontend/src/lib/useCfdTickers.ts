@@ -14,12 +14,14 @@ function parseTickerPayload(value:unknown):CfdTickerRow[]|null{
   if(!Array.isArray(value))return null;const rows:CfdTickerRow[]=[];
   for(const entry of value){if(!entry||typeof entry!=='object')continue;const raw=entry as Record<string,unknown>;const symbol=typeof raw.symbol==='string'?raw.symbol.trim():'';if(!symbol)continue;
     const price=numericString(raw.price);if(price===null&&raw.price!==null)continue;const change=numericString(raw.changePercent24h);
+    // Bid and ask only as a sane pair (bid ≤ ask, both positive); one without the other is not a quote.
+    const bid=numericString(raw.bid),ask=numericString(raw.ask),pair=bid!==null&&ask!==null&&Number(bid)>0&&Number(ask)>=Number(bid);
     rows.push({symbol,name:typeof raw.name==='string'&&raw.name.trim()?raw.name:symbol,price,status:typeof raw.status==='string'?raw.status:'unavailable',
       stale:raw.stale===true,marketClosed:raw.marketClosed===true,displayOnly:true,executionAllowed:false,
       provider:typeof raw.provider==='string'?raw.provider:undefined,providerSymbol:typeof raw.providerSymbol==='string'?raw.providerSymbol:undefined,
       providerTimestamp:typeof raw.providerTimestamp==='number'?raw.providerTimestamp:null,fetchedAt:typeof raw.fetchedAt==='number'?raw.fetchedAt:null,
       asOf:typeof raw.asOf==='number'?raw.asOf:null,maxQuoteAgeMs:typeof raw.maxQuoteAgeMs==='number'?raw.maxQuoteAgeMs:undefined,
-      ...(change===null?{}:{changePercent24h:change})});
+      ...(change===null?{}:{changePercent24h:change}),...(pair?{bid,ask}:{})});
   }
   return value.length>0&&rows.length===0?null:ageCfdTickerRows(rows);
 }
