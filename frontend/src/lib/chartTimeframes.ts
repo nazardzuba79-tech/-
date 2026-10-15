@@ -15,10 +15,14 @@
  *
  * A derived candle is emitted only when every base candle of its bucket is
  * present (counted against the bucket's length on the UTC calendar: days,
- * Monday-based weeks, calendar months). The one exception is the newest
- * bucket, which is still forming: it is emitted when its first base candle
- * is the bucket's own open, and flagged `partialLast`. A historical bucket
- * with a gap is dropped, never padded — nothing here invents history.
+ * Monday-based weeks, calendar months). Two exceptions, both honest: the
+ * newest bucket, still forming, is emitted when its first base candle is the
+ * bucket's own open, and flagged `partialLast`; and the first bucket of an
+ * instrument's whole history (a listing's first day, week or month, when the
+ * caller says where the history starts) is emitted from that first bar on,
+ * exactly as the server builds the listing's own first daily bar. A
+ * historical bucket with a gap is dropped, never padded — nothing here
+ * invents history.
  *
  * Pure arithmetic over epoch seconds; no DOM, no network, no storage.
  */
@@ -128,16 +132,22 @@ export function timeframeDurationMs(tf: ChartTimeframe, atSeconds?: number): num
  *   futures-public  Futures (Bybit linear perpetuals): every interval is native.
  *   spot-public   Spot (Kraken OHLC, Bybit spot behind the market edge):
  *                 1m 5m 15m 1h 4h 1d 1w; the rest are derived.
- *   test-market   VOLTEX test assets (deterministic simulation): the six
- *                 intervals the chart always had; the rest are derived.
+ *   test-market   VOLTEX test assets (the server simulation behind the API
+ *                 host for VTA and the market edge for NRX and the managed
+ *                 listings): 1m straight from the ticks, then 5m 15m 1h 4h
+ *                 1d 1w (verified against both hosts on 2026-10-14: every
+ *                 other code answers HTTP 400); the rest are derived.
  *   legacy        The plain chart's own endpoint: the six intervals only.
  */
 export type CandleSourceKind = 'futures-public' | 'spot-public' | 'test-market' | 'legacy';
 
+/** What the test-market simulation serves as it is (src/services/testMarkets/testMarketSimulation SIM_INTERVALS). */
+export const TEST_MARKET_TIMEFRAMES: readonly ChartTimeframe[] = Object.freeze(['1m', '5m', '15m', '1h', '4h', '1d', '1w']);
+
 export const NATIVE_TIMEFRAMES: Record<CandleSourceKind, readonly ChartTimeframe[]> = Object.freeze({
   'futures-public': CHART_TIMEFRAMES,
   'spot-public': Object.freeze(['1m', '5m', '15m', '1h', '4h', '1d', '1w'] as const),
-  'test-market': LEGACY_TIMEFRAMES,
+  'test-market': TEST_MARKET_TIMEFRAMES,
   legacy: LEGACY_TIMEFRAMES,
 });
 
@@ -191,14 +201,21 @@ export interface AggregationResult {
 
 const finite = (c: Candle) => [c.time, c.open, c.high, c.low, c.close, c.volume].every(Number.isFinite);
 
+export interface AggregationOptions {
+  /** Epoch seconds of the instrument's first trade (a listing): the bucket holding it may open there. */
+  historyStart?: number;
+}
+
 /**
  * Build `target` candles from `base` candles. `now` (epoch seconds) decides
  * whether the newest bucket is still forming; it defaults to the clock.
  */
-export function aggregateCandles(base: readonly Candle[], baseTf: ChartTimeframe, target: ChartTimeframe, now = Date.now() / 1000): AggregationResult {
+export function aggregateCandles(base: readonly Candle[], baseTf: ChartTimeframe, target: ChartTimeframe, now = Date.now() / 1000, options: AggregationOptions = {}): AggregationResult {
   if (!timeframeDivides(baseTf, target)) throw new RangeError(`${baseTf} does not tile ${target}`);
   const step = timeframeSpec(baseTf).seconds;
   const rows = base.filter(finite).slice().sort((a, b) => a.time - b.time);
+  // The first base bar is the instrument's first bar ever when it is the bar that holds the listing instant.
+  const firstOfHistory = options.historyStart !== undefined && rows.length > 0 && rows[0].time <= options.historyStart && options.historyStart < rows[0].time + step;
   const buckets = new Map<number, Candle[]>();
   for (const row of rows) {
     if (row.time % step !== 0) continue; // off-grid base bar: not one of ours
@@ -215,15 +232,19 @@ export function aggregateCandles(base: readonly Candle[], baseTf: ChartTimeframe
     const end = timeframeBucketEnd(start, target);
     const expected = Math.round((end - start) / step);
     const opensAtStart = list[0].time === start;
-    const contiguous = list.every((row, i) => row.time === start + i * step);
-    const complete = list.length === expected && opensAtStart && contiguous;
+    // No gap between the bars on hand (from the first of them, which is the bucket's open unless the listing is inside the bucket).
+    const packed = list.every((row, i) => row.time === list[0].time + i * step);
+    const complete = list.length === expected && opensAtStart && packed;
     const newest = index === starts.length - 1;
     const forming = newest && end > now;
-    if (!complete && !(forming && opensAtStart && contiguous)) { dropped++; return; }
+    // A listing's first bucket: real from its first bar to the bucket's end (or to now while it forms).
+    const fromListing = index === 0 && firstOfHistory && packed && (forming || list[list.length - 1].time + step === end);
+    if (!complete && !fromListing && !(forming && opensAtStart && packed)) { dropped++; return; }
     let high = -Infinity, low = Infinity, volume = 0;
     for (const row of list) { if (row.high > high) high = row.high; if (row.low < low) low = row.low; volume += row.volume; }
     candles.push({ time: start, open: list[0].open, high, low, close: list[list.length - 1].close, volume });
-    if (!complete) partialLast = true;
+    // Still forming: the newest bucket whose end is ahead of the clock (a closed first bucket of a listing is whole).
+    if (forming && !complete) partialLast = true;
   });
   return { candles, partialLast, dropped };
 }

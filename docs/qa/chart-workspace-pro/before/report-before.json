@@ -1,0 +1,284 @@
+{
+  "phase": "before",
+  "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cw2/frontend/dist",
+  "startedAt": "2026-10-14T11:52:43.932Z",
+  "checks": [
+    {
+      "id": "aith.spot.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 801,
+        "errors": [],
+        "last": {
+          "path": "/market/test-assets/AITH-USDT/candles",
+          "interval": "1h",
+          "limit": 520
+        },
+        "fixtureBars": {
+          "1m": 1000,
+          "5m": 263,
+          "15m": 88,
+          "1h": 22,
+          "4h": 6,
+          "1d": 2,
+          "1w": 1
+        }
+      }
+    },
+    {
+      "id": "aith.spot.1440.errors",
+      "ok": false,
+      "detail": [
+        "console: Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "console: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    }
+  ],
+  "perf": {
+    "aith.spot.1440.timeframes": {
+      "strip": [
+        {
+          "tf": "1m",
+          "plan": "unavailable",
+          "off": true
+        },
+        {
+          "tf": "5m",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "15m",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "1h",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "4h",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "1d",
+          "plan": "native",
+          "off": false
+        },
+        {
+          "tf": "1w",
+          "plan": "native",
+          "off": false
+        }
+      ],
+      "options": [
+        {
+          "tf": "1m",
+          "disabled": true,
+          "title": "",
+          "hint": "Недоступен для этого рынка"
+        },
+        {
+          "tf": "3m",
+          "disabled": true,
+          "title": "",
+          "hint": "Недоступен для этого рынка"
+        },
+        {
+          "tf": "5m",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "15m",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "30m",
+          "disabled": false,
+          "title": "",
+          "hint": "Строится из свечей 15м"
+        },
+        {
+          "tf": "1h",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "2h",
+          "disabled": false,
+          "title": "",
+          "hint": "Строится из свечей 1ч"
+        },
+        {
+          "tf": "4h",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "6h",
+          "disabled": false,
+          "title": "",
+          "hint": "Строится из свечей 1ч"
+        },
+        {
+          "tf": "12h",
+          "disabled": false,
+          "title": "",
+          "hint": "Строится из свечей 4ч"
+        },
+        {
+          "tf": "1d",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "1w",
+          "disabled": false,
+          "title": "",
+          "hint": ""
+        },
+        {
+          "tf": "1M",
+          "disabled": false,
+          "title": "",
+          "hint": "Строится из свечей 1Д"
+        }
+      ],
+      "unavailableOnStrip": [
+        "1m"
+      ],
+      "disabledInMenu": [
+        "1m",
+        "3m"
+      ]
+    },
+    "aith.spot.1440.1w": {
+      "request": {
+        "path": "/market/test-assets/AITH-USDT/candles",
+        "interval": "1w",
+        "limit": 520
+      },
+      "state": "candles",
+      "bars": 1,
+      "widthCss": 484,
+      "heightCss": 516,
+      "widestBodyPx": 193,
+      "bodiesOnRow": 1,
+      "lowestCandleRatio": 0.698,
+      "highestCandleRatio": 0.109,
+      "prices": null
+    },
+    "aith.spot.1440.1d": {
+      "request": {
+        "path": "/market/test-assets/AITH-USDT/candles",
+        "interval": "1d",
+        "limit": 520
+      },
+      "state": "candles",
+      "bars": 2,
+      "widthCss": 484,
+      "heightCss": 516,
+      "widestBodyPx": 193,
+      "bodiesOnRow": 1,
+      "lowestCandleRatio": 0.698,
+      "highestCandleRatio": 0.109,
+      "prices": null
+    },
+    "aith.spot.1440.1h": {
+      "request": {
+        "path": "/market/test-assets/AITH-USDT/candles",
+        "interval": "1h",
+        "limit": 520
+      },
+      "state": "candles",
+      "bars": 22,
+      "widthCss": 484,
+      "heightCss": 516,
+      "widestBodyPx": 17,
+      "bodiesOnRow": 2,
+      "lowestCandleRatio": 0.698,
+      "highestCandleRatio": 0.109,
+      "prices": null
+    },
+    "aith.spot.1440.5m": {
+      "request": {
+        "path": "/market/test-assets/AITH-USDT/candles",
+        "interval": "5m",
+        "limit": 520
+      },
+      "state": "candles",
+      "bars": 263,
+      "widthCss": 484,
+      "heightCss": 516,
+      "widestBodyPx": 1,
+      "bodiesOnRow": 3,
+      "lowestCandleRatio": 0.698,
+      "highestCandleRatio": 0.101,
+      "prices": null
+    },
+    "aith.spot.1440.1m": {
+      "unavailable": true,
+      "bars": 1000
+    },
+    "aith.spot.1440.extras": {
+      "gear": false,
+      "legend": "SMA 200",
+      "insufficient": 0
+    },
+    "aith.spot.1440.compare": {
+      "entry": "BTC/USDTНе удалось загрузить BTC/USDT—",
+      "value": "—",
+      "requests": [
+        "/api/v1/market/test-assets/BTC-USDT/candles"
+      ]
+    },
+    "aith.spot.1440.pane": {
+      "state": "failed",
+      "pair": "BTC/USDT",
+      "options": [
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "4h",
+        "6h",
+        "12h",
+        "1d",
+        "1w",
+        "1M"
+      ],
+      "last": null,
+      "requests": [
+        "/api/v1/market/test-assets/BTC-USDT/candles",
+        "/api/v1/market/test-assets/BTC-USDT/candles"
+      ]
+    }
+  },
+  "screenshots": [
+    "before-aith-1440.png",
+    "before-aith-1440-page.png",
+    "before-aith-1440-tf-menu.png",
+    "before-aith-1440-1w.png",
+    "before-aith-1440-1d.png",
+    "before-aith-1440-1h.png",
+    "before-aith-1440-5m.png",
+    "before-aith-1440-compare.png",
+    "before-aith-1440-layout2.png"
+  ],
+  "environment": "LOCAL QA ONLY — production bundle, loopback read-only fixture",
+  "finishedAt": "2026-10-14T11:52:55.814Z",
+  "summary": {
+    "passed": 1,
+    "failed": 1
+  }
+}

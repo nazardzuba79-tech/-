@@ -34,6 +34,8 @@ export interface CandleRequest {
   signal?: AbortSignal;
   /** Epoch milliseconds: bars at or before this instant (history paging). */
   endTime?: number;
+  /** Epoch seconds of the instrument's first trade (a listing), so a derived first bucket may open there. */
+  historyStart?: number;
 }
 
 export interface CandleAnswer {
@@ -51,6 +53,10 @@ export const RAW_STORE_CAP = 20000;
 export const RAW_STORE_MAX_KEYS = 12;
 
 const abortError = () => (typeof DOMException === 'function' ? new DOMException('Aborted', 'AbortError') : Object.assign(new Error('Aborted'), { name: 'AbortError' }));
+/** The one refusal of this module, carried as a code so a chart never reads an error's message to tell it apart. */
+export const TIMEFRAME_UNAVAILABLE = 'timeframe_unavailable';
+export const timeframeUnavailableError = (timeframe: string): Error => Object.assign(new RangeError(`${TIMEFRAME_UNAVAILABLE}:${timeframe}`), { code: TIMEFRAME_UNAVAILABLE });
+export const isTimeframeUnavailable = (error: unknown): boolean => (error as { code?: unknown } | null)?.code === TIMEFRAME_UNAVAILABLE;
 const isAbort = (error: unknown) => (error as { name?: string } | null)?.name === 'AbortError';
 
 type Shared = { promise: Promise<{ candles: Candle[] }>; controller: AbortController; waiters: number; at: number };
@@ -107,7 +113,7 @@ export async function loadChartCandles(loader: ChartCandleLoader, source: Candle
   const { market, pair, timeframe, limit, signal, endTime } = request;
   if (!isChartTimeframe(timeframe)) throw new RangeError(`Unknown timeframe ${String(timeframe)}`);
   const plan = timeframePlan(source, timeframe);
-  if (plan.kind === 'unavailable') throw new RangeError(`timeframe_unavailable:${timeframe}`);
+  if (plan.kind === 'unavailable') throw timeframeUnavailableError(timeframe);
   if (plan.kind === 'native') {
     // As the chart always asked: straight to the market's loader with the
     // caller's own signal (the loaders keep their own caches and streams).
@@ -127,7 +133,7 @@ export async function loadChartCandles(loader: ChartCandleLoader, source: Candle
 }
 
 async function loadDerived(loader: ChartCandleLoader, source: CandleSourceKind, request: CandleRequest, plan: { base: ChartTimeframe; factor: number }): Promise<CandleAnswer> {
-  const { market, pair, timeframe, limit, signal, endTime } = request;
+  const { market, pair, timeframe, limit, signal, endTime, historyStart } = request;
   const rawLimit = derivedRawLimit(plan, timeframe, limit, source);
   const key = `${market}|${pair}|${plan.base}|${rawLimit}|${endTime ?? 'latest'}`;
   const page = await fetchShared(key, inner => loader(pair, plan.base, rawLimit, inner, endTime), signal);
@@ -138,7 +144,7 @@ async function loadDerived(loader: ChartCandleLoader, source: CandleSourceKind, 
   if (rawStore.has(storeKey)) rawStore.delete(storeKey);
   rawStore.set(storeKey, merged);
   if (rawStore.size > RAW_STORE_MAX_KEYS) rawStore.delete(rawStore.keys().next().value!);
-  const built = aggregateCandles(merged, plan.base, timeframe);
+  const built = aggregateCandles(merged, plan.base, timeframe, undefined, { historyStart });
   let candles = built.candles;
   if (endTime !== undefined) {
     // A history page: only bars that end at or before the asked instant,
@@ -149,12 +155,14 @@ async function loadDerived(loader: ChartCandleLoader, source: CandleSourceKind, 
   return { candles: candles.slice(-limit), plan: { kind: 'derived', base: plan.base, factor: plan.factor }, partialLast: built.partialLast && endTime === undefined };
 }
 
-/** A loader with the same contract as the market's own, serving every catalogue timeframe it can. */
-export function workspaceCandleLoader(loader: ChartCandleLoader, source: CandleSourceKind, market: 'spot' | 'futures'): ChartCandleLoader {
+/** A loader with the same contract as the market's own, serving every catalogue timeframe it can; `historyStart` says where an instrument's history begins (epoch seconds), when known. */
+export function workspaceCandleLoader(loader: ChartCandleLoader, source: CandleSourceKind, market: 'spot' | 'futures', historyStart?: (pair: string) => number | undefined): ChartCandleLoader {
   return async (pair, interval, limit, signal, endTime) => {
     if (!isChartTimeframe(interval)) return loader(pair, interval, limit, signal, endTime);
-    const answer = await loadChartCandles(loader, source, { market, pair, timeframe: interval, limit, signal, endTime });
-    return { candles: answer.candles };
+    const answer = await loadChartCandles(loader, source, { market, pair, timeframe: interval, limit, signal, endTime, historyStart: historyStart?.(pair) });
+    // The loader contract is the candles; a derived answer also says whether its newest bar is still forming.
+    const out: { candles: Candle[]; partialLast?: boolean } = { candles: answer.candles, partialLast: answer.partialLast };
+    return out;
   };
 }
 

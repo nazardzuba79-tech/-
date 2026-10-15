@@ -39,8 +39,17 @@ describe('native intervals', () => {
   });
   it('refuses an interval the source cannot build at all', async () => {
     const loader = jest.fn();
-    await expect(loadChartCandles(loader, 'test-market', { market: 'spot', pair: 'VTA/USDT', timeframe: '1m', limit: 10 })).rejects.toThrow('timeframe_unavailable');
+    await expect(loadChartCandles(loader, 'legacy', { market: 'spot', pair: 'BTC/USDT', timeframe: '1m', limit: 10 })).rejects.toThrow('timeframe_unavailable');
     expect(loader).not.toHaveBeenCalled();
+  });
+  it('asks the test market for its native 1m as it is and builds 3m from it', async () => {
+    const loader = jest.fn(async () => ({ candles: Array.from({ length: 9 }, (_, i) => mk(start + i * 60, 100 + i)) }));
+    const native = await loadChartCandles(loader, 'test-market', { market: 'spot', pair: 'AITH/USDT', timeframe: '1m', limit: 9 });
+    expect(loader.mock.calls[0].slice(0, 3)).toEqual(['AITH/USDT', '1m', 9]);
+    expect(native.plan).toEqual({ kind: 'native' });
+    const derived = await loadChartCandles(loader, 'test-market', { market: 'spot', pair: 'AITH/USDT', timeframe: '3m', limit: 3 });
+    expect(derived.plan).toEqual({ kind: 'derived', base: '1m', factor: 3 });
+    expect(derived.candles.map(c => c.time)).toEqual([start, start + 180, start + 360]);
   });
 });
 

@@ -1,0 +1,1761 @@
+{
+ "result": {
+  "tag": "old-spot-x4-1440-stress-2",
+  "mode": "old",
+  "market": "spot",
+  "stress": true,
+  "throttle": 4,
+  "width": 1440,
+  "pair": "AITH/USDT",
+  "timeout": 12000,
+  "rowAtLayout1": [
+   "more"
+  ],
+  "rowAtLayout2": [
+   "fullscreen",
+   "more"
+  ],
+  "gotoOpenMs": 1714,
+  "gotoMenu": {
+   "id": "more",
+   "x": 485,
+   "y": 188,
+   "w": 300,
+   "h": 704
+  },
+  "gotoError": null,
+  "dialogOpen": true,
+  "gotoStatus": "История за эту дату не загружена",
+  "lifecycle": {
+   "paintedStatesAfterLayout1": [
+    "compare layout goto scale fullscreen more",
+    "compare scale fullscreen more",
+    "fullscreen more",
+    "more"
+   ],
+   "keysShownThenHidden": [
+    "compare",
+    "layout",
+    "goto",
+    "scale",
+    "fullscreen"
+   ],
+   "roCallbacksAfterLayout1": 65,
+   "mutationsAfterLayout1": 5,
+   "lastMutationMsAfterLayout1": 1614,
+   "framesAfterLayout1": 5,
+   "framesWithGotoOnRow": 1,
+   "firstGotoFrameMs": 372,
+   "lastGotoFrameMs": 372,
+   "keySequence": [
+    "372ms: [compare layout goto scale fullscreen more] w=588 cell=612 measured=true more=3 dense=3 menu=null goto=630,154,28,28",
+    "467ms: [compare scale fullscreen more] w=588 cell=612 measured=true more=5 dense=null menu=null goto=-",
+    "533ms: [fullscreen more] w=588 cell=612 measured=true more=7 dense=null menu=null goto=-",
+    "673ms: [more] w=588 cell=612 measured=true more=8 dense=null menu=null goto=-",
+    "1631ms: [more] w=588 cell=612 measured=true more=8 dense=null menu=more goto=-"
+   ]
+  },
+  "errors": []
+ },
+ "life": {
+  "ro": [
+   {
+    "t": 1288,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 1445,
+    "targets": [
+     "orderbook-asks"
+    ]
+   },
+   {
+    "t": 2390,
+    "targets": [
+     "orderbook-asks"
+    ]
+   },
+   {
+    "t": 2391,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 2393,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 2394,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2396,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2396,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2396,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2396,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2396,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2396,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2396,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2397,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2397,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2397,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2397,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2397,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2398,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2398,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2398,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2398,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2399,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2399,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2399,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2399,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2399,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2399,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2399,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2684,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 2684,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 2685,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 2761,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 2761,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3104,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3105,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3390,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 3391,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 3698,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 3699,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 6126,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 6130,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 6678,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6680,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6680,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 6680,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 6686,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6686,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6686,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6686,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6686,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6687,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6688,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6688,
+    "targets": [
+     "cw-pane-chart"
+    ]
+   },
+   {
+    "t": 6693,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6693,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6693,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6693,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6693,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6693,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6693,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6972,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6972,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6972,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6972,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6972,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6973,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 6973,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 6974,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7184,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7185,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7626,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7626,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7626,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7627,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7627,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7627,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7627,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7839,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7839,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7993,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7993,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 8139,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 8139,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 10134,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 10134,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11015,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11015,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11015,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11015,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11122,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11122,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11122,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11122,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11122,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11122,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11122,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11122,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11201,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11201,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11401,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11450,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11498,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11543,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11569,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11600,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11624,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11638,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11658,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11684,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11720,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11763,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11792,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11843,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11882,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11904,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11936,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11940,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11978,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11992,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12036,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12058,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12079,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12101,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12128,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12171,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12275,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12319,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12356,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12411,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12442,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12534,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12534,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 12612,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12658,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12705,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12741,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12775,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12829,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12858,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12886,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12956,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12957,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 12994,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13020,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13044,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13093,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13164,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13183,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13236,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13259,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13281,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13310,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13358,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13377,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13426,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13476,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13518,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13539,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13571,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13611,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13661,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13727,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13774,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13804,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13825,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13852,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13880,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13911,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13929,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13962,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14016,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14057,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14123,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14177,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14211,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14211,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 14231,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14276,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14306,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14330,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14362,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14400,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14413,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14439,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14461,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14485,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14496,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14527,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14541,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14580,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   }
+  ],
+  "mutations": [
+   {
+    "t": 5208,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 6560,
+    "added": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen"
+    ],
+    "removed": [
+     "more"
+    ],
+    "attrs": [
+     "class",
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": "1",
+    "width": 281,
+    "menu": null,
+    "goto": [
+     903,
+     224,
+     28,
+     28
+    ],
+    "cell": 305
+   },
+   {
+    "t": 6834,
+    "added": [
+     "more",
+     "fullscreen"
+    ],
+    "removed": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 7135,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 7349,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 7941,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 8066,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 8303,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 9698,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 10294,
+    "added": [
+     "fullscreen"
+    ],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 10975,
+    "added": [
+     "compare",
+     "layout",
+     "goto",
+     "scale"
+    ],
+    "removed": [],
+    "attrs": [
+     "class",
+     "data-cw-more"
+    ],
+    "keys": "compare layout goto scale fullscreen more",
+    "measured": true,
+    "more": "3",
+    "dense": "3",
+    "width": 588,
+    "menu": null,
+    "goto": [
+     630,
+     154,
+     28,
+     28
+    ],
+    "cell": 612
+   },
+   {
+    "t": 11089,
+    "added": [
+     "tools",
+     "presets",
+     "snapshot",
+     "more"
+    ],
+    "removed": [
+     "more",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "snapshot"
+    ],
+    "attrs": [
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "compare scale fullscreen more",
+    "measured": true,
+    "more": "5",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 11156,
+    "added": [
+     "layout",
+     "fullscreen"
+    ],
+    "removed": [
+     "compare",
+     "scale",
+     "fullscreen",
+     "layout"
+    ],
+    "attrs": [
+     "data-cw-more"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 11274,
+    "added": [],
+    "removed": [
+     "fullscreen"
+    ],
+    "attrs": [
+     "data-cw-more"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 12254,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612
+   }
+  ],
+  "frames": [
+   {
+    "t": 4301,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 5234,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 6621,
+    "keys": "compare layout tools presets goto scale snapshot fullscreen",
+    "measured": true,
+    "more": null,
+    "dense": "1",
+    "width": 281,
+    "menu": null,
+    "goto": [
+     903,
+     224,
+     28,
+     28
+    ],
+    "cell": 305
+   },
+   {
+    "t": 6871,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 9729,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305
+   },
+   {
+    "t": 11012,
+    "keys": "compare layout goto scale fullscreen more",
+    "measured": true,
+    "more": "3",
+    "dense": "3",
+    "width": 588,
+    "menu": null,
+    "goto": [
+     630,
+     154,
+     28,
+     28
+    ],
+    "cell": 612
+   },
+   {
+    "t": 11107,
+    "keys": "compare scale fullscreen more",
+    "measured": true,
+    "more": "5",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 11173,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 11313,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612
+   },
+   {
+    "t": 12271,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612
+   }
+  ],
+  "marks": [
+   {
+    "t": 4282,
+    "name": "installed"
+   },
+   {
+    "t": 6139,
+    "name": "layout-menu-open"
+   },
+   {
+    "t": 6186,
+    "name": "layout2-click"
+   },
+   {
+    "t": 8393,
+    "name": "pane-settled"
+   },
+   {
+    "t": 10546,
+    "name": "layout-menu-open-2"
+   },
+   {
+    "t": 10640,
+    "name": "layout1-click"
+   },
+   {
+    "t": 11561,
+    "name": "escape"
+   },
+   {
+    "t": 13274,
+    "name": "goto-open-done"
+   },
+   {
+    "t": 15259,
+    "name": "goto-applied"
+   }
+  ]
+ }
+}

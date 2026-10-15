@@ -27,7 +27,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { type Candle } from '../lib/indicators';
 import {
-  DEFAULT_CHART_INDICATORS, INDICATOR_CATALOGUE, computeIndicator, getChartIndicators, indicatorDefinition, indicatorInstanceLabel, newIndicatorInstance,
+  DEFAULT_CHART_INDICATORS, INDICATOR_CATALOGUE, computeIndicator, getChartIndicators, indicatorDefinition, indicatorInstanceLabel, indicatorMinBars, newIndicatorInstance,
   saveChartIndicators, subscribeChartIndicators, type IndicatorInstance, type IndicatorOutput, type IndicatorType,
 } from '../lib/chartIndicators';
 import {
@@ -47,8 +47,11 @@ import type { DrawingView } from '../lib/drawingGeometry';
 import { ChartDrawingLayer, CURSOR_TOOLS, newDrawingId, type ChartDrawing, type DrawingTool, type TextRequest } from './ChartDrawingLayer';
 import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
 import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_INTERVAL_MS, type ChartCandleLoader, type ChartTradingInteraction, type ChartPositionLine } from '../lib/chartTrading';
-import { CHART_TIMEFRAMES, LEGACY_TIMEFRAMES, isChartTimeframe, timeframeDurationMs, timeframeLabelKey, timeframePlan, timeframeSpec, type CandleSourceKind, type ChartTimeframe, type TimeframePlan } from '../lib/chartTimeframes';
-import { loadChartCandles, workspaceCandleLoader } from '../lib/chartCandleSource';
+import { CHART_TIMEFRAMES, LEGACY_TIMEFRAMES, isChartTimeframe, timeframeDurationMs, timeframeLabelKey, timeframeSpec, type CandleSourceKind, type ChartTimeframe } from '../lib/chartTimeframes';
+import { isTimeframeUnavailable, loadChartCandles, timeframeUnavailableError, workspaceCandleLoader } from '../lib/chartCandleSource';
+import { candleSourceFor, chartCapabilities, quickTimeframesFor, resolveTimeframe } from '../lib/chartCapabilities';
+import { CHART_CANDLE_LOADERS, candleHistoryStart } from '../lib/chartCandleLoaders';
+import { dataBoundsFromEdges, initialLogicalRange, safeBottomMargin, timeTickLabel } from '../lib/chartViewport';
 import {
   BUILT_IN_PRESETS, DEFAULT_WORKSPACE, MAX_WORKSPACE_PRESETS, deleteWorkspacePreset, getChartWorkspace, getWorkspacePresets, presetFromWorkspace, renameWorkspacePreset,
   saveWorkspacePreset, subscribeChartWorkspace, subscribeWorkspacePresets, updateChartWorkspace, type ChartWorkspaceState, type CompareEntry, type ComparePeriod, type WorkspaceLayout, type WorkspacePreset,
@@ -303,8 +306,17 @@ export function PriceChart({
   const patchWorkspace = useCallback((patch: Partial<ChartWorkspaceState> | ((s: ChartWorkspaceState) => Partial<ChartWorkspaceState>)) => updateChartWorkspace(market, patch), [market]);
   const compareEntries = workspaceOn ? workspace.compare : NO_COMPARE;
   const compareOn = workspaceOn && compareEntries.length > 0;
-  const sourceKind: CandleSourceKind = candleSource ?? (candleLoader ? (market === 'futures' ? 'futures-public' : 'spot-public') : 'legacy');
-  const plans = useMemo(() => Object.fromEntries(CHART_TIMEFRAMES.map(tf => [tf, timeframePlan(sourceKind, tf)])) as Record<ChartTimeframe, TimeframePlan>, [sourceKind]);
+  const compareOnRef = useRef(compareOn); compareOnRef.current = compareOn;
+  const sourceKind: CandleSourceKind = candleSource ?? (candleLoader ? candleSourceFor(market, pair) : 'legacy');
+  /**
+   * What this chart can do for its instrument (lib/chartCapabilities,
+   * 2026-10-14): the one answer the quick strip, the full menu, the stars,
+   * the phone sheet, the digit shortcuts, the templates and the pane sync
+   * all read, so an interval is either offered and served or not offered.
+   */
+  const caps = useMemo(() => chartCapabilities({ market, pair, loaders: CHART_CANDLE_LOADERS, loader: candleLoader ?? null, source: sourceKind }), [market, pair, candleLoader, sourceKind]);
+  const capsRef = useRef(caps); capsRef.current = caps;
+  const plans = caps.plans;
   // One loader identity for the chart's whole life: it reads the market's
   // loader and source through refs, so the candle effect never re-runs for
   // a swap of the function it calls (see paintedSeriesRef below). Native
@@ -319,9 +331,51 @@ export function PriceChart({
     workspaceLoaderRef.current = (p, i, limit, signal, endTime) => {
       const loader = loaderRef.current;
       if (!loader) return Promise.reject(new Error('no_candle_loader'));
-      return workspaceCandleLoader(loader, sourceRef.current, marketRef.current)(p, i, limit, signal, endTime);
+      return workspaceCandleLoader(loader, sourceRef.current, marketRef.current, candleHistoryStart.bind(null, marketRef.current))(p, i, limit, signal, endTime);
     };
   }
+  // ── A positive-price chart never autoscales below zero (2026-10-14) ──────
+  // Lightweight Charts keeps the bars inside [bottom, 1 − top] of the pane and
+  // extends the axis linearly into both margins, so a young listing whose bars
+  // span 2 → 22 showed "−6.0000" under its one weekly bar. The margins the
+  // paint sets are the base; when the visible bars would put the pane's bottom
+  // edge below zero, the bottom margin shrinks to the largest fraction that
+  // keeps it at or above zero (lib/chartViewport) and grows back as the view
+  // narrows. Only the automatic scale is touched: a scale the viewer set by
+  // hand, a logarithmic one and the percent scale of compare mode are left alone.
+  const baseMarginsRef = useRef({ top: 0.1, bottom: 0.3 });
+  const appliedBottomRef = useRef<number | null>(null);
+  const safeMarginsFrameRef = useRef<number | null>(null);
+  const applySafeMargins = useCallback(() => {
+    safeMarginsFrameRef.current = null;
+    const chart = chartRef.current, series = seriesRef.current;
+    if (!chart || !series || typeof chart.paneSize !== 'function' || typeof series.coordinateToPrice !== 'function' || !candlesRef.current.length || compareOnRef.current) return;
+    const scale = chart.priceScale('right');
+    const options = scale.options();
+    if (!options.autoScale || options.mode === PriceScaleMode.Logarithmic) return;
+    const height = chart.paneSize(0).height;
+    if (!(height > 0)) return;
+    const base = baseMarginsRef.current;
+    const current = appliedBottomRef.current ?? base.bottom;
+    const topPrice = series.coordinateToPrice(0), bottomPrice = series.coordinateToPrice(height - 1);
+    if (typeof topPrice !== 'number' || typeof bottomPrice !== 'number' || !(topPrice > bottomPrice)) return;
+    const { lo, hi } = dataBoundsFromEdges(topPrice, bottomPrice, base.top, current);
+    const next = safeBottomMargin(lo, hi, base.top, base.bottom);
+    if (Math.abs(next - current) < 0.004) return;
+    appliedBottomRef.current = next;
+    scale.applyOptions({ scaleMargins: { top: base.top, bottom: next } });
+  }, []);
+  const scheduleSafeMargins = useCallback(() => {
+    if (safeMarginsFrameRef.current !== null || typeof requestAnimationFrame !== 'function') return;
+    safeMarginsFrameRef.current = requestAnimationFrame(applySafeMargins);
+  }, [applySafeMargins]);
+  /** The paint's margins for the right scale: remembered as the base the clamp above shrinks from. */
+  const setBaseMargins = useCallback((top: number, bottom: number) => {
+    baseMarginsRef.current = { top, bottom };
+    appliedBottomRef.current = null;
+    chartRef.current?.priceScale('right').applyOptions({ scaleMargins: { top, bottom } });
+    scheduleSafeMargins();
+  }, [scheduleSafeMargins]);
   const [viewSettings, setViewSettings] = useState<ChartSettings | null>(() => (chartSettings ? getChartSettings() : null));
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => (chartSettings ? subscribeChartSettings(setViewSettings) : undefined), [chartSettings]);
@@ -366,8 +420,12 @@ export function PriceChart({
   const privateHistoryRef = useRef<((time: number) => Promise<void>) | null>(null);
   const [candlesRevision, setCandlesRevision] = useState(0);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
-  const [interval, setInterval_] = useState<Interval>(() => (terminal && drawingTools ? getChartWorkspace(market).timeframe : '1h'));
+  const [interval, setInterval_] = useState<Interval>(() => (terminal && drawingTools ? resolveTimeframe(getChartWorkspace(market).timeframe, caps) : '1h'));
   const [empty, setEmpty] = useState(false);
+  /** The newest bar is a derived bucket still forming (lib/chartTimeframes). */
+  const [partialLast, setPartialLast] = useState(false);
+  /** The last failure was an interval this source cannot serve (never offered by the capabilities; kept honest if asked for anyway). */
+  const [loadUnsupported, setLoadUnsupported] = useState(false);
   /**
    * The instrument whose candles are currently ON SCREEN — "market|pair|interval".
    *
@@ -513,7 +571,11 @@ export function PriceChart({
       // axis read as an intentional part of the chart instead of text
       // floating in empty space.
       rightPriceScale: { borderColor: token('--voltex-axis-border', '#292c34') },
-      timeScale: { borderColor: token('--voltex-axis-border', '#292c34'), timeVisible: true },
+      timeScale: {
+        borderColor: token('--voltex-axis-border', '#292c34'), timeVisible: true,
+        // A lone bar of a day or longer is dated, an intraday one keeps hours and minutes (lib/chartViewport).
+        tickMarkFormatter: (time: Time, tickMarkType: number, locale: string) => timeTickLabel(Number(time), INTERVAL_SECONDS[chartHitRef.current.interval] ?? 0, tickMarkType, locale),
+      },
       crosshair: terminal
         ? {
             mode: CrosshairMode.Normal,
@@ -544,6 +606,10 @@ export function PriceChart({
         : {}),
     });
     chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: 0.3 } });
+    baseMarginsRef.current = { top: 0.1, bottom: 0.3 };
+    appliedBottomRef.current = null;
+    // Read-only handle for acceptance tooling (scripts/qa-*): the chart and its candle series. The product never reads it.
+    Object.defineProperty(containerRef.current, '__voltexChart', { value: { chart, series }, configurable: true, enumerable: false, writable: true });
 
     // Line/Area alternatives to the candlesticks — same right price scale,
     // just hidden by default (see the chartType effect below for the swap).
@@ -812,7 +878,7 @@ export function PriceChart({
       volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     }
     chart.applyOptions({ layout: { panes: { separatorColor: 'rgba(255, 255, 255, 0.08)', separatorHoverColor: 'rgba(255, 255, 255, 0.16)' } } });
-    chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: bandOscillators ? 0.3 : 0.06 } });
+    setBaseMargins(0.1, bandOscillators ? 0.3 : 0.06);
     volumeColorsRef.current = [rgbaOf(s.bodyUp, s.volumeOpacity), rgbaOf(s.bodyDown, s.volumeOpacity)];
     const candles = candlesRef.current;
     if (candles?.length) volume.setData(candles.map(c => ({ time: c.time as any, value: c.volume, color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1] })));
@@ -1288,7 +1354,7 @@ export function PriceChart({
     }
     setLoadFailed(false);
 
-    function display(res: { candles: Candle[] }) {
+    function display(res: { candles: Candle[]; partialLast?: boolean }) {
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
         if (priceFormatter) {
@@ -1333,19 +1399,16 @@ export function PriceChart({
 
         if (!hasSetInitialRange && chartRef.current) {
           hasSetInitialRange = true;
-          const visible = chartSettings ? SETTINGS_VISIBLE_CANDLES : VISIBLE_CANDLES;
-          if (res.candles.length > visible) {
-            // Show only the most recent `visible` bars — every one
-            // of them sits past the MA's 200-bar warm-up, so the line
-            // spans the full visible width instead of trailing off partway.
-            chartRef.current.timeScale().setVisibleLogicalRange({
-              from: res.candles.length - visible,
-              to: res.candles.length - 1,
-            });
-          } else {
-            chartRef.current.timeScale().fitContent();
-          }
+          // The newest `visible` bars when there are more (every one of them
+          // past the MA's 200-bar warm-up, so the line spans the visible
+          // width); a short history — a young listing with one weekly bar —
+          // at a readable bar width at the right of the plot, never one bar
+          // stretched over it (lib/chartViewport).
+          const range = initialLogicalRange(res.candles.length, chartSettings ? SETTINGS_VISIBLE_CANDLES : VISIBLE_CANDLES);
+          if (range) chartRef.current.timeScale().setVisibleLogicalRange(range);
         }
+        setPartialLast(!!(res as { partialLast?: boolean }).partialLast);
+        scheduleSafeMargins();
 
         forceRedraw((n) => n + 1);
         if (privateMode) setCandlesRevision(value => value + 1);
@@ -1367,9 +1430,10 @@ export function PriceChart({
         // `controller` is the newest request. If it is no longer this one, a
         // later request owns the chart and this answer is history.
         if (cancelled || controller !== requestController) return;
-        display(historyEnabled ? { candles: mergeChartCandles(candlesRef.current, res.candles, privateMode ? 10000 : Number.MAX_SAFE_INTEGER) } : res);
+        display(historyEnabled ? { candles: mergeChartCandles(candlesRef.current, res.candles, privateMode ? 10000 : Number.MAX_SAFE_INTEGER), partialLast: (res as { partialLast?: boolean }).partialLast } : res);
         setLoadFailed(false);
-      } catch {
+        setLoadUnsupported(false);
+      } catch (error) {
         // A superseded or cleanup-aborted request is not evidence of anything.
         // It must never clear candles and never raise an error over a chart
         // that is perfectly fine.
@@ -1377,8 +1441,10 @@ export function PriceChart({
         if (requestController.signal.aborted && !timedOut) return;
         // Last good wins: bars already on screen stay on screen through a
         // failed tail refresh. Only a chart with nothing to show reports the
-        // failure, and it says so out loud instead of leaving a silent blank.
-        if (!candlesRef.current.length) { clearSeries(); setLoadFailed(true); }
+        // failure, and it says so out loud instead of leaving a silent blank —
+        // an interval the source cannot serve by its own name, a temporary
+        // failure by its own.
+        if (!candlesRef.current.length) { clearSeries(); setLoadFailed(true); setLoadUnsupported(isTimeframeUnavailable(error)); }
       } finally {
         clearTimeout(timeout);
         loading=false;
@@ -1552,12 +1618,21 @@ export function PriceChart({
   }, [chartType, compareOn]);
 
   // ── Workspace: timeframe and bar type follow the store ─────────────────
-  const selectTimeframe = useCallback((tf: Interval) => {
+  const selectTimeframe = useCallback((wanted: Interval) => {
+    // Whatever asked — a key, a digit, a template, a synced pane — the chart shows what its source serves.
+    const tf = resolveTimeframe(wanted, capsRef.current);
     if (tradingRef.current?.selecting) tradingRef.current.onCancelSelection();
     setInterval_(tf);
     if (workspaceOn) updateChartWorkspace(market, { timeframe: tf });
   }, [workspaceOn, market]);
-  useEffect(() => { if (workspaceOn && workspace.timeframe !== interval) setInterval_(workspace.timeframe); }, [workspaceOn, workspace.timeframe]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The store's interval, validated for this instrument: a pair whose source lacks it shows the
+  // nearest one the source has, and the store follows so every pane reads the interval on screen.
+  useEffect(() => {
+    if (!workspaceOn) return;
+    const tf = resolveTimeframe(workspace.timeframe, caps);
+    if (tf !== interval) setInterval_(tf);
+    if (tf !== workspace.timeframe) updateChartWorkspace(market, { timeframe: tf });
+  }, [workspaceOn, workspace.timeframe, caps]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (workspaceOn && workspace.barType !== chartType) setChartType(workspace.barType); }, [workspaceOn, workspace.barType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Workspace: the cursor, the visible range and the pane sync bus ─────
@@ -1606,6 +1681,20 @@ export function PriceChart({
       chart.timeScale().unsubscribeVisibleTimeRangeChange(onRange);
     };
   }, [chartReady, workspaceOn]);
+  // The clamp above follows every pan and zoom (the autoscale recomputes per visible range).
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || !chartReady || typeof chart.timeScale !== 'function') return;
+    const scale = chart.timeScale();
+    if (typeof scale.subscribeVisibleLogicalRangeChange !== 'function') return;
+    const onRange = () => scheduleSafeMargins();
+    scale.subscribeVisibleLogicalRangeChange(onRange);
+    return () => {
+      scale.unsubscribeVisibleLogicalRangeChange(onRange);
+      if (safeMarginsFrameRef.current !== null && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(safeMarginsFrameRef.current);
+      safeMarginsFrameRef.current = null;
+    };
+  }, [chartReady, scheduleSafeMargins]);
   // Incoming sync from the other panes of the workspace.
   useEffect(() => {
     if (!syncBus || !workspaceOn) return;
@@ -1640,17 +1729,20 @@ export function PriceChart({
   useEffect(() => {
     const entries = compareEntries;
     for (const key of [...compareDataRef.current.keys()]) if (!entries.some(e => e.pair === key)) compareDataRef.current.delete(key);
-    if (!compareOn || !loaderRef.current) { setCompareStatus({}); return; }
+    if (!compareOn) { setCompareStatus({}); return; }
     let cancelled = false;
     const controllers = new Map<string, AbortController>();
     const loadOne = async (p: string) => {
-      const loader = loaderRef.current;
-      if (!loader || cancelled) return;
+      if (cancelled) return;
       controllers.get(p)?.abort();
       const own = new AbortController();
       controllers.set(p, own);
+      // Each compared instrument reads its own source (lib/chartCapabilities): BTC beside a managed
+      // listing comes from Spot, a test pair beside BTC from the simulation — never the chart's loader.
+      const theirs = chartCapabilities({ market, pair: p, loaders: CHART_CANDLE_LOADERS });
       try {
-        const answer = await loadChartCandles(loader, sourceRef.current, { market, pair: p, timeframe: interval, limit: CANDLE_FETCH_LIMIT, signal: own.signal });
+        if (theirs.plans[interval].kind === 'unavailable') throw timeframeUnavailableError(interval);
+        const answer = await loadChartCandles(theirs.loader, theirs.source, { market, pair: p, timeframe: interval, limit: CANDLE_FETCH_LIMIT, signal: own.signal, historyStart: candleHistoryStart(market, p) });
         if (cancelled || controllers.get(p) !== own) return;
         compareDataRef.current.set(p, answer.candles);
         setCompareStatus(current => (current[p] === 'ok' ? current : { ...current, [p]: 'ok' }));
@@ -1718,7 +1810,7 @@ export function PriceChart({
   const [autoScale, setAutoScale] = useState(true);
   const requestFeature = useCallback((id: string | null) => setOpenRequest(current => ({ id, seq: current.seq + 1 })), []);
   const applyPreset = useCallback((preset: WorkspacePreset) => {
-    updateChartWorkspace(market, { timeframe: preset.timeframe, quickTimeframes: preset.quickTimeframes, barType: preset.barType, compare: [], layout: 1 });
+    updateChartWorkspace(market, { timeframe: resolveTimeframe(preset.timeframe, capsRef.current), quickTimeframes: preset.quickTimeframes, barType: preset.barType, compare: [], layout: 1 });
     saveChartIndicators(preset.indicators.map(inst => ({ ...inst, id: `${inst.id}-${Date.now().toString(36)}`, params: { ...inst.params }, colors: [...inst.colors] })), market);
     if (chartSettings && (preset.volume !== undefined || preset.indicatorLegend !== undefined)) {
       const current = getChartSettings();
@@ -1734,7 +1826,7 @@ export function PriceChart({
     };
     const onKey = (event: KeyboardEvent) => {
       if (typing(event.target) || event.ctrlKey || event.metaKey) return;
-      const quick = workspace.quickTimeframes;
+      const quick = quickTimeframesFor(workspace.quickTimeframes, caps);
       if (!event.altKey && !event.shiftKey) {
         if (/^[1-9]$/.test(event.key)) { const tf = quick[Number(event.key) - 1]; if (tf && plans[tf].kind !== 'unavailable') { event.preventDefault(); selectTimeframe(tf); } return; }
         if (event.key === ',' || event.key === '.') {
@@ -1753,14 +1845,14 @@ export function PriceChart({
         case 'KeyD': event.preventDefault(); updateChartWorkspace(market, s => ({ view: s.view === 'data' ? 'chart' : 'data' })); break;
         case 'KeyA': event.preventDefault(); updateChartWorkspace(market, s => ({ view: s.view === 'analytics' ? 'chart' : 'analytics' })); break;
         case 'KeyN': event.preventDefault(); chartRef.current?.timeScale().scrollToRealTime(); break;
-        case 'KeyR': event.preventDefault(); chartRef.current?.timeScale().resetTimeScale(); chartRef.current?.priceScale('right').applyOptions({ autoScale: true }); setAutoScale(true); break;
+        case 'KeyR': event.preventDefault(); chartRef.current?.timeScale().resetTimeScale(); chartRef.current?.priceScale('right').applyOptions({ autoScale: true }); setAutoScale(true); scheduleSafeMargins(); break;
         case 'KeyX': event.preventDefault(); updateChartWorkspace(market, { compare: [] }); break;
         default: break;
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [workspaceOn, workspace.quickTimeframes, interval, plans, selectTimeframe, market, onFullscreen, requestFeature]);
+  }, [workspaceOn, workspace.quickTimeframes, interval, plans, caps, selectTimeframe, market, onFullscreen, requestFeature]);
 
 
   const priceToY = useCallback((price: number): number | null => {
@@ -2150,10 +2242,10 @@ export function PriceChart({
               }}
               goTo={{ onGo: ms => (goToTimeRef.current ? goToTimeRef.current(ms) : Promise.resolve('missing' as const)), lastTime: candlesRef.current[candlesRef.current.length - 1]?.time ?? null }}
               quick={{
-                onReset: () => { chartRef.current?.timeScale().resetTimeScale(); chartRef.current?.priceScale('right').applyOptions({ autoScale: true }); setAutoScale(true); },
+                onReset: () => { chartRef.current?.timeScale().resetTimeScale(); chartRef.current?.priceScale('right').applyOptions({ autoScale: true }); setAutoScale(true); scheduleSafeMargins(); },
                 onFit: fitContent,
                 onLatest: () => chartRef.current?.timeScale().scrollToRealTime(),
-                autoScale, onAutoScale: () => { chartRef.current?.priceScale('right').applyOptions({ autoScale: !autoScale }); setAutoScale(!autoScale); },
+                autoScale, onAutoScale: () => { chartRef.current?.priceScale('right').applyOptions({ autoScale: !autoScale }); setAutoScale(!autoScale); scheduleSafeMargins(); },
                 logScale: (viewSettings?.scaleMode ?? 'normal') === 'logarithmic' || priceScaleMode === 'logarithmic',
                 onLogScale: () => { if (!chartSettings) return; const current = getChartSettings(); saveChartSettings({ ...current, scaleMode: current.scaleMode === 'logarithmic' ? 'normal' : 'logarithmic' }); },
               }}
@@ -2244,7 +2336,7 @@ export function PriceChart({
         <div ref={chartAreaRef} style={styles.chartArea} data-chart-state={loadFailed ? 'error' : empty ? 'empty' : 'candles'} data-cw-view={workspaceOn ? workspace.view : undefined} data-cw-compare={compareOn ? compareEntries.length : undefined}>
           <div ref={containerRef} style={styles.chart} />
           {privateTrading?.enabled && chartReady && <PrivatePositionLines chart={chartRef.current} series={seriesRef.current} interaction={privateTrading} pair={pair}/>}
-          {terminal && <div className="voltex-plot-title">{pair} · {interval}</div>}
+          {terminal && <div className="voltex-plot-title">{pair} · {interval}{partialLast && <span className="voltex-plot-note" data-cw-tf-partial> · {t('chart.ws.tf.partial')}</span>}</div>}
 
           {terminal && <div className="chart-watermark">{pair.split('/')[0]}</div>}
 
@@ -2322,11 +2414,11 @@ export function PriceChart({
             * said what.
             */}
           {loadFailed ? (
-            <div style={styles.chartErrorOverlay}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('trade.chartLoadFailed')}</span>
-              <button type="button" style={styles.chartRetryButton} onClick={() => retryCandlesRef.current?.()}>
+            <div style={styles.chartErrorOverlay} data-chart-error={loadUnsupported ? 'unsupported' : 'failed'}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{loadUnsupported ? t('chart.ws.tf.unavailable') : t('trade.chartLoadFailed')}</span>
+              {!loadUnsupported && <button type="button" style={styles.chartRetryButton} onClick={() => retryCandlesRef.current?.()}>
                 {t('trade.chartRetry')}
-              </button>
+              </button>}
             </div>
           ) : empty && (
             <div style={styles.emptyOverlay}>
@@ -2336,7 +2428,11 @@ export function PriceChart({
 
           {(viewSettings?.indicatorLegend ?? true) && !compareOn && !(workspaceOn && workspace.view === 'data') && indicatorInstances.some(i => i.visible) && (
             <div className="voltex-indicator-legend" style={styles.legend}>
-              {indicatorInstances.filter(i => i.visible).map(i => <LegendItem key={i.id} color={i.colors[0]} label={indicatorInstanceLabel(i)} />)}
+              {indicatorInstances.filter(i => i.visible).map(i => {
+                // A short history under a long indicator says so instead of showing a label with no line behind it.
+                const need = indicatorMinBars(i), bars = candlesRef.current.length;
+                return <LegendItem key={i.id} color={i.colors[0]} label={indicatorInstanceLabel(i)} note={bars > 0 && bars < need ? t('chart.indicator.insufficient', { n: bars, need }) : undefined} />;
+              })}
             </div>
           )}
         </div>
@@ -2408,11 +2504,12 @@ function DrawingDialog({ kind, t, onConfirm, onCancel, initial = '' }: {
   </div>;
 }
 
-function LegendItem({ color, label }: { color: string; label: string }) {
+function LegendItem({ color, label, note }: { color: string; label: string; note?: string }) {
   return (
-    <div style={styles.legendItem}>
+    <div style={styles.legendItem} data-indicator-insufficient={note ? '' : undefined} title={note}>
       <span style={{ ...styles.legendDot, background: color }} />
       {label}
+      {note && <span style={styles.legendNote}>{note}</span>}
     </div>
   );
 }
@@ -2891,6 +2988,11 @@ const styles: Record<string, React.CSSProperties> = {
     height: 3,
     borderRadius: 1.5,
     flexShrink: 0,
+  },
+  legendNote: {
+    marginLeft: 2,
+    fontWeight: 400,
+    color: '#8b9098',
   },
   body: {
     flex: 1,

@@ -1,0 +1,1617 @@
+{
+ "result": {
+  "tag": "old-spot-x4-1440-stress-2",
+  "mode": "old",
+  "market": "spot",
+  "stress": true,
+  "throttle": 4,
+  "width": 1440,
+  "pair": "AITH/USDT",
+  "timeout": 12000,
+  "rowAtLayout1": [
+   "more"
+  ],
+  "rowAtLayout2": [
+   "fullscreen",
+   "more"
+  ],
+  "gotoOpenMs": 2302,
+  "gotoMenu": {
+   "id": "more",
+   "x": 485,
+   "y": 188,
+   "w": 300,
+   "h": 704
+  },
+  "gotoError": null,
+  "dialogOpen": true,
+  "gotoStatus": "История за эту дату не загружена",
+  "lifecycle": {
+   "paintedStatesAfterLayout1": [
+    "more"
+   ],
+   "keysShownThenHidden": [],
+   "roCallbacksAfterLayout1": 66,
+   "mutationsAfterLayout1": 2,
+   "lastMutationMsAfterLayout1": 2009,
+   "framesAfterLayout1": 2,
+   "framesWithGotoOnRow": 0,
+   "firstGotoFrameMs": null,
+   "lastGotoFrameMs": null,
+   "keySequence": [
+    "487ms: [more] w=588 cell=612 measured=true more=8 dense=null menu=null goto=-",
+    "2042ms: [more] w=588 cell=612 measured=true more=8 dense=null menu=more goto=-"
+   ]
+  },
+  "errors": []
+ },
+ "life": {
+  "ro": [
+   {
+    "t": 1698,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 1845,
+    "targets": [
+     "orderbook-asks"
+    ]
+   },
+   {
+    "t": 2811,
+    "targets": [
+     "orderbook-asks"
+    ]
+   },
+   {
+    "t": 2812,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 2815,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 2815,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2816,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2816,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2816,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2816,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2816,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2817,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2817,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2817,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2817,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2817,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2818,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2818,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2819,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2819,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2819,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2820,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2820,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2820,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2820,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2820,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2820,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2820,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2820,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3052,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 3052,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 3052,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3595,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 4007,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 4007,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 6563,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 6563,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7256,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7256,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7818,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7819,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7819,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7825,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7825,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7825,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7825,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7825,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7825,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7826,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7826,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7826,
+    "targets": [
+     "cw-pane-chart"
+    ]
+   },
+   {
+    "t": 7829,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7829,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7829,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7829,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7829,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7829,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7829,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8044,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8045,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8045,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8045,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8045,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8045,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8045,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 8047,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 8226,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 8226,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 8439,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8439,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8439,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8439,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8439,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8439,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8439,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8729,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 8729,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 10530,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 10546,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11696,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11697,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11697,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11701,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11778,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11778,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11778,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11778,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11778,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11778,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11778,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11778,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11864,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11865,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11946,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11983,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12004,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12025,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12084,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12112,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12139,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12163,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12181,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12204,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12245,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12284,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12334,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12372,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12500,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12501,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 12576,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12605,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12637,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12678,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12697,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12741,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12777,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12831,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12831,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 12924,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12925,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 12952,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12977,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13004,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13253,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13289,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13319,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13404,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13445,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13485,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13605,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13692,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13763,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13796,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13850,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13931,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 13978,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14013,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14039,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14100,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14136,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14168,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14213,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14260,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14328,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14390,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14432,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14477,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14545,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14598,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14654,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14655,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 14727,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14786,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14824,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14864,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14930,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14977,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15032,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15086,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15126,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15153,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15171,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15201,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15235,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15254,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15308,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15347,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15464,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15502,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15527,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15577,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15632,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15680,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15748,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15793,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15816,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15835,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15867,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15887,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15919,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15959,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 15980,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 16016,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 16041,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 16077,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   }
+  ],
+  "mutations": [
+   {
+    "t": 5888,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 7710,
+    "added": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen",
+     "more",
+     "fullscreen"
+    ],
+    "removed": [
+     "more",
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen"
+    ],
+    "attrs": [
+     "class",
+     "data-cw-more",
+     "data-cw-dense"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305,
+    "parts": {
+     "start": 132.9,
+     "startScroll": 133,
+     "strip": 132.9,
+     "stripScroll": 133,
+     "stripClient": 133,
+     "stripOverflow": "auto",
+     "stripKids": "15m:41.4 1h:31.3 1d:34.3 ▾:26",
+     "menus": null,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "fullscreen": 28
+     },
+     "features": 109.1
+    }
+   },
+   {
+    "t": 10173,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305,
+    "parts": {
+     "start": 132.9,
+     "startScroll": 133,
+     "strip": 132.9,
+     "stripScroll": 133,
+     "stripClient": 133,
+     "stripOverflow": "auto",
+     "stripKids": "15m:41.4 1h:31.3 1d:34.3 ▾:26",
+     "menus": null,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "fullscreen": 28
+     },
+     "features": 109.1
+    }
+   },
+   {
+    "t": 11678,
+    "added": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "more"
+    ],
+    "removed": [
+     "more",
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen"
+    ],
+    "attrs": [
+     "class",
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 13216,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 99.9
+    }
+   }
+  ],
+  "frames": [
+   {
+    "t": 5040,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 5933,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 7752,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305,
+    "parts": {
+     "start": 132.9,
+     "startScroll": 133,
+     "strip": 132.9,
+     "stripScroll": 133,
+     "stripClient": 133,
+     "stripOverflow": "auto",
+     "stripKids": "15m:41.4 1h:31.3 1d:34.3 ▾:26",
+     "menus": null,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "fullscreen": 28
+     },
+     "features": 109.1
+    }
+   },
+   {
+    "t": 10252,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305,
+    "parts": {
+     "start": 132.9,
+     "startScroll": 133,
+     "strip": 132.9,
+     "stripScroll": 133,
+     "stripClient": 133,
+     "stripOverflow": "auto",
+     "stripKids": "15m:41.4 1h:31.3 1d:34.3 ▾:26",
+     "menus": null,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "fullscreen": 28
+     },
+     "features": 109.1
+    }
+   },
+   {
+    "t": 11694,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 13249,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 99.9
+    }
+   }
+  ],
+  "marks": [
+   {
+    "t": 5009,
+    "name": "installed"
+   },
+   {
+    "t": 6965,
+    "name": "layout-menu-open"
+   },
+   {
+    "t": 7066,
+    "name": "layout2-click"
+   },
+   {
+    "t": 8797,
+    "name": "pane-settled"
+   },
+   {
+    "t": 11101,
+    "name": "layout-menu-open-2"
+   },
+   {
+    "t": 11207,
+    "name": "layout1-click"
+   },
+   {
+    "t": 12129,
+    "name": "escape"
+   },
+   {
+    "t": 14417,
+    "name": "goto-open-done"
+   },
+   {
+    "t": 16589,
+    "name": "goto-applied"
+   }
+  ],
+  "toolbar": []
+ }
+}
