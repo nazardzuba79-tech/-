@@ -90,9 +90,11 @@ export function CfdOrderForm({
       setQuantity('');
       onPlaced();
       toast.success(t('trade.orderPlaced'));
-    } catch {
-      setError(t('futures.placeOrderError'));
-      toast.error(t('futures.placeOrderError'));
+    } catch (failure) {
+      const message=(failure as Error)?.message==='cfd_practice_storage_unavailable'
+        ? copy.storageUnavailable : t('futures.placeOrderError');
+      setError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

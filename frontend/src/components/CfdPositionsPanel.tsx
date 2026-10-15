@@ -48,7 +48,10 @@ export function CfdPositionsPanel({refreshKey,tickers}:{refreshKey:number;ticker
     const price=priceBySymbol.get(position.symbol);if(!price){setError(copy.priceUnavailable);return;}
     setClosingId(position.id);setError(null);
     try{closeCfdPaperPosition(position.id,price,quantity);reload();setPartialId(null);setPartialQty('');}
-    catch(failure){setError((failure as Error)?.message==='price_unavailable'?copy.priceUnavailable:copy.closeQuantityInvalid);}
+    catch(failure){
+      const code=(failure as Error)?.message;
+      setError(code==='cfd_practice_storage_unavailable'?copy.storageUnavailable:code==='price_unavailable'?copy.priceUnavailable:copy.closeQuantityInvalid);
+    }
     finally{setClosingId(null);}
   }
   function submitPartial(event:FormEvent,position:CfdPaperPosition){
