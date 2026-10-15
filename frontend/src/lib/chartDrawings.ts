@@ -355,10 +355,10 @@ export function positionMetrics(kind: 'long' | 'short', entry: number, target: n
 
 // ── Persistence ─────────────────────────────────────────────────────
 
-/** Which product a drawing belongs to. Spot and Futures keep separate
- *  sets even for the same ticker: they are different instruments and a
- *  perpetual's levels are not a spot chart's levels. */
-export type DrawingMarket = 'spot' | 'futures';
+/** Which product a drawing belongs to. Spot, Futures and CFD keep
+ *  separate sets even for the same ticker: they are different instruments
+ *  and a perpetual's levels are not a spot chart's levels. */
+export type DrawingMarket = 'spot' | 'futures' | 'cfd';
 
 /**
  * One saved drawing.

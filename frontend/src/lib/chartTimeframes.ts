@@ -137,9 +137,19 @@ export function timeframeDurationMs(tf: ChartTimeframe, atSeconds?: number): num
  *                 listings): 1m straight from the ticks, then 5m 15m 1h 4h
  *                 1d 1w (verified against both hosts on 2026-10-14: every
  *                 other code answers HTTP 400); the rest are derived.
+ *   cfd-display   CFD (metals, energy, FX majors): the public display OHLC
+ *                 route (`/cfd/display/candles`, the market edge in
+ *                 production) carries 1m 5m 15m 30m 1h 4h 1d — the edge's and
+ *                 the API's CFD_INTERVALS (checked against biquote.io on
+ *                 2026-10-15); the rest are derived, with the instrument's
+ *                 trading calendar telling a closed market from a gap
+ *                 (see `expectedBar` below).
  *   legacy        The plain chart's own endpoint: the six intervals only.
  */
-export type CandleSourceKind = 'futures-public' | 'spot-public' | 'test-market' | 'legacy';
+export type CandleSourceKind = 'futures-public' | 'spot-public' | 'test-market' | 'cfd-display' | 'legacy';
+
+/** What the CFD display OHLC route serves as it is (workers/market-edge CFD_INTERVALS, src/services/marketData/cfd/BiquoteCfdOhlcSource CFD_OHLC_INTERVALS). */
+export const CFD_DISPLAY_TIMEFRAMES: readonly ChartTimeframe[] = Object.freeze(['1m', '5m', '15m', '30m', '1h', '4h', '1d']);
 
 /** What the test-market simulation serves as it is (src/services/testMarkets/testMarketSimulation SIM_INTERVALS). */
 export const TEST_MARKET_TIMEFRAMES: readonly ChartTimeframe[] = Object.freeze(['1m', '5m', '15m', '1h', '4h', '1d', '1w']);
@@ -148,11 +158,17 @@ export const NATIVE_TIMEFRAMES: Record<CandleSourceKind, readonly ChartTimeframe
   'futures-public': CHART_TIMEFRAMES,
   'spot-public': Object.freeze(['1m', '5m', '15m', '1h', '4h', '1d', '1w'] as const),
   'test-market': TEST_MARKET_TIMEFRAMES,
+  'cfd-display': CFD_DISPLAY_TIMEFRAMES,
   legacy: LEGACY_TIMEFRAMES,
 });
 
 /** The most raw candles one request to the source can return. */
-export const SOURCE_RAW_LIMIT: Record<CandleSourceKind, number> = Object.freeze({ 'futures-public': 1000, 'spot-public': 720, 'test-market': 1000, legacy: 1000 });
+export const SOURCE_RAW_LIMIT: Record<CandleSourceKind, number> = Object.freeze({ 'futures-public': 1000, 'spot-public': 720, 'test-market': 1000, 'cfd-display': 500, legacy: 1000 });
+
+/** Whether a source's bars carry traded volume. CFD bars do not: the OTC
+ *  quote feed has no exchange volume (`volume` is 0, `tickVolume` counts
+ *  price updates), so the chart shows no volume and no volume indicator. */
+export const SOURCE_HAS_VOLUME: Record<CandleSourceKind, boolean> = Object.freeze({ 'futures-public': true, 'spot-public': true, 'test-market': true, 'cfd-display': false, legacy: true });
 
 export type TimeframePlan =
   | { kind: 'native' }
@@ -204,6 +220,16 @@ const finite = (c: Candle) => [c.time, c.open, c.high, c.low, c.close, c.volume]
 export interface AggregationOptions {
   /** Epoch seconds of the instrument's first trade (a listing): the bucket holding it may open there. */
   historyStart?: number;
+  /**
+   * Whether a base bar starting at `time` (epoch seconds, `step` seconds
+   * long) should exist: false while the instrument's market is closed for
+   * that whole bar (a weekend, a daily maintenance break). Without it every
+   * slot of a bucket is expected, as for a 24/7 venue. With it a bucket is
+   * complete when every EXPECTED slot is present, so a forex week built from
+   * Sunday–Friday daily bars is whole, while a missing Wednesday still drops
+   * it. A present bar is always aggregated, expected or not.
+   */
+  expectedBar?: (time: number, step: number) => boolean;
 }
 
 /**
@@ -227,9 +253,27 @@ export function aggregateCandles(base: readonly Candle[], baseTf: ChartTimeframe
   const starts = [...buckets.keys()].sort((a, b) => a - b);
   const candles: Candle[] = [];
   let dropped = 0, partialLast = false;
+  const expectedBar = options.expectedBar;
   starts.forEach((start, index) => {
     const list = buckets.get(start)!;
     const end = timeframeBucketEnd(start, target);
+    if (expectedBar) {
+      // Session-aware completeness: only the slots the market was open for must be present.
+      const present = new Set(list.map(row => row.time));
+      const slots: number[] = [];
+      for (let t = start; t < end; t += step) if (expectedBar(t, step)) slots.push(t);
+      const newest = index === starts.length - 1;
+      const forming = newest && end > now;
+      const due = forming ? slots.filter(t => t <= list[list.length - 1].time) : slots;
+      const firstDue = due.length ? due[0] : list[0].time;
+      const whole = due.length > 0 && due.every(t => present.has(t)) && list[0].time <= firstDue;
+      if (!whole) { dropped++; return; }
+      let high = -Infinity, low = Infinity, volume = 0;
+      for (const row of list) { if (row.high > high) high = row.high; if (row.low < low) low = row.low; volume += row.volume; }
+      candles.push({ time: start, open: list[0].open, high, low, close: list[list.length - 1].close, volume });
+      if (forming && due.length < slots.length) partialLast = true;
+      return;
+    }
     const expected = Math.round((end - start) / step);
     const opensAtStart = list[0].time === start;
     // No gap between the bars on hand (from the first of them, which is the bucket's open unless the listing is inside the bucket).

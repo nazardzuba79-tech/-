@@ -2103,6 +2103,7 @@ export const ZH: Record<Key, string> = {
   'chart.ws.compare.source': "{market} 数据",
   'chart.ws.compare.spot': "现货",
   'chart.ws.compare.futures': "合约",
+  'chart.ws.compare.cfd': "差价合约",
   'chart.ws.layout': "布局",
   'chart.ws.layout.one': "单图",
   'chart.ws.layout.two': "双图",

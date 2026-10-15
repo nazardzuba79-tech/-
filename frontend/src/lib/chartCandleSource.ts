@@ -22,12 +22,14 @@
  */
 import type { Candle } from './indicators';
 import type { ChartCandleLoader } from './chartTrading';
+import type { ChartMarket } from './chartCapabilities';
+import { expectedBarFor } from './chartSessions';
 import {
   aggregateCandles, derivedRawLimit, isChartTimeframe, timeframePlan, type CandleSourceKind, type ChartTimeframe, type TimeframePlan,
 } from './chartTimeframes';
 
 export interface CandleRequest {
-  market: 'spot' | 'futures';
+  market: ChartMarket;
   pair: string;
   timeframe: ChartTimeframe;
   limit: number;
@@ -144,7 +146,8 @@ async function loadDerived(loader: ChartCandleLoader, source: CandleSourceKind, 
   if (rawStore.has(storeKey)) rawStore.delete(storeKey);
   rawStore.set(storeKey, merged);
   if (rawStore.size > RAW_STORE_MAX_KEYS) rawStore.delete(rawStore.keys().next().value!);
-  const built = aggregateCandles(merged, plan.base, timeframe, undefined, { historyStart });
+  // A CFD market's weekends and daily breaks are not gaps (lib/chartSessions).
+  const built = aggregateCandles(merged, plan.base, timeframe, undefined, { historyStart, expectedBar: expectedBarFor(market, pair) });
   let candles = built.candles;
   if (endTime !== undefined) {
     // A history page: only bars that end at or before the asked instant,
@@ -156,7 +159,7 @@ async function loadDerived(loader: ChartCandleLoader, source: CandleSourceKind, 
 }
 
 /** A loader with the same contract as the market's own, serving every catalogue timeframe it can; `historyStart` says where an instrument's history begins (epoch seconds), when known. */
-export function workspaceCandleLoader(loader: ChartCandleLoader, source: CandleSourceKind, market: 'spot' | 'futures', historyStart?: (pair: string) => number | undefined): ChartCandleLoader {
+export function workspaceCandleLoader(loader: ChartCandleLoader, source: CandleSourceKind, market: ChartMarket, historyStart?: (pair: string) => number | undefined): ChartCandleLoader {
   return async (pair, interval, limit, signal, endTime) => {
     if (!isChartTimeframe(interval)) return loader(pair, interval, limit, signal, endTime);
     const answer = await loadChartCandles(loader, source, { market, pair, timeframe: interval, limit, signal, endTime, historyStart: historyStart?.(pair) });
@@ -175,6 +178,6 @@ export function resetChartCandleSource(): void {
 }
 
 /** How many raw base bars are kept for a series (diagnostics and tests). */
-export const rawStoreSize = (market: 'spot' | 'futures', pair: string, base: ChartTimeframe): number => rawStore.get(`${market}|${pair}|${base}`)?.length ?? 0;
+export const rawStoreSize = (market: ChartMarket, pair: string, base: ChartTimeframe): number => rawStore.get(`${market}|${pair}|${base}`)?.length ?? 0;
 /** Expose only the aggregate entry count for deterministic retention tests. */
 export const rawStoreEntryCount = (): number => rawStore.size;

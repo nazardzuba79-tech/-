@@ -1,0 +1,1337 @@
+{
+  "phase": "before",
+  "dist": "frontend/dist built from main f5875c00 (before)",
+  "startedAt": "2026-10-15T05:03:22.570Z",
+  "environment": "LOCAL QA ONLY — loopback host, real public CFD display sources, no database, no production writes",
+  "checks": [
+    {
+      "id": "layout.1920",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1912,
+        "h": 56
+      },
+      "tickerUsedPx": 510,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 1326,
+        "h": 770
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 770
+      },
+      "form": {
+        "x": 1616,
+        "y": 112,
+        "w": 300,
+        "h": 770
+      },
+      "bottom": {
+        "x": 4,
+        "y": 886,
+        "w": 1912,
+        "h": 190
+      },
+      "namesClipped": [
+        "XAUUSD",
+        "XAGUSD",
+        "XPTUSD",
+        "XPDUSD",
+        "WTIUSD",
+        "XBRUSD",
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.1440",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1432,
+        "h": 56
+      },
+      "tickerUsedPx": 510,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 846,
+        "h": 590
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 590
+      },
+      "form": {
+        "x": 1136,
+        "y": 112,
+        "w": 300,
+        "h": 590
+      },
+      "bottom": {
+        "x": 4,
+        "y": 706,
+        "w": 1432,
+        "h": 190
+      },
+      "namesClipped": [
+        "XAUUSD",
+        "XAGUSD",
+        "XPTUSD",
+        "XPDUSD",
+        "WTIUSD",
+        "XBRUSD",
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.1366",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1358,
+        "h": 56
+      },
+      "tickerUsedPx": 510,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 772,
+        "h": 590
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 590
+      },
+      "form": {
+        "x": 1062,
+        "y": 112,
+        "w": 300,
+        "h": 590
+      },
+      "bottom": {
+        "x": 4,
+        "y": 706,
+        "w": 1358,
+        "h": 190
+      },
+      "namesClipped": [
+        "XAUUSD",
+        "XAGUSD",
+        "XPTUSD",
+        "XPDUSD",
+        "WTIUSD",
+        "XBRUSD",
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.1024",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1016,
+        "h": 56
+      },
+      "tickerUsedPx": 510,
+      "chart": {
+        "x": 4,
+        "y": 436,
+        "w": 712,
+        "h": 600
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 1016,
+        "h": 320
+      },
+      "form": {
+        "x": 720,
+        "y": 436,
+        "w": 300,
+        "h": 600
+      },
+      "bottom": {
+        "x": 4,
+        "y": 1040,
+        "w": 1016,
+        "h": 210
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.768",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 768,
+        "h": 95
+      },
+      "tickerUsedPx": 1468,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 768,
+        "h": 531
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.430",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 430,
+        "h": 95
+      },
+      "tickerUsedPx": 792,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 430,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.390",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 390,
+        "h": 95
+      },
+      "tickerUsedPx": 712,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 390,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.360",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 360,
+        "h": 95
+      },
+      "tickerUsedPx": 652,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 360,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.320",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 320,
+        "h": 95
+      },
+      "tickerUsedPx": 572,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 320,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    }
+  ],
+  "perf": {
+    "layout.1920": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1912,
+        "h": 56
+      },
+      "tickerUsedPx": 510,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 1326,
+        "h": 770
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 770
+      },
+      "form": {
+        "x": 1616,
+        "y": 112,
+        "w": 300,
+        "h": 770
+      },
+      "bottom": {
+        "x": 4,
+        "y": 886,
+        "w": 1912,
+        "h": 190
+      },
+      "namesClipped": [
+        "XAUUSD",
+        "XAGUSD",
+        "XPTUSD",
+        "XPDUSD",
+        "WTIUSD",
+        "XBRUSD",
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.1440": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1432,
+        "h": 56
+      },
+      "tickerUsedPx": 510,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 846,
+        "h": 590
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 590
+      },
+      "form": {
+        "x": 1136,
+        "y": 112,
+        "w": 300,
+        "h": 590
+      },
+      "bottom": {
+        "x": 4,
+        "y": 706,
+        "w": 1432,
+        "h": 190
+      },
+      "namesClipped": [
+        "XAUUSD",
+        "XAGUSD",
+        "XPTUSD",
+        "XPDUSD",
+        "WTIUSD",
+        "XBRUSD",
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.1366": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1358,
+        "h": 56
+      },
+      "tickerUsedPx": 510,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 772,
+        "h": 590
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 590
+      },
+      "form": {
+        "x": 1062,
+        "y": 112,
+        "w": 300,
+        "h": 590
+      },
+      "bottom": {
+        "x": 4,
+        "y": 706,
+        "w": 1358,
+        "h": 190
+      },
+      "namesClipped": [
+        "XAUUSD",
+        "XAGUSD",
+        "XPTUSD",
+        "XPDUSD",
+        "WTIUSD",
+        "XBRUSD",
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.1024": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1016,
+        "h": 56
+      },
+      "tickerUsedPx": 510,
+      "chart": {
+        "x": 4,
+        "y": 436,
+        "w": 712,
+        "h": 600
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 1016,
+        "h": 320
+      },
+      "form": {
+        "x": 720,
+        "y": 436,
+        "w": 300,
+        "h": 600
+      },
+      "bottom": {
+        "x": 4,
+        "y": 1040,
+        "w": 1016,
+        "h": 210
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.768": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 768,
+        "h": 95
+      },
+      "tickerUsedPx": 1468,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 768,
+        "h": 531
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.430": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 430,
+        "h": 95
+      },
+      "tickerUsedPx": 792,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 430,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.390": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 390,
+        "h": 95
+      },
+      "tickerUsedPx": 712,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 390,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.360": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 360,
+        "h": 95
+      },
+      "tickerUsedPx": 652,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 360,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.320": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 320,
+        "h": 95
+      },
+      "tickerUsedPx": 572,
+      "chart": {
+        "x": 0,
+        "y": 253,
+        "w": 320,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "intervals": [
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    }
+  },
+  "screenshots": [
+    "cfd-before-1920.png",
+    "cfd-before-1440.png",
+    "cfd-before-1366.png",
+    "cfd-before-1024.png",
+    "cfd-before-768.png",
+    "cfd-before-430.png",
+    "cfd-before-390.png",
+    "cfd-before-360.png",
+    "cfd-before-320.png"
+  ],
+  "requests": [
+    {
+      "at": 1792040603806,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792040603809,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792040603810,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792040603811,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792040603849,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=320"
+    },
+    {
+      "at": 1792040603851,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792040609071,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792040609072,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792040609073,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792040609075,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792040609076,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=320"
+    },
+    {
+      "at": 1792040609077,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792040611147,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792040611147,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792040611148,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792040611149,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792040611149,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=320"
+    },
+    {
+      "at": 1792040611150,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792040613262,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792040613263,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792040613263,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792040613264,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792040613265,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=320"
+    },
+    {
+      "at": 1792040613265,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792040615394,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792040615395,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792040615396,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792040615398,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792040615399,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=320"
+    },
+    {
+      "at": 1792040615399,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792040617431,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792040617431,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792040617432,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792040617433,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792040617433,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=320"
+    },
+    {
+      "at": 1792040617434,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792040619435,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792040619435,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792040619436,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792040619436,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792040619437,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=320"
+    },
+    {
+      "at": 1792040619437,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792040621392,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792040621393,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792040621394,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792040621395,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792040621396,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=320"
+    },
+    {
+      "at": 1792040621396,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792040623378,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792040623379,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792040623381,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792040623381,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792040623382,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=320"
+    },
+    {
+      "at": 1792040623382,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    }
+  ],
+  "blockedWrites": 0,
+  "blockedHosts": [
+    "fonts.googleapis.com"
+  ],
+  "pageErrors": [],
+  "completedAt": "2026-10-15T05:03:45.124Z"
+}

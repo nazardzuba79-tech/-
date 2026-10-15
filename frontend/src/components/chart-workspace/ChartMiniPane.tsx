@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CandlestickSeries, ColorType, CrosshairMode, HistogramSeries, LineStyle, createChart, type IChartApi, type ISeriesApi, type Time } from 'lightweight-charts';
 import { browserClearInterval, browserSetInterval, isBrowserInactive } from '../../lib/browserActivity';
-import { chartCapabilities, resolveTimeframe } from '../../lib/chartCapabilities';
+import { chartCapabilities, resolveTimeframe, type ChartMarket } from '../../lib/chartCapabilities';
 import { CHART_CANDLE_LOADERS, candleHistoryStart } from '../../lib/chartCandleLoaders';
 import { loadChartCandles } from '../../lib/chartCandleSource';
 import { getChartSettings, rgbaOf, subscribeChartSettings, type ChartSettings } from '../../lib/chartSettings';
@@ -14,7 +14,7 @@ import { ICONS } from './chartWorkspaceIcons';
 
 export interface ChartMiniPaneProps {
   index: number;
-  market: 'spot' | 'futures';
+  market: ChartMarket;
   pair: string | null;
   /** The pane's own interval, or the main chart's when it has none; shown as the nearest one its source serves. */
   timeframe: ChartTimeframe;
@@ -167,9 +167,10 @@ export function ChartMiniPane({ index, market, pair, timeframe, instruments, onC
   useEffect(() => {
     const s = settings;
     seriesRef.current?.applyOptions({ upColor: s.bodyUp, downColor: s.bodyDown, wickUpColor: s.wickUp, wickDownColor: s.wickDown, borderUpColor: s.borderUp, borderDownColor: s.borderDown, borderVisible: s.border });
-    volumeRef.current?.applyOptions({ visible: s.volume });
+    // A source without traded volume (CFD) shows none, whatever the setting says.
+    volumeRef.current?.applyOptions({ visible: s.volume && (caps?.volume ?? true) });
     if (formatPrice) seriesRef.current?.applyOptions({ priceFormat: { type: 'custom', formatter: formatPrice, minMove: 1e-8 } });
-  }, [settings, formatPrice]);
+  }, [settings, formatPrice, caps?.volume]);
 
   // Data: one identity (instrument + interval + source) per run of this effect. Changing it clears
   // the canvas first, aborts the request in flight and drops any late answer of the old identity.
@@ -201,7 +202,7 @@ export function ChartMiniPane({ index, market, pair, timeframe, instruments, onC
         }
         candlesRef.current = answer.candles;
         series.setData(answer.candles.map(c => ({ time: c.time as Time, open: c.open, high: c.high, low: c.low, close: c.close })));
-        volume.setData(answer.candles.map(c => ({ time: c.time as Time, value: c.volume, color: c.close >= c.open ? up : down })));
+        volume.setData(caps.volume ? answer.candles.map(c => ({ time: c.time as Time, value: c.volume, color: c.close >= c.open ? up : down })) : []);
         setLast(answer.candles[answer.candles.length - 1].close);
         setStaleSince(null);
         setState('ok');

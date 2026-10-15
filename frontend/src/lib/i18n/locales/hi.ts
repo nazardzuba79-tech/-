@@ -2080,6 +2080,7 @@ export const HI: Record<Key, string> = {
   'chart.ws.compare.source': "{market} डेटा",
   'chart.ws.compare.spot': "स्पॉट",
   'chart.ws.compare.futures': "फ्यूचर्स",
+  'chart.ws.compare.cfd': "CFD",
   'chart.ws.layout': "लेआउट",
   'chart.ws.layout.one': "एक चार्ट",
   'chart.ws.layout.two': "दो चार्ट",

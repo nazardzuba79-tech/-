@@ -2109,6 +2109,7 @@ export const EN: Record<Key, string> = {
   'chart.ws.compare.source': "{market} data",
   'chart.ws.compare.spot': "Spot",
   'chart.ws.compare.futures': "Futures",
+  'chart.ws.compare.cfd': "CFD",
   'chart.ws.layout': "Layout",
   'chart.ws.layout.one': "One chart",
   'chart.ws.layout.two': "Two charts",

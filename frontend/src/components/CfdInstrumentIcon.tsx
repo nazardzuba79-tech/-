@@ -1,49 +1,63 @@
+import { useState } from 'react';
+import { cfdAsset, CURRENCY_FLAG, isCfdCurrency, type CfdAssetIdentity } from '../lib/cfdAssetIdentity';
+import eu from '../assets/cfd-flags/eu.svg';
+import us from '../assets/cfd-flags/us.svg';
+import gb from '../assets/cfd-flags/gb.svg';
+import jp from '../assets/cfd-flags/jp.svg';
+import au from '../assets/cfd-flags/au.svg';
+import ca from '../assets/cfd-flags/ca.svg';
+import ch from '../assets/cfd-flags/ch.svg';
+import nz from '../assets/cfd-flags/nz.svg';
+import gold from '../assets/cfd-marks/gold.svg';
+import silver from '../assets/cfd-marks/silver.svg';
+import platinum from '../assets/cfd-marks/platinum.svg';
+import palladium from '../assets/cfd-marks/palladium.svg';
+import wti from '../assets/cfd-marks/wti.svg';
+import brent from '../assets/cfd-marks/brent.svg';
 import './CfdInstrumentIcon.css';
 
-type IconKind='metal'|'wti'|'brent'|'fx';
+/** flag-icons (MIT) square flags, bundled: a few hundred bytes each, inlined by the build. */
+const FLAG_SRC: Record<string, string> = { eu, us, gb, jp, au, ca, ch, nz };
+/** VOLTEX's own commodity marks (assets/cfd-marks, drawn for this terminal): ingot stacks for the
+ * precious metals, a crude-oil drop for the two benchmarks. Shown the way exchanges and TradingView
+ * show a commodity pair: the asset's mark with the quote currency's flag over its corner. */
+const COMMODITY_SRC: Record<string, string> = { XAUUSD: gold, XAGUSD: silver, XPTUSD: platinum, XPDUSD: palladium, WTIUSD: wti, XBRUSD: brent };
 
-const METALS=new Set(['XAUUSD','XAGUSD','XPTUSD','XPDUSD']);
-const FX=new Set(['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD']);
+function Flag({ code, className }: { code: string; className: string }) {
+  const [failed, setFailed] = useState(false);
+  const flag = isCfdCurrency(code) ? CURRENCY_FLAG[code] : null;
+  const src = flag ? FLAG_SRC[flag] : undefined;
+  // A flag that cannot be shown becomes the currency code: never a broken image.
+  if (!src || failed) return <span className={`${className} cfd-flag-fallback`}>{code.slice(0, 3)}</span>;
+  return <img className={className} src={src} alt="" width={16} height={16} draggable={false} decoding="async" onError={() => setFailed(true)} />;
+}
 
-function kindOf(symbol:string):IconKind{
-  if(METALS.has(symbol))return'metal';
-  if(symbol==='WTIUSD')return'wti';
-  if(symbol==='XBRUSD')return'brent';
-  return FX.has(symbol)?'fx':'fx';
+function CommodityMark({ symbol, fallback }: { symbol: string; fallback: string }) {
+  const [failed, setFailed] = useState(false);
+  const src = COMMODITY_SRC[symbol];
+  if (!src || failed) return <span className="cfd-flag cfd-flag-base cfd-flag-fallback">{fallback}</span>;
+  return <img className="cfd-flag cfd-flag-base cfd-commodity" src={src} alt="" width={16} height={16} draggable={false} decoding="async" onError={() => setFailed(true)} />;
+}
+
+function Mark({ asset }: { asset: CfdAssetIdentity }) {
+  // Owner (2026-10-15): metals and oil read like on other exchanges — the asset's own mark, then the
+  // quote currency's flag; currency pairs keep their two flags.
+  const base = asset.assetClass === 'forex'
+    ? <Flag code={asset.base} className="cfd-flag cfd-flag-base" />
+    : <CommodityMark symbol={asset.symbol} fallback={asset.mark.slice(0, 3)} />;
+  return <>{base}<Flag code={asset.quote} className="cfd-flag cfd-flag-quote" /></>;
 }
 
 /**
- * Premium CFD instrument mark rendered entirely as inline SVG.
- *
- * No image element, remote asset, provider icon, CDN or API request is involved.
- * The surrounding terminal already contains the symbol/name for accessible
- * identification, so this mark is decorative.
+ * One mark per CFD instrument from the asset registry (lib/cfdAssetIdentity):
+ * the two currencies' flags for a pair, the commodity's mark and the quote
+ * currency's flag for a metal or oil. Decorative — the symbol and the name sit beside it.
+ * An instrument the registry does not know gets its first three letters.
  */
-export function CfdInstrumentIcon({symbol,compact=false}:{symbol:string;compact?:boolean}){
-  const kind=kindOf(symbol);
-  return <span className={`cfd-instrumentIcon cfd-instrumentIcon-${symbol} cfd-instrumentIcon-${kind}${compact?' cfd-instrumentIcon--compact':''}`} aria-hidden="true">
-    <svg viewBox="0 0 32 32" focusable="false">
-      {kind==='metal'&&<>
-        <path className="cfd-icon-primary" d="M8.25 21.25 11.1 11.5h9.8l2.85 9.75H8.25Z"/>
-        <path className="cfd-icon-secondary" d="M11.1 11.5 16 8.8l4.9 2.7M12 17.2h8"/>
-        <path className="cfd-icon-shine" d="M23.8 8.1v3.2M22.2 9.7h3.2"/>
-      </>}
-      {kind==='wti'&&<>
-        <ellipse className="cfd-icon-primary" cx="16" cy="9.3" rx="6.8" ry="2.7"/>
-        <path className="cfd-icon-primary" d="M9.2 9.3v13.2c0 1.5 3 2.7 6.8 2.7s6.8-1.2 6.8-2.7V9.3"/>
-        <path className="cfd-icon-secondary" d="M9.2 15.7c0 1.5 3 2.7 6.8 2.7s6.8-1.2 6.8-2.7M9.2 21c0 1.5 3 2.7 6.8 2.7s6.8-1.2 6.8-2.7"/>
-      </>}
-      {kind==='brent'&&<>
-        <path className="cfd-icon-primary cfd-icon-fill-soft" d="M16 6.8c-1.8 3.2-6.3 8.2-6.3 12.6A6.3 6.3 0 0 0 16 25.7a6.3 6.3 0 0 0 6.3-6.3C22.3 15 17.8 10 16 6.8Z"/>
-        <path className="cfd-icon-secondary" d="M12.7 20.1c.5 1.6 1.7 2.5 3.5 2.7"/>
-        <path className="cfd-icon-shine" d="M22.8 7.2v3M21.3 8.7h3"/>
-      </>}
-      {kind==='fx'&&<>
-        <circle className="cfd-icon-secondary cfd-icon-fill-soft" cx="11.2" cy="12.2" r="5.1"/>
-        <circle className="cfd-icon-primary cfd-icon-fill-soft" cx="20.8" cy="19.8" r="5.1"/>
-        <path className="cfd-icon-primary" d="M8.3 22.8h6.5l-2-2M23.7 9.2h-6.5l2 2"/>
-        <path className="cfd-icon-secondary" d="M14.8 22.8a8.3 8.3 0 0 0 8.3-8.3M17.2 9.2a8.3 8.3 0 0 0-8.3 8.3"/>
-      </>}
-    </svg>
+export function CfdInstrumentIcon({ symbol, compact = false }: { symbol: string; compact?: boolean }) {
+  const asset = cfdAsset(symbol);
+  const kind = asset?.assetClass ?? 'unknown';
+  return <span className={`cfd-instrumentIcon cfd-instrumentIcon-${symbol} cfd-mark-${kind}${compact ? ' cfd-instrumentIcon--compact' : ''}`} aria-hidden="true" data-cfd-mark={asset?.mark ?? ''}>
+    {asset ? <Mark asset={asset} /> : <span className="cfd-element">{symbol.slice(0, 3)}</span>}
   </span>;
 }

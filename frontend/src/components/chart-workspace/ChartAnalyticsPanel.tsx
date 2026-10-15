@@ -20,6 +20,8 @@ export interface ChartAnalyticsPanelProps {
   sameQuote: boolean;
   formatPrice: (value: number) => string;
   formatVolume: (value: number) => string;
+  /** False where the bars carry no traded volume (CFD): the row is left out rather than shown as 0. */
+  volume?: boolean;
   lang: string;
   t: (key: Key, params?: Record<string, string | number>) => string;
   nowMs: number;
@@ -30,7 +32,7 @@ const utc = (seconds: number) => new Date(seconds * 1000).toISOString().slice(0,
 const num = (value: number | null, digits = 2, lang = 'ru') => (value === null || !Number.isFinite(value) ? '—' : value.toLocaleString(lang === 'ru' ? 'ru-RU' : lang, { minimumFractionDigits: digits, maximumFractionDigits: digits }));
 
 /** «Аналитика»: the period's figures, relative strength against compared instruments, and volatility — all from the loaded bars. */
-export function ChartAnalyticsPanel({ candles, timeframe, period, onPeriod, visibleRange, mainPair, compare, sameQuote, formatPrice, formatVolume, lang, t, nowMs, onClose }: ChartAnalyticsPanelProps) {
+export function ChartAnalyticsPanel({ candles, timeframe, period, onPeriod, visibleRange, mainPair, compare, sameQuote, formatPrice, formatVolume, volume = true, lang, t, nowMs, onClose }: ChartAnalyticsPanelProps) {
   const bars = useMemo(() => periodBars(candles, period, visibleRange), [candles, period, visibleRange]);
   const stats = useMemo(() => periodStats(bars, timeframe, nowMs), [bars, timeframe, nowMs]);
   const vol = useMemo(() => volatilityStats(bars, timeframe, { nowMs }), [bars, timeframe, nowMs]);
@@ -55,7 +57,7 @@ export function ChartAnalyticsPanel({ candles, timeframe, period, onPeriod, visi
             <div className="cw-row-line"><dt>{t('chart.ws.stat.high')}</dt><dd>{formatPrice(stats.high)}</dd></div>
             <div className="cw-row-line"><dt>{t('chart.ws.stat.low')}</dt><dd>{formatPrice(stats.low)}</dd></div>
             <div className="cw-row-line"><dt>{t('chart.ws.stat.range')}</dt><dd>{`${formatPrice(stats.range)} (${num(stats.rangePct, 2, lang)}%)`}</dd></div>
-            <div className="cw-row-line"><dt>{t('chart.ws.stat.volume')}</dt><dd>{formatVolume(stats.volume)}</dd></div>
+            {volume && <div className="cw-row-line"><dt>{t('chart.ws.stat.volume')}</dt><dd>{formatVolume(stats.volume)}</dd></div>}
             <div className="cw-row-line"><dt>{t('chart.ws.stat.bars')}</dt><dd>{stats.completed}{stats.hasForming ? ` ${t('chart.ws.stat.forming')}` : ''}</dd></div>
             {stats.bestBar && <div className="cw-row-line is-up"><dt>{t('chart.ws.stat.best')}</dt><dd>{`${pct(stats.bestBar.changePct)} · ${utc(stats.bestBar.time)}`}</dd></div>}
             {stats.worstBar && <div className="cw-row-line is-down"><dt>{t('chart.ws.stat.worst')}</dt><dd>{`${pct(stats.worstBar.changePct)} · ${utc(stats.worstBar.time)}`}</dd></div>}

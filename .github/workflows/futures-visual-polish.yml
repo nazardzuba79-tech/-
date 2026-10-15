@@ -26,7 +26,7 @@ on:
       - 'frontend/src/lib/__tests__/mobileTradeDeposit.test.ts'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/lib/__tests__/terminalMobileParity.test.ts'
-      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/lib/cfdCandles.ts'
       - 'frontend/src/lib/__tests__/terminalDesignSystem.test.ts'
       - 'frontend/src/components/FuturesOrderForm.tsx'
       - 'frontend/src/components/FuturesPositionsPanel.tsx'

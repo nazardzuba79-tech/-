@@ -24,9 +24,18 @@ on:
       - 'frontend/src/pages/trade-terminal/CfdInfoStrip.css'
       - 'frontend/src/lib/__tests__/cfdDisplayOnly.test.ts'
       - 'frontend/src/lib/__tests__/cfdTerminal.test.ts'
+      - 'frontend/src/lib/__tests__/cfdChartWorkspace.test.ts'
+      - 'frontend/src/lib/useCfdDailySeries.ts'
+      - 'frontend/src/lib/useCfdPracticePositions.ts'
+      - 'frontend/src/lib/chartSessions.ts'
+      - 'frontend/src/assets/cfd-flags/**'
+      - 'frontend/src/assets/cfd-marks/**'
+      - 'frontend/src/pages/trade-terminal/CfdWorkspace.css'
+      - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/home/**'
       - 'frontend/src/pages/trade-terminal/CfdPractice.css'
       - 'scripts/qa-cfd-display-browser.cjs'
+      - 'scripts/qa-cfd-workspace.cjs'
       - 'scripts/cfd-browser-readiness.cjs'
       - 'scripts/test-cfd-browser-readiness.cjs'
       - '.github/workflows/cfd-display-only.yml'
@@ -58,7 +67,7 @@ jobs:
       - name: Market-data collector build
         run: npx tsc -p tsconfig.collector.json
       - name: Market-data and CFD regression tests
-        run: npm test -- --runInBand --silent --runTestsByPath src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts src/services/marketData/live/__tests__/CollectorDepthRouting.test.ts src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts src/cfd/__tests__/CfdDisplaySelfTest.test.ts src/cfd/__tests__/CfdDerivRequestId.test.ts src/cfd/__tests__/CfdDerivShutdown.test.ts src/cfd/__tests__/CfdDisplayFeedLifecycle.test.ts src/cfd/__tests__/CfdQuoteSafety.test.ts src/cfd/__tests__/CfdQuoteRoutes.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts src/cfd/__tests__/CfdDailySessionBudget.test.ts frontend/src/lib/__tests__/cfdInfoStrip.test.ts
+        run: npm test -- --runInBand --silent --runTestsByPath src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts src/services/marketData/live/__tests__/CollectorDepthRouting.test.ts src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts src/cfd/__tests__/CfdDisplaySelfTest.test.ts src/cfd/__tests__/CfdDerivRequestId.test.ts src/cfd/__tests__/CfdDerivShutdown.test.ts src/cfd/__tests__/CfdDisplayFeedLifecycle.test.ts src/cfd/__tests__/CfdQuoteSafety.test.ts src/cfd/__tests__/CfdQuoteRoutes.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts src/cfd/__tests__/CfdDailySessionBudget.test.ts frontend/src/lib/__tests__/cfdInfoStrip.test.ts frontend/src/lib/__tests__/cfdChartWorkspace.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
@@ -70,16 +79,24 @@ jobs:
         run: |
           npm install --prefix /tmp/voltex-cfd-display-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/voltex-cfd-display-qa/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Browser QA — prices, owned chart and practice orders
+      - name: Browser QA — prices, chart and practice orders
         env:
           CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-display-qa/node_modules/playwright
         run: node scripts/qa-cfd-display-browser.cjs
+      # 2026-10-15: the shared Chart Workspace on the CFD chart, on the same loopback host and real display route.
+      - name: Browser QA — CFD chart workspace (intervals, types, indicators, compare, 1/2/4 charts, drawings, templates, list, practice cycle, phones)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-cfd-display-qa/node_modules/playwright
+          LANG: en_US.UTF-8
+        run: node scripts/qa-cfd-workspace.cjs --dist frontend/dist --out output/cfd-workspace --phase ci
       - name: Preserve browser evidence
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: cfd-working-terminal-browser
-          path: docs/qa/cfd-display-browser/
+          path: |
+            docs/qa/cfd-display-browser/
+            output/cfd-workspace/
           retention-days: 7
   public-sources:
     runs-on: ubuntu-latest

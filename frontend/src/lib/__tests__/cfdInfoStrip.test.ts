@@ -238,8 +238,12 @@ describe('strip model', () => {
 describe('strip component and copy', () => {
   test('the ticker bar renders the strip from the shared daily series and shows no provider percent', () => {
     const source = read('components/CfdTickerBar.tsx');
-    for (const needle of ['useCfdDailySession', 'cfdInfoStripModel', 'cfd-info-strip', 'cfd-ticker-day-change', 'cfd-ticker-day-range', 'cfd-market-state', 'cfd-state-pill', 'cfd-pair-cluster', '<CfdInstrumentIcon symbol={symbol} compact />'])
+    // 2026-10-15: the day range is two figures (session high, session low) in the compact stats bar.
+    for (const needle of ['useCfdDailySession', 'cfdInfoStripModel', 'cfd-info-strip', 'cfd-ticker-day-change', 'cfd-ticker-day-high', 'cfd-ticker-day-low', 'cfd-market-state', 'cfd-state-pill', 'cfd-pair-cluster', '<CfdInstrumentIcon symbol={symbol} compact />'])
       expect(source).toContain(needle);
+    // No figure an OTC CFD quote does not have (the doc comment names them; the code does not).
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    expect(code).not.toMatch(/funding|openInterest|turnover|volume24h/i);
     expect(source).not.toContain('changePercent24h');
     expect(source).not.toContain('cfd-product-badge');
   });

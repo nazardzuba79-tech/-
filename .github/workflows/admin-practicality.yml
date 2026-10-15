@@ -11,6 +11,7 @@ on:
       - 'scripts/qa-admin-workflow-interactions.cjs'
       - 'scripts/qa-admin-api-compatibility.cjs'
       - 'scripts/qa-admin-adjustment-placement.cjs'
+      - 'scripts/qa-admin-sort-deposits.cjs'
       - '.github/workflows/admin-practicality.yml'
 permissions:
   contents: read
@@ -58,6 +59,10 @@ jobs:
           QA_COMPATIBILITY: '1'
           QA_OUT: output/admin-practicality/api-compatibility
         run: node scripts/qa-admin-practicality.cjs
+      - name: Users header sorting and the Пополнения layout at six widths
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright
+        run: node scripts/qa-admin-sort-deposits.cjs --dist frontend/dist --out output/admin-practicality/sort-deposits
       - name: Deposits adjustment entry, confirmation and timeout recovery
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright
