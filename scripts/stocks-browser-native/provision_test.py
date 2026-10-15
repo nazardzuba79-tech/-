@@ -1,10 +1,13 @@
 """Pure fixture validation; never calls provision, downloads, root tools or Chrome."""
 import importlib.util
+from contextlib import ExitStack
 import io
 import pathlib
 import tarfile
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 HERE = pathlib.Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location('native_provision', HERE / 'provision.py')
@@ -13,6 +16,92 @@ SPEC.loader.exec_module(P)
 
 
 class NativePureTests(unittest.TestCase):
+    def test_socket_bounds_include_all_agent_suffixes_and_terminating_nul(self):
+        sizes = P.gpg_socket_bounds('/run/vsg-fixture/i')
+        self.assertEqual(set(sizes), {'S.gpg-agent', 'S.gpg-agent.extra', 'S.gpg-agent.browser', 'S.gpg-agent.ssh'})
+        for suffix, size in sizes.items():
+            self.assertEqual(size, len(('/run/vsg-fixture/i/' + suffix).encode()) + 1)
+        for name in ['gpg-import', 'gpg-trusted']:
+            with self.assertRaisesRegex(ValueError, 'pathname bound'):
+                P.gpg_socket_bounds(P.PREFIX.as_posix() + '/verification/' + name)
+        longest_suffix = 'S.gpg-agent.browser'
+        home = '/' + 'x' * (108 - len(longest_suffix) - 3)
+        self.assertEqual(max(P.gpg_socket_bounds(home).values()), 108)
+        for invalid in [home + 'x', '/' + 'é' * 60, '/run/../other', 'relative', '/run/bad\0value']:
+            with self.assertRaises(ValueError):
+                P.gpg_socket_bounds(invalid)
+
+    def test_gpg_scratch_identity_rejects_path_owner_mode_inode_and_link_changes(self):
+        expected = {'path': '/run/vsg-fixture', 'ino': 12, 'dev': 34}
+        observed = {**expected, 'resolved': expected['path'], 'uid': 0, 'gid': 0, 'mode': 0o700, 'directory': True, 'symlink': False}
+        P.validate_gpg_scratch(observed, expected)
+        for changed in [{'resolved': '/run/elsewhere'}, {'uid': 1001}, {'gid': 1001}, {'mode': 0o755}, {'directory': False}, {'symlink': True}, {'ino': 13}, {'dev': 35}]:
+            with self.assertRaises(ValueError):
+                P.validate_gpg_scratch({**observed, **changed}, expected)
+        with self.assertRaises(ValueError):
+            P.validate_gpg_scratch({**observed, 'path': '/tmp/vsg-fixture'}, {**expected, 'path': '/tmp/vsg-fixture'})
+
+    def scratch_mocks(self):
+        observed = {'path': '/run/vsg-fixture', 'resolved': '/run/vsg-fixture', 'uid': 0, 'gid': 0, 'mode': 0o700, 'directory': True, 'symlink': False, 'ino': 12, 'dev': 34}
+        stack = ExitStack()
+        stack.enter_context(mock.patch.object(P, 'protected'))
+        stack.enter_context(mock.patch.object(P.tempfile, 'mkdtemp', return_value='/run/vsg-fixture'))
+        observation = stack.enter_context(mock.patch.object(P, 'gpg_scratch_observation', return_value=observed))
+        stack.enter_context(mock.patch.object(P.pathlib.Path, 'mkdir'))
+        stack.enter_context(mock.patch.object(P.pathlib.Path, 'lstat', return_value=SimpleNamespace(st_mode=P.stat.S_IFDIR | 0o700)))
+        stack.enter_context(mock.patch.object(P.pathlib.Path, 'exists', return_value=False))
+        removal = stack.enter_context(mock.patch.object(P.shutil, 'rmtree'))
+        removal.avoids_symlink_attacks = True
+        return stack, removal, observation
+
+    def test_gpg_scratch_cleanup_on_success_import_failure_and_mock_term(self):
+        for outcome in ['success', 'import-failure', 'term']:
+            with self.subTest(outcome=outcome):
+                stack, removal, _ = self.scratch_mocks()
+                with stack, mock.patch.object(P.signal, 'getsignal', return_value='previous-handler'), mock.patch.object(P.signal, 'signal') as handlers:
+                    proof = {'status': 'NOT_CREATED'}
+                    def flow():
+                        with P.provision_signals():
+                            with P.temporary_gpg_homes(proof) as homes:
+                                self.assertEqual([home.as_posix() for home in homes], ['/run/vsg-fixture/i', '/run/vsg-fixture/t'])
+                                if outcome == 'import-failure':
+                                    raise ValueError('mock GPG nonzero import')
+                                if outcome == 'term':
+                                    handlers.call_args_list[0].args[1](P.signal.SIGTERM, None)
+                    if outcome == 'success':
+                        flow()
+                    else:
+                        with self.assertRaisesRegex((ValueError, RuntimeError), 'mock GPG|interrupted by signal'):
+                            flow()
+                    removal.assert_called_once()
+                    self.assertEqual(proof['status'], 'PASS')
+                    self.assertLessEqual(proof['maximumSocketBytesIncludingNul'], 108)
+                    self.assertEqual(handlers.call_args_list[-2].args, (P.signal.SIGTERM, 'previous-handler'))
+                    self.assertEqual(handlers.call_args_list[-1].args, (P.signal.SIGINT, 'previous-handler'))
+
+    def test_gpg_cleanup_failure_or_replaced_directory_never_claims_success(self):
+        for tampered in [False, True]:
+            stack, removal, observation = self.scratch_mocks()
+            with stack:
+                if tampered:
+                    initial = observation.return_value
+                    observation.side_effect = [initial, {**initial, 'ino': 99}]
+                else:
+                    removal.side_effect = OSError('mock cleanup failure')
+                proof = {'status': 'NOT_CREATED'}
+                with self.assertRaisesRegex(RuntimeError, 'cleanup FAIL'):
+                    with P.temporary_gpg_homes(proof):
+                        pass
+                self.assertEqual(proof['status'], 'FAIL')
+                if tampered:
+                    removal.assert_not_called()
+
+    def test_gpg_command_nonzero_is_still_a_hard_failure(self):
+        with mock.patch.object(P.subprocess, 'run', return_value=SimpleNamespace(returncode=1)) as process:
+            with self.assertRaisesRegex(ValueError, 'command failed'):
+                P.command(['/usr/bin/gpg', '--no-autostart', '--import', 'fixture'])
+            process.assert_called_once()
+
     def test_signing_rejects_invalid_records(self):
         now = 1792058400000
         created = now // 1000 - 3600

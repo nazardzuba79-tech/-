@@ -25,6 +25,20 @@ Chrome payload. No deb maintainer scripts run. Only newly extracted executable
 modes are normalized; setuid/setgid bits are not installed. Namespace sandbox
 qualification must succeed without them.
 
+GPG key import and verification use two temporary homes in a fresh root-owned
+0700 directory under `/run`. They cannot live beneath the long package-SHA
+prefix: the previous import socket name was 131 bytes before its terminating
+NUL, exceeding Linux's 108-byte Unix-socket field. The guard bounds all four
+agent socket suffixes including NUL before invoking GPG. `--no-autostart` and
+every nonzero-exit rejection remain unchanged; no agent is started. A managed
+`finally` validates exact path, root ownership, type, mode, inode and device
+before removing only its own short directory on success, error or handled TERM.
+Prior signal handlers are restored. Cleanup failure fails provisioning. Successful
+cleanup metadata is retained in public provenance without the random temporary
+path. SIGKILL or VM loss cannot run cleanup; disposable-VM teardown remains the
+backstop. This source repair requires fresh-head qualification, not a claim that
+the failed browser job passed.
+
 Playwright and playwright-core 1.56.1 tarballs are verified against the exact npm
 lock SRI and extracted without npm, lifecycle scripts or browser downloads. Npm
 signature/attestation provenance is not independently claimed. This keeps the
@@ -88,4 +102,6 @@ Primary references:
 - https://github.com/actions/runner-images/blob/573fa3ad959907712ce8bf6a5f91ab82b03e7f2d/images/ubuntu/Ubuntu2204-Readme.md
 - https://github.com/actions/runner-images/issues/14254
 - https://www.google.com/linuxrepositories/
+- https://github.com/gpg/gnupg/blob/gnupg-2.2.27/common/asshelp.c#L460
+- https://man7.org/linux/man-pages/man7/unix.7.html
 - https://playwright.dev/docs/browsers#chromium-sandbox

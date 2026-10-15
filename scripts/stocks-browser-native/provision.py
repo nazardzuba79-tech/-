@@ -5,6 +5,7 @@ old installation chmod, or privileged Node/npm. Invoke with isolated Python (-I)
 """
 import argparse
 import base64
+from contextlib import contextmanager
 import email.utils
 import gzip
 import hashlib
@@ -19,6 +20,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 import urllib.request
 
@@ -70,6 +72,82 @@ def tool_proof(requested):
     value = resolved.stat()
     require(value.st_size <= 64 * 1024 * 1024, 'bounded system tool')
     return {'requested': requested, 'resolved': str(resolved), 'sha256': digest(resolved.read_bytes()), 'bytes': value.st_size, 'mode': stat.S_IMODE(value.st_mode)}
+
+
+def gpg_socket_bounds(home):
+    """Linux sockaddr_un.sun_path includes the terminating NUL in its 108 bytes."""
+    value = pathlib.PurePosixPath(home).as_posix()
+    require(value == home and value.startswith('/') and '..' not in pathlib.PurePosixPath(value).parts and '\\' not in value and '\0' not in value, 'canonical absolute GNUPGHOME required')
+    sizes = {suffix: len((value + '/' + suffix).encode('utf-8')) + 1
+             for suffix in ['S.gpg-agent', 'S.gpg-agent.extra', 'S.gpg-agent.browser', 'S.gpg-agent.ssh']}
+    require(all(size <= 108 for size in sizes.values()), 'GNUPGHOME exceeds Linux Unix-socket pathname bound')
+    return sizes
+
+
+def gpg_scratch_observation(directory):
+    protected(directory, regular=False)  # Includes every real ancestor, /run and /.
+    value = directory.lstat()
+    return {'path': str(directory), 'resolved': str(directory.resolve(strict=True)),
+            'uid': value.st_uid, 'gid': value.st_gid, 'mode': stat.S_IMODE(value.st_mode),
+            'directory': stat.S_ISDIR(value.st_mode), 'symlink': stat.S_ISLNK(value.st_mode),
+            'ino': value.st_ino, 'dev': value.st_dev}
+
+
+def validate_gpg_scratch(actual, expected):
+    require(re.fullmatch(r'/run/vsg-[A-Za-z0-9_-]{6,16}', expected['path']), 'fixed short GPG scratch parent/name required')
+    require(actual['path'] == actual['resolved'] == expected['path'], 'GPG scratch path identity changed')
+    require(actual['uid'] == actual['gid'] == 0 and actual['mode'] == 0o700, 'GPG scratch must be root-owned 0700')
+    require(actual['directory'] and not actual['symlink'], 'GPG scratch type changed')
+    require(actual['ino'] == expected['ino'] and actual['dev'] == expected['dev'], 'GPG scratch inode/device changed')
+
+
+@contextmanager
+def temporary_gpg_homes(cleanup_proof):
+    """No GC finalizer: cleanup always validates this process's exact allocation."""
+    protected(pathlib.Path('/run'), regular=False)
+    directory, expected = None, None
+    try:
+        directory = pathlib.Path(tempfile.mkdtemp(prefix='vsg-', dir='/run'))
+        initial = gpg_scratch_observation(directory)
+        expected = {key: initial[key] for key in ['path', 'ino', 'dev']}
+        validate_gpg_scratch(initial, expected)
+        homes = [directory / name for name in ['i', 't']]
+        socket_sizes = []
+        for home in homes:
+            socket_sizes.extend(gpg_socket_bounds(home.as_posix()).values())
+            home.mkdir(mode=0o700)
+            protected(home, regular=False)
+            require(stat.S_IMODE(home.lstat().st_mode) == 0o700, 'private GNUPGHOME mode')
+        cleanup_proof.update({'status': 'PENDING', 'homes': 2, 'rootOwned': True, 'mode': '0700',
+                              'maximumSocketBytesIncludingNul': max(socket_sizes), 'publicKeysOnly': True})
+        yield homes
+    finally:
+        if directory is not None:
+            try:
+                require(expected is not None, 'GPG scratch ownership was not established')
+                validate_gpg_scratch(gpg_scratch_observation(directory), expected)
+                require(shutil.rmtree.avoids_symlink_attacks, 'symlink-safe GPG cleanup unavailable')
+                shutil.rmtree(directory)
+                require(not directory.exists(), 'GPG scratch cleanup incomplete')
+                cleanup_proof['status'] = 'PASS'
+            except BaseException as error:
+                cleanup_proof.update({'status': 'FAIL', 'reason': str(error)})
+                raise RuntimeError('owned GPG temporary-directory cleanup FAIL: ' + str(error)) from error
+
+
+@contextmanager
+def provision_signals():
+    def stop(signum, _frame):
+        raise RuntimeError('provision interrupted by signal ' + str(signum))
+    previous = {}
+    try:
+        for signum in [signal.SIGTERM, signal.SIGINT]:
+            previous[signum] = signal.getsignal(signum)
+            signal.signal(signum, stop)
+        yield
+    finally:
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
 
 
 def source_files(source_sha):
@@ -328,23 +406,22 @@ def provision(source_sha, run_id):
         for name, key in [('google-key.asc', 'key'), ('InRelease', 'inRelease'), ('Packages.gz', 'packages')]:
             pin = M[key]
             download(pin['url'], verification / name, pin['bytes'], pin['sha256'], pin['bytes'])
-        for name in ['gpg-import', 'gpg-trusted']:
-            (verification / name).mkdir(mode=0o700)
-        original = ['/usr/bin/gpg', '--batch', '--no-options', '--homedir', str(verification / 'gpg-import'), '--no-auto-key-retrieve', '--no-autostart']
-        command(original + ['--import', str(verification / 'google-key.asc')])
-        exported = command(original + ['--export', M['googlePrimaryFingerprint']])
-        trusted = ['/usr/bin/gpg', '--batch', '--no-options', '--homedir', str(verification / 'gpg-trusted'), '--no-auto-key-retrieve', '--no-autostart']
-        command(trusted + ['--import'], data=exported)
-        listing = command(trusted + ['--with-colons', '--fingerprint', '--fingerprint', '--list-keys']).decode()
-        status = command(trusted + ['--status-fd', '1', '--output', str(verification / 'Release'), '--decrypt', str(verification / 'InRelease')]).decode()
-        signature = signing_proof(status, listing, int(time.time() * 1000))
-        release = release_proof((verification / 'Release').read_text(), (verification / 'Packages.gz').read_bytes(), int(time.time() * 1000))
-        os.chmod(verification / 'Release', 0o644)  # New authenticated plaintext output only.
-        (verification / 'gpg-status.txt').write_text(status)
-        (verification / 'key-listing.txt').write_text(listing)
-        # No agent or imported keyring remains; immutable public verification records do.
-        for name in ['gpg-import', 'gpg-trusted']:
-            shutil.rmtree(verification / name)
+        gpg_cleanup = {'status': 'NOT_CREATED'}
+        with temporary_gpg_homes(gpg_cleanup) as (import_home, trusted_home):
+            original = ['/usr/bin/gpg', '--batch', '--no-options', '--homedir', str(import_home), '--no-auto-key-retrieve', '--no-autostart']
+            command(original + ['--import', str(verification / 'google-key.asc')])
+            exported = command(original + ['--export', M['googlePrimaryFingerprint']])
+            trusted = ['/usr/bin/gpg', '--batch', '--no-options', '--homedir', str(trusted_home), '--no-auto-key-retrieve', '--no-autostart']
+            command(trusted + ['--import'], data=exported)
+            listing = command(trusted + ['--with-colons', '--fingerprint', '--fingerprint', '--list-keys']).decode()
+            status = command(trusted + ['--status-fd', '1', '--output', str(verification / 'Release'), '--decrypt', str(verification / 'InRelease')]).decode()
+            signature = signing_proof(status, listing, int(time.time() * 1000))
+            release = release_proof((verification / 'Release').read_text(), (verification / 'Packages.gz').read_bytes(), int(time.time() * 1000))
+            os.chmod(verification / 'Release', 0o644)  # New authenticated plaintext output only.
+            (verification / 'gpg-status.txt').write_text(status)
+            (verification / 'key-listing.txt').write_text(listing)
+        require(gpg_cleanup['status'] == 'PASS', 'GPG temporary-directory cleanup must pass')
+        (verification / 'gpg-scratch-cleanup.json').write_text(json.dumps(gpg_cleanup) + '\n')
         deb = verification / 'google-chrome.deb'
         pin = M['chrome']
         download('https://dl.google.com/linux/chrome/deb/' + pin['filename'], deb, pin['bytes'], pin['sha256'], pin['bytes'])
@@ -374,7 +451,7 @@ def provision(source_sha, run_id):
         proof = {'schema': 1, 'status': 'PASS_AUTHENTICATED_EXTRACTION', 'prefix': str(PREFIX), 'executable': str(PREFIX / 'chrome/chrome'),
                  'package': pin, 'playwrightVersion': M['playwrightVersion'], 'sourceSha': source_sha, 'runId': run_id,
                  'manifestSha256': digest(MANIFEST_BYTES), 'sourceFiles': sources, 'signature': signature, 'release': release,
-                 'dependencies': deps, 'tools': tools, 'npmArchives': npm_archives, 'files': files,
+                 'dependencies': deps, 'tools': tools, 'gpgScratchCleanup': gpg_cleanup, 'npmArchives': npm_archives, 'files': files,
                  'limitations': ['Existing distro dependencies verified by package versions; runtime loader and actual renderer sandbox remain qualification gates.', 'No claim of kernel-level network egress isolation on the native VM.']}
         (PREFIX / 'installation.json').write_text(json.dumps(proof, indent=2) + '\n')
         return {'status': proof['status'], 'prefix': str(PREFIX), 'sourceSha': source_sha, 'runId': run_id, 'payloadFiles': len(files), 'browserExecuted': False, 'hostPolicyChanged': False}
@@ -394,11 +471,8 @@ def main():
     args = parser.parse_args()
     require(re.fullmatch('[a-f0-9]{40}', args.source_sha) and re.fullmatch(r'\d+-\d+', args.run_id), 'exact cleanup/provision identity')
     require(os.getuid() == os.geteuid() == 0 and sys.flags.isolated, 'root isolated interpreter required')
-    def stop(signum, _frame):
-        raise RuntimeError('provision interrupted by signal ' + str(signum))
-    signal.signal(signal.SIGTERM, stop)
-    signal.signal(signal.SIGINT, stop)
-    print(json.dumps(cleanup(args.source_sha, args.run_id) if args.cleanup else provision(args.source_sha, args.run_id)))
+    with provision_signals():
+        print(json.dumps(cleanup(args.source_sha, args.run_id) if args.cleanup else provision(args.source_sha, args.run_id)))
 
 
 if __name__ == '__main__':
