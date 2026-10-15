@@ -16,6 +16,51 @@ SPEC.loader.exec_module(P)
 
 
 class NativePureTests(unittest.TestCase):
+    def metadata_blobs(self):
+        return {'scripts/stocks-browser-native/metadata/' + name: (HERE / 'metadata' / name).read_bytes()
+                for name in ['google-key.asc', 'InRelease', 'Packages.gz']}
+
+    def test_original_metadata_exact_bytes_reject_tamper_truncation_swap_and_missing(self):
+        blobs = self.metadata_blobs()
+        self.assertEqual(set(P.pinned_metadata(blobs)), {'google-key.asc', 'InRelease', 'Packages.gz'})
+        for name, raw in blobs.items():
+            for invalid in [raw[:-1], bytes([raw[0] ^ 1]) + raw[1:], b'', None]:
+                with self.assertRaisesRegex(ValueError, 'metadata (absent|pin mismatch)'):
+                    P.pinned_metadata({**blobs, name: invalid})
+        with self.assertRaises(ValueError):
+            P.pinned_metadata({**blobs, 'scripts/stocks-browser-native/metadata/InRelease': blobs['scripts/stocks-browser-native/metadata/Packages.gz']})
+
+    def test_only_fresh_key_is_fetched_and_must_equal_committed_original(self):
+        snapshots = P.pinned_metadata(self.metadata_blobs())
+        for changed_key in [False, True]:
+            with tempfile.TemporaryDirectory() as temporary:
+                directory = pathlib.Path(temporary)
+                def fake_download(url, destination, maximum, expected_sha, expected_size):
+                    self.assertEqual((url, maximum, expected_sha, expected_size),
+                                     (P.M['key']['url'], P.M['key']['bytes'], P.M['key']['sha256'], P.M['key']['bytes']))
+                    destination.write_bytes(b'changed official key' if changed_key else snapshots['google-key.asc'])
+                with mock.patch.object(P, 'download', side_effect=fake_download) as network:
+                    if changed_key:
+                        with self.assertRaisesRegex(ValueError, 'fresh official key differs'):
+                            P.stage_metadata(directory, snapshots)
+                        self.assertFalse((directory / 'InRelease').exists())
+                    else:
+                        P.stage_metadata(directory, snapshots)
+                        for name in ['InRelease', 'Packages.gz']:
+                            self.assertEqual((directory / name).read_bytes(), snapshots[name])
+                    network.assert_called_once()
+
+    def test_original_signed_metadata_retains_identity_and_72_hour_freshness_limits(self):
+        snapshots = P.pinned_metadata(self.metadata_blobs())
+        text = snapshots['InRelease'].decode().replace('\r\n', '\n').split('\n\n', 1)[1].split('\n-----BEGIN PGP SIGNATURE-----', 1)[0]
+        date = int(P.email.utils.parsedate_to_datetime(P.field(text, 'Date')).timestamp() * 1000)
+        self.assertEqual(P.release_proof(text, snapshots['Packages.gz'], date + 3600000)['date'], date)
+        for now in [date + P.M['metadataMaximumAgeMs'] + 1, date - P.M['metadataFutureToleranceMs'] - 1]:
+            with self.assertRaisesRegex(ValueError, 'Release timestamp'):
+                P.release_proof(text, snapshots['Packages.gz'], now)
+        with self.assertRaisesRegex(ValueError, 'Release identity'):
+            P.release_proof(text.replace('Origin: Google LLC', 'Origin: Untrusted'), snapshots['Packages.gz'], date + 3600000)
+
     def test_socket_bounds_include_all_agent_suffixes_and_terminating_nul(self):
         sizes = P.gpg_socket_bounds('/run/vsg-fixture/i')
         self.assertEqual(set(sizes), {'S.gpg-agent', 'S.gpg-agent.extra', 'S.gpg-agent.browser', 'S.gpg-agent.ssh'})

@@ -203,6 +203,31 @@ def download(url, destination, maximum, expected_sha=None, expected_size=None, i
     return {'sha256': sha256.hexdigest(), 'bytes': total}
 
 
+def pinned_metadata(source_blobs):
+    """Exact original public snapshot, captured from the already admitted Git SHA."""
+    result = {}
+    for name, key in [('google-key.asc', 'key'), ('InRelease', 'inRelease'), ('Packages.gz', 'packages')]:
+        raw = source_blobs.get('scripts/stocks-browser-native/metadata/' + name)
+        require(isinstance(raw, bytes), 'committed public metadata absent: ' + name)
+        require(len(raw) == M[key]['bytes'] and digest(raw) == M[key]['sha256'], 'committed public metadata pin mismatch: ' + name)
+        result[name] = raw
+    return result
+
+
+def stage_metadata(verification, snapshots):
+    # Preserve the live-key update/revocation admission: a changed official key
+    # fails its original pin; a stored key alone cannot silently replace it.
+    pin = M['key']
+    key_file = verification / 'google-key.asc'
+    download(pin['url'], key_file, pin['bytes'], pin['sha256'], pin['bytes'])
+    require(key_file.read_bytes() == snapshots['google-key.asc'], 'fresh official key differs from committed public key')
+    # Release/index URLs are mutable. Their original signed bytes are versioned
+    # source, then verified by the unchanged GPG + expiry/72h chain below.
+    for name in ['InRelease', 'Packages.gz']:
+        with (verification / name).open('xb') as output:
+            output.write(snapshots[name])
+
+
 def field(text, name):
     rows = [line[len(name) + 1:].strip() for line in text.splitlines() if line.startswith(name + ':')]
     require(len(rows) == 1, 'unique metadata field: ' + name)
@@ -394,6 +419,7 @@ def provision(source_sha, run_id):
     require(pathlib.Path(sys.executable).resolve() == interpreter, 'official system interpreter required')
     tools = [tool_proof(tool) for tool in ['/usr/bin/python3', '/usr/bin/git', '/usr/bin/gpg', '/usr/bin/dpkg-deb', '/usr/bin/dpkg-query', '/usr/bin/dpkg']]
     sources, source_blobs = source_files(source_sha)
+    snapshots = pinned_metadata(source_blobs)
     protected(PREFIX.parent, regular=False)
     require(not PREFIX.exists() and not PREFIX.is_symlink(), 'fresh native installation prefix required')
     os.umask(0o022)
@@ -403,9 +429,7 @@ def provision(source_sha, run_id):
     try:
         verification = PREFIX / 'verification'
         verification.mkdir(mode=0o755)
-        for name, key in [('google-key.asc', 'key'), ('InRelease', 'inRelease'), ('Packages.gz', 'packages')]:
-            pin = M[key]
-            download(pin['url'], verification / name, pin['bytes'], pin['sha256'], pin['bytes'])
+        stage_metadata(verification, snapshots)
         gpg_cleanup = {'status': 'NOT_CREATED'}
         with temporary_gpg_homes(gpg_cleanup) as (import_home, trusted_home):
             original = ['/usr/bin/gpg', '--batch', '--no-options', '--homedir', str(import_home), '--no-auto-key-retrieve', '--no-autostart']

@@ -62,6 +62,27 @@ test('complete protected inventory binds all source, backend tests, compiler/con
     const changed = closure(); changed.current.get(name).blob = 'd'.repeat(40); assert.throws(() => gate.verifyClosure(changed), undefined, name);
   }
 });
+test('only the four reviewed metadata paths can inherit; an unknown fifth requires FULL', () => {
+  const names = ['scripts/stocks-browser-native/metadata/google-key.asc',
+    'scripts/stocks-browser-native/metadata/InRelease', 'scripts/stocks-browser-native/metadata/Packages.gz',
+    'scripts/stocks-browser-native/metadata/.gitattributes'];
+  assert.deepEqual([...gate.ALLOWED_PATHS].filter(name => name.startsWith('scripts/stocks-browser-native/metadata/')).sort(), [...names].sort());
+  function add(value, name, reviewed) {
+    const content = value.readHead(name);
+    value.current.set(name, { path: name, mode: '100644', blob: 'd'.repeat(40), bytes: content.length });
+    if (reviewed) value.plan.changes.push({ path: name, beforeBlob: null, beforeMode: null,
+      afterSha256: gate.sha(content), afterMode: '100644' });
+  }
+  const value = closure();
+  for (const name of names) add(value, name, true);
+  assert.ok(gate.verifyClosure(value).protectedFiles > 5000);
+  for (const reviewed of [false, true]) {
+    const changed = closure();
+    for (const name of names) add(changed, name, true);
+    add(changed, 'scripts/stocks-browser-native/metadata/extra.json', reviewed);
+    assert.throws(() => gate.verifyClosure(changed));
+  }
+});
 test('unknown additions/deletions/mode changes, invented allowlists and mismatched evidence require FULL', () => {
   for (const change of [
     x => x.current.set('outside-src/new-input.json', { path: 'outside-src/new-input.json', mode: '100644', blob: 'd'.repeat(40), bytes: 1 }),

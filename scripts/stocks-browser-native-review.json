@@ -15,7 +15,7 @@
       "path": "docs/AI_HANDOFF.md",
       "beforeBlob": "1d41e848459b935a509c8c6e67c7262876998c70",
       "beforeMode": "100644",
-      "afterSha256": "0a3f722470e94c3f4a9c7e10e77efebd651b7ed7a0b53ad48fe11ac718541abc",
+      "afterSha256": "687f80d42159545608d9858e81e5fc3092d0979edf63a8a7f15711a6e979c5b4",
       "afterMode": "100644"
     },
     {
@@ -64,21 +64,21 @@
       "path": "scripts/stocks-browser-native-admission.cjs",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "d507b5d1727def456ad69423c97fc2c4d07fd2ee936c44bc4762ceb8e612cd8f",
+      "afterSha256": "cd5f2d541878692326a3332939c69ba9fb26a3ffb7c997e3c00c9ff4e38dda5b",
       "afterMode": "100644"
     },
     {
       "path": "scripts/stocks-browser-native-admission.test.cjs",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "c381fae33d30360167539486cd4eda2316c0039a0e3364df560bd546a923d762",
+      "afterSha256": "05c8a19fd20d287309e5249e09b3a6ad8342e1cd800a7ed4265107ff608e9014",
       "afterMode": "100644"
     },
     {
       "path": "scripts/stocks-browser-native/README.md",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "c9447dde4271388f0b8b9cb0cb01f656e194bb5540fb43aa2430d9999d0068a4",
+      "afterSha256": "0b306584641610c732c49a13ae20c647056ba93de10785371b5d39cb5c8b7e21",
       "afterMode": "100644"
     },
     {
@@ -110,6 +110,34 @@
       "afterMode": "100644"
     },
     {
+      "path": "scripts/stocks-browser-native/metadata/.gitattributes",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "0e1b5e65c76e098b8a2857fa2253fe49ac3b8a27625cdd3aa50b749040014349",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/metadata/InRelease",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "165c0c3c9fa9dd2e89d1b7879d0dccaa6cf717006e281ab8e24a2dbcb2cd57dd",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/metadata/Packages.gz",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "b14b2a882410b13ef6f912f328ebae0588fe2a0a92b8d936019489bb2390b4c5",
+      "afterMode": "100644"
+    },
+    {
+      "path": "scripts/stocks-browser-native/metadata/google-key.asc",
+      "beforeBlob": null,
+      "beforeMode": null,
+      "afterSha256": "54dea5f6c2a26091578cf52a999cebc6b64df478d37ad4dce96376b711e3b27c",
+      "afterMode": "100644"
+    },
+    {
       "path": "scripts/stocks-browser-native/native.test.cjs",
       "beforeBlob": null,
       "beforeMode": null,
@@ -134,14 +162,14 @@
       "path": "scripts/stocks-browser-native/provision.py",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "6aa53bce2942e52e74611e8a77063055f7affdec6ab8c79fda2bab05ebab8cae",
+      "afterSha256": "3d5b9b02d0f2bac05380972d0ffb21d21a6298f66a68baa87755da308ee3403d",
       "afterMode": "100644"
     },
     {
       "path": "scripts/stocks-browser-native/provision_test.py",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "13546312731be72ba2f4eb8559aaab8e84e2df1c0635b71f1d9346e41ada9427",
+      "afterSha256": "b60dd69976318e170ad91673a926b02a093f1d59b509ed1c5f4e962dbf87a12b",
       "afterMode": "100644"
     },
     {

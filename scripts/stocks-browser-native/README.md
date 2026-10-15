@@ -80,8 +80,19 @@ always-step gate. Parent workflow retains the existing 30-minute job limit.
 ## Trust and remaining qualification gates
 
 GPG validates the Google primary fingerprint and current signed subkey, expiry,
-revocation flags, signature time and Release age (72 hours maximum). Exact pinned
-metadata changing or expiring causes failure, requiring another source review.
+revocation flags, signature time and Release age (72 hours maximum). Tampered
+pinned source metadata or expiry causes failure, requiring another source review.
+The original public `InRelease` and `Packages.gz` bytes are retained under
+`metadata/` and admitted as exact Git blobs before any privileged mutation; CI
+does not refetch their mutable repository URLs. Their original hashes and Chrome
+package pin are unchanged. Three literal `-text` attributes preserve those exact
+bytes across checkout platforms. The official Google key is still fetched freshly and
+must match both its original hash and committed key bytes, so a changed key or
+new revocation cannot silently be replaced by the stored copy. GPG verification
+and the original time limits still run on every provisioning attempt. This
+snapshot's Release date is 2026-10-14 20:54:09 UTC; its 72-hour bound ends at
+2026-10-17 20:54:09 UTC, or sooner if another signature/key expiry gate applies.
+No source snapshot extends that window or authorizes an unverified repin.
 `chain.cjs` copies the pure verifier from the archived source proposal (original
 SHA256 `a1b811d655502a0858ce2586f506e85195d8ba404471d998c6b1c1607ad3e5b9`);
 it does not import or activate that proposal. The Python verifier mirrors these
