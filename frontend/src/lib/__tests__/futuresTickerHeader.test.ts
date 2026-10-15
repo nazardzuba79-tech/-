@@ -18,6 +18,77 @@ const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replace
 const source = read('frontend/src/components/FuturesTickerBar.tsx');
 const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 
+// KYC additional materials (2026-10-15): the review-stage types, two
+// optional fields on the KYC reads and two admin calls are additions only
+// (`git diff` over api.ts: +66/-0). Each block must occur exactly once and is
+// removed by its exact text, so every Futures/Spot method stays byte-pinned.
+const KYC_MATERIALS_API_ADDITIONS: readonly string[] = [
+  "export type KycReviewStage =\n  | 'NOT_STARTED' | 'UNDER_REVIEW' | 'DOCUMENT_REQUIRED' | 'SELFIE_REQUIRED' | 'DOCUMENT_AND_SELFIE_REQUIRED'\n  | 'MATERIALS_RECEIVED' | 'RE_REVIEW' | 'APPROVED' | 'REJECTED';\nexport type KycMaterialKind = 'DOCUMENT' | 'SELFIE' | 'DOCUMENT_AND_SELFIE';\nexport type KycDocumentReason = 'BLURRY' | 'UNREADABLE' | 'CROPPED' | 'LOW_LIGHT' | 'OTHER';\n\n/** What the user sees about an open request: the ask and the reason, nothing internal. */\nexport interface KycMaterialRequestView {\n  id: string;\n  kind: KycMaterialKind;\n  documentReason: KycDocumentReason | null;\n  documentReasonText: string | null;\n  selfieComment: string | null;\n  documentRequested: boolean;\n  selfieRequested: boolean;\n  documentReceived: boolean;\n  selfieReceived: boolean;\n  createdAt: string;\n}\n\n/** The admin's view of one request, newest first in a submission's history. */\nexport interface AdminKycMaterialRequest {\n  id: string;\n  kind: KycMaterialKind;\n  status: 'OPEN' | 'RECEIVED' | 'CLOSED';\n  documentReason: KycDocumentReason | null;\n  documentReasonText: string | null;\n  selfieComment: string | null;\n  requestedBy: string;\n  createdAt: string;\n  document: { receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null } | null;\n  selfie: {\n    receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null;\n    consentAt: string | null; consentVersion: string | null;\n  } | null;\n  acknowledgedAt: string | null;\n  closedAt: string | null;\n  closedOutcome: 'APPROVED' | 'REJECTED' | 'SUPERSEDED' | null;\n}\n\n",
+  "      /** The finer stage of the latest submission; kycStatus stays PENDING while materials are requested. */\n      reviewStage?: KycReviewStage;\n      /** The admin's open request for a new document photo and/or a selfie, if any. */\n      materialRequest?: KycMaterialRequestView | null;\n",
+  "          // Paged admin reads only (/admin/clients/page); absent from the legacy list.\n          reviewStage?: KycReviewStage;\n          activeMaterialRequestId?: string | null;\n          materialRequests?: AdminKycMaterialRequest[];\n",
+  "  // Admin: ask for a new document photo and/or a selfie without rejecting.\n  // `clientRequestId` makes a repeated click (or a retry) the same request.\n  requestKycMaterials: (submissionId: string, body: {\n    clientRequestId: string;\n    kind: KycMaterialKind;\n    documentReason?: KycDocumentReason;\n    documentReasonText?: string;\n    selfieComment?: string;\n  }) =>\n    request<{ materialRequest: AdminKycMaterialRequest; reviewStage: KycReviewStage }>(`/kyc/${encodeURIComponent(submissionId)}/material-requests`, {\n      method: 'POST',\n      body: JSON.stringify(body),\n    }),\n\n  // Admin: the received materials were opened — «Материалы получены» → «Повторная проверка».\n  acknowledgeKycMaterials: (materialRequestId: string) =>\n    request<{ acknowledged: boolean }>(`/kyc/material-requests/${encodeURIComponent(materialRequestId)}/acknowledge`, { method: 'POST' }),\n\n",
+];
+
+function stripKycMaterialsApi(text: string): string {
+  return KYC_MATERIALS_API_ADDITIONS.reduce((out, block) => out.replace(block, ''), text);
+}
+
+/**
+ * The financial-API fingerprint of frontend/src/lib/api.ts: every approved
+ * additive change is removed by its exact text, then the whole file must hash
+ * to the original pin. Shared by the pin test and its negative checks.
+ */
+function normalizeApiTs(text: string): string {
+  return stripKycMaterialsApi(text)
+    // Reuse the identical authenticated transport in the lazy OTC module.
+    .replace('export async function request<T>', 'async function request<T>')
+    // Remembered-device auth (2026-10-03, admin accounts only) adds logout and
+    // a sessions-response flag. Normalize only those exact auth-only additions
+    // so this guard keeps pinning Futures/Spot API.
+    .replace("  /** Ends this session on the server as well; the caller clears the token. */\n  logout: () => request<{ status: 'ok' }>('/auth/logout', { method: 'POST' }),\n\n", '')
+    .replace("current: boolean; remembered?: boolean }[]", "current: boolean }[]")
+    // Withdrawal requests (2026-09-30): the POST result names `balanceHeld`,
+    // one read of what can be withdrawn, and the admin list's `balanceHeld`.
+    // Removed here by exact text; every Futures/Spot method stays byte-pinned.
+    .replace("status: string; balanceHeld: boolean }>(\n      '/withdrawals',", "status: string }>(\n      '/withdrawals',")
+    .replace("\n  /** What the caller can withdraw, per asset, exactly as the server checks it.\n   * TRADING = the Cross trading account; SPOT = the spot ledger, with\n   * `futures` naming what would have to be transferred first. */\n  getWithdrawalOptions: () =>\n    request<{\n      source: 'TRADING' | 'SPOT';\n      assets: { asset: string; available: string }[];\n      futures: { asset: string; available: string }[];\n    }>('/withdrawals/options'),\n", '')
+    .replace("        rejectionReason: string | null;\n        balanceHeld: boolean;\n        createdAt: string;", "        rejectionReason: string | null;\n        createdAt: string;")
+    // NRX public reads alone use Cloudflare; byte-pin all existing transports,
+    // especially index/funding/internal OI and every account write, as before.
+    .replace("import { fetchNrxPublic, isNrxPair } from './nrxMarket';\n", '')
+    .replace(/\(isNrxPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
+    // Managed listings (Admin → Listings) are edge-served like NRX: the same four
+    // public reads, routed by isEdgeMarketPair (NRX or a published listing).
+    .replace("import { fetchNrxPublic, isEdgeMarketPair } from './nrxMarket';\n", '')
+    .replace(/\(isEdgeMarketPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
+    // Private VTA adds only these two methods and response types. Continue
+    // fingerprinting every pre-existing Futures/Spot method unchanged.
+    .replace("export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }\nexport interface VtaDemoSnapshot {\n  balances: { asset: string; available: string; locked: string }[];\n  sales: (VtaSaleReceipt & { createdAt: string })[];\n}\n\n", '')
+    .replace("  getVtaDemo: () => request<VtaDemoSnapshot>('/demo/vta'),\n  sellVtaDemo: (requestId: string, quantity: string) => request<VtaSaleReceipt>('/demo/vta/sell', {\n    method: 'POST', body: JSON.stringify({ requestId, quantity }),\n  }),\n", '')
+    // Idle sleep adds transport scheduling and session isolation only. Remove
+    // these exact additions to retain the existing financial API fingerprint.
+    .replace("import { browserFetch as fetch } from './browserActivity';\n", '')
+    .replace("if (typeof window !== 'undefined') window.addEventListener('storage', event => {\n  if (event.key === TOKEN_KEY || event.key === null) notifySessionChange();\n});\n", '')
+    .replace("  if (getToken() !== token) throw new DOMException('Session changed', 'AbortError');\n", '')
+    .replace('        userId: string | null;\n        userEmail: string | null;', '        userId: string;\n        userEmail: string;')
+    .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
+    "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
+    'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
+).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '')
+    // Admin KYC email delivery (2026-09-25, reshaped 2026-09-26 for the KYC edge) — one admin-only method, no Futures/Spot read touched.
+    .replace("  // Admin: where new KYC documents are emailed (by the KYC edge, not this API).\n  getKycDelivery: () => request<{ mode: 'EDGE_EMAIL'; configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),\n\n", '')
+    // KYC edge (2026-09-26): the Render document upload left api.ts for lib/kycEdge.ts. Restore the removed KYC-only method by name.
+    .replace("  // KYC verification. The document itself is uploaded by lib/kycEdge.ts to\n  // the Cloudflare KYC edge, never to this API.\n  getMyKyc: () =>", "  // KYC verification\n  submitKyc: (fields: {\n    country: string;\n    fullName: string;\n    dateOfBirth: string;\n    documentType: 'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE';\n    document: File;\n  }) => {\n    const form = new FormData();\n    form.append('country', fields.country);\n    form.append('fullName', fields.fullName);\n    form.append('dateOfBirth', fields.dateOfBirth);\n    form.append('documentType', fields.documentType);\n    form.append('document', fields.document);\n    return requestForm<{ id: string; status: string }>('/kyc/submit', form);\n  },\n\n  getMyKyc: () =>")
+    // Admin bandwidth optimization (2026-09-25): one compact admin-only
+    // recent-deposit read. It does not touch any Futures/Spot method.
+    .replace("  // Compact helper for the Users page. Returns only one recent deposit\n  // badge row per user from the rolling last 24h — not full deposit history.\n  getAdminRecentDepositsByUser: () =>\n    request<\n      {\n        userId: string;\n        amount: string;\n        asset: string;\n        createdAt: string;\n      }[]\n    >('/admin/deposits/recent-by-user'),\n\n", '')
+    // Support became a form posting to the support Worker (2026-09-26): the
+    // live-chat methods and their types were removed. Restore their exact
+    // text here so every Futures/Spot method stays byte-pinned.
+    .replace("  // --- Admin panel (/admin)", "  // Live-chat support widget\n  startSupportConversation: (name: string, email: string, subject: SupportSubject, message: string) =>\n    request<SupportConversation & { messages: SupportMessage[] }>('/support/conversations', {\n      method: 'POST',\n      body: JSON.stringify({ name, email, subject, message }),\n    }),\n\n  getMySupportConversation: () =>\n    request<{ conversation: (SupportConversation & { messages: SupportMessage[] }) | null }>(\n      '/support/conversations/mine'\n    ),\n\n  getSupportConversation: (id: string) =>\n    request<{ conversation: SupportConversation; messages: SupportMessage[] }>(`/support/conversations/${id}`),\n\n  getSupportConversationStatus: (id: string) =>\n    request<{ unreadByUser: boolean }>(`/support/conversations/${id}/status`),\n\n  sendSupportMessage: (id: string, body: string) =>\n    request<SupportMessage>(`/support/conversations/${id}/messages`, {\n      method: 'POST',\n      body: JSON.stringify({ body }),\n    }),\n\n  markSupportConversationRead: (id: string) => request<void>(`/support/conversations/${id}/read`, { method: 'POST' }),\n\n" + "  // --- Admin panel (/admin)")
+    .replace("};\n\nfunction pairToSlug(", "};\n\n" + "export type SupportSubject = 'TECHNICAL' | 'KYC' | 'CARD' | 'OTHER';\n\nexport interface SupportMessage {\n  id: string;\n  sender: 'USER' | 'ADMIN';\n  body: string;\n  createdAt: string;\n}\n\nexport interface SupportConversation {\n  id: string;\n  userId: string | null;\n  guestName: string;\n  guestEmail: string;\n  subject: SupportSubject;\n  unreadByUser: boolean;\n  createdAt: string;\n  updatedAt: string;\n}\n\n" + "function pairToSlug(");
+}
+
 // Baselines re-taken at the Market Data Gateway migration (see
 // docs/MARKET_DATA_ARCHITECTURE.md). What changed in these three files is
 // exactly one thing: the 24h REFERENCE spot figures (last/change/high/low/
@@ -300,62 +371,7 @@ test.each([
   // Restore that exact line for this fingerprint of all existing API behavior.
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
-  const source = path === 'frontend/src/lib/api.ts' ? read(path)
-    // KYC additional materials (2026-10-15): the review-stage types, two
-    // optional fields on the KYC reads and two admin calls are additions only
-    // (`git diff` over api.ts: +66/-0). Removed by exact text so every
-    // Futures/Spot method stays byte-pinned.
-    .replace("export type KycReviewStage =\n  | 'NOT_STARTED' | 'UNDER_REVIEW' | 'DOCUMENT_REQUIRED' | 'SELFIE_REQUIRED' | 'DOCUMENT_AND_SELFIE_REQUIRED'\n  | 'MATERIALS_RECEIVED' | 'RE_REVIEW' | 'APPROVED' | 'REJECTED';\nexport type KycMaterialKind = 'DOCUMENT' | 'SELFIE' | 'DOCUMENT_AND_SELFIE';\nexport type KycDocumentReason = 'BLURRY' | 'UNREADABLE' | 'CROPPED' | 'LOW_LIGHT' | 'OTHER';\n\n/** What the user sees about an open request: the ask and the reason, nothing internal. */\nexport interface KycMaterialRequestView {\n  id: string;\n  kind: KycMaterialKind;\n  documentReason: KycDocumentReason | null;\n  documentReasonText: string | null;\n  selfieComment: string | null;\n  documentRequested: boolean;\n  selfieRequested: boolean;\n  documentReceived: boolean;\n  selfieReceived: boolean;\n  createdAt: string;\n}\n\n/** The admin's view of one request, newest first in a submission's history. */\nexport interface AdminKycMaterialRequest {\n  id: string;\n  kind: KycMaterialKind;\n  status: 'OPEN' | 'RECEIVED' | 'CLOSED';\n  documentReason: KycDocumentReason | null;\n  documentReasonText: string | null;\n  selfieComment: string | null;\n  requestedBy: string;\n  createdAt: string;\n  document: { receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null } | null;\n  selfie: {\n    receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null;\n    consentAt: string | null; consentVersion: string | null;\n  } | null;\n  acknowledgedAt: string | null;\n  closedAt: string | null;\n  closedOutcome: 'APPROVED' | 'REJECTED' | 'SUPERSEDED' | null;\n}\n\n", '')
-    .replace("      /** The finer stage of the latest submission; kycStatus stays PENDING while materials are requested. */\n      reviewStage?: KycReviewStage;\n      /** The admin's open request for a new document photo and/or a selfie, if any. */\n      materialRequest?: KycMaterialRequestView | null;\n", '')
-    .replace("          // Paged admin reads only (/admin/clients/page); absent from the legacy list.\n          reviewStage?: KycReviewStage;\n          activeMaterialRequestId?: string | null;\n          materialRequests?: AdminKycMaterialRequest[];\n", '')
-    .replace("  // Admin: ask for a new document photo and/or a selfie without rejecting.\n  // `clientRequestId` makes a repeated click (or a retry) the same request.\n  requestKycMaterials: (submissionId: string, body: {\n    clientRequestId: string;\n    kind: KycMaterialKind;\n    documentReason?: KycDocumentReason;\n    documentReasonText?: string;\n    selfieComment?: string;\n  }) =>\n    request<{ materialRequest: AdminKycMaterialRequest; reviewStage: KycReviewStage }>(`/kyc/${encodeURIComponent(submissionId)}/material-requests`, {\n      method: 'POST',\n      body: JSON.stringify(body),\n    }),\n\n  // Admin: the received materials were opened — «Материалы получены» → «Повторная проверка».\n  acknowledgeKycMaterials: (materialRequestId: string) =>\n    request<{ acknowledged: boolean }>(`/kyc/material-requests/${encodeURIComponent(materialRequestId)}/acknowledge`, { method: 'POST' }),\n\n", '')
-    // Reuse the identical authenticated transport in the lazy OTC module.
-    .replace('export async function request<T>', 'async function request<T>')
-    // Remembered-device auth (2026-10-03, admin accounts only) adds logout and
-    // a sessions-response flag. Normalize only those exact auth-only additions
-    // so this guard keeps pinning Futures/Spot API.
-    .replace("  /** Ends this session on the server as well; the caller clears the token. */\n  logout: () => request<{ status: 'ok' }>('/auth/logout', { method: 'POST' }),\n\n", '')
-    .replace("current: boolean; remembered?: boolean }[]", "current: boolean }[]")
-    // Withdrawal requests (2026-09-30): the POST result names `balanceHeld`,
-    // one read of what can be withdrawn, and the admin list's `balanceHeld`.
-    // Removed here by exact text; every Futures/Spot method stays byte-pinned.
-    .replace("status: string; balanceHeld: boolean }>(\n      '/withdrawals',", "status: string }>(\n      '/withdrawals',")
-    .replace("\n  /** What the caller can withdraw, per asset, exactly as the server checks it.\n   * TRADING = the Cross trading account; SPOT = the spot ledger, with\n   * `futures` naming what would have to be transferred first. */\n  getWithdrawalOptions: () =>\n    request<{\n      source: 'TRADING' | 'SPOT';\n      assets: { asset: string; available: string }[];\n      futures: { asset: string; available: string }[];\n    }>('/withdrawals/options'),\n", '')
-    .replace("        rejectionReason: string | null;\n        balanceHeld: boolean;\n        createdAt: string;", "        rejectionReason: string | null;\n        createdAt: string;")
-    // NRX public reads alone use Cloudflare; byte-pin all existing transports,
-    // especially index/funding/internal OI and every account write, as before.
-    .replace("import { fetchNrxPublic, isNrxPair } from './nrxMarket';\n", '')
-    .replace(/\(isNrxPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
-    // Managed listings (Admin → Listings) are edge-served like NRX: the same four
-    // public reads, routed by isEdgeMarketPair (NRX or a published listing).
-    .replace("import { fetchNrxPublic, isEdgeMarketPair } from './nrxMarket';\n", '')
-    .replace(/\(isEdgeMarketPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
-    // Private VTA adds only these two methods and response types. Continue
-    // fingerprinting every pre-existing Futures/Spot method unchanged.
-    .replace("export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }\nexport interface VtaDemoSnapshot {\n  balances: { asset: string; available: string; locked: string }[];\n  sales: (VtaSaleReceipt & { createdAt: string })[];\n}\n\n", '')
-    .replace("  getVtaDemo: () => request<VtaDemoSnapshot>('/demo/vta'),\n  sellVtaDemo: (requestId: string, quantity: string) => request<VtaSaleReceipt>('/demo/vta/sell', {\n    method: 'POST', body: JSON.stringify({ requestId, quantity }),\n  }),\n", '')
-    // Idle sleep adds transport scheduling and session isolation only. Remove
-    // these exact additions to retain the existing financial API fingerprint.
-    .replace("import { browserFetch as fetch } from './browserActivity';\n", '')
-    .replace("if (typeof window !== 'undefined') window.addEventListener('storage', event => {\n  if (event.key === TOKEN_KEY || event.key === null) notifySessionChange();\n});\n", '')
-    .replace("  if (getToken() !== token) throw new DOMException('Session changed', 'AbortError');\n", '')
-    .replace('        userId: string | null;\n        userEmail: string | null;', '        userId: string;\n        userEmail: string;')
-    .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
-    "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
-    'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
-  ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '')
-    // Admin KYC email delivery (2026-09-25, reshaped 2026-09-26 for the KYC edge) — one admin-only method, no Futures/Spot read touched.
-    .replace("  // Admin: where new KYC documents are emailed (by the KYC edge, not this API).\n  getKycDelivery: () => request<{ mode: 'EDGE_EMAIL'; configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),\n\n", '')
-    // KYC edge (2026-09-26): the Render document upload left api.ts for lib/kycEdge.ts. Restore the removed KYC-only method by name.
-    .replace("  // KYC verification. The document itself is uploaded by lib/kycEdge.ts to\n  // the Cloudflare KYC edge, never to this API.\n  getMyKyc: () =>", "  // KYC verification\n  submitKyc: (fields: {\n    country: string;\n    fullName: string;\n    dateOfBirth: string;\n    documentType: 'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE';\n    document: File;\n  }) => {\n    const form = new FormData();\n    form.append('country', fields.country);\n    form.append('fullName', fields.fullName);\n    form.append('dateOfBirth', fields.dateOfBirth);\n    form.append('documentType', fields.documentType);\n    form.append('document', fields.document);\n    return requestForm<{ id: string; status: string }>('/kyc/submit', form);\n  },\n\n  getMyKyc: () =>")
-    // Admin bandwidth optimization (2026-09-25): one compact admin-only
-    // recent-deposit read. It does not touch any Futures/Spot method.
-    .replace("  // Compact helper for the Users page. Returns only one recent deposit\n  // badge row per user from the rolling last 24h — not full deposit history.\n  getAdminRecentDepositsByUser: () =>\n    request<\n      {\n        userId: string;\n        amount: string;\n        asset: string;\n        createdAt: string;\n      }[]\n    >('/admin/deposits/recent-by-user'),\n\n", '')
-    // Support became a form posting to the support Worker (2026-09-26): the
-    // live-chat methods and their types were removed. Restore their exact
-    // text here so every Futures/Spot method stays byte-pinned.
-    .replace("  // --- Admin panel (/admin)", "  // Live-chat support widget\n  startSupportConversation: (name: string, email: string, subject: SupportSubject, message: string) =>\n    request<SupportConversation & { messages: SupportMessage[] }>('/support/conversations', {\n      method: 'POST',\n      body: JSON.stringify({ name, email, subject, message }),\n    }),\n\n  getMySupportConversation: () =>\n    request<{ conversation: (SupportConversation & { messages: SupportMessage[] }) | null }>(\n      '/support/conversations/mine'\n    ),\n\n  getSupportConversation: (id: string) =>\n    request<{ conversation: SupportConversation; messages: SupportMessage[] }>(`/support/conversations/${id}`),\n\n  getSupportConversationStatus: (id: string) =>\n    request<{ unreadByUser: boolean }>(`/support/conversations/${id}/status`),\n\n  sendSupportMessage: (id: string, body: string) =>\n    request<SupportMessage>(`/support/conversations/${id}/messages`, {\n      method: 'POST',\n      body: JSON.stringify({ body }),\n    }),\n\n  markSupportConversationRead: (id: string) => request<void>(`/support/conversations/${id}/read`, { method: 'POST' }),\n\n" + "  // --- Admin panel (/admin)")
-    .replace("};\n\nfunction pairToSlug(", "};\n\n" + "export type SupportSubject = 'TECHNICAL' | 'KYC' | 'CARD' | 'OTHER';\n\nexport interface SupportMessage {\n  id: string;\n  sender: 'USER' | 'ADMIN';\n  body: string;\n  createdAt: string;\n}\n\nexport interface SupportConversation {\n  id: string;\n  userId: string | null;\n  guestName: string;\n  guestEmail: string;\n  subject: SupportSubject;\n  unreadByUser: boolean;\n  createdAt: string;\n  updatedAt: string;\n}\n\n" + "function pairToSlug(") : normalized;
+  const source = path === 'frontend/src/lib/api.ts' ? normalizeApiTs(read(path)) : normalized;
   expect(hash(source)).toBe(expected);
 });
 
@@ -847,4 +863,26 @@ describe('the instrument cluster is one node, and its caption is real', () => {
     // Unknown to the catalogue: nothing, not «BTC USDT» standing in for a name.
     expect(caption(mount().render({ symbol: 'BTC/USDT', archive: true }))).toBeNull();
   });
+});
+
+// Reviewer request on PR #530: the KYC normalisation removes exactly the four
+// approved blocks, once each, and nothing else — a change to any protected read
+// or to the transport still trips the original pin.
+test('api.ts KYC additions are stripped exactly once; any other change still breaks the pin', () => {
+  const PIN = 'adae38b50ae173bb9a537bbbabff275a7065275fda66663f090089ab8ed6b8d2';
+  const api = read('frontend/src/lib/api.ts');
+  expect(KYC_MATERIALS_API_ADDITIONS).toHaveLength(4);
+  for (const block of KYC_MATERIALS_API_ADDITIONS) expect(api.split(block).length - 1).toBe(1);
+  expect(hash(normalizeApiTs(api))).toBe(PIN);
+  // Without the KYC strip the file no longer matches: the strip is doing real work.
+  expect(hash(normalizeApiTs(api.replace(KYC_MATERIALS_API_ADDITIONS[3], KYC_MATERIALS_API_ADDITIONS[3] + '\n')))).not.toBe(PIN);
+  for (const [from, to] of [
+    ['/futures/mark-price/', '/futures/mark-price-x/'],
+    ['/futures/open-interest/', '/futures/open-interest-x/'],
+    ['/futures/funding-rate/', '/futures/funding-rate-x/'],
+    ['Authorization', 'X-Authorization'],
+  ]) {
+    expect({ from, found: api.includes(from) }).toEqual({ from, found: true });
+    expect({ from, same: hash(normalizeApiTs(api.replace(from, to))) === PIN }).toEqual({ from, same: false });
+  }
 });
