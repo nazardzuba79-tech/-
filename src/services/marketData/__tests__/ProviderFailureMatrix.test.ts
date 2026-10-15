@@ -1,7 +1,7 @@
 import { CfdMarketDataService } from '../../CfdMarketDataService';
 import { ArbitrageService } from '../../ArbitrageService';
 import { KrakenMarketDataService } from '../../KrakenMarketDataService';
-import { ProviderUnavailableError } from '../ProviderHealth';
+import { HttpProviderClient, ProviderHealth, ProviderUnavailableError, type ProviderRequestPolicy } from '../ProviderHealth';
 
 /**
  * The failure matrix for the two providers this task moved onto the shared
@@ -34,10 +34,22 @@ describe('provider failure matrix', () => {
     'XAU/USD': { symbol: 'XAU/USD', close: '2400.10', percent_change: '0.42' },
   };
 
-  // This matrix isolates transport/circuit behavior under a sufficient TEST quota.
-  // CfdQuoteSafety separately verifies that the Basic budget denies retries.
-  function cfd(fetchFn: jest.Mock, policy: Record<string, unknown> = FAST) {
-    return new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', policy, {creditsPerMinute:100,creditsPerDay:10000});
+  function cfd(fetchFn: jest.Mock, policy: ProviderRequestPolicy = FAST) {
+    return new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', policy);
+  }
+
+  // Retry/circuit policy belongs to the shared transport. The CFD adapter's
+  // eight-credit batch and 60s reference cadence are tested separately below.
+  function transport(fetchFn: jest.Mock, policy: ProviderRequestPolicy = FAST) {
+    const health = new ProviderHealth('twelvedata');
+    const client = new HttpProviderClient('Twelve Data', {
+      ...policy,
+      fetchFn: fetchFn as unknown as typeof fetch,
+      health,
+      random: () => 0,
+      wrapError: () => new Error('Failed to reach Twelve Data'),
+    });
+    return { client, health };
   }
 
   // ── Twelve Data / CFD ───────────────────────────────────────────────
@@ -48,10 +60,12 @@ describe('provider failure matrix', () => {
       .mockResolvedValueOnce(response({}, false, 503))
       .mockResolvedValueOnce(response(goldQuote));
 
-    const tickers = await cfd(fetchFn).getTickers();
+    const { client, health } = transport(fetchFn);
+    const tickers = await client.getJson('https://td.test/quote');
 
     expect(fetchFn).toHaveBeenCalledTimes(2);
-    expect(tickers.find((t) => t.symbol === 'XAUUSD')!.price).toBe('2400.10');
+    expect(tickers).toEqual(goldQuote);
+    expect(health.snapshot()).toMatchObject({ state: 'CLOSED', consecutiveFailures: 0 });
   });
 
   it('honours Retry-After on a 429 instead of hammering a metered provider', async () => {
@@ -67,30 +81,30 @@ describe('provider failure matrix', () => {
   it('retries a transport timeout within a bounded budget, never unbounded', async () => {
     const fetchFn = jest.fn().mockRejectedValue(new Error('ETIMEDOUT'));
 
-    await expect(cfd(fetchFn).getTickers()).rejects.toThrow(/Failed to reach Twelve Data/);
+    await expect(transport(fetchFn).client.getJson('https://td.test/quote')).rejects.toThrow(/Failed to reach Twelve Data/);
     // 1 initial attempt + the default 2 retries. Bounded, by construction.
     expect(fetchFn).toHaveBeenCalledTimes(3);
   });
 
   it('opens the circuit after repeated failures and then stops calling the provider', async () => {
     const fetchFn = jest.fn().mockRejectedValue(new Error('down'));
-    // retries:0 so each getTickers() call is exactly one outbound attempt,
+    // retries:0 so each transport call is exactly one outbound attempt,
     // making the 4-failure threshold easy to count.
-    const service = cfd(fetchFn, { retries: 0 });
+    const { client, health } = transport(fetchFn, { retries: 0 });
 
     for (let i = 0; i < 4; i++) {
-      await expect(service.getTickers()).rejects.toThrow();
+      await expect(client.getJson('https://td.test/quote')).rejects.toThrow();
     }
     expect(fetchFn).toHaveBeenCalledTimes(4);
+    expect(health.snapshot()).toMatchObject({ state: 'OPEN', consecutiveFailures: 4 });
 
     // Circuit is OPEN: the next call must not reach the network at all.
-    await expect(service.getTickers()).rejects.toBeInstanceOf(ProviderUnavailableError);
+    await expect(client.getJson('https://td.test/quote')).rejects.toBeInstanceOf(ProviderUnavailableError);
     expect(fetchFn).toHaveBeenCalledTimes(4);
   });
 
   it('recovers through a HALF_OPEN probe once the cooldown elapses', async () => {
-    // ProviderHealth reads the wall clock (the service constructs it with
-    // production defaults, which is the thing under test), so the clock is
+    // ProviderHealth reads the wall clock with its production defaults, so it is
     // moved rather than injected.
     let now = 1_700_000_000_000;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
@@ -102,24 +116,63 @@ describe('provider failure matrix', () => {
         .mockRejectedValueOnce(new Error('down'))
         .mockRejectedValueOnce(new Error('down'))
         .mockResolvedValue(response(goldQuote));
-      const service = cfd(fetchFn, { retries: 0 });
+      const { client, health } = transport(fetchFn, { retries: 0 });
 
-      for (let i = 0; i < 4; i++) await expect(service.getTickers()).rejects.toThrow();
-      await expect(service.getTickers()).rejects.toBeInstanceOf(ProviderUnavailableError);
+      for (let i = 0; i < 4; i++) await expect(client.getJson('https://td.test/quote')).rejects.toThrow();
+      await expect(client.getJson('https://td.test/quote')).rejects.toBeInstanceOf(ProviderUnavailableError);
       expect(fetchFn).toHaveBeenCalledTimes(4);
+      expect(health.snapshot().state).toBe('OPEN');
 
       // Past the 30s cooldown the next caller is the single probe, and its
       // success closes the circuit.
       now += 31_000;
-      const recovered = await service.getTickers();
-      expect(recovered.find((t) => t.symbol === 'XAUUSD')).toBeDefined();
+      fetchFn.mockImplementationOnce(async () => {
+        expect(health.snapshot().state).toBe('HALF_OPEN');
+        return response(goldQuote);
+      });
+      const recovered = await client.getJson('https://td.test/quote');
+      expect(recovered).toEqual(goldQuote);
       expect(fetchFn).toHaveBeenCalledTimes(5);
+      expect(health.snapshot()).toMatchObject({ state: 'CLOSED', consecutiveFailures: 0 });
     } finally {
       (Date.now as jest.Mock).mockRestore();
     }
   });
 
-  it('serves the last good quote when a refresh fails inside the stale budget', async () => {
+  it('enforces the CFD hard caps and suppresses repeated reference attempts until the next 60s refresh', async () => {
+    let now = 1_700_000_000_000;
+    const fetchFn = jest.fn()
+      .mockResolvedValueOnce(response({}, false, 503))
+      .mockResolvedValue(response(goldQuote));
+    const service = new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', FAST,
+      { now: () => now, creditsPerMinute: 100, creditsPerDay: 10000 });
+
+    await expect(service.getTickers()).rejects.toThrow(/Failed to reach Twelve Data/);
+    // The first eight-symbol attempt spends the whole minute budget. Even a
+    // retryable response cannot cause another actual provider request.
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    const requestedSymbols = (call: number) => new URL(String((fetchFn.mock.calls as unknown[][])[call][0]))
+      .searchParams.get('symbol')!.split(',');
+    expect(requestedSymbols(0)).toHaveLength(8);
+    expect(new Set(requestedSymbols(0)).size).toBe(8);
+    expect((await service.diagnostics()).credits).toMatchObject({ perMinute: 8, perDay: 800, minuteUsed: 8, dayUsed: 8 });
+
+    await expect(service.getTickers()).rejects.toThrow();
+    now += 59_999;
+    await expect(service.getTickers()).rejects.toThrow();
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    now += 1;
+    const recovered = await service.getTickers();
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    expect(requestedSymbols(1)).toHaveLength(8);
+    expect(requestedSymbols(1)).not.toEqual(requestedSymbols(0));
+    expect(recovered.find(t => t.symbol === 'XAUUSD')!.price).toBe('2400.10');
+    expect((await service.diagnostics()).credits).toMatchObject({ perMinute: 8, perDay: 800, minuteUsed: 8, dayUsed: 16 });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('serves the last good quote as stale when the next scheduled refresh fails', async () => {
     const realNow = Date.now;
     let now = 1_700_000_000_000;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
@@ -128,7 +181,7 @@ describe('provider failure matrix', () => {
       const service = cfd(fetchFn, { retries: 0 });
 
       await service.getTickers();
-      now += 65_000; // past the 60s TTL, inside the 120s stale budget
+      now += 65_000; // the next 60s reference refresh is eligible
 
       const stale = await service.getTickersWithMeta();
       expect(stale.stale).toBe(true);
@@ -139,17 +192,34 @@ describe('provider failure matrix', () => {
     }
   });
 
-  it('stops serving once the stale budget expires rather than aging a price indefinitely', async () => {
+  it('retains an old display price without refreshing its age or permitting execution', async () => {
     let now = 1_700_000_000_000;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
     try {
-      const fetchFn = jest.fn().mockResolvedValueOnce(response(goldQuote)).mockRejectedValue(new Error('down'));
-      const service = cfd(fetchFn, { retries: 0 });
+      const observedAt = now;
+      const timestampedGold = { 'XAU/USD': { ...goldQuote['XAU/USD'], timestamp: observedAt / 1000 } };
+      const fetchFn = jest.fn().mockResolvedValueOnce(response(timestampedGold)).mockRejectedValue(new Error('down'));
+      const service = new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', { retries: 0 },
+        { now: () => now, entitledSymbols: ['XAUUSD'], executionSymbols: ['XAUUSD'] });
 
-      await service.getTickers();
-      now += 10 * 60_000; // far past TTL + stale budget
+      await expect(service.getFreshQuote('XAUUSD')).resolves.toMatchObject({
+        lastDecimal: '2400.10', status: 'live', stale: false, fetchedAt: observedAt,
+        providerTimestamp: observedAt, entitlementVerified: true, executionAllowed: true,
+      });
+      now += 10 * 60_000;
 
-      await expect(service.getTickers()).rejects.toThrow();
+      const stale = await service.getTickersWithMeta();
+      expect(stale.stale).toBe(true);
+      expect(stale.fetchedAt).toBe(observedAt);
+      expect(stale.value.find(t => t.symbol === 'XAUUSD')!.price).toBe('2400.10');
+      const display = (await service.getQuotes()).find(q => q.symbol === 'XAUUSD');
+      expect(display).toMatchObject({
+        lastDecimal: '2400.10', status: 'stale', stale: true, referenceStatus: 'stale',
+        fetchedAt: observedAt, providerTimestamp: observedAt, entitlementVerified: true, executionAllowed: true,
+      });
+      await expect(service.getFreshQuote('XAUUSD')).rejects.toMatchObject({
+        code: 'cfd_quote_temporarily_unavailable', reason: 'unavailable_or_stale',
+      });
     } finally {
       (Date.now as jest.Mock).mockRestore();
     }
