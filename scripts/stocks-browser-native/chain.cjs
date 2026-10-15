@@ -6,7 +6,8 @@ function field(text,key){const rows=text.split('\n').filter(row=>row.startsWith(
 function signingProof(status,keyListing,manifest,now){
   assert.ok(typeof status==='string'&&status.length<65536);assert.ok(Number.isFinite(now));
   const rows=status.split('\n').filter(Boolean).map(row=>row.trim().split(/\s+/));
-  for(const row of rows){assert.equal(row[0],'[GNUPG:]');assert.ok(!['BADSIG','ERRSIG','NO_PUBKEY','EXPSIG','EXPKEYSIG','REVKEYSIG','KEYEXPIRED','SIGEXPIRED','FAILURE','ERROR','NODATA'].includes(row[1]),'GPG rejection: '+row[1]);}
+  for(const row of rows){assert.ok(row.length>1,'GPG status token required');assert.equal(row[0],'[GNUPG:]');assert.ok(!['BADSIG','ERRSIG','NO_PUBKEY','EXPSIG','EXPKEYSIG','REVKEYSIG','KEYREVOKED','SIGEXPIRED','FAILURE','ERROR','NODATA'].includes(row[1]),'GPG rejection: '+row[1]);}
+  const expiredNotices=rows.filter(row=>row[1]==='KEYEXPIRED');
   const valid=rows.filter(row=>row[1]==='VALIDSIG');assert.equal(valid.length,1,'one valid signature required');
   const signature=valid[0],signer=signature[2];assert.match(signer,/^[A-F0-9]{40}$/);
   assert.ok(signer===manifest.googlePrimaryFingerprint||signature.at(-1)===manifest.googlePrimaryFingerprint,'signature must chain to the pinned Google primary');
@@ -15,10 +16,27 @@ function signingProof(status,keyListing,manifest,now){
   assert.ok(created>0&&created<=now+manifest.metadataFutureToleranceMs&&now-created<=manifest.metadataMaximumAgeMs,'signature timestamp out of bounds');
   assert.ok(expires===0||expires>now,'signature expired');
   const entries=[];let current;
-  for(const line of keyListing.split('\n')){const parts=line.split(':');if(['pub','sub'].includes(parts[0])){current={type:parts[0],validity:parts[1],created:Number(parts[5])*1000,expires:Number(parts[6])*1000};entries.push(current);}else if(parts[0]==='fpr'&&current&&!current.fingerprint)current.fingerprint=parts[9];}
+  for(const line of keyListing.split('\n')){const parts=line.split(':');if(['pub','sub'].includes(parts[0])){current={type:parts[0],validity:parts[1],created:Number(parts[5])*1000,expires:Number(parts[6])*1000,createdText:parts[5],expiresText:parts[6],fingerprintCount:0};entries.push(current);}else if(parts[0]==='fpr'&&current){current.fingerprintCount++;if(!current.fingerprint)current.fingerprint=parts[9];}}
   const primaries=entries.filter(row=>row.type==='pub');assert.equal(primaries.length,1,'only the pinned Google primary may be imported');assert.equal(primaries[0].fingerprint,manifest.googlePrimaryFingerprint);
   const signingKey=entries.find(row=>row.fingerprint===signer);assert.ok(signingKey,'validated signing subkey unavailable');
   for(const entry of [primaries[0],signingKey]){assert.ok(!['r','e','d','i'].includes(entry.validity),'revoked/expired/disabled/invalid signing key');assert.ok(entry.created>0&&entry.created<=now+manifest.metadataFutureToleranceMs);assert.ok(entry.expires===0||entry.expires>now,'signing key expired');}
+  if(expiredNotices.length){
+    assert.equal(entries[0],primaries[0],'expired notices require a single unambiguous primary-key listing');
+    const fingerprints=new Set();
+    for(const entry of entries){assert.equal(entry.fingerprintCount,1,'one full fingerprint per key required');assert.match(entry.fingerprint,/^[A-F0-9]{40}$/);assert.ok(!fingerprints.has(entry.fingerprint),'duplicate key fingerprint');fingerprints.add(entry.fingerprint);}
+    const news=rows.filter(row=>row[1]==='NEWSIG'),good=rows.filter(row=>row[1]==='GOODSIG');
+    assert.equal(news.length,1,'expired notices require one NEWSIG');assert.equal(good.length,1,'expired notices require one GOODSIG');
+    assert.equal(good[0][2],signer.slice(-16),'GOODSIG must identify the selected signer');
+    const newsIndex=rows.indexOf(news[0]);assert.ok(newsIndex<rows.indexOf(good[0])&&rows.indexOf(good[0])<rows.indexOf(signature),'signature status ordering is ambiguous');
+    for(const notice of expiredNotices){
+      assert.ok(rows.indexOf(notice)>newsIndex,'expired notice precedes NEWSIG');assert.equal(notice.length,3,'one expired-key timestamp required');assert.match(notice[2],/^[1-9][0-9]*$/);
+      const expiredAt=Number(notice[2])*1000;assert.ok(Number.isSafeInteger(expiredAt)&&expiredAt>0,'invalid expired-key timestamp');
+      const matches=entries.filter(entry=>entry.expires===expiredAt);assert.equal(matches.length,1,'expired-key timestamp must identify exactly one key');
+      const entry=matches[0];assert.equal(entry.type,'sub');assert.equal(entry.validity,'e');assert.notEqual(entry.fingerprint,manifest.googlePrimaryFingerprint);assert.notEqual(entry.fingerprint,signer);
+      for(const [text,value] of [[entry.createdText,entry.created],[entry.expiresText,entry.expires]]){assert.match(text,/^[1-9][0-9]*$/);assert.ok(Number.isSafeInteger(value)&&value>0,'canonical safe unused-subkey timestamp required');}
+      assert.ok(entry.created>0&&entry.created<=expiredAt&&expiredAt<=now,'expired unused subkey timestamps invalid');
+    }
+  }
   return {primary:manifest.googlePrimaryFingerprint,signer,created,expires};
 }
 function releaseProof(text,manifest,now){

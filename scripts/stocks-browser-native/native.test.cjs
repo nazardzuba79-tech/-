@@ -28,10 +28,56 @@ test('canonical payload inventory rejects aliases, duplicates, omissions and une
 });
 test('pinned GPG proof rejects bad, expired, revoked, wrong signer and weak-digest records',()=>{
   assert.equal(signingProof(signature,listing,manifest,now).primary,primary);
-  for(const bad of ['BADSIG','ERRSIG','NO_PUBKEY','EXPSIG','EXPKEYSIG','REVKEYSIG','KEYEXPIRED','SIGEXPIRED','FAILURE','ERROR','NODATA'])assert.throws(()=>signingProof(signature+'[GNUPG:] '+bad+' bad\n',listing,manifest,now));
+  assert.throws(()=>signingProof(signature+'[GNUPG:]\n',listing,manifest,now));
+  for(const bad of ['BADSIG','ERRSIG','NO_PUBKEY','EXPSIG','EXPKEYSIG','REVKEYSIG','KEYREVOKED','KEYEXPIRED','SIGEXPIRED','FAILURE','ERROR','NODATA'])assert.throws(()=>signingProof(signature+'[GNUPG:] '+bad+' bad\n',listing,manifest,now));
   assert.throws(()=>signingProof(signature.replace(primary,'A'.repeat(40)),listing,manifest,now));assert.throws(()=>signingProof(signature.replace(' 1 8 01',' 1 2 01'),listing,manifest,now));
   for(const invalid of ['r','e','d','i'])assert.throws(()=>signingProof(signature,listing.replace('sub:-:','sub:'+invalid+':'),manifest,now));
   assert.throws(()=>signingProof(signature,listing,manifest,now+manifest.metadataMaximumAgeMs));
+});
+function publicWitness(){
+  const bytes=fs.readFileSync(path.join(__dirname,'fixtures/gpg-status-926291d6.json'));
+  assert.equal(sha(bytes),'ab511cd860788f7e61acb234b2a0f4de9b5c633770e0ad346f9be85186353efe');
+  const witness=JSON.parse(bytes);assert.equal(witness.complete,true);assert.deepEqual(witness.commandExitCodes,{decrypt:0,listKeys:0});
+  for(const stream of Object.values(witness.streams)){assert.equal(Buffer.byteLength(stream.text),stream.bytes);assert.equal(sha(stream.text),stream.sha256);}
+  return {status:witness.streams.status.text,keys:witness.streams.keyListing.text,at:witness.observedAtUnixMs};
+}
+test('actual public GPG witness accepts only expired unused subkey notices with a valid current signer',()=>{
+  const value=publicWitness(),proof=signingProof(value.status,value.keys,manifest,value.at);
+  assert.equal(proof.primary,primary);assert.equal(proof.signer,'0E225917414670F4442C250DFD533C07C264648F');
+  const notices=value.status.match(/^\[GNUPG:\] KEYEXPIRED \d+$/gm);assert.equal(notices.length,15);assert.equal(new Set(notices).size,5);
+  assert.deepEqual(signingProof(value.status.replace(/^\[GNUPG:\] KEYEXPIRED.*\n/gm,''),value.keys,manifest,value.at),proof);
+  for(const bad of ['BADSIG','ERRSIG','NO_PUBKEY','EXPSIG','EXPKEYSIG','REVKEYSIG','KEYREVOKED','SIGEXPIRED','FAILURE','ERROR','NODATA'])assert.throws(()=>signingProof(value.status+'[GNUPG:] '+bad+' bad\n',value.keys,manifest,value.at),undefined,bad);
+});
+test('expired-subkey exception rejects malformed notices, ambiguous keys and unbound signature status',()=>{
+  const base=publicWitness(),notice='[GNUPG:] KEYEXPIRED 1555048520',news='[GNUPG:] NEWSIG\n';
+  const good=base.status.match(/^\[GNUPG:\] GOODSIG.*\n/m)[0],valid=base.status.match(/^\[GNUPG:\] VALIDSIG.*\n/m)[0];
+  const expiredKey=base.keys.match(/^sub:e:.*1555048520.*\nfpr:.*\n/m)[0],expiredFingerprint='3B068FB4789ABE4AEFA3BB491397BC53640DB551';
+  const changes=[
+    x=>x.status+='[GNUPG:]\n',
+    x=>x.status=x.status.replace(news,''),x=>x.status+=news,
+    x=>x.status=notice+'\n'+x.status.replace(notice+'\n',''),
+    x=>x.status=x.status.replace(good,''),x=>x.status+=good,
+    x=>x.status=x.status.replace(good,good.replace('FD533C07C264648F','0000000000000000')),
+    x=>x.status=x.status.replace(good,'').replace(valid,valid+good),
+    x=>x.keys=x.keys.replace('sub:e:4096:1:1397BC53640DB551','sub:-:4096:1:1397BC53640DB551'),
+    x=>x.keys=x.keys.replace('sub:e:4096:1:1397BC53640DB551','sub:r:4096:1:1397BC53640DB551'),
+    x=>x.keys=x.keys.replace(expiredFingerprint,'bad'),
+    x=>x.keys=x.keys.replace(expiredFingerprint,primary),
+    x=>x.keys=x.keys.replace('fpr:::::::::'+expiredFingerprint+':','fpr:::::::::'+expiredFingerprint+':\nfpr:::::::::'+expiredFingerprint+':'),
+    x=>x.keys+=expiredKey,
+    x=>x.keys+=expiredKey.replace(expiredFingerprint,'A'.repeat(40)).replace('sub:e:','sub:-:'),
+    x=>x.keys=expiredKey+x.keys.replace(expiredKey,''),
+    x=>x.keys=x.keys.replace(':1460440520:1555048520:',':1555048521:1555048520:'),
+    x=>x.keys=x.keys.replace(':1736268781:1830876781:',':1736268781:1555048520:'),
+    x=>x.keys=x.keys.replace(':1460440275::',':1460440275:1555048520:'),
+    x=>x.keys=x.keys.replace('sub:-:4096:1:FD533C07C264648F','sub:e:4096:1:FD533C07C264648F'),
+    x=>x.status=x.status.replace(' 1 8 01 '+primary,' 1 2 01 '+primary),
+    x=>x.at+=manifest.metadataMaximumAgeMs,
+  ];
+  for(const timestamp of ['', '0','-1','1.5','1e3','+1555048520','01555048520','1555048520 extra','9007199254740992','1'])changes.push(x=>x.status=x.status.replace(notice,'[GNUPG:] KEYEXPIRED '+timestamp));
+  for(const timestamp of ['1.460440520e9','1460440520.0','1_460_440_520','+1460440520','01460440520','-1460440520','0',' 1460440520 ','9007199254741'])changes.push(x=>x.keys=x.keys.replace(':1460440520:1555048520:',':'+timestamp+':1555048520:'));
+  for(const timestamp of ['1.555048520e9','1555048520.0','1_555_048_520','+1555048520','01555048520','-1555048520','0',' 1555048520 ','9007199254741'])changes.push(x=>x.keys=x.keys.replace(':1460440520:1555048520:',':1460440520:'+timestamp+':'));
+  for(const change of changes){const value={...base};change(value);assert.throws(()=>signingProof(value.status,value.keys,manifest,value.at));}
 });
 test('signed Release age and exact Packages digest are not relaxed',()=>{
   const release=`Origin: Google LLC\nSuite: stable\nCodename: stable\nDate: Thu, 15 Oct 2026 09:00:00 GMT\nSHA256:\n ${manifest.packages.sha256} ${manifest.packages.bytes} ${manifest.packages.path}\n`;

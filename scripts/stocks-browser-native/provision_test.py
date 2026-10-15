@@ -17,7 +17,7 @@ SPEC.loader.exec_module(P)
 
 class NativePureTests(unittest.TestCase):
     def test_public_gpg_witness_precedes_unchanged_signature_rejection(self):
-        status = '[GNUPG:] KEYEXPIRED 123\n'
+        status = '[GNUPG:] BADSIG public-fixture\n[GNUPG:] KEYEXPIRED 123\n'
         listing = 'pub:e:fixture-public-key\n'
         stderr, stdout = io.StringIO(), io.StringIO()
         with mock.patch.object(P.sys, 'stderr', stderr), mock.patch.object(P.sys, 'stdout', stdout):
@@ -218,11 +218,115 @@ class NativePureTests(unittest.TestCase):
         status = f'[GNUPG:] VALIDSIG {signer} 2026-10-15 {created} 0 4 0 1 8 01 {primary}\n'
         listing = f'pub:-:4096:1:key:{created}:0:::::\nfpr:::::::::{primary}:\nsub:-:4096:1:sub:{created}:0:::::\nfpr:::::::::{signer}:\n'
         self.assertEqual(P.signing_proof(status, listing, now)['primary'], primary)
-        for bad in ['BADSIG', 'ERRSIG', 'NO_PUBKEY', 'EXPSIG', 'EXPKEYSIG', 'REVKEYSIG', 'KEYEXPIRED', 'SIGEXPIRED', 'FAILURE', 'ERROR', 'NODATA']:
+        for bad in ['BADSIG', 'ERRSIG', 'NO_PUBKEY', 'EXPSIG', 'EXPKEYSIG', 'REVKEYSIG', 'KEYREVOKED', 'KEYEXPIRED', 'SIGEXPIRED', 'FAILURE', 'ERROR', 'NODATA']:
             with self.assertRaises(ValueError):
                 P.signing_proof(status + '[GNUPG:] ' + bad + ' bad\n', listing, now)
         with self.assertRaises(ValueError):
             P.signing_proof(status, listing.replace('sub:-:', 'sub:r:'), now)
+        with self.assertRaises(ValueError):
+            P.signing_proof(status, listing, now + P.M['metadataMaximumAgeMs'])
+
+    def signing_witness_fixture(self):
+        raw = (HERE / 'fixtures' / 'gpg-status-926291d6.json').read_bytes()
+        self.assertEqual(P.digest(raw), 'ab511cd860788f7e61acb234b2a0f4de9b5c633770e0ad346f9be85186353efe')
+        witness = P.json.loads(raw)
+        for stream in witness['streams'].values():
+            data = stream['text'].encode('utf-8')
+            self.assertEqual((len(data), P.digest(data)), (stream['bytes'], stream['sha256']))
+        return witness['streams']['status']['text'], witness['streams']['keyListing']['text'], witness['observedAtUnixMs']
+
+    def test_actual_witness_accepts_only_identified_expired_unused_subkeys(self):
+        status, listing, now = self.signing_witness_fixture()
+        self.assertEqual(status.count('[GNUPG:] KEYEXPIRED '), 15)
+        result = P.signing_proof(status, listing, now)
+        self.assertEqual(result, {
+            'primary': P.M['googlePrimaryFingerprint'],
+            'signer': '0E225917414670F4442C250DFD533C07C264648F',
+            'created': 1792011268000, 'expires': 0})
+        without_notices = '\n'.join(line for line in status.splitlines() if not line.startswith('[GNUPG:] KEYEXPIRED ')) + '\n'
+        self.assertEqual(P.signing_proof(without_notices, listing, now), result)
+
+    def test_expired_notice_rejects_malformed_unmatched_or_unsafe_timestamp(self):
+        status, listing, now = self.signing_witness_fixture()
+        for replacement in ['', '0', '-1', '01', '1555048520.0', '1555048520 extra', '123', '9007199254741']:
+            with self.subTest(timestamp=replacement), self.assertRaises(ValueError):
+                P.signing_proof(status.replace('KEYEXPIRED 1555048520', 'KEYEXPIRED ' + replacement, 1), listing, now)
+
+    def test_expired_notice_requires_one_bound_signature_sequence(self):
+        status, listing, now = self.signing_witness_fixture()
+        good = next(line for line in status.splitlines() if line.startswith('[GNUPG:] GOODSIG ')) + '\n'
+        valid = next(line for line in status.splitlines() if line.startswith('[GNUPG:] VALIDSIG ')) + '\n'
+        changed = [
+            status.replace('[GNUPG:] NEWSIG\n', ''),
+            status + '[GNUPG:] NEWSIG\n',
+            '[GNUPG:] KEYEXPIRED 1555048520\n' + status,
+            status.replace(good, ''),
+            status + good,
+            status.replace('GOODSIG FD533C07C264648F', 'GOODSIG 0000000000000000'),
+            status.replace(good + valid, valid + good),
+            status + valid,
+        ]
+        for index, altered in enumerate(changed):
+            with self.subTest(sequence=index), self.assertRaises(ValueError):
+                P.signing_proof(altered, listing, now)
+
+    def test_expired_subkey_listing_timestamps_are_canonical_and_safe(self):
+        status, listing, now = self.signing_witness_fixture()
+        for field, original in [('created', '1460440520'), ('expires', '1555048520')]:
+            replacements = [original + 'e0', original + '.0', original[:4] + '_' + original[4:],
+                            '+' + original, '0' + original, '-' + original, '0',
+                            ' ' + original, original + ' ', '9007199254741']
+            for text in replacements:
+                with self.subTest(field=field, text=text), self.assertRaises(ValueError):
+                    P.signing_proof(status, listing.replace(':' + original + ':', ':' + text + ':', 1), now)
+
+    def test_no_expired_notice_path_preserves_existing_listing_conversion(self):
+        status, listing, now = self.signing_witness_fixture()
+        status = '\n'.join(line for line in status.splitlines() if not line.startswith('[GNUPG:] KEYEXPIRED ')) + '\n'
+        expected = P.signing_proof(status, listing, now)
+        # This attribution-only correction must not change the established
+        # no-notice path for unrelated unused keys.
+        self.assertEqual(P.signing_proof(status, listing.replace(':1460440520:', ':1460_440520:', 1), now), expected)
+
+    def test_expired_notice_rejects_ambiguous_or_incomplete_key_identity(self):
+        status, listing, now = self.signing_witness_fixture()
+        expired_fpr = '3B068FB4789ABE4AEFA3BB491397BC53640DB551'
+        second_fpr = '3E50F6D3EC278FDEB655C8CA6494C6D6997C215E'
+        fpr_row = 'fpr:::::::::' + expired_fpr + ':\n'
+        collision = 'sub:e:4096:1:fixture:1460440520:1555048520:::::s::::::23:\nfpr:::::::::' + 'A' * 40 + ':\n'
+        changed = [
+            listing.replace(fpr_row, ''),
+            listing.replace(fpr_row, fpr_row + fpr_row),
+            listing.replace(expired_fpr, expired_fpr[:-1]),
+            listing.replace(second_fpr, expired_fpr),
+            listing + collision,
+            collision + listing,
+            listing.replace('sub:e:4096:1:1397BC53640DB551', 'sub:r:4096:1:1397BC53640DB551'),
+            listing.replace('sub:e:4096:1:1397BC53640DB551', 'sub:-:4096:1:1397BC53640DB551'),
+            listing.replace(':1460440520:1555048520:', ':1555048521:1555048520:'),
+        ]
+        for index, altered in enumerate(changed):
+            with self.subTest(identity=index), self.assertRaises(ValueError):
+                P.signing_proof(status, altered, now)
+        future = now // 1000 + 3600
+        with self.assertRaises(ValueError):
+            P.signing_proof(status.replace('KEYEXPIRED 1555048520', 'KEYEXPIRED ' + str(future)),
+                            listing.replace(':1555048520:', ':' + str(future) + ':'), now)
+
+    def test_expired_notice_never_exempts_primary_signer_or_other_fatal_status(self):
+        status, listing, now = self.signing_witness_fixture()
+        for kind in ['pub', 'sub']:
+            for invalid in ['r', 'e', 'd', 'i']:
+                key_id = '7721F63BD38B4796' if kind == 'pub' else 'FD533C07C264648F'
+                before = kind + ':-:4096:1:' + key_id
+                after = kind + ':' + invalid + ':4096:1:' + key_id
+                with self.subTest(key=kind, validity=invalid), self.assertRaises(ValueError):
+                    P.signing_proof(status, listing.replace(before, after), now)
+        for bad in ['BADSIG', 'ERRSIG', 'NO_PUBKEY', 'EXPSIG', 'EXPKEYSIG', 'REVKEYSIG', 'KEYREVOKED', 'SIGEXPIRED', 'FAILURE', 'ERROR', 'NODATA']:
+            with self.subTest(fatal=bad), self.assertRaises(ValueError):
+                P.signing_proof(status + '[GNUPG:] ' + bad + ' fixture\n', listing, now)
+        with self.assertRaises(ValueError):
+            P.signing_proof(status, listing.replace(':1830876781:', ':1555048520:'), now)
         with self.assertRaises(ValueError):
             P.signing_proof(status, listing, now + P.M['metadataMaximumAgeMs'])
 

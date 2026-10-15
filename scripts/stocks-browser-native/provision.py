@@ -273,7 +273,7 @@ def signing_proof_with_witness(status, listing, now, source_sha, run_id):
 
 def signing_proof(status, listing, now):
     rows = [line.split() for line in status.splitlines() if line]
-    bad = {'BADSIG', 'ERRSIG', 'NO_PUBKEY', 'EXPSIG', 'EXPKEYSIG', 'REVKEYSIG', 'KEYEXPIRED', 'SIGEXPIRED', 'FAILURE', 'ERROR', 'NODATA'}
+    bad = {'BADSIG', 'ERRSIG', 'NO_PUBKEY', 'EXPSIG', 'EXPKEYSIG', 'REVKEYSIG', 'KEYREVOKED', 'SIGEXPIRED', 'FAILURE', 'ERROR', 'NODATA'}
     require(all(len(row) > 1 and row[0] == '[GNUPG:]' and row[1] not in bad for row in rows), 'GPG rejected signature')
     valid = [row for row in rows if row[1] == 'VALIDSIG']
     require(len(valid) == 1, 'one valid GPG signature required')
@@ -287,16 +287,50 @@ def signing_proof(status, listing, now):
     for line in listing.splitlines():
         parts = line.split(':')
         if parts[0] in ['pub', 'sub']:
-            current = {'type': parts[0], 'validity': parts[1], 'created': int(parts[5] or '0') * 1000, 'expires': int(parts[6] or '0') * 1000}
+            current = {'type': parts[0], 'validity': parts[1], 'created': int(parts[5] or '0') * 1000, 'expires': int(parts[6] or '0') * 1000, 'createdText': parts[5], 'expiresText': parts[6], 'fingerprintCount': 0}
             entries.append(current)
-        elif parts[0] == 'fpr' and current is not None and 'fingerprint' not in current:
-            current['fingerprint'] = parts[9]
+        elif parts[0] == 'fpr' and current is not None:
+            current['fingerprintCount'] += 1
+            if 'fingerprint' not in current:
+                current['fingerprint'] = parts[9]
     primaries = [entry for entry in entries if entry['type'] == 'pub']
     keys = [entry for entry in entries if entry.get('fingerprint') == signer]
     require(len(primaries) == 1 and primaries[0].get('fingerprint') == M['googlePrimaryFingerprint'] and len(keys) == 1, 'exact imported signing key required')
     for entry in [primaries[0], keys[0]]:
         require(entry['validity'] not in ['r', 'e', 'd', 'i'], 'invalid/revoked/expired key')
         require(0 < entry['created'] <= now + M['metadataFutureToleranceMs'] and (entry['expires'] == 0 or entry['expires'] > now), 'key validity window')
+    expired_notices = [(index, row) for index, row in enumerate(rows) if row[1] == 'KEYEXPIRED']
+    if expired_notices:
+        # GPG also reports expired unused subkeys. Defer only fully attributable
+        # notices; the primary and actual signer must already pass every gate.
+        newsig = [index for index, row in enumerate(rows) if row[1] == 'NEWSIG']
+        goodsig = [(index, row) for index, row in enumerate(rows) if row[1] == 'GOODSIG']
+        valid_index = next(index for index, row in enumerate(rows) if row[1] == 'VALIDSIG')
+        require(len(newsig) == len(goodsig) == 1 and len(goodsig[0][1]) >= 3
+                and goodsig[0][1][2] == signer[-16:]
+                and newsig[0] < goodsig[0][0] < valid_index
+                and all(index > newsig[0] for index, _ in expired_notices),
+                'expired subkey notice requires one bound signature sequence')
+        fingerprints = [entry.get('fingerprint', '') for entry in entries]
+        require(entries[0] is primaries[0]
+                and all(entry['fingerprintCount'] == 1 and re.fullmatch('[A-F0-9]{40}', fingerprint)
+                        for entry, fingerprint in zip(entries, fingerprints))
+                and len(set(fingerprints)) == len(fingerprints),
+                'expired subkey notice requires unambiguous full key identities')
+        for _, notice in expired_notices:
+            require(len(notice) == 3 and re.fullmatch('[1-9][0-9]*', notice[2]), 'malformed expired subkey timestamp')
+            seconds = int(notice[2])
+            require(seconds <= 9007199254740, 'expired subkey timestamp exceeds safe milliseconds')
+            matches = [entry for entry in entries if entry['expires'] == seconds * 1000]
+            require(len(matches) == 1, 'expired subkey timestamp is unmatched or ambiguous')
+            entry = matches[0]
+            for text in [entry['createdText'], entry['expiresText']]:
+                require(re.fullmatch('[1-9][0-9]*', text) and int(text) <= 9007199254740,
+                        'expired subkey listing timestamps must be canonical safe positive integers')
+            require(entry['type'] == 'sub' and entry['validity'] == 'e'
+                    and entry['fingerprint'] not in [M['googlePrimaryFingerprint'], signer]
+                    and 0 < entry['created'] <= entry['expires'] <= now,
+                    'expired notice does not identify an expired unused subkey')
     return {'primary': M['googlePrimaryFingerprint'], 'signer': signer, 'created': created, 'expires': expires}
 
 

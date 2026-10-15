@@ -83,6 +83,22 @@ test('only the four reviewed metadata paths can inherit; an unknown fifth requir
     assert.throws(() => gate.verifyClosure(changed));
   }
 });
+test('only the exact public GPG witness fixture is admitted; another fixture requires FULL', () => {
+  const name = 'scripts/stocks-browser-native/fixtures/gpg-status-926291d6.json';
+  assert.deepEqual([...gate.ALLOWED_PATHS].filter(value => value.startsWith('scripts/stocks-browser-native/fixtures/')), [name]);
+  function add(value, file, reviewed) {
+    const content = value.readHead(file);
+    value.current.set(file, { path: file, mode: '100644', blob: 'd'.repeat(40), bytes: content.length });
+    if (reviewed) value.plan.changes.push({ path: file, beforeBlob: null, beforeMode: null,
+      afterSha256: gate.sha(content), afterMode: '100644' });
+  }
+  const value = closure(); add(value, name, true); assert.ok(gate.verifyClosure(value).protectedFiles > 5000);
+  for (const reviewed of [false, true]) {
+    const changed = closure(); add(changed, name, true);
+    add(changed, 'scripts/stocks-browser-native/fixtures/unreviewed.json', reviewed);
+    assert.throws(() => gate.verifyClosure(changed));
+  }
+});
 test('unknown additions/deletions/mode changes, invented allowlists and mismatched evidence require FULL', () => {
   for (const change of [
     x => x.current.set('outside-src/new-input.json', { path: 'outside-src/new-input.json', mode: '100644', blob: 'd'.repeat(40), bytes: 1 }),

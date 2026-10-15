@@ -109,6 +109,19 @@ survives cleanup through the CI log. The entire emitted JSON line is bounded to
 without running signature validation. Nothing is silently truncated, written to
 stdout, or accepted on the strength of this witness.
 
+The captured public witness from CI source `926291d6` is retained unchanged as
+`fixtures/gpg-status-926291d6.json` for regression tests only; it is never a live
+installation proof. Its fifteen `KEYEXPIRED` notices identify five unused,
+expired signing subkeys, each reported three times. A notice is deferred only
+after the pinned primary and selected signer pass the existing validity gates,
+and only when its positive integer timestamp uniquely identifies an expired
+unused subkey with a complete, unique fingerprint. This exception also requires
+one ordered `NEWSIG` / matching `GOODSIG` / `VALIDSIG` sequence and no notice
+before `NEWSIG`. Ambiguous identities, unmatched/malformed timestamps, an expired
+primary or selected signer, and every other fatal status (including
+`KEYREVOKED`) still fail. Duplicate notices for an identified unused subkey are
+allowed; no key expiry window or package/signature pin is extended.
+
 Actual CI kernel/user namespace availability, `/proc` readability after sandbox
 dumpability changes, library compatibility, and seven-case acceptance remain
 unproven until execution. A native VM has normal network access; existing fixture

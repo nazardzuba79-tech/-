@@ -30,6 +30,7 @@ const ALLOWED_PATHS = new Set([
   'scripts/stocks-browser-native/metadata/InRelease',
   'scripts/stocks-browser-native/metadata/Packages.gz',
   'scripts/stocks-browser-native/metadata/.gitattributes',
+  'scripts/stocks-browser-native/fixtures/gpg-status-926291d6.json',
 ]);
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 function exactKeys(value, keys) { assert.ok(value && typeof value === 'object' && !Array.isArray(value)); assert.deepEqual(Object.keys(value).sort(), [...keys].sort()); }
