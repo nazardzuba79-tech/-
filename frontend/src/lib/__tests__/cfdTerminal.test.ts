@@ -83,12 +83,18 @@ test.each(['?market=cfd','?market=cfd&symbol=WTIUSD','?market=cfd&symbol=EURUSD'
 test('all thirteen canonical display instruments render without fabricated extras',()=>{const list=mount('components/CfdInstrumentList.tsx');const tree=list.render({symbol:'XAUUSD',tickers:rows,configured:true,loadError:false,onRetry:jest.fn(),onChange:jest.fn()});expect(nodes(tree).filter(n=>n.type==='button'&&n.props.className?.includes('cfd-option'))).toHaveLength(13);for(const row of rows)expect(text(tree)).toContain(row.symbol);});
 
 // 2026-10-15: the marks come from one registry (lib/cfdAssetIdentity): issuer flags for a currency pair
-// (flag-icons, MIT, bundled — a few hundred bytes each, inlined by the build), the element symbol for a
-// metal, the benchmark for oil. Still no remote host, no CDN, no provider icon and no per-row request.
+// (flag-icons, MIT, bundled — a few hundred bytes each, inlined by the build); for a metal or oil VOLTEX's
+// own mark (ingots, an oil drop) with the quote flag. Still no remote host, no CDN, no provider icon and no per-row request.
 test('CFD instrument marks are bundled local assets with zero remote requests',()=>{
  const icon=read('components/CfdInstrumentIcon.tsx'),iconCss=read('components/CfdInstrumentIcon.css');
  const list=read('components/CfdInstrumentList.tsx'),markets=read('components/CfdMarketsSection.tsx');
- expect(icon).toContain('<svg');expect(icon).not.toMatch(/https?:\/\//);
+ expect(icon).not.toMatch(/https?:\/\//);
+ // Owner (2026-10-15): metals and oil show their own mark (ingots, an oil drop) with the quote flag, like other exchanges.
+ for(const [symbol,mark] of [['XAUUSD','gold'],['XAGUSD','silver'],['XPTUSD','platinum'],['XPDUSD','palladium'],['WTIUSD','wti'],['XBRUSD','brent']]){
+   expect(icon).toContain(`import ${mark} from '../assets/cfd-marks/${mark}.svg'`);expect(icon).toContain(`${symbol}: ${mark}`);
+   expect(readFileSync(resolve(root,'src/assets/cfd-marks',`${mark}.svg`),'utf8')).toMatch(/^<svg[^>]*viewBox="0 0 64 64"/);
+ }
+ expect(readFileSync(resolve(root,'src/assets/cfd-marks/SOURCES.md'),'utf8')).toContain('own drawings');
  for(const flag of ['eu','us','gb','jp','au','ca','ch','nz']){expect(icon).toContain(`import ${flag} from '../assets/cfd-flags/${flag}.svg'`);expect(readFileSync(resolve(root,'src/assets/cfd-flags',`${flag}.svg`),'utf8')).toMatch(/^<svg[^>]*viewBox="0 0 512 512"/);}
  expect(readFileSync(resolve(root,'src/assets/cfd-flags/LICENSE-flag-icons.txt'),'utf8')).toContain('The MIT License');
  expect(icon).toContain('onError');expect(icon).toContain('cfd-flag-fallback');
@@ -100,7 +106,6 @@ test('CFD instrument marks are bundled local assets with zero remote requests',(
  expect(list).not.toContain('CFD_ICON_BY_SYMBOL');
  for(const symbol of ['XAUUSD','XAGUSD','XPTUSD','XPDUSD','WTIUSD','XBRUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD'])
    expect(assetIdentity.cfdAsset(symbol)?.symbol).toBe(symbol);
- for(const symbol of ['XAUUSD','XAGUSD','XPTUSD','XPDUSD','XBRUSD'])expect(iconCss).toContain(`.cfd-instrumentIcon-${symbol}`);
  expect(assetIdentity.CFD_ASSETS.filter(a=>a.assetClass==='metals').map(a=>a.mark)).toEqual(['Au','Ag','Pt','Pd']);
  for(const asset of assetIdentity.CFD_ASSETS.filter(a=>a.assetClass==='forex'))for(const code of [asset.base,asset.quote])expect(assetIdentity.isCfdCurrency(code)).toBe(true);
  expect(iconCss).toContain('radial-gradient');

@@ -1,7 +1,7 @@
 /* CFD instrument marks (2026-10-15): one round mark per instrument, the same
-   size everywhere it appears. Currency pairs: the base currency's flag over
-   the quote's; metals: the element symbol on the metal's tone; oil: the
-   benchmark. Colours are the materials', not a brand's. */
+   size everywhere it appears — two overlapping circles, as exchanges show a
+   pair: the base (a currency's flag, a metal's ingots, an oil drop) top-left,
+   the quote currency's flag bottom-right. */
 .cfd-instrumentIcon{
   --cfd-mark-size:30px;
   position:relative;display:inline-block;flex:0 0 var(--cfd-mark-size);width:var(--cfd-mark-size);height:var(--cfd-mark-size);
@@ -16,25 +16,12 @@
 .cfd-flag-fallback{display:grid;place-items:center;background:#2a2f38;color:#dfe5ec;font:700 7px/1 Inter,Arial,sans-serif;letter-spacing:.02em}
 .cfd-instrumentIcon--compact .cfd-flag-fallback{font-size:6px}
 
-/* Metals: the element symbol (Au, Ag, Pt, Pd) on a coin of the metal's tone. */
-.cfd-mark-metals,.cfd-mark-unknown{display:inline-grid;place-items:center;
-  background:radial-gradient(circle at 32% 26%,var(--cfd-metal-hi),var(--cfd-metal-mid) 55%,var(--cfd-metal-lo));
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),inset 0 -2px 3px rgba(0,0,0,.28)}
-.cfd-element{font:800 11px/1 Inter,Arial,sans-serif;letter-spacing:-.01em;color:var(--cfd-metal-ink,#1b1406)}
+/* Metals and oil (owner, 2026-10-15): the commodity's mark (assets/cfd-marks) top-left and the
+   quote currency's flag bottom-right, the same geometry as a currency pair. */
+.cfd-commodity{object-fit:contain}
+/* The commodity leads; the quote flag is a small badge on its corner. */
+.cfd-mark-metals .cfd-flag-base,.cfd-mark-energy .cfd-flag-base{width:76%;height:76%}
+.cfd-mark-metals .cfd-flag-quote,.cfd-mark-energy .cfd-flag-quote{width:50%;height:50%}
+.cfd-mark-unknown{display:inline-grid;place-items:center;background:radial-gradient(circle at 32% 26%,#4a515c,#343a43 55%,#252a31)}
+.cfd-element{font:800 11px/1 Inter,Arial,sans-serif;letter-spacing:-.01em;color:#e3e8ee}
 .cfd-instrumentIcon--compact .cfd-element{font-size:9px}
-.cfd-mark-unknown{--cfd-metal-hi:#4a515c;--cfd-metal-mid:#343a43;--cfd-metal-lo:#252a31;--cfd-metal-ink:#e3e8ee}
-.cfd-instrumentIcon-XAUUSD{--cfd-metal-hi:#ffe9a6;--cfd-metal-mid:#e3b448;--cfd-metal-lo:#9c6f1c;--cfd-metal-ink:#3a2705}
-.cfd-instrumentIcon-XAGUSD{--cfd-metal-hi:#ffffff;--cfd-metal-mid:#c9d1da;--cfd-metal-lo:#8995a2;--cfd-metal-ink:#27303a}
-.cfd-instrumentIcon-XPTUSD{--cfd-metal-hi:#f3f7fa;--cfd-metal-mid:#b7c4ce;--cfd-metal-lo:#73838f;--cfd-metal-ink:#1f2a33}
-.cfd-instrumentIcon-XPDUSD{--cfd-metal-hi:#e9ecf1;--cfd-metal-mid:#a3abb7;--cfd-metal-lo:#626b78;--cfd-metal-ink:#1d232b}
-
-/* Oil benchmarks: a barrel (WTI) or a drop (Brent) over the benchmark's code. */
-.cfd-mark-energy{display:inline-grid;place-items:center;align-content:center;gap:0;
-  background:radial-gradient(circle at 32% 26%,#4a3a26,#2a2116 62%,#1a140d);box-shadow:inset 0 0 0 1px rgba(232,170,92,.35)}
-.cfd-instrumentIcon-XBRUSD.cfd-mark-energy{background:radial-gradient(circle at 32% 26%,#24434d,#152a31 62%,#0d1b20);box-shadow:inset 0 0 0 1px rgba(110,196,224,.35)}
-.cfd-energy-glyph{width:58%;height:58%;margin-top:-3px;fill:none;stroke:#e8aa5c;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.cfd-instrumentIcon-XBRUSD .cfd-energy-glyph{stroke:#7cc9e3;fill:rgba(124,201,227,.16)}
-.cfd-energy-label{margin-top:-4px;font:800 6.5px/1 Inter,Arial,sans-serif;letter-spacing:.04em;color:#f1c98f}
-.cfd-instrumentIcon-XBRUSD .cfd-energy-label{color:#a9def0}
-.cfd-instrumentIcon--compact .cfd-energy-label{display:none}
-.cfd-instrumentIcon--compact .cfd-energy-glyph{width:66%;height:66%;margin-top:0}
