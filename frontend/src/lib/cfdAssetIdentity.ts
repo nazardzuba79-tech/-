@@ -5,9 +5,10 @@
  *
  * What identifies each instrument is a real designation, never an invented
  * brand: currency pairs by the flags of the two currencies' issuers (the euro
- * by the EU flag), precious metals by their chemical element symbol (Au, Ag,
- * Pt, Pd), the two oil benchmarks by their benchmark name (WTI, Brent). None
- * of these instruments has a corporate logo, and none is drawn.
+ * by the EU flag); precious metals by an ingot stack in the metal's colour and
+ * the two oil benchmarks by a crude-oil drop (VOLTEX's own drawings,
+ * assets/cfd-marks), each with the quote currency's flag, the way exchanges
+ * show a commodity pair. `mark` keeps the element symbol / benchmark name.
  *
  * The flags are the flag-icons set (MIT, lipis/flag-icons 7.5.0, square
  * 1x1 variant) shipped with the bundle under assets/cfd-flags — each file is

@@ -479,7 +479,7 @@ async function main() {
       }));
       check('cfd.list.groups', l.groups.join(' ') === 'metals:4 energy:2 forex:7', { groups: l.groups });
       check('cfd.list.readable-names', l.rows.length === 13 && l.rows.every(r => r.name && r.name !== r.s && r.clipped === false), { rows: l.rows.map(r => `${r.s}=${r.name}${r.clipped ? ' (clipped)' : ''}`) });
-      check('cfd.list.identity-marks', l.rows.every(r => r.icon) && l.flags.length === 14 && l.flags.every(f => f.ok && !/^https?:/.test(f.src)), { icons: l.rows.map(r => `${r.s}:${r.icon}`), flags: l.flags.length, broken: l.flags.filter(f => !f.ok) });
+      check('cfd.list.identity-marks', l.rows.every(r => r.icon) && l.flags.length === 26 && l.flags.every(f => f.ok && !/^https?:/.test(f.src)), { icons: l.rows.map(r => `${r.s}:${r.icon}`), flags: l.flags.length, broken: l.flags.filter(f => !f.ok) });
       const activeRow = l.rows.find(r => r.s === l.active);
       check('cfd.list.change-matches-strip', !!activeRow && !!l.barChange && activeRow.change !== '—' && l.barChange.includes(activeRow.change.replace('+', '')), { list: activeRow?.change, bar: l.barChange });
       await page.locator('.cfd-instruments-area input[type="search"]').fill('евро'); await page.waitForTimeout(250);

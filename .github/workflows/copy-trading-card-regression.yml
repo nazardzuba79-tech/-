@@ -82,6 +82,7 @@ on:
       - 'frontend/src/lib/cfdTickerFreshness.ts'
       # CFD workspace (2026-10-15): the market list's asset marks and day-change series.
       - 'frontend/src/assets/cfd-flags/**'
+      - 'frontend/src/assets/cfd-marks/**'
       - 'frontend/src/lib/cfdAssetIdentity.ts'
       - 'frontend/src/lib/cfdInfoStrip.ts'
       - 'frontend/src/lib/useCfdDailySeries.ts'
@@ -185,6 +186,7 @@ on:
       - 'frontend/src/lib/cfdTickerFreshness.ts'
       # CFD workspace (2026-10-15): the market list's asset marks and day-change series.
       - 'frontend/src/assets/cfd-flags/**'
+      - 'frontend/src/assets/cfd-marks/**'
       - 'frontend/src/lib/cfdAssetIdentity.ts'
       - 'frontend/src/lib/cfdInfoStrip.ts'
       - 'frontend/src/lib/useCfdDailySeries.ts'
