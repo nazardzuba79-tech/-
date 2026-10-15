@@ -15,6 +15,10 @@ on:
       - 'src/api/routes/adminUsers.ts'
       - 'src/api/routes/__tests__/kyc.test.ts'
       - 'src/api/routes/__tests__/kycEdgePostgres.test.ts'
+      - 'src/api/routes/__tests__/kycMaterials.test.ts'
+      - 'src/api/routes/__tests__/kycMaterialsPostgres.test.ts'
+      - 'src/api/routes/adminPagedReads.ts'
+      - 'src/services/kycMaterials.ts'
       - 'src/services/KycEdgeTrust.ts'
       - 'src/index.ts'
       - 'prisma/**'
@@ -26,6 +30,11 @@ on:
       - 'frontend/src/components/CountrySelect.tsx'
       - 'frontend/src/pages/admin/KycSubmissionReview.tsx'
       - 'frontend/src/pages/admin/AdminKycPage.tsx'
+      - 'frontend/src/pages/admin/KycMaterialsAdmin.tsx'
+      - 'frontend/src/pages/admin/kycMaterials.css'
+      - 'frontend/src/pages/settings-arctic/KycMaterialsPanel.tsx'
+      - 'frontend/src/lib/__tests__/adminKycReviewSafety.test.ts'
+      - 'scripts/qa-kyc-materials.cjs'
       - 'frontend/src/lib/i18n/locales/**'
       - 'scripts/qa-kyc-edge.cjs'
       - '.github/workflows/kyc-edge.yml'
@@ -97,6 +106,10 @@ jobs:
           npx jest --runInBand --silent --runTestsByPath
           src/api/routes/__tests__/kyc.test.ts
           src/api/routes/__tests__/kycEdgePostgres.test.ts
+          src/api/routes/__tests__/kycMaterials.test.ts
+          src/api/routes/__tests__/kycMaterialsPostgres.test.ts
+          src/api/routes/__tests__/adminPagedReads.test.ts
+          frontend/src/lib/__tests__/adminKycReviewSafety.test.ts
           src/api/routes/__tests__/admin.test.ts
           src/api/routes/__tests__/adminUsers.test.ts
           frontend/src/lib/__tests__/kycEdgeClient.test.ts
@@ -118,10 +131,16 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/kyc-qa-browser/node_modules/playwright
         run: node scripts/qa-kyc-edge.cjs
+      - name: Additional materials (new document photo / selfie) — 12 browser scenarios on PostgreSQL, synthetic camera and files
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/kyc-qa-browser/node_modules/playwright
+        run: node scripts/qa-kyc-materials.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: kyc-edge-${{ github.sha }}
-          path: docs/qa/kyc-edge/
+          path: |
+            docs/qa/kyc-edge/
+            docs/qa/kyc-materials/
           if-no-files-found: ignore
           retention-days: 7

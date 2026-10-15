@@ -127,6 +127,10 @@ function MaterialCard({ part, request, received, recording, onSent, onStale }: {
       setFileError(t('kycMaterials.selfieFileType'));
       return;
     }
+    if (!isSelfie && type !== 'image/jpeg' && type !== 'image/png' && type !== 'application/pdf') {
+      setFileError(t('settings.kycFileType'));
+      return;
+    }
     setPreparing(true);
     try {
       await checkKycImage(file, part);

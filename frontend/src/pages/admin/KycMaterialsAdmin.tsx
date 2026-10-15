@@ -292,6 +292,18 @@ function ComparePane({ title, hint, initial, accept, testId }: {
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
+  // In-page maximised view (no Fullscreen API): Escape restores the pane, not close the whole screen.
+  useEffect(() => {
+    if (!max) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || document.fullscreenElement) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setMax(false);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [max]);
 
   function open(file: File | null) {
     if (!file) return;

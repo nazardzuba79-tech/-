@@ -141,3 +141,57 @@ there is still at most one row.
   re-run the deploy workflow. Render re-fetches the public key at most once
   a minute after a signature mismatch. If `KYC_EDGE_PUBLIC_KEY` is pinned,
   update it as well.
+
+## Additional materials: a new document photo and/or a selfie (2026-10-15)
+
+While a submission is PENDING the admin can ask for more instead of rejecting:
+a new photo of the document (reason: blurry, hard to read, cropped, not enough
+light, or own text), an ordinary selfie for a manual face comparison (no
+document in hand; optional comment), or both.
+
+- **Storage is unchanged.** The files take the same road as the document:
+  browser → `POST /v1/materials` on this Worker → admin mailbox. Subjects
+  «[KYC] Новое фото документа — …» / «[KYC] Селфи для подтверждения личности — …»,
+  attachment `kyc-<submissionId>-document|selfie-<delivery8>.<ext>`, header
+  `X-Voltex-Kyc-Material: <requestId>; part=…`. Render/Neon keep only the
+  request, what arrived (type, size, Message-ID, time), the selfie consent
+  (time + wording version `kyc-selfie-v1`) and every decision in `AuditLog`.
+  Keeping the pictures on a server (encrypted, with retention) would be a
+  separate decision for the owner; nothing here does it.
+- **Table** `KycMaterialRequest` (additive migration
+  `20261015090000_kyc_material_requests`; `KycStatus` enum unchanged).
+  `User.kycStatus` stays `PENDING` for the whole cycle; the finer stage is
+  derived (`src/services/kycMaterials.ts`): На проверке → Требуется новое фото
+  документа / Требуется селфи / Требуются документ и селфи → Дополнительные
+  материалы получены → Повторная проверка → Подтверждено / Отклонено.
+- **Admin API** (`requireAdmin`): `POST /kyc/:id/material-requests`
+  (`clientRequestId` makes a repeat the same request; a new one supersedes the
+  open one; submission row locked) and
+  `POST /kyc/material-requests/:id/acknowledge`. A decision
+  (`POST /kyc/:id/review`) closes open requests; received data is kept.
+- **Edge ↔ Render**, both signed like the submission calls:
+  `/internal/kyc/materials/authorize` (session + ownership: someone else's
+  request answers exactly like a missing one; closed / not requested / already
+  received → 409; a selfie needs consent and is JPEG/PNG only) and
+  `/internal/kyc/materials/confirmed` (delivery id recomputed with HMAC, row
+  locked, idempotent). Sealed receipts (`kind: 'material'`) reuse `/v1/confirm`.
+- **Admin Telegram** event `KYC_MATERIALS_RECEIVED` through the private
+  binding (`KycNotifications.notifyMaterials`: email, name, part, complete —
+  no file, no id). Until the notification Worker with that method is
+  deployed, the call fails quietly and the upload is unaffected.
+- **Comparison screen** in the admin: document left, selfie right, zoom,
+  rotate, pan, fullscreen. The admin opens the saved attachments locally
+  (object URLs, never uploaded); a legacy on-server document loads itself.
+  There is no face recognition, no similarity score, no automatic decision.
+- **Quality checks** in the browser only: format, size, the image decodes,
+  minimum resolution (document 1000×600, selfie 640×480). They say nothing
+  about authenticity; the admin decides.
+- Tests: `src/api/routes/__tests__/kycMaterials*.test.ts`,
+  `workers/kyc-edge/test.mjs`, `workers/notification-edge/*.test.mjs`,
+  `frontend/src/lib/__tests__/kycEdgeClient.test.ts`,
+  `adminKycReviewSafety.test.ts`; browser: `scripts/qa-kyc-materials.cjs`
+  (12 scenarios, PostgreSQL, Chromium's synthetic camera, synthetic files).
+- **Deploying it** means: the migration (Render runs `prisma migrate deploy`
+  on start), the Worker (`deploy-kyc-edge.yml` deploys the notification Worker
+  first, then this one — both on a push to `main` touching `workers/**`), and
+  the frontend. All three come with a merge to `main`; none was done here.
