@@ -5,7 +5,8 @@ import { registerManagedListings, type TestAsset } from '../testMarkets';
 const getFuturesCandles = jest.fn(async () => ({ candles: [] }));
 const getSpotPublicCandles = jest.fn(async () => ({ candles: [] }));
 const testMarketCandleLoader = jest.fn(async () => ({ candles: [] }));
-const loaders: CandleLoaderTable = { futures: getFuturesCandles, spot: getSpotPublicCandles, testMarket: testMarketCandleLoader };
+const getCfdDisplayCandles = jest.fn(async () => ({ candles: [] }));
+const loaders: CandleLoaderTable = { futures: getFuturesCandles, spot: getSpotPublicCandles, testMarket: testMarketCandleLoader, cfd: getCfdDisplayCandles };
 
 const listing = (pair: string, symbol: string): TestAsset => ({
   pair, symbol, name: symbol, quote: 'USDT', isTestAsset: true, isTradable: true, status: '', listingArmed: true, listingAt: '2026-10-13T15:00:00.000Z', initialPrice: 2,
@@ -74,5 +75,36 @@ describe('an interval asked for is shown as the nearest one the source serves', 
     expect(quickTimeframesFor(quick, legacy)).toEqual(['5m', '15m', '1h', '4h', '1d', '1w']);
     expect(quick).toEqual(DEFAULT_QUICK_TIMEFRAMES);
     expect(quickTimeframesFor(quick, chartCapabilities({ market: 'spot', pair: 'AITH/USDT', loaders }))).toEqual(DEFAULT_QUICK_TIMEFRAMES);
+  });
+});
+
+// 2026-10-15 (CFD Chart Workspace): the CFD chart is the shared chart over the
+// display OHLC route; it has seven native intervals and no traded volume.
+describe('CFD: the display route, its seven native intervals and no volume', () => {
+  const caps = chartCapabilities({ market: 'cfd', pair: 'XAUUSD', loaders });
+  it('binds every CFD instrument to the display loader, the page\'s own loader winning for its instrument only', () => {
+    for (const symbol of ['XAUUSD', 'WTIUSD', 'EURUSD', 'USDJPY']) {
+      expect(candleSourceFor('cfd', symbol)).toBe('cfd-display');
+      expect(candleLoaderFor('cfd', symbol, loaders)).toBe(getCfdDisplayCandles);
+    }
+    const own = jest.fn(async () => ({ candles: [] }));
+    expect(candleLoaderFor('cfd', 'XAUUSD', loaders, own)).toBe(own);
+    expect(caps.loader).toBe(getCfdDisplayCandles);
+  });
+  it('serves 1m 5m 15m 30m 1h 4h 1d as they are and builds the rest from real lower bars', () => {
+    expect(caps.native).toEqual(['1m', '5m', '15m', '30m', '1h', '4h', '1d']);
+    expect(caps.timeframes).toEqual(CHART_TIMEFRAMES);
+    expect(caps.plans['3m']).toEqual({ kind: 'derived', base: '1m', factor: 3 });
+    expect(caps.plans['2h']).toEqual({ kind: 'derived', base: '1h', factor: 2 });
+    expect(caps.plans['6h']).toEqual({ kind: 'derived', base: '1h', factor: 6 });
+    expect(caps.plans['12h']).toEqual({ kind: 'derived', base: '4h', factor: 3 });
+    expect(caps.plans['1w']).toEqual({ kind: 'derived', base: '1d', factor: 7 });
+    expect(caps.plans['1M']).toEqual({ kind: 'derived', base: '1d', factor: 30 });
+    expect(caps.rawLimit).toBe(500);
+  });
+  it('says the bars carry no volume, while every crypto source does', () => {
+    expect(caps.volume).toBe(false);
+    expect(chartCapabilities({ market: 'futures', pair: 'BTC/USDT', loaders }).volume).toBe(true);
+    expect(chartCapabilities({ market: 'spot', pair: 'BTC/USDT', loaders }).volume).toBe(true);
   });
 });

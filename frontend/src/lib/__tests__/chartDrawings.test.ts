@@ -709,9 +709,13 @@ describe('the rail is shared, and every button does something', () => {
     expect(fs.existsSync(path.resolve(__dirname, '../../components/FuturesDrawingTools.css'))).toBe(false);
   });
 
-  test('CFD is untouched by this overlay', () => {
-    const cfd = fs.readFileSync(path.resolve(__dirname, '../../components/CfdChart.tsx'), 'utf8');
-    expect(cfd).not.toMatch(/drawingTools|DrawToolbar|drawing-rail|chartDrawings/);
+  // 2026-10-15 (CFD Chart Workspace): CFD now reaches the same rail through the
+  // shared chart with its own drawing store (market "cfd"), not a second rail.
+  test('CFD reaches the same rail through the shared chart, with its own drawings', () => {
+    expect(fs.existsSync(path.resolve(__dirname, '../../components/CfdChart.tsx'))).toBe(false);
+    const page = fs.readFileSync(path.resolve(__dirname, '../../pages/TradePage.tsx'), 'utf8');
+    expect(page).toMatch(/<PriceChart pair=\{selectedCfdSymbol\} market="cfd" chrome="terminal" drawingTools/);
+    expect(fs.readFileSync(path.resolve(__dirname, '../chartDrawings.ts'), 'utf8')).toMatch(/DrawingMarket = [^;]*'cfd'/);
   });
 
   const layerCode = fs.readFileSync(path.resolve(__dirname, '../../components/ChartDrawingLayer.tsx'), 'utf8')

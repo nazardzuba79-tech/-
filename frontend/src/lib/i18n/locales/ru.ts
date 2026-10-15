@@ -2053,6 +2053,7 @@ export const RU = {
   'chart.ws.compare.source': "Данные {market}",
   'chart.ws.compare.spot': "Спот",
   'chart.ws.compare.futures': "Фьючерсы",
+  'chart.ws.compare.cfd': "CFD",
   'chart.ws.layout': "Макет",
   'chart.ws.layout.one': "Один график",
   'chart.ws.layout.two': "Два графика",

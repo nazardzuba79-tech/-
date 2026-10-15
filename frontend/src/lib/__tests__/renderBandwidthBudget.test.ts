@@ -56,7 +56,8 @@ describe('Render free-tier bandwidth guardrails', () => {
 
   test('production CFD display stays on Cloudflare and never falls back to Render', () => {
     const tickers = read('frontend/src/lib/useCfdTickers.ts');
-    const chart = read('frontend/src/components/CfdChart.tsx');
+    // 2026-10-15: CFD candles come from lib/cfdCandles (the chart is the shared terminal chart).
+    const chart = read('frontend/src/lib/cfdCandles.ts');
     expect(tickers).toContain('MARKET_EDGE_BASE');
     expect(tickers).not.toContain('fallbackEndpoint');
     expect(tickers).not.toContain('fillMissingQuotes');

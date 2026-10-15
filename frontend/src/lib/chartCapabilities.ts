@@ -17,18 +17,20 @@
  */
 import { isTestMarketPair } from './testMarkets';
 import {
-  CHART_TIMEFRAMES, DEFAULT_CHART_TIMEFRAME, NATIVE_TIMEFRAMES, SOURCE_RAW_LIMIT, timeframePlan, timeframeSpec,
+  CHART_TIMEFRAMES, DEFAULT_CHART_TIMEFRAME, NATIVE_TIMEFRAMES, SOURCE_HAS_VOLUME, SOURCE_RAW_LIMIT, timeframePlan, timeframeSpec,
   type CandleSourceKind, type ChartTimeframe, type TimeframePlan,
 } from './chartTimeframes';
 import type { ChartCandleLoader } from './chartTrading';
 
-export type ChartMarket = 'spot' | 'futures';
+/** Which terminal a chart belongs to. CFD (2026-10-15): metals, energy and FX majors over the display OHLC route. */
+export type ChartMarket = 'spot' | 'futures' | 'cfd';
 
-/** The three loaders of the product, by source (lib/chartCandleLoaders binds the real ones; tests pass their own). */
+/** The loaders of the product, by source (lib/chartCandleLoaders binds the real ones; tests pass their own). */
 export interface CandleLoaderTable {
   futures: ChartCandleLoader;
   spot: ChartCandleLoader;
   testMarket: ChartCandleLoader;
+  cfd: ChartCandleLoader;
 }
 
 export interface ChartContext {
@@ -54,11 +56,14 @@ export interface ChartCapabilities {
   native: ChartTimeframe[];
   /** The most raw bars one request to the source can return. */
   rawLimit: number;
+  /** The bars carry traded volume (false for CFD: no exchange volume exists for an OTC quote). */
+  volume: boolean;
 }
 
-/** Where an instrument's candles come from: the Futures venue, the test-market simulation, or the Spot venue. */
+/** Where an instrument's candles come from: the Futures venue, the CFD display route, the test-market simulation, or the Spot venue. */
 export function candleSourceFor(market: ChartMarket, pair: string): CandleSourceKind {
   if (market === 'futures') return 'futures-public';
+  if (market === 'cfd') return 'cfd-display';
   return isTestMarketPair(pair) ? 'test-market' : 'spot-public';
 }
 
@@ -71,6 +76,7 @@ export function candleSourceFor(market: ChartMarket, pair: string): CandleSource
  */
 export function candleLoaderFor(market: ChartMarket, pair: string, loaders: CandleLoaderTable, own?: ChartCandleLoader | null): ChartCandleLoader {
   if (market === 'futures') return own ?? loaders.futures;
+  if (market === 'cfd') return own ?? loaders.cfd;
   if (isTestMarketPair(pair)) return loaders.testMarket;
   return own ?? loaders.spot;
 }
@@ -99,6 +105,7 @@ export function chartCapabilities(context: ChartContext): ChartCapabilities {
     timeframes: CHART_TIMEFRAMES.filter(tf => plans[tf].kind !== 'unavailable'),
     native: [...NATIVE_TIMEFRAMES[source]],
     rawLimit: SOURCE_RAW_LIMIT[source],
+    volume: SOURCE_HAS_VOLUME[source],
   };
 }
 

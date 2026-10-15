@@ -31,7 +31,7 @@ on:
       - 'frontend/src/components/TerminalChart.tsx'
       - 'frontend/src/lib/useLiveMarket.ts'
       - 'frontend/src/lib/useCfdTickers.ts'
-      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/lib/cfdCandles.ts'
       - 'frontend/src/pages/home/useHomeMarket.ts'
       - 'src/services/marketData/cfd/BiquoteCfdQuoteSource.ts'
       - 'scripts/qa-cfd-display-browser.cjs'

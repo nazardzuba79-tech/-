@@ -54,19 +54,21 @@ test('CFD terminal exposes working local order controls but never financial exec
   expect(positions).not.toMatch(/getCfdPositions|getCfdPositionHistory|api\.closeCfdPosition/);
 });
 
+// 2026-10-15 (CFD Chart Workspace): the chart is the shared terminal chart; its
+// candles come from lib/cfdCandles through the same six-hour display cache.
 test('CFD chart samples real OHLC through the cached backend with no duplicate direct request', () => {
-  const chart=read('components/CfdChart.tsx');
-  expect(chart).toContain('/cfd/display/candles/');
-  expect(chart).not.toContain('https://biquote.io/api/');
-  expect(chart).toContain('readDisplayJson');expect(chart).toContain('SLOW_DISPLAY_REFRESH_MS');expect(chart).toContain('SampledDataNote');
+  const candles=read('lib/cfdCandles.ts');
+  expect(candles).toContain('/cfd/display/candles/');
+  expect(candles).not.toContain('https://biquote.io/api/');
+  expect(candles).toContain('readDisplayJson');expect(candles).toContain('SLOW_DISPLAY_REFRESH_MS');
   const route=readFileSync(resolve(process.cwd(),'src/api/routes/cfd.ts'),'utf8');
   expect(route).toContain('collectorDisplay.getOhlc');expect(route).toContain('biquoteOhlc.getOhlc');
-  expect(chart).toContain('CandlestickSeries');
-  expect(chart).toContain('createChart');
-  expect(chart).toContain('data-chart-status={status}');
-  expect(chart).not.toContain('TradingViewAdvancedChart');
-  expect(chart).not.toContain('cfd-disclaimer');
-  expect(chart).not.toContain('chartNote');
+  expect(read('lib/chartCandleLoaders.ts')).toContain('cfd: getCfdDisplayCandles');
+  const page=read('pages/TradePage.tsx');
+  expect(page).toContain('<PriceChart pair={selectedCfdSymbol} market="cfd"');
+  expect(page).not.toContain('CfdChart');
+  expect(page).not.toContain('TradingViewAdvancedChart');
+  expect(page).not.toContain('cfd-disclaimer');
 });
 
 test('customer CFD layout stays compact without verbose practice or per-row status copy', () => {

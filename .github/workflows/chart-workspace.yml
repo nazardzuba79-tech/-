@@ -20,6 +20,8 @@ on:
       - 'frontend/src/lib/testMarketStore.ts'
       - 'frontend/src/lib/testMarkets.ts'
       - 'frontend/src/lib/__tests__/chart*.test.ts'
+      - 'frontend/src/lib/cfdCandles.ts'
+      - 'frontend/src/lib/__tests__/cfdChartWorkspace.test.ts'
       - 'frontend/src/lib/__tests__/futuresChartBlank.test.ts'
       - 'frontend/src/lib/__tests__/priceChartMarketOrders.test.ts'
       - 'scripts/qa-chart-workspace.cjs'
@@ -62,6 +64,7 @@ jobs:
             frontend/src/lib/__tests__/chartCompare.test.ts \
             frontend/src/lib/__tests__/chartIndicators.test.ts \
             frontend/src/lib/__tests__/chartCandleStats.test.ts \
+            frontend/src/lib/__tests__/cfdChartWorkspace.test.ts \
             frontend/src/lib/__tests__/futuresChartBlank.test.ts \
             frontend/src/lib/__tests__/priceChartMarketOrders.test.ts \
             frontend/src/lib/__tests__/i18nLanguageChunks.test.ts

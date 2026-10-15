@@ -7,7 +7,7 @@ import {
   type ChartAxisFont, type ChartColorPreset, type ChartGridMode, type ChartLineStyle, type ChartPriceDecimals, type ChartScaleMode, type ChartSettings,
 } from '../lib/chartSettings';
 import {
-  DEFAULT_CHART_INDICATORS, INDICATOR_CATALOGUE, MAX_CHART_INDICATORS, getSavedChartIndicators, indicatorDefinition, indicatorInstanceLabel, newIndicatorInstance,
+  INDICATOR_CATALOGUE, defaultChartIndicators, MAX_CHART_INDICATORS, getSavedChartIndicators, indicatorDefinition, indicatorInstanceLabel, newIndicatorInstance,
   previewChartIndicators, revertChartIndicators, saveChartIndicators, type IndicatorInstance, type IndicatorLineWidth, type IndicatorType,
 } from '../lib/chartIndicators';
 import './ChartSettingsDialog.css';
@@ -53,7 +53,7 @@ export function ChartSettingsDialog({ onClose, initialTab = 'candles', focusIndi
   const ok = () => { saveChartSettings(draft); saveChartIndicators(indicators, market); onClose(); };
   const reset = () => {
     change({ ...DEFAULT_CHART_SETTINGS });
-    changeIndicators(DEFAULT_CHART_INDICATORS.map(i => ({ ...i, params: { ...i.params }, colors: [...i.colors] })));
+    changeIndicators(defaultChartIndicators(market));
   };
 
   useEffect(() => {

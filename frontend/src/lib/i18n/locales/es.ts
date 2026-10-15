@@ -1994,6 +1994,7 @@ export const ES: Record<Key, string> = {
   'chart.ws.compare.source': "Datos de {market}",
   'chart.ws.compare.spot': "Spot",
   'chart.ws.compare.futures': "Futuros",
+  'chart.ws.compare.cfd': "CFD",
   'chart.ws.layout': "Diseño",
   'chart.ws.layout.one': "Un gráfico",
   'chart.ws.layout.two': "Dos gráficos",

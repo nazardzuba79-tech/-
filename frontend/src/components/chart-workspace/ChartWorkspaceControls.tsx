@@ -7,13 +7,14 @@ import { ICONS } from './chartWorkspaceIcons';
 import type { CompareEntry, ComparePeriod, WorkspaceLayout, WorkspacePreset } from '../../lib/chartWorkspace';
 import type { ChartTimeframe, TimeframePlan } from '../../lib/chartTimeframes';
 import type { Key } from '../../lib/i18n';
+import type { ChartMarket } from '../../lib/chartCapabilities';
 
 type T = (key: Key, params?: Record<string, string | number>) => string;
 
 export type GoToResult = 'ok' | 'missing' | 'future';
 
 export interface ChartWorkspaceControlsProps {
-  market: 'spot' | 'futures';
+  market: ChartMarket;
   mainPair: string;
   compact: boolean;
   t: T;

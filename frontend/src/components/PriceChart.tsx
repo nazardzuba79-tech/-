@@ -27,7 +27,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { type Candle } from '../lib/indicators';
 import {
-  DEFAULT_CHART_INDICATORS, INDICATOR_CATALOGUE, computeIndicator, getChartIndicators, indicatorDefinition, indicatorInstanceLabel, indicatorMinBars, newIndicatorInstance,
+  INDICATOR_CATALOGUE, computeIndicator, defaultChartIndicators, getChartIndicators, indicatorDefinition, indicatorInstanceLabel, indicatorMinBars, indicatorNeedsVolume, newIndicatorInstance,
   saveChartIndicators, subscribeChartIndicators, type IndicatorInstance, type IndicatorOutput, type IndicatorType,
 } from '../lib/chartIndicators';
 import {
@@ -113,6 +113,8 @@ type IndicatorSeriesSet = {
 const RAIL_COLLAPSED_KEY = 'voltex.drawingRail.collapsed';
 const readRailCollapsed = (): boolean => { try { return typeof localStorage !== 'undefined' && localStorage.getItem(RAIL_COLLAPSED_KEY) === '1'; } catch { return false; } };
 const writeRailCollapsed = (collapsed: boolean): void => { try { localStorage.setItem(RAIL_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch { /* private mode: the choice lasts this visit */ } };
+/** The price currency of a pair: BTC/USDT → USDT, a CFD symbol (EURUSD, USDJPY) → its last three letters. */
+const quoteOf = (pair: string): string => (pair.includes('/') ? pair.split('/')[1] : pair.slice(-3));
 
 interface ConditionalOrder {
   id: string;
@@ -326,6 +328,7 @@ export function PriceChart({
   const sourceRef = useRef(sourceKind); sourceRef.current = sourceKind;
   const marketRef = useRef(market); marketRef.current = market;
   const pausedRef = useRef(paused); pausedRef.current = paused;
+  const volumeAvailableRef = useRef(caps.volume); volumeAvailableRef.current = caps.volume;
   const workspaceLoaderRef = useRef<ChartCandleLoader | null>(null);
   if (!workspaceLoaderRef.current) {
     workspaceLoaderRef.current = (p, i, limit, signal, endTime) => {
@@ -442,16 +445,20 @@ export function PriceChart({
   /** Jump the chart to an instant, loading older bars where the source pages (set by the candle effect). */
   const goToTimeRef = useRef<((ms: number) => Promise<'ok' | 'missing' | 'future'>) | null>(null);
   /** The viewer's indicator presets are isolated between Spot and Futures. */
-  const [indicatorInstances, setIndicatorInstances] = useState<IndicatorInstance[]>(() => getChartIndicators(market));
+  const [storedIndicators, setIndicatorInstances] = useState<IndicatorInstance[]>(() => getChartIndicators(market));
   useEffect(() => {
     setIndicatorInstances(getChartIndicators(market));
     return subscribeChartIndicators(setIndicatorInstances, market);
   }, [market]);
+  /** A source without traded volume (CFD, lib/chartTimeframes SOURCE_HAS_VOLUME) shows no volume and no indicator built from it. */
+  const volumeAvailable = caps.volume;
+  const indicatorInstances = useMemo(() => (volumeAvailable ? storedIndicators : storedIndicators.filter(i => !indicatorNeedsVolume(i.type))), [storedIndicators, volumeAvailable]);
   /** Bumped when the candles change, so every instance recomputes once. */
   const [indicatorDataVersion, setIndicatorDataVersion] = useState(0);
-  /** Lower-pane indicators get panes of their own on the futures chart; Spot and
-   *  CFD keep the band under the candles they always had. */
-  const paneSupport = terminal && market === 'futures';
+  /** Lower-pane indicators get panes of their own on the Futures and CFD charts
+   *  (CFD moved to the workspace chart on 2026-10-15); Spot keeps the band
+   *  under the candles it always had. */
+  const paneSupport = terminal && (market === 'futures' || market === 'cfd');
   const hasType = (type: IndicatorType) => indicatorInstances.some(i => i.type === type && i.visible);
   /** Spot's flat toggles: off → one instance with its defaults, on → every instance of that kind off. */
   const toggleType = (type: IndicatorType) => {
@@ -796,7 +803,7 @@ export function PriceChart({
     const chart = chartRef.current, series = seriesRef.current, volume = volumeSeriesRef.current;
     if (!viewSettings || !chart || !series || !volume) return;
     // In compare mode the candles and their volume give way to the percentage lines.
-    const s = compareOn ? { ...viewSettings, volume: false } : viewSettings, clear = 'rgba(0,0,0,0)', base = basePaintRef.current;
+    const s = compareOn || !volumeAvailable ? { ...viewSettings, volume: false } : viewSettings, clear = 'rgba(0,0,0,0)', base = basePaintRef.current;
     series.applyOptions({
       upColor: s.body ? s.bodyUp : clear, downColor: s.body ? s.bodyDown : clear,
       borderVisible: s.border, borderUpColor: s.borderUp, borderDownColor: s.borderDown,
@@ -822,7 +829,7 @@ export function PriceChart({
     const STYLE = { solid: LineStyle.Solid, dashed: LineStyle.Dashed, dotted: LineStyle.Dotted } as const;
     const gridColor = rgbaOf(s.gridColor, s.gridOpacity);
     // Desktop Futures and Spot terminals (Spot follows the Futures design, owner 2026-10-13).
-    const desktopTerminal = terminal && (market === 'futures' || market === 'spot') && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 901px)').matches;
+    const desktopTerminal = terminal && (market === 'futures' || market === 'spot' || market === 'cfd') && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 901px)').matches;
     chart.applyOptions({
       layout: {
         background: { type: ColorType.Solid, color: s.background ?? base?.background ?? '#101014' },
@@ -881,7 +888,7 @@ export function PriceChart({
     setBaseMargins(0.1, bandOscillators ? 0.3 : 0.06);
     volumeColorsRef.current = [rgbaOf(s.bodyUp, s.volumeOpacity), rgbaOf(s.bodyDown, s.volumeOpacity)];
     const candles = candlesRef.current;
-    if (candles?.length) volume.setData(candles.map(c => ({ time: c.time as any, value: c.volume, color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1] })));
+    if (candles?.length && volumeAvailable) volume.setData(candles.map(c => ({ time: c.time as any, value: c.volume, color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1] })));
     const text = `${pair.includes('/') ? pair : pair.replace(/USDT$/, '/USDT')} · ${interval}`;
     if (s.watermark) {
       const lines = [{ text, color: 'rgba(255,255,255,0.05)', fontSize: 44, fontStyle: '600' }];
@@ -889,7 +896,7 @@ export function PriceChart({
       else watermarkRef.current = createTextWatermark(chart.panes()[0], { horzAlign: 'center', vertAlign: 'center', lines }) as unknown as { detach: () => void; applyOptions: (o: object) => void };
     } else if (watermarkRef.current) { watermarkRef.current.detach(); watermarkRef.current = null; }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewSettings, pair, interval, bandOscillators, priceScaleMode, priceFormatter, indicatorInstances, compareOn]);
+  }, [viewSettings, pair, interval, bandOscillators, priceScaleMode, priceFormatter, indicatorInstances, compareOn, volumeAvailable]);
 
   // The indicators on the chart (Issue #502): one set of series per instance,
   // created when it appears, removed with it; data computed from the chart's
@@ -1381,13 +1388,12 @@ export function PriceChart({
         seriesRef.current.setData(
           res.candles.map((c) => ({ time: c.time as any, open: c.open, high: c.high, low: c.low, close: c.close }))
         );
-        volumeSeriesRef.current.setData(
-          res.candles.map((c) => ({
+        // No histogram (and no "0" axis label) for a source without traded volume.
+        volumeSeriesRef.current.setData(volumeAvailableRef.current ? res.candles.map((c) => ({
             time: c.time as any,
             value: c.volume,
             color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1],
-          }))
-        );
+          })) : []);
         // Cache for the line/area chart-type swap; the indicators recompute
         // from this list in their own effect once per candle change.
         candlesRef.current = res.candles;
@@ -1811,10 +1817,13 @@ export function PriceChart({
   const requestFeature = useCallback((id: string | null) => setOpenRequest(current => ({ id, seq: current.seq + 1 })), []);
   const applyPreset = useCallback((preset: WorkspacePreset) => {
     updateChartWorkspace(market, { timeframe: resolveTimeframe(preset.timeframe, capsRef.current), quickTimeframes: preset.quickTimeframes, barType: preset.barType, compare: [], layout: 1 });
-    saveChartIndicators(preset.indicators.map(inst => ({ ...inst, id: `${inst.id}-${Date.now().toString(36)}`, params: { ...inst.params }, colors: [...inst.colors] })), market);
+    // A template's volume indicator (VWAP in «Скальпинг») is left out where the bars carry no volume.
+    const indicators = capsRef.current.volume ? preset.indicators : preset.indicators.filter(inst => !indicatorNeedsVolume(inst.type));
+    saveChartIndicators(indicators.map(inst => ({ ...inst, id: `${inst.id}-${Date.now().toString(36)}`, params: { ...inst.params }, colors: [...inst.colors] })), market);
     if (chartSettings && (preset.volume !== undefined || preset.indicatorLegend !== undefined)) {
       const current = getChartSettings();
-      saveChartSettings({ ...current, volume: preset.volume ?? current.volume, indicatorLegend: preset.indicatorLegend ?? current.indicatorLegend });
+      // The volume switch is the viewer's shared paint: a CFD template leaves it as it was.
+      saveChartSettings({ ...current, volume: capsRef.current.volume ? preset.volume ?? current.volume : current.volume, indicatorLegend: preset.indicatorLegend ?? current.indicatorLegend });
     }
     setAppliedPreset(preset.id);
   }, [market, chartSettings]);
@@ -2159,7 +2168,7 @@ export function PriceChart({
     typeLabels={typeLabels}
     typeGroupLabel={t('chart.group.type')}
     indicatorsLabel={t('chart.group.indicators')}
-    indicators={INDICATOR_CATALOGUE.map(def => ({
+    indicators={INDICATOR_CATALOGUE.filter(def => volumeAvailable || !indicatorNeedsVolume(def.type)).map(def => ({
       key: def.type, label: t(def.label as never), params: def.params.map(p => String(p.default)).join(' · '),
       color: def.lines[0].color, pane: def.pane, active: indicatorInstances.some(i => i.type === def.type),
       onToggle: () => toggleType(def.type),
@@ -2196,7 +2205,7 @@ export function PriceChart({
         <div className={`chart-toolbar${workspaceOn ? ' cw-toolbar' : ''}`} data-mobile-tools={mobileToolsOpen}>
           {workspaceOn ? (
             <ChartWorkspaceControls
-              market={market === 'futures' ? 'futures' : 'spot'}
+              market={market}
               mainPair={pair}
               compact={compactLayout}
               t={t}
@@ -2236,7 +2245,7 @@ export function PriceChart({
                 onDelete: id => deleteWorkspacePreset(market, id),
                 onReset: () => {
                   updateChartWorkspace(market, { timeframe: DEFAULT_WORKSPACE.timeframe, quickTimeframes: [...DEFAULT_WORKSPACE.quickTimeframes], barType: 'candles', compare: [], layout: 1 });
-                  saveChartIndicators(DEFAULT_CHART_INDICATORS.map(i => ({ ...i, params: { ...i.params }, colors: [...i.colors] })), market);
+                  saveChartIndicators(defaultChartIndicators(market), market);
                   setAppliedPreset(null);
                 },
               }}
@@ -2346,13 +2355,13 @@ export function PriceChart({
           {workspaceOn && workspace.view === 'data' && <ChartDataWindow
             stats={hoverStats} indicators={hoverIndicators}
             compare={compareOn ? compareLegend.filter(i => !i.main).map(i => ({ pair: i.pair, color: i.color, value: i.value })) : null}
-            formatPrice={formatPriceValue} formatVolume={formatVolumeValue} lang={lang} t={t} touch={compactLayout}
+            formatPrice={formatPriceValue} formatVolume={formatVolumeValue} volume={volumeAvailable} lang={lang} t={t} touch={compactLayout}
             onClose={() => updateChartWorkspace(market, { view: 'chart' })} />}
           {workspaceOn && workspace.view === 'analytics' && <ChartAnalyticsPanel
             candles={candlesRef.current} timeframe={interval} period={analyticsPeriod} onPeriod={setAnalyticsPeriod} visibleRange={visibleLogical}
             mainPair={pair} compare={compareEntries.filter(e => e.visible).map(e => ({ pair: e.pair, color: e.color, candles: compareDataRef.current.get(e.pair) ?? [] }))}
-            sameQuote={compareEntries.every(e => e.pair.split('/')[1] === pair.split('/')[1])}
-            formatPrice={formatPriceValue} formatVolume={formatVolumeValue} lang={lang} t={t} nowMs={Date.now()}
+            sameQuote={compareEntries.every(e => quoteOf(e.pair) === quoteOf(pair))}
+            formatPrice={formatPriceValue} formatVolume={formatVolumeValue} volume={volumeAvailable} lang={lang} t={t} nowMs={Date.now()}
             onClose={() => updateChartWorkspace(market, { view: 'chart' })} />}
 
           {drawingToolsOn && !compareOn && <ChartDrawingLayer
@@ -2430,8 +2439,10 @@ export function PriceChart({
             <div className="voltex-indicator-legend" style={styles.legend}>
               {indicatorInstances.filter(i => i.visible).map(i => {
                 // A short history under a long indicator says so instead of showing a label with no line behind it.
-                const need = indicatorMinBars(i), bars = candlesRef.current.length;
-                return <LegendItem key={i.id} color={i.colors[0]} label={indicatorInstanceLabel(i)} note={bars > 0 && bars < need ? t('chart.indicator.insufficient', { n: bars, need }) : undefined} />;
+                // CFD (owner, 2026-10-15): no such note on its chart — an indicator the loaded bars cannot draw is left out of the legend.
+                const need = indicatorMinBars(i), bars = candlesRef.current.length, short = bars > 0 && bars < need;
+                if (short && market === 'cfd') return null;
+                return <LegendItem key={i.id} color={i.colors[0]} label={indicatorInstanceLabel(i)} note={short ? t('chart.indicator.insufficient', { n: bars, need }) : undefined} />;
               })}
             </div>
           )}

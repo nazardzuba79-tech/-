@@ -1,0 +1,4526 @@
+{
+  "phase": "after",
+  "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/frontend/dist",
+  "startedAt": "2026-10-15T09:29:01.464Z",
+  "environment": "LOCAL QA ONLY — loopback host, real public CFD display sources, no database, no production writes",
+  "checks": [
+    {
+      "id": "layout.1920",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1912,
+        "h": 56
+      },
+      "tickerUsedPx": 981,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 1326,
+        "h": 864
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 864
+      },
+      "form": {
+        "x": 1616,
+        "y": 112,
+        "w": 300,
+        "h": 864
+      },
+      "bottom": {
+        "x": 4,
+        "y": 980,
+        "w": 1912,
+        "h": 96
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Тип графика: Свечи",
+        "Индикаторы",
+        "Сравнить",
+        "Макет",
+        "Инструменты",
+        "Шаблоны",
+        "К дате",
+        "Сбросить масштаб",
+        "Снимок графика",
+        "Полный экран",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    {
+      "id": "layout.1440",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1432,
+        "h": 56
+      },
+      "tickerUsedPx": 981,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 846,
+        "h": 684
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 684
+      },
+      "form": {
+        "x": 1136,
+        "y": 112,
+        "w": 300,
+        "h": 684
+      },
+      "bottom": {
+        "x": 4,
+        "y": 800,
+        "w": 1432,
+        "h": 96
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Тип графика: Свечи",
+        "Индикаторы",
+        "Сравнить",
+        "Макет",
+        "Ещё",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    {
+      "id": "layout.1366",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1358,
+        "h": 56
+      },
+      "tickerUsedPx": 981,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 772,
+        "h": 684
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 684
+      },
+      "form": {
+        "x": 1062,
+        "y": 112,
+        "w": 300,
+        "h": 684
+      },
+      "bottom": {
+        "x": 4,
+        "y": 800,
+        "w": 1358,
+        "h": 96
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Тип графика: Свечи",
+        "Индикаторы",
+        "Сравнить",
+        "Полный экран",
+        "Ещё",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    {
+      "id": "layout.1024",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1016,
+        "h": 56
+      },
+      "tickerUsedPx": 729,
+      "chart": {
+        "x": 4,
+        "y": 436,
+        "w": 712,
+        "h": 592
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 1016,
+        "h": 320
+      },
+      "form": {
+        "x": 720,
+        "y": 436,
+        "w": 300,
+        "h": 592
+      },
+      "bottom": {
+        "x": 4,
+        "y": 1032,
+        "w": 1016,
+        "h": 210
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Тип графика: Свечи",
+        "Индикаторы",
+        "Макет",
+        "Ещё",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    {
+      "id": "layout.768",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 768,
+        "h": 103
+      },
+      "tickerUsedPx": 1457,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 768,
+        "h": 531
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    {
+      "id": "layout.430",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 430,
+        "h": 103
+      },
+      "tickerUsedPx": 780,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 430,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.390",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 390,
+        "h": 103
+      },
+      "tickerUsedPx": 699,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 390,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.360",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 360,
+        "h": 103
+      },
+      "tickerUsedPx": 641,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 360,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "15м",
+        "1ч",
+        "1Д",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "15m",
+        "1h",
+        "1d"
+      ]
+    },
+    {
+      "id": "layout.320",
+      "info": true,
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 320,
+        "h": 103
+      },
+      "tickerUsedPx": 560,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 320,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "15м",
+        "1ч",
+        "1Д",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "15m",
+        "1h",
+        "1d"
+      ]
+    },
+    {
+      "id": "cfd.1440.no-notes",
+      "pass": true,
+      "insufficient": 0,
+      "orderNote": 0,
+      "legend": []
+    },
+    {
+      "id": "cfd.1440.workspace.present",
+      "pass": true,
+      "toolbar": true,
+      "views": [
+        "chart",
+        "data",
+        "analytics"
+      ],
+      "rail": true,
+      "quick": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ],
+      "settings": true,
+      "old": 0
+    },
+    {
+      "id": "cfd.1440.stats.verified-only",
+      "pass": true,
+      "stats": [
+        "price",
+        "change",
+        "prevclose",
+        "high",
+        "low",
+        "bidask",
+        "spread",
+        "updated",
+        "status"
+      ],
+      "text": "AuXAUUSDЗолотоЦена4,159.84Изм. за день+47.87 (+1.16%)Закрытие пред. сессии4,111.97Макс. дня4,161.90Мин. дня4,111.24Bid / Ask4,159.75 / 4,159.92Спред0.17Котировка09:29 UTCСтатусОткрытадо закрытия 11ч 30мин",
+      "status": "open"
+    },
+    {
+      "id": "cfd.1440.stats.bidask",
+      "info": true,
+      "bidask": true,
+      "spread": true,
+      "source": "local backend /cfd/tickers (the market edge needs its own deploy)"
+    },
+    {
+      "id": "cfd.1440.timeframe.1m",
+      "pass": true,
+      "state": "candles",
+      "ms": 1228,
+      "asked": [
+        "1m"
+      ],
+      "stored": "1m"
+    },
+    {
+      "id": "cfd.1440.timeframe.3m",
+      "pass": true,
+      "state": "candles",
+      "ms": 956,
+      "asked": [],
+      "stored": "3m"
+    },
+    {
+      "id": "cfd.1440.timeframe.5m",
+      "pass": true,
+      "state": "candles",
+      "ms": 716,
+      "asked": [
+        "5m"
+      ],
+      "stored": "5m"
+    },
+    {
+      "id": "cfd.1440.timeframe.15m",
+      "pass": true,
+      "state": "candles",
+      "ms": 700,
+      "asked": [
+        "15m"
+      ],
+      "stored": "15m"
+    },
+    {
+      "id": "cfd.1440.timeframe.30m",
+      "pass": true,
+      "state": "candles",
+      "ms": 949,
+      "asked": [
+        "30m"
+      ],
+      "stored": "30m"
+    },
+    {
+      "id": "cfd.1440.timeframe.1h",
+      "pass": true,
+      "state": "candles",
+      "ms": 622,
+      "asked": [],
+      "stored": "1h"
+    },
+    {
+      "id": "cfd.1440.timeframe.2h",
+      "pass": true,
+      "state": "candles",
+      "ms": 857,
+      "asked": [],
+      "stored": "2h"
+    },
+    {
+      "id": "cfd.1440.timeframe.4h",
+      "pass": true,
+      "state": "candles",
+      "ms": 627,
+      "asked": [
+        "4h"
+      ],
+      "stored": "4h"
+    },
+    {
+      "id": "cfd.1440.timeframe.6h",
+      "pass": true,
+      "state": "candles",
+      "ms": 829,
+      "asked": [],
+      "stored": "6h"
+    },
+    {
+      "id": "cfd.1440.timeframe.12h",
+      "pass": true,
+      "state": "candles",
+      "ms": 879,
+      "asked": [],
+      "stored": "12h"
+    },
+    {
+      "id": "cfd.1440.timeframe.1d",
+      "pass": true,
+      "state": "candles",
+      "ms": 732,
+      "asked": [
+        "1d"
+      ],
+      "stored": "1d"
+    },
+    {
+      "id": "cfd.1440.timeframe.1w",
+      "pass": true,
+      "state": "candles",
+      "ms": 615,
+      "asked": [],
+      "stored": "1w"
+    },
+    {
+      "id": "cfd.1440.timeframe.1M",
+      "pass": true,
+      "state": "candles",
+      "ms": 859,
+      "asked": [],
+      "stored": "1M"
+    },
+    {
+      "id": "cfd.1440.timeframe.menu-all-13",
+      "pass": true,
+      "menuOptions": [
+        {
+          "tf": "1m",
+          "disabled": false
+        },
+        {
+          "tf": "3m",
+          "disabled": false
+        },
+        {
+          "tf": "5m",
+          "disabled": false
+        },
+        {
+          "tf": "15m",
+          "disabled": false
+        },
+        {
+          "tf": "30m",
+          "disabled": false
+        },
+        {
+          "tf": "1h",
+          "disabled": false
+        },
+        {
+          "tf": "2h",
+          "disabled": false
+        },
+        {
+          "tf": "4h",
+          "disabled": false
+        },
+        {
+          "tf": "6h",
+          "disabled": false
+        },
+        {
+          "tf": "12h",
+          "disabled": false
+        },
+        {
+          "tf": "1d",
+          "disabled": false
+        },
+        {
+          "tf": "1w",
+          "disabled": false
+        },
+        {
+          "tf": "1M",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "id": "cfd.1440.type.bars",
+      "pass": true,
+      "present": 1,
+      "barType": "bars",
+      "priceBefore": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      },
+      "price": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      }
+    },
+    {
+      "id": "cfd.1440.type.hollow",
+      "pass": true,
+      "present": 1,
+      "barType": "hollow",
+      "priceBefore": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      },
+      "price": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      }
+    },
+    {
+      "id": "cfd.1440.type.heikin",
+      "pass": true,
+      "present": 1,
+      "barType": "heikin",
+      "priceBefore": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      },
+      "price": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      }
+    },
+    {
+      "id": "cfd.1440.type.line",
+      "pass": true,
+      "present": 1,
+      "barType": "line",
+      "priceBefore": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      },
+      "price": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      }
+    },
+    {
+      "id": "cfd.1440.type.area",
+      "pass": true,
+      "present": 1,
+      "barType": "area",
+      "priceBefore": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      },
+      "price": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      }
+    },
+    {
+      "id": "cfd.1440.type.candles",
+      "pass": true,
+      "present": 1,
+      "barType": "candles",
+      "priceBefore": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      },
+      "price": {
+        "ticker": "4,159.84",
+        "ticket": "≈ 4,159.84"
+      }
+    },
+    {
+      "id": "cfd.1440.indicators.no-volume-indicators",
+      "pass": true,
+      "catalogue": [
+        "ma",
+        "ema",
+        "wma",
+        "bollinger",
+        "supertrend",
+        "rsi",
+        "macd",
+        "atr",
+        "stochastic",
+        "stochrsi",
+        "adx",
+        "cci",
+        "williams"
+      ]
+    },
+    {
+      "id": "cfd.1440.indicators.own-store",
+      "pass": true,
+      "types": [
+        "rsi",
+        "ema"
+      ]
+    },
+    {
+      "id": "cfd.1440.data.window",
+      "pass": true,
+      "rows": 12,
+      "labels": [
+        "Время (UTC)",
+        "Открытие",
+        "Максимум",
+        "Минимум",
+        "Закрытие",
+        "Изменение",
+        "Изменение, %",
+        "Тело",
+        "Верхняя тень",
+        "Нижняя тень",
+        "RSI 14",
+        "EMA 20"
+      ],
+      "hoverRequests": 0
+    },
+    {
+      "id": "cfd.1440.analytics.panel",
+      "pass": true,
+      "blocks": 3,
+      "text": "Аналитика периодаВидимый диапазонВся история1 день1 неделя1 месяцИзменение цены+29.60 (+0,72%)Максимум4217.45Минимум4066.42Размах High–Low151.03 (3,71%)Завершённых свечей168 + текущая (не завершена)На"
+    },
+    {
+      "id": "cfd.1440.compare.cfd-instruments",
+      "pass": true,
+      "options": [
+        "XAGUSD",
+        "XPTUSD",
+        "XPDUSD",
+        "WTIUSD",
+        "XBRUSD",
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY"
+      ],
+      "searched": [
+        "NZDUSD"
+      ],
+      "entries": 2,
+      "values": [
+        "XAUUSD +0,18%",
+        "EURUSD −0,15%",
+        "XAGUSD −7,14%"
+      ]
+    },
+    {
+      "id": "cfd.1440.compare.exit",
+      "pass": true
+    },
+    {
+      "id": "cfd.1440.layout2.own-instrument-and-interval",
+      "pass": true,
+      "state": "ok",
+      "tickets": 1,
+      "layout": "2",
+      "paneOptions": [
+        "XAGUSD",
+        "XPTUSD",
+        "XPDUSD",
+        "WTIUSD",
+        "XBRUSD",
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ],
+      "paneAsked": [
+        "4h"
+      ]
+    },
+    {
+      "id": "cfd.1440.layout2.sync",
+      "pass": true,
+      "syncCursor": true,
+      "syncTimeframe": true
+    },
+    {
+      "id": "cfd.1440.layout2.pane-switches-terminal",
+      "pass": true,
+      "url": "?market=cfd&symbol=EURUSD",
+      "active": "EURUSD",
+      "bar": "EURUSD"
+    },
+    {
+      "id": "cfd.1440.layout.back-to-one-keeps-state",
+      "pass": true,
+      "panes": 0,
+      "state": "candles",
+      "tf": "1h"
+    },
+    {
+      "id": "cfd.1440.drawing.horizontal",
+      "pass": true,
+      "drawings": [
+        "horizontal"
+      ]
+    },
+    {
+      "id": "cfd.1440.drawing.ruler",
+      "pass": true,
+      "text": "+43,012 (+1,04%) | 24 бара, 1д | Объём 0.00"
+    },
+    {
+      "id": "cfd.1440.drawing.isolated-from-spot",
+      "pass": true,
+      "spotDrawBefore": 0,
+      "spotDrawAfter": 0
+    },
+    {
+      "id": "cfd.1440.presets.builtin",
+      "pass": true,
+      "presets": [
+        "builtin-scalping",
+        "builtin-intraday",
+        "builtin-swing",
+        "builtin-clean"
+      ],
+      "timeframe": "5m",
+      "presetTypes": [
+        "ema",
+        "ema",
+        "rsi"
+      ]
+    },
+    {
+      "id": "cfd.1440.presets.reset",
+      "pass": true,
+      "timeframe": "1h"
+    },
+    {
+      "id": "cfd.1440.goto",
+      "pass": true,
+      "gotoClosed": true,
+      "futureWarn": "Дата в будущем"
+    },
+    {
+      "id": "cfd.1440.settings.dialog",
+      "pass": true,
+      "text": "Настройки графикаШкалы и линииОформлениеСвечиИндикаторыЦвета свечейЗелёный / красныйСтандарт, по умолчаниюБелый / оранже"
+    },
+    {
+      "id": "cfd.1440.snapshot.png",
+      "pass": true,
+      "file": "voltex_XAUUSD_1h_2026-10-15_09-30.png",
+      "size": 43995
+    },
+    {
+      "id": "cfd.1440.fullscreen",
+      "pass": true,
+      "attr": true,
+      "w": 1440,
+      "afterEscape": false
+    },
+    {
+      "id": "cfd.1440.keyboard.digits",
+      "pass": true,
+      "digit": "15m",
+      "typed": "15m"
+    },
+    {
+      "id": "cfd.1440.network.no-sockets-no-writes",
+      "pass": true,
+      "sockets": [],
+      "writes": 0,
+      "total": 30,
+      "candles": 23,
+      "tickers": 1,
+      "byInterval": {
+        "1d": 14,
+        "1h": 3,
+        "1m": 1,
+        "5m": 1,
+        "15m": 1,
+        "30m": 1,
+        "4h": 2
+      }
+    },
+    {
+      "id": "cfd.1920.layout4",
+      "pass": true,
+      "panes": [
+        "XAGUSD:ok",
+        "EURUSD:ok",
+        "WTIUSD:ok"
+      ],
+      "overflow": false,
+      "tickets": 1,
+      "ms": 1107,
+      "heapBefore": 13400000,
+      "heapAfter": 13400000
+    },
+    {
+      "id": "cfd.1920.layout4.back-to-one",
+      "pass": true
+    },
+    {
+      "id": "cfd.list.groups",
+      "pass": true,
+      "groups": [
+        "metals:4",
+        "energy:2",
+        "forex:7"
+      ]
+    },
+    {
+      "id": "cfd.list.readable-names",
+      "pass": true,
+      "rows": [
+        "XAUUSD=Золото",
+        "XAGUSD=Серебро",
+        "XPTUSD=Платина",
+        "XPDUSD=Палладий",
+        "WTIUSD=Нефть WTI",
+        "XBRUSD=Нефть Brent",
+        "EURUSD=Евро",
+        "GBPUSD=Британский фунт",
+        "USDJPY=Японская иена",
+        "AUDUSD=Австралийский доллар",
+        "USDCAD=Канадский доллар",
+        "USDCHF=Швейцарский франк",
+        "NZDUSD=Новозеландский доллар"
+      ]
+    },
+    {
+      "id": "cfd.list.identity-marks",
+      "pass": true,
+      "icons": [
+        "XAUUSD:Au",
+        "XAGUSD:Ag",
+        "XPTUSD:Pt",
+        "XPDUSD:Pd",
+        "WTIUSD:WTI",
+        "XBRUSD:Brent",
+        "EURUSD:EUR",
+        "GBPUSD:GBP",
+        "USDJPY:JPY",
+        "AUDUSD:AUD",
+        "USDCAD:CAD",
+        "USDCHF:CHF",
+        "NZDUSD:NZD"
+      ],
+      "flags": 14,
+      "broken": []
+    },
+    {
+      "id": "cfd.list.change-matches-strip",
+      "pass": true,
+      "list": "+1.16%",
+      "bar": "+47.87 (+1.16%)"
+    },
+    {
+      "id": "cfd.list.search",
+      "pass": true,
+      "found": [
+        "EURUSD"
+      ],
+      "found2": [
+        "XAGUSD"
+      ]
+    },
+    {
+      "id": "cfd.list.fast-switch",
+      "pass": true,
+      "url": "?market=cfd&symbol=GBPUSD",
+      "active": "GBPUSD",
+      "bar": "GBPUSD",
+      "ticket": "≈ 1.32670",
+      "ms": 1682
+    },
+    {
+      "id": "cfd.list.sort-flattens-groups",
+      "pass": true,
+      "sorted": [
+        "sorted"
+      ]
+    },
+    {
+      "id": "cfd.list.daily-series-bounded",
+      "pass": true,
+      "dailyCalls": 13,
+      "note": "one 20-bar daily request per instrument at most, six-hour cache"
+    },
+    {
+      "id": "cfd.trade.1440.ticket.market-only",
+      "pass": true
+    },
+    {
+      "id": "cfd.trade.1440.ticket.empty-quantity-disabled",
+      "pass": true
+    },
+    {
+      "id": "cfd.trade.1440.open-long-and-short",
+      "pass": true,
+      "rows": [
+        "AuXAUUSD 10xШорт0.14,159.844,159.84+0.00 USD+0.00%41.60 USD4,559.1815.10, 09:30ЗакрытьЗакрыть часть",
+        "AuXAUUSD 10xЛонг0.24,159.844,159.84+0.00 USD+0.00%83.20 USD3,760.4915.10, 09:30ЗакрытьЗакрыть часть"
+      ],
+      "preview": [
+        "Стоимость позиции831.97 USD",
+        "Маржа83.20 USD",
+        "Прим. цена ликвидации3,760.49"
+      ]
+    },
+    {
+      "id": "cfd.trade.1440.partial-close",
+      "pass": true,
+      "prefilled": "0.1",
+      "refused": "Укажите количество больше 0 и не больше размера позиции",
+      "open": [
+        "SHORT 0.1",
+        "LONG 0.1"
+      ],
+      "history": [
+        "LONG 0.1 0"
+      ]
+    },
+    {
+      "id": "cfd.trade.1440.close-all-and-history",
+      "pass": true,
+      "history": [
+        "LONG 0.1 0",
+        "SHORT 0.1 0",
+        "LONG 0.1 0"
+      ],
+      "writesRefused": 0
+    },
+    {
+      "id": "cfd.trade.1440.empty-state-compact",
+      "pass": true,
+      "h": 96,
+      "text": "Нет открытых позиций"
+    },
+    {
+      "id": "cfd.trade.390.ticket.market-only",
+      "pass": true
+    },
+    {
+      "id": "cfd.trade.390.ticket.empty-quantity-disabled",
+      "pass": true
+    },
+    {
+      "id": "cfd.trade.390.open-long-and-short",
+      "pass": true,
+      "rows": [
+        "AuXAUUSD 10xШорт0.14,159.844,159.84+0.00 USD+0.00%41.60 USD4,559.1815.10, 09:30ЗакрытьЗакрыть часть",
+        "AuXAUUSD 10xЛонг0.24,159.844,159.84+0.00 USD+0.00%83.20 USD3,760.4915.10, 09:30ЗакрытьЗакрыть часть"
+      ],
+      "preview": [
+        "Стоимость позиции831.97 USD",
+        "Маржа83.20 USD",
+        "Прим. цена ликвидации3,760.49"
+      ]
+    },
+    {
+      "id": "cfd.trade.390.partial-close",
+      "pass": true,
+      "prefilled": "0.1",
+      "refused": "Укажите количество больше 0 и не больше размера позиции",
+      "open": [
+        "SHORT 0.1",
+        "LONG 0.1"
+      ],
+      "history": [
+        "LONG 0.1 0"
+      ]
+    },
+    {
+      "id": "cfd.trade.390.close-all-and-history",
+      "pass": true,
+      "history": [
+        "LONG 0.1 0",
+        "SHORT 0.1 0",
+        "LONG 0.1 0"
+      ],
+      "writesRefused": 0
+    },
+    {
+      "id": "cfd.trade.390.empty-state-compact",
+      "pass": true,
+      "h": 240,
+      "text": "Нет открытых позиций"
+    },
+    {
+      "id": "cfd.mobile.430.chart",
+      "pass": true,
+      "overflow": false,
+      "toolbar": true,
+      "sheet": {
+        "id": "phone-sheet",
+        "x": 0,
+        "y": 220,
+        "w": 430,
+        "h": 640,
+        "inside": true
+      },
+      "canvas": true,
+      "stats": 9
+    },
+    {
+      "id": "cfd.mobile.430.ticket",
+      "pass": true,
+      "overflow": false,
+      "submit": true
+    },
+    {
+      "id": "cfd.mobile.390.chart",
+      "pass": true,
+      "overflow": false,
+      "toolbar": true,
+      "sheet": {
+        "id": "phone-sheet",
+        "x": 0,
+        "y": 220,
+        "w": 390,
+        "h": 640,
+        "inside": true
+      },
+      "canvas": true,
+      "stats": 9
+    },
+    {
+      "id": "cfd.mobile.390.ticket",
+      "pass": true,
+      "overflow": false,
+      "submit": true
+    },
+    {
+      "id": "cfd.mobile.360.chart",
+      "pass": true,
+      "overflow": false,
+      "toolbar": true,
+      "sheet": {
+        "id": "phone-sheet",
+        "x": 0,
+        "y": 220,
+        "w": 360,
+        "h": 640,
+        "inside": true
+      },
+      "canvas": true,
+      "stats": 9
+    },
+    {
+      "id": "cfd.mobile.360.ticket",
+      "pass": true,
+      "overflow": false,
+      "submit": true
+    },
+    {
+      "id": "cfd.mobile.320.chart",
+      "pass": true,
+      "overflow": false,
+      "toolbar": true,
+      "sheet": {
+        "id": "phone-sheet",
+        "x": 0,
+        "y": 220,
+        "w": 320,
+        "h": 640,
+        "inside": true
+      },
+      "canvas": true,
+      "stats": 9
+    },
+    {
+      "id": "cfd.mobile.320.ticket",
+      "pass": true,
+      "overflow": false,
+      "submit": true
+    }
+  ],
+  "perf": {
+    "layout.1920": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1912,
+        "h": 56
+      },
+      "tickerUsedPx": 981,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 1326,
+        "h": 864
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 864
+      },
+      "form": {
+        "x": 1616,
+        "y": 112,
+        "w": 300,
+        "h": 864
+      },
+      "bottom": {
+        "x": 4,
+        "y": 980,
+        "w": 1912,
+        "h": 96
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Тип графика: Свечи",
+        "Индикаторы",
+        "Сравнить",
+        "Макет",
+        "Инструменты",
+        "Шаблоны",
+        "К дате",
+        "Сбросить масштаб",
+        "Снимок графика",
+        "Полный экран",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    "layout.1440": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1432,
+        "h": 56
+      },
+      "tickerUsedPx": 981,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 846,
+        "h": 684
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 684
+      },
+      "form": {
+        "x": 1136,
+        "y": 112,
+        "w": 300,
+        "h": 684
+      },
+      "bottom": {
+        "x": 4,
+        "y": 800,
+        "w": 1432,
+        "h": 96
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Тип графика: Свечи",
+        "Индикаторы",
+        "Сравнить",
+        "Макет",
+        "Ещё",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    "layout.1366": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1358,
+        "h": 56
+      },
+      "tickerUsedPx": 981,
+      "chart": {
+        "x": 286,
+        "y": 112,
+        "w": 772,
+        "h": 684
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 278,
+        "h": 684
+      },
+      "form": {
+        "x": 1062,
+        "y": 112,
+        "w": 300,
+        "h": 684
+      },
+      "bottom": {
+        "x": 4,
+        "y": 800,
+        "w": 1358,
+        "h": 96
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Тип графика: Свечи",
+        "Индикаторы",
+        "Сравнить",
+        "Полный экран",
+        "Ещё",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    "layout.1024": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 4,
+        "y": 52,
+        "w": 1016,
+        "h": 56
+      },
+      "tickerUsedPx": 729,
+      "chart": {
+        "x": 4,
+        "y": 436,
+        "w": 712,
+        "h": 592
+      },
+      "list": {
+        "x": 4,
+        "y": 112,
+        "w": 1016,
+        "h": 320
+      },
+      "form": {
+        "x": 720,
+        "y": 436,
+        "w": 300,
+        "h": 592
+      },
+      "bottom": {
+        "x": 4,
+        "y": 1032,
+        "w": 1016,
+        "h": 210
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Тип графика: Свечи",
+        "Индикаторы",
+        "Макет",
+        "Ещё",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    "layout.768": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 768,
+        "h": 103
+      },
+      "tickerUsedPx": 1457,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 768,
+        "h": 531
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "5м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "1Н",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d",
+        "1w"
+      ]
+    },
+    "layout.430": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 430,
+        "h": 103
+      },
+      "tickerUsedPx": 780,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 430,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.390": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 390,
+        "h": 103
+      },
+      "tickerUsedPx": 699,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 390,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "1м",
+        "15м",
+        "1ч",
+        "4ч",
+        "1Д",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "1m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ]
+    },
+    "layout.360": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 360,
+        "h": 103
+      },
+      "tickerUsedPx": 641,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 360,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "15м",
+        "1ч",
+        "1Д",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "15m",
+        "1h",
+        "1d"
+      ]
+    },
+    "layout.320": {
+      "overflow": false,
+      "tickerBar": {
+        "x": 0,
+        "y": 56,
+        "w": 320,
+        "h": 103
+      },
+      "tickerUsedPx": 560,
+      "chart": {
+        "x": 0,
+        "y": 261,
+        "w": 320,
+        "h": 507
+      },
+      "list": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "form": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "bottom": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "namesClipped": [],
+      "toolbarButtons": [
+        "График",
+        "Данные",
+        "Аналитика",
+        "VOLTEX",
+        "TradingView",
+        "15м",
+        "1ч",
+        "1Д",
+        "Все таймфреймы",
+        "Сравнить",
+        "•••",
+        "Настройки графика",
+        "Крест",
+        "Курсоры",
+        "Линия тренда",
+        "Инструменты линий тренда",
+        "Коррекция по Фибоначчи",
+        "Инструменты Фибоначчи",
+        "Паттерн XABCD",
+        "Паттерны",
+        "Длинная позиция",
+        "Прогнозирование и измерения",
+        "Кисть",
+        "Геометрические фигуры",
+        "Текст",
+        "Текст и заметки",
+        "Линейка",
+        "Остаться в режиме рисования",
+        "Заблокировать рисунки",
+        "Удалить все рисунки",
+        "Скрыть инструменты"
+      ],
+      "intervals": [
+        "15m",
+        "1h",
+        "1d"
+      ]
+    },
+    "cfd.1440.openToCandlesMs": 2256,
+    "cfd.1440.layout2Ms": 550,
+    "cfd.1440.requests": {
+      "total": 30,
+      "candles": 23,
+      "tickers": 1,
+      "byInterval": {
+        "1d": 14,
+        "1h": 3,
+        "1m": 1,
+        "5m": 1,
+        "15m": 1,
+        "30m": 1,
+        "4h": 2
+      }
+    },
+    "cfd.1440.heapMB": 20,
+    "cfd.1920.layout4Ms": 1107,
+    "cfd.list.fiveSwitchesMs": 1682
+  },
+  "screenshots": [
+    "cfd-after-1920.png",
+    "cfd-after-1440.png",
+    "cfd-after-1366.png",
+    "cfd-after-1024.png",
+    "cfd-after-768.png",
+    "cfd-after-430.png",
+    "cfd-after-390.png",
+    "cfd-after-360.png",
+    "cfd-after-320.png",
+    "cfd-after-1440-1M.png",
+    "cfd-after-1440-heikin.png",
+    "cfd-after-1440-indicators.png",
+    "cfd-after-1440-data.png",
+    "cfd-after-1440-analytics.png",
+    "cfd-after-1440-compare.png",
+    "cfd-after-1440-layout2.png",
+    "cfd-after-1440-drawings.png",
+    "snapshot-cfd-after.png",
+    "cfd-after-1440-fullscreen.png",
+    "cfd-after-1920-layout4.png",
+    "cfd-after-1440-history.png",
+    "cfd-after-390-history.png"
+  ],
+  "requests": [
+    {
+      "at": 1792056544802,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056544809,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056544810,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056544815,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056544817,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056545092,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056545096,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056548459,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548462,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548477,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548635,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548636,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548638,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548803,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548804,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548807,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548955,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548960,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056548963,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056550793,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056550796,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056550798,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056550801,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056550802,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056550806,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056550806,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056551143,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551144,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551145,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551236,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551255,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551270,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551285,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551330,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551331,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551332,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551363,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056551376,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553319,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056553320,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553324,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056553332,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056553332,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056553334,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056553335,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056553575,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553577,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553579,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553685,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553695,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553696,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553704,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553726,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553726,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553738,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553747,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056553753,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056555715,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056555721,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056555730,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056555730,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056555765,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056555767,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056555769,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056556071,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556077,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556078,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556152,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556152,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556153,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556170,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556171,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556171,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556187,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556200,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056556203,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558536,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056558546,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558581,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056558584,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056558585,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056558586,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056558586,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056558758,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558759,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558759,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558807,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558826,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558826,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558837,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558842,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558853,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558873,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558875,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056558880,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056560755,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056560757,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056560757,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056560758,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056560759,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056560759,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056560760,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056560996,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056560997,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056560997,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056561024,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056561033,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056561040,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056561043,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056561056,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056561061,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056561065,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056561078,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056561080,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056562921,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056562923,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056562953,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056562953,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056562960,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056562960,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056562962,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056563147,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563156,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563158,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563202,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563210,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563210,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563217,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563225,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563225,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563233,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563241,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056563255,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565178,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056565179,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056565179,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056565186,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056565189,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565190,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056565190,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056565460,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565461,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565461,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565488,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565497,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565497,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565519,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565539,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565549,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565572,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565592,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056565603,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567387,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056567389,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056567392,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056567396,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056567397,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567397,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056567398,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056567814,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567814,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567815,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567896,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567908,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567911,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567918,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567925,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567933,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567939,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567945,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056567956,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056569859,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056569863,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056569868,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056569869,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056569875,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056569876,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056569877,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056570273,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570274,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570274,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570336,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570346,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570348,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570360,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570360,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570373,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570432,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570433,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056570434,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056571806,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1m&limit=500"
+    },
+    {
+      "at": 1792056573879,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=5m&limit=500"
+    },
+    {
+      "at": 1792056574647,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=15m&limit=500"
+    },
+    {
+      "at": 1792056575520,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=30m&limit=500"
+    },
+    {
+      "at": 1792056577717,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=4h&limit=500"
+    },
+    {
+      "at": 1792056580057,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=500"
+    },
+    {
+      "at": 1792056591687,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056592948,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056595724,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=4h&limit=500"
+    },
+    {
+      "at": 1792056597560,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056599218,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056609303,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056609322,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609323,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056609324,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056609324,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056609325,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056609325,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056609688,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609689,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609691,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609761,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609770,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609771,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609792,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609801,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609802,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609811,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609825,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056609831,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056611364,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056611364,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056611374,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056614032,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056614043,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056614043,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056614044,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056614044,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614045,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056614045,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056614317,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614328,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614332,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614388,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614396,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614396,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614416,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614416,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614425,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614439,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614441,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056614457,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056617862,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056617863,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056618175,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056618182,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056618445,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056618446,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056618680,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056618685,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056618864,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056618866,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056620492,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056620492,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056620493,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056620493,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056620497,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620499,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056620500,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056620818,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620818,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620819,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620886,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620901,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620905,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620917,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620923,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620934,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620941,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620961,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056620968,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629654,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056629655,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056629657,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629657,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056629660,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056629660,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056629660,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056629844,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629844,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629845,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629915,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629928,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629929,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629938,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629952,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629960,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629972,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629985,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056629989,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056635794,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056635796,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056635804,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056635840,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056635841,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056635841,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056635842,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056636034,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636035,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636035,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636049,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636061,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636062,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636074,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636076,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636077,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636092,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636094,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056636110,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639200,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056639200,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056639201,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056639201,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056639201,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639202,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056639207,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056639418,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639436,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639437,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639446,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639457,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639458,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639470,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639480,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639484,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639489,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639494,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056639506,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642415,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056642416,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642416,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056642417,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056642446,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056642447,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056642448,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056642663,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642664,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642664,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642717,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642717,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642718,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642736,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642748,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642754,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642767,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642792,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056642794,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056645866,
+      "method": "GET",
+      "path": "/api/v1/me",
+      "query": ""
+    },
+    {
+      "at": 1792056645867,
+      "method": "GET",
+      "path": "/api/v1/futures/config",
+      "query": ""
+    },
+    {
+      "at": 1792056645867,
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "query": ""
+    },
+    {
+      "at": 1792056645868,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056645896,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAUUSD",
+      "query": "interval=1h&limit=500"
+    },
+    {
+      "at": 1792056645906,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/tickers",
+      "query": ""
+    },
+    {
+      "at": 1792056645915,
+      "method": "GET",
+      "path": "/api/v1/cfd/config",
+      "query": ""
+    },
+    {
+      "at": 1792056646025,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XAGUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646026,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPTUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646026,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XPDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646094,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/WTIUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646094,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/XBRUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646094,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/EURUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646114,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/GBPUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646125,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDJPY",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646125,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/AUDUSD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646132,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCAD",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646148,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/USDCHF",
+      "query": "interval=1d&limit=20"
+    },
+    {
+      "at": 1792056646148,
+      "method": "GET",
+      "path": "/api/v1/cfd/display/candles/NZDUSD",
+      "query": "interval=1d&limit=20"
+    }
+  ],
+  "blockedWrites": 0,
+  "blockedHosts": [
+    "fonts.googleapis.com"
+  ],
+  "pageErrors": [],
+  "completedAt": "2026-10-15T09:30:49.012Z"
+}

@@ -12,6 +12,8 @@ export interface ChartDataWindowProps {
   compare: DataWindowCompare[] | null;
   formatPrice: (value: number) => string;
   formatVolume: (value: number) => string;
+  /** False where the bars carry no traded volume (CFD): the row is left out rather than shown as 0. */
+  volume?: boolean;
   lang: string;
   t: (key: Key, params?: Record<string, string | number>) => string;
   touch: boolean;
@@ -22,14 +24,14 @@ const utc = (seconds: number) => new Date(seconds * 1000).toISOString().slice(0,
 const signed = (value: number, format: (v: number) => string) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${format(Math.abs(value))}`;
 
 /** «Данные»: the hovered (or tapped) candle's own numbers and the indicator values at that bar. */
-export function ChartDataWindow({ stats, indicators, compare, formatPrice, formatVolume, lang, t, touch, onClose }: ChartDataWindowProps) {
+export function ChartDataWindow({ stats, indicators, compare, formatPrice, formatVolume, volume = true, lang, t, touch, onClose }: ChartDataWindowProps) {
   const rows: [string, string, string?][] = stats ? [
     [t('chart.ws.data.time'), utc(stats.time)],
     [t('chart.ws.data.open'), formatPrice(stats.open)],
     [t('chart.ws.data.high'), formatPrice(stats.high)],
     [t('chart.ws.data.low'), formatPrice(stats.low)],
     [t('chart.ws.data.close'), formatPrice(stats.close)],
-    [t('chart.ws.data.volume'), formatVolume(stats.volume)],
+    ...(volume ? [[t('chart.ws.data.volume'), formatVolume(stats.volume)] as [string, string]] : []),
     [t('chart.ws.data.change'), signed(stats.change, formatPrice), stats.change > 0 ? 'up' : stats.change < 0 ? 'down' : undefined],
     [t('chart.ws.data.changePct'), formatPercent(stats.changePct, lang), stats.changePct > 0 ? 'up' : stats.changePct < 0 ? 'down' : undefined],
     [t('chart.ws.data.body'), formatPrice(stats.body)],

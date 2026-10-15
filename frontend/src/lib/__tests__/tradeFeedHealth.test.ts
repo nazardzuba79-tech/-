@@ -72,6 +72,8 @@ beforeEach(() => {
       if (name.endsWith('/useMarketData')) return { useMarketData: () => ({ loaded: true, status: 'ready', tickers: new Map([['BTC/USDT', {}], ['ETH/USDT', {}]]) }) };
       if (name.endsWith('/useCfdTickers')) return { useCfdTickers: () => cfdFeed };
       if (name.endsWith('/cfdPresentation')) return cfdPresentation;
+      // 2026-10-15: the CFD chart's practice-position lines (the chart itself is the stubbed child).
+      if (name.endsWith('/useCfdPracticePositions')) return { useCfdPracticePositionLines: () => [] };
       if (name.endsWith('/tradingMode')) return { rememberTradingMode: () => {} };
       if (name.endsWith('/useCompactAccountPanel')) return evaluate('lib/useCompactAccountPanel.ts');
       if (name.endsWith('/krakenSocket')) return { krakenSocket: { getStatus: () => 'disconnected', subscribeStatus: krakenSubscribe } };
