@@ -164,6 +164,29 @@ async function languages(browser) {
   }
 }
 
+async function finalizeTransitionVideo(ctx, video, directory) {
+  await ctx.close();
+  assert.ok(video, 'transition recording must create a video artifact');
+  const file = path.join(directory, 'transitions.webm');
+  // A remote browser stores its recording server-side; the client export path may not exist.
+  try { fs.mkdirSync(directory, { mode: 0o700 }); }
+  catch (error) { if (error.code !== 'EEXIST') throw error; }
+  const parent = fs.lstatSync(directory);
+  assert.ok(parent.isDirectory() && !parent.isSymbolicLink());
+  if (typeof process.getuid === 'function') { assert.equal(parent.uid, process.getuid()); assert.equal(parent.mode & 0o022, 0); }
+  try { fs.lstatSync(file); throw Error('transition video destination must be fresh'); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+  let timer;
+  try { await Promise.race([video.saveAs(file), new Promise((_, reject) => { timer = setTimeout(() => reject(Error('transition video save deadline exceeded')), 10000); })]); }
+  finally { clearTimeout(timer); }
+  const stat = fs.lstatSync(file);
+  assert.ok(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1 && stat.size > 0 && stat.size <= 16 * 1024 * 1024);
+  const bytes = fs.readFileSync(file);
+  // The existing Stocks browser workflow shares a 28-minute completion budget.
+  const witness = require('./stocks-browser-native/qualification.cjs').inspectWebm(bytes, { width: 1280, height: 720, maxDurationMs: 1680000 });
+  return { file, sha256: require('node:crypto').createHash('sha256').update(bytes).digest('hex'), ...witness };
+}
+
 async function transitions(browser, video) {
   const { ctx, page, log } = await context(browser, { width: 1280, height: 720, video });
   await page.goto(ORIGIN + '/stocks?view=overview'); await page.locator('.vxo-row-link').nth(1).waitFor(); await settle(page);
@@ -207,9 +230,10 @@ async function transitions(browser, video) {
   await page.waitForTimeout(800);
   const streams = await page.evaluate(() => window.__qaStreams);
   report.measurements.transitionReads = { ...stockReads(log), streamsOpenedByPage: streams };
-  const videoPath = await page.video()?.path();
-  await ctx.close();
-  if (videoPath) report.video = path.relative(OUT, videoPath).replaceAll('\\', '/');
+  const artifact = page.video();
+  const savedVideo = await finalizeTransitionVideo(ctx, artifact, video);
+  report.video = path.relative(OUT, savedVideo.file).replaceAll('\\', '/');
+  report.videoEvidence = { ...savedVideo, file: report.video };
   // Reload and direct URL.
   const second = await context(browser, { width: 1440, height: 900 });
   await second.page.goto(ORIGIN + href(N225)); await panelReady(second.page);

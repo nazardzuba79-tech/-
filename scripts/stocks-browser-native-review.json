@@ -15,7 +15,7 @@
       "path": "docs/AI_HANDOFF.md",
       "beforeBlob": "1d41e848459b935a509c8c6e67c7262876998c70",
       "beforeMode": "100644",
-      "afterSha256": "5db93574eafee53eeca1b02432dbdc294557e00cbf3529b5657424edb2cf6486",
+      "afterSha256": "384ab0d329e15e59dea42233ad2564fb1daf037f436c6dc3136c613a876646fc",
       "afterMode": "100644"
     },
     {
@@ -148,7 +148,7 @@
       "path": "scripts/stocks-browser-native/native.test.cjs",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "990dd6a002e7a97fc1a221d0a122de84cdefc283b4f3e536d73cf22ca41eb8c2",
+      "afterSha256": "bcf695353554453e9cf2fa0fc3b7825a730fc15e153a05972b363d3c1aa61675",
       "afterMode": "100644"
     },
     {
@@ -183,7 +183,7 @@
       "path": "scripts/stocks-browser-native/qualification.cjs",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "8b429f3a90479cbe8809b27a86227449724195bfb32ba875e743d98102f6e4ce",
+      "afterSha256": "e63bb982d5b7e82da162e14ea7c4e90afd265d466712228af97ccecee01e8cf1",
       "afterMode": "100644"
     },
     {

@@ -29,7 +29,7 @@ test('recording dependency uses the exact immutable cache, revision and complete
 });
 function webmFixture({codec='V_VP8',duration=400,width=320,height=180,doctype='webm',block=true}={}){
   const element=(id,body)=>{const hex=id.toString(16),key=Buffer.from(hex.length%2?'0'+hex:hex,'hex'),size=body.length<127?Buffer.from([0x80|body.length]):Buffer.from([0x40|(body.length>>8),body.length&255]);return Buffer.concat([key,size,body]);};
-  const uint=value=>value<256?Buffer.from([value]):Buffer.from([value>>8,value&255]),d=Buffer.alloc(8);d.writeDoubleBE(duration);const frame=Buffer.from('0000009d012a4001b400','hex');
+  const uint=value=>value<256?Buffer.from([value]):Buffer.from([value>>8,value&255]),d=Buffer.alloc(8);d.writeDoubleBE(duration);const frame=Buffer.from('0000009d012a4001b400','hex');frame.writeUInt16LE(width,6);frame.writeUInt16LE(height,8);
   const info=element(0x1549a966,element(0x4489,d)),video=element(0xe0,Buffer.concat([element(0xb0,uint(width)),element(0xba,uint(height))]));
   const track=element(0x1654ae6b,element(0xae,Buffer.concat([element(0xd7,uint(1)),element(0x83,uint(1)),element(0x86,Buffer.from(codec)),video])));
   const cluster=element(0x1f43b675,block?element(0xa3,Buffer.concat([Buffer.from('81000080','hex'),frame])):Buffer.alloc(0));
@@ -40,6 +40,33 @@ test('video witness requires finalized WebM, VP8 track and actual bounded keyfra
   for(const options of [{codec:'V_VP9'},{duration:0},{duration:NaN},{duration:60001},{width:321},{height:181},{doctype:'matroska'},{block:false}])assert.throws(()=>inspectWebm(webmFixture(options)));
   for(const bytes of [Buffer.alloc(0),valid.subarray(0,valid.length-1),Buffer.concat([valid,Buffer.from([0])]),Buffer.alloc(16*1024*1024+1)])assert.throws(()=>inspectWebm(bytes));
   const bad=Buffer.from(valid),marker=bad.indexOf(Buffer.from('9d012a','hex'));bad[marker]=0;assert.throws(()=>inspectWebm(bad));
+  assert.equal(inspectWebm(webmFixture({duration:61000}),{maxDurationMs:1680000}).durationMs,61000);assert.throws(()=>inspectWebm(webmFixture({duration:1680001}),{maxDurationMs:1680000}));for(const maxDurationMs of [0,-1,NaN,Infinity,1680001,'1680000'])assert.throws(()=>inspectWebm(valid,{maxDurationMs}));
+});
+function transitionVideoHelper(){const source=fs.readFileSync(path.join(__dirname,'../qa-stocks-ui.cjs'),'utf8'),start=source.indexOf('async function finalizeTransitionVideo('),end=source.indexOf('\nasync function transitions(',start);assert.ok(start>=0&&end>start);const module={exports:{}};require('node:vm').runInNewContext(source.slice(start,end)+'\nmodule.exports=finalizeTransitionVideo;', {fs,path,assert,module,setTimeout,clearTimeout,process:{getuid:process.getuid?.bind(process)},require:name=>{if(name==='./stocks-browser-native/qualification.cjs')return require('./qualification.cjs');if(name==='node:crypto')return require(name);throw Error('unexpected fixture dependency');}});return module.exports;}
+test('remote CDP video uses saveAs after finalization and validates the actual copied bytes',async()=>{
+  const {saveFinalizedVideo}=require('./qualification.cjs'),saveTransition=transitionVideoHelper(),os=require('node:os');
+  for(const kind of ['qualification','transition']){const output=fs.mkdtempSync(path.join(os.tmpdir(),'voltex-video-unit-')),directory=path.join(output,'video');if(kind==='qualification')fs.mkdirSync(directory);const events=[],bytes=webmFixture(kind==='transition'?{width:1280,height:720,duration:61000}:{});
+    try{const video={path:()=>{throw Error('Video.path is unsupported over remote CDP');},saveAs:async file=>{assert.deepEqual(events,['close']);assert.ok(fs.lstatSync(directory).isDirectory());if(kind==='transition'&&typeof process.getuid==='function'){assert.equal(fs.lstatSync(directory).uid,process.getuid());assert.equal(fs.lstatSync(directory).mode&0o777,0o700);}events.push('save');fs.writeFileSync(file,bytes);}};let saved;
+      if(kind==='transition')saved=await saveTransition({close:async()=>{assert.equal(fs.existsSync(directory),false);events.push('close');}},video,directory);else{events.push('close');saved=await saveFinalizedVideo(video,directory,output);}
+      assert.deepEqual(events,['close','save']);assert.equal(saved.sha256,sha(bytes));assert.equal(saved.codec,'V_VP8');assert.equal(saved.keyframes,1);assert.equal(path.basename(saved.file||saved.path),kind==='transition'?'transitions.webm':'qualification.webm');
+    }finally{assert.equal(path.resolve(path.dirname(output)),path.resolve(os.tmpdir()));assert.ok(path.basename(output).startsWith('voltex-video-unit-'));fs.rmSync(output,{recursive:true,force:true});}
+  }
+});
+test('transition export accepts an existing owned recording directory and rejects a file or directory symlink',async()=>{
+  const saveTransition=transitionVideoHelper(),os=require('node:os');
+  for(const kind of ['existing-directory','file','symlink']){const output=fs.mkdtempSync(path.join(os.tmpdir(),'voltex-video-unit-')),directory=path.join(output,'video');let saves=0,closed=0;
+    try{if(kind==='existing-directory'){fs.mkdirSync(directory,{mode:0o700});fs.writeFileSync(path.join(directory,'local-recording.webm'),'preserved');}else if(kind==='file')fs.writeFileSync(directory,'preserved');else{const target=path.join(output,'actual');fs.mkdirSync(target,{mode:0o700});fs.symlinkSync(target,directory,'junction');}const video={path:()=>{throw Error('unsupported');},saveAs:async file=>{saves++;fs.writeFileSync(file,webmFixture({width:1280,height:720}));}};const run=()=>saveTransition({close:async()=>closed++},video,directory);
+      if(kind==='existing-directory'){await run();assert.equal(saves,1);assert.equal(fs.readFileSync(path.join(directory,'local-recording.webm'),'utf8'),'preserved');}else{await assert.rejects(run);assert.equal(saves,0);}assert.equal(closed,1);
+    }finally{assert.equal(path.resolve(path.dirname(output)),path.resolve(os.tmpdir()));assert.ok(path.basename(output).startsWith('voltex-video-unit-'));fs.rmSync(output,{recursive:true,force:true});}
+  }
+});
+test('remote video export rejects missing, empty, preexisting and failed artifacts',async()=>{
+  const {saveFinalizedVideo}=require('./qualification.cjs'),saveTransition=transitionVideoHelper(),os=require('node:os');
+  for(const kind of ['qualification','transition'])for(const failure of ['empty','absent','existing','save-failure']){const output=fs.mkdtempSync(path.join(os.tmpdir(),'voltex-video-unit-')),directory=path.join(output,'video');fs.mkdirSync(directory);let calls=0,closed=0;
+    try{const file=path.join(directory,kind==='transition'?'transitions.webm':'qualification.webm');if(failure==='existing')fs.writeFileSync(file,'preserved');const video={path:()=>{throw Error('unsupported path must not be called');},saveAs:async destination=>{calls++;if(failure==='save-failure')throw Error('fixture export failure');if(failure==='empty')fs.writeFileSync(destination,Buffer.alloc(0));}};
+      await assert.rejects(()=>kind==='transition'?saveTransition({close:async()=>closed++},video,directory):saveFinalizedVideo(video,directory,output));if(kind==='transition')assert.equal(closed,1);assert.equal(calls,failure==='existing'?0:1);if(failure==='existing')assert.equal(fs.readFileSync(file,'utf8'),'preserved');
+    }finally{assert.equal(path.resolve(path.dirname(output)),path.resolve(os.tmpdir()));assert.ok(path.basename(output).startsWith('voltex-video-unit-'));fs.rmSync(output,{recursive:true,force:true});}
+  }
 });
 test('recording failures close the owned context and retain cleanup failures without a browser',async()=>{
   const {videoSmoke,bounded}=require('./qualification.cjs'),os=require('node:os');
