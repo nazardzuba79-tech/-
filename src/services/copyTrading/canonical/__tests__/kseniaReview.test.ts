@@ -60,6 +60,13 @@ test('48 irregular cohorts, allocation-only 5.4M AUM, independently reconciled d
 });
 test.each([1, 7, 30, 90, 365])('append-only +%i UTC days including copied trades, fee events and serialized restart', days => {
   const next = advanceKseniaReview(baseline, days);
+  for (const trade of next.trades.slice(baseline.trades.length)) {
+    expect(Number.isInteger(trade.leverage)).toBe(true);
+    expect(trade.leverage).toBeGreaterThanOrEqual(3);
+    expect(trade.leverage).toBeLessThanOrEqual(6);
+    const capital = next.cashflow.masterDays.find(day => day.date === trade.closedAt.slice(0, 10))!.capitalAtRisk;
+    expect(trade.entryPrice * trade.quantity / trade.leverage).toBeLessThanOrEqual(capital);
+  }
   expect(next.dailyResults.slice(0, baseline.dailyResults.length)).toEqual(baseline.dailyResults);
   expect(next.trades.slice(0, baseline.trades.length)).toEqual(baseline.trades);
   expect(next.equityHistory.slice(0, baseline.equityHistory.length)).toEqual(baseline.equityHistory);
