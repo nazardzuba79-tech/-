@@ -122,6 +122,26 @@ primary or selected signer, and every other fatal status (including
 `KEYREVOKED`) still fail. Duplicate notices for an identified unused subkey are
 allowed; no key expiry window or package/signature pin is extended.
 
+Video capture requires the separate FFmpeg revision `1011` referenced by the
+SRI-bound Playwright 1.56.1 `browsers.json`. The source manifest pins the exact
+official ZIP, its two regular members (`ffmpeg-linux` and `COPYING.LGPLv2.1`),
+their sizes, modes and SHA256 digests. The archive was obtained over verified
+HTTPS from the source-listed Playwright CDN on 2026-10-15 and redirected to the
+source-listed Microsoft host. The installer uses that exact observed final URL
+directly; redirects remain prohibited. These are reviewed measured digest pins
+with HTTPS-origin authentication, not a publisher detached signature or the
+Google APT signature chain used for Chrome.
+
+Before any FFmpeg payload write, the installer checks the complete ZIP hash,
+exact two-entry inventory, regular-file types/modes, canonical fixed names,
+compression flags, byte bounds and both uncompressed hashes. It extracts only
+into the new `<prefix>/browsers/ffmpeg-1011` directory and includes every file in
+the immutable installation inventory. No downloaded executable or package
+script runs as root. The runtime must use that fixed `PLAYWRIGHT_BROWSERS_PATH`
+before importing Playwright and qualify real video recording; the user cache,
+system FFmpeg and unverified alternate binaries are not fallbacks. Existing
+Chrome sandbox, TLS, seven-case acceptance and owned-process cleanup gates remain.
+
 Actual CI kernel/user namespace availability, `/proc` readability after sandbox
 dumpability changes, library compatibility, and seven-case acceptance remain
 unproven until execution. A native VM has normal network access; existing fixture

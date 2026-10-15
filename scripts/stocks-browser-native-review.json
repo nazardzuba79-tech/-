@@ -8,14 +8,14 @@
       "path": ".github/workflows/stocks-review.yml",
       "beforeBlob": "2a304bef6996ee942f1862dcd9e9bcfa807ba093",
       "beforeMode": "100644",
-      "afterSha256": "8e934cae128c396867df2632c549b6866b868ffab5c6965e41518ca2a38437d1",
+      "afterSha256": "5d5fd617c6d514708759b5ea85e4053b0a6006049156aaf89d07f9f0c09eb88f",
       "afterMode": "100644"
     },
     {
       "path": "docs/AI_HANDOFF.md",
       "beforeBlob": "1d41e848459b935a509c8c6e67c7262876998c70",
       "beforeMode": "100644",
-      "afterSha256": "927aa320cb007159c59f46acd95d598bc3daecdf83c1a32e376c014a8aab6ebb",
+      "afterSha256": "5db93574eafee53eeca1b02432dbdc294557e00cbf3529b5657424edb2cf6486",
       "afterMode": "100644"
     },
     {
@@ -78,7 +78,7 @@
       "path": "scripts/stocks-browser-native/README.md",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "4da229a00487fc77a3704bddda5a8b4e25a04debc984164474a2e63b99c21ab3",
+      "afterSha256": "aa067808aade13af378e28fd270aa318e89039e8db7f0ca56a6382f819f4fafd",
       "afterMode": "100644"
     },
     {
@@ -106,14 +106,14 @@
       "path": "scripts/stocks-browser-native/installation.cjs",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "cd9070df75bf73987c1c2822a0d46e43855e730fe117d64ab80fad1cf6afb14b",
+      "afterSha256": "1887bd5d71498aba50b9fef6b69878c6e4c36f2cfbc3b57e83d059699e994597",
       "afterMode": "100644"
     },
     {
       "path": "scripts/stocks-browser-native/manifest.json",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "9fd241f5d28a2cac5d7d52cc56517956fb3d2d4032530e0ec79283512bf47bc5",
+      "afterSha256": "991cc9ebcfd9f17527aa0cc349a564cbae9ab0f53ac93c66b2e38f51492c4ab3",
       "afterMode": "100644"
     },
     {
@@ -148,7 +148,7 @@
       "path": "scripts/stocks-browser-native/native.test.cjs",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "bb12c3e997de007d225eb3f24a0509c01a4c36ce763edbc7bea4ad4c831da596",
+      "afterSha256": "990dd6a002e7a97fc1a221d0a122de84cdefc283b4f3e536d73cf22ca41eb8c2",
       "afterMode": "100644"
     },
     {
@@ -169,28 +169,28 @@
       "path": "scripts/stocks-browser-native/provision.py",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "5a351e1c0b2c3bda1e409b675f1a06fe63b07d578bcc19f5cce2af8f2b73cf16",
+      "afterSha256": "71cbd06515c8b8961e617ea9a18bae9c5fbc29ca8f4d44da0239f728f05de14e",
       "afterMode": "100644"
     },
     {
       "path": "scripts/stocks-browser-native/provision_test.py",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "37600f2b1e771ae535f4b8b9a4fc897eaea53cda4d00acd4d7894287f0073453",
+      "afterSha256": "70a58ad0d9f3c476a287df6052285ee9d2684c638471643f0ea59024f69bcb2b",
       "afterMode": "100644"
     },
     {
       "path": "scripts/stocks-browser-native/qualification.cjs",
       "beforeBlob": null,
       "beforeMode": null,
-      "afterSha256": "e854888610c10f8c32a825da44ed7c2551ce540789098beb2b7f728c320bbad4",
+      "afterSha256": "8b429f3a90479cbe8809b27a86227449724195bfb32ba875e743d98102f6e4ce",
       "afterMode": "100644"
     },
     {
       "path": "services/stocks/auth-burst-trace-512/workflow.test.mjs",
       "beforeBlob": "ca4dd5a24c67b04bc2d87489c221698f4be7e777",
       "beforeMode": "100644",
-      "afterSha256": "db16f943ce68ee147015ed91e8729921c12df0fbd60e55b9a3a939c538790dc3",
+      "afterSha256": "34d8dc5617a8284041ca86b7df1bfb56286ebdda4165073ce68eb7c23a8865ce",
       "afterMode": "100644"
     },
     {
@@ -204,7 +204,7 @@
       "path": "services/stocks/review-correctness.test.mjs",
       "beforeBlob": "68e62266955fb7f80a52cb289d23add7a0e0ac16",
       "beforeMode": "100644",
-      "afterSha256": "fd812a4754442f37d7128f0b87ee42ef36f065c2c5cb6458b20fa05861874ab4",
+      "afterSha256": "161b17a3f88a35c09daa220531cda66f134e57ba4393ba88e0633f555213b1a1",
       "afterMode": "100644"
     }
   ]

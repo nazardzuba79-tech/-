@@ -34,6 +34,35 @@
   "metadataMaximumAgeMs": 259200000,
   "metadataFutureToleranceMs": 300000,
   "playwrightVersion": "1.56.1",
+  "ffmpeg": {
+    "revision": "1011",
+    "directory": "browsers/ffmpeg-1011",
+    "executable": "browsers/ffmpeg-1011/ffmpeg-linux",
+    "sourceCommit": "54c711571a37de525377e6f3d3608c3e029b1829",
+    "authentication": "Official HTTPS/TLS; measured fixed digest; no publisher detached signature/checksum claimed",
+    "archive": {
+      "url": "https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip",
+      "finalUrl": "https://playwright.download.prss.microsoft.com/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip",
+      "bytes": 2376500,
+      "sha256": "ebc74fc5b94830176a3c2914ae96bd8bc7f6a91f4f33890230f84a172ee61ccc"
+    },
+    "files": [
+      {
+        "path": "ffmpeg-linux",
+        "bytes": 5101056,
+        "compressedBytes": 2366817,
+        "mode": 493,
+        "sha256": "460d44f3416005662f528d4b92e7b94ace924e8a0288106d3803b73c56eaadc8"
+      },
+      {
+        "path": "COPYING.LGPLv2.1",
+        "bytes": 26526,
+        "compressedBytes": 9349,
+        "mode": 420,
+        "sha256": "b634ab5640e258563c536e658cad87080553df6f34f62269a21d554844e58bfe"
+      }
+    ]
+  },
   "runtimeSelectionVariable": "VOLTEX_STOCKS_NATIVE_BROWSER",
   "runtimeSelectionValue": "1",
   "playwrightPackage": {

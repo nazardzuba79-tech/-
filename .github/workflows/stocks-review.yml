@@ -1189,6 +1189,7 @@ jobs:
       VOLTEX_STOCKS_NATIVE_BROWSER: '1'
       QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       QA_PLAYWRIGHT_MODULE: /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/playwright/node_modules/playwright
+      PLAYWRIGHT_BROWSERS_PATH: /usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc/browsers
     steps:
       - name: Record original shared browser budget
         shell: bash

@@ -214,6 +214,15 @@ const NATIVE_TRANSITION = {
     ['stocks-ui-browser', '6874d6c4a18b224f271cbb499f4cf06d2d410acf98566329879e5047c0d3628d', 'c53c259c66669d8e2d5f4bdcad15f173c979129c1d007c4800ee248f7cce6349'],
   ],
 };
+// The recording dependency adds only one fixed environment value. All earlier
+// reviewed transitions, finite pins and the other 21 job blocks stay exact.
+const FFMPEG_TRANSITION = {
+  sourceCommit: 'b0dfad72a852b9f3e5471ea2895188953df0f0e3',
+  sourceSha256: '8e934cae128c396867df2632c549b6866b868ffab5c6965e41518ca2a38437d1',
+  reviewedSha256: '5d5fd617c6d514708759b5ea85e4053b0a6006049156aaf89d07f9f0c09eb88f',
+  browserBefore: 'c53c259c66669d8e2d5f4bdcad15f173c979129c1d007c4800ee248f7cce6349',
+  browserAfter: '3c8da2bc71d064b5b5ef6b1852e8752ecbc95f437b5ff78a6b66329fd9a524a4',
+};
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 function workflowParts(value) {
   const marker = value.indexOf('\njobs:\n');
@@ -281,18 +290,33 @@ function assertNativeTransition(current, source, parent, original) {
   assert.equal(sha256(current), NATIVE_TRANSITION.reviewedSha256);
   return 'REVIEWED_NATIVE_BROWSER_V1';
 }
+function assertFfmpegTransition(current, source, nativeSource, parent, original) {
+  assert.equal(assertNativeTransition(source, nativeSource, parent, original), 'REVIEWED_NATIVE_BROWSER_V1');
+  assert.equal(sha256(source), FFMPEG_TRANSITION.sourceSha256);
+  const prior = workflowParts(source), candidate = workflowParts(current);
+  assert.equal(prior.order.length, 22); assert.deepEqual(candidate.order, prior.order); assert.equal(candidate.header, prior.header);
+  for (const name of prior.order.filter(name => name !== 'stocks-ui-browser')) assert.equal(candidate.blocks[name], prior.blocks[name], 'non-browser job changed: ' + name);
+  const prefix = '/usr/lib/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc';
+  const anchor = '      QA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}\n' +
+    '      QA_PLAYWRIGHT_MODULE: ' + prefix + '/playwright/node_modules/playwright\n';
+  assert.equal(prior.blocks['stocks-ui-browser'].split(anchor).length, 2);
+  assert.equal(candidate.blocks['stocks-ui-browser'], prior.blocks['stocks-ui-browser'].replace(anchor, anchor + '      PLAYWRIGHT_BROWSERS_PATH: ' + prefix + '/browsers\n'));
+  assert.equal(sha256(prior.blocks['stocks-ui-browser']), FFMPEG_TRANSITION.browserBefore);
+  assert.equal(sha256(candidate.blocks['stocks-ui-browser']), FFMPEG_TRANSITION.browserAfter);
+  assert.equal(sha256(current), FFMPEG_TRANSITION.reviewedSha256); return 'REVIEWED_NATIVE_FFMPEG_V1';
+}
 let frozenWorkflowInputs;
 function frozenInputs() {
   if (!frozenWorkflowInputs) {
     const read = commit => execFileSync('git', ['show', commit + ':' + WORKFLOW_PATH], {
       cwd: root, encoding: 'utf8', timeout: 10000, maxBuffer: 1024 ** 2 }).replace(/\r\n/g, '\n');
-    frozenWorkflowInputs = { parent: read(REVIEWED_TRANSITION.parentCommit), original: read(BASELINE_SHA), nativeSource: read(NATIVE_TRANSITION.sourceCommit) };
+    frozenWorkflowInputs = { parent: read(REVIEWED_TRANSITION.parentCommit), original: read(BASELINE_SHA), nativeSource: read(NATIVE_TRANSITION.sourceCommit), ffmpegSource: read(FFMPEG_TRANSITION.sourceCommit) };
   }
   return frozenWorkflowInputs;
 }
 function checkTransition(candidate) {
-  const { parent, original, nativeSource } = frozenInputs();
-  return assertNativeTransition(candidate, nativeSource, parent, original);
+  const { parent, original, nativeSource, ffmpegSource } = frozenInputs();
+  return assertFfmpegTransition(candidate, ffmpegSource, nativeSource, parent, original);
 }
 function changedBlock(name, transform) {
   const block = workflowParts(text).blocks[name];
@@ -304,10 +328,17 @@ function changedBlock(name, transform) {
 
 test('reviewed correctness transition retains whole historical provenance and exact 13 untouched jobs', () => {
   assert.ok(job);
-  const { parent, original, nativeSource } = frozenInputs();
+  const { parent, original, nativeSource, ffmpegSource } = frozenInputs();
   assert.equal(assertReviewedTransition(parent, parent, original), 'ORIGINAL_PARENT');
   assert.equal(assertReviewedTransition(nativeSource, parent, original), 'REVIEWED_CORRECTNESS_V2');
-  assert.equal(checkTransition(text), 'REVIEWED_NATIVE_BROWSER_V1');
+  assert.equal(assertNativeTransition(ffmpegSource, nativeSource, parent, original), 'REVIEWED_NATIVE_BROWSER_V1');
+  assert.equal(checkTransition(text), 'REVIEWED_NATIVE_FFMPEG_V1');
+});
+test('recording transition binds the exact prior source and rejects alternate mutable cache paths', () => {
+  const { parent, original, nativeSource, ffmpegSource } = frozenInputs();
+  assert.throws(() => assertFfmpegTransition(text, ffmpegSource + '\n', nativeSource, parent, original));
+  const line = text.match(/^      PLAYWRIGHT_BROWSERS_PATH: .+$/m)?.[0]; assert.ok(line);
+  for (const replacement of ['', '      PLAYWRIGHT_BROWSERS_PATH: /tmp/ms-playwright', line + '\n' + line]) assert.throws(() => checkTransition(text.replace(line, replacement)));
 });
 test('native-only transition cannot mutate unrelated jobs, its exact source or reviewed scheduling', () => {
   const { parent, original, nativeSource } = frozenInputs();

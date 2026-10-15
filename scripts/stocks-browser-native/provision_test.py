@@ -342,6 +342,121 @@ class NativePureTests(unittest.TestCase):
                     info.size = 7
                     archive.addfile(info, io.BytesIO(b'fixture'))
 
+    def ffmpeg_archive(self, path, changes=None):
+        files = [('ffmpeg-linux', b'public-ffmpeg-fixture', 0o100755),
+                 ('COPYING.LGPLv2.1', b'public-license-fixture', 0o100644)]
+        if changes:
+            files = changes(files)
+        with P.zipfile.ZipFile(path, 'w') as archive:
+            for name, data, mode in files:
+                entry = P.zipfile.ZipInfo(name)
+                entry.create_system = 3
+                entry.external_attr = mode << 16
+                archive.writestr(entry, data, compress_type=P.zipfile.ZIP_DEFLATED)
+        raw = path.read_bytes()
+        pin = P.json.loads(P.json.dumps(P.M['ffmpeg']))
+        pin['archive'].update({'bytes': len(raw), 'sha256': P.digest(raw)})
+        with P.zipfile.ZipFile(path) as archive:
+            pin['files'] = [{'path': row.filename, 'bytes': row.file_size,
+                             'compressedBytes': row.compress_size, 'mode': (row.external_attr >> 16) & 0o7777,
+                             'sha256': P.digest(archive.read(row))} for row in archive.infolist()]
+        return pin
+
+    def test_ffmpeg_revision_matches_sri_bound_core_inventory(self):
+        descriptor = {'name': 'ffmpeg', 'revision': '1011', 'revisionOverrides': {'mac12': '1010'}}
+        P.ffmpeg_revision({'browsers': [descriptor]}, P.M['ffmpeg'])
+        for entries in [[], [descriptor, descriptor], [{'name': 'ffmpeg', 'revision': '1009'}],
+                        [{**descriptor, 'revisionOverrides': {'ubuntu22.04-x64': '1010'}}]]:
+            with self.subTest(entries=entries), self.assertRaises(ValueError):
+                P.ffmpeg_revision({'browsers': entries}, P.M['ffmpeg'])
+
+    def test_ffmpeg_complete_regular_payload_is_verified_before_creation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            archive = root / 'ffmpeg.zip'
+            pin = self.ffmpeg_archive(archive)
+            destination = root / 'ffmpeg'
+            P.extract_ffmpeg(archive, destination, pin)
+            self.assertEqual({item.name for item in destination.iterdir()}, {'ffmpeg-linux', 'COPYING.LGPLv2.1'})
+            for entry in pin['files']:
+                target = destination / entry['path']
+                self.assertEqual((target.stat().st_size, P.digest(target.read_bytes())), (entry['bytes'], entry['sha256']))
+                self.assertEqual(target.stat().st_mode & 0o6000, 0)
+            pin['files'][1]['sha256'] = '0' * 64
+            rejected = root / 'not-created'
+            with self.assertRaisesRegex(ValueError, 'payload digest mismatch'):
+                P.extract_ffmpeg(archive, rejected, pin)
+            self.assertFalse(rejected.exists())  # Neither binary nor license was written.
+
+    def test_ffmpeg_zip_rejects_paths_duplicates_links_special_files_and_modes(self):
+        changes = [
+            lambda rows: rows[:1],
+            lambda rows: rows + [('unexpected', b'x', 0o100644)],
+            lambda rows: [rows[0], rows[0]],
+            lambda rows: [('../ffmpeg-linux', rows[0][1], rows[0][2]), rows[1]],
+            lambda rows: [('/ffmpeg-linux', rows[0][1], rows[0][2]), rows[1]],
+            lambda rows: [('sub/ffmpeg-linux', rows[0][1], rows[0][2]), rows[1]],
+        ]
+        for mode in [0o120777, 0o040755, 0o020644, 0o104755, 0o100777]:
+            changes.append(lambda rows, mode=mode: [(rows[0][0], rows[0][1], mode), rows[1]])
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            for index, change in enumerate(changes):
+                archive, destination = root / f'bad-{index}.zip', root / f'bad-{index}'
+                with self.subTest(case=index):
+                    pin = self.ffmpeg_archive(archive, change)
+                    with self.assertRaises(ValueError):
+                        P.extract_ffmpeg(archive, destination, pin)
+                    self.assertFalse(destination.exists())
+
+    def test_ffmpeg_zip_rejects_encoding_type_and_size_metadata_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = pathlib.Path(directory) / 'ffmpeg.zip'
+            pin = self.ffmpeg_archive(archive)
+            for attribute, value in [('flag_bits', 1), ('flag_bits', 8), ('compress_type', P.zipfile.ZIP_STORED),
+                                     ('create_system', 0), ('file_size', 17 * 1024 * 1024),
+                                     ('compress_size', 33 * 1024 * 1024), ('orig_filename', 'ffmpeg-linux\0extra')]:
+                with self.subTest(attribute=attribute, value=value), P.zipfile.ZipFile(archive) as zipped:
+                    members = zipped.infolist()
+                    setattr(members[0], attribute, value)
+                    with self.assertRaises(ValueError):
+                        P.ffmpeg_members(members, pin)
+
+    def test_ffmpeg_archive_tamper_and_truncation_fail_before_destination(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            for kind in ['tamper', 'truncate']:
+                archive, destination = root / (kind + '.zip'), root / kind
+                pin = self.ffmpeg_archive(archive)
+                raw = archive.read_bytes()
+                archive.write_bytes((bytes([raw[0] ^ 1]) + raw[1:]) if kind == 'tamper' else raw[:-1])
+                with self.subTest(kind=kind), self.assertRaises(ValueError):
+                    P.extract_ffmpeg(archive, destination, pin)
+                self.assertFalse(destination.exists())
+
+    def test_ffmpeg_download_only_accepts_fixed_final_https_url_and_no_redirect(self):
+        with tempfile.TemporaryDirectory() as directory:
+            destination = pathlib.Path(directory) / 'download.zip'
+            for url in [P.M['ffmpeg']['archive']['url'], 'http://playwright.download.prss.microsoft.com/ffmpeg.zip',
+                        P.M['ffmpeg']['archive']['finalUrl'] + '?alternate=1']:
+                with self.subTest(url=url), mock.patch.object(P.urllib.request, 'build_opener') as opener:
+                    with self.assertRaisesRegex(ValueError, 'unreviewed public source'):
+                        P.download(url, destination, 32 * 1024 * 1024)
+                    opener.assert_not_called()
+            body = b'public-download-fixture'
+            response = mock.MagicMock()
+            response.__enter__.return_value = response
+            response.status, response.url = 200, P.M['ffmpeg']['archive']['finalUrl']
+            response.read.side_effect = [body, b'']
+            with mock.patch.object(P.urllib.request, 'build_opener') as opener:
+                opener.return_value.open.return_value = response
+                record = P.download(response.url, destination, 32 * 1024 * 1024, P.digest(body), len(body))
+                opener.return_value.open.assert_called_once_with(response.url, timeout=30)
+                self.assertEqual(record, {'sha256': P.digest(body), 'bytes': len(body)})
+                self.assertEqual(destination.read_bytes(), body)
+            with self.assertRaisesRegex(ValueError, 'redirect prohibited'):
+                P.NoRedirect().redirect_request(None, None, 307, '', {}, P.M['ffmpeg']['archive']['finalUrl'])
+
     def test_npm_regular_files_only_and_new_suid_bits_removed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = pathlib.Path(directory)

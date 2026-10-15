@@ -23,6 +23,7 @@ import tarfile
 import tempfile
 import time
 import urllib.request
+import zipfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
@@ -178,7 +179,10 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def download(url, destination, maximum, expected_sha=None, expected_size=None, integrity=None):
-    require(url.startswith(('https://dl.google.com/', 'https://registry.npmjs.org/')), 'unreviewed public source')
+    require(url.startswith(('https://dl.google.com/', 'https://registry.npmjs.org/'))
+            or (url == M['ffmpeg']['archive']['finalUrl']
+                and url == 'https://playwright.download.prss.microsoft.com/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip'),
+            'unreviewed public source')
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     sha256, sha512, total, deadline = hashlib.sha256(), hashlib.sha512(), 0, time.monotonic() + 180
     with opener.open(url, timeout=30) as response, destination.open('xb') as output:
@@ -418,6 +422,61 @@ def extract_npm(archive, destination):
             os.chmod(target, 0o755 if member.mode & 0o111 else 0o644)
 
 
+def ffmpeg_revision(core_inventory, pin):
+    require(pin['revision'] == '1011' and pin['directory'] == 'browsers/ffmpeg-1011'
+            and pin['executable'] == 'browsers/ffmpeg-1011/ffmpeg-linux', 'fixed FFmpeg identity required')
+    descriptors = [entry for entry in core_inventory['browsers'] if entry.get('name') == 'ffmpeg']
+    require(len(descriptors) == 1 and descriptors[0]['revision'] == pin['revision']
+            and descriptors[0].get('revisionOverrides', {}).get('ubuntu22.04-x64', pin['revision']) == pin['revision'],
+            'SRI-bound Playwright FFmpeg revision mismatch')
+
+
+def ffmpeg_members(members, pin):
+    required_modes = {'ffmpeg-linux': 0o755, 'COPYING.LGPLv2.1': 0o644}
+    require(len(pin['files']) == len(members) == 2, 'exactly two FFmpeg files required')
+    expected = {entry['path']: entry for entry in pin['files']}
+    require(set(expected) == set(required_modes), 'exact FFmpeg payload names required')
+    require(len({member.filename for member in members}) == 2, 'duplicate FFmpeg ZIP member')
+    total = 0
+    for member in members:
+        require(member.filename in expected and member.orig_filename == member.filename, 'unreviewed FFmpeg ZIP path')
+        entry = expected[member.filename]
+        require(entry['mode'] == required_modes[member.filename]
+                and member.create_system == 3 and (member.external_attr >> 16) == (stat.S_IFREG | entry['mode'])
+                and not member.is_dir(), 'FFmpeg ZIP mode/type mismatch')
+        require(member.flag_bits == 0 and member.compress_type == zipfile.ZIP_DEFLATED, 'unsupported FFmpeg ZIP encoding')
+        require(0 < member.file_size == entry['bytes'] <= 16 * 1024 * 1024
+                and 0 < member.compress_size == entry['compressedBytes'] <= 32 * 1024 * 1024,
+                'FFmpeg ZIP member size mismatch')
+        total += member.file_size
+    require(total <= 16 * 1024 * 1024, 'FFmpeg ZIP inflation bound')
+    return expected
+
+
+def extract_ffmpeg(archive, destination, pin):
+    require(archive.stat().st_size == pin['archive']['bytes'] <= 32 * 1024 * 1024, 'FFmpeg archive size mismatch')
+    raw = archive.read_bytes()
+    require(digest(raw) == pin['archive']['sha256'], 'FFmpeg archive digest mismatch')
+    payload = []
+    with zipfile.ZipFile(io.BytesIO(raw), mode='r') as zipped:
+        members = zipped.infolist()
+        expected = ffmpeg_members(members, pin)
+        for member in members:
+            entry = expected[member.filename]
+            with zipped.open(member) as source:
+                data = source.read(entry['bytes'] + 1)
+                require(len(data) == entry['bytes'] and source.read(1) == b'', 'FFmpeg extracted size mismatch')
+            require(digest(data) == entry['sha256'], 'FFmpeg payload digest mismatch')
+            payload.append((entry, data))
+    # Every archive/member hash, path and byte bound passes before any writes.
+    destination.mkdir(mode=0o755)
+    for entry, data in payload:
+        target = destination / entry['path']
+        with target.open('xb') as output:
+            output.write(data)
+        os.chmod(target, entry['mode'])  # Only new reviewed regular files.
+
+
 def inventory(directory, relative_to):
     rows, total = [], 0
     for item in sorted(directory.rglob('*')):
@@ -540,13 +599,23 @@ def provision(source_sha, run_id):
             npm_archives.append({'path': 'verification/' + archive.name, 'integrity': entry['integrity'], **record})
             extract_npm(archive, playwright / 'node_modules' / name)
             require(json.loads((playwright / 'node_modules' / name / 'package.json').read_text())['version'] == M['playwrightVersion'], 'extracted Playwright version')
+        core_inventory = playwright / 'node_modules/playwright-core/browsers.json'
+        require(core_inventory.stat().st_size <= 65536, 'Playwright browser inventory size bound')
+        ffmpeg_revision(json.loads(core_inventory.read_text()), M['ffmpeg'])
+        ffmpeg_archive = verification / 'ffmpeg-linux.zip'
+        ffmpeg_pin = M['ffmpeg']['archive']
+        # Use the reviewed final Microsoft HTTPS URL directly; redirects remain prohibited.
+        download(ffmpeg_pin['finalUrl'], ffmpeg_archive, 32 * 1024 * 1024,
+                 ffmpeg_pin['sha256'], ffmpeg_pin['bytes'])
+        (PREFIX / 'browsers').mkdir(mode=0o755)
+        extract_ffmpeg(ffmpeg_archive, PREFIX / M['ffmpeg']['directory'], M['ffmpeg'])
         (verification / 'manifest.json').write_bytes(MANIFEST_BYTES)
         require(source_files(source_sha)[0] == sources, 'source mutation during provisioning')
-        files = inventory(PREFIX / 'chrome', PREFIX) + inventory(playwright, PREFIX)
+        files = inventory(PREFIX / 'chrome', PREFIX) + inventory(playwright, PREFIX) + inventory(PREFIX / 'browsers', PREFIX)
         proof = {'schema': 1, 'status': 'PASS_AUTHENTICATED_EXTRACTION', 'prefix': str(PREFIX), 'executable': str(PREFIX / 'chrome/chrome'),
                  'package': pin, 'playwrightVersion': M['playwrightVersion'], 'sourceSha': source_sha, 'runId': run_id,
                  'manifestSha256': digest(MANIFEST_BYTES), 'sourceFiles': sources, 'signature': signature, 'release': release,
-                 'dependencies': deps, 'tools': tools, 'gpgScratchCleanup': gpg_cleanup, 'npmArchives': npm_archives, 'files': files,
+                 'dependencies': deps, 'tools': tools, 'gpgScratchCleanup': gpg_cleanup, 'npmArchives': npm_archives, 'ffmpeg': M['ffmpeg'], 'files': files,
                  'limitations': ['Existing distro dependencies verified by package versions; runtime loader and actual renderer sandbox remain qualification gates.', 'No claim of kernel-level network egress isolation on the native VM.']}
         (PREFIX / 'installation.json').write_text(json.dumps(proof, indent=2) + '\n')
         return {'status': proof['status'], 'prefix': str(PREFIX), 'sourceSha': source_sha, 'runId': run_id, 'payloadFiles': len(files), 'browserExecuted': False, 'hostPolicyChanged': False}

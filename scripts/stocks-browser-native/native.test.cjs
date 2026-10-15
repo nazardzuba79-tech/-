@@ -1,12 +1,12 @@
 'use strict';
 // Pure source/fixture tests: no Chrome, container, provider or privileged operation.
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {manifest,EXECUTABLE,requested,selectExecutable,ancestors,canonicalRelative,validateProof,validateClosure}=require('./installation.cjs');
+const {manifest,EXECUTABLE,BROWSERS_PATH,FFMPEG,browserCache,ffmpegDescriptor,ffmpegRevision,staticFfmpegElf,requested,selectExecutable,ancestors,canonicalRelative,validateProof,validateClosure}=require('./installation.cjs');
 const {sha,signingProof,releaseProof}=require('./chain.cjs');
 const sourceSha='a'.repeat(40),now=Date.parse('2026-10-15T10:00:00Z'),created=Math.floor(now/1000)-3600,primary=manifest.googlePrimaryFingerprint,sub='0123456789ABCDEF0123456789ABCDEF01234567';
 const signature=`[GNUPG:] VALIDSIG ${sub} 2026-10-15 ${created} 0 4 0 1 8 01 ${primary}\n`;
 const listing=`pub:-:4096:1:key:${created}:0:::::\nfpr:::::::::${primary}:\nsub:-:4096:1:sub:${created}:0:::::\nfpr:::::::::${sub}:\n`;
-function fixture(){return {schema:1,status:'PASS_AUTHENTICATED_EXTRACTION',prefix:manifest.prefix,executable:EXECUTABLE,package:{...manifest.chrome},playwrightVersion:manifest.playwrightVersion,sourceSha,runId:'1-1',manifestSha256:sha(fs.readFileSync(path.join(__dirname,'manifest.json'))),files:['chrome/chrome','playwright/package.json','playwright/package-lock.json','playwright/node_modules/playwright/package.json','playwright/node_modules/playwright-core/package.json'].map(path=>({path,sha256:'b'.repeat(64),bytes:10,mode:0o644})),sourceFiles:['scripts/stocks-browser-native/provision.py','scripts/stocks-browser-native/extract.py','scripts/stocks-browser-native/installation.cjs','scripts/qa-stocks-public-nss.cjs','scripts/qa-stocks-browser-launch.cjs','scripts/qa-stocks-chrome-preflight.cjs'].map(path=>({path,sha256:'c'.repeat(64),bytes:10})),dependencies:[{name:'libc6',version:'fixture-only'}],npmArchives:[{},{}]};}
+function fixture(){return {schema:1,status:'PASS_AUTHENTICATED_EXTRACTION',prefix:manifest.prefix,executable:EXECUTABLE,package:{...manifest.chrome},playwrightVersion:manifest.playwrightVersion,ffmpeg:structuredClone(manifest.ffmpeg),sourceSha,runId:'1-1',manifestSha256:sha(fs.readFileSync(path.join(__dirname,'manifest.json'))),files:[...['chrome/chrome','playwright/package.json','playwright/package-lock.json','playwright/node_modules/playwright/package.json','playwright/node_modules/playwright-core/package.json','playwright/node_modules/playwright-core/browsers.json'].map(path=>({path,sha256:'b'.repeat(64),bytes:10,mode:0o644})),...manifest.ffmpeg.files.map(row=>({path:manifest.ffmpeg.directory+'/'+row.path,sha256:row.sha256,bytes:row.bytes,mode:row.mode}))],sourceFiles:['scripts/stocks-browser-native/provision.py','scripts/stocks-browser-native/extract.py','scripts/stocks-browser-native/installation.cjs','scripts/qa-stocks-public-nss.cjs','scripts/qa-stocks-browser-launch.cjs','scripts/qa-stocks-chrome-preflight.cjs'].map(path=>({path,sha256:'c'.repeat(64),bytes:10})),dependencies:[{name:'libc6',version:'fixture-only'}],npmArchives:[{},{}]};}
 test('native selection is explicit and fixed, with no arbitrary path or fallback',()=>{
   assert.equal(requested({}),false);assert.equal(selectExecutable({}),'/opt/google/chrome/chrome');assert.equal(selectExecutable({VOLTEX_STOCKS_NATIVE_BROWSER:'1'}),EXECUTABLE);
   for(const value of ['','0','true','/tmp/chrome'])assert.throws(()=>selectExecutable({VOLTEX_STOCKS_NATIVE_BROWSER:value}));
@@ -17,6 +17,38 @@ test('native proof requires exact source, package, path, manifest and complete m
   assert.equal(validateProof(fixture(),sourceSha).sourceSha,sourceSha);
   for(const update of [{sourceSha:'d'.repeat(40)},{prefix:'/tmp/chrome'},{executable:'/opt/google/chrome/chrome'},{manifestSha256:'0'.repeat(64)},{package:{...manifest.chrome,sha256:'0'.repeat(64)}},{playwrightVersion:'1.57.0'},{status:'PASS'},{sourceFiles:[]},{files:fixture().files.slice(1)}])assert.throws(()=>validateProof({...fixture(),...update},sourceSha));
   assert.throws(()=>validateProof(fixture(),''));
+});
+test('recording dependency uses the exact immutable cache, revision and complete pinned payload',()=>{
+  assert.equal(browserCache({PLAYWRIGHT_BROWSERS_PATH:BROWSERS_PATH}),BROWSERS_PATH);assert.equal(FFMPEG,BROWSERS_PATH+'/ffmpeg-1011/ffmpeg-linux');
+  for(const cache of [undefined,'0','/tmp/ms-playwright',BROWSERS_PATH+'/',BROWSERS_PATH+'/../browsers'])assert.throws(()=>browserCache({PLAYWRIGHT_BROWSERS_PATH:cache}));
+  assert.equal(ffmpegDescriptor(manifest.ffmpeg).revision,'1011');assert.equal(ffmpegRevision({browsers:[{name:'ffmpeg',revision:'1011'}]}),'1011');
+  for(const browsers of [[],[{name:'ffmpeg',revision:'1010'}],[{name:'ffmpeg',revision:'1011',revisionOverrides:{'ubuntu22.04-x64':'1012'}}],[{name:'ffmpeg',revision:'1011'},{name:'ffmpeg',revision:'1011'}]])assert.throws(()=>ffmpegRevision({browsers}));
+  for(const mutate of [x=>x.ffmpeg.revision='1012',x=>x.files=x.files.filter(row=>!row.path.endsWith('/ffmpeg-linux')),x=>x.files.find(row=>row.path.endsWith('/ffmpeg-linux')).sha256='0'.repeat(64),x=>x.files.find(row=>row.path.endsWith('/ffmpeg-linux')).mode=0o644,x=>x.files.push({path:'browsers/unreviewed',sha256:'b'.repeat(64),bytes:1,mode:0o755})]){const value=fixture();mutate(value);assert.throws(()=>validateProof(value,sourceSha));}
+  const elf=Buffer.alloc(120);Buffer.from('7f454c460201','hex').copy(elf);elf.writeUInt16LE(2,16);elf.writeUInt16LE(62,18);elf.writeBigUInt64LE(64n,32);elf.writeUInt16LE(56,54);elf.writeUInt16LE(1,56);elf.writeUInt32LE(1,64);assert.equal(staticFfmpegElf(elf).dynamicLoader,false);
+  for(const type of [2,3]){const bad=Buffer.from(elf);bad.writeUInt32LE(type,64);assert.throws(()=>staticFfmpegElf(bad));}assert.throws(()=>staticFfmpegElf(elf.subarray(0,80)));
+});
+function webmFixture({codec='V_VP8',duration=400,width=320,height=180,doctype='webm',block=true}={}){
+  const element=(id,body)=>{const hex=id.toString(16),key=Buffer.from(hex.length%2?'0'+hex:hex,'hex'),size=body.length<127?Buffer.from([0x80|body.length]):Buffer.from([0x40|(body.length>>8),body.length&255]);return Buffer.concat([key,size,body]);};
+  const uint=value=>value<256?Buffer.from([value]):Buffer.from([value>>8,value&255]),d=Buffer.alloc(8);d.writeDoubleBE(duration);const frame=Buffer.from('0000009d012a4001b400','hex');
+  const info=element(0x1549a966,element(0x4489,d)),video=element(0xe0,Buffer.concat([element(0xb0,uint(width)),element(0xba,uint(height))]));
+  const track=element(0x1654ae6b,element(0xae,Buffer.concat([element(0xd7,uint(1)),element(0x83,uint(1)),element(0x86,Buffer.from(codec)),video])));
+  const cluster=element(0x1f43b675,block?element(0xa3,Buffer.concat([Buffer.from('81000080','hex'),frame])):Buffer.alloc(0));
+  return Buffer.concat([element(0x1a45dfa3,element(0x4282,Buffer.from(doctype))),element(0x18538067,Buffer.concat([info,track,cluster]))]);
+}
+test('video witness requires finalized WebM, VP8 track and actual bounded keyframe payload',()=>{
+  const {inspectWebm}=require('./qualification.cjs'),valid=webmFixture();assert.equal(inspectWebm(valid).keyframes,1);
+  for(const options of [{codec:'V_VP9'},{duration:0},{duration:NaN},{duration:60001},{width:321},{height:181},{doctype:'matroska'},{block:false}])assert.throws(()=>inspectWebm(webmFixture(options)));
+  for(const bytes of [Buffer.alloc(0),valid.subarray(0,valid.length-1),Buffer.concat([valid,Buffer.from([0])]),Buffer.alloc(16*1024*1024+1)])assert.throws(()=>inspectWebm(bytes));
+  const bad=Buffer.from(valid),marker=bad.indexOf(Buffer.from('9d012a','hex'));bad[marker]=0;assert.throws(()=>inspectWebm(bad));
+});
+test('recording failures close the owned context and retain cleanup failures without a browser',async()=>{
+  const {videoSmoke,bounded}=require('./qualification.cjs'),os=require('node:os');
+  for(const failCleanup of [false,true]){const output=fs.mkdtempSync(path.join(os.tmpdir(),'voltex-video-unit-'));let closed=0;
+    try{const context={setDefaultTimeout(){},newPage:async()=>{throw Error('fixture page failure');},close:async()=>{closed++;if(failCleanup)throw Error('fixture cleanup failure');}};
+      await assert.rejects(()=>videoSmoke({newContext:async()=>context},output),error=>error.message==='fixture page failure'&&(!failCleanup||error.videoCleanup==='fixture cleanup failure'));assert.equal(closed,1);
+    }finally{assert.equal(path.resolve(path.dirname(output)),path.resolve(os.tmpdir()));assert.ok(path.basename(output).startsWith('voltex-video-unit-'));fs.rmSync(output,{recursive:true,force:true});}
+  }
+  await assert.rejects(()=>bounded(new Promise(()=>{}),5,'fixture'),/fixture deadline exceeded/);
 });
 test('canonical payload inventory rejects aliases, duplicates, omissions and unexpected executable files',()=>{
   for(const value of ['/a','a/../b','a//b','a/./b','a\\b','a:stream','a\0b',''])assert.throws(()=>canonicalRelative(value));

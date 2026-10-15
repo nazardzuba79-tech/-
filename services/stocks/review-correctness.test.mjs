@@ -156,6 +156,7 @@ test('native browser workflow preserves the seven cases and does not change sand
   assert.match(browser, /^    runs-on: ubuntu-22\.04$/m); assert.match(browser, /^    timeout-minutes: 30$/m);
   for (const name of nativeAdmission.BROWSER_STEPS) assert.match(browser, new RegExp('^        id: ' + name + '$', 'm'));
   assert.match(browser, /VOLTEX_STOCKS_NATIVE_BROWSER: '1'/);
+  assert.match(browser, /^      PLAYWRIGHT_BROWSERS_PATH: \/usr\/lib\/voltex-stocks-browser-b7726070ca707965e9a17b38e4f15ba283bf6f65c339626c092862af7b19badc\/browsers$/m);
   assert.match(browser, /sudo \/usr\/bin\/env -i PATH=\/usr\/bin:\/bin LANG=C LC_ALL=C \/usr\/bin\/python3 -I scripts\/stocks-browser-native\/provision\.py/);
   assert.ok(browser.indexOf('id: native-qualification') < browser.indexOf('npm ci'));
   assert.ok(browser.indexOf('id: native-cleanup') < browser.indexOf('--browser-result'));
