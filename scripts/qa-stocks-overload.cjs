@@ -1,3 +1,4 @@
+const { launchStocksBrowser } = require('./qa-stocks-browser-launch.cjs');
 // Built Professional B UI against disposable paper accounts. All market data,
 // identities and injected failures below are fixtures; external traffic is denied.
 // Build with VITE_STOCKS_ENABLED=true VITE_STOCKS_WIDGET_PREVIEW=true
@@ -62,7 +63,7 @@ const writeRequests = () => report.requests.filter(r => r.method === 'POST');
       assert.equal(response.status, 200, 'local fixture setup/read must succeed');
       return response.json();
     };
-    browser = await chromium.launch({ headless: true, ...(process.env.QA_CHROMIUM ? { executablePath: process.env.QA_CHROMIUM } : {}) });
+    browser = await launchStocksBrowser(chromium,{ headless: true, ...(process.env.QA_CHROMIUM ? { executablePath: process.env.QA_CHROMIUM } : {}) });
     for (const width of [1440, 390]) {
       const initial = await local(width, `state?id=${encodeURIComponent(id)}`);
       await local(width, 'catalogue'); await local(width, 'refresh', { id }, initial.token);

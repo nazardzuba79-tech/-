@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {assertLinux,trustInventory,safeLaunch,inspectNss,chromePackage,inspectChrome,retainChromePreflight,CHROME}=require('./qa-stocks-public-nss.cjs');
+const {assertLinux,trustInventory,safeLaunch,inspectNss,chromePackage,inspectChrome,retainChromePreflight,assertChromePath,CHROME}=require('./qa-stocks-public-nss.cjs');
 test('NSS helper accepts Linux only; never invokes Windows certutil',()=>{
   assertLinux('linux');for(const platform of ['win32','darwin',undefined])assert.throws(()=>assertLinux(platform),/NSS_FIXTURE_REQUIRES_LINUX/);
   if(process.platform!=='linux')assert.throws(()=>inspectNss('/never/executed'),/NSS_FIXTURE_REQUIRES_LINUX/);
@@ -12,7 +12,24 @@ test('NSS inventory requires exactly the private server-CA entry',()=>{
 });
 test('owned browser launch rejects every certificate/security bypass spelling',()=>{
   safeLaunch(['chromium','--headless','--user-data-dir=/private/profile']);
-  for(const option of ['--ignore-certificate-errors','--ignore-certificate-errors-spki-list=abc','--allow-insecure-localhost','--disable-web-security','--no-sandbox','--disable-setuid-sandbox'])assert.throws(()=>safeLaunch(['chromium',option]),/bypass prohibited/);
+  for(const option of ['--ignore-certificate-errors','--ignore-certificate-errors-spki-list=abc','--allow-insecure-localhost','--disable-web-security','--no-sandbox','--disable-setuid-sandbox','--disable-namespace-sandbox','--disable-seccomp-filter-sandbox','--disable-gpu-sandbox','--single-process'])assert.throws(()=>safeLaunch(['chromium',option]),/bypass prohibited/);
+});
+function trustedPath(){
+  const row=path=>({path,status:'AVAILABLE',uid:0,mode:'755',symlink:false,regular:path===CHROME,directory:path!==CHROME,write:{allowed:false,code:'EACCES'},executeOrSearch:{allowed:true}});
+  return {process:{uid:1001,euid:1001},file:row(CHROME),parents:['/opt/google/chrome','/opt/google','/opt','/'].map(row),binaryExecuted:false};
+}
+test('Chrome path requires actual unprivileged write denial on the executable and every ancestor',()=>{
+  assertChromePath(trustedPath());
+  for(const target of ['file',0,1,2,3])for(const delta of [{status:'UNKNOWN'},{uid:1001},{mode:'777'},{mode:'775'},{symlink:true},{write:{allowed:true}},{write:{allowed:false,code:'ENOENT'}},{executeOrSearch:{allowed:false}}]){
+    const observed=trustedPath();Object.assign(target==='file'?observed.file:observed.parents[target],delta);let executed=0;
+    assert.throws(()=>retainChromePreflight(observed,()=>{assertChromePath(observed);executed++;}));
+    assert.equal(executed,0);assert.equal(observed.binaryExecuted,false);assert.equal(observed.status,'REJECTED');
+  }
+});
+test('Chrome path rejects root identity, missing/reordered parents and path substitution',()=>{
+  for(const mutate of [o=>o.process.uid=0,o=>o.process.euid=0,o=>o.parents.pop(),o=>o.parents.reverse(),o=>o.file.path='/tmp/chrome',o=>o.file.regular=false,o=>o.parents[0].directory=false]){
+    const observed=trustedPath();mutate(observed);assert.throws(()=>assertChromePath(observed));
+  }
 });
 const installed={requested:CHROME,resolved:CHROME,owner:'google-chrome-stable: '+CHROME,packageVersion:'123.0.4567.89-1',actualVersion:'Google Chrome 123.0.4567.89',uid:0,mode:0o100755,regular:true,symlink:false};
 test('installed Chrome requires exact path, package, root ownership and non-writable executable',()=>{

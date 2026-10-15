@@ -39,10 +39,26 @@ function pathObservation(file){
   catch(error){Object.assign(row,{status:'UNKNOWN',code:error.code||'UNKNOWN'});}
   return row;
 }
+function assertChromePath(observation){
+  const {process:identity,file,parents}=observation;
+  assert.ok(identity&&Number.isInteger(identity.uid)&&identity.uid>0&&identity.uid===identity.euid,'Chrome QA must run as a non-root identity');
+  assert.deepEqual(parents.map(row=>row.path),['/opt/google/chrome','/opt/google','/opt','/'],'complete Chrome ancestry required');
+  assert.equal(file.path,CHROME);
+  for(const row of [file,...parents]){
+    assert.equal(row.status,'AVAILABLE','Chrome path observation unavailable');
+    assert.equal(row.uid,0,'Chrome path must be root owned');assert.equal(row.symlink,false,'Chrome path symlink prohibited');
+    assert.match(row.mode,/^[0-7]{3,4}$/);assert.equal(parseInt(row.mode,8)&0o022,0,'Chrome path must not be group/world writable');
+    assert.equal(row.write?.allowed,false,'Chrome path is writable by the test identity');
+    assert.ok(['EACCES','EPERM','EROFS'].includes(row.write?.code),'Chrome write denial must be explicit');
+    assert.equal(row.executeOrSearch?.allowed,true,'Chrome path must be searchable/executable');
+    assert.equal(row===file?row.regular:row.directory,true,'Chrome path type mismatch');
+  }
+}
 function inspectChrome(executable,env){
   assertLinux(process.platform);assert.equal(executable,CHROME,'explicit installed Chrome path required');
   const groups=process.getgroups(),observation={status:'IN_PROGRESS',stage:'filesystem',executable,installationPerformed:false,binaryExecuted:false,process:{uid:process.getuid(),euid:process.geteuid(),gid:process.getgid(),egid:process.getegid(),groups:groups.slice(0,128),groupsTruncated:groups.length>128},file:pathObservation(executable),parents:['/opt/google/chrome','/opt/google','/opt','/'].map(pathObservation)};
   return retainChromePreflight(observation,()=>{
+  assertChromePath(observation); // Includes actual-UID denial and every parent, before any candidate execution.
   const resolved=fs.realpathSync(executable),st=fs.lstatSync(executable);observation.resolved=resolved;observation.executableBound={maximumBytes:1024*1024*1024,withinBound:st.size>0&&st.size<=1024*1024*1024};fs.accessSync(executable,fs.constants.X_OK);
   observation.stage='package';
   const dpkg='/usr/bin/dpkg-query',owner=command(dpkg,['-S',resolved],env).stdout.trim();
@@ -100,7 +116,7 @@ function trustInventory(text,nickname){
   assert.deepEqual(rows,['Certificate Nickname Trust Attributes','SSL,S/MIME,JAR/XPI',nickname+' C,,'],'only fixture CA is trusted in private NSS inventory');
 }
 function safeLaunch(argv){
-  assert.ok(Array.isArray(argv));assert.ok(!argv.some(a=>/ignore-certificate-errors|allow-insecure-localhost|disable-web-security|--no-sandbox|--disable-setuid-sandbox/.test(a)),'browser certificate/security bypass prohibited');
+  assert.ok(Array.isArray(argv));assert.ok(!argv.some(a=>/ignore-certificate-errors|allow-insecure-localhost|disable-web-security|--no-sandbox|--disable-setuid-sandbox|--disable-namespace-sandbox|--disable-seccomp-filter-sandbox|--disable-gpu-sandbox|--single-process/.test(a)),'browser certificate/security bypass prohibited');
 }
 function createNssHome({credentials,certutil,forbiddenRoots=[]}){
   const tool=inspectNss(certutil); // Fail before creating a profile if the platform/tool is unavailable.
@@ -146,4 +162,4 @@ function createNssHome({credentials,certutil,forbiddenRoots=[]}){
   };
   }catch(e){if(fs.existsSync(home))fs.rmSync(home,{recursive:true,force:false});throw e;}
 }
-module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss,chromePackage,inspectChrome,inspectBrowserProcess,retainChromePreflight,CHROME};
+module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss,chromePackage,inspectChrome,inspectBrowserProcess,retainChromePreflight,assertChromePath,CHROME};

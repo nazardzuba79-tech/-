@@ -6585,3 +6585,10 @@ architecture, limits, merge, deploy, production or funds changes.
 On the separate codex/stocks-review-20261015 branch, updated only stale tests: ProviderFailureMatrix separates HTTP transport retries from the existing service 8/minute and 800/day quota, validates per-symbol budget/cadence and stale-display versus fresh-risk rejection; the CfdMarketDataService Gold expectation now matches the existing catalog. LiveFinancialIsolation now parses exact TypeScript wiring roles and rejects four in-memory invalid-use mutations instead of relying on source line counts. No application/runtime source changed in this patch.
 
 Local targeted evidence: ProviderFailureMatrix, CfdMarketDataService, ProviderHealth and CfdQuoteSafety: 4 suites, 133 passed, 0 failed (3.418 s). LiveFinancialIsolation: 4 passed, 0 failed (2.039 s). These are targeted results, not full-backend or capacity acceptance. Canonical preservation failures remain unresolved; no canonical hash repin, financial change, finite diagnostic replay, push, merge or deploy is included.
+
+
+## 2026-10-15 — Stocks browser admission hardening (environment not accepted)
+
+QA-only launchers now require a verified Linux Google Chrome installation: executable and every ancestor must be root-owned, non-symlinked and not writable by the runner before executable inspection. Six ordinary Stocks QA scripts share sandbox-enabled launch and actual renderer namespace/seccomp proof; the public-host path preserves private NSS/TLS controls and adds the same renderer proof. There is no Windows fallback and no permission/sandbox/TLS bypass. The current GitHub runner Chrome previously failed path admission; these source changes do not repair or certify that installation.
+
+Local pure tests covering browser admission and the explicit 251-plus-one backend inventory: 25 passed, 0 failed (193.7886 ms). Actual Linux browser/sandbox acceptance remains NOT_RUN; a separate authenticated immutable environment is being prepared. No runtime app, real financial path, production setting, merge or deployment changed.

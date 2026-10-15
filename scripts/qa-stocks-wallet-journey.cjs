@@ -1,3 +1,4 @@
+const { launchStocksBrowser } = require('./qa-stocks-browser-launch.cjs');
 // Isolated owner Wallet ↔ Stocks browser journey. NEVER connects to production.
 // Requires a USDT-only Stocks build. The gateway is loopback-only and fixture-only.
 const assert = require('node:assert/strict');
@@ -177,7 +178,7 @@ async function run() {
     ok(blocked.status === 200 && blocked.body.account.canTrade === false, 'other account has isolated read-only Stocks ledger');
     ok((await read('bob', 'refresh', { id: ID }, blocked.body.token)).status === 401, 'other account cannot induce a paper fill through quote refresh');
 
-    browser = await chromium.launch({ headless: true });
+    browser = await launchStocksBrowser(chromium,{ headless: true });
     for (const size of [[1440, 900], [390, 844]]) {
       const [width, height] = size;
       const context = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block', locale: 'ru-RU' });

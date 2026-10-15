@@ -1,3 +1,4 @@
+const { launchStocksBrowser } = require('./qa-stocks-browser-launch.cjs');
 // Built UI, isolated read-only fixtures. Never forwards traffic to production.
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const assert = require('node:assert/strict'), { once } = require('node:events');
@@ -28,7 +29,7 @@ const report = { views: [], transitions: [], pageErrors: [], writesBlocked: 0, e
   fs.mkdirSync(out, {recursive:true});
   const server = fixtureModule.exports.listen(0, '127.0.0.1'); await once(server, 'listening');
   const origin = 'http://127.0.0.1:' + server.address().port;
-  const browser = await chromium.launch({headless:true});
+  const browser = await launchStocksBrowser(chromium,{headless:true});
   try {
     for (const lang of langs) {
       const ctx = await browser.newContext({viewport:{width:1920,height:1000}, locale:'en-US', serviceWorkers:'block'});

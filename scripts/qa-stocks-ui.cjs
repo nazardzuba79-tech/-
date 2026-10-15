@@ -1,3 +1,4 @@
+const { launchStocksBrowser } = require('./qa-stocks-browser-launch.cjs');
 // Stocks panel/overview browser QA. Built UI, isolated read-only fixtures:
 // crypto pages use the terminal QA's Express fixtures; Stocks reads the REAL
 // stock server (services/stocks/server.mjs) over a disposable SQLite file of
@@ -614,7 +615,7 @@ function bundle(dist) {
   const { startStockFixture } = await import(pathToFileURL(path.join(__dirname, 'qa-stocks-ui-fixture.mjs')).href);
   const stock = await startStockFixture({ port: 4431, frontendOrigin: ORIGIN });
   report.fixture = { instruments: stock.instruments.length, withData: stock.instruments.filter(i => i.enabled).length, candles: stock.candles };
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchStocksBrowser(chromium,{ headless: true });
   try {
     const close = await serve(AFTER_DIST);
     try {

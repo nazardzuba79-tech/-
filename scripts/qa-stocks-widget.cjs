@@ -1,3 +1,4 @@
+const { launchStocksBrowser } = require('./qa-stocks-browser-launch.cjs');
 // Built Stocks preview, no stock server/DB. Live mode uses official TV only.
 // Never inspect provider DOM, responses, prices or sockets. Screenshots are visual evidence.
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
@@ -13,7 +14,7 @@ const report = { live: LIVE, checks: 0, financialRequests: [], stockReads: [], p
 const ok = (value, name) => { assert.ok(value,name);report.checks++; };
 const href = symbol => '/stocks/'+encodeURIComponent('XNGS:'+symbol);
 async function main() {
-  const browser = await chromium.launch({headless:true});
+  const browser = await launchStocksBrowser(chromium,{headless:true});
   try {
     const ctx = await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block',...(process.env.QA_VIDEO ? {recordVideo:{dir:OUT,size:{width:1440,height:900}}} : {})});
     await ctx.addInitScript(() => {if(window.top!==window)return;if(!localStorage.getItem('exchange_lang'))localStorage.setItem('exchange_lang','ru');localStorage.removeItem('exchange_token');});

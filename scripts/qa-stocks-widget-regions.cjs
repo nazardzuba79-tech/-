@@ -1,10 +1,11 @@
+const { launchStocksBrowser } = require('./qa-stocks-browser-launch.cjs');
 // Research only, one official embed at a time. No provider DOM/data extraction.
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require(process.env.QA_PLAYWRIGHT_MODULE||'playwright');
 const out=path.resolve(process.env.QA_OUT||'output/stocks-widget-regions');
 const symbols=['RUS:SBER','TSE:7203','HKEX:700','SSE:600519','SZSE:000001','SSE:000001','HSI:HSI','SP:SPX','NASDAQ:NDX','TVC:DJI'];
 (async()=>{
-  fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({headless:true});
+  fs.mkdirSync(out,{recursive:true});const browser=await launchStocksBrowser(chromium,{headless:true});
   try{
     const page=await browser.newPage({viewport:{width:1100,height:700}}),evidence=[];
     await page.route('**/*',route=>{const h=new URL(route.request().url()).hostname;return /(^|\.)tradingview(-widget)?\.com$/.test(h)?route.continue():route.abort();});

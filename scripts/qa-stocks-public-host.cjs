@@ -5,6 +5,7 @@ const {fixtureProcess}=require('./qa-stocks-local-stage-recovery.cjs');
 const {ID}=require('./qa-stocks-local-stage-fixture.cjs');
 const {certificates,createIngress,request,HOST,PREFIX}=require('./qa-stocks-tls-ingress.cjs');
 const {createNssHome,assertLinux,inspectChrome,inspectBrowserProcess}=require('./qa-stocks-public-nss.cjs');
+const {verifyRendererSandbox}=require('./qa-stocks-browser-launch.cjs');
 const {browserTlsProbes,BAD_SNI}=require('./qa-stocks-public-tls-probes.cjs');
 const {walletFixtures,staticFixture,sha}=require('./qa-stocks-public-fixtures.cjs');
 const {verifyBuild}=require('./qa-stocks-principal-projection.cjs');
@@ -64,6 +65,7 @@ async function main({output,buildRoot,authorityPackage,python,playwright,certuti
     report.browser={version:null,ownedPid:browserServer.process().pid,normalCertificateValidation:true,chromiumSandbox:true,ignoreHTTPSErrors:false,launchArguments:browserServer.process().spawnargs.slice(1),process:inspectBrowserProcess(browserServer.process(),report.installedBrowser)};
     browser=await chromium.connect(browserServer.wsEndpoint());report.browser.version=browser.version();
     assert.equal(report.browser.version,report.installedBrowser.version,'actual browser protocol version matches verified installed executable');
+    report.browser.rendererSandbox=await verifyRendererSandbox(browser,report.installedBrowser);
     report.browserTls=await browserTlsProbes({browser,credentials,python,upstreamOrigin:ready.gatewayOrigin,fixture,check});
     for(const build of manifest.builds){
       check(build.env.VITE_STOCKS_OWNER_USDT_ONLY===String(build.name!=='off'),'explicit owner USDT-only build flag '+build.name);
