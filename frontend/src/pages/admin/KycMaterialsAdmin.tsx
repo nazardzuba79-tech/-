@@ -305,8 +305,12 @@ function ComparePane({ title, hint, initial, accept, testId }: {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [max]);
 
+  const [refused, setRefused] = useState(false);
   function open(file: File | null) {
     if (!file) return;
+    // Only the types this pane takes (a dropped or pasted file skips the picker's filter).
+    if (!accept.split(',').includes((file.type || '').toLowerCase())) { setRefused(true); return; }
+    setRefused(false);
     // Opened only in this tab; never uploaded anywhere.
     setLocal({ url: URL.createObjectURL(file), pdf: file.type === 'application/pdf', name: file.name });
     setView(INITIAL_VIEW);
@@ -339,6 +343,7 @@ function ComparePane({ title, hint, initial, accept, testId }: {
           onChange={(e) => { const f = e.target.files?.[0] ?? null; e.target.value = ''; open(f); }} />
         <button type="button" style={styles.neutralBtn} onClick={() => inputRef.current?.click()}>{source ? 'Открыть другой файл' : 'Открыть файл'}</button>
       </div>
+      {refused && <p role="alert" className="kyc-mat-warning" style={{ margin: '6px 10px 0' }}>Этот тип файла здесь не открывается ({accept.replace(/image\/|application\//g, '').toUpperCase()}).</p>}
       <div className="kyc-compare-tools" role="toolbar" aria-label={`${title}: просмотр`}>
         <button type="button" onClick={() => zoom(1 / 1.25)} disabled={!source || source.pdf} aria-label="Уменьшить">−</button>
         <span className="kyc-mat-mono" aria-live="polite">{Math.round(view.scale * 100)}%</span>
@@ -349,6 +354,14 @@ function ComparePane({ title, hint, initial, accept, testId }: {
       </div>
       <div
         className="kyc-compare-stage"
+        // Faster than the picker: drop the saved attachment here, or click the
+        // pane and paste an image copied from the mail (Ctrl+V). Still local only.
+        tabIndex={0}
+        aria-label={`${title}: перетащите файл или вставьте изображение (Ctrl+V)`}
+        data-kyc-compare-stage={testId}
+        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
+        onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); open(f); } }}
+        onPaste={(e) => { const f = e.clipboardData.files?.[0]; if (f) { e.preventDefault(); open(f); } }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
@@ -356,7 +369,7 @@ function ComparePane({ title, hint, initial, accept, testId }: {
         onDoubleClick={() => zoom(view.scale >= 2 ? 1 / view.scale : 2)}
       >
         {!source ? (
-          <p className="kyc-mat-muted kyc-compare-empty">{hint}</p>
+          <p className="kyc-mat-muted kyc-compare-empty">{hint} Можно перетащить файл сюда или вставить изображение (Ctrl+V).</p>
         ) : source.pdf ? (
           <iframe title={title} src={source.url} className="kyc-compare-pdf" />
         ) : (

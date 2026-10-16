@@ -242,4 +242,7 @@ biometric processing. Open points to settle before release:
 4. If the owner wants the comparison screen to open the files without saving
    attachments, that needs server-side storage (encrypted, access-checked,
    with deletion) — a separate architecture decision; until then the screen
-   is honestly a manual one: the admin saves the attachments and opens them.
+   is honestly a manual one: the admin saves the attachments and opens them
+   (or drops / pastes them into the panes). The audited options, verified R2
+   prices, the secure read path and the risks are in
+   `docs/KYC_PHOTO_STORAGE_PLAN.md`.

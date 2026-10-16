@@ -321,3 +321,23 @@ test('materials: a decided submission offers no request or comparison', async ()
   expect(host.querySelector('[data-kyc-request-open]')).toBeNull();
   expect(host.querySelector('[data-kyc-compare-open]')).toBeNull();
 });
+
+test('materials: the comparison panes open a dropped or pasted file locally and refuse a type they do not take', async () => {
+  const create = jest.spyOn(URL, 'createObjectURL').mockReturnValue('blob:local-selfie');
+  jest.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+  await renderMaterials({ reviewStage: 'MATERIALS_RECEIVED', activeMaterialRequestId: 'material-1', materialRequests: [{ ...receivedRequest, acknowledgedAt: '2026-10-15T09:20:00.000Z' }] });
+  await click(button('Сравнить документ и селфи'));
+  const stage = (part: string) => host.querySelector(`[data-kyc-compare-stage="${part}"]`) as HTMLElement;
+  const fire = async (node: HTMLElement, type: 'paste' | 'drop', file: File) => {
+    const event = new dom.window.Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(event, type === 'paste' ? 'clipboardData' : 'dataTransfer', { value: { files: [file], types: ['Files'] } });
+    await act(async () => { node.dispatchEvent(event); await flush(); });
+  };
+  await fire(stage('selfie'), 'paste', new dom.window.File(['x'], 'image.png', { type: 'image/png' }));
+  expect(host.querySelector('[data-kyc-compare-pane="selfie"] img')?.getAttribute('src')).toBe('blob:local-selfie');
+  await fire(stage('selfie'), 'drop', new dom.window.File(['%PDF'], 'scan.pdf', { type: 'application/pdf' }));
+  expect(host.querySelector('[data-kyc-compare-pane="selfie"] [role="alert"]')?.textContent).toContain('не открывается');
+  expect(create).toHaveBeenCalledTimes(1); // the PDF was never opened as a selfie
+  expect(api.requestKycMaterials ?? jest.fn()).not.toHaveBeenCalled();
+  expect(api.reviewKyc).not.toHaveBeenCalled();
+});
