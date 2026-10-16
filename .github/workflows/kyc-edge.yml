@@ -17,9 +17,11 @@ on:
       - 'src/api/routes/__tests__/kycEdgePostgres.test.ts'
       - 'src/api/routes/__tests__/kycMaterials.test.ts'
       - 'src/api/routes/__tests__/kycMaterialsPostgres.test.ts'
+      - 'src/api/routes/__tests__/kycWorkerDeployGate.test.ts'
       - 'src/api/routes/adminPagedReads.ts'
       - 'src/services/kycMaterials.ts'
       - 'src/services/KycEdgeTrust.ts'
+      - 'src/services/AdminUserDeletionService.ts'
       - 'src/index.ts'
       - 'prisma/**'
       - 'frontend/src/lib/kycEdge.ts'
@@ -108,6 +110,7 @@ jobs:
           src/api/routes/__tests__/kycEdgePostgres.test.ts
           src/api/routes/__tests__/kycMaterials.test.ts
           src/api/routes/__tests__/kycMaterialsPostgres.test.ts
+          src/api/routes/__tests__/kycWorkerDeployGate.test.ts
           src/api/routes/__tests__/adminPagedReads.test.ts
           frontend/src/lib/__tests__/adminKycReviewSafety.test.ts
           src/api/routes/__tests__/admin.test.ts

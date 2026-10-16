@@ -1,4 +1,17 @@
-# KYC documents: Cloudflare edge → admin email (Render/Neon keep metadata only)
+# KYC documents: Cloudflare edge → admin email (the API keeps metadata only)
+
+> **Where things run (2026-10-16).** This document was written when the API ran
+> on Render with Neon PostgreSQL; read «Render» below as **the VOLTEX API** and
+> «Neon» as **its PostgreSQL**. Since the Hetzner cutover the API and its
+> PostgreSQL run on Hetzner (`docs/VOLTEX_CURRENT_STATE.md`; Render services
+> suspended, Neon kept only as old/rollback infrastructure). Verified read-only
+> on 2026-10-16: `https://api.voltextech.net/health` reports commit `57a154a0`
+> (branch `release/hetzner-api-baseline-3e64ae89`, started 2026-10-09), so a
+> merge to `main` does **not** update the API. **UNVERIFIED** from this
+> repository (needs the operator's SSH): the Compose project directory, the
+> container names, the image and the database identity on that server.
+> Releasing: `docs/KYC_RELEASE_RUNBOOK.md`. Document handling rules:
+> `docs/KYC_DOCUMENT_POLICY.md`.
 
 **This is manual, lightweight KYC document handling — not a certified KYC
 provider.** Nothing checks that a document is genuine, matches the person, or
@@ -123,11 +136,22 @@ there is still at most one row.
 
 ## Deploy / operate
 
-- Worker: `.github/workflows/deploy-kyc-edge.yml` runs on a push to `main` that
-  touches `workers/kyc-edge/**`, or on a manual run. It tests, deploys,
-  creates the signing key if it is missing (it never rotates an existing
-  one), then smoke-tests `/health`, `/v1/public-key`, 401 without a session,
-  404, CORS and `no-store`.
+- Worker: `.github/workflows/deploy-kyc-edge.yml`. A push to `main` that
+  touches the Workers only **verifies** them (contract tests, synthetic
+  notification tests, both `wrangler deploy --dry-run`; no token). Deploying
+  is a **manual run from `main`** (owner decision 2026-10-16) with the API
+  commit the operator deployed on Hetzner: the run checks read-only that
+  `api.voltextech.net/health` reports exactly that commit, that the commit
+  carries the materials routes and migration, and that the live API answers
+  415 (not 404) on `internal/kyc/authorize`, `internal/kyc/materials/authorize`
+  and `internal/kyc/materials/confirmed`; then it deploys the notification
+  Worker, the KYC edge, creates the signing key if it is missing (it never
+  rotates an existing one), and smoke-tests `/health`, `/v1/public-key`, 401
+  without a session on `/v1/submit` and `/v1/materials`, 404, CORS and
+  `no-store`. Mode `notification-only` deploys the Telegram Worker alone
+  (e.g. after a JWT secret rotation) without the KYC checks. The deploy job
+  uses the GitHub environment `kyc-workers-production`; required reviewers
+  can be added to it in the repository settings.
 - PR checks: `.github/workflows/kyc-edge.yml`. It runs the Worker contract
   tests, a wrangler dry-run, the additive migration on PostgreSQL 16, the API
   and PostgreSQL suites, both builds, and `scripts/qa-kyc-edge.cjs` in
@@ -138,7 +162,7 @@ there is still at most one row.
   `docs/AI_HANDOFF.md`). If it is ever removed, sends fail with a provider error
   (`E_RECIPIENT_NOT_ALLOWED`), users see «Документ не отправлен», and no row is created.
 - To rotate the signing key: delete the `KYC_EDGE_SIGNING_JWK` secret and
-  re-run the deploy workflow. Render re-fetches the public key at most once
+  run the deploy workflow by hand. The API re-fetches the public key at most once
   a minute after a signature mismatch. If `KYC_EDGE_PUBLIC_KEY` is pinned,
   update it as well.
 
@@ -191,36 +215,29 @@ document in hand; optional comment), or both.
   `frontend/src/lib/__tests__/kycEdgeClient.test.ts`,
   `adminKycReviewSafety.test.ts`; browser: `scripts/qa-kyc-materials.cjs`
   (12 scenarios, PostgreSQL, Chromium's synthetic camera, synthetic files).
-- **Deploying it** means: the migration (Render runs `prisma migrate deploy`
-  on start), the Worker (`deploy-kyc-edge.yml` deploys the notification Worker
-  first, then this one — both on a push to `main` touching `workers/**`), and
-  the frontend. All three come with a merge to `main`; none was done here.
+- **Deploying it** means: the migration and the API on Hetzner (by the
+  operator; the repository `Dockerfile` start command runs `prisma migrate
+  deploy` — whether the Hetzner Compose uses it is UNVERIFIED), the
+  Workers (a manual run of `deploy-kyc-edge.yml`, notification Worker first),
+  and the frontend (Cloudflare Pages). A merge to `main` does none of the
+  first two. Order, checks and rollback: `docs/KYC_RELEASE_RUNBOOK.md`.
 
-### Release order, compatibility and rollback (plan only — nothing was run)
+### Release order, compatibility and rollback
 
-A merge to `main` starts three deploys at once: Render (runs
-`prisma migrate deploy`, then the API), `deploy-kyc-edge.yml` (notification
-Worker first, then the KYC edge), and the frontend. Every piece is additive, so
-any arrival order is safe:
+Superseded on 2026-10-16: the earlier text here assumed that a merge to `main`
+starts Render's API deploy with `prisma migrate deploy`. It does not — the API
+is on Hetzner and is updated by hand. The step-by-step order (PostgreSQL backup
+→ migration → API → Workers → frontend → checks), its preflight and the
+rollback are in `docs/KYC_RELEASE_RUNBOOK.md`.
 
-| Arrives first | Effect until the rest arrives |
+Compatibility that still holds (every piece is additive):
+
+| Live first | Effect until the rest arrives |
 |---|---|
 | API + migration | Old frontend ignores the new optional fields; old Workers never call the new routes. |
-| Frontend | No user can have a request yet, so the user page looks as before; in the admin, «Отправить запрос» and the two new queue filters fail with an error (old API) — nothing is written. |
-| KYC edge Worker | `/v1/materials` answers 404/503 (old API has no authorize route); nothing calls it yet; the submission path is unchanged. |
-| KYC edge before notification Worker | `notifyMaterials` is missing → one `[notifications] DELIVERY_UNAVAILABLE` warning, upload unaffected (the workflow deploys notifications first anyway). |
-
-Preflight for the owner, read-only: `npx prisma migrate status` against
-production (no pending/failed migration besides this one); the KYC Worker's
-`KYC_EDGE_SIGNING_JWK` and Render's `KYC_EDGE_PUBLIC_KEY` unchanged; the
-mailbox still a verified Email Routing destination; CI green on the exact head.
-Smoke after deploy: `/health` of both Workers, `/v1/materials` without a
-session → 401, `GET /kyc/me` has `reviewStage`.
-
-Rollback: revert the merge commit (the three deploys run again with the old
-code). Keep the table — dropping it would erase the audit trail of requests;
-old code never reads it. Users with an open request then see the ordinary
-«На рассмотрении», and the admin can still approve or reject as before.
+| Frontend | The user page looks as before (nobody has a request yet); in the admin, «Отправить запрос» and the two new queue filters fail with an error until the API has the routes — nothing is written. |
+| KYC edge Worker | Prevented: the manual deploy refuses to run until the live API answers on the materials routes. |
+| KYC edge before notification Worker | Prevented: the deploy job deploys the notification Worker first. |
 
 ### Retention, access, consent withdrawal — owner/legal decision
 
@@ -239,10 +256,12 @@ biometric processing. Open points to settle before release:
    support; the admin finds the letter by `rfc822msgid:<Message-ID>` from the
    request history, deletes it and records it; the request can be closed by a
    new request or a decision. An in-app button would be a separate change.
-4. If the owner wants the comparison screen to open the files without saving
-   attachments, that needs server-side storage (encrypted, access-checked,
-   with deletion) — a separate architecture decision; until then the screen
-   is honestly a manual one: the admin saves the attachments and opens them
-   (or drops / pastes them into the panes). The audited options, verified R2
-   prices, the secure read path and the risks are in
-   `docs/KYC_PHOTO_STORAGE_PLAN.md`.
+4. The comparison screen stays manual — **owner's decision, 2026-10-16**: no
+   Cloudflare R2 or any other new store for passports and selfies, no
+   automatic loading into the admin panel. The admin saves the attachments and
+   opens them (or drops / pastes them into the panes). Not a release blocker.
+   The audit and the rejected option: `docs/KYC_PHOTO_STORAGE_PLAN.md`.
+5. Telegram: VOLTEX's own `KYC_MATERIALS_RECEIVED` notice is text only (no
+   file, see below). The owner's mailbox also forwards to Telegram (the
+   owner's own mechanism, unchanged). The rules for both, and what to do if
+   that forwarding carries attachments: `docs/KYC_DOCUMENT_POLICY.md`.

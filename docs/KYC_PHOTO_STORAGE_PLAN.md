@@ -1,5 +1,14 @@
 # KYC photos in the admin panel — storage audit and plan (2026-10-16)
 
+> **Owner decision, 2026-10-16: rejected.** Do not create or connect
+> Cloudflare R2 or any other store for passports and selfies, and do not load
+> photos into the admin panel automatically. The current path stays: user →
+> KYC edge → attachment in the admin mailbox; the admin opens the attachments
+> in the comparison screen by hand. This is **not a release blocker**. No
+> extra forwarding of documents to Telegram either (§7). The audit and Option
+> A below are kept only as the record of what was considered and why it was
+> rejected. Handling rules for the mailbox: `docs/KYC_DOCUMENT_POLICY.md`.
+
 Owner question: can the admin open a KYC application and see the document
 photo next to the selfie automatically, without saving e-mail attachments,
 without a new paid service and without public URLs?
@@ -30,10 +39,10 @@ the dashboard (Storage & databases → R2).
 
 | Option | Verdict |
 |---|---|
-| **A. Private Cloudflare R2 bucket, reachable only through the KYC Worker** | Recommended if the owner approves a new store. |
+| A. Private Cloudflare R2 bucket, reachable only through the KYC Worker | **Rejected by the owner (2026-10-16).** Was the recommendation if a new store were approved. |
 | B. PostgreSQL (Neon) `bytea` | Not recommended: images in the main database, backups grow, Neon plan storage limits, every DB reader is near the pictures. |
 | C. Render disk | Not possible on the free plan (no persistent disk). |
-| D. Keep e-mail + manual comparison (current) | Works today; no new store; inconvenient. |
+| **D. Keep e-mail + manual comparison (current)** | **Chosen by the owner (2026-10-16).** Works today; no new store; the admin opens the attachments by hand (or drops / pastes them into the panes). |
 
 ## 3. Option A in detail
 
@@ -109,9 +118,9 @@ estimates from the published prices, not a quote.
 - **Deletion correctness**: lifecycle expiry is asynchronous (≤ 24 h typical);
   per-object deletion on decision should be tested.
 
-## 6. What the owner decides before any code is written
+## 6. What the owner would have decided (item 1 answered: no)
 
-1. Approve a new private store for KYC images (R2 bucket) — yes/no.
+1. Approve a new private store for KYC images (R2 bucket) — **no (2026-10-16)**; items 3–5 therefore do not apply.
 2. Retention period for documents and for selfies (and whether selfies are
    deleted right after the decision).
 3. Confirm the R2 subscription on the Cloudflare account and who may hold R2
@@ -124,3 +133,20 @@ Work after approval (estimate): Worker write/read paths and tests, Render
 ticket route + audit, admin panel auto-load, consent v2 in 7 languages,
 lifecycle configuration, browser QA — about 2–3 days of work, then a staged
 release like the one in `docs/KYC_EDGE.md`.
+
+## 7. Telegram (owner's note, 2026-10-16)
+
+Two different things, not to be confused:
+
+- **VOLTEX's own Telegram notice** (`workers/notification-edge`, event
+  `KYC_MATERIALS_RECEIVED`): text only — e-mail, name, which part arrived,
+  whether the request is complete. The Worker accepts a fixed list of fields,
+  rejects any other, and has no call that sends a photo or a file. Unchanged.
+- **The owner's mailbox forwarding to Telegram**: an existing mechanism of the
+  owner's, outside this repository; not changed and not duplicated. Whether it
+  forwards the letters' **attachments** (the photos) or only a notice cannot
+  be told from the repository; `docs/KYC_DOCUMENT_POLICY.md` says what follows
+  in either case.
+
+No new bot, forwarding, URL or other transfer of documents to Telegram is
+added.

@@ -8,6 +8,8 @@ import { PrismaClient } from '@prisma/client';
 import { kycRouter } from '../kyc';
 import { KycEdgeTrust, KYC_EDGE_BODY_TYPE } from '../../../services/KycEdgeTrust';
 import { kycMaterialDeliveryId, SELFIE_CONSENT_VERSION } from '../../../services/kycMaterials';
+import { AdminUserDeletionService } from '../../../services/AdminUserDeletionService';
+import { AccountDeletionGate } from '../../../services/AccountDeletionGate';
 
 /**
  * Additional KYC materials against real PostgreSQL (after `prisma migrate
@@ -57,6 +59,19 @@ pg('KYC additional materials on real PostgreSQL', () => {
   afterAll(async () => {
     await db.$disconnect();
     delete process.env.KYC_EDGE_PUBLIC_KEY;
+  });
+
+  // KycMaterialRequest → KycSubmission is ON DELETE RESTRICT, and the admin
+  // «Удалить пользователя» removes KycSubmission rows. Without deleting the
+  // requests first, deleting anyone who ever got a request failed whole.
+  it('an admin can still delete a user who had a material request', async () => {
+    const f = await fixture('delete');
+    await db.kycMaterialRequest.create({ data: { submissionId: f.submission.id, userId: f.user.id, kind: 'SELFIE', requestedBy: f.admin.id } });
+    const books = { spot: { cancelOrder: jest.fn() }, futures: { cancelOrder: jest.fn() }, demo: { cancelOrder: jest.fn() } } as unknown as ConstructorParameters<typeof AdminUserDeletionService>[2];
+    await expect(new AdminUserDeletionService(db, new AccountDeletionGate(), books).delete(f.admin.id, f.user.id)).resolves.toEqual({ ok: true });
+    expect(await db.user.count({ where: { id: f.user.id } })).toBe(0);
+    expect(await db.kycSubmission.count({ where: { id: f.submission.id } })).toBe(0);
+    expect(await db.kycMaterialRequest.count({ where: { userId: f.user.id } })).toBe(0);
   });
 
   it('the migration is additive: a new table with no binary column, existing tables untouched', async () => {
