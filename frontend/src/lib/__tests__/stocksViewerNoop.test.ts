@@ -96,12 +96,21 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
       'react-router-dom': { useParams: () => ({ instrumentId: ID }), useNavigate: () => jest.fn() },
       './useStocksText': { useStocksText: () => ({ s: stockTranslator(language), lang: language, locale: languageLocales[language] }) },
       './stockText': { stockOrderLabel: (s: string) => s, stockNoticeText: (s: any) => s.message || s.status, stockFxPolicyText: () => '' },
+      './OriginalStocksHeader': compile('src/pages/stocks/global/OriginalStocksHeader.tsx', {
+        'react/jsx-runtime': req('react/jsx-runtime'), 'lucide-react': req('lucide-react'),
+        'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
+        '../../../components/LanguageSwitcher': { LanguageSwitcher: Empty },
+        '../../../lib/i18n': { useLanguage: () => ({ t: (key: string) => key }) },
+        './useStocksText': { useStocksText: () => ({ s: stockTranslator(language), lang: language, locale: languageLocales[language] }) },
+      }),
+      './stockOriginalText': compile('src/pages/stocks/global/stockOriginalText.ts'),
+      './quoteReadiness': compile('src/pages/stocks/global/quoteReadiness.ts'),
       './chartDemand': { StockChartDemand: Demand }, '../../../components/Nav': { Nav: Empty },
       './GlobalChart': { default: ({ fills, entry }: { fills: unknown[]; entry: string | null }) =>
         React.createElement('div', { 'data-testid': 'chart', 'data-fill-count': fills.length, 'data-entry': entry || '' }) },
       '../../../lib/stocksIdentity': { DEFAULT_STOCKS_INSTRUMENT: ID },
       '../stockRequestError': { StockRequestError: RequestError, globalStockErrorText: (s: string) => s },
-      './tradeMarkers': { quoteAge: () => '' }, './globalStocks.css': {}, './desktopProfessional.css': {},
+      './tradeMarkers': { quoteAge: () => '' }, './globalStocks.css': {}, './desktopProfessional.css': {}, './stocksOriginal.css': {},
       '../../../lib/api': { getToken: () => credential, clearToken: () => { credential = null; listeners.forEach(l => l()); },
         onSessionChange: (listener: () => void) => { listeners.add(listener); return () => listeners.delete(listener); }, api: { logout: jest.fn() } },
       './accountSession': compile('src/pages/stocks/global/accountSession.ts'),
@@ -183,6 +192,44 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
     expect(setBalance.disabled).toBe(true);
     await flush(() => setBalance.click());
     expect(writes).toHaveLength(0); expect(sessionStorage.length).toBe(0);
+  });
+
+  test.each([
+    { label: 'График', view: 'chart' },
+    { label: 'Позиции / заявки', view: 'account' },
+  ])('header settings switches $view to trade before opening the account settings', async ({ label, view }) => {
+    const previousRaf = Object.getOwnPropertyDescriptor(globalThis, 'requestAnimationFrame');
+    const frames: FrameRequestCallback[] = [];
+    Object.defineProperty(globalThis, 'requestAnimationFrame', { configurable: true, writable: true,
+      value: (callback: FrameRequestCallback) => frames.push(callback) });
+    try {
+      await draw(state(false));
+      await flush(() => Array.from(document.querySelectorAll<HTMLButtonElement>('.vxg-mobile-tabs button'))
+        .find(tab => tab.textContent === label)!.click());
+      expect(document.querySelector('.vxg-terminal')!.classList.contains('vxg-view-' + view)).toBe(true);
+      const details = document.querySelector<HTMLDetailsElement>('.vxg-settings')!;
+      const scroll = jest.fn(() => {
+        expect(document.querySelector('.vxg-terminal')!.classList.contains('vxg-view-trade')).toBe(true);
+      });
+      details.scrollIntoView = scroll;
+      expect(details.open).toBe(false);
+      await flush(() => document.querySelector<HTMLButtonElement>('.vxo-original-actions button[aria-label="Параметры счёта"]')!.click());
+      expect(document.querySelector('.vxg-terminal')!.classList.contains('vxg-view-trade')).toBe(true);
+      expect(details.open).toBe(false);
+      expect(frames).toHaveLength(1);
+      expect(scroll).not.toHaveBeenCalled();
+      await flush(() => frames.shift()!(0));
+      expect(details.open).toBe(true);
+      expect(scroll).toHaveBeenCalledTimes(1);
+      expect(scroll).toHaveBeenCalledWith({ block: 'nearest' });
+      expect(details.querySelector<HTMLInputElement>('input')!.disabled).toBe(true);
+      expect(details.querySelector<HTMLButtonElement>('button')!.disabled).toBe(true);
+      expect(writes).toHaveLength(0);
+      expect(sessionStorage.length).toBe(0);
+    } finally {
+      if (previousRaf) Object.defineProperty(globalThis, 'requestAnimationFrame', previousRaf);
+      else delete (globalThis as any).requestAnimationFrame;
+    }
   });
 
   test('a stale loading handler stays no-op after permission arrives but before the authorized render commits', async () => {

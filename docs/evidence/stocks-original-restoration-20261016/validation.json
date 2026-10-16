@@ -1,0 +1,99 @@
+{
+  "baseline": "bcfd6d042c494f7b940b483934ef1803297fcca2",
+  "quoteReadinessCommit": "4832dd123aeafba3e748f3c78fb53a778bc18150",
+  "main": "2e7acf158000404133db85723bac13695215e25c",
+  "localOnly": true,
+  "terminalDesignApproval": "PENDING",
+  "fullFrontend": {
+    "success": true,
+    "suites": 278,
+    "passed": 4504,
+    "failed": 0,
+    "pending": 0,
+    "runtimeErrors": 0,
+    "openHandles": []
+  },
+  "focused": {
+    "suites": 6,
+    "passed": 126
+  },
+  "server": {
+    "files": 27,
+    "passed": 227,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 31.966
+  },
+  "workflowGuard": {
+    "passed": 14
+  },
+  "typescript": {
+    "frontend": "PASS",
+    "backend": "PASS"
+  },
+  "productionBuild": {
+    "status": "PASS",
+    "modules": 6194,
+    "warning": "Existing shared chunk exceeds 500 kB"
+  },
+  "browser": {
+    "geometryViews": 20,
+    "horizontalOverflows": 0,
+    "chartTicketOverlaps": 0,
+    "capturedWarningsErrors": 0,
+    "realFinancialOperations": 0
+  },
+  "capacity": "NOT_RUN - previous gates unchanged",
+  "logs": [
+    {
+      "name": "original-full-frontend.log",
+      "bytes": 9813008,
+      "sha256": "a0ef5a3b5cc0debaacc2f0d19d17c394c59d7b7b78943e1ba24236eee2f542fa"
+    },
+    {
+      "name": "original-full-frontend.json",
+      "bytes": 1805372,
+      "sha256": "1a94453fc63e2d298cb208d26e05740677b41f63bc61fede54568f9a29b04d8d"
+    },
+    {
+      "name": "original-full-frontend-final.log",
+      "bytes": 9811652,
+      "sha256": "034559dd847fe78f4a417ad20b4fb51d9255ef441d836d03a3a4c65c6b0ef0b2"
+    },
+    {
+      "name": "original-full-frontend-final.json",
+      "bytes": 1801694,
+      "sha256": "6e881ea7bcdbfb31d2228f3809b783b264c9d1b8b975c6ea27bbf6a74ff5c010"
+    },
+    {
+      "name": "ui-final-targeted.log",
+      "bytes": 854,
+      "sha256": "ff2f33339939d5049c4504b735bd7d0b7778f4712cdedd62d967e07cd3e10318"
+    },
+    {
+      "name": "ui-final-tsc-frontend.log",
+      "bytes": 94,
+      "sha256": "5b0491ecb3cc0ab5ed465eca86c475dc8845343f99021c715de38df32d359cf6"
+    },
+    {
+      "name": "ui-final-tsc-backend.log",
+      "bytes": 85,
+      "sha256": "cce415eaf1b7c962acb1d2897146b6b9f0e455bacc79500da731b023b6c60036"
+    },
+    {
+      "name": "original-final-build.log",
+      "bytes": 19951,
+      "sha256": "a307e52be8a44d5d0d4792895a5381804323d113b9b0358687b888f6fe0a7baa"
+    },
+    {
+      "name": "quote-readiness-full-stocks-global.log",
+      "bytes": 24526,
+      "sha256": "542b21ab1424286200c965cbf8c99877975b43b5e45c05ed15befd01192c96c1"
+    },
+    {
+      "name": "quote-readiness-workflow-guard.log",
+      "bytes": 1461,
+      "sha256": "8a223a674d8258a2a415fd40894ef871bb7768dd8958cbbd3d047a2f8813137a"
+    }
+  ]
+}

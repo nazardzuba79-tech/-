@@ -15,6 +15,8 @@ const StocksOverview = lazy(() => import('./StocksOverview'));
 declare const __VOLTEX_STOCKS_GLOBAL_SIMULATOR__: boolean;
 const GlobalStocks = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__
   ? lazy(() => import('./global/GlobalStocks')) : null;
+const GlobalStocksCatalogue = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__
+  ? lazy(() => import('./global/GlobalStocksCatalogue')) : null;
 
 /**
  * /stocks                      working panel (reopens the last valid instrument)
@@ -24,7 +26,8 @@ const GlobalStocks = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' &
  */
 export function StocksPage() {
   const {t}=useLanguage();
-  if (GlobalStocks && isStocksLocalPreviewHost(typeof window === 'undefined' ? undefined : window.location.hostname)) return <Suspense fallback={<div>{t('stocks.loading')}</div>}><GlobalStocks /></Suspense>;
+  const { instrumentId } = useParams();
+  if (GlobalStocks && GlobalStocksCatalogue && isStocksLocalPreviewHost(typeof window === 'undefined' ? undefined : window.location.hostname)) return <Suspense fallback={<div>{t('stocks.loading')}</div>}>{instrumentId ? <GlobalStocks /> : <GlobalStocksCatalogue />}</Suspense>;
   return widgetPreview ? <StocksLayout catalogue={widgetCatalogue} /> : <LegacyStocksPage />;
 }
 function LegacyStocksPage() {

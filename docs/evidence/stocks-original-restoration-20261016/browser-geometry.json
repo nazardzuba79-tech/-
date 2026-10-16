@@ -1,0 +1,846 @@
+[
+  {
+    "page": "catalogue",
+    "size": [
+      320,
+      844
+    ],
+    "metrics": {
+      "plotCount": 0,
+      "rows": [
+        {
+          "client": 285,
+          "right": 297.33335399627686,
+          "scroll": 285
+        },
+        {
+          "client": 285,
+          "right": 297.33335399627686,
+          "scroll": 285
+        }
+      ],
+      "scroll": 310,
+      "table": {
+        "bottom": 773.8333435058594,
+        "height": 145.33334350585938,
+        "left": 12,
+        "right": 298,
+        "top": 628.5,
+        "width": 286,
+        "x": 12,
+        "y": 628.5
+      },
+      "width": 320
+    }
+  },
+  {
+    "page": "catalogue",
+    "size": [
+      360,
+      844
+    ],
+    "metrics": {
+      "plotCount": 0,
+      "rows": [
+        {
+          "client": 317,
+          "right": 333.3333549499512,
+          "scroll": 317
+        },
+        {
+          "client": 317,
+          "right": 333.3333549499512,
+          "scroll": 317
+        }
+      ],
+      "scroll": 350,
+      "table": {
+        "bottom": 757.8333435058594,
+        "height": 145.33334350585938,
+        "left": 16,
+        "right": 334,
+        "top": 612.5,
+        "width": 318,
+        "x": 16,
+        "y": 612.5
+      },
+      "width": 360
+    }
+  },
+  {
+    "page": "catalogue",
+    "size": [
+      390,
+      844
+    ],
+    "metrics": {
+      "plotCount": 0,
+      "rows": [
+        {
+          "client": 347,
+          "right": 363.3333549499512,
+          "scroll": 347
+        },
+        {
+          "client": 347,
+          "right": 363.3333549499512,
+          "scroll": 347
+        }
+      ],
+      "scroll": 380,
+      "table": {
+        "bottom": 757.8333435058594,
+        "height": 145.33334350585938,
+        "left": 16,
+        "right": 364,
+        "top": 612.5,
+        "width": 348,
+        "x": 16,
+        "y": 612.5
+      },
+      "width": 390
+    }
+  },
+  {
+    "page": "catalogue",
+    "size": [
+      430,
+      900
+    ],
+    "metrics": {
+      "plotCount": 0,
+      "rows": [
+        {
+          "client": 387,
+          "right": 403.3333549499512,
+          "scroll": 387
+        },
+        {
+          "client": 387,
+          "right": 403.3333549499512,
+          "scroll": 387
+        }
+      ],
+      "scroll": 420,
+      "table": {
+        "bottom": 757.8333435058594,
+        "height": 145.33334350585938,
+        "left": 16,
+        "right": 404,
+        "top": 612.5,
+        "width": 388,
+        "x": 16,
+        "y": 612.5
+      },
+      "width": 430
+    }
+  },
+  {
+    "page": "catalogue",
+    "size": [
+      768,
+      900
+    ],
+    "metrics": {
+      "plotCount": 0,
+      "rows": [
+        {
+          "client": 725,
+          "right": 741.3333549499512,
+          "scroll": 725
+        },
+        {
+          "client": 725,
+          "right": 741.3333549499512,
+          "scroll": 725
+        }
+      ],
+      "scroll": 758,
+      "table": {
+        "bottom": 761.8333435058594,
+        "height": 175.33334350585938,
+        "left": 16,
+        "right": 742,
+        "top": 586.5,
+        "width": 726,
+        "x": 16,
+        "y": 586.5
+      },
+      "width": 768
+    }
+  },
+  {
+    "page": "catalogue",
+    "size": [
+      800,
+      900
+    ],
+    "metrics": {
+      "plotCount": 0,
+      "rows": [
+        {
+          "client": 757,
+          "right": 773.3333549499512,
+          "scroll": 757
+        },
+        {
+          "client": 757,
+          "right": 773.3333549499512,
+          "scroll": 757
+        }
+      ],
+      "scroll": 790,
+      "table": {
+        "bottom": 761.8333435058594,
+        "height": 175.33334350585938,
+        "left": 16,
+        "right": 774,
+        "top": 586.5,
+        "width": 758,
+        "x": 16,
+        "y": 586.5
+      },
+      "width": 800
+    }
+  },
+  {
+    "page": "catalogue",
+    "size": [
+      1440,
+      900
+    ],
+    "metrics": {
+      "plotCount": 0,
+      "rows": [
+        {
+          "client": 1381,
+          "right": 1405.3334159851074,
+          "scroll": 1381
+        },
+        {
+          "client": 1381,
+          "right": 1405.3334159851074,
+          "scroll": 1381
+        }
+      ],
+      "scroll": 1430,
+      "table": {
+        "bottom": 669.6666870117188,
+        "height": 175.33334350585938,
+        "left": 24,
+        "right": 1406,
+        "top": 494.3333435058594,
+        "width": 1382,
+        "x": 24,
+        "y": 494.3333435058594
+      },
+      "width": 1440
+    }
+  },
+  {
+    "page": "catalogue",
+    "size": [
+      1920,
+      1080
+    ],
+    "metrics": {
+      "plotCount": 0,
+      "rows": [
+        {
+          "client": 1551,
+          "right": 1730.3334197998047,
+          "scroll": 1551
+        },
+        {
+          "client": 1551,
+          "right": 1730.3334197998047,
+          "scroll": 1551
+        }
+      ],
+      "scroll": 1910,
+      "table": {
+        "bottom": 669.6666870117188,
+        "height": 175.33334350585938,
+        "left": 179,
+        "right": 1731,
+        "top": 494.3333435058594,
+        "width": 1552,
+        "x": 179,
+        "y": 494.3333435058594
+      },
+      "width": 1920
+    }
+  },
+  {
+    "page": "terminal-chart",
+    "size": [
+      1366,
+      768
+    ],
+    "metrics": {
+      "account": {
+        "bottom": 732,
+        "height": 112,
+        "left": 12,
+        "right": 1000,
+        "top": 620,
+        "width": 988,
+        "x": 12,
+        "y": 620
+      },
+      "chart": {
+        "bottom": 608,
+        "height": 480,
+        "left": 12,
+        "right": 720,
+        "top": 128,
+        "width": 708,
+        "x": 12,
+        "y": 128
+      },
+      "scroll": 1356,
+      "tabs": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "ticket": {
+        "bottom": 732,
+        "height": 604,
+        "left": 1008,
+        "right": 1344,
+        "top": 128,
+        "width": 336,
+        "x": 1008,
+        "y": 128
+      },
+      "width": 1366
+    }
+  },
+  {
+    "page": "terminal-chart",
+    "size": [
+      1440,
+      900
+    ],
+    "metrics": {
+      "account": {
+        "bottom": 864,
+        "height": 112,
+        "left": 12,
+        "right": 1074,
+        "top": 752,
+        "width": 1062,
+        "x": 12,
+        "y": 752
+      },
+      "chart": {
+        "bottom": 740,
+        "height": 612,
+        "left": 12,
+        "right": 794,
+        "top": 128,
+        "width": 782,
+        "x": 12,
+        "y": 128
+      },
+      "scroll": 1430,
+      "tabs": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "ticket": {
+        "bottom": 864,
+        "height": 736,
+        "left": 1082,
+        "right": 1418,
+        "top": 128,
+        "width": 336,
+        "x": 1082,
+        "y": 128
+      },
+      "width": 1440
+    }
+  },
+  {
+    "page": "terminal-chart",
+    "size": [
+      1707,
+      900
+    ],
+    "metrics": {
+      "account": {
+        "bottom": 866,
+        "height": 120,
+        "left": 12,
+        "right": 1341.3333740234375,
+        "top": 746,
+        "width": 1329.3333740234375,
+        "x": 12,
+        "y": 746
+      },
+      "chart": {
+        "bottom": 734,
+        "height": 606,
+        "left": 12,
+        "right": 1052.4271240234375,
+        "top": 128,
+        "width": 1040.4271240234375,
+        "x": 12,
+        "y": 128
+      },
+      "scroll": 1697,
+      "tabs": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "ticket": {
+        "bottom": 866,
+        "height": 738,
+        "left": 1349.3333740234375,
+        "right": 1685.3333740234375,
+        "top": 128,
+        "width": 336,
+        "x": 1349.3333740234375,
+        "y": 128
+      },
+      "width": 1707
+    }
+  },
+  {
+    "page": "terminal-chart",
+    "size": [
+      1920,
+      1080
+    ],
+    "metrics": {
+      "account": {
+        "bottom": 1046,
+        "height": 120,
+        "left": 12,
+        "right": 1554,
+        "top": 926,
+        "width": 1542,
+        "x": 12,
+        "y": 926
+      },
+      "chart": {
+        "bottom": 914,
+        "height": 786,
+        "left": 12,
+        "right": 1258,
+        "top": 128,
+        "width": 1246,
+        "x": 12,
+        "y": 128
+      },
+      "scroll": 1910,
+      "tabs": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "ticket": {
+        "bottom": 1046,
+        "height": 918,
+        "left": 1562,
+        "right": 1898,
+        "top": 128,
+        "width": 336,
+        "x": 1562,
+        "y": 128
+      },
+      "width": 1920
+    }
+  },
+  {
+    "page": "terminal-chart",
+    "size": [
+      320,
+      844
+    ],
+    "metrics": {
+      "account": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "chart": {
+        "bottom": 781,
+        "height": 602,
+        "left": 3,
+        "right": 307,
+        "top": 179,
+        "width": 304,
+        "x": 3,
+        "y": 179
+      },
+      "scroll": 310,
+      "tabs": {
+        "bottom": 176,
+        "height": 42,
+        "left": 3,
+        "right": 307,
+        "top": 134,
+        "width": 304,
+        "x": 3,
+        "y": 134
+      },
+      "ticket": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "width": 320
+    }
+  },
+  {
+    "page": "terminal-chart",
+    "size": [
+      360,
+      844
+    ],
+    "metrics": {
+      "account": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "chart": {
+        "bottom": 781,
+        "height": 602,
+        "left": 3,
+        "right": 347,
+        "top": 179,
+        "width": 344,
+        "x": 3,
+        "y": 179
+      },
+      "scroll": 350,
+      "tabs": {
+        "bottom": 176,
+        "height": 42,
+        "left": 3,
+        "right": 347,
+        "top": 134,
+        "width": 344,
+        "x": 3,
+        "y": 134
+      },
+      "ticket": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "width": 360
+    }
+  },
+  {
+    "page": "terminal-chart",
+    "size": [
+      390,
+      844
+    ],
+    "metrics": {
+      "account": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "chart": {
+        "bottom": 781,
+        "height": 602,
+        "left": 3,
+        "right": 377,
+        "top": 179,
+        "width": 374,
+        "x": 3,
+        "y": 179
+      },
+      "scroll": 380,
+      "tabs": {
+        "bottom": 176,
+        "height": 42,
+        "left": 3,
+        "right": 377,
+        "top": 134,
+        "width": 374,
+        "x": 3,
+        "y": 134
+      },
+      "ticket": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "width": 390
+    }
+  },
+  {
+    "page": "terminal-chart",
+    "size": [
+      430,
+      900
+    ],
+    "metrics": {
+      "account": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "chart": {
+        "bottom": 837,
+        "height": 658,
+        "left": 3,
+        "right": 417,
+        "top": 179,
+        "width": 414,
+        "x": 3,
+        "y": 179
+      },
+      "scroll": 420,
+      "tabs": {
+        "bottom": 176,
+        "height": 42,
+        "left": 3,
+        "right": 417,
+        "top": 134,
+        "width": 414,
+        "x": 3,
+        "y": 134
+      },
+      "ticket": {
+        "bottom": 0,
+        "height": 0,
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "width": 0,
+        "x": 0,
+        "y": 0
+      },
+      "width": 430
+    }
+  },
+  {
+    "page": "terminal-trade",
+    "size": [
+      320,
+      844
+    ],
+    "metrics": {
+      "scroll": 310,
+      "settings": {
+        "bottom": 835.0104179382324,
+        "height": 18.697917938232425,
+        "left": 16,
+        "right": 294,
+        "top": 816.3125,
+        "width": 278,
+        "x": 16,
+        "y": 816.3125
+      },
+      "submit": {
+        "bottom": 597,
+        "height": 46.84375,
+        "left": 16,
+        "right": 294,
+        "top": 550.15625,
+        "width": 278,
+        "x": 16,
+        "y": 550.15625
+      },
+      "ticket": {
+        "bottom": 851.0104179382324,
+        "height": 787.34375,
+        "left": 3,
+        "right": 307,
+        "top": 63.66666793823242,
+        "width": 304,
+        "x": 3,
+        "y": 63.66666793823242
+      },
+      "width": 320
+    }
+  },
+  {
+    "page": "terminal-trade",
+    "size": [
+      360,
+      844
+    ],
+    "metrics": {
+      "scroll": 350,
+      "settings": {
+        "bottom": 818.5104179382324,
+        "height": 18.697917938232425,
+        "left": 16,
+        "right": 334,
+        "top": 799.8125,
+        "width": 318,
+        "x": 16,
+        "y": 799.8125
+      },
+      "submit": {
+        "bottom": 597,
+        "height": 46.84375,
+        "left": 16,
+        "right": 334,
+        "top": 550.15625,
+        "width": 318,
+        "x": 16,
+        "y": 550.15625
+      },
+      "ticket": {
+        "bottom": 834.5104179382324,
+        "height": 770.84375,
+        "left": 3,
+        "right": 347,
+        "top": 63.66666793823242,
+        "width": 344,
+        "x": 3,
+        "y": 63.66666793823242
+      },
+      "width": 360
+    }
+  },
+  {
+    "page": "terminal-trade",
+    "size": [
+      390,
+      844
+    ],
+    "metrics": {
+      "scroll": 380,
+      "settings": {
+        "bottom": 802.0104179382324,
+        "height": 18.697917938232425,
+        "left": 16,
+        "right": 364,
+        "top": 783.3125,
+        "width": 348,
+        "x": 16,
+        "y": 783.3125
+      },
+      "submit": {
+        "bottom": 597,
+        "height": 46.84375,
+        "left": 16,
+        "right": 364,
+        "top": 550.15625,
+        "width": 348,
+        "x": 16,
+        "y": 550.15625
+      },
+      "ticket": {
+        "bottom": 818.0104179382324,
+        "height": 754.34375,
+        "left": 3,
+        "right": 377,
+        "top": 63.66666793823242,
+        "width": 374,
+        "x": 3,
+        "y": 63.66666793823242
+      },
+      "width": 390
+    }
+  },
+  {
+    "page": "terminal-trade",
+    "size": [
+      430,
+      900
+    ],
+    "metrics": {
+      "scroll": 420,
+      "settings": {
+        "bottom": 804.0104179382324,
+        "height": 18.697917938232425,
+        "left": 16,
+        "right": 404,
+        "top": 785.3125,
+        "width": 388,
+        "x": 16,
+        "y": 785.3125
+      },
+      "submit": {
+        "bottom": 599,
+        "height": 46.84375,
+        "left": 16,
+        "right": 404,
+        "top": 552.15625,
+        "width": 388,
+        "x": 16,
+        "y": 552.15625
+      },
+      "ticket": {
+        "bottom": 820.0104217529297,
+        "height": 754.34375,
+        "left": 3,
+        "right": 417,
+        "top": 65.66667175292969,
+        "width": 414,
+        "x": 3,
+        "y": 65.66667175292969
+      },
+      "width": 430
+    }
+  }
+]
