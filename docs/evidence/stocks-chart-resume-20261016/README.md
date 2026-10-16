@@ -55,3 +55,8 @@ failed its bounded NSS package-owner prerequisite before its browser cases.
 The failure and narrowly scoped follow-up are retained in
 [NSS-PREFLIGHT.md](NSS-PREFLIGHT.md); they do not invalidate or replace the
 earlier Windows screenshot failure or historical capacity failures.
+
+Source `82a7df6f` subsequently exposed a registration accounting test setup
+race before the new NSS prerequisite could be accepted. The observed failure,
+real-timer reproducer and test-only correction are recorded in
+[REGISTRATION-TEST.md](REGISTRATION-TEST.md). That source is not a full CI PASS.

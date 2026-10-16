@@ -223,16 +223,51 @@ test('mixed existing/new duplicate registration preserves observed prices and co
 
 test('active group members retain request/byte limits and queued expiry never creates an owner later', async t => {
   const f = await fixture(t, { maxPending: 4, maxQueueBytes: 800, queueTimeoutMs: 150 }), alice = await f.repo.forPrincipal(ALICE);
+  // This is an active-group accounting test, not a 150 ms fsync benchmark.
+  // Keep real worker/COMMIT barriers and the original queue deadline, but
+  // establish that precondition before advancing the queue's logical clock.
+  let now = performance.now();
+  const nativeTimeout = globalThis.setTimeout, nativeClear = globalThis.clearTimeout;
+  const timers = new Map(), owned = new Set();
+  t.mock.method(performance, 'now', () => now);
+  t.mock.method(globalThis, 'setTimeout', (callback, milliseconds, ...args) => {
+    if (milliseconds !== 150) return nativeTimeout(callback, milliseconds, ...args);
+    const handle = {}; owned.add(handle); timers.set(handle, { callback, args, at: now + milliseconds }); return handle;
+  });
+  t.mock.method(globalThis, 'clearTimeout', handle => {
+    if (owned.has(handle)) { timers.delete(handle); return; }
+    return nativeClear(handle);
+  });
+  const advance = milliseconds => {
+    now += milliseconds;
+    for (const [handle, timer] of [...timers]) if (timer.at <= now) {
+      timers.delete(handle); timer.callback(...timer.args);
+    }
+  };
   const first = await f.gate(alice), previous = arm(f.registration);
   const activeOwners = ['one', 'two', 'three'].map(principal);
   const active = Promise.all(activeOwners.map(owner => f.repo.forPrincipal(owner))); active.catch(() => {});
-  release(f.financial); await first.pending; await entered(f.registration, previous);
+  release(f.financial); await first.pending;
+  await Promise.race([entered(f.registration, previous), active.then(() => { throw Error('registration completed before its armed barrier'); })]);
   assert.equal(f.repo.metrics().queue.active, 3);
+  assert.equal(f.repo.metrics().queue.pending, 0);
+  assert.equal(timers.size, 0, 'all active registration deadlines were cancelled on dispatch');
   await assert.rejects(f.repo.forPrincipal({ issuer: 'x'.repeat(512), subject: 'byte-rejected' }), error => error.code === 'ACCOUNT_BUSY');
   const expiredOwner = principal('expired'), rejectedOwner = principal('count-rejected');
   const expired = f.repo.forPrincipal(expiredOwner); expired.catch(() => {});
   await assert.rejects(f.repo.forPrincipal(rejectedOwner), error => error.code === 'ACCOUNT_BUSY');
+  const beforeExpiry = f.repo.metrics().queue.timedOut;
+  assert.equal(timers.size, 1, 'exactly the queued owner retains its 150 ms deadline');
+  advance(149);
+  assert.equal(f.repo.metrics().queue.pending, 1);
+  assert.equal(f.repo.metrics().queue.timedOut, beforeExpiry);
+  assert.equal(timers.size, 1);
+  advance(1);
   await assert.rejects(expired, error => error.code === 'ACCOUNT_BUSY');
+  assert.equal(f.repo.metrics().queue.timedOut, beforeExpiry + 1);
+  assert.equal(f.repo.metrics().queue.pending, 0);
+  assert.equal(f.repo.metrics().queue.active, 3);
+  assert.equal(timers.size, 0);
   assert.equal(f.repo.metrics().queue.maxPending, 4);
   assert.ok(f.repo.metrics().queue.maxBytes <= 800);
   release(f.registration); await active;
@@ -240,6 +275,28 @@ test('active group members retain request/byte limits and queued expiry never cr
   assert.equal(durable.size, 4);
   assert.equal(durable.has(accountId(expiredOwner)), false);
   assert.equal(durable.has(accountId(rejectedOwner)), false);
+  assert.equal(f.repo.metrics().queue.bytes, 0);
+});
+
+test('real registration deadlines may expire behind a prior commit without creating any queued owners', async t => {
+  const f = await fixture(t, { maxPending: 4, maxQueueBytes: 800, queueTimeoutMs: 150 }), alice = await f.repo.forPrincipal(ALICE);
+  const first = await f.gate(alice), previous = arm(f.registration);
+  const queuedOwners = ['one', 'two', 'three'].map(principal);
+  // Do not release the prior real commit until the three real queue timers fire.
+  const outcomes = await Promise.allSettled(queuedOwners.map(owner => f.repo.forPrincipal(owner)));
+  assert.equal(outcomes.length, 3);
+  for (const outcome of outcomes) {
+    assert.equal(outcome.status, 'rejected'); assert.equal(outcome.reason.code, 'ACCOUNT_BUSY');
+  }
+  assert.equal(f.repo.metrics().queue.queueTimeoutMs, 150);
+  assert.equal(f.repo.metrics().queue.timedOut, 3);
+  assert.equal(f.repo.metrics().queue.pending, 0);
+  assert.equal(Atomics.load(f.registration, 1), previous);
+  release(f.financial); await first.pending;
+  const durable = rows(f.path);
+  assert.equal(durable.size, 1);
+  for (const owner of queuedOwners) assert.equal(durable.has(accountId(owner)), false);
+  assert.equal(Atomics.load(f.registration, 1), previous);
   assert.equal(f.repo.metrics().queue.bytes, 0);
 });
 
