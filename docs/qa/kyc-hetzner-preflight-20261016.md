@@ -43,6 +43,12 @@ Current image is also the immediate rollback:
 The runtime bootstrap ignores supplied command arguments and launches the API.
 The preparation adds a migration-only runner; use an explicit `--entrypoint node`.
 No existing bootstrap, configuration, password or secret was modified.
+Effective Compose also pins `VOLTEX_RELEASE_SHA` to the current `57a154a0…`.
+Future release overlay must update both the immutable image and this non-secret
+release identifier; all other effective configuration stays unchanged.
+An in-memory `docker compose config` comparison of this proposed overlay PASS:
+only those two fields differ, every other effective setting identical. No config
+file or running container was changed by this check.
 
 ## Existing backup: real restore PASS
 

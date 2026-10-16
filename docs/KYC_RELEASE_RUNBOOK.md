@@ -126,11 +126,22 @@ backend TypeScript build PASS. Неактивний тестовий image
 Перед перемиканням зібрати/перевірити image вже з exact затвердженого merge SHA,
 не використовувати preflight tag як production. Старий API продовжує працювати.
 
-Створити **новий** `releases/kyc-<SHA>/compose.kyc.yaml` з єдиним override:
-`services.api-production.image: sha256:<candidate image ID>`. Інших полів не
-змінювати. Додати його останнім до `dc` як масив `kc`. Звірити effective config
-лише за безпечними полями: порти 127.0.0.1:13020→3000, mounts, limits, networks
-і secret NAMES без змін; image — єдина різниця. Не друкувати весь config/env.
+Створити **новий** `releases/kyc-<SHA>/compose.kyc.yaml` з двома точними override:
+
+```yaml
+services:
+  api-production:
+    image: sha256:<candidate image ID>
+    environment:
+      VOLTEX_RELEASE_SHA: <RELEASE_COMMIT>
+```
+
+Чинний Compose явно задає `VOLTEX_RELEASE_SHA=57a154a0…`, тому лише image ENV
+не змінить release identity. Інших полів не змінювати. Додати overlay останнім:
+`kc=("${dc[@]}" -f "$PWD/releases/kyc-$RELEASE_COMMIT/compose.kyc.yaml")`.
+Звірити effective config лише за безпечними полями: порти
+127.0.0.1:13020→3000, mounts, limits, networks і secret NAMES без змін;
+image та release SHA — єдині різниці. Не друкувати весь config/env.
 
 ## 4. Міграція (окремим кроком)
 
@@ -142,6 +153,7 @@ backend TypeScript build PASS. Неактивний тестовий image
 
 ```sh
 test "$KYC_APPROVED_RELEASE_SHA" = "$RELEASE_COMMIT"
+export KYC_APPROVED_RELEASE_SHA KYC_VERIFIED_BACKUP_SHA256
 # KYC_VERIFIED_BACKUP_SHA256 = plaintext checksum щойно відновленого snapshot.
 # Це НЕ секрет, але НЕ заміна реальній перевірці restore і дозволу власника.
 "${kc[@]}" run --rm --no-deps --entrypoint node \
