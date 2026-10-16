@@ -98,6 +98,11 @@ async function main() {
       await cta.click(); await dialog.waitFor();
       const message='SYNTHETIC FIXTURE ONLY — страна: Украина; город: Киев; криптовалюта: USDT; сумма: 10000. Не выполнять обмен.';
       await dialog.getByLabel('Имя',{exact:true}).fill('Fixture Tester');
+      // The reopened form starts an async profile read; retain the exact account-email contract.
+      await page.waitForFunction(expected => {
+        const email = document.querySelector('.support-form input[type="email"]');
+        return email?.value === expected;
+      }, 'fixture@example.invalid', { timeout: 5000 });
       assert.equal(await dialog.getByLabel('Email',{exact:true}).inputValue(),'fixture@example.invalid');
       assert.equal(await dialog.getByLabel('Email',{exact:true}).evaluate(el=>el.readOnly),true,'account email cannot be forged in Support');
       await dialog.getByRole('radio',{name:'Другое',exact:true}).check();

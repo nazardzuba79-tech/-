@@ -1,0 +1,199 @@
+{
+  "parent": "9dd11aded1337346abd5844b15ec9846bf1e5478",
+  "fixtureOnly": true,
+  "negative": {
+    "failed": 2,
+    "passed": 24,
+    "failures": [
+      {
+        "name": "a cancelled profile read does not consume prefill (before-reopen)",
+        "failures": [
+          "Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)\n\nExpected number of calls: 2\nReceived number of calls: 1\n    at [worktree]\\frontend\\src\\lib\\__tests__\\supportForm.test.ts:269:21"
+        ]
+      },
+      {
+        "name": "a cancelled profile read does not consume prefill (after-reopen)",
+        "failures": [
+          "Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)\n\nExpected number of calls: 2\nReceived number of calls: 1\n    at [worktree]\\frontend\\src\\lib\\__tests__\\supportForm.test.ts:269:21"
+        ]
+      }
+    ]
+  },
+  "support": {
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0
+  },
+  "stage": {
+    "status": "PASS",
+    "assertions": 80,
+    "cases": [
+      {
+        "name": "actual /me authority, policy/session rejection and bounded maximum avatar",
+        "status": "PASS"
+      },
+      {
+        "name": "owner full trading cycle and exact P&L/reservation with viewer isolation",
+        "status": "PASS"
+      },
+      {
+        "name": "lost HTTP acknowledgement, restart, same-ID retry and conflict",
+        "status": "PASS"
+      },
+      {
+        "name": "feature-off rejects cached credentials and CSRF without upstream work",
+        "status": "PASS"
+      },
+      {
+        "name": "quiesced FULL SQLite backup, distinct-path restore and exact ledger reconciliation",
+        "status": "PASS"
+      }
+    ]
+  },
+  "package": {
+    "status": "PASS",
+    "assertions": 59
+  },
+  "guards": {
+    "pass": 6,
+    "fail": 0
+  },
+  "logs": [
+    {
+      "file": "support-prefill-negative.log",
+      "bytes": 3881,
+      "sha256": "407b95dd1e8b72b8d4993d0abda3e28da0757a3aee995f813bb8c04250c11091"
+    },
+    {
+      "file": "support-prefill-positive.log",
+      "bytes": 2473,
+      "sha256": "160328b90c669efd886cc269b03e3ae9f16cff233413967dfd7d1c70c1b4d453"
+    },
+    {
+      "file": "stage-viewer-repair-01.log",
+      "bytes": 706,
+      "sha256": "2660f684bff4af76b0b0ce0152626b72abd3ae4fee3b3ca59cd47749dfcd5c2a"
+    },
+    {
+      "file": "package-viewer-repair-01.log",
+      "bytes": 200,
+      "sha256": "b7ea842cf9a24af247b3ceabcb447a854a92565936c9d210875f049a65e6fb3b"
+    },
+    {
+      "file": "stage-repair-guards.log",
+      "bytes": 691,
+      "sha256": "c1306bdfd2f94151284680e8ab774ed7e4008fdf0d8273a329a661201e744b0d"
+    },
+    {
+      "file": "support-followup-typescript.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "support-followup-build-correct-runtime.log",
+      "bytes": 19447,
+      "sha256": "b0b56eee6d7c24741526c99ee8a0061c5aa188a4e02f370006cd2f1132dc637d"
+    },
+    {
+      "file": "stage-queue-proof-01.log",
+      "bytes": 704,
+      "sha256": "97d243317d20d40c3e370816db332c43493cc934f243f70ab84b1f563ac230b6"
+    },
+    {
+      "file": "package-queue-proof-01.log",
+      "bytes": 198,
+      "sha256": "2bd7f03f6951710d86d28c627f950e0d257656035758005d4748ddb8aecb4e9e"
+    },
+    {
+      "file": "followup-source-freeze-tests.log",
+      "bytes": 6760,
+      "sha256": "789a75a190e5b94e9c8a69494bd4eed090ca3ddeaa68a69fdf88f4a150281a9a"
+    },
+    {
+      "file": "global-queue-preservation-01.log",
+      "bytes": 21762,
+      "sha256": "30c7d21deb30b3c0f39ac88fd4fae31d5a25e305602dcf0da299475272643c27"
+    },
+    {
+      "file": "frontend-followup-full.log",
+      "bytes": 9811450,
+      "sha256": "3070efbc0e7decc3f22c98b8aa3fb6908aff41787eb5f11ff759fdde8697178e"
+    }
+  ],
+  "frontend": {
+    "suites": 275,
+    "pass": 4403,
+    "fail": 0,
+    "skipped": 0
+  },
+  "quoteAdmission": {
+    "pass": 20,
+    "fail": 0,
+    "skipped": 0
+  },
+  "cfdTrace": {
+    "pass": 36,
+    "fail": 0,
+    "skipped": 0
+  },
+  "existingGlobal": {
+    "pass": 202,
+    "fail": 0,
+    "skipped": 0
+  },
+  "stage-queue-proof-01": {
+    "status": "PASS",
+    "assertions": 80
+  },
+  "package-queue-proof-01": {
+    "status": "PASS",
+    "assertions": 59
+  },
+  "sourceFiles": [
+    {
+      "path": "services/stocks-global/server.mjs",
+      "bytes": 28307,
+      "sha256": "c963c58c3a91ef088c7719e472a750e1b895fca4a6204e5a1038d05db72d0e02"
+    },
+    {
+      "path": "services/stocks-global/quote-admission.test.mjs",
+      "bytes": 21996,
+      "sha256": "133b88cb89d3e70753283e724fdbcd37ada3829192a3638bd790ae67f5d5c419"
+    },
+    {
+      "path": "frontend/src/components/SupportWidget.tsx",
+      "bytes": 18065,
+      "sha256": "643580c5aeffd2fc5bb78f9efa3da5f8600e5cef08b60f8a7585b95eedada4b8"
+    },
+    {
+      "path": "frontend/src/lib/__tests__/supportForm.test.ts",
+      "bytes": 24954,
+      "sha256": "5d971fbacfce4872380247047ab484efbf5a2f7fa7fadc1c235bfd27ecdaaf2a"
+    },
+    {
+      "path": "scripts/cfd-workspace-quote-readiness.cjs",
+      "bytes": 15429,
+      "sha256": "4caf266d83128c59ae4d8a5bf9669823e8428a03c9fd3bf03a3e3435ae738467"
+    },
+    {
+      "path": "scripts/cfd-workspace-quote-readiness.test.cjs",
+      "bytes": 41955,
+      "sha256": "56defb5f478d666b4820627d892442cea29037c086610ce6c0bae0730a1a9a0c"
+    },
+    {
+      "path": "scripts/qa-cfd-workspace.cjs",
+      "bytes": 52541,
+      "sha256": "fbb4d3c13f1ee180b6b26c76aae4c88316d4dd3476def276bd72e43c747fd1e1"
+    },
+    {
+      "path": "scripts/qa-otc-cash.cjs",
+      "bytes": 12536,
+      "sha256": "e1770de9306d506bf140c0e7c82a2889ccb6897ea21a76a49b94b84c09243e3c"
+    },
+    {
+      "path": "scripts/qa-stocks-local-stage-recovery.cjs",
+      "bytes": 32266,
+      "sha256": "7dd385516187e21af79a1195b58e7611d51b1839d21d9908c5ea9008c6d876d9"
+    }
+  ]
+}

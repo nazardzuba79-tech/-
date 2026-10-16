@@ -568,3 +568,123 @@ test('observer checkpoints detect a new same-price quote epoch while allowing un
   assert.notEqual(before.epoch, revised.epoch);
   h.assertPassive(4);
 });
+
+test('main chart diagnostics retain requested identity, response provenance and bar count without changing quote readiness', async () => {
+  const input = fixture(), dom = { ...input.dom, chartState: 'error' }, h = await observerHarness(dom);
+  const before = await observedFixture(h);
+  const body = { symbol: 'GBPUSD', providerSymbol: 'GBPUSD', interval: '1h', source: 'unit-chart-source',
+    bars: [{ openTime: NOW, open: 1, high: 2, low: 1, close: 2 }], _display: input.daily.body._display };
+  const bytes = jsonBytes(body), url = dailyUrl('GBPUSD').replace('interval=1d&limit=20', 'interval=1h&limit=500');
+  h.send('chart', bytes, { url, headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=30',
+    authorization: 'unit-secret-not-for-evidence', 'set-cookie': 'unit-secret-not-for-evidence' } });
+  await flushObservationTasks();
+  const entry = h.observer.evidence.charts[0], after = await h.observer.checkpoint('XAUUSD', 'chart-failure-state');
+  assert.equal(entry.kind, 'chart'); assert.equal(entry.symbol, 'GBPUSD');
+  assert.equal(entry.requestedInterval, '1h'); assert.equal(entry.requestedLimit, '500');
+  assert.equal(entry.status, 200); assert.equal(entry.complete, true);
+  assert.deepEqual(entry.data, { symbol: 'GBPUSD', providerSymbol: 'GBPUSD', interval: '1h', source: 'unit-chart-source', barCount: 1, responseError: null });
+  assert.deepEqual(entry.snapshot, body._display);
+  assert.equal(entry.bodySha256, createHash('sha256').update(bytes).digest('hex'));
+  assert.equal(entry.bytes, bytes.length); assert.deepEqual(entry.timing, h.requests.at(-1).timing());
+  assert.equal(Object.hasOwn(entry, 'body'), false, 'chart bodies must not accumulate in memory');
+  const serialized = JSON.stringify(h.observer.evidence);
+  assert.equal(serialized.includes('unit-secret-not-for-evidence'), false);
+  assert.equal(Object.hasOwn(entry.data, 'bars'), false, 'retain bar count and digest, not another full candle copy');
+  assert.equal(after.dom.chartState, 'error');
+  assert.equal(after.ready, true, 'chart diagnostics cannot replace or alter the existing quote gate');
+  assert.equal(sameQuoteEpoch(before, after), true);
+  assert.equal(h.observer.evidence.entries.length, 2);
+  h.assertPassive(3);
+});
+
+test('main chart failures retain safe HTTP codes and actual transport or parse failures without falling back to daily data', async () => {
+  const h = await observerHarness(); await observedFixture(h);
+  const url = dailyUrl('GBPUSD').replace('interval=1d&limit=20', 'interval=1h&limit=500');
+  h.send('chart', { error: 'cfd_chart_temporarily_unavailable' }, { url, status: 503 });
+  h.send('chart', { error: 'private arbitrary response text', debug: 'unit-private-value' }, { url, status: 502 });
+  const aborted = h.request('chart', { url, failure: 'net::ERR_ABORTED' }); h.page.emit('requestfailed', aborted);
+  h.send('chart', Buffer.from('{"error": unit-secret-not-for-evidence}'), { url, status: 502 });
+  const unavailable = deferred(); h.send('chart', unavailable.promise, { url });
+  await flushObservationTasks(); unavailable.reject(Error('UNIT_CHART_BODY_UNAVAILABLE')); await flushObservationTasks();
+  const [http, arbitrary, transport, nonJson, unreadable] = h.observer.evidence.charts;
+  assert.equal(http.status, 503); assert.equal(http.data.responseError, 'cfd_chart_temporarily_unavailable');
+  assert.equal(http.data.barCount, null); assert.equal(http.complete, true);
+  assert.equal(arbitrary.status, 502); assert.equal(arbitrary.data.responseError, null);
+  assert.equal(JSON.stringify(arbitrary).includes('unit-private-value'), false);
+  assert.equal(transport.error, 'net::ERR_ABORTED'); assert.equal(transport.complete, false);
+  assert.equal(nonJson.status, 502); assert.equal(nonJson.error, 'CHART_TRACE_JSON_PARSE'); assert.equal(nonJson.complete, false);
+  assert.equal(JSON.stringify(h.observer.evidence).includes('unit-secret-not-for-evidence'), false, 'parse errors must not expose response fragments');
+  assert.equal(unreadable.error, 'UNIT_CHART_BODY_UNAVAILABLE'); assert.equal(unreadable.complete, false);
+  assert.equal((await h.observer.snapshot('XAUUSD')).ready, true);
+  h.assertPassive(7);
+});
+
+test('daily main chart and hourly requests remain separate from the selected daily quote gate and unrelated origins', async () => {
+  const h = await observerHarness(), input = fixture();
+  h.send('ticker', input.ticker.body);
+  for (const [interval, limit] of [['1d', '500'], ['1h', '500'], ['15m', '200']]) {
+    const url = dailyUrl('XAUUSD').replace('interval=1d&limit=20', `interval=${interval}&limit=${limit}`);
+    h.send('chart', { ...input.daily.body, interval }, { url });
+  }
+  h.send('chart', input.daily.body, { url: 'https://other-unit.invalid/api/v1/cfd/display/candles/XAUUSD?interval=1h&limit=500' });
+  await flushObservationTasks();
+  assert.deepEqual(h.observer.evidence.charts.map(entry => [entry.requestedInterval, entry.requestedLimit]), [['1d', '500'], ['1h', '500'], ['15m', '200']]);
+  const result = await h.observer.snapshot('XAUUSD');
+  assert.equal(result.ready, false); assert.equal(result.dailySequence, null);
+  assert.equal(h.observer.evidence.entries.length, 1);
+  h.assertPassive(5);
+});
+
+test('chart diagnostics have their own bounded capacity without consuming or weakening the original quote trace limit', async () => {
+  const h = await observerHarness(); const before = await observedFixture(h);
+  const url = dailyUrl('GBPUSD').replace('interval=1d&limit=20', 'interval=1h&limit=500');
+  for (let index = 0; index < 257; index += 1) h.request('chart', { url });
+  assert.equal(h.observer.evidence.charts.length, 256); assert.equal(h.observer.evidence.chartOverflow, true);
+  assert.equal(h.observer.evidence.entries.length, 2); assert.equal(h.observer.evidence.overflow, false);
+  const after = await h.observer.snapshot('XAUUSD');
+  assert.equal(after.ready, true); assert.equal(sameQuoteEpoch(before, after), true);
+  h.assertPassive(259);
+});
+
+test('stalled chart body diagnostics use the existing bounded drain and cannot alter quote acceptance', async t => {
+  const timers = controlledTimers(t), h = await observerHarness(), stalled = deferred();
+  const before = await observedFixture(h);
+  h.send('chart', stalled.promise, { url: dailyUrl('GBPUSD').replace('interval=1d&limit=20', 'interval=1h&limit=500') });
+  await flushObservationTasks();
+  const draining = h.observer.settle();
+  assert.equal(timers.scheduled.at(-1).delay, 1000); timers.fire(timers.scheduled.at(-1));
+  assert.deepEqual(await draining, { complete: true, pending: 0 });
+  assert.deepEqual(h.observer.evidence.chartDrain, { complete: false, pending: 1 });
+  assert.equal(h.observer.evidence.chartIncomplete, true);
+  assert.equal(sameQuoteEpoch(before, await h.observer.snapshot('XAUUSD')), true);
+  stalled.resolve(jsonBytes({ symbol: 'GBPUSD', interval: '1h', bars: [] })); await flushObservationTasks();
+  assert.deepEqual(await h.observer.settle(0), { complete: true, pending: 0 });
+  assert.deepEqual(h.observer.evidence.chartDrain, { complete: false, pending: 0 }, 'late body must not conceal incomplete chart capture');
+  assert.equal(timers.active.size, 0);
+  h.assertPassive(3);
+});
+
+test('chart CDP event traffic cannot consume the original quote network ID or event capacity', async () => {
+  const h = await observerHarness(), before = await observedFixture(h);
+  const url = dailyUrl('GBPUSD').replace('interval=1d&limit=20', 'interval=1h&limit=500');
+  // Exceed both existing quote capacities (256 IDs and 1024 events).
+  for (let index = 0; index < 300; index += 1) {
+    const requestId = 'chart-' + index;
+    h.cdp.emit('Network.requestWillBeSent', { requestId, timestamp: index, wallTime: NOW / 1000,
+      request: { url, method: 'GET' }, initiator: { type: 'script' } });
+    h.cdp.emit('Network.responseReceived', { requestId, timestamp: index, response: { status: 503 } });
+    h.cdp.emit('Network.requestServedFromCache', { requestId });
+    h.cdp.emit('Network.loadingFinished', { requestId, timestamp: index, encodedDataLength: 0 });
+    h.cdp.emit('Network.loadingFailed', { requestId, timestamp: index, errorText: 'net::ERR_ABORTED' });
+  }
+  assert.equal(h.observer.evidence.network.length, 0); assert.equal(h.observer.evidence.overflow, false);
+  assert.equal(h.observer.evidence.charts.length, 0, 'chart bodies are captured through passive page observations only');
+  h.cdp.emit('Network.requestWillBeSent', { requestId: 'quote-after-charts', timestamp: 400, wallTime: NOW / 1000,
+    request: { url: tickerUrl, method: 'GET' }, initiator: { type: 'script' } });
+  h.cdp.emit('Network.responseReceived', { requestId: 'quote-after-charts', timestamp: 401, response: { status: 200 } });
+  h.cdp.emit('Network.loadingFinished', { requestId: 'quote-after-charts', timestamp: 402, encodedDataLength: 1 });
+  assert.deepEqual(h.observer.evidence.network.map(event => event.event), ['request', 'response', 'loadingFinished']);
+  assert.equal(h.observer.evidence.overflow, false);
+  assert.equal(sameQuoteEpoch(before, await h.observer.snapshot('XAUUSD')), true);
+  h.assertPassive(2);
+});

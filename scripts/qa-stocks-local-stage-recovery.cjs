@@ -183,7 +183,10 @@ function inspectClosedDb(file, dataRoot) {
     const integrity = db.prepare('PRAGMA integrity_check').all(); assert.deepEqual(integrity.map(x => x.integrity_check), ['ok']);
     assert.equal(db.prepare('PRAGMA journal_mode').get().journal_mode, 'delete');
     const rows = db.prepare('SELECT id, ledger FROM paper_accounts ORDER BY id').all().map(row => ({ id: row.id, ledger: JSON.parse(row.ledger) }));
-    assert.equal(rows.length, 2); for (const row of rows) assert.equal(row.ledger.schema, 2);
+    // The fixture admits exactly one trader. Bob remains an authenticated
+    // market-data viewer and must never acquire a funded SQLite account.
+    assert.deepEqual(rows.map(row => row.id), [sha(JSON.stringify([ISSUER, 'alice']))], 'only the fixture owner has a persisted account');
+    for (const row of rows) assert.equal(row.ledger.schema, 2);
     return { rows, bytes: fs.statSync(file).size, sha256: sha(fs.readFileSync(file)), integrity: 'ok', journal: 'delete' };
   } finally { db.close(); }
 }
@@ -215,6 +218,11 @@ async function main(output) {
   const order = (name, extra = {}) => ({ id: 'local-stage-order-' + name.padEnd(18, '0'), instrumentId: ID, currency: 'USDT', side: 'BUY', type: 'MARKET', quantity: '0.4', ...extra });
   const state = user => call(user, 'state');
   const refresh = async () => { const r = await call('alice', 'refresh', { id: ID }, alice.body.token); check(r.status === 200, 'fixture refresh'); };
+  const viewer = (result, label) => {
+    check(result.status === 200 && result.body.account?.mode === 'viewer' && result.body.account.canTrade === false, label + ': authenticated market-only response');
+    check(['USDT', 'USDC'].every(currency => ['cash', 'reserved', 'available'].every(field => result.body.wallets?.[currency]?.[field] === '0.00000000')), label + ': no funded or reserved viewer cash');
+    check(result.body.orders.length === 0 && result.body.fills.length === 0 && Object.keys(result.body.positions).length === 0 && result.body.adjustments.length === 0, label + ': no financial history or positions');
+  };
   try {
     const build = freshBuild(output);
     report.build = { command: build.command, compilerVersion: build.compilerVersion, exitCode: build.exitCode, proofSha256: build.proofSha256, logSha256: build.logSha256 };
@@ -248,8 +256,30 @@ async function main(output) {
       alice = await state('alice'); bob = await state('bob');
     });
     await test('owner full trading cycle and exact P&L/reservation with viewer isolation', async () => {
-      check(bob.body.account.canTrade === false, 'Bob is read-only');
+      viewer(bob, 'Bob initial view');
+      // Measure viewer-only work in a fresh worker between actual quiescent
+      // snapshots. Do not infer no writes from the displayed zero balance.
+      const beforeViewer = await fixture.command('quiesce');
+      check(beforeViewer.closed === true, 'viewer baseline worker fully quiesced');
+      const viewerBaseline = inspectClosedDb(beforeViewer.path, dataRoot);
+      await fixture.command('restart');
+      bob = await state('bob'); viewer(bob, 'Bob fresh-worker view');
       check((await call('bob', 'orders', order('bob'), bob.body.token)).status === 401, 'Bob order denied');
+      const afterViewer = await fixture.command('quiesce');
+      check(afterViewer.closed === true, 'viewer-only worker fully quiesced');
+      const viewerMetrics = afterViewer.accountMetrics;
+      check(viewerMetrics?.queue.accepted === 0 && viewerMetrics.queue.dispatched === 0 && viewerMetrics.queue.active === 0 && viewerMetrics.queue.pending === 0, 'viewer read and denied order admit no account-worker commands');
+      check(viewerMetrics?.sqlWriteCalls === 0 && viewerMetrics.transactionExecCalls === 0, 'viewer read and denied order perform no ledger writes or transactions');
+      const viewerAfter = inspectClosedDb(afterViewer.path, dataRoot);
+      check(viewerAfter.sha256 === viewerBaseline.sha256 && JSON.stringify(viewerAfter.rows) === JSON.stringify(viewerBaseline.rows), 'viewer operations preserve every persisted ledger byte and never create Bob');
+      report.viewerIsolation = { responseMode: 'viewer', fundedBalance: false, persistedAccounts: viewerAfter.rows.length, viewerAccountCreated: false,
+        accountCommands: viewerMetrics.queue.accepted, sqlWrites: viewerMetrics.sqlWriteCalls, transactions: viewerMetrics.transactionExecCalls, databaseByteIdentical: true };
+      await fixture.command('restart'); alice = await state('alice'); bob = await state('bob');
+      check(alice.status === 200 && alice.body.account.canTrade === true, 'owner restored after viewer-only proof');
+      viewer(bob, 'Bob post-restart view');
+      // The additional restart must obey the existing observation recovery
+      // fence (reopened account epoch + 2s), not bypass it or backdate quotes.
+      await new Promise(resolve => setTimeout(resolve, 2100));
       check((await call('alice', 'orders', order('csrf'), 'wrong-token')).status === 422, 'forged CSRF denied');
       const selector = await call('alice', 'state?accountId=bob');
       check(selector.status === 400 && selector.body.error === 'QUERY_NOT_ALLOWED', 'account selector denied at gateway');
@@ -278,7 +308,7 @@ async function main(output) {
       check(oversell.status === 422 && oversell.body.error === 'INSUFFICIENT_SHARES', 'oversell denied');
       const usdc = await call('alice', 'orders', order('usdc', { currency: 'USDC' }), alice.body.token);
       check(usdc.status === 422 && usdc.body.error === 'INVALID_ORDER', 'owner USDT-only policy retained');
-      const other = await state('bob'); check(other.body.fills.length === 0 && other.body.wallets.USDT.cash === '10000.00000000', 'Bob ledger unchanged');
+      const other = await state('bob'); viewer(other, 'Bob after owner trading');
       report.financialCheckpoint = { cash: closed.body.wallets.USDT.cash, realized: closed.body.realized.USDT, shares: '0.00000000', fills: closed.body.fills.length };
     });
     const lostOrder = order('lost-ack', { quantity: '0.2' });
@@ -317,10 +347,11 @@ async function main(output) {
         original: { path: stopped.path, sha256: original.sha256, bytes: original.bytes }, restored: { path: restoredPath, sha256: copy.sha256, bytes: copy.bytes }, integrity: 'ok', accounts: original.rows.map(x => ({ id: x.id, ledgerSha256: sha(JSON.stringify(x.ledger)) })) });
       await fixture.command('restore', { path: restoredPath }); alice = await state('alice'); bob = await state('bob');
       check(alice.body.positions[ID + '|USDT'].quantity === '0.20000000' && alice.body.wallets.USDT.cash === '9982.00000000', 'restored owner financial state');
-      check(bob.body.fills.length === 0 && bob.body.wallets.USDT.cash === '10000.00000000', 'restored viewer stays isolated');
+      viewer(bob, 'Bob after exact backup restore');
       const retry = await call('alice', 'orders', lostOrder, alice.body.token);
       check(retry.status === 200 && retry.body.fills.filter(x => x.orderId === lostOrder.id).length === 1, 'restored idempotency retained');
       await fixture.command('quiesce');
+      check(inspectClosedDb(restoredPath, dataRoot).rows.length === 1, 'restored viewer reads and owner retry never create a viewer account');
       check(inspectClosedDb(stopped.path, dataRoot).sha256 === original.sha256, 'original retained DB untouched by restored service');
       report.backup = { integrity: 'PASS', exactCopy: true, differentPath: true, originalRetained: true };
     });

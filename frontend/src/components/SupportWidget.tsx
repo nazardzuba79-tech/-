@@ -84,10 +84,11 @@ export function SupportWidget() {
   // The existing bounded prefill is restricted to the actual specialist form.
   useEffect(() => {
     if (!open || mode !== 'specialist' || prefilledRef.current || !getToken()) return;
-    prefilledRef.current = true;
     let cancelled = false;
     api.getMe().then(me => {
       if (cancelled) return;
+      // Closing before the profile arrives must not consume the one successful prefill.
+      prefilledRef.current = true;
       setEmail(current => current || me.email || '');
       setName(current => current || me.displayName || '');
     }).catch(() => {});

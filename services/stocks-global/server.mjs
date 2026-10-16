@@ -16,6 +16,118 @@ import { projectViewerQuote } from './viewer-projection.mjs';
 import { twoTraderPolicy, configuredTraders, marketOnlyState } from './trader-policy.mjs';
 const ROOT=resolve(fileURLToPath(new URL('../../',import.meta.url))),API='/__stocks_global/';
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.ico':'image/x-icon'};
+// Instrument admission, not transport concurrency: MarketHub retains its own
+// request coalescing, six-second transport deadlines and per-host rate limits.
+export function createQuoteReader({hub,now=Date.now,sourceAllowed=()=>{},monotonicNow=()=>performance.now(),schedule=setTimeout,cancelTimer=clearTimeout}){
+  const recent=new Map(),flights=new Map(),queue=[];
+  const counters={maxActive:0,maxQueued:0,coalesced:0,cancelled:0,expired:0,rejected:0,started:0};
+  let active=0,waiters=0,closed=false;
+  const busy=()=>new SimError('SOURCE_BUSY');
+  const fresh=id=>{const cached=recent.get(id);return cached&&now()-cached.at<2000?cached:null;};
+  const removeQueued=(flight,error)=>{
+    if(flight.state!=='queued')return;
+    const index=queue.indexOf(flight);if(index!==-1)queue.splice(index,1);
+    cancelTimer(flight.timer);flight.state='cancelled';
+    if(flights.get(flight.id)===flight)flights.delete(flight.id);
+    flight.reject(error);
+  };
+  const pump=()=>{
+    while(!closed&&active<2&&queue.length){
+      const flight=queue[0];
+      if(monotonicNow()>=flight.deadline){counters.expired++;removeQueued(flight,busy());continue;}
+      if(!flight.waiters.size){removeQueued(flight,busy());continue;}
+      queue.shift();cancelTimer(flight.timer);flight.state='active';active++;
+      counters.maxActive=Math.max(counters.maxActive,active);counters.started++;flight.resolve();
+    }
+  };
+  const finish=flight=>{
+    flight.outstanding--;
+    if(flight.outstanding)return;
+    if(flights.get(flight.id)===flight)flights.delete(flight.id);
+    if(flight.state==='active')active--;
+    flight.state='finished';pump();
+  };
+  const reader=(flight,pending,signal)=>new Promise((resolve,reject)=>{
+    let done=false;
+    const entry={pending};
+    const settle=(error,value)=>{
+      if(done)return;done=true;signal?.removeEventListener('abort',abort);
+      flight.waiters.delete(entry);waiters--;
+      if(!flight.waiters.size)removeQueued(flight,busy());
+      error?reject(error):resolve(value);
+    };
+    const abort=()=>{counters.cancelled++;settle(busy());};
+    flight.waiters.add(entry);waiters++;
+    signal?.addEventListener('abort',abort,{once:true});
+    pending.then(value=>settle(null,value),error=>settle(error));
+    if(signal?.aborted)abort();
+  });
+  const quote=(id,{includeUsdc=true,signal}={})=>{
+    check(!closed&&!signal?.aborted,'SOURCE_BUSY');sourceAllowed(id);
+    const cached=fresh(id);
+    if(cached&&(!includeUsdc||cached.includeUsdc))return Promise.resolve(cached.value);
+    if(waiters>=256){counters.rejected++;throw busy();}
+    let flight=flights.get(id),created=false;
+    if(!flight){
+      if(active>=2&&queue.length>=32){counters.rejected++;throw busy();}
+      flight={id,state:'queued',deadline:monotonicNow()+2000,waiters:new Set(),outstanding:0,native:null,full:null};
+      flight.ready=new Promise((resolve,reject)=>{flight.resolve=resolve;flight.reject=reject;});
+      flights.set(id,flight);created=true;
+    }else counters.coalesced++;
+    let pending=includeUsdc?flight.full:(flight.native??flight.full);
+    if(!pending){
+      // Promotion joins the original native observation and holds its permit
+      // through FX settlement. Queue residence never renews the native TTL.
+      const native=includeUsdc?flight.native:null;
+      let unusedPromotion=false;
+      const requirePromotionReader=()=>{
+        if(native&&![...flight.waiters].some(entry=>entry.pending===pending)){
+          unusedPromotion=true;throw busy();
+        }
+      };
+      flight.outstanding++;
+      pending=(async()=>{
+        await flight.ready;
+        check(flight.waiters.size>0,'SOURCE_BUSY');
+        if(!flight.started){check(monotonicNow()<flight.deadline,'SOURCE_BUSY');flight.started=true;}
+        sourceAllowed(id);
+        requirePromotionReader();
+        const atDispatch=fresh(id);
+        if(!native&&atDispatch&&(!includeUsdc||atDispatch.includeUsdc))return atDispatch.value;
+        let nativeAt,value;
+        if(includeUsdc&&typeof hub.withUsdcPrices==='function'&&(native||atDispatch)){
+          const observation=native?await native:atDispatch.value;
+          check(flight.waiters.size>0,'SOURCE_BUSY');
+          requirePromotionReader();
+          nativeAt=native?(recent.get(id)?.at??now()):atDispatch.at;
+          value=await hub.withUsdcPrices(observation);
+        }else value=await hub.quote(id,{includeUsdc});
+        recent.set(id,{at:nativeAt??now(),value,includeUsdc});
+        while(recent.size>80)recent.delete(recent.keys().next().value);
+        return value;
+      })().finally(()=>{
+        if(unusedPromotion&&flight.full===pending)flight.full=null;
+        finish(flight);
+      });
+      if(includeUsdc)flight.full=pending;else flight.native=pending;
+    }
+    const result=reader(flight,pending,signal);
+    if(created&&flight.state==='queued'){
+      queue.push(flight);counters.maxQueued=Math.max(counters.maxQueued,Math.max(0,queue.length-Math.max(0,2-active)));
+      flight.timer=schedule(()=>{counters.expired++;removeQueued(flight,busy());pump();},2000);
+      pump();
+    }
+    return result;
+  };
+  quote.metrics=()=>({...counters,active,queued:queue.length,waiters,flights:flights.size});
+  quote.close=async()=>{
+    closed=true;
+    const pending=[...flights.values()].flatMap(flight=>[flight.native,flight.full]).filter(Boolean);
+    for(const flight of [...queue])removeQueued(flight,busy());
+    await Promise.allSettled(pending);
+  };
+  return quote;
+}
 export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined}={}){
   const twoTraderMode=tradePrincipals!==undefined;
   const mayTrade=twoTraderMode?twoTraderPolicy(tradePrincipals):null;
@@ -25,7 +137,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   check(accountsPath||dataPath,'LOCAL_LEDGER_PATH_REQUIRED');
   const accounts=accountsPath?await openAccountWorker(accountsPath,{...accountWorkerOptions,now,diagnostics:accountDiagnostics}):null;
   const legacy=accounts?null:await openStore(dataPath,{now});
-  const contexts=new Map(),contextFlights=new Map(),refreshTasks=new Set(),backgroundFlights=new WeakMap(),flights=new Map(),recent=new Map(),historyWire=new WeakMap();
+  const contexts=new Map(),contextFlights=new Map(),refreshTasks=new Set(),backgroundFlights=new WeakMap(),historyWire=new WeakMap();
   Object.assign(hub.metrics,{accountQuoteCommits:0,accountQuoteObservations:0,accountQuoteMs:0,historySerializations:0,historySerializeMs:0});
   let address,closing=false,cursor=0,catalogueTask=null,lastCatalogue=0;
   const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,demandEpoch:0,demandSince:0,demandView:null,demandAbort:new AbortController(),accessed:now(),errors:{},observed:new Set(),ownerMayTrade:!ownerOnlyMode,token:randomBytes(32).toString('hex')});
@@ -62,26 +174,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     }
     await contextFlights.get(ctx.id);
   };
-  const quote=(id,{includeUsdc=true}={})=>{
-    sourceAllowed(id);
-    // A full observation may serve Wallet, but a USDT-only response must never
-    // satisfy a state/engine read without independently checked USDC conversion.
-    const cached=recent.get(id),fresh=cached&&now()-cached.at<2000;
-    if(fresh&&(!includeUsdc||cached.includeUsdc))return Promise.resolve(cached.value);
-    let flight=flights.get(id);
-    if(flight){if(!includeUsdc)return flight.native??flight.full;if(flight.full)return flight.full;}
-    else{check(flights.size<2,'SOURCE_BUSY');flight={native:null,full:null};}
-    const native=includeUsdc?(flight.native??(fresh?Promise.resolve(cached.value):null)):null;
-    let nativeAt;
-    const fetched=native&&typeof hub.withUsdcPrices==='function'?native.then(value=>{nativeAt=recent.get(id)?.at??now();return hub.withUsdcPrices(value);}):hub.quote(id,{includeUsdc});
-    const pending=fetched.then(value=>{recent.set(id,{at:nativeAt??now(),value,includeUsdc});while(recent.size>80)recent.delete(recent.keys().next().value);return value;}).finally(()=>{
-      // Native and FX continuations share one instrument admission. An upgrade
-      // keeps that slot until the full observation settles, including failure.
-      if(flights.get(id)===flight&&(!flight.full||flight.full===pending))flights.delete(id);
-    });
-    if(includeUsdc)flight.full=pending;else flight.native=pending;
-    flights.set(id,flight);return pending;
-  };
+  const quote=createQuoteReader({hub,now,sourceAllowed});
   const demand=(ctx,id,view)=>{
     view??='legacy-http';check(typeof view==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(view),'INVALID_REQUEST');
     if(ctx.demandView!==view||ctx.selected!==id||now()-ctx.lease>=12000||ctx.lease===0){ctx.demandAbort.abort();ctx.demandAbort=new AbortController();ctx.demandEpoch++;ctx.demandSince=now();ctx.observed.clear();}
@@ -99,7 +192,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     const read=async()=>{while(next<ids.length){const id=ids[next++];try{
       check(!signal.aborted,'SOURCE_BUSY');sourceAllowed(id);
       let abort;
-      try{view.quotes[id]=await Promise.race([quote(id,{includeUsdc:false}),new Promise((_,reject)=>{
+      try{view.quotes[id]=await Promise.race([quote(id,{includeUsdc:false,signal}),new Promise((_,reject)=>{
         abort=()=>reject(new SimError('SOURCE_BUSY'));
         signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();
       })]);}finally{if(abort)signal.removeEventListener('abort',abort);}
@@ -112,7 +205,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     if(closing)return;
     const epoch=ctx.demandEpoch;
     if(ownerOnlyMode)signal=AbortSignal.any([ctx.demandAbort.signal,...(signal?[signal]:[])]);
-    try{const q=await quote(id);if(authorize)await authorize();if(ownerOnlyMode){if(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||!ctx.ownerMayTrade||now()-ctx.lease>=12000)return;check(q.timestamp>=ctx.demandSince,'QUOTE_STALE');}const started=performance.now();const committed=await ctx.store.execute(accounts?(background?'observeBackground':'observe'):'quote',q,ownerOnlyMode?{signal}:undefined);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;if(ownerOnlyMode&&(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||ctx.lease===0||now()-ctx.lease>=12000))return;ctx.observed.add(id);delete ctx.errors[id];return committed.snapshot;}
+    try{const q=await quote(id,{signal});if(authorize)await authorize();if(ownerOnlyMode){if(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||!ctx.ownerMayTrade||now()-ctx.lease>=12000)return;check(q.timestamp>=ctx.demandSince,'QUOTE_STALE');}const started=performance.now();const committed=await ctx.store.execute(accounts?(background?'observeBackground':'observe'):'quote',q,ownerOnlyMode?{signal}:undefined);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;if(ownerOnlyMode&&(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||ctx.lease===0||now()-ctx.lease>=12000))return;ctx.observed.add(id);delete ctx.errors[id];return committed.snapshot;}
     catch(e){if(signal?.aborted||ownerOnlyMode&&epoch!==ctx.demandEpoch)return;if(e.code?.startsWith('AUTH_'))throw e;ctx.observed.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;if(authorize)await authorize();await ctx.store.execute(accounts?(background?'observeFailedBackground':'observeFailed'):'quoteFailed',{id});}
   }
   const refreshInBackground=(ctx,id=ctx.selected)=>{
@@ -158,7 +251,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
           let view=await status(ctx,observedView,readAbort.signal);
           // Read-only users share market data, never the owner matcher or ledger.
           if(ownerOnlyMode&&!ctx.ownerMayTrade&&id){
-            try{const q=await quote(id);if(readAbort.signal.aborted)return;
+            try{const q=await quote(id,{signal:readAbort.signal});if(readAbort.signal.aborted)return;
               view=projectViewerQuote(view,id,q,now());delete view.errors[id];
             }catch(e){if(readAbort.signal.aborted)return;delete view.quotes[id];view.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';}
           }
@@ -229,7 +322,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     })().catch(e=>{for(const ctx of interested)ctx.errors[ctx.selected]=e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR';}).finally(()=>{tick=null;});
     return tick;
   },3000):null;
-  return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await Promise.allSettled([...refreshTasks,...contextFlights.values(),...[...flights.values()].flatMap(flight=>[flight.native,flight.full]),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
+  return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,quoteMetrics:()=>quote.metrics(),refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;const quoteClosed=quote.close();if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await quoteClosed;await Promise.allSettled([...refreshTasks,...contextFlights.values(),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const accountsPath=process.env.STOCKS_ACCOUNTS_DATA;check(accountsPath||process.env.STOCKS_GLOBAL_DATA?.endsWith('.json'),'LOCAL_LEDGER_PATH_REQUIRED');

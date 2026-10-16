@@ -232,7 +232,8 @@ async function main() {
         await page.screenshot({ path: file, fullPage: width <= 1024 });
         report.screenshots.push(path.relative(OUT, file));
       } catch (error) {
-        check(`shots.${width}`, false, { error: String(error.message).slice(0, 300) });
+        const finalChartState = await page.evaluate(() => document.querySelector('.cfd-chart-area [data-chart-state]')?.getAttribute('data-chart-state') ?? null).catch(() => null);
+        check(`shots.${width}`, false, { error: String(error.message).slice(0, 300), chartState: finalChartState });
         await page.screenshot({ path: path.join(OUT, `cfd-${PHASE}-${width}-failure.png`) }).catch(() => {});
       } finally { await context.close(); }
     }
@@ -507,7 +508,7 @@ async function main() {
       const tickersBefore = requests.filter(r => r.path === '/api/v1/cfd/display/tickers').length, t = Date.now();
       for (const sym of ['EURUSD', 'WTIUSD', 'USDJPY', 'XPTUSD', 'GBPUSD']) await page.locator(`.cfd-option[data-cfd-symbol="${sym}"]`).click();
       const settled = await waitCandles(page);
-      const sw = await page.evaluate(() => ({ url: location.search, active: document.querySelector('.cfd-option.active')?.getAttribute('data-cfd-symbol'), bar: document.querySelector('[data-cfd-stats] .cfd-symbol')?.textContent?.trim(), ticket: document.querySelector('.cfd-referencePrice')?.textContent?.trim() }));
+      const sw = await page.evaluate(() => ({ url: location.search, active: document.querySelector('.cfd-option.active')?.getAttribute('data-cfd-symbol'), bar: document.querySelector('[data-cfd-stats] .cfd-symbol')?.textContent?.trim(), ticket: document.querySelector('.cfd-referencePrice')?.textContent?.trim(), chartState: document.querySelector('.cfd-chart-area [data-chart-state]')?.getAttribute('data-chart-state') ?? null }));
       report.perf['cfd.list.fiveSwitchesMs'] = Date.now() - t;
       check('cfd.list.fast-switch', settled && /symbol=GBPUSD/.test(sw.url) && sw.active === 'GBPUSD' && sw.bar === 'GBPUSD' && /\d/.test(sw.ticket || '') && requests.filter(r => r.path === '/api/v1/cfd/display/tickers').length === tickersBefore, { ...sw, ms: report.perf['cfd.list.fiveSwitchesMs'] });
       await page.locator('.cfd-column-sorts button').nth(1).click(); await page.waitForTimeout(200);

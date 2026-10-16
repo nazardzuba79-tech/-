@@ -71,46 +71,60 @@ const sameQuoteEpoch = (before, after) => before?.ready === true && after?.ready
 
 async function observeSelectedQuote(page, { origin, record }) {
   const entries = [], byRequest = new Map(), pending = new Set(), network = [], networkIds = new Set();
+  // Chart diagnostics are separately bounded and never participate in quote readiness.
+  const charts = [], chartPending = new Set();
+  let chartSequence = 0, chartOverflow = false, chartIncomplete = false;
   let sequence = 0, overflow = false, incomplete = false;
   const classify = url => {
     const u = new URL(url);
     if (u.origin !== origin) return null;
     if (u.pathname === '/api/v1/cfd/display/tickers') return { kind: 'ticker' };
     const match = u.pathname.match(/^\/api\/v1\/cfd\/display\/candles\/([A-Z0-9]+)$/);
-    return match && u.searchParams.get('interval') === '1d' && u.searchParams.get('limit') === '20' ? { kind: 'daily', symbol: match[1] } : null;
+    if (!match) return null;
+    const interval = u.searchParams.get('interval'), limit = u.searchParams.get('limit');
+    return interval === '1d' && limit === '20' ? { kind: 'daily', symbol: match[1] }
+      : { kind: 'chart', symbol: match[1], requestedInterval: interval, requestedLimit: limit };
   };
   page.on('request', request => {
     const kind = classify(request.url()); if (!kind) return;
-    if (entries.length >= 256) { overflow = true; return; }
-    const entry = { sequence: ++sequence, ...kind, url: request.url(), method: request.method(), resourceType: request.resourceType(), startedAt: Date.now(), complete: false };
-    entries.push(entry); byRequest.set(request, entry);
+    const isChart = kind.kind === 'chart', target = isChart ? charts : entries;
+    if (target.length >= 256) { if (isChart) chartOverflow = true; else overflow = true; return; }
+    const entry = { sequence: isChart ? ++chartSequence : ++sequence, ...kind, url: request.url(), method: request.method(), resourceType: request.resourceType(), startedAt: Date.now(), complete: false };
+    target.push(entry); byRequest.set(request, entry);
   });
   page.on('requestfailed', request => {
     const entry = byRequest.get(request); if (entry) Object.assign(entry, { endedAt: Date.now(), error: request.failure()?.errorText || 'REQUEST_FAILED' });
   });
   page.on('response', response => {
     const entry = byRequest.get(response.request()); if (!entry) return;
+    const isChart = entry.kind === 'chart', pendingBodies = isChart ? chartPending : pending;
     entry.status = response.status(); entry.responseAt = Date.now(); entry.fromServiceWorker = response.fromServiceWorker();
     const task = (async () => {
       const headers = await response.allHeaders();
       entry.headers = Object.fromEntries(['cache-control', 'age', 'etag', 'x-voltex-refresh-seconds', 'content-type'].map(key => [key, headers[key] ?? null]));
       const body = await response.body(); entry.bytes = body.length; entry.bodySha256 = hash(body);
       if (body.length > 2_000_000) throw Error('QUOTE_TRACE_BODY_LIMIT');
-      const parsed = JSON.parse(body.toString('utf8'));
-      Object.defineProperty(entry, 'body', { value: parsed, enumerable: false });
+      let parsed;
+      try { parsed = JSON.parse(body.toString('utf8')); }
+      catch (error) { if (isChart) throw Error('CHART_TRACE_JSON_PARSE'); throw error; }
+      if (!isChart) Object.defineProperty(entry, 'body', { value: parsed, enumerable: false });
       entry.snapshot = parsed?._display ?? null;
-      entry.data = entry.kind === 'ticker' ? { source: parsed?.source ?? null, rows: Array.isArray(parsed?.tickers) ? parsed.tickers.map(quoteProjection) : null }
+      entry.data = isChart ? { symbol: parsed?.symbol ?? null, providerSymbol: parsed?.providerSymbol ?? null,
+        interval: parsed?.interval ?? null, source: parsed?.source ?? null, barCount: Array.isArray(parsed?.bars) ? parsed.bars.length : null,
+        // Preserve the public API error code, not arbitrary response text or headers.
+        responseError: typeof parsed?.error === 'string' && /^[A-Za-z0-9_.:-]{1,120}$/.test(parsed.error) ? parsed.error : null }
+        : entry.kind === 'ticker' ? { source: parsed?.source ?? null, rows: Array.isArray(parsed?.tickers) ? parsed.tickers.map(quoteProjection) : null }
         : { symbol: parsed?.symbol, interval: parsed?.interval, bars: parsed?.bars };
       entry.timing = response.request().timing(); entry.complete = true;
     })().catch(error => { entry.error = String(error?.message || error).slice(0, 300); })
-      .finally(() => { entry.endedAt = Date.now(); pending.delete(task); });
-    pending.add(task);
+      .finally(() => { entry.endedAt = Date.now(); pendingBodies.delete(task); });
+    pendingBodies.add(task);
   });
   // CDP is observational: cache provenance and initiators, not an intercepted request path.
   const cdp = await page.context().newCDPSession(page);
   const addNetwork = event => { if (network.length >= 1024) overflow = true; else network.push(event); };
   cdp.on('Network.requestWillBeSent', event => {
-    if (!classify(event.request.url)) return;
+    const kind = classify(event.request.url); if (!kind || kind.kind === 'chart') return;
     if (overflow || networkIds.size >= 256) { overflow = true; return; }
     networkIds.add(event.requestId);
     addNetwork({ event: 'request', requestId: event.requestId, timestamp: event.timestamp, wallTime: event.wallTime,
@@ -126,7 +140,8 @@ async function observeSelectedQuote(page, { origin, record }) {
     if (networkIds.has(data.requestId)) addNetwork({ event, ...data });
   });
   await cdp.send('Network.enable');
-  const evidence = { entries, network, checkpoints: [], readiness: [], get overflow() { return overflow; }, get incomplete() { return incomplete; } }; record(evidence);
+  const evidence = { entries, network, charts, checkpoints: [], readiness: [], get overflow() { return overflow; }, get incomplete() { return incomplete; },
+    get chartOverflow() { return chartOverflow; }, get chartIncomplete() { return chartIncomplete; } }; record(evidence);
   const snapshot = async symbol => {
     const dom = await page.evaluate(() => {
       const bar = document.querySelector('[data-cfd-stats]');
@@ -138,7 +153,8 @@ async function observeSelectedQuote(page, { origin, record }) {
       return { requestedSymbol: new URL(location.href).searchParams.get('symbol'), activeSymbol: document.querySelector('.cfd-option.active')?.getAttribute('data-cfd-symbol'),
         headerSymbol: document.querySelector('.cfd-selected-instrument .cfd-symbol')?.textContent?.trim(), ticker: document.querySelector('.cfd-ticker-price')?.textContent?.trim(),
         ticket: document.querySelector('.cfd-referencePrice')?.textContent?.trim(), stats: [...(bar?.querySelectorAll('[data-cfd-stat]') || [])].map(e => e.getAttribute('data-cfd-stat')),
-        status: bar?.querySelector('[data-cfd-status]')?.getAttribute('data-cfd-status'), cache };
+        status: bar?.querySelector('[data-cfd-status]')?.getAttribute('data-cfd-status'),
+        chartState: document.querySelector('.cfd-chart-area [data-chart-state]')?.getAttribute('data-chart-state') ?? null, cache };
     });
     const ticker = entries.filter(entry => entry.kind === 'ticker').at(-1), daily = entries.filter(entry => entry.kind === 'daily' && entry.symbol === symbol).at(-1), now = Date.now();
     const verdict = evaluateSelectedQuote({ symbol, dom, ticker, daily, now });
@@ -167,9 +183,11 @@ async function observeSelectedQuote(page, { origin, record }) {
     const budget = Number.isFinite(timeoutMs) ? Math.max(0, Math.min(DIAGNOSTIC_DRAIN_MS, timeoutMs)) : DIAGNOSTIC_DRAIN_MS;
     let timer;
     try {
-      await Promise.race([Promise.allSettled([...pending]), new Promise(resolve => { timer = setTimeout(resolve, budget); })]);
+      await Promise.race([Promise.allSettled([...pending, ...chartPending]), new Promise(resolve => { timer = setTimeout(resolve, budget); })]);
     } finally { clearTimeout(timer); }
     if (pending.size) incomplete = true;
+    if (chartPending.size) chartIncomplete = true;
+    evidence.chartDrain = { complete: !chartIncomplete, pending: chartPending.size };
     const result = { complete: !incomplete, pending: pending.size };
     evidence.drain = result;
     return result;

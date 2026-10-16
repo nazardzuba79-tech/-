@@ -246,6 +246,65 @@ it('a signed-in user gets name and email prefilled from one profile read, only w
   h.cleanup();
 });
 
+it.each(['before-reopen', 'after-reopen'] as const)('a cancelled profile read does not consume prefill (%s)', async settlement => {
+  type Profile = { email: string; displayName: string };
+  let resolveFirst!: (profile: Profile) => void;
+  let resolveSecond!: (profile: Profile) => void;
+  const first = new Promise<Profile>(resolve => { resolveFirst = resolve; });
+  const second = new Promise<Profile>(resolve => { resolveSecond = resolve; });
+  const h = mountWidget();
+  h.getMe.mockReturnValueOnce(first).mockReturnValueOnce(second);
+  const dismiss = () => act(() => h.dom.window.document.dispatchEvent(new h.dom.window.KeyboardEvent('keydown', { key: 'Escape' })));
+  const settleFirst = () => act(async () => {
+    resolveFirst({ email: 'discarded@example.invalid', displayName: 'Discarded profile' });
+    await first;
+  });
+  try {
+    await open(h);
+    expect(h.getMe).toHaveBeenCalledTimes(1);
+    expect((h.host.querySelector('input[type="email"]') as HTMLInputElement).value).toBe('');
+    dismiss(); expect(h.panel()).toBeNull();
+    if (settlement === 'before-reopen') await settleFirst();
+    await open(h);
+    expect(h.getMe).toHaveBeenCalledTimes(2);
+    h.type('input[autocomplete="name"]', 'Edited fixture name');
+    if (settlement === 'after-reopen') await settleFirst();
+    expect((h.host.querySelector('input[type="email"]') as HTMLInputElement).value).toBe('');
+    expect(h.fetches).toHaveLength(0); // Open, close and profile settlement never submit.
+    await act(async () => {
+      resolveSecond({ email: valid.email, displayName: 'Fresh profile name' });
+      await second;
+    });
+    const email = h.host.querySelector('input[type="email"]') as HTMLInputElement;
+    expect(email.value).toBe(valid.email);
+    expect(email.readOnly).toBe(true);
+    expect((h.host.querySelector('input[autocomplete="name"]') as HTMLInputElement).value).toBe('Edited fixture name');
+    fill(h); await h.submit();
+    expect(h.fetches).toHaveLength(1);
+    expect(h.fetches[0].body.email).toBe(valid.email);
+    dismiss(); await open(h);
+    expect(h.getMe).toHaveBeenCalledTimes(2); // A completed prefill stays bounded.
+  } finally { h.cleanup(); }
+});
+
+it('a pending profile from an unmounted session cannot prefill the next session', async () => {
+  let settle!: (profile: object) => void;
+  const pending = new Promise<object>(resolve => { settle = resolve; });
+  const previous = mountWidget({ token: 'previous-fixture-session' });
+  previous.getMe.mockReturnValueOnce(pending);
+  try { await open(previous); expect(previous.getMe).toHaveBeenCalledTimes(1); }
+  finally { previous.cleanup(); }
+  const next = mountWidget({ token: 'next-fixture-session', me: { email: 'next@example.invalid', displayName: 'Next account' } });
+  try {
+    await open(next);
+    await act(async () => { settle({ email: 'previous@example.invalid', displayName: 'Previous account' }); await pending; });
+    expect((next.host.querySelector('input[type="email"]') as HTMLInputElement).value).toBe('next@example.invalid');
+    expect((next.host.querySelector('input[type="email"]') as HTMLInputElement).readOnly).toBe(true);
+    expect((next.host.querySelector('input[autocomplete="name"]') as HTMLInputElement).value).toBe('Next account');
+    expect(next.getMe).toHaveBeenCalledTimes(1); expect(next.fetches).toHaveLength(0);
+  } finally { next.cleanup(); }
+});
+
 it('a double submit is one POST', async () => {
   const h = mountWidget({ token: 'fixture-session' });
   await open(h);
