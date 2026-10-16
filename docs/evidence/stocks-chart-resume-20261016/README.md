@@ -45,3 +45,13 @@ These were uncapped Windows diagnostics while frontend Jest/build were also runn
 - MOEX/SBER remain blocked; commercial Binance/Bybit data rights remain **NOT CLEARED**.
 
 Green correctness CI must not be reported as production readiness or capacity acceptance.
+
+## Current-source CI follow-up
+
+At `6d44e287`, complete Linux Chart QA passed **224/224**, including both repaired
+hover checks with zero new candle requests. Chart pure/helper checks passed
+190/22; frontend passed 274 suites / 4,386 assertions. Stocks public-host then
+failed its bounded NSS package-owner prerequisite before its browser cases.
+The failure and narrowly scoped follow-up are retained in
+[NSS-PREFLIGHT.md](NSS-PREFLIGHT.md); they do not invalidate or replace the
+earlier Windows screenshot failure or historical capacity failures.

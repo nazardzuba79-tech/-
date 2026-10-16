@@ -6720,3 +6720,10 @@ Root local validation: Python21 passed; JavaScript18 passed,0 failed/skipped. Br
 - Serializer generic validation candidate REJECTED, never wired: V2 195468 exact-byte comparisons but20nonempty +94.7%,40nonempty +9.7% wall regression; host contention/WindowsCPUquantization/rope flattening limitations recorded. Candidate preserved only in docs/evidence/stocks-chart-resume-20261016/rejected-serializer.
 - Original50mixed29/25/31deadlinesFAIL; crypto p95+13.648569/+13.811445%FAIL; strict rerunNOT_RUN, HetznercapacityINCONCLUSIVE, realPGNOT_RUN, MOEXblocked,commercialrightsNOTCLEARED. Consumed evidence scheduling/limits untouched. No capacity or publicationPASS claim.
 - Evidence: docs/evidence/stocks-chart-resume-20261016/README.md; raw local QA output/stocks-chart-resume-20261015. Reviewer must use final exact-head CI plus retained failures, not this in-progress checkpoint as release approval.
+
+
+### 2026-10-16 — Chart PASS and isolated NSS prerequisite follow-up
+
+At pushed source 6d44e287428b6140475a97d701b57710acc73504, Linux Chart run38847147212 passed224/224, pure190 and helper22; both measured hover deltas stayed zero. Full frontend274/4386 passed. Stocks browser116802710746 passed six scenarios but public-host failed before OFF/ON/candidate: dpkg-query -S /usr/bin/certutil exceeded unchanged10s. Failure report/stack retained in docs/evidence/stocks-chart-resume-20261016/nss-preflight-failure-6d44e287.json; no rerun-to-green.
+
+Follow-up replaces the global package-file scan with targeted installed-package membership/status/content integrity, rejects diversions/malformed metadata and changed executable bytes, and retains10s/128KiB/no-retry/TLS/sandbox/cleanup boundaries. It does not claim exclusive-owner or independent publisher-signature evidence. Final local NSS/Chrome21 and TLS/fixture16 tests PASS. Actual Linux/public-host acceptance awaits new exact-source CI. Native source inheritance hashes remain frozen; changed inputs require FULL backend. Product runtime and original capacity/rights/PG blockers remain unchanged. See NSS-PREFLIGHT.md. Full6d backend was still running when this checkpoint was written.

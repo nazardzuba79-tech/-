@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "fixtureOnly": true,
+  "publicExposure": false,
+  "productionAccess": false,
+  "capacityClaim": false,
+  "status": "FAIL",
+  "assertions": 3,
+  "checks": [
+    "three complete separate builds",
+    "every recorded frontend input unchanged",
+    "fixture exits normally"
+  ],
+  "cases": [
+    {
+      "name": "off",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "on",
+      "status": "NOT_RUN"
+    },
+    {
+      "name": "candidate",
+      "status": "NOT_RUN"
+    }
+  ],
+  "startedAt": "2026-10-16T04:05:09.110Z",
+  "build": {
+    "manifestSha256": "3b6c7ce07eea092df6af98729837c8d6aaea3a7fb653f05cb95aefaa0af2d232",
+    "sourceHash": "31168003f59f69a09b51717554a70665f5e02798b1eabd5b080f78079387cab8",
+    "buildRoot": "/home/runner/work/_temp/stocks-public-build",
+    "cases": [
+      {
+        "name": "off",
+        "env": {
+          "VITE_STOCKS_ENABLED": "false",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "false",
+          "VITE_STOCKS_WIDGET_PREVIEW": "false",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "false",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "ae9accaa3b4b5e4fa997755de7e5888998f0587f7300c60b6c8c675aa6160735",
+        "candidateDelta": null
+      },
+      {
+        "name": "on",
+        "env": {
+          "VITE_STOCKS_ENABLED": "true",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "true",
+          "VITE_STOCKS_WIDGET_PREVIEW": "true",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "true",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "b3f7466e01df00ce369a486ec68b472c83dffb3ece39432931d8b2916bef3af2",
+        "candidateDelta": null
+      },
+      {
+        "name": "candidate",
+        "env": {
+          "VITE_STOCKS_ENABLED": "true",
+          "VITE_STOCKS_GLOBAL_SIMULATOR": "true",
+          "VITE_STOCKS_WIDGET_PREVIEW": "true",
+          "VITE_STOCKS_OWNER_USDT_ONLY": "true",
+          "VITE_STOCKS_SIMULATOR": "false",
+          "VITE_API_URL": "/api/v1",
+          "VITE_MARKET_EDGE_URL": "https://stocks-review.invalid/__fixture_market"
+        },
+        "outputHash": "abf9b5e9570fe8d8f5124bb8e8e2174f7f00de54283c6b2a021caefd9f000ccc",
+        "candidateDelta": {
+          "path": "src/pages/stocks/stockHostPolicy.ts",
+          "before": "hostname === '127.0.0.1'",
+          "after": "(hostname === '127.0.0.1' || hostname === 'stocks-review.invalid')",
+          "originalSha256": "a6cbea13918d37c60951cd3fa8e4868b89e77fd9130176b9903102eb70544926",
+          "candidateSha256": "d0bc4cd5cef43bba18e38c099cbe77762bf8537eaf2cc83fab49aa8c4e985ccd",
+          "scope": "build-memory QA shadow only; actual hostname fence is untouched"
+        }
+      }
+    ],
+    "verifiedSourceFiles": 1242
+  },
+  "authority": {
+    "source": "/home/runner/work/-/-/output/stocks-local-stage/package",
+    "manifestSha256": "06302caa6a9014786638311ffbf1d3e4aee02bd3cddffdbd8ccc39c5f862369b",
+    "files": 27,
+    "build": {
+      "proofSha256": "b35746fea30314642a11b718d61fcae3ecbc6c23c1d9b059db3595b6e47d7ad6",
+      "compiled": {
+        "dist/api/routes/account.js": "6a06d889c1e31a73a017c6aca58c4f6cab20857f4ee1a943b6e334804691440c",
+        "dist/api/asyncRoute.js": "30d5ca41c9b3a35cc23b9b21f21906fea8d78c453807aea44484f294d74f293b",
+        "dist/services/AdminPasswordVault.js": "5b8de70bf420d0c4dd0844c71a972c7d407a5114eb6d10143edcf4b6ca9c1e7b",
+        "dist/api/middleware/auth.js": "dcaaf312a5d51a02bf25837b533679302f12f53a485f7ed63d1f1ac9ae37bd2d",
+        "dist/services/ContactEmailPolicy.js": "949972ebda91902df904a503e5fd1ad52ef094c230e99df34a80a283b037abb8",
+        "dist/services/TwoFactorService.js": "945c25a8a126233e2296cc69c57d65592e0b23bb02a649ec512e1eaabbb7e408"
+      },
+      "sourceCount": 280,
+      "compilerVersion": "5.9.3",
+      "sourceBuildStartedAt": "2026-10-16T03:54:24.238Z",
+      "sourceBuildEndedAt": "2026-10-16T03:54:36.004Z",
+      "identityResolverSha256": "4e0635d44ade1c066bca7eb6d735e4c18c8ff16ea8e4c63d8ca00a4c5dfb823c",
+      "fixtureSha256": "2d137a89c4f1ff02e1d18b2366faa4cd0cad0f34c93fbb8407d29cb8f9819379"
+    },
+    "scope": "Immutable fresh-build-proven local /me artifact; current source/compiler/config/log verified, compiled closure read from artifact only; strict fixture Prisma and separate private SQLite; no production session"
+  },
+  "failure": {
+    "message": "bounded NSS subprocess\n+ actual - expected\n\n+ Error: spawnSync /usr/bin/dpkg-query ETIMEDOUT\n+     at Object.spawnSync (node:internal/child_process:1160:20)\n+     at spawnSync (node:child_process:928:24)\n+     at command (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:104:16)\n+     at inspectNss (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:113:15)\n+     at createNssHome (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:128:14)\n+     at main (/home/runner/work/-/-/scripts/qa-stocks-public-host.cjs:53:48)\n+     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {\n+   code: 'ETIMEDOUT',\n+   errno: -110,\n+   path: '/usr/bin/dpkg-query',\n+   spawnargs: [\n+     '-S',\n+     '/usr/bin/certutil'\n+   ],\n+   syscall: 'spawnSync /usr/bin/dpkg-query'\n+ }\n- undefined\n",
+    "stack": "AssertionError [ERR_ASSERTION]: bounded NSS subprocess\n+ actual - expected\n\n+ Error: spawnSync /usr/bin/dpkg-query ETIMEDOUT\n+     at Object.spawnSync (node:internal/child_process:1160:20)\n+     at spawnSync (node:child_process:928:24)\n+     at command (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:104:16)\n+     at inspectNss (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:113:15)\n+     at createNssHome (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:128:14)\n+     at main (/home/runner/work/-/-/scripts/qa-stocks-public-host.cjs:53:48)\n+     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {\n+   code: 'ETIMEDOUT',\n+   errno: -110,\n+   path: '/usr/bin/dpkg-query',\n+   spawnargs: [\n+     '-S',\n+     '/usr/bin/certutil'\n+   ],\n+   syscall: 'spawnSync /usr/bin/dpkg-query'\n+ }\n- undefined\n\n    at command (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:105:10)\n    at inspectNss (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:113:15)\n    at createNssHome (/home/runner/work/-/-/scripts/qa-stocks-public-nss.cjs:128:14)\n    at main (/home/runner/work/-/-/scripts/qa-stocks-public-host.cjs:53:48)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+  },
+  "fixtureAudit": {
+    "fixtureOnly": true,
+    "productionAccess": false,
+    "runtime": {
+      "node": "v24.21.0",
+      "platform": "linux",
+      "arch": "x64"
+    },
+    "identityRequests": 0,
+    "prisma": {
+      "sessionReads": 0,
+      "sessionTouches": 0,
+      "userReads": 0,
+      "policyReads": 0,
+      "unexpected": 0
+    },
+    "forwarded": 0,
+    "blockedRoutes": 0,
+    "deniedNetwork": 0,
+    "quotes": 0,
+    "histories": 0,
+    "droppedAcknowledgements": 0
+  },
+  "child": {
+    "code": 0,
+    "signal": null,
+    "outputBytes": 0
+  },
+  "completedAt": "2026-10-16T04:05:19.881Z",
+  "limitations": [
+    "No production domain, provider traffic, real funds, deploy image or capacity claim",
+    "Linux-only fresh private NSS fixture CA; normal browser TLS validation; no global trust change",
+    "External request denial is a QA browser routing boundary, not OS network isolation",
+    "Untouched enabled public route still selects legacy; shared exact-localhost Wallet fence intentionally blocks its reads",
+    "Candidate modifies one shared hostname hunk in build memory only and is not publishable"
+  ]
+}

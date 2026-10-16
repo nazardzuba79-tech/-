@@ -101,21 +101,73 @@ function ownedDirectory(dir){
   return {path:dir,mode:'0700',uid:st.uid};
 }
 function command(executable,args,env){
+  const startedAt=performance.now();
   const result=spawnSync(executable,args,{env,encoding:'utf8',timeout:10000,maxBuffer:128*1024});
   assert.equal(result.error,undefined,'bounded NSS subprocess');assert.equal(result.signal,null,'NSS process signalled');
   assert.equal(result.status,0,'NSS command failed: '+(result.stderr||'').slice(0,1000));
-  return {args,stdout:result.stdout,stderr:result.stderr,exitCode:result.status};
+  return {args,stdout:result.stdout,stderr:result.stderr,exitCode:result.status,elapsedMs:performance.now()-startedAt};
+}
+function verifyNssPackage({executable,bytes,fileList,versions,md5sums}){
+  assert.ok(path.posix.isAbsolute(executable)&&path.posix.normalize(executable)===executable,'canonical Linux NSS path required');
+  assert.ok(Buffer.isBuffer(bytes)&&bytes.length>0&&bytes.length<=8*1024*1024,'bounded NSS executable bytes');
+  for(const text of [fileList,versions,md5sums])assert.ok(typeof text==='string'&&Buffer.byteLength(text)<=128*1024,'bounded package metadata');
+  const files=fileList.replace(/\n$/,'').split('\n');
+  // -L includes diversion annotations; none may be accepted as a file entry.
+  assert.ok(files.length>0&&files.every(line=>line==='/.'||(line.startsWith('/')&&path.posix.normalize(line)===line&&!/[\r\0]/.test(line))),'unrecognized or diverted NSS package file');
+  assert.equal(files.filter(line=>line===executable).length,1,'exact NSS package file membership required');
+  const packages=versions.replace(/\n$/,'').split('\n').map(line=>line.split('\t'));
+  assert.equal(packages.length,2,'exact NSS package set required');
+  for(const name of ['libnss3-tools','libnss3']){
+    const matches=packages.filter(row=>row[0]===name);
+    assert.equal(matches.length,1,'exact NSS package identity required');
+    assert.equal(matches[0].length,3,'NSS package version/status columns');
+    assert.ok(/^[0-9][A-Za-z0-9.+:~\-]*$/.test(matches[0][1]),'NSS package version required');
+    assert.equal(matches[0][2],'install ok installed','NSS package must be fully installed');
+  }
+  const relative=executable.slice(1),entries=md5sums.replace(/\n$/,'').split('\n').map(line=>/^([a-f0-9]{32})  (\S+)$/.exec(line));
+  assert.ok(entries.length>0&&entries.every(Boolean),'malformed installed package checksums');
+  assert.ok(entries.every(row=>!path.posix.isAbsolute(row[2])&&path.posix.normalize(row[2])===row[2]&&row[2]!=='.'&&row[2]!=='..'&&!row[2].startsWith('../')&&!/[\r\0]/.test(row[2])),'canonical relative package checksum paths required');
+  const matches=entries.filter(row=>row[2]===relative);
+  assert.equal(matches.length,1,'exact installed NSS checksum entry required');
+  assert.equal(createHash('md5').update(bytes).digest('hex'),matches[0][1],'NSS executable differs from installed package');
+  return {kind:'targeted-installed-package-integrity',packageName:'libnss3-tools',registeredPath:executable,
+    installedFileMd5:matches[0][1],executableSha256:sha(bytes),packages:packages.map(row=>row[0]+'\t'+row[1]),
+    note:'Targeted package membership and installed-file integrity; not an exclusive-owner search or independent publisher signature'};
+}
+function trustedNssExecutable(requested,maximum){
+  const resolved=fs.realpathSync(requested);assert.equal(resolved,requested,'explicit non-symlink NSS tool required');
+  const st=fs.lstatSync(resolved);assert.ok(st.isFile()&&!st.isSymbolicLink()&&st.size>0&&st.size<=maximum,'bounded regular NSS tool');
+  assert.equal(st.uid,0,'NSS tool must be root owned');assert.equal(st.mode&0o022,0,'NSS tool must not be group/world writable');
+  fs.accessSync(resolved,fs.constants.X_OK);
+  for(let parent=path.dirname(resolved);;parent=path.dirname(parent)){
+    const dir=fs.lstatSync(parent);assert.ok(dir.isDirectory()&&!dir.isSymbolicLink(),'NSS tool ancestor must be a real directory');
+    assert.equal(dir.uid,0,'NSS tool ancestor must be root owned');assert.equal(dir.mode&0o022,0,'NSS tool ancestor must not be group/world writable');
+    if(parent===path.dirname(parent))break;
+  }
+  const fd=fs.openSync(resolved,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW);
+  try{
+    const before=fs.fstatSync(fd);
+    for(const key of ['dev','ino','size','mode','uid','mtimeMs','ctimeMs'])assert.equal(before[key],st[key],'NSS tool changed before hashing');
+    const bytes=Buffer.alloc(st.size+1);let count=0;
+    while(count<bytes.length){const read=fs.readSync(fd,bytes,count,bytes.length-count,null);if(!read)break;count+=read;}
+    assert.equal(count,st.size,'NSS tool changed size while hashing');
+    const after=fs.fstatSync(fd),current=fs.lstatSync(resolved);
+    for(const key of ['dev','ino','size','mode','uid','mtimeMs','ctimeMs']){assert.equal(after[key],before[key],'NSS tool changed while hashing');assert.equal(current[key],before[key],'NSS tool path changed while hashing');}
+    return {executable:resolved,bytes:bytes.subarray(0,count),sha256:sha(bytes.subarray(0,count))};
+  }finally{fs.closeSync(fd);}
 }
 function inspectNss(certutil,dpkg='/usr/bin/dpkg-query'){
   assertLinux(process.platform);assert.ok(path.isAbsolute(certutil)&&path.isAbsolute(dpkg),'explicit Linux tools required');
-  const executable=fs.realpathSync(certutil),st=fs.statSync(executable);assert.ok(st.isFile()&&st.size<=8*1024*1024);fs.accessSync(executable,fs.constants.X_OK);
+  const target=trustedNssExecutable(certutil,8*1024*1024),query=trustedNssExecutable(dpkg,8*1024*1024),executable=target.executable;
   const env={PATH:'/usr/bin:/bin',LANG:'C',LC_ALL:'C'};
-  const owner=command(dpkg,['-S',executable],env).stdout.trim();
-  assert.equal(owner,'libnss3-tools: '+executable,'Linux NSS certutil must be package identified');
-  const format='--showformat=$'+'{Package}\t$'+'{Version}\n';
-  const versions=command(dpkg,['-W',format,'libnss3-tools','libnss3'],env).stdout.trim().split('\n');
-  assert.equal(versions.length,2);for(const name of ['libnss3-tools','libnss3'])assert.ok(versions.some(s=>s.startsWith(name+'\t')&&s.length>name.length+1));
-  return {executable,executableSha256:sha(fs.readFileSync(executable)),packageOwner:owner,packages:versions};
+  // Query only the known package instead of scanning every installed file list.
+  // Keep the same per-command deadline and output cap; no retry or fallback.
+  const files=command(query.executable,['-L','libnss3-tools'],env);
+  const format='--showformat=$'+'{Package}\t$'+'{Version}\t$'+'{Status}\n';
+  const versions=command(query.executable,['-W',format,'libnss3-tools','libnss3'],env);
+  const checksums=command(query.executable,['--control-show','libnss3-tools','md5sums'],env);
+  const proof=verifyNssPackage({executable,bytes:target.bytes,fileList:files.stdout,versions:versions.stdout,md5sums:checksums.stdout});
+  return {executable,...proof,queryExecutable:query.executable,querySha256:query.sha256,commands:[files,versions,checksums]};
 }
 function trustInventory(text,nickname){
   const rows=text.split(/\r?\n/).map(s=>s.trim().replace(/\s+/g,' ')).filter(Boolean);
@@ -168,4 +220,4 @@ function createNssHome({credentials,certutil,forbiddenRoots=[]}){
   };
   }catch(e){if(fs.existsSync(home))fs.rmSync(home,{recursive:true,force:false});throw e;}
 }
-module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss,chromePackage,inspectChrome,inspectBrowserProcess,retainChromePreflight,assertChromePath,CHROME,selectedChrome};
+module.exports={assertLinux,trustInventory,safeLaunch,createNssHome,inspectNss,verifyNssPackage,trustedNssExecutable,chromePackage,inspectChrome,inspectBrowserProcess,retainChromePreflight,assertChromePath,CHROME,selectedChrome};
