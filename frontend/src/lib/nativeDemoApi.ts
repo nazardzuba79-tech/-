@@ -9,6 +9,11 @@ export interface NativePosition {
   id:string;symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;markPrice:string;lastPrice:string;leverage:string;
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
   unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
+  /**
+   * The same `netPnl` taken apart by the engine: `tradingPnl - feesPaid +
+   * fundingNet === netPnl`. Absent from a server older than the split.
+   */
+  tradingPnl?:string;feesPaid?:string;realizedGross?:string;openingFees?:string;closingFees?:string;
   protection:NativeProtection;
   pendingClose?:{reason:'STOP_LOSS'|'TAKE_PROFIT';quantity:string;triggerPrice:string;triggeredAt:number;actionId:string}|null;
   /**
@@ -37,7 +42,9 @@ export interface NativeState {
   orderHistoryLoaded?:boolean;
   historyFailed?:boolean;
   initialized:boolean;revision:number;source:'DEMO_BALANCE'|'PREVIEW_FIXTURE'|null;asOf:number|null;demoAvailable?:string|null;
-  model:{version:string;funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number};fundingSource?:string;historicalLimit?:string;historyResolution?:string[]};
+  model:{version:string;funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number};fundingSource?:string;historicalLimit?:string;historyResolution?:string[];
+    /** The funding terms in force at `asOf`, and a version already pinned to start later. Absent on an older server. */
+    fundingModel?:{active:NativeFundingTerms;intervalMs:number;upcoming:NativeFundingTerms|null}};
   /**
    * THE AUTHORITATIVE ACCOUNT, computed once on the server.
    *
@@ -52,6 +59,10 @@ export interface NativeState {
   positions:NativePosition[];history:NativePosition[];orders:NativeOrder[];events:NativeEvent[];
   entries?:{positionId:string;candle:NativeCandle|null}[];
 }
+/** One version of the demo funding schedule. `SIDE_CASHFLOW` is the original custom model; `FIXED_RATE` one signed 8h rate. */
+export type NativeFundingTerms=
+  |{version:string;kind:'SIDE_CASHFLOW';longCashflow:string;shortCashflow:string;effectiveFrom:number}
+  |{version:string;kind:'FIXED_RATE';rate:string;effectiveFrom:number};
 export interface NativeAccountAggregate{
   settleBalance:string;walletCollateral:string;collateral:string;unrealizedPnl:string;equity:string;
   initialMargin:string;orderReserve:string;maintenanceMargin:string;available:string;
@@ -68,6 +79,8 @@ export type LedgerSource='INITIAL_COLLATERAL'|'OPENING_FEE'|'CLOSING_FEE'|'LIQUI
 export interface LedgerEntryView{
   id:string;time:number;source:LedgerSource;kind:string;positionId:string|null;symbol:string|null;
   quantity:string|null;price:string|null;amount:string;balanceAfter:string;
+  /** FUNDING lines priced by a FIXED_RATE version: the rate and the version. */
+  fundingRate?:string;fundingModel?:string;
 }
 export interface AccountLedgerView{
   entries:LedgerEntryView[];openingBalance:string;closingBalance:string;
@@ -255,6 +268,16 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
 export const nativeDemoApi=createNativeDemoClient(import.meta.env.VITE_API_URL||'/api/v1',getToken);
 export interface NativeHistoryItems {
   positions:NativePosition;orders:NativeOrder;events:NativeEvent;entries:{positionId:string;candle:NativeCandle|null};
+}
+/**
+ * The signed per-settlement fraction each side receives under `terms`, as
+ * decimal text (no floating point): a fixed rate debits LONG and credits
+ * SHORT when positive, the reverse when negative.
+ */
+export function nativeFundingSideRates(terms:NativeFundingTerms):{long:string;short:string}{
+  if(terms.kind==='SIDE_CASHFLOW')return{long:terms.longCashflow,short:terms.shortCashflow};
+  const rate=terms.rate.replace(/^\+/,''),negated=rate.startsWith('-')?rate.slice(1):/^0(?:\.0*)?$/.test(rate)?rate:`-${rate}`;
+  return{long:negated,short:rate};
 }
 /** Signed fraction string -> percent text by decimal shifting (no floating point): '-0.001' -> '−0.1%'. */
 export function nativeFundingPercent(value:string):string{

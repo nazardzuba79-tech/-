@@ -158,6 +158,18 @@ describe('native demo frontend',()=>{
     expect(calls).toEqual([['run',{kind:'OPEN',symbol:'BTC/USDT',side:'LONG',type:'LIMIT',margin:'5000',leverage:'10',price:'49000.5',
       candle:{source:'BYBIT_LINEAR',interval:'1h',openTime:1_700_000_000_000,pricePoint:'OPEN'},protection:{takeProfit:null,stopLoss:null}}]]);
   });
+  test('a pinned fixed rate is stated per side: positive debits LONG and credits SHORT',()=>{
+    const {module,h}=controls();
+    const fixed=(rate:string)=>{
+      const base=state();
+      const {c}=controller({state:{...base,model:{...base.model,fundingModel:{active:{version:'BYBIT_LINEAR_30D_MEAN_V1',kind:'FIXED_RATE',rate,effectiveFrom:1},intervalMs:28_800_000,upcoming:null}}}});
+      h.reset();return text(module.NativeDemoTicket({controller:c,symbol:'BTC/USDT'}));
+    };
+    expect(fixed('0.0001')).toContain('Long −0.01% / Short +0.01%');
+    expect(fixed('-0.00003125')).toContain('Long +0.003125% / Short −0.003125%');
+    expect(nativeApi.nativeFundingSideRates({version:'V2',kind:'FIXED_RATE',rate:'0',effectiveFrom:1})).toEqual({long:'0',short:'0'});
+    expect(nativeApi.nativeFundingSideRates({version:'VOLTEX_CUSTOM_DEMO_V1',kind:'SIDE_CASHFLOW',longCashflow:'-0.001',shortCashflow:'0.004',effectiveFrom:0})).toEqual({long:'-0.001',short:'0.004'});
+  });
   test('the ticket states the funding rate as a rate, and never claims it is Bybit funding',()=>{
     // The rates themselves are unchanged and still come from the server
     // model — only the paragraph explaining that this is a demo is gone.

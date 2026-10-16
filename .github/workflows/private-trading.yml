@@ -24,6 +24,7 @@ on:
       - 'frontend/src/components/TerminalChart*'
       - 'prisma/**'
       - 'scripts/qa-private-*'
+      - 'scripts/research/**'
       - '.github/workflows/private-trading.yml'
 permissions:
   contents: read
@@ -87,6 +88,9 @@ jobs:
           src/private-trading/__tests__/nativeDemoEngine.test.ts
           src/private-trading/__tests__/nativeDemoReplay.test.ts
           src/private-trading/__tests__/nativeDemoService.test.ts
+          src/private-trading/__tests__/nativeFixedFunding.test.ts
+          src/private-trading/__tests__/nativeFixedFundingService.test.ts
+          src/private-trading/__tests__/nativeFundingModel.integration.test.ts
           src/private-trading/__tests__/nativeHistoricalCurrent.test.ts
           src/private-trading/__tests__/historicalPriceFallback.test.ts
           src/private-trading/__tests__/nativeThinContract.test.ts
@@ -122,6 +126,8 @@ jobs:
           frontend/src/lib/__tests__/priceChartMarketOrders.test.ts
           frontend/src/lib/__tests__/privateChartTicket.test.ts
           frontend/src/lib/__tests__/privateTradingFrontend.test.ts
+      - name: Fixed funding rate method on a local Bybit stand-in (no network)
+        run: node --test scripts/research/bybit-funding-average.test.cjs
       - name: Checkout exact pre-optimization baseline for short capacity comparison
         uses: actions/checkout@v4
         with:

@@ -1503,3 +1503,16 @@ model NativeDemoRevision {
   @@id([userId, revision])
   @@unique([userId, requestKey])
 }
+
+/// Native demo funding versions, pinned once and never changed.
+/// A FIXED_RATE version's start is written by the first process that knows it
+/// (the first 8h settlement boundary after that process started), so a later
+/// deploy, restart or second instance reads the same instant and rate. Every
+/// settlement before `effectiveFrom` keeps the terms it was made under.
+model NativeFundingModel {
+  version        String   @id
+  rate           String
+  effectiveFrom  DateTime
+  evidenceSha256 String
+  createdAt      DateTime @default(now())
+}

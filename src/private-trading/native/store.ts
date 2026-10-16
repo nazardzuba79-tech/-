@@ -9,6 +9,7 @@ import { NativeCheckpoint, NativeInstruction } from './replay';
 import { CollateralHolding } from './collateral';
 import { deriveNativeLiveProjection, projectionDigest, verifiedProjection, type NativeLiveProjection } from './liveProjection';
 import { nativeHistoryPage, type HistoryQuery } from './historyPage';
+import { FundingModelError, LEGACY_FUNDING_SCHEDULE, NATIVE_FIXED_FUNDING, nextFundingBoundaryAfter, scheduleWithFixedRate, validFixedRate, type NativeFundingSchedule } from './fundingModel';
 
 export interface NativeAccount {
   executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';
@@ -102,6 +103,27 @@ export interface NativeRepository {
   initialize(actor:OwnerSession,key:string):Promise<NativeAccount>;
   prior(actor:OwnerSession,key:string,hash:string):Promise<NativeAccount|null>;
   commit(actor:OwnerSession,expected:number,next:NativeAccount,key:string,hash:string,beforeWrite?:()=>void):Promise<NativeAccount>;
+  /** The funding schedule (fundingModel.ts). Absent = the legacy model for every settlement. */
+  fundingSchedule?():Promise<NativeFundingSchedule>;
+}
+/**
+ * PIN THE SHIPPED FIXED-RATE VERSION, ONCE.
+ *
+ * The first caller writes the version with `effectiveFrom` = the first 8h
+ * settlement boundary after now; every later caller (a restart, a second
+ * instance, a redeploy) inserts nothing and reads that same row. The stored
+ * rate and evidence must be the shipped ones: a mismatch means somebody
+ * edited a pinned version, which would re-price settlements already made,
+ * so it is refused rather than reconciled.
+ */
+export async function pinNativeFundingSchedule(db:Pick<PrismaClient,'nativeFundingModel'>,model:{version:string;rate:string|null;evidence:string|null}=NATIVE_FIXED_FUNDING,now:()=>number=Date.now):Promise<NativeFundingSchedule>{
+  if(model.rate===null)return LEGACY_FUNDING_SCHEDULE;
+  if(!model.evidence||!/^[0-9a-f]{64}$/.test(model.evidence))throw new FundingModelError('FUNDING_EVIDENCE_MISSING');
+  const rate=validFixedRate(model.rate);
+  await db.nativeFundingModel.createMany({data:[{version:model.version,rate,effectiveFrom:new Date(nextFundingBoundaryAfter(now())),evidenceSha256:model.evidence}],skipDuplicates:true});
+  const row=await db.nativeFundingModel.findUnique({where:{version:model.version}});
+  if(!row||row.rate!==rate||row.evidenceSha256!==model.evidence)throw new FundingModelError('FUNDING_MODEL_CONFLICT');
+  return scheduleWithFixedRate(model.version,rate,row.effectiveFrom.getTime());
 }
 /** Only DemoBalance + NativeDemo* writes exist here. Real wallets/orders are not dependencies. */
 export class PrismaNativeRepository implements NativeRepository {
@@ -110,6 +132,10 @@ export class PrismaNativeRepository implements NativeRepository {
   private readonly executionCache=new Map<string,NativeAccount>();
   constructor(private readonly db:PrismaClient,private readonly config:()=>PrivateTradingConfig=privateTradingConfig,private readonly cacheExecution=false){}
   get commandLaneScope(): object { return this.db; }
+  private fundingPin?:Promise<NativeFundingSchedule>;
+  fundingSchedule():Promise<NativeFundingSchedule>{
+    return this.fundingPin??=pinNativeFundingSchedule(this.db).catch(error=>{this.fundingPin=undefined;throw error;});
+  }
   private remember(userId:string,row:NativeAccount){
     if(!this.cacheExecution)return;
     this.executionCache.delete(userId);

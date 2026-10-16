@@ -21,7 +21,13 @@ const dataDir=path.join(os.tmpdir(),'voltex-native-demo-review');fs.mkdirSync(da
 const app=express();app.disable('x-powered-by');app.use(express.json({limit:'50kb'}));
 app.use((_req,res,next)=>{res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');next();});
 const source=new CollectorPrivateTradingSource();
-const now=()=>Date.now(),started=now();
+/* QA lever, fixture only and off by default: a server clock a QA run can move
+   FORWARD (POST /qa/clock), so 00/08/16 UTC funding settlements can be seen
+   without waiting eight hours. Every server-side reader — engine, quotes,
+   fixture candles, sessions — uses this one clock; it never moves back. */
+const clockQa=process.env.NATIVE_PREVIEW_FIXTURE==='1'&&process.env.NATIVE_PREVIEW_CLOCK_QA==='1';
+let clockOffset=0;
+const now=()=>Date.now()+clockOffset,started=now();
 /* THE FULL LINEAR-PERPETUAL UNIVERSE, not a demo short list.
    The terminal must show the markets it normally shows, so the symbol set is
    discovered from the same public ticker response the preview already fetches
@@ -100,7 +106,7 @@ async function transport(url,options={}){
   else result=await source.funding(symbol,Number(q.get('startTime')),Number(q.get('endTime')),options.signal);
   return new Response(JSON.stringify(result),{status:200,headers:{'Content-Type':'application/json'}});
 }
-const market=new PrivateTradingMarketData({collector:{url:'http://127.0.0.1',token:'preview-local-public-market-only'},request:transport});
+const market=new PrivateTradingMarketData({collector:{url:'http://127.0.0.1',token:'preview-local-public-market-only'},request:transport,now});
 const sessions=new Map();
 function session(token){if(!/^[a-f0-9]{48}$/.test(token??''))return null;let s=sessions.get(token);if(s)return s;const file=path.join(dataDir,token+'.json');if(fs.existsSync(file)){try{s=JSON.parse(fs.readFileSync(file,'utf8'));sessions.set(token,s);return s;}catch{}}return null;}
 function save(token,s){sessions.set(token,s);const file=path.join(dataDir,token+'.json'),tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(s));fs.renameSync(tmp,file);}
@@ -115,12 +121,26 @@ const performanceDb={copyPerformanceScenario:{
   async updateMany({where,data}){const row=performanceRows.get(where.id);if(!row||row.revision!==where.revision)return{count:0};performanceRows.set(where.id,{...row,revision:row.revision+1,stateText:data.stateText,simulatedAt:data.simulatedAt});return{count:1};},
 }};
 const copyPerformance=new CopyPerformanceService(performanceDb,()=>new Date());
-const service=new NativeDemoService(new ReviewRepository({session,save,now,walletBtc:PREVIEW_WALLET_BTC}),market);
+const reviewRepository=new ReviewRepository({session,save,now,walletBtc:PREVIEW_WALLET_BTC});
+/* QA lever, fixture only and off by default: a SYNTHETIC fixed-rate funding
+   version pinned from the 8h boundary three days before this server started,
+   so a review can show settlements priced by the fixed-rate model next to the
+   P&L breakdown. It is never the shipped rate (fundingModel.ts keeps that
+   null until the Bybit evidence is committed) and never reaches production. */
+const qaFixedFundingRate=fixture?process.env.NATIVE_PREVIEW_FIXED_FUNDING_RATE:undefined;
+if(qaFixedFundingRate){
+  const{scheduleWithFixedRate,NATIVE_FUNDING_INTERVAL_MS}=require('../dist/private-trading/native/fundingModel');
+  const from=Math.floor((started-3*86400000)/NATIVE_FUNDING_INTERVAL_MS)*NATIVE_FUNDING_INTERVAL_MS;
+  const schedule=scheduleWithFixedRate('QA_SYNTHETIC_FIXED',qaFixedFundingRate,from);
+  reviewRepository.fundingSchedule=async()=>schedule;
+}
+const service=new NativeDemoService(reviewRepository,market,now);
 // The review uses the same executor after UI refresh became read-only. Only
 // admitted, per-browser synthetic accounts are eligible; no database exists here.
 const executor=new NativeLimitPass(service,async()=>[...sessions.values()].map(s=>reviewExecutionActor(s,now())).filter(Boolean));
 executor.start();
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
+if(clockQa)app.post('/qa/clock',(req,res)=>{const ms=Number(req.body?.advanceMs);if(!Number.isSafeInteger(ms)||ms<=0||ms>7*86400000)return res.status(400).json({error:'advanceMs'});clockOffset+=ms;res.json({now:now(),offsetMs:clockOffset});});
 app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,...(tinyPriceQa?{tinyPriceFixture:true}:{}),commit:process.env.RENDER_GIT_COMMIT??null}));
 if (fixture) {
   // Optional public catalogues mounted by the current header. No account/API

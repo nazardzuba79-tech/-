@@ -1,0 +1,56 @@
+{
+  "scope": "real /futures terminal, isolated native fixture, synthetic fixed funding rate (QA lever)",
+  "label": "before",
+  "rate": null,
+  "checks": [
+    {
+      "name": "1920px: no page errors",
+      "passed": true,
+      "evidence": {
+        "screenshots": [
+          "docs/qa/native-funding-pnl/before/open-1920.png",
+          "docs/qa/native-funding-pnl/before/history-1920.png"
+        ]
+      }
+    },
+    {
+      "name": "1440px: no page errors",
+      "passed": true,
+      "evidence": {
+        "screenshots": [
+          "docs/qa/native-funding-pnl/before/open-1440.png",
+          "docs/qa/native-funding-pnl/before/history-1440.png"
+        ]
+      }
+    },
+    {
+      "name": "390px: no page errors",
+      "passed": true,
+      "evidence": {
+        "screenshots": [
+          "docs/qa/native-funding-pnl/before/open-390.png",
+          "docs/qa/native-funding-pnl/before/history-390.png"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "geometry": {
+    "390": {
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "rowHeight": 569.5
+    },
+    "1440": {
+      "clientWidth": 1128,
+      "scrollWidth": 1238,
+      "rowHeight": 68
+    },
+    "1920": {
+      "clientWidth": 1608,
+      "scrollWidth": 1608,
+      "rowHeight": 68
+    }
+  },
+  "passed": true
+}

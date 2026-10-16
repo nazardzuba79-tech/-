@@ -1,6 +1,6 @@
 import { useEffect,useRef,useState,type FormEvent } from 'react';
 import { privateNumber,privateUtc } from '../../lib/privateTradingApi';
-import { nativeDemoApi,nativeFundingPercent,type NativeDraft,type NativePosition,type NativeState } from '../../lib/nativeDemoApi';
+import { nativeDemoApi,nativeFundingPercent,nativeFundingSideRates,type NativeDraft,type NativePosition,type NativeState } from '../../lib/nativeDemoApi';
 import { PrivateResultCardDialog } from './PrivateResultCardDialog';
 import type { NativeDemoController } from './useNativeDemo';
 import './nativeDemo.css';
@@ -9,8 +9,11 @@ const sign=(value:string|null|undefined)=>value===null||value===undefined||value
 /** The funding rates this account settles at, stated the way a rate is
  *  stated anywhere else on the terminal — a number, not an explanation. */
 function fundingRates(c:NativeDemoController){
-  const f=c.state?.model.funding;
-  return f?`Long ${nativeFundingPercent(f.longCashflow)} / Short ${nativeFundingPercent(f.shortCashflow)} · 8ч`:'—';
+  // The terms in force now, from the server's schedule; an older server
+  // only sends the original custom constants.
+  const active=c.state?.model.fundingModel?.active,f=c.state?.model.funding;
+  const rates=active?nativeFundingSideRates(active):f?{long:f.longCashflow,short:f.shortCashflow}:null;
+  return rates?`Long ${nativeFundingPercent(rates.long)} / Short ${nativeFundingPercent(rates.short)} · 8ч`:'—';
 }
 export function NativeDemoTicket({controller:c,symbol,pickedPrice,pickedSequence}:{controller:NativeDemoController;symbol:string;pickedPrice?:string;pickedSequence?:number}){
   const[side,setSide]=useState<'LONG'|'SHORT'>('LONG'),[type,setType]=useState<'MARKET'|'LIMIT'>('MARKET'),[amount,setAmount]=useState('5000'),[leverage,setLeverage]=useState('10'),[price,setPrice]=useState('');

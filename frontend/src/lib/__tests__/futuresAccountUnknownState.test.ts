@@ -605,3 +605,60 @@ describe('Futures orders presentation', () => {
     expect(panel.refreshes).toEqual([]);
   });
 });
+
+// ── 3. The native demo's P&L breakdown, and the real table unchanged ──
+
+describe('native demo positions show Trading P&L, Funding, Fees and Net P&L apart', () => {
+  const row = {
+    id: 'n1', symbol: 'BTC/USDT', side: 'LONG', size: '2', entryPrice: '50000',
+    leverage: 20, marginType: 'CROSS', initialMargin: '5000', liquidationPrice: null,
+    markPrice: '52000', unrealizedPnl: '4000', realizedPnl: '-75.2', roe: '80', openedAt: '2026-10-16T00:00:01.000Z',
+    protection: { takeProfit: null, stopLoss: null },
+  };
+  // tradingPnl - fees + funding = netPnl: 4000 - 55 + (-20.2) = 3924.8
+  const breakdown = { tradingPnl: '4000', funding: '-20.2', fees: '55', netPnl: '3924.8' };
+  // A cell is the panel's own `Td` element; a figure inside it is drawn by
+  // calling the component it names (PnlPart), so the text is the real output.
+  const draw = (tree: any): any => nodes(tree).map((n) => (typeof n.type === 'function' && n.type.name === 'PnlPart' ? n.type(n.props) : n));
+  const cellText = (tree: any, label: string) => nodes(tree).filter((n) => typeof n.type === 'function' && n.props?.label === label).map((n) => text(draw(n)));
+
+  test('an open native row shows the four figures, fees as a debit, and no separate realized column', () => {
+    const panel = mount('components/FuturesPositionsPanel.tsx', { account: accountState({ positions: resource([{ ...row, pnlBreakdown: breakdown }]) }) });
+    const tree = panel.render({ refreshKey: 0, tab: 'open' });
+    for (const key of ['futures.colTradingPnl', 'futures.colFunding', 'futures.colFees', 'futures.colNetPnl']) expect(text(tree)).toContain(key);
+    expect(cellText(tree, 'futures.colRealized')).toEqual([]);
+    expect(cellText(tree, 'futures.colTradingPnl')[0]).toContain('4,000.0000');
+    expect(cellText(tree, 'futures.colFunding')[0]).toContain('-20.2000');
+    expect(cellText(tree, 'futures.colFees')[0]).toContain('-55.0000');
+    expect(cellText(tree, 'futures.colNetPnl')[0]).toContain('3,924.8000');
+  });
+
+  test('a real-engine row (no breakdown) keeps exactly its realized column', () => {
+    const panel = mount('components/FuturesPositionsPanel.tsx', { account: accountState({ positions: resource([row]) }) });
+    const tree = panel.render({ refreshKey: 0, tab: 'open' });
+    expect(cellText(tree, 'futures.colRealized')[0]).toContain('-75.2000');
+    for (const key of ['futures.colTradingPnl', 'futures.colFunding', 'futures.colFees', 'futures.colNetPnl']) expect(text(tree)).not.toContain(key);
+  });
+
+  test('a closed native trade shows its whole result, and the total is the Net P&L', () => {
+    const closed = { id: 'n1', symbol: 'BTC/USDT', side: 'LONG', leverage: 20, marginType: 'CROSS', entryPrice: '50000', realizedPnl: '3867.6',
+      status: 'CLOSED', openedAt: '2026-10-16T00:00:01.000Z', closedAt: '2026-10-16T16:00:02.000Z',
+      pnlBreakdown: { tradingPnl: '4000', funding: '-20.2', fees: '112.2', netPnl: '3867.6' } };
+    const panel = mount('components/FuturesPositionsPanel.tsx', { account: accountState({ positionHistory: resource([closed]) }) });
+    const tree = panel.render({ refreshKey: 0, tab: 'history' });
+    expect(text(tree)).not.toContain('futures.realizedPnl');
+    expect(cellText(tree, 'futures.colTradingPnl')).toEqual([expect.stringContaining('4,000.00')]);
+    expect(cellText(tree, 'futures.colFunding')).toEqual([expect.stringContaining('-20.20')]);
+    expect(cellText(tree, 'futures.colFees')).toEqual([expect.stringContaining('-112.20')]);
+    expect(cellText(tree, 'futures.colNetPnl')).toEqual([expect.stringContaining('3,867.60')]);
+  });
+
+  test('a real-engine history keeps its single realized P&L column', () => {
+    const closed = { id: 'r1', symbol: 'BTC/USDT', side: 'SHORT', leverage: 5, marginType: 'ISOLATED', entryPrice: '50000', realizedPnl: '12.5',
+      status: 'CLOSED', openedAt: '2026-10-16T00:00:01.000Z', closedAt: '2026-10-16T01:00:00.000Z' };
+    const panel = mount('components/FuturesPositionsPanel.tsx', { account: accountState({ positionHistory: resource([closed]) }) });
+    const tree = panel.render({ refreshKey: 0, tab: 'history' });
+    expect(text(tree)).toContain('futures.realizedPnl');
+    expect(text(tree)).not.toContain('futures.colNetPnl');
+  });
+});
