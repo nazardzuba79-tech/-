@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAdminGate, type AdminGate } from '../../lib/useAdminGate';
 import { useAdminSummaryChime } from '../../lib/useAdminAlerts';
@@ -88,6 +88,18 @@ export function AdminLayout() {
   const location = useLocation();
   const summary = useAdminWorkSummary(status === 'ok');
   useAdminSummaryChime(status === 'ok', summary.data?.alerts);
+  // The phone menu closes with Escape and gives focus back to its button.
+  const menuButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMobileOpen(false);
+      menuButton.current?.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileOpen]);
 
   if (gate.status === 'checking' || gate.status === 'error') return <AdminGateScreen gate={gate} />;
   if (status === 'denied') return <Navigate to="/" replace />;
@@ -185,6 +197,7 @@ export function AdminLayout() {
           }}
         >
           <button
+            ref={menuButton}
             onClick={() => setMobileOpen(true)}
             className="admin-mobile-menu-btn admin-nav-link"
             style={{ display: 'none', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: 8, color: 'var(--text-secondary)', cursor: 'pointer' }}

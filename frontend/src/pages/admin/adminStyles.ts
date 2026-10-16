@@ -154,7 +154,8 @@ export const styles: Record<string, CSSProperties> = {
     color: 'var(--text-secondary)',
     cursor: 'pointer',
   },
-  main: { padding: '16px 24px 24px', minWidth: 0 },
+  // 88px at the bottom keeps the last control clear of the floating support launcher.
+  main: { padding: '16px 24px 88px', minWidth: 0 },
   title: { fontSize: 21, marginBottom: 10, fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.02em' },
   subtitle: { fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' },
   card: {
@@ -417,12 +418,14 @@ export const styles: Record<string, CSSProperties> = {
   pageBtnActive: { background: 'var(--admin-brand)', borderColor: 'var(--admin-brand)', color: 'var(--admin-brand-on)' },
 
   // Slide-in detail drawer.
-  drawerOverlay: { position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(15,17,21,0.3)' },
+  // Above the floating support launcher (998) and its panel (999): nothing
+  // site-wide may sit on a modal admin surface or its confirm button.
+  drawerOverlay: { position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,17,21,0.3)' },
   drawerPanel: {
     position: 'fixed',
     right: 0,
     top: 0,
-    zIndex: 51,
+    zIndex: 1001,
     height: '100vh',
     width: 'min(100%, 440px)',
     background: 'var(--panel)',
