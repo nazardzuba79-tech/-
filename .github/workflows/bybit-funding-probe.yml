@@ -1,0 +1,25 @@
+name: Bybit funding history probe (research, read-only)
+on:
+  push:
+    branches: [claude/peaceful-volta-h5zw7g-bybit-funding-probe]
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Runner egress
+        run: curl -sS --max-time 10 https://ipinfo.io/json | grep -E '"(country|region|org)"' || true
+      - name: Bybit public API — funding history, last 30 complete UTC days
+        run: node scripts/research/bybit-funding-average.mjs --end 2026-10-16 --days 30 --top 10 --out out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bybit-funding
+          path: out
+          if-no-files-found: warn
