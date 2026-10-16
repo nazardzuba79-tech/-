@@ -86,8 +86,8 @@ module.exports=async function globalMatrix({browser,origin,id,prefix,local,out,r
       await until(()=>inflight.size===0,'language switch market request drain');
       const switchReads=reads,switchWrites=writes,next=lang==='en'?'ru':'en',nextText=labels[next];
       const switchLanguage=async target=>{
-        await page.locator('.vxg-pro-nav').getByRole('button',{name:'Language / Язык / 语言',exact:true}).click();
-        await page.locator('.vxg-pro-nav').getByRole('button',{name:labels[target].choice,exact:true}).click();
+        await page.locator('.vxo-original-header').getByRole('button',{name:'Language / Язык / 语言',exact:true}).click();
+        await page.locator('.vxo-original-header').getByRole('button',{name:labels[target].choice,exact:true}).click();
         await until(async()=>await ticket.getByLabel(labels[target].amount,{exact:true}).count()===1,'Stocks language context switch');
       };
       await switchLanguage(next);

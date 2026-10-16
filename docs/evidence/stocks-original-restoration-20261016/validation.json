@@ -104,6 +104,21 @@
       "name": "original-support-dock-geometry.json",
       "bytes": 17418,
       "sha256": "6322376ab4d9cdbbd7f191c90356f1721c92979b29690d31f3b952fd670beae3"
+    },
+    {
+      "name": "ci-a5488c26/selector-native-guards.log",
+      "bytes": 2388,
+      "sha256": "2c4e2ea7b0f6c15432665d1c9bf247fa03ef188293adf7d7b2ac66db7118f7bb"
+    },
+    {
+      "name": "ci-a5488c26/stocks-ui-browser-116984867808.log",
+      "bytes": 1195685,
+      "sha256": "1be8d98b4e68c50ed459f2e5e0e2fdfb1592d02e0d21d1c9d00b3f8a168c6d13"
+    },
+    {
+      "name": "original-header-language-browser.json",
+      "bytes": 258,
+      "sha256": "418d95c520b44426d3a7a6a441e32fe26c1b06eb57484de768af4a3accc9c3ec"
     }
   ],
   "mobileSupportDock": {
@@ -141,5 +156,22 @@
     "buildSeconds": 11.46,
     "financialOperations": 0,
     "financialLogicChanged": false
+  },
+  "headerSelectorCorrection": {
+    "failedHead": "a5488c26f23f98b6941e9050c3c7edbdcf261225",
+    "run": 38903829542,
+    "job": 116984867808,
+    "failure": "Timeout 30000ms waiting .vxg-pro-nav exact language button in scripts/qa-stocks-global-matrix.cjs:89",
+    "parentCompletedAssertions": 141,
+    "parentExternalApiCalls": 0,
+    "oldScope": ".vxg-pro-nav",
+    "newScope": ".vxo-original-header",
+    "exactSelectorSubstitutions": 2,
+    "actionsAndAssertionsUnchanged": true,
+    "syntax": "PASS",
+    "existingNativeAndWorkflowGuardTests": 21,
+    "guardFailures": 0,
+    "manualLanguageSwitch": "RU->EN->RU retains Limit amount0.625 and price95.25; no submission",
+    "nativeBrowserAcceptance": "Required on final CI; no local provenance bypass"
   }
 }

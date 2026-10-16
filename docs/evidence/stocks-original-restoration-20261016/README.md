@@ -47,3 +47,9 @@ Final screenshot review found the pre-existing global Support launcher over the 
 [Before obstruction](terminal-support-overlap-before-390.jpg) / [corrected chart](terminal-chart-390.jpg) / [corrected order form](terminal-trade-390.jpg). Additional [25 geometry checks](support-dock-geometry.json) cover chart/trade/account/catalogue at 320/360/390/430, scrolling and a 390x500 viewport: no visible control overlap or horizontal overflow; minimum launcher clearance 10 px. Support close/composer remain within the viewport at 390x844 and 390x500. Exiting to Futures restores body block/visible and root padding 0 px; desktop also retains root padding 0 px. Build PASS, 6194 modules, existing shared-chunk warning retained. No order or support message submitted.
 
 The 4504-test full frontend and CFD/Chart/Support/OTC CI results on parent a5488c26 passed before this CSS-only correction; final exact-head CI is reported on the PR, not inferred from that parent.
+
+## Browser language selector correction
+
+Exact-head a5488c26 CI retained a real browser failure: Stocks overload reached 141 assertions, then the localization matrix timed out at qa-stocks-global-matrix.cjs:89 looking for its exact language button under the retired `.vxg-pro-nav` header (run38903829542/job116984867808). The restored header contains the same control under `.vxo-original-header`. Corrected exactly those two scoping selectors; all button names, actions, assertions, waits, request limits and native browser security requirements remain unchanged.
+
+Syntax and 21 existing native/preflight/workflow guards PASS. Manual [RU→EN→RU check](header-language-browser.json) retained Limit amount0.625 and price95.25 without submitting an order. Final native browser CI must pass on the new containing head; no Windows sandbox fallback or previous-head success is substituted. Complete failure log and guard log hashes are retained in validation.json.

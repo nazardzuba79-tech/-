@@ -1,0 +1,18 @@
+{
+  "English": {
+    "amount": "0.625",
+    "buttons": [
+      "Buy",
+      "Sell",
+      "Market",
+      "Limit",
+      "Buy AAPLX"
+    ],
+    "price": "95.25"
+  },
+  "Russian": {
+    "amount": "0.625",
+    "price": "95.25"
+  },
+  "noOrderSubmitted": true
+}

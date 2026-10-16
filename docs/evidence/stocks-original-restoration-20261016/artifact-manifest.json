@@ -15,6 +15,11 @@
     "sha256": "f79058cc381599fdc998863cd2e0bb59dde8d136fcb012e2ee8cb64edbc37308"
   },
   {
+    "name": "header-language-browser.json",
+    "bytes": 258,
+    "sha256": "418d95c520b44426d3a7a6a441e32fe26c1b06eb57484de768af4a3accc9c3ec"
+  },
+  {
     "name": "reference-catalogue-1440.jpg",
     "bytes": 87531,
     "sha256": "f8f61402e0eb46a90308be90ca43f2bccf6f56d0fa42b8040acd4e95d2ca435d"
