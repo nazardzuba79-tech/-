@@ -61,7 +61,7 @@ export function LicencesContent({ documents, review = false, portfolio = false }
       </section>
       <section className="licences-portfolio" aria-labelledby="licences-materials-title">
       <div className="licences-section-head"><h2 id="licences-materials-title">{t('licenses.presentedDocuments')}</h2><span><FileText size={16} aria-hidden="true" />{(1).toLocaleString(localeOf(lang))}</span></div>
-      <p className="licences-materials-note">{t('licenses.confirmationNote')}</p>
+      <p className="licences-materials-note">{t('licenses.materialsNote')}</p>
       <a className="licences-portfolio-image" href="/regulatory-documents/voltex-portfolio.png" target="_blank" rel="noopener noreferrer" aria-label={t('licenses.openImage')}>
         <img src="/regulatory-documents/voltex-portfolio.png" alt={t('licenses.portfolioAlt')} width="1536" height="1024" />
       </a>
@@ -71,9 +71,8 @@ export function LicencesContent({ documents, review = false, portfolio = false }
         <h2 id="licences-explanations-title">{t('licenses.explanationsTitle')}</h2>
         <div className="licences-jurisdiction-grid">{PRESENTED_JURISDICTIONS.map(jurisdiction => <article className="licences-jurisdiction-info" key={jurisdiction.id}>
           <h3>{t(jurisdiction.name)}</h3>
-          <p className="licences-owner-confirmed"><CheckCircle2 size={14} aria-hidden="true" />{t('licenses.ownerConfirmed')}</p>
+          <p className="licences-regulator-label"><CheckCircle2 size={14} aria-hidden="true" />{t('licenses.regulatorLabel')}: {jurisdiction.regulator}</p>
           <dl>
-            <div><dt>{t('licenses.organizationLabel')}</dt><dd className="licences-organization">{jurisdiction.regulator}</dd></div>
             <div><dt>{t('licenses.imageDocumentLabel')}</dt><dd>{t(jurisdiction.description)}</dd></div>
           </dl>
         </article>)}</div>

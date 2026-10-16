@@ -4,15 +4,16 @@ Prepared 2026-10-14 from freshly fetched main `72f0a5944b01b4d2596957ba6939b397b
 
 ## Current release state
 
-### Jurisdiction descriptions and owner confirmation (2026-10-16)
+### Jurisdiction descriptions and regulator labels (2026-10-16)
 
-The owner requested contextual descriptions of seven jurisdictions and stated
-that all verifications were confirmed. The informational blocks therefore carry
-an explicitly attributed “Confirmed by the owner of VOLTEX” label, localized in
-all seven languages. Their document descriptions reproduce the supplied image.
-No regulator endorsement, worldwide permission or client-funds protection claim
-is added. The owner attribution is distinct from independently documented
-regulatory verification and does not populate or increment the verified catalogue.
+The owner requested contextual descriptions of seven jurisdictions, and approved
+the final label “Regulator: MAS” (and the corresponding designation per entry)
+with a decorative check icon. This label is localized in all seven languages;
+the icon is hidden from assistive technology and conveys no separate status.
+The document descriptions reproduce the supplied image. The previous owner-
+confirmation wording has been removed. No regulator endorsement, worldwide
+permission or client-funds protection claim is added. These informational
+descriptions do not populate or increment the verified catalogue.
 `REGULATORY_DOCUMENTS`, review candidate evidence/statuses and the publication
 filter are unchanged. The existing source image remains byte-for-byte identical.
 

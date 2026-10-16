@@ -27,12 +27,11 @@
 .licences-jurisdiction-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:48px; }
 .licences-jurisdiction-info { min-width:0; background:#0c121b; border:1px solid #29313d; border-radius:10px; padding:24px; overflow-wrap:anywhere; }
 .licences-jurisdiction-info h3 { margin:0 0 10px; font-size:18px; font-weight:500; line-height:1.4; }
-.licences-owner-confirmed { display:flex; align-items:flex-start; gap:6px; margin:0 0 22px; font-size:11px; line-height:1.5; color:#cbb47d; }
-.licences-owner-confirmed svg { flex-shrink:0; margin-top:1px; }
+.licences-regulator-label { display:flex; align-items:flex-start; gap:6px; margin:0 0 22px; font-size:12px; line-height:1.5; color:#cbb47d; }
+.licences-regulator-label svg { flex-shrink:0; margin-top:2px; }
 .licences-jurisdiction-info dl { margin:0; display:grid; gap:18px; }
 .licences-jurisdiction-info dt { margin-bottom:6px; color:#99a6b8; font-size:11px; line-height:1.5; }
 .licences-jurisdiction-info dd { margin:0; color:#d7dfe9; font-size:13px; line-height:1.75; }
-.licences-jurisdiction-info .licences-organization { color:#e4cf9f; font-size:15px; font-weight:500; letter-spacing:.015em; }
 @media(max-width:1100px) { .licences-jurisdiction-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:600px) {
   .licences-jurisdictions { margin-bottom:28px; }

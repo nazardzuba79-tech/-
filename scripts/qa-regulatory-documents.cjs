@@ -78,10 +78,11 @@ async function main() {
     check(await page.locator('.licences-portfolio-status').count()===0,`${language}: removed portfolio label does not render`);
     check(await page.locator('.licence-card').count()===0,`${language}: no unverified public cards`);
     check(await page.locator('.licences-jurisdiction-info').count()===7,`${language}: seven informational descriptions outside the verified catalogue`);
-    check(await page.locator('.licences-owner-confirmed').count()===7,`${language}: owner-attributed confirmations`);
-    check(await page.locator('.licences-owner-confirmed').evaluateAll(nodes=>nodes.every(node=>node.textContent.includes('VOLTEX'))),`${language}: confirmation attribution remains explicit`);
+    check(await page.locator('.licences-regulator-label').count()===7,`${language}: seven regulator labels`);
+    check(await page.locator('.licences-regulator-label svg[aria-hidden="true"]').count()===7,`${language}: decorative check icons remain accessible`);
+    check(await page.locator('.licences-owner-confirmed').count()===0,`${language}: former owner-confirmation labels removed`);
     check((await page.locator('.licences-jurisdictions li').allTextContents()).join('|')===(await page.locator('.licences-jurisdiction-info h3').allTextContents()).join('|'),`${language}: jurisdiction list matches all descriptions`);
-    check((await page.locator('.licences-organization').allTextContents()).join('|')==='MAS|FCA|VARA|SFC|CySEC|FINMA|CMVM',`${language}: organization designations preserved`);
+    check((await page.locator('.licences-regulator-label').allTextContents()).map(text=>text.split(':').pop().trim()).join('|')==='MAS|FCA|VARA|SFC|CySEC|FINMA|CMVM',`${language}: regulator designations preserved`);
     check((await page.locator('.licences-portfolio .licences-section-head>span').innerText()).trim()==='1',`${language}: one image remains one material, not seven verified documents`);
     const materialsRequests=report.apiRequests.length;
     for(const width of report.widths) {

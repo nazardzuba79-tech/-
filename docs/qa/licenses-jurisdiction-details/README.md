@@ -2,14 +2,16 @@
 
 Base: fresh main `c2ee9e7143a45f80f300fb997da6a5f40a97fee6`.
 Route: `/legal/licenses`. Review branch: `codex/licenses-jurisdiction-details-20261016`.
-PR only; no merge or production deployment is authorized by this change.
+The owner authorized merge and frontend publication after the final regulator-
+label change and successful checks (2026-10-16).
 
 The page now provides a localized introduction, seven jurisdiction names, an
 explanation of the presented materials, the unchanged image with an open-image
-link, and compact jurisdiction/organization/document descriptions. The owner
-stated that the information was confirmed, so the badge explicitly identifies
-its source: “Confirmed by the owner of VOLTEX”. It does not assert independent
-verification by a regulator or worldwide operating permission.
+link, and compact jurisdiction/organization/document descriptions. The final
+caption is “Regulator: MAS”, “Regulator: FCA”, etc., with a decorative check icon.
+Owner-confirmation wording and the duplicate organization row were removed.
+The caption identifies the regulator named in the image; it does not assert
+verification or endorsement by that regulator or worldwide operating permission.
 
 `licenses.pageTitle` is separate from the existing `licenses.title` used in
 navigation, preserving the menu/footer label. All new text uses the existing
@@ -22,7 +24,7 @@ seven dictionaries (ru/en/es/zh/hi/ja/ko). No new dependency or API is introduce
 - Regulatory publication, localization chunks, About and Academy/Help:
   4 suites / 106 tests PASS. No publication gate tests or evidence requirements
   were changed.
-- Real Chromium: 419 checks PASS, 8 widths × 7 languages, including public
+- Real Chromium: 426 checks PASS, 8 widths × 7 languages, including public
   description layout and the existing isolated review viewer. Public screenshots
   cover 320/390/430/768/1440/1920. No horizontal overflow, clipped description
   containers, JavaScript exceptions, unexpected console errors, failed local
