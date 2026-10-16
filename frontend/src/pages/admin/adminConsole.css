@@ -82,10 +82,17 @@
   .admin-user-stats { grid-template-columns: minmax(0, 1fr) !important; }
   .admin-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-data-table { min-width: 950px; }
+  /* Three columns (asset, available, reserved): no wide-table floor, so the
+     reserved column stays on a phone screen instead of 992px of page width. */
+  .admin-data-table.admin-balance-table { min-width: 0; }
   .admin-kyc-grid { grid-template-columns: minmax(0, 1fr); }
   .admin-kyc-grid > div:first-child { max-height: 220px !important; }
   .admin-page-grid .admin-detail-grid, .admin-page-grid .admin-detail-form { grid-template-columns: minmax(0, 1fr) !important; }
   .admin-attention a { flex-wrap: wrap; }
+}
+@media (max-width: 360px) {
+  /* 320px: the full eight-decimal amounts of both columns fit without an inner scroll. */
+  .admin-data-table.admin-balance-table th, .admin-data-table.admin-balance-table td { padding-left: 6px; padding-right: 6px; }
 }
 
 /* Users page: quick filters, СОБЫТИЕ badges and the «Зачислить» entry point. */
@@ -131,9 +138,17 @@
 .admin-inline-alert > span { min-width: 0; flex: 1 1 220px; }
 .admin-inline-retry { flex: none; min-height: 32px; padding: 0 14px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; font-weight: 700; font-size: 12px; cursor: pointer; }
 
+/* 769–900px: index.css gives the shell 20px padding; keep the same room under
+   the last control for the floating support launcher as on phones and desktop. */
+@media (max-width: 900px) {
+  .admin-page-grid .admin-main { padding-bottom: 88px !important; }
+}
+
 /* Compact admin shell on phones only. Larger layouts retain their existing spacing. */
 @media (max-width: 767px) {
-  .admin-page-grid .admin-main { padding: 12px !important; }
+  /* 88px at the bottom: the floating support launcher (bottom 24 + 50px)
+     must never sit on the last button of a page («Отклонить», «Проверить и зачислить»). */
+  .admin-page-grid .admin-main { padding: 12px 12px 88px !important; }
   .admin-main > header { margin-bottom: 10px !important; min-height: 40px !important; }
   .admin-main > header .admin-mobile-menu-btn { min-height: 40px; min-width: 40px; align-items: center; justify-content: center; }
   .admin-main h1 { font-size: 19px !important; margin-top: 0 !important; margin-bottom: 7px !important; }
