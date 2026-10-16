@@ -10,7 +10,7 @@ Source parent is `186b80bebd9ab31ad22aa269e9077744fbbaa32f`. Fresh `main` is `2e
 | --- | --- |
 | Full frontend Jest | 275 suites, 4,400 tests PASS; 0 skipped/failed |
 | Global simulator, account, authorization and preview tests | 206 PASS; 0 skipped/failed |
-| Final fixture Wallet revision | 4 PASS; 0 skipped/failed |
+| Final fixture Wallet and pagination revision | 5 PASS; 0 skipped/failed |
 | Viewer UI authorization/no-op regressions | 14 PASS |
 | Local staging, package closure and review scheduling guards | 32 PASS |
 | Exact workflow transition, review selection and backend offline/admission guards | 63 PASS |
@@ -23,6 +23,10 @@ Browser verification used only labeled local synthetic fixtures. Alpha: 731.25 U
 Viewer submit with empty and valid input, plus Sell, produced no mutation request or fake result; the complete observed network interval contained four GETs and zero POSTs. Width checks at 320/360/390/430 px found no page-wide horizontal overflow. The pre-existing floating support button touches the mobile ticket edge; global/mobile styling was deliberately not changed in this Stocks authorization patch.
 
 Local preview: `http://127.0.0.1:4452/__stocks_fixture/`. It denies external network/financial writes and labels every fixture surface. Its dedicated Wallet is a read-only fixture projection, **not** the real `/wallet` or a production `DemoBalance` adapter. Non-admin real Wallet integration remains unresolved. Ephemeral fixture login must be selected again after server restart, while financial fixture state persists.
+
+This interactive helper exposes two instruments and three identities (alpha, beta, one viewer). Fifty viewer sessions in this helper are not fifty different users. The distinct-principal HTTP regression creates fifty viewer identities separately. The helper alone does not constitute the twenty-instrument acceptance stand. Its synthetic hub counters count method calls, not external provider HTTP requests; the fixed `externalRequests` fixture field is not independent network-egress evidence. Worker SQL metrics are snapshots, not OS CPU/fsync measurements. The interactive database contains trades and must not be presented as a pristine seed; an external acceptance harness needs its own verified initial ledger and closed-file hash.
+
+Final handoff review found and fixed a fixture-only pagination unit error: the API's exclusive `before` cursor is milliseconds, while candle timestamps are seconds. The regression checks 1m, 15m and 1D pages, including exact boundaries, forty older candles, no overlap and no missing boundary candle. Real provider history code was unchanged.
 
 The final HTTP authorization recheck rejects revocation or identity changes during body/quote awaits. A revocation occurring after that recheck and worker admission has no shared commit-time revocation epoch yet; do not claim atomic authorization revocation through COMMIT.
 

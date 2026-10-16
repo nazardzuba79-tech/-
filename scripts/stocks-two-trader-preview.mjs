@@ -90,9 +90,12 @@ function fixtureHub(audit) {
       const item = requireId(id); if (!TIMEFRAMES.includes(interval)) throw new SimError('INVALID_TIMEFRAME');
       audit.historyReads++;
       const step = { '1m': 60, '5m': 300, '15m': 900, '30m': 1800, '1h': 3600, '4h': 14400, '1D': 86400 }[interval];
-      const upper = before == null ? Math.floor(Date.now() / 1000) : Number(before);
-      if (!Number.isSafeInteger(upper) || upper < step * 40) throw new SimError('INVALID_REQUEST');
-      const anchor = Math.floor(upper / step) * step, price = Number(prices.get(id));
+      // The HTTP history API accepts milliseconds; candle.time is seconds.
+      // An exclusive older cutoff must retain the immediately preceding bar,
+      // including the chart's oldest.time * 1000 - 1 pagination request.
+      const upperMs = before == null ? Date.now() : Number(before);
+      if (!Number.isSafeInteger(upperMs) || upperMs < step * 40 * 1000 || upperMs > Date.now()) throw new SimError('INVALID_REQUEST');
+      const anchor = (before == null ? Math.floor : Math.ceil)(upperMs / (step * 1000)) * step, price = Number(prices.get(id));
       return { instrumentId: id, interval, provider: item.provider, currency: 'USDT', fixtureOnly: true,
         receivedAt: Date.now(), delaySeconds: 0, candles: Array.from({ length: 40 }, (_, i) => ({ time: anchor - (40 - i) * step, open: price, high: price + 1, low: Math.max(price - 1, price / 2), close: price, volume: 0 })) };
     },

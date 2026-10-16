@@ -101,6 +101,29 @@ test('viewer receives explicit fixture market data, creates no ledger, and canno
   assert.equal((await state(f.app, viewer)).status, 401);
 });
 
+test('fixture history uses exclusive millisecond pagination and returns contiguous older second-based candles', async t => {
+  const f = await fixture(t), viewer = await login(f.app, 'viewer');
+  for (const [interval, step] of [['1m', 60], ['15m', 900], ['1D', 86400]]) {
+    const path = '/__stocks_global/history?id=' + encodeURIComponent(ID) + '&interval=' + interval;
+    const first = await request(f.app, path, { token: viewer });
+    assert.equal(first.status, 200, JSON.stringify(first.body));
+    assert.equal(first.body.fixtureOnly, true); assert.equal(first.body.candles.length, 40);
+    const oldest = first.body.candles[0].time;
+    const beforeMs = oldest * 1000 - 1;
+    const older = await request(f.app, path + '&before=' + beforeMs, { token: viewer });
+    assert.equal(older.status, 200, JSON.stringify(older.body));
+    assert.equal(older.body.candles.length, 40);
+    const times = older.body.candles.map(candle => candle.time);
+    assert.ok(times.every(time => Number.isSafeInteger(time) && time * 1000 < beforeMs));
+    assert.equal(Math.max(...times), oldest - step, 'newest older candle is immediately before the previous oldest, without a gap');
+    assert.equal(new Set([...times, ...first.body.candles.map(candle => candle.time)]).size, 80, 'pages do not overlap');
+    assert.ok(times.every((time, i) => i === 0 || time - times[i - 1] === step));
+    const exactBoundary = await request(f.app, path + '&before=' + oldest * 1000, { token: viewer });
+    assert.equal(exactBoundary.status, 200);
+    assert.deepEqual(exactBoundary.body.candles, older.body.candles, 'exact millisecond boundary remains exclusive');
+  }
+});
+
 test('preview hard rejects foreign hosts/origins and presents fixture labels plus network-denying CSP', async t => {
   const f = await fixture(t);
   const landing = await fetch(f.app.origin + '/'); const html = await landing.text();
