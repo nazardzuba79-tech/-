@@ -94,6 +94,52 @@
       "name": "quote-readiness-workflow-guard.log",
       "bytes": 1461,
       "sha256": "8a223a674d8258a2a415fd40894ef871bb7768dd8958cbbd3d047a2f8813137a"
+    },
+    {
+      "name": "original-support-dock-build.log",
+      "bytes": 19952,
+      "sha256": "1b0622a39951bb399f06084e5307a2b728377996e7c977ff98db4ce1207f9543"
+    },
+    {
+      "name": "original-support-dock-geometry.json",
+      "bytes": 17418,
+      "sha256": "6322376ab4d9cdbbd7f191c90356f1721c92979b29690d31f3b952fd670beae3"
     }
-  ]
+  ],
+  "mobileSupportDock": {
+    "sourceParent": "a5488c26f23f98b6941e9050c3c7edbdcf261225",
+    "productFiles": [
+      "frontend/src/pages/stocks/global/stocksOriginal.css"
+    ],
+    "checks": 25,
+    "widths": [
+      320,
+      360,
+      390,
+      430
+    ],
+    "minimumClearancePx": 10,
+    "visibleControlOverlaps": 0,
+    "horizontalOverflows": 0,
+    "supportPanelViewports": [
+      [
+        390,
+        844
+      ],
+      [
+        390,
+        500
+      ]
+    ],
+    "routeExit": "/futures?pair=BTC%2FUSDT",
+    "routeExitBodyDisplay": "block",
+    "routeExitBodyOverflow": "visible",
+    "routeExitRootPadding": "0px",
+    "desktopRootPadding": "0px",
+    "productionBuild": "PASS",
+    "modules": 6194,
+    "buildSeconds": 11.46,
+    "financialOperations": 0,
+    "financialLogicChanged": false
+  }
 }

@@ -11,8 +11,8 @@
   },
   {
     "name": "catalogue-390.jpg",
-    "bytes": 37213,
-    "sha256": "475c9445cc0d50361bc060c709732ca3f802de4bc59fae762516bdf7c4a0bdd8"
+    "bytes": 36634,
+    "sha256": "f79058cc381599fdc998863cd2e0bb59dde8d136fcb012e2ee8cb64edbc37308"
   },
   {
     "name": "reference-catalogue-1440.jpg",
@@ -23,6 +23,11 @@
     "name": "reference-catalogue-390.jpg",
     "bytes": 39109,
     "sha256": "05b85d0c47f2e4a0b02031daa37733a26de38586e19be9dd7873a435635fc2c7"
+  },
+  {
+    "name": "support-dock-geometry.json",
+    "bytes": 17418,
+    "sha256": "6322376ab4d9cdbbd7f191c90356f1721c92979b29690d31f3b952fd670beae3"
   },
   {
     "name": "terminal-1440.jpg",
@@ -46,12 +51,17 @@
   },
   {
     "name": "terminal-chart-390.jpg",
+    "bytes": 40682,
+    "sha256": "e9a0d27cea3c45546e8ee5fd0e811fe1b37c7277b83acbc7364557323d8566c1"
+  },
+  {
+    "name": "terminal-support-overlap-before-390.jpg",
     "bytes": 47230,
     "sha256": "3a13bfd244c0f0508386b2e068be9cbd4e88ebeefc8856d7b39911062b672148"
   },
   {
     "name": "terminal-trade-390.jpg",
-    "bytes": 38303,
-    "sha256": "58832d6fd708aaa8ada2eb7b87bf232e7384f9f7e80d8efb0c4b8d010edebc06"
+    "bytes": 36349,
+    "sha256": "e2f3de45d25f897fd334596bbfeafd3208cc2be50bd0487b7e7493dee41417f4"
   }
 ]

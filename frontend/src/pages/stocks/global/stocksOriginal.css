@@ -111,3 +111,34 @@
 @media(max-width:359px){.vxo-original-header{padding:0 12px}.vxo-original-actions{gap:6px}.vxo-original-back{font-size:12px}.vxo-original-catalogue{padding-left:12px;padding-right:12px}.vxo-original-row{padding:0 8px;gap:5px;grid-template-columns:24px minmax(0,1fr) 94px}.vxo-original-instrument{gap:7px}.vxo-original-logo{width:28px;height:28px;font-size:10px}.vxo-original-instrument strong{font-size:12px}}
 
 .vxg-page.vxg-original-terminal .vxg-quote-waiting{font-size:12px;line-height:1.5;color:#765f2d;background:#fcf8ee;border:1px solid #e3d5b3;border-radius:5px;padding:10px}.vxg-page.vxg-original-terminal .vxg-quote-waiting small{display:block;font-size:10px;color:#8a7750}
+
+/* Reserve a real mobile dock: scrolling charts/forms cannot pass underneath
+   the shared fixed launcher. The fixture banner remains a normal body child;
+   leaving Stocks (or signing out) removes every layout override below. */
+@media(max-width:767px){
+  body:has(.vxo-original-page,.vxg-page.vxg-original-terminal):has(.support-launcher){
+    --stocks-support-dock:calc(64px + env(safe-area-inset-bottom,0px));
+    display:flex;flex-direction:column;height:100dvh;overflow:hidden;
+  }
+  body:has(.vxo-original-page,.vxg-page.vxg-original-terminal):has(.support-launcher) #root{
+    flex:1 1 0;min-height:0;height:auto;padding-bottom:var(--stocks-support-dock);overflow:hidden;
+  }
+  body:has(.support-launcher) :is(.vxo-original-page,.vxg-page.vxg-original-terminal){
+    height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;
+  }
+  body:has(.vxo-original-page,.vxg-page.vxg-original-terminal):has(.support-launcher) #root::after{
+    content:'';position:fixed;left:0;right:0;bottom:0;height:var(--stocks-support-dock);
+    background:#f5f3ee;border-top:1px solid #d8d3ca;z-index:997;pointer-events:none;
+  }
+  body:has(.vxo-original-page,.vxg-page.vxg-original-terminal) .support-launcher{
+    width:44px!important;height:44px!important;right:12px!important;
+    bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+  }
+  body:has(.support-launcher) .vxg-page.vxg-original-terminal .vxg-terminal{padding-bottom:16px}
+  body:has(.support-launcher) .vxg-page.vxg-original-terminal .vxg-chart-section{
+    height:calc(100dvh - 242px - var(--stocks-support-dock));
+  }
+  body:has(.support-launcher) .vxg-page.vxg-original-terminal .vxg-view-account .vxg-account{
+    height:calc(100dvh - 250px - var(--stocks-support-dock));
+  }
+}

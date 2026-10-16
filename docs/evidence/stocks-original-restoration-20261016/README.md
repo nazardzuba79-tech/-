@@ -39,3 +39,11 @@ Local URLs while the launcher is running:
 - First complete frontend run retained **4503 PASS / 1 FAIL**: the new identity allowlist was in presentation source. It was moved unchanged into the existing pure `stocksIdentity` contract module; the branding guard and all its assertions remain untouched. Final complete rerun is recorded in `validation.json`.
 
 No new performance/capacity test, merge, deploy, production operation or data-rights change. Existing constrained-load/crypto-coexistence failures, unverified Hetzner capacity, MOEX block and uncleared commercial redistribution rights remain release gates. Review the light terminal proposal before integration approval.
+
+## Final mobile support correction
+
+Final screenshot review found the pre-existing global Support launcher over the mobile price-scale corner. The Stocks-only <=767 px stylesheet now reserves a 64 px bottom dock and confines catalogue/terminal scrolling above it. Shared Support/Nav, desktop layout, account logic and permissions are unchanged; leaving Stocks removes the overrides.
+
+[Before obstruction](terminal-support-overlap-before-390.jpg) / [corrected chart](terminal-chart-390.jpg) / [corrected order form](terminal-trade-390.jpg). Additional [25 geometry checks](support-dock-geometry.json) cover chart/trade/account/catalogue at 320/360/390/430, scrolling and a 390x500 viewport: no visible control overlap or horizontal overflow; minimum launcher clearance 10 px. Support close/composer remain within the viewport at 390x844 and 390x500. Exiting to Futures restores body block/visible and root padding 0 px; desktop also retains root padding 0 px. Build PASS, 6194 modules, existing shared-chunk warning retained. No order or support message submitted.
+
+The 4504-test full frontend and CFD/Chart/Support/OTC CI results on parent a5488c26 passed before this CSS-only correction; final exact-head CI is reported on the PR, not inferred from that parent.
