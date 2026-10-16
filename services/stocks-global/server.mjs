@@ -13,6 +13,7 @@ import { MarketHub } from './market.mjs';
 import { CATALOG, instrument } from './catalog.mjs';
 import { check, SimError, snapshot } from './engine.mjs';
 import { projectViewerQuote } from './viewer-projection.mjs';
+import { preDemandReadiness } from './quote-readiness.mjs';
 import { twoTraderPolicy, configuredTraders, marketOnlyState } from './trader-policy.mjs';
 const ROOT=resolve(fileURLToPath(new URL('../../',import.meta.url))),API='/__stocks_global/';
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.ico':'image/x-icon'};
@@ -140,13 +141,24 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   const contexts=new Map(),contextFlights=new Map(),refreshTasks=new Set(),backgroundFlights=new WeakMap(),historyWire=new WeakMap();
   Object.assign(hub.metrics,{accountQuoteCommits:0,accountQuoteObservations:0,accountQuoteMs:0,historySerializations:0,historySerializeMs:0});
   let address,closing=false,cursor=0,catalogueTask=null,lastCatalogue=0;
-  const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,demandEpoch:0,demandSince:0,demandView:null,demandAbort:new AbortController(),accessed:now(),errors:{},observed:new Set(),ownerMayTrade:!ownerOnlyMode,token:randomBytes(32).toString('hex')});
+  const context=(store,id)=>({store,id,selected:'BYBIT:AAPLXUSDT',lease:0,demandEpoch:0,demandSince:0,demandView:null,demandAbort:new AbortController(),accessed:now(),errors:{},readiness:{},observed:new Set(),ownerMayTrade:!ownerOnlyMode,token:randomBytes(32).toString('hex')});
   if(legacy)contexts.set('legacy',context({read:()=>legacy.read(),execute:(command,input)=>command==='interests'?Promise.resolve(executeAccountCommand(legacy.read(),command,input,now())):legacy.transact((s,t)=>executeAccountCommand(s,command,input,t))},'legacy'));
   const sourceAllowed=id=>{check(instrument(id),'INVALID_PAIR');check(instrument(id).provider!=='moex','MOEX_UNVERIFIED');};
   const blockedCatalogue=list=>list.map(i=>i.provider==='moex'?{...i,online:false,display:null,sourceError:'MOEX_UNVERIFIED'}:i);
   let catalogue=blockedCatalogue(CATALOG.map(i=>({...i,exists:null,online:false})));
   const accountView=ctx=>({id:ctx.id,mode:ctx.ownerMayTrade?'isolated-paper':'viewer',quoteView:'volatile',canTrade:ctx.ownerMayTrade===true,...(twoTraderMode?{fundingMode:'existing-only'}:{})});
-  const status=async(ctx,committed,signal)=>({... (committed??(accounts&&ownerOnlyMode&&!ctx.ownerMayTrade?marketOnlyState(now()):await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read()))),...(accounts?{account:accountView(ctx)}:{}),catalogue,errors:{...ctx.errors},metrics:{...hub.metrics,rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}});
+  const readinessView=ctx=>{
+    const at=now(),readiness={};
+    if(ownerOnlyMode&&ctx.ownerMayTrade&&ctx.lease!==0&&at-ctx.lease<12000){
+      for(const[id,entry]of Object.entries(ctx.readiness)){
+        if(id!==ctx.selected||entry.epoch!==ctx.demandEpoch||ctx.errors[id]!=='QUOTE_STALE')continue;
+        const hint=preDemandReadiness(entry.quote,at,ctx.demandSince);
+        if(hint)readiness[id]=hint;
+      }
+    }
+    return Object.keys(readiness).length?{readiness}:{};
+  };
+  const status=async(ctx,committed,signal)=>({... (committed??(accounts&&ownerOnlyMode&&!ctx.ownerMayTrade?marketOnlyState(now()):await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read()))),...(accounts?{account:accountView(ctx)}:{}),catalogue,errors:{...ctx.errors},...readinessView(ctx),metrics:{...hub.metrics,rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}});
   const loadCatalogue=()=>catalogueTask??=hub.catalogue().then(list=>{catalogue=blockedCatalogue(list);lastCatalogue=now();}).finally(()=>{catalogueTask=null;});
   const getContext=async(req,signal)=>{
     if(!accounts)return contexts.get('legacy');
@@ -177,10 +189,10 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   const quote=createQuoteReader({hub,now,sourceAllowed});
   const demand=(ctx,id,view)=>{
     view??='legacy-http';check(typeof view==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(view),'INVALID_REQUEST');
-    if(ctx.demandView!==view||ctx.selected!==id||now()-ctx.lease>=12000||ctx.lease===0){ctx.demandAbort.abort();ctx.demandAbort=new AbortController();ctx.demandEpoch++;ctx.demandSince=now();ctx.observed.clear();}
+    if(ctx.demandView!==view||ctx.selected!==id||now()-ctx.lease>=12000||ctx.lease===0){ctx.demandAbort.abort();ctx.demandAbort=new AbortController();ctx.demandEpoch++;ctx.demandSince=now();ctx.readiness={};ctx.observed.clear();}
     ctx.selected=id;ctx.lease=now();ctx.demandView=view;
   };
-  const release=ctx=>{ctx.demandAbort.abort();ctx.demandEpoch++;ctx.lease=0;ctx.observed.clear();};
+  const release=ctx=>{ctx.demandAbort.abort();ctx.demandEpoch++;ctx.lease=0;ctx.readiness={};ctx.observed.clear();};
   // Wallet marks are response-only: never feed the order matcher.
   async function portfolio(ctx,signal){
     const viewer=accounts&&ownerOnlyMode&&!ctx.ownerMayTrade;
@@ -204,9 +216,10 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   async function refreshContext(ctx,id=ctx.selected,background=false,signal,authorize){
     if(closing)return;
     const epoch=ctx.demandEpoch;
+    let observedQuote;
     if(ownerOnlyMode)signal=AbortSignal.any([ctx.demandAbort.signal,...(signal?[signal]:[])]);
-    try{const q=await quote(id,{signal});if(authorize)await authorize();if(ownerOnlyMode){if(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||!ctx.ownerMayTrade||now()-ctx.lease>=12000)return;check(q.timestamp>=ctx.demandSince,'QUOTE_STALE');}const started=performance.now();const committed=await ctx.store.execute(accounts?(background?'observeBackground':'observe'):'quote',q,ownerOnlyMode?{signal}:undefined);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;if(ownerOnlyMode&&(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||ctx.lease===0||now()-ctx.lease>=12000))return;ctx.observed.add(id);delete ctx.errors[id];return committed.snapshot;}
-    catch(e){if(signal?.aborted||ownerOnlyMode&&epoch!==ctx.demandEpoch)return;if(e.code?.startsWith('AUTH_'))throw e;ctx.observed.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;if(authorize)await authorize();await ctx.store.execute(accounts?(background?'observeFailedBackground':'observeFailed'):'quoteFailed',{id});}
+    try{const q=await quote(id,{signal});observedQuote=q;if(authorize)await authorize();if(ownerOnlyMode){if(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||!ctx.ownerMayTrade||now()-ctx.lease>=12000)return;check(q.timestamp>=ctx.demandSince,'QUOTE_STALE');}const started=performance.now();const committed=await ctx.store.execute(accounts?(background?'observeBackground':'observe'):'quote',q,ownerOnlyMode?{signal}:undefined);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;if(ownerOnlyMode&&(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||ctx.lease===0||now()-ctx.lease>=12000))return;ctx.observed.add(id);delete ctx.errors[id];delete ctx.readiness[id];return committed.snapshot;}
+    catch(e){if(signal?.aborted||ownerOnlyMode&&epoch!==ctx.demandEpoch)return;if(e.code?.startsWith('AUTH_'))throw e;ctx.observed.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';delete ctx.readiness[id];if(ownerOnlyMode&&e.code==='QUOTE_STALE'&&preDemandReadiness(observedQuote,now(),ctx.demandSince))ctx.readiness[id]={quote:observedQuote,epoch};if(e.code?.startsWith('ACCOUNT_'))throw e;if(authorize)await authorize();await ctx.store.execute(accounts?(background?'observeFailedBackground':'observeFailed'):'quoteFailed',{id});}
   }
   const refreshInBackground=(ctx,id=ctx.selected)=>{
     let work=backgroundFlights.get(ctx);if(!work){work=new Map();backgroundFlights.set(ctx,work);}

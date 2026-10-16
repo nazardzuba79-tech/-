@@ -243,6 +243,15 @@ const QUOTE_ADMISSION_TRANSITION = {
   isolatedBefore: '6756a12b902646158f0891f4e950f94d6f610396d8129341054c57f8755aaa5f',
   isolatedAfter: 'ae9302ca93ae23e1e53a3d4d8f4f621c2411fc0f0b7def883b79c1f5fa261f97',
 };
+// Add only the informational pre-demand readiness regression. Every consumed
+// workflow proof above remains exact, including the unchanged financial gates.
+const READINESS_HINT_TRANSITION = {
+  sourceCommit: 'bcfd6d042c494f7b940b483934ef1803297fcca2',
+  sourceSha256: '77e01e52aca5351ec932d37ae9b8d145b7d50bcbece044cb998ca8fb804f4976',
+  reviewedSha256: '1a0549f2d03a381053e877763782f481fe43f4a4f8ce2c518bbddb714b3e4525',
+  isolatedBefore: 'ae9302ca93ae23e1e53a3d4d8f4f621c2411fc0f0b7def883b79c1f5fa261f97',
+  isolatedAfter: '71c0d60a085a74ef933e03acd4dfb48f26e248c473af0905b559b6b87fce86b6',
+};
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 function workflowParts(value) {
   const marker = value.indexOf('\njobs:\n');
@@ -370,18 +379,36 @@ function assertQuoteAdmissionTransition(current, source, twoTraderSource, ffmpeg
   assert.equal(sha256(current), QUOTE_ADMISSION_TRANSITION.reviewedSha256);
   return 'REVIEWED_QUOTE_ADMISSION_TEST_V1';
 }
+function assertReadinessHintTransition(current, source, quoteAdmissionSource, twoTraderSource, ffmpegSource, nativeSource, parent, original) {
+  assert.equal(assertQuoteAdmissionTransition(source, quoteAdmissionSource, twoTraderSource, ffmpegSource, nativeSource, parent, original), 'REVIEWED_QUOTE_ADMISSION_TEST_V1');
+  assert.equal(sha256(source), READINESS_HINT_TRANSITION.sourceSha256);
+  const prior = workflowParts(source), candidate = workflowParts(current);
+  assert.equal(prior.order.length, 22); assert.deepEqual(candidate.order, prior.order); assert.equal(candidate.header, prior.header);
+  for (const name of prior.order.filter(name => name !== 'isolated-simulator')) {
+    assert.equal(candidate.blocks[name], prior.blocks[name], 'non-isolated job changed: ' + name);
+  }
+  const before = '      - name: Two trusted traders, market-only viewers and isolated fixture preview\n' +
+    '        run: node --test services/stocks-global/account-existing-only.test.mjs services/stocks-global/two-trader-http.test.mjs services/stocks-global/two-trader-auth-lifetime.test.mjs scripts/stocks-two-trader-preview.test.mjs services/stocks-global/quote-admission.test.mjs\n';
+  const after = before.replace(/\n$/, ' services/stocks-global/quote-readiness.test.mjs\n');
+  assert.equal(prior.blocks['isolated-simulator'].split(before).length, 2, 'exactly one reviewed quote-admission command');
+  assert.equal(candidate.blocks['isolated-simulator'], prior.blocks['isolated-simulator'].replace(before, after));
+  assert.equal(sha256(prior.blocks['isolated-simulator']), READINESS_HINT_TRANSITION.isolatedBefore);
+  assert.equal(sha256(candidate.blocks['isolated-simulator']), READINESS_HINT_TRANSITION.isolatedAfter);
+  assert.equal(sha256(current), READINESS_HINT_TRANSITION.reviewedSha256);
+  return 'REVIEWED_READINESS_HINT_TEST_V1';
+}
 let frozenWorkflowInputs;
 function frozenInputs() {
   if (!frozenWorkflowInputs) {
     const read = commit => execFileSync('git', ['show', commit + ':' + WORKFLOW_PATH], {
       cwd: root, encoding: 'utf8', timeout: 10000, maxBuffer: 1024 ** 2 }).replace(/\r\n/g, '\n');
-    frozenWorkflowInputs = { parent: read(REVIEWED_TRANSITION.parentCommit), original: read(BASELINE_SHA), nativeSource: read(NATIVE_TRANSITION.sourceCommit), ffmpegSource: read(FFMPEG_TRANSITION.sourceCommit), twoTraderSource: read(TWO_TRADER_TRANSITION.sourceCommit), quoteAdmissionSource: read(QUOTE_ADMISSION_TRANSITION.sourceCommit) };
+    frozenWorkflowInputs = { parent: read(REVIEWED_TRANSITION.parentCommit), original: read(BASELINE_SHA), nativeSource: read(NATIVE_TRANSITION.sourceCommit), ffmpegSource: read(FFMPEG_TRANSITION.sourceCommit), twoTraderSource: read(TWO_TRADER_TRANSITION.sourceCommit), quoteAdmissionSource: read(QUOTE_ADMISSION_TRANSITION.sourceCommit), readinessSource: read(READINESS_HINT_TRANSITION.sourceCommit) };
   }
   return frozenWorkflowInputs;
 }
 function checkTransition(candidate) {
-  const { parent, original, nativeSource, ffmpegSource, twoTraderSource, quoteAdmissionSource } = frozenInputs();
-  return assertQuoteAdmissionTransition(candidate, quoteAdmissionSource, twoTraderSource, ffmpegSource, nativeSource, parent, original);
+  const { parent, original, nativeSource, ffmpegSource, twoTraderSource, quoteAdmissionSource, readinessSource } = frozenInputs();
+  return assertReadinessHintTransition(candidate, readinessSource, quoteAdmissionSource, twoTraderSource, ffmpegSource, nativeSource, parent, original);
 }
 function changedBlock(name, transform) {
   const block = workflowParts(text).blocks[name];
@@ -393,13 +420,29 @@ function changedBlock(name, transform) {
 
 test('reviewed correctness transition retains whole historical provenance and exact 13 untouched jobs', () => {
   assert.ok(job);
-  const { parent, original, nativeSource, ffmpegSource, twoTraderSource, quoteAdmissionSource } = frozenInputs();
+  const { parent, original, nativeSource, ffmpegSource, twoTraderSource, quoteAdmissionSource, readinessSource } = frozenInputs();
   assert.equal(assertReviewedTransition(parent, parent, original), 'ORIGINAL_PARENT');
   assert.equal(assertReviewedTransition(nativeSource, parent, original), 'REVIEWED_CORRECTNESS_V2');
   assert.equal(assertNativeTransition(ffmpegSource, nativeSource, parent, original), 'REVIEWED_NATIVE_BROWSER_V1');
   assert.equal(assertFfmpegTransition(twoTraderSource, ffmpegSource, nativeSource, parent, original), 'REVIEWED_NATIVE_FFMPEG_V1');
   assert.equal(assertTwoTraderTransition(quoteAdmissionSource, twoTraderSource, ffmpegSource, nativeSource, parent, original), 'REVIEWED_TWO_TRADER_LOCAL_V1');
-  assert.equal(checkTransition(text), 'REVIEWED_QUOTE_ADMISSION_TEST_V1');
+  assert.equal(assertQuoteAdmissionTransition(readinessSource, quoteAdmissionSource, twoTraderSource, ffmpegSource, nativeSource, parent, original), 'REVIEWED_QUOTE_ADMISSION_TEST_V1');
+  assert.equal(checkTransition(text), 'REVIEWED_READINESS_HINT_TEST_V1');
+});
+
+test('readiness hint coverage adds exactly one named test without weakening any original workflow gate', () => {
+  const { parent, original, nativeSource, ffmpegSource, twoTraderSource, quoteAdmissionSource, readinessSource } = frozenInputs();
+  assert.throws(() => assertReadinessHintTransition(text, readinessSource + '\n', quoteAdmissionSource, twoTraderSource, ffmpegSource, nativeSource, parent, original));
+  const token = ' services/stocks-global/quote-readiness.test.mjs';
+  assert.equal(text.split(token).length, 2, 'informational readiness regression runs exactly once');
+  for (const replacement of ['', token + token, ' services/stocks-global/*.test.mjs', token + ' || true']) {
+    assert.throws(() => checkTransition(changedBlock('isolated-simulator', block => block.replace(token, replacement))));
+  }
+  for (const injection of ['        continue-on-error: true\n', '        if: false\n']) {
+    assert.throws(() => checkTransition(changedBlock('isolated-simulator', block => block.replace(
+      '      - name: Two trusted traders, market-only viewers and isolated fixture preview\n',
+      '      - name: Two trusted traders, market-only viewers and isolated fixture preview\n' + injection))));
+  }
 });
 
 test('quote admission transition adds exactly one existing test file without changing scheduling or acceptance', () => {
