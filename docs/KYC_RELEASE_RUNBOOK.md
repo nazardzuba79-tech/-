@@ -120,9 +120,12 @@ docker image inspect "voltex-kyc:$RELEASE_COMMIT" --format '{{.Id}} {{index .Con
 
 16.10 рецепт зібрано без мережі на чинному pinned base: Prisma generate і
 backend TypeScript build PASS. Неактивний тестовий image
-`voltex-kyc-preflight:310924b7` містить код PR `310924b7` плюс цей migration helper;
+`voltex-kyc-preflight:checked-history-20261016` містить код PR `0e2b5a29`;
 це НЕ фінальний release image. `status` із нього, з явним entrypoint,
 показав рівно одну pending KYC migration. API не запускався і ledger не змінено.
+Усі 43 історичні migration.sql у ньому побайтово тотожні чинному image:
+рецепт зберігає їх із base і копіює лише schema + нову KYC migration, не весь
+каталог `prisma`. Це також зберігає історичні CRLF/checksums.
 Перед перемиканням зібрати/перевірити image вже з exact затвердженого merge SHA,
 не використовувати preflight tag як production. Старий API продовжує працювати.
 

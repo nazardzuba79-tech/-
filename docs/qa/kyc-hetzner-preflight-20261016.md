@@ -84,13 +84,15 @@ KYC rollback: doing so would discard intervening financial/customer writes.
   OPEN default, unique clientRequestId, restrictive FK, child-first deletion PASS.
   The harness was corrected to handle PostgreSQL 18's `restrict_violation` condition
   (in addition to `foreign_key_violation`); the KYC SQL itself was not changed.
-- Migration-only runner: eight local safety/redaction tests PASS; included in existing CI.
+- Migration-only runner and build-history guard: nine local safety tests PASS; included in existing CI.
   The CLI catch boundary also suppresses unexpected raw SDK/filesystem exceptions.
 - No-network candidate build using existing dependency base: Prisma generate and backend
   TypeScript build PASS. No npm download, production secrets or DB mounted for the build.
-- Inactive test image: `voltex-kyc-preflight:310924b7`,
-  `sha256:f56c0ebb0e3d8f50729b497221ac1d2676973f18e95af8578ff34fa27bfa3130`.
-  It contains PR application source plus the preparation runner, not a final release.
+- Inactive test image: `voltex-kyc-preflight:checked-history-20261016`,
+  `sha256:f1ded2a04cef75cef6e335bb899ab45970aa7099e6e9ebe2654013012f29b3d1`.
+  It contains PR source/runner `0e2b5a29` with the checked history-preserving build
+  recipe, not a final merged release. All 43 historical migration.sql hashes
+  exactly match the current production image; only the new KYC migration is added.
 - Read-only `migrate status` from that image passed the expected pending-only gate
   (CLI exit 1 because one migration is pending). No API/collector was started.
 - Actual release must rebuild/relabel from the final approved merged SHA and pass

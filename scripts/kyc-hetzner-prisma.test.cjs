@@ -43,3 +43,10 @@ test('CLI failures do not print unchecked exception content', () => {
   assert.match(result.stderr, /Migration runner stopped/);
   assert.doesNotMatch(result.stderr, /synthetic-private-value|Error:|at main/);
 });
+test('candidate keeps historical migration bytes from the pinned base', () => {
+  const fs = require('node:fs'); const path = require('node:path');
+  const recipe = fs.readFileSync(path.join(__dirname, 'kyc-hetzner.Dockerfile'), 'utf8');
+  assert.doesNotMatch(recipe, /^COPY(?: --\S+)* prisma\s/m);
+  assert.equal(recipe.split('\n').filter(line => line.startsWith('COPY') && line.includes(`prisma/migrations/${MIGRATION}`)).length, 2);
+  assert.match(recipe, /FROM sha256:594d20f45f48775be9698793c32de273744bb4c4d7c57f73c4a4087fb896aec1/);
+});
