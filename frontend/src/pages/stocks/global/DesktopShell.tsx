@@ -53,7 +53,7 @@ export function DesktopHeader({ currency, onMarkets, onPortfolio, onHistory, onW
     </nav>
     <span className="vxg-pro-label">VOLTEX Professional</span>
     <span className="vxg-pro-settlement">{currency}</span>
-    <button className="vxg-pro-wallet" onClick={onWallet}>{s("Тестовый кошелёк")}</button>
+    <button className="vxg-pro-wallet" onClick={onWallet}>{s("Параметры счёта")}</button>
     <span className="vxg-language" style={{flex:'0 0 32px',position:'relative',zIndex:70}}><LanguageSwitcher /></span>
   </header>;
 }
@@ -83,7 +83,7 @@ export function DesktopQuotes({ asset, quote, fills, now, ready }: {
   const number=(value:string|number|null|undefined,digits=2)=>formatNumber(locale,value,digits);
   const [tab, setTab] = useState<'quote' | 'fills'>('quote');
   const executions = fills.filter(fill => fill.instrumentId === asset?.id).slice(-20).reverse();
-  return <aside className="vxg-desktop-only vxg-pro-quotes" aria-label={s("Котировки и тестовые сделки")}>
+  return <aside className="vxg-desktop-only vxg-pro-quotes" aria-label={s("Котировки")}>
     <div className="vxg-pro-panel-tabs">
       <button className={tab === 'quote' ? 'selected' : ''} onClick={() => setTab('quote')}>{s("Котировки")}</button>
       <button className={tab === 'fills' ? 'selected' : ''} onClick={() => setTab('fills')}>{s("Сделки")}</button>
@@ -96,7 +96,7 @@ export function DesktopQuotes({ asset, quote, fills, now, ready }: {
       <div className="vxg-pro-book-side"><small>{s("Лучшая покупка · Bid")}</small><div className="up"><strong>{number(quote?.bid, 6)}</strong><span>—</span></div></div>
       <p className="vxg-pro-depth-note">{s("Доступна верхняя котировка. Глубина рынка и объёмы заявок не предоставлены.")}</p>
       <dl className="vxg-pro-provenance"><dt>{s("Источник")}</dt><dd>{asset?.provider.toUpperCase() || '—'}</dd><dt>{s("Инструмент")}</dt><dd>{asset?.sourceSymbol || '—'}</dd><dt>{s("Валюта цены")}</dt><dd>{asset?.currency || '—'}</dd></dl>
-    </> : <div className="vxg-pro-executions"><small>{s("Ваши тестовые сделки ·")} {asset?.asset || '—'}</small>{executions.length ? executions.map(fill => <article key={fill.id}>
+    </> : <div className="vxg-pro-executions"><small>{asset?.asset || '—'}</small>{executions.length ? executions.map(fill => <article key={fill.id}>
       <span className={fill.side === 'BUY' ? 'up' : 'down'}>{fill.side === 'BUY' ? '↑' : '↓'} {number(fill.nativePrice, 6)}<small>{asset?.currency}</small></span>
       <span>{number(fill.quantity, 8)}<small>{new Date(fill.timestamp).toLocaleTimeString(locale)}</small></span>
     </article>) : <p className="vxg-empty">{s("Сделок по инструменту пока нет")}</p>}</div>}

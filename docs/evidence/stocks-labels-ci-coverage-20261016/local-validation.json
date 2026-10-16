@@ -1,0 +1,284 @@
+{
+  "schema": "stocks-labels-ci-coverage-v1",
+  "sourceParent": "1587ee6f13f86dc5e4e87e342a87496bc1bedb56",
+  "checks": {
+    "frontendSuites": 3,
+    "frontendPass": 35,
+    "frontendFail": 0,
+    "frontendSkipped": 0,
+    "guardPass": 74,
+    "guardFail": 0,
+    "typeScript": "PASS",
+    "build": "PASS",
+    "buildModules": 6188,
+    "browserErrors": [],
+    "desktop": {
+      "width": 1440,
+      "scrollWidth": 1440,
+      "chartWidth": 792,
+      "chartHeight": 548
+    },
+    "mobile": [
+      {
+        "fields": [
+          {
+            "label": "Цена",
+            "left": 26.666667938232425,
+            "right": 283.3333549499512
+          },
+          {
+            "label": "Количество",
+            "left": 26.666667938232425,
+            "right": 283.3333549499512
+          },
+          {
+            "label": "Итого",
+            "left": 26.666667938232425,
+            "right": 283.3333549499512
+          },
+          {
+            "label": "Баланс USDT",
+            "left": 28.666667938232425,
+            "right": 281.3333396911621
+          }
+        ],
+        "primaryOldLabel": false,
+        "scrollWidth": 310,
+        "tabs": [
+          {
+            "left": 155,
+            "right": 232.5,
+            "text": "Торговля"
+          },
+          {
+            "left": 3,
+            "right": 104.33333587646484,
+            "text": "График"
+          },
+          {
+            "left": 104.33333587646484,
+            "right": 205.6666717529297,
+            "text": "Торговля"
+          },
+          {
+            "left": 205.6666717529297,
+            "right": 307.00000762939453,
+            "text": "Позиции / заявки"
+          }
+        ],
+        "width": 320
+      },
+      {
+        "fields": [
+          {
+            "label": "Цена",
+            "left": 26.666667938232425,
+            "right": 323.3333549499512
+          },
+          {
+            "label": "Количество",
+            "left": 26.666667938232425,
+            "right": 323.3333549499512
+          },
+          {
+            "label": "Итого",
+            "left": 26.666667938232425,
+            "right": 323.3333549499512
+          },
+          {
+            "label": "Баланс USDT",
+            "left": 28.666667938232425,
+            "right": 321.3333549499512
+          }
+        ],
+        "primaryOldLabel": false,
+        "scrollWidth": 350,
+        "tabs": [
+          {
+            "left": 175,
+            "right": 262.5,
+            "text": "Торговля"
+          },
+          {
+            "left": 3,
+            "right": 117.66667175292967,
+            "text": "График"
+          },
+          {
+            "left": 117.66667175292967,
+            "right": 232.33334350585935,
+            "text": "Торговля"
+          },
+          {
+            "left": 232.33334350585935,
+            "right": 347.00001525878906,
+            "text": "Позиции / заявки"
+          }
+        ],
+        "width": 360
+      },
+      {
+        "fields": [
+          {
+            "label": "Цена",
+            "left": 26.666667938232425,
+            "right": 353.3333549499512
+          },
+          {
+            "label": "Количество",
+            "left": 26.666667938232425,
+            "right": 353.3333549499512
+          },
+          {
+            "label": "Итого",
+            "left": 26.666667938232425,
+            "right": 353.3333549499512
+          },
+          {
+            "label": "Баланс USDT",
+            "left": 28.666667938232425,
+            "right": 351.3333549499512
+          }
+        ],
+        "primaryOldLabel": false,
+        "scrollWidth": 380,
+        "tabs": [
+          {
+            "left": 190,
+            "right": 285,
+            "text": "Торговля"
+          },
+          {
+            "left": 3,
+            "right": 127.66667175292967,
+            "text": "График"
+          },
+          {
+            "left": 127.66667175292967,
+            "right": 252.33334350585935,
+            "text": "Торговля"
+          },
+          {
+            "left": 252.33334350585935,
+            "right": 377.00001525878906,
+            "text": "Позиции / заявки"
+          }
+        ],
+        "width": 390
+      },
+      {
+        "fields": [
+          {
+            "label": "Цена",
+            "left": 26.666667938232425,
+            "right": 393.3333549499512
+          },
+          {
+            "label": "Количество",
+            "left": 26.666667938232425,
+            "right": 393.3333549499512
+          },
+          {
+            "label": "Итого",
+            "left": 26.666667938232425,
+            "right": 393.3333549499512
+          },
+          {
+            "label": "Баланс USDT",
+            "left": 28.666667938232425,
+            "right": 391.3333549499512
+          }
+        ],
+        "primaryOldLabel": false,
+        "scrollWidth": 420,
+        "tabs": [
+          {
+            "left": 210,
+            "right": 315,
+            "text": "Торговля"
+          },
+          {
+            "left": 3,
+            "right": 141,
+            "text": "График"
+          },
+          {
+            "left": 141,
+            "right": 279,
+            "text": "Торговля"
+          },
+          {
+            "left": 279,
+            "right": 417,
+            "text": "Позиции / заявки"
+          }
+        ],
+        "width": 430
+      }
+    ],
+    "disclosure": "Exact existing test-only/no-real-execution text accessible in existing account settings; balance editing remains disabled"
+  },
+  "limitations": [
+    "Screenshots use explicit isolated synthetic local fixtures only, no external source or financial calls.",
+    "Before preview retained prior fixture trades and731.24cash; after preview used a new independent fixture directory with731.25cash and empty history. No prior account was reset or overwritten.",
+    "Recovered PR471 archive not yet confirmed as requested owner-selected v0. No design-specific layout changes.",
+    "Local checks are not exact-head CI or resource capacity acceptance."
+  ],
+  "artifacts": [
+    {
+      "file": "labels-before-desktop-1440.jpg",
+      "bytes": 103414,
+      "sha256": "f599f48c969a49293514dd24b135a8d841783c2f2749c9e106e77f103dbc6807"
+    },
+    {
+      "file": "labels-before-mobile-390.jpg",
+      "bytes": 40918,
+      "sha256": "475093f1c38fa46aea9327ec124c5e590529742f3b566e74dcc97c61d0c3f0b9"
+    },
+    {
+      "file": "labels-after-desktop-1440.jpg",
+      "bytes": 103280,
+      "sha256": "66b2659be96fee221e56b1caa1f5630b26f1eeed659d65facec65f190188e0fe"
+    },
+    {
+      "file": "labels-after-mobile-390-top.jpg",
+      "bytes": 38644,
+      "sha256": "4e9ed2eddae1daa13edd4ae175a0d9926a422f50baa519553b5b6b054dadb789"
+    },
+    {
+      "file": "labels-after-desktop-disclosure.jpg",
+      "bytes": 105318,
+      "sha256": "5c8ba5a83cc9acab9636f279fcf7028f0ad59450246e396d7291df807e57f6c6"
+    },
+    {
+      "file": "labels-targeted.log",
+      "bytes": 582,
+      "sha256": "a7ca27a72457b54fa417306a40cef73a5e4bdc7ae689b1ebe0b02a55ebb74ad8"
+    },
+    {
+      "file": "labels-targeted.json",
+      "bytes": 16846,
+      "sha256": "50efe0207a18224723caaf19d13a1d342fc13ea4453003b7d9ae6d27c6a13717"
+    },
+    {
+      "file": "labels-typescript.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "labels-build.log",
+      "bytes": 19273,
+      "sha256": "53feea053a9668b5865a7c0fbaca3cca3cbf3899b3a77f490483cf67291a7cae"
+    },
+    {
+      "file": "labels-browser-geometry.json",
+      "bytes": 4229,
+      "sha256": "300f4ede7f3ee15e2d3ea037a5a5509878250024760ab2eec1b22062a0c11ac8"
+    },
+    {
+      "file": "quote-workflow-admission-guards.log",
+      "bytes": 7477,
+      "sha256": "2fcbeb1aec910be9b9b5022105e5502397cc5e91b5d00a699964022731928eab"
+    }
+  ]
+}

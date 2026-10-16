@@ -2,10 +2,13 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
+import { stockTranslator } from '../../pages/stocks/global/stockText';
 
 const frontend = resolve(__dirname, '../../..'), req = createRequire(resolve(frontend, 'package.json'));
 const React = req('react'), { createRoot } = req('react-dom/client'), { JSDOM } = req('jsdom');
 const ID = 'BYBIT:AAPLXUSDT';
+const languageLocales = { ru: 'ru-RU', en: 'en-US', es: 'es-ES', zh: 'zh-CN', hi: 'hi-IN', ja: 'ja-JP', ko: 'ko-KR' } as const;
+let language: keyof typeof languageLocales = 'ru';
 const compile = (file: string, imports: Record<string, unknown> = {}) => {
   // Vite replaces this build-time constant; the test exercises the USDT review build.
   const input = readFileSync(resolve(frontend, file), 'utf8')
@@ -62,6 +65,7 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
     if (body) await flush(() => pendingState.shift()!(body));
   };
   beforeEach(() => {
+    language = 'ru';
     jest.useFakeTimers(); root = undefined; credential = 'fixture-alice-session'; listeners = new Set(); pendingState = []; writes = [];
     dom = new JSDOM('<div id="root"></div>', { url: 'http://127.0.0.1:4438/stocks/' + encodeURIComponent(ID), pretendToBeVisual: true });
     priorGlobals = new Map(globals.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
@@ -90,7 +94,7 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
     Terminal = compile('src/pages/stocks/global/GlobalStocks.tsx', {
       react: React, 'react/jsx-runtime': req('react/jsx-runtime'), 'bignumber.js': { default: req('bignumber.js') },
       'react-router-dom': { useParams: () => ({ instrumentId: ID }), useNavigate: () => jest.fn() },
-      './useStocksText': { useStocksText: () => ({ s: (s: string) => s, lang: 'ru', locale: 'ru-RU' }) },
+      './useStocksText': { useStocksText: () => ({ s: stockTranslator(language), lang: language, locale: languageLocales[language] }) },
       './stockText': { stockOrderLabel: (s: string) => s, stockNoticeText: (s: any) => s.message || s.status, stockFxPolicyText: () => '' },
       './chartDemand': { StockChartDemand: Demand }, '../../../components/Nav': { Nav: Empty },
       './GlobalChart': { default: ({ fills, entry }: { fills: unknown[]; entry: string | null }) =>
@@ -153,6 +157,32 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
     expect(document.querySelector<HTMLButtonElement>('.vxg-submit')!.disabled).toBe(false);
     await flush(() => { document.querySelector<HTMLButtonElement>('.vxg-submit')!.click(); submit(); });
     expect(writes).toHaveLength(0); expect(sessionStorage.length).toBe(0); expect(notices()).toEqual(before);
+  });
+
+  test.each(Object.keys(languageLocales) as Array<keyof typeof languageLocales>)('account settings expose the unchanged testing disclosure without enabling a viewer write in %s', async lang => {
+    language = lang;
+    const s = stockTranslator(lang);
+    await draw();
+    const details = document.querySelector<HTMLDetailsElement>('.vxg-settings')!;
+    const summary = details.querySelector<HTMLElement>('summary')!;
+    expect(summary.textContent).toBe(s('Параметры счёта'));
+    expect(details.open).toBe(false);
+    expect(document.querySelectorAll('.vxg-notice')).toHaveLength(1);
+    expect(document.querySelector('.vxg-ticket > .vxg-notice')).toBeNull();
+    const disclosure = details.querySelector('.vxg-notice')!;
+    expect(disclosure.textContent).toBe(s('Баланс и позиции — тестовые. Заявки не выходят на реальный рынок.'));
+    await flush(() => summary.click());
+    expect(details.open).toBe(true);
+    expect(details.contains(disclosure)).toBe(true);
+    expect(disclosure.textContent).toBe(s('Баланс и позиции — тестовые. Заявки не выходят на реальный рынок.'));
+    const balance = details.querySelector<HTMLInputElement>('input')!;
+    expect(balance.getAttribute('aria-label')).toBe(s('Баланс') + ' USDT');
+    expect(balance.disabled).toBe(true);
+    const setBalance = details.querySelector<HTMLButtonElement>('button')!;
+    expect(setBalance.textContent).toBe(s('Установить баланс'));
+    expect(setBalance.disabled).toBe(true);
+    await flush(() => setBalance.click());
+    expect(writes).toHaveLength(0); expect(sessionStorage.length).toBe(0);
   });
 
   test('a stale loading handler stays no-op after permission arrives but before the authorized render commits', async () => {

@@ -7,9 +7,11 @@ import * as grouping from '../../pages/stocks/global/tradeMarkers';
 
 const frontend = resolve(__dirname, '../../..'), req = createRequire(resolve(frontend, 'package.json'));
 const React = req('react'), { createRoot } = req('react-dom/client'), { JSDOM } = req('jsdom');
+const languageLocales = { ru: 'ru-RU', en: 'en-US', es: 'es-ES', zh: 'zh-CN', hi: 'hi-IN', ja: 'ja-JP', ko: 'ko-KR' } as const;
+let language: keyof typeof languageLocales = 'ru';
 const imports: Record<string, unknown> = {
   react: React, 'react/jsx-runtime': req('react/jsx-runtime'),
-  'react-router-dom': req('react-router-dom'), './useStocksText':{useStocksText:()=>({s:stockTranslator('ru'),lang:'ru',locale:'ru-RU'})}, './tradeMarkers': grouping,
+  'react-router-dom': req('react-router-dom'), './useStocksText':{useStocksText:()=>({s:stockTranslator(language),lang:language,locale:languageLocales[language]})}, './tradeMarkers': grouping,
   'bignumber.js': req('bignumber.js'), '../../../components/LanguageSwitcher': { LanguageSwitcher: () => null },
 };
 const components: any = {};
@@ -22,6 +24,7 @@ new Function('exports', 'require', ts.transpileModule(
 });
 let dom: any, root: any;
 beforeEach(() => {
+  language = 'ru';
   dom = new JSDOM('<div id="root"></div>', { pretendToBeVisual: true });
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, IS_REACT_ACT_ENVIRONMENT: true });
   root = createRoot(document.getElementById('root'));
@@ -80,7 +83,7 @@ test('Stocks desktop navigation invokes the existing catalogue, portfolio, histo
   const onMarkets = jest.fn(), onPortfolio = jest.fn(), onHistory = jest.fn(), onWallet = jest.fn();
   await React.act(async () => root.render(React.createElement((imports['react-router-dom'] as any).MemoryRouter, null,
     React.createElement(components.DesktopHeader, { currency: 'USDC', onMarkets, onPortfolio, onHistory, onWallet }))));
-  for (const text of ['Рынки', 'Акции', 'Портфель', 'История', 'Тестовый кошелёк']) {
+  for (const text of ['Рынки', 'Акции', 'Портфель', 'История', 'Параметры счёта']) {
     await React.act(async () => button(text).click());
   }
   expect(onMarkets).toHaveBeenCalledTimes(2);
@@ -88,4 +91,25 @@ test('Stocks desktop navigation invokes the existing catalogue, portfolio, histo
   expect(onHistory).toHaveBeenCalledTimes(1);
   expect(onWallet).toHaveBeenCalledTimes(1);
   expect(document.querySelector('.vxg-pro-settlement')!.textContent).toBe('USDC');
+});
+
+test.each(Object.keys(languageLocales) as Array<keyof typeof languageLocales>)('desktop account, quote and trade labels retain their actual actions in %s', async lang => {
+  language = lang;
+  const s = stockTranslator(lang), onWallet = jest.fn();
+  await React.act(async () => root.render(React.createElement((imports['react-router-dom'] as any).MemoryRouter, null,
+    React.createElement(components.DesktopHeader, { currency: 'USDC', onMarkets: jest.fn(), onPortfolio: jest.fn(), onHistory: jest.fn(), onWallet }),
+    React.createElement(components.DesktopQuotes, { asset, fills: [], ready: false, now: 100000 }))));
+  const account = document.querySelector<HTMLButtonElement>('.vxg-pro-wallet')!;
+  expect(account.textContent).toBe(s('Параметры счёта'));
+  expect(document.body.textContent).not.toContain(s('Тестовый кошелёк'));
+  await React.act(async () => account.click());
+  expect(onWallet).toHaveBeenCalledTimes(1);
+  expect(document.querySelector('.vxg-pro-settlement')!.textContent).toBe('USDC');
+  const quotes = document.querySelector('.vxg-pro-quotes')!;
+  expect(quotes.getAttribute('aria-label')).toBe(s('Котировки'));
+  expect(quotes.getAttribute('aria-label')).not.toBe(s('Котировки и тестовые сделки'));
+  await React.act(async () => button(s('Сделки')).click());
+  expect(document.querySelector('.vxg-pro-executions > small')!.textContent).toBe(asset.asset);
+  expect(quotes.textContent).not.toContain(s('Ваши тестовые сделки ·'));
+  expect(quotes.textContent).toContain(s('Сделок по инструменту пока нет'));
 });

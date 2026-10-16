@@ -1099,7 +1099,7 @@ jobs:
       - name: Local staging recovery guards
         run: node --test scripts/qa-stocks-local-stage.test.cjs scripts/qa-stocks-package-proof.test.cjs
       - name: Two trusted traders, market-only viewers and isolated fixture preview
-        run: node --test services/stocks-global/account-existing-only.test.mjs services/stocks-global/two-trader-http.test.mjs services/stocks-global/two-trader-auth-lifetime.test.mjs scripts/stocks-two-trader-preview.test.mjs
+        run: node --test services/stocks-global/account-existing-only.test.mjs services/stocks-global/two-trader-http.test.mjs services/stocks-global/two-trader-auth-lifetime.test.mjs scripts/stocks-two-trader-preview.test.mjs services/stocks-global/quote-admission.test.mjs
       - name: Bounded clean-build local authority and SQLite restart recovery
         timeout-minutes: 5
         run: node scripts/qa-stocks-local-stage-recovery.cjs --output "$GITHUB_WORKSPACE/output/stocks-local-stage"
