@@ -600,7 +600,7 @@ export function FuturesPositionsPanel({
                     && (aggregate === null || !aggregate.collateralComplete);
                   const liquidationPrice = nativeCrossLiquidationUnknown ? null : p.liquidationPrice;
                   return (
-                    <tr key={p.id} className="futures-position-row" data-side={p.side}>
+                    <tr key={p.id} className="futures-position-row" data-side={p.side} data-pnl-split={openSplit && p.pnlBreakdown ? 'true' : undefined}>
                       {/* Contract, with Cross and the leverage under it. */}
                       <Td label={t('futures.colContracts')}>
                         <div className="futures-position-contract">
@@ -815,7 +815,8 @@ export function FuturesPositionsPanel({
                           Net P&L the wallet actually moved by. */}
                       <Td label={t('futures.colTradingPnl')} className={`mono ${pnlTone(p.pnlBreakdown.tradingPnl)}`}>{group(parseFloat(p.pnlBreakdown.tradingPnl), 2)}</Td>
                       <Td label={t('futures.colFunding')} className={`mono ${pnlTone(p.pnlBreakdown.funding)}`}>{group(parseFloat(p.pnlBreakdown.funding), 2)}</Td>
-                      <Td label={t('futures.colFees')} className="mono">{group(-parseFloat(p.pnlBreakdown.fees), 2)}</Td>
+                      {/* `+ 0`: a zero fee is «0.00», never «-0.00». */}
+                      <Td label={t('futures.colFees')} className="mono">{group(-parseFloat(p.pnlBreakdown.fees) + 0, 2)}</Td>
                       <Td label={t('futures.colNetPnl')} className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{group(pnl, 2)}</Td>
                     </>) : (
                     <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{group(pnl, 2)}</Td>)}

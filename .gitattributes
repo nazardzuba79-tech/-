@@ -1,0 +1,4 @@
+# Funding evidence is pinned by its SHA-256 (src/private-trading/native/fundingModel.ts):
+# git must never rewrite its line endings, on any checkout.
+docs/research/bybit-funding-*.json -text
+docs/research/bybit-funding-*.md -text

@@ -228,6 +228,39 @@ describe('replay: restarts and the switch from the legacy model', () => {
     // And an old journal with no schedule replays exactly as the legacy schedule.
     expect(replayNativeDemo(input(instructions, LEGACY_FUNDING_SCHEDULE))).toEqual(legacy);
   });
+
+  test('the SHIPPED model, pinned the way production pins it, re-prices nothing that settled before its start', async () => {
+    // Whatever `NATIVE_FIXED_FUNDING` holds — null today, the Bybit rate once
+    // its evidence is committed — goes through the real pin with the start a
+    // first process would get here (the boundary after T + 15h = T + 16h).
+    const rows = new Map<string, { version: string; rate: string; effectiveFrom: Date; evidenceSha256: string }>();
+    const db = { nativeFundingModel: {
+      createMany: async ({ data }: { data: { version: string; rate: string; effectiveFrom: Date; evidenceSha256: string }[] }) => { for (const d of data) if (!rows.has(d.version)) rows.set(d.version, d); return { count: data.length }; },
+      findUnique: async ({ where }: { where: { version: string } }) => rows.get(where.version) ?? null,
+    } } as unknown as Parameters<typeof pinNativeFundingSchedule>[0];
+    const shipped = await pinNativeFundingSchedule(db, NATIVE_FIXED_FUNDING, () => T + 15 * H);
+    const instructions = [openAt('o1', T + M), openAt('o2', T + 2 * M, 'SHORT'), closeAt('c2', 'o2', T + 7 * H, '50000')];
+    const legacy = replayNativeDemo(input(instructions));
+    const after = replayNativeDemo(input(instructions, shipped));
+    const before = (s: DemoState) => s.events.filter((e) => e.time < T + 2 * F);
+    expect(before(after)).toEqual(before(legacy));
+    expect(after.positions.find((p) => p.id === 'o2')).toEqual(legacy.positions.find((p) => p.id === 'o2'));
+    if (NATIVE_FIXED_FUNDING.rate === null) {
+      // Nothing shipped: the account is exactly the account it was.
+      expect(shipped).toBe(LEGACY_FUNDING_SCHEDULE);
+      expect(after).toEqual(legacy);
+      expect(rows.size).toBe(0);
+    } else {
+      // Shipped: later settlements, and only those, carry the shipped rate.
+      expect(fundingTermsAt(shipped, T + 2 * F)).toMatchObject({ version: NATIVE_FIXED_FUNDING.version, rate: NATIVE_FIXED_FUNDING.rate, effectiveFrom: T + 2 * F });
+      const later = fundingEvents(after).filter((e) => e.time >= T + 2 * F);
+      expect(later.length).toBeGreaterThan(0);
+      for (const e of later) {
+        expect(e).toMatchObject({ fundingRate: NATIVE_FIXED_FUNDING.rate, fundingModel: NATIVE_FIXED_FUNDING.version });
+        expect(e.cashflow).toBe(new BigNumber(e.quantity).times(e.price!).times(NATIVE_FIXED_FUNDING.rate).negated().toFixed());
+      }
+    }
+  });
 });
 
 describe('the schedule and its one-time pin', () => {

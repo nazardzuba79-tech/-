@@ -7,9 +7,15 @@ keeps settling under the original custom model until a rate computed from Bybit 
 ## Why the rate is not in this change
 
 The rate must come from Bybit's own settled funding history. The cloud container this work was done
-in cannot reach Bybit: `api.bybit.com`, `api.bytick.com` and the other official v5 hosts answered
-HTTP 403 from CloudFront (geo-blocked), and `public.bybit.com` publishes no funding history. No
-other exchange or aggregator was used as a substitute, and no number was typed in by hand.
+in cannot reach Bybit: `api.bybit.com`, `api.bytick.com`, `api.bybit.nl`, `api.byhkbit.com`,
+`api.bybit.kz` and `api.bybitglobal.com` answered HTTP 403 "blocked from your country" (re-checked
+2026-10-16), and `public.bybit.com` publishes no funding history. The one GitHub Actions attempt
+(branch `claude/peaceful-volta-h5zw7g-bybit-funding-probe`, run 38901482152) failed at the Bybit step
+and produced no artifact; that route is not used again. No other exchange or aggregator was used as a
+substitute, and no number was typed in by hand.
+
+Step-by-step run on the owner's Windows machine (PowerShell or Codex):
+[`BYBIT_FUNDING_WINDOWS_RUN.md`](BYBIT_FUNDING_WINDOWS_RUN.md).
 
 ## How to produce it
 
@@ -28,7 +34,11 @@ NATIVE_FIXED_FUNDING = { version: 'BYBIT_LINEAR_30D_MEAN_V1', rate: '<summary.fi
 ```
 
 The guard in `nativeFixedFunding.test.ts` fails unless a committed `bybit-funding-*.json` has exactly
-that SHA-256, `"usable": true` and the same `fixedRate8h`.
+that SHA-256, `"usable": true` and the same `fixedRate8h` (checked: a typed-in rate with made-up
+evidence fails it). A second test pins whatever `NATIVE_FIXED_FUNDING` holds through the real pin
+and proves that every settlement before its start is byte-identical to the legacy replay and every
+later one carries the shipped rate. `.gitattributes` keeps git from rewriting the evidence's line
+endings, so its SHA-256 survives Windows and Linux checkouts.
 
 ## Method (also written into the JSON)
 

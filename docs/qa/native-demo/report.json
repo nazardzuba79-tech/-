@@ -10,53 +10,61 @@
         "page": 320,
         "scroll": 320,
         "brand": {
-          "left": 48.046875,
-          "right": 178,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
         },
         "deposit": {
-          "left": 186,
-          "right": 264,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 225,
+          "right": 312,
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 12,
-          "right": 308,
-          "top": 271,
-          "bottom": 315
+          "left": 128.21875,
+          "right": 314,
+          "top": 238,
+          "bottom": 332
         },
         "tabs": {
-          "left": 12,
-          "right": 308,
-          "top": 327,
-          "bottom": 372
+          "left": 128.21875,
+          "right": 314,
+          "top": 340,
+          "bottom": 384
         },
         "price": {
-          "left": 12,
-          "right": 308,
-          "top": 384,
-          "bottom": 432
+          "left": 128.21875,
+          "right": 314,
+          "top": 407,
+          "bottom": 455
         },
         "info": {
-          "left": 12,
-          "right": 308,
-          "top": 728,
-          "bottom": 904
+          "left": 128.21875,
+          "right": 314,
+          "top": 701.390625,
+          "bottom": 778.390625
         },
-        "calculator": {
-          "left": 12,
-          "right": 308,
-          "top": 997,
-          "bottom": 1047
+        "submit": {
+          "left": 128.21875,
+          "right": 314,
+          "top": 786.390625,
+          "bottom": 898.390625
+        },
+        "heading": {
+          "left": 0,
+          "right": 320,
+          "top": 111,
+          "bottom": 182
         },
         "launcher": {
-          "left": 147.6875,
-          "right": 308,
-          "top": 1003,
-          "bottom": 1047
-        }
+          "left": 268,
+          "right": 312,
+          "top": 124,
+          "bottom": 168
+        },
+        "summaryBeforeSubmit": true,
+        "submitPosition": "static"
       }
     },
     {
@@ -77,53 +85,61 @@
         "page": 390,
         "scroll": 390,
         "brand": {
-          "left": 50,
-          "right": 179.953125,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
         },
         "deposit": {
-          "left": 221,
-          "right": 299,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 293,
+          "right": 380,
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 12,
-          "right": 378,
-          "top": 271,
-          "bottom": 315
+          "left": 164.59375,
+          "right": 382,
+          "top": 176,
+          "bottom": 220
         },
         "tabs": {
-          "left": 12,
-          "right": 378,
-          "top": 327,
-          "bottom": 372
+          "left": 164.59375,
+          "right": 382,
+          "top": 228,
+          "bottom": 272
         },
         "price": {
-          "left": 12,
-          "right": 378,
-          "top": 384,
-          "bottom": 432
+          "left": 164.59375,
+          "right": 382,
+          "top": 295,
+          "bottom": 343
         },
         "info": {
-          "left": 12,
-          "right": 378,
-          "top": 728,
-          "bottom": 875
+          "left": 164.59375,
+          "right": 382,
+          "top": 589.390625,
+          "bottom": 654.390625
         },
-        "calculator": {
-          "left": 12,
-          "right": 378,
-          "top": 968,
-          "bottom": 1018
+        "submit": {
+          "left": 164.59375,
+          "right": 382,
+          "top": 662.390625,
+          "bottom": 774.390625
+        },
+        "heading": {
+          "left": 0,
+          "right": 390,
+          "top": 61,
+          "bottom": 118
         },
         "launcher": {
-          "left": 217.6875,
-          "right": 378,
-          "top": 974,
-          "bottom": 1018
-        }
+          "left": 336,
+          "right": 380,
+          "top": 67,
+          "bottom": 111
+        },
+        "summaryBeforeSubmit": true,
+        "submitPosition": "static"
       }
     },
     {
@@ -144,53 +160,61 @@
         "page": 393,
         "scroll": 393,
         "brand": {
-          "left": 50,
-          "right": 179.953125,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
         },
         "deposit": {
-          "left": 224,
-          "right": 302,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 296,
+          "right": 383,
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 12,
-          "right": 381,
-          "top": 271,
-          "bottom": 315
+          "left": 165.796875,
+          "right": 385,
+          "top": 176,
+          "bottom": 220
         },
         "tabs": {
-          "left": 12,
-          "right": 381,
-          "top": 327,
-          "bottom": 372
+          "left": 165.796875,
+          "right": 385,
+          "top": 228,
+          "bottom": 272
         },
         "price": {
-          "left": 12,
-          "right": 381,
-          "top": 384,
-          "bottom": 432
+          "left": 165.796875,
+          "right": 385,
+          "top": 295,
+          "bottom": 343
         },
         "info": {
-          "left": 12,
-          "right": 381,
-          "top": 728,
-          "bottom": 875
+          "left": 165.796875,
+          "right": 385,
+          "top": 589.390625,
+          "bottom": 654.390625
         },
-        "calculator": {
-          "left": 12,
-          "right": 381,
-          "top": 968,
-          "bottom": 1018
+        "submit": {
+          "left": 165.796875,
+          "right": 385,
+          "top": 662.390625,
+          "bottom": 774.390625
+        },
+        "heading": {
+          "left": 0,
+          "right": 393,
+          "top": 61,
+          "bottom": 118
         },
         "launcher": {
-          "left": 220.6875,
-          "right": 381,
-          "top": 974,
-          "bottom": 1018
-        }
+          "left": 339,
+          "right": 383,
+          "top": 67,
+          "bottom": 111
+        },
+        "summaryBeforeSubmit": true,
+        "submitPosition": "static"
       }
     },
     {
@@ -211,53 +235,61 @@
         "page": 430,
         "scroll": 430,
         "brand": {
-          "left": 54,
-          "right": 183.953125,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 60,
+          "right": 88,
+          "top": 8,
+          "bottom": 52
         },
         "deposit": {
-          "left": 228,
-          "right": 306,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 333,
+          "right": 420,
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 12,
-          "right": 418,
-          "top": 271,
-          "bottom": 315
+          "left": 180.59375,
+          "right": 422,
+          "top": 176,
+          "bottom": 220
         },
         "tabs": {
-          "left": 12,
-          "right": 418,
-          "top": 327,
-          "bottom": 372
+          "left": 180.59375,
+          "right": 422,
+          "top": 228,
+          "bottom": 272
         },
         "price": {
-          "left": 12,
-          "right": 418,
-          "top": 384,
-          "bottom": 432
+          "left": 180.59375,
+          "right": 422,
+          "top": 295,
+          "bottom": 343
         },
         "info": {
-          "left": 12,
-          "right": 418,
-          "top": 728,
-          "bottom": 875
+          "left": 180.59375,
+          "right": 422,
+          "top": 541.390625,
+          "bottom": 606.390625
         },
-        "calculator": {
-          "left": 12,
-          "right": 418,
-          "top": 968,
-          "bottom": 1018
+        "submit": {
+          "left": 180.59375,
+          "right": 422,
+          "top": 614.390625,
+          "bottom": 726.390625
+        },
+        "heading": {
+          "left": 0,
+          "right": 430,
+          "top": 61,
+          "bottom": 118
         },
         "launcher": {
-          "left": 257.6875,
-          "right": 418,
-          "top": 974,
-          "bottom": 1018
-        }
+          "left": 376,
+          "right": 420,
+          "top": 67,
+          "bottom": 111
+        },
+        "summaryBeforeSubmit": true,
+        "submitPosition": "static"
       }
     },
     {
@@ -278,53 +310,61 @@
         "page": 768,
         "scroll": 768,
         "brand": {
-          "left": 54,
-          "right": 183.953125,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 60,
+          "right": 88,
+          "top": 8,
+          "bottom": 52
         },
         "deposit": {
-          "left": 509,
-          "right": 599,
-          "top": 3.5,
-          "bottom": 47.5
+          "left": 671,
+          "right": 758,
+          "top": 8,
+          "bottom": 52
         },
         "margin": {
-          "left": 12,
-          "right": 756,
-          "top": 271,
-          "bottom": 315
+          "left": 315.796875,
+          "right": 760,
+          "top": 176,
+          "bottom": 220
         },
         "tabs": {
-          "left": 12,
-          "right": 756,
-          "top": 327,
-          "bottom": 372
+          "left": 315.796875,
+          "right": 760,
+          "top": 228,
+          "bottom": 272
         },
         "price": {
-          "left": 12,
-          "right": 756,
-          "top": 384,
-          "bottom": 432
+          "left": 315.796875,
+          "right": 760,
+          "top": 295,
+          "bottom": 343
         },
         "info": {
-          "left": 12,
-          "right": 756,
-          "top": 728,
-          "bottom": 875
+          "left": 315.796875,
+          "right": 760,
+          "top": 541.390625,
+          "bottom": 606.390625
         },
-        "calculator": {
-          "left": 12,
-          "right": 756,
-          "top": 968,
-          "bottom": 1018
+        "submit": {
+          "left": 315.796875,
+          "right": 760,
+          "top": 614.390625,
+          "bottom": 726.390625
+        },
+        "heading": {
+          "left": 0,
+          "right": 768,
+          "top": 61,
+          "bottom": 118
         },
         "launcher": {
-          "left": 595.6875,
-          "right": 756,
-          "top": 974,
-          "bottom": 1018
-        }
+          "left": 714,
+          "right": 758,
+          "top": 67,
+          "bottom": 111
+        },
+        "summaryBeforeSubmit": true,
+        "submitPosition": "static"
       }
     },
     {
@@ -376,72 +416,72 @@
       "passed": true,
       "evidence": {
         "price": {
-          "width": 297,
-          "height": 44,
-          "left": 1129,
-          "right": 1426,
-          "top": 246,
-          "bottom": 290
+          "width": 276,
+          "height": 42,
+          "left": 1148,
+          "right": 1424,
+          "top": 236,
+          "bottom": 278
         },
         "quantity": {
-          "width": 297,
-          "height": 44,
-          "left": 1129,
-          "right": 1426,
-          "top": 304,
-          "bottom": 348
+          "width": 276,
+          "height": 42,
+          "left": 1148,
+          "right": 1424,
+          "top": 298,
+          "bottom": 340
         },
         "long": {
-          "width": 144.5,
-          "height": 44,
-          "left": 1129,
-          "right": 1273.5,
-          "top": 723.84375,
-          "bottom": 767.84375
+          "width": 132,
+          "height": 42,
+          "left": 1148,
+          "right": 1280,
+          "top": 622.390625,
+          "bottom": 664.390625
         },
         "short": {
-          "width": 144.5,
-          "height": 44,
-          "left": 1281.5,
-          "right": 1426,
-          "top": 723.84375,
-          "bottom": 767.84375
+          "width": 132,
+          "height": 42,
+          "left": 1292,
+          "right": 1424,
+          "top": 622.390625,
+          "bottom": 664.390625
         },
         "trailing": [
           {
             "outer": {
-              "width": 297,
-              "height": 44,
-              "left": 1129,
-              "right": 1426,
-              "top": 246,
-              "bottom": 290
+              "width": 276,
+              "height": 42,
+              "left": 1148,
+              "right": 1424,
+              "top": 236,
+              "bottom": 278
             },
             "inner": {
-              "width": 81.203125,
-              "height": 42,
-              "left": 1343.796875,
-              "right": 1425,
-              "top": 247,
-              "bottom": 289
+              "width": 85.203125,
+              "height": 40,
+              "left": 1337.796875,
+              "right": 1423,
+              "top": 237,
+              "bottom": 277
             }
           },
           {
             "outer": {
-              "width": 297,
-              "height": 44,
-              "left": 1129,
-              "right": 1426,
-              "top": 304,
-              "bottom": 348
+              "width": 276,
+              "height": 42,
+              "left": 1148,
+              "right": 1424,
+              "top": 298,
+              "bottom": 340
             },
             "inner": {
-              "width": 54,
-              "height": 42,
-              "left": 1371,
-              "right": 1425,
-              "top": 305,
-              "bottom": 347
+              "width": 44.609375,
+              "height": 40,
+              "left": 1378.390625,
+              "right": 1423,
+              "top": 299,
+              "bottom": 339
             }
           }
         ]
@@ -451,9 +491,9 @@
       "name": "quantity-to-usdt-calculator-1440",
       "passed": true,
       "evidence": {
-        "price": 49815.8,
+        "price": 49404.1,
         "quantity": 5,
-        "positionValue": "249079.00"
+        "positionValue": "247,020.50"
       }
     },
     {
@@ -465,72 +505,72 @@
       "passed": true,
       "evidence": {
         "price": {
-          "width": 297,
-          "height": 44,
-          "left": 1129,
-          "right": 1426,
-          "top": 246,
-          "bottom": 290
+          "width": 276,
+          "height": 42,
+          "left": 1148,
+          "right": 1424,
+          "top": 236,
+          "bottom": 278
         },
         "quantity": {
-          "width": 297,
-          "height": 44,
-          "left": 1129,
-          "right": 1426,
-          "top": 304,
-          "bottom": 348
+          "width": 276,
+          "height": 42,
+          "left": 1148,
+          "right": 1424,
+          "top": 298,
+          "bottom": 340
         },
         "long": {
-          "width": 144.5,
-          "height": 44,
-          "left": 1129,
-          "right": 1273.5,
-          "top": 748.84375,
-          "bottom": 792.84375
+          "width": 132,
+          "height": 42,
+          "left": 1148,
+          "right": 1280,
+          "top": 644.390625,
+          "bottom": 686.390625
         },
         "short": {
-          "width": 144.5,
-          "height": 44,
-          "left": 1281.5,
-          "right": 1426,
-          "top": 748.84375,
-          "bottom": 792.84375
+          "width": 132,
+          "height": 42,
+          "left": 1292,
+          "right": 1424,
+          "top": 644.390625,
+          "bottom": 686.390625
         },
         "trailing": [
           {
             "outer": {
-              "width": 297,
-              "height": 44,
-              "left": 1129,
-              "right": 1426,
-              "top": 246,
-              "bottom": 290
+              "width": 276,
+              "height": 42,
+              "left": 1148,
+              "right": 1424,
+              "top": 236,
+              "bottom": 278
             },
             "inner": {
-              "width": 54,
-              "height": 42,
-              "left": 1371,
-              "right": 1425,
-              "top": 247,
-              "bottom": 289
+              "width": 54.8125,
+              "height": 40,
+              "left": 1368.1875,
+              "right": 1423,
+              "top": 237,
+              "bottom": 277
             }
           },
           {
             "outer": {
-              "width": 297,
-              "height": 44,
-              "left": 1129,
-              "right": 1426,
-              "top": 304,
-              "bottom": 348
+              "width": 276,
+              "height": 42,
+              "left": 1148,
+              "right": 1424,
+              "top": 298,
+              "bottom": 340
             },
             "inner": {
-              "width": 54,
-              "height": 42,
-              "left": 1371,
-              "right": 1425,
-              "top": 305,
-              "bottom": 347
+              "width": 44.609375,
+              "height": 40,
+              "left": 1378.390625,
+              "right": 1423,
+              "top": 299,
+              "bottom": 339
             }
           }
         ]
@@ -540,9 +580,9 @@
       "name": "account-summary-1440",
       "passed": true,
       "evidence": {
-        "balance": "10,099,356.61 USDT",
-        "available": "10,049,266.83 USDT",
-        "im": "0.50%",
+        "balance": "10,098,535.48 USDT",
+        "available": "10,048,859.65 USDT",
+        "im": "0.49%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -566,20 +606,21 @@
         "headers": [
           "Контракты",
           "К-во",
-          "Стоим.",
-          "Маржа",
+          "Начальная маржа",
           "Цена Входа",
-          "Цена маркировки",
+          "Цена марк.",
           "Цена ликвид.",
-          "Нереализованный P&L(ROI)",
-          "Реализованный P&L",
-          "TP/SL",
-          "Закрыть как"
+          "Нереализованный P&L (ROI)",
+          "Торговый P&L",
+          "Фандинг",
+          "Комиссии",
+          "Чистый P&L",
+          "TP/SL · Закрыть как"
         ],
-        "text": "Контракты\tК-во\tСтоим.\tМаржа\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x\n\t7.000 BTC\t348,710.60 USDT\t34,871.13 USDT\t49,815.90\t49,815.80\t—\t\n-0.7000\n-0.00%\n≈-0.70 USD\n\t\n-191.7912\n≈-191.79 USD\n\t\n+ Добавить\n\t\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nШорт\nМарж. торговля 10.00x\n\t3.000 BTC\t149,447.40 USDT\t14,944.71 USDT\t49,815.70\t49,815.80\t—\t\n-0.3000\n-0.00%\n≈-0.30 USD\n\t\n-82.1959\n≈-82.20 USD\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+        "text": "Все фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nКонтракты\tК-во\tНачальная маржа\tЦена Входа\tЦена марк.\tЦена ликвид.\tНереализованный P&L (ROI)\tТорговый P&L\tФандинг\tКомиссии\tЧистый P&L\tTP/SL · Закрыть как\n\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x\n\t7.000 BTC\t34,582.94 USDT\t49,404.20\t49,404.10\t—\t\n-0.70 USDT\n(0.00%)\n≈-0.70 USD\n\t\n-0.70\n\t\n0.00\n\t\n-190.21\n\t\n-190.91\n≈-190.91 USD\n\t\n+ TP/SL\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nШорт\nМарж. торговля 10.00x\n\t3.000 BTC\t14,821.20 USDT\t49,404.00\t49,404.10\t—\t\n-0.30 USDT\n(0.00%)\n≈-0.30 USD\n\t\n-0.30\n\t\n0.00\n\t\n-81.52\n\t\n-81.82\n≈-81.82 USD\n\t\n+ TP/SL\nЛимитный\nРыночный",
         "scroll": {
-          "client": 1114,
-          "full": 1240,
+          "client": 1128,
+          "full": 1499,
           "overflow": "scroll"
         }
       }
@@ -594,14 +635,14 @@
       "evidence": {
         "width": 330,
         "height": 371.25,
-        "top": 247.953125,
-        "bottom": 752.046875,
-        "dialogHeight": 504.09375,
+        "top": 248.671875,
+        "bottom": 751.3125,
+        "dialogHeight": 502.640625,
         "vh": 1000,
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-06dfc186-dac6-41d2-870c-7206eef9b8c3",
+        "href": "/futures?nativeCard=native%3A9%3Anative-0e7e97bc-6762-47e9-b10c-b8772d6604a8",
         "exported": "1080x1215"
       }
     },
@@ -644,72 +685,72 @@
       "passed": true,
       "evidence": {
         "price": {
-          "width": 366,
+          "width": 217.40625,
           "height": 48,
-          "left": 12,
-          "right": 378,
-          "top": 384,
-          "bottom": 432
+          "left": 164.59375,
+          "right": 382,
+          "top": 295,
+          "bottom": 343
         },
         "quantity": {
-          "width": 366,
+          "width": 217.40625,
           "height": 48,
-          "left": 12,
-          "right": 378,
-          "top": 444,
-          "bottom": 492
+          "left": 164.59375,
+          "right": 382,
+          "top": 351,
+          "bottom": 399
         },
         "long": {
-          "width": 179,
+          "width": 217.40625,
           "height": 52,
-          "left": 12,
-          "right": 191,
-          "top": 708,
-          "bottom": 760
+          "left": 164.59375,
+          "right": 382,
+          "top": 662.390625,
+          "bottom": 714.390625
         },
         "short": {
-          "width": 179,
+          "width": 217.40625,
           "height": 52,
-          "left": 199,
-          "right": 378,
-          "top": 708,
-          "bottom": 760
+          "left": 164.59375,
+          "right": 382,
+          "top": 722.390625,
+          "bottom": 774.390625
         },
         "trailing": [
           {
             "outer": {
-              "width": 366,
+              "width": 217.40625,
               "height": 48,
-              "left": 12,
-              "right": 378,
-              "top": 384,
-              "bottom": 432
+              "left": 164.59375,
+              "right": 382,
+              "top": 295,
+              "bottom": 343
             },
             "inner": {
-              "width": 81.203125,
+              "width": 94,
               "height": 46,
-              "left": 295.796875,
-              "right": 377,
-              "top": 385,
-              "bottom": 431
+              "left": 287,
+              "right": 381,
+              "top": 296,
+              "bottom": 342
             }
           },
           {
             "outer": {
-              "width": 366,
+              "width": 217.40625,
               "height": 48,
-              "left": 12,
-              "right": 378,
-              "top": 444,
-              "bottom": 492
+              "left": 164.59375,
+              "right": 382,
+              "top": 351,
+              "bottom": 399
             },
             "inner": {
-              "width": 54,
+              "width": 51.609375,
               "height": 46,
-              "left": 323,
-              "right": 377,
-              "top": 445,
-              "bottom": 491
+              "left": 329.390625,
+              "right": 381,
+              "top": 352,
+              "bottom": 398
             }
           }
         ]
@@ -719,9 +760,9 @@
       "name": "quantity-to-usdt-calculator-390",
       "passed": true,
       "evidence": {
-        "price": 49832.3,
+        "price": 49404.1,
         "quantity": 5,
-        "positionValue": "249161.50"
+        "positionValue": "247,020.50"
       }
     },
     {
@@ -733,72 +774,72 @@
       "passed": true,
       "evidence": {
         "price": {
-          "width": 366,
+          "width": 217.40625,
           "height": 48,
-          "left": 12,
-          "right": 378,
-          "top": 384,
-          "bottom": 432
+          "left": 164.59375,
+          "right": 382,
+          "top": -25,
+          "bottom": 23
         },
         "quantity": {
-          "width": 366,
+          "width": 217.40625,
           "height": 48,
-          "left": 12,
-          "right": 378,
-          "top": 444,
-          "bottom": 492
+          "left": 164.59375,
+          "right": 382,
+          "top": 31,
+          "bottom": 79
         },
         "long": {
-          "width": 179,
+          "width": 217.40625,
           "height": 52,
-          "left": 12,
-          "right": 191,
-          "top": 708,
-          "bottom": 760
+          "left": 164.59375,
+          "right": 382,
+          "top": 364.390625,
+          "bottom": 416.390625
         },
         "short": {
-          "width": 179,
+          "width": 217.40625,
           "height": 52,
-          "left": 199,
-          "right": 378,
-          "top": 708,
-          "bottom": 760
+          "left": 164.59375,
+          "right": 382,
+          "top": 424.390625,
+          "bottom": 476.390625
         },
         "trailing": [
           {
             "outer": {
-              "width": 366,
+              "width": 217.40625,
               "height": 48,
-              "left": 12,
-              "right": 378,
-              "top": 384,
-              "bottom": 432
+              "left": 164.59375,
+              "right": 382,
+              "top": -25,
+              "bottom": 23
             },
             "inner": {
-              "width": 54,
+              "width": 62.8125,
               "height": 46,
-              "left": 323,
-              "right": 377,
-              "top": 385,
-              "bottom": 431
+              "left": 318.1875,
+              "right": 381,
+              "top": -24,
+              "bottom": 22
             }
           },
           {
             "outer": {
-              "width": 366,
+              "width": 217.40625,
               "height": 48,
-              "left": 12,
-              "right": 378,
-              "top": 444,
-              "bottom": 492
+              "left": 164.59375,
+              "right": 382,
+              "top": 31,
+              "bottom": 79
             },
             "inner": {
-              "width": 54,
+              "width": 51.609375,
               "height": 46,
-              "left": 323,
-              "right": 377,
-              "top": 445,
-              "bottom": 491
+              "left": 329.390625,
+              "right": 381,
+              "top": 32,
+              "bottom": 78
             }
           }
         ]
@@ -808,9 +849,9 @@
       "name": "account-summary-390",
       "passed": true,
       "evidence": {
-        "balance": "10,099,389.52 USDT",
-        "available": "10,049,283.14 USDT",
-        "im": "0.50%",
+        "balance": "10,098,535.48 USDT",
+        "available": "10,048,859.65 USDT",
+        "im": "0.49%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -834,17 +875,19 @@
         "headers": [
           "Контракты",
           "К-во",
-          "Стоим.",
-          "Маржа",
+          "Начальная маржа",
           "Цена Входа",
-          "Цена маркировки",
+          "Цена марк.",
           "Цена ликвид.",
-          "Нереализованный P&L(ROI)",
-          "Реализованный P&L",
+          "Нереализованный P&L (ROI)",
+          "Торговый P&L",
+          "Фандинг",
+          "Комиссии",
+          "Чистый P&L",
           "TP/SL",
           "Закрыть как"
         ],
-        "text": "BTCUSDT\nБесср.\nЛонг\nМарж. торговля\n10.00x\n7.000\nBTC\n348,826.10\nUSDT\n34,882.68\nUSDT\n49,832.40\n49,832.30\n—\n-0.7000\n-0.00%\n≈-0.70 USD\n-191.8547\n≈-191.85 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nШорт\nМарж. торговля\n10.00x\n3.000\nBTC\n149,496.90\nUSDT\n14,949.66\nUSDT\n49,832.20\n49,832.30\n—\n-0.3000\n-0.00%\n≈-0.30 USD\n-82.2231\n≈-82.22 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+        "text": "Все фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля\n10.00x\n7.000\nBTC\n34,582.94\nUSDT\n49,404.20\n49,404.10\n—\n-0.70 USDT\n(0.00%)\n≈-0.70 USD\n-0.70\n0.00\n-190.21\n-190.91\n≈-190.91 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nШорт\nМарж. торговля\n10.00x\n3.000\nBTC\n14,821.20\nUSDT\n49,404.00\n49,404.10\n—\n-0.30 USDT\n(0.00%)\n≈-0.30 USD\n-0.30\n0.00\n-81.52\n-81.82\n≈-81.82 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
         "scroll": {
           "client": 390,
           "full": 390,
@@ -862,14 +905,14 @@
       "evidence": {
         "width": 352,
         "height": 396,
-        "top": 161.578125,
-        "bottom": 682.421875,
-        "dialogHeight": 520.84375,
+        "top": 162.296875,
+        "bottom": 681.6875,
+        "dialogHeight": 519.390625,
         "vh": 844,
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-54a6f81d-8390-4a8f-b7f9-3d6f13e767dc",
+        "href": "/futures?nativeCard=native%3A9%3Anative-86ae6af3-37c2-4a27-a03b-d3c6ecd1b0c1",
         "exported": "1080x1215"
       }
     },

@@ -631,12 +631,19 @@ describe('native demo positions show Trading P&L, Funding, Fees and Net P&L apar
     expect(cellText(tree, 'futures.colFunding')[0]).toContain('-20.2000');
     expect(cellText(tree, 'futures.colFees')[0]).toContain('-55.0000');
     expect(cellText(tree, 'futures.colNetPnl')[0]).toContain('3,924.8000');
+    // The row says it carries the split, so the phone card can place the
+    // four figures in pairs and keep the two action cells full width.
+    expect(nodes(tree).find((n) => n.type === 'tr' && n.props.className === 'futures-position-row')?.props['data-pnl-split']).toBe('true');
+    const mobile = source('pages/trade-terminal/FuturesMobile.css');
+    expect(mobile).toContain('#archive-terminal-preview .futures-position-row[data-pnl-split] td:is(:nth-child(10),:nth-child(11)) { grid-column:auto; }');
+    expect(mobile).toContain('#archive-terminal-preview .futures-position-row[data-pnl-split] td:nth-last-child(-n+2) { grid-column:1 / -1; }');
   });
 
   test('a real-engine row (no breakdown) keeps exactly its realized column', () => {
     const panel = mount('components/FuturesPositionsPanel.tsx', { account: accountState({ positions: resource([row]) }) });
     const tree = panel.render({ refreshKey: 0, tab: 'open' });
     expect(cellText(tree, 'futures.colRealized')[0]).toContain('-75.2000');
+    expect(nodes(tree).find((n) => n.type === 'tr' && n.props.className === 'futures-position-row')?.props['data-pnl-split']).toBeUndefined();
     for (const key of ['futures.colTradingPnl', 'futures.colFunding', 'futures.colFees', 'futures.colNetPnl']) expect(text(tree)).not.toContain(key);
   });
 
@@ -651,6 +658,16 @@ describe('native demo positions show Trading P&L, Funding, Fees and Net P&L apar
     expect(cellText(tree, 'futures.colFunding')).toEqual([expect.stringContaining('-20.20')]);
     expect(cellText(tree, 'futures.colFees')).toEqual([expect.stringContaining('-112.20')]);
     expect(cellText(tree, 'futures.colNetPnl')).toEqual([expect.stringContaining('3,867.60')]);
+  });
+
+  test('a zero fee in the history reads «0.00», never «-0.00»', () => {
+    const closed = { id: 'z1', symbol: 'BTC/USDT', side: 'LONG', leverage: 20, marginType: 'CROSS', entryPrice: '50000', realizedPnl: '0',
+      status: 'CLOSED', openedAt: '2026-10-16T00:00:01.000Z', closedAt: '2026-10-16T01:00:00.000Z',
+      pnlBreakdown: { tradingPnl: '0', funding: '0', fees: '0', netPnl: '0' } };
+    const panel = mount('components/FuturesPositionsPanel.tsx', { account: accountState({ positionHistory: resource([closed]) }) });
+    const tree = panel.render({ refreshKey: 0, tab: 'history' });
+    expect(cellText(tree, 'futures.colFees')[0]).toContain('"0.00"');
+    expect(cellText(tree, 'futures.colFees')[0]).not.toContain('-0.00');
   });
 
   test('a real-engine history keeps its single realized P&L column', () => {
