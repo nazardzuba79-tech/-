@@ -84,7 +84,8 @@ KYC rollback: doing so would discard intervening financial/customer writes.
   OPEN default, unique clientRequestId, restrictive FK, child-first deletion PASS.
   The harness was corrected to handle PostgreSQL 18's `restrict_violation` condition
   (in addition to `foreign_key_violation`); the KYC SQL itself was not changed.
-- Migration-only runner: seven local safety/redaction tests PASS; included in existing CI.
+- Migration-only runner: eight local safety/redaction tests PASS; included in existing CI.
+  The CLI catch boundary also suppresses unexpected raw SDK/filesystem exceptions.
 - No-network candidate build using existing dependency base: Prisma generate and backend
   TypeScript build PASS. No npm download, production secrets or DB mounted for the build.
 - Inactive test image: `voltex-kyc-preflight:310924b7`,

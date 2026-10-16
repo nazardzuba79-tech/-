@@ -71,5 +71,9 @@ async function main() {
   process.exitCode = result.status === 0 ? 0 : 1;
 }
 
-if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
+// Unexpected SDK/filesystem errors must not bypass the CLI output redaction.
+if (require.main === module) main().catch(() => {
+  console.error('Migration runner stopped; approval, backup, ledger or runtime gate failed. Inspect securely on host.');
+  process.exitCode = 1;
+});
 module.exports = { plan, checkLedger, redact, MIGRATION };

@@ -34,3 +34,12 @@ test('redacts password, encoded password and connection URL', () => {
   const clean = redact([pass, encodeURIComponent(pass), url, 'postgres://other:private@db/test'].join(' '), pass, url);
   assert.doesNotMatch(clean, /synthetic|private|postgres/);
 });
+test('CLI failures do not print unchecked exception content', () => {
+  const { spawnSync } = require('node:child_process');
+  const result = spawnSync(process.execPath, [require.resolve('./kyc-hetzner-prisma.cjs'), 'status'], {
+    env: { ...process.env, VOLTEX_RUNTIME_MODE: 'synthetic-private-value' }, encoding: 'utf8',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Migration runner stopped/);
+  assert.doesNotMatch(result.stderr, /synthetic-private-value|Error:|at main/);
+});
