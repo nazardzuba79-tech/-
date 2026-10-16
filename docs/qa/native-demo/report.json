@@ -498,9 +498,9 @@
       "name": "quantity-to-usdt-calculator-1440",
       "passed": true,
       "evidence": {
-        "price": 50911.4,
+        "price": 50519.8,
         "quantity": 5,
-        "positionValue": "254,557.00"
+        "positionValue": "252,599.00"
       }
     },
     {
@@ -587,9 +587,9 @@
       "name": "account-summary-1440",
       "passed": true,
       "evidence": {
-        "balance": "10,101,541.79 USDT",
-        "available": "10,050,350.37 USDT",
-        "im": "0.51%",
+        "balance": "10,100,760.74 USDT",
+        "available": "10,049,963.08 USDT",
+        "im": "0.50%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -597,6 +597,7 @@
           " USDT",
           " USDT"
         ],
+        "checkedAgainst": "command",
         "mode": "Кросс"
       }
     },
@@ -621,7 +622,7 @@
           "Реализованный P&L",
           "TP/SL · Закрыть как"
         ],
-        "text": "Все фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nКонтракты\tК-во\tНачальная маржа\tЦена Входа\tЦена марк.\tЦена ликвид.\tНереализованный P&L (ROI)\tРеализованный P&L\tTP/SL · Закрыть как\n\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x\n\t7.000 BTC\t35,638.05 USDT\t50,911.50\t50,911.40\t—\t\n-0.70 USDT\n(0.00%)\n≈-0.70 USD\n\t\n-196.01\n≈-196.01 USD\n\t\n+ TP/SL\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nШорт\nМарж. торговля 10.00x\n\t3.000 BTC\t15,273.39 USDT\t50,911.30\t50,911.40\t—\t\n-0.30 USDT\n(0.00%)\n≈-0.30 USD\n\t\n-84.00\n≈-84.00 USD\n\t\n+ TP/SL\nЛимитный\nРыночный",
+        "text": "Все фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nКонтракты\tК-во\tНачальная маржа\tЦена Входа\tЦена марк.\tЦена ликвид.\tНереализованный P&L (ROI)\tРеализованный P&L\tTP/SL · Закрыть как\n\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x\n\t7.000 BTC\t35,363.93 USDT\t50,519.90\t50,519.80\t—\t\n-0.70 USDT\n(0.00%)\n≈-0.70 USD\n\t\n-194.50\n≈-194.50 USD\n\t\n+ TP/SL\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nШорт\nМарж. торговля 10.00x\n\t3.000 BTC\t15,155.91 USDT\t50,519.70\t50,519.80\t—\t\n-0.30 USDT\n(0.00%)\n≈-0.30 USD\n\t\n-83.36\n≈-83.36 USD\n\t\n+ TP/SL\nЛимитный\nРыночный",
         "scroll": {
           "client": 1128,
           "full": 1225,
@@ -646,7 +647,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-091f37b6-b267-4a7d-8315-9dfe68694dd4",
+        "href": "/futures?nativeCard=native%3A9%3Anative-7df7b8a5-8057-4fa8-bb9a-b69042960165",
         "exported": "1080x1215"
       }
     },
@@ -771,9 +772,9 @@
       "name": "quantity-to-usdt-calculator-390",
       "passed": true,
       "evidence": {
-        "price": 50911.4,
+        "price": 50519.8,
         "quantity": 5,
-        "positionValue": "254,557.00"
+        "positionValue": "252,599.00"
       }
     },
     {
@@ -860,9 +861,9 @@
       "name": "account-summary-390",
       "passed": true,
       "evidence": {
-        "balance": "10,101,541.79 USDT",
-        "available": "10,050,350.37 USDT",
-        "im": "0.51%",
+        "balance": "10,100,760.74 USDT",
+        "available": "10,049,963.08 USDT",
+        "im": "0.50%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -870,6 +871,7 @@
           " USDT",
           " USDT"
         ],
+        "checkedAgainst": "command",
         "mode": "Кросс"
       }
     },
@@ -895,7 +897,7 @@
           "TP/SL",
           "Закрыть как"
         ],
-        "text": "Все фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля\n10.00x\n7.000\nBTC\n35,638.05\nUSDT\n50,911.50\n50,911.40\n—\n-0.70 USDT\n(0.00%)\n≈-0.70 USD\n-196.01\n≈-196.01 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nШорт\nМарж. торговля\n10.00x\n3.000\nBTC\n15,273.39\nUSDT\n50,911.30\n50,911.40\n—\n-0.30 USDT\n(0.00%)\n≈-0.30 USD\n-84.00\n≈-84.00 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+        "text": "Все фьючерсные позиции\nТекущие позиции: 2\nСовокупный P&L: -1.00 USDT\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля\n10.00x\n7.000\nBTC\n35,363.93\nUSDT\n50,519.90\n50,519.80\n—\n-0.70 USDT\n(0.00%)\n≈-0.70 USD\n-194.50\n≈-194.50 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nШорт\nМарж. торговля\n10.00x\n3.000\nBTC\n15,155.91\nUSDT\n50,519.70\n50,519.80\n—\n-0.30 USDT\n(0.00%)\n≈-0.30 USD\n-83.36\n≈-83.36 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
         "scroll": {
           "client": 390,
           "full": 390,
@@ -920,7 +922,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-037636f5-e6ed-4452-ba8d-73fe2872bfa4",
+        "href": "/futures?nativeCard=native%3A9%3Anative-78db5575-2e98-4e8c-840f-65fbc9a361ab",
         "exported": "1080x1215"
       }
     },

@@ -262,7 +262,7 @@ function expectedUsagePercent(part, equity) {
   return value.toFixed(2) + '%';
 }
 
-async function accountSummary(page, state) {
+async function accountSummary(page, commandState, s) {
   await workspace(page, 'trade');
   // The command response is authoritative, but React applies the matching
   // execution context on its next render. Order-book presentation can add
@@ -270,11 +270,27 @@ async function accountSummary(page, state) {
   // returned equity instead of asserting against a one-render-old card.
   // This does NOT relax the financial assertion: a wrong/stuck value still
   // fails after the short UI-settle window.
-  const expectedBalance = Number(state.account.equity).toFixed(2);
-  await page.waitForFunction((expected) => {
+  const shownBalance = () => page.evaluate(() => (document.querySelector('.futures-account-balance .fa-amount')?.textContent ?? '').replace(/,/g, '').trim());
+  const shows = (expected, timeout) => page.waitForFunction((value) => {
     const text = document.querySelector('.futures-account-balance .fa-amount')?.textContent ?? '';
-    return text.replace(/,/g, '').trim() === expected;
-  }, expectedBalance, { timeout: 8000 });
+    return text.replace(/,/g, '').trim() === value;
+  }, expected, { timeout }).then(() => true, () => false);
+  let state = commandState;
+  if (!(await shows(Number(state.account.equity).toFixed(2), 8000))) {
+    // The open positions keep the terminal polling /native/live every 30 s,
+    // and each poll revalues the account at the current mark. The review
+    // fixture moves its price at every minute, so a poll landing after the
+    // command can legitimately replace the command's equity. The card must
+    // then show EXACTLY what the server reports now: read that state and
+    // check every figure below against it. A wrong or stuck card still fails.
+    const seen = [shownBalance().catch(() => '')];
+    for (let attempt = 1; ; attempt += 1) {
+      state = await api(s.context, s.token, 'live');
+      if (await shows(Number(state.account.equity).toFixed(2), 35_000)) break;
+      seen.push(await shownBalance().catch(() => ''));
+      if (attempt === 3) throw new Error(`Margin Balance never matched the server: command ${Number(commandState.account.equity).toFixed(2)}, last /native/live ${Number(state.account.equity).toFixed(2)}, card showed ${JSON.stringify(await Promise.all(seen))}`);
+    }
+  }
   const g = await page.locator('.futures-account-summary').evaluate(e => ({
     balance: e.querySelector('.futures-account-balance .fa-value')?.textContent,
     available: e.querySelector('.futures-account-available .fa-value')?.textContent,
@@ -286,6 +302,7 @@ async function accountSummary(page, state) {
     modeRowInCard: e.querySelector('.futures-account-mode') !== null,
     units: [...e.querySelectorAll('.futures-account-stat .fa-unit')].map(x => x.textContent),
   }));
+  g.checkedAgainst = state === commandState ? 'command' : 'native/live';
   g.mode = await page.locator('.fo-mlTriggerText').innerText();
   assert(/(?:Cross|Кросс)/i.test(g.mode || ''), 'Owner margin mode is not Cross: ' + JSON.stringify(g));
   assert.equal(g.modeRowInCard, false, 'The duplicate margin-mode row is back in the account card');
@@ -339,7 +356,7 @@ async function normalFlow(width) {
     await rows(p).first().waitFor();
     await check(`positions-reachable-${width}`, async () => { assert(await p.locator('#futures-bottom-content').isVisible(), 'Positions workspace did not reveal the lower panel'); assert.equal(await rows(p).count(), 2); });
     await check(`fields-market-${width}`, () => geometry(p));
-    await check(`account-summary-${width}`, () => accountSummary(p, state));
+    await check(`account-summary-${width}`, () => accountSummary(p, state, s));
     await check(`position-table-${width}`, () => tableLayout(p, width));
     const limit = (Number(state.positions[0].markPrice) * 2).toFixed(1);
     await family(p, 'LIMIT'); await price(p).fill(limit); await qty(p).fill('1');
