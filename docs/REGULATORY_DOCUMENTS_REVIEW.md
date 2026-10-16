@@ -4,6 +4,21 @@ Prepared 2026-10-14 from freshly fetched main `72f0a5944b01b4d2596957ba6939b397b
 
 ## Current release state
 
+### Jurisdiction descriptions and regulator labels (2026-10-16)
+
+The owner requested contextual descriptions of seven jurisdictions, and approved
+the final label “Regulator: MAS” (and the corresponding designation per entry)
+with a decorative check icon. This label is localized in all seven languages;
+the icon is hidden from assistive technology and conveys no separate status.
+The document descriptions reproduce the supplied image. The previous owner-
+confirmation wording has been removed. No regulator endorsement, worldwide
+permission or client-funds protection claim is added. These informational
+descriptions do not populate or increment the verified catalogue.
+`REGULATORY_DOCUMENTS`, review candidate evidence/statuses and the publication
+filter are unchanged. The existing source image remains byte-for-byte identical.
+
+The following paragraphs describe the previously published baseline.
+
 The owner approved publication of the supplied image and its description on
 `/legal/licenses`. The public page displays the original collage as provided
 with neutral copy and makes no active-licence assertion. At the owner’s request,
