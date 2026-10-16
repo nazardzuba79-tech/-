@@ -63,6 +63,14 @@ function freshBuild(output) {
   return { ...proof, proofSha256: sha(fs.readFileSync(path.join(output, 'build-provenance.json'))) };
 }
 
+function stockRuntimeSources() {
+  const files = fs.readdirSync(path.join(root, 'services/stocks-global'))
+    .filter(name => name.endsWith('.mjs') && !name.endsWith('.test.mjs') && name !== 'probe.mjs')
+    .map(name => 'services/stocks-global/' + name).sort();
+  assert.ok(files.includes('services/stocks-global/trader-policy.mjs'), 'two-trader policy must belong to the local fixture runtime');
+  return files;
+}
+
 function packageFixture(destination, build) {
   fs.mkdirSync(destination, { mode: 0o700 });
   const files = new Map(), externals = new Set();
@@ -87,9 +95,7 @@ function packageFixture(destination, build) {
     }
   }
   copy('scripts/qa-stocks-local-stage-fixture.cjs');
-  for (const name of fs.readdirSync(path.join(root, 'services/stocks-global'))) {
-    if (name.endsWith('.mjs') && !name.endsWith('.test.mjs') && name !== 'probe.mjs') copy('services/stocks-global/' + name);
-  }
+  for (const relative of stockRuntimeSources()) copy(relative);
   copy('services/stocks-simulator/engine.mjs');
   copy('dist/api/routes/account.js');
   assert.ok(fs.readFileSync(path.join(destination, 'services/stocks-global/accounts.mjs'), 'utf8').includes('PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA busy_timeout=1000;'), 'packaged worker uses unchanged FULL configuration');
@@ -345,4 +351,4 @@ if (require.main === module) {
   assert.ok(path.isAbsolute(process.argv[3]), '--output must be absolute');
   main(path.resolve(process.argv[3])).catch(error => { console.error(error); process.exitCode = 1; });
 }
-module.exports = { fixtureProcess, main };
+module.exports = { fixtureProcess, main, stockRuntimeSources };

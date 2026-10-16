@@ -85,5 +85,6 @@ test('only the trusted account may trade; USDC submissions and manual refresh by
   const [ownerFinal, bobFinal] = await Promise.all([send('state'), send('state', { user: 'bob' })]);
   assert.equal(ownerFinal.data.fills.length, 1);
   assert.equal(bobFinal.data.fills.length, 0);
-  assert.equal(bobFinal.data.wallets.USDT.cash, '10000.00000000');
+  assert.equal(bobFinal.data.account.mode, 'viewer');
+  assert.equal(bobFinal.data.wallets.USDT.cash, '0.00000000', 'viewer projection is not a funded paper account');
 });

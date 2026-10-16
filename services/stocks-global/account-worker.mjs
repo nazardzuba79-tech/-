@@ -41,10 +41,10 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
       // The timer may be delayed by the host event loop. Expired work must not
       // become active (and later execute) merely because its callback is late.
       if(waited>=queueTimeoutMs){queue.shift();counters.rejected++;counters.timedOut++;settle(entry,'ACCOUNT_BUSY');continue;}
-      if(entries.length&&(entries[0].type!=='ensure'||entry.type!=='ensure'||entries.length>=32))break;
+      if(entries.length&&(entries[0].type!=='ensure'||entry.type!=='ensure'||entries[0].existingOnly||entry.existingOnly||entries.length>=32))break;
       queue.shift();clearTimeout(entry.timer);detachAbort(entry);entries.push(entry);
       counters.waitMs+=waited;counters.maxWaitMs=Math.max(counters.maxWaitMs,waited);
-      if(entry.type!=='ensure')break;
+      if(entry.type!=='ensure'||entry.existingOnly)break;
     }
     if(!entries.length){if(closing&&!closeSent){closeSent=true;worker.postMessage({kind:'close'});}return;}
     const first=entries[0],registrationBatch=entries.length>1;
@@ -53,7 +53,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
       updateClock();
       worker.postMessage(registrationBatch?
         {kind:'ensureBatch',requestId:first.requestId,principals:entries.map(entry=>entry.principal)}:
-        {kind:'command',requestId:first.requestId,principal:first.principal,type:first.type,input:first.input});
+        {kind:'command',requestId:first.requestId,principal:first.principal,type:first.type,input:first.input,...(first.existingOnly?{existingOnly:true}:{})});
       counters.dispatched+=entries.length;
       if(registrationBatch){counters.registrationGroups++;counters.groupedRegistrations+=entries.length;counters.maxRegistrationGroup=Math.max(counters.maxRegistrationGroup,entries.length);}
     }catch{active=null;for(const entry of entries)settle(entry,'ACCOUNT_COMMAND_INVALID');pump();}
@@ -80,7 +80,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
   worker.on('error',fatal);
   worker.on('exit',()=>{if(!closed)fatal();});
   await started;
-  const dispatch=(principal,type,input,options)=>{
+  const dispatch=(principal,type,input,options,existingOnly=false)=>{
     if(dead||closed||closing)return Promise.reject(error('ACCOUNT_UNAVAILABLE'));
     if(type!=='ensure'&&!ACCOUNT_MUTATIONS.has(type)&&!ACCOUNT_READS.has(type))return Promise.reject(error('ACCOUNT_COMMAND_INVALID'));
     // Only undispatched projections or optional market observations may be abandoned.
@@ -91,7 +91,7 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
     try{
       // Snapshot the caller's values at admission so later mutation cannot
       // redirect queued work or change an accepted order's canonical payload.
-      payload=structuredClone({principal,type,input});encoded=JSON.stringify(payload);
+      payload=structuredClone({principal,type,input,...(existingOnly?{existingOnly:true}:{})});encoded=JSON.stringify(payload);
     }catch{return Promise.reject(error('ACCOUNT_COMMAND_INVALID'));}
     const size=Buffer.byteLength(encoded),pending=queue.length+(active?.entries.length??0);
     if(pending>=maxPending||bytes+size>maxQueueBytes){counters.rejected++;return Promise.reject(error('ACCOUNT_BUSY'));}
@@ -109,12 +109,15 @@ export async function openAccountWorker(path,{now=Date.now,diagnostics=false,max
     });
   };
   return{
-    async forPrincipal(principal){
+    async forPrincipal(principal,{existingOnly=false}={}){
+      check(typeof existingOnly==='boolean','ACCOUNT_COMMAND_INVALID');
       // Only the authenticated server constructs this principal. Account IDs
       // never come from an order body or a client-selected route parameter.
       const owner=structuredClone(principal),id=accountId(owner);
-      await dispatch(owner,'ensure');
-      return{id,read:()=>dispatch(owner,'read'),execute:(command,input,options)=>dispatch(owner,command,input,options)};
+      await dispatch(owner,'ensure',undefined,undefined,existingOnly);
+      // This mode is captured by the handle, never accepted from command input
+      // or overridden through per-request signal/options objects.
+      return{id,read:()=>dispatch(owner,'read',undefined,undefined,existingOnly),execute:(command,input,options)=>dispatch(owner,command,input,options,existingOnly)};
     },
     metrics(){return{...sqlMetrics,sqlStages:Object.fromEntries(Object.entries(sqlMetrics.sqlStages).map(([key,value])=>[key,{...value}])),updatedAt:sqlMetrics.observedAt,metricsAgeMs:sqlMetrics.observedAt?Math.max(0,Date.now()-sqlMetrics.observedAt):0,workerAlive:Number(!dead&&!closed),queue:{...counters,pending:queue.length,active:active?.entries.length??0,bytes,maxPendingLimit:maxPending,maxQueueBytesLimit:maxQueueBytes,queueTimeoutMs}};},
     close(){

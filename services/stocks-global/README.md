@@ -1,6 +1,8 @@
 # Stocks US/RU: isolated local simulator
 
-Review branch only. No broker/order connector, API keys, production database, migrations or deployment. V1 (`services/stocks-simulator`) and its ledger are unchanged. V2 refuses a V1 ledger rather than migrating it. This is a single-owner loopback prototype, not a multi-user service.
+Review branch only. No broker/order connector, API keys, production database, migrations or deployment. V1 (`services/stocks-simulator`) and its ledger are unchanged. V2 refuses a V1 ledger rather than migrating it. The current review target is **two explicitly bound test traders plus read-only viewers**, not fifty trading accounts. This remains a loopback review service; production integration and capacity are not approved.
+
+The reproducible two-trader fixture preview, source-of-funds boundary, measurements and unresolved checks are documented in [the 2026-10-16 local review note](../../docs/stocks-two-trader-local-20261016.md). Its prices, identities and initial funds are explicitly synthetic; it does not connect or import the owner's existing balances.
 
 ## Run
 
@@ -11,13 +13,13 @@ $env:VITE_STOCKS_ENABLED='true'
 $env:VITE_STOCKS_WIDGET_PREVIEW='true'
 $env:VITE_STOCKS_SIMULATOR='false'
 $env:VITE_STOCKS_GLOBAL_SIMULATOR='true'
-$env:VITE_MARKET_EDGE_ORIGIN='http://127.0.0.1:4437'
+$env:VITE_MARKET_EDGE_URL='http://127.0.0.1:4437'
 npm.cmd run build -- --outDir dist-stocks-global
 ```
 
 The widget flag keeps the existing preview configuration valid; V2 renders native lightweight-charts, not a widget or iframe. Existing Spot/Futures chart indicator functions are reused without modification.
 
-From the repository root, choose a **new, dedicated local ledger path**, not a V1/real ledger:
+The following ownerless JSON entry point is retained only for legacy isolated tests. It is **not** the current two-trader acceptance entry point. From the repository root, choose a **new, dedicated local ledger path**, not a V1/real ledger:
 
 ```powershell
 $env:STOCKS_GLOBAL_DATA='C:/path/to/local-review/ledger-v2.json'
@@ -57,13 +59,21 @@ US tokens follow their source's instrument trading status, not an invented NASDA
 - Test capital changes append an audit record, preserve transactions and cannot consume reserved cash. There is no reset endpoint. The preview ledger is not a tamper-proof production accounting system.
 - JSON writes use fsync, rename and an exclusive writer lock. Limits: 10,000 orders, 50,000 fills, 1,000 capital adjustments. Reject limits explicitly; no silent history pruning.
 
-## Owner-only USDT review mode
+## Strict two-trader USDT review mode
 
-Authenticated CLI startup requires `STOCKS_TRADE_OWNER_SUBJECT` and refuses to start without it. Trading mutations `orders`, `cancel`, `refresh`, and `balances` fail closed unless `STOCKS_TRADE_OWNER_SUBJECT` equals the authenticated user ID returned by the trusted `/api/v1/me` endpoint. This is not an email, browser flag, or editable role. New owner-only order submissions accept **USDT** only. Historical USDC data are preserved without reset or migration. To select only USDT in the owner review UI, build with `VITE_STOCKS_OWNER_USDT_ONLY=true`. Read-only wallet presentation keeps Stocks separate from real crypto balances, equity and collateral. Review remains on loopback; no production gateway, authorization secret or deployment is added.
+Authenticated CLI startup uses `STOCKS_ACCOUNTS_DATA`, `STOCKS_IDENTITY_ENDPOINT`, `STOCKS_IDENTITY_ISSUER` and `STOCKS_TRADE_PRINCIPALS`. The last value is JSON containing **exactly two distinct full trusted `{issuer, subject}` pairs**. Missing, malformed or duplicate pairs fail closed. `STOCKS_TRADE_OWNER_SUBJECT` is not the current CLI authorization contract. Browser email, roles, localStorage flags and account selectors cannot grant trading access.
+
+Each permitted principal must already resolve to its own durable test ledger (`existingOnly`); a missing binding returns `ACCOUNT_NOT_BOUND`. Login, reads and trade submission do not initialize a default balance, refill funds or reset history. Restricted users cannot call the balance-adjustment endpoint. New order submissions accept **USDT** only; historical USDC records are preserved. Build the existing review UI with `VITE_STOCKS_OWNER_USDT_ONLY=true`.
+
+Authenticated viewer catalogue/history reads do not open a financial account. Viewer state and portfolio projections do not call account registration/read commands or run the matcher. Viewers receive no spendable balance; Buy/Sell submit is a client no-op before validation, while forged API mutations still fail backend authorization. The market quote DTO, source checks, freshness limits and cache TTLs are retained.
+
+An existing SQLite test ledger is **not evidence** that its cash equals the real users' current Wallet test cash. Their private identity bindings and a single-authority transactional bridge to the existing test-cash source remain separate integration blockers. Do not seed or copy those balances into this service. The local fixture Wallet adapter is a same-ledger test seam only; it is not the production `DemoBalance` bridge. See the linked note for the required atomic bridge contract and the pending auth-to-commit review.
+
+The dedicated fixture preview exposes **`/__stocks_fixture/wallet`** as a clearly labelled, read-only Fixture Wallet. It reads the existing `/api/v1/demo/vta` fixture response with the current `exchange_token`, showing that account's same-ledger cash, available amount and reserve. It creates no additional balance and does not alter the normal `/wallet` route. Shared real Funding/Wallet authorization remains admin-gated; synthetic users are not falsely promoted to admin to bypass it. Fixture landing/banner links lead to the fixture page, not an alleged real Wallet integration.
 
 ## Requests and isolation
 
-Only allowlisted HTTPS **GET** requests to Bybit, Binance, MOEX, CBR and Kraken are implemented. Redirects are rejected; response cap 8 MiB; timeout 6 seconds; budget 100 requests/minute/provider; coalesced cache capped at 80 entries. Binance metadata requests explicitly name only the thirteen configured symbols. The provider budget counts requests, not Binance weights; current adapters remain below the observed 6,000-weight/minute limit.
+Only allowlisted HTTPS **GET** requests to Bybit, Binance, MOEX, CBR and Kraken are implemented. Redirects are rejected; response cap 8 MiB; timeout 6 seconds; budget 100 requests per rolling minute per hostname; coalesced cache capped at 80 entries. Binance metadata requests explicitly name only the thirteen configured symbols. This is an application request budget, not Binance's weighted allowance. The current twenty-symbol polling pattern exceeds this application budget even under ideal same-symbol coalescing; see the measured admission failure and derived call counts in the linked review note.
 
 Frontend state polls every three seconds, selected candle history every fifteen seconds; no twelve persistent sockets or collectors. Catalogue display quotes batch-refresh at most once per minute. Only selected/pending/held instruments enter execution polling. A visible-tab lease expires after twelve seconds; hidden pages stop polling and pending paper orders pause. There is no retrospective fill on resume. Source responses already in flight may finish after hiding.
 
@@ -86,7 +96,7 @@ Primary references checked during research:
 node --test services/stocks-global/engine.test.mjs services/stocks-global/server.test.mjs services/stocks-simulator/engine.test.mjs services/stocks-simulator/server.test.mjs
 ```
 
-Tests use explicit fixtures and disposable local files. Fixture prices are never served by the live preview. Run `node services/stocks-global/probe.mjs <evidence-directory>` for finite, read-only source verification; source availability can change. See the QA report for actual browser cycles, screenshots, source matrix and blockers.
+Tests use explicit fixtures and disposable local files. The dedicated `scripts/stocks-two-trader-preview.mjs` intentionally serves labelled local fixture prices behind loopback/CSP guards; the normal `MarketHub` adapter does not substitute fixtures for unavailable real sources. `node services/stocks-global/probe.mjs <evidence-directory>` is the separate finite, read-only source-verification command; do not confuse its output with fixture acceptance. See the QA report for actual browser cycles, screenshots, source matrix and blockers.
 
 ### Owner Wallet and visible chart lifecycle
 

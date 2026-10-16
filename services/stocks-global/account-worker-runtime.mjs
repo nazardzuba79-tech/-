@@ -30,10 +30,14 @@ const beforeRegistrationCommit=()=>{
 const repo=openAccounts(workerData.path,{now,diagnostics:workerData.diagnostics,beforeCommit,beforeRegistrationCommit}),handles=new Map();
 const observations=createObservations({now});
 const metrics=()=>({...repo.metrics(),...observations.metrics(),observedAt:Date.now()});
-const get=(principal,registration)=>{
+const get=(principal,registration,existingOnly=false)=>{
   const id=accountId(principal);let store=handles.get(id);
-  if(!store){store=repo.forPrincipal(principal);handles.set(id,store);observations.register(id,registration?.created??store.created);while(handles.size>512){const first=handles.keys().next().value;handles.delete(first);observations.forget(first);}}
-  return store;
+  // Revalidate the persisted binding for every restricted command, even when
+  // an unrestricted handle for the same identity was cached earlier. This path
+  // never uses registration batching or createState on a missing record.
+  const bound=existingOnly?repo.forPrincipal(principal,{existingOnly:true}):null;
+  if(!store){store=bound??repo.forPrincipal(principal);handles.set(id,store);observations.register(id,registration?.created??store.created);while(handles.size>512){const first=handles.keys().next().value;handles.delete(first);observations.forget(first);}}
+  return bound??store;
 };
 let busy=false;
 parentPort.on('message',async message=>{
@@ -61,7 +65,8 @@ parentPort.on('message',async message=>{
       parentPort.postMessage({kind:'result',requestId:message.requestId,value:{ids:identities},metrics:metrics()});
       return;
     }
-    const {principal,type,input}=message,store=get(principal);let value,financialCommit=false;
+    const {principal,type,input}=message;check(message.existingOnly===undefined||typeof message.existingOnly==='boolean','ACCOUNT_COMMAND_INVALID');
+    const store=get(principal,undefined,message.existingOnly===true);let value,financialCommit=false;
     const mutate=async(fn,id,project=false)=>{
       let committedState,syncId=id;
       const result=await store.transact((state,time)=>{if(type==='submitObserved'&&state.orders.some(o=>o.id===input?.order?.id))syncId=null;const result=fn(state,time);committedState=structuredClone(state);return result;});

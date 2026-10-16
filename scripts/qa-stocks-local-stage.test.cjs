@@ -4,7 +4,16 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { fixtureProcess, main } = require('./qa-stocks-local-stage-recovery.cjs');
+const { fixtureProcess, main, stockRuntimeSources } = require('./qa-stocks-local-stage-recovery.cjs');
+
+test('local fixture runtime retains two-trader admission with identity and projection dependencies', () => {
+  const files = stockRuntimeSources();
+  for (const name of ['server', 'identity', 'trader-policy', 'viewer-projection', 'account-worker-runtime']) {
+    assert.equal(files.filter(file => file === `services/stocks-global/${name}.mjs`).length, 1, name);
+  }
+  assert.ok(files.every(file => !file.endsWith('.test.mjs') && !file.endsWith('/probe.mjs')));
+  assert.equal(new Set(files).size, files.length);
+});
 
 function temporary(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stocks-local-stage-guard-'));

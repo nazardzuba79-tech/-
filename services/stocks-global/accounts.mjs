@@ -34,7 +34,7 @@ export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, be
   const exists = db.prepare('SELECT 1 FROM paper_accounts WHERE id=?');
   const insert = db.prepare('INSERT OR IGNORE INTO paper_accounts(id,ledger) VALUES (?,?)');
   const update = db.prepare('UPDATE paper_accounts SET ledger=? WHERE id=?');
-  const load = id => { const row = sql('read','sqlReadCalls',()=>read.get(id)); check(row, 'ACCOUNT_NOT_FOUND'); const state = JSON.parse(row.ledger); validate(state); return state; };
+  const load = (id,missing='ACCOUNT_NOT_FOUND') => { const row = sql('read','sqlReadCalls',()=>read.get(id)); check(row, missing); const state = JSON.parse(row.ledger); validate(state); return state; };
   return {
     ensurePrincipals(principals) {
       // Only the worker's already-admitted, consecutive registrations may share
@@ -61,23 +61,28 @@ export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, be
         throw error;
       }
     },
-    forPrincipal(principal) {
+    forPrincipal(principal,{existingOnly=false}={}) {
+      check(typeof existingOnly==='boolean','ACCOUNT_COMMAND_INVALID');
       const id = accountId(principal);
+      const missing=existingOnly?'ACCOUNT_NOT_BOUND':'ACCOUNT_NOT_FOUND';
       // Reopening an existing owner must not acquire SQLite's writer lock merely
       // to ignore an INSERT. A concurrent writer can coexist with this read.
       // Missing owners still receive their own FULL durable INSERT before ACK;
       // INSERT OR IGNORE retains correctness if another process creates first.
-      const present=sql('exists','sqlReadCalls',()=>exists.get(id));
-      const created = !present && sql('write','sqlWriteCalls',()=>insert.run(id,JSON.stringify(createState(now())))).changes === 1;
+      // Restricted traders must already have an authoritative test ledger. Read
+      // and validate the raw record; neither login nor a later command can fund
+      // an absent binding. The default fixture/legacy registration stays intact.
+      const present=existingOnly?load(id,missing):sql('exists','sqlReadCalls',()=>exists.get(id));
+      const created = !existingOnly && !present && sql('write','sqlWriteCalls',()=>insert.run(id,JSON.stringify(createState(now())))).changes === 1;
       return {
         id, created,
-        readState: () => load(id),
-        read: () => snapshot(load(id), now()),
+        readState: () => load(id,missing),
+        read: () => snapshot(load(id,missing), now()),
         async transact(fn) {
           sql('begin','sqlExecCalls',()=>db.exec('BEGIN IMMEDIATE'));
           let committed=false;
           try {
-            const state = load(id), result = fn(state, now());
+            const state = load(id,missing), result = fn(state, now());
             check(!result?.then, 'ASYNC_TRANSACTION_FORBIDDEN');
             state.revision++; validate(state);
             const encoded=JSON.stringify(state);

@@ -13,11 +13,15 @@ import { MarketHub } from './market.mjs';
 import { CATALOG, instrument } from './catalog.mjs';
 import { check, SimError, snapshot } from './engine.mjs';
 import { projectViewerQuote } from './viewer-projection.mjs';
+import { twoTraderPolicy, configuredTraders, marketOnlyState } from './trader-policy.mjs';
 const ROOT=resolve(fileURLToPath(new URL('../../',import.meta.url))),API='/__stocks_global/';
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2','.ico':'image/x-icon'};
-export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined}={}){
+export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined}={}){
+  const twoTraderMode=tradePrincipals!==undefined;
+  const mayTrade=twoTraderMode?twoTraderPolicy(tradePrincipals):null;
+  if(twoTraderMode)ownerOnlyMode=true;
   check(Boolean(authenticate)===Boolean(accountsPath),'AUTH_CONFIG_INVALID');
-  check(!ownerOnlyMode || (accountsPath && typeof tradeOwnerSubject === 'string' && /^[A-Za-z0-9_.:@-]{1,128}$/.test(tradeOwnerSubject)),'AUTH_CONFIG_INVALID');
+  check(!ownerOnlyMode || (accountsPath && (twoTraderMode || typeof tradeOwnerSubject === 'string' && /^[A-Za-z0-9_.:@-]{1,128}$/.test(tradeOwnerSubject))),'AUTH_CONFIG_INVALID');
   check(accountsPath||dataPath,'LOCAL_LEDGER_PATH_REQUIRED');
   const accounts=accountsPath?await openAccountWorker(accountsPath,{...accountWorkerOptions,now,diagnostics:accountDiagnostics}):null;
   const legacy=accounts?null:await openStore(dataPath,{now});
@@ -29,26 +33,34 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   const sourceAllowed=id=>{check(instrument(id),'INVALID_PAIR');check(instrument(id).provider!=='moex','MOEX_UNVERIFIED');};
   const blockedCatalogue=list=>list.map(i=>i.provider==='moex'?{...i,online:false,display:null,sourceError:'MOEX_UNVERIFIED'}:i);
   let catalogue=blockedCatalogue(CATALOG.map(i=>({...i,exists:null,online:false})));
-  const status=async(ctx,committed,signal)=>({... (committed??await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read())),...(accounts?{account:{id:ctx.id,mode:'isolated-paper',quoteView:'volatile',canTrade:ctx.ownerMayTrade===true}}:{}),catalogue,errors:{...ctx.errors},metrics:{...hub.metrics,rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}});
+  const accountView=ctx=>({id:ctx.id,mode:ctx.ownerMayTrade?'isolated-paper':'viewer',quoteView:'volatile',canTrade:ctx.ownerMayTrade===true,...(twoTraderMode?{fundingMode:'existing-only'}:{})});
+  const status=async(ctx,committed,signal)=>({... (committed??(accounts&&ownerOnlyMode&&!ctx.ownerMayTrade?marketOnlyState(now()):await(accounts?ctx.store.execute('readView',undefined,{signal}):ctx.store.read()))),...(accounts?{account:accountView(ctx)}:{}),catalogue,errors:{...ctx.errors},metrics:{...hub.metrics,rssBytes:process.memoryUsage.rss(),cpu:process.cpuUsage(),polling:now()-ctx.lease<12000}});
   const loadCatalogue=()=>catalogueTask??=hub.catalogue().then(list=>{catalogue=blockedCatalogue(list);lastCatalogue=now();}).finally(()=>{catalogueTask=null;});
   const getContext=async(req,signal)=>{
     if(!accounts)return contexts.get('legacy');
     const principal=await authenticate(req,{signal});
     check(!signal.aborted,'AUTH_UNAVAILABLE');
     const id=accountId(principal);
-    if(!contexts.has(id)&&!contextFlights.has(id)){
+    if(!contexts.has(id)){
       // Bound active sessions; durable ledgers and pending orders are never evicted.
       for(const[key,ctx]of contexts)if(now()-ctx.accessed>60000)contexts.delete(key);
       check(contexts.size+contextFlights.size<512,'ACCOUNT_CAPACITY');
-      // Publish a single initialization promise before awaiting disk. Concurrent
-      // first requests for one principal must share the same CSRF context.
-      const pending=accounts.forPrincipal(principal).then(store=>{const ctx=context(store,id);contexts.set(id,ctx);return ctx;}).finally(()=>contextFlights.delete(id));
-      contextFlights.set(id,pending);
+      // Market access authenticates without registering a financial ledger.
+      contexts.set(id,context(null,id));
     }
-    const ctx=contexts.get(id)??await contextFlights.get(id);ctx.accessed=now();
+    const ctx=contexts.get(id);ctx.accessed=now();ctx.principal=principal;
     // Every request rechecks the trusted identity. Client-provided roles never authorize trade.
-    ctx.ownerMayTrade = !ownerOnlyMode || principal.subject === tradeOwnerSubject;
+    ctx.ownerMayTrade = twoTraderMode?mayTrade(principal):!ownerOnlyMode || principal.subject === tradeOwnerSubject;
     return ctx;
+  };
+  const requireAccount=async ctx=>{
+    if(!accounts||ctx.store)return;
+    check(ctx.ownerMayTrade,'AUTH_REQUIRED');
+    if(!contextFlights.has(ctx.id)){
+      const pending=accounts.forPrincipal(ctx.principal,{existingOnly:twoTraderMode}).then(store=>{ctx.store=store;}).finally(()=>contextFlights.delete(ctx.id));
+      contextFlights.set(ctx.id,pending);
+    }
+    await contextFlights.get(ctx.id);
   };
   const quote=(id,{includeUsdc=true}={})=>{
     sourceAllowed(id);
@@ -78,7 +90,8 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   const release=ctx=>{ctx.demandAbort.abort();ctx.demandEpoch++;ctx.lease=0;ctx.observed.clear();};
   // Wallet marks are response-only: never feed the order matcher.
   async function portfolio(ctx,signal){
-    const view=accounts?await ctx.store.execute('portfolioView',undefined,{signal}):null;check(view,'AUTH_REQUIRED');
+    const viewer=accounts&&ownerOnlyMode&&!ctx.ownerMayTrade;
+    const view=viewer?{schema:2,revision:0,serverTime:now(),positions:{},quotes:{}}:accounts?await ctx.store.execute('portfolioView',undefined,{signal}):null;check(view,'AUTH_REQUIRED');
     const errors={};
     const ids=[...new Set(Object.values(view.positions).map(p=>p.instrumentId))];
     let next=0;
@@ -93,14 +106,14 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     }catch(e){delete view.quotes[id];errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';}}};
     await Promise.all([read(),read()]);
     const projected=snapshot({wallets:{USDT:{cash:'0',reserved:'0'},USDC:{cash:'0',reserved:'0'}},positions:view.positions,quotes:view.quotes,orders:[]},now());
-    return {...view,serverTime:projected.serverTime,positions:projected.positions,quotes:projected.quotes,account:{id:ctx.id,mode:'isolated-paper',canTrade:ctx.ownerMayTrade===true},catalogue,errors};
+    return {...view,serverTime:projected.serverTime,positions:projected.positions,quotes:projected.quotes,account:accountView(ctx),catalogue,errors};
   }
-  async function refreshContext(ctx,id=ctx.selected,background=false,signal){
+  async function refreshContext(ctx,id=ctx.selected,background=false,signal,authorize){
     if(closing)return;
     const epoch=ctx.demandEpoch;
     if(ownerOnlyMode)signal=AbortSignal.any([ctx.demandAbort.signal,...(signal?[signal]:[])]);
-    try{const q=await quote(id);if(ownerOnlyMode){if(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||!ctx.ownerMayTrade||now()-ctx.lease>=12000)return;check(q.timestamp>=ctx.demandSince,'QUOTE_STALE');}const started=performance.now();const committed=await ctx.store.execute(accounts?(background?'observeBackground':'observe'):'quote',q,ownerOnlyMode?{signal}:undefined);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;if(ownerOnlyMode&&(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||ctx.lease===0||now()-ctx.lease>=12000))return;ctx.observed.add(id);delete ctx.errors[id];return committed.snapshot;}
-    catch(e){if(signal?.aborted||ownerOnlyMode&&epoch!==ctx.demandEpoch)return;ctx.observed.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;await ctx.store.execute(accounts?(background?'observeFailedBackground':'observeFailed'):'quoteFailed',{id});}
+    try{const q=await quote(id);if(authorize)await authorize();if(ownerOnlyMode){if(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||!ctx.ownerMayTrade||now()-ctx.lease>=12000)return;check(q.timestamp>=ctx.demandSince,'QUOTE_STALE');}const started=performance.now();const committed=await ctx.store.execute(accounts?(background?'observeBackground':'observe'):'quote',q,ownerOnlyMode?{signal}:undefined);if(committed.observation?.durable===false)hub.metrics.accountQuoteObservations++;else hub.metrics.accountQuoteCommits++;hub.metrics.accountQuoteMs+=performance.now()-started;if(ownerOnlyMode&&(signal?.aborted||epoch!==ctx.demandEpoch||ctx.selected!==id||ctx.lease===0||now()-ctx.lease>=12000))return;ctx.observed.add(id);delete ctx.errors[id];return committed.snapshot;}
+    catch(e){if(signal?.aborted||ownerOnlyMode&&epoch!==ctx.demandEpoch)return;if(e.code?.startsWith('AUTH_'))throw e;ctx.observed.delete(id);ctx.errors[id]=e instanceof SimError?e.code:'SOURCE_UNAVAILABLE';if(e.code?.startsWith('ACCOUNT_'))throw e;if(authorize)await authorize();await ctx.store.execute(accounts?(background?'observeFailedBackground':'observeFailed'):'quoteFailed',{id});}
   }
   const refreshInBackground=(ctx,id=ctx.selected)=>{
     let work=backgroundFlights.get(ctx);if(!work){work=new Map();backgroundFlights.set(ctx,work);}
@@ -123,13 +136,25 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
       cleanupRequest=()=>{req.off('aborted',onAborted);res.off('close',onRequestClose);};
       if(req.aborted||res.destroyed)onAborted();
       const ctx=await getContext(req,requestAbort.signal);if(res.destroyed)return;
+      // Bind revalidation to this request's initial trusted identity, never a
+      // mutable context or a second allowed identity returned for the same
+      // credential. Auth waits stay outside the serialized financial queue.
+      const requestPrincipalId=ctx.id;
+      const authorize=twoTraderMode?async()=>{
+        const principal=await authenticate(req,{signal:requestAbort.signal});
+        check(!requestAbort.signal.aborted,'AUTH_UNAVAILABLE');
+        check(accountId(principal)===requestPrincipalId&&mayTrade(principal),'AUTH_REQUIRED');
+      }:undefined;
       check(![...u.searchParams.keys()].some(k=>!['id','interval','before'].includes(k)),'ACCOUNT_SELECTOR_FORBIDDEN');
       if(req.method==='GET'&&u.pathname===API+'state'){
         if(res.destroyed)return;
+        if(ctx.ownerMayTrade)await requireAccount(ctx);
+        if(res.destroyed)return;
+        if(authorize&&ctx.ownerMayTrade&&(!autoPoll||!u.searchParams.get('id')))await authorize();
         const readAbort=new AbortController();let demandEpoch;const onClose=()=>{if(!res.writableFinished){readAbort.abort();if(ownerOnlyMode&&demandEpoch===ctx.demandEpoch)release(ctx);}};
         res.once('close',onClose);
         try{
-          let observedView;const id=u.searchParams.get('id');if(id){check(instrument(id),'INVALID_PAIR');const changed=id!==ctx.selected;if(ctx.ownerMayTrade){if(ownerOnlyMode){demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}else{ctx.selected=id;ctx.lease=now();}}else ctx.selected=id;if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&ctx.ownerMayTrade){if(ownerOnlyMode)observedView=await refreshContext(ctx,id,false,readAbort.signal);else if(changed)refreshInBackground(ctx);}}
+          let observedView;const id=u.searchParams.get('id');if(id){check(instrument(id),'INVALID_PAIR');const changed=id!==ctx.selected;if(ctx.ownerMayTrade){if(ownerOnlyMode){demand(ctx,id,req.headers['x-stocks-view']);demandEpoch=ctx.demandEpoch;}else{ctx.selected=id;ctx.lease=now();}}else ctx.selected=id;if(instrument(id).provider==='moex')ctx.errors[id]='MOEX_UNVERIFIED';if(autoPoll&&ctx.ownerMayTrade){if(ownerOnlyMode)observedView=await refreshContext(ctx,id,false,readAbort.signal,authorize);else if(changed)refreshInBackground(ctx);}}
           let view=await status(ctx,observedView,readAbort.signal);
           // Read-only users share market data, never the owner matcher or ledger.
           if(ownerOnlyMode&&!ctx.ownerMayTrade&&id){
@@ -141,9 +166,11 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
         }finally{res.off('close',onClose);}
       }
       if(req.method==='GET'&&u.pathname===API+'portfolio'){
+        if(ctx.ownerMayTrade)await requireAccount(ctx);
+        if(res.destroyed)return;
         const abort=new AbortController(),onClose=()=>{if(!res.writableFinished)abort.abort();};
         res.once('close',onClose);const timer=setTimeout(()=>abort.abort(),2500);
-        try{const view=await portfolio(ctx,abort.signal);if(!res.destroyed)send(res,200,view);}
+        try{const view=await portfolio(ctx,abort.signal);if(authorize&&ctx.ownerMayTrade)await authorize();if(!res.destroyed)send(res,200,view);}
         finally{clearTimeout(timer);res.off('close',onClose);}return;
       }
       if(req.method==='DELETE'&&u.pathname===API+'lease'){check(req.headers['x-stocks-token']===ctx.token,'TOKEN_REQUIRED');if(u.searchParams.get('id')===ctx.selected&&(req.headers['x-stocks-view']??'legacy-http')===ctx.demandView)release(ctx);send(res,200,{released:true});return;}
@@ -161,10 +188,14 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
       if(req.method==='GET'&&u.pathname===API+'catalogue'){await loadCatalogue();send(res,200,{catalogue});return;}
       check(req.method==='POST','METHOD_NOT_ALLOWED');
       if(accounts && ownerOnlyMode && [API+'orders',API+'cancel',API+'balances',API+'refresh'].includes(u.pathname)) check(ctx.ownerMayTrade === true,'AUTH_REQUIRED');
+      if(twoTraderMode&&u.pathname===API+'balances')throw new SimError('BALANCE_EDIT_DISABLED');
       const supplied=req.headers['x-stocks-token'];check(typeof supplied==='string'&&Buffer.byteLength(supplied)===Buffer.byteLength(ctx.token)&&timingSafeEqual(Buffer.from(supplied),Buffer.from(ctx.token)),'TOKEN_REQUIRED');check(req.headers['content-type']?.startsWith('application/json'),'JSON_REQUIRED');
       const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;check(size<=8192,'BODY_TOO_LARGE');chunks.push(chunk);}let input;try{input=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new SimError('INVALID_JSON');}
       check(input&&typeof input==='object'&&!Array.isArray(input),'INVALID_JSON');
       check(!['userId','accountId','owner','subject','issuer','account','user'].some(k=>k in input),'ACCOUNT_SELECTOR_FORBIDDEN');
+      await requireAccount(ctx);
+      if(authorize)await authorize();
+      if(res.destroyed)return;
       let committed,result;if(u.pathname===API+'orders'){if(accounts && ownerOnlyMode)check(input.currency==='USDT','INVALID_ORDER');sourceAllowed(input.instrumentId);committed=await ctx.store.execute(accounts?'submitObserved':'submit',accounts?{order:input,sourceBlocked:!ctx.observed.has(input.instrumentId)||!!ctx.errors[input.instrumentId]||(ownerOnlyMode&&(ctx.selected!==input.instrumentId||ctx.lease===0||now()-ctx.lease>=12000))}:input);result=committed.result;}
       else if(u.pathname===API+'cancel'){committed=await ctx.store.execute('cancel',{id:input.id});result=committed.result;}
       else if(u.pathname===API+'balances')committed=await ctx.store.execute('balances',input);
@@ -172,7 +203,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
         sourceAllowed(input.id);if(ownerOnlyMode)demand(ctx,input.id,req.headers['x-stocks-view']);else{ctx.selected=input.id;ctx.lease=now();}
         const epoch=ctx.demandEpoch,abort=new AbortController(),onClose=()=>{if(!res.writableFinished){abort.abort();if(ownerOnlyMode&&epoch===ctx.demandEpoch)release(ctx);}};
         res.once('close',onClose);
-        try{committed={snapshot:await refreshContext(ctx,ctx.selected,false,abort.signal)};if(res.destroyed)return;}
+        try{committed={snapshot:await refreshContext(ctx,ctx.selected,false,abort.signal,authorize)};if(res.destroyed)return;}
         finally{res.off('close',onClose);}
       }
       else throw new SimError('ROUTE_NOT_FOUND');send(res,200,{...await status(ctx,committed?.snapshot),result});return;
@@ -204,7 +235,7 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const accountsPath=process.env.STOCKS_ACCOUNTS_DATA;check(accountsPath||process.env.STOCKS_GLOBAL_DATA?.endsWith('.json'),'LOCAL_LEDGER_PATH_REQUIRED');
   check(accountsPath||process.env.STOCKS_LEGACY_SINGLE_OWNER_REVIEW==='true','AUTH_CONFIG_INVALID');
   const authenticate=accountsPath?identityResolver({endpoint:process.env.STOCKS_IDENTITY_ENDPOINT,issuer:process.env.STOCKS_IDENTITY_ISSUER}):undefined;
-  const app=await createServer({port:Number(process.env.STOCKS_GLOBAL_PORT||4437),dataPath:process.env.STOCKS_GLOBAL_DATA?resolve(process.env.STOCKS_GLOBAL_DATA):undefined,accountsPath:accountsPath?resolve(accountsPath):undefined,authenticate,ownerOnlyMode:Boolean(accountsPath),tradeOwnerSubject:accountsPath?(process.env.STOCKS_TRADE_OWNER_SUBJECT || null):undefined,dist:process.env.STOCKS_GLOBAL_DIST?resolve(process.env.STOCKS_GLOBAL_DIST):undefined});
+  const app=await createServer({port:Number(process.env.STOCKS_GLOBAL_PORT||4437),dataPath:process.env.STOCKS_GLOBAL_DATA?resolve(process.env.STOCKS_GLOBAL_DATA):undefined,accountsPath:accountsPath?resolve(accountsPath):undefined,authenticate,tradePrincipals:accountsPath?configuredTraders(process.env.STOCKS_TRADE_PRINCIPALS):undefined,dist:process.env.STOCKS_GLOBAL_DIST?resolve(process.env.STOCKS_GLOBAL_DIST):undefined});
   console.log('Stocks local preview http://127.0.0.1:'+app.port+'/stocks/BYBIT%3AAAPLXUSDT');
   let stopping=false;const stop=async()=>{if(stopping)return;stopping=true;await app.close();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);
 }

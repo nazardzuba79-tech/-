@@ -6,6 +6,13 @@ const {build,sha}=require('./qa-stocks-package-builder.cjs');
 const {fixtureProcess}=require('./qa-stocks-local-stage-recovery.cjs');
 const {ISSUER,ID}=require('./qa-stocks-local-stage-fixture.cjs');
 const root=path.resolve(__dirname,'..'),PREFIX='/__stocks_global/';
+function assertTraderPolicyClosure(manifest){
+  const policy='services/stocks-global/trader-policy.mjs',files=manifest.files.filter(file=>file.path===policy);
+  assert.equal(files.length,1,'exactly one two-trader policy belongs to the runtime package');
+  assert.ok(Number.isSafeInteger(files[0].bytes)&&files[0].bytes>0&&/^[a-f0-9]{64}$/.test(files[0].sha256),'two-trader policy has retained byte/hash provenance');
+  assert.ok(manifest.edges.some(edge=>edge.from==='services/stocks-global/server.mjs'&&edge.to===policy&&edge.kind==='module'),'server admission imports the packaged two-trader policy');
+  return true;
+}
 function verifyAndCopy(source,destination,manifestName,files){
   assert.ok(!fs.existsSync(destination));fs.mkdirSync(destination,{mode:0o700});
   for(const file of files){const input=path.resolve(source,file.path),output=path.resolve(destination,file.path);assert.ok(input.startsWith(source+path.sep)&&output.startsWith(destination+path.sep));assert.ok(fs.lstatSync(input).isFile());assert.equal(sha(fs.readFileSync(input)),file.sha256);fs.mkdirSync(path.dirname(output),{recursive:true});fs.copyFileSync(input,output,fs.constants.COPYFILE_EXCL);}
@@ -38,6 +45,7 @@ async function main(output,authorityPackage){
   try{
     const manifest=build(root,path.join(output,'runtime-package'));write('dependency-proof.json',manifest);check(manifest.npmDependencies.length===0,'AST closure has no npm dependencies');
     check(manifest.edges.some(e=>e.kind==='worker-url'&&e.to==='services/stocks-global/account-worker-runtime.mjs'),'SQLite worker URL belongs to package');
+    check(assertTraderPolicyClosure(manifest),'two-trader admission policy belongs to the exact AST runtime closure');
     const authorityManifest=JSON.parse(fs.readFileSync(path.join(authorityPackage,'manifest.json'),'utf8'));
     check(authorityManifest.fixtureOnly===true,'reused actual compiled /me fixture package');
     // Verify source/dist/module bytes still match the current reviewed checkout; never rebuild or mutate the retained r3 artifact.
@@ -93,4 +101,4 @@ async function main(output,authorityPackage){
   console.log(JSON.stringify({status:report.status,assertions:report.assertions,output,failure:report.failure||null}));if(report.status!=='PASS')process.exitCode=1;
 }
 if(require.main===module){assert.equal(process.argv.length,6);assert.equal(process.argv[2],'--output');assert.equal(process.argv[4],'--authority-package');main(path.resolve(process.argv[3]),path.resolve(process.argv[5])).catch(e=>{console.error(e);process.exitCode=1;});}
-module.exports={main};
+module.exports={main,assertTraderPolicyClosure};

@@ -128,7 +128,8 @@ test('Wallet-only holdings consume no FX; later full state upgrades the same obs
   const full = await f.send('state?id=' + encodeURIComponent(ID), { user: 'bob' });
   assert.equal(full.status, 200); assert.ok(full.data.quotes[ID].prices.USDC);
   assert.equal(f.count('native'), 1); assert.equal(f.count('fx'), 1);
-  assert.equal(full.data.fills.length, 0); assert.equal(full.data.wallets.USDT.cash, '10000.00000000');
+  assert.equal(full.data.fills.length, 0); assert.equal(full.data.account.mode, 'viewer');
+  assert.equal(full.data.wallets.USDT.cash, '0.00000000', 'market viewers never receive a funded ledger');
   const after = (await f.send('state')).data;
   assert.equal(after.revision, before.revision); assert.deepEqual(after.fills, before.fills);
   f.state.now += 501;

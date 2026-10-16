@@ -1,7 +1,7 @@
 name: Stocks isolated review
 on:
   pull_request:
-    paths: ['services/stocks/**', 'services/stocks-global/**', 'services/stocks-simulator/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/__tests__/stock*.test.ts', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', 'scripts/stocks-browser-native/**', 'scripts/stocks-browser-native-*', 'scripts/qa-backend-full*', '.github/workflows/stocks-review.yml', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.discovery.test.ts', 'src/services/marketData/__tests__/ProviderFailureMatrix.test.ts', 'src/services/__tests__/CfdMarketDataService.test.ts', 'src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts', 'src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts']
+    paths: ['services/stocks/**', 'services/stocks-global/**', 'services/stocks-simulator/**', 'frontend/src/pages/stocks/**', 'frontend/src/lib/__tests__/stock*.test.ts', 'frontend/src/lib/stocks.ts', 'frontend/src/lib/i18n/locales/**', 'scripts/qa-stocks*', 'scripts/stocks-two-trader-*', 'scripts/stocks-browser-native/**', 'scripts/stocks-browser-native-*', 'scripts/qa-backend-full*', '.github/workflows/stocks-review.yml', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.discovery.test.ts', 'src/services/marketData/__tests__/ProviderFailureMatrix.test.ts', 'src/services/__tests__/CfdMarketDataService.test.ts', 'src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts', 'src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts']
   push:
     branches: [codex/stocks-bounded-v1-20261007]
 permissions:
@@ -1097,7 +1097,9 @@ jobs:
       - name: Offline native transport and targeted-harness guards
         run: node --test services/stocks/native-transport-proof/binance-offline.test.mjs services/stocks/targeted-http-512/targeted.test.mjs
       - name: Local staging recovery guards
-        run: node --test scripts/qa-stocks-local-stage.test.cjs
+        run: node --test scripts/qa-stocks-local-stage.test.cjs scripts/qa-stocks-package-proof.test.cjs
+      - name: Two trusted traders, market-only viewers and isolated fixture preview
+        run: node --test services/stocks-global/account-existing-only.test.mjs services/stocks-global/two-trader-http.test.mjs services/stocks-global/two-trader-auth-lifetime.test.mjs scripts/stocks-two-trader-preview.test.mjs
       - name: Bounded clean-build local authority and SQLite restart recovery
         timeout-minutes: 5
         run: node scripts/qa-stocks-local-stage-recovery.cjs --output "$GITHUB_WORKSPACE/output/stocks-local-stage"
