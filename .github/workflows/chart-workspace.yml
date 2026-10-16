@@ -25,6 +25,8 @@ on:
       - 'frontend/src/lib/__tests__/futuresChartBlank.test.ts'
       - 'frontend/src/lib/__tests__/priceChartMarketOrders.test.ts'
       - 'scripts/qa-chart-workspace.cjs'
+      - 'scripts/chart-workspace-hover-phase.cjs'
+      - 'scripts/chart-workspace-hover-phase.test.cjs'
       - '.github/workflows/chart-workspace.yml'
   workflow_dispatch: {}
 
@@ -51,6 +53,8 @@ jobs:
           node-version: '22'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Native polling phase and zero-request hover guard regressions
+        run: node --test scripts/chart-workspace-hover-phase.test.cjs
       - run: npx prisma generate
       - name: Timeframes, capabilities, viewport, candle source, workspace, compare, indicators and the chart harnesses
         run: |

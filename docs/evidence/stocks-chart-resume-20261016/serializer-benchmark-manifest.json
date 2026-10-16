@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "verdict": "REJECT_RUNTIME_WIRING",
+  "capacityAcceptance": "NOT_RUN",
+  "concurrentHostWork": "Root confirmed frontend Jest/build during V1 and V2",
+  "files": [
+    {
+      "file": "serializer-benchmark.mjs",
+      "bytes": 10691,
+      "sha256": "1a440b88b9dc674ee683d33a5db4e7abc6ccc4f6bb8ed8be6c0c7dbb6bdf8a44"
+    },
+    {
+      "file": "serializer-benchmark-results.json",
+      "bytes": 73653,
+      "sha256": "926afe6b59b91a12488d88543144af43e012c908f7f0d95795cbbf48a1531972"
+    },
+    {
+      "file": "serializer-benchmark-execution.json",
+      "bytes": 329,
+      "sha256": "8de6f8b89fd3b0cf9215ccdd751552be1b1277dcdd3844bf9cabe6e5d222b814"
+    },
+    {
+      "file": "serializer-benchmark.log",
+      "bytes": 3456,
+      "sha256": "6410d97c7c5bc7b3ef9df0803318937bcfae58320e2000a117784b402283fc28"
+    },
+    {
+      "file": "serializer-benchmark-v2.mjs",
+      "bytes": 10783,
+      "sha256": "a0a5d2dcba46f6d738d25ad4fd665a1f4b137e5ea3a591ffc138026fe4e81985"
+    },
+    {
+      "file": "serializer-benchmark-v2-results.json",
+      "bytes": 130432,
+      "sha256": "30f1079c57836e4ca05593b08e38a22ff4109f510dcaea7a958865c4f67bd601"
+    },
+    {
+      "file": "serializer-benchmark-v2-execution.json",
+      "bytes": 332,
+      "sha256": "df4507775179c5f8a0b6cf7ca9255896239b8182c1a8736cc4c80a976f679d6e"
+    },
+    {
+      "file": "serializer-benchmark-v2.log",
+      "bytes": 3429,
+      "sha256": "19ebe24486747e6a77fbc44521ec27c6b93d66a3bcb093fbdf8898699e6694f9"
+    },
+    {
+      "file": "SERIALIZER-CANDIDATE-REVIEW.md",
+      "bytes": 3008,
+      "sha256": "eb1e815dc66cfdb6badd1d2b23e35205133bfddac65ae0882bea8a195d150eae"
+    }
+  ]
+}

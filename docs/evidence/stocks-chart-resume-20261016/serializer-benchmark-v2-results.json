@@ -1,0 +1,4467 @@
+{
+  "schema": 1,
+  "kind": "LOCAL_SERIALIZER_MICROBENCHMARK_ONLY",
+  "balancedOrder": "6 paired rounds AB/BA; baseline and candidate each first in 3 rounds",
+  "fixtureOnly": true,
+  "capacityAcceptance": "NOT_RUN",
+  "externalRequests": 0,
+  "sqliteOpened": false,
+  "sourceHashes": {
+    "services/stocks/state-response-serialization.mjs": "60e3cbacb917b75825c9eb4e82abf1b257bf57b777837be20ddba8127d636f85",
+    "services/stocks-global/engine.mjs": "dfd733dd19b7dc6023018a9d183ef66abeeb4adaa15c7bed2004ad330f0ef6c4",
+    "services/stocks-global/catalog.mjs": "1bd76716a297ccec2599dd035995060520a855062f94ad3afa83d5ab4d47b0eb",
+    "services/stocks-simulator/engine.mjs": "d7f10f47690a03c00c67ed4fceb0130e83ece0ef6b6bbaeacef8b17338c01812"
+  },
+  "scriptSha256": "a0a5d2dcba46f6d738d25ad4fd665a1f4b137e5ea3a591ffc138026fe4e81985",
+  "startedAt": "2026-10-16T03:30:35.747Z",
+  "environment": {
+    "platform": "win32",
+    "node": "v24.21.0",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Core(TM) Ultra 9 275HX",
+    "logicalCpus": 24,
+    "totalMemoryBytes": 68112736256,
+    "cpuQuota": "UNCONTROLLED_WINDOWS_HOST",
+    "ioThrottle": "NONE",
+    "gcExposed": true
+  },
+  "limitations": [
+    "No HTTP/auth/SQLite/account worker timing",
+    "No cgroup CPU/RAM/I/O equivalence",
+    "No Spot/Futures coexistence test",
+    "Synthetic rows are benchmark fixtures only",
+    "Batch CPU includes equality checking/harness and is process-wide; per-call wall excludes equality comparison",
+    "RSS is process high-water/current observation, not memory attributable exclusively to one serializer",
+    "Exact catalogue publication, dynamic snapshots and byte equality are measured; end-to-end workload acceptance is not"
+  ],
+  "publication": [
+    {
+      "instruments": 20,
+      "wallMs": {
+        "count": 200,
+        "mean": 0.1977340000000006,
+        "p50": 0.1909999999999883,
+        "p95": 0.2513000000000005,
+        "p99": 0.44360000000000355,
+        "min": 0.1670999999999907,
+        "max": 0.5881000000000114
+      },
+      "cpuUs": {
+        "user": 31000,
+        "system": 16000
+      },
+      "memoryBefore": {
+        "rss": 86130688,
+        "heapUsed": 24316120,
+        "heapTotal": 58638336,
+        "external": 2574602
+      },
+      "memoryAfter": {
+        "rss": 109789184,
+        "heapUsed": 34979024,
+        "heapTotal": 58638336,
+        "external": 2574622
+      }
+    },
+    {
+      "instruments": 40,
+      "wallMs": {
+        "count": 200,
+        "mean": 0.8574414999999863,
+        "p50": 0.7559000000001106,
+        "p95": 1.2841999999982363,
+        "p99": 1.7753999999986263,
+        "min": 0.412400000001071,
+        "max": 2.6290999999982887
+      },
+      "cpuUs": {
+        "user": 219000,
+        "system": 0
+      },
+      "memoryBefore": {
+        "rss": 385970176,
+        "heapUsed": 200311272,
+        "heapTotal": 336588800,
+        "external": 2574622
+      },
+      "memoryAfter": {
+        "rss": 360861696,
+        "heapUsed": 196093144,
+        "heapTotal": 311861248,
+        "external": 2574622
+      }
+    }
+  ],
+  "cases": [
+    {
+      "instruments": 20,
+      "shape": "empty",
+      "historyOrders": 0,
+      "historyFills": 0,
+      "variants": 8,
+      "referenceByteSizes": [
+        10437,
+        10408,
+        10410,
+        10438,
+        10410,
+        10408,
+        10441,
+        10409
+      ],
+      "inputSha256": [
+        "46c24c050faaf230c2310c30e059a7ae5eb324769dcfa242c4eaa22a6f097369",
+        "72161b856f1764e3725dff0f1f98d632d810f99817258c637c346c1023fda6be",
+        "90bef25295633f6e0aedc6f161211e8347aa9ba49d5e9792d8adf49b507f2953",
+        "d5f6b4bea0b738ee82326150a61e9101c7655bc6e5ab5e2ee6fb02add4fac442",
+        "6f42d47007a1c923f1df0d1c190a2d476962d40ea2110a88bf2baa312fc635d8",
+        "f2b35315d9f282a1773c9dd797d4ea7973a9b575689e4bc0af98c8ad6932ddf6",
+        "1e8fb41f3858fcf49749e154e1b8951934d54fb704d1a0b72ef38ac0e075e993",
+        "1fa21b291560ae1904f4eccbb4e01a67d3614d8df14e2518ba67f3a15e85e67e"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 15,
+        "entries": 45,
+        "characters": 538,
+        "maxDepth": 2
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.015029150000000144,
+            "p50": 0.014399999999994861,
+            "p95": 0.015900000000016234,
+            "p99": 0.027799999999984948,
+            "min": 0.013499999999993406,
+            "max": 0.23859999999999104
+          },
+          "batchElapsedMs": 31.202799999999996,
+          "cpuUs": {
+            "user": 31000,
+            "system": 0
+          },
+          "cpuUsPerCall": 15.5,
+          "memoryBefore": {
+            "rss": 111009792,
+            "heapUsed": 24491776,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110297088,
+            "heapUsed": 29665136,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 5173360
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.011362849999999838,
+            "p50": 0.010500000000007503,
+            "p95": 0.014200000000016644,
+            "p99": 0.030900000000002592,
+            "min": 0.009500000000002728,
+            "max": 0.19209999999998217
+          },
+          "batchElapsedMs": 26.423300000000012,
+          "cpuUs": {
+            "user": 16000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 16,
+          "memoryBefore": {
+            "rss": 110845952,
+            "heapUsed": 24546376,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110444544,
+            "heapUsed": 28912992,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 4366616
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.010275450000000063,
+            "p50": 0.010000000000019327,
+            "p95": 0.011399999999980537,
+            "p99": 0.014000000000010004,
+            "min": 0.009399999999999409,
+            "max": 0.0671999999999855
+          },
+          "batchElapsedMs": 23.846900000000005,
+          "cpuUs": {
+            "user": 31000,
+            "system": 0
+          },
+          "cpuUsPerCall": 15.5,
+          "memoryBefore": {
+            "rss": 110305280,
+            "heapUsed": 24569768,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110215168,
+            "heapUsed": 26711400,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 2141632
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.014535650000000018,
+            "p50": 0.014299999999991542,
+            "p95": 0.015199999999992997,
+            "p99": 0.017399999999980764,
+            "min": 0.013499999999964984,
+            "max": 0.20900000000000318
+          },
+          "batchElapsedMs": 29.9854,
+          "cpuUs": {
+            "user": 31000,
+            "system": 0
+          },
+          "cpuUsPerCall": 15.5,
+          "memoryBefore": {
+            "rss": 110563328,
+            "heapUsed": 24569264,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110256128,
+            "heapUsed": 29700240,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 5130976
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.014653149999998874,
+            "p50": 0.01439999999996644,
+            "p95": 0.015199999999992997,
+            "p99": 0.01979999999997517,
+            "min": 0.013399999999990087,
+            "max": 0.17660000000000764
+          },
+          "batchElapsedMs": 30.217600000000004,
+          "cpuUs": {
+            "user": 31000,
+            "system": 0
+          },
+          "cpuUsPerCall": 15.5,
+          "memoryBefore": {
+            "rss": 110587904,
+            "heapUsed": 24570552,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110592000,
+            "heapUsed": 29700968,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 5130416
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.011694149999999553,
+            "p50": 0.010499999999979082,
+            "p95": 0.016400000000032833,
+            "p99": 0.020699999999976626,
+            "min": 0.00940000000002783,
+            "max": 0.08569999999997435
+          },
+          "batchElapsedMs": 26.679300000000012,
+          "cpuUs": {
+            "user": 31000,
+            "system": 15000
+          },
+          "cpuUsPerCall": 23,
+          "memoryBefore": {
+            "rss": 110710784,
+            "heapUsed": 24558432,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110551040,
+            "heapUsed": 29855832,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 5297400
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.010421349999999137,
+            "p50": 0.010100000000022646,
+            "p95": 0.011199999999973898,
+            "p99": 0.014100000000041746,
+            "min": 0.009499999999945885,
+            "max": 0.080600000000004
+          },
+          "batchElapsedMs": 24.082299999999975,
+          "cpuUs": {
+            "user": 31000,
+            "system": 0
+          },
+          "cpuUsPerCall": 15.5,
+          "memoryBefore": {
+            "rss": 110723072,
+            "heapUsed": 24573760,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110723072,
+            "heapUsed": 26709848,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 2136088
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.01453800000000075,
+            "p50": 0.014299999999991542,
+            "p95": 0.015199999999992997,
+            "p99": 0.017499999999984084,
+            "min": 0.013399999999990087,
+            "max": 0.19130000000001246
+          },
+          "batchElapsedMs": 29.980700000000013,
+          "cpuUs": {
+            "user": 32000,
+            "system": 0
+          },
+          "cpuUsPerCall": 16,
+          "memoryBefore": {
+            "rss": 110727168,
+            "heapUsed": 24574312,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110383104,
+            "heapUsed": 29691328,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 5117016
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.015880749999999864,
+            "p50": 0.014299999999991542,
+            "p95": 0.027300000000025193,
+            "p99": 0.04529999999999745,
+            "min": 0.013399999999990087,
+            "max": 0.18540000000001555
+          },
+          "batchElapsedMs": 32.85700000000003,
+          "cpuUs": {
+            "user": 15000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 15.5,
+          "memoryBefore": {
+            "rss": 110653440,
+            "heapUsed": 24580400,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110653440,
+            "heapUsed": 29697416,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 5117016
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.011651400000000705,
+            "p50": 0.010499999999979082,
+            "p95": 0.01639999999997599,
+            "p99": 0.017499999999984084,
+            "min": 0.009399999999970987,
+            "max": 0.09010000000000673
+          },
+          "batchElapsedMs": 26.5154,
+          "cpuUs": {
+            "user": 79000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 47.5,
+          "memoryBefore": {
+            "rss": 110710784,
+            "heapUsed": 24567344,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110551040,
+            "heapUsed": 29804072,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 5236728
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.010318600000000544,
+            "p50": 0.010100000000022646,
+            "p95": 0.011300000000005639,
+            "p99": 0.014400000000023283,
+            "min": 0.009500000000002728,
+            "max": 0.05160000000000764
+          },
+          "batchElapsedMs": 23.73339999999996,
+          "cpuUs": {
+            "user": 16000,
+            "system": 0
+          },
+          "cpuUsPerCall": 8,
+          "memoryBefore": {
+            "rss": 110481408,
+            "heapUsed": 24582384,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110333952,
+            "heapUsed": 26728352,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 2145968
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.014356650000000172,
+            "p50": 0.014099999999984902,
+            "p95": 0.01490000000001146,
+            "p99": 0.017699999999990723,
+            "min": 0.013399999999933243,
+            "max": 0.18700000000001182
+          },
+          "batchElapsedMs": 29.618099999999913,
+          "cpuUs": {
+            "user": 16000,
+            "system": 0
+          },
+          "cpuUsPerCall": 8,
+          "memoryBefore": {
+            "rss": 110682112,
+            "heapUsed": 24586248,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110682112,
+            "heapUsed": 29703264,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 5117016
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 0.014832224999999971,
+        "candidateMeanMs": 0.010953966666666641,
+        "baselineCpuUsPerCall": 14.333333333333334,
+        "candidateCpuUsPerCall": 20.916666666666668,
+        "wallChangePercent": -26.147515516608856,
+        "cpuChangePercent": 45.93023255813953
+      }
+    },
+    {
+      "instruments": 20,
+      "shape": "small-nonempty",
+      "historyOrders": 3,
+      "historyFills": 2,
+      "variants": 8,
+      "referenceByteSizes": [
+        13252,
+        13237,
+        13237,
+        13255,
+        13237,
+        13237,
+        13256,
+        13238
+      ],
+      "inputSha256": [
+        "60c00f3cd0783719b0ab41dfeee7c8465603ee444a8c0c528cb31fb480f5e4ae",
+        "1285261e61000311cf8d5ef1cac5ab4654493a19723c7e5a10271db751e60455",
+        "db8ee314e62fa782f8afd737c47cee3493eb8cd108ea7465915c1ad516a327b2",
+        "05932e2c3d171f016bd8811df7f1955c170ad11668fecaeb4163f3458807bd74",
+        "3544041d3226fc5c69493ae1f2e97285d8feb6f79e0860864f75c7c7fd5e7235",
+        "407a0c8aee1cf5f58d580e5a9d82a3fed518120d124507166441825a81ee7b39",
+        "04331579bc6358af9a53c81f4afede44a434c61dc4c38c99d953af9661b5925e",
+        "1a4f9801b3c8ca166c3df6fa1330efa09ab313c5213408c684bbe0d4fdbf0c8d"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 28,
+        "entries": 170,
+        "characters": 2496,
+        "maxDepth": 4
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.01825544999999994,
+            "p50": 0.01779999999996562,
+            "p95": 0.01960000000008222,
+            "p99": 0.02580000000000382,
+            "min": 0.016899999999964166,
+            "max": 0.1854999999999336
+          },
+          "batchElapsedMs": 37.762500000000045,
+          "cpuUs": {
+            "user": 16000,
+            "system": 15000
+          },
+          "cpuUsPerCall": 15.5,
+          "memoryBefore": {
+            "rss": 112533504,
+            "heapUsed": 24638296,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110485504,
+            "heapUsed": 37103384,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 12465088
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.037507850000000245,
+            "p50": 0.03459999999995489,
+            "p95": 0.05389999999999873,
+            "p99": 0.0805000000000291,
+            "min": 0.03269999999997708,
+            "max": 0.20839999999998327
+          },
+          "batchElapsedMs": 79.48259999999993,
+          "cpuUs": {
+            "user": 78000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 47,
+          "memoryBefore": {
+            "rss": 110841856,
+            "heapUsed": 24631928,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110596096,
+            "heapUsed": 26767768,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 2135840
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.0347689500000007,
+            "p50": 0.0341000000000804,
+            "p95": 0.03769999999997253,
+            "p99": 0.04330000000004475,
+            "min": 0.03260000000000218,
+            "max": 0.1715000000000373
+          },
+          "batchElapsedMs": 73.69590000000005,
+          "cpuUs": {
+            "user": 63000,
+            "system": 0
+          },
+          "cpuUsPerCall": 31.5,
+          "memoryBefore": {
+            "rss": 110895104,
+            "heapUsed": 24646832,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110895104,
+            "heapUsed": 40501184,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15854352
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.01803324999999808,
+            "p50": 0.017800000000079308,
+            "p95": 0.01859999999999218,
+            "p99": 0.021600000000034925,
+            "min": 0.016899999999964166,
+            "max": 0.18299999999999272
+          },
+          "batchElapsedMs": 37.260099999999966,
+          "cpuUs": {
+            "user": 32000,
+            "system": 0
+          },
+          "cpuUsPerCall": 16,
+          "memoryBefore": {
+            "rss": 110886912,
+            "heapUsed": 24647384,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110886912,
+            "heapUsed": 37037064,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 12389680
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.017868300000000035,
+            "p50": 0.017699999999990723,
+            "p95": 0.018400000000042382,
+            "p99": 0.02109999999993306,
+            "min": 0.016799999999989268,
+            "max": 0.14669999999989614
+          },
+          "batchElapsedMs": 36.79139999999995,
+          "cpuUs": {
+            "user": 31000,
+            "system": 0
+          },
+          "cpuUsPerCall": 15.5,
+          "memoryBefore": {
+            "rss": 110874624,
+            "heapUsed": 24647728,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110878720,
+            "heapUsed": 37037408,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 12389680
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.03988919999999951,
+            "p50": 0.03459999999995489,
+            "p95": 0.06639999999993051,
+            "p99": 0.09519999999997708,
+            "min": 0.03279999999995198,
+            "max": 0.2599999999999909
+          },
+          "batchElapsedMs": 84.42090000000007,
+          "cpuUs": {
+            "user": 78000,
+            "system": 0
+          },
+          "cpuUsPerCall": 39,
+          "memoryBefore": {
+            "rss": 110985216,
+            "heapUsed": 24634576,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110743552,
+            "heapUsed": 26769984,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 2135408
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.037260649999999035,
+            "p50": 0.0342000000000553,
+            "p95": 0.04229999999995471,
+            "p99": 0.09640000000001692,
+            "min": 0.03279999999995198,
+            "max": 0.36590000000001055
+          },
+          "batchElapsedMs": 78.87580000000003,
+          "cpuUs": {
+            "user": 46000,
+            "system": 31000
+          },
+          "cpuUsPerCall": 38.5,
+          "memoryBefore": {
+            "rss": 111046656,
+            "heapUsed": 24649392,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111046656,
+            "heapUsed": 40503744,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15854352
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.01818429999999728,
+            "p50": 0.017800000000079308,
+            "p95": 0.019199999999955253,
+            "p99": 0.024000000000114596,
+            "min": 0.01679999999987558,
+            "max": 0.16399999999998727
+          },
+          "batchElapsedMs": 37.521600000000035,
+          "cpuUs": {
+            "user": 47000,
+            "system": 0
+          },
+          "cpuUsPerCall": 23.5,
+          "memoryBefore": {
+            "rss": 111001600,
+            "heapUsed": 24649944,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111001600,
+            "heapUsed": 37039624,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 12389680
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.020553400000001148,
+            "p50": 0.018100000000004002,
+            "p95": 0.031799999999975626,
+            "p99": 0.07960000000002765,
+            "min": 0.01689999999985048,
+            "max": 0.2520999999999276
+          },
+          "batchElapsedMs": 42.620099999999866,
+          "cpuUs": {
+            "user": 47000,
+            "system": 0
+          },
+          "cpuUsPerCall": 23.5,
+          "memoryBefore": {
+            "rss": 110895104,
+            "heapUsed": 24650288,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110895104,
+            "heapUsed": 37039968,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 12389680
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.036282800000000864,
+            "p50": 0.03469999999992979,
+            "p95": 0.05150000000003274,
+            "p99": 0.05529999999998836,
+            "min": 0.03290000000015425,
+            "max": 0.13340000000016516
+          },
+          "batchElapsedMs": 76.88040000000001,
+          "cpuUs": {
+            "user": 78000,
+            "system": 0
+          },
+          "cpuUsPerCall": 39,
+          "memoryBefore": {
+            "rss": 111042560,
+            "heapUsed": 24637136,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110870528,
+            "heapUsed": 26831760,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 2194624
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.03560129999999867,
+            "p50": 0.03449999999997999,
+            "p95": 0.03850000000011278,
+            "p99": 0.047000000000025466,
+            "min": 0.03289999999992688,
+            "max": 0.45659999999998035
+          },
+          "batchElapsedMs": 75.67969999999991,
+          "cpuUs": {
+            "user": 79000,
+            "system": 0
+          },
+          "cpuUsPerCall": 39.5,
+          "memoryBefore": {
+            "rss": 110796800,
+            "heapUsed": 24653088,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110796800,
+            "heapUsed": 40507440,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15854352
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.02077324999999837,
+            "p50": 0.018000000000029104,
+            "p95": 0.04179999999996653,
+            "p99": 0.06610000000000582,
+            "min": 0.016900000000077853,
+            "max": 0.2234000000000833
+          },
+          "batchElapsedMs": 43.15890000000013,
+          "cpuUs": {
+            "user": 46000,
+            "system": 0
+          },
+          "cpuUsPerCall": 23,
+          "memoryBefore": {
+            "rss": 110964736,
+            "heapUsed": 24652776,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110964736,
+            "heapUsed": 37042184,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 12389408
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 0.018944658333332476,
+        "candidateMeanMs": 0.03688512499999984,
+        "baselineCpuUsPerCall": 19.5,
+        "candidateCpuUsPerCall": 39.083333333333336,
+        "wallChangePercent": 94.69934137108045,
+        "cpuChangePercent": 100.42735042735043
+      }
+    },
+    {
+      "instruments": 20,
+      "shape": "cutoff-below",
+      "historyOrders": 3,
+      "historyFills": 20,
+      "variants": 8,
+      "referenceByteSizes": [
+        20831,
+        20816,
+        20816,
+        20834,
+        20816,
+        20816,
+        20835,
+        20817
+      ],
+      "inputSha256": [
+        "771580f69f87584166b00e32e7075f94089f4a6e3cea5ea3427bc4ae5585a6d1",
+        "83a03e9811ee072884ea7b264d901423f6ce0b87e15e72ffdda2031327a19071",
+        "fda4d18ba4b0099241692baa806a621abfa8b30a3cd48e33d37808f265e8ebec",
+        "e6bc7cbd80fa4adcb721bb8ea363683fc1b294c9d2527a410a49a29cb6077d2a",
+        "fdc2de3fc4c11d3ea13e427557628d2c175fb334f42754c76c1b27c41092727f",
+        "0bcd05af934f4864033a55aeddef7e8d4ef735811352c859fb9936f40656256e",
+        "7d1c0f4d01c314ffdb16cb68f39c39d9d894d078da11ae44c00beb4e48654790",
+        "76ba2efd1b1b84e45afbbed469cceec2866050241b5ff12ebbdcf39762ef6888"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 46,
+        "entries": 512,
+        "characters": 7691,
+        "maxDepth": 4
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.03622440000000097,
+            "p50": 0.0340000000001055,
+            "p95": 0.039099999999962165,
+            "p99": 0.10579999999981737,
+            "min": 0.031799999999975626,
+            "max": 0.5192000000001826
+          },
+          "batchElapsedMs": 74.62210000000005,
+          "cpuUs": {
+            "user": 47000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 31.5,
+          "memoryBefore": {
+            "rss": 110972928,
+            "heapUsed": 24727080,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 110972928,
+            "heapUsed": 34971352,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10244272
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09844790000000239,
+            "p50": 0.09220000000004802,
+            "p95": 0.1170999999999367,
+            "p99": 0.2119000000000142,
+            "min": 0.08479999999985921,
+            "max": 1.3287000000000262
+          },
+          "batchElapsedMs": 201.96399999999994,
+          "cpuUs": {
+            "user": 203000,
+            "system": 0
+          },
+          "cpuUsPerCall": 101.5,
+          "memoryBefore": {
+            "rss": 111112192,
+            "heapUsed": 24711864,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111185920,
+            "heapUsed": 40419152,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15707288
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.12350975000000085,
+            "p50": 0.09499999999979991,
+            "p95": 0.16030000000000655,
+            "p99": 0.23900000000003274,
+            "min": 0.08510000000001128,
+            "max": 32.269599999999855
+          },
+          "batchElapsedMs": 253.02469999999994,
+          "cpuUs": {
+            "user": 204000,
+            "system": 0
+          },
+          "cpuUsPerCall": 102,
+          "memoryBefore": {
+            "rss": 111345664,
+            "heapUsed": 24732232,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111357952,
+            "heapUsed": 37900168,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 13167936
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.035030399999995555,
+            "p50": 0.03399999999987813,
+            "p95": 0.038200000000188084,
+            "p99": 0.06319999999982429,
+            "min": 0.03199999999992542,
+            "max": 0.23100000000022192
+          },
+          "batchElapsedMs": 72.1541000000002,
+          "cpuUs": {
+            "user": 78000,
+            "system": 0
+          },
+          "cpuUsPerCall": 39,
+          "memoryBefore": {
+            "rss": 111398912,
+            "heapUsed": 24732816,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111398912,
+            "heapUsed": 34977168,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10244352
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.03628600000000108,
+            "p50": 0.03399999999987813,
+            "p95": 0.041600000000016735,
+            "p99": 0.08899999999994179,
+            "min": 0.03199999999992542,
+            "max": 0.3546000000001186
+          },
+          "batchElapsedMs": 74.90260000000012,
+          "cpuUs": {
+            "user": 62000,
+            "system": 0
+          },
+          "cpuUsPerCall": 31,
+          "memoryBefore": {
+            "rss": 111296512,
+            "heapUsed": 24733160,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111300608,
+            "heapUsed": 34977512,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10244352
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.10206674999999564,
+            "p50": 0.09370000000035361,
+            "p95": 0.1693000000000211,
+            "p99": 0.22310000000015862,
+            "min": 0.08470000000033906,
+            "max": 0.3910000000000764
+          },
+          "batchElapsedMs": 209.41610000000037,
+          "cpuUs": {
+            "user": 219000,
+            "system": 0
+          },
+          "cpuUsPerCall": 109.5,
+          "memoryBefore": {
+            "rss": 111390720,
+            "heapUsed": 24719680,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111185920,
+            "heapUsed": 40421792,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15702112
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09866079999999897,
+            "p50": 0.09300000000030195,
+            "p95": 0.12750000000005457,
+            "p99": 0.2104999999996835,
+            "min": 0.08489999999983411,
+            "max": 0.32660000000032596
+          },
+          "batchElapsedMs": 202.47879999999986,
+          "cpuUs": {
+            "user": 187000,
+            "system": 15000
+          },
+          "cpuUsPerCall": 101,
+          "memoryBefore": {
+            "rss": 111157248,
+            "heapUsed": 24735144,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111210496,
+            "heapUsed": 37903960,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 13168816
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.035271949999994376,
+            "p50": 0.03359999999975116,
+            "p95": 0.03929999999991196,
+            "p99": 0.07690000000002328,
+            "min": 0.0316000000002532,
+            "max": 0.21389999999973952
+          },
+          "batchElapsedMs": 72.62930000000006,
+          "cpuUs": {
+            "user": 63000,
+            "system": 0
+          },
+          "cpuUsPerCall": 31.5,
+          "memoryBefore": {
+            "rss": 111333376,
+            "heapUsed": 24735472,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111353856,
+            "heapUsed": 34979824,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10244352
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.034657449999997196,
+            "p50": 0.03350000000000364,
+            "p95": 0.038000000000010914,
+            "p99": 0.060799999999744614,
+            "min": 0.03170000000000073,
+            "max": 0.18830000000025393
+          },
+          "batchElapsedMs": 71.27030000000013,
+          "cpuUs": {
+            "user": 63000,
+            "system": 0
+          },
+          "cpuUsPerCall": 31.5,
+          "memoryBefore": {
+            "rss": 111312896,
+            "heapUsed": 24735816,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111316992,
+            "heapUsed": 34980168,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10244352
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09965364999999837,
+            "p50": 0.0941000000002532,
+            "p95": 0.13100000000031287,
+            "p99": 0.21469999999999345,
+            "min": 0.08489999999983411,
+            "max": 0.36779999999998836
+          },
+          "batchElapsedMs": 204.26429999999982,
+          "cpuUs": {
+            "user": 171000,
+            "system": 32000
+          },
+          "cpuUsPerCall": 101.5,
+          "memoryBefore": {
+            "rss": 111316992,
+            "heapUsed": 24722336,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111214592,
+            "heapUsed": 40549864,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15827528
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.20929485000000136,
+            "p50": 0.22580000000016298,
+            "p95": 0.37629999999990105,
+            "p99": 0.4776999999999134,
+            "min": 0.08450000000038926,
+            "max": 0.7298000000000684
+          },
+          "batchElapsedMs": 426.11619999999994,
+          "cpuUs": {
+            "user": 422000,
+            "system": 15000
+          },
+          "cpuUsPerCall": 218.5,
+          "memoryBefore": {
+            "rss": 111304704,
+            "heapUsed": 24737704,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111337472,
+            "heapUsed": 37914048,
+            "heapTotal": 59162624,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 13176344
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.11243415000000073,
+            "p50": 0.12770000000000437,
+            "p95": 0.14549999999962893,
+            "p99": 0.18700000000035288,
+            "min": 0.06190000000015061,
+            "max": 0.47020000000020445
+          },
+          "batchElapsedMs": 229.9991,
+          "cpuUs": {
+            "user": 234000,
+            "system": 0
+          },
+          "cpuUsPerCall": 117,
+          "memoryBefore": {
+            "rss": 111452160,
+            "heapUsed": 24741200,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111452160,
+            "heapUsed": 34985552,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10244352
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 0.04831739166666499,
+        "candidateMeanMs": 0.1219389499999996,
+        "baselineCpuUsPerCall": 46.916666666666664,
+        "candidateCpuUsPerCall": 122.33333333333333,
+        "wallChangePercent": 152.37072158455817,
+        "cpuChangePercent": 160.74600355239787
+      }
+    },
+    {
+      "instruments": 20,
+      "shape": "cutoff-above",
+      "historyOrders": 3,
+      "historyFills": 21,
+      "variants": 8,
+      "referenceByteSizes": [
+        21260,
+        21245,
+        21245,
+        21263,
+        21245,
+        21245,
+        21264,
+        21246
+      ],
+      "inputSha256": [
+        "b5c57d95027b6f0de0dc0309438bb983aed8cec229ba3dee637b9c44441e59b6",
+        "66cfb830fade4cdc9abdfdbabc49c61c112bf12b38b269c420c207a1330bf91f",
+        "372524a60aff57064df9d53bf33d3941a0c8d3d6cbc84ab51e33ef4bae437e7c",
+        "b6133d6f8887038b0db352358a017dd85f4885b642cdcc6588497672142f9e77",
+        "45c9f8b20af2c79af137b28427bf6b07fef23111ea52bc1b405660ab12a2e9ca",
+        "66746bcd20f9c977aeeb1a551b59aa557397ff96938d0bf183be8a84428d86fb",
+        "0c98fcbe48daed0dcdfc396dc2a68ec7acf83fc0539ffce600e02118db64253f",
+        "963e6ab12559f63a75582267c0819f4c785c7171d05138cd57e9ed9f4a88bf05"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 47,
+        "entries": 531,
+        "characters": 7988,
+        "maxDepth": 4
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.11262844999999834,
+            "p50": 0.11890000000039436,
+            "p95": 0.15600000000040382,
+            "p99": 0.21570000000019718,
+            "min": 0.03969999999981155,
+            "max": 0.47129999999970096
+          },
+          "batchElapsedMs": 230.17279999999982,
+          "cpuUs": {
+            "user": 218000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 117,
+          "memoryBefore": {
+            "rss": 111497216,
+            "heapUsed": 24748320,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111517696,
+            "heapUsed": 35057048,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10308728
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.2945497999999909,
+            "p50": 0.26040000000011787,
+            "p95": 0.39580000000023574,
+            "p99": 0.5335000000000036,
+            "min": 0.12449999999989814,
+            "max": 0.7377999999998792
+          },
+          "batchElapsedMs": 594.7997999999998,
+          "cpuUs": {
+            "user": 594000,
+            "system": 31000
+          },
+          "cpuUsPerCall": 312.5,
+          "memoryBefore": {
+            "rss": 111489024,
+            "heapUsed": 24735656,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111312896,
+            "heapUsed": 37154744,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 12419088
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.28214374999998015,
+            "p50": 0.24790000000029977,
+            "p95": 0.3816999999999098,
+            "p99": 0.49069999999937863,
+            "min": 0.1147000000000844,
+            "max": 0.9769999999998618
+          },
+          "batchElapsedMs": 569.7655000000004,
+          "cpuUs": {
+            "user": 532000,
+            "system": 0
+          },
+          "cpuUsPerCall": 266,
+          "memoryBefore": {
+            "rss": 111550464,
+            "heapUsed": 24750840,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111550464,
+            "heapUsed": 35156248,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10405408
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09118080000000237,
+            "p50": 0.08240000000023429,
+            "p95": 0.13479999999981374,
+            "p99": 0.15850000000045839,
+            "min": 0.07530000000042492,
+            "max": 0.44760000000042055
+          },
+          "batchElapsedMs": 186.88240000000042,
+          "cpuUs": {
+            "user": 188000,
+            "system": 0
+          },
+          "cpuUsPerCall": 94,
+          "memoryBefore": {
+            "rss": 111239168,
+            "heapUsed": 24751424,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111259648,
+            "heapUsed": 35060152,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10308728
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.11244900000001644,
+            "p50": 0.1135999999996784,
+            "p95": 0.14699999999993452,
+            "p99": 0.2143000000005486,
+            "min": 0.06599999999980355,
+            "max": 0.4768000000003667
+          },
+          "batchElapsedMs": 229.45980000000054,
+          "cpuUs": {
+            "user": 219000,
+            "system": 0
+          },
+          "cpuUsPerCall": 109.5,
+          "memoryBefore": {
+            "rss": 113438720,
+            "heapUsed": 24751544,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111607808,
+            "heapUsed": 35112904,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10361360
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.27508960000000887,
+            "p50": 0.24330000000009022,
+            "p95": 0.38950000000022555,
+            "p99": 0.47929999999996653,
+            "min": 0.19099999999980355,
+            "max": 0.8494999999993524
+          },
+          "batchElapsedMs": 555.9072999999999,
+          "cpuUs": {
+            "user": 547000,
+            "system": 15000
+          },
+          "cpuUsPerCall": 281,
+          "memoryBefore": {
+            "rss": 111554560,
+            "heapUsed": 24738304,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111529984,
+            "heapUsed": 37158096,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 12419792
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.32765040000001133,
+            "p50": 0.35060000000066793,
+            "p95": 0.4191000000000713,
+            "p99": 0.6024000000006708,
+            "min": 0.1871000000001004,
+            "max": 0.8230999999996129
+          },
+          "batchElapsedMs": 661.3315999999995,
+          "cpuUs": {
+            "user": 735000,
+            "system": 0
+          },
+          "cpuUsPerCall": 367.5,
+          "memoryBefore": {
+            "rss": 111562752,
+            "heapUsed": 24754536,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111566848,
+            "heapUsed": 35159944,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10405408
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.125089300000016,
+            "p50": 0.13389999999981228,
+            "p95": 0.14940000000024156,
+            "p99": 0.2205999999996493,
+            "min": 0.06350000000020373,
+            "max": 0.5601999999998952
+          },
+          "batchElapsedMs": 254.92869999999948,
+          "cpuUs": {
+            "user": 250000,
+            "system": 0
+          },
+          "cpuUsPerCall": 125,
+          "memoryBefore": {
+            "rss": 111513600,
+            "heapUsed": 24753984,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 111538176,
+            "heapUsed": 35062712,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10308728
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.11077539999999363,
+            "p50": 0.0988999999999578,
+            "p95": 0.14909999999963475,
+            "p99": 0.20910000000003492,
+            "min": 0.07539999999971769,
+            "max": 2.1797000000005937
+          },
+          "batchElapsedMs": 226.45489999999972,
+          "cpuUs": {
+            "user": 219000,
+            "system": 0
+          },
+          "cpuUsPerCall": 109.5,
+          "memoryBefore": {
+            "rss": 111484928,
+            "heapUsed": 24754104,
+            "heapTotal": 59424768,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 122208256,
+            "heapUsed": 51796160,
+            "heapTotal": 92979200,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 27042056
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.28101060000000505,
+            "p50": 0.2536999999992986,
+            "p95": 0.38949999999931606,
+            "p99": 0.4952999999995882,
+            "min": 0.1879000000008091,
+            "max": 0.7678999999998268
+          },
+          "batchElapsedMs": 567.8175000000001,
+          "cpuUs": {
+            "user": 531000,
+            "system": 46000
+          },
+          "cpuUsPerCall": 288.5,
+          "memoryBefore": {
+            "rss": 127344640,
+            "heapUsed": 24740864,
+            "heapTotal": 92979200,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 145068032,
+            "heapUsed": 53785504,
+            "heapTotal": 92979200,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 29044640
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.27877779999999575,
+            "p50": 0.24380000000019209,
+            "p95": 0.38079999999899883,
+            "p99": 0.4519000000000233,
+            "min": 0.19430000000011205,
+            "max": 0.6763999999993757
+          },
+          "batchElapsedMs": 562.6077999999998,
+          "cpuUs": {
+            "user": 563000,
+            "system": 0
+          },
+          "cpuUsPerCall": 281.5,
+          "memoryBefore": {
+            "rss": 145465344,
+            "heapUsed": 24755960,
+            "heapTotal": 92979200,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 145489920,
+            "heapUsed": 51926312,
+            "heapTotal": 92979200,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 27170352
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.11048950000001423,
+            "p50": 0.13210000000071886,
+            "p95": 0.14429999999993015,
+            "p99": 0.1569999999992433,
+            "min": 0.07569999999941501,
+            "max": 0.3845000000001164
+          },
+          "batchElapsedMs": 225.42669999999998,
+          "cpuUs": {
+            "user": 203000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 109.5,
+          "memoryBefore": {
+            "rss": 145510400,
+            "heapUsed": 24756544,
+            "heapTotal": 92979200,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 145530880,
+            "heapUsed": 35022408,
+            "heapTotal": 92979200,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 10265864
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 0.11043540833334016,
+        "candidateMeanMs": 0.2898703249999987,
+        "baselineCpuUsPerCall": 110.75,
+        "candidateCpuUsPerCall": 299.5,
+        "wallChangePercent": 162.4795157410466,
+        "cpuChangePercent": 170.4288939051919
+      }
+    },
+    {
+      "instruments": 20,
+      "shape": "large-ledger",
+      "historyOrders": 10000,
+      "historyFills": 50000,
+      "variants": 2,
+      "referenceByteSizes": [
+        24726931,
+        24726916
+      ],
+      "inputSha256": [
+        "7bb2afa5e861b629a1a0e6020f463df29ec40d7c9d7b8652f4e929931ac140f3",
+        "a639bbe78b22b2937a439b6a59baa2f920863ffc0f3bcee48a2f8a39f60c1d07"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 60023,
+        "entries": 1090090,
+        "characters": 17261194,
+        "maxDepth": 4
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 152.9568250000002,
+            "p50": 148.23899999999958,
+            "p95": 155.95910000000003,
+            "p99": 155.95910000000003,
+            "min": 144.73580000000038,
+            "max": 162.89340000000084
+          },
+          "batchElapsedMs": 626.2510000000002,
+          "cpuUs": {
+            "user": 562000,
+            "system": 63000
+          },
+          "cpuUsPerCall": 156250,
+          "memoryBefore": {
+            "rss": 287875072,
+            "heapUsed": 101416952,
+            "heapTotal": 238727168,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 361771008,
+            "heapUsed": 175598528,
+            "heapTotal": 312909824,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74181576
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 147.35894999999982,
+            "p50": 143.89490000000114,
+            "p95": 146.6328999999987,
+            "p99": 146.6328999999987,
+            "min": 143.84900000000016,
+            "max": 155.0589999999993
+          },
+          "batchElapsedMs": 604.1352999999999,
+          "cpuUs": {
+            "user": 547000,
+            "system": 63000
+          },
+          "cpuUsPerCall": 152500,
+          "memoryBefore": {
+            "rss": 312377344,
+            "heapUsed": 126100056,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 386510848,
+            "heapUsed": 200289584,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74189528
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 162.0775749999998,
+            "p50": 158.6161000000011,
+            "p95": 163.02699999999822,
+            "p99": 163.02699999999822,
+            "min": 153.83480000000054,
+            "max": 172.83239999999932
+          },
+          "batchElapsedMs": 662.3204999999998,
+          "cpuUs": {
+            "user": 656000,
+            "system": 0
+          },
+          "cpuUsPerCall": 164000,
+          "memoryBefore": {
+            "rss": 311103488,
+            "heapUsed": 126100640,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 385953792,
+            "heapUsed": 200290168,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74189528
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 166.1979750000005,
+            "p50": 159.82810000000063,
+            "p95": 166.53180000000066,
+            "p99": 166.53180000000066,
+            "min": 154.95490000000063,
+            "max": 183.47710000000006
+          },
+          "batchElapsedMs": 677.9493999999995,
+          "cpuUs": {
+            "user": 610000,
+            "system": 63000
+          },
+          "cpuUsPerCall": 168250,
+          "memoryBefore": {
+            "rss": 312553472,
+            "heapUsed": 126101224,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 387121152,
+            "heapUsed": 200282800,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74181576
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 165.94264999999996,
+            "p50": 159.42569999999978,
+            "p95": 167.73400000000038,
+            "p99": 167.73400000000038,
+            "min": 150.59079999999994,
+            "max": 186.02009999999973
+          },
+          "batchElapsedMs": 679.871000000001,
+          "cpuUs": {
+            "user": 500000,
+            "system": 172000
+          },
+          "cpuUsPerCall": 168000,
+          "memoryBefore": {
+            "rss": 311209984,
+            "heapUsed": 126101864,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 385228800,
+            "heapUsed": 200283440,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74181576
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 162.72505,
+            "p50": 163.91560000000027,
+            "p95": 164.11319999999978,
+            "p99": 164.11319999999978,
+            "min": 152.5033999999996,
+            "max": 170.3680000000004
+          },
+          "batchElapsedMs": 664.8564999999999,
+          "cpuUs": {
+            "user": 500000,
+            "system": 140000
+          },
+          "cpuUsPerCall": 160000,
+          "memoryBefore": {
+            "rss": 311193600,
+            "heapUsed": 126102560,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 386031616,
+            "heapUsed": 200292088,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74189528
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 164.73475000000053,
+            "p50": 158.47370000000046,
+            "p95": 166.88500000000022,
+            "p99": 166.88500000000022,
+            "min": 149.9291000000012,
+            "max": 183.65120000000024
+          },
+          "batchElapsedMs": 671.5583999999999,
+          "cpuUs": {
+            "user": 562000,
+            "system": 94000
+          },
+          "cpuUsPerCall": 164000,
+          "memoryBefore": {
+            "rss": 311582720,
+            "heapUsed": 126103200,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 385961984,
+            "heapUsed": 200292728,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74189528
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 171.33802499999956,
+            "p50": 159.03709999999955,
+            "p95": 180.26560000000063,
+            "p99": 180.26560000000063,
+            "min": 155.11619999999857,
+            "max": 190.9331999999995
+          },
+          "batchElapsedMs": 697.3672000000006,
+          "cpuUs": {
+            "user": 656000,
+            "system": 32000
+          },
+          "cpuUsPerCall": 172000,
+          "memoryBefore": {
+            "rss": 311037952,
+            "heapUsed": 126103784,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 386330624,
+            "heapUsed": 200285360,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74181576
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 160.0657749999982,
+            "p50": 158.2609999999986,
+            "p95": 158.26949999999852,
+            "p99": 158.26949999999852,
+            "min": 149.62739999999758,
+            "max": 174.10519999999815
+          },
+          "batchElapsedMs": 654.8302999999978,
+          "cpuUs": {
+            "user": 594000,
+            "system": 62000
+          },
+          "cpuUsPerCall": 164000,
+          "memoryBefore": {
+            "rss": 311529472,
+            "heapUsed": 126104424,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 385155072,
+            "heapUsed": 200286000,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74181576
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 157.65342500000042,
+            "p50": 153.33680000000095,
+            "p95": 155.45060000000012,
+            "p99": 155.45060000000012,
+            "min": 147.03199999999924,
+            "max": 174.79430000000139
+          },
+          "batchElapsedMs": 645.5092999999979,
+          "cpuUs": {
+            "user": 515000,
+            "system": 125000
+          },
+          "cpuUsPerCall": 160000,
+          "memoryBefore": {
+            "rss": 311099392,
+            "heapUsed": 126105120,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 385146880,
+            "heapUsed": 200294648,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74189528
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 166.8834250000009,
+            "p50": 156.32650000000285,
+            "p95": 173.15350000000035,
+            "p99": 173.15350000000035,
+            "min": 153.617000000002,
+            "max": 184.43669999999838
+          },
+          "batchElapsedMs": 679.0335999999988,
+          "cpuUs": {
+            "user": 594000,
+            "system": 93000
+          },
+          "cpuUsPerCall": 171750,
+          "memoryBefore": {
+            "rss": 312254464,
+            "heapUsed": 126105760,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 385208320,
+            "heapUsed": 200295288,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74189528
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 159.56277500000124,
+            "p50": 157.90070000000196,
+            "p95": 164.31720000000132,
+            "p99": 164.31720000000132,
+            "min": 144.37940000000162,
+            "max": 171.65380000000005
+          },
+          "batchElapsedMs": 652.4817000000003,
+          "cpuUs": {
+            "user": 578000,
+            "system": 62000
+          },
+          "cpuUsPerCall": 160000,
+          "memoryBefore": {
+            "rss": 311066624,
+            "heapUsed": 126106344,
+            "heapTotal": 262406144,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 385933312,
+            "heapUsed": 200287920,
+            "heapTotal": 336588800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 74181576
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 162.67733749999994,
+        "candidateMeanMs": 160.23886250000024,
+        "baselineCpuUsPerCall": 164750,
+        "candidateCpuUsPerCall": 162041.66666666666,
+        "wallChangePercent": -1.4989641688718303,
+        "cpuChangePercent": -1.6439049064238764
+      }
+    },
+    {
+      "instruments": 40,
+      "shape": "empty",
+      "historyOrders": 0,
+      "historyFills": 0,
+      "variants": 8,
+      "referenceByteSizes": [
+        17173,
+        17144,
+        17146,
+        17174,
+        17146,
+        17144,
+        17177,
+        17145
+      ],
+      "inputSha256": [
+        "dbc782a988ec2c75cbcbc3fb741a01571be5fde313cd163e4cf93ec65ed6cf16",
+        "663e7cf6becb2e34c56373a4d8d75ccc04b326ca8237fb09feacd8676f99a767",
+        "8764f80358634b03812a681e4b5860009bd3188b7ae01b62dc7eb792720852cd",
+        "856dd626a58ade45b918229b320a16a894fda4ba7d9cea8d893ca9f9b812dc9a",
+        "582b89680592d97a170b4fa514fd6eae935aea456789594601462e2de482921c",
+        "0dc3105853b0d23a5cf557ac6d56a2aee17e2e6eba9a226ea9d2ec853d9b46d7",
+        "ca325c0f97774f239ee6a459122a59d6133c6fb9d4fa85488e082ea0cfee7e62",
+        "b010002d9777cabb7387a59630146e24ed62344dcd478c592da894034a204204"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 15,
+        "entries": 45,
+        "characters": 538,
+        "maxDepth": 2
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.08242259999998897,
+            "p50": 0.06939999999667634,
+            "p95": 0.10870000000068103,
+            "p99": 0.14069999999992433,
+            "min": 0.06379999999990105,
+            "max": 0.4673999999977241
+          },
+          "batchElapsedMs": 171.54579999999987,
+          "cpuUs": {
+            "user": 156000,
+            "system": 0
+          },
+          "cpuUsPerCall": 78,
+          "memoryBefore": {
+            "rss": 238489600,
+            "heapUsed": 52309456,
+            "heapTotal": 188485632,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 237379584,
+            "heapUsed": 60124456,
+            "heapTotal": 188485632,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 7815000
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.0251409000000167,
+            "p50": 0.02419999999983702,
+            "p95": 0.02839999999923748,
+            "p99": 0.04470000000219443,
+            "min": 0.010500000000320142,
+            "max": 0.14090000000214786
+          },
+          "batchElapsedMs": 64.2448000000004,
+          "cpuUs": {
+            "user": 47000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 31.5,
+          "memoryBefore": {
+            "rss": 212414464,
+            "heapUsed": 27649704,
+            "heapTotal": 163758080,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212414464,
+            "heapUsed": 65367040,
+            "heapTotal": 163758080,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 37717336
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.033428299999955925,
+            "p50": 0.03589999999894644,
+            "p95": 0.03810000000157743,
+            "p99": 0.05349999999816646,
+            "min": 0.02239999999801512,
+            "max": 0.20899999999892316
+          },
+          "batchElapsedMs": 81.8673000000017,
+          "cpuUs": {
+            "user": 78000,
+            "system": 0
+          },
+          "cpuUsPerCall": 39,
+          "memoryBefore": {
+            "rss": 212881408,
+            "heapUsed": 27650320,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212881408,
+            "heapUsed": 65368672,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 37718352
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.07921805000001222,
+            "p50": 0.07119999999849824,
+            "p95": 0.10930000000007567,
+            "p99": 0.14860000000044238,
+            "min": 0.04069999999774154,
+            "max": 0.524199999999837
+          },
+          "batchElapsedMs": 165.01440000000002,
+          "cpuUs": {
+            "user": 157000,
+            "system": 0
+          },
+          "cpuUsPerCall": 78.5,
+          "memoryBefore": {
+            "rss": 212332544,
+            "heapUsed": 27650624,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212361216,
+            "heapUsed": 35456728,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 7806104
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09179300000003059,
+            "p50": 0.10429999999905704,
+            "p95": 0.1190999999998894,
+            "p99": 0.16599999999743886,
+            "min": 0.05349999999816646,
+            "max": 0.6637999999984459
+          },
+          "batchElapsedMs": 190.35339999999997,
+          "cpuUs": {
+            "user": 188000,
+            "system": 0
+          },
+          "cpuUsPerCall": 94,
+          "memoryBefore": {
+            "rss": 212889600,
+            "heapUsed": 27636736,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212369408,
+            "heapUsed": 35443128,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 7806392
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.040731700000058484,
+            "p50": 0.03800000000046566,
+            "p95": 0.06149999999979627,
+            "p99": 0.06819999999788706,
+            "min": 0.01750000000174623,
+            "max": 0.2029999999977008
+          },
+          "batchElapsedMs": 96.16479999999865,
+          "cpuUs": {
+            "user": 110000,
+            "system": 0
+          },
+          "cpuUsPerCall": 55,
+          "memoryBefore": {
+            "rss": 212279296,
+            "heapUsed": 27637736,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212570112,
+            "heapUsed": 66245176,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 38607440
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.03625745000005554,
+            "p50": 0.03689999999915017,
+            "p95": 0.039700000001175795,
+            "p99": 0.06409999999959837,
+            "min": 0.017700000000331784,
+            "max": 0.3525000000008731
+          },
+          "batchElapsedMs": 87.39909999999873,
+          "cpuUs": {
+            "user": 156000,
+            "system": 0
+          },
+          "cpuUsPerCall": 78,
+          "memoryBefore": {
+            "rss": 212234240,
+            "heapUsed": 27652608,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212234240,
+            "heapUsed": 65370216,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 37717608
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09443574999992416,
+            "p50": 0.10499999999956344,
+            "p95": 0.11720000000059372,
+            "p99": 0.13850000000093132,
+            "min": 0.04250000000320142,
+            "max": 0.5547999999980675
+          },
+          "batchElapsedMs": 195.3199999999997,
+          "cpuUs": {
+            "user": 250000,
+            "system": 0
+          },
+          "cpuUsPerCall": 125,
+          "memoryBefore": {
+            "rss": 212754432,
+            "heapUsed": 27653160,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212295680,
+            "heapUsed": 35459552,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 7806392
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.08947300000001088,
+            "p50": 0.07619999999951688,
+            "p95": 0.11890000000130385,
+            "p99": 0.1823999999978696,
+            "min": 0.06369999999878928,
+            "max": 0.7991999999976542
+          },
+          "batchElapsedMs": 185.27880000000005,
+          "cpuUs": {
+            "user": 172000,
+            "system": 0
+          },
+          "cpuUsPerCall": 86,
+          "memoryBefore": {
+            "rss": 212213760,
+            "heapUsed": 27653504,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212312064,
+            "heapUsed": 35459896,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 7806392
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.028571549999995113,
+            "p50": 0.025200000000040745,
+            "p95": 0.0404000000016822,
+            "p99": 0.07289999999920838,
+            "min": 0.02110000000175205,
+            "max": 0.22910000000047148
+          },
+          "batchElapsedMs": 70.1807000000008,
+          "cpuUs": {
+            "user": 78000,
+            "system": 0
+          },
+          "cpuUsPerCall": 39,
+          "memoryBefore": {
+            "rss": 212824064,
+            "heapUsed": 27640296,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212561920,
+            "heapUsed": 66247736,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 38607440
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.029310300000022833,
+            "p50": 0.025400000002264278,
+            "p95": 0.038199999999051215,
+            "p99": 0.05760000000009313,
+            "min": 0.019099999997706618,
+            "max": 0.26129999999830034
+          },
+          "batchElapsedMs": 72.76590000000215,
+          "cpuUs": {
+            "user": 63000,
+            "system": 0
+          },
+          "cpuUsPerCall": 31.5,
+          "memoryBefore": {
+            "rss": 213737472,
+            "heapUsed": 27655168,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212647936,
+            "heapUsed": 65427312,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 37772144
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09280659999997988,
+            "p50": 0.10559999999895808,
+            "p95": 0.11859999999796855,
+            "p99": 0.16089999999894644,
+            "min": 0.05429999999978463,
+            "max": 0.7691000000013446
+          },
+          "batchElapsedMs": 191.97469999999885,
+          "cpuUs": {
+            "user": 234000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 125,
+          "memoryBefore": {
+            "rss": 212955136,
+            "heapUsed": 27655720,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212303872,
+            "heapUsed": 35462112,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 7806392
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 0.08835816666665779,
+        "candidateMeanMs": 0.032240033333350765,
+        "baselineCpuUsPerCall": 97.75,
+        "candidateCpuUsPerCall": 45.666666666666664,
+        "wallChangePercent": -63.51210697367645,
+        "cpuChangePercent": -53.28218243819267
+      }
+    },
+    {
+      "instruments": 40,
+      "shape": "small-nonempty",
+      "historyOrders": 3,
+      "historyFills": 2,
+      "variants": 8,
+      "referenceByteSizes": [
+        19988,
+        19973,
+        19973,
+        19991,
+        19973,
+        19973,
+        19992,
+        19974
+      ],
+      "inputSha256": [
+        "7f93006024b093cc5a4812e6e3b2996029379a941ba0c6eaf4618ac6c6027563",
+        "9068248e8e189cfdbc5774337e93f8b7e3f2df340a288eba93cd37b564e63b4a",
+        "98665528babb8c59f116aa687116f1e5fba357d66c11ad4b086993a807b5b824",
+        "8385bff521da47eb63e925a957b18dcba40139f085c267e1580a2515c1f2f9b9",
+        "e0bf55d0f8a120a25567055a2a6035fcc980702f7277a1c1fae4c08b1c7784c8",
+        "ba5865269c33a9dcf7ded56c0ed83c7ef8247937436dd1788092f25104bb4937",
+        "107777b3ca7da4dae3898f0efaf1cf2d135866840fb13151b66da2becc55a815",
+        "e5efddcc6b3beb5ccd98d9c93069af149e00066aa4a46f4fa1eef0a35d5ed3a8"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 28,
+        "entries": 170,
+        "characters": 2496,
+        "maxDepth": 4
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.08823629999994045,
+            "p50": 0.08029999999780557,
+            "p95": 0.1323000000011234,
+            "p99": 0.1837999999988824,
+            "min": 0.06309999999939464,
+            "max": 0.5200999999979103
+          },
+          "batchElapsedMs": 183.77860000000146,
+          "cpuUs": {
+            "user": 172000,
+            "system": 15000
+          },
+          "cpuUsPerCall": 93.5,
+          "memoryBefore": {
+            "rss": 212946944,
+            "heapUsed": 27712912,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 212951040,
+            "heapUsed": 48057688,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 20344776
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.10742625000001499,
+            "p50": 0.08610000000044238,
+            "p95": 0.2007999999987078,
+            "p99": 0.23370000000068103,
+            "min": 0.06499999999869033,
+            "max": 0.4848000000019965
+          },
+          "batchElapsedMs": 233.34500000000116,
+          "cpuUs": {
+            "user": 203000,
+            "system": 32000
+          },
+          "cpuUsPerCall": 117.5,
+          "memoryBefore": {
+            "rss": 212959232,
+            "heapUsed": 27719120,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218877952,
+            "heapUsed": 71484088,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 43764968
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.10745849999995334,
+            "p50": 0.0904000000009546,
+            "p95": 0.14549999999871943,
+            "p99": 0.20820000000094296,
+            "min": 0.0650999999998021,
+            "max": 0.38739999999961583
+          },
+          "batchElapsedMs": 232.01369999999952,
+          "cpuUs": {
+            "user": 297000,
+            "system": 0
+          },
+          "cpuUsPerCall": 148.5,
+          "memoryBefore": {
+            "rss": 219320320,
+            "heapUsed": 27721288,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219320320,
+            "heapUsed": 68215896,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 40494608
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.098090550000039,
+            "p50": 0.08159999999770662,
+            "p95": 0.1330999999991036,
+            "p99": 0.15910000000076252,
+            "min": 0.06169999999838183,
+            "max": 0.4267999999974563
+          },
+          "batchElapsedMs": 203.52839999999924,
+          "cpuUs": {
+            "user": 172000,
+            "system": 0
+          },
+          "cpuUsPerCall": 86,
+          "memoryBefore": {
+            "rss": 219258880,
+            "heapUsed": 27720824,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219258880,
+            "heapUsed": 48065952,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 20345128
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09417884999996931,
+            "p50": 0.07930000000123982,
+            "p95": 0.12860000000000582,
+            "p99": 0.16200000000026193,
+            "min": 0.06420000000071013,
+            "max": 0.6256999999968684
+          },
+          "batchElapsedMs": 195.54680000000008,
+          "cpuUs": {
+            "user": 172000,
+            "system": 0
+          },
+          "cpuUsPerCall": 86,
+          "memoryBefore": {
+            "rss": 221224960,
+            "heapUsed": 27721168,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218759168,
+            "heapUsed": 48119480,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 20398312
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09805979999997726,
+            "p50": 0.08200000000215368,
+            "p95": 0.15370000000257278,
+            "p99": 0.24170000000231084,
+            "min": 0.07749999999941792,
+            "max": 0.5785000000032596
+          },
+          "batchElapsedMs": 212.67510000000038,
+          "cpuUs": {
+            "user": 156000,
+            "system": 31000
+          },
+          "cpuUsPerCall": 93.5,
+          "memoryBefore": {
+            "rss": 218755072,
+            "heapUsed": 27707960,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219037696,
+            "heapUsed": 71566312,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 43858352
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09170329999998285,
+            "p50": 0.08090000000083819,
+            "p95": 0.13549999999668216,
+            "p99": 0.17920000000231084,
+            "min": 0.07729999999719439,
+            "max": 0.3705000000009022
+          },
+          "batchElapsedMs": 199.64719999999943,
+          "cpuUs": {
+            "user": 265000,
+            "system": 0
+          },
+          "cpuUsPerCall": 132.5,
+          "memoryBefore": {
+            "rss": 218865664,
+            "heapUsed": 27723504,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218865664,
+            "heapUsed": 68218112,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 40494608
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.08592625000008774,
+            "p50": 0.07870000000184518,
+            "p95": 0.12299999999959255,
+            "p99": 0.1522000000004482,
+            "min": 0.06309999999939464,
+            "max": 0.47290000000066357
+          },
+          "batchElapsedMs": 179.1252999999997,
+          "cpuUs": {
+            "user": 250000,
+            "system": 0
+          },
+          "cpuUsPerCall": 125,
+          "memoryBefore": {
+            "rss": 219279360,
+            "heapUsed": 27724056,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219279360,
+            "heapUsed": 48069184,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 20345128
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09516555000001972,
+            "p50": 0.08009999999922002,
+            "p95": 0.12510000000111177,
+            "p99": 0.14180000000123982,
+            "min": 0.07470000000103028,
+            "max": 0.4503000000004249
+          },
+          "batchElapsedMs": 197.8028000000013,
+          "cpuUs": {
+            "user": 188000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 102,
+          "memoryBefore": {
+            "rss": 218714112,
+            "heapUsed": 27724400,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218783744,
+            "heapUsed": 48069528,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 20345128
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09934944999998516,
+            "p50": 0.08289999999760767,
+            "p95": 0.14470000000073924,
+            "p99": 0.19859999999971478,
+            "min": 0.06660000000192667,
+            "max": 0.4543000000012398
+          },
+          "batchElapsedMs": 215.39649999999892,
+          "cpuUs": {
+            "user": 219000,
+            "system": 0
+          },
+          "cpuUsPerCall": 109.5,
+          "memoryBefore": {
+            "rss": 218710016,
+            "heapUsed": 27711192,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218914816,
+            "heapUsed": 71829656,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 44118464
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.09314579999994022,
+            "p50": 0.0812999999980093,
+            "p95": 0.13559999999779393,
+            "p99": 0.19200000000273576,
+            "min": 0.07549999999901047,
+            "max": 0.38959999999860884
+          },
+          "batchElapsedMs": 202.65109999999913,
+          "cpuUs": {
+            "user": 203000,
+            "system": 0
+          },
+          "cpuUsPerCall": 101.5,
+          "memoryBefore": {
+            "rss": 221364224,
+            "heapUsed": 27726064,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218890240,
+            "heapUsed": 68274872,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 40548808
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.08282889999998588,
+            "p50": 0.07800000000133878,
+            "p95": 0.11230000000068685,
+            "p99": 0.16709999999875436,
+            "min": 0.07140000000072177,
+            "max": 0.5129999999990105
+          },
+          "batchElapsedMs": 173.13980000000083,
+          "cpuUs": {
+            "user": 172000,
+            "system": 0
+          },
+          "cpuUsPerCall": 86,
+          "memoryBefore": {
+            "rss": 219353088,
+            "heapUsed": 27726616,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218836992,
+            "heapUsed": 48071744,
+            "heapTotal": 164020224,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 20345128
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 0.09073773333334036,
+        "candidateMeanMs": 0.09952384999997564,
+        "baselineCpuUsPerCall": 96.41666666666667,
+        "candidateCpuUsPerCall": 117.16666666666667,
+        "wallChangePercent": 9.682980105264472,
+        "cpuChangePercent": 21.52117545375973
+      }
+    },
+    {
+      "instruments": 40,
+      "shape": "cutoff-below",
+      "historyOrders": 3,
+      "historyFills": 20,
+      "variants": 8,
+      "referenceByteSizes": [
+        27567,
+        27552,
+        27552,
+        27570,
+        27552,
+        27552,
+        27571,
+        27553
+      ],
+      "inputSha256": [
+        "56d875d7f1f2140d5f2853f6c6de26baac28b53152973c43cc504259b4621f30",
+        "2576fdbefd81934a96545d85c8ee0ffdac9fd12b286237c129dbf20b02acfd33",
+        "f216bec19f5b232c01501fc9cc065d385c17a3c1a403531bf3479e840493cd34",
+        "bb793474f00fe58709e8766e4d52491ca385e245ae28332ce788d0b704159631",
+        "7850a8ff2a03c17bdd41ece17e6452f95713d40f9eb60de378f6eae22d1fbd02",
+        "833f6430614d00097d992060c7d43d8bff0b2764cb95e8ebcbaa6bfc86027027",
+        "a2f65aa80f1aebcb0f276d68ebf388ff2df2eb43793609efc4e3d9917e5ee292",
+        "fb6e5df913ce63241f02e05910d449e5ab662212900614e15ae521959724d828"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 46,
+        "entries": 512,
+        "characters": 7691,
+        "maxDepth": 4
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.1730189500000397,
+            "p50": 0.19090000000142027,
+            "p95": 0.20529999999780557,
+            "p99": 0.2235000000000582,
+            "min": 0.11530000000129803,
+            "max": 0.667700000001787
+          },
+          "batchElapsedMs": 356.119999999999,
+          "cpuUs": {
+            "user": 406000,
+            "system": 0
+          },
+          "cpuUsPerCall": 203,
+          "memoryBefore": {
+            "rss": 219328512,
+            "heapUsed": 27866032,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219328512,
+            "heapUsed": 91880016,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64013984
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.2877391999999582,
+            "p50": 0.27260000000023865,
+            "p95": 0.4573999999993248,
+            "p99": 0.599499999996624,
+            "min": 0.1775000000016007,
+            "max": 0.8982999999971071
+          },
+          "batchElapsedMs": 593.8306999999986,
+          "cpuUs": {
+            "user": 656000,
+            "system": 0
+          },
+          "cpuUsPerCall": 328,
+          "memoryBefore": {
+            "rss": 219447296,
+            "heapUsed": 27881456,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219414528,
+            "heapUsed": 45035056,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 17153600
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.29797775000003457,
+            "p50": 0.2793000000019674,
+            "p95": 0.44549999999799184,
+            "p99": 0.5390000000006694,
+            "min": 0.17520000000149594,
+            "max": 0.9879999999975553
+          },
+          "batchElapsedMs": 615.1699000000008,
+          "cpuUs": {
+            "user": 578000,
+            "system": 0
+          },
+          "cpuUsPerCall": 289,
+          "memoryBefore": {
+            "rss": 219840512,
+            "heapUsed": 27883600,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219115520,
+            "heapUsed": 41850072,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 13966472
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.16991445000002386,
+            "p50": 0.19110000000000582,
+            "p95": 0.2076999999990221,
+            "p99": 0.25799999999799184,
+            "min": 0.09909999999945285,
+            "max": 0.7701000000015483
+          },
+          "batchElapsedMs": 350.3627000000015,
+          "cpuUs": {
+            "user": 328000,
+            "system": 0
+          },
+          "cpuUsPerCall": 164,
+          "memoryBefore": {
+            "rss": 219582464,
+            "heapUsed": 27884168,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219111424,
+            "heapUsed": 91898232,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64014064
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.16830274999992798,
+            "p50": 0.19239999999990687,
+            "p95": 0.20679999999993015,
+            "p99": 0.2139999999999418,
+            "min": 0.09790000000066357,
+            "max": 0.6670000000012806
+          },
+          "batchElapsedMs": 347.76929999999993,
+          "cpuUs": {
+            "user": 343000,
+            "system": 0
+          },
+          "cpuUsPerCall": 171.5,
+          "memoryBefore": {
+            "rss": 218914816,
+            "heapUsed": 27884256,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218935296,
+            "heapUsed": 91898576,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64014320
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.3032160000000058,
+            "p50": 0.29589999999734573,
+            "p95": 0.44470000000001164,
+            "p99": 0.529500000000553,
+            "min": 0.1025999999983469,
+            "max": 0.878099999998085
+          },
+          "batchElapsedMs": 627.4750999999997,
+          "cpuUs": {
+            "user": 594000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 305,
+          "memoryBefore": {
+            "rss": 218902528,
+            "heapUsed": 27871032,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219238400,
+            "heapUsed": 43710696,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15839664
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.3026428499999929,
+            "p50": 0.29060000000026776,
+            "p95": 0.44320000000152504,
+            "p99": 0.5110999999997148,
+            "min": 0.1305000000029395,
+            "max": 0.9048000000002503
+          },
+          "batchElapsedMs": 624.3372999999992,
+          "cpuUs": {
+            "user": 578000,
+            "system": 15000
+          },
+          "cpuUsPerCall": 296.5,
+          "memoryBefore": {
+            "rss": 218959872,
+            "heapUsed": 27885904,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219033600,
+            "heapUsed": 41852632,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 13966728
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.16497459999997774,
+            "p50": 0.18989999999757856,
+            "p95": 0.20609999999942374,
+            "p99": 0.2294000000001688,
+            "min": 0.053600000002916204,
+            "max": 0.6713999999992666
+          },
+          "batchElapsedMs": 340.2515999999996,
+          "cpuUs": {
+            "user": 343000,
+            "system": 0
+          },
+          "cpuUsPerCall": 171.5,
+          "memoryBefore": {
+            "rss": 218968064,
+            "heapUsed": 27886456,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219045888,
+            "heapUsed": 91900792,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64014336
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.15286914999998952,
+            "p50": 0.1330999999991036,
+            "p95": 0.2043999999987136,
+            "p99": 0.23779999999896972,
+            "min": 0.09749999999985448,
+            "max": 0.644799999998213
+          },
+          "batchElapsedMs": 316.35429999999906,
+          "cpuUs": {
+            "user": 297000,
+            "system": 0
+          },
+          "cpuUsPerCall": 148.5,
+          "memoryBefore": {
+            "rss": 218877952,
+            "heapUsed": 27886800,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218951680,
+            "heapUsed": 91901136,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64014336
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.2756513499999819,
+            "p50": 0.2701999999990221,
+            "p95": 0.43100000000049477,
+            "p99": 0.4975000000013097,
+            "min": 0.12010000000009313,
+            "max": 0.7332999999998719
+          },
+          "batchElapsedMs": 571.5858000000007,
+          "cpuUs": {
+            "user": 562000,
+            "system": 0
+          },
+          "cpuUsPerCall": 281,
+          "memoryBefore": {
+            "rss": 219017216,
+            "heapUsed": 27873592,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219389952,
+            "heapUsed": 43714272,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15840680
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.30602865000001295,
+            "p50": 0.29829999999856227,
+            "p95": 0.43589999999676365,
+            "p99": 0.5266000000010536,
+            "min": 0.1687999999994645,
+            "max": 0.798399999999674
+          },
+          "batchElapsedMs": 630.6898000000001,
+          "cpuUs": {
+            "user": 594000,
+            "system": 32000
+          },
+          "cpuUsPerCall": 313,
+          "memoryBefore": {
+            "rss": 219107328,
+            "heapUsed": 27889480,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219127808,
+            "heapUsed": 41856208,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 13966728
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.17937525000004825,
+            "p50": 0.19210000000020955,
+            "p95": 0.21239999999670545,
+            "p99": 0.2585999999973865,
+            "min": 0.09070000000065193,
+            "max": 0.4863000000004831
+          },
+          "batchElapsedMs": 369.2433999999994,
+          "cpuUs": {
+            "user": 375000,
+            "system": 0
+          },
+          "cpuUsPerCall": 187.5,
+          "memoryBefore": {
+            "rss": 219549696,
+            "heapUsed": 27889016,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219553792,
+            "heapUsed": 91903352,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64014336
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 0.16807585833333452,
+        "candidateMeanMs": 0.29554263333333103,
+        "baselineCpuUsPerCall": 174.33333333333334,
+        "candidateCpuUsPerCall": 302.0833333333333,
+        "wallChangePercent": 75.8388362635635,
+        "cpuChangePercent": 73.27915869980876
+      }
+    },
+    {
+      "instruments": 40,
+      "shape": "cutoff-above",
+      "historyOrders": 3,
+      "historyFills": 21,
+      "variants": 8,
+      "referenceByteSizes": [
+        27996,
+        27981,
+        27981,
+        27999,
+        27981,
+        27981,
+        28000,
+        27982
+      ],
+      "inputSha256": [
+        "76c31e0d9c26db4ccfd9a26d8d2587b931a2b744a8384c3b1696cb4e4241aef6",
+        "f8bf159626f4e22f0c136cb6d966ccf67c3f2136a6c2a8cd3d0e437dd9075784",
+        "cfb6cc635ab4593614d10ffef59b9f137fac50b55ccac3aab347620587b9b736",
+        "1e7fac224878a1d48d9bf4e8eb7ce1cd4d42d70ad2fc9f55cc48ab025c0b35a3",
+        "119e9451d68616ee4d56f0da9bca1eb6d8d57ac1d1029049afbafb226970f3dd",
+        "d6aa6d447ca3733c4385ead799573bb34d483831fa03b894b9c1200b39256311",
+        "70058ee40d496ca5ce4142f06c0de97266d35fb25731d328949e1f35cd5453bc",
+        "61417b5b43d44ba874290ab39d85c03f209d558e913422032fa572e5639d4ad9"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 47,
+        "entries": 531,
+        "characters": 7988,
+        "maxDepth": 4
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.15905015000005004,
+            "p50": 0.13550000000032014,
+            "p95": 0.20910000000003492,
+            "p99": 0.2657999999973981,
+            "min": 0.10119999999733409,
+            "max": 0.7076000000015483
+          },
+          "batchElapsedMs": 328.6265999999996,
+          "cpuUs": {
+            "user": 312000,
+            "system": 0
+          },
+          "cpuUsPerCall": 156,
+          "memoryBefore": {
+            "rss": 219426816,
+            "heapUsed": 27898800,
+            "heapTotal": 165068800,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219488256,
+            "heapUsed": 91913456,
+            "heapTotal": 165068800,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64014656
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.3369889499999681,
+            "p50": 0.2904000000016822,
+            "p95": 0.4644000000007509,
+            "p99": 0.6228999999984808,
+            "min": 0.13599999999860302,
+            "max": 1.1131999999997788
+          },
+          "batchElapsedMs": 685.476200000001,
+          "cpuUs": {
+            "user": 656000,
+            "system": 0
+          },
+          "cpuUsPerCall": 328,
+          "memoryBefore": {
+            "rss": 219594752,
+            "heapUsed": 27885760,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219426816,
+            "heapUsed": 43096408,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15210648
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.35499880000004486,
+            "p50": 0.3132999999979802,
+            "p95": 0.44650000000183354,
+            "p99": 0.5737000000008265,
+            "min": 0.24129999999786378,
+            "max": 0.8467999999993481
+          },
+          "batchElapsedMs": 721.1461999999992,
+          "cpuUs": {
+            "user": 703000,
+            "system": 0
+          },
+          "cpuUsPerCall": 351.5,
+          "memoryBefore": {
+            "rss": 219906048,
+            "heapUsed": 27901072,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219906048,
+            "heapUsed": 41865944,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 13964872
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.12948049999997419,
+            "p50": 0.12279999999736901,
+            "p95": 0.19620000000213622,
+            "p99": 0.23770000000149594,
+            "min": 0.06190000000060536,
+            "max": 0.47599999999874854
+          },
+          "batchElapsedMs": 269.6791999999987,
+          "cpuUs": {
+            "user": 250000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 133,
+          "memoryBefore": {
+            "rss": 219144192,
+            "heapUsed": 27901656,
+            "heapTotal": 164806656,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219238400,
+            "heapUsed": 91916848,
+            "heapTotal": 164806656,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64015192
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.16908634999999048,
+            "p50": 0.1952000000019325,
+            "p95": 0.20999999999912689,
+            "p99": 0.25019999999858555,
+            "min": 0.06240000000252621,
+            "max": 0.5072000000000116
+          },
+          "batchElapsedMs": 347.9662000000026,
+          "cpuUs": {
+            "user": 328000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 172,
+          "memoryBefore": {
+            "rss": 219160576,
+            "heapUsed": 27902592,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219181056,
+            "heapUsed": 91917784,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64015192
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.3030972499999916,
+            "p50": 0.28029999999853317,
+            "p95": 0.4382999999943422,
+            "p99": 0.5487999999968451,
+            "min": 0.12910000000556465,
+            "max": 0.8057999999946333
+          },
+          "batchElapsedMs": 618.3027000000002,
+          "cpuUs": {
+            "user": 579000,
+            "system": 46000
+          },
+          "cpuUsPerCall": 312.5,
+          "memoryBefore": {
+            "rss": 219639808,
+            "heapUsed": 27889352,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219566080,
+            "heapUsed": 43099728,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15210376
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.3364064999999828,
+            "p50": 0.2933000000048196,
+            "p95": 0.44799999999668216,
+            "p99": 0.5570999999981723,
+            "min": 0.1503000000011525,
+            "max": 0.7796999999991385
+          },
+          "batchElapsedMs": 685.170100000003,
+          "cpuUs": {
+            "user": 672000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 344,
+          "memoryBefore": {
+            "rss": 219922432,
+            "heapUsed": 27904448,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219922432,
+            "heapUsed": 41870336,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 13965888
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.13932630000005883,
+            "p50": 0.12670000000071013,
+            "p95": 0.19890000000305008,
+            "p99": 0.23350000000209548,
+            "min": 0.05490000000281725,
+            "max": 0.5108000000036554
+          },
+          "batchElapsedMs": 289.6918000000005,
+          "cpuUs": {
+            "user": 282000,
+            "system": 0
+          },
+          "cpuUsPerCall": 141,
+          "memoryBefore": {
+            "rss": 219230208,
+            "heapUsed": 27905032,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219308032,
+            "heapUsed": 91920224,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64015192
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.13303069999992295,
+            "p50": 0.1275999999998021,
+            "p95": 0.19919999999547144,
+            "p99": 0.269800000001851,
+            "min": 0.05189999999856809,
+            "max": 0.5102000000042608
+          },
+          "batchElapsedMs": 276.4799000000057,
+          "cpuUs": {
+            "user": 281000,
+            "system": 0
+          },
+          "cpuUsPerCall": 140.5,
+          "memoryBefore": {
+            "rss": 219676672,
+            "heapUsed": 27905152,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219148288,
+            "heapUsed": 91920344,
+            "heapTotal": 164544512,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64015192
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.3885606999999618,
+            "p50": 0.4268999999985681,
+            "p95": 0.48489999999583233,
+            "p99": 0.6211000000039348,
+            "min": 0.24919999999838183,
+            "max": 0.8912000000054832
+          },
+          "batchElapsedMs": 790.1017999999967,
+          "cpuUs": {
+            "user": 766000,
+            "system": 0
+          },
+          "cpuUsPerCall": 383,
+          "memoryBefore": {
+            "rss": 219045888,
+            "heapUsed": 27891912,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 218951680,
+            "heapUsed": 43102288,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 15210376
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.33051124999997045,
+            "p50": 0.2914999999993597,
+            "p95": 0.4628999999986263,
+            "p99": 0.5870999999970081,
+            "min": 0.11660000000119908,
+            "max": 2.046299999994517
+          },
+          "batchElapsedMs": 673.3208999999988,
+          "cpuUs": {
+            "user": 640000,
+            "system": 15000
+          },
+          "cpuUsPerCall": 327.5,
+          "memoryBefore": {
+            "rss": 219672576,
+            "heapUsed": 27907008,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219672576,
+            "heapUsed": 41871880,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 13964872
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 2000,
+          "wallMs": {
+            "count": 2000,
+            "mean": 0.15053224999993473,
+            "p50": 0.13089999999647262,
+            "p95": 0.20709999999962747,
+            "p99": 0.2628999999942607,
+            "min": 0.09419999999954598,
+            "max": 0.7012000000031549
+          },
+          "batchElapsedMs": 312.8999999999942,
+          "cpuUs": {
+            "user": 359000,
+            "system": 16000
+          },
+          "cpuUsPerCall": 187.5,
+          "memoryBefore": {
+            "rss": 219643904,
+            "heapUsed": 27907592,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 219156480,
+            "heapUsed": 91922784,
+            "heapTotal": 164282368,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 64015192
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 0.14675104166665523,
+        "candidateMeanMs": 0.3417605749999866,
+        "baselineCpuUsPerCall": 155,
+        "candidateCpuUsPerCall": 341.0833333333333,
+        "wallChangePercent": 132.88459905878912,
+        "cpuChangePercent": 120.05376344086018
+      }
+    },
+    {
+      "instruments": 40,
+      "shape": "large-ledger",
+      "historyOrders": 10000,
+      "historyFills": 50000,
+      "variants": 2,
+      "referenceByteSizes": [
+        24733667,
+        24733652
+      ],
+      "inputSha256": [
+        "7df4aec4be443bf41d3d51f26da11192d7cbe98afa706c0c91f19a995c5b9c09",
+        "a8755af34f91a7e377f389edcc8b598f7e964eb74e165bafa0a0a4452de93f1e"
+      ],
+      "shapeWithoutCatalogue": {
+        "objects": 60023,
+        "entries": 1090090,
+        "characters": 17261194,
+        "maxDepth": 4
+      },
+      "runs": [
+        {
+          "repeat": 1,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 227.72177499999998,
+            "p50": 215.08690000000206,
+            "p95": 242.433100000002,
+            "p99": 242.433100000002,
+            "min": 207.8940999999977,
+            "max": 245.47299999999814
+          },
+          "batchElapsedMs": 942.1473000000042,
+          "cpuUs": {
+            "user": 890000,
+            "system": 78000
+          },
+          "cpuUsPerCall": 242000,
+          "memoryBefore": {
+            "rss": 367468544,
+            "heapUsed": 175813576,
+            "heapTotal": 312946688,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 566448128,
+            "heapUsed": 373682408,
+            "heapTotal": 510816256,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 197868832
+        },
+        {
+          "repeat": 1,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 211.98914999999943,
+            "p50": 209.86820000000444,
+            "p95": 214.6568999999945,
+            "p99": 214.6568999999945,
+            "min": 190.4294000000009,
+            "max": 233.00209999999788
+          },
+          "batchElapsedMs": 878.3861000000034,
+          "cpuUs": {
+            "user": 828000,
+            "system": 47000
+          },
+          "cpuUsPerCall": 218750,
+          "memoryBefore": {
+            "rss": 418443264,
+            "heapUsed": 225202344,
+            "heapTotal": 361627648,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 566329344,
+            "heapUsed": 373612128,
+            "heapTotal": 510029824,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 148409784
+        },
+        {
+          "repeat": 2,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 217.11187500000233,
+            "p50": 210.83450000000448,
+            "p95": 221.452200000007,
+            "p99": 221.452200000007,
+            "min": 207.90739999999641,
+            "max": 228.25340000000142
+          },
+          "batchElapsedMs": 891.9749000000011,
+          "cpuUs": {
+            "user": 688000,
+            "system": 188000
+          },
+          "cpuUsPerCall": 219000,
+          "memoryBefore": {
+            "rss": 418795520,
+            "heapUsed": 225202928,
+            "heapTotal": 361627648,
+            "external": 2574622
+          },
+          "memoryAfter": {
+            "rss": 567390208,
+            "heapUsed": 373612712,
+            "heapTotal": 510029824,
+            "external": 2574622
+          },
+          "heapDeltaBytes": 148409784
+        },
+        {
+          "repeat": 2,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 218.75172500000008,
+            "p50": 207.64960000000428,
+            "p95": 224.6209000000017,
+            "p99": 224.6209000000017,
+            "min": 207.02049999999872,
+            "max": 235.7158999999956
+          },
+          "batchElapsedMs": 900.7347000000009,
+          "cpuUs": {
+            "user": 703000,
+            "system": 204000
+          },
+          "cpuUsPerCall": 226750,
+          "memoryBefore": {
+            "rss": 418754560,
+            "heapUsed": 224172016,
+            "heapTotal": 361365504,
+            "external": 2572007
+          },
+          "memoryAfter": {
+            "rss": 567156736,
+            "heapUsed": 372573848,
+            "heapTotal": 509767680,
+            "external": 2572007
+          },
+          "heapDeltaBytes": 148401832
+        },
+        {
+          "repeat": 3,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 227.5549749999991,
+            "p50": 224.2580999999991,
+            "p95": 231.71250000000146,
+            "p99": 231.71250000000146,
+            "min": 222.48859999999695,
+            "max": 231.7606999999989
+          },
+          "batchElapsedMs": 933.7093000000023,
+          "cpuUs": {
+            "user": 734000,
+            "system": 172000
+          },
+          "cpuUsPerCall": 226500,
+          "memoryBefore": {
+            "rss": 418029568,
+            "heapUsed": 224153616,
+            "heapTotal": 361365504,
+            "external": 2572007
+          },
+          "memoryAfter": {
+            "rss": 566702080,
+            "heapUsed": 372555448,
+            "heapTotal": 509767680,
+            "external": 2572007
+          },
+          "heapDeltaBytes": 148401832
+        },
+        {
+          "repeat": 3,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 208.51777500000026,
+            "p50": 207.2569999999978,
+            "p95": 209.08000000000175,
+            "p99": 209.08000000000175,
+            "min": 203.32570000000123,
+            "max": 214.40840000000026
+          },
+          "batchElapsedMs": 858.6584999999977,
+          "cpuUs": {
+            "user": 703000,
+            "system": 141000
+          },
+          "cpuUsPerCall": 211000,
+          "memoryBefore": {
+            "rss": 418648064,
+            "heapUsed": 224152912,
+            "heapTotal": 361365504,
+            "external": 2572007
+          },
+          "memoryAfter": {
+            "rss": 567099392,
+            "heapUsed": 372562696,
+            "heapTotal": 509767680,
+            "external": 2572007
+          },
+          "heapDeltaBytes": 148409784
+        },
+        {
+          "repeat": 4,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 211.08464999999887,
+            "p50": 210.70190000000002,
+            "p95": 213.5202999999965,
+            "p99": 213.5202999999965,
+            "min": 204.18299999999726,
+            "max": 215.9334000000017
+          },
+          "batchElapsedMs": 871.9727999999959,
+          "cpuUs": {
+            "user": 578000,
+            "system": 281000
+          },
+          "cpuUsPerCall": 214750,
+          "memoryBefore": {
+            "rss": 417050624,
+            "heapUsed": 224153392,
+            "heapTotal": 361365504,
+            "external": 2572007
+          },
+          "memoryAfter": {
+            "rss": 565833728,
+            "heapUsed": 372563176,
+            "heapTotal": 509767680,
+            "external": 2572007
+          },
+          "heapDeltaBytes": 148409784
+        },
+        {
+          "repeat": 4,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 215.04892499999914,
+            "p50": 207.13880000000063,
+            "p95": 217.5037999999986,
+            "p99": 217.5037999999986,
+            "min": 200.3197,
+            "max": 235.23339999999735
+          },
+          "batchElapsedMs": 888.5046000000002,
+          "cpuUs": {
+            "user": 735000,
+            "system": 156000
+          },
+          "cpuUsPerCall": 222750,
+          "memoryBefore": {
+            "rss": 417742848,
+            "heapUsed": 224153976,
+            "heapTotal": 361365504,
+            "external": 2572007
+          },
+          "memoryAfter": {
+            "rss": 566935552,
+            "heapUsed": 372555808,
+            "heapTotal": 509767680,
+            "external": 2572007
+          },
+          "heapDeltaBytes": 148401832
+        },
+        {
+          "repeat": 5,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 224.8419249999988,
+            "p50": 221.83699999999953,
+            "p95": 229.4071999999942,
+            "p99": 229.4071999999942,
+            "min": 215.95040000000154,
+            "max": 232.17309999999998
+          },
+          "batchElapsedMs": 929.0843999999997,
+          "cpuUs": {
+            "user": 813000,
+            "system": 188000
+          },
+          "cpuUsPerCall": 250250,
+          "memoryBefore": {
+            "rss": 418541568,
+            "heapUsed": 224154616,
+            "heapTotal": 361365504,
+            "external": 2572007
+          },
+          "memoryAfter": {
+            "rss": 566640640,
+            "heapUsed": 372556448,
+            "heapTotal": 509767680,
+            "external": 2572007
+          },
+          "heapDeltaBytes": 148401832
+        },
+        {
+          "repeat": 5,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 210.4498250000015,
+            "p50": 206.75110000000132,
+            "p95": 210.72119999999995,
+            "p99": 210.72119999999995,
+            "min": 204.9528000000064,
+            "max": 219.37419999999838
+          },
+          "batchElapsedMs": 872.1669000000038,
+          "cpuUs": {
+            "user": 782000,
+            "system": 93000
+          },
+          "cpuUsPerCall": 218750,
+          "memoryBefore": {
+            "rss": 417349632,
+            "heapUsed": 224155312,
+            "heapTotal": 361365504,
+            "external": 2572007
+          },
+          "memoryAfter": {
+            "rss": 566996992,
+            "heapUsed": 372565096,
+            "heapTotal": 509767680,
+            "external": 2572007
+          },
+          "heapDeltaBytes": 148409784
+        },
+        {
+          "repeat": 6,
+          "mode": "candidate",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 202.56919999999627,
+            "p50": 198.700499999999,
+            "p95": 201.01139999999577,
+            "p99": 201.01139999999577,
+            "min": 195.06759999999485,
+            "max": 215.49729999999545
+          },
+          "batchElapsedMs": 842.5356000000029,
+          "cpuUs": {
+            "user": 719000,
+            "system": 109000
+          },
+          "cpuUsPerCall": 207000,
+          "memoryBefore": {
+            "rss": 417329152,
+            "heapUsed": 224155952,
+            "heapTotal": 361365504,
+            "external": 2572007
+          },
+          "memoryAfter": {
+            "rss": 566972416,
+            "heapUsed": 372565736,
+            "heapTotal": 509767680,
+            "external": 2572007
+          },
+          "heapDeltaBytes": 148409784
+        },
+        {
+          "repeat": 6,
+          "mode": "baseline",
+          "iterations": 4,
+          "wallMs": {
+            "count": 4,
+            "mean": 203.01177500000267,
+            "p50": 193.03230000000622,
+            "p95": 210.03859999999986,
+            "p99": 210.03859999999986,
+            "min": 192.87050000000454,
+            "max": 216.10570000000007
+          },
+          "batchElapsedMs": 843.8286000000007,
+          "cpuUs": {
+            "user": 641000,
+            "system": 203000
+          },
+          "cpuUsPerCall": 211000,
+          "memoryBefore": {
+            "rss": 417984512,
+            "heapUsed": 224156536,
+            "heapTotal": 361365504,
+            "external": 2572007
+          },
+          "memoryAfter": {
+            "rss": 566534144,
+            "heapUsed": 372558368,
+            "heapTotal": 509767680,
+            "external": 2572007
+          },
+          "heapDeltaBytes": 148401832
+        }
+      ],
+      "summary": {
+        "baselineMeanMs": 219.48851666666664,
+        "candidateMeanMs": 210.28707916666644,
+        "baselineCpuUsPerCall": 229875,
+        "candidateCpuUsPerCall": 214875,
+        "wallChangePercent": -4.19221818058676,
+        "cpuChangePercent": -6.5252854812398065
+      }
+    }
+  ],
+  "exactByteComparisons": 195468,
+  "finishedAt": "2026-10-16T03:31:27.464Z",
+  "elapsedMs": 51716.5704,
+  "sourceUnchanged": true
+}

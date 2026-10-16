@@ -1,0 +1,13 @@
+{
+  "startedAt": "2026-10-16T03:29:27.613Z",
+  "finishedAt": "2026-10-16T03:29:40.906Z",
+  "status": 0,
+  "signal": null,
+  "error": null,
+  "command": [
+    "node",
+    "--expose-gc",
+    "serializer-benchmark.mjs",
+    "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015"
+  ]
+}

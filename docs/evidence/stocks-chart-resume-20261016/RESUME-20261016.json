@@ -1,0 +1,56 @@
+{
+  "recoveredAt": "2026-10-16T03:23:56.077Z",
+  "reviewProcessExit": "NOT_RETAINED: parent interrupted before receipt; not inferred from report",
+  "mainProcessExit": 0,
+  "ownedMatchingProcesses": 0,
+  "replayed": false,
+  "invalidFirstAttempt": "main-before/INVALID-DIAGNOSTIC.txt",
+  "checks": {
+    "main": {
+      "passed": 44,
+      "failed": 0
+    },
+    "review": {
+      "passed": 44,
+      "failed": 0
+    }
+  },
+  "scope": "Narrow Windows native-timer comparison only; original Linux failure and full CI not resolved",
+  "files": [
+    {
+      "path": "paired-before-v2.json",
+      "bytes": 1479,
+      "sha256": "4f0073742531d9b364c03570951b6306defbf228662c43e57a0aefdd8f475ed2"
+    },
+    {
+      "path": "chart-causal-observer.cjs",
+      "bytes": 5077,
+      "sha256": "f680604752640f218c86f0bd7ca890afd94ccb07e43302d729154b365132965e"
+    },
+    {
+      "path": "qa-chart-causal.cjs",
+      "bytes": 131316,
+      "sha256": "d38cfbf3bd2d8f2cb6612255de684c8c3cb47ab020e1e9665a723d9a78d797f0"
+    },
+    {
+      "path": "main-before-v2/report-after.json",
+      "bytes": 16557,
+      "sha256": "a5f82c03803438095faf300ba3313c31ac40d42e86b7e14bb61d1d3d02b65089"
+    },
+    {
+      "path": "review-before-v2/report-after.json",
+      "bytes": 16589,
+      "sha256": "abc3a3a7d6330bfebfdc886f3bd9cf4d568b1032b46ca965cc4ec2e7af02b0e9"
+    },
+    {
+      "path": "main-before-v2.log",
+      "bytes": 6473,
+      "sha256": "a973c81bb7c741cdde434646fafa41b21934f3e02958417357ea9cfe3e19cffb"
+    },
+    {
+      "path": "review-before-v2.log",
+      "bytes": 6475,
+      "sha256": "9171dfcbc59be7bb08d250322854b409ab93e5884d6bf9487aef48731a568b00"
+    }
+  ]
+}

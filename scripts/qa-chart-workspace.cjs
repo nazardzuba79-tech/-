@@ -24,6 +24,7 @@ const express = require('express');
 const { once } = require('node:events');
 const crypto = require('node:crypto');
 const { execSync } = require('node:child_process');
+const { installCandleFetchObserver, attachCandlePhase, dataWindowReady } = require('./chart-workspace-hover-phase.cjs');
 
 const args = process.argv.slice(2);
 const arg = (key, fallback) => (args.includes(key) ? args[args.indexOf(key) + 1] : fallback);
@@ -160,14 +161,7 @@ const bootstrap = `(() => {
   if (location.hostname !== '127.0.0.1') throw new Error('Loopback only');
   localStorage.setItem('exchange_token','qa-chart-workspace'); localStorage.setItem('exchange_lang','ru');
   window.__qa = { fetches: [], sockets: 0, socketUrls: [] };
-  const original = window.fetch.bind(window);
-  window.fetch = (input, options) => {
-    const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url, location.origin);
-    window.__qa.fetches.push({ url: url.pathname + url.search, at: performance.now() });
-    if (url.origin === 'https://market.voltextech.net') return original('/api/v1' + url.pathname + url.search, options);
-    if (url.origin !== location.origin) return Promise.reject(new Error('External network blocked in fixture'));
-    return original(input, options);
-  };
+  (${installCandleFetchObserver.toString()})(window);
   const books = ${JSON.stringify(Object.fromEntries(SYMBOLS.map(s => [key(s), book(key(s))])))};
   window.WebSocket = class extends EventTarget {
     static CONNECTING=0; static OPEN=1; static CLOSING=2; static CLOSED=3; readyState=0;
@@ -428,8 +422,9 @@ async function selectLayout(page, value, { timeout = 15000, beforeClick } = {}) 
   await waitLayout(page, value, { timeout });
 }
 
-async function openTerminal(ctx, origin, market, { width, height, mobile, pair = 'BTC/USDT' }) {
+async function openTerminal(ctx, origin, market, { width, height, mobile, pair = 'BTC/USDT', candlePhase = false }) {
   const page = await ctx.newPage();
+  if (candlePhase) page.candlePhase = await attachCandlePhase(page);
   const errors = [];
   const file = message => report.pageErrors.push({ section: currentSection?.id ?? null, url: page.url().replace(/^https?:\/\/[^/]+/, ''), message });
   page.on('pageerror', e => { errors.push(String(e).slice(0, 200)); file(String(e).slice(0, 300)); });
@@ -917,7 +912,7 @@ async function run() {
   // ── Interactions at 1440 (Futures and Spot) and 1920 (layout 4) ────────
   for (const market of ['futures', 'spot']) await section(`interactions.${market}`, SELECT[`interactions.${market}`], async () => {
     const ctx = await context(1440, 900);
-    const { page, errors } = await openTerminal(ctx, origin, market, { width: 1440, height: 900 });
+    const { page, errors } = await openTerminal(ctx, origin, market, { width: 1440, height: 900, candlePhase: true });
     const P = `${market}.1440`;
     const candleRequests = () => page.evaluate(() => window.__qa.fetches.filter(f => /candles/.test(f.url)).map(f => f.url));
     const store = () => page.evaluate(m => JSON.parse(localStorage.getItem(`voltex.chartWorkspace.${m}.v1`) || 'null'), market);
@@ -1049,14 +1044,30 @@ async function run() {
     // Data window -------------------------------------------------------
     if (wants('data')) {
       await page.keyboard.press('Escape');
-      await page.locator('[data-cw-view="data"]').click(); await page.waitForTimeout(300);
+      await page.locator('[data-cw-view="data"]').click();
+      await page.waitForFunction(dataWindowReady);
       const canvas = await page.locator('.terminal-chart-shell canvas').first().boundingBox();
-      const before = (await candleRequests()).length;
-      for (let i = 0; i < 20; i += 1) await page.mouse.move(canvas.x + canvas.width * (0.3 + i * 0.02), canvas.y + canvas.height * 0.4);
-      await page.waitForTimeout(400);
-      const after = (await candleRequests()).length;
-      const dataWindow = await page.evaluate(() => { const el = document.querySelector('[data-cw-data-window]'); return el ? { rows: el.querySelectorAll('dt').length, text: el.textContent.slice(0, 400) } : null; });
-      check(`${P}.data.window`, dataWindow && dataWindow.rows >= 8 && /UTC/.test(dataWindow.text) && after === before, { rows: dataWindow?.rows, requestsDuringHover: after - before, sample: dataWindow?.text.slice(0, 160) });
+      const evidenceFile = `data-window-phase-${market}.json`;
+      let alignment, result;
+      try {
+        // Native refresh remains active. Start after its next proven interval
+        // request/body completes, not at an accidental phase of the 5s timer.
+        // Every original candle fetch is still counted during the unchanged
+        // 20 moves + 400ms window; crossing the next deadline is a failure.
+        alignment = await page.candlePhase.nextPrimaryRefresh(market);
+        check(`${P}.data.poll-active`, alignment.phase.fire.at > alignment.ready.at,
+          { timerId: alignment.phase.timerId, fire: alignment.phase.fire, deadline: alignment.phase.deadline, evidenceFile });
+        const before = (await candleRequests()).length;
+        for (let i = 0; i < 20; i += 1) await page.mouse.move(canvas.x + canvas.width * (0.3 + i * 0.02), canvas.y + canvas.height * 0.4);
+        await page.waitForTimeout(400);
+        const after = (await candleRequests()).length;
+        result = await page.candlePhase.finish(alignment.phase, before, after);
+        const dataWindow = await page.evaluate(() => { const el = document.querySelector('[data-cw-data-window]'); return el ? { rows: el.querySelectorAll('dt').length, text: el.textContent.slice(0, 400) } : null; });
+        check(`${P}.data.window`, dataWindow && dataWindow.rows >= 8 && /UTC/.test(dataWindow.text) && after === before && result.verdict.ok,
+          { rows: dataWindow?.rows, requestsDuringHover: after - before, sample: dataWindow?.text.slice(0, 160), phase: result.verdict, evidenceFile });
+      } finally {
+        fs.writeFileSync(path.join(OUT, evidenceFile), JSON.stringify({ alignment, result, ...await page.candlePhase.capture() }, null, 2));
+      }
       await shot(page, `after-${market}-1440-data`, await chartClip(page, 4));
       await page.locator('[data-cw-view="chart"]').click(); await page.waitForTimeout(200);
     }

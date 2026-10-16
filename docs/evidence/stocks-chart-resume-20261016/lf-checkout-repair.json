@@ -1,0 +1,14 @@
+{
+  "reason": "Windows core.autocrlf checkout differed from exact Git blob bytes; source/tests unchanged",
+  "normalizedFiles": 1077,
+  "rawProofSha256": "bfade33c7f4d137db0a3b243823078465f56455b61a2a50b28d29a75965b471f",
+  "frontendDiff": "EMPTY",
+  "index": "Three pre-existing CRLF-blob paths touched by renormalize were restored to their exact HEAD entries and bytes; final cached frontend diff empty",
+  "originalRun": {
+    "tests": 4386,
+    "passed": 4380,
+    "failed": 6,
+    "pending": 0
+  },
+  "rerun": "PENDING_AT_COMMIT"
+}

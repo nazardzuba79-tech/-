@@ -1,0 +1,36 @@
+{
+  "epoch": 1792065600000,
+  "playwright": "1.63.0",
+  "executable": "C:\\Users\\nazar\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe",
+  "executableSHA256": "9b07943f834485b43c9d54caea2951c78715f9f07070a80ab6658465ebd3e711",
+  "observerSHA256": "f680604752640f218c86f0bd7ca890afd94ccb07e43302d729154b365132965e",
+  "harnessSHA256": "d38cfbf3bd2d8f2cb6612255de684c8c3cb47ab020e1e9665a723d9a78d797f0",
+  "cases": [
+    {
+      "name": "main",
+      "started": "2026-10-15T19:17:05.348Z",
+      "finished": "2026-10-15T19:17:45.996Z",
+      "code": 0,
+      "timedOut": false,
+      "repo": "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\chart-main-a2eca7a2",
+      "args": [
+        "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-chart-resume-20261015\\qa-chart-causal.cjs",
+        "--dist",
+        "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\work\\chart-main-a2eca7a2\\frontend\\dist",
+        "--out",
+        "C:\\Users\\nazar\\Documents\\Codex\\2026-10-06\\admin-listings-aith-usdt-0-80\\output\\stocks-chart-resume-20261015\\main-before-v2",
+        "--phase",
+        "after",
+        "--only",
+        "timeframes,types,compare,data",
+        "--widths",
+        "1440",
+        "--phones",
+        "390",
+        "--perf-window",
+        "6000"
+      ],
+      "sha": "a2eca7a2ca2da33c0542d4805026e44d0262e969"
+    }
+  ]
+}
