@@ -38,6 +38,8 @@ on:
       - 'scripts/qa-cfd-workspace.cjs'
       - 'scripts/cfd-browser-readiness.cjs'
       - 'scripts/test-cfd-browser-readiness.cjs'
+      - 'scripts/cfd-workspace-quote-readiness.cjs'
+      - 'scripts/cfd-workspace-quote-readiness.test.cjs'
       - '.github/workflows/cfd-display-only.yml'
 permissions:
   contents: read
@@ -74,7 +76,7 @@ jobs:
           VITE_API_URL: /api/v1
         run: npm run build
       - name: Bounded real-route readiness regression tests
-        run: node --test scripts/test-cfd-browser-readiness.cjs
+        run: node --test scripts/test-cfd-browser-readiness.cjs scripts/cfd-workspace-quote-readiness.test.cjs
       - name: Install disposable browser QA tooling
         run: |
           npm install --prefix /tmp/voltex-cfd-display-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0

@@ -1,0 +1,52 @@
+✔ selected quote readiness needs the matching rendered quote and its own daily sessions (3.2745ms)
+✔ another priced instrument never substitutes for an unavailable selected quote (0.6932ms)
+✔ every selected DOM identity must match the requested instrument (0.7313ms)
+✔ ticker and ticket must both show the selected numeric quote, with supported display formatting (0.563ms)
+✔ malformed selected quote prices cannot become readiness through numeric coercion (0.5543ms)
+✔ all six original stats remain required rather than accepting any priced row or canvas (0.3217ms)
+✔ source, provider and explicit display-only non-executable flags are required (0.4462ms)
+✔ acquisition and quote timestamps must be finite, positive and never in the future (0.8332ms)
+✔ ticker and daily observations both require the exact client snapshot envelope (2.1807ms)
+✔ display readiness does not impose a new financial freshness limit or require an open session (0.3474ms)
+✔ only the documented display-route quote statuses can establish readiness (0.2669ms)
+✔ incomplete, unsuccessful or non-JSON ticker and daily observations fail readiness (0.6441ms)
+✔ daily data must identify the selected instrument and use the daily interval (0.2711ms)
+✔ invalid daily prices, OHLC ranges and timestamps cannot satisfy selected stats readiness (1.6864ms)
+✔ daily session must contain the quote timestamp and have a previous closed session within five days (0.4211ms)
+✔ epoch equality accepts the same complete observations and refuses either unready side (0.4662ms)
+✔ epoch changes when quote acquisition changes even if the rendered price stays identical (0.8991ms)
+✔ epoch binds the quote price and daily response content rather than the visible stat labels alone (0.2091ms)
+✔ observer waits for the delayed selected body without adding requests or extending the 45-second deadline (2.8099ms)
+✔ a stalled DOM observation fails at the original readiness deadline with no retry requests (1.2091ms)
+✔ a permanently unavailable selected quote expires at 45 seconds even when another instrument has a price (0.8889ms)
+✔ bounded drain reports stalled bodies and stays incomplete even if the body later arrives (3.3688ms)
+✔ completed observation drains without firing its timeout and preserves a complete receipt (0.6015ms)
+✔ request failure, non-JSON, failed HTTP and unreadable bodies cannot reuse an earlier successful quote (1.6937ms)
+✔ latest pending ticker or selected daily request fails closed instead of falling back to earlier success (0.7449ms)
+✔ observer retains response, local-cache and CDP provenance without changing the cache or response (1.9151ms)
+✔ unrelated origin, hourly candles and untracked CDP responses cannot satisfy selected daily readiness (0.3951ms)
+✔ request trace overflow caps stored entries at 256 and invalidates an otherwise ready selected quote (1.9627ms)
+✔ CDP trace caps recognized request IDs at 256 and cannot accept later events for an overflow ID (1.8671ms)
+✔ observer checkpoints detect a new same-price quote epoch while allowing unchanged acquisition data (0.7502ms)
+✔ readiness probes exact uncached real routes for the selected and reload charts, then stops (2.584ms)
+✔ a transient chart failure is recorded before a bounded retry, with no display-cache route (1.6211ms)
+✔ missing or non-numeric actual quotes fail after exactly three attempts without chart requests (0.8414ms)
+▶ HTTP 200 cannot pass mismatched identities, invalid OHLC, duplicate times or insufficient bars
+  ✔ symbol (1.2907ms)
+  ✔ interval (0.6909ms)
+  ✔ invalidRange (0.539ms)
+  ✔ booleanPrices (1.3793ms)
+  ✔ invalidTime (0.6017ms)
+  ✔ duplicateTime (0.4091ms)
+  ✔ oneBar (0.5434ms)
+✔ HTTP 200 cannot pass mismatched identities, invalid OHLC, duplicate times or insufficient bars (6.7226ms)
+✔ transport and non-JSON failures retain diagnostics and exhaust finite retries (0.5331ms)
+✔ foreign, credentialled and non-origin targets are rejected before any request (0.3422ms)
+ℹ tests 43
+ℹ suites 0
+ℹ pass 43
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 143.2638

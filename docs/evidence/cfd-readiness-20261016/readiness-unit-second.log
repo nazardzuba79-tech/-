@@ -1,0 +1,38 @@
+✔ selected quote readiness needs the matching rendered quote and its own daily sessions (3.1571ms)
+✔ another priced instrument never substitutes for an unavailable selected quote (0.5441ms)
+✔ every selected DOM identity must match the requested instrument (0.518ms)
+✔ ticker and ticket must both show the selected numeric quote, with supported display formatting (0.4793ms)
+✔ malformed selected quote prices cannot become readiness through numeric coercion (0.492ms)
+✔ all six original stats remain required rather than accepting any priced row or canvas (0.2661ms)
+✔ source, provider and explicit display-only non-executable flags are required (0.3887ms)
+✔ acquisition and quote timestamps must be finite, positive and never in the future (0.6003ms)
+✔ display readiness does not impose a new financial freshness limit or require an open session (0.2521ms)
+✔ incomplete, unsuccessful or non-JSON ticker and daily observations fail readiness (0.6264ms)
+✔ daily data must identify the selected instrument and use the daily interval (0.2941ms)
+✔ invalid daily prices, OHLC ranges and timestamps cannot satisfy selected stats readiness (1.4347ms)
+✔ daily session must contain the quote timestamp and have a previous closed session within five days (0.3058ms)
+✔ epoch equality accepts the same complete observations and refuses either unready side (0.4603ms)
+✔ epoch changes when quote acquisition changes even if the rendered price stays identical (0.4684ms)
+✔ epoch binds the quote price and daily response content rather than the visible stat labels alone (0.233ms)
+✔ readiness probes exact uncached real routes for the selected and reload charts, then stops (2.2526ms)
+✔ a transient chart failure is recorded before a bounded retry, with no display-cache route (1.479ms)
+✔ missing or non-numeric actual quotes fail after exactly three attempts without chart requests (0.7156ms)
+▶ HTTP 200 cannot pass mismatched identities, invalid OHLC, duplicate times or insufficient bars
+  ✔ symbol (0.6136ms)
+  ✔ interval (0.6849ms)
+  ✔ invalidRange (0.4577ms)
+  ✔ booleanPrices (1.0321ms)
+  ✔ invalidTime (0.3157ms)
+  ✔ duplicateTime (0.3057ms)
+  ✔ oneBar (0.4807ms)
+✔ HTTP 200 cannot pass mismatched identities, invalid OHLC, duplicate times or insufficient bars (4.8227ms)
+✔ transport and non-JSON failures retain diagnostics and exhaust finite retries (0.519ms)
+✔ foreign, credentialled and non-origin targets are rejected before any request (0.2875ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 124.5817

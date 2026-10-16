@@ -1,0 +1,18 @@
+✔ inheritance admits only exact same-repository PR528 and complete head/base metadata (3.6056ms)
+✔ successful backend job is bound to exact attempt and artifact; failed overall browser run stays failed (2.0665ms)
+✔ complete protected inventory binds all source, backend tests, compiler/config and locks (267.7768ms)
+✔ only the four reviewed metadata paths can inherit; an unknown fifth requires FULL (70.8534ms)
+✔ only the exact public GPG witness fixture is admitted; another fixture requires FULL (65.0635ms)
+✔ unknown additions/deletions/mode changes, invented allowlists and mismatched evidence require FULL (297.1737ms)
+✔ Git inventory rejects symlinks, submodules, duplicates and malformed records (0.9435ms)
+✔ untrusted archive/evidence bytes cannot become inherited proof (1.6416ms)
+✔ native browser completion requires every real case, cleanup and the shared deadline (2.9998ms)
+✔ older PR512 finite admission retains its original 128 changed-path bound (0.8482ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 821.6379

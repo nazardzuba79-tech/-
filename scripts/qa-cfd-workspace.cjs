@@ -16,11 +16,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const express = require('express');
+const { observeSelectedQuote, sameQuoteEpoch } = require('./cfd-workspace-quote-readiness.cjs');
+const { execFileSync } = require('node:child_process');
 
 const args = process.argv.slice(2);
 const arg = (name, fallback) => { const i = args.indexOf(`--${name}`); return i >= 0 && args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : fallback; };
 const flag = name => args.includes(`--${name}`);
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(arg('root', path.resolve(__dirname, '..')));
 const DIST = path.resolve(arg('dist', path.join(ROOT, 'frontend/dist')));
 const OUT = path.resolve(arg('out', path.join(ROOT, 'docs/qa/cfd-workspace/run')));
 const PHASE = arg('phase', 'after');
@@ -36,7 +38,12 @@ const { CfdMarketDataService } = require(path.join(ROOT, 'dist/services/CfdMarke
 const { cfdRouter, stopCfdDisplayFeeds } = require(path.join(ROOT, 'dist/api/routes/cfd'));
 
 const report = { phase: PHASE, dist: DIST, startedAt: new Date().toISOString(), environment: 'LOCAL QA ONLY — loopback host, real public CFD display sources, no database, no production writes',
-  checks: [], perf: {}, screenshots: [], requests: [], blockedWrites: 0, blockedHosts: [], pageErrors: [] };
+  checks: [], perf: {}, screenshots: [], requests: [], quoteTraces: [], blockedWrites: 0, blockedHosts: [], pageErrors: [],
+  source: { checkout: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim(),
+    tree: execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { cwd: ROOT, encoding: 'utf8' }).trim(),
+    harnessSha256: crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex'),
+    helperSha256: crypto.createHash('sha256').update(fs.readFileSync(require.resolve('./cfd-workspace-quote-readiness.cjs'))).digest('hex'),
+    indexSha256: crypto.createHash('sha256').update(fs.readFileSync(path.join(DIST, 'index.html'))).digest('hex') } };
 const check = (id, pass, detail = {}) => { report.checks.push({ id, pass: !!pass, ...detail }); console.log(`${pass ? 'PASS' : 'FAIL'} ${id}${pass ? '' : ' ' + JSON.stringify(detail).slice(0, 400)}`); };
 const note = (id, detail) => { report.checks.push({ id, info: true, ...detail }); console.log(`INFO ${id} ${JSON.stringify(detail).slice(0, 400)}`); };
 
@@ -158,7 +165,9 @@ async function main() {
   if (flag('serve')) { console.log(`${origin}/trade?market=cfd&symbol=XAUUSD`); return; }
   const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  report.browser = { version: browser.version(), node: process.version, locale: 'ru-RU', timezone: 'UTC' };
   const denied = new Set();
+  const quoteObservers = new WeakMap(), allQuoteObservers = [];
   const open = async (width, height = width <= 430 ? 860 : width <= 1024 ? 900 : width >= 1920 ? 1080 : 900, opts = {}) => {
     const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, locale: 'ru-RU', timezoneId: 'UTC', serviceWorkers: 'block', hasTouch: width <= 430, isMobile: false });
     await context.addInitScript(({ practice }) => {
@@ -171,6 +180,9 @@ async function main() {
       denied.add(u.hostname); return route.abort();
     });
     const page = await context.newPage();
+    const quoteObserver = await observeSelectedQuote(page, { origin, record: evidence => { evidence.width = width; report.quoteTraces.push(evidence); } });
+    quoteObservers.set(page, quoteObserver);
+    allQuoteObservers.push(quoteObserver);
     page.setDefaultTimeout(30000);
     const requests = [], sockets = [];
     page.on('request', q => { const u = new URL(q.url()); if (u.origin === origin && u.pathname.startsWith('/api/')) requests.push({ t: Date.now(), method: q.method(), path: u.pathname, interval: u.searchParams.get('interval'), limit: u.searchParams.get('limit') }); });
@@ -182,7 +194,7 @@ async function main() {
   const goto = async (page, symbol = 'XAUUSD') => {
     await page.goto(`${origin}/trade?market=cfd&symbol=${symbol}`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.querySelectorAll('.cfd-option').length >= 13, null, { timeout: 45000 });
-    await page.waitForFunction(() => [...document.querySelectorAll('.cfd-option .cfd-price')].some(n => /\d/.test(n.textContent || '')), null, { timeout: 45000 });
+    await quoteObservers.get(page).wait(symbol);
     await page.waitForFunction(() => !!document.querySelector('.cfd-chart-area canvas'), null, { timeout: 30000 });
     await waitCandles(page, 30000);
     await page.waitForTimeout(1200);
@@ -274,6 +286,7 @@ async function main() {
       // Chart types: drawn bars change, the execution price does not.
       const priceOf = () => page.evaluate(() => ({ ticker: document.querySelector('.cfd-ticker-price')?.textContent?.trim(), ticket: document.querySelector('.cfd-referencePrice')?.textContent?.trim() }));
       const priceBefore = await priceOf();
+      const quoteBefore = await quoteObservers.get(page).checkpoint('XAUUSD', 'chart-types-before');
       for (const kind of ['bars', 'hollow', 'heikin', 'line', 'area', 'candles']) {
         await page.keyboard.press('Escape');
         await page.locator('.cfd-chart-area .chart-type-trigger').click(); await page.waitForTimeout(150);
@@ -281,7 +294,9 @@ async function main() {
         if (present) await item.first().click();
         await page.waitForTimeout(300);
         const ws = await store(page, WS_KEY), price = await priceOf();
-        check(`${P}.type.${kind}`, present && ws?.barType === kind && price.ticker === priceBefore.ticker && price.ticket === priceBefore.ticket, { present, barType: ws?.barType, priceBefore, price });
+        const quoteAfter = await quoteObservers.get(page).checkpoint('XAUUSD', `chart-type-${kind}`);
+        check(`${P}.type.${kind}`, present && ws?.barType === kind && price.ticker === priceBefore.ticker && price.ticket === priceBefore.ticket && sameQuoteEpoch(quoteBefore, quoteAfter), { present, barType: ws?.barType, priceBefore, price, quoteBefore, quoteAfter,
+          quoteEpochError: sameQuoteEpoch(quoteBefore, quoteAfter) ? null : 'QUOTE_EPOCH_CHANGED_OR_UNVERIFIED' });
         if (kind === 'heikin') await shot(page, `cfd-${PHASE}-1440-heikin`);
       }
 
@@ -569,6 +584,8 @@ async function main() {
   }
 
   await browser.close();
+  const drains = await Promise.all(allQuoteObservers.map(observer => observer.settle()));
+  check('cfd.quote-trace.complete', drains.every(result => result.complete) && allQuoteObservers.every(observer => !observer.evidence.overflow), { drains });
   report.blockedHosts = [...denied].sort();
 }
 

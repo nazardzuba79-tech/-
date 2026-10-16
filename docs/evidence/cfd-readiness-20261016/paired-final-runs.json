@@ -1,0 +1,52 @@
+[
+  {
+    "run": "review-final-after",
+    "startedAt": "2026-10-16T05:26:28.954Z",
+    "finishedAt": "2026-10-16T05:27:01.911Z",
+    "exit": 0,
+    "sha": "9f453a9d46b4feff714190a8aa4b3628ce42dffa",
+    "args": [
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015/scripts/qa-cfd-workspace.cjs",
+      "--root",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015",
+      "--dist",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015/frontend/dist",
+      "--out",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/output/cfd-qa-part-a-20261016/review-final-after",
+      "--phase",
+      "after",
+      "--only",
+      "chart",
+      "--widths",
+      "1440"
+    ],
+    "harnessSha256": "4b1c2506e1793bdc9b9bbedc7e9073514ac05a0e70af9e43c0d81baed502b620",
+    "helperSha256": "1edb12f43a453772840c8b2454bcd4b673b43f800e98ff3c88ae5543b9d6d93e",
+    "logSha256": "2afb8eba0ebe677bfd8c2def3cc054f99e1bd4d6c5e15ab5030117b3ba797bf9"
+  },
+  {
+    "run": "main-final-after",
+    "startedAt": "2026-10-16T05:27:02.364Z",
+    "finishedAt": "2026-10-16T05:27:35.442Z",
+    "exit": 0,
+    "sha": "c2ee9e7143a45f80f300fb997da6a5f40a97fee6",
+    "args": [
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015/scripts/qa-cfd-workspace.cjs",
+      "--root",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/cfd-main-c2ee9e71",
+      "--dist",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/cfd-main-c2ee9e71/frontend/dist",
+      "--out",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/output/cfd-qa-part-a-20261016/main-final-after",
+      "--phase",
+      "after",
+      "--only",
+      "chart",
+      "--widths",
+      "1440"
+    ],
+    "harnessSha256": "4b1c2506e1793bdc9b9bbedc7e9073514ac05a0e70af9e43c0d81baed502b620",
+    "helperSha256": "1edb12f43a453772840c8b2454bcd4b673b43f800e98ff3c88ae5543b9d6d93e",
+    "logSha256": "e3c4f32f34b077ba2f2974cc5e5e154021f46899e8d2275a7ebd6d3875252a4d"
+  }
+]

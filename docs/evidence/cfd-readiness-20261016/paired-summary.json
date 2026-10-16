@@ -1,0 +1,1754 @@
+[
+  {
+    "name": "review-before",
+    "source": {
+      "checkout": "9f453a9d46b4feff714190a8aa4b3628ce42dffa",
+      "tree": "2c6be1981c46bcf1b6d793cc5f0ca5fb389e2e94",
+      "harnessSha256": "7415fd51bd9a40756848952d50abdc927d74db13884c25362493607d10da132e",
+      "helperSha256": "b61cc9686b4ceab4896e36594b1da7271f91a5cc8a95d3173db2494aa2f80c16",
+      "indexSha256": "b70bea031d3bc61af7c02b60c32a1c02697b2ed8f327f15bf1a339d059dde1c6"
+    },
+    "browser": {
+      "version": "153.0.8010.12",
+      "node": "v24.21.0",
+      "locale": "ru-RU",
+      "timezone": "UTC"
+    },
+    "pass": 45,
+    "fail": [],
+    "pageErrors": [],
+    "blockedWrites": 0,
+    "reportSha256": "a85d31cb62ab7530974d0b38a879f0d4a4983d8adec5a4c2f003018fc721705c",
+    "traces": [
+      {
+        "overflow": false,
+        "incomplete": false,
+        "drain": {
+          "complete": true,
+          "pending": 0
+        },
+        "readiness": [],
+        "entries": [
+          {
+            "sequence": 1,
+            "kind": "daily",
+            "symbol": "XAUUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 143,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"c009efe3814523f54f7714d98841d1fbb476073fccacd6c3ea5b73b938f50f7d\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237048,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "c009efe3814523f54f7714d98841d1fbb476073fccacd6c3ea5b73b938f50f7d",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 2,
+            "kind": "ticker",
+            "status": 200,
+            "complete": true,
+            "ms": 884,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"cd9cbd8a746dcfc23b02813f4d9e7cf9765bbaccfe5a573ca4a5336a7114fce5\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237745,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "cd9cbd8a746dcfc23b02813f4d9e7cf9765bbaccfe5a573ca4a5336a7114fce5",
+            "xau": {
+              "symbol": "XAUUSD",
+              "price": "4173.993",
+              "provider": "biquote",
+              "providerSymbol": "XAUUSD",
+              "providerTimestamp": 1792128236000,
+              "fetchedAt": 1792128236923,
+              "asOf": 1792128236000,
+              "maxQuoteAgeMs": 120000,
+              "status": "live",
+              "stale": false,
+              "marketClosed": false,
+              "displayOnly": true,
+              "executionAllowed": false
+            }
+          },
+          {
+            "sequence": 3,
+            "kind": "daily",
+            "symbol": "XAGUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 46,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"484bc3bfc1ce6ed319a003e2d34e8ce6bb8d97691420c3e5ac372ddd986325f5\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237837,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "484bc3bfc1ce6ed319a003e2d34e8ce6bb8d97691420c3e5ac372ddd986325f5",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 4,
+            "kind": "daily",
+            "symbol": "XPTUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 48,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"6ce920f9ebf5245319f9333f843212a6a2f01ecd60a5a631f7203a8f828de315\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237839,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "6ce920f9ebf5245319f9333f843212a6a2f01ecd60a5a631f7203a8f828de315",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 5,
+            "kind": "daily",
+            "symbol": "XPDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 44,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"0f8e1649827924bcf9bc3020585319b1ce0b17d10bf3e60efdb84fba45c6d28a\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237838,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "0f8e1649827924bcf9bc3020585319b1ce0b17d10bf3e60efdb84fba45c6d28a",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 6,
+            "kind": "daily",
+            "symbol": "WTIUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 43,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"e75bd5c9ee0333265bbb3eae1e6bc246f6e0a47e6762e43f371e2a1e12ace96d\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237875,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "e75bd5c9ee0333265bbb3eae1e6bc246f6e0a47e6762e43f371e2a1e12ace96d",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 7,
+            "kind": "daily",
+            "symbol": "XBRUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 45,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"89939546233467cea6a9970853617300545b4159d072ec9ec5f5b09809412f4a\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237883,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "89939546233467cea6a9970853617300545b4159d072ec9ec5f5b09809412f4a",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 8,
+            "kind": "daily",
+            "symbol": "EURUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 41,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"f1be8a6fa6a8e9f130c55487703e14252edfa7b10de88c43d5901bd81ab39e09\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237882,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "f1be8a6fa6a8e9f130c55487703e14252edfa7b10de88c43d5901bd81ab39e09",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 9,
+            "kind": "daily",
+            "symbol": "GBPUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 47,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"26cd86f26a8778451996d470ca3029e9ce65f74e0faf12a502fdad878e17fb88\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237917,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "26cd86f26a8778451996d470ca3029e9ce65f74e0faf12a502fdad878e17fb88",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 10,
+            "kind": "daily",
+            "symbol": "USDJPY",
+            "status": 200,
+            "complete": true,
+            "ms": 43,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"8061b182499621bb48fa1ad3fa63b526a12f3f1f02920e6a53fc9fa73751512d\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237920,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "8061b182499621bb48fa1ad3fa63b526a12f3f1f02920e6a53fc9fa73751512d",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 11,
+            "kind": "daily",
+            "symbol": "AUDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 44,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"f970e995e7ef98a33483fbae737f8fc9edd3247f3671551a53d4631bad13e41f\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237921,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "f970e995e7ef98a33483fbae737f8fc9edd3247f3671551a53d4631bad13e41f",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 12,
+            "kind": "daily",
+            "symbol": "USDCAD",
+            "status": 200,
+            "complete": true,
+            "ms": 67,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"fb2a769b46aea891d67d088ebcac2a61f8acff9b0cd87d71f1af1298fe7f8370\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237977,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "fb2a769b46aea891d67d088ebcac2a61f8acff9b0cd87d71f1af1298fe7f8370",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 13,
+            "kind": "daily",
+            "symbol": "USDCHF",
+            "status": 200,
+            "complete": true,
+            "ms": 63,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"b414c62658179084b6b7f9777d73fc0196075a7c40096c652d3b434a351bc151\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237980,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "b414c62658179084b6b7f9777d73fc0196075a7c40096c652d3b434a351bc151",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 14,
+            "kind": "daily",
+            "symbol": "NZDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 39,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"5b1ef4158193023aa44b80bb6e9222b110d54a208c72b9a74787a83222639520\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128237965,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "5b1ef4158193023aa44b80bb6e9222b110d54a208c72b9a74787a83222639520",
+            "dailyBars": 21
+          }
+        ],
+        "checkpoints": [
+          {
+            "label": "chart-types-before",
+            "at": 1792128247863,
+            "ready": true,
+            "reasons": [],
+            "epoch": "178dda61de0bb842bd840f3d8fd092df27ee468874904b049de18eb96e6fd0dd",
+            "providerAgeMs": 11863,
+            "snapshotAgeMs": 10118,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-bars",
+            "at": 1792128248417,
+            "ready": true,
+            "reasons": [],
+            "epoch": "178dda61de0bb842bd840f3d8fd092df27ee468874904b049de18eb96e6fd0dd",
+            "providerAgeMs": 12417,
+            "snapshotAgeMs": 10672,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-hollow",
+            "at": 1792128248969,
+            "ready": true,
+            "reasons": [],
+            "epoch": "178dda61de0bb842bd840f3d8fd092df27ee468874904b049de18eb96e6fd0dd",
+            "providerAgeMs": 12969,
+            "snapshotAgeMs": 11224,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-heikin",
+            "at": 1792128249551,
+            "ready": true,
+            "reasons": [],
+            "epoch": "178dda61de0bb842bd840f3d8fd092df27ee468874904b049de18eb96e6fd0dd",
+            "providerAgeMs": 13551,
+            "snapshotAgeMs": 11806,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-line",
+            "at": 1792128250184,
+            "ready": true,
+            "reasons": [],
+            "epoch": "178dda61de0bb842bd840f3d8fd092df27ee468874904b049de18eb96e6fd0dd",
+            "providerAgeMs": 14184,
+            "snapshotAgeMs": 12439,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-area",
+            "at": 1792128250764,
+            "ready": true,
+            "reasons": [],
+            "epoch": "178dda61de0bb842bd840f3d8fd092df27ee468874904b049de18eb96e6fd0dd",
+            "providerAgeMs": 14764,
+            "snapshotAgeMs": 13019,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-candles",
+            "at": 1792128251316,
+            "ready": true,
+            "reasons": [],
+            "epoch": "178dda61de0bb842bd840f3d8fd092df27ee468874904b049de18eb96e6fd0dd",
+            "providerAgeMs": 15316,
+            "snapshotAgeMs": 13571,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "main-before",
+    "source": {
+      "checkout": "c2ee9e7143a45f80f300fb997da6a5f40a97fee6",
+      "tree": "f97ae06a83291bdb23c0ba7827952798132c5f5b",
+      "harnessSha256": "7415fd51bd9a40756848952d50abdc927d74db13884c25362493607d10da132e",
+      "helperSha256": "b61cc9686b4ceab4896e36594b1da7271f91a5cc8a95d3173db2494aa2f80c16",
+      "indexSha256": "9fde018edd8fcb24069237da79d548fe4a20e9c78768dfd5d5310a2cd6ab7afb"
+    },
+    "browser": {
+      "version": "153.0.8010.12",
+      "node": "v24.21.0",
+      "locale": "ru-RU",
+      "timezone": "UTC"
+    },
+    "pass": 45,
+    "fail": [],
+    "pageErrors": [],
+    "blockedWrites": 0,
+    "reportSha256": "cdb848a358c392965035b90b3567dfb15c878d2b666018a287dfe574fd8fce86",
+    "traces": [
+      {
+        "overflow": false,
+        "incomplete": false,
+        "drain": {
+          "complete": true,
+          "pending": 0
+        },
+        "readiness": [],
+        "entries": [
+          {
+            "sequence": 1,
+            "kind": "daily",
+            "symbol": "XAUUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 126,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"d7d4a0532f9f37093f6f19f31a03f72a7fdb1aa920d6c8dbed4fed270e4ddf08\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128270654,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "d7d4a0532f9f37093f6f19f31a03f72a7fdb1aa920d6c8dbed4fed270e4ddf08",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 2,
+            "kind": "ticker",
+            "status": 200,
+            "complete": true,
+            "ms": 499,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"709e44f11badf2b5bacaefbc123e49b38a8cf8116668085b3b961ada95c83e4e\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128270992,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "709e44f11badf2b5bacaefbc123e49b38a8cf8116668085b3b961ada95c83e4e",
+            "xau": {
+              "symbol": "XAUUSD",
+              "price": "4174.178",
+              "provider": "biquote",
+              "providerSymbol": "XAUUSD",
+              "providerTimestamp": 1792128270000,
+              "fetchedAt": 1792128270550,
+              "asOf": 1792128270000,
+              "maxQuoteAgeMs": 120000,
+              "status": "live",
+              "stale": false,
+              "marketClosed": false,
+              "displayOnly": true,
+              "executionAllowed": false
+            }
+          },
+          {
+            "sequence": 3,
+            "kind": "daily",
+            "symbol": "XAGUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 41,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"9b5e0fe7eb9830defa1eb3cbd83119d39f0273d6a66eae853070f5debf61311f\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271076,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "9b5e0fe7eb9830defa1eb3cbd83119d39f0273d6a66eae853070f5debf61311f",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 4,
+            "kind": "daily",
+            "symbol": "XPTUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 46,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"e8c1910f625f850d86ae3799f19a68da7fcc16e7ae02729bb741eb109c78cb1b\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271077,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "e8c1910f625f850d86ae3799f19a68da7fcc16e7ae02729bb741eb109c78cb1b",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 5,
+            "kind": "daily",
+            "symbol": "XPDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 45,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"8398d1cbe0dde33b86c4310391ce8a893421f694fd156b26c4c38e10fa145bd9\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271078,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "8398d1cbe0dde33b86c4310391ce8a893421f694fd156b26c4c38e10fa145bd9",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 6,
+            "kind": "daily",
+            "symbol": "WTIUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 48,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"f0fa7c0687312bb036c7e7aa1ff212f130eb9e9efea89e277ea417af9ae6073a\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271118,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "f0fa7c0687312bb036c7e7aa1ff212f130eb9e9efea89e277ea417af9ae6073a",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 7,
+            "kind": "daily",
+            "symbol": "XBRUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 43,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"a3602ce08f3f11f1c910b70f6222d34761a96e2e1fe37c4d11e070c9318828b1\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271121,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "a3602ce08f3f11f1c910b70f6222d34761a96e2e1fe37c4d11e070c9318828b1",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 8,
+            "kind": "daily",
+            "symbol": "EURUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 45,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"c3aa782475aa3146aebca371843659d0fc749db96e56a016dc0754a4feef5c91\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271123,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "c3aa782475aa3146aebca371843659d0fc749db96e56a016dc0754a4feef5c91",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 9,
+            "kind": "daily",
+            "symbol": "GBPUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 42,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"6de80d7ea996fde3b2d44f0dd599b1049a8f58e28691d4f3159bc143f81c1655\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271158,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "6de80d7ea996fde3b2d44f0dd599b1049a8f58e28691d4f3159bc143f81c1655",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 10,
+            "kind": "daily",
+            "symbol": "USDJPY",
+            "status": 200,
+            "complete": true,
+            "ms": 42,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"13de1797538b207612ed2a45b81f1e5761519892921f3e342226745806e6ac32\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271164,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "13de1797538b207612ed2a45b81f1e5761519892921f3e342226745806e6ac32",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 11,
+            "kind": "daily",
+            "symbol": "AUDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 39,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"3baa2f38fb996a74fdcfcb13886c0f14c6fe9f53552fc157a7f342e565b1bd35\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271166,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "3baa2f38fb996a74fdcfcb13886c0f14c6fe9f53552fc157a7f342e565b1bd35",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 12,
+            "kind": "daily",
+            "symbol": "USDCAD",
+            "status": 200,
+            "complete": true,
+            "ms": 39,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"128995171f15b93ca10c7d90f560ce5264a1b2c715c1b04c5ebbda958aca9835\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271196,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "128995171f15b93ca10c7d90f560ce5264a1b2c715c1b04c5ebbda958aca9835",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 13,
+            "kind": "daily",
+            "symbol": "USDCHF",
+            "status": 200,
+            "complete": true,
+            "ms": 41,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"20c59bb35d85740184755bbe68903c23e59b499432f1a4f8a7c6747780ef5d29\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271202,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "20c59bb35d85740184755bbe68903c23e59b499432f1a4f8a7c6747780ef5d29",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 14,
+            "kind": "daily",
+            "symbol": "NZDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 39,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"5434cc022a644994abdd27ae1eaee1efdbbdfabd3c6ba1f014a891556e0c38c5\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128271204,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "5434cc022a644994abdd27ae1eaee1efdbbdfabd3c6ba1f014a891556e0c38c5",
+            "dailyBars": 21
+          }
+        ],
+        "checkpoints": [
+          {
+            "label": "chart-types-before",
+            "at": 1792128281220,
+            "ready": true,
+            "reasons": [],
+            "epoch": "3913d5dea8ebdf30c5021c36dfe359c2e31d02cfb2f5b38139ed149b588ad14c",
+            "providerAgeMs": 11220,
+            "snapshotAgeMs": 10228,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-bars",
+            "at": 1792128281790,
+            "ready": true,
+            "reasons": [],
+            "epoch": "3913d5dea8ebdf30c5021c36dfe359c2e31d02cfb2f5b38139ed149b588ad14c",
+            "providerAgeMs": 11790,
+            "snapshotAgeMs": 10798,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-hollow",
+            "at": 1792128282355,
+            "ready": true,
+            "reasons": [],
+            "epoch": "3913d5dea8ebdf30c5021c36dfe359c2e31d02cfb2f5b38139ed149b588ad14c",
+            "providerAgeMs": 12355,
+            "snapshotAgeMs": 11363,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-heikin",
+            "at": 1792128282922,
+            "ready": true,
+            "reasons": [],
+            "epoch": "3913d5dea8ebdf30c5021c36dfe359c2e31d02cfb2f5b38139ed149b588ad14c",
+            "providerAgeMs": 12922,
+            "snapshotAgeMs": 11930,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-line",
+            "at": 1792128283572,
+            "ready": true,
+            "reasons": [],
+            "epoch": "3913d5dea8ebdf30c5021c36dfe359c2e31d02cfb2f5b38139ed149b588ad14c",
+            "providerAgeMs": 13572,
+            "snapshotAgeMs": 12580,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-area",
+            "at": 1792128284157,
+            "ready": true,
+            "reasons": [],
+            "epoch": "3913d5dea8ebdf30c5021c36dfe359c2e31d02cfb2f5b38139ed149b588ad14c",
+            "providerAgeMs": 14157,
+            "snapshotAgeMs": 13165,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-candles",
+            "at": 1792128284722,
+            "ready": true,
+            "reasons": [],
+            "epoch": "3913d5dea8ebdf30c5021c36dfe359c2e31d02cfb2f5b38139ed149b588ad14c",
+            "providerAgeMs": 14722,
+            "snapshotAgeMs": 13730,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "review-final-after",
+    "source": {
+      "checkout": "9f453a9d46b4feff714190a8aa4b3628ce42dffa",
+      "tree": "2c6be1981c46bcf1b6d793cc5f0ca5fb389e2e94",
+      "harnessSha256": "4b1c2506e1793bdc9b9bbedc7e9073514ac05a0e70af9e43c0d81baed502b620",
+      "helperSha256": "1edb12f43a453772840c8b2454bcd4b673b43f800e98ff3c88ae5543b9d6d93e",
+      "indexSha256": "b70bea031d3bc61af7c02b60c32a1c02697b2ed8f327f15bf1a339d059dde1c6"
+    },
+    "browser": {
+      "version": "153.0.8010.12",
+      "node": "v24.21.0",
+      "locale": "ru-RU",
+      "timezone": "UTC"
+    },
+    "pass": 45,
+    "fail": [],
+    "pageErrors": [],
+    "blockedWrites": 0,
+    "reportSha256": "ceea3495fa744c588d35b4452109ce540629334406f0e34697606981e39fd2a2",
+    "traces": [
+      {
+        "overflow": false,
+        "incomplete": false,
+        "drain": {
+          "complete": true,
+          "pending": 0
+        },
+        "readiness": [
+          {
+            "startedAt": 1792128390263,
+            "at": 1792128390271,
+            "elapsed": 8,
+            "ready": true,
+            "reasons": []
+          }
+        ],
+        "entries": [
+          {
+            "sequence": 1,
+            "kind": "daily",
+            "symbol": "XAUUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 128,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"fd74a165387f25103480ad5afc00f022120ca2397db46c54673bc41b7fbc85b4\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128389916,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "fd74a165387f25103480ad5afc00f022120ca2397db46c54673bc41b7fbc85b4",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 2,
+            "kind": "ticker",
+            "status": 200,
+            "complete": true,
+            "ms": 466,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"cd33991708024d4089c6b079f9f65d8c2f9b714c9167701e207589b96b4bb939\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390216,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "cd33991708024d4089c6b079f9f65d8c2f9b714c9167701e207589b96b4bb939",
+            "xau": {
+              "symbol": "XAUUSD",
+              "price": "4174.33",
+              "provider": "biquote",
+              "providerSymbol": "XAUUSD",
+              "providerTimestamp": 1792128389000,
+              "fetchedAt": 1792128389810,
+              "asOf": 1792128389000,
+              "maxQuoteAgeMs": 120000,
+              "status": "live",
+              "stale": false,
+              "marketClosed": false,
+              "displayOnly": true,
+              "executionAllowed": false
+            }
+          },
+          {
+            "sequence": 3,
+            "kind": "daily",
+            "symbol": "XAGUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 45,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"b66d08701f11b10cb2dec3413f08b205def09286e89efe28615c976716c91bc5\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390296,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "b66d08701f11b10cb2dec3413f08b205def09286e89efe28615c976716c91bc5",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 4,
+            "kind": "daily",
+            "symbol": "XPTUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 45,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"6a6a19c069bc5436af9ea8ab1e19f9cdbd1142a74f1d212b9c05de76651236c8\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390297,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "6a6a19c069bc5436af9ea8ab1e19f9cdbd1142a74f1d212b9c05de76651236c8",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 5,
+            "kind": "daily",
+            "symbol": "XPDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 46,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"a8c7951503b9e326e8736634ba1d98ca6c302b9e3c3377155893745e04b14d8a\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390299,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "a8c7951503b9e326e8736634ba1d98ca6c302b9e3c3377155893745e04b14d8a",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 6,
+            "kind": "daily",
+            "symbol": "WTIUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 41,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"bfd7bc0865154f4b7b8081206b72b81cdae6f64bf36956da8d914440271f742e\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390335,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "bfd7bc0865154f4b7b8081206b72b81cdae6f64bf36956da8d914440271f742e",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 7,
+            "kind": "daily",
+            "symbol": "XBRUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 43,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"7f8f4c7e19790f868e714cc0e9290aad831032a78709621955eee87308d4d6f1\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390341,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "7f8f4c7e19790f868e714cc0e9290aad831032a78709621955eee87308d4d6f1",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 8,
+            "kind": "daily",
+            "symbol": "EURUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 40,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"ca8a27e0a4b35b296e35c6d57ede86389ece4f9c4d637f892bda5d6160ab70fc\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390340,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "ca8a27e0a4b35b296e35c6d57ede86389ece4f9c4d637f892bda5d6160ab70fc",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 9,
+            "kind": "daily",
+            "symbol": "GBPUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 43,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"b6ebf6372c46f21ffe92a61c4008de50e9c68830128196e5e5d4e1deef63c21b\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390376,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "b6ebf6372c46f21ffe92a61c4008de50e9c68830128196e5e5d4e1deef63c21b",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 10,
+            "kind": "daily",
+            "symbol": "USDJPY",
+            "status": 200,
+            "complete": true,
+            "ms": 41,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"dabf980ac5370877566df87954bc80eb2f5771168e8e3de33c36eaedc460b436\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390380,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "dabf980ac5370877566df87954bc80eb2f5771168e8e3de33c36eaedc460b436",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 11,
+            "kind": "daily",
+            "symbol": "AUDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 41,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"5217c193f7bfde4653cf304dbe283b330b8e59fc33104aac6421144cf4916d31\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390381,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "5217c193f7bfde4653cf304dbe283b330b8e59fc33104aac6421144cf4916d31",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 12,
+            "kind": "daily",
+            "symbol": "USDCAD",
+            "status": 200,
+            "complete": true,
+            "ms": 50,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"63f24211eea4513a49fe21a82e79abce6597970f38621a2e60aebf18e2c58f31\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390426,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "63f24211eea4513a49fe21a82e79abce6597970f38621a2e60aebf18e2c58f31",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 13,
+            "kind": "daily",
+            "symbol": "USDCHF",
+            "status": 200,
+            "complete": true,
+            "ms": 45,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"d8b80de47af8bbc68fcc1e6b7121c46402d9beee2f88d8954793b7f7469d37d1\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390422,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "d8b80de47af8bbc68fcc1e6b7121c46402d9beee2f88d8954793b7f7469d37d1",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 14,
+            "kind": "daily",
+            "symbol": "NZDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 46,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"5b69ad43d99792eccb70d87d720c9071820c20de0c6e33fb19f7c718b4b7c512\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128390428,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "5b69ad43d99792eccb70d87d720c9071820c20de0c6e33fb19f7c718b4b7c512",
+            "dailyBars": 21
+          }
+        ],
+        "checkpoints": [
+          {
+            "label": "chart-types-before",
+            "at": 1792128400405,
+            "ready": true,
+            "reasons": [],
+            "epoch": "f326f001fd38cfa077fce4b9fd3ae390c85a4b33262bf11949334fd3b116b5ec",
+            "providerAgeMs": 11405,
+            "snapshotAgeMs": 10189,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-bars",
+            "at": 1792128400959,
+            "ready": true,
+            "reasons": [],
+            "epoch": "f326f001fd38cfa077fce4b9fd3ae390c85a4b33262bf11949334fd3b116b5ec",
+            "providerAgeMs": 11959,
+            "snapshotAgeMs": 10743,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-hollow",
+            "at": 1792128401514,
+            "ready": true,
+            "reasons": [],
+            "epoch": "f326f001fd38cfa077fce4b9fd3ae390c85a4b33262bf11949334fd3b116b5ec",
+            "providerAgeMs": 12514,
+            "snapshotAgeMs": 11298,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-heikin",
+            "at": 1792128402088,
+            "ready": true,
+            "reasons": [],
+            "epoch": "f326f001fd38cfa077fce4b9fd3ae390c85a4b33262bf11949334fd3b116b5ec",
+            "providerAgeMs": 13088,
+            "snapshotAgeMs": 11872,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-line",
+            "at": 1792128402747,
+            "ready": true,
+            "reasons": [],
+            "epoch": "f326f001fd38cfa077fce4b9fd3ae390c85a4b33262bf11949334fd3b116b5ec",
+            "providerAgeMs": 13747,
+            "snapshotAgeMs": 12531,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-area",
+            "at": 1792128403312,
+            "ready": true,
+            "reasons": [],
+            "epoch": "f326f001fd38cfa077fce4b9fd3ae390c85a4b33262bf11949334fd3b116b5ec",
+            "providerAgeMs": 14312,
+            "snapshotAgeMs": 13096,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-candles",
+            "at": 1792128403880,
+            "ready": true,
+            "reasons": [],
+            "epoch": "f326f001fd38cfa077fce4b9fd3ae390c85a4b33262bf11949334fd3b116b5ec",
+            "providerAgeMs": 14880,
+            "snapshotAgeMs": 13664,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "main-final-after",
+    "source": {
+      "checkout": "c2ee9e7143a45f80f300fb997da6a5f40a97fee6",
+      "tree": "f97ae06a83291bdb23c0ba7827952798132c5f5b",
+      "harnessSha256": "4b1c2506e1793bdc9b9bbedc7e9073514ac05a0e70af9e43c0d81baed502b620",
+      "helperSha256": "1edb12f43a453772840c8b2454bcd4b673b43f800e98ff3c88ae5543b9d6d93e",
+      "indexSha256": "9fde018edd8fcb24069237da79d548fe4a20e9c78768dfd5d5310a2cd6ab7afb"
+    },
+    "browser": {
+      "version": "153.0.8010.12",
+      "node": "v24.21.0",
+      "locale": "ru-RU",
+      "timezone": "UTC"
+    },
+    "pass": 45,
+    "fail": [],
+    "pageErrors": [],
+    "blockedWrites": 0,
+    "reportSha256": "b17c7ad4c7f58adc2e53d28a6ea3de55fe6fb039a934123ddedab8b43b4be295",
+    "traces": [
+      {
+        "overflow": false,
+        "incomplete": false,
+        "drain": {
+          "complete": true,
+          "pending": 0
+        },
+        "readiness": [
+          {
+            "startedAt": 1792128423675,
+            "at": 1792128423683,
+            "elapsed": 8,
+            "ready": true,
+            "reasons": []
+          }
+        ],
+        "entries": [
+          {
+            "sequence": 1,
+            "kind": "daily",
+            "symbol": "XAUUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 126,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"ff8b0e26a8420ff7a644bc4c040eeff812b5f8c1b3d1800f842bdd6258b2933c\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423195,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "ff8b0e26a8420ff7a644bc4c040eeff812b5f8c1b3d1800f842bdd6258b2933c",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 2,
+            "kind": "ticker",
+            "status": 200,
+            "complete": true,
+            "ms": 597,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"395cdfc670a0237e43aa05a53ae76866801cd0bd85b31ec5e243be04488da47f\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423632,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "395cdfc670a0237e43aa05a53ae76866801cd0bd85b31ec5e243be04488da47f",
+            "xau": {
+              "symbol": "XAUUSD",
+              "price": "4173.729",
+              "provider": "biquote",
+              "providerSymbol": "XAUUSD",
+              "providerTimestamp": 1792128422000,
+              "fetchedAt": 1792128423089,
+              "asOf": 1792128422000,
+              "maxQuoteAgeMs": 120000,
+              "status": "live",
+              "stale": false,
+              "marketClosed": false,
+              "displayOnly": true,
+              "executionAllowed": false
+            }
+          },
+          {
+            "sequence": 3,
+            "kind": "daily",
+            "symbol": "XAGUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 53,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"01b7650622c4191f142221f308c8bf852840d108c2a4903d188ec829285c902d\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423723,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "01b7650622c4191f142221f308c8bf852840d108c2a4903d188ec829285c902d",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 4,
+            "kind": "daily",
+            "symbol": "XPTUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 51,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"62b7f34a98b036fe49df3fab72dc29813a2fbaf037c3e528d37ac03fc92fe3b1\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423720,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "62b7f34a98b036fe49df3fab72dc29813a2fbaf037c3e528d37ac03fc92fe3b1",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 5,
+            "kind": "daily",
+            "symbol": "XPDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 54,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"fddde2b4e6c65dc6ea0f75ebc3bb0d37a1c3abdfd63cc056a729b41e859703e0\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423725,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "fddde2b4e6c65dc6ea0f75ebc3bb0d37a1c3abdfd63cc056a729b41e859703e0",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 6,
+            "kind": "daily",
+            "symbol": "WTIUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 45,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"ca87dccbe6ffbbebd5e0104ed5a3f3421381c3a15000ba450dc8e29e242fba96\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423761,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "ca87dccbe6ffbbebd5e0104ed5a3f3421381c3a15000ba450dc8e29e242fba96",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 7,
+            "kind": "daily",
+            "symbol": "XBRUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 48,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"264b677890c6f4e7cfa76fac8cf9cb6332e38a7674fac635165e9f38a835aab1\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423766,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "264b677890c6f4e7cfa76fac8cf9cb6332e38a7674fac635165e9f38a835aab1",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 8,
+            "kind": "daily",
+            "symbol": "EURUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 41,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"962ef6168ce876764e466c903b7d60b37aecb861b5bc0757a766cf69ce57251d\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423764,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "962ef6168ce876764e466c903b7d60b37aecb861b5bc0757a766cf69ce57251d",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 9,
+            "kind": "daily",
+            "symbol": "GBPUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 40,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"90ee71bcf08d43bc4801b7ac8b9cfe23f9f4048c46d1885f05fc1fb421d01220\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423802,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "90ee71bcf08d43bc4801b7ac8b9cfe23f9f4048c46d1885f05fc1fb421d01220",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 10,
+            "kind": "daily",
+            "symbol": "USDJPY",
+            "status": 200,
+            "complete": true,
+            "ms": 49,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"b5efdc298a49e10ba089e2c742b1b2a9e3918bc770983b93fd5bc42f45ba8bf6\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423811,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "b5efdc298a49e10ba089e2c742b1b2a9e3918bc770983b93fd5bc42f45ba8bf6",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 11,
+            "kind": "daily",
+            "symbol": "AUDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 41,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"cdad0b070a33d59a8c02b96941ba7f34a50140fd9e1483c6537339d1a73be9ce\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423810,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "cdad0b070a33d59a8c02b96941ba7f34a50140fd9e1483c6537339d1a73be9ce",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 12,
+            "kind": "daily",
+            "symbol": "USDCAD",
+            "status": 200,
+            "complete": true,
+            "ms": 38,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"4433c677b2480f17d305d598cc30d66d0ab9ded76c1b3dc8c535d2a7d874f670\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423839,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "4433c677b2480f17d305d598cc30d66d0ab9ded76c1b3dc8c535d2a7d874f670",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 13,
+            "kind": "daily",
+            "symbol": "USDCHF",
+            "status": 200,
+            "complete": true,
+            "ms": 40,
+            "headers": {
+              "cache-control": "public, max-age=21600, must-revalidate",
+              "age": null,
+              "etag": "W/\"743a7b25435526046875adc2f6fbe16996bd850e0f05d59a73de2cc75cb0e0da\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423850,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "743a7b25435526046875adc2f6fbe16996bd850e0f05d59a73de2cc75cb0e0da",
+            "dailyBars": 21
+          },
+          {
+            "sequence": 14,
+            "kind": "daily",
+            "symbol": "NZDUSD",
+            "status": 200,
+            "complete": true,
+            "ms": 47,
+            "headers": {
+              "cache-control": "public, max-age=21599, must-revalidate",
+              "age": null,
+              "etag": "W/\"71ef523c7a8474bfad7c2617178b5bcf8c4e33273e82278929fbe4fd84dfccf0\"",
+              "x-voltex-refresh-seconds": "21600",
+              "content-type": "application/json; charset=utf-8"
+            },
+            "snapshot": {
+              "mode": "snapshot",
+              "capturedAt": 1792128423851,
+              "refreshMs": 21600000
+            },
+            "bodySha256": "71ef523c7a8474bfad7c2617178b5bcf8c4e33273e82278929fbe4fd84dfccf0",
+            "dailyBars": 21
+          }
+        ],
+        "checkpoints": [
+          {
+            "label": "chart-types-before",
+            "at": 1792128433894,
+            "ready": true,
+            "reasons": [],
+            "epoch": "583e249ca7f024ea9f7c21ca0daa2b46c2102c1ab191156117de8c65d319913e",
+            "providerAgeMs": 11894,
+            "snapshotAgeMs": 10262,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-bars",
+            "at": 1792128434450,
+            "ready": true,
+            "reasons": [],
+            "epoch": "583e249ca7f024ea9f7c21ca0daa2b46c2102c1ab191156117de8c65d319913e",
+            "providerAgeMs": 12450,
+            "snapshotAgeMs": 10818,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-hollow",
+            "at": 1792128435014,
+            "ready": true,
+            "reasons": [],
+            "epoch": "583e249ca7f024ea9f7c21ca0daa2b46c2102c1ab191156117de8c65d319913e",
+            "providerAgeMs": 13014,
+            "snapshotAgeMs": 11382,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-heikin",
+            "at": 1792128435585,
+            "ready": true,
+            "reasons": [],
+            "epoch": "583e249ca7f024ea9f7c21ca0daa2b46c2102c1ab191156117de8c65d319913e",
+            "providerAgeMs": 13585,
+            "snapshotAgeMs": 11953,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-line",
+            "at": 1792128436244,
+            "ready": true,
+            "reasons": [],
+            "epoch": "583e249ca7f024ea9f7c21ca0daa2b46c2102c1ab191156117de8c65d319913e",
+            "providerAgeMs": 14244,
+            "snapshotAgeMs": 12612,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-area",
+            "at": 1792128436821,
+            "ready": true,
+            "reasons": [],
+            "epoch": "583e249ca7f024ea9f7c21ca0daa2b46c2102c1ab191156117de8c65d319913e",
+            "providerAgeMs": 14821,
+            "snapshotAgeMs": 13189,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          },
+          {
+            "label": "chart-type-candles",
+            "at": 1792128437374,
+            "ready": true,
+            "reasons": [],
+            "epoch": "583e249ca7f024ea9f7c21ca0daa2b46c2102c1ab191156117de8c65d319913e",
+            "providerAgeMs": 15374,
+            "snapshotAgeMs": 13742,
+            "tickerSequence": 2,
+            "dailySequence": 1
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,102 @@
+[
+  {
+    "run": "review-before",
+    "startedAt": "2026-10-16T05:23:55.851Z",
+    "finishedAt": "2026-10-16T05:24:29.415Z",
+    "exit": 0,
+    "sha": "9f453a9d46b4feff714190a8aa4b3628ce42dffa",
+    "args": [
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/output/cfd-qa-part-a-20261016/qa-cfd-legacy-observed.cjs",
+      "--root",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015",
+      "--dist",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015/frontend/dist",
+      "--out",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/output/cfd-qa-part-a-20261016/review-before",
+      "--phase",
+      "before",
+      "--only",
+      "chart",
+      "--widths",
+      "1440"
+    ],
+    "harnessSha256": "7415fd51bd9a40756848952d50abdc927d74db13884c25362493607d10da132e",
+    "helperSha256": "b61cc9686b4ceab4896e36594b1da7271f91a5cc8a95d3173db2494aa2f80c16",
+    "logSha256": "af476e1b21febecc43099f9ec58248c06f5e93f5d4813529176a02f1301fceb9"
+  },
+  {
+    "run": "main-before",
+    "startedAt": "2026-10-16T05:24:29.871Z",
+    "finishedAt": "2026-10-16T05:25:02.838Z",
+    "exit": 0,
+    "sha": "c2ee9e7143a45f80f300fb997da6a5f40a97fee6",
+    "args": [
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/output/cfd-qa-part-a-20261016/qa-cfd-legacy-observed.cjs",
+      "--root",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/cfd-main-c2ee9e71",
+      "--dist",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/cfd-main-c2ee9e71/frontend/dist",
+      "--out",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/output/cfd-qa-part-a-20261016/main-before",
+      "--phase",
+      "before",
+      "--only",
+      "chart",
+      "--widths",
+      "1440"
+    ],
+    "harnessSha256": "7415fd51bd9a40756848952d50abdc927d74db13884c25362493607d10da132e",
+    "helperSha256": "b61cc9686b4ceab4896e36594b1da7271f91a5cc8a95d3173db2494aa2f80c16",
+    "logSha256": "1d6cca0680a4313d7a115ce74c859be6bd564e8198b8996e98aaeabee8dc42f1"
+  },
+  {
+    "run": "review-after",
+    "startedAt": "2026-10-16T05:25:03.201Z",
+    "finishedAt": "2026-10-16T05:25:36.089Z",
+    "exit": 0,
+    "sha": "9f453a9d46b4feff714190a8aa4b3628ce42dffa",
+    "args": [
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015/scripts/qa-cfd-workspace.cjs",
+      "--root",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015",
+      "--dist",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015/frontend/dist",
+      "--out",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/output/cfd-qa-part-a-20261016/review-after",
+      "--phase",
+      "after",
+      "--only",
+      "chart",
+      "--widths",
+      "1440"
+    ],
+    "harnessSha256": "4b1c2506e1793bdc9b9bbedc7e9073514ac05a0e70af9e43c0d81baed502b620",
+    "helperSha256": "b61cc9686b4ceab4896e36594b1da7271f91a5cc8a95d3173db2494aa2f80c16",
+    "logSha256": "c792b710a7db18590aa838423045b10cc008927fa508d0dc6fddf3444aa30703"
+  },
+  {
+    "run": "main-after",
+    "startedAt": "2026-10-16T05:25:36.445Z",
+    "finishedAt": "2026-10-16T05:26:08.358Z",
+    "exit": 0,
+    "sha": "c2ee9e7143a45f80f300fb997da6a5f40a97fee6",
+    "args": [
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/stocks-review-20261015/scripts/qa-cfd-workspace.cjs",
+      "--root",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/cfd-main-c2ee9e71",
+      "--dist",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/work/cfd-main-c2ee9e71/frontend/dist",
+      "--out",
+      "C:/Users/nazar/Documents/Codex/2026-10-06/admin-listings-aith-usdt-0-80/output/cfd-qa-part-a-20261016/main-after",
+      "--phase",
+      "after",
+      "--only",
+      "chart",
+      "--widths",
+      "1440"
+    ],
+    "harnessSha256": "4b1c2506e1793bdc9b9bbedc7e9073514ac05a0e70af9e43c0d81baed502b620",
+    "helperSha256": "b61cc9686b4ceab4896e36594b1da7271f91a5cc8a95d3173db2494aa2f80c16",
+    "logSha256": "f0baca7fd1965797b1d74f061e924c1a93a13100b2e86be967d71332370234b9"
+  }
+]

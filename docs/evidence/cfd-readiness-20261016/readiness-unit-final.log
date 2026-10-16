@@ -1,0 +1,49 @@
+✔ selected quote readiness needs the matching rendered quote and its own daily sessions (4.1838ms)
+✔ another priced instrument never substitutes for an unavailable selected quote (0.5229ms)
+✔ every selected DOM identity must match the requested instrument (0.5995ms)
+✔ ticker and ticket must both show the selected numeric quote, with supported display formatting (0.5707ms)
+✔ malformed selected quote prices cannot become readiness through numeric coercion (0.5586ms)
+✔ all six original stats remain required rather than accepting any priced row or canvas (0.3123ms)
+✔ source, provider and explicit display-only non-executable flags are required (0.4474ms)
+✔ acquisition and quote timestamps must be finite, positive and never in the future (0.7751ms)
+✔ ticker and daily observations both require the exact client snapshot envelope (1.6411ms)
+✔ display readiness does not impose a new financial freshness limit or require an open session (0.5458ms)
+✔ only the documented display-route quote statuses can establish readiness (0.328ms)
+✔ incomplete, unsuccessful or non-JSON ticker and daily observations fail readiness (0.5387ms)
+✔ daily data must identify the selected instrument and use the daily interval (0.2428ms)
+✔ invalid daily prices, OHLC ranges and timestamps cannot satisfy selected stats readiness (1.5561ms)
+✔ daily session must contain the quote timestamp and have a previous closed session within five days (0.4279ms)
+✔ epoch equality accepts the same complete observations and refuses either unready side (0.4608ms)
+✔ epoch changes when quote acquisition changes even if the rendered price stays identical (0.8398ms)
+✔ epoch binds the quote price and daily response content rather than the visible stat labels alone (0.3915ms)
+✔ observer waits for the delayed selected body without adding requests or extending the 45-second deadline (3.0979ms)
+✔ a stalled DOM observation fails at the original readiness deadline with no retry requests (1.2537ms)
+✔ bounded drain reports stalled bodies and stays incomplete even if the body later arrives (3.0554ms)
+✔ completed observation drains without firing its timeout and preserves a complete receipt (0.5518ms)
+✔ request failure, non-JSON, failed HTTP and unreadable bodies cannot reuse an earlier successful quote (1.9319ms)
+✔ latest pending ticker or selected daily request fails closed instead of falling back to earlier success (0.7053ms)
+✔ observer retains response, local-cache and CDP provenance without changing the cache or response (0.9808ms)
+✔ unrelated origin, hourly candles and untracked CDP responses cannot satisfy selected daily readiness (0.4036ms)
+✔ observer checkpoints detect a new same-price quote epoch while allowing unchanged acquisition data (1.6792ms)
+✔ readiness probes exact uncached real routes for the selected and reload charts, then stops (2.6363ms)
+✔ a transient chart failure is recorded before a bounded retry, with no display-cache route (1.6415ms)
+✔ missing or non-numeric actual quotes fail after exactly three attempts without chart requests (0.9348ms)
+▶ HTTP 200 cannot pass mismatched identities, invalid OHLC, duplicate times or insufficient bars
+  ✔ symbol (0.7536ms)
+  ✔ interval (0.6024ms)
+  ✔ invalidRange (0.7298ms)
+  ✔ booleanPrices (1.3766ms)
+  ✔ invalidTime (0.4779ms)
+  ✔ duplicateTime (0.4091ms)
+  ✔ oneBar (0.5059ms)
+✔ HTTP 200 cannot pass mismatched identities, invalid OHLC, duplicate times or insufficient bars (6.0696ms)
+✔ transport and non-JSON failures retain diagnostics and exhaust finite retries (0.4554ms)
+✔ foreign, credentialled and non-origin targets are rejected before any request (0.3162ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 133.8105

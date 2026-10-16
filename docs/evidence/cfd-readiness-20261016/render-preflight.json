@@ -1,0 +1,135 @@
+{
+  "checkedAt": "2026-10-16T05:23:48.622Z",
+  "services": [
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-dakd1dvqj5pc73ao0510",
+      "name": "voltex-copy-locked-review",
+      "branch": "codex/copy-trading-locked-list",
+      "autoDeploy": "yes",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:16:20.156692Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-dak3hm8jo6nc73bc6280",
+      "name": "voltex-native-demo-review",
+      "branch": "codex/private-cross-demo-bybit-model",
+      "autoDeploy": "yes",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:24:16.419622Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-dak0fbh5efls73ak4g8g",
+      "name": "voltex-banking-review",
+      "branch": "codex/banking-earn",
+      "autoDeploy": "yes",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:24:16.840652Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-dajvmslg1s2s73cc3k8g",
+      "name": "voltex-private-terminal-review",
+      "branch": "codex/private-trading-replay",
+      "autoDeploy": "yes",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:24:16.176831Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-daj7qsp5efls73ft6c3g",
+      "name": "voltex-cfd-collector-review",
+      "branch": "fix/cfd-working-terminal",
+      "autoDeploy": "no",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:09:41.718126Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-daj5nqtg1s2s739gpo70",
+      "name": "voltex-cfd-free-display-staging",
+      "branch": "feat/cfd-multi-provider-admission",
+      "autoDeploy": "no",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:24:17.70292Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-daj45tlg1s2s739bu9mg",
+      "name": "voltex-cfd-reference-staging",
+      "branch": "feat/cfd-multi-provider-admission",
+      "autoDeploy": "no",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:24:17.880229Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-daikl1e7bikc7391tmig",
+      "name": "voltex-market-data-prod",
+      "branch": "main",
+      "autoDeploy": "no",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T16:12:50.984603Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-dai3bvu1egvs73d9srog",
+      "name": "exchange-api-staging",
+      "branch": "codex/bybit-live-market-data",
+      "autoDeploy": "no",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:17:46.5824Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-dai2gahijrss738db7u0",
+      "name": "voltex-market-data-staging",
+      "branch": "codex/bybit-live-market-data",
+      "autoDeploy": "no",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:17:45.716518Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-da467nn40ujc73cumjr0",
+      "name": "voltex-exchange",
+      "branch": "main",
+      "autoDeploy": "yes",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T01:24:17.358746Z"
+    },
+    {
+      "workspace": "Крипто Биржа",
+      "id": "srv-da467nn40ujc73cumjqg",
+      "name": "exchange-api",
+      "branch": "main",
+      "autoDeploy": "no",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-01T15:33:50.414874Z"
+    },
+    {
+      "workspace": "VOLTEX Free",
+      "id": "srv-daplu7g473hc73c6mlt0",
+      "name": "voltex-api",
+      "branch": "main",
+      "autoDeploy": "no",
+      "preview": "off",
+      "prPreview": "no",
+      "updatedAt": "2026-10-02T17:53:31.354805Z"
+    }
+  ]
+}

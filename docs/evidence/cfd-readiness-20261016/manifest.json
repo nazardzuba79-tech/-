@@ -1,0 +1,70 @@
+{
+  "originalHead": "9f453a9d46b4feff714190a8aa4b3628ce42dffa",
+  "main": "c2ee9e7143a45f80f300fb997da6a5f40a97fee6",
+  "originalCiRun": "38850356451",
+  "originalCiReportSha256": "40c7c5e5756c4c393159170e3def85a712e66f1bd7897ddd0dc67445ea706b22",
+  "files": [
+    {
+      "path": "review-before.json.gz",
+      "rawSha256": "a85d31cb62ab7530974d0b38a879f0d4a4983d8adec5a4c2f003018fc721705c",
+      "rawBytes": 321216
+    },
+    {
+      "path": "main-before.json.gz",
+      "rawSha256": "cdb848a358c392965035b90b3567dfb15c878d2b666018a287dfe574fd8fce86",
+      "rawBytes": 321267
+    },
+    {
+      "path": "review-final-after.json.gz",
+      "rawSha256": "ceea3495fa744c588d35b4452109ce540629334406f0e34697606981e39fd2a2",
+      "rawBytes": 323797
+    },
+    {
+      "path": "main-final-after.json.gz",
+      "rawSha256": "b17c7ad4c7f58adc2e53d28a6ea3de55fe6fb039a934123ddedab8b43b4be295",
+      "rawBytes": 323817
+    }
+  ],
+  "runtimeComparison": [
+    {
+      "path": "src/api/routes/cfd.ts",
+      "headBlob": "cd5e790636acf91a48a20d9273009361262f539e",
+      "mainBlob": "cd5e790636acf91a48a20d9273009361262f539e"
+    },
+    {
+      "path": "src/api/middleware/publicDisplayCache.ts",
+      "headBlob": "094e9c8965fe813047d0f97bc966dab584bfd1d1",
+      "mainBlob": "094e9c8965fe813047d0f97bc966dab584bfd1d1"
+    },
+    {
+      "path": "src/services/marketData/cfd/CfdDisplayQuoteRouter.ts",
+      "headBlob": "823b9e9d96b07d09adce5052c47c7935000b28f0",
+      "mainBlob": "823b9e9d96b07d09adce5052c47c7935000b28f0"
+    },
+    {
+      "path": "frontend/src/lib/useCfdTickers.ts",
+      "headBlob": "d85846f2c9bed723114979933cd6e2a7cc5f3715",
+      "mainBlob": "d85846f2c9bed723114979933cd6e2a7cc5f3715"
+    },
+    {
+      "path": "frontend/src/lib/useCfdDailySession.ts",
+      "headBlob": "cfe24c8649cad7a5cfba71fe8efba0aa2dacfb2d",
+      "mainBlob": "cfe24c8649cad7a5cfba71fe8efba0aa2dacfb2d"
+    },
+    {
+      "path": "frontend/src/lib/cfdInfoStrip.ts",
+      "headBlob": "c031aacbcb71cc684b9d391314b7401637603d2e",
+      "mainBlob": "c031aacbcb71cc684b9d391314b7401637603d2e"
+    },
+    {
+      "path": "frontend/src/lib/displaySnapshotCache.ts",
+      "headBlob": "6e9a817e0131b4581111ce69000e58ed8ff35bdc",
+      "mainBlob": "6e9a817e0131b4581111ce69000e58ed8ff35bdc"
+    },
+    {
+      "path": "frontend/src/pages/TradePage.tsx",
+      "headBlob": "40449f5e8ed7378ffef09c2013fee15808e7b92a",
+      "mainBlob": "40449f5e8ed7378ffef09c2013fee15808e7b92a"
+    }
+  ]
+}
