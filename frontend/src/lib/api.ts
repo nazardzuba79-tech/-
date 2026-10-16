@@ -628,6 +628,46 @@ interface RealBalance {
   valueUsd: number | null;
 }
 
+export type KycReviewStage =
+  | 'NOT_STARTED' | 'UNDER_REVIEW' | 'DOCUMENT_REQUIRED' | 'SELFIE_REQUIRED' | 'DOCUMENT_AND_SELFIE_REQUIRED'
+  | 'MATERIALS_RECEIVED' | 'RE_REVIEW' | 'APPROVED' | 'REJECTED';
+export type KycMaterialKind = 'DOCUMENT' | 'SELFIE' | 'DOCUMENT_AND_SELFIE';
+export type KycDocumentReason = 'BLURRY' | 'UNREADABLE' | 'CROPPED' | 'LOW_LIGHT' | 'OTHER';
+
+/** What the user sees about an open request: the ask and the reason, nothing internal. */
+export interface KycMaterialRequestView {
+  id: string;
+  kind: KycMaterialKind;
+  documentReason: KycDocumentReason | null;
+  documentReasonText: string | null;
+  selfieComment: string | null;
+  documentRequested: boolean;
+  selfieRequested: boolean;
+  documentReceived: boolean;
+  selfieReceived: boolean;
+  createdAt: string;
+}
+
+/** The admin's view of one request, newest first in a submission's history. */
+export interface AdminKycMaterialRequest {
+  id: string;
+  kind: KycMaterialKind;
+  status: 'OPEN' | 'RECEIVED' | 'CLOSED';
+  documentReason: KycDocumentReason | null;
+  documentReasonText: string | null;
+  selfieComment: string | null;
+  requestedBy: string;
+  createdAt: string;
+  document: { receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null } | null;
+  selfie: {
+    receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null;
+    consentAt: string | null; consentVersion: string | null;
+  } | null;
+  acknowledgedAt: string | null;
+  closedAt: string | null;
+  closedOutcome: 'APPROVED' | 'REJECTED' | 'SUPERSEDED' | null;
+}
+
 export const api = {
   // Read-only modeled strategy history on the normal backend. The legacy
   // internal simulation controls remain separate and cannot reset these ledgers.
@@ -1214,6 +1254,10 @@ export const api = {
   getMyKyc: () =>
     request<{
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+      /** The finer stage of the latest submission; kycStatus stays PENDING while materials are requested. */
+      reviewStage?: KycReviewStage;
+      /** The admin's open request for a new document photo and/or a selfie, if any. */
+      materialRequest?: KycMaterialRequestView | null;
       latestSubmission: {
         id: string;
         country: string;
@@ -1243,6 +1287,10 @@ export const api = {
           status: string;
           rejectionReason: string | null;
           createdAt: string;
+          // Paged admin reads only (/admin/clients/page); absent from the legacy list.
+          reviewStage?: KycReviewStage;
+          activeMaterialRequestId?: string | null;
+          materialRequests?: AdminKycMaterialRequest[];
         } | null;
       }[]
     >('/admin/clients', { signal }),
@@ -1343,6 +1391,24 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ approve, reason }),
     }),
+
+  // Admin: ask for a new document photo and/or a selfie without rejecting.
+  // `clientRequestId` makes a repeated click (or a retry) the same request.
+  requestKycMaterials: (submissionId: string, body: {
+    clientRequestId: string;
+    kind: KycMaterialKind;
+    documentReason?: KycDocumentReason;
+    documentReasonText?: string;
+    selfieComment?: string;
+  }) =>
+    request<{ materialRequest: AdminKycMaterialRequest; reviewStage: KycReviewStage }>(`/kyc/${encodeURIComponent(submissionId)}/material-requests`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  // Admin: the received materials were opened — «Материалы получены» → «Повторная проверка».
+  acknowledgeKycMaterials: (materialRequestId: string) =>
+    request<{ acknowledged: boolean }>(`/kyc/material-requests/${encodeURIComponent(materialRequestId)}/acknowledge`, { method: 'POST' }),
 
   // Backend-authoritative eligibility and persisted card requests, not issuance.
   getCardApplication: () => request<CardApplicationSnapshot>('/card/application/me'),

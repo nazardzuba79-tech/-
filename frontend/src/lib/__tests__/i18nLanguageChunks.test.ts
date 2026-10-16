@@ -375,6 +375,10 @@ describe('translation integrity', () => {
         if (key?.startsWith('chart.settings.')) return false;
         // New regulatory-document UI keys; all pre-existing copy stays frozen.
         if (key?.startsWith('licenses.')) return false;
+        // KYC additional materials (2026-10-15): the admin's request for a new
+        // document photo and/or a selfie. `git diff --numstat` over the locales
+        // reports `47 0` per language, additions only; asserted by name below.
+        if (key?.startsWith('kycMaterials.')) return false;
         // Chart workspace (2026-10-13): the timeframe labels, the two-row
         // toolbar, compare, layout, data window, analytics, templates and
         // shortcuts, plus three more chart types. `git diff --numstat` over
@@ -411,6 +415,12 @@ describe('translation integrity', () => {
       for (const key of Object.keys(dicts.ru).filter(key => key.startsWith('licenses.'))) {
         expect({ code, key, translated: Boolean(dicts[code][key]?.trim()) }).toEqual({ code, key, translated: true });
         if (code !== 'ru') expect(dicts[code][key]).not.toBe(dicts.ru[key]);
+      }
+      for (const key of Object.keys(dicts.ru).filter(key => key.startsWith('kycMaterials.'))) {
+        expect({ code, key, translated: Boolean(dicts[code][key]?.trim()) }).toEqual({ code, key, translated: true });
+        if (code !== 'ru') expect({ code, key, same: dicts[code][key] === dicts.ru[key] }).toEqual({ code, key, same: false });
+        // Placeholders survive translation exactly.
+        expect({ code, key, params: (dicts[code][key].match(/\{\w+\}/g) ?? []).sort() }).toEqual({ code, key, params: (dicts.ru[key].match(/\{\w+\}/g) ?? []).sort() });
       }
       expect(dicts[code]['settings.rememberedDevice'].trim()).not.toBe('');
       for (const key of ['futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch']) {

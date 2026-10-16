@@ -7,6 +7,7 @@ import { requireAdmin } from '../middleware/admin';
 import { decryptAdminPassword } from '../../services/AdminPasswordVault';
 import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
 import { hiddenAdminUserMap, isAdminUserHidden } from '../../services/AdminUserVisibility';
+import { materialRequestsBySubmission, submissionMaterials } from '../../services/kycMaterials';
 
 const paging = z.object({
   page: z.coerce.number().int().min(1).max(1_000_000).default(1),
@@ -20,7 +21,9 @@ const userQuery = paging.extend({
 });
 const kycQuery = paging.extend({
   search: z.string().trim().max(200).default(''),
-  status: z.enum(['all', 'NOT_STARTED', 'PENDING', 'APPROVED', 'REJECTED']).default('all'),
+  // MATERIALS_RECEIVED: the user sent everything an admin asked for and it awaits a decision.
+  // AWAITING_MATERIALS: an admin asked for something the user has not sent yet.
+  status: z.enum(['all', 'NOT_STARTED', 'PENDING', 'APPROVED', 'REJECTED', 'MATERIALS_RECEIVED', 'AWAITING_MATERIALS']).default('all'),
   from: z.string().datetime({ offset: true }).optional(), to: z.string().datetime({ offset: true }).optional(),
 }).refine(q => !q.from || !q.to || Date.parse(q.from) <= Date.parse(q.to), 'Invalid date range');
 const withdrawalQuery = paging.extend({ search: z.string().trim().max(200).default(''),
@@ -228,7 +231,9 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
         items = rows.map(p => ({ id: p.id, productName: p.product.name, amount: p.amount.toString(), asset: p.asset, status: p.status, createdAt: p.createdAt })); break;
       }
       case 'kyc': {
-        const [rows, count] = await Promise.all([prisma.kycSubmission.findMany(args), prisma.kycSubmission.count({ where })]); total = count; items = rows.map(kycView); break;
+        const [rows, count] = await Promise.all([prisma.kycSubmission.findMany(args), prisma.kycSubmission.count({ where })]); total = count;
+        const materials = await materialRequestsBySubmission(prisma, rows.map(r => r.id));
+        items = rows.map(r => ({ ...kycView(r), ...submissionMaterials(r, materials.get(r.id) ?? []) })); break;
       }
       case 'audit': {
         const [rows, count] = await Promise.all([prisma.auditLog.findMany(args), prisma.auditLog.count({ where })]); total = count; items = await auditViews(prisma, rows); break;
@@ -242,14 +247,19 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
     if (!parsed.success) return res.status(400).json({ error: 'Недопустимые параметры списка' });
     const q = parsed.data;
     const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
+    const materialStatus = q.status === 'MATERIALS_RECEIVED' ? 'RECEIVED' : q.status === 'AWAITING_MATERIALS' ? 'OPEN' : null;
+    const kycFilter: Prisma.UserWhereInput = materialStatus
+      ? { kycStatus: 'PENDING', kycSubmissions: { some: { status: 'PENDING', materialRequests: { some: { status: materialStatus, closedAt: null } } } } }
+      : q.status === 'all' || q.status === 'MATERIALS_RECEIVED' || q.status === 'AWAITING_MATERIALS' ? {} : { kycStatus: q.status };
     const where: Prisma.UserWhereInput = { ...(hiddenIds.length ? { id: { notIn: hiddenIds } } : {}),
-      ...(q.status !== 'all' ? { kycStatus: q.status } : {}),
+      ...kycFilter,
       ...(q.search ? { OR: [{ email: { contains: literalContains(q.search), mode: 'insensitive' } }, { id: { contains: literalContains(q.search), mode: 'insensitive' } }] } : {}) };
     let rows: User[], total: number;
     if (q.from || q.to) {
       const filters = [Prisma.sql`true`];
       if (hiddenIds.length) filters.push(Prisma.sql`u."id" NOT IN (${Prisma.join(hiddenIds)})`);
-      if (q.status !== 'all') filters.push(Prisma.sql`u."kycStatus"::text = ${q.status}`);
+      if (materialStatus) filters.push(Prisma.sql`u."kycStatus"::text = 'PENDING' AND EXISTS (SELECT 1 FROM "KycMaterialRequest" r JOIN "KycSubmission" ks ON ks."id" = r."submissionId" WHERE r."userId" = u."id" AND ks."status" = 'PENDING' AND r."status" = ${materialStatus} AND r."closedAt" IS NULL)`);
+      else if (q.status !== 'all') filters.push(Prisma.sql`u."kycStatus"::text = ${q.status}`);
       if (q.search) filters.push(Prisma.sql`(strpos(lower(u."email"), lower(${q.search})) > 0 OR strpos(lower(u."id"), lower(${q.search})) > 0)`);
       if (q.from) filters.push(Prisma.sql`latest."createdAt" >= ${new Date(q.from)}`);
       if (q.to) filters.push(Prisma.sql`latest."createdAt" <= ${new Date(q.to)}`);
@@ -275,7 +285,9 @@ export function adminPagedReadsRouter(prisma: PrismaClient): Router {
         ORDER BY s."createdAt" DESC, s."id" DESC LIMIT 1
       ) k WHERE u."id" IN (${Prisma.join(rows.map(u => u.id))})`) : [];
     const latestByUser = new Map(latest.map(k => [k.userId, k]));
-    res.set('Cache-Control', 'private, no-store').json(pageResult(rows.map(u => ({ ...identity(u), latestKyc: latestByUser.has(u.id) ? kycView(latestByUser.get(u.id)!) : null })), total, q));
+    const materials = await materialRequestsBySubmission(prisma, latest.map(k => k.id));
+    const latestView = (k: KycSubmission) => ({ ...kycView(k), ...submissionMaterials(k, materials.get(k.id) ?? []) });
+    res.set('Cache-Control', 'private, no-store').json(pageResult(rows.map(u => ({ ...identity(u), latestKyc: latestByUser.has(u.id) ? latestView(latestByUser.get(u.id)!) : null })), total, q));
   }));
 
   router.get('/admin/audit-log/page', ...gate, asyncRoute(async (req, res) => {

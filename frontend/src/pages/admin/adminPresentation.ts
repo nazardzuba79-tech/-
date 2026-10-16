@@ -24,6 +24,8 @@ export function adminDayBoundary(day: string, end = false): string | undefined {
 }
 export const ADMIN_ACTIONS: Record<string, string> = {
   KYC_APPROVED: 'Верификация одобрена', KYC_REJECTED: 'Верификация отклонена',
+  KYC_MATERIALS_REQUESTED: 'Запрошены дополнительные материалы KYC', KYC_MATERIAL_RECEIVED: 'Получен дополнительный материал KYC',
+  KYC_MATERIALS_VIEWED: 'Начата повторная проверка KYC',
   WITHDRAWAL_APPROVED: 'Вывод одобрен', WITHDRAWAL_SENT: 'Вывод отмечен отправленным', WITHDRAWAL_REJECTED: 'Вывод отклонён',
   TREASURY_WALLET_UPDATED: 'Адрес пополнения изменён', TREASURY_WALLET_RESET: 'Адрес пополнения сброшен',
   BALANCE_ADJUSTED: 'Баланс скорректирован', DEMO_TOP_UP: 'Тестовый баланс пополнен', DEMO_BALANCE_ADJUSTED: 'Тестовый баланс скорректирован',

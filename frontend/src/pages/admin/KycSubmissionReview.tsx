@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, ApiError, getToken, onSessionChange } from '../../lib/api';
+import { api, ApiError, getToken, onSessionChange, type AdminKycMaterialRequest, type KycMaterialKind, type KycReviewStage } from '../../lib/api';
 import { getAdminKycDocumentAbortable } from '../../lib/adminReadApi';
 import { getCountryName } from '../../lib/countries';
 import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
 import { AdminModal } from './AdminPrimitives';
+import { KYC_STAGE_LABEL, KycCompareView, KycMaterialHistory, KycMaterialRequestForm } from './KycMaterialsAdmin';
 
 export const DOC_TYPE_LABEL: Record<string, string> = {
   PASSPORT: 'Паспорт',
@@ -31,6 +32,11 @@ export interface KycSubmissionView {
   emailMessageId?: string | null;
   documentMimeType?: string | null;
   documentSizeBytes?: number | null;
+  /** Derived on the server: the finer stage while additional materials are involved. */
+  reviewStage?: KycReviewStage;
+  activeMaterialRequestId?: string | null;
+  /** Requests for a new document photo and/or a selfie, newest first. */
+  materialRequests?: AdminKycMaterialRequest[];
 }
 
 function formatSize(bytes: number): string {
@@ -51,10 +57,12 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
  * решение. Одна и та же карточка в очереди «Верификация · KYC» и в карточке
  * пользователя, чтобы заявку можно было проверить там, где её увидели.
  */
-export function KycSubmissionReview({ submission, email, onReviewed }: {
+export function KycSubmissionReview({ submission, email, onReviewed, onChanged }: {
   submission: KycSubmissionView;
   email?: string;
   onReviewed: () => void;
+  /** A non-final change (materials requested, re-review started): reload without leaving this card. */
+  onChanged?: () => void;
 }) {
   const [session, setSession] = useState(getToken);
   const [documentState, setDocumentState] = useState<{ id: string; session: string | null; url: string | null; pdf: boolean; missing: boolean; error: string | null } | null>(null);
@@ -67,6 +75,16 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
   currentId.current = submission.id;
   const [decision, setDecision] = useState<{ approve: boolean; reason: string; id: string; session: string | null } | null>(null);
   const [uncertain, setUncertain] = useState(false);
+  // «Запросить дополнительные материалы» (with an optional preset) and the comparison screen.
+  const [requestForm, setRequestForm] = useState<{ preset?: KycMaterialKind } | null>(null);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [ackBusy, setAckBusy] = useState(false);
+  const [ackError, setAckError] = useState<string | null>(null);
+  const ackRef = useRef<string | null>(null);
+  const materialRequests = submission.materialRequests ?? [];
+  const activeMaterial = materialRequests.find(r => r.id === submission.activeMaterialRequestId) ?? null;
+  const stage = submission.reviewStage;
+  const changed = onChanged ?? onReviewed;
   const emailed = submission.documentDelivery === 'EMAIL';
   const activeDocument = documentState?.id === submission.id && documentState.session === session && session === getToken() ? documentState : null;
   const documentUrl = activeDocument?.url;
@@ -74,7 +92,7 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
   const documentMissing = activeDocument?.missing;
 
   useEffect(() => onSessionChange(() => { setSession(getToken()); setDecision(null); setError(null); }), []);
-  useEffect(() => { setDecision(null); setUncertain(false); setReason(''); setError(null); }, [submission.id, submission.status]);
+  useEffect(() => { setDecision(null); setUncertain(false); setReason(''); setError(null); setRequestForm(null); setCompareOpen(false); setAckError(null); }, [submission.id, submission.status]);
 
   useEffect(() => {
     setDocumentState(null);
@@ -140,6 +158,29 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
 
   function closeDecision() { if (!busyRef.current) setDecision(null); }
 
+  // «Материалы получены» → «Повторная проверка»: the admin started looking at them.
+  async function acknowledge(id: string) {
+    if (ackRef.current === id) return;
+    ackRef.current = id;
+    setAckBusy(true);
+    setAckError(null);
+    try {
+      await api.acknowledgeKycMaterials(id);
+      if (currentId.current === submission.id) changed();
+    } catch {
+      ackRef.current = null;
+      if (currentId.current === submission.id) setAckError('Не удалось отметить начало повторной проверки. Повторите.');
+    } finally {
+      setAckBusy(false);
+    }
+  }
+
+  function openCompare() {
+    setCompareOpen(true);
+    setRequestForm(null);
+    if (activeMaterial && activeMaterial.status === 'RECEIVED' && !activeMaterial.acknowledgedAt) void acknowledge(activeMaterial.id);
+  }
+
   const pending = submission.status === 'PENDING';
 
   return (
@@ -150,6 +191,11 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
       <Row label="Дата рождения" value={new Date(submission.dateOfBirth).toLocaleDateString('ru-RU')} />
       <Row label="Документ" value={DOC_TYPE_LABEL[submission.documentType] ?? submission.documentType} />
       <Row label="Подана (Europe/Kyiv)" value={new Date(submission.createdAt).toLocaleString('ru-RU', { timeZone: 'Europe/Kyiv' })} />
+      {stage && (
+        <Row label="Этап проверки" value={
+          <span data-kyc-stage={stage} className="kyc-mat-stage" data-attention={stage === 'MATERIALS_RECEIVED' || stage === 'RE_REVIEW' ? true : undefined}>{KYC_STAGE_LABEL[stage]}</span>
+        } />
+      )}
       {submission.reviewedAt && <Row label="Проверена (Europe/Kyiv)" value={new Date(submission.reviewedAt).toLocaleString('ru-RU', { timeZone: 'Europe/Kyiv' })} />}
       {submission.status === 'REJECTED' && submission.rejectionReason && (
         <Row label="Причина отказа" value={submission.rejectionReason} />
@@ -204,6 +250,37 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
         )}
       </div>
 
+      <KycMaterialHistory
+        requests={materialRequests}
+        activeId={submission.activeMaterialRequestId ?? null}
+        fullName={submission.fullName}
+        email={email}
+        busyAck={ackBusy}
+        onAcknowledge={id => void acknowledge(id)}
+      />
+      {ackError && <div role="alert" style={styles.errorBox}>{ackError}</div>}
+
+      {pending && !uncertain && (
+        requestForm ? (
+          <KycMaterialRequestForm
+            submissionId={submission.id}
+            preset={requestForm.preset}
+            activeRequest={activeMaterial}
+            onCancel={() => setRequestForm(null)}
+            onSent={() => { setRequestForm(null); changed(); }}
+          />
+        ) : (
+          <div className="kyc-mat-actions" style={{ justifyContent: 'stretch' }}>
+            <button type="button" data-kyc-request-open style={{ ...styles.neutralBtn, flex: 1 }} disabled={busy} onClick={() => { setRequestForm({}); setCompareOpen(false); }}>
+              Запросить дополнительные материалы
+            </button>
+            <button type="button" data-kyc-compare-open style={{ ...styles.neutralBtn, flex: 1 }} disabled={busy} onClick={openCompare}>
+              Сравнить документ и селфи
+            </button>
+          </div>
+        )
+      )}
+
       {pending ? (
         <>
           <label style={styles.label}>
@@ -246,6 +323,16 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
           bg={submission.status === 'APPROVED' ? 'var(--buy-dim)' : 'var(--sell-dim)'}
         />
       )}
+      {compareOpen && pending && (
+        <KycCompareView
+          legacyDocument={!emailed && documentUrl ? { url: documentUrl, pdf: !!documentIsPdf } : null}
+          onClose={() => setCompareOpen(false)}
+          onApprove={() => { setCompareOpen(false); requestDecision(true); }}
+          onReject={() => { setCompareOpen(false); requestDecision(false); }}
+          onRequestSelfie={() => { setCompareOpen(false); setRequestForm({ preset: 'SELFIE' }); }}
+          onRequestDocument={() => { setCompareOpen(false); setRequestForm({ preset: 'DOCUMENT' }); }}
+        />
+      )}
       {decision && decision.id === submission.id && decision.session === getToken() && <AdminModal title={decision.approve ? 'Подтвердить проверку личности' : 'Отклонить заявку на проверку'} busy={busy} onClose={closeDecision}>
         <div className="admin-modal-body">
           <Row label="Пользователь" value={email ?? '—'} />
@@ -255,6 +342,7 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
           <Row label="Подана (Europe/Kyiv)" value={new Date(submission.createdAt).toLocaleString('ru-RU', { timeZone: 'Europe/Kyiv' })} />
           <p style={styles.hint}>{decision.approve ? 'Личность будет отмечена как проверенная. Убедитесь, что проверили документ именно этого пользователя.' : 'Заявка будет отклонена. Пользователь увидит причину отказа.'}</p>
           {!decision.approve && <Row label="Причина" value={decision.reason || 'Не указана'} />}
+          {activeMaterial && !activeMaterial.closedAt && <p style={styles.hint}>Открытый запрос «дополнительные материалы» будет закрыт этим решением; история и полученные файлы сохраняются.</p>}
           {error && <div role="alert" style={styles.errorBox}>{error}</div>}
           {uncertain && <button type="button" style={styles.neutralBtn} onClick={() => { setDecision(null); onReviewed(); }}>Проверить заявку</button>}
         </div>
