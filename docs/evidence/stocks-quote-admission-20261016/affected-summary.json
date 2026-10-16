@@ -1,0 +1,453 @@
+{
+  "sourceSHA": "1587ee6f13f86dc5e4e87e342a87496bc1bedb56",
+  "sourceTree": "c8443567ca725850c17304c20b62976a797158f8",
+  "qualification": "PRE_ADMITTED_RAW_AND_CANONICAL_INPUTS_PASS",
+  "verdict": "PASS_AFFECTED_LOCAL_SYNTHETIC_VIEWER_ADMISSION_AND_FINANCE",
+  "totalHTTP": 1038,
+  "totalWallMs": 61688.4813,
+  "artifacts": {
+    "FINAL-EVIDENCE-1587ee6f.json": "72bac3b619e85d052ba1ecac7f298763842fc7843531a966798f698dcdb9c021",
+    "RESULTS-1587ee6f.md": "b38b0e61fb6baf5a054630849acffd52fb9b22f3efc432c4c2d5cf80cfda6d29",
+    "runs-1587ee6f/result.json": "4242d8e6e298f7ee620c8f760206fdc7b398d1b27f9a424c44874b2ec36d6ca9"
+  },
+  "scope": "Only affected20instrument cold/warm once, not original quota/coexistence acceptance",
+  "cells": [
+    {
+      "cell": "twenty-cold",
+      "requests": 499,
+      "p95Ms": 639.2462000000014,
+      "p99Ms": 731.8377999999993,
+      "timeouts": 0,
+      "beforeSourceBusy": {
+        "all": 182,
+        "viewers": 174,
+        "traders": 8
+      },
+      "afterSourceBusy": {
+        "all": 0,
+        "viewers": 0,
+        "traders": 0
+      },
+      "allRoleMarketErrorCounts": {
+        "trader:QUOTE_STALE": 2
+      },
+      "rawRoleMarketErrors": [
+        {
+          "rid": "twenty-cold-155",
+          "actor": "alpha",
+          "phase": "workload",
+          "tag": "initial-recovery",
+          "path": "/__stocks_global/state?id=BYBIT%3AAAPLXUSDT",
+          "marketErrors": {
+            "BYBIT:AAPLXUSDT": "QUOTE_STALE"
+          }
+        },
+        {
+          "rid": "twenty-cold-156",
+          "actor": "beta",
+          "phase": "workload",
+          "tag": "initial-recovery",
+          "path": "/__stocks_global/state?id=BYBIT%3AAAPLXUSDT",
+          "marketErrors": {
+            "BYBIT:AAPLXUSDT": "QUOTE_STALE"
+          }
+        }
+      ],
+      "unexpectedRoleMarketErrors": [],
+      "roleTransportErrors": [
+        {
+          "rid": "twenty-cold-152",
+          "actor": "b-viewer-0",
+          "phase": "viewer-gates",
+          "path": "/__stocks_global/orders",
+          "status": 401,
+          "error": "AUTH_REQUIRED",
+          "expectedRejection": true
+        },
+        {
+          "rid": "twenty-cold-153",
+          "actor": "anonymous",
+          "phase": "viewer-gates",
+          "path": "/__stocks_global/catalogue",
+          "status": 401,
+          "error": "AUTH_REQUIRED",
+          "expectedRejection": true
+        },
+        {
+          "rid": "twenty-cold-154",
+          "actor": "b-viewer-49",
+          "phase": "viewer-gates",
+          "path": "/__stocks_global/state",
+          "status": 401,
+          "error": "AUTH_REQUIRED",
+          "expectedRejection": true
+        },
+        {
+          "rid": "twenty-cold-157",
+          "actor": "alpha",
+          "phase": "negative",
+          "path": "/__stocks_global/balances",
+          "status": 422,
+          "error": "BALANCE_EDIT_DISABLED",
+          "expectedRejection": true
+        }
+      ],
+      "cpu": {
+        "userUs": 1546000,
+        "systemUs": 734000,
+        "totalUs": 2280000,
+        "throughRestartFirstRawExportUs": 2359000
+      },
+      "rss": {
+        "sampledPeakBytes": 126304256,
+        "postExportBytes": 120881152,
+        "wholeProcessLifetimeMaxRssKiB": 124224
+      },
+      "sql": {
+        "calls": 158,
+        "reads": 92,
+        "writes": 22,
+        "commits": 22,
+        "wallMs": 110.1052000000011,
+        "commitWallMs": 52.717799999994895,
+        "threadCpuAvailable": 1
+      },
+      "financialQueue": {
+        "accepted": 46,
+        "timedOut": 0,
+        "rejected": 0,
+        "maxPending": 2,
+        "maxWaitMs": 15.705799999999726,
+        "waitTotalMs": 73.64150000000541
+      },
+      "fixtureWork": {
+        "quote": 82,
+        "history": 100,
+        "catalogue": 50,
+        "errors": 0,
+        "maxQuoteActive": 2,
+        "prewarmQuote": 0,
+        "prewarmHistory": 0
+      },
+      "quoteMetrics": {
+        "before": {
+          "maxActive": 0,
+          "maxQueued": 0,
+          "coalesced": 0,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 0,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        },
+        "prewarm": {
+          "maxActive": 0,
+          "maxQueued": 0,
+          "coalesced": 0,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 0,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        },
+        "afterWorkload": {
+          "maxActive": 2,
+          "maxQueued": 18,
+          "coalesced": 126,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 82,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        },
+        "workloadCounterDelta": {
+          "coalesced": 126,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 82
+        },
+        "sampledPeakWaiters": 52,
+        "beforeRestartCleanup": {
+          "maxActive": 2,
+          "maxQueued": 18,
+          "coalesced": 126,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 82,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        },
+        "terminalRestartCleanup": {
+          "maxActive": 0,
+          "maxQueued": 0,
+          "coalesced": 0,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 0,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        }
+      },
+      "viewerOnly": {
+        "requests": 154,
+        "authStarts": 153,
+        "queueAccepted": 0,
+        "sqlCalls": 0,
+        "ledgerUnchanged": true,
+        "accounts": 2
+      },
+      "inRunAssertions": {
+        "pass": 159,
+        "fail": 0
+      },
+      "offlineFinanceChecks": {
+        "pass": 26,
+        "fail": 0
+      },
+      "cleanup": {
+        "gatewayListening": false,
+        "stocksListening": false,
+        "authorityListening": false,
+        "workerAlive": 0,
+        "quoteMetrics": {
+          "maxActive": 0,
+          "maxQueued": 0,
+          "coalesced": 0,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 0,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        }
+      },
+      "integrity": "ok",
+      "accountCount": 2
+    },
+    {
+      "cell": "twenty-warm",
+      "requests": 539,
+      "p95Ms": 583.949400000005,
+      "p99Ms": 681.3767999999982,
+      "timeouts": 0,
+      "beforeSourceBusy": {
+        "all": 138,
+        "viewers": 130,
+        "traders": 8
+      },
+      "afterSourceBusy": {
+        "all": 0,
+        "viewers": 0,
+        "traders": 0
+      },
+      "allRoleMarketErrorCounts": {},
+      "rawRoleMarketErrors": [],
+      "unexpectedRoleMarketErrors": [],
+      "roleTransportErrors": [
+        {
+          "rid": "twenty-warm-192",
+          "actor": "b-viewer-0",
+          "phase": "viewer-gates",
+          "path": "/__stocks_global/orders",
+          "status": 401,
+          "error": "AUTH_REQUIRED",
+          "expectedRejection": true
+        },
+        {
+          "rid": "twenty-warm-193",
+          "actor": "anonymous",
+          "phase": "viewer-gates",
+          "path": "/__stocks_global/catalogue",
+          "status": 401,
+          "error": "AUTH_REQUIRED",
+          "expectedRejection": true
+        },
+        {
+          "rid": "twenty-warm-194",
+          "actor": "b-viewer-49",
+          "phase": "viewer-gates",
+          "path": "/__stocks_global/state",
+          "status": 401,
+          "error": "AUTH_REQUIRED",
+          "expectedRejection": true
+        },
+        {
+          "rid": "twenty-warm-197",
+          "actor": "alpha",
+          "phase": "negative",
+          "path": "/__stocks_global/balances",
+          "status": 422,
+          "error": "BALANCE_EDIT_DISABLED",
+          "expectedRejection": true
+        }
+      ],
+      "cpu": {
+        "userUs": 1422000,
+        "systemUs": 547000,
+        "totalUs": 1969000,
+        "throughRestartFirstRawExportUs": 2078000
+      },
+      "rss": {
+        "sampledPeakBytes": 165158912,
+        "postExportBytes": 156590080,
+        "wholeProcessLifetimeMaxRssKiB": 161360
+      },
+      "sql": {
+        "calls": 154,
+        "reads": 88,
+        "writes": 22,
+        "commits": 22,
+        "wallMs": 109.67730000002484,
+        "commitWallMs": 47.403200000015204,
+        "threadCpuAvailable": 1
+      },
+      "financialQueue": {
+        "accepted": 44,
+        "timedOut": 0,
+        "rejected": 0,
+        "maxPending": 2,
+        "maxWaitMs": 15.066400000003341,
+        "waitTotalMs": 72.30170000002545
+      },
+      "fixtureWork": {
+        "quote": 63,
+        "history": 100,
+        "catalogue": 50,
+        "errors": 0,
+        "maxQuoteActive": 2,
+        "prewarmQuote": 20,
+        "prewarmHistory": 20
+      },
+      "quoteMetrics": {
+        "before": {
+          "maxActive": 0,
+          "maxQueued": 0,
+          "coalesced": 0,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 0,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        },
+        "prewarm": {
+          "maxActive": 1,
+          "maxQueued": 0,
+          "coalesced": 0,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 20,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        },
+        "afterWorkload": {
+          "maxActive": 2,
+          "maxQueued": 18,
+          "coalesced": 97,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 83,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        },
+        "workloadCounterDelta": {
+          "coalesced": 97,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 63
+        },
+        "sampledPeakWaiters": 52,
+        "beforeRestartCleanup": {
+          "maxActive": 2,
+          "maxQueued": 18,
+          "coalesced": 97,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 83,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        },
+        "terminalRestartCleanup": {
+          "maxActive": 0,
+          "maxQueued": 0,
+          "coalesced": 0,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 0,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        }
+      },
+      "viewerOnly": {
+        "requests": 154,
+        "authStarts": 153,
+        "queueAccepted": 0,
+        "sqlCalls": 0,
+        "ledgerUnchanged": true,
+        "accounts": 2
+      },
+      "inRunAssertions": {
+        "pass": 159,
+        "fail": 0
+      },
+      "offlineFinanceChecks": {
+        "pass": 26,
+        "fail": 0
+      },
+      "cleanup": {
+        "gatewayListening": false,
+        "stocksListening": false,
+        "authorityListening": false,
+        "workerAlive": 0,
+        "quoteMetrics": {
+          "maxActive": 0,
+          "maxQueued": 0,
+          "coalesced": 0,
+          "cancelled": 0,
+          "expired": 0,
+          "rejected": 0,
+          "started": 0,
+          "active": 0,
+          "queued": 0,
+          "waiters": 0,
+          "flights": 0
+        }
+      },
+      "integrity": "ok",
+      "accountCount": 2
+    }
+  ]
+}

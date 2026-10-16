@@ -41,4 +41,17 @@ The affected twenty-instrument cold/warm HTTP proof must use the repaired fail-c
 
 ## Remaining gates
 
-Real owner/Xenia issuer-subject bindings and an authoritative existing test-cash adapter are still absent. The local fixture Wallet is not the actual DemoBalance integration. Commit-time revocation fencing, strict capacity/coexistence, actual production resources, MOEX data and commercial redistribution rights remain unresolved. The newly requested exact Stocks v0 design has not been identified in the local project inputs; Figma Professional B and implementation screenshots must not be relabeled as that reference. No merge, deploy, production mutation or real financial operation was performed.
+### Affected local quote-admission proof
+
+The once-only, source-bound follow-up at `1587ee6f13f86dc5e4e87e342a87496bc1bedb56` completed 20-instrument cold and warm cases: 1,038 HTTP requests in 61.6884813 seconds. The repaired launcher verified raw and Git-canonical inputs before spawning the workload. The historical 9dd launcher anomaly remains an unqualified diagnostic baseline; this does not retroactively admit it.
+
+| Cell | All-role SOURCE_BUSY before / after | Timeout | After p95 / p99 |
+| --- | --- | --- | --- |
+| 20 instruments, cold | 182 / 0 | 0 | 639.246 / 731.838 ms |
+| 20 instruments, warm | 138 / 0 | 0 | 583.949 / 681.377 ms |
+
+The queue replaces immediate refusals with bounded waiting; these latency values must not be presented as a latency improvement over the fast-failing baseline. Cold retains two initial trader `QUOTE_STALE` recovery responses. Expected authorization and balance-edit refusals are retained; there are no unexpected transport or mutation errors. Each case passes 159 in-run and 26 offline financial checks. Viewer-only reads perform zero SQL calls and zero financial-queue admissions. Maximum active instrument flights is 2, maximum queued keys 18, and all flights/waiters drain to zero.
+
+See the [hash-verified report](evidence/stocks-quote-admission-20261016/affected-results.md) and [numeric summary](evidence/stocks-quote-admission-20261016/affected-summary.json). CPU/RSS cover the whole unconstrained Windows harness, not the Stocks service alone. Observer overhead, Linux resource quotas, physical fsync, crypto coexistence and real-provider capacity remain unproved. No original strict acceptance threshold or provider budget was changed, and no full matrix was repeated.
+
+Real owner/Xenia issuer-subject bindings and an authoritative existing test-cash adapter are still absent. The local fixture Wallet is not the actual DemoBalance integration. Commit-time revocation fencing, strict capacity/coexistence, actual production resources, MOEX data and commercial redistribution rights remain unresolved. A Stocks archive associated with PR #471 has now been recovered and previewed separately, but its identity as the requested owner-selected v0 design is unconfirmed. Its Apple view has no trading ticket and its chart frame was blank in the retained preview. Figma Professional B and implementation screenshots must not be relabeled as that reference. No merge, deploy, production mutation or real financial operation was performed.
