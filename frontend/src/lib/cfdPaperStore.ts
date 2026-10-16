@@ -44,20 +44,32 @@ function validHistory(raw:any):raw is CfdPaperHistory{
     &&Number.isFinite(raw.closedAt)&&raw.closedAt>=raw.openedAt;
 }
 
-function readState():CfdPaperState{
-  if(typeof window==='undefined')return empty();
+/** Read-only UI tolerates bad storage, but mutations must not erase positions
+ * from an unreadable ledger or acknowledge a write that never persisted. */
+function readState(forWrite=false):CfdPaperState{
+  if(typeof window==='undefined'){
+    if(forWrite)throw new Error('cfd_practice_storage_unavailable');
+    return empty();
+  }
   try{
     const raw=window.localStorage.getItem(KEY);if(!raw)return empty();
-    const parsed=JSON.parse(raw);if(!parsed||typeof parsed!=='object')return empty();
-    return{
-      open:Array.isArray(parsed.open)?parsed.open.filter(validOpen).slice(0,100):[],
-      history:Array.isArray(parsed.history)?parsed.history.filter(validHistory).slice(0,200):[],
-    };
-  }catch{return empty();}
+    const parsed=JSON.parse(raw);
+    if(!parsed||typeof parsed!=='object'||!Array.isArray(parsed.open)||!Array.isArray(parsed.history))throw new Error('Invalid practice ledger');
+    const open=parsed.open.filter(validOpen).slice(0,100);
+    const history=parsed.history.filter(validHistory).slice(0,200);
+    if(forWrite&&(open.length!==parsed.open.length||history.length!==parsed.history.length))throw new Error('Invalid practice ledger entries');
+    return{open,history};
+  }catch{
+    if(forWrite)throw new Error('cfd_practice_storage_unavailable');
+    return empty();
+  }
 }
 function writeState(state:CfdPaperState){
-  if(typeof window==='undefined')return;
-  try{window.localStorage.setItem(KEY,JSON.stringify(state));window.dispatchEvent(new Event(EVENT));}catch{}
+  if(typeof window==='undefined')throw new Error('cfd_practice_storage_unavailable');
+  try{window.localStorage.setItem(KEY,JSON.stringify(state));}
+  catch{throw new Error('cfd_practice_storage_unavailable');}
+  // A notification error cannot undo a successful persistent write.
+  try{window.dispatchEvent(new Event(EVENT));}catch{}
 }
 function id(){return globalThis.crypto?.randomUUID?.()??`paper-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;}
 
@@ -73,7 +85,7 @@ export function openCfdPaperPosition(params:{symbol:string;side:'BUY'|'SELL';qua
     leverage:params.leverage,initialMargin:String(params.initialMargin),liquidationPrice:params.liquidationPrice&&params.liquidationPrice>0?String(params.liquidationPrice):null,
     status:'OPEN',openedAt:Date.now(),
   };
-  const state=readState();state.open=[position,...state.open].slice(0,100);writeState(state);return{...position};
+  const state=readState(true);state.open=[position,...state.open].slice(0,100);writeState(state);return{...position};
 }
 
 /** Ten decimals: below any quantity a ticket accepts, above the binary noise of a subtraction. */
@@ -90,7 +102,7 @@ const tidy=(value:number)=>String(Number(value.toFixed(10)));
  */
 export function closeCfdPaperPosition(positionId:string,markPrice:number,quantity?:number):CfdPaperHistory{
   if(!Number.isFinite(markPrice)||markPrice<=0)throw new Error('price_unavailable');
-  const state=readState(),index=state.open.findIndex(p=>p.id===positionId);if(index<0)throw new Error('position_not_found');
+  const state=readState(true),index=state.open.findIndex(p=>p.id===positionId);if(index<0)throw new Error('position_not_found');
   const position=state.open[index],size=Number(position.size),entry=Number(position.entryPrice);
   const partial=quantity!==undefined&&Number(tidy(quantity))!==size;
   if(quantity!==undefined&&(!Number.isFinite(quantity)||quantity<=0))throw new Error('invalid_close_quantity');
