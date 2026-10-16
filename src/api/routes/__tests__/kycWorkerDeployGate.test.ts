@@ -16,7 +16,9 @@ import { AddressInfo } from 'net';
 import { resolve } from 'path';
 
 const root = resolve(__dirname, '../../../..');
-const workflow = readFileSync(resolve(root, '.github/workflows/deploy-kyc-edge.yml'), 'utf8');
+// Windows checkouts (admin-user-deletion.yml runs this file there) use CRLF.
+const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replace(/\r\n/g, '\n');
+const workflow = read('.github/workflows/deploy-kyc-edge.yml');
 const lines = workflow.split('\n');
 
 /** Text of one job under `jobs:` (two-space indented key). */
@@ -41,6 +43,11 @@ function stepScript(name: string): string {
   }
   return body.join('\n');
 }
+
+// The workflow runs on ubuntu-latest, so its bash steps are executed where bash
+// is the shell they were written for: kyc-edge.yml (ubuntu) runs them in full.
+// On a Windows runner only the structure checks above apply.
+const bashSteps = process.platform === 'win32' ? describe.skip : describe;
 
 const READY = 'Live API is that commit and already serves the KYC materials routes (read-only)';
 const COMMIT = 'The named API commit is in this repository and carries the KYC materials API and migration';
@@ -89,7 +96,7 @@ describe('deploy-kyc-edge.yml: a push verifies, only a manual run deploys', () =
     expect(readiness).toContain('-X POST "$API/api/v1/$path"');
     expect(readiness).toContain('for path in internal/kyc/authorize internal/kyc/materials/authorize internal/kyc/materials/confirmed; do');
     expect(readiness).toContain("grep -Eq '^VOLTEX_API_ORIGIN = \"https://api\\.voltextech\\.net\"$' workers/kyc-edge/wrangler.toml");
-    expect(readFileSync(resolve(root, 'workers/kyc-edge/wrangler.toml'), 'utf8')).toMatch(/^VOLTEX_API_ORIGIN = "https:\/\/api\.voltextech\.net"$/m);
+    expect(read('workers/kyc-edge/wrangler.toml')).toMatch(/^VOLTEX_API_ORIGIN = "https:\/\/api\.voltextech\.net"$/m);
   });
 
   it('dispatch inputs reach shell scripts only through env (no expression inside a run block)', () => {
@@ -139,7 +146,7 @@ const LIVE = 'a'.repeat(40);
 const ALL_415 = { 'internal/kyc/authorize': 415, 'internal/kyc/materials/authorize': 415, 'internal/kyc/materials/confirmed': 415 };
 const ready = (api: string, env: Record<string, string>) => runScript(stepScript(READY), { API: api, ...env });
 
-describe('readiness script against a local stand-in API', () => {
+bashSteps('readiness script against a local stand-in API', () => {
   it('blocks the KYC deploy while the live API predates the materials routes (today: 415 / 404)', async () => {
     const result = await withApi({ health: { status: 'ok', commit: LIVE }, codes: { 'internal/kyc/authorize': 415 } }, api =>
       ready(api, { WORKERS: 'notification-and-kyc', API_COMMIT: LIVE, MIGRATION_APPLIED: 'true' }));
@@ -178,8 +185,8 @@ describe('readiness script against a local stand-in API', () => {
   });
 });
 
-describe('commit script against this repository', () => {
-  const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+bashSteps('commit script against this repository', () => {
+  const head = process.platform === 'win32' ? '' : execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   // The job-level env of api-readiness, as GitHub sets it.
   const check = (commit: string, workers = 'notification-and-kyc') =>
     runScript(stepScript(COMMIT), { API: 'https://api.voltextech.net', API_COMMIT: commit, WORKERS: workers });
