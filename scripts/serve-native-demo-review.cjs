@@ -5,6 +5,8 @@
 const express=require('express'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const{randomBytes,createHash}=require('node:crypto');
 const{NativeDemoService}=require('../dist/private-trading/native/service');
+// The rates the real /futures/config serves (config/voltexFunding.ts), so the stand shows what production would.
+const{VOLTEX_FUNDING}=require('../dist/config/voltexFunding');
 const{nativeDemoRoutes}=require('../dist/private-trading/native/routes');
 const{ReviewRepository,reviewExecutionActor}=require('./native-demo-review-repository.cjs');
 const{NativeLimitPass}=require('../dist/private-trading/native/limitPass');
@@ -178,7 +180,7 @@ app.get('/api/v1/market/universe',asyncRoute(async(_req,res)=>{
    preview among them — so the stand could not show what the real backend
    shows. The shape is the client's LeverageTier; the values are the
    instrument's own. */
-app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();const i=await market.instrument('BTCUSDT');res.json({symbols:symbols.map(s=>s.replace(/USDT$/,'/USDT')),minLeverage:Number(i.leverage.min),maxLeverage:Number(i.leverage.max),fundingIntervalHours:null,highLeverageWarningThreshold:null,
+app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();const i=await market.instrument('BTCUSDT');res.json({symbols:symbols.map(s=>s.replace(/USDT$/,'/USDT')),minLeverage:Number(i.leverage.min),maxLeverage:Number(i.leverage.max),fundingIntervalHours:null,fundingCashflow:{version:VOLTEX_FUNDING.version,long:VOLTEX_FUNDING.longCashflow,short:VOLTEX_FUNDING.shortCashflow},highLeverageWarningThreshold:null,
   leverageTiers:(i.riskTiers??[]).map((t,idx,all)=>({notionalCap:idx===all.length-1?null:Number(t.riskLimitValue),maxLeverage:Number(t.maxLeverage),maintenanceMarginRate:Number(t.maintenanceMarginRate),maintenanceAmount:Number(t.maintenanceDeduction??0)}))});}));
 app.get('/api/v1/futures/mark-price/:pair',asyncRoute(async(req,res)=>{const symbol=req.params.pair.replace('-',''),q=await market.freshQuote(symbol);res.json({symbol,markPrice:q.markPrice,indexPrice:null});}));
 app.get('/api/v1/market/external/tickers',asyncRoute(async(_req,res)=>res.json(await tickers())));

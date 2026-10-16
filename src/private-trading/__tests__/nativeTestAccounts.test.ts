@@ -35,6 +35,7 @@ function fixture() {
   const revisions: any[] = [];
   const forbidden = jest.fn(() => { throw new Error('Real persistence or legacy engine reached'); });
   const nativeRead = jest.fn(async ({ where }: any) => accounts.get(where.userId) ?? null);
+  const fundingModels = new Map<string, any>();
   const db: any = {
     user: { findUnique: jest.fn(async ({ where }: any) => users[where.id]), update: forbidden },
     session: { findUnique: jest.fn(async ({ where }: any) => sessions[where.id]), update: jest.fn(async () => ({})) },
@@ -61,6 +62,11 @@ function fixture() {
     },
     nativeDemoLiveProjection: {
       upsert: jest.fn(async ({ create }: any) => ({ userId: create.userId })),
+    },
+    // The funding version is pinned once at start-up (store.ts); an in-memory row stands in for the table.
+    nativeFundingModel: {
+      createMany: jest.fn(async ({ data }: any) => { for (const d of data) if (!fundingModels.has(d.version)) fundingModels.set(d.version, d); return { count: data.length }; }),
+      findUnique: jest.fn(async ({ where }: any) => fundingModels.get(where.version) ?? null),
     },
     $queryRaw: jest.fn(async (parts: TemplateStringsArray, ...values: string[]) => {
       if (parts.join('?').includes('FROM "User" u LEFT JOIN "Session" s')) {

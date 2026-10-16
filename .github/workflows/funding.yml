@@ -1,0 +1,103 @@
+name: Funding (VOLTEX fixed rates, once per boundary, net P&L)
+
+# VOLTEX funding V2 (config/voltexFunding.ts): LONG −0.01%, SHORT +0.04% of
+# position value per 8h settlement, on native demo and real futures accounts.
+# This proves, on every PR that touches it: the rates; that settlements made
+# before the native version's pinned start are never re-priced; that each
+# boundary settles once — including two instances on a real PostgreSQL —;
+# that net P&L carries settled funding exactly once; and that the terminal
+# shows VOLTEX's own rates.
+on:
+  pull_request:
+    paths:
+      - 'src/config/voltexFunding.ts'
+      - 'src/config/futuresConfig.ts'
+      - 'src/futures/FundingRateService.ts'
+      - 'src/futures/__tests__/FundingRateService.test.ts'
+      - 'src/futures/__tests__/fundingOnce.pg.test.ts'
+      - 'src/private-trading/native/**'
+      - 'src/private-trading/__tests__/nativeFunding*.ts'
+      - 'src/api/routes/futures.ts'
+      - 'src/api/routes/privateTrading.ts'
+      - 'src/api/routes/__tests__/futuresProtection.test.ts'
+      - 'frontend/src/lib/contractDetails.ts'
+      - 'frontend/src/components/FuturesTickerBar.tsx'
+      - 'frontend/src/components/FuturesContractDetails.tsx'
+      - 'frontend/src/lib/__tests__/contractDetails.test.ts'
+      - 'frontend/src/lib/__tests__/futuresTickerHeader.test.ts'
+      - 'frontend/src/lib/__tests__/futuresMarketStats.test.ts'
+      - 'prisma/**'
+      - '.github/workflows/funding.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: funding-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  funding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: funding_qa
+          POSTGRES_PASSWORD: ephemeral_ci_only
+          POSTGRES_DB: voltex_funding_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U funding_qa -d voltex_funding_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      # Disposable loopback database, used by nothing else in this job. Never production.
+      DATABASE_URL: postgresql://funding_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_funding_test?schema=public
+      DIRECT_URL: postgresql://funding_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_funding_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Backend dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Migrate the empty database from the committed migrations
+        run: npx prisma migrate deploy
+      - name: Backend typecheck and build
+        run: npm run build
+      - name: Rates, settlement, no re-pricing, net P&L (native and real)
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/futures/__tests__/FundingRateService.test.ts
+          src/private-trading/__tests__/nativeFundingV2.test.ts
+          src/private-trading/__tests__/nativeFundingV2Service.test.ts
+          src/private-trading/__tests__/nativeDemoEngine.test.ts
+          src/private-trading/__tests__/nativeDemoReplay.test.ts
+          src/private-trading/__tests__/nativeInvariants.test.ts
+          src/private-trading/__tests__/accountLedger.test.ts
+          src/private-trading/__tests__/nativeTestAccounts.test.ts
+          src/api/routes/__tests__/futuresProtection.test.ts
+      - name: Real PostgreSQL — one settlement per boundary across two instances; the native pin is immutable
+        env:
+          VOLTEX_PG_TEST_URL: postgresql://funding_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_funding_test?schema=public
+          PRIVATE_TRADING_DB_TESTS: '1'
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/futures/__tests__/fundingOnce.pg.test.ts
+          src/private-trading/__tests__/nativeFundingModel.integration.test.ts
+      - name: Terminal shows VOLTEX's own funding rates
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          frontend/src/lib/__tests__/contractDetails.test.ts
+          frontend/src/lib/__tests__/futuresTickerHeader.test.ts
+          frontend/src/lib/__tests__/futuresMarketStats.test.ts

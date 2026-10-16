@@ -11,6 +11,7 @@ import { referencePerpetualTurnover } from '../lib/terminalPresentation';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatCompact } from '../lib/formatNumber';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
+import { voltexFundingRates } from '../lib/contractDetails';
 import { List as ListIcon } from 'lucide-react';
 import { CryptoIcon } from './CryptoIcon';
 import { useAssetMetadata } from '../lib/assetMetadataStore';
@@ -83,12 +84,15 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
    */
   const assetName = useAssetMetadata([baseAsset])[baseAsset.toUpperCase()]?.name ?? null;
   const { markPrice, indexPrice } = useFuturesMark(symbol);
-  const [fundingRate, setFundingRate] = useState<number | null>(null);
   /** From the one shared read of /futures/config — see
    *  lib/futuresConfigStore. `null` while unknown or after a failed read,
    *  which is what makes the countdown render "—" rather than a made-up
-   *  interval, exactly as before. */
-  const fundingIntervalHours = useFuturesConfig().config?.fundingIntervalHours ?? null;
+   *  interval, exactly as before. The funding rates are VOLTEX's own fixed
+   *  rates by side from the same config — what every position here settles
+   *  at — never a provider's live rate. */
+  const futuresConfig = useFuturesConfig().config;
+  const fundingIntervalHours = futuresConfig?.fundingIntervalHours ?? null;
+  const funding = voltexFundingRates(futuresConfig);
   /**
    * Tracked external derivatives statistics — turnover and open interest.
    *
@@ -100,42 +104,15 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
   const [derivatives, setDerivatives] = useState<GatewaySection<FuturesMarketStats> | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
     // Every figure below is re-read for the symbol currently selected, so
     // the whole row always describes one instrument — there is no path
     // where a stat is left over from the previously selected contract.
-    setFundingRate(null);
     // Cleared on every symbol change, so BTC's turnover and open interest
     // can never sit under an ETH header while the new read is in flight.
     setDerivatives(null);
-
-    // Everything in this loop is a VOLTEX financial value read from the
-    // futures services, and is deliberately unchanged: mark price, the
-    // index price and the settled funding rate. No external venue's
-    // derivatives metric is read here, and none may substitute for these.
-    //
-    // VOLTEX's OWN open interest is no longer read here: the header's
-    // "Open Interest" cell asks about the MARKET, and this venue's book
-    // was never an answer to that question. `/futures/open-interest` and
-    // its client method are untouched — internal risk and the Analytics
-    // VOLTEX section still read them.
-    const fundingReader = createVisibleRead(async () => {
-      await api
-        .getFuturesFundingRate(symbol, 1)
-        .then((res) => {
-          if (cancelled) return;
-          const latest = res.history[0];
-          setFundingRate(latest ? parseFloat(latest.rate) : null);
-        });
-    }, 60_000, true);
-    // Mark/index are shared with the order form at 30s.
-    // The latest SETTLED funding record changes on the settlement boundary, not
-    // every four seconds, so one visible-minute refresh is ample and avoids
-    // repeatedly downloading the same DB-backed history row.
-    return () => {
-      cancelled = true;
-      fundingReader.stop();
-    };
+    // Mark/index are shared with the order form at 30s (useFuturesMark). The
+    // funding rates are fixed configuration, read once with /futures/config,
+    // so nothing here polls for them.
   }, [symbol]);
 
   useEffect(() => {
@@ -376,8 +353,12 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
       <div className="ticker-item futures-funding">
         <span className="label">{t('futures.headerFunding')}</span>
         <span className="futures-funding-values">
-          <span className={`value ${fundingRate !== null && fundingRate < 0 ? 'down' : 'up'}`}>
-            {fundingRate !== null ? `${(fundingRate * 100).toFixed(4)}%` : '—'}
+          <span className="value" data-funding-rates={funding ? 'voltex' : undefined}>
+            {funding ? <>
+              <span className={funding.long.negative ? 'down' : 'up'}>{t('futures.long')} {funding.long.value}</span>
+              {' · '}
+              <span className={funding.short.negative ? 'down' : 'up'}>{t('futures.short')} {funding.short.value}</span>
+            </> : '—'}
           </span>
           <span className="label"> / </span>
           <NextFundingCountdown intervalHours={fundingIntervalHours} />

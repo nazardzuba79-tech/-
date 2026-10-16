@@ -11,6 +11,7 @@ import { contractRules, simulationProfile } from '../service';
 import { calculatePosition, closePositionAllocation, fundingCashflow, pnlForRoi, quoteOrderCost, roiPercent, targetExitPrice, validateContractOrder, ContractRuleError } from '../math';
 import { NativeAccount, NativeRepository, commandHash } from './store';
 import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, ExternalCollateral, executeObservedBook, protectionTrigger, migrateDemoState, NATIVE_DEMO_MODEL, setDemoCollateral } from './engine';
+import { fundingModelView, fundingTermsAt, isLegacyFunding, LEGACY_FUNDING_SCHEDULE, nextFundingBoundaryAfter, NATIVE_FUNDING_INTERVAL_MS, type NativeFundingSchedule } from './fundingModel';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
 import { crossAccount, CrossAccount } from './accountModel';
 
@@ -184,6 +185,11 @@ export function truncateBook(book:NativeBook,side:'BUY'|'SELL',quantity:string,l
   }
   return side==='BUY'?{bids:[],asks:kept,timestamp:book.timestamp}:{bids:kept,asks:[],timestamp:book.timestamp};
 }
+/** The funding sentence an OPEN's profile carries: the terms its next settlement is priced by. */
+function fundingAssumption(terms:ReturnType<typeof fundingTermsAt>):string{
+  if(isLegacyFunding(terms))return 'Custom demo funding -0.001 / +0.004 of position value per 8h UTC; not provider funding.';
+  return `VOLTEX funding ${terms.version}: ${terms.longCashflow} long / +${terms.shortCashflow} short of position value per 8h UTC; not provider funding.`;
+}
 export class NativeDemoService {
   /**
    * ONE ORDERED LANE PER ACCOUNT, in this process.
@@ -207,6 +213,31 @@ export class NativeDemoService {
     const scope=repository.commandLaneScope;
     this.lanes=(scope&&repositoryLanes.get(scope))||new Map<string,CommandLane>();
     if(scope)repositoryLanes.set(scope,this.lanes);
+  }
+  /**
+   * The funding schedule every replay of every account is priced by. Read
+   * once from the repository (which pins a new version's start the first
+   * time it is asked) and kept for the life of the process: the schedule
+   * only ever gains versions that start in the future, so a cached copy can
+   * never re-price a settlement it has already made.
+   */
+  private fundingCache?:NativeFundingSchedule;
+  private fundingLoad?:Promise<NativeFundingSchedule>;
+  async funding():Promise<NativeFundingSchedule>{
+    if(this.fundingCache)return this.fundingCache;
+    this.fundingLoad??=(this.repository.fundingSchedule?this.repository.fundingSchedule():Promise.resolve(LEGACY_FUNDING_SCHEDULE))
+      .then((schedule:NativeFundingSchedule)=>this.fundingCache=schedule,(error:unknown)=>{this.fundingLoad=undefined;throw error;});
+    return this.fundingLoad;
+  }
+  /**
+   * The model the terminal is told about: the engine constants, with
+   * `funding` stating the terms the NEXT settlement after `time` is priced by
+   * (what a position held now will be paid or charged), and the schedule.
+   */
+  private model(time:number){
+    const schedule=this.fundingCache??LEGACY_FUNDING_SCHEDULE,next=fundingTermsAt(schedule,nextFundingBoundaryAfter(time));
+    return{...NATIVE_DEMO_MODEL,funding:{longCashflow:next.longCashflow,shortCashflow:next.shortCashflow,unit:'FRACTION' as const,intervalMs:NATIVE_FUNDING_INTERVAL_MS,version:next.version},
+      fundingModel:fundingModelView(schedule,time)};
   }
   /** A reused snapshot that no longer passes the freshness check is replaced by a fresh fetch, not reported as stale. */
   private async valuationQuote(symbol:string):Promise<PrivateFreshQuote>{
@@ -273,7 +304,7 @@ export class NativeDemoService {
    * the wire, and exactly one place that builds it.
    */
   view(row:NativeAccount|null){
-    const empty={model:NATIVE_DEMO_MODEL,account:null as CrossAccount|null,ledger:null as AccountLedger|null};
+    const empty={model:this.model(this.now()),account:null as CrossAccount|null,ledger:null as AccountLedger|null};
     if(!row)return{...empty,initialized:false,revision:0,positions:[] as ReturnType<typeof demoPositionView>[],history:[] as ReturnType<typeof demoPositionView>[],
       orders:[] as DemoState['orders'],events:[] as DemoState['events'],source:null as NativeAccount['source']|null,asOf:null as number|null,
       entries:[] as {positionId:string;candle:NativeCandle|null}[]};
@@ -509,6 +540,7 @@ export class NativeDemoService {
   /** Display revaluation only: never replay, settle, trigger, execute or commit. */
   async live(actor:OwnerSession){
     if(!this.repository.live)throw new PrivateTradingError('live_unavailable','Счёт временно недоступен',503);
+    await this.funding();
     const projection=await this.repository.live(actor);
     if(!projection)return{...this.view(null),demoAvailable:await this.repository.available(actor)};
     const snapshot=structuredClone(projection.state);
@@ -529,13 +561,14 @@ export class NativeDemoService {
     const at=Math.max(this.now(),snapshot.time);
     if(Object.values(latest).some(q=>at-q.time>(hybrid?HISTORICAL_DEMO_CURRENT_MAX_AGE_MS:PRIVATE_QUOTE_MAX_AGE_MS)||q.time>at+1000))throw new PrivateMarketDataError('quote_stale');
     markDemoAccount(snapshot,latest,at);
-    return{initialized:true,revision:projection.revision,executionMode:projection.executionMode,source:projection.source,asOf:at,model:NATIVE_DEMO_MODEL,
+    return{initialized:true,revision:projection.revision,executionMode:projection.executionMode,source:projection.source,asOf:at,model:this.model(at),
       account:crossAccount(demoAccount(snapshot),valuation,snapshot.positions.length>0),
       ledger:{...projection.ledger,entries:[]},
       positions:snapshot.positions.map(p=>({...demoPositionView(snapshot,p),...(p.entryTimestamp?{openedAt:p.entryTimestamp}:{})})),orders:snapshot.orders,
       history:[],events:[],entries:projection.entryMarkers??[],historyDeferred:true};
   }
   async state(actor:OwnerSession){
+    await this.funding();
     const row=await commandRead('repository.read',()=>this.repository.read(actor));
     const view=await this.authoritative(actor,this.view(row),row);
     return{...view,demoAvailable:row?null:await this.repository.available(actor)};
@@ -645,7 +678,7 @@ export class NativeDemoService {
     return{...contractRules(instrument),riskTiers:simulationProfile(instrument).riskTiers,
       takerFeeRate:simulationProfile(instrument).takerFeeRate,makerFeeRate:simulationProfile(instrument).makerFeeRate};
   }
-  async initialize(actor:OwnerSession,key:string){const row=await this.repository.initialize(actor,key);return this.authoritative(actor,this.view(row),row);}
+  async initialize(actor:OwnerSession,key:string){await this.funding();const row=await this.repository.initialize(actor,key);return this.authoritative(actor,this.view(row),row);}
   private async bars(request:BarRequest):Promise<ReplayBar[]>{
     return commandRead('market.history',()=>nativeHistoryCache(this.market,this.now).load(request,commandSignal()));
   }
@@ -958,12 +991,12 @@ export class NativeDemoService {
     };
     guard('before_replay');
     let result:ReplayResult;
-    try{result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:at,checkpoint:row.checkpoint},r=>this.bars(r));}
+    try{result=await replayNativeDemoAsync({funding:await this.funding(),deposit:row.deposit,instructions:commands,asOf:at,checkpoint:row.checkpoint},r=>this.bars(r));}
     catch(e){
       if(!(e instanceof DemoEngineError&&e.code==='CHECKPOINT_MISMATCH'))throw e;
       const recovered=row.checkpoint&&recoverEmptyObservationCheckpoint(row.checkpoint,row.commands,row.snapshot);
       if(!recovered)throw e;
-      result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:at,checkpoint:recovered},r=>this.bars(r));
+      result=await replayNativeDemoAsync({funding:await this.funding(),deposit:row.deposit,instructions:commands,asOf:at,checkpoint:recovered},r=>this.bars(r));
     }
     guard('after_replay');
     const next:NativeAccount={...row,executionMode:'HISTORICAL_DEMO',commands,snapshot:result.snapshot,checkpoint:result.checkpoint,
@@ -1085,7 +1118,7 @@ export class NativeDemoService {
         const resealed={...cp,digest:instructionDigest(commands,cp.time)};
         try{
           commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length,fromCheckpoint:true});
-          const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time,checkpoint:resealed},loader());
+          const result=await replayNativeDemoAsync({funding:await this.funding(),deposit:row.deposit,instructions:commands,asOf:row.snapshot.time,checkpoint:resealed},loader());
           if(comparableState(result.snapshot)!==comparableState(row.snapshot))throw new Error('replay differs');
           this.compactionRetryAfter.delete(attempt);
           console.info('[native] observation compaction verified from checkpoint',row.commands.length,commands.length);
@@ -1104,7 +1137,7 @@ export class NativeDemoService {
     const commands=row.commands.filter(c=>!drop.has(c.id));
     try{
       commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length,fromCheckpoint:false});
-      const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time},loader());
+      const result=await replayNativeDemoAsync({funding:await this.funding(),deposit:row.deposit,instructions:commands,asOf:row.snapshot.time},loader());
       if(comparableState(result.snapshot)!==comparableState(row.snapshot))throw new Error('replay differs');
       this.compactionRetryAfter.delete(attempt);
       console.info('[native] observation compaction verified',row.commands.length,commands.length);
@@ -1172,12 +1205,12 @@ export class NativeDemoService {
     }else throw new DemoEngineError('INVALID_ORDER');
     const commands=[...row.commands,draft];
     let result:ReplayResult;
-    try{result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:at,checkpoint:row.checkpoint},r=>this.bars(r));}
+    try{result=await replayNativeDemoAsync({funding:await this.funding(),deposit:row.deposit,instructions:commands,asOf:at,checkpoint:row.checkpoint},r=>this.bars(r));}
     catch(e){
       if(!(e instanceof DemoEngineError&&e.code==='CHECKPOINT_MISMATCH'))throw e;
       const recovered=row.checkpoint&&recoverEmptyObservationCheckpoint(row.checkpoint,row.commands,row.snapshot);
       if(!recovered)throw e;
-      result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:at,checkpoint:recovered},r=>this.bars(r));
+      result=await replayNativeDemoAsync({funding:await this.funding(),deposit:row.deposit,instructions:commands,asOf:at,checkpoint:recovered},r=>this.bars(r));
     }
     const next:NativeAccount={...row,executionMode:'HISTORICAL_DEMO',commands,snapshot:result.snapshot,checkpoint:result.checkpoint,
       executionSession:{...actor},executionPending:exposedSymbols(result.snapshot).size>0};
@@ -1190,13 +1223,13 @@ export class NativeDemoService {
   private async replay(row:NativeAccount,commands:NativeInstruction[],checkpoint:NativeAccount['checkpoint']|null,collateral:ExternalCollateral,decision?:NativeInstruction['context']):Promise<ReplayResult&{projectionChanged:boolean;books:{symbol:string;book:NativeBook;at:number}[];latest:Record<string,{mark:string;last:string;time:number}>}>{
     const load=(r:BarRequest)=>this.bars(r),asOf=this.now();
     let result:ReplayResult;
-    try{result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf,checkpoint},load);}
+    try{result=await replayNativeDemoAsync({funding:await this.funding(),deposit:row.deposit,instructions:commands,asOf,checkpoint},load);}
     catch(e){
       // A checkpoint that no longer matches (clock skew, legacy row) falls back to the full scenario.
       if(!(checkpoint&&e instanceof DemoEngineError&&e.code==='CHECKPOINT_MISMATCH'))throw e;
       const recovered=recoverEmptyObservationCheckpoint(checkpoint,row.commands,row.snapshot);
       commandScope()?.trace(recovered?'checkpoint.recovered_empty_observation':'checkpoint.full_replay');
-      result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf,...(recovered?{checkpoint:recovered}:{})},load);
+      result=await replayNativeDemoAsync({funding:await this.funding(),deposit:row.deposit,instructions:commands,asOf,...(recovered?{checkpoint:recovered}:{})},load);
     }
     // Quotes are fetched only after the (possibly long) history pass, then checked for freshness again.
     const latest:Record<string,{mark:string;last:string;time:number}>={};
@@ -1305,7 +1338,7 @@ export class NativeDemoService {
     if(request.kind==='OPEN'){
       const symbol=request.symbol.replace(/[^A-Z0-9]/g,''),instrument=await commandRead('market.instrument',()=>this.market.instrument(symbol,commandSignal())),rules=contractRules(instrument),profile=simulationProfile(instrument);
       profile.riskModelVersion='NATIVE_MARGIN_V3:'+instrument.parameterVersion;
-      profile.assumptions=['USDT-only demo, Cross or Isolated per order; gross hedge maintenance; not Bybit matching.','An isolated position is backed by its posted margin alone: its settlements are booked at their actual price and fee, and a loss beyond the post is a separate SHORTFALL line covered by the simulation insurance model, never by the shared wallet.','Custom demo funding -0.001 / +0.004 of position value per 8h UTC; not provider funding.','Historical assumed OHLC path, never a claim of actual past fills.'];
+      profile.assumptions=['USDT-only demo, Cross or Isolated per order; gross hedge maintenance; not Bybit matching.','An isolated position is backed by its posted margin alone: its settlements are booked at their actual price and fee, and a loss beyond the post is a separate SHORTFALL line covered by the simulation insurance model, never by the shared wallet.',fundingAssumption(fundingTermsAt(await this.funding(),nextFundingBoundaryAfter(this.now()))),'Historical assumed OHLC path, never a claim of actual past fills.'];
       const sizePrice=request.type==='LIMIT'?request.price:undefined;
       const size=(price:string)=>request.quantity??new BigNumber(request.margin!).times(request.leverage).div(price).div(rules.qtyStep).integerValue(BigNumber.ROUND_FLOOR).times(rules.qtyStep).toFixed();
       // The named position IS the identity of a reducing order. It is checked

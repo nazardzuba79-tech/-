@@ -1443,6 +1443,9 @@ export const api = {
       minLeverage: number;
       maxLeverage: number;
       fundingIntervalHours: number;
+      /** VOLTEX's fixed funding per 8h settlement, by side: a signed fraction
+       *  of position value (+ credited, − debited). Absent on an older backend. */
+      fundingCashflow?: { version: string; long: string; short: string };
       highLeverageWarningThreshold: number;
       leverageTiers: { notionalCap: number | null; maxLeverage: number; maintenanceMarginRate: number; maintenanceAmount: number }[];
     }>('/futures/config'),
@@ -1500,8 +1503,11 @@ export const api = {
         /** Already banked on this position — partial closes and anything
          *  else settled into it. A SEPARATE figure from `unrealizedPnl`:
          *  the two are never summed, because the size that produced this
-         *  is no longer part of the size that produces that. */
+         *  is no longer part of the size that produces that. Includes the
+         *  funding already settled on the position, once. */
         realizedPnl: string;
+        /** The funding part of `realizedPnl` (+ received, − paid). Absent on an older backend. */
+        fundingNet?: string;
         roe: string | null;
         openedAt: string;
         /** Real, server-held TP/SL for this position. `null` on a side is
@@ -1524,7 +1530,10 @@ export const api = {
         leverage: number;
         marginType: 'ISOLATED' | 'CROSS';
         entryPrice: string;
+        /** The trade's net result: price P&L of every close plus all the funding it settled. */
         realizedPnl: string;
+        /** The funding part of `realizedPnl` (+ received, − paid). Absent on an older backend. */
+        fundingNet?: string;
         status: string;
         openedAt: string;
         closedAt: string | null;

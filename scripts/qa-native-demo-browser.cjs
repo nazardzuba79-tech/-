@@ -309,6 +309,14 @@ async function normalFlow(width) {
   const s = await session(width), p = s.page;
   try {
     await ready(s); await family(p, 'LIMIT'); await check(`fields-limit-${width}`, () => geometry(p));
+    // VOLTEX funding V2, as the header states it: the fixed rates by side every position settles at.
+    await check(`voltex-funding-rates-${width}`, async () => {
+      const cell = p.locator('.ticker-bar .futures-funding-values .value[data-funding-rates="voltex"]');
+      await cell.waitFor({ state: 'attached' });
+      const text = (await cell.textContent()).replace(/\s+/g, ' ').trim();
+      assert(text.includes('\u22120.01%') && text.includes('+0.04%'), `Header funding is not LONG −0.01% / SHORT +0.04%: ${text}`);
+      return { header: text };
+    });
     await check(`quantity-to-usdt-calculator-${width}`, async () => {
       const seeded = Number(await price(p).inputValue());
       assert(Number.isFinite(seeded) && seeded > 0, `LIMIT price was not seeded from the live last price: ${seeded}`);
