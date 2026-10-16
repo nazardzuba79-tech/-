@@ -39,6 +39,8 @@ on:
       - 'scripts/qa-kyc-materials.cjs'
       - 'frontend/src/lib/i18n/locales/**'
       - 'scripts/qa-kyc-edge.cjs'
+      - 'scripts/kyc-hetzner*'
+      - 'docs/KYC_RELEASE_RUNBOOK.md'
       - '.github/workflows/kyc-edge.yml'
       - '.github/workflows/deploy-kyc-edge.yml'
 
@@ -98,6 +100,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Hetzner migration-only runner safety gates
+        run: node --test scripts/kyc-hetzner-prisma.test.cjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate
