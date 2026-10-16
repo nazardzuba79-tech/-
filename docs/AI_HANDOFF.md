@@ -6248,3 +6248,9 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
   - `qa-native-funding-pnl` 36/36 at 1920/1440/390;
   - `qa-native-demo-browser` full 45/45, P&L 42/42, large 87/87.
 - Not run: production, real phones.
+- CI follow-up on `fc0e11d5`.
+  - Every red job (cadence-and-isolation, verify, pair-persistence, regressions, validate, read-budget, fixtures-only, native, complete-suite) failed one test: `futuresUiPolish` «pages/FuturesPage.tsx matches the audited integration fingerprint».
+  - Cause: the new `closeCardHistory` state and `onHistoryWanted` prop; I had not re-run the full suite after that edit.
+  - Fix: fingerprint re-taken with its written reason. Reproduced and fixed locally: without the new hash the test fails, with it the CI sets pass.
+  - Full frontend Jest after the fix: 257/257 suites, 4308/4308 tests.
+  - The CI lists of `regressions` (4 suites) and `validate` (37 passed, 2 DB suites skipped without a DB) pass locally; so does `scripts/mobile-review-checks.cjs` (8/8).
