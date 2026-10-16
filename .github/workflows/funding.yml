@@ -26,6 +26,19 @@ on:
       - 'frontend/src/lib/__tests__/contractDetails.test.ts'
       - 'frontend/src/lib/__tests__/futuresTickerHeader.test.ts'
       - 'frontend/src/lib/__tests__/futuresMarketStats.test.ts'
+      - 'frontend/src/components/FuturesPositionsPanel.tsx'
+      - 'frontend/src/components/FuturesPositionClosedCard.tsx'
+      - 'frontend/src/lib/nativeFuturesAdapter.ts'
+      - 'frontend/src/lib/nativeDemoApi.ts'
+      - 'frontend/src/lib/futuresAccountStore.ts'
+      - 'frontend/src/pages/FuturesPage.tsx'
+      - 'frontend/src/pages/trade-terminal/FuturesMobile.css'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'frontend/src/lib/__tests__/futuresAccountUnknownState.test.ts'
+      - 'frontend/src/lib/__tests__/futuresPositionClosedCard.test.ts'
+      - 'frontend/src/lib/__tests__/nativeFuturesTerminal.test.ts'
+      - 'frontend/src/lib/__tests__/futuresReferenceRow.test.ts'
+      - 'frontend/src/lib/__tests__/i18nLanguageChunks.test.ts'
       - 'prisma/**'
       - '.github/workflows/funding.yml'
 
@@ -101,3 +114,11 @@ jobs:
           frontend/src/lib/__tests__/contractDetails.test.ts
           frontend/src/lib/__tests__/futuresTickerHeader.test.ts
           frontend/src/lib/__tests__/futuresMarketStats.test.ts
+      - name: Trading P&L, Funding, Fees and Net P&L in the terminal (open, history, close card, phone, 7 languages)
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          frontend/src/lib/__tests__/futuresAccountUnknownState.test.ts
+          frontend/src/lib/__tests__/futuresPositionClosedCard.test.ts
+          frontend/src/lib/__tests__/nativeFuturesTerminal.test.ts
+          frontend/src/lib/__tests__/futuresReferenceRow.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts

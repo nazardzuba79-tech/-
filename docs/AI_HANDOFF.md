@@ -6231,3 +6231,20 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
 - Byte-pins re-taken with written reasons in `futuresTickerHeader.test.ts` (header reads, `api.ts`, `routes/futures.ts`). Test fakes gained the new tables (`nativeTestAccounts`, `futuresProtection`).
 - Unresolved / owner: merge, deploy and the migration (it must ship with the new API; native requests fail closed without the pin table). Analytics «Funding rate · VOLTEX» still shows the last settled record's `rate`, which is now the LONG side's rate — not changed here. PR #534 can be closed as superseded.
 - CI follow-up on `b1d687cb`: `native` failed only `account-summary-1440` (8 s timeout waiting for the command's equity). Cause: with positions open the terminal polls `/native/live` every 30 s and each poll revalues the account at the current mark; the review fixture moves its price every minute, so a poll landing after the command replaces the command's equity. Reproduced locally by forcing a poll past a minute boundary: the card showed 10,100,789.83 against the command's 10,100,872.03, and the old check failed with the same `Timeout 8000ms exceeded`. `scripts/qa-native-demo-browser.cjs` now, only when the command's equity is not shown, reads `/native/live` and requires the card to show exactly that state's equity (up to 3 reads), checking available and IM/MM against the same state; the evidence records `checkedAgainst`. Forced run PASS (`checkedAgainst: native/live`); final full run 45/45 PASS (`checkedAgainst: command`). No product code changed by this follow-up.
+- Follow-up on the owner's request before closing #534: ported the missing P&L display from #534 (`claude/peaceful-volta-h5zw7g-funding-fixed`, `c1eb002b`), adapted to V2, in the commit that carries this line.
+  - Native demo rows, history and the «Позиция закрыта» card show «Торговый P&L / Фандинг / Комиссии / Чистый P&L» from the engine's own `tradingPnl / fundingNet / feesPaid / netPnl`. Net = Trading − Fees + Funding; nothing is recomputed.
+  - Phone layout: `data-pnl-split`. 7 locales: 4 keys.
+  - Files: `FuturesPositionsPanel.tsx`, `FuturesPositionClosedCard.tsx`, `nativeFuturesAdapter.ts`, `futuresAccountStore.ts`, `nativeDemoApi.ts` (fields only), `FuturesMobile.css`, locales, tests from #534, `qa-native-demo-browser.cjs` (consistent large-value fixtures).
+  - NOT ported: the Bybit rate, `FIXED_RATE` terms / `nativeFundingSideRates`, #534's migration and fixed-rate fixture lever, research scripts.
+- Found by the new browser QA and fixed (pre-existing, also on main): the native close card's result stayed «…» until it closed itself, because native history loads only on the history tab. The panel now reports `onHistoryWanted` while the card is shown, and `FuturesPage` adds that to `setHistoryDemand`. Unit test with a negative control.
+- New `scripts/qa-native-funding-pnl.cjs` (V2, fixture only).
+  - Two levers in `serve-native-demo-review.cjs`, off by default: `NATIVE_PREVIEW_CLOCK_QA` and `NATIVE_PREVIEW_FUNDING_V2_QA`.
+  - It is wired into `native-demo-qa.yml`; the new Jest suites are wired into `funding.yml`.
+- Real accounts keep one P&L column (it includes settled funding). The API has no per-position fees.
+- Verified locally:
+  - frontend `tsc -b` and backend `tsc`;
+  - full frontend Jest 257/257 suites, 4307/4307 tests (on a fresh production build; with a stale QA `dist` two bundle-reading suites failed, then passed after the rebuild);
+  - narrow backend 11 suites, 224 tests;
+  - `qa-native-funding-pnl` 36/36 at 1920/1440/390;
+  - `qa-native-demo-browser` full 45/45, P&L 42/42, large 87/87.
+- Not run: production, real phones.

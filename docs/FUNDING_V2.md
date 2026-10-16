@@ -57,6 +57,41 @@ The header and «Данные контракта» show VOLTEX's rates by side f
 `/futures/config` (`fundingCashflow`). They no longer show a settled-record
 poll or the provider's live rate.
 
+### P&L taken apart (native demo / test accounts)
+
+Ported from PR #534 (display only; its Bybit rate, fixed-rate model and
+migration were not carried over). The engine already reports
+`tradingPnl`, `feesPaid`, `fundingNet` and `netPnl`, with
+`netPnl = tradingPnl − feesPaid + fundingNet`. The terminal shows them
+unchanged and never recomputes them:
+
+- **Open positions:** «Торговый P&L», «Фандинг», «Комиссии», «Чистый P&L»
+  replace the single realized column. Fees are shown as a debit. The
+  «≈ USD» line is under the Net P&L only.
+- **Position history:** the same four columns. The total is the Net P&L
+  the wallet moved by.
+- **«Позиция закрыта» card:** Trading, Funding and Fees above the Net P&L.
+  The native demo loads history only on demand, so the Positions tab now
+  asks for it while the card is shown. Before this change, the card's result
+  stayed «…» until the card closed itself.
+- **Phone:** the four figures sit in pairs, and the TP/SL and «Закрыть как»
+  cells keep full width (`data-pnl-split`).
+- **7 languages:** four new keys (`futures.colTradingPnl`,
+  `futures.colFunding`, `futures.colFees`, `futures.colNetPnl`).
+- **Real accounts:** the API reports no per-position fees, so their tables
+  keep one P&L column. That column includes settled funding (see above).
+
+Browser proof: `scripts/qa-native-funding-pnl.cjs`.
+
+- It runs on the review fixture with two QA levers, fixture only and off by
+  default:
+  - `NATIVE_PREVIEW_CLOCK_QA`: a forward-only server clock;
+  - `NATIVE_PREVIEW_FUNDING_V2_QA`: the shipped V2 terms pinned three days
+    back.
+- It crosses real 00/08/16 UTC boundaries, then checks every figure against
+  the engine and the ledger at 1920, 1440 and 390 px. This covers open rows,
+  history and a «Рыночный» close from the table.
+
 ## Before activation (owner only)
 
 Merging and deploying is the owner's decision. The migration is additive (one
