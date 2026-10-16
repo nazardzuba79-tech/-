@@ -17,11 +17,18 @@ export function transform(profile, input) {
     const start = text.indexOf('export function projectViewerQuote(');
     return text.slice(0, start) + 'export function projectViewerQuote(view, instrumentId, quote, now) {\n  return snapshot({ ...view, quotes: { ...view.quotes, [instrumentId]: quote } }, now);\n}\n';
   }
-  const from = profile === 'wallet' ? 'quote(id,{includeUsdc:false})'
-    : "hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'),{signal:abort.signal})";
-  const to = profile === 'wallet' ? 'quote(id,{includeUsdc:true})'
-    : "hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'))";
-  if (!['wallet', 'history'].includes(profile) || text.split(from).length !== 2) throw Error('UNREVIEWED_TARGET_HUNK');
+  // Keep the historical control and the explicitly reviewed cancellable call
+  // distinct. The wallet control toggles FX scope only; it must retain signal.
+  const hunks = profile === 'wallet' ? [
+    ['quote(id,{includeUsdc:false})', 'quote(id,{includeUsdc:true})'],
+    ['quote(id,{includeUsdc:false,signal})', 'quote(id,{includeUsdc:true,signal})'],
+  ] : profile === 'history' ? [[
+    "hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'),{signal:abort.signal})",
+    "hub.history(u.searchParams.get('id'),u.searchParams.get('interval')||'15m',u.searchParams.get('before'))",
+  ]] : [];
+  const matches = hunks.filter(([from]) => text.includes(from));
+  if (matches.length !== 1 || text.split(matches[0][0]).length !== 2) throw Error('UNREVIEWED_TARGET_HUNK');
+  const [from, to] = matches[0];
   return text.replace(from, to);
 }
 export function prepare(source, destination, profile, variant, sourceSha, reviewed) {

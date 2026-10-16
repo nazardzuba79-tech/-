@@ -35,11 +35,30 @@ test('incomplete, duplicate or missing timings cannot become zero-errors PASS', 
 test('control hunks target only their mechanism and reject missing or duplicated callsites', () => {
   const server = readFileSync(new URL('../../stocks-global/server.mjs',import.meta.url),'utf8').replace(/\r\n/g,'\n');
   const wallet=transform('wallet',server),history=transform('history',server);
-  assert.equal(wallet,server.replace('quote(id,{includeUsdc:false})','quote(id,{includeUsdc:true})'));
+  assert.equal(wallet,server.replace('quote(id,{includeUsdc:false,signal})','quote(id,{includeUsdc:true,signal})'));
   assert.equal(history,server.replace("u.searchParams.get('before'),{signal:abort.signal})","u.searchParams.get('before'))"));
   assert.throws(()=>transform('wallet',server+server)); assert.throws(()=>transform('history','old noncancellable source'));
   const projection=transform('projection20',readFileSync(new URL('../../stocks-global/viewer-projection.mjs',import.meta.url),'utf8'));
   assert.ok(projection.includes('return snapshot({ ...view, quotes: { ...view.quotes, [instrumentId]: quote } }, now);'));
+});
+test('wallet controls preserve both exact historical and cancellable callsites without modifying any other bytes', () => {
+  for (const [from,to] of [
+    ['quote(id,{includeUsdc:false})','quote(id,{includeUsdc:true})'],
+    ['quote(id,{includeUsdc:false,signal})','quote(id,{includeUsdc:true,signal})'],
+  ]) {
+    const prefix='const before = "unchanged";\nawait ', suffix=';\nconst after = "unchanged";\n';
+    assert.equal(transform('wallet',prefix+from+suffix),prefix+to+suffix);
+  }
+});
+test('wallet controls reject mixed, duplicate and unknown callsites rather than broadening the reviewed transform', () => {
+  const legacy='quote(id,{includeUsdc:false})', cancellable='quote(id,{includeUsdc:false,signal})';
+  for (const source of [legacy+';'+legacy,cancellable+';'+cancellable,legacy+';'+cancellable,cancellable+';'+legacy,
+    'quote(id,{includeUsdc:false,signal:other})','quote(id,{includeUsdc:false,signal:abort.signal})',
+    'quote(id,{includeUsdc:false, signal})','quote(id,{signal,includeUsdc:false})',
+    'quote(id,{includeUsdc:false,...options})','quote(id,{includeUsdc:true,signal})','missing']) {
+    assert.throws(()=>transform('wallet',source),/UNREVIEWED_TARGET_HUNK/,source);
+  }
+  assert.throws(()=>transform('unknown',legacy),/UNREVIEWED_TARGET_HUNK/);
 });
 test('all runtime hashes are verified even for target-first and identity pairs', t => {
   const base=mkdtempSync(join(tmpdir(),'targeted-source-'));t.after(()=>rmSync(base,{recursive:true,force:true}));const source=join(base,'source');

@@ -1,0 +1,90 @@
+{
+  "sourceHead": "f5ed92d1d90140f23dc289c1db11bd8b6636a955",
+  "ciCheckout": "6160172ddb8e0620c853526da10ae7dfdb659110",
+  "identicalGitTree": "6688518f0600ce41752d214bf5238e02f5c35841",
+  "failure": {
+    "run": 38896564016,
+    "job": 116958335843,
+    "file": "services/stocks/targeted-http-512/targeted.test.mjs",
+    "code": "UNREVIEWED_TARGET_HUNK",
+    "cause": "Wallet control recognizes the old quote call without signal; bounded runtime now forwards signal."
+  },
+  "fix": "Accept exactly one reviewed old or signal-aware anchor and alter only includeUsdc; reject duplicates, mixed anchors and unknown text. Runtime, historical source hashes/pins and financial rules unchanged.",
+  "localRegression": {
+    "before": {
+      "fail": 1,
+      "code": "UNREVIEWED_TARGET_HUNK"
+    },
+    "after": {
+      "pass": 26,
+      "fail": 0,
+      "skipped": 0,
+      "existing": 24,
+      "new": 2
+    }
+  },
+  "ciOnParent": {
+    "cfd": {
+      "run": 38896563889,
+      "browserPass": 75,
+      "browserFail": 0,
+      "diagnosticRows": 10,
+      "pageErrors": 0,
+      "blockedWrites": 0,
+      "unitPass": 268,
+      "artifact": 12044217769,
+      "zipSha256": "d299f7eefdd1262e5702f6db8742e8fa627e35bb17348ae4381231d68ab09f3a"
+    },
+    "frontend": {
+      "run": 38896564059,
+      "suites": 275,
+      "pass": 4417,
+      "fail": 0,
+      "skipped": 0,
+      "artifact": 12044541326,
+      "zipSha256": "eafa0bf4809819dce01c15c5037021e07c2a82074469c4dd7dfddaa5ac00ca88"
+    },
+    "otc": {
+      "run": 38896564094,
+      "status": "success"
+    },
+    "support": {
+      "run": 38896564067,
+      "verify": "success",
+      "fixturePostgres": "success",
+      "deploy": "skipped"
+    }
+  },
+  "artifacts": [
+    {
+      "file": "targeted-hunk-f5ed92d1-before.log",
+      "sha256": "aeff42c574389e02af1fd6f6c49057b96cef3062f17bad839178e83aeb43d63c",
+      "bytes": 1067
+    },
+    {
+      "file": "targeted-hunk-f5ed92d1-after.log",
+      "sha256": "60ff5edd61046da54bc32dc2680eac6ff01cec0283098313c81b286a828f94e7",
+      "bytes": 2792
+    },
+    {
+      "file": "isolated-f5ed92d1.log",
+      "sha256": "0baf24d3e3044480f240dc5e216ffa6d9efb33eba9668f46915c79a87a97a75c",
+      "bytes": 154689
+    },
+    {
+      "file": "cfd-f5ed92d1-report.json",
+      "sha256": "8880363326cdc63ddcfd64077c75beb91f8d242225d4c4849cebf7df2f484a94",
+      "bytes": 2715521
+    },
+    {
+      "file": "frontend-f5ed92d1.json",
+      "sha256": "4718884a90f717406916b6965c4964e6e0e2b75e294fbb3d0f3c4420b52d90d8",
+      "bytes": 1738436
+    }
+  ],
+  "limitations": [
+    "Parent CI results are preserved, not inherited as final-source checks.",
+    "No B profile rerun or production operation.",
+    "Earlier upstream CFD failure cause remains unproven; this passing run does not erase the retained failing run."
+  ]
+}
