@@ -6287,3 +6287,11 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
 - Local validation: 609 passing tests across 19 distinct suites; frontend TypeScript/Vite build and diff checks passed. Windows-only asset CRLF conversion corrected to Git blob bytes without repository changes or relaxed assertions.
 - Evidence and comparison: `docs/qa/pr501-main-reconciliation-20261017.md`. Historical October 7 screenshots are not new QA. Next: verify all remote CI on final pushed HEAD and prepare existing PR for owner merge. No merge to main, deployment or production migration performed.
 - CI follow-up to `0fef555667ffad78fd4cff6ff363e8c5bbb8684a`: the KYC offline browser scenario still expected its generic upload fallback; updated only that expectation to the now-specific localized network message, with exact matching. All send/idempotency/DB assertions and KYC application code remain unchanged. Revalidate on the final pushed head; no test waiver.
+
+## 2026-10-17 — Codex — PR #501 hover-only CI repair
+
+- Implementation SHA: `2c7cba37782fca768cc37ba3cfc296812c14d06c`, continuing existing #501 from `aabe8f963874fa5b8179728803cc68c49354694e`; fresh main remains `50875f2116474ce01acbb08c1d9e3e68ec99a7f3`.
+- Proven cause: the harness counted PriceChart's existing 5000 ms periodic candle fetch during the pointer window. One instrumented loopback run captured exact URLs/timestamps and Chromium async `await -> setInterval` initiators; original CI artifacts only retained aggregate counts. Evidence: `docs/qa/pr501-hover-request-cause-20261017.md`.
+- Material files: `scripts/qa-chart-workspace.cjs`, fixture-only `qa-hover-interval-isolation.cjs`, `chartHoverIsolation.test.ts`, chart workflow's helper trigger and mandatory test inclusion. Existing periodic callbacks resume in finally; hover requires zero HTTP requests, zero fetch attempts and zero newly registered intervals. No raised limits or removed tests.
+- Preserved all application source, design, Funding V2, financial logic and seven dictionaries byte-for-byte against aabe8f96. No production access, deployment, merge or production migration.
+- Local validation: 7/7 isolation/negative-control regressions; 8/8 targeted real-browser checks (`--only data`); script syntax and diff checks pass. Next: await final-head CI; do not merge until every required gate passes.
