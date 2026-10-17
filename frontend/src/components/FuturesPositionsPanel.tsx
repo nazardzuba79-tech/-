@@ -44,6 +44,33 @@ function approxUsd(value: number, quoteAsset: string): string | null {
   if (!Number.isFinite(value) || !USD_QUOTES.has(quoteAsset)) return null;
   return `≈${group(Math.abs(value) < 0.005 ? 0 : value, 2)} USD`;
 }
+/**
+ * One figure of a native position's P&L breakdown, in the same markup the
+ * realized cell uses. `debit` shows a paid amount (fees) as a negative, so
+ * the four columns read left to right as the sum they are:
+ * Trading P&L − fees + funding = Net P&L.
+ */
+function PnlPart({ raw, quoteAsset, digits, debit = false, approx = false }: { raw: string; quoteAsset: string; digits: number; debit?: boolean; approx?: boolean }) {
+  const parsed = parseFloat(raw);
+  // `+ 0` turns the -0 of a zero debit into 0, so no «-0.00» is printed.
+  const value = (debit ? -parsed : parsed) + 0;
+  const known = Number.isFinite(value);
+  const usd = approx ? approxUsd(value, quoteAsset) : null;
+  return (
+    <div className="futures-position-pnl">
+      <span
+        className="futures-position-realized"
+        data-unit={known ? quoteAsset : undefined}
+        data-positive={known && value > 0 ? 'true' : undefined}
+      >{known ? group(value, digits) : '—'}</span>
+      {usd && <small className="futures-position-approx">{usd}</small>}
+    </div>
+  );
+}
+const pnlTone = (raw: string, debit = false) => {
+  const value = parseFloat(raw) * (debit ? -1 : 1);
+  return !Number.isFinite(value) || value === 0 ? '' : value > 0 ? 'text-buy' : 'text-sell';
+};
 function groupQuantity(raw: string): string {
   const value = Number(raw);
   if (!raw.trim() || !Number.isFinite(value)) return raw;
@@ -59,11 +86,24 @@ export function FuturesPositionsPanel({
   onEditLeverage,
   leverageBusy = false,
   archive = false,
+  mobile = false,
   symbolFilter,
   onSelectSymbol,
   onShowHistory,
+  onHistoryWanted,
 }: {
   archive?: boolean;
+  /**
+   * The phone layout (≤900px, `MOBILE_TERMINAL_QUERY`). There the TP/SL
+   * cell is a «+ TP/SL» touch target with the armed levels listed under it
+   * (`.futures-mobile-protection-values`, shown by the mobile sheet only).
+   * 2026-10-13 audit: that compact trigger used to follow `archive`, which
+   * is the DESKTOP design too — so on a 1440px screen the levels block
+   * stayed `display:none` and a saved stop showed as «+ TP/SL», as if
+   * nothing were armed. Desktop rows carry the chips in the trigger, which
+   * the archive sheet styles (`.fut-tpslChip`).
+   */
+  mobile?: boolean;
   symbolFilter?: string;
   /** Open this position's contract in the terminal — chart, book and order
    *  form all follow. Selecting a contract NEVER touches the position: it
@@ -74,6 +114,13 @@ export function FuturesPositionsPanel({
   /** «История позиций →» on the «Позиция закрыта» card. Absent: the card
    *  has no link (a standalone panel switches its own tab instead). */
   onShowHistory?: () => void;
+  /** Whether this panel needs the position history while it is not on the
+   *  history tab: true while a «Позиция закрыта» card is shown, whose result
+   *  (Net P&L and, for the native demo, its split) is read from the closed
+   *  row. The native demo loads history only on demand, so the page passes
+   *  this on to it; the real engine's store already loads it from the
+   *  resource request below. */
+  onHistoryWanted?: (wanted: boolean) => void;
   refreshKey: number;
   /** Optional native position editor; the order form only configures new orders. */
   onEditLeverage?: (positionId: string) => void;
@@ -216,12 +263,28 @@ export function FuturesPositionsPanel({
     // The region is (re)mounted with the rows and the tab; sizes are the observer's.
   }, [positions, tab, archive]);
   const history = account.positionHistory.data;
+  // The native engine reports every row's P&L taken apart; the real
+  // endpoint does not, and its table keeps its two P&L columns unchanged.
+  const openSplit = !!positions && positions.length > 0 && positions.every(p => p.pnlBreakdown !== undefined);
+  const historySplit = !!history && history.length > 0 && history.every(row => row.pnlBreakdown !== undefined);
   const dismissClosed = useCallback(() => setClosed(null), []);
+  const cardWantsHistory = closed?.kind === 'closed';
+  useEffect(() => {
+    if (!onHistoryWanted) return;
+    onHistoryWanted(cardWantsHistory);
+    return () => onHistoryWanted(false);
+  }, [cardWantsHistory, onHistoryWanted]);
   const closedRow = closed?.kind === 'closed' ? history?.find(row => row.id === closed.positionId) ?? null : null;
   const closedPnl: ClosedPositionNotice['pnl'] = closed?.kind !== 'closed' ? null
     : closedRow ? (() => {
       const value = parseFloat(closedRow.realizedPnl);
-      return Number.isFinite(value) ? { text: `${value > 0 ? '+' : ''}${group(value, 2)} ${closed.quote}`.trim(), positive: value >= 0 } : null;
+      if (!Number.isFinite(value)) return null;
+      const signed = (figure: number) => `${figure > 0 ? '+' : ''}${group(Math.abs(figure) < 0.005 ? 0 : figure, 2)} ${closed.quote}`.trim();
+      const parts = closedRow.pnlBreakdown;
+      const breakdown = parts && [parts.tradingPnl, parts.funding, parts.fees].every(v => Number.isFinite(parseFloat(v)))
+        ? { trading: signed(parseFloat(parts.tradingPnl)), funding: signed(parseFloat(parts.funding)), fees: signed(-parseFloat(parts.fees)) }
+        : undefined;
+      return { text: signed(value), positive: value >= 0, ...(breakdown ? { breakdown } : {}) };
     })()
     // A history read that finished after the close without this position,
     // or a failed one, has nothing to report: the line is left out rather
@@ -507,7 +570,9 @@ export function FuturesPositionsPanel({
                   <Th title={t('futures.hintMark')}>{t('futures.colMark')}</Th>
                   <Th title={t('futures.hintLiq')}>{t('futures.colLiq')}</Th>
                   <Th title={t('futures.hintUnrealized')}>{t('futures.colUnrealized')}</Th>
-                  <Th title={t('futures.hintRealized')}>{t('futures.colRealized')}</Th>
+                  {openSplit
+                    ? <><Th>{t('futures.colTradingPnl')}</Th><Th>{t('futures.colFunding')}</Th><Th>{t('futures.colFees')}</Th><Th>{t('futures.colNetPnl')}</Th></>
+                    : <Th title={t('futures.hintRealized')}>{t('futures.colRealized')}</Th>}
                   {narrow
                     ? <Th>{t('futures.tpsl')} · {t('futures.colCloseAs')}</Th>
                     : <><Th>{t('futures.tpsl')}</Th><Th>{t('futures.colCloseAs')}</Th></>}
@@ -550,7 +615,7 @@ export function FuturesPositionsPanel({
                     && (aggregate === null || !aggregate.collateralComplete);
                   const liquidationPrice = nativeCrossLiquidationUnknown ? null : p.liquidationPrice;
                   return (
-                    <tr key={p.id} className="futures-position-row" data-side={p.side}>
+                    <tr key={p.id} className="futures-position-row" data-side={p.side} data-pnl-split={openSplit && p.pnlBreakdown ? 'true' : undefined}>
                       {/* Contract, with Cross and the leverage under it. */}
                       <Td label={t('futures.colContracts')}>
                         <div className="futures-position-contract">
@@ -617,6 +682,24 @@ export function FuturesPositionsPanel({
                             onClick={()=>execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)}><ExternalLink size={17} aria-hidden="true"/></button>}
                         </FuturesUnrealizedPnl>
                       </Td>
+                      {openSplit && p.pnlBreakdown ? (<>
+                        {/* The native engine's own split of this position's
+                            result: what the price did (open and already
+                            closed parts), the funding settled so far, the
+                            fees paid, and their sum. Nothing is added here. */}
+                        <Td label={t('futures.colTradingPnl')} className={`mono ${pnlTone(p.pnlBreakdown.tradingPnl)}`}>
+                          <PnlPart raw={p.pnlBreakdown.tradingPnl} quoteAsset={quoteAsset} digits={archive ? 2 : 4} />
+                        </Td>
+                        <Td label={t('futures.colFunding')} className={`mono ${pnlTone(p.pnlBreakdown.funding)}`}>
+                          <PnlPart raw={p.pnlBreakdown.funding} quoteAsset={quoteAsset} digits={archive ? 2 : 4} />
+                        </Td>
+                        <Td label={t('futures.colFees')} className="mono">
+                          <PnlPart raw={p.pnlBreakdown.fees} quoteAsset={quoteAsset} digits={archive ? 2 : 4} debit />
+                        </Td>
+                        <Td label={t('futures.colNetPnl')} className={`mono ${pnlTone(p.pnlBreakdown.netPnl)}`}>
+                          <PnlPart raw={p.pnlBreakdown.netPnl} quoteAsset={quoteAsset} digits={archive ? 2 : 4} approx />
+                        </Td>
+                      </>) : (
                       <Td label={t('futures.colRealized')} className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
                         <div className="futures-position-pnl">
                           <span
@@ -626,7 +709,7 @@ export function FuturesPositionsPanel({
                           >{Number.isFinite(realized) ? group(realized, archive ? 2 : 4) : '—'}</span>
                           {realizedApprox && <small className="futures-position-approx">{realizedApprox}</small>}
                         </div>
-                      </Td>
+                      </Td>)}
                       {/* TP/SL and the two close pills: two columns, or one
                           on a narrow panel (see `narrow`). The elements are
                           built once and placed, so both layouts carry the
@@ -637,7 +720,7 @@ export function FuturesPositionsPanel({
                            extra endpoint and no extra timer. */
                         const protection = (
                           <FuturesPositionProtectionCell
-                            compactTrigger={archive}
+                            compactTrigger={archive && mobile}
                             compactLabel={narrow}
                             positionId={p.id}
                             protection={p.protection ?? null}
@@ -721,7 +804,9 @@ export function FuturesPositionsPanel({
                 <Th>{t('trade.market')}</Th>
                 <Th>{t('futures.side')}</Th>
                 <Th>{t('futures.entryPrice')}</Th>
-                <Th>{t('futures.realizedPnl')}</Th>
+                {historySplit
+                  ? <><Th>{t('futures.colTradingPnl')}</Th><Th>{t('futures.colFunding')}</Th><Th>{t('futures.colFees')}</Th><Th>{t('futures.colNetPnl')}</Th></>
+                  : <Th>{t('futures.realizedPnl')}</Th>}
                 <Th>{t('trade.status')}</Th>
               </tr>
             </thead>
@@ -740,7 +825,16 @@ export function FuturesPositionsPanel({
                       </span>
                     </Td>
                     <Td className="mono">{p.entryPrice}</Td>
-                    <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{group(pnl, 2)}</Td>
+                    {historySplit && p.pnlBreakdown ? (<>
+                      {/* A closed trade's whole result: its total is the
+                          Net P&L the wallet actually moved by. */}
+                      <Td label={t('futures.colTradingPnl')} className={`mono ${pnlTone(p.pnlBreakdown.tradingPnl)}`}>{group(parseFloat(p.pnlBreakdown.tradingPnl), 2)}</Td>
+                      <Td label={t('futures.colFunding')} className={`mono ${pnlTone(p.pnlBreakdown.funding)}`}>{group(parseFloat(p.pnlBreakdown.funding), 2)}</Td>
+                      {/* `+ 0`: a zero fee is «0.00», never «-0.00». */}
+                      <Td label={t('futures.colFees')} className="mono">{group(-parseFloat(p.pnlBreakdown.fees) + 0, 2)}</Td>
+                      <Td label={t('futures.colNetPnl')} className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{group(pnl, 2)}</Td>
+                    </>) : (
+                    <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{group(pnl, 2)}</Td>)}
                     <Td>{p.status === 'LIQUIDATED' ? <span style={{ color: 'var(--sell)' }}>{positionStatus(p.status, t)}</span> : positionStatus(p.status, t)}</Td>
                   </tr>
                 );

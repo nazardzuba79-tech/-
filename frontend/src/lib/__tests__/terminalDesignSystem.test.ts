@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 /**
@@ -210,15 +210,15 @@ it('Spot and CFD retain the shared surface while Futures-only colours stay local
   expect(css).toMatch(/\.cfd-bottom-panel \.cfd-tabs\) \{\s*background: #101014 !important;/);
 });
 
-it('the CFD chart reads its paint from the stylesheet, with its old colours as fallbacks', () => {
-  const chart = read('src/components/CfdChart.tsx');
-  for (const [token, fallback] of [['--voltex-candle-up', '#12c98d'], ['--voltex-candle-down', '#ef5350'],
-    ['--voltex-axis-border', '#2b2e36'], ['--voltex-axis-text', '#aeb9c4'], ['--voltex-plot-background', '#101014'],
-    ['--voltex-volume-up', 'rgba(18,201,141,.28)'], ['--voltex-volume-down', 'rgba(239,83,80,.28)']]) {
-    expect(chart).toContain(`token('${token}','${fallback}')`);
+// 2026-10-15 (CFD Chart Workspace): CfdChart.tsx is gone. The CFD chart is the
+// shared terminal chart, inside the same .terminal-chart-shell, so it reads the
+// same paint tokens the block above declares for Spot and Futures.
+it('the CFD chart is the shared terminal chart and reads its paint from the stylesheet', () => {
+  expect(existsSync(resolve(frontend, 'src/components/CfdChart.tsx'))).toBe(false);
+  expect(read('src/pages/TradePage.tsx')).toContain('<PriceChart pair={selectedCfdSymbol} market="cfd" chrome="terminal"');
+  expect(read('src/components/TerminalChart.tsx')).toContain('className={`terminal-chart-shell');
+  const chart = read('src/components/PriceChart.tsx');
+  for (const token of ['--voltex-candle-up', '--voltex-candle-down', '--voltex-axis-border', '--voltex-axis-text', '--voltex-plot-background']) {
+    expect(chart).toContain(`token('${token}'`);
   }
-  // No literal paint left behind the tokens.
-  expect(chart).toContain('upColor:up,downColor:down,borderVisible:false,wickUpColor:up,wickDownColor:down');
-  expect(chart).toContain('color:bar.close>=bar.open?volumeUpRef.current:volumeDownRef.current');
-  expect(chart).not.toContain("borderColor:'#2b2e36'");
 });

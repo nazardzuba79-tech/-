@@ -53,6 +53,12 @@ const CODE_KEY: Record<string, Key> = {
   LIMIT_PRICE_REQUIRED: 'futures.orderError.limitPriceRequired',
   CONTRACT_LIMIT: 'futures.orderError.contractLimit',
   CLOSE_EXCEEDS_POSITION: 'futures.orderError.closeExceedsPosition',
+  // The real engine's market sweep found less resting size than the order
+  // (a quick close against a thin book), or the only resting size was the
+  // trader's own order. Both came back as a bare sentence before the
+  // 2026-10-13 audit and read as «Не удалось закрыть позицию».
+  INSUFFICIENT_LIQUIDITY: 'futures.orderError.insufficientLiquidity',
+  SELF_MATCH: 'futures.orderError.selfMatch',
   POSITION_NOT_OPEN: 'futures.orderError.positionNotOpen',
   POSITION_MISSING: 'futures.orderError.positionNotOpen',
   ORDER_NOT_OPEN: 'futures.orderError.orderNotOpen',

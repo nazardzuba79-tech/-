@@ -50,3 +50,34 @@
   .vx-chart-settings .vcs-presets { grid-template-columns:minmax(0,1fr); }
   .vx-chart-settings .vcs-pane { padding:14px 16px; }
 }
+/* Issue #502 (2026-10-10): scales, indicator and range controls. */
+.vx-chart-settings .vcs-hint { margin:4px 0 12px; font-size:12px; line-height:1.45; color:#8a8f98; }
+.vx-chart-settings .vcs-white { height:30px; padding:0 10px; border:1px solid #2a2d33; border-radius:8px; background:#0f1013; color:#eaecef; font-size:12px; font-variant-numeric:tabular-nums; }
+.vx-chart-settings .vcs-white:hover { border-color:#454951; }
+.vx-chart-settings .vcs-white.is-on { background:#ffffff; color:#0a0b0d; border-color:#ffffff; font-weight:600; }
+.vx-chart-settings .vcs-range { min-width:180px; }
+.vx-chart-settings .vcs-range input[type=range] { flex:1; min-width:110px; accent-color:#f0c964; }
+.vx-chart-settings .vcs-range output { width:40px; text-align:right; font-size:12px; color:#eaecef; font-variant-numeric:tabular-nums; }
+.vx-chart-settings .vcs-indicator { margin-bottom:10px; padding:10px 12px; border:1px solid #2a2d33; border-radius:10px; background:#0f1013; }
+.vx-chart-settings .vcs-indicator-head { display:flex; align-items:center; gap:10px; }
+.vx-chart-settings .vcs-indicator-head b { font-size:13px; font-weight:600; color:#eaecef; }
+.vx-chart-settings .vcs-indicator-head small { flex:1; font-size:11px; color:#6b6f77; }
+.vx-chart-settings .vcs-btn.vcs-small { height:28px; padding:0 10px; font-size:11.5px; }
+.vx-chart-settings .vcs-indicator-body { display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:8px; }
+.vx-chart-settings .vcs-field { display:grid; gap:4px; font-size:11px; color:#a1a5ad; }
+.vx-chart-settings .vcs-field input[type=number] { width:76px; height:30px; padding:0 8px; border:1px solid #2a2d33; border-radius:8px; background:#181a1f; color:#eaecef; font:inherit; font-size:12.5px; font-variant-numeric:tabular-nums; }
+.vx-chart-settings .vcs-field input[type=number]:focus { outline:none; border-color:#f0c964; }
+.vx-chart-settings .vcs-field select { height:30px; }
+.vx-chart-settings .vcs-search { box-sizing:border-box; width:100%; height:32px; margin:0 0 10px; padding:0 10px; border:1px solid #2a2d33; border-radius:8px; background:#0f1013; color:#eaecef; font:inherit; font-size:12.5px; }
+.vx-chart-settings .vcs-search:focus { outline:none; border-color:#f0c964; }
+.vx-chart-settings .vcs-catalogue { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.vx-chart-settings .vcs-catalogue-item { display:grid; grid-template-columns:auto minmax(0,1fr); grid-template-rows:auto auto; column-gap:10px; align-items:center; padding:9px 12px; border:1px solid #2a2d33; border-radius:10px; background:#0f1013; text-align:left; }
+.vx-chart-settings .vcs-catalogue-item:hover:not(:disabled) { border-color:#454951; }
+.vx-chart-settings .vcs-catalogue-item:disabled { opacity:.45; cursor:default; }
+.vx-chart-settings .vcs-catalogue-item .vcs-swatch { grid-row:1 / span 2; margin:0; }
+.vx-chart-settings .vcs-catalogue-item b { font-size:12.5px; font-weight:600; }
+.vx-chart-settings .vcs-catalogue-item small { grid-column:2; font-size:11px; color:#a1a5ad; }
+.vx-chart-settings .vcs-catalogue-item em { grid-column:2; font-style:normal; font-size:10.5px; color:#6b6f77; }
+@media (max-width:640px) {
+  .vx-chart-settings .vcs-catalogue { grid-template-columns:minmax(0,1fr); }
+}

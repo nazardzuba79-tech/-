@@ -1,4 +1,5 @@
 import { browserFetch as fetch } from './browserActivity';
+import { createReadCoalescer } from './readCoalescer';
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
 import { fetchNrxPublic, isEdgeMarketPair } from './nrxMarket';
 import type { CardApplicationSnapshot, CardProduct } from '../pages/crypto-card-final/cardApplicationState';
@@ -547,6 +548,29 @@ async function vtaRequest<T>(path: string, options: RequestInit = {}): Promise<T
 
 // Like request(), but for multipart/form-data (file uploads) — the browser
 // sets the Content-Type boundary itself, so it must NOT be set manually.
+export interface SpotOrderRecord {
+  id: string;
+  pair: string;
+  side: 'BUY' | 'SELL';
+  type: string;
+  price: string | null;
+  triggerPrice: string | null;
+  ocoGroupId: string | null;
+  originalQuantity: string;
+  remainingQuantity: string;
+  status: string;
+  createdAt: string;
+}
+const readSpotOrders = createReadCoalescer<SpotOrderRecord[]>(1500);
+// This promise window holds authenticated order data. A URL alone is not an
+// account identity: logout/login can switch users without reloading this module.
+// Clear immediately on session notifications AND guard direct token changes.
+let spotOrdersSessionToken: string | null | undefined;
+onSessionChange(() => {
+  readSpotOrders.clear();
+  spotOrdersSessionToken = undefined;
+});
+
 async function requestForm<T>(path: string, formData: FormData): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -602,6 +626,46 @@ interface RealBalance {
   locked: string;
   priceUsd: number | null;
   valueUsd: number | null;
+}
+
+export type KycReviewStage =
+  | 'NOT_STARTED' | 'UNDER_REVIEW' | 'DOCUMENT_REQUIRED' | 'SELFIE_REQUIRED' | 'DOCUMENT_AND_SELFIE_REQUIRED'
+  | 'MATERIALS_RECEIVED' | 'RE_REVIEW' | 'APPROVED' | 'REJECTED';
+export type KycMaterialKind = 'DOCUMENT' | 'SELFIE' | 'DOCUMENT_AND_SELFIE';
+export type KycDocumentReason = 'BLURRY' | 'UNREADABLE' | 'CROPPED' | 'LOW_LIGHT' | 'OTHER';
+
+/** What the user sees about an open request: the ask and the reason, nothing internal. */
+export interface KycMaterialRequestView {
+  id: string;
+  kind: KycMaterialKind;
+  documentReason: KycDocumentReason | null;
+  documentReasonText: string | null;
+  selfieComment: string | null;
+  documentRequested: boolean;
+  selfieRequested: boolean;
+  documentReceived: boolean;
+  selfieReceived: boolean;
+  createdAt: string;
+}
+
+/** The admin's view of one request, newest first in a submission's history. */
+export interface AdminKycMaterialRequest {
+  id: string;
+  kind: KycMaterialKind;
+  status: 'OPEN' | 'RECEIVED' | 'CLOSED';
+  documentReason: KycDocumentReason | null;
+  documentReasonText: string | null;
+  selfieComment: string | null;
+  requestedBy: string;
+  createdAt: string;
+  document: { receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null } | null;
+  selfie: {
+    receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null;
+    consentAt: string | null; consentVersion: string | null;
+  } | null;
+  acknowledgedAt: string | null;
+  closedAt: string | null;
+  closedOutcome: 'APPROVED' | 'REJECTED' | 'SUPERSEDED' | null;
 }
 
 export const api = {
@@ -1159,22 +1223,26 @@ export const api = {
   disable2FA: (code: string) =>
     request<{ status: string }>('/account/2fa/disable', { method: 'POST', body: JSON.stringify({ code }) }),
 
-  getMyOrders: (status?: string) =>
-    request<
-      {
-        id: string;
-        pair: string;
-        side: 'BUY' | 'SELL';
-        type: string;
-        price: string | null;
-        triggerPrice: string | null;
-        ocoGroupId: string | null;
-        originalQuantity: string;
-        remainingQuantity: string;
-        status: string;
-        createdAt: string;
-      }[]
-    >(`/orders/me${status ? `?status=${status}` : ''}`),
+  /**
+   * The chart and the open-orders panel both poll this every 4 s; identical
+   * reads started within 1.5 s share one request (see lib/readCoalescer).
+   * `fresh` is for reads that must see the server's current state — after a
+   * cancel, a placement or a trigger drag — and never shares.
+   */
+  getMyOrders: (status?: string, options?: { fresh?: boolean }) => {
+    const token = getToken();
+    if (spotOrdersSessionToken !== token) {
+      readSpotOrders.clear();
+      spotOrdersSessionToken = token;
+    }
+    const path = `/orders/me${status ? `?status=${status}` : ''}`;
+    return readSpotOrders(path, () => request<SpotOrderRecord[]>(path), options?.fresh).then(orders => {
+      // A request may settle after a logout or account switch. Never deliver
+      // a previous account's order list, even if JSON parsing finished late.
+      if (getToken() !== token) throw new DOMException('Session changed', 'AbortError');
+      return orders;
+    });
+  },
 
   getMyTrades: (pair?: string) =>
     request<
@@ -1186,6 +1254,10 @@ export const api = {
   getMyKyc: () =>
     request<{
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+      /** The finer stage of the latest submission; kycStatus stays PENDING while materials are requested. */
+      reviewStage?: KycReviewStage;
+      /** The admin's open request for a new document photo and/or a selfie, if any. */
+      materialRequest?: KycMaterialRequestView | null;
       latestSubmission: {
         id: string;
         country: string;
@@ -1215,6 +1287,10 @@ export const api = {
           status: string;
           rejectionReason: string | null;
           createdAt: string;
+          // Paged admin reads only (/admin/clients/page); absent from the legacy list.
+          reviewStage?: KycReviewStage;
+          activeMaterialRequestId?: string | null;
+          materialRequests?: AdminKycMaterialRequest[];
         } | null;
       }[]
     >('/admin/clients', { signal }),
@@ -1316,6 +1392,24 @@ export const api = {
       body: JSON.stringify({ approve, reason }),
     }),
 
+  // Admin: ask for a new document photo and/or a selfie without rejecting.
+  // `clientRequestId` makes a repeated click (or a retry) the same request.
+  requestKycMaterials: (submissionId: string, body: {
+    clientRequestId: string;
+    kind: KycMaterialKind;
+    documentReason?: KycDocumentReason;
+    documentReasonText?: string;
+    selfieComment?: string;
+  }) =>
+    request<{ materialRequest: AdminKycMaterialRequest; reviewStage: KycReviewStage }>(`/kyc/${encodeURIComponent(submissionId)}/material-requests`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  // Admin: the received materials were opened — «Материалы получены» → «Повторная проверка».
+  acknowledgeKycMaterials: (materialRequestId: string) =>
+    request<{ acknowledged: boolean }>(`/kyc/material-requests/${encodeURIComponent(materialRequestId)}/acknowledge`, { method: 'POST' }),
+
   // Backend-authoritative eligibility and persisted card requests, not issuance.
   getCardApplication: () => request<CardApplicationSnapshot>('/card/application/me'),
 
@@ -1349,6 +1443,9 @@ export const api = {
       minLeverage: number;
       maxLeverage: number;
       fundingIntervalHours: number;
+      /** VOLTEX's fixed funding per 8h settlement, by side: a signed fraction
+       *  of position value (+ credited, − debited). Absent on an older backend. */
+      fundingCashflow?: { version: string; long: string; short: string };
       highLeverageWarningThreshold: number;
       leverageTiers: { notionalCap: number | null; maxLeverage: number; maintenanceMarginRate: number; maintenanceAmount: number }[];
     }>('/futures/config'),
@@ -1406,8 +1503,11 @@ export const api = {
         /** Already banked on this position — partial closes and anything
          *  else settled into it. A SEPARATE figure from `unrealizedPnl`:
          *  the two are never summed, because the size that produced this
-         *  is no longer part of the size that produces that. */
+         *  is no longer part of the size that produces that. Includes the
+         *  funding already settled on the position, once. */
         realizedPnl: string;
+        /** The funding part of `realizedPnl` (+ received, − paid). Absent on an older backend. */
+        fundingNet?: string;
         roe: string | null;
         openedAt: string;
         /** Real, server-held TP/SL for this position. `null` on a side is
@@ -1430,7 +1530,10 @@ export const api = {
         leverage: number;
         marginType: 'ISOLATED' | 'CROSS';
         entryPrice: string;
+        /** The trade's net result: price P&L of every close plus all the funding it settled. */
         realizedPnl: string;
+        /** The funding part of `realizedPnl` (+ received, − paid). Absent on an older backend. */
+        fundingNet?: string;
         status: string;
         openedAt: string;
         closedAt: string | null;

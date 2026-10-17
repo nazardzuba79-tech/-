@@ -74,17 +74,23 @@ export interface SpotReadController {
   pause: () => void;
 }
 
+/** The open-orders panel and the chart read the same status set, so the
+ * API can hand both one request (lib/readCoalescer). */
+export const SPOT_OPEN_ORDER_STATUSES = 'PENDING_TRIGGER,OPEN,PARTIALLY_FILLED';
+
 /** Periodic polls share one request so a slow response is never starved.
  * A mutation/refresh invalidates that response and queues one immediate read;
- * its returned promise waits for the fresh read as well. */
-export function createSpotReadController<T>(request: () => Promise<T>, handlers: {
+ * its returned promise waits for the fresh read as well. The request is told
+ * whether it is that fresh read, so a read that must see the server's
+ * current state is never served from a sibling poller's in-flight answer. */
+export function createSpotReadController<T>(request: (fresh: boolean) => Promise<T>, handlers: {
   accept: (rows: T) => void; reject: () => void; settled: () => void; started?: () => void;
 }): SpotReadController {
-  let enabled = true, revision = 0, queued = false;
+  let enabled = true, revision = 0, queued = false, freshQueued = false;
   let pending: Promise<void> | null = null;
   function read(fresh = false): Promise<void> {
     if (!enabled) return Promise.resolve();
-    if (fresh) { revision++; queued = true; }
+    if (fresh) { revision++; queued = true; freshQueued = true; }
     if (pending) return pending;
     // Start in a microtask so even a synchronous request failure cannot leave
     // an already-settled promise stuck in the single-flight slot.
@@ -92,9 +98,10 @@ export function createSpotReadController<T>(request: () => Promise<T>, handlers:
       if (!enabled) return;
       do {
         queued = false;
+        const wantFresh = freshQueued; freshQueued = false;
         const requestedRevision = revision;
         const current = () => enabled && requestedRevision === revision;
-        try { handlers.started?.(); const rows = await request(); if (current()) handlers.accept(rows); }
+        try { handlers.started?.(); const rows = await request(wantFresh); if (current()) handlers.accept(rows); }
         catch { if (current()) handlers.reject(); }
         finally { if (current()) handlers.settled(); }
       } while (enabled && queued);
@@ -105,7 +112,7 @@ export function createSpotReadController<T>(request: () => Promise<T>, handlers:
     });
     return pending;
   }
-  return { read, resume: () => { enabled = true; }, pause: () => { enabled = false; revision++; queued = false; } };
+  return { read, resume: () => { enabled = true; }, pause: () => { enabled = false; revision++; queued = false; freshQueued = false; } };
 }
 
 /** Keep real sequential cancels and continue after one rejection. Report the

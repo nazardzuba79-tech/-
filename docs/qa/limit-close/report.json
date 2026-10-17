@@ -7,7 +7,7 @@
       "evidence": {
         "side": "LONG",
         "width": 1440,
-        "positionId": "native-1d6ac8e1-3124-4d15-8d67-8f46edee8732",
+        "positionId": "native-a9d7dd2b-7023-4a44-922d-94d86bd7d6f2",
         "before": "15000000",
         "realizedBefore": "-33",
         "dialog": {
@@ -47,13 +47,13 @@
       "evidence": {
         "side": "LONG",
         "width": 1600,
-        "positionId": "native-025d3c81-db0e-46af-af50-4ffd69ca5281",
+        "positionId": "native-433207cc-df7a-4b71-b228-78bfa579e83d",
         "before": "15000000",
         "realizedBefore": "-33",
         "dialog": {
           "entry": 0.004,
-          "market": 0.0548,
-          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0548. Ожидаемая прибыль составит 253,849.3000 USDT (включая расчетную комиссию за закрытие)"
+          "market": 0.0549,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0549. Ожидаемая прибыль составит 254,349.0250 USDT (включая расчетную комиссию за закрытие)"
         },
         "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену выше рыночной.",
         "cancel": {
@@ -87,13 +87,13 @@
       "evidence": {
         "side": "LONG",
         "width": 390,
-        "positionId": "native-af0a2958-4890-4c1b-baf6-514782029781",
+        "positionId": "native-6a6f1ee2-34f0-400b-ae63-de709c99a961",
         "before": "15000000",
         "realizedBefore": "-33",
         "dialog": {
           "entry": 0.004,
-          "market": 0.0559,
-          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0559. Ожидаемая прибыль составит 259,346.2750 USDT (включая расчетную комиссию за закрытие)"
+          "market": 0.056,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0560. Ожидаемая прибыль составит 259,846.0000 USDT (включая расчетную комиссию за закрытие)"
         },
         "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену выше рыночной.",
         "cancel": {
@@ -102,13 +102,13 @@
           "quantityAfterCancel": "15000000"
         },
         "fill": {
-          "limit": "0.0568",
-          "fillPrice": 0.0568,
+          "limit": "0.0569",
+          "fillPrice": 0.0571,
           "quantityAfter": "10000000",
           "realizedBefore": "-33",
-          "realizedAfter": "263910.2",
-          "realizedDelta": 263943.2,
-          "gross": 264000
+          "realizedAfter": "265409.9",
+          "realizedDelta": 265442.9,
+          "gross": 265500
         },
         "quarter": {
           "quantityAfter": "7500000",
@@ -122,7 +122,7 @@
       "evidence": {
         "side": "SHORT",
         "width": 1440,
-        "positionId": "native-e4440b02-4449-4b98-90a4-f2f65bc7fc8a",
+        "positionId": "native-4410b1b3-4215-40de-ab43-e093e5e44e83",
         "before": "15000000",
         "realizedBefore": "-33",
         "dialog": {
@@ -162,13 +162,13 @@
       "evidence": {
         "side": "SHORT",
         "width": 1600,
-        "positionId": "native-0fa6c3f8-3f18-40f5-84a5-11634308894b",
+        "positionId": "native-3148a54e-ec8a-4e50-9b6c-d3cce266ef8c",
         "before": "15000000",
         "realizedBefore": "-33",
         "dialog": {
           "entry": 0.004,
-          "market": 0.0528,
-          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0528. Ожидаемый убыток составит 244,145.2000 USDT (включая расчетную комиссию за закрытие)"
+          "market": 0.0527,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0527. Ожидаемый убыток составит 243,644.9250 USDT (включая расчетную комиссию за закрытие)"
         },
         "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену ниже рыночной.",
         "cancel": {
@@ -202,13 +202,13 @@
       "evidence": {
         "side": "SHORT",
         "width": 390,
-        "positionId": "native-901f5cdf-10b3-4003-a5d1-c3a6f718059f",
+        "positionId": "native-5ba1e4a6-23db-450f-a58e-f95563ea43c9",
         "before": "15000000",
         "realizedBefore": "-33",
         "dialog": {
           "entry": 0.004,
-          "market": 0.0517,
-          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0517. Ожидаемый убыток составит 238,642.1750 USDT (включая расчетную комиссию за закрытие)"
+          "market": 0.0516,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0516. Ожидаемый убыток составит 238,141.9000 USDT (включая расчетную комиссию за закрытие)"
         },
         "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену ниже рыночной.",
         "cancel": {
@@ -217,13 +217,13 @@
           "quantityAfterCancel": "15000000"
         },
         "fill": {
-          "limit": "0.0508",
-          "fillPrice": 0.0508,
+          "limit": "0.0506",
+          "fillPrice": 0.0505,
           "quantityAfter": "10000000",
           "realizedBefore": "-33",
-          "realizedAfter": "-234083.8",
-          "realizedDelta": -234050.8,
-          "gross": -233999.99999999997
+          "realizedAfter": "-232583.5",
+          "realizedDelta": -232550.5,
+          "gross": -232500
         },
         "quarter": {
           "quantityAfter": "7500000",

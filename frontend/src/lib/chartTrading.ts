@@ -1,4 +1,5 @@
 import type { Candle } from './indicators';
+import { isChartTimeframe, timeframeDurationMs } from './chartTimeframes';
 
 /** Public charts do not opt into this contract. All persisted values come from the private server. */
 export interface ChartTradeCandle {
@@ -72,8 +73,24 @@ export interface ChartTradingInteraction {
 }
 export type ChartCandleLoader = (pair: string, interval: string, limit: number, signal?: AbortSignal, endTime?: number) => Promise<{ candles: Candle[] }>;
 
-export const CHART_INTERVAL_MS: Record<string, number> = { '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000 };
+/** The intervals a candle may be SELECTED on for a trade: exactly the ones
+ *  the private server accepts (its PRIVATE_CHART_INTERVALS), with their
+ *  fixed lengths. Derived display timeframes (3m, 30m, 2h, 6h, 12h, 1M) are
+ *  deliberately absent: a trade is never anchored to a bar the venue does
+ *  not have. */
+export const CHART_INTERVAL_MS: Record<string, number> = { '1m': 60000, '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000 };
 export const chartSymbol = (pair: string) => pair.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/**
+ * The length of a DISPLAY bar in milliseconds: a trading interval's fixed
+ * length, or the workspace catalogue's for the rest (a calendar month is
+ * measured at the bar it belongs to). Null for a name nobody knows.
+ */
+export function chartIntervalMs(interval: string, barTimeSeconds?: number): number | null {
+  const fixed = CHART_INTERVAL_MS[interval];
+  if (fixed) return fixed;
+  return isChartTimeframe(interval) ? timeframeDurationMs(interval, barTimeSeconds) : null;
+}
 
 export function completeChartCandle(candle: Candle, symbol: string, interval: string, now = Date.now()): ChartTradeCandle | null {
   const duration = CHART_INTERVAL_MS[interval];
@@ -100,14 +117,16 @@ export function isCandleHit(input: {
 
 /** Resolve to an actually loaded bar, never synthesize or attach across a history gap. */
 export function chartEventBar(candles: Candle[], eventTimeMs: number, interval: string): number | null {
-  const duration = CHART_INTERVAL_MS[interval];
-  if (!duration || !Number.isFinite(eventTimeMs) || !candles.length) return null;
+  if (chartIntervalMs(interval) === null || !Number.isFinite(eventTimeMs) || !candles.length) return null;
   let left = 0, right = candles.length - 1, found = -1;
   while (left <= right) {
     const middle = (left + right) >> 1;
     if (candles[middle].time * 1000 <= eventTimeMs) { found = middle; left = middle + 1; } else right = middle - 1;
   }
-  if (found < 0 || eventTimeMs >= candles[found].time * 1000 + duration) return null;
+  if (found < 0) return null;
+  // The bar's own length: a derived month is as long as that month.
+  const duration = chartIntervalMs(interval, candles[found].time)!;
+  if (eventTimeMs >= candles[found].time * 1000 + duration) return null;
   return candles[found].time;
 }
 

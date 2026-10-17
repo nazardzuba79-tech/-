@@ -1,0 +1,1113 @@
+{
+ "result": {
+  "tag": "old-spot-x4-1440-1",
+  "mode": "old",
+  "market": "spot",
+  "stress": false,
+  "throttle": 4,
+  "width": 1440,
+  "pair": "AITH/USDT",
+  "timeout": 12000,
+  "rowAtLayout1": [
+   "more"
+  ],
+  "rowAtLayout2": [
+   "fullscreen",
+   "more"
+  ],
+  "gotoOpenMs": 1551,
+  "gotoMenu": {
+   "id": "more",
+   "x": 485,
+   "y": 188,
+   "w": 300,
+   "h": 704
+  },
+  "gotoError": null,
+  "dialogOpen": true,
+  "gotoStatus": "История за эту дату не загружена",
+  "lifecycle": {
+   "paintedStatesAfterLayout1": [
+    "more"
+   ],
+   "keysShownThenHidden": [],
+   "roCallbacksAfterLayout1": 18,
+   "mutationsAfterLayout1": 2,
+   "lastMutationMsAfterLayout1": 1452,
+   "framesAfterLayout1": 2,
+   "framesWithGotoOnRow": 0,
+   "firstGotoFrameMs": null,
+   "lastGotoFrameMs": null,
+   "keySequence": [
+    "426ms: [more] w=588 cell=612 measured=true more=8 dense=null menu=null goto=-",
+    "1491ms: [more] w=588 cell=612 measured=true more=8 dense=null menu=more goto=-"
+   ]
+  },
+  "errors": []
+ },
+ "life": {
+  "ro": [
+   {
+    "t": 1403,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 1550,
+    "targets": [
+     "orderbook-asks"
+    ]
+   },
+   {
+    "t": 2474,
+    "targets": [
+     "orderbook-asks"
+    ]
+   },
+   {
+    "t": 2475,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 2477,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 2478,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2479,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2479,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2479,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2479,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2479,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2479,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2479,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2480,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2480,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2480,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2480,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2481,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2482,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 2705,
+    "targets": [
+     "market-ticker.market-ticker-static"
+    ]
+   },
+   {
+    "t": 2705,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 2710,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 3197,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3197,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3197,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3197,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3197,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3197,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3197,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3198,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3198,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3198,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3198,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 3375,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 3375,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 6260,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 6260,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 6956,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 6957,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7378,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7380,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7858,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7858,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7858,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 7859,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 7859,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7859,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7859,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7859,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7859,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7859,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7859,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7859,
+    "targets": [
+     "cw-pane-chart"
+    ]
+   },
+   {
+    "t": 7861,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7861,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7861,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7861,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7861,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7861,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 7861,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8005,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8008,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8008,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8008,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8008,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8008,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8008,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 8011,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 8087,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 8087,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 8218,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8219,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8219,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8219,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8219,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8219,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8219,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 8472,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 8472,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 10266,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 10266,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11460,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11462,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11462,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11466,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11565,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11566,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11566,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11566,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11566,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11566,
+    "targets": [
+     ""
+    ]
+   },
+   {
+    "t": 11566,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11566,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 11642,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 11643,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 12019,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12019,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 12636,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 12636,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   },
+   {
+    "t": 14320,
+    "targets": [
+     "cw-row.is-measured"
+    ]
+   },
+   {
+    "t": 14320,
+    "targets": [
+     "chart-tabs.cw-tf-strip"
+    ]
+   }
+  ],
+  "mutations": [
+   {
+    "t": 5911,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 7806,
+    "added": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen",
+     "more",
+     "fullscreen"
+    ],
+    "removed": [
+     "more",
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen"
+    ],
+    "attrs": [
+     "class",
+     "data-cw-more",
+     "data-cw-dense"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305,
+    "parts": {
+     "start": 132.9,
+     "startScroll": 133,
+     "strip": 132.9,
+     "stripScroll": 133,
+     "stripClient": 133,
+     "stripOverflow": "auto",
+     "stripKids": "15m:41.4 1h:31.3 1d:34.3 ▾:26",
+     "menus": null,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "fullscreen": 28
+     },
+     "features": 109.1
+    }
+   },
+   {
+    "t": 9982,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305,
+    "parts": {
+     "start": 132.9,
+     "startScroll": 133,
+     "strip": 132.9,
+     "stripScroll": 133,
+     "stripClient": 133,
+     "stripOverflow": "auto",
+     "stripKids": "15m:41.4 1h:31.3 1d:34.3 ▾:26",
+     "menus": null,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "fullscreen": 28
+     },
+     "features": 109.1
+    }
+   },
+   {
+    "t": 11434,
+    "added": [
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "more"
+    ],
+    "removed": [
+     "more",
+     "compare",
+     "layout",
+     "tools",
+     "presets",
+     "goto",
+     "scale",
+     "snapshot",
+     "fullscreen"
+    ],
+    "attrs": [
+     "class",
+     "data-cw-dense",
+     "data-cw-more"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 12484,
+    "added": [],
+    "removed": [],
+    "attrs": [
+     "class"
+    ],
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   }
+  ],
+  "frames": [
+   {
+    "t": 4968,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 5952,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 7843,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": null,
+    "goto": null,
+    "cell": 305,
+    "parts": {
+     "start": 132.9,
+     "startScroll": 133,
+     "strip": 132.9,
+     "stripScroll": 133,
+     "stripClient": 133,
+     "stripOverflow": "auto",
+     "stripKids": "15m:41.4 1h:31.3 1d:34.3 ▾:26",
+     "menus": null,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "fullscreen": 28
+     },
+     "features": 109.1
+    }
+   },
+   {
+    "t": 10026,
+    "keys": "fullscreen more",
+    "measured": true,
+    "more": "7",
+    "dense": "3",
+    "width": 281,
+    "menu": "more",
+    "goto": null,
+    "cell": 305,
+    "parts": {
+     "start": 132.9,
+     "startScroll": 133,
+     "strip": 132.9,
+     "stripScroll": 133,
+     "stripClient": 133,
+     "stripOverflow": "auto",
+     "stripKids": "15m:41.4 1h:31.3 1d:34.3 ▾:26",
+     "menus": null,
+     "end": 31,
+     "more": 55.4,
+     "keys": {
+      "fullscreen": 28
+     },
+     "features": 109.1
+    }
+   },
+   {
+    "t": 11458,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": null,
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   },
+   {
+    "t": 12523,
+    "keys": "more",
+    "measured": true,
+    "more": "8",
+    "dense": null,
+    "width": 588,
+    "menu": "more",
+    "goto": null,
+    "cell": 612,
+    "parts": {
+     "start": 263.9,
+     "startScroll": 264,
+     "strip": 263.9,
+     "stripScroll": 264,
+     "stripClient": 264,
+     "stripOverflow": "auto",
+     "stripKids": "1m:33.3 5m:33.3 15m:41.4 1h:31.3 4h:31.3 1d:34.3 1w:33.3 ▾:26",
+     "menus": 180.2,
+     "end": 31,
+     "more": 55.4,
+     "keys": {},
+     "features": 100.9
+    }
+   }
+  ],
+  "marks": [
+   {
+    "t": 4939,
+    "name": "installed"
+   },
+   {
+    "t": 6970,
+    "name": "layout-menu-open"
+   },
+   {
+    "t": 7071,
+    "name": "layout2-click"
+   },
+   {
+    "t": 8610,
+    "name": "pane-settled"
+   },
+   {
+    "t": 10914,
+    "name": "layout-menu-open-2"
+   },
+   {
+    "t": 11032,
+    "name": "layout1-click"
+   },
+   {
+    "t": 11861,
+    "name": "escape"
+   },
+   {
+    "t": 13397,
+    "name": "goto-open-done"
+   },
+   {
+    "t": 15252,
+    "name": "goto-applied"
+   }
+  ],
+  "toolbar": []
+ }
+}

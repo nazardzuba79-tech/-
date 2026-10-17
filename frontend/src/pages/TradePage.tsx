@@ -2,6 +2,14 @@ import { VtaSpotPanels } from '../components/VtaSpotPanels';
 import { NrxBookTabs } from '../components/NrxBookTabs';
 import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 
+/** The market list starts folded on desktops narrower than 1366px, where the
+ *  four-column grid cannot give the chart a readable plot. */
+const NARROW_DESKTOP_QUERY = '(min-width: 1025px) and (max-width: 1365px)';
+function startsWithMarketListFolded(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(NARROW_DESKTOP_QUERY).matches;
+}
+
 import { readSpotPublicBook } from '../lib/spotPublicMarket';
 import { SampledDataNote } from '../components/SampledDataNote';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -21,12 +29,12 @@ import { useCompactAccountPanel } from '../lib/useCompactAccountPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { CfdInstrumentList } from '../components/CfdInstrumentList';
 import { CfdTickerBar } from '../components/CfdTickerBar';
-import { resolveCfdSymbol } from '../lib/cfdPresentation';
+import { cfdChartPriceFormatter, resolveCfdSymbol } from '../lib/cfdPresentation';
 import './trade-terminal/CfdTerminal.css';
-import { CfdChart } from '../components/CfdChart';
 import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
+import { useCfdPracticePositionLines } from '../lib/useCfdPracticePositions';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import './trade-terminal/TradeTerminal.css';
@@ -46,6 +54,8 @@ import './trade-terminal/SpotCfdGraphite.css';
 // The released Futures look (PR #469) on the Spot and CFD DOM: geometry, type
 // and palette only, scoped to .spot-terminal / .cfd-terminal (owner, 2026-10-07).
 import './trade-terminal/SpotCfdParity.css';
+// CFD workspace (2026-10-15): instrument bar figures, grouped market list, market-only ticket, positions.
+import './trade-terminal/CfdWorkspace.css';
 import './trade-terminal/SpotMobileCompact.css';
 import './trade-terminal/SpotMobilePhone.css';
 import './trade-terminal/TerminalMobileHeader.css';
@@ -132,7 +142,21 @@ export function TradePage() {
   const openOrdersRef = useRef<OpenOrdersHandle>(null);
   const pairListRef = useRef<PairListHandle>(null);
   const [marketPanelWidth, setMarketPanelWidth] = useState(258);
-  const [marketPanelCollapsed, setMarketPanelCollapsed] = useState(false);
+  // Desktop below 1366px (1280×720 laptops, 1366px at 110–125 % zoom): the
+  // four columns left the plot 126–316px wide and pushed the toolbar's gear
+  // under the chart, so the market list starts folded there and the «Рынки»
+  // key brings it back (2026-10-13 audit). Phones and tablets (≤1024px) have
+  // their own stacked layout and keep it open.
+  const [marketPanelCollapsed, setMarketPanelCollapsed] = useState(() => startsWithMarketListFolded());
+  // Zooming or resizing across that edge folds or unfolds the list the same
+  // way; a toggle by hand stays until the next crossing.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const narrow = window.matchMedia(NARROW_DESKTOP_QUERY);
+    const onChange = (event: MediaQueryListEvent) => setMarketPanelCollapsed(event.matches);
+    narrow.addEventListener('change', onChange);
+    return () => narrow.removeEventListener('change', onChange);
+  }, []);
   const [orderBookCollapsed, setOrderBookCollapsed] = useState(false);
   const [ordersHeight, setOrdersHeight] = useState(172);
   const bookPairRef = useRef(pair);
@@ -183,6 +207,8 @@ export function TradePage() {
   }, [searchParams]);
   const selectedCfdSymbol = resolveCfdSymbol(cfdSymbol, cfdTickers);
   const cfdTicker = cfdTickers.find((t) => t.symbol === selectedCfdSymbol);
+  // Practice entries on the chart: the fill price only (the practice has no liquidation engine, so no liquidation line).
+  const cfdPositionLines = useCfdPracticePositionLines(marketType === 'cfd');
   const selectCfdSymbol = (next: string) => {
     setCfdSymbol(next);
     setSearchParams(current => {
@@ -388,14 +414,17 @@ export function TradePage() {
                 tickers={cfdTickers} configured={cfdConfigured} loadError={cfdLoadError} onRetry={reloadCfd} />
             </aside>
             <section className="cfd-chart-area" aria-label={selectedCfdSymbol}>
-              <CfdChart symbol={selectedCfdSymbol} />
+              {/* Chart Workspace 2.0 (2026-10-15): the Spot/Futures chart with the CFD display source (lib/cfdCandles). */}
+              <PriceChart pair={selectedCfdSymbol} market="cfd" chrome="terminal" drawingTools compactTools chartSettings
+                onSelectPair={selectCfdSymbol} priceFormatter={cfdChartPriceFormatter(selectedCfdSymbol)} pairFormatter={cfdChartPriceFormatter}
+                positionLines={cfdPositionLines} />
             </section>
             <section className="cfd-form-area" aria-label={t('trade.market')}>
               <CfdOrderForm symbol={selectedCfdSymbol} ticker={cfdTicker} configured={cfdConfigured} onPlaced={handleOrderPlaced} />
             </section>
           </main>
           <div className="cfd-bottom-panel" data-mobile-account-panel>
-            <CfdPositionsPanel refreshKey={ordersRefreshKey} />
+            <CfdPositionsPanel refreshKey={ordersRefreshKey} tickers={cfdTickers} />
           </div>
         </div>
       </div>
@@ -449,7 +478,7 @@ export function TradePage() {
               ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} error={testMarket.error} />
               : pairResolving
                 ? <div className="chart-resolving" style={{ width: "100%", height: "100%" }} aria-busy="true" data-pair-resolving />
-                : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />}
+                : <PriceChart pair={pair} onSelectPair={selectSpotPair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />}
           </div>
 
           <div className="orderbook-area" data-sampled-book="true">

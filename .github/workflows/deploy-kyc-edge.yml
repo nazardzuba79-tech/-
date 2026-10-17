@@ -1,8 +1,18 @@
 name: Deploy KYC and notification Workers (Cloudflare)
 
-# Deploys the KYC document edge when a change to it lands on main (the same
-# moment Pages and Render auto-deploy the frontend and API), or on a manual
-# run. PRs are verified by kyc-edge.yml; nothing here runs for a PR.
+# The production API runs on Hetzner and a merge to main does NOT update it
+# (docs/VOLTEX_CURRENT_STATE.md). A Worker deployed on the merge could call
+# routes the live API does not have yet, so (owner decision 2026-10-16):
+#   - a push to main only VERIFIES the Workers (tests and dry runs, no token);
+#   - deploying is a manual run of this workflow from main, after the
+#     operator has updated the Hetzner API (docs/KYC_RELEASE_RUNBOOK.md).
+# The manual run names the API commit the operator deployed and checks,
+# read-only, that https://api.voltextech.net/health reports exactly that
+# commit, that the commit carries the KYC materials routes and migration, and
+# that the live API already answers on those routes. Only then does it deploy
+# the notification Worker and, after it, the KYC edge. Telegram delivery is
+# unchanged: the Workers already deployed keep running until a manual run.
+# PRs are verified by kyc-edge.yml and telegram-notifications.yml.
 on:
   push:
     branches: [main]
@@ -13,18 +23,135 @@ on:
       - 'scripts/deploy-notification-public-key.mjs'
       - '.github/workflows/deploy-kyc-edge.yml'
   workflow_dispatch:
-
-concurrency:
-  group: deploy-kyc-edge
-  cancel-in-progress: false
+    inputs:
+      workers:
+        description: 'notification-and-kyc = both Workers (needs the updated Hetzner API); notification-only = Telegram Worker alone'
+        type: choice
+        options: [notification-and-kyc, notification-only]
+        default: notification-and-kyc
+      api_commit:
+        description: 'Full 40-character commit that https://api.voltextech.net/health reports now (the API you deployed on Hetzner)'
+        type: string
+        required: true
+      migration_applied:
+        description: 'I ran prisma migrate status (read-only) on the production database and 20261015090000_kyc_material_requests is applied'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: KYC edge contract tests
+        working-directory: workers/kyc-edge
+        run: node --test test.mjs
+      - name: KYC edge configuration dry run (no token, nothing uploaded)
+        working-directory: workers/kyc-edge
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/kyc-edge-dry
+      - name: Install locked notification toolchain
+        working-directory: workers/notification-edge
+        run: npm ci --no-audit --no-fund
+      - name: Notification synthetic tests (never real Telegram)
+        working-directory: workers/notification-edge
+        run: npm test
+      - name: Notification configuration dry run (no token, nothing uploaded)
+        working-directory: workers/notification-edge
+        run: npx wrangler deploy --dry-run
+
+  api-readiness:
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      API: https://api.voltextech.net
+      WORKERS: ${{ inputs.workers }}
+      API_COMMIT: ${{ inputs.api_commit }}
+      MIGRATION_APPLIED: ${{ inputs.migration_applied }}
+    steps:
+      - name: Deploy only reviewed code from main
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Run this workflow from main, not $GITHUB_REF"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: The named API commit is in this repository and carries the KYC materials API and migration
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$API_COMMIT" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::api_commit must be the full 40-character commit from $API/health"
+            exit 1
+          fi
+          if ! git cat-file -e "$API_COMMIT^{commit}" 2>/dev/null; then
+            echo "::error::$API_COMMIT is not a commit of this repository; deploy the API from a pushed, reviewed commit"
+            exit 1
+          fi
+          if [ "$WORKERS" = "notification-and-kyc" ]; then
+            if ! git grep -q -F "'/internal/kyc/materials/authorize'" "$API_COMMIT" -- src/api/routes/kyc.ts; then
+              echo "::error::$API_COMMIT has no KYC materials routes; the KYC edge would call routes the API does not have"
+              exit 1
+            fi
+            if ! git cat-file -e "$API_COMMIT:prisma/migrations/20261015090000_kyc_material_requests/migration.sql" 2>/dev/null; then
+              echo "::error::$API_COMMIT has no migration 20261015090000_kyc_material_requests"
+              exit 1
+            fi
+          fi
+          echo "api_commit=$API_COMMIT workers=$WORKERS"
+      - name: The KYC edge on main calls this API
+        run: grep -Eq '^VOLTEX_API_ORIGIN = "https://api\.voltextech\.net"$' workers/kyc-edge/wrangler.toml
+      - name: Live API is that commit and already serves the KYC materials routes (read-only)
+        run: |
+          set -euo pipefail
+          live="$(curl --connect-timeout 5 --max-time 15 -fsS "$API/health" \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);process.stdout.write(j.status==='ok'&&typeof j.commit==='string'?j.commit:'')})")"
+          echo "live_api_commit=${live:-unknown}"
+          if [ "$live" != "$API_COMMIT" ]; then
+            echo "::error::$API/health reports '${live:-unknown}', not $API_COMMIT"
+            exit 1
+          fi
+          if [ "$WORKERS" = "notification-and-kyc" ]; then
+            if [ "$MIGRATION_APPLIED" != "true" ]; then
+              echo "::error::Confirm migration_applied after a read-only prisma migrate status on the production database"
+              exit 1
+            fi
+            # An unsigned empty POST is refused before any database access:
+            # 415 = the route exists, 404 = this API predates it.
+            for path in internal/kyc/authorize internal/kyc/materials/authorize internal/kyc/materials/confirmed; do
+              code="$(curl --connect-timeout 5 --max-time 15 -sS -o /dev/null -w '%{http_code}' -X POST "$API/api/v1/$path")"
+              echo "$path=$code"
+              if [ "$code" != "415" ]; then
+                echo "::error::$API/api/v1/$path answered $code, expected 415; update the Hetzner API first (docs/KYC_RELEASE_RUNBOOK.md)"
+                exit 1
+              fi
+            done
+          fi
+          echo "api_ready=yes"
+
   deploy:
+    if: github.event_name == 'workflow_dispatch'
+    needs: [verify, api-readiness]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Repository Settings → Environments → kyc-workers-production can require
+    # a reviewer's approval before this job starts.
+    environment: kyc-workers-production
+    concurrency:
+      group: deploy-kyc-edge
+      cancel-in-progress: false
     defaults:
       run:
         working-directory: workers/kyc-edge
@@ -38,20 +165,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Worker contract tests
-        run: node --test test.mjs
       - name: Install locked notification toolchain
         working-directory: workers/notification-edge
         run: npm ci --no-audit --no-fund
-      - name: Notification synthetic tests (never real Telegram)
-        working-directory: workers/notification-edge
-        run: npm test
       - name: Deploy notification Worker before KYC service binding
         working-directory: workers/notification-edge
         run: npx wrangler deploy
-      - name: Deploy Worker
+      - name: Deploy KYC edge Worker
+        if: inputs.workers == 'notification-and-kyc'
         run: npx --yes wrangler@4 deploy
       - name: Signing key — created once inside this runner, stored only as a Worker secret
+        if: inputs.workers == 'notification-and-kyc'
         run: |
           set -euo pipefail
           listing="$(npx --yes wrangler@4 secret list --format json)"
@@ -64,7 +188,8 @@ jobs:
               | npx --yes wrangler@4 secret put KYC_EDGE_SIGNING_JWK
             echo "signing_key=created"
           fi
-      - name: Production smoke (no document, no email)
+      - name: KYC edge production smoke (no document, no email)
+        if: inputs.workers == 'notification-and-kyc'
         run: |
           set -euo pipefail
           base=https://kyc.voltextech.net
@@ -80,13 +205,15 @@ jobs:
           curl -fsS "$base/v1/public-key" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.alg!=='Ed25519'||!j.key||!j.key.x||j.key.d)process.exit(1);console.log('public_key=ok')})"
           unauth="$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'content-type: multipart/form-data; boundary=x' --data-binary $'--x--\r\n' "$base/v1/submit")"
           echo "submit_without_session=$unauth"; test "$unauth" = "401"
+          materials="$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'content-type: multipart/form-data; boundary=x' --data-binary $'--x--\r\n' "$base/v1/materials")"
+          echo "materials_without_session=$materials"; test "$materials" = "401"
           missing="$(curl -sS -o /dev/null -w '%{http_code}' "$base/uploads/anything")"
           echo "unknown_route=$missing"; test "$missing" = "404"
           acao="$(curl -sS -o /dev/null -D - -X OPTIONS -H 'origin: https://evil.example' "$base/v1/submit" | tr -d '\r' | grep -i '^access-control-allow-origin:' || true)"
           echo "foreign_origin_cors='${acao}'"; test -z "$acao"
           cache="$(curl -sS -o /dev/null -D - "$base/health" | tr -d '\r' | grep -i '^cache-control:' || true)"
           echo "$cache"; printf '%s' "$cache" | grep -qi 'no-store'
-      - name: Pin only Render public verification key (no secret transfer, no DB)
+      - name: Pin only the API's public verification key (no secret transfer, no DB)
         working-directory: .
         run: node scripts/deploy-notification-public-key.mjs
       - name: Notification health (no event and no Telegram API call)

@@ -53,8 +53,11 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
   }, [counting, left, pair]);
 
   if (asset && !preListing) {
+    // The same chart as any Spot pair (2026-10-14): the viewer's chart settings and their gear,
+    // the volume in its own strip and the Spot scale margins — the listing's chart used to keep
+    // the plain chart's bottom margin and showed a price axis below zero under its first bars.
     const chart = <TerminalChart key={`${pair}:${asset.version ?? 0}`} pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
-      tradingView={false} priceScaleMode="normal" priceFormatter={formatTestAxisPrice} />;
+      tradingView={false} priceScaleMode="normal" priceFormatter={formatTestAxisPrice} chartSettings />;
     return <div className="managed-demo-chart">
       <div className="managed-demo-status">{marketLabel}{error && <> · {t('listing.dataStale')}</>}</div>
       {chart}

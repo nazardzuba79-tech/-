@@ -87,7 +87,9 @@ async function run(){
       }
       if(u.hostname==="biquote.io"&&u.pathname==="/api/latest"){
         const payload={},available=new Set(["XAUUSD","XPDUSD","EURUSD","GBPUSD","USDCAD"]);
-        for(const symbol of u.searchParams.getAll("symbols"))if(available.has(symbol))payload[symbol]={symbol,mid:symbol==="XAUUSD"?"4305.20":"100.25",timestamp:new Date().toISOString(),dayDiffPercent:1.25,marketState:"open",stale:false};
+        // XAUUSD carries a sane bid/ask pair, EURUSD an inverted one (ask below bid), the rest none.
+        for(const symbol of u.searchParams.getAll("symbols"))if(available.has(symbol))payload[symbol]={symbol,mid:symbol==="XAUUSD"?"4305.20":"100.25",timestamp:new Date().toISOString(),dayDiffPercent:1.25,marketState:"open",stale:false,
+          ...(symbol==="XAUUSD"?{bid:"4305.12",ask:"4305.28"}:symbol==="EURUSD"?{bid:"100.30",ask:"100.20"}:{})};
         return jsonResponse(payload);
       }
       if(u.hostname==="www.eia.gov"&&u.pathname.includes("/dnav/pet/hist/")){
@@ -132,6 +134,9 @@ async function run(){
     assert.ok(cfd.tickers.every(row=>row.price!==null));
     assert.deepEqual(new Set(cfd.sources),new Set(["biquote","deriv","eia","frankfurter"]));
     assert.equal(cfd.tickers.find(row=>row.symbol==="XAUUSD").provider,"biquote");
+    // The provider's bid/ask travel only as a sane pair; an inverted pair and a missing one are left out.
+    assert.equal(cfd.tickers.find(row=>row.symbol==="XAUUSD").bid,"4305.12");assert.equal(cfd.tickers.find(row=>row.symbol==="XAUUSD").ask,"4305.28");
+    assert.equal(cfd.tickers.find(row=>row.symbol==="EURUSD").bid,undefined);assert.equal(cfd.tickers.find(row=>row.symbol==="GBPUSD").ask,undefined);
     assert.equal(cfd.tickers.find(row=>row.symbol==="XAGUSD").provider,"deriv");
     assert.equal(cfd.tickers.find(row=>row.symbol==="WTIUSD").provider,"eia");
     assert.equal(cfd.tickers.find(row=>row.symbol==="USDCHF").provider,"frankfurter");

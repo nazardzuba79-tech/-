@@ -12,6 +12,10 @@
 
 export type ChartGridMode = 'none' | 'horizontal' | 'vertical' | 'all';
 export type ChartColorPreset = 'standard' | 'classic' | 'asia' | 'custom';
+export type ChartScaleMode = 'normal' | 'logarithmic';
+export type ChartPriceDecimals = 'auto' | 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type ChartAxisFont = 'terminal' | 'inter' | 'mono';
+export type ChartLineStyle = 'solid' | 'dashed' | 'dotted';
 
 export interface ChartSettings {
   preset: ChartColorPreset;
@@ -22,10 +26,39 @@ export interface ChartSettings {
   /** null keeps the terminal's own surface behind the plot. */
   background: string | null;
   grid: ChartGridMode; gridColor: string;
+  /** 0.1–1: the grid lines' opacity over `gridColor`. */
+  gridOpacity: number;
   crosshair: string;
+  crosshairStyle: ChartLineStyle;
   watermark: boolean;
   volume: boolean;
+  /** 0.2–1: how solid the volume bars are drawn. */
+  volumeOpacity: number;
   lastPriceLine: boolean;
+  /** The on-chart indicator names. */
+  indicatorLegend: boolean;
+  // ── Scales (Issue #502, 2026-10-10). Lightweight Charts paints the time
+  // axis, every price-scale label it is not told otherwise about and the
+  // crosshair labels in `layout.textColor`; the right price scale has its
+  // own `textColor`. So the time-axis colour is the chart's shared text
+  // colour and the price-axis colour overrides it for the right scale.
+  /** Right price-scale digits; null keeps the terminal's own axis tone. */
+  priceAxisText: string | null;
+  /** Time-axis labels (and every other axis text); null keeps the terminal's tone. */
+  timeAxisText: string | null;
+  /** Axis label size in px, 10–16; null keeps the chart's own size. */
+  axisFontSize: number | null;
+  axisFont: ChartAxisFont;
+  priceScaleVisible: boolean;
+  timeScaleVisible: boolean;
+  /** The 1px seam between the plot and each scale. */
+  scaleBorders: boolean;
+  /** null keeps the terminal's own seam colour. */
+  scaleBorderColor: string | null;
+  scaleTicks: boolean;
+  scaleMode: ChartScaleMode;
+  /** 'auto' follows the instrument's own precision; a number fixes the decimals shown. */
+  priceDecimals: ChartPriceDecimals;
 }
 
 /** Up / down pairs. «standard» is the order book's own buy and sell colour. */
@@ -43,10 +76,25 @@ export const DEFAULT_CHART_SETTINGS: Readonly<ChartSettings> = Object.freeze({
   body: true, border: true, wick: true,
   background: null,
   grid: 'none', gridColor: '#2a2d35',
+  gridOpacity: 1,
   crosshair: '#f0b90b',
+  crosshairStyle: 'dashed',
   watermark: false,
   volume: true,
+  volumeOpacity: 0.75,
   lastPriceLine: true,
+  indicatorLegend: true,
+  priceAxisText: null,
+  timeAxisText: null,
+  axisFontSize: null,
+  axisFont: 'terminal',
+  priceScaleVisible: true,
+  timeScaleVisible: true,
+  scaleBorders: true,
+  scaleBorderColor: null,
+  scaleTicks: false,
+  scaleMode: 'normal',
+  priceDecimals: 'auto',
 });
 
 export const CHART_SETTINGS_KEY = 'voltex.chartSettings.v1';
@@ -54,7 +102,15 @@ const HEX = /^#[0-9a-f]{6}$/i;
 const GRID: readonly ChartGridMode[] = ['none', 'horizontal', 'vertical', 'all'];
 const PRESET: readonly ChartColorPreset[] = ['standard', 'classic', 'asia', 'custom'];
 const COLOR_KEYS = ['bodyUp', 'bodyDown', 'borderUp', 'borderDown', 'wickUp', 'wickDown', 'gridColor', 'crosshair'] as const;
-const FLAG_KEYS = ['body', 'border', 'wick', 'watermark', 'volume', 'lastPriceLine'] as const;
+const FLAG_KEYS = ['body', 'border', 'wick', 'watermark', 'volume', 'lastPriceLine', 'indicatorLegend', 'priceScaleVisible', 'timeScaleVisible', 'scaleBorders', 'scaleTicks'] as const;
+/** Colours that may also be null («as the terminal»). */
+const OPTIONAL_COLOR_KEYS = ['background', 'priceAxisText', 'timeAxisText', 'scaleBorderColor'] as const;
+const SCALE_MODE: readonly ChartScaleMode[] = ['normal', 'logarithmic'];
+const AXIS_FONT: readonly ChartAxisFont[] = ['terminal', 'inter', 'mono'];
+const LINE_STYLE: readonly ChartLineStyle[] = ['solid', 'dashed', 'dotted'];
+export const AXIS_FONT_SIZES = [10, 11, 12, 13, 14, 15, 16] as const;
+export const PRICE_DECIMALS: readonly ChartPriceDecimals[] = ['auto', 0, 1, 2, 3, 4, 5, 6];
+const unit = (v: unknown, min: number, max: number): number | null => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v * 100) / 100)) : null);
 
 /** Anything stored is re-checked field by field: a bad value falls back to its default. */
 export function normalizeChartSettings(raw: unknown): ChartSettings {
@@ -65,11 +121,24 @@ export function normalizeChartSettings(raw: unknown): ChartSettings {
   for (const k of FLAG_KEYS) if (typeof r[k] === 'boolean') s[k] = r[k] as boolean;
   if (typeof r.preset === 'string' && PRESET.includes(r.preset as ChartColorPreset)) s.preset = r.preset as ChartColorPreset;
   if (typeof r.grid === 'string' && GRID.includes(r.grid as ChartGridMode)) s.grid = r.grid as ChartGridMode;
-  if (r.background === null || (typeof r.background === 'string' && HEX.test(r.background))) s.background = r.background === null ? null : (r.background as string).toLowerCase();
+  for (const k of OPTIONAL_COLOR_KEYS) {
+    if (r[k] === null || (typeof r[k] === 'string' && HEX.test(r[k] as string))) s[k] = r[k] === null ? null : (r[k] as string).toLowerCase();
+  }
+  if (typeof r.scaleMode === 'string' && SCALE_MODE.includes(r.scaleMode as ChartScaleMode)) s.scaleMode = r.scaleMode as ChartScaleMode;
+  if (typeof r.axisFont === 'string' && AXIS_FONT.includes(r.axisFont as ChartAxisFont)) s.axisFont = r.axisFont as ChartAxisFont;
+  if (typeof r.crosshairStyle === 'string' && LINE_STYLE.includes(r.crosshairStyle as ChartLineStyle)) s.crosshairStyle = r.crosshairStyle as ChartLineStyle;
+  if (r.axisFontSize === null) s.axisFontSize = null;
+  else if (typeof r.axisFontSize === 'number' && (AXIS_FONT_SIZES as readonly number[]).includes(r.axisFontSize)) s.axisFontSize = r.axisFontSize;
+  if (r.priceDecimals === 'auto' || (typeof r.priceDecimals === 'number' && (PRICE_DECIMALS as readonly unknown[]).includes(r.priceDecimals))) s.priceDecimals = r.priceDecimals as ChartPriceDecimals;
+  const gridOpacity = unit(r.gridOpacity, 0.1, 1); if (gridOpacity !== null) s.gridOpacity = gridOpacity;
+  const volumeOpacity = unit(r.volumeOpacity, 0.2, 1); if (volumeOpacity !== null) s.volumeOpacity = volumeOpacity;
   // A candle with neither a body nor an outline would not be drawn at all.
   if (!s.body && !s.border) s.body = true;
   return s;
 }
+
+/** The white the owner asked for on the price scale (Issue #502): a preset, not a picker guess. */
+export const AXIS_WHITE = '#ffffff';
 
 /** The colours of one preset, applied to body, border and wick alike. */
 export function withPreset(s: ChartSettings, preset: Exclude<ChartColorPreset, 'custom'>): ChartSettings {

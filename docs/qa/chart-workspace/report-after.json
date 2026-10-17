@@ -1,0 +1,2564 @@
+{
+  "phase": "after",
+  "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-chart/frontend/dist",
+  "startedAt": "2026-10-14T05:22:38.371Z",
+  "checks": [
+    {
+      "id": "geometry.futures.1366.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 681,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.futures.1366.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1366,
+        "scrollWidth": 1366
+      }
+    },
+    {
+      "id": "geometry.futures.1366.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 740,
+          "h": 28
+        },
+        "heading": {
+          "x": 4,
+          "y": 112,
+          "w": 764,
+          "h": 36
+        },
+        "views": {
+          "x": 20,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.futures.1366.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "scale",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.futures.1366.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.spot.1366.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 698,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.spot.1366.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1366,
+        "scrollWidth": 1366
+      }
+    },
+    {
+      "id": "geometry.spot.1366.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 278,
+          "y": 154,
+          "w": 514,
+          "h": 28
+        },
+        "heading": {
+          "x": 266,
+          "y": 112,
+          "w": 538,
+          "h": 36
+        },
+        "views": {
+          "x": 282,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.spot.1366.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "layout",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.spot.1366.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "15m",
+          "1h",
+          "4h",
+          "1d"
+        ],
+        "dense": "1"
+      }
+    },
+    {
+      "id": "geometry.futures.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 610,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.futures.1440.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1440,
+        "scrollWidth": 1440
+      }
+    },
+    {
+      "id": "geometry.futures.1440.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 814,
+          "h": 28
+        },
+        "heading": {
+          "x": 4,
+          "y": 112,
+          "w": 838,
+          "h": 36
+        },
+        "views": {
+          "x": 20,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.futures.1440.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.futures.1440.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.spot.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 617,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.spot.1440.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1440,
+        "scrollWidth": 1440
+      }
+    },
+    {
+      "id": "geometry.spot.1440.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 278,
+          "y": 154,
+          "w": 588,
+          "h": 28
+        },
+        "heading": {
+          "x": 266,
+          "y": 112,
+          "w": 612,
+          "h": 36
+        },
+        "views": {
+          "x": 282,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.spot.1440.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.spot.1440.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.futures.1707.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 615,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.futures.1707.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1707,
+        "scrollWidth": 1707
+      }
+    },
+    {
+      "id": "geometry.futures.1707.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 1081,
+          "h": 28
+        },
+        "heading": {
+          "x": 4,
+          "y": 112,
+          "w": 1105,
+          "h": 36
+        },
+        "views": {
+          "x": 20,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.futures.1707.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "tools",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.futures.1707.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.spot.1707.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 662,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.spot.1707.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1707,
+        "scrollWidth": 1707
+      }
+    },
+    {
+      "id": "geometry.spot.1707.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 278,
+          "y": 154,
+          "w": 852,
+          "h": 28
+        },
+        "heading": {
+          "x": 266,
+          "y": 112,
+          "w": 876,
+          "h": 36
+        },
+        "views": {
+          "x": 282,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.spot.1707.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "scale",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.spot.1707.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.futures.1920.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 666,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.futures.1920.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1920,
+        "scrollWidth": 1920
+      }
+    },
+    {
+      "id": "geometry.futures.1920.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 1294,
+          "h": 28
+        },
+        "heading": {
+          "x": 4,
+          "y": 112,
+          "w": 1318,
+          "h": 36
+        },
+        "views": {
+          "x": 20,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.futures.1920.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.futures.1920.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "geometry.spot.1920.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 702,
+        "chartState": "candles",
+        "errors": []
+      }
+    },
+    {
+      "id": "geometry.spot.1920.no-overflow",
+      "ok": true,
+      "detail": {
+        "vw": 1920,
+        "scrollWidth": 1920
+      }
+    },
+    {
+      "id": "geometry.spot.1920.two-rows",
+      "ok": true,
+      "detail": {
+        "toolbar": {
+          "x": 278,
+          "y": 154,
+          "w": 999,
+          "h": 28
+        },
+        "heading": {
+          "x": 266,
+          "y": 112,
+          "w": 1023,
+          "h": 36
+        },
+        "views": {
+          "x": 282,
+          "y": 124,
+          "w": 189,
+          "h": 22
+        }
+      }
+    },
+    {
+      "id": "geometry.spot.1920.features-inside",
+      "ok": true,
+      "detail": {
+        "visible": [
+          "timeframes",
+          "compare",
+          "layout",
+          "tools",
+          "scale",
+          "fullscreen",
+          "more"
+        ],
+        "clipped": []
+      }
+    },
+    {
+      "id": "geometry.spot.1920.quick-timeframes",
+      "ok": true,
+      "detail": {
+        "quick": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "dense": null
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.1m-native",
+      "ok": true,
+      "detail": {
+        "interval": "1m",
+        "store": "1m"
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.4h",
+      "ok": true,
+      "detail": {
+        "ms": 79,
+        "t1": 1791955372331
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.menu",
+      "ok": true,
+      "detail": {
+        "menu": {
+          "id": "timeframes",
+          "x": 254,
+          "y": 188,
+          "w": 300,
+          "h": 701,
+          "vw": 1440,
+          "vh": 900,
+          "inside": true
+        },
+        "options": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "6h",
+          "12h",
+          "1d",
+          "1w",
+          "1M"
+        ]
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.3m-native",
+      "ok": true,
+      "detail": {
+        "url": "/api/v1/market/futures/candles/BTC-USDT?interval=3m&limit=520",
+        "plan3m": "native"
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.3m-chart",
+      "ok": true,
+      "detail": {
+        "version": 1,
+        "timeframe": "3m",
+        "quickTimeframes": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "barType": "candles",
+        "compare": [],
+        "comparePeriod": "all",
+        "layout": 1,
+        "panes": [
+          {
+            "pair": null,
+            "timeframe": null
+          },
+          {
+            "pair": null,
+            "timeframe": null
+          },
+          {
+            "pair": null,
+            "timeframe": null
+          }
+        ],
+        "syncCursor": true,
+        "syncTime": true,
+        "syncTimeframe": false,
+        "activePane": 0
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.1M",
+      "ok": true,
+      "detail": {
+        "url": "/api/v1/market/futures/candles/BTC-USDT?interval=1M&limit=520"
+      }
+    },
+    {
+      "id": "futures.1440.timeframes.favourites",
+      "ok": true,
+      "detail": {
+        "quickPlus": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "shownPlus": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "4h",
+          "1d",
+          "1w",
+          "1M"
+        ],
+        "denseRow": false,
+        "quickReset": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ]
+      }
+    },
+    {
+      "id": "futures.1440.types.bars",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "bars"
+      }
+    },
+    {
+      "id": "futures.1440.types.hollow",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "hollow"
+      }
+    },
+    {
+      "id": "futures.1440.types.heikin",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "heikin"
+      }
+    },
+    {
+      "id": "futures.1440.types.line",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "line"
+      }
+    },
+    {
+      "id": "futures.1440.types.candles",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "candles"
+      }
+    },
+    {
+      "id": "futures.1440.compare.menu",
+      "ok": true,
+      "detail": {
+        "id": "compare",
+        "x": 468,
+        "y": 188,
+        "w": 340,
+        "h": 464,
+        "vw": 1440,
+        "vh": 900,
+        "inside": true
+      }
+    },
+    {
+      "id": "futures.1440.compare.one",
+      "ok": true,
+      "detail": {
+        "entries": 1,
+        "attr": "1",
+        "legend": true,
+        "value": "+4,53%",
+        "main": "+3,54%",
+        "leftScale": true
+      }
+    },
+    {
+      "id": "futures.1440.compare.three-max",
+      "ok": true,
+      "detail": {
+        "three": {
+          "entries": 3,
+          "options": 0,
+          "values": [
+            "+3,54%",
+            "+4,53%",
+            "−2,86%",
+            "+7,01%"
+          ]
+        },
+        "searchDisabled": true,
+        "fourthOffered": 0,
+        "stillThree": 3
+      }
+    },
+    {
+      "id": "futures.1440.compare.period-hide-remove",
+      "ok": true,
+      "detail": {
+        "period": "1w",
+        "hidden": true,
+        "two": 2
+      }
+    },
+    {
+      "id": "futures.1440.compare.relative-strength",
+      "ok": true,
+      "detail": {
+        "panel": true,
+        "rs": true,
+        "text": "BTC/USDT · Доходность+3,54%SOL/USDT · Доходность−2,86%Разница, п.п.+6,40Корреляция доходностей0,63Соотношение цен519,6731Не прогноз. По 520 общим точкам, доходности свеча к свече"
+      }
+    },
+    {
+      "id": "futures.1440.compare.exit-restores",
+      "ok": true,
+      "detail": {
+        "attr": null,
+        "entries": 0,
+        "legend": false,
+        "state": "candles"
+      }
+    },
+    {
+      "id": "futures.1440.data.window",
+      "ok": true,
+      "detail": {
+        "rows": 12,
+        "requestsDuringHover": 0,
+        "sample": "Данные свечиЗавершённая свечаВремя (UTC)2026-10-12 15:00Открытие84417.68Максимум84640.77Минимум84329.84Закрытие84515.41Объём8Изменение+97.73Изменение, %+0,12%Те"
+      }
+    },
+    {
+      "id": "futures.1440.analytics.panel",
+      "ok": true,
+      "detail": {
+        "blocks": 3,
+        "periods": [
+          "visible",
+          "all",
+          "1d",
+          "1w",
+          "1M"
+        ],
+        "pressed": "true",
+        "sample": "Аналитика периодаВидимый диапазонВся история1 день1 неделя1 месяцИзменение цены+2721.26 (+3,28%)Максимум89502.05Минимум7"
+      }
+    },
+    {
+      "id": "futures.1440.layout.two",
+      "ok": true,
+      "detail": {
+        "panes": [
+          "ok"
+        ],
+        "layout": "2",
+        "tickets": 1,
+        "canvases": 18,
+        "ms": 208
+      }
+    },
+    {
+      "id": "futures.1440.layout.pane-own-instrument",
+      "ok": true,
+      "detail": {
+        "paneReq": [
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "15m"
+        ],
+        "store": {
+          "pair": "ETH/USDT",
+          "timeframe": "15m"
+        }
+      }
+    },
+    {
+      "id": "futures.1440.layout.sync-cursor",
+      "ok": true,
+      "detail": {
+        "syncCursor": true
+      }
+    },
+    {
+      "id": "futures.1440.layout.pane-trade-switches-terminal",
+      "ok": true,
+      "detail": {
+        "before": "http://127.0.0.1:44109/futures?pair=BTC/USDT",
+        "url": "http://127.0.0.1:44109/futures?pair=ETH%2FUSDT",
+        "hits": 0
+      }
+    },
+    {
+      "id": "futures.1440.layout.back-to-one",
+      "ok": true,
+      "detail": {}
+    },
+    {
+      "id": "futures.1440.presets.builtin-scalping",
+      "ok": true,
+      "detail": {
+        "timeframe": "5m",
+        "indicators": [
+          "ema",
+          "ema",
+          "vwap",
+          "rsi"
+        ]
+      }
+    },
+    {
+      "id": "futures.1440.presets.custom-save-rename-delete",
+      "ok": true,
+      "detail": {
+        "saved": 1,
+        "renamed": "QA 25m · 4",
+        "afterDelete": 0,
+        "version": 1
+      }
+    },
+    {
+      "id": "futures.1440.presets.reset",
+      "ok": true,
+      "detail": {
+        "timeframe": "1h"
+      }
+    },
+    {
+      "id": "futures.1440.goto.loaded-bar",
+      "ok": true,
+      "detail": {
+        "closedOk": true,
+        "range": 330
+      }
+    },
+    {
+      "id": "futures.1440.goto.future-refused",
+      "ok": true,
+      "detail": {
+        "futureWarn": "Дата в будущем"
+      }
+    },
+    {
+      "id": "futures.1440.goto.history-honest",
+      "ok": true,
+      "detail": {
+        "pagedRequests": 1,
+        "requestsBefore": 27,
+        "dialogStillOpen": 0
+      }
+    },
+    {
+      "id": "futures.1440.snapshot.png",
+      "ok": true,
+      "detail": {
+        "file": "voltex_ETHUSDT_1h_2026-10-14_05-23.png",
+        "size": 45026
+      }
+    },
+    {
+      "id": "futures.1440.fullscreen.toggle-escape",
+      "ok": true,
+      "detail": {
+        "attr": true,
+        "shell": 1440,
+        "ticket": true,
+        "afterEscape": false
+      }
+    },
+    {
+      "id": "futures.1440.keyboard.escape-digits-inputs",
+      "ok": true,
+      "detail": {
+        "closed": {
+          "menu": false,
+          "focus": "compare"
+        },
+        "digit": "15m",
+        "typed": "15m",
+        "focusVisible": {
+          "tag": "BUTTON",
+          "feature": "fullscreen",
+          "outline": true
+        }
+      }
+    },
+    {
+      "id": "futures.1440.menus.inside-viewport",
+      "ok": true,
+      "detail": {
+        "timeframes": {
+          "inside": true,
+          "x": 254,
+          "y": 188,
+          "w": 300,
+          "h": 701
+        },
+        "compare": {
+          "inside": true,
+          "x": 468,
+          "y": 188,
+          "w": 340,
+          "h": 464
+        },
+        "layout": {
+          "inside": true,
+          "x": 580,
+          "y": 188,
+          "w": 280,
+          "h": 254
+        },
+        "tools": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "presets": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "goto": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "scale": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "snapshot": {
+          "inside": true,
+          "x": 458,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        }
+      }
+    },
+    {
+      "id": "futures.1440.menus.indicators",
+      "ok": true,
+      "detail": {
+        "inside": true,
+        "w": 312
+      }
+    },
+    {
+      "id": "futures.1440.regression.terminal-intact",
+      "ok": true,
+      "detail": {
+        "form": true,
+        "formVisible": true,
+        "book": true,
+        "rail": true,
+        "tv": [
+          "VOLTEX",
+          "TradingView"
+        ]
+      }
+    },
+    {
+      "id": "futures.1440.regression.tradingview-switch",
+      "ok": true,
+      "detail": {
+        "iframe": false,
+        "dataDisabled": true,
+        "form": true,
+        "back": "candles"
+      }
+    },
+    {
+      "id": "futures.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "spot.1440.timeframes.1m-native",
+      "ok": true,
+      "detail": {
+        "interval": "1m",
+        "store": "1m"
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.4h",
+      "ok": true,
+      "detail": {
+        "ms": 117,
+        "t1": 1791955411233
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.menu",
+      "ok": true,
+      "detail": {
+        "menu": {
+          "id": "timeframes",
+          "x": 516,
+          "y": 188,
+          "w": 300,
+          "h": 701,
+          "vw": 1440,
+          "vh": 900,
+          "inside": true
+        },
+        "options": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "6h",
+          "12h",
+          "1d",
+          "1w",
+          "1M"
+        ]
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.3m-derived-from-1m",
+      "ok": true,
+      "detail": {
+        "url": "/api/v1/market/external/candles/BTC-USDT?interval=1m&limit=720",
+        "plan3m": "derived"
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.3m-chart",
+      "ok": true,
+      "detail": {
+        "version": 1,
+        "timeframe": "3m",
+        "quickTimeframes": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "barType": "candles",
+        "compare": [],
+        "comparePeriod": "all",
+        "layout": 1,
+        "panes": [
+          {
+            "pair": null,
+            "timeframe": null
+          },
+          {
+            "pair": null,
+            "timeframe": null
+          },
+          {
+            "pair": null,
+            "timeframe": null
+          }
+        ],
+        "syncCursor": true,
+        "syncTime": true,
+        "syncTimeframe": false,
+        "activePane": 0
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.1M",
+      "ok": true,
+      "detail": {
+        "url": "/api/v1/market/external/candles/BTC-USDT?interval=1d&limit=720"
+      }
+    },
+    {
+      "id": "spot.1440.timeframes.favourites",
+      "ok": true,
+      "detail": {
+        "quickPlus": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ],
+        "shownPlus": [
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1M"
+        ],
+        "denseRow": true,
+        "quickReset": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d",
+          "1w"
+        ]
+      }
+    },
+    {
+      "id": "spot.1440.types.bars",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "bars"
+      }
+    },
+    {
+      "id": "spot.1440.types.hollow",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "hollow"
+      }
+    },
+    {
+      "id": "spot.1440.types.heikin",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "heikin"
+      }
+    },
+    {
+      "id": "spot.1440.types.line",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "line"
+      }
+    },
+    {
+      "id": "spot.1440.types.candles",
+      "ok": true,
+      "detail": {
+        "present": 1,
+        "barType": "candles"
+      }
+    },
+    {
+      "id": "spot.1440.compare.menu",
+      "ok": true,
+      "detail": {
+        "id": "more",
+        "x": 485,
+        "y": 188,
+        "w": 300,
+        "h": 704,
+        "vw": 1440,
+        "vh": 900,
+        "inside": true
+      }
+    },
+    {
+      "id": "spot.1440.compare.one",
+      "ok": true,
+      "detail": {
+        "entries": 1,
+        "attr": "1",
+        "legend": true,
+        "value": "+4,53%",
+        "main": "+3,54%",
+        "leftScale": true
+      }
+    },
+    {
+      "id": "spot.1440.compare.three-max",
+      "ok": true,
+      "detail": {
+        "three": {
+          "entries": 3,
+          "options": 0,
+          "values": [
+            "+3,54%",
+            "+4,53%",
+            "−2,86%",
+            "+7,01%"
+          ]
+        },
+        "searchDisabled": true,
+        "fourthOffered": 0,
+        "stillThree": 3
+      }
+    },
+    {
+      "id": "spot.1440.compare.period-hide-remove",
+      "ok": true,
+      "detail": {
+        "period": "1w",
+        "hidden": true,
+        "two": 2
+      }
+    },
+    {
+      "id": "spot.1440.compare.relative-strength",
+      "ok": true,
+      "detail": {
+        "panel": true,
+        "rs": true,
+        "text": "BTC/USDT · Доходность+3,54%SOL/USDT · Доходность−2,86%Разница, п.п.+6,40Корреляция доходностей0,63Соотношение цен519,6731Не прогноз. По 520 общим точкам, доходности свеча к свече"
+      }
+    },
+    {
+      "id": "spot.1440.compare.exit-restores",
+      "ok": true,
+      "detail": {
+        "attr": null,
+        "entries": 0,
+        "legend": false,
+        "state": "candles"
+      }
+    },
+    {
+      "id": "spot.1440.data.window",
+      "ok": true,
+      "detail": {
+        "rows": 12,
+        "requestsDuringHover": 0,
+        "sample": "Данные свечиЗавершённая свечаВремя (UTC)2026-10-12 15:00Открытие84417.68Максимум84640.77Минимум84329.84Закрытие84515.41Объём8Изменение+97.73Изменение, %+0,12%Те"
+      }
+    },
+    {
+      "id": "spot.1440.analytics.panel",
+      "ok": true,
+      "detail": {
+        "blocks": 3,
+        "periods": [
+          "visible",
+          "all",
+          "1d",
+          "1w",
+          "1M"
+        ],
+        "pressed": "true",
+        "sample": "Аналитика периодаВидимый диапазонВся история1 день1 неделя1 месяцИзменение цены+2721.26 (+3,28%)Максимум89502.05Минимум7"
+      }
+    },
+    {
+      "id": "spot.1440.layout.two",
+      "ok": true,
+      "detail": {
+        "panes": [
+          "ok"
+        ],
+        "layout": "2",
+        "tickets": 1,
+        "canvases": 18,
+        "ms": 286
+      }
+    },
+    {
+      "id": "spot.1440.layout.pane-own-instrument",
+      "ok": true,
+      "detail": {
+        "paneReq": [
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "1h",
+          "15m"
+        ],
+        "store": {
+          "pair": "ETH/USDT",
+          "timeframe": "15m"
+        }
+      }
+    },
+    {
+      "id": "spot.1440.layout.sync-cursor",
+      "ok": true,
+      "detail": {
+        "syncCursor": true
+      }
+    },
+    {
+      "id": "spot.1440.layout.pane-trade-switches-terminal",
+      "ok": true,
+      "detail": {
+        "before": "http://127.0.0.1:44109/trade?pair=BTC/USDT",
+        "url": "http://127.0.0.1:44109/trade?pair=ETH%2FUSDT",
+        "hits": 0
+      }
+    },
+    {
+      "id": "spot.1440.layout.back-to-one",
+      "ok": true,
+      "detail": {}
+    },
+    {
+      "id": "spot.1440.presets.builtin-scalping",
+      "ok": true,
+      "detail": {
+        "timeframe": "5m",
+        "indicators": [
+          "ema",
+          "ema",
+          "vwap",
+          "rsi"
+        ]
+      }
+    },
+    {
+      "id": "spot.1440.presets.custom-save-rename-delete",
+      "ok": true,
+      "detail": {
+        "saved": 1,
+        "renamed": "QA 25m · 4",
+        "afterDelete": 0,
+        "version": 1
+      }
+    },
+    {
+      "id": "spot.1440.presets.reset",
+      "ok": true,
+      "detail": {
+        "timeframe": "1h"
+      }
+    },
+    {
+      "id": "spot.1440.goto.loaded-bar",
+      "ok": true,
+      "detail": {
+        "closedOk": true,
+        "range": 317
+      }
+    },
+    {
+      "id": "spot.1440.goto.future-refused",
+      "ok": true,
+      "detail": {
+        "futureWarn": "Дата в будущем"
+      }
+    },
+    {
+      "id": "spot.1440.goto.history-honest",
+      "ok": true,
+      "detail": {
+        "pagedRequests": 0,
+        "requestsBefore": 26,
+        "dialogStillOpen": 1
+      }
+    },
+    {
+      "id": "spot.1440.snapshot.png",
+      "ok": true,
+      "detail": {
+        "file": "voltex_ETHUSDT_1h_2026-10-14_05-24.png",
+        "size": 33168
+      }
+    },
+    {
+      "id": "spot.1440.fullscreen.toggle-escape",
+      "ok": true,
+      "detail": {
+        "attr": true,
+        "shell": 1440,
+        "ticket": true,
+        "afterEscape": false
+      }
+    },
+    {
+      "id": "spot.1440.keyboard.escape-digits-inputs",
+      "ok": true,
+      "detail": {
+        "closed": {
+          "menu": false,
+          "focus": "more"
+        },
+        "digit": "15m",
+        "typed": "15m",
+        "focusVisible": {
+          "tag": "A",
+          "feature": "header-brand",
+          "outline": true
+        }
+      }
+    },
+    {
+      "id": "spot.1440.menus.inside-viewport",
+      "ok": true,
+      "detail": {
+        "timeframes": {
+          "inside": true,
+          "x": 516,
+          "y": 188,
+          "w": 300,
+          "h": 701
+        },
+        "compare": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "layout": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "tools": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "presets": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "goto": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "scale": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        },
+        "snapshot": {
+          "inside": true,
+          "x": 485,
+          "y": 188,
+          "w": 300,
+          "h": 704
+        }
+      }
+    },
+    {
+      "id": "spot.1440.menus.indicators",
+      "ok": true,
+      "detail": {
+        "inside": true,
+        "w": 312
+      }
+    },
+    {
+      "id": "spot.1440.regression.terminal-intact",
+      "ok": true,
+      "detail": {
+        "form": true,
+        "formVisible": true,
+        "book": true,
+        "rail": true,
+        "tv": [
+          "VOLTEX",
+          "TradingView"
+        ]
+      }
+    },
+    {
+      "id": "spot.1440.regression.tradingview-switch",
+      "ok": true,
+      "detail": {
+        "iframe": false,
+        "dataDisabled": true,
+        "form": true,
+        "back": "candles"
+      }
+    },
+    {
+      "id": "spot.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "futures.1920.layout.four",
+      "ok": true,
+      "detail": {
+        "panes": [
+          "ok",
+          "ok",
+          "ok"
+        ],
+        "overflow": false,
+        "tickets": 1,
+        "ms": 278,
+        "heapBefore": 15170480,
+        "heapAfter": 20048728
+      }
+    },
+    {
+      "id": "futures.1920.layout.pane-expand",
+      "ok": true,
+      "detail": {
+        "expanded": "2",
+        "width": 1318
+      }
+    },
+    {
+      "id": "mobile.futures.320x568.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.320x568.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.320x568.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 102,
+          "w": 320,
+          "h": 466,
+          "vw": 320,
+          "vh": 568,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.320x568.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.320x568.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.320x568.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.320x568.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 102,
+          "w": 320,
+          "h": 466,
+          "vw": 320,
+          "vh": 568,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.320x568.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.futures.360x740.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.360x740.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.360x740.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 133,
+          "w": 360,
+          "h": 607,
+          "vw": 360,
+          "vh": 740,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.360x740.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.360x740.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.360x740.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.360x740.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 133,
+          "w": 360,
+          "h": 607,
+          "vw": 360,
+          "vh": 740,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.360x740.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 3,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 204,
+          "w": 390,
+          "h": 640,
+          "vw": 390,
+          "vh": 844,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.compare-sheet",
+      "ok": true,
+      "detail": {
+        "entries": 1,
+        "box": {
+          "inside": true
+        }
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.layout-tabs",
+      "ok": true,
+      "detail": {
+        "tabs": 2,
+        "panes": 0,
+        "overflow": false
+      }
+    },
+    {
+      "id": "mobile.futures.390x844.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 5,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 204,
+          "w": 390,
+          "h": 640,
+          "vw": 390,
+          "vh": 844,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.compare-sheet",
+      "ok": true,
+      "detail": {
+        "entries": 1,
+        "box": {
+          "inside": true
+        }
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.layout-tabs",
+      "ok": true,
+      "detail": {
+        "tabs": 2,
+        "panes": 0,
+        "overflow": false
+      }
+    },
+    {
+      "id": "mobile.spot.390x844.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.futures.430x932.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.430x932.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 5,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.430x932.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 292,
+          "w": 430,
+          "h": 640,
+          "vw": 430,
+          "vh": 932,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.430x932.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.430x932.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.430x932.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 5,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.430x932.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 292,
+          "w": 430,
+          "h": 640,
+          "vw": 430,
+          "vh": 932,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.430x932.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 7,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 70,
+          "w": 844,
+          "h": 320,
+          "vw": 844,
+          "vh": 390,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.futures.844x390.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.loaded",
+      "ok": true,
+      "detail": {
+        "chartState": "candles",
+        "overflow": false,
+        "errors": []
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.phone-row",
+      "ok": true,
+      "detail": {
+        "h": 44,
+        "quick": 7,
+        "sheet": true,
+        "rows": 1,
+        "stripScrolls": false,
+        "menuKeyVisible": true,
+        "clipped": []
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.sheet",
+      "ok": true,
+      "detail": {
+        "sheet": {
+          "id": "phone-sheet",
+          "x": 0,
+          "y": 70,
+          "w": 844,
+          "h": 320,
+          "vw": 844,
+          "vh": 390,
+          "inside": true
+        },
+        "sheetItems": [
+          "menus",
+          "layout",
+          "tools",
+          "presets",
+          "goto",
+          "scale",
+          "snapshot",
+          "fullscreen",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "mobile.spot.844x390.order-form-reachable",
+      "ok": true,
+      "detail": {
+        "visible": true
+      }
+    },
+    {
+      "id": "zoom.90",
+      "ok": true,
+      "detail": {
+        "cssWidth": 1600,
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 974,
+          "h": 28
+        },
+        "clipped": [],
+        "features": 7
+      }
+    },
+    {
+      "id": "zoom.100",
+      "ok": true,
+      "detail": {
+        "cssWidth": 1440,
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 814,
+          "h": 28
+        },
+        "clipped": [],
+        "features": 5
+      }
+    },
+    {
+      "id": "zoom.110",
+      "ok": true,
+      "detail": {
+        "cssWidth": 1309,
+        "toolbar": {
+          "x": 16,
+          "y": 154,
+          "w": 683,
+          "h": 28
+        },
+        "clipped": [],
+        "features": 3
+      }
+    },
+    {
+      "id": "zoom.125",
+      "ok": true,
+      "detail": {
+        "cssWidth": 1152,
+        "toolbar": {
+          "x": 16,
+          "y": 150,
+          "w": 526,
+          "h": 28
+        },
+        "clipped": [],
+        "features": 3
+      }
+    },
+    {
+      "id": "perf.A.one-chart-requests",
+      "ok": true,
+      "detail": {
+        "candleRequests": 3,
+        "allRequests": 3,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 15,
+        "canvases": 11,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.B.compares-bounded",
+      "ok": true,
+      "detail": {
+        "candleRequests": 3,
+        "allRequests": 4,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 15,
+        "canvases": 7,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.C.two-charts-bounded",
+      "ok": true,
+      "detail": {
+        "candleRequests": 4,
+        "allRequests": 4,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 15,
+        "canvases": 18,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.C.four-charts-bounded",
+      "ok": true,
+      "detail": {
+        "candleRequests": 7,
+        "allRequests": 7,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 20,
+        "canvases": 32,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.hidden-tab-silent",
+      "ok": true,
+      "detail": {
+        "candleRequests": 0,
+        "allRequests": 0,
+        "newSockets": 0,
+        "socketsTotal": 1,
+        "heapMb": 20,
+        "canvases": 32,
+        "cpuTaskMs": 0,
+        "windowMs": 15000
+      }
+    },
+    {
+      "id": "perf.collapse-stops-panes",
+      "ok": true,
+      "detail": {
+        "candleRequests": 3,
+        "allRequests": 3,
+        "newSockets": 0,
+        "socketsTotal": 2,
+        "heapMb": 16,
+        "canvases": 11,
+        "cpuTaskMs": 0,
+        "windowMs": 15000,
+        "canvasesBefore": 11
+      }
+    }
+  ],
+  "perf": {
+    "geometry.futures.1366.chart": {
+      "x": 60,
+      "y": 188,
+      "w": 628,
+      "h": 390
+    },
+    "geometry.spot.1366.chart": {
+      "x": 322,
+      "y": 188,
+      "w": 402,
+      "h": 412
+    },
+    "geometry.futures.1440.chart": {
+      "x": 60,
+      "y": 188,
+      "w": 702,
+      "h": 390
+    },
+    "geometry.spot.1440.chart": {
+      "x": 322,
+      "y": 188,
+      "w": 476,
+      "h": 412
+    },
+    "geometry.futures.1707.chart": {
+      "x": 60,
+      "y": 188,
+      "w": 968,
+      "h": 390
+    },
+    "geometry.spot.1707.chart": {
+      "x": 322,
+      "y": 188,
+      "w": 738,
+      "h": 412
+    },
+    "geometry.futures.1920.chart": {
+      "x": 60,
+      "y": 188,
+      "w": 1182,
+      "h": 390
+    },
+    "geometry.spot.1920.chart": {
+      "x": 322,
+      "y": 188,
+      "w": 886,
+      "h": 412
+    },
+    "futures.1440.timeframeSwitchMs": 77,
+    "futures.1440.compareFirstLineMs": 1190,
+    "futures.1440.layout2OpenMs": 208,
+    "spot.1440.timeframeSwitchMs": 116,
+    "spot.1440.compareFirstLineMs": 1203,
+    "spot.1440.layout2OpenMs": 286,
+    "futures.1920.layout4OpenMs": 278,
+    "after.chartOpenMs": 792,
+    "after.A.one-chart": {
+      "candleRequests": 3,
+      "allRequests": 3,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 15,
+      "canvases": 11,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.B.three-compares": {
+      "candleRequests": 3,
+      "allRequests": 4,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 15,
+      "canvases": 7,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.C.two-charts": {
+      "candleRequests": 4,
+      "allRequests": 4,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 15,
+      "canvases": 18,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.C.four-charts": {
+      "candleRequests": 7,
+      "allRequests": 7,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 20,
+      "canvases": 32,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.hidden-tab.four-charts": {
+      "candleRequests": 0,
+      "allRequests": 0,
+      "newSockets": 0,
+      "socketsTotal": 1,
+      "heapMb": 20,
+      "canvases": 32,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    },
+    "after.A.after-collapse": {
+      "candleRequests": 3,
+      "allRequests": 3,
+      "newSockets": 0,
+      "socketsTotal": 2,
+      "heapMb": 16,
+      "canvases": 11,
+      "cpuTaskMs": 0,
+      "windowMs": 15000
+    }
+  },
+  "screenshots": [
+    "after-futures-1366.png",
+    "after-futures-1366-page.png",
+    "after-spot-1366.png",
+    "after-spot-1366-page.png",
+    "after-futures-1440.png",
+    "after-futures-1440-page.png",
+    "after-spot-1440.png",
+    "after-spot-1440-page.png",
+    "after-futures-1707.png",
+    "after-futures-1707-page.png",
+    "after-spot-1707.png",
+    "after-spot-1707-page.png",
+    "after-futures-1920.png",
+    "after-futures-1920-page.png",
+    "after-spot-1920.png",
+    "after-spot-1920-page.png",
+    "after-futures-1440-1M.png",
+    "after-futures-1440-hollow.png",
+    "after-futures-1440-heikin.png",
+    "after-futures-1440-compare.png",
+    "after-futures-1440-compare-page.png",
+    "after-futures-1440-analytics-rs.png",
+    "after-futures-1440-data.png",
+    "after-futures-1440-analytics.png",
+    "after-futures-1440-layout2.png",
+    "after-futures-1440-layout2-page.png",
+    "snapshot-futures.png",
+    "after-futures-1440-fullscreen.png",
+    "after-spot-1440-1M.png",
+    "after-spot-1440-hollow.png",
+    "after-spot-1440-heikin.png",
+    "after-spot-1440-compare.png",
+    "after-spot-1440-compare-page.png",
+    "after-spot-1440-analytics-rs.png",
+    "after-spot-1440-data.png",
+    "after-spot-1440-analytics.png",
+    "after-spot-1440-layout2.png",
+    "after-spot-1440-layout2-page.png",
+    "snapshot-spot.png",
+    "after-spot-1440-fullscreen.png",
+    "after-futures-1920-layout4.png",
+    "after-futures-1920-layout4-page.png",
+    "after-futures-mobile-320x568.png",
+    "after-spot-mobile-320x568.png",
+    "after-futures-mobile-360x740.png",
+    "after-spot-mobile-360x740.png",
+    "after-futures-mobile-390x844.png",
+    "after-futures-mobile-390-sheet.png",
+    "after-futures-mobile-390-compare.png",
+    "after-futures-mobile-390-layout2.png",
+    "after-spot-mobile-390x844.png",
+    "after-spot-mobile-390-sheet.png",
+    "after-spot-mobile-390-compare.png",
+    "after-spot-mobile-390-layout2.png",
+    "after-futures-mobile-430x932.png",
+    "after-spot-mobile-430x932.png",
+    "after-futures-mobile-844x390.png",
+    "after-spot-mobile-844x390.png",
+    "after-futures-zoom-90.png",
+    "after-futures-zoom-100.png",
+    "after-futures-zoom-110.png",
+    "after-futures-zoom-125.png"
+  ],
+  "environment": "LOCAL QA ONLY — production bundle, loopback read-only fixture",
+  "finishedAt": "2026-10-14T05:26:47.411Z",
+  "summary": {
+    "passed": 174,
+    "failed": 0
+  }
+}

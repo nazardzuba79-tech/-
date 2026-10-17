@@ -46,7 +46,8 @@ describe('Spot/CFD mobile parity with Futures', () => {
     const cfd = page.slice(cfdStart, spotStart);
     expect(cfd).toContain('data-mobile-market="cfd"');
     expect(cfd).toContain('<CfdInstrumentList');
-    expect(cfd).toContain('<CfdChart');
+    // 2026-10-15: the CFD chart is the shared terminal chart (Chart Workspace).
+    expect(cfd).toContain('<PriceChart pair={selectedCfdSymbol} market="cfd"');
     expect(cfd).toContain('<CfdOrderForm');
     expect(cfd).toContain('<CfdPositionsPanel');
     expect(cfd).not.toContain('<OrderBookPanel');

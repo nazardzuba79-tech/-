@@ -45,6 +45,7 @@ const COLUMNS: { titleKey: Key; links: { labelKey: Key; to: string }[] }[] = [
   {
     titleKey: 'home.footer.legal',
     links: [
+      { labelKey: 'licenses.title', to: '/legal/licenses' },
       { labelKey: 'home.footer.terms', to: '/legal/terms' },
       { labelKey: 'home.footer.privacy', to: '/legal/privacy' },
       { labelKey: 'home.footer.risk', to: '/legal/risk' },

@@ -16,6 +16,8 @@
    at 768 and 844×390 it sat under the bar. Left of the support launcher (44px at right:10px
    above the bar, SupportWidget.css), which used to sit on top of it. */
 @media(max-width:860px){.markets-analytics-launch{right:64px;bottom:76px}}
+/* Desktop: clear of the 50px support launcher at right:24px (2026-10-13 audit: the pill sat under it at 1280–1920px). */
+@media(min-width:861px){.markets-analytics-launch{right:90px}}
 /* The pill is rendered outside .markets-bolt-root, where --bg-card-1 is not
    defined and --text-primary is the dark theme's white: on the light markets
    page the label «Аналитика» was white on a transparent oval (invisible at

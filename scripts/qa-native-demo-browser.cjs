@@ -10,6 +10,7 @@ const { pathToFileURL } = require('node:url');
 const { reviewHistoryPage } = require('./native-demo-review-repository.cjs');
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
+const BigNumber = require('bignumber.js');
 const root = path.resolve(__dirname, '..'), front = path.join(root, 'frontend');
 const pnlOnly = process.env.NATIVE_QA_PNL_ONLY === '1';
 const largeOnly = pnlOnly || process.env.NATIVE_QA_LARGE_ONLY === '1';
@@ -262,7 +263,7 @@ function expectedUsagePercent(part, equity) {
   return value.toFixed(2) + '%';
 }
 
-async function accountSummary(page, state) {
+async function accountSummary(page, commandState, s) {
   await workspace(page, 'trade');
   // The command response is authoritative, but React applies the matching
   // execution context on its next render. Order-book presentation can add
@@ -270,11 +271,27 @@ async function accountSummary(page, state) {
   // returned equity instead of asserting against a one-render-old card.
   // This does NOT relax the financial assertion: a wrong/stuck value still
   // fails after the short UI-settle window.
-  const expectedBalance = Number(state.account.equity).toFixed(2);
-  await page.waitForFunction((expected) => {
+  const shownBalance = () => page.evaluate(() => (document.querySelector('.futures-account-balance .fa-amount')?.textContent ?? '').replace(/,/g, '').trim());
+  const shows = (expected, timeout) => page.waitForFunction((value) => {
     const text = document.querySelector('.futures-account-balance .fa-amount')?.textContent ?? '';
-    return text.replace(/,/g, '').trim() === expected;
-  }, expectedBalance, { timeout: 8000 });
+    return text.replace(/,/g, '').trim() === value;
+  }, expected, { timeout }).then(() => true, () => false);
+  let state = commandState;
+  if (!(await shows(Number(state.account.equity).toFixed(2), 8000))) {
+    // The open positions keep the terminal polling /native/live every 30 s,
+    // and each poll revalues the account at the current mark. The review
+    // fixture moves its price at every minute, so a poll landing after the
+    // command can legitimately replace the command's equity. The card must
+    // then show EXACTLY what the server reports now: read that state and
+    // check every figure below against it. A wrong or stuck card still fails.
+    const seen = [shownBalance().catch(() => '')];
+    for (let attempt = 1; ; attempt += 1) {
+      state = await api(s.context, s.token, 'live');
+      if (await shows(Number(state.account.equity).toFixed(2), 35_000)) break;
+      seen.push(await shownBalance().catch(() => ''));
+      if (attempt === 3) throw new Error(`Margin Balance never matched the server: command ${Number(commandState.account.equity).toFixed(2)}, last /native/live ${Number(state.account.equity).toFixed(2)}, card showed ${JSON.stringify(await Promise.all(seen))}`);
+    }
+  }
   const g = await page.locator('.futures-account-summary').evaluate(e => ({
     balance: e.querySelector('.futures-account-balance .fa-value')?.textContent,
     available: e.querySelector('.futures-account-available .fa-value')?.textContent,
@@ -286,6 +303,7 @@ async function accountSummary(page, state) {
     modeRowInCard: e.querySelector('.futures-account-mode') !== null,
     units: [...e.querySelectorAll('.futures-account-stat .fa-unit')].map(x => x.textContent),
   }));
+  g.checkedAgainst = state === commandState ? 'command' : 'native/live';
   g.mode = await page.locator('.fo-mlTriggerText').innerText();
   assert(/(?:Cross|Кросс)/i.test(g.mode || ''), 'Owner margin mode is not Cross: ' + JSON.stringify(g));
   assert.equal(g.modeRowInCard, false, 'The duplicate margin-mode row is back in the account card');
@@ -309,6 +327,14 @@ async function normalFlow(width) {
   const s = await session(width), p = s.page;
   try {
     await ready(s); await family(p, 'LIMIT'); await check(`fields-limit-${width}`, () => geometry(p));
+    // VOLTEX funding V2, as the header states it: the fixed rates by side every position settles at.
+    await check(`voltex-funding-rates-${width}`, async () => {
+      const cell = p.locator('.ticker-bar .futures-funding-values .value[data-funding-rates="voltex"]');
+      await cell.waitFor({ state: 'attached' });
+      const text = (await cell.textContent()).replace(/\s+/g, ' ').trim();
+      assert(text.includes('\u22120.01%') && text.includes('+0.04%'), `Header funding is not LONG −0.01% / SHORT +0.04%: ${text}`);
+      return { header: text };
+    });
     await check(`quantity-to-usdt-calculator-${width}`, async () => {
       const seeded = Number(await price(p).inputValue());
       assert(Number.isFinite(seeded) && seeded > 0, `LIMIT price was not seeded from the live last price: ${seeded}`);
@@ -331,7 +357,7 @@ async function normalFlow(width) {
     await rows(p).first().waitFor();
     await check(`positions-reachable-${width}`, async () => { assert(await p.locator('#futures-bottom-content').isVisible(), 'Positions workspace did not reveal the lower panel'); assert.equal(await rows(p).count(), 2); });
     await check(`fields-market-${width}`, () => geometry(p));
-    await check(`account-summary-${width}`, () => accountSummary(p, state));
+    await check(`account-summary-${width}`, () => accountSummary(p, state, s));
     await check(`position-table-${width}`, () => tableLayout(p, width));
     const limit = (Number(state.positions[0].markPrice) * 2).toFixed(1);
     await family(p, 'LIMIT'); await price(p).fill(limit); await qty(p).fill('1');
@@ -488,20 +514,65 @@ async function chartFlow(width) {
     assert.equal(closed.state.positions.length,0);assert.equal(closed.state.orders.filter(o=>['OPEN','PARTIALLY_FILLED'].includes(o.status)).length,0);
   } finally { await s.context.close(); }
 }
+// `pnl` is the price result (unrealized while open, realized gross once
+// closed); `fees` is what was paid and `funding` what was settled (signed),
+// so every case is one complete, self-consistent native row.
 const CASES = [
-  { id: 'profit-1_2m', pnl: '1200000', roi: '2400' }, { id: 'profit-10m', pnl: '10000000', roi: '20000' },
-  { id: 'loss-1_2m', pnl: '-1200000', roi: '-2400' }, { id: 'roi-20000', pnl: '250000', roi: '20000' },
-  { id: 'roi-128450', pnl: '4820000.5', roi: '128450.75' }, { id: 'roi-negative-99999', pnl: '-8750000.25', roi: '-99999.99' },
-  { id: 'real-zero', pnl: '0', roi: '0' },
+  { id: 'profit-1_2m', pnl: '1200000', roi: '2400', fees: '1289.63', funding: '-25.18' },
+  { id: 'profit-10m', pnl: '10000000', roi: '20000', fees: '10746.37', funding: '210.55' },
+  { id: 'loss-1_2m', pnl: '-1200000', roi: '-2400', fees: '1289.63', funding: '-25.18' },
+  { id: 'roi-20000', pnl: '250000', roi: '20000', fees: '137.5', funding: '0' },
+  { id: 'roi-128450', pnl: '4820000.5', roi: '128450.75', fees: '2650.12', funding: '-48.2' },
+  { id: 'roi-negative-99999', pnl: '-8750000.25', roi: '-99999.99', fees: '4812.5', funding: '96.25' },
+  { id: 'real-zero', pnl: '0', roi: '0', fees: '0', funding: '0' },
 ];
 const PNL_CASES = [
-  { id: 'huge-profit', pnl: '16136162', roi: '33391.29' },
-  { id: 'profit', pnl: '136.25', roi: '3.91' },
-  { id: 'loss', pnl: '-136.25', roi: '-3.91' },
-  { id: 'zero', pnl: '0', roi: '0' },
-  { id: 'tiny-profit', pnl: '0.0000012345', roi: '0.001', formatted: '+0.0000012345' },
-  { id: 'huge-roi', pnl: '136.25', roi: '123456789.12' },
+  { id: 'huge-profit', pnl: '16136162', roi: '33391.29', fees: '8875.89', funding: '-161.36' },
+  { id: 'profit', pnl: '136.25', roi: '3.91', fees: '0.75', funding: '-0.02' },
+  { id: 'loss', pnl: '-136.25', roi: '-3.91', fees: '0.75', funding: '0.02' },
+  { id: 'zero', pnl: '0', roi: '0', fees: '0', funding: '0' },
+  { id: 'tiny-profit', pnl: '0.0000012345', roi: '0.001', formatted: '+0.0000012345', fees: '0', funding: '0' },
+  { id: 'huge-roi', pnl: '136.25', roi: '123456789.12', fees: '0.75', funding: '-0.02' },
 ];
+/**
+ * A synthetic native row whose P&L figures obey the engine's own equations
+ * (engine.ts `demoPositionView`): realized = gross − fees + funding,
+ * net = unrealized + realized, trading = unrealized + gross. The layout
+ * fixture used to set only unrealized and realized, leaving the engine's
+ * split (trading, fees, funding, net) at the seed position's values — a row
+ * no engine could produce. Every figure now comes from one case, and the
+ * equation is checked before anything is rendered.
+ */
+function consistentRow(position, example, closed) {
+  const n = v => new BigNumber(v), fees = n(example.fees), funding = n(example.funding);
+  const gross = closed ? n(example.pnl) : n(0), unrealized = closed ? n(0) : n(example.pnl);
+  const realized = gross.minus(fees).plus(funding), net = unrealized.plus(realized), trading = unrealized.plus(gross);
+  assert.equal(trading.minus(fees).plus(funding).toFixed(), net.toFixed(), `${example.id}: fixture breaks Net = Trading - Fees + Funding`);
+  return { ...position, unrealizedPnl: unrealized.toFixed(), realizedGross: gross.toFixed(), openingFees: fees.toFixed(), closingFees: '0',
+    feesPaid: fees.toFixed(), fundingNet: funding.toFixed(), realizedPnl: realized.toFixed(), netPnl: net.toFixed(), tradingPnl: trading.toFixed() };
+}
+const approxOf = value => `≈${grouped(Math.abs(Number(value)) < 0.005 ? 0 : value, 2)} USD`;
+/** The four native P&L cells of the first row: the figure each shows, and its «≈ USD» line if any. */
+const BREAKDOWN = { trading: 'Торговый P&L', funding: 'Фандинг', fees: 'Комиссии', net: 'Чистый P&L' };
+async function breakdownCells(page, scope) {
+  return page.locator(scope).first().evaluate((row, labels) => Object.fromEntries(Object.entries(labels).map(([key, label]) => {
+    const td = row.querySelector(`td[data-mobile-label="${label}"]`);
+    if (!td) return [key, null];
+    const figure = td.querySelector('.futures-position-realized') ?? td;
+    return [key, { figure: figure.firstChild?.textContent?.trim() ?? figure.textContent.trim(), approx: td.querySelector('.futures-position-approx')?.textContent.trim() ?? null }];
+  })), BREAKDOWN);
+}
+/** The displayed breakdown equals the row, and the displayed figures still add up (each rounded to 2 places). */
+function assertBreakdown(cells, row, { approxOnNet }) {
+  const fees = new BigNumber(row.feesPaid).negated().plus(0);
+  assert.deepEqual(Object.fromEntries(Object.entries(cells).map(([k, v]) => [k, v?.figure ?? null])), {
+    trading: grouped(row.tradingPnl, 2), funding: grouped(row.fundingNet, 2), fees: grouped(fees.toFixed(), 2), net: grouped(row.netPnl, 2),
+  }, 'Native P&L breakdown cells do not show the row');
+  const shown = key => new BigNumber(cells[key].figure.replaceAll(',', ''));
+  assert(shown('trading').plus(shown('fees')).plus(shown('funding')).minus(shown('net')).abs().lte('0.015'), 'Displayed Trading + Fees + Funding ≠ Net');
+  for (const key of ['trading', 'funding', 'fees']) assert.equal(cells[key].approx, null, `No «≈ USD» line belongs under ${key}`);
+  assert.equal(cells.net.approx, approxOnNet ? approxOf(row.netPnl) : null, 'Net P&L «≈ USD» line');
+}
 const signed = value => Number(value) === 0 ? grouped(value, 2) : (Number(value) > 0 ? '+' : '') + grouped(value, 2);
 function intersects(a, b) { return a.right > b.left + 1 && b.right > a.left + 1 && a.bottom > b.top + 1 && b.bottom > a.top + 1; }
 async function cardGlyphs(page, model) {
@@ -539,7 +610,7 @@ async function largeValues(width) {
   try {
     for (const example of pnlOnly ? PNL_CASES : CASES) {
       current = structuredClone(s.base);
-      Object.assign(current.positions[0], { quantity: '1250.5', entryPrice: '1875000.5', markPrice: '1999999.99', unrealizedPnl: example.pnl, realizedPnl: example.pnl, roiPercent: example.roi });
+      current.positions[0] = consistentRow({ ...current.positions[0], quantity: '1250.5', entryPrice: '1875000.5', markPrice: '1999999.99', roiPercent: example.roi }, example, false);
       current.account.unrealizedPnl = example.pnl;
       cardModel = { ...s.baseCard, unrealizedPnl: example.pnl, roiPercent: example.roi, entryPrice: '1875000.5', valuationPrice: '1999999.99' };
       await s.page.reload(); await ready(s); await accountTab(s.page, 'positions'); await rows(s.page).first().waitFor();
@@ -548,9 +619,16 @@ async function largeValues(width) {
         assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), (example.formatted || signed(example.pnl)) + ' USDT');
         const roi = Number(grouped(example.roi, 2).replaceAll(',', '')) === 0 ? '0.00' : signed(example.roi);
         assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), `(${roi}%)`);
-        // Bybit's «≈… USD» line under unrealized and under realized (owner, 2026-09-30).
-        const approx = `≈${grouped(Math.abs(Number(example.pnl)) < 0.005 ? 0 : example.pnl, 2)} USD`;
-        assert.deepEqual((await s.page.locator('.futures-position-approx').allInnerTexts()).map(t => t.trim()), [approx, approx]);
+        // Bybit's «≈… USD» line under the unrealized figure (owner, 2026-09-30)…
+        assert.deepEqual((await s.page.locator('.futures-unrealized .futures-position-approx').allInnerTexts()).map(t => t.trim()), [approxOf(example.pnl)]);
+        // …and under the native row's Net P&L, its total. Nowhere else: the
+        // row has exactly these two lines, in this order.
+        const row = current.positions[0];
+        assert.deepEqual((await s.page.locator('.futures-position-approx').allInnerTexts()).map(t => t.trim()), [approxOf(example.pnl), approxOf(row.netPnl)]);
+        // The native row shows its whole result apart, exactly as the row states it.
+        assert.equal(await s.page.locator('.futures-positions-table td[data-mobile-label="Реализованный P&L"]').count(), 0, 'A native row keeps no separate realized column');
+        const breakdown = await breakdownCells(s.page, '.futures-positions-table tbody tr');
+        assertBreakdown(breakdown, row, { approxOnNet: true });
         const layout = await tableLayout(s.page, width);
         const cell = await s.page.locator('.futures-unrealized').evaluate(e => {
           const money = e.querySelector('.futures-position-money'), roi = e.querySelector('.futures-position-roi'), usd = e.querySelector('.futures-position-approx');
@@ -571,19 +649,23 @@ async function largeValues(width) {
           });
           await s.page.locator('.futures-positions-panel').screenshot({ path: path.join(out, `positions-${width}.png`) });
         }
-        return { ...layout, cell };
+        return { ...layout, cell, breakdown };
       });
       if (pnlOnly) continue;
       await check(`large-card-glyphs-${example.id}-${width}`, () => cardGlyphs(s.page, cardModel));
       await check(`large-card-png-${example.id}-${width}`, async () => { await s.page.locator('.futures-position-card, .archive-pnl-open').click(); return card(s.page, `card-${example.id}-${width}.png`, width); });
-      const completed = { ...current.positions[0], status: 'CLOSED', closedAt: current.asOf, netPnl: example.pnl, liquidationPrice: null };
+      // Closed: the whole price result is realized, nothing is unrealized,
+      // and the total the history shows is the row's Net P&L.
+      const completed = consistentRow({ ...current.positions[0], status: 'CLOSED', closedAt: current.asOf, liquidationPrice: null }, example, true);
       current = { ...current, positions: [], history: [completed] };
       await s.page.reload(); await ready(s); await accountTab(s.page, 'positionHistory');
       await s.page.locator('.futures-positions-panel tbody tr').waitFor();
       await check(`large-history-${example.id}-${width}`, async () => {
-        // The history tab follows the same rule as the open rows.
+        // The history tab follows the same rule as the open rows: full figures, the split, Net as the total.
         assert((await s.page.locator('.futures-positions-panel').innerText()).includes(grouped(example.pnl, 2)), 'Closed P&L not rendered in full');
-        return tableLayout(s.page, width);
+        const breakdown = await breakdownCells(s.page, '.futures-history-table tbody tr');
+        assertBreakdown(breakdown, completed, { approxOnNet: false });
+        return { ...(await tableLayout(s.page, width)), breakdown };
       });
     }
     await s.page.screenshot({ path: path.join(out, `terminal-${width}.png`), fullPage: true });
@@ -710,7 +792,7 @@ async function main() {
   // Observation only: no components, layout, prices or routing are replaced by the build shim.
   const chartModule = path.join(front, 'node_modules/lightweight-charts/dist/lightweight-charts.production.mjs');
   shim = path.join(os.tmpdir(), `voltex-native-observer-${process.pid}.mjs`);
-  fs.writeFileSync(shim, `export * from ${JSON.stringify(chartModule)};import{createChart as original,CandlestickSeries}from ${JSON.stringify(chartModule)};import * as renderer from ${JSON.stringify(path.join(front, 'src/lib/privateResultCard.ts'))};window.__nativeQaCardRenderer=renderer;export function createChart(...args){const c=original(...args);window.__nativeQaChart=c;const add=c.addSeries.bind(c);c.addSeries=(type,...rest)=>{const s=add(type,...rest);if(type===CandlestickSeries)window.__nativeQaSeries=s;return s;};return c;}`);
+  fs.writeFileSync(shim, `export * from ${JSON.stringify(chartModule)};import{createChart as original,CandlestickSeries}from ${JSON.stringify(chartModule)};import * as renderer from ${JSON.stringify(path.join(front, 'src/lib/privateResultCard.ts'))};window.__nativeQaCardRenderer=renderer;export function createChart(...args){const c=original(...args);window.__nativeQaChart=c;const add=c.addSeries.bind(c);c.addSeries=(type,...rest)=>{const s=add(type,...rest);/* first candlestick series = the data series; the chart workspace (2026-10-14) adds hidden display-only candlestick series for Hollow and Heikin-Ashi after it */if(type===CandlestickSeries&&!window.__nativeQaSeries)window.__nativeQaSeries=s;return s;};return c;}`);
   const { build } = await import(pathToFileURL(path.join(front, 'node_modules/vite/dist/node/index.js')).href);
   await build({ root: front, resolve: { alias: { 'lightweight-charts': shim } }, define: { 'import.meta.env.VITE_API_URL': JSON.stringify('/api/v1') } });
   await startServer(); const { chromium } = require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT || 'playwright'); browser = await chromium.launch({ headless: true });

@@ -1,0 +1,7 @@
+PASS I18N ru: five routes render without raw keys, html lang set, no page errors
+PASS I18N en: five routes render without raw keys, html lang set, no page errors
+PASS I18N es: five routes render without raw keys, html lang set, no page errors
+PASS I18N hi: five routes render without raw keys, html lang set, no page errors
+PASS I18N ja: five routes render without raw keys, html lang set, no page errors
+PASS I18N ko: five routes render without raw keys, html lang set, no page errors
+PASS I18N zh: five routes render without raw keys, html lang set, no page errors

@@ -274,7 +274,11 @@ describe('Spot orders truthful dense presentation', () => {
   it('preserves existing GET filters, visible 4-second polling, selected-pair filtering and per-order cancel endpoint', () => {
     const open = source('OpenOrdersPanel.tsx');
     const history = source('OrderHistoryPanel.tsx');
-    expect(open).toContain("getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED')");
+    // The same GET filter, named once and shared with the chart so the API
+    // can answer both 4-second pollers with one request (lib/readCoalescer);
+    // the panel's own fresh reads (after a cancel) bypass that sharing.
+    expect(open).toContain("getMyOrders(SPOT_OPEN_ORDER_STATUSES, { fresh })");
+    expect(source('spotOrderPresentation.ts')).toContain("export const SPOT_OPEN_ORDER_STATUSES = 'PENDING_TRIGGER,OPEN,PARTIALLY_FILLED';");
     expect(history).toContain("getMyOrders('FILLED,CANCELLED')");
     for (const value of [open, history]) {
       expect(value).toContain('startVisibleReadPolling(load, 4000)');

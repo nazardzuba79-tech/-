@@ -303,8 +303,10 @@ async function interactions(page, width, report) {
   // Existing drawing serialization is fed back through the real app loader.
   await page.evaluate(time => localStorage.setItem('voltex.drawings.futures.BTC/USDT',JSON.stringify({version:1,hidden:false,locked:false,drawings:[{kind:'horizontal',points:[{time,price:84750}],style:{color:'#ffffff',width:1,dash:'solid'}}]})),NOW/1000-7200);
   await page.reload({waitUntil:'domcontentloaded'}); await page.locator('.futures-ticker-bar').waitFor(); await page.waitForTimeout(400);
-  await page.locator('.chart-tabs button').filter({hasText:/^4h$/}).click();
-  record.chart.timeframe=await page.locator('.chart-tabs button.active').textContent();
+  // 2026-10-14 (chart workspace): the quick timeframes carry a data hook and a localised label («4ч»); the older text filter stays as the fallback.
+  const quarterDay = page.locator('[data-cw-tf="4h"], .chart-tabs button:text-is("4h")').first();
+  await quarterDay.click();
+  record.chart.timeframe=(await page.locator('[data-cw-tf][aria-pressed="true"]').first().getAttribute('data-cw-tf').catch(()=>null)) ?? await page.locator('.chart-tabs button.active').textContent();
   record.chart.drawings=await page.evaluate(()=>JSON.parse(localStorage.getItem('voltex.drawings.futures.BTC/USDT')).drawings);
   check(record.chart.timeframe==='4h'&&record.chart.drawings.length===1,'timeframe change loses stored drawing');
   await page.screenshot({path:path.join(OUT,`${PHASE}-${width}-drawing.png`),animations:'disabled'});

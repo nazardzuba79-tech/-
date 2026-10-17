@@ -11,9 +11,25 @@ import { adminDate, adminStatus } from './adminPresentation';
 import { refreshAdminSummary } from './adminWorkSummary';
 import { adminQueueDateBounds } from './adminQueueDates';
 import { AdminCompatibilityNotice, adminPageEmpty } from './adminPageSupport';
+import { KYC_STAGE_LABEL } from './KycMaterialsAdmin';
+import type { KycReviewStage } from '../../lib/api';
 import './adminQueueViews.css';
 
-const KYC_STATUSES = ['all', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_STARTED'] as const;
+const KYC_STATUSES = ['all', 'PENDING', 'MATERIALS_RECEIVED', 'AWAITING_MATERIALS', 'APPROVED', 'REJECTED', 'NOT_STARTED'] as const;
+/** Queue filters that look at additional materials, not at the status enum. */
+const MATERIAL_FILTER_LABEL: Record<string, string> = {
+  MATERIALS_RECEIVED: 'Получены доп. материалы',
+  AWAITING_MATERIALS: 'Ожидают доп. материалы',
+};
+type QueueKyc = { status: string; reviewStage?: KycReviewStage };
+const stageText = (kyc: QueueKyc) => kyc.status === 'PENDING' && kyc.reviewStage && kyc.reviewStage !== 'UNDER_REVIEW' ? KYC_STAGE_LABEL[kyc.reviewStage] : adminStatus(kyc.status);
+function nextStep(kyc: QueueKyc | null): string {
+  if (!kyc) return 'Ожидать подачи заявки';
+  if (kyc.status !== 'PENDING') return 'Открыть историю проверки';
+  if (kyc.reviewStage === 'MATERIALS_RECEIVED' || kyc.reviewStage === 'RE_REVIEW') return 'Сравнить новые материалы и принять решение';
+  if (kyc.reviewStage === 'DOCUMENT_REQUIRED' || kyc.reviewStage === 'SELFIE_REQUIRED' || kyc.reviewStage === 'DOCUMENT_AND_SELFIE_REQUIRED') return 'Ожидать дополнительные материалы от пользователя';
+  return 'Проверить документ и принять решение';
+}
 
 /** Верификация (KYC) — очередь заявок на проверку: кто подал, когда,
  * проверено/отклонить с причиной. Документы новых заявок приходят на почту
@@ -72,7 +88,7 @@ export function AdminKycPage() {
         <label>По дату<input aria-label="Дата заявки по" type="date" style={styles.input} value={toDraft} min={fromDraft || undefined} onChange={event => setToDraft(event.target.value)} /></label>
         <button type="submit" style={styles.neutralBtn}>Найти</button>
         <label>Статус<select aria-label="Статус KYC" style={styles.input} value={status} onChange={event => view.update({ status: event.target.value, page: 1 })}>
-          {KYC_STATUSES.map(value => <option key={value} value={value}>{value === 'all' ? 'Все пользователи' : adminStatus(value)}</option>)}
+          {KYC_STATUSES.map(value => <option key={value} value={value}>{value === 'all' ? 'Все пользователи' : MATERIAL_FILTER_LABEL[value] ?? adminStatus(value)}</option>)}
         </select></label>
         {(search || fromDate || toDate || status !== 'PENDING') && <button type="button" style={styles.neutralBtn} onClick={() => view.update({ search: '', user: '', fromDate: '', toDate: '', status: 'PENDING', page: 1 })}>Сбросить</button>}
       </form>
@@ -108,7 +124,7 @@ export function AdminKycPage() {
             >
               <span style={{ fontWeight: 600, fontSize: 13, overflowWrap: 'anywhere' }}>{c.email}</span>
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                {adminStatus(c.latestKyc?.status ?? c.kycStatus)} · {c.latestKyc ? adminDate(c.latestKyc.createdAt) : 'Заявка не подана'}
+                {c.latestKyc ? stageText(c.latestKyc) : adminStatus(c.kycStatus)} · {c.latestKyc ? adminDate(c.latestKyc.createdAt) : 'Заявка не подана'}
               </span>
             </button>
           ))}
@@ -116,7 +132,7 @@ export function AdminKycPage() {
         </div>
 
         <div style={styles.card}>
-          {selected && <div className="admin-queue-detail-heading"><span>Следующий шаг: {selected.latestKyc?.status === 'PENDING' ? 'Проверить документ и принять решение' : selected.latestKyc ? 'Открыть историю проверки' : 'Ожидать подачи заявки'}</span>
+          {selected && <div className="admin-queue-detail-heading"><span>Следующий шаг: {nextStep(selected.latestKyc)}</span>
             <Link to={`/admin/users/${encodeURIComponent(selected.id)}?tab=kyc&returnTo=${encodeURIComponent(view.returnTo)}`} style={styles.neutralBtn}>Открыть пользователя</Link>
           </div>}
           {!selected?.latestKyc ? (
@@ -126,6 +142,8 @@ export function AdminKycPage() {
               submission={selected.latestKyc}
               email={selected.email}
               onReviewed={() => { setSelectedId(null); clientsRead.reload(); refreshAdminSummary(); }}
+              // Materials requested or re-review started: stay on this user.
+              onChanged={() => { setSelectedId(selected.id); clientsRead.reload(); refreshAdminSummary(); }}
             />
           )}
         </div>

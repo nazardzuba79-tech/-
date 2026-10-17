@@ -93,3 +93,37 @@ test('real workerd + SQLite DO: signed deposit/registration, private KYC binding
     assert.equal(calls.length, 5, 'no background egress');
   } finally { await mf.dispose(); }
 });
+
+test('real workerd: KYC materials event through the private binding — one Telegram message, duplicate deduplicated, deposit/registration refused', async () => {
+  const bundle = await build({ stdin: { resolveDir: fileURLToPath(new URL('.', import.meta.url)), contents: `
+    export { default, KycNotifications, NotificationEvent } from './src/index.js';
+  ` }, bundle: true, write: false, format: 'esm', external: ['cloudflare:*'] });
+  const path = await mkdtemp(join(tmpdir(), 'voltex-notification-materials-'));
+  const calls = [];
+  const options = {
+    durableObjectsPersist: path,
+    workers: [{ name: 'notifications', modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-01',
+      bindings: { TELEGRAM_BOT_TOKEN: 'synthetic-token', TELEGRAM_CHAT_ID: 'synthetic-chat' },
+      durableObjects: { EVENTS: { className: 'NotificationEvent', useSQLite: true } },
+      outboundService: async request => { calls.push(await request.json()); return WorkerResponse.json({ ok: true, result: { message_id: calls.length } }); },
+    }, { name: 'kyc-edge-caller', modules: true, compatibilityDate: '2025-09-24',
+      script: `export default { async fetch(r, env) { return Response.json(await env.NOTIFICATIONS.notifyMaterials(await r.json())); } }`,
+      serviceBindings: { NOTIFICATIONS: { name: 'notifications', entrypoint: 'KycNotifications' } },
+      outboundService: () => { throw new Error('unexpected outbound call'); },
+    }],
+  };
+  const mf = new Miniflare({ ...convertV4MiniflareOptions(options), isolatedResourcePersistencePath: path, resourcePersistencePath: path, telemetry: { enabled: false } });
+  try {
+    const caller = await mf.getWorker('kyc-edge-caller');
+    const event = { eventId: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', eventType: 'KYC_MATERIALS_RECEIVED', timestamp: Date.now(), email: 'synthetic@example.test', fullName: 'Test Synthetic Person', part: 'SELFIE', complete: true };
+    const send = (e) => caller.fetch('https://local/', { method: 'POST', body: JSON.stringify(e) }).then(r => r.json());
+    const results = await Promise.all([send(event), send(event), send(event)]);
+    assert.equal(results.filter(r => r.status === 'SENT').length, 1, JSON.stringify(results));
+    assert.equal(calls.length, 1);
+    assert.match(calls[0].text, /^📎 KYC: получены дополнительные материалы\n\nEmail: synthetic@example\.test\nFull Name: Test Synthetic Person\nМатериал: селфи для подтверждения личности\nСтатус: повторная проверка$/);
+    assert.equal((await send({ ...event, eventId: 'other', fileBase64: '/9j/' })).status, 'INVALID_EVENT');
+    assert.equal((await send({ eventId: 'dep', eventType: 'DEPOSIT_DISCOVERED', timestamp: Date.now(), amount: '15', asset: 'USDT', network: 'TRC20' })).status, 'INVALID_EVENT');
+    assert.equal((await send({ eventId: 'kyc-1', eventType: 'KYC_SUBMITTED', timestamp: Date.now() })).status, 'INVALID_EVENT', 'materials method cannot send a new-application event');
+    assert.equal(calls.length, 1);
+  } finally { await mf.dispose(); }
+});

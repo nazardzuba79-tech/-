@@ -85,16 +85,19 @@ describe('chart settings', () => {
     expect(page).toContain('positionLines={chartPositionLines} chartSettings foldHeading={false} />');
     const chart = read('frontend/src/components/PriceChart.tsx');
     expect(chart).toContain("aria-label={t('chart.settings.open')}");
-    expect(chart).toContain('{settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} />}');
+    // 2026-10-10 (Issue #502): the dialog edits this chart's own market's indicator list (Spot and Futures are stored apart).
+    expect(chart).toContain('{settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} market={market} />}');
     expect(chart).toContain("fontFamily: token('--voltex-chart-font', 'Inter, Arial, sans-serif')");
     // Volume in its own strip under the candles, as Binance draws it (owner, 2026-09-30).
     expect(chart).toContain('const volumePane = s.volume ? 1 : 0;');
     expect(chart).toContain('if (volume.getPane().paneIndex() !== volumePane) volume.moveToPane(volumePane);');
     expect(chart).toContain('panes[1]?.setStretchFactor(0.2);');
     // 2026-10-07 (Spot/CFD in the released Futures look): the Spot chart carries the same
-    // settings as Futures, so one chart setting serves both terminals; the CFD chart does not.
+    // settings as Futures, so one chart setting serves both terminals. 2026-10-15 (CFD Chart
+    // Workspace): the CFD chart is the same shared chart and carries the same settings.
     expect(read('frontend/src/pages/TradePage.tsx')).toContain('drawingTools market="spot" compactTools chartSettings />');
-    expect(read('frontend/src/pages/TradePage.tsx')).toContain('<CfdChart symbol={selectedCfdSymbol} />');
+    expect(read('frontend/src/pages/TradePage.tsx')).toContain('<PriceChart pair={selectedCfdSymbol} market="cfd" chrome="terminal" drawingTools compactTools chartSettings');
+    expect(read('frontend/src/pages/TradePage.tsx')).not.toContain('<CfdChart');
     for (const other of ['frontend/src/pages/CfdPage.tsx']) {
       if (existsSync(resolve(root, other))) expect(read(other)).not.toContain('chartSettings');
     }

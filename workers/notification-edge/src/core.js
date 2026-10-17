@@ -1,6 +1,6 @@
 export const RETENTION_MS = 7 * 24 * 60 * 60_000;
 export const VERSION = 'notifications-v1';
-const TYPES = ['KYC_SUBMITTED', 'DEPOSIT_DISCOVERED', 'NEW_USER_REGISTERED', 'DEPOSIT_ADDRESS_COPIED'];
+const TYPES = ['KYC_SUBMITTED', 'KYC_MATERIALS_RECEIVED', 'DEPOSIT_DISCOVERED', 'NEW_USER_REGISTERED', 'DEPOSIT_ADDRESS_COPIED'];
 export const reply = (status, code, extra = {}) => Response.json({ status: code, ...extra }, {
   status, headers: { 'cache-control': 'no-store' },
 });
@@ -25,6 +25,11 @@ export function validEvent(e, type, now = Date.now()) {
   if (type === 'KYC_SUBMITTED') {
     return (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
       && (!e.fullName || text(e.fullName, 200)) && (!e.documentType || text(e.documentType, 40));
+  }
+  if (type === 'KYC_MATERIALS_RECEIVED') {
+    return (e.part === 'DOCUMENT' || e.part === 'SELFIE') && (e.complete === undefined || typeof e.complete === 'boolean')
+      && (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
+      && (!e.fullName || text(e.fullName, 200));
   }
   return amount(e.amount) && e.asset === 'USDT' && e.network === 'TRC20'
     && (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
@@ -53,6 +58,13 @@ export function message(e) {
     'Статус: ожидает проверки', e.fullName && `Full Name: ${e.fullName}`,
     e.documentType && `Document Type: ${e.documentType}`,
   ].filter(line => line !== false && line !== undefined && line !== null).join('\n');
+  // A new document photo or selfie an admin asked for reached the KYC mailbox.
+  if (e.eventType === 'KYC_MATERIALS_RECEIVED') return [
+    '📎 KYC: получены дополнительные материалы', '', e.email && `Email: ${e.email}`,
+    e.fullName && `Full Name: ${e.fullName}`,
+    `Материал: ${e.part === 'SELFIE' ? 'селфи для подтверждения личности' : 'новое фото документа'}`,
+    `Статус: ${e.complete === false ? 'ожидается остальная часть запроса' : 'повторная проверка'}`,
+  ].filter(line => line !== false && line !== undefined && line !== null).join('\n');
   // These are discovery facts, not proof of finality, attribution or credit.
   const total = e.accumulated ?? e.amount;
   const ready = BigInt(total.split('.')[0]) >= 300n;
@@ -73,6 +85,8 @@ export async function acceptEvent(event, type, env) {
     ? ['eventId', 'eventType', 'timestamp', 'asset', 'network', 'networkLabel']
     : type === 'KYC_SUBMITTED'
     ? ['eventId', 'eventType', 'timestamp', 'email', 'fullName', 'documentType']
+    : type === 'KYC_MATERIALS_RECEIVED'
+    ? ['eventId', 'eventType', 'timestamp', 'email', 'fullName', 'part', 'complete']
     : ['eventId', 'eventType', 'timestamp', 'amount', 'asset', 'network', 'email', 'accumulated', 'remaining'];
   if (Object.keys(event).some(key => !allowed.includes(key))) return reply(400, 'INVALID_EVENT');
   const id = env.EVENTS.idFromName(`${type}:${event.eventId}`);

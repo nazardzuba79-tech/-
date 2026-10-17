@@ -425,7 +425,20 @@ test.each([
     // chart has Bybit's two rows — «График» with the VOLTEX | TradingView
     // switch, then the intervals. Payload, math and every handler unchanged;
     // futuresFinalPolish still mounts the page and counts one chart.
-    "b76b54e9ad5ac9a2aeca45e6d86b5b627be2d5e4d60818cbef325cc2239ab375"
+    // 2026-10-13 audit: one prop, `mobile={compact}`, on FuturesPositionsPanel so the
+    // phone-only compact TP/SL trigger stops following the desktop archive design.
+    // Re-taken 2026-10-13 (chart workspace). ONE more prop differs: the chart
+    // element gets `onSelectPair={selectSymbol}`, the page's existing
+    // instrument switch, so a second chart pane's «Торговать» moves the
+    // whole terminal through the same path the pair list already uses.
+    // No order, execution, account, depth or layout byte changed.
+    // Re-taken again on the merge of main d694b2a0 (#517): both props above.
+    // Re-taken 2026-10-16 (funding V2, P&L split): one state flag and one prop.
+    // `onHistoryWanted={setCloseCardHistory}` on FuturesPositionsPanel lets a
+    // «Позиция закрыта» card ask for the native position history, which the
+    // page's existing `setHistoryDemand` effect now also loads while the card
+    // is shown. No order, execution, account, depth or layout byte changed.
+    "ac101210d56f6a487dd29bc16de067fc450ac5adfc9ae79c031a0a7a87291076"
   ],
   [
     "components/FuturesPairList.tsx",

@@ -9,6 +9,7 @@ import { chartExits } from '../nativeChartExits';
 import { withNativeTransportRetry } from '../nativeTransportRetry';
 import { createVisibleRead } from '../visibleRead';
 import { readNativeEngineHint,writeNativeEngineHint } from '../nativeEngineHint';
+import { bindingAfterAccessFailure } from '../nativeAccessVerdict';
 
 const frontend=resolve(__dirname,'../../..'),req=createRequire(resolve(frontend,'package.json'));
 const React=req('react'),{createRoot}=req('react-dom/client'),{JSDOM}=req('jsdom');
@@ -21,7 +22,7 @@ class TestError extends Error {constructor(message:string,public status:number,p
 const initial=()=>({initialized:true,revision:7,source:'DEMO_BALANCE',asOf:1,model:{version:'test'},account:null,ledger:null,
   positions:[{id:'p',symbol:'BTCUSDT',status:'OPEN',protection:{takeProfit:null,stopLoss:null}}],orders:[],history:[],events:[],entries:[]});
 describe('actual React native hook live lifecycle',()=>{
-  let dom:any,root:any,current:any,state:any,api:any,offSession:()=>void,stopActivity:(()=>void)|undefined;
+  let dom:any,root:any,current:any,state:any,api:any,offSession:()=>void,stopActivity:(()=>void)|undefined,Harness:any;
   beforeEach(async()=>{
     jest.useFakeTimers();dom=new JSDOM('<div id="root"></div>',{url:'http://localhost/',pretendToBeVisual:true});
     Object.assign(globalThis,{window:dom.window,document:dom.window.document,IS_REACT_ACT_ENVIRONMENT:true});
@@ -32,11 +33,11 @@ describe('actual React native hook live lifecycle',()=>{
       react:React,'react-router-dom':{useSearchParams:()=>[new URLSearchParams()]},
       '../../lib/api':{getToken:()=>`x.${Buffer.from(JSON.stringify({sub:'qa',sid:'session'})).toString('base64url')}.x`,onSessionChange:(fn:()=>void)=>{offSession=fn;return()=>{};}},
       '../../lib/nativeDemoApi':{nativeDemoApi:api},'../../lib/privateTradingApi':{PrivateTradingError:TestError,privateErrorText:(e:Error)=>e.message,privateTradingApi:{}},
-      '../../lib/visibleRead':{createVisibleRead},'../../lib/nativeEngineHint':{readNativeEngineHint,writeNativeEngineHint},
+      '../../lib/visibleRead':{createVisibleRead},'../../lib/nativeEngineHint':{readNativeEngineHint,writeNativeEngineHint},'../../lib/nativeAccessVerdict':{bindingAfterAccessFailure},
       '../../lib/nativeCommandLane':{NativeCommandLane,acceptsRevision},'../../lib/nativeTransportRetry':{withNativeTransportRetry},'../../lib/nativeChartExits':{chartExits},
       '../../lib/nativeLivePolicy':{compactNativeUiState,shouldPollNativeLive,NATIVE_LIVE_POLL_MS},'./useNativeHistory':history,
     });
-    function Harness(){current=module.useNativeDemo('BTC/USDT');return null;}
+    Harness=function Harness(){current=module.useNativeDemo('BTC/USDT');return null;};
     root=createRoot(document.getElementById('root'));
     await React.act(async()=>{root.render(React.createElement(Harness));});
   });
@@ -50,6 +51,21 @@ describe('actual React native hook live lifecycle',()=>{
     Object.defineProperty(document,'hidden',{configurable:true,value:false});
     await React.act(async()=>document.dispatchEvent(new dom.window.Event('visibilitychange')));
     expect(api.live).toHaveBeenCalledTimes(3);expect(api.activate).toHaveBeenCalledTimes(2);expect(api.access).toHaveBeenCalledTimes(2);
+  });
+  test('an explicit private_access_denied resolves the binding to ordinary and makes no native reads (2026-10-13 audit)',async()=>{
+    await React.act(async()=>root.unmount());
+    api.access=jest.fn(async()=>{throw new TestError('Режим недоступен',403,'private_access_denied');});api.live.mockClear();api.activate.mockClear();
+    root=createRoot(document.getElementById('root'));
+    await React.act(async()=>{root.render(React.createElement(Harness));});
+    expect(api.access).toHaveBeenCalledTimes(1);
+    expect(current.binding).toBe('ordinary');expect(current.requested).toBe(false);expect(current.allowed).toBe(false);expect(current.checked).toBe(true);
+    await tick(60_000);expect(api.live).not.toHaveBeenCalled();expect(api.activate).not.toHaveBeenCalled();
+    // an outage with any other status is not a verdict: the binding stays as it was
+    await React.act(async()=>root.unmount());
+    api.access=jest.fn(async()=>{throw new TestError('QA access outage',503);});
+    root=createRoot(document.getElementById('root'));
+    await React.act(async()=>{root.render(React.createElement(Harness));});
+    expect(current.binding).toBe('unknown');expect(current.requested).toBe(true);expect(current.allowed).toBe(false);
   });
   test('after final close, idle account makes no periodic reads; explicit refresh still works',async()=>{
     state={...state,revision:8,positions:[]};

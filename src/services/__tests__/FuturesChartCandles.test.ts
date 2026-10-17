@@ -38,7 +38,13 @@ test('same-key requests coalesce and cache expires without serving stale values'
   await expect(service.get('BTC-USDT','15m',520)).rejects.toThrow('offline');
   await service.get('BTC-USDT','15m',520);expect(request).toHaveBeenCalledTimes(3);
 });
-test.each([['BTC/USD','15m',520],['BTC-USDT','invalid',520],['BTC-USDT','15m',1001],['BTC-USDT','15m',NaN]])('invalid input never reaches provider',async(pair,interval,limit)=>{
+test.each([['1m','1'],['3m','3'],['30m','30'],['2h','120'],['6h','360'],['12h','720'],['1M','M']])('chart workspace interval %s maps to the public kline code %s',async(interval,code)=>{
+  const request=jest.fn().mockResolvedValue({ok:true,json:async()=>({retCode:0,result:{category:'linear',symbol:'BTCUSDT',list:[]}})});
+  const service=new FuturesChartCandles(request as any);
+  await service.get('BTC-USDT',interval,20);
+  expect(new URL(request.mock.calls[0][0]).searchParams.get('interval')).toBe(code);
+});
+test.each([['BTC/USD','15m',520],['BTC-USDT','invalid',520],['BTC-USDT','45m',520],['BTC-USDT','15m',1001],['BTC-USDT','15m',NaN]])('invalid input never reaches provider',async(pair,interval,limit)=>{
   const request=jest.fn();const service=new FuturesChartCandles(request);
   await expect(service.get(String(pair),String(interval),Number(limit))).rejects.toBeInstanceOf(RangeError);expect(request).not.toHaveBeenCalled();
 });

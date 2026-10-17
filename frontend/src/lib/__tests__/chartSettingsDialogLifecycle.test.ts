@@ -34,6 +34,7 @@ beforeEach(() => {
   new Function('exports', 'require', code)(output, (name: string) => {
     if (name.endsWith('.css')) return {};
     if (name === '../lib/chartSettings') return settings;
+    if (name === '../lib/chartIndicators') return require('../chartIndicators');
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     return req(name);
   });

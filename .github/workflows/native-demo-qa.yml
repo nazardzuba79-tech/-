@@ -12,6 +12,7 @@ on:
       - 'scripts/qa-pnl-card.cjs'
       - 'scripts/qa-order-panel-refinement.cjs'
       - 'scripts/qa-futures-tiny-price.cjs'
+      - 'scripts/qa-native-funding-pnl.cjs'
       - 'jest.config.js'
       - '.github/workflows/native-demo-qa.yml'
 permissions:
@@ -65,6 +66,11 @@ jobs:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
           NATIVE_QA_PNL_ONLY: '1'
         run: node scripts/qa-native-demo-browser.cjs
+      - name: VOLTEX V2 funding in the P&L breakdown — open rows, history and the close card (1920, 1440, 390)
+        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+        env:
+          PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
+        run: node scripts/qa-native-funding-pnl.cjs
       - name: P&L card opens promptly and shows real price precision
         if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
         env:
@@ -93,6 +99,7 @@ jobs:
           path: |
             native-tests.json
             docs/qa/native-demo/
+            docs/qa/native-funding-pnl/
             docs/qa/futures-tiny-price/
             docs/qa/limit-close/
             docs/qa/pnl-card/

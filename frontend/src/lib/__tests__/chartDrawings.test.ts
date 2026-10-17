@@ -117,6 +117,19 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartIndicators') return require('../chartIndicators');
+    // Chart workspace (2026-10-13): pure modules are real, the panels are stubs.
+    if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (id === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (id === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (id === '../lib/chartCompare') return require('../chartCompare');
+    if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (id === '../lib/chartViewport') return require('../chartViewport');
+    if (id === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
+    if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (id === './ChartDrawingLayer') return layer;
     if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
     return localRequire(id);
@@ -252,6 +265,18 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartIndicators') return require('../chartIndicators');
+    if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (id === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (id === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (id === '../lib/chartCompare') return require('../chartCompare');
+    if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (id === '../lib/chartViewport') return require('../chartViewport');
+    if (id === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
+    if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, output);
@@ -381,6 +406,18 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
     if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartIndicators') return require('../chartIndicators');
+    if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (id === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (id === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (id === '../lib/chartCompare') return require('../chartCompare');
+    if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (id === '../lib/chartViewport') return require('../chartViewport');
+    if (id === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
+    if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, bindings);
@@ -662,16 +699,23 @@ describe('the rail is shared, and every button does something', () => {
     expect(futures).not.toContain('DrawToolbar');
     expect(futures.match(/<PriceChart\b/g)).toHaveLength(1);
     // 2026-10-07: Spot's chart carries the viewer's chart settings like Futures (Spot/CFD parity).
-    expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />');
+    // 2026-10-13 (chart workspace): both pages also hand the chart their
+    // instrument switch, so a second pane's «Торговать» moves the terminal.
+    expect(trade).toContain('<PriceChart pair={pair} onSelectPair={selectSpotPair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />');
+    expect(futures).toContain('compactTools={studio} onSelectPair={selectSymbol}');
     // One implementation, not two: there is a single chart component and a
     // single rail, and both pages reach it through the same prop.
     expect(fs.existsSync(path.resolve(__dirname, '../../components/FuturesPriceChart.tsx'))).toBe(false);
     expect(fs.existsSync(path.resolve(__dirname, '../../components/FuturesDrawingTools.css'))).toBe(false);
   });
 
-  test('CFD is untouched by this overlay', () => {
-    const cfd = fs.readFileSync(path.resolve(__dirname, '../../components/CfdChart.tsx'), 'utf8');
-    expect(cfd).not.toMatch(/drawingTools|DrawToolbar|drawing-rail|chartDrawings/);
+  // 2026-10-15 (CFD Chart Workspace): CFD now reaches the same rail through the
+  // shared chart with its own drawing store (market "cfd"), not a second rail.
+  test('CFD reaches the same rail through the shared chart, with its own drawings', () => {
+    expect(fs.existsSync(path.resolve(__dirname, '../../components/CfdChart.tsx'))).toBe(false);
+    const page = fs.readFileSync(path.resolve(__dirname, '../../pages/TradePage.tsx'), 'utf8');
+    expect(page).toMatch(/<PriceChart pair=\{selectedCfdSymbol\} market="cfd" chrome="terminal" drawingTools/);
+    expect(fs.readFileSync(path.resolve(__dirname, '../chartDrawings.ts'), 'utf8')).toMatch(/DrawingMarket = [^;]*'cfd'/);
   });
 
   const layerCode = fs.readFileSync(path.resolve(__dirname, '../../components/ChartDrawingLayer.tsx'), 'utf8')

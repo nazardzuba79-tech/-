@@ -347,6 +347,8 @@ describe('translation integrity', () => {
           'futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
+          // Native demo P&L breakdown columns (2026-10-16): four new keys, additions only.
+          'futures.colTradingPnl', 'futures.colFunding', 'futures.colFees', 'futures.colNetPnl',
           'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable',
           'markets.new', // Spot rail newest-listing sorter (2026-10-04), additive only.
           'deposit.transferCreditNote', // New manual-catalogue copy; preserve every existing dictionary byte.
@@ -375,10 +377,37 @@ describe('translation integrity', () => {
           // tab reads «Ордера» instead of the wrapping «Открытые ордера»;
           // `git diff --numstat` over the locales reports `1 0` per language.
           'trade.mobileTabOrders',
-           ...CUSTOMER_PRESENTATION_KEYS];
+          ...CUSTOMER_PRESENTATION_KEYS,
+          // Desktop Futures chart indicator catalogue (Issue #502, 2026-10-10):
+          // `git diff --numstat` over the locales reports `12 0` per language
+          // for these names; the settings dialog's `chart.settings.*` keys are
+          // already additive below.
+          ...['sma', 'ema', 'wma', 'vwap', 'atr', 'stochastic', 'stochrsi', 'obv', 'adx', 'supertrend', 'cci', 'williams'].map(name => `chart.indicator.${name}`),
+          // Futures refusal codes (2026-10-13 audit): the engine's thin-book
+          // and self-match refusals, which reached the trader as the generic
+          // «Не удалось закрыть позицию», named in every language. `git diff
+          // --numstat` over the locales reports `2 0` per language,
+          // additions only; asserted by name below.
+          'futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
+        // New regulatory-document UI keys; all pre-existing copy stays frozen.
+        if (key?.startsWith('licenses.')) return false;
+        // KYC additional materials (2026-10-15): the admin's request for a new
+        // document photo and/or a selfie. `git diff --numstat` over the locales
+        // reports `47 0` per language, additions only; asserted by name below.
+        if (key?.startsWith('kycMaterials.')) return false;
+        // Chart workspace (2026-10-13): the timeframe labels, the two-row
+        // toolbar, compare, layout, data window, analytics, templates and
+        // shortcuts, plus three more chart types. `git diff --numstat` over
+        // the locales reports additions only for every language.
+        if (key?.startsWith('chart.ws.') || key?.startsWith('chart.tf.')) return false;
+        if (key === 'chart.type.bars' || key === 'chart.type.hollow' || key === 'chart.type.heikin') return false;
+        // Chart workspace follow-up (2026-10-14): the legend's honest "not enough bars" line
+        // beside the `chart.ws.*` pane states; `git diff --numstat` over the locales reports
+        // `7 0` per language, additions only; asserted by name below.
+        if (key === 'chart.indicator.insufficient') return false;
         // `otc.*` is the OTC page from the owner's OTC.zip (2026-09-30):
         // `git diff --numstat` over the locales directory reports `63 0` for
         // every language, additions only; asserted by name below.
@@ -402,7 +431,21 @@ describe('translation integrity', () => {
       expect(dicts[code]['futures.positionLimits'].trim()).not.toBe('');
       expect(dicts[code]['nav.tools'].trim()).not.toBe('');
       expect(dicts[code]['nav.knowledgeCenter'].trim()).not.toBe('');
+      for (const key of Object.keys(dicts.ru).filter(key => key.startsWith('licenses.'))) {
+        expect({ code, key, translated: Boolean(dicts[code][key]?.trim()) }).toEqual({ code, key, translated: true });
+        if (code !== 'ru') expect(dicts[code][key]).not.toBe(dicts.ru[key]);
+      }
+      for (const key of Object.keys(dicts.ru).filter(key => key.startsWith('kycMaterials.'))) {
+        expect({ code, key, translated: Boolean(dicts[code][key]?.trim()) }).toEqual({ code, key, translated: true });
+        if (code !== 'ru') expect({ code, key, same: dicts[code][key] === dicts.ru[key] }).toEqual({ code, key, same: false });
+        // Placeholders survive translation exactly.
+        expect({ code, key, params: (dicts[code][key].match(/\{\w+\}/g) ?? []).sort() }).toEqual({ code, key, params: (dicts.ru[key].match(/\{\w+\}/g) ?? []).sort() });
+      }
       expect(dicts[code]['settings.rememberedDevice'].trim()).not.toBe('');
+      for (const key of ['futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch']) {
+        expect({ code, key, text: dicts[code][key]?.trim() !== '' }).toEqual({ code, key, text: true });
+        if (code !== 'ru') expect({ code, key, translated: dicts[code][key] !== dicts.ru[key] }).toEqual({ code, key, translated: true });
+      }
       expect(dicts[code]['nav.card']).toBe(shortCardLabels[code]);
       expect(dicts[code]['wallet.superVip']).toBe(approvedVipCopy[code].label);
       expect(dicts[code]['wallet.superVipTitle']).toBe(approvedVipCopy[code].title);
@@ -535,6 +578,25 @@ describe('translation integrity', () => {
     for (const key of FUTURES_PROSE) {
       const lines = LOCALES.map((code) => (dicts[code] as any)[key]);
       expect({ key, distinct: new Set(lines).size }).toEqual({ key, distinct: LOCALES.length });
+    }
+  });
+
+  it('carries the chart workspace follow-up states in every language, translated (2026-10-14)', () => {
+    // A pane's loading / no-history / failed / not-updating words, its retry key, the
+    // timeframe menu's one-line note on built intervals and the legend's "not enough bars"
+    // line. Prose, so seven identical strings would mean six were never translated.
+    const KEYS = ['chart.ws.tf.derivedNote', 'chart.ws.pane.loading', 'chart.ws.pane.empty', 'chart.ws.pane.error', 'chart.ws.pane.stale', 'chart.ws.pane.retry', 'chart.indicator.insufficient'];
+    for (const code of LOCALES) {
+      for (const key of KEYS) {
+        expect({ code, key, value: typeof (dicts[code] as any)[key] }).toEqual({ code, key, value: 'string' });
+        expect((dicts[code] as any)[key].trim().length).toBeGreaterThan(0);
+      }
+      expect((dicts[code] as any)['chart.ws.pane.stale']).toContain('{time}');
+      expect((dicts[code] as any)['chart.indicator.insufficient']).toContain('{n}');
+      expect((dicts[code] as any)['chart.indicator.insufficient']).toContain('{need}');
+    }
+    for (const key of ['chart.ws.pane.empty', 'chart.ws.pane.error', 'chart.ws.pane.stale', 'chart.indicator.insufficient', 'chart.ws.tf.derivedNote']) {
+      expect(new Set(LOCALES.map((code) => (dicts[code] as any)[key])).size).toBe(LOCALES.length);
     }
   });
 

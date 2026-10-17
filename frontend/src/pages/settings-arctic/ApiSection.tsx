@@ -3,6 +3,7 @@ import { Copy, KeyRound, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
+import { copyToClipboard } from '../../lib/clipboard';
 import { Panel, PanelHeader } from './Panel';
 import { StatusBadge } from './StatusBadge';
 import { customerErrorText } from '../../lib/customerError';
@@ -50,8 +51,10 @@ export function ApiSection() {
   }
 
   function copy(text: string, label2: string) {
-    navigator.clipboard?.writeText(text);
-    toast.success(`${label2} ${t('deposit.copied').toLowerCase()}`);
+    void copyToClipboard(text).then(
+      () => toast.success(`${label2} ${t('deposit.copied').toLowerCase()}`),
+      () => toast.error(t('deposit.ui.copyError')),
+    );
   }
 
   return (

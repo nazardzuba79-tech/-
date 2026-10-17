@@ -329,7 +329,7 @@
   background: #101014 !important;
 }
 .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.bottom-panel, .cfd-bottom-panel) { box-shadow: 0 -1px 0 var(--border); }
-/* Both charts paint nothing of their own (PriceChart and CfdChart read
+/* Both charts paint nothing of their own (PriceChart — the CFD chart too since 2026-10-15 — reads
    these tokens): clean white / orange candles, white axis, no ruled edge,
    and the volume bars in the exchange's own colours — the Futures chart. */
 .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.terminal-chart-shell, .cfd-chart) {

@@ -415,7 +415,10 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
     // futures chart's volume follows whatever candle colours are chosen.
     expect(CHART).toContain("useRef<[string, string]>(['rgba(234,236,239,0.5)', 'rgba(247,166,0,0.5)'])");
     expect(CHART).toContain('color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1],');
-    expect(CHART).toContain('volumeColorsRef.current = [rgbaOf(s.bodyUp, 0.75), rgbaOf(s.bodyDown, 0.75)];');
+    // Issue #502 (2026-10-10): the bars' opacity became a chart setting
+    // (default 0.75, as before); the colours are still the candles' own.
+    expect(CHART).toContain('volumeColorsRef.current = [rgbaOf(s.bodyUp, s.volumeOpacity), rgbaOf(s.bodyDown, s.volumeOpacity)];');
+    expect(read('lib/chartSettings.ts')).toContain('volumeOpacity: 0.75,');
     expect(CHART.toLowerCase()).not.toContain('#2962ff');
   });
 
