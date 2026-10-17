@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, FileText, Globe2, Minus, Plus, X } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, CheckCircle2, FileText, Globe2, Minus, Plus, X } from 'lucide-react';
 import { useLanguage, localeOf } from '../../lib/i18n';
 import { REGULATORY_DOCUMENTS, publishedDocuments, type RegulatoryDocument } from '../../lib/regulatoryDocuments';
 import { HomeHeader } from '../home/HomeHeader';
 import { HomeFooter } from '../home/HomeFooter';
+import { PRESENTED_JURISDICTIONS } from './licenceJurisdictions';
 import './licenses.css';
 
 function DocumentViewer({ document, onClose }: { document: RegulatoryDocument; onClose: () => void }) {
@@ -50,17 +51,36 @@ export function LicencesContent({ documents, review = false, portfolio = false }
     {review && <p className="licences-review" role="status">{t('licenses.reviewNotice')}</p>}
     <header className="licences-heading">
       <span className="licences-eyebrow">VOLTEX · {t('licenses.eyebrow')}</span>
-      <h1>{t('licenses.title')}</h1>
+      <h1>{t('licenses.pageTitle')}</h1>
       <p>{t('licenses.intro')}</p>
     </header>
-    <div className="licences-section-head"><h2>{t('licenses.documents')}</h2><span><Globe2 size={16} aria-hidden="true" />{(portfolio && documents.length === 0 ? 1 : documents.length).toLocaleString(localeOf(lang))}</span></div>
-    {portfolio && documents.length === 0 ? <section className="licences-portfolio">
-      <p className="licences-portfolio-description">{t('licenses.portfolioDescription')}</p>
-      <a className="licences-portfolio-image" href="/regulatory-documents/voltex-portfolio.png" target="_blank" rel="noopener noreferrer" aria-label={t('licenses.openOriginal')}>
+    {portfolio && <>
+      <section className="licences-jurisdictions" aria-labelledby="licences-jurisdictions-title">
+        <h2 id="licences-jurisdictions-title">{t('licenses.jurisdictions')}</h2>
+        <ul>{PRESENTED_JURISDICTIONS.map(jurisdiction => <li key={jurisdiction.id}>{t(jurisdiction.name)}</li>)}</ul>
+      </section>
+      <section className="licences-portfolio" aria-labelledby="licences-materials-title">
+      <div className="licences-section-head"><h2 id="licences-materials-title">{t('licenses.presentedDocuments')}</h2><span><FileText size={16} aria-hidden="true" />{(1).toLocaleString(localeOf(lang))}</span></div>
+      <p className="licences-materials-note">{t('licenses.materialsNote')}</p>
+      <a className="licences-portfolio-image" href="/regulatory-documents/voltex-portfolio.png" target="_blank" rel="noopener noreferrer" aria-label={t('licenses.openImage')}>
         <img src="/regulatory-documents/voltex-portfolio.png" alt={t('licenses.portfolioAlt')} width="1536" height="1024" />
       </a>
-      <a className="licences-portfolio-open" href="/regulatory-documents/voltex-portfolio.png" target="_blank" rel="noopener noreferrer">{t('licenses.openOriginal')} <ArrowUpRight size={15} aria-hidden="true" /></a>
-    </section> : documents.length === 0 ? <section className="licences-empty"><FileText size={32} strokeWidth={1.2} aria-hidden="true" /><h3>{t('licenses.empty')}</h3></section>
+      <a className="licences-portfolio-open" href="/regulatory-documents/voltex-portfolio.png" target="_blank" rel="noopener noreferrer">{t('licenses.openImage')} <ArrowUpRight size={15} aria-hidden="true" /></a>
+      </section>
+      <section className="licences-explanations" aria-labelledby="licences-explanations-title">
+        <h2 id="licences-explanations-title">{t('licenses.explanationsTitle')}</h2>
+        <div className="licences-jurisdiction-grid">{PRESENTED_JURISDICTIONS.map(jurisdiction => <article className="licences-jurisdiction-info" key={jurisdiction.id}>
+          <h3>{t(jurisdiction.name)}</h3>
+          <p className="licences-regulator-label"><CheckCircle2 size={14} aria-hidden="true" />{t('licenses.regulatorLabel')}: {jurisdiction.regulator}</p>
+          <dl>
+            <div><dt>{t('licenses.imageDocumentLabel')}</dt><dd>{t(jurisdiction.description)}</dd></div>
+          </dl>
+        </article>)}</div>
+      </section>
+    </>}
+    {(!portfolio || documents.length > 0) && <>
+    <div className="licences-section-head"><h2>{t('licenses.documents')}</h2><span><Globe2 size={16} aria-hidden="true" />{documents.length.toLocaleString(localeOf(lang))}</span></div>
+    {documents.length === 0 ? <section className="licences-empty"><FileText size={32} strokeWidth={1.2} aria-hidden="true" /><h3>{t('licenses.empty')}</h3></section>
       : <div className="licences-grid">{documents.map(document => {
         const translated = document.translations[lang];
         return <article className="licence-card" key={document.id}>
@@ -78,6 +98,7 @@ export function LicencesContent({ documents, review = false, portfolio = false }
           <button className="licence-document-button" type="button" disabled={!document.documentUrl} onClick={() => setSelected(document)}><FileText size={17} aria-hidden="true" />{t('licenses.viewDocument')}<ArrowUpRight size={17} aria-hidden="true" /></button>
         </article>;
       })}</div>}
+    </>}
     {selected && <DocumentViewer document={selected} onClose={() => setSelected(null)} />}
   </main>;
 }
@@ -93,7 +114,7 @@ export function LicencesPage() {
   }, []);
   useEffect(() => {
     const originalTitle = document.title;
-    document.title = `${t('licenses.title')} | VOLTEX`;
+    document.title = `${t('licenses.pageTitle')} | VOLTEX`;
     const robots = document.createElement('meta');
     robots.name = 'robots'; robots.content = 'noindex, nofollow';
     document.head.append(robots);

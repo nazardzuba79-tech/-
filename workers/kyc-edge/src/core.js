@@ -4,8 +4,12 @@
 // Document path:  browser → this Worker → Cloudflare Email Routing → admin mailbox.
 // Render/Neon see two small signed JSON calls (authorize, confirm) and never a
 // document byte. Nothing is stored here: no KV / R2 / D1, no public URL.
+//
+// Additional materials (/v1/materials) — a new photo of the document or a
+// selfie an admin asked for — take exactly the same road, bound by Render to
+// the user's own open request.
 
-import { queueKycNotification } from './notifications.js';
+import { queueKycNotification, queueKycMaterialNotification } from './notifications.js';
 
 export const SERVICE = 'voltex-kyc-edge';
 export const VERSION = 'kyc-edge-v1';
@@ -20,6 +24,9 @@ const MAX_BODY_BYTES = MAX_DOCUMENT_BYTES + 64 * 1024;
 
 const EXTENSION = { 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf' };
 const DOCUMENT_TYPES = new Set(['PASSPORT', 'ID_CARD', 'DRIVERS_LICENSE']);
+const MATERIAL_PARTS = new Set(['DOCUMENT', 'SELFIE']);
+/** The selfie consent wording the user accepted; Render pins the same version. */
+export const SELFIE_CONSENT_VERSION = 'kyc-selfie-v1';
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SUBMISSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@<>"',;:\\]+@[^\s@<>"',;:\\]+\.[^\s@<>"',;:\\]+$/;
@@ -77,6 +84,20 @@ export function validateFields(form, now = new Date()) {
   if (!validDateOfBirth(dateOfBirth, now)) return { error: { status: 400, code: 'kyc_bad_request' } };
   if (typeof documentType !== 'string' || !DOCUMENT_TYPES.has(documentType)) return { error: { status: 400, code: 'kyc_bad_request' } };
   return { fields: { requestId: requestId.toLowerCase(), country, fullName, dateOfBirth, documentType } };
+}
+
+/** An additional material: which request, which part, and — for a selfie — the consent. */
+export function validateMaterialFields(form) {
+  const requestId = form.get('requestId');
+  const materialRequestId = form.get('materialRequestId');
+  const part = form.get('part');
+  if (typeof requestId !== 'string' || !UUID_V4.test(requestId)) return { error: { status: 400, code: 'kyc_bad_request' } };
+  if (typeof materialRequestId !== 'string' || !SUBMISSION_ID.test(materialRequestId)) return { error: { status: 400, code: 'kyc_bad_request' } };
+  if (typeof part !== 'string' || !MATERIAL_PARTS.has(part)) return { error: { status: 400, code: 'kyc_bad_request' } };
+  if (part === 'SELFIE' && (form.get('selfieConsent') !== 'true' || form.get('consentVersion') !== SELFIE_CONSENT_VERSION)) {
+    return { error: { status: 400, code: 'kyc_selfie_consent_required' } };
+  }
+  return { fields: { requestId: requestId.toLowerCase(), materialRequestId: materialRequestId.toLowerCase(), part } };
 }
 
 /** Size, declared type, and magic bytes — all three must agree. */
@@ -180,9 +201,34 @@ export function kycBody({ email, fullName, country, dateOfBirth, documentType, u
   ].join('\r\n');
 }
 
+const MATERIAL_TITLE = { DOCUMENT: 'Новое фото документа', SELFIE: 'Селфи для подтверждения личности' };
+
+export function kycMaterialSubject(part, fullName, email) {
+  return `[KYC] ${MATERIAL_TITLE[part]} — ${fullName} — ${email}`;
+}
+
+export function kycMaterialBody({ part, email, fullName, userId, submissionId, materialRequestId, deliveryId, receivedAt, consentAt }) {
+  return [
+    `User email: ${email}`,
+    `Full Name: ${fullName}`,
+    `VOLTEX user ID: ${userId}`,
+    `Submission ID: ${submissionId}`,
+    `Material request ID: ${materialRequestId}`,
+    `Delivery ID: ${deliveryId}`,
+    `Material: ${MATERIAL_TITLE[part]}`,
+    `Received At: ${receivedAt}`,
+    ...(part === 'SELFIE' ? [`Согласие на сбор и использование селфи для проверки личности: получено ${consentAt} (версия ${SELFIE_CONSENT_VERSION})`] : []),
+    '',
+    'Дополнительный материал по запросу администратора к заявке на проверке. Решение — в админ-панели VOLTEX: Верификация (KYC) → заявка пользователя.',
+    ...(part === 'SELFIE'
+      ? ['Селфи сравнивается с фото в документе вручную. Автоматическое распознавание лиц не используется; не передавайте файл сторонним сервисам.']
+      : []),
+  ].join('\r\n');
+}
+
 /** The complete RFC 5322 message as bytes. Every header value is either fixed or encoded. */
-export function buildKycMime({ from, to, submissionId, messageId, subject, text, document, date, boundary }) {
-  const filename = `kyc-${submissionId}.${EXTENSION[document.mime]}`;
+export function buildKycMime({ from, to, submissionId, messageId, subject, text, document, date, boundary, filename: name, material }) {
+  const filename = name || `kyc-${submissionId}.${EXTENSION[document.mime]}`;
   const head = [
     `From: VOLTEX KYC <${from}>`,
     `To: <${to}>`,
@@ -192,6 +238,8 @@ export function buildKycMime({ from, to, submissionId, messageId, subject, text,
     'MIME-Version: 1.0',
     'Auto-Submitted: auto-generated',
     `X-Voltex-Kyc-Submission: ${submissionId}`,
+    // Validated identifiers only (uuid; DOCUMENT|SELFIE).
+    ...(material ? [`X-Voltex-Kyc-Material: ${material.materialRequestId}; part=${material.part}`] : []),
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
     '',
     `--${boundary}`,
@@ -350,10 +398,13 @@ async function callRender(env, deps, material, path, payload, extraHeaders = {})
   return { status: res.status, data };
 }
 
-async function confirmWithRender(env, deps, material, confirm) {
+const SUBMISSION_CONFIRM_PATH = '/internal/kyc/submission-confirmed';
+const MATERIAL_CONFIRM_PATH = '/internal/kyc/materials/confirmed';
+
+async function confirmWithRender(env, deps, material, confirm, path = SUBMISSION_CONFIRM_PATH) {
   try {
-    const { status, data } = await callRender(env, deps, material, '/internal/kyc/submission-confirmed', confirm);
-    return status >= 200 && status < 300 ? { ok: true, result: data?.status ?? null } : { ok: false, status };
+    const { status, data } = await callRender(env, deps, material, path, confirm);
+    return status >= 200 && status < 300 ? { ok: true, result: data?.status ?? null, complete: data?.complete === true } : { ok: false, status };
   } catch {
     return { ok: false, status: 0 };
   }
@@ -388,35 +439,46 @@ async function rememberDelivery(deps, request, submissionId, value) {
 
 // ---------------------------------------------------------------- handlers
 
-async function handleSubmit(request, env, ctx, deps) {
+/**
+ * The checks every upload passes before a byte of the body is read: origin,
+ * session shape, declared size, multipart, rate limit, configuration. Returns
+ * `{ response }` on refusal, otherwise `{ now, auth, material, form }`.
+ */
+async function readUpload(request, env, deps, rateKey) {
   const now = deps.now();
   const origin = request.headers.get('origin');
-  if (origin && !allowedOrigins(env).includes(origin)) return fail(request, env, 403, 'kyc_origin_forbidden');
+  if (origin && !allowedOrigins(env).includes(origin)) return { response: fail(request, env, 403, 'kyc_origin_forbidden') };
 
   const auth = request.headers.get('authorization') || '';
-  if (!/^Bearer [A-Za-z0-9._~+/=-]{20,4096}$/.test(auth)) return fail(request, env, 401, 'kyc_auth_required');
+  if (!/^Bearer [A-Za-z0-9._~+/=-]{20,4096}$/.test(auth)) return { response: fail(request, env, 401, 'kyc_auth_required') };
 
   // Browsers always send Content-Length for a FormData body; without it the
   // runtime would buffer an unbounded stream before any check could run.
   const length = Number(request.headers.get('content-length') || '0');
-  if (!Number.isFinite(length) || length <= 0) return fail(request, env, 411, 'kyc_bad_request');
-  if (length > MAX_BODY_BYTES) return fail(request, env, 413, 'kyc_file_too_large');
+  if (!Number.isFinite(length) || length <= 0) return { response: fail(request, env, 411, 'kyc_bad_request') };
+  if (length > MAX_BODY_BYTES) return { response: fail(request, env, 413, 'kyc_file_too_large') };
   if (!String(request.headers.get('content-type') || '').toLowerCase().startsWith('multipart/form-data')) {
-    return fail(request, env, 400, 'kyc_bad_request');
+    return { response: fail(request, env, 400, 'kyc_bad_request') };
   }
 
   const ip = request.headers.get('cf-connecting-ip') || 'unknown';
-  if (!(await rateAllowed(env, `submit:${ip}`, now))) return fail(request, env, 429, 'kyc_rate_limited');
+  if (!(await rateAllowed(env, `${rateKey}:${ip}`, now))) return { response: fail(request, env, 429, 'kyc_rate_limited') };
 
   const material = await signingMaterial(env);
-  if (!material || !env.VOLTEX_API_ORIGIN || !deps.sendEmail) return fail(request, env, 503, 'kyc_edge_not_configured');
+  if (!material || !env.VOLTEX_API_ORIGIN || !deps.sendEmail) return { response: fail(request, env, 503, 'kyc_edge_not_configured') };
 
-  let form;
   try {
-    form = await withTimeout(request.formData(), BODY_TIMEOUT_MS, 'kyc_timeout');
+    const form = await withTimeout(request.formData(), BODY_TIMEOUT_MS, 'kyc_timeout');
+    return { now, auth, material, form };
   } catch (err) {
-    return fail(request, env, err?.code === 'kyc_timeout' ? 408 : 400, err?.code === 'kyc_timeout' ? 'kyc_timeout' : 'kyc_bad_request');
+    return { response: fail(request, env, err?.code === 'kyc_timeout' ? 408 : 400, err?.code === 'kyc_timeout' ? 'kyc_timeout' : 'kyc_bad_request') };
   }
+}
+
+async function handleSubmit(request, env, ctx, deps) {
+  const upload = await readUpload(request, env, deps, 'submit');
+  if (upload.response) return upload.response;
+  const { now, auth, material, form } = upload;
 
   const checked = validateFields(form, new Date(now));
   if (checked.error) return fail(request, env, checked.error.status, checked.error.code);
@@ -551,6 +613,150 @@ async function deliverAndConfirm(request, env, ctx, deps, material, { fields, do
   return { status: 'PENDING', submissionId, confirmed: false, receipt };
 }
 
+async function handleMaterials(request, env, ctx, deps) {
+  const upload = await readUpload(request, env, deps, 'materials');
+  if (upload.response) return upload.response;
+  const { now, auth, material, form } = upload;
+
+  const checked = validateMaterialFields(form);
+  if (checked.error) return fail(request, env, checked.error.status, checked.error.code);
+  const doc = await validateDocument(form.get('file'));
+  if (doc.error) return fail(request, env, doc.error.status, doc.error.code);
+  const { fields } = checked;
+  const { document } = doc;
+  // A selfie is a photograph.
+  if (fields.part === 'SELFIE' && document.mime === 'application/pdf') return fail(request, env, 415, 'kyc_file_type');
+  const consentAt = fields.part === 'SELFIE' ? new Date(now).toISOString() : null;
+
+  // Render checks the session, that the request is this user's, still open and
+  // asks for this part, and names the delivery. Nothing from the browser but
+  // the request id and the file is trusted.
+  let authz;
+  try {
+    authz = await callRender(env, deps, material, '/internal/kyc/materials/authorize', {
+      requestId: fields.requestId,
+      materialRequestId: fields.materialRequestId,
+      part: fields.part,
+      mimeType: document.mime,
+      sizeBytes: document.size,
+      ...(fields.part === 'SELFIE' ? { selfieConsent: true, consentVersion: SELFIE_CONSENT_VERSION } : {}),
+    }, { authorization: auth });
+  } catch {
+    return fail(request, env, 503, 'kyc_service_unavailable');
+  }
+  if (authz.status === 401) return fail(request, env, 401, 'kyc_auth_required');
+  if ([400, 403, 404, 409, 429].includes(authz.status)) {
+    const code = typeof authz.data?.code === 'string' ? authz.data.code : 'kyc_bad_request';
+    return fail(request, env, authz.status, code);
+  }
+  if (authz.status !== 200) return fail(request, env, 503, 'kyc_service_unavailable');
+  const { deliveryId, userId, email, submissionId, alreadyReceived } = authz.data || {};
+  const fullName = cleanText(authz.data?.fullName, 200);
+  if (
+    typeof deliveryId !== 'string' || !SUBMISSION_ID.test(deliveryId) || typeof userId !== 'string' ||
+    typeof email !== 'string' || !EMAIL.test(email) || !fullName ||
+    typeof submissionId !== 'string' || !SUBMISSION_ID.test(submissionId)
+  ) {
+    return fail(request, env, 503, 'kyc_service_unavailable');
+  }
+  if (alreadyReceived) {
+    log('material_duplicate', { deliveryId, part: fields.part });
+    return json(request, env, 200, { status: 'RECEIVED', part: fields.part, deliveryId, confirmed: true, duplicate: true });
+  }
+
+  // One email per delivery: a double click shares the first attempt.
+  const running = inFlight.get(deliveryId);
+  if (running) {
+    const shared = await running.catch(() => null);
+    if (!shared) return fail(request, env, 502, 'kyc_email_failed');
+    return json(request, env, shared.confirmed ? 201 : 202, shared);
+  }
+  const attempt = deliverMaterial(request, env, ctx, deps, material, {
+    fields, document, deliveryId, userId, email, fullName, submissionId, consentAt, now,
+  });
+  inFlight.set(deliveryId, attempt);
+  try {
+    const outcome = await attempt;
+    return json(request, env, outcome.confirmed ? 201 : 202, outcome);
+  } catch (err) {
+    log('material_email_failed', { deliveryId, code: String(err?.code || err?.name || 'error').slice(0, 60) });
+    return fail(request, env, 502, 'kyc_email_failed');
+  } finally {
+    inFlight.delete(deliveryId);
+  }
+}
+
+async function deliverMaterial(request, env, ctx, deps, material, { fields, document, deliveryId, userId, email, fullName, submissionId, consentAt, now }) {
+  const receivedAt = new Date(now).toISOString();
+  const messageId = `${deliveryId}@voltextech.net`;
+  const idem = `material-${deliveryId}`;
+
+  const remembered = await rememberedDelivery(deps, request, idem);
+  let emailAcceptedAt = remembered?.emailAcceptedAt;
+  let emailMessageId = typeof remembered?.emailMessageId === 'string' ? remembered.emailMessageId : messageId;
+  if (!emailAcceptedAt) {
+    const raw = buildKycMime({
+      from: KYC_SENDER,
+      to: KYC_RECIPIENT,
+      submissionId,
+      messageId,
+      subject: kycMaterialSubject(fields.part, fullName, email),
+      text: kycMaterialBody({ part: fields.part, email, fullName, userId, submissionId, materialRequestId: fields.materialRequestId, deliveryId, receivedAt, consentAt }),
+      document,
+      date: new Date(now),
+      boundary: `voltex-kyc-${crypto.randomUUID()}`,
+      filename: `kyc-${submissionId}-${fields.part === 'SELFIE' ? 'selfie' : 'document'}-${deliveryId.slice(0, 8)}.${EXTENSION[document.mime]}`,
+      material: { materialRequestId: fields.materialRequestId, part: fields.part },
+    });
+    const sent = await withTimeout(deps.sendEmail(KYC_SENDER, KYC_RECIPIENT, raw), EMAIL_TIMEOUT_MS, 'kyc_email_timeout');
+    emailAcceptedAt = new Date(deps.now()).toISOString();
+    const reported = typeof sent?.messageId === 'string' ? sent.messageId.trim().replace(/^<|>$/g, '') : '';
+    if (MESSAGE_ID.test(reported)) emailMessageId = reported;
+    await rememberDelivery(deps, request, idem, { emailAcceptedAt, emailMessageId });
+    log('material_email_accepted', { deliveryId, part: fields.part, bytes: document.size, mime: document.mime });
+  }
+
+  const confirm = {
+    deliveryId,
+    requestId: fields.requestId,
+    userId,
+    materialRequestId: fields.materialRequestId,
+    part: fields.part,
+    mimeType: document.mime,
+    sizeBytes: document.size,
+    emailMessageId,
+    emailAcceptedAt,
+    ...(consentAt ? { selfieConsentAt: consentAt, consentVersion: SELFIE_CONSENT_VERSION } : {}),
+  };
+  const notification = {
+    eventId: deliveryId, eventType: 'KYC_MATERIALS_RECEIVED', timestamp: Date.parse(emailAcceptedAt),
+    email, fullName, part: fields.part,
+  };
+  const first = await confirmWithRender(env, deps, material, confirm, MATERIAL_CONFIRM_PATH);
+  if (first.ok) {
+    log('material_confirmed', { deliveryId, result: first.result });
+    queueKycMaterialNotification(env, ctx, { ...notification, complete: first.complete }, first.result);
+    return { status: 'RECEIVED', part: fields.part, deliveryId, confirmed: true, complete: first.complete };
+  }
+
+  log('material_confirm_deferred', { deliveryId, status: first.status });
+  const receipt = await sealReceipt(material, { v: 1, kind: 'material', exp: now + RECEIPT_TTL_MS, confirm, notification });
+  if (ctx && typeof ctx.waitUntil === 'function') {
+    ctx.waitUntil((async () => {
+      for (const delay of [2_000, 8_000]) {
+        await new Promise((r) => setTimeout(r, delay));
+        const retry = await confirmWithRender(env, deps, material, confirm, MATERIAL_CONFIRM_PATH);
+        if (retry.ok) {
+          log('material_confirmed_late', { deliveryId });
+          queueKycMaterialNotification(env, ctx, { ...notification, complete: retry.complete }, retry.result);
+          return;
+        }
+      }
+    })());
+  }
+  return { status: 'RECEIVED', part: fields.part, deliveryId, confirmed: false, receipt };
+}
+
 async function handleConfirm(request, env, ctx, deps) {
   const now = deps.now();
   const origin = request.headers.get('origin');
@@ -565,6 +771,13 @@ async function handleConfirm(request, env, ctx, deps) {
   const sealed = await openReceipt(material, body?.receipt);
   if (!sealed || sealed.v !== 1 || typeof sealed.exp !== 'number' || sealed.exp < now || !sealed.confirm) {
     return fail(request, env, 400, 'kyc_receipt_invalid');
+  }
+  if (sealed.kind === 'material') {
+    const done = await confirmWithRender(env, deps, material, sealed.confirm, MATERIAL_CONFIRM_PATH);
+    if (!done.ok) return fail(request, env, 503, 'kyc_service_unavailable');
+    log('material_confirmed_receipt', { deliveryId: sealed.confirm.deliveryId });
+    if (sealed.notification) queueKycMaterialNotification(env, ctx, { ...sealed.notification, complete: done.complete }, done.result);
+    return json(request, env, 200, { status: 'RECEIVED', part: sealed.confirm.part, deliveryId: sealed.confirm.deliveryId, confirmed: true, complete: done.complete });
   }
   const result = await confirmWithRender(env, deps, material, sealed.confirm);
   if (!result.ok) return fail(request, env, 503, 'kyc_service_unavailable');
@@ -593,6 +806,7 @@ export async function handle(request, env, ctx, deps) {
       return json(request, env, 200, { alg: 'Ed25519', key: material.publicJwk });
     }
     if (request.method === 'POST' && url.pathname === '/v1/submit') return await handleSubmit(request, env, ctx, deps);
+    if (request.method === 'POST' && url.pathname === '/v1/materials') return await handleMaterials(request, env, ctx, deps);
     if (request.method === 'POST' && url.pathname === '/v1/confirm') return await handleConfirm(request, env, ctx, deps);
     return fail(request, env, 404, 'not_found');
   } catch (err) {

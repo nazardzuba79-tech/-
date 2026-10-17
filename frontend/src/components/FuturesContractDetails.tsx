@@ -55,7 +55,11 @@ export function FuturesContractDetails({ symbol }: { symbol: string }) {
         {row('turnover', t('futures.headerTurnover24h'), withUnit(facts.turnover24h))}
         {row('funding', t('futures.fundingRate'),
           <>
-            <span className={facts.fundingRate ? (facts.fundingRate.negative ? 'down' : 'up') : undefined}>{facts.fundingRate?.value ?? DASH}</span>
+            {facts.funding ? <>
+              <span data-funding-side="long" className={facts.funding.long.negative ? 'down' : 'up'}>{t('futures.long')} {facts.funding.long.value}</span>
+              <span className="fcd-unit">·</span>
+              <span data-funding-side="short" className={facts.funding.short.negative ? 'down' : 'up'}>{t('futures.short')} {facts.funding.short.value}</span>
+            </> : DASH}
             <span className="fcd-unit">/</span>
             <span>{countdown ?? DASH}</span>
           </>)}

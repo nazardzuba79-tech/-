@@ -302,18 +302,25 @@ describe('admin-only KYC routes', () => {
     const prisma = {
       user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }), update: jest.fn() },
       kycSubmission: { findUnique: jest.fn().mockResolvedValue({ id: 'sub-1', userId: 'user-1', status: 'PENDING' }), update: jest.fn() },
+      kycMaterialRequest: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
       auditLog: { create: jest.fn() },
     } as any;
     const res = await request(buildApp(prisma)).post('/api/v1/kyc/sub-1/review').set('Authorization', authHeader('admin-1')).send({ approve: true });
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('APPROVED');
     expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'user-1' }, data: { kycStatus: 'APPROVED' } });
+    // The decision ends an open request for additional materials; nothing is deleted.
+    expect(prisma.kycMaterialRequest.updateMany).toHaveBeenCalledWith({
+      where: { submissionId: 'sub-1', closedAt: null },
+      data: expect.objectContaining({ status: 'CLOSED', closedBy: 'admin-1', closedOutcome: 'APPROVED' }),
+    });
   });
 
   it('POST /kyc/:id/review rejects with a reason', async () => {
     const prisma = {
       user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }), update: jest.fn() },
       kycSubmission: { findUnique: jest.fn().mockResolvedValue({ id: 'sub-1', userId: 'user-1', status: 'PENDING' }), update: jest.fn() },
+      kycMaterialRequest: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
       auditLog: { create: jest.fn() },
     } as any;
     const res = await request(buildApp(prisma)).post('/api/v1/kyc/sub-1/review').set('Authorization', authHeader('admin-1')).send({ approve: false, reason: 'Document expired' });

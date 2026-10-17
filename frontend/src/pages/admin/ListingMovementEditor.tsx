@@ -60,7 +60,7 @@ export function ListingMovementEditor({ value, initialPrice, listingAt, locked, 
       <label>Максимальная цена, USDT<input inputMode="decimal" value={value.maxPrice} data-field="maxPrice" onChange={e => { setGainText(null); onChange({ ...value, maxPrice: normalizeMovementDecimal(e.target.value) }); }} /><small>Единственная сохранённая граница, включая верхние тени. Не округляется вверх.</small><strong data-maximum-price>{formatMovementPrice(value.maxPrice)} USDT</strong></label>
       <label className="listing-wide">Поведение после завершения роста<select value={value.afterGrowth} data-field="afterGrowth" onChange={() => {}}><option value="range">Боковик без дальнейшего направленного роста</option></select><small>Цена продолжает колебаться, но новый этап роста автоматически не начинается. Предусмотрен запас до максимума для теней.</small></label>
     </div>
-    <details className="listing-settings-details" data-movement-stages>
+    <details className="listing-settings-details" data-movement-stages id="listing-section-stages">
       <summary>Этапы движения <span>{value.stages.length} · {formatMovementPrice(totalHours)} ч</span></summary>
       <p className="listing-hint">Цели задаются в USDT. Процент рядом всегда рассчитан от начальной цены. Один этап должен завершаться ровно через 24 часа с целью первых суток.</p>
       <div className="listing-stages">
@@ -79,7 +79,7 @@ export function ListingMovementEditor({ value, initialPrice, listingAt, locked, 
       </div>
       <button type="button" disabled={value.stages.length >= 12} onClick={() => onChange({ ...value, stages: [...value.stages, { type: 'range', durationHours: 24, targetPrice: value.stages[value.stages.length - 1]?.targetPrice ?? initialPrice }] })} data-add-stage>Добавить этап</button>
     </details>
-    <details className="listing-settings-details" data-movement-advanced>
+    <details className="listing-settings-details" data-movement-advanced id="listing-section-advanced">
       <summary>Точная настройка свечей <span>Откаты, колебания и тени</span></summary>
       <h3>Откаты</h3><p className="listing-hint">Глубина отката считается от локальной вершины, а не от начальной цены монеты.</p>
       <div className="listing-grid">

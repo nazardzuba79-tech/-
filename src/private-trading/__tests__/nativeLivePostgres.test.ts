@@ -13,6 +13,11 @@ const pg=url?describe:describe.skip;
 pg('native projection real PostgreSQL transactions and pagination',()=>{
   if(url){const parsed=new URL(url);if(parsed.hostname!=='127.0.0.1'||parsed.pathname!=='/voltex_native_egress_test')throw new Error('disposable localhost test database required');}
   const db=new PrismaClient({datasources:{db:{url:url??'postgresql://localhost/disabled'}},log:[{emit:'event',level:'query'}]});
+  // The test's own verification SQL runs here, on a client that logs nothing,
+  // so `queries` only ever holds statements the repository issued. Prisma
+  // delivers a query's log event apart from its result, so a read on `db`
+  // just before `queries=[]` could otherwise land in the next inspection.
+  const check=new PrismaClient({datasources:{db:{url:url??'postgresql://localhost/disabled'}}});
   const actor={...fixtureActor,userId:'native-egress-pg-test',sessionId:'native-egress-pg-session'};
   const config=()=>({enabled:true,ownerId:actor.userId});
   const repo=new PrismaNativeRepository(db,config);
@@ -30,7 +35,7 @@ pg('native projection real PostgreSQL transactions and pagination',()=>{
     await db.demoBalance.upsert({where:{userId_asset:{userId:actor.userId,asset:'USDT'}},create:{userId:actor.userId,asset:'USDT',available:'100000'},update:{available:'100000'}});
     await repo.initialize(actor,'initialize-test');queries=[];
   });
-  afterAll(()=>db.$disconnect());
+  afterAll(()=>Promise.all([db.$disconnect(),check.$disconnect()]));
   test('cold repository after browser/server sleep retains positions, orders and funds; live read never backfills TP/SL',async()=>{
     const f=setup();await f.service.initialize(fixtureActor,key());
     await f.service.command(fixtureActor,{kind:'OPEN',symbol:'BTCUSDT',side:'LONG',type:'MARKET',quantity:'1',leverage:'10',protection:{takeProfit:'51000'},idempotencyKey:key()});
@@ -58,7 +63,7 @@ pg('native projection real PostgreSQL transactions and pagination',()=>{
     await repo.commit(actor,1,fixture,'commit-test','hash');
     queries=[];const p=await repo.live(actor);
     expect(p?.revision).toBe(2);expect(p).toEqual(deriveNativeLiveProjection({...fixture,revision:2}));
-    const receipt=await db.nativeDemoRevision.findUniqueOrThrow({where:{userId_revision:{userId:actor.userId,revision:2}}});
+    const receipt=await check.nativeDemoRevision.findUniqueOrThrow({where:{userId_revision:{userId:actor.userId,revision:2}}});
     expect(receipt.payload).toEqual(JSON.parse(JSON.stringify(compact(revisionPayload({...fixture,revision:2})))));
     queries=[];await repo.live(actor);
     expect(queries.some(q=>q.includes('NativeDemoRevision'))).toBe(false);
@@ -67,16 +72,16 @@ pg('native projection real PostgreSQL transactions and pagination',()=>{
   });
   test('mark-only publication updates live projection without authority or immutable revision writes',async()=>{
     await repo.commit(actor,1,fixture,'projection-seed','hash');
-    const authorityBefore=await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}});
-    const revisionsBefore=await db.nativeDemoRevision.count({where:{userId:actor.userId}});
+    const authorityBefore=await check.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}});
+    const revisionsBefore=await check.nativeDemoRevision.count({where:{userId:actor.userId}});
     const fresh=structuredClone({...fixture,revision:2});
     fresh.snapshot.positions[0].markPrice='54321';
     queries=[];
     await expect(repo.publishLive(actor,2,fresh)).resolves.toBe(true);
     const live=await repo.live(actor);
     expect(live?.state.positions[0]).toMatchObject({markPrice:'54321'});
-    expect(await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}})).toEqual(authorityBefore);
-    expect(await db.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(revisionsBefore);
+    expect(await check.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}})).toEqual(authorityBefore);
+    expect(await check.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(revisionsBefore);
     expect(queries.some(q=>q.includes('UPDATE "public"."NativeDemoAccount"'))).toBe(false);
     expect(queries.some(q=>q.includes('INSERT INTO "public"."NativeDemoRevision"'))).toBe(false);
     // A stale worker can never overwrite the projection after authority moved.
@@ -138,16 +143,16 @@ pg('native projection real PostgreSQL transactions and pagination',()=>{
     expect(queries.some(q=>q.includes('INSERT INTO "public"."NativeDemoLiveProjection"'))).toBe(true);
     expect(await repo.read(actor)).toEqual(before);expect(await repo.live(actor)).toEqual(projection);
     expect(await repo.prior(actor,'expired-final-guard','hash')).toBeNull();
-    expect(await db.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(1);
+    expect(await check.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(1);
   });
   test.each(['missing','corrupt','stale'])('%s projection rebuilds from authority without financial writes',async variant=>{
     await repo.commit(actor,1,fixture,'commit-test','hash');
-    const before=await db.nativeDemoAccount.findUnique({where:{userId:actor.userId}});
-    if(variant==='missing')await db.nativeDemoLiveProjection.delete({where:{userId:actor.userId}});
-    else await db.nativeDemoLiveProjection.update({where:{userId:actor.userId},data:variant==='corrupt'?{payload:{walletBalance:'invented'}}:{revision:1}});
+    const before=await check.nativeDemoAccount.findUnique({where:{userId:actor.userId}});
+    if(variant==='missing')await check.nativeDemoLiveProjection.delete({where:{userId:actor.userId}});
+    else await check.nativeDemoLiveProjection.update({where:{userId:actor.userId},data:variant==='corrupt'?{payload:{walletBalance:'invented'}}:{revision:1}});
     queries=[];expect((await repo.live(actor))?.revision).toBe(2);
-    expect(await db.nativeDemoAccount.findUnique({where:{userId:actor.userId}})).toEqual(before);
-    expect(await db.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(2);
+    expect(await check.nativeDemoAccount.findUnique({where:{userId:actor.userId}})).toEqual(before);
+    expect(await check.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(2);
     expect(queries.some(q=>/^(INSERT INTO|UPDATE) "public"\."(NativeDemoAccount|NativeDemoRevision|DemoBalance)"/.test(q))).toBe(false);
   });
   test('keyset history is complete, ordered and pinned when new authority commits',async()=>{

@@ -8,7 +8,7 @@ const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
 const out = path.resolve(process.env.QA_OUT || 'output/regulatory-documents');
 fs.mkdirSync(out, { recursive:true });
-const report = { result:'FAIL', checks:[], widths:[320,360,390,430,768,1366,1440,1920], languages:['ru','en','zh','es','hi','ja','ko'], errors:[], fixtureOnly:true };
+const report = { result:'FAIL', checks:[], widths:[320,360,390,430,768,1366,1440,1920], languages:['ru','en','zh','es','hi','ja','ko'], errors:[], consoleErrors:[], screenshots:[], apiRequests:[], externalRequests:[], blockedWrites:[], failedLocalResponses:[], fixtureOnly:true };
 const check = (condition, name) => { assert.ok(condition, name); report.checks.push(name); };
 const walk = directory => fs.readdirSync(directory,{withFileTypes:true}).flatMap(entry => entry.isDirectory() ? walk(path.join(directory,entry.name)) : [path.join(directory,entry.name)]);
 const production = 'http://127.0.0.1:4280';
@@ -41,13 +41,20 @@ async function main() {
   await context.route('**/*', route=>{
     const url=new URL(route.request().url());
     if(url.pathname.endsWith('/review/licences/portfolio.png')) return route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=','base64')});
-    if(![production,review].includes(url.origin)) return route.abort();
-    if(url.pathname.startsWith('/api/')) return route.fulfill({contentType:'application/json',body:'{}'});
-    if(route.request().method()!=='GET') return route.abort();
+    if(![production,review].includes(url.origin)) { report.externalRequests.push(url.origin+url.pathname); return route.abort(); }
+    if(route.request().method()!=='GET') { report.blockedWrites.push(route.request().method()+' '+url.pathname); return route.abort(); }
+    if(url.pathname.startsWith('/api/')) { report.apiRequests.push(url.pathname); return route.fulfill({contentType:'application/json',body:'{}'}); }
     return route.continue();
   });
   const page=await context.newPage();
   page.on('pageerror',error=>report.errors.push(error.message));
+  page.on('console',message=>{
+    if(message.type()!=='error') return;
+    const location=new URL(message.location().url||production,production);
+    if(message.text()==='Failed to load resource: net::ERR_FAILED'&&report.externalRequests.includes(location.origin+location.pathname)) return;
+    report.consoleErrors.push({message:message.text(),url:location.href});
+  });
+  page.on('response',response=>{ if(response.status()>=400) report.failedLocalResponses.push({url:response.url(),status:response.status()}); });
   for(const language of report.languages) {
     await page.goto(review+'/review/licences/index.html');
     await page.evaluate(language=>localStorage.setItem('exchange_lang',language),language);
@@ -70,15 +77,46 @@ async function main() {
     check(true,`${language}: supplied image renders at original dimensions`);
     check(await page.locator('.licences-portfolio-status').count()===0,`${language}: removed portfolio label does not render`);
     check(await page.locator('.licence-card').count()===0,`${language}: no unverified public cards`);
+    check(await page.locator('.licences-jurisdiction-info').count()===7,`${language}: seven informational descriptions outside the verified catalogue`);
+    check(await page.locator('.licences-regulator-label').count()===7,`${language}: seven regulator labels`);
+    check(await page.locator('.licences-regulator-label svg[aria-hidden="true"]').count()===7,`${language}: decorative check icons remain accessible`);
+    check(await page.locator('.licences-owner-confirmed').count()===0,`${language}: former owner-confirmation labels removed`);
+    check((await page.locator('.licences-jurisdictions li').allTextContents()).join('|')===(await page.locator('.licences-jurisdiction-info h3').allTextContents()).join('|'),`${language}: jurisdiction list matches all descriptions`);
+    check((await page.locator('.licences-regulator-label').allTextContents()).map(text=>text.split(':').pop().trim()).join('|')==='MAS|FCA|VARA|SFC|CySEC|FINMA|CMVM',`${language}: regulator designations preserved`);
+    check((await page.locator('.licences-portfolio .licences-section-head>span').innerText()).trim()==='1',`${language}: one image remains one material, not seven verified documents`);
+    const materialsRequests=report.apiRequests.length;
+    for(const width of report.widths) {
+      await page.setViewportSize({width,height:900});
+      check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`public/${language}/${width}: no horizontal overflow`);
+      check(await page.locator('.licences-jurisdiction-info').evaluateAll(nodes=>nodes.every(node=>node.scrollWidth<=node.clientWidth)),`public/${language}/${width}: descriptions do not clip`);
+      const columns=await page.locator('.licences-jurisdiction-grid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length);
+      check(columns===(width<=600?1:width<=1100?2:3),`public/${language}/${width}: informational grid columns`);
+    }
+    check(report.apiRequests.length===materialsRequests,`${language}: description layout and resize make no API requests`);
+    const [imageTab]=await Promise.all([context.waitForEvent('page'),page.locator('.licences-portfolio-open').click()]);
+    await imageTab.waitForLoadState('load');
+    check(imageTab.url()===production+'/regulatory-documents/voltex-portfolio.png',`${language}: open image uses the existing original`);
+    check(await imageTab.locator('img').evaluate(img=>img.complete&&img.naturalWidth===1536),`${language}: original opens and decodes`);
+    await imageTab.close();
+    await page.setViewportSize({width:1440,height:1000});
+    await page.screenshot({path:path.join(out,`public-${language}-1440.png`),fullPage:true});
     check(await page.locator('meta[name="robots"][content="noindex, nofollow"]').count()===1,`${language}: indexing deferred`);
   }
   await page.goto(production+'/legal/licenses');
   await page.evaluate(()=>localStorage.setItem('exchange_lang','ru'));
   await page.reload();
-  for(const width of [1440,390]) {
+  await page.locator('main[lang="ru"] .licences-jurisdiction-info').last().waitFor();
+  await page.locator('.licences-portfolio-image img').evaluate(image=>image.decode());
+  await page.evaluate(()=>document.fonts.ready);
+  for(const width of [320,390,430,768,1440,1920]) {
     await page.setViewportSize({width,height:1000});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     check(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),`public/${width}: no horizontal overflow`);
+    const geometry=await page.evaluate(()=>({pageHeight:document.documentElement.scrollHeight,lastDescriptionBottom:document.querySelector('.licences-jurisdiction-info:last-child').getBoundingClientRect().bottom+scrollY,footerBottom:document.querySelector('footer').getBoundingClientRect().bottom+scrollY}));
+    check(geometry.pageHeight>=geometry.lastDescriptionBottom-1&&geometry.pageHeight>=geometry.footerBottom-1,`public/${width}: full page includes final description and footer`);
+    report.screenshots.push({width,...geometry});
     await page.screenshot({path:path.join(out,`public-${width}.png`),fullPage:true});
+    if(width===1440||width===390) await page.locator('.licences-explanations').screenshot({path:path.join(out,`descriptions-${width}.png`)});
   }
   await page.goto(review+'/review/licences/index.html');
   await page.getByRole('button',{name:'RU',exact:true}).click();
@@ -109,6 +147,9 @@ async function main() {
   await page.waitForFunction(() => Boolean(document.querySelector('a[href="/legal/licenses"]')));
   check(true,'Homepage footer links to licences');
   check(report.errors.length===0,'No JavaScript page errors');
+  check(report.consoleErrors.length===0,'No unexpected console errors');
+  check(report.blockedWrites.length===0,'No write requests');
+  check(report.failedLocalResponses.length===0,'No failed local assets or API responses');
   report.result='PASS';
 }
 main().catch(error=>{ report.errors.push(error.stack);process.exitCode=1; }).finally(async()=>{

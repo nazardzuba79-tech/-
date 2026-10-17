@@ -1,0 +1,1192 @@
+{
+  "scope": "real /futures terminal, isolated native fixture, shipped VOLTEX V2 funding (QA lever pins it 3 days back)",
+  "funding": {
+    "version": "VOLTEX_FIXED_V2",
+    "LONG": "-0.0001",
+    "SHORT": "0.0004"
+  },
+  "checks": [
+    {
+      "name": "1920px: the model in force is VOLTEX V2",
+      "passed": true,
+      "evidence": {
+        "longCashflow": "-0.0001",
+        "shortCashflow": "0.0004",
+        "unit": "FRACTION",
+        "intervalMs": 28800000,
+        "version": "VOLTEX_FIXED_V2"
+      }
+    },
+    {
+      "name": "1920px: engine reports every position apart (trading - fees + funding = net)",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "status": "OPEN",
+          "tradingPnl": "762.7",
+          "feesPaid": "27.151355",
+          "fundingNet": "-20.03292",
+          "netPnl": "715.515725"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "status": "OPEN",
+          "tradingPnl": "-1525.8",
+          "feesPaid": "54.30249",
+          "fundingNet": "160.26336",
+          "netPnl": "-1419.83913"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "status": "CLOSED",
+          "tradingPnl": "654.6",
+          "feesPaid": "54.78154",
+          "fundingNet": "-5.09991",
+          "netPnl": "594.71855"
+        }
+      ]
+    },
+    {
+      "name": "1920px: one V2 settlement per boundary held, quantity x mark x side rate",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-17T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "50461.6",
+              "rate": "-0.0001",
+              "amount": "-5.04616"
+            },
+            {
+              "at": "2026-10-17T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "49055.2",
+              "rate": "-0.0001",
+              "amount": "-4.90552"
+            },
+            {
+              "at": "2026-10-17T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "49813.3",
+              "rate": "-0.0001",
+              "amount": "-4.98133"
+            },
+            {
+              "at": "2026-10-18T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "50999.1",
+              "rate": "-0.0001",
+              "amount": "-5.09991"
+            }
+          ]
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "settlements": [
+            {
+              "at": "2026-10-17T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "50461.6",
+              "rate": "0.0004",
+              "amount": "40.36928"
+            },
+            {
+              "at": "2026-10-17T08:00:00.000Z",
+              "quantity": "2",
+              "mark": "49055.2",
+              "rate": "0.0004",
+              "amount": "39.24416"
+            },
+            {
+              "at": "2026-10-17T16:00:00.000Z",
+              "quantity": "2",
+              "mark": "49813.3",
+              "rate": "0.0004",
+              "amount": "39.85064"
+            },
+            {
+              "at": "2026-10-18T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "50999.1",
+              "rate": "0.0004",
+              "amount": "40.79928"
+            }
+          ]
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-18T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "50999.1",
+              "rate": "-0.0001",
+              "amount": "-5.09991"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1920px: the ledger reconciles to the wallet",
+      "passed": true,
+      "evidence": {
+        "closingBalance": "10000653.495145",
+        "walletBalance": "10000653.495145",
+        "totals": {
+          "realizedPnl": "654.6",
+          "fees": "136.235385",
+          "funding": "135.13053",
+          "shortfallCovered": "0",
+          "net": "653.495145"
+        }
+      }
+    },
+    {
+      "name": "1920px: open rows show the engine's Trading P&L, Funding, Fees and Net P&L",
+      "passed": true,
+      "evidence": [
+        {
+          "Контракты": "BTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x",
+          "К-во": "1.000 BTC",
+          "Начальная маржа": "4,936.61 USDT",
+          "Цена Входа": "49,366.10",
+          "Цена марк.": "50,128.80",
+          "Цена ликвид.": "—",
+          "Нереализованный P&L (ROI)": "+762.70 USDT\n(+15.45%)\n≈762.70 USD",
+          "Торговый P&L": "762.70",
+          "Фандинг": "-20.03",
+          "Комиссии": "-27.15",
+          "Чистый P&L": "715.52\n≈715.52 USD",
+          "TP/SL · Закрыть как": "+ TP/SL\nЛимитный\nРыночный"
+        },
+        {
+          "Контракты": "ETHUSDT\nБесср.\nШорт\nМарж. торговля 10.00x",
+          "К-во": "2 ETH",
+          "Начальная маржа": "9,873.18 USDT",
+          "Цена Входа": "49,365.90",
+          "Цена марк.": "50,128.80",
+          "Цена ликвид.": "5,071,914.50",
+          "Нереализованный P&L (ROI)": "-1,525.80 USDT\n(-15.45%)\n≈-1,525.80 USD",
+          "Торговый P&L": "-1,525.80",
+          "Фандинг": "160.26",
+          "Комиссии": "-54.30",
+          "Чистый P&L": "-1,419.84\n≈-1,419.84 USD",
+          "TP/SL · Закрыть как": "+ TP/SL\nЛимитный\nРыночный"
+        }
+      ]
+    },
+    {
+      "name": "1920px: the closed trade's total is its Net P&L, with its parts beside it",
+      "passed": true,
+      "evidence": {
+        "row": {
+          "Торговый P&L": "654.60",
+          "Фандинг": "-5.10",
+          "Комиссии": "-54.78",
+          "Чистый P&L": "594.72"
+        },
+        "engine": {
+          "tradingPnl": "654.6",
+          "fundingNet": "-5.09991",
+          "feesPaid": "54.78154",
+          "netPnl": "594.71855"
+        }
+      }
+    },
+    {
+      "name": "1920px: the «Позиция закрыта» card shows the engine's split and its Net P&L",
+      "passed": true,
+      "evidence": {
+        "card": {
+          "trading": "-1,526.00 USDT",
+          "funding": "+160.26 USDT",
+          "fees": "-109.44 USDT",
+          "net": "-1,475.18 USDT",
+          "netLabel": "Чистый P&L"
+        },
+        "engine": {
+          "tradingPnl": "-1526",
+          "fundingNet": "160.26336",
+          "feesPaid": "109.44428",
+          "netPnl": "-1475.18092"
+        }
+      }
+    },
+    {
+      "name": "1920px: no page errors",
+      "passed": true,
+      "evidence": {
+        "screenshots": [
+          "docs/qa/native-funding-pnl/open-1920.png",
+          "docs/qa/native-funding-pnl/history-1920.png"
+        ]
+      }
+    },
+    {
+      "name": "1920px after the UI close: the model in force is VOLTEX V2",
+      "passed": true,
+      "evidence": {
+        "longCashflow": "-0.0001",
+        "shortCashflow": "0.0004",
+        "unit": "FRACTION",
+        "intervalMs": 28800000,
+        "version": "VOLTEX_FIXED_V2"
+      }
+    },
+    {
+      "name": "1920px after the UI close: engine reports every position apart (trading - fees + funding = net)",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "status": "OPEN",
+          "tradingPnl": "762.7",
+          "feesPaid": "27.151355",
+          "fundingNet": "-20.03292",
+          "netPnl": "715.515725"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "status": "CLOSED",
+          "tradingPnl": "-1526",
+          "feesPaid": "109.44428",
+          "fundingNet": "160.26336",
+          "netPnl": "-1475.18092"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "status": "CLOSED",
+          "tradingPnl": "654.6",
+          "feesPaid": "54.78154",
+          "fundingNet": "-5.09991",
+          "netPnl": "594.71855"
+        }
+      ]
+    },
+    {
+      "name": "1920px after the UI close: one V2 settlement per boundary held, quantity x mark x side rate",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-17T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "50461.6",
+              "rate": "-0.0001",
+              "amount": "-5.04616"
+            },
+            {
+              "at": "2026-10-17T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "49055.2",
+              "rate": "-0.0001",
+              "amount": "-4.90552"
+            },
+            {
+              "at": "2026-10-17T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "49813.3",
+              "rate": "-0.0001",
+              "amount": "-4.98133"
+            },
+            {
+              "at": "2026-10-18T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "50999.1",
+              "rate": "-0.0001",
+              "amount": "-5.09991"
+            }
+          ]
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "settlements": [
+            {
+              "at": "2026-10-17T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "50461.6",
+              "rate": "0.0004",
+              "amount": "40.36928"
+            },
+            {
+              "at": "2026-10-17T08:00:00.000Z",
+              "quantity": "2",
+              "mark": "49055.2",
+              "rate": "0.0004",
+              "amount": "39.24416"
+            },
+            {
+              "at": "2026-10-17T16:00:00.000Z",
+              "quantity": "2",
+              "mark": "49813.3",
+              "rate": "0.0004",
+              "amount": "39.85064"
+            },
+            {
+              "at": "2026-10-18T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "50999.1",
+              "rate": "0.0004",
+              "amount": "40.79928"
+            }
+          ]
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-18T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "50999.1",
+              "rate": "-0.0001",
+              "amount": "-5.09991"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1920px after the UI close: the ledger reconciles to the wallet",
+      "passed": true,
+      "evidence": {
+        "closingBalance": "9999072.353355",
+        "walletBalance": "9999072.353355",
+        "totals": {
+          "realizedPnl": "-871.4",
+          "fees": "191.377175",
+          "funding": "135.13053",
+          "shortfallCovered": "0",
+          "net": "-927.646645"
+        }
+      }
+    },
+    {
+      "name": "1440px: the model in force is VOLTEX V2",
+      "passed": true,
+      "evidence": {
+        "longCashflow": "-0.0001",
+        "shortCashflow": "0.0004",
+        "unit": "FRACTION",
+        "intervalMs": 28800000,
+        "version": "VOLTEX_FIXED_V2"
+      }
+    },
+    {
+      "name": "1440px: engine reports every position apart (trading - fees + funding = net)",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "status": "OPEN",
+          "tradingPnl": "286.5",
+          "feesPaid": "27.570895",
+          "fundingNet": "-20.01696",
+          "netPnl": "238.912145"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "status": "OPEN",
+          "tradingPnl": "-573.4",
+          "feesPaid": "55.14157",
+          "fundingNet": "160.13568",
+          "netPnl": "-468.40589"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "status": "CLOSED",
+          "tradingPnl": "418.8",
+          "feesPaid": "55.22649",
+          "fundingNet": "-5.08565",
+          "netPnl": "358.48786"
+        }
+      ]
+    },
+    {
+      "name": "1440px: one V2 settlement per boundary held, quantity x mark x side rate",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-18T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "49896.0",
+              "rate": "-0.0001",
+              "amount": "-4.9896"
+            },
+            {
+              "at": "2026-10-18T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "49031.1",
+              "rate": "-0.0001",
+              "amount": "-4.90311"
+            },
+            {
+              "at": "2026-10-19T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "50386.0",
+              "rate": "-0.0001",
+              "amount": "-5.0386"
+            },
+            {
+              "at": "2026-10-19T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "50856.5",
+              "rate": "-0.0001",
+              "amount": "-5.08565"
+            }
+          ]
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "settlements": [
+            {
+              "at": "2026-10-18T08:00:00.000Z",
+              "quantity": "2",
+              "mark": "49896.0",
+              "rate": "0.0004",
+              "amount": "39.9168"
+            },
+            {
+              "at": "2026-10-18T16:00:00.000Z",
+              "quantity": "2",
+              "mark": "49031.1",
+              "rate": "0.0004",
+              "amount": "39.22488"
+            },
+            {
+              "at": "2026-10-19T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "50386.0",
+              "rate": "0.0004",
+              "amount": "40.3088"
+            },
+            {
+              "at": "2026-10-19T08:00:00.000Z",
+              "quantity": "2",
+              "mark": "50856.5",
+              "rate": "0.0004",
+              "amount": "40.6852"
+            }
+          ]
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-19T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "50856.5",
+              "rate": "-0.0001",
+              "amount": "-5.08565"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1440px: the ledger reconciles to the wallet",
+      "passed": true,
+      "evidence": {
+        "closingBalance": "10000415.894115",
+        "walletBalance": "10000415.894115",
+        "totals": {
+          "realizedPnl": "418.8",
+          "fees": "137.938955",
+          "funding": "135.03307",
+          "shortfallCovered": "0",
+          "net": "415.894115"
+        }
+      }
+    },
+    {
+      "name": "1440px: open rows show the engine's Trading P&L, Funding, Fees and Net P&L",
+      "passed": true,
+      "evidence": [
+        {
+          "Контракты": "BTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x",
+          "К-во": "1.000 BTC",
+          "Начальная маржа": "5,012.89 USDT",
+          "Цена Входа": "50,128.90",
+          "Цена марк.": "50,415.40",
+          "Цена ликвид.": "—",
+          "Нереализованный P&L (ROI)": "+286.50 USDT\n(+5.72%)\n≈286.50 USD",
+          "Торговый P&L": "286.50",
+          "Фандинг": "-20.02",
+          "Комиссии": "-27.57",
+          "Чистый P&L": "238.91\n≈238.91 USD",
+          "TP/SL · Закрыть как": "+ TP/SL\nЛимитный\nРыночный"
+        },
+        {
+          "Контракты": "ETHUSDT\nБесср.\nШорт\nМарж. торговля 10.00x",
+          "К-во": "2 ETH",
+          "Начальная маржа": "10,025.74 USDT",
+          "Цена Входа": "50,128.70",
+          "Цена марк.": "50,415.40",
+          "Цена ликвид.": "5,072,602.40",
+          "Нереализованный P&L (ROI)": "-573.40 USDT\n(-5.72%)\n≈-573.40 USD",
+          "Торговый P&L": "-573.40",
+          "Фандинг": "160.14",
+          "Комиссии": "-55.14",
+          "Чистый P&L": "-468.41\n≈-468.41 USD",
+          "TP/SL · Закрыть как": "+ TP/SL\nЛимитный\nРыночный"
+        }
+      ]
+    },
+    {
+      "name": "1440px: the closed trade's total is its Net P&L, with its parts beside it",
+      "passed": true,
+      "evidence": {
+        "row": {
+          "Торговый P&L": "418.80",
+          "Фандинг": "-5.09",
+          "Комиссии": "-55.23",
+          "Чистый P&L": "358.49"
+        },
+        "engine": {
+          "tradingPnl": "418.8",
+          "fundingNet": "-5.08565",
+          "feesPaid": "55.22649",
+          "netPnl": "358.48786"
+        }
+      }
+    },
+    {
+      "name": "1440px: the «Позиция закрыта» card shows the engine's split and its Net P&L",
+      "passed": true,
+      "evidence": {
+        "card": {
+          "trading": "-573.60 USDT",
+          "funding": "+160.14 USDT",
+          "fees": "-110.60 USDT",
+          "net": "-524.06 USDT",
+          "netLabel": "Чистый P&L"
+        },
+        "engine": {
+          "tradingPnl": "-573.6",
+          "fundingNet": "160.13568",
+          "feesPaid": "110.59862",
+          "netPnl": "-524.06294"
+        }
+      }
+    },
+    {
+      "name": "1440px: no page errors",
+      "passed": true,
+      "evidence": {
+        "screenshots": [
+          "docs/qa/native-funding-pnl/open-1440.png",
+          "docs/qa/native-funding-pnl/history-1440.png"
+        ]
+      }
+    },
+    {
+      "name": "1440px after the UI close: the model in force is VOLTEX V2",
+      "passed": true,
+      "evidence": {
+        "longCashflow": "-0.0001",
+        "shortCashflow": "0.0004",
+        "unit": "FRACTION",
+        "intervalMs": 28800000,
+        "version": "VOLTEX_FIXED_V2"
+      }
+    },
+    {
+      "name": "1440px after the UI close: engine reports every position apart (trading - fees + funding = net)",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "status": "OPEN",
+          "tradingPnl": "286.5",
+          "feesPaid": "27.570895",
+          "fundingNet": "-20.01696",
+          "netPnl": "238.912145"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "status": "CLOSED",
+          "tradingPnl": "-573.6",
+          "feesPaid": "110.59862",
+          "fundingNet": "160.13568",
+          "netPnl": "-524.06294"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "status": "CLOSED",
+          "tradingPnl": "418.8",
+          "feesPaid": "55.22649",
+          "fundingNet": "-5.08565",
+          "netPnl": "358.48786"
+        }
+      ]
+    },
+    {
+      "name": "1440px after the UI close: one V2 settlement per boundary held, quantity x mark x side rate",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-18T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "49896.0",
+              "rate": "-0.0001",
+              "amount": "-4.9896"
+            },
+            {
+              "at": "2026-10-18T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "49031.1",
+              "rate": "-0.0001",
+              "amount": "-4.90311"
+            },
+            {
+              "at": "2026-10-19T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "50386.0",
+              "rate": "-0.0001",
+              "amount": "-5.0386"
+            },
+            {
+              "at": "2026-10-19T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "50856.5",
+              "rate": "-0.0001",
+              "amount": "-5.08565"
+            }
+          ]
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "settlements": [
+            {
+              "at": "2026-10-18T08:00:00.000Z",
+              "quantity": "2",
+              "mark": "49896.0",
+              "rate": "0.0004",
+              "amount": "39.9168"
+            },
+            {
+              "at": "2026-10-18T16:00:00.000Z",
+              "quantity": "2",
+              "mark": "49031.1",
+              "rate": "0.0004",
+              "amount": "39.22488"
+            },
+            {
+              "at": "2026-10-19T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "50386.0",
+              "rate": "0.0004",
+              "amount": "40.3088"
+            },
+            {
+              "at": "2026-10-19T08:00:00.000Z",
+              "quantity": "2",
+              "mark": "50856.5",
+              "rate": "0.0004",
+              "amount": "40.6852"
+            }
+          ]
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-19T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "50856.5",
+              "rate": "-0.0001",
+              "amount": "-5.08565"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1440px after the UI close: the ledger reconciles to the wallet",
+      "passed": true,
+      "evidence": {
+        "closingBalance": "9999786.837065",
+        "walletBalance": "9999786.837065",
+        "totals": {
+          "realizedPnl": "-154.8",
+          "fees": "193.396005",
+          "funding": "135.03307",
+          "shortfallCovered": "0",
+          "net": "-213.162935"
+        }
+      }
+    },
+    {
+      "name": "390px: the model in force is VOLTEX V2",
+      "passed": true,
+      "evidence": {
+        "longCashflow": "-0.0001",
+        "shortCashflow": "0.0004",
+        "unit": "FRACTION",
+        "intervalMs": 28800000,
+        "version": "VOLTEX_FIXED_V2"
+      }
+    },
+    {
+      "name": "390px: engine reports every position apart (trading - fees + funding = net)",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "status": "OPEN",
+          "tradingPnl": "-1249.3",
+          "feesPaid": "27.728525",
+          "fundingNet": "-24.8998",
+          "netPnl": "-1301.928325"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "status": "OPEN",
+          "tradingPnl": "2498.2",
+          "feesPaid": "55.45683",
+          "fundingNet": "199.1984",
+          "netPnl": "2641.94157"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "status": "CLOSED",
+          "tradingPnl": "-1366.1",
+          "feesPaid": "54.834065",
+          "fundingNet": "-9.94742",
+          "netPnl": "-1430.881485"
+        }
+      ]
+    },
+    {
+      "name": "390px: one V2 settlement per boundary held, quantity x mark x side rate",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-19T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "49364.8",
+              "rate": "-0.0001",
+              "amount": "-4.93648"
+            },
+            {
+              "at": "2026-10-20T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "49328.3",
+              "rate": "-0.0001",
+              "amount": "-4.93283"
+            },
+            {
+              "at": "2026-10-20T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "50830.7",
+              "rate": "-0.0001",
+              "amount": "-5.08307"
+            },
+            {
+              "at": "2026-10-20T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "50430.0",
+              "rate": "-0.0001",
+              "amount": "-5.043"
+            },
+            {
+              "at": "2026-10-21T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "49044.2",
+              "rate": "-0.0001",
+              "amount": "-4.90442"
+            }
+          ]
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "settlements": [
+            {
+              "at": "2026-10-19T16:00:00.000Z",
+              "quantity": "2",
+              "mark": "49364.8",
+              "rate": "0.0004",
+              "amount": "39.49184"
+            },
+            {
+              "at": "2026-10-20T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "49328.3",
+              "rate": "0.0004",
+              "amount": "39.46264"
+            },
+            {
+              "at": "2026-10-20T08:00:00.000Z",
+              "quantity": "2",
+              "mark": "50830.7",
+              "rate": "0.0004",
+              "amount": "40.66456"
+            },
+            {
+              "at": "2026-10-20T16:00:00.000Z",
+              "quantity": "2",
+              "mark": "50430.0",
+              "rate": "0.0004",
+              "amount": "40.344"
+            },
+            {
+              "at": "2026-10-21T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "49044.2",
+              "rate": "0.0004",
+              "amount": "39.23536"
+            }
+          ]
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-20T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "50430.0",
+              "rate": "-0.0001",
+              "amount": "-5.043"
+            },
+            {
+              "at": "2026-10-21T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "49044.2",
+              "rate": "-0.0001",
+              "amount": "-4.90442"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "390px: the ledger reconciles to the wallet",
+      "passed": true,
+      "evidence": {
+        "closingBalance": "9998660.23176",
+        "walletBalance": "9998660.23176",
+        "totals": {
+          "realizedPnl": "-1366.1",
+          "fees": "138.01942",
+          "funding": "164.35118",
+          "shortfallCovered": "0",
+          "net": "-1339.76824"
+        }
+      }
+    },
+    {
+      "name": "390px: open rows show the engine's Trading P&L, Funding, Fees and Net P&L",
+      "passed": true,
+      "evidence": [
+        {
+          "Контракты": "BTCUSDT\nБесср.\nЛонг\nМарж. торговля\n10.00x",
+          "К-во": "1.000\nBTC",
+          "Начальная маржа": "5,041.55\nUSDT",
+          "Цена Входа": "50,415.50",
+          "Цена марк.": "49,166.20",
+          "Цена ликвид.": "—",
+          "Нереализованный P&L (ROI)": "-1,249.30 USDT\n(-24.78%)\n≈-1,249.30 USD",
+          "Торговый P&L": "-1,249.30",
+          "Фандинг": "-24.90",
+          "Комиссии": "-27.73",
+          "Чистый P&L": "-1,301.93\n≈-1,301.93 USD",
+          "TP/SL": "+ Добавить\nTP —\nSL —",
+          "Закрыть как": "Лимитный\nРыночный"
+        },
+        {
+          "Контракты": "ETHUSDT\nБесср.\nШорт\nМарж. торговля\n10.00x",
+          "К-во": "2\nETH",
+          "Начальная маржа": "10,083.06\nUSDT",
+          "Цена Входа": "50,415.30",
+          "Цена марк.": "49,166.20",
+          "Цена ликвид.": "5,070,011.90",
+          "Нереализованный P&L (ROI)": "+2,498.20 USDT\n(+24.78%)\n≈2,498.20 USD",
+          "Торговый P&L": "2,498.20",
+          "Фандинг": "199.20",
+          "Комиссии": "-55.46",
+          "Чистый P&L": "2,641.94\n≈2,641.94 USD",
+          "TP/SL": "+ Добавить\nTP —\nSL —",
+          "Закрыть как": "Лимитный\nРыночный"
+        }
+      ]
+    },
+    {
+      "name": "390px: the closed trade's total is its Net P&L, with its parts beside it",
+      "passed": true,
+      "evidence": {
+        "row": {
+          "Торговый P&L": "-1,366.10",
+          "Фандинг": "-9.95",
+          "Комиссии": "-54.83",
+          "Чистый P&L": "-1,430.88"
+        },
+        "engine": {
+          "tradingPnl": "-1366.1",
+          "fundingNet": "-9.94742",
+          "feesPaid": "54.834065",
+          "netPnl": "-1430.881485"
+        }
+      }
+    },
+    {
+      "name": "390px: the «Позиция закрыта» card shows the engine's split and its Net P&L",
+      "passed": true,
+      "evidence": {
+        "card": {
+          "trading": "+2,498.00 USDT",
+          "funding": "+199.20 USDT",
+          "fees": "-109.54 USDT",
+          "net": "+2,587.66 USDT",
+          "netLabel": "Чистый P&L"
+        },
+        "engine": {
+          "tradingPnl": "2498",
+          "fundingNet": "199.1984",
+          "feesPaid": "109.53976",
+          "netPnl": "2587.65864"
+        }
+      }
+    },
+    {
+      "name": "390px: no page errors",
+      "passed": true,
+      "evidence": {
+        "screenshots": [
+          "docs/qa/native-funding-pnl/open-390.png",
+          "docs/qa/native-funding-pnl/history-390.png"
+        ]
+      }
+    },
+    {
+      "name": "390px after the UI close: the model in force is VOLTEX V2",
+      "passed": true,
+      "evidence": {
+        "longCashflow": "-0.0001",
+        "shortCashflow": "0.0004",
+        "unit": "FRACTION",
+        "intervalMs": 28800000,
+        "version": "VOLTEX_FIXED_V2"
+      }
+    },
+    {
+      "name": "390px after the UI close: engine reports every position apart (trading - fees + funding = net)",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "status": "OPEN",
+          "tradingPnl": "-1249.3",
+          "feesPaid": "27.728525",
+          "fundingNet": "-24.8998",
+          "netPnl": "-1301.928325"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "status": "CLOSED",
+          "tradingPnl": "2498",
+          "feesPaid": "109.53976",
+          "fundingNet": "199.1984",
+          "netPnl": "2587.65864"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "status": "CLOSED",
+          "tradingPnl": "-1366.1",
+          "feesPaid": "54.834065",
+          "fundingNet": "-9.94742",
+          "netPnl": "-1430.881485"
+        }
+      ]
+    },
+    {
+      "name": "390px after the UI close: one V2 settlement per boundary held, quantity x mark x side rate",
+      "passed": true,
+      "evidence": [
+        {
+          "symbol": "BTCUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-19T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "49364.8",
+              "rate": "-0.0001",
+              "amount": "-4.93648"
+            },
+            {
+              "at": "2026-10-20T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "49328.3",
+              "rate": "-0.0001",
+              "amount": "-4.93283"
+            },
+            {
+              "at": "2026-10-20T08:00:00.000Z",
+              "quantity": "1",
+              "mark": "50830.7",
+              "rate": "-0.0001",
+              "amount": "-5.08307"
+            },
+            {
+              "at": "2026-10-20T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "50430.0",
+              "rate": "-0.0001",
+              "amount": "-5.043"
+            },
+            {
+              "at": "2026-10-21T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "49044.2",
+              "rate": "-0.0001",
+              "amount": "-4.90442"
+            }
+          ]
+        },
+        {
+          "symbol": "ETHUSDT",
+          "side": "SHORT",
+          "settlements": [
+            {
+              "at": "2026-10-19T16:00:00.000Z",
+              "quantity": "2",
+              "mark": "49364.8",
+              "rate": "0.0004",
+              "amount": "39.49184"
+            },
+            {
+              "at": "2026-10-20T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "49328.3",
+              "rate": "0.0004",
+              "amount": "39.46264"
+            },
+            {
+              "at": "2026-10-20T08:00:00.000Z",
+              "quantity": "2",
+              "mark": "50830.7",
+              "rate": "0.0004",
+              "amount": "40.66456"
+            },
+            {
+              "at": "2026-10-20T16:00:00.000Z",
+              "quantity": "2",
+              "mark": "50430.0",
+              "rate": "0.0004",
+              "amount": "40.344"
+            },
+            {
+              "at": "2026-10-21T00:00:00.000Z",
+              "quantity": "2",
+              "mark": "49044.2",
+              "rate": "0.0004",
+              "amount": "39.23536"
+            }
+          ]
+        },
+        {
+          "symbol": "SOLUSDT",
+          "side": "LONG",
+          "settlements": [
+            {
+              "at": "2026-10-20T16:00:00.000Z",
+              "quantity": "1",
+              "mark": "50430.0",
+              "rate": "-0.0001",
+              "amount": "-5.043"
+            },
+            {
+              "at": "2026-10-21T00:00:00.000Z",
+              "quantity": "1",
+              "mark": "49044.2",
+              "rate": "-0.0001",
+              "amount": "-4.90442"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "390px after the UI close: the ledger reconciles to the wallet",
+      "passed": true,
+      "evidence": {
+        "closingBalance": "10001104.14883",
+        "walletBalance": "10001104.14883",
+        "totals": {
+          "realizedPnl": "1131.9",
+          "fees": "192.10235",
+          "funding": "164.35118",
+          "shortfallCovered": "0",
+          "net": "1104.14883"
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "geometry": {
+    "390": {
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "rowHeight": 693.5
+    },
+    "1440": {
+      "clientWidth": 1128,
+      "scrollWidth": 1525,
+      "rowHeight": 68
+    },
+    "1920": {
+      "clientWidth": 1608,
+      "scrollWidth": 1608,
+      "rowHeight": 68
+    }
+  },
+  "passed": true
+}

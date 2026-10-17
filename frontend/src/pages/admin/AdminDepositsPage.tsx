@@ -500,7 +500,7 @@ function IgnoreModal({ row, onClose, onDone }: { row: DepositQueueRow; onClose: 
     <>
       <div style={styles.drawerOverlay} onClick={() => { if (!busy) onClose(); }} />
       <div role="dialog" aria-modal="true" aria-labelledby="ignore-title" data-ignore-modal={row.id}
-        style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(440px, calc(100vw - 32px))', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto',
+        style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(440px, calc(100vw - 32px))', maxHeight: 'calc(var(--admin-viewport-height, 100dvh) - 32px)', overflowY: 'auto',
           background: 'var(--panel)', color: 'var(--text-primary)', borderRadius: 12, boxShadow: '0 20px 50px rgba(15,17,21,.25)', padding: 18, zIndex: 1001, boxSizing: 'border-box' }}>
         <strong id="ignore-title" style={{ fontSize: 15 }}>Игнорировать перевод</strong>
         <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', margin: '6px 0 10px', overflowWrap: 'anywhere' }}>

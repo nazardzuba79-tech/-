@@ -56,6 +56,15 @@ const KYC_PROFILE_CARD_KEYS = ['kycStepDocumentShort', 'kycStepReview', 'kycStep
   'kycStepNotSent', 'kycUploadTitle', 'kycUploadHint', 'kycChooseFile', 'kycReplaceFile', 'kycRemoveFile', 'kycPendingNoReupload',
   'kycRejectedHint', 'kycSubmittedData', 'kycStartCta', 'kycResubmitCta', 'kycOpenStatus', 'cardShortcutTitle'].map(key => `settings.${key}`);
 const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 'Faq', 'Glossary'].map(name => `nav.menu${name}Desc`);
+// Customer wording audit (2026-10-07): additive labels only. Keep the old
+// dictionary digest intact; do not exempt entire listing/error namespaces.
+const CUSTOMER_PRESENTATION_KEYS = [
+  'trade.statusUnavailable', 'trade.orderTypeUnavailable', 'trade.status.REJECTED', 'trade.status.EXPIRED',
+  'futures.positionStatus.OPEN', 'futures.positionStatus.CLOSED', 'futures.positionStatus.LIQUIDATED',
+  'listing.simulation', 'listing.tradingUnavailable', 'listing.marketLive', 'listing.dateUnconfirmed',
+  'listing.awaitingStart', 'listing.untilListing', 'listing.scheduledAt', 'listing.loadFailed',
+  'listing.dataStale', 'listing.volume24h', 'serverError.forbidden', 'serverError.network', 'serverError.timeout',
+];
 // Aircraft authentication design approved 2026-10-05: eleven existing labels
 // change and nine presentation labels are added. Name only those exact keys;
 // password rules, errors, 2FA, legal and all other auth copy remain frozen.
@@ -74,6 +83,13 @@ const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySub
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('provides the twenty new customer state labels in every locale', () => {
+    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(20);
+    for (const code of LOCALES) for (const key of CUSTOMER_PRESENTATION_KEYS) {
+      expect(dicts[code][key]?.trim()).toBeTruthy();
+      expect(dicts[code][key]).not.toBe(key);
+    }
+  });
   it('localizes the exact two-line card copy and 22+/70+ fiat/crypto counts without an investor claim', () => {
     const approvedCommunityCopy: Record<string, { title: string; subtitle: string }> = {
       ru: { title: '0% комиссии за покупки — и снятие наличных', subtitle: '22+ фиатных валют · 70+ криптовалют' },
@@ -331,6 +347,8 @@ describe('translation integrity', () => {
           'futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
+          // Native demo P&L breakdown columns (2026-10-16): four new keys, additions only.
+          'futures.colTradingPnl', 'futures.colFunding', 'futures.colFees', 'futures.colNetPnl',
           'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable',
           'markets.new', // Spot rail newest-listing sorter (2026-10-04), additive only.
           'deposit.transferCreditNote', // New manual-catalogue copy; preserve every existing dictionary byte.
@@ -359,6 +377,7 @@ describe('translation integrity', () => {
           // tab reads «Ордера» instead of the wrapping «Открытые ордера»;
           // `git diff --numstat` over the locales reports `1 0` per language.
           'trade.mobileTabOrders',
+          ...CUSTOMER_PRESENTATION_KEYS,
           // Desktop Futures chart indicator catalogue (Issue #502, 2026-10-10):
           // `git diff --numstat` over the locales reports `12 0` per language
           // for these names; the settings dialog's `chart.settings.*` keys are
@@ -375,6 +394,10 @@ describe('translation integrity', () => {
         if (key?.startsWith('chart.settings.')) return false;
         // New regulatory-document UI keys; all pre-existing copy stays frozen.
         if (key?.startsWith('licenses.')) return false;
+        // KYC additional materials (2026-10-15): the admin's request for a new
+        // document photo and/or a selfie. `git diff --numstat` over the locales
+        // reports `47 0` per language, additions only; asserted by name below.
+        if (key?.startsWith('kycMaterials.')) return false;
         // Chart workspace (2026-10-13): the timeframe labels, the two-row
         // toolbar, compare, layout, data window, analytics, templates and
         // shortcuts, plus three more chart types. `git diff --numstat` over
@@ -411,6 +434,12 @@ describe('translation integrity', () => {
       for (const key of Object.keys(dicts.ru).filter(key => key.startsWith('licenses.'))) {
         expect({ code, key, translated: Boolean(dicts[code][key]?.trim()) }).toEqual({ code, key, translated: true });
         if (code !== 'ru') expect(dicts[code][key]).not.toBe(dicts.ru[key]);
+      }
+      for (const key of Object.keys(dicts.ru).filter(key => key.startsWith('kycMaterials.'))) {
+        expect({ code, key, translated: Boolean(dicts[code][key]?.trim()) }).toEqual({ code, key, translated: true });
+        if (code !== 'ru') expect({ code, key, same: dicts[code][key] === dicts.ru[key] }).toEqual({ code, key, same: false });
+        // Placeholders survive translation exactly.
+        expect({ code, key, params: (dicts[code][key].match(/\{\w+\}/g) ?? []).sort() }).toEqual({ code, key, params: (dicts.ru[key].match(/\{\w+\}/g) ?? []).sort() });
       }
       expect(dicts[code]['settings.rememberedDevice'].trim()).not.toBe('');
       for (const key of ['futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch']) {

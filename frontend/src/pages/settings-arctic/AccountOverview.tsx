@@ -18,6 +18,7 @@ export function AccountOverview({
   roleLabel,
   verifiedLabel,
   kycStatus,
+  kycActionRequired = false,
   memberSince,
   onVerify,
 }: {
@@ -27,6 +28,8 @@ export function AccountOverview({
   verifiedLabel: string;
   /** The status enum itself — the action is never chosen from translated text. */
   kycStatus: KycStatus;
+  /** Under review, but the admin asked for a new document photo and/or a selfie. */
+  kycActionRequired?: boolean;
   memberSince: string;
   /** Opens the Verification tab through the Settings tab state. */
   onVerify: () => void;
@@ -69,7 +72,7 @@ export function AccountOverview({
                 {row.value}
               </p>
             </div>
-            {row.verification && <VerificationAction status={kycStatus} label={verifiedLabel} onVerify={onVerify} />}
+            {row.verification && <VerificationAction status={kycStatus} label={verifiedLabel} onVerify={onVerify} actionRequired={kycActionRequired} />}
             {row.copy && (
               <button
                 onClick={() => handleCopy(row)}
@@ -92,7 +95,7 @@ export function AccountOverview({
  * it is under review — never a prompt to upload again — and just the
  * verified mark once approved.
  */
-function VerificationAction({ status, label, onVerify }: { status: KycStatus; label: string; onVerify: () => void }) {
+function VerificationAction({ status, label, onVerify, actionRequired = false }: { status: KycStatus; label: string; onVerify: () => void; actionRequired?: boolean }) {
   const { t } = useLanguage();
   if (status === 'APPROVED') {
     return <StatusBadge tone="success" icon={<BadgeCheck className="size-3.5" />}>{label}</StatusBadge>;
@@ -107,7 +110,7 @@ function VerificationAction({ status, label, onVerify }: { status: KycStatus; la
           onClick={onVerify}
           className="rounded-lg px-2 py-1.5 text-[13px] font-medium text-brand max-sm:min-h-11 transition-colors duration-150 hover:bg-brand-soft focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_var(--accent-dim)]"
         >
-          {t('settings.kycOpenStatus')}
+          {t(actionRequired ? 'kycMaterials.openRequest' : 'settings.kycOpenStatus')}
         </button>
       </div>
     );

@@ -1,7 +1,8 @@
 /**
  * The contract facts shown under the order ticket on the archive design:
  * what the header already carries for the selected contract (index and
- * mark price, open interest, 24h turnover, funding), plus the contract's
+ * mark price, open interest, 24h turnover), VOLTEX's own funding rates
+ * from /futures/config, plus the contract's
  * own order limits when the engine publishes them. Pure: the component
  * only labels and paints what this returns, so every rule about units and
  * unknowns lives here and is tested here.
@@ -23,7 +24,8 @@ export interface ContractFacts {
   /** Base units when a venue reported them, else the notional in the quote asset — the same rule the header applies. */
   openInterest: ContractFigure | null;
   turnover24h: ContractFigure | null;
-  fundingRate: { value: string; negative: boolean } | null;
+  /** VOLTEX's funding per settlement by side, from /futures/config — never a provider's live rate. */
+  funding: VoltexFundingRates | null;
   settleAsset: string | null;
   maxLeverage: string | null;
   minOrderQty: ContractFigure | null;
@@ -31,8 +33,32 @@ export interface ContractFacts {
   maxOrderQty: ContractFigure | null;
 }
 
-/** The two config fields this block reads; the store's config satisfies it. */
-export interface ContractConfigFacts { fundingIntervalHours: number; maxLeverage: number }
+/** The config fields this block reads; the store's config satisfies it. */
+export interface ContractConfigFacts {
+  fundingIntervalHours: number;
+  maxLeverage: number;
+  fundingCashflow?: { long: string; short: string };
+}
+
+export interface FundingSideRate { value: string; negative: boolean }
+export interface VoltexFundingRates { long: FundingSideRate; short: FundingSideRate }
+
+/** A signed fraction as a signed percent: '-0.0001' → '−0.01%', '0.0004' → '+0.04%'. Two to four decimals. */
+export function fundingPercent(fraction: string): FundingSideRate | null {
+  if (!/^-?\d+(\.\d+)?$/.test(fraction)) return null;
+  const pct = Number(fraction) * 100;
+  if (!Number.isFinite(pct)) return null;
+  const digits = pct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4, useGrouping: false }).replace('-', '');
+  const zero = Number(digits) === 0;
+  return { value: `${zero ? '' : pct < 0 ? '\u2212' : '+'}${digits}%`, negative: !zero && pct < 0 };
+}
+
+/** VOLTEX's funding rates by side, as the terminal states them. `null` until the config says. */
+export function voltexFundingRates(config: Pick<ContractConfigFacts, 'fundingCashflow'> | null | undefined): VoltexFundingRates | null {
+  const long = config?.fundingCashflow ? fundingPercent(config.fundingCashflow.long) : null;
+  const short = config?.fundingCashflow ? fundingPercent(config.fundingCashflow.short) : null;
+  return long && short ? { long, short } : null;
+}
 
 const PERPETUAL: ReadonlySet<LiveQuote['marketType']> = new Set(['linear_perpetual', 'inverse_perpetual']);
 
@@ -65,7 +91,6 @@ export function contractFacts(
   const oiBase = num(quote?.openInterest);
   const oiValue = num(quote?.openInterestValue);
   const turnover = num(quote?.quoteVolume24h);
-  const funding = num(quote?.fundingRate);
   return {
     perpetual: quote ? PERPETUAL.has(quote.marketType) : null,
     indexPrice: index !== null ? formatPrice(index) : null,
@@ -77,7 +102,7 @@ export function contractFacts(
           ? { value: formatCompact(oiValue), unit: quoteAsset }
           : null,
     turnover24h: turnover !== null && quoteAsset !== null ? { value: formatAmount(turnover), unit: quoteAsset } : null,
-    fundingRate: funding !== null ? { value: `${(funding * 100).toFixed(4)}%`, negative: funding < 0 } : null,
+    funding: voltexFundingRates(config),
     settleAsset: quote ? quote.settleAsset ?? quote.quoteAsset : null,
     maxLeverage: config && Number.isFinite(config.maxLeverage) && config.maxLeverage > 0 ? `${config.maxLeverage}x` : null,
     minOrderQty: figure(rules?.minOrderQty, base),

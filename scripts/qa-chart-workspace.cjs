@@ -24,6 +24,7 @@ const express = require('express');
 const { once } = require('node:events');
 const crypto = require('node:crypto');
 const { execSync } = require('node:child_process');
+const { installHoverIntervalIsolation } = require('./qa-hover-interval-isolation.cjs');
 
 const args = process.argv.slice(2);
 const arg = (key, fallback) => (args.includes(key) ? args[args.indexOf(key) + 1] : fallback);
@@ -160,6 +161,7 @@ const bootstrap = `(() => {
   if (location.hostname !== '127.0.0.1') throw new Error('Loopback only');
   localStorage.setItem('exchange_token','qa-chart-workspace'); localStorage.setItem('exchange_lang','ru');
   window.__qa = { fetches: [], sockets: 0, socketUrls: [] };
+  window.__qa.hoverIntervals = (${installHoverIntervalIsolation.toString()})(window);
   const original = window.fetch.bind(window);
   window.fetch = (input, options) => {
     const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url, location.origin);
@@ -1051,12 +1053,25 @@ async function run() {
       await page.keyboard.press('Escape');
       await page.locator('[data-cw-view="data"]').click(); await page.waitForTimeout(300);
       const canvas = await page.locator('.terminal-chart-shell canvas').first().boundingBox();
-      const before = (await candleRequests()).length;
-      for (let i = 0; i < 20; i += 1) await page.mouse.move(canvas.x + canvas.width * (0.3 + i * 0.02), canvas.y + canvas.height * 0.4);
-      await page.waitForTimeout(400);
-      const after = (await candleRequests()).length;
+      // PriceChart independently polls every 5s. Isolate pre-existing periodic
+      // callbacks, not pointer work: all HTTP/fetches, rAF, timeouts and newly
+      // created intervals stay observable. Resume scheduled work in finally.
+      const requests = [];
+      const recordRequest = request => requests.push({ url: request.url(), method: request.method(), at: new Date().toISOString() });
+      let attempted = [], periodic;
+      const before = await page.evaluate(() => { window.__qa.hoverIntervals.begin(); return window.__qa.fetches.length; });
+      page.on('request', recordRequest);
+      try {
+        for (let i = 0; i < 20; i += 1) await page.mouse.move(canvas.x + canvas.width * (0.3 + i * 0.02), canvas.y + canvas.height * 0.4);
+        await page.waitForTimeout(400);
+        attempted = await page.evaluate(n => window.__qa.fetches.slice(n), before);
+      } finally {
+        page.off('request', recordRequest);
+        periodic = await page.evaluate(() => window.__qa.hoverIntervals.end());
+      }
       const dataWindow = await page.evaluate(() => { const el = document.querySelector('[data-cw-data-window]'); return el ? { rows: el.querySelectorAll('dt').length, text: el.textContent.slice(0, 400) } : null; });
-      check(`${P}.data.window`, dataWindow && dataWindow.rows >= 8 && /UTC/.test(dataWindow.text) && after === before, { rows: dataWindow?.rows, requestsDuringHover: after - before, sample: dataWindow?.text.slice(0, 160) });
+      check(`${P}.data.window`, dataWindow && dataWindow.rows >= 8 && /UTC/.test(dataWindow.text) && requests.length === 0 && attempted.length === 0 && periodic.created.length === 0,
+        { rows: dataWindow?.rows, requestsDuringHover: requests.length, fetchesDuringHover: attempted, requests, periodic, sample: dataWindow?.text.slice(0, 160) });
       await shot(page, `after-${market}-1440-data`, await chartClip(page, 4));
       await page.locator('[data-cw-view="chart"]').click(); await page.waitForTimeout(200);
     }

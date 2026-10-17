@@ -74,7 +74,7 @@ export class AdminUserDeletionService {
           // Fixed allowlist, child-before-parent order. Native and Banking tables
           // have SQL FKs/triggers outside the Prisma relation graph.
           const tables = ['Session', 'ApiKey', 'EmailVerificationChallenge', 'DepositClaim', 'CardApplication',
-            'KycSubmission', 'Purchase', 'PortfolioSnapshot', 'FuturesPositionProtection', 'FundingPayment',
+            'KycMaterialRequest', 'KycSubmission', 'Purchase', 'PortfolioSnapshot', 'FuturesPositionProtection', 'FundingPayment',
             'FuturesOrder', 'FuturesPosition', 'FuturesBalance', 'CfdPosition', 'Order', 'Balance', 'Wallet',
             'DemoOrder', 'DemoBalance', 'PrivateTradingPreview', 'PrivateTradingCommand', 'PrivateTradingLedger',
             'PrivateTradingCard', 'PrivateTradingAccount', 'NativeDemoLiveProjection', 'NativeDemoRevision', 'NativeDemoAccount'];

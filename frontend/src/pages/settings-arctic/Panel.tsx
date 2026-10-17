@@ -9,7 +9,10 @@ export function Panel({ children, className = '' }: { children: ReactNode; class
 
 export function PanelHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6 sm:py-5">
+    // flex-wrap: only when the title and a long status (e.g. «Требуется новое фото
+    // документа») cannot share a phone-width line does the status move under the
+    // title, instead of cutting the title off. When they fit nothing changes.
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-border px-5 py-4 sm:px-6 sm:py-5">
       <div className="min-w-0">
         <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-foreground">{title}</h2>
         {subtitle && <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{subtitle}</p>}

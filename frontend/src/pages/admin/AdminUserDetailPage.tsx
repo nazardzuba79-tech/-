@@ -53,6 +53,17 @@ function AdminUserDetail({ id }: { id: string }) {
     if (inner.left < outer.left) strip.scrollLeft -= outer.left - inner.left + 8;
     else if (inner.right > outer.right) strip.scrollLeft += inner.right - outer.right + 8;
   }, [tab, loaded]);
+  // The strip marks which side still has more tabs (fades in adminConsole.css).
+  const [more, setMore] = useState('');
+  useEffect(() => {
+    const strip = tabStrip.current;
+    if (!strip) return;
+    const measure = () => setMore(`${strip.scrollLeft > 1 ? 'left ' : ''}${strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1 ? 'right' : ''}`.trim());
+    measure();
+    strip.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    return () => { strip.removeEventListener('scroll', measure); window.removeEventListener('resize', measure); };
+  }, [loaded]);
   if (!detail) return read.error ? <div role="alert" style={styles.card}><p>{read.error}</p><button onClick={read.reload}>Повторить</button><Link to={back}>Все пользователи</Link></div> : <div aria-label="Загрузка пользователя"><Skeleton height={100} /><Skeleton height={200} /></div>;
   const accountKnown = detail.isBlocked !== null;
   const canAdjust = detail.compatibility?.mode !== 'legacy' && detail.balances !== null;
@@ -65,7 +76,7 @@ function AdminUserDetail({ id }: { id: string }) {
     </div>
     <AdminReadStatus {...read} hasData />
     <AdminCompatibilityNotice compatibility={detail.compatibility} />
-    <div ref={tabStrip} className="admin-tabs" role="tablist" aria-label="Разделы пользователя">{tabs.map(name => <button key={name} role="tab" aria-selected={tab === name} aria-controls="admin-detail-panel" onClick={() => setTab(name)}>{name}</button>)}</div>
+    <div className="admin-tabs-wrap" data-more={more || undefined}><div ref={tabStrip} className="admin-tabs" role="tablist" aria-label="Разделы пользователя">{tabs.map(name => <button key={name} role="tab" aria-selected={tab === name} aria-controls="admin-detail-panel" onClick={() => setTab(name)}>{name}</button>)}</div></div>
     <div id="admin-detail-panel" role="tabpanel" aria-label={tab}>
       {tab === 'Общее' && <div className="admin-detail-overview">
         <section style={styles.card}><h2>Профиль</h2><dl className="admin-key-values">

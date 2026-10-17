@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { api } from '../lib/api';
+import { api, type KycReviewStage } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { readKycReceipt } from '../lib/kycEdge';
 import { Nav } from '../components/Nav';
@@ -58,7 +58,13 @@ const ARCTIC_THEME_VARS = {
   '--shadow-md': '0 1px 2px -1px oklch(0.5 0.02 258 / 0.05), 0 8px 24px -6px oklch(0.4 0.03 258 / 0.1)',
 } as React.CSSProperties;
 
-function kycStatusText(t: ReturnType<typeof useLanguage>['t'], status: string): string {
+/** The stages where the admin asked for more, or is re-checking what arrived. */
+const MATERIAL_STAGES = ['DOCUMENT_REQUIRED', 'SELFIE_REQUIRED', 'DOCUMENT_AND_SELFIE_REQUIRED', 'MATERIALS_RECEIVED', 'RE_REVIEW'] as const;
+type MaterialStage = typeof MATERIAL_STAGES[number];
+const isMaterialStage = (stage: KycReviewStage | null): stage is MaterialStage => (MATERIAL_STAGES as readonly string[]).includes(stage ?? '');
+
+function kycStatusText(t: ReturnType<typeof useLanguage>['t'], status: string, stage: KycReviewStage | null = null): string {
+  if (status === 'PENDING' && isMaterialStage(stage)) return t(`kycMaterials.stage.${stage}`);
   if (status === 'PENDING') return t('settings.kyc.PENDING');
   if (status === 'APPROVED') return t('settings.kyc.APPROVED');
   if (status === 'REJECTED') return t('settings.kyc.REJECTED');
@@ -127,6 +133,16 @@ function ProfileTabContent({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const [me, setMe] = useState<Awaited<ReturnType<typeof api.getMe>> | null>(null);
   const [recentActivity, setRecentActivity] = useState<Awaited<ReturnType<typeof api.getSecurityLog>>>([]);
   const [editOpen, setEditOpen] = useState(false);
+  // Under review, the Verification row names the finer stage (a requested
+  // document photo or selfie). Read only then, from the server.
+  const [kycStage, setKycStage] = useState<KycReviewStage | null>(null);
+  const pendingOnServer = me?.kycStatus === 'PENDING';
+  useEffect(() => {
+    if (!pendingOnServer) return;
+    let cancelled = false;
+    api.getMyKyc().then((kyc) => { if (!cancelled) setKycStage(kyc.reviewStage ?? null); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [pendingOnServer]);
 
   useEffect(() => {
     api.getMe().then(setMe).catch(() => {});
@@ -151,7 +167,8 @@ function ProfileTabContent({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   // invites a second upload.
   const kycStatus = me.kycStatus !== 'APPROVED' && readKycReceipt() ? 'PENDING' : me.kycStatus;
   const verified = kycStatus === 'APPROVED';
-  const statusText = kycStatusText(t, kycStatus);
+  const statusText = kycStatusText(t, kycStatus, kycStage);
+  const kycActionRequired = kycStatus === 'PENDING' && (kycStage === 'DOCUMENT_REQUIRED' || kycStage === 'SELFIE_REQUIRED' || kycStage === 'DOCUMENT_AND_SELFIE_REQUIRED');
   const roleLabel = me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser');
   const memberSince = new Date(me.createdAt).toLocaleDateString(localeOf(lang));
 
@@ -183,6 +200,7 @@ function ProfileTabContent({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
           roleLabel={roleLabel}
           verifiedLabel={statusText}
           kycStatus={kycStatus}
+          kycActionRequired={kycActionRequired}
           memberSince={memberSince}
           onVerify={() => {
             onNavigate('verification');

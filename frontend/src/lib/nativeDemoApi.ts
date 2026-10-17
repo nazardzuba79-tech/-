@@ -9,6 +9,11 @@ export interface NativePosition {
   id:string;symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;markPrice:string;lastPrice:string;leverage:string;
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
   unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
+  /**
+   * The same `netPnl` taken apart by the engine: `tradingPnl - feesPaid +
+   * fundingNet === netPnl`. Absent from a server older than the split.
+   */
+  tradingPnl?:string;feesPaid?:string;realizedGross?:string;openingFees?:string;closingFees?:string;
   protection:NativeProtection;
   pendingClose?:{reason:'STOP_LOSS'|'TAKE_PROFIT';quantity:string;triggerPrice:string;triggeredAt:number;actionId:string}|null;
   /**

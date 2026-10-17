@@ -24,7 +24,7 @@ export interface ClosedPositionNotice {
   quantity: string | null;
   price: string | null;
   /** undefined = waiting for the history; null = not reported, line hidden. */
-  pnl?: { text: string; positive: boolean } | null;
+  pnl?: { text: string; positive: boolean; breakdown?: { trading: string; funding: string; fees: string } } | null;
   /** The refusal, for `failed`. */
   reason?: string;
 }
@@ -90,8 +90,13 @@ export function FuturesPositionClosedCard({ notice, onDismiss, onShowHistory }: 
         <dl className="futures-closed-card-rows">
           {notice.quantity !== null && <><dt>{t('trade.quantity')}</dt><dd className="mono" data-closed-quantity>{notice.quantity}</dd></>}
           {notice.price !== null && <><dt>{t('futures.closedPrice')}</dt><dd className="mono" data-closed-price>{notice.price}</dd></>}
+          {notice.pnl?.breakdown && <>
+            <dt>{t('futures.colTradingPnl')}</dt><dd className="mono" data-closed-trading>{notice.pnl.breakdown.trading}</dd>
+            <dt>{t('futures.colFunding')}</dt><dd className="mono" data-closed-funding>{notice.pnl.breakdown.funding}</dd>
+            <dt>{t('futures.colFees')}</dt><dd className="mono" data-closed-fees>{notice.pnl.breakdown.fees}</dd>
+          </>}
           {notice.pnl !== null && <>
-            <dt>{t('futures.colRealized')}</dt>
+            <dt>{notice.pnl?.breakdown ? t('futures.colNetPnl') : t('futures.colRealized')}</dt>
             <dd className={`mono${notice.pnl ? (notice.pnl.positive ? ' text-buy' : ' text-sell') : ''}`} data-closed-pnl aria-busy={notice.pnl === undefined}>
               {notice.pnl === undefined ? '…' : notice.pnl.text}
             </dd>
