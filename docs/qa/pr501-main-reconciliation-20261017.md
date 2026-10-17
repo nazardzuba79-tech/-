@@ -1,5 +1,7 @@
 # PR #501 reconciliation — 2026-10-17
 
+Subsequent chart CI attribution fix: see [hover request evidence](pr501-hover-request-cause-20261017.md). That follow-up only changes test tooling and adds its mandatory CI coverage; production source remains as validated here.
+
 Existing PR/branch: #501, `integration/customer-wording-20261010`.
 Original head: `d4522ea3a9c51ed91703bdc457ac2acd66545a81`.
 Fresh main: `50875f2116474ce01acbb08c1d9e3e68ec99a7f3`, including Funding V2 #535 and Copy Trading #536.
