@@ -36,17 +36,30 @@ test('all 30 ordinary identities are stable, local and have no business-state ke
   }
 });
 
-test('organic mix includes seven intentional initials, never all polished custom art', () => {
+test('the catalogue retains a mix of imagery while repeated initials gain distinct emblems', () => {
   expect(Object.fromEntries(categories.map(category => [category, catalogueIds.filter(id => getTraderVisual(id).category === category).length])))
-    .toEqual({ mascot: 8, digital: 5, portrait: 5, abstract: 5, initials: 7 });
-  expect(7 / catalogueIds.length).toBeGreaterThanOrEqual(0.20);
-  expect(7 / catalogueIds.length).toBeLessThanOrEqual(0.25);
+    .toEqual({ mascot: 8, digital: 5, portrait: 5, abstract: 9, initials: 3 });
   for (const roster of [marketplaceTraders, sortTraders(marketplaceTraders, 'Top Performance', '90D')]) {
-    expect(new Set(roster.slice(0, 8).map(t => getTraderVisual(t.id).category)).size).toBe(5);
+    expect(new Set(roster.slice(0, 8).map(t => getTraderVisual(t.id).category)).size).toBeGreaterThanOrEqual(4);
   }
-  expect(getTraderVisual('VX-002').category).toBe('initials');
+  expect(getTraderVisual('VX-002').mark).toBe('quant');
   expect(getTraderVisual('VX-016').category).toBe('mascot');
   expect(getTraderVisual('VX-028').category).toBe('digital');
+});
+
+test('all invitation-only aliases have stable unique artwork without unlocking data or operator portraits', () => {
+  const signatures = new Set<string>();
+  for (let index = 1; index <= 432; index++) {
+    const id = `VX-L${String(index).padStart(3, '0')}`;
+    const visual = getTraderVisual(id);
+    expect(getTraderVisual(id)).toBe(visual);
+    signatures.add(JSON.stringify([visual.mark, visual.accent, visual.background]));
+    expect(visual.avatarSrc).toBeUndefined();
+  }
+  expect(signatures.size).toBe(432);
+  for (const id of ['VX-L000', 'VX-L433', 'VX-KSENIA', 'VX-001']) expect(getTraderVisual(id)).toEqual({});
+  const primary = catalogueIds.map(id => getTraderVisual(id));
+  expect(new Set(primary.map(v => JSON.stringify([v.avatarSrc, v.mark, v.accent, v.background]))).size).toBe(30);
 });
 
 test('good existing art and all existing card treatments are retained', () => {

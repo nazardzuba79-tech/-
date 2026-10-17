@@ -7,6 +7,9 @@ on:
       - 'src/api/routes/copyPerformance.ts'
       - 'src/api/routes/syntheticCopyTrading.ts'
       - 'frontend/src/lib/copyMarketplace*.ts'
+      - 'frontend/src/lib/copyDemoRoi.ts'
+      - 'frontend/src/lib/__tests__/copyDemoRoi.test.ts'
+      - 'frontend/src/lib/__tests__/copyCatalogueStatic.test.ts'
       - 'frontend/src/lib/__tests__/copyMarketplace*.test.ts'
       - 'frontend/src/lib/kseniaCopyTrading.ts'
       - 'frontend/src/lib/syntheticCopyTrading.ts'
@@ -289,6 +292,13 @@ jobs:
           npm test -- --runInBand --runTestsByPath
           frontend/src/lib/__tests__/copyPerformancePeriods.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+      - name: Dated demo expiry and static catalogue
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/copyDemoRoi.test.ts
+          frontend/src/lib/__tests__/copyCatalogueStatic.test.ts
+          frontend/src/lib/__tests__/traderVisuals.test.ts
+          src/services/copyTrading/__tests__/copyOctoberDemo.test.ts
       - name: Copy privacy, retry and period regressions
         run: >-
           npm test -- --runInBand --runTestsByPath

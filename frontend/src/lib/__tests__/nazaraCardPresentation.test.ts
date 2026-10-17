@@ -11,7 +11,7 @@ import { getTraderVisual } from '../../pages/copy-trading-bolt/traderVisuals';
 import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
 import { isModeledTraderData } from '../modeledCopyData';
 import { languageModule } from '../../../test-utils/languageStub';
-import { copyFunctions, liveMetricModule } from '../../../test-utils/copyPresentation';
+import { copyFunctions, liveMetricModule, demoRoiModule } from '../../../test-utils/copyPresentation';
 import { syntheticChartData, syntheticPerformancePoints, formatSyntheticHistoryDate, periodRatioFacts } from '../syntheticCopyTrading';
 import { demoChartData } from '../../pages/copy-trading-bolt/demoPerformance';
 import { publicSignedUsdt, publicUsdtNumber } from '../copyTradingMoney';
@@ -33,7 +33,7 @@ const React = frontendRequire('react');
 const { renderToStaticMarkup } = frontendRequire('react-dom/server');
 const empty = () => null;
 const dependencies = {
-  ...liveMetricModule(), ...languageModule('ru'),
+  ...liveMetricModule(), ...languageModule('ru'), ...demoRoiModule(),
   useFiguresPending: () => false,
   useFollowing: () => ({ following: new Set<string>() }),
   getTraderVisual, nazarTrader, selectSyntheticPeriod, selectDemoPerformance,
