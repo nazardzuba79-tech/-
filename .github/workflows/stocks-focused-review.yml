@@ -82,6 +82,8 @@ jobs:
           services/stocks-global/cash-authority-contract.test.mjs
           services/stocks-global/two-trader-http.test.mjs
           services/stocks-global/account-existing-only.test.mjs
+      - name: Pilot read-only preflight contract (mock database only)
+        run: node --test services/stocks-global/pilot-preflight.test.cjs
       - name: Stocks-only shared trade stream bootstrap (synthetic and disconnected)
         run: >-
           node --test
