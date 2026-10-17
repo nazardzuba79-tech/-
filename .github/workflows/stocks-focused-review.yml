@@ -64,6 +64,8 @@ jobs:
           cache: npm
       - name: Install exact locked dependencies without postinstall scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install frontend dependencies for viewer interaction assertions
+        run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Generate client locally (no database migration)
         run: npx prisma generate
       - name: Financial authority on disposable PostgreSQL
