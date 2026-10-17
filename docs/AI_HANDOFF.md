@@ -6230,3 +6230,12 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
 - Preserved prior engine/service/snapshot/cache, daily modeled trades, all period calculations, hidden history/access rules, real financial accounting, approved card layout/CSS, featured avatars and existing portrait assets.
 - Validation: 82 targeted tests / 8 suites PASS; frontend build PASS (existing >500 kB chunk warning); seven-language rendering, 1440x900 and 390x844 browser review; 18–22 October API → snapshot → frontend, idempotence, restart restoration and no financial write calls. Production inspection was read-only; future dates and restart evidence are local fixtures only.
 - Next: review draft PR and exact-head CI. Do not merge or deploy without owner permission. AUM/copier scenario allocations remain constant; Ksenia card Win Rate/Drawdown intentionally retain ALL labels. Detailed evidence and screenshots in the QA README.
+
+### Codex — 2026-10-17 — PR #536 exact-head CI corrections
+
+- Implementation `18d93d1e0314dcc446a275f4b102dbc42626a1f4`, continuing owner-approved PR #536 from fresh `40c8386a17f442d2cbbda19d046c1c03944677d0`; no merge/deploy.
+- Changed only test support/guards and three Copy browser QA selectors: isolated card/profile renderers load the real DemoRoiNotice with its inactive default context; plainLanguage permits exact seven-language simulation disclosures only in DemoRoiContext and requires warnings to remain. No general wording or financial assertion removed.
+- cryptoCardProductionPromotion advances only the approved art-only traderVisuals fingerprint. Added an exact CopyTradingPage guard that normalizes only the three DemoRoiProvider wiring lines, then verifies every remaining byte against base 2e7acf15. All other source/asset locks remain unchanged.
+- Browser QA now scopes rolling-period date reads to the performance chart, avoiding the adjacent demo notice; existing ROI/date assertions are preserved. No application source, ROI logic, financial data or design change.
+- Local validation: 106 tests / 9 targeted suites PASS, three QA script syntax checks and git diff --check PASS. Existing SSR useLayoutEffect warnings do not fail the suites. Local CRLF asset checkout differences were restored to repository bytes without changing tracked content or hashes.
+- Next: wait for all workflows on the pushed exact head; report failures truthfully and fix only this PR's causes. No merge/deploy authorized.
