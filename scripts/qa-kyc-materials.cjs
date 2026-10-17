@@ -307,7 +307,9 @@ function attachmentOf(mail) {
       const mailsBefore = sink.mails.length;
       await context.setOffline(true);
       await part.locator('[data-kyc-material-submit="DOCUMENT"]').click();
-      await part.getByText('Не удалось отправить файл.', { exact: false }).waitFor({ timeout: 10000 });
+      // PR #501: customerErrorText recognizes fetch/network failure before the
+      // generic upload fallback. Keep the offline and no-duplicate checks below.
+      await part.getByText('Не удалось связаться с сервисом. Проверьте подключение.', { exact: true }).waitFor({ timeout: 10000 });
       await context.setOffline(false);
       assert.equal(sink.mails.length, mailsBefore, 'offline: nothing sent');
       await part.locator('[data-kyc-material-submit="DOCUMENT"]').dblclick();
