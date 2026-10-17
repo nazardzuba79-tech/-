@@ -6382,3 +6382,70 @@ Base a9d40edeca55f23af3211abe0c92b5b2025f6fca includes PR501 9740b3b0ba4bd4b9525
 Current integration:351 targeted regressionsPASS/11suites (i18n,PR501 messages/listing,Stocks routing/catalogue/viewer/Wallet/shared navigation,API), backend/frontend no-emit typecheckPASS, Prisma schema validation/private client generationPASS without DB connection/migrations. Historical119PASS and strictHTTP two-winner proof remain frozen-source baseline, not tests of this integration SHA. No CPU/load/full audit/24h/external workflow. Stocks workflow/historical profiler tooling not blindly imported:CI guards/dependencies recorded externally for separate review. Existing root lock already pins transitive ts-node10.9.2; no package install or lock rewrite.
 
 Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherry-pick, push,newPR,deploy,production/balance mutation. WS bootstrap,reviewed external route/Host-Origin,real immutable bindings,rights and agreed environment remain open. Current unprofiled crypto gate NOTRUN; <=+5% required before production/shared-production pilot, not alone a blocker for genuinely isolated agreed testing. Publication BLOCKED pending freshCF/NF/otherauto-deploy receipts.
+
+### Claude — 2026-10-17 — PR #518 completed on current main: historical demo contour and scenario management
+- **Branch:** `feature/listings-historical-movement-review-20261014` (PR #518, Draft). Base: `main` `db844642`, merged in as `a1cd0218` with no rebase or force push.
+- **Commits:**
+  - `a1cd0218`: the merge.
+  - `2cac7fab`: the demo contour.
+  - `2b966547`: admin scenario management.
+  - Followed by a docs commit containing this entry.
+- **Preserved from main (#500 mobile admin):**
+  - the AdminListingsPage action dock and section anchors;
+  - the phone form CSS.
+  - The three conflicts (AdminListingsPage, ListingMovementEditor, adminListings.css) were reconciled by intent.
+- **Preserved from #518 (owner/Codex):**
+  - the CSV importers and their parity;
+  - the movement-only IndexedDB library;
+  - the 8 dated presets, which activate only after an operator CSV import;
+  - 1 source hour = 1 real hour;
+  - `HISTORICAL_RIGHTS_UNVERIFIED` fail-closed in both UI and server;
+  - the bounded replay index.
+- **Preserved from other assets:** NRX, AITH, VTA and other managed listings are unchanged.
+- **Research on `origin/main`:**
+  - Managed listings are restricted test assets (deposits, withdrawals, adjustments, collateral, demo).
+  - Spot only accepts a published, tradable, started listing. Any program is `DEMO_ONLY`.
+  - The published model price feeds wallet valuation, conditional orders and card eligibility.
+  - Owner allocation writes real `Balance`.
+  - Historical drafts never reach Render because publication is refused.
+- **New: `src/services/listings/simulationContour.ts`.** A historical simulation has no real-ledger identity, even if published one day:
+  - the Spot gate refuses it;
+  - its model price is never a conditional-order price and never a wallet price;
+  - it allows no owner allocation (the config requires `ownerAllocation` 0 — `HISTORICAL_DEMO_NO_LEDGER` — and `allocateListingOwner` refuses).
+  - Guards were added in `nrxSpot.ts`, `WalletPortfolioService.ts`, `ownerAllocation.ts` and `listingConfig.ts`. Existing assets are unaffected.
+- **Admin scenario management:**
+  - the active model is shown;
+  - a per-fragment plan and a daily-candle chart of the whole replay are computed client-side from the relative moves;
+  - a server `history` preview horizon covers at most the first 30 days (720 h). Computing the maximum 4800 h replay whole took about 11 s of CPU here, so it is not offered;
+  - the list shows a badge for listings with a historical model;
+  - a saved model can be reused from another listing (server-stored, no CSV);
+  - a safe return to the range scenario removes the fragments and the editor's default −55 % fall;
+  - owner allocation is fixed at 0;
+  - historical server errors are mapped to Russian text.
+- **Tests added:**
+  - `historicalDemoContour.test.ts` (13 tests);
+  - `historicalDemoContour.pg.test.ts` (nine real-money entry points refused; no other module's rows change);
+  - `listingMovementHistorical.test.ts` (6 tests);
+  - `qa-listing-controls.cjs` extended, and `admin-listings.yml` now runs the contour tests.
+  - A mutation check confirmed that 5 isolation tests fail without the guards.
+- **Verified locally on this tree:**
+  - Backend `tsc --noEmit` and `npm run build`: PASS. Frontend `tsc -b` and `vite build`: PASS.
+  - Jest listings, testMarkets, adminListings, Wallet and Order: 30 suites passed, 3 skipped for lack of a database URL. Those 3 were then run on local PostgreSQL: `nrxSpot.pg`, `vtaDemoSales.pg` and `vtaNativeCoexistence.pg`, 31/31.
+  - Full frontend Jest: 263/263 suites, 4531/4531 tests.
+  - Worker: `test:listings`, `test:smoke` and the contract test: PASS.
+  - Browser:
+    - `qa-historical-archive-storage`: PASS.
+    - `qa-admin-listings`: 20 checks PASS.
+    - AITH replacement: PASS.
+    - `qa-listing-controls`: 13/13.
+    - `qa-admin-practicality`: screens, interactions 22 PASS, compatibility 121.
+    - `qa-admin-sort-deposits`: 23/23.
+    - `qa-admin-mobile-audit`: 167 screens, 0 problems.
+    - `qa-admin-adjustment-placement`: 26 checks.
+- **Still blocked:** publication (rights and provenance for each dataset, plus legal presentation).
+- **Existing risks seen in research (NRX or ordinary Spot, not changed here):**
+  - the owner/allowlisted NRX MARKET SELL credits real USDT at the simulated price, with no idempotency key;
+  - the simulated NRX price triggers real conditional orders;
+  - the listing gate fails open for pairs Render does not know (empty or stale snapshot, draft tickers);
+  - `/trades/me` does not filter simulation sales.
+- **Not done:** merge, deploy, production migration, real balances or paid resources. Codex's Stocks #538 was not touched.

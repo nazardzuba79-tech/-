@@ -9,7 +9,7 @@ import { LISTING_REVISION_CONFLICT, listingProfileLabel, listingRequestError, li
 import { ListingScenarioLab } from './ListingScenarioLab';
 import { ListingMovementEditor } from './ListingMovementEditor';
 import { ListingCandlePreview } from './ListingCandlePreview';
-import { formatMovementPrice, newListingMovement, rebaseListingMovement, validateListingMovement, type ListingMovement, type ListingProgram } from './listingMovementModel';
+import { formatMovementPrice, historicalModelLabel, newListingMovement, rebaseListingMovement, validateListingMovement, type ListingMovement, type ListingProgram } from './listingMovementModel';
 import { useAdminCompact } from './useAdminCompact';
 import './adminListings.css';
 
@@ -99,7 +99,7 @@ export function AdminListingsPage() {
   const [logoReading, setLogoReading] = useState(false);
   const [preview, setPreview] = useState<ListingPreview | null>(null);
   const [previewAt, setPreviewAt] = useState('');
-  const [previewHorizon, setPreviewHorizon] = useState<'first24h' | 'growth' | 'afterGrowth'>('first24h');
+  const [previewHorizon, setPreviewHorizon] = useState<'first24h' | 'growth' | 'afterGrowth' | 'history'>('first24h');
   const [previewInterval, setPreviewInterval] = useState('5m');
   const [publishing, setPublishing] = useState<{ listing: AdminListing; key: string } | null>(null);
   const loading = useRef(false);
@@ -148,6 +148,19 @@ export function AdminListingsPage() {
   const listingAtUtc = form.wallTime ? zonedWallTimeToUtc(form.wallTime, form.timeZone) : null;
   const draftIsSaved = Boolean(!logoReading && current && editing?.revision === current.draftRevision
     && formSignature(form) === formSignature(fromConfig(current.draft)));
+  // A historical continuation stays a saved draft with a private preview: the
+  // server refuses to publish it (HISTORICAL_RIGHTS_UNVERIFIED), so does the form.
+  const historicalMode = form.simulationProgram?.kind === 'scenario-controls-v2' && form.simulationProgram.afterGrowth === 'historical';
+  const historicalHours = historicalMode && form.simulationProgram?.kind === 'scenario-controls-v2'
+    ? (form.simulationProgram.historical?.clips ?? []).reduce((hours, clip) => hours + clip.bars.length, 0) : 0;
+  // Historical models saved with OTHER listings (draft or published version), for reuse in this one.
+  const savedModels = useMemo(() => (listings ?? []).filter(listing => listing.id !== editing?.id).flatMap(listing =>
+    [['черновик', listing.draft] as const, ['опубликовано', listing.active] as const].flatMap(([kind, config]) => {
+      const program = config?.simulationProgram?.kind === 'scenario-controls-v2' ? config.simulationProgram : null;
+      const label = historicalModelLabel(program);
+      return program?.historical && label ? [{ key: `${listing.id}:${kind}`, label: `${listing.draft.symbol} (${kind}): ${label}`, program: program.historical }] : [];
+    })).filter((model, index, all) => all.findIndex(other => other.label.slice(other.label.indexOf(':')) === model.label.slice(model.label.indexOf(':'))
+      && JSON.stringify(other.program) === JSON.stringify(model.program)) === index), [listings, editing?.id]);
 
   function invalidatePreview() {
     previewRequest.current += 1;
@@ -252,6 +265,11 @@ export function AdminListingsPage() {
 
   function openPublish() {
     if (!current || busy || !draftIsSaved) return;
+    if (current.draft.simulationProgram?.kind === 'scenario-controls-v2'
+      && current.draft.simulationProgram.afterGrowth === 'historical') {
+      setFormError('Историческое движение пока только для закрытого предпросмотра. Публикация требует проверки прав на источник и отдельного торгового счёта.');
+      return;
+    }
     setPublishing({ listing: current, key: newPublishKey() });
   }
 
@@ -305,7 +323,12 @@ export function AdminListingsPage() {
               <div className="listing-row" role="row" key={listing.id} data-listing-row={listing.draft.symbol}>
                 <span className="listing-ident">
                   {listing.draft.logo ? <img src={listing.draft.logo} alt="" width={28} height={28} /> : <span className="listing-letter">{listing.draft.symbol[0]}</span>}
-                  <span><b>{listing.draft.symbol}/USDT</b><small>{listing.draft.name}</small></span>
+                  <span><b>{listing.draft.symbol}/USDT</b><small>{listing.draft.name}</small>
+                    {(() => {
+                      const program = listing.draft.simulationProgram?.kind === 'scenario-controls-v2' ? listing.draft.simulationProgram : null;
+                      const label = historicalModelLabel(program);
+                      return label && <small className="listing-model" data-listing-model="historical">История после этапов: {label} · только черновик</small>;
+                    })()}</span>
                 </span>
                 <span className="listing-when">{listingMoment(listing.draft.listingAt, listing.draft.displayTimeZone)}</span>
                 <span className={`listing-status listing-status-${status.tone}`} data-listing-status={status.tone}>{status.text}</span>
@@ -339,8 +362,8 @@ export function AdminListingsPage() {
               const anchor = initialPriceAnchor.current;
               changeForm({ ...form, initialPrice, ...(anchor ? { simulationProgram: rebaseListingMovement(anchor.program, anchor.initial, initialPrice) } : {}) });
             }} data-field="initialPrice" required /></label>
-            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={form.ownerAllocation} inputMode="decimal" onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
-              <small>Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.</small></label>
+            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={historicalMode ? '0' : form.ownerAllocation} inputMode="decimal" disabled={historicalMode} onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
+              <small>{historicalMode ? 'Историческая симуляция не выдаёт актив: всегда 0.' : 'Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.'}</small></label>
             <label>Дата и время листинга<input type="datetime-local" value={form.wallTime} onChange={(e) => changeForm({ ...form, wallTime: e.target.value })} data-field="wallTime" required /></label>
             <label>Часовой пояс<select value={form.timeZone} onChange={(e) => changeForm({ ...form, timeZone: e.target.value })} data-field="timeZone">
               {LISTING_TIME_ZONES.map((zone) => <option key={zone} value={zone}>{listingTimeZoneLabel(zone)}</option>)}
@@ -372,7 +395,8 @@ export function AdminListingsPage() {
             <label className="listing-check"><input type="checkbox" checked={form.tradable} disabled={Boolean(form.simulationProgram)} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Спотовая торговля после листинга
               <small>{form.simulationProgram ? 'Для ограниченной демонстрации исполнение заявок недоступно. Сохранение и публикация не меняют балансы.' : 'Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.'}</small></label>
           </div>
-          {form.simulationProgram?.kind === 'scenario-controls-v2' && <div id="listing-section-movement" className="listing-section-anchor"><ListingMovementEditor key={editing.id ?? 'new'} value={form.simulationProgram} initialPrice={form.initialPrice} listingAt={listingAtUtc} locked={editing.locked} onChange={simulationProgram => changeForm({ ...form, simulationProgram })} /></div>}
+          {form.simulationProgram?.kind === 'scenario-controls-v2' && <div id="listing-section-movement" className="listing-section-anchor"><ListingMovementEditor key={editing.id ?? 'new'} value={form.simulationProgram} initialPrice={form.initialPrice} listingAt={listingAtUtc} locked={editing.locked} savedModels={savedModels} onChange={simulationProgram => changeForm({ ...form, simulationProgram,
+            ...(simulationProgram.afterGrowth === 'historical' ? { ownerAllocation: '0' } : {}) })} /></div>}
           {form.simulationProgram?.kind === 'capped-growth-range-v1' && <p className="listing-hint" data-legacy-movement>Сохранён прежний ограниченный сценарий. Его параметры и история не заменяются новым алгоритмом.</p>}
           {!form.simulationProgram && !editing.locked && <button type="button" onClick={() => changeForm({ ...form, simulationProgram: newListingMovement(form.initialPrice || '1'), tradable: false })} data-enable-movement>Настроить движение в демонстрационном режиме</button>}
           {/* The error and the unsaved-draft note travel with the actions, so a refused
@@ -380,15 +404,16 @@ export function AdminListingsPage() {
           <div className="listing-actions-dock">
             {formError && <p role="alert" style={styles.errorBox} data-listing-error>{formError}</p>}
             {editing.id && !draftIsSaved && !logoReading && <p className="listing-hint" role="status" data-unsaved-draft>Настройки изменены — обновите предпросмотр. Сначала сохраните изменения черновика, чтобы открыть предпросмотр или опубликовать их.</p>}
+            {historicalMode && <p className="listing-hint" role="status" data-historical-publish-gate>Историческая модель: сохранение черновика и предпросмотр доступны, публичный запуск заблокирован до подтверждения прав и полной изоляции симуляционных счетов.</p>}
             <div className="listing-buttons">
               <button type="submit" className="listing-primary" disabled={busy || logoReading} data-save-draft>Сохранить черновик</button>
               {editing.id && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
-              {current && <button type="button" disabled={busy || !draftIsSaved} onClick={openPublish} data-publish>Опубликовать</button>}
+              {current && <button type="button" disabled={busy || !draftIsSaved || historicalMode} onClick={openPublish} data-publish>Опубликовать</button>}
               <button type="button" onClick={() => { cancelLogoRead(); setEditing(null); setPublishing(null); invalidatePreview(); }}>Закрыть</button>
             </div>
           </div>
           {editing.id && form.simulationProgram?.kind === 'scenario-controls-v2' && <div className="listing-preview-selectors listing-grid" id="listing-section-preview">
-            <label>Отрезок предпросмотра<select value={previewHorizon} data-field="previewHorizon" onChange={e => { invalidatePreview(); setPreviewHorizon(e.target.value as typeof previewHorizon); setPreviewInterval(e.target.value === 'first24h' ? '5m' : '1h'); }}><option value="first24h">Первые 24 часа</option><option value="growth">Весь этап роста</option><option value="afterGrowth">Поведение после роста</option></select></label>
+            <label>Отрезок предпросмотра<select value={previewHorizon} data-field="previewHorizon" onChange={e => { invalidatePreview(); setPreviewHorizon(e.target.value as typeof previewHorizon); setPreviewInterval(e.target.value === 'first24h' ? '5m' : e.target.value === 'history' ? (Math.min(historicalHours + 24, 720) < 359 ? '1h' : '4h') : '1h'); }}><option value="first24h">Первые 24 часа</option><option value="growth">Весь этап роста</option><option value="afterGrowth">Поведение после роста</option>{historicalMode && historicalHours > 0 && <option value="history">{historicalHours + 24 <= 720 ? `Весь исторический отрезок (${historicalHours} ч)` : 'Исторический отрезок: первые 30 дней'}</option>}</select></label>
             <label>Интервал свечей<select value={previewInterval} data-field="previewInterval" onChange={e => { invalidatePreview(); setPreviewInterval(e.target.value); }}><option value="5m">5 минут</option><option value="15m">15 минут</option><option value="1h">1 час</option><option value="4h">4 часа</option><option value="1d">1 день</option></select><small>До 360 свечей за запрос. Для длинного отрезка выберите более крупный интервал.</small></label>
           </div>}
           {editing.id && form.simulationProgram?.kind !== 'scenario-controls-v2' && (
@@ -410,6 +435,7 @@ export function AdminListingsPage() {
                 <div><dt>Цена через 24 часа</dt><dd>{formatMovementPrice(preview.scenarioSummary.first24hPrice)} USDT</dd></div>
                 <div><dt>Максимальная разрешённая цена</dt><dd>{formatMovementPrice(preview.scenarioSummary.maxPrice)} USDT</dd></div>
                 <div><dt>Максимум показанного отрезка</dt><dd>{formatMovementPrice(preview.scenarioSummary.observedHigh)} USDT</dd></div>
+                {preview.scenarioSummary.observedLow !== undefined && <div><dt>Минимум показанного отрезка</dt><dd>{formatMovementPrice(preview.scenarioSummary.observedLow)} USDT</dd></div>}
               </dl>}
               <ListingCandlePreview candles={preview.candles} />
               <small className="listing-hint">{preview.candles.length} свечей · время на графике: Всемирное время (UTC). Объём — модельная активность.</small>

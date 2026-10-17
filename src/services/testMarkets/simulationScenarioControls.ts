@@ -4,6 +4,7 @@
  */
 import type { ListingScenario, ScenarioControlsProgram } from '../../shared/listingScenarioControls';
 import type { RealismTick } from './simulationRealism';
+import type { HistoricalMoveClip, HistoricalMoveProgram, HistoricalMoveBar } from '../../shared/listingHistoricalReplay';
 import { seededRandom } from './simulationRandom';
 
 const HOUR = 3_600_000, MINUTE = 60_000, TICK = 10_000;
@@ -104,7 +105,129 @@ function priceAt(config: ControlledScenarioConfig, seed: string, at: number): nu
   return displaced(base, envelope * (move + range), cap);
 }
 
+/* Inlined PURE v2-only arithmetic: this module is omitted by the NRX v1
+ * source projection, which forbids any new runtime imports here. The
+ * independent shared reference implementation stays regression-tested. */
+/** A bounded index is admitted ONLY for deeply frozen, validated programs.
+ * Mutable editor inputs keep the reference path: never cache stale candles.
+ * Four entries, each at most 4801 Float64 prices; no ticks, clocks or IO.
+ */
+interface HistoricalOpenIndex {
+  program: HistoricalMoveProgram;
+  anchor: number;
+  opens: Float64Array;
+  bars: HistoricalMoveBar[];
+}
+const historicalOpenIndexes: HistoricalOpenIndex[] = [];
+function findHistoricalOpenIndex(program: HistoricalMoveProgram, anchor: number): HistoricalOpenIndex | undefined {
+  const at = historicalOpenIndexes.findIndex(entry => entry.program === program && entry.anchor === anchor);
+  if (at < 0) return undefined;
+  const [entry] = historicalOpenIndexes.splice(at, 1);
+  historicalOpenIndexes.push(entry);
+  return entry;
+}
+function buildHistoricalOpenIndex(program: HistoricalMoveProgram, anchor: number): HistoricalOpenIndex | undefined {
+  if (!Number.isFinite(anchor) || anchor <= 0 || !Object.isFrozen(program)
+      || !Object.isFrozen(program.clips) || !program.clips.every(clip =>
+        Object.isFrozen(clip) && Object.isFrozen(clip.bars) && clip.bars.every(bar => Object.isFrozen(bar)))) return undefined;
+  const total = program.clips.reduce((sum, clip) => sum + clip.bars.length, 0);
+  if (total < 24 || total > 4800) return undefined;
+  const opens = new Float64Array(total + 1), bars: HistoricalMoveBar[] = [];
+  let offset = 0, clipAnchor = anchor;
+  for (const clip of program.clips) {
+    let open = clipAnchor, factor = 1;
+    for (const bar of clip.bars) {
+      opens[offset++] = open;
+      bars.push(bar);
+      const multiplier = 1 + bar[2] / 1000000;
+      open *= multiplier;
+      factor *= multiplier;
+    }
+    // Preserve the reference's exact floating-point grouping across clips.
+    // anchor * product is NOT bit-identical to sequential anchored products.
+    clipAnchor *= factor;
+  }
+  opens[total] = clipAnchor;
+  const entry = { program, anchor, opens, bars };
+  if (historicalOpenIndexes.length === 4) historicalOpenIndexes.shift();
+  historicalOpenIndexes.push(entry);
+  return entry;
+}
+
+function lastFactor(clip: HistoricalMoveClip): number {
+  return clip.bars.reduce((factor, bar) => factor * (1 + bar[2] / 1000000), 1);
+}
+
+interface HistoricalTick { price: number; high: number; low: number; volume: number; quoteVolume: number; }
+interface HistoricalHour { open: number; ticks: HistoricalTick[]; regime: 'impulse'|'pullback'|'consolidation'; }
+
+/**
+ * Returns canonical 10-second modeled ticks for one HISTORICAL hour.
+ * The source's hourly close, high and low PPM moves are respected; true
+ * intrahour ordering was not in hourly OHLC, and is intentionally modeled.
+ * No clock acceleration and no "future" data reads.
+ */
+function historicalReplayHour(program: HistoricalMoveProgram, anchor: number, hour: number, seed: string): HistoricalHour {
+  // Persisted configurations are strictly validated by parseListingConfig
+  // before entering this synchronous v2-only generator; no runtime imports
+  // are permitted by the NRX legacy release identity guard.
+  if (!Number.isSafeInteger(hour) || hour < 0) throw new Error('Час истории должен быть неотрицательным');
+  let indexed = findHistoricalOpenIndex(program, anchor);
+  if (!indexed) {
+    indexed = buildHistoricalOpenIndex(program, anchor);
+  }
+  let open = anchor, remaining = hour;
+  let found: HistoricalMoveBar | null = null;
+  if (indexed) {
+    open = indexed.opens[Math.min(hour, indexed.bars.length)];
+    found = indexed.bars[hour] ?? null;
+  } else {
+    for (const clip of program.clips) {
+      if (remaining < clip.bars.length) {
+        for (let i=0; i<remaining; i++) open *= 1 + clip.bars[i][2] / 1000000;
+        found = clip.bars[remaining];
+        break;
+      }
+      open *= lastFactor(clip);
+      remaining -= clip.bars.length;
+    }
+  }
+  if (!Number.isFinite(open) || open <= 0) throw new Error('Историческая цена не представима');
+  const ticks: HistoricalTick[] = [];
+  let last = open;
+  const hash = Array.from(seed + ':' + hour).reduce((h,ch)=>((h * 33) ^ ch.charCodeAt(0)) >>> 0, 5381);
+  const upFirst = (hash & 1) === 0;
+  const [high,low,close] = found
+    ? [open * (1 + found[0] / 1000000), open * (1 + found[1] / 1000000), open * (1 + found[2] / 1000000)]
+    : [open * 1.004, open * 0.996, open];
+  const stops: [number,number][] = upFirst
+    ? [[0,open],[120,high],[240,low],[360,close]]
+    : [[0,open],[120,low],[240,high],[360,close]];
+  for (let t=1;t<=360;t++) {
+    const index = t <= 120 ? 0 : t <= 240 ? 1 : 2;
+    const [t0,p0] = stops[index], [t1,p1] = stops[index+1];
+    const fraction = (t - t0)/(t1 - t0);
+    const price = t === 360 ? close : p0 * Math.exp(Math.log(p1/p0) * fraction);
+    const move = Math.abs(Math.log(price/last));
+    // Model-only activity; historical volume is neither imported nor claimed.
+    const quoteVolume = 20 + Math.min(300,move*20000) + (hash%17);
+    ticks.push({price,high:Math.max(last,price),low:Math.min(last,price),
+      quoteVolume,volume:quoteVolume/((price+last)/2)});
+    last = price;
+  }
+  const delta = Math.log(close/open);
+  return {open,ticks,regime:delta > 0.001 ? 'impulse' : delta < -0.001 ? 'pullback' : 'consolidation'};
+}
+
 export function controlledScenarioHour(config: ControlledScenarioConfig, seed: string, hour: number): { open: number; ticks: RealismTick[]; regime: Regime } {
+  const stagesEnd = config.controls.stages.reduce((total, stage) => total + stage.durationHours, 0);
+  if (config.controls.afterGrowth === 'historical' && config.controls.historical && hour >= stagesEnd) {
+    // A 10-second synthetic tick is drawn once per real 10 seconds. Hour N
+    // reproduces source hour N's relative OHLC; no replay speed control.
+    // The preceding growth and final pullback are NOT modified.
+    const anchor = Number(config.controls.stages[config.controls.stages.length - 1].targetPrice);
+    return historicalReplayHour(config.controls.historical, anchor, hour - stagesEnd, seed);
+  }
   const start = config.from + hour * HOUR, cap = Number(config.controls.maxPrice);
   const open = priceAt(config, seed, start), ticks: RealismTick[] = [];
   let previous = open;

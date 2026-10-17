@@ -4,6 +4,7 @@ on:
     paths:
       - 'src/services/listings/**'
       - 'src/shared/listingScenarioControls.ts'
+      - 'src/shared/listingHistoricalReplay.ts'
       - 'src/shared/aithPublication.ts'
       - 'config/test-markets/aith.draft.json'
       - 'src/services/testMarkets/**'
@@ -26,7 +27,10 @@ on:
       - 'scripts/qa-admin-listings.cjs'
       - 'scripts/qa-aith-replacement.cjs'
       - 'scripts/qa-listing-controls.cjs'
+      - 'scripts/benchmark-historical-replay.cjs'
+      - 'scripts/qa-historical-archive-storage.cjs'
       - 'frontend/src/lib/__tests__/listingMovement*.test.ts'
+      - 'frontend/src/lib/__tests__/listingHistoricalLibrary.test.ts'
       - 'scripts/smoke-market-edge-listings.mjs'
       - 'render.yaml'
       - 'scripts/allocate-listing-owner.cjs'
@@ -69,6 +73,7 @@ jobs:
           src/services/listings/__tests__/aithReplacement.test.ts
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
+          src/services/listings/__tests__/historicalDemoContour.pg.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
@@ -76,10 +81,15 @@ jobs:
           frontend/src/lib/__tests__/testMarkets.test.ts
       - name: Durable Object store on real workerd (Miniflare)
         run: npm run test:listings --prefix workers/market-edge
-      - name: Saved scenario controls, bounds and legacy-history preservation
+      - name: Saved scenario controls, bounds, legacy-history preservation and the historical demo contour
         run: >-
           npx jest --runInBand --silent
-          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing'
+          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary|historicalDemoContour'
+      - name: Historical replay CPU/RAM diagnostic (synthetic fixtures, not CX23)
+        run: |
+          mkdir -p /tmp/listings-qa-report
+          node --expose-gc scripts/benchmark-historical-replay.cjs > /tmp/listings-qa-report/historical-replay-benchmark.json
+          cat /tmp/listings-qa-report/historical-replay-benchmark.json
       - name: Post-deploy smoke script (configured / not configured / token mismatch) on real workerd
         run: npm run test:smoke --prefix workers/market-edge
       - name: Existing Worker contract
@@ -94,6 +104,11 @@ jobs:
         run: |
           npm install --prefix /tmp/listings-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
           node /tmp/listings-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Historical archive integrity on real Chromium / IndexedDB
+        run: node scripts/qa-historical-archive-storage.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_OUTPUT: /tmp/listings-qa-report/historical-archive-storage
       - name: Create → Preview → Publish → open from Markets, no redeploy
         run: node scripts/qa-admin-listings.cjs
         env:

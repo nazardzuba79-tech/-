@@ -120,3 +120,41 @@
 .listing-form-compact .listing-actions-dock > p { margin: 0; }
 .listing-form-compact .listing-buttons button { min-height: 44px; flex: 1 1 auto; }
 .listing-form-compact .listing-buttons .listing-primary { flex: 1 1 100%; }
+
+/* Draft-only historic movement picker: contained, readable on laptop and phone. */
+.listing-historical-editor { display:grid; gap:12px; min-width:0; padding:14px; border:1px solid var(--border); border-radius:9px; background:#f4f7fb; }
+.listing-historical-editor h3 { margin:0; font-size:14px; color:var(--text-primary); }
+.listing-historical-editor input[type=file] { width:100%; max-width:100%; min-width:0; font-size:12px; }
+.listing-historical-editor [data-historical-clips] { display:grid; gap:7px; }
+.listing-historical-clip { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 16px; padding:9px 11px; border:1px solid var(--border); border-radius:7px; background:var(--panel); font-size:12px; overflow-wrap:anywhere; }
+.listing-historical-clip strong { display:inline; }
+.listing-historical-editor [role=alert] { color:#a42b3e; font-size:12px; }
+
+
+/* Offline historical preset library: no extra layout panels or horizontal overflow. */
+.listing-history-library { display:grid; gap:12px; min-width:0; padding:14px; border:1px solid var(--border); background:var(--panel); border-radius:9px; }
+.listing-history-library h4 { margin:0; color:var(--text-primary); font-size:14px; }
+.listing-history-presets { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; min-width:0; }
+.listing-history-preset { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px; border:1px solid var(--border); border-radius:8px; background:#f9fafb; min-width:0; }
+.listing-history-preset > span { display:grid; gap:4px; min-width:0; }
+.listing-history-preset strong { font-size:12px; font-weight:600; color:var(--text-primary); overflow-wrap:anywhere; }
+.listing-history-preset small { font-size:11px; color:var(--text-tertiary); line-height:1.35; }
+.listing-history-preset button, .listing-history-library .listing-buttons button { flex:none; min-height:34px; }
+.listing-history-archive-list { display:grid; gap:6px; min-width:0; }
+.listing-history-library input[type=file] { max-width:100%; width:100%; min-width:0; font-size:12px; }
+@media(max-width:900px) {
+  .listing-history-presets { grid-template-columns:minmax(0,1fr); }
+}
+@media(max-width:390px) {
+  .listing-history-preset { align-items:flex-start; }
+}
+
+/* Historical model: what runs after the stages, and what it will do (no new panels or colours). */
+.listing-historical-active { display:grid; gap:4px; padding:10px 12px; border:1px solid var(--border); border-left:3px solid #2f6fd6; border-radius:7px; background:var(--panel); font-size:12px; line-height:1.4; overflow-wrap:anywhere; }
+.listing-historical-active strong { color:var(--text-primary); font-size:13px; }
+.listing-historical-active span { color:var(--text-tertiary); }
+.listing-historical-plan { display:grid; gap:6px; min-width:0; }
+.listing-historical-plan ol { margin:0; padding-left:20px; display:grid; gap:4px; font-size:12px; line-height:1.45; overflow-wrap:anywhere; }
+.listing-historical-plan p { margin:0; }
+.listing-ident small.listing-model { display:block; color:#2f6fd6; overflow-wrap:anywhere; }
+[data-historical-returned] { display:block; margin-top:6px; font-size:12px; font-weight:500; color:var(--text-primary); }

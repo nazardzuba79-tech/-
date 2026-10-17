@@ -281,6 +281,190 @@ async function acceptance() {
   assert.equal(refused.status, 422);
   assert.equal(refused.body.error, 'HISTORY_LOCKED');
   check('Explicit confirmation only; UTC/Kyiv shown; published generator equals preview; history rewrite rejected');
+
+  // Historical continuation is a PRIVATE DRAFT only. Exercise the actual
+  // admin browser, file input, source/date/duration picker, Durable Object
+  // persistence and canonical backend Preview; never publish or trade it.
+  await page.locator('[data-create-listing]').click();
+  await page.fill('[data-field="name"]', 'Исторический ритм');
+  await page.fill('[data-field="symbol"]', 'QHX');
+  await page.fill('[data-field="initialPrice"]', '2');
+  await page.selectOption('[data-field="timeZone"]', 'UTC');
+  await page.fill('[data-field="wallTime"]', new Date(Math.ceil((Date.now()+3*86400000)/60000)*60000).toISOString().slice(0,16));
+  await page.selectOption('[data-field="afterGrowth"]', 'historical');
+  assert.equal(await page.locator('[data-historical-editor]').count(), 1);
+  assert.equal(await page.inputValue('[data-field="afterGrowth"]'), 'historical');
+  await page.selectOption('[data-field="historicalSource"]', 'BTC/USDT');
+  await page.fill('[data-field="historicalStartDate"]', '2018-01-02');
+  await page.selectOption('[data-field="historicalDuration"]', '24');
+  let srcPrice=100;
+  const csv=Array.from({length:72},(_,i)=>{
+    const open=srcPrice,close=open*(i%2===0?1.005:0.995);
+    const high=Math.max(open,close)*1.01,low=Math.min(open,close)*.99;
+    srcPrice=close;
+    return [Math.floor(Date.parse('2018-01-01T00:00:00Z')/1000)+i*3600,open,high,low,close].join(',');
+  }).join('\n');
+  await page.locator('[data-field="historicalCsv"]').setInputFiles({
+    name:'btc-hourly-QA.csv', mimeType:'text/csv', buffer:Buffer.from(csv),
+  });
+  await page.locator('[data-historical-clips] [role="listitem"]').waitFor();
+  assert.match(await page.locator('[data-historical-clips]').innerText(),/2018/);
+  // Store original OHLC only in local IndexedDB once; then use another excerpt
+  // from the SAME archive without a new CSV upload or server-side dataset.
+  assert.equal(await page.locator('[data-use-historical-preset="btc-2018-jan"]').isDisabled(),true);
+  await page.locator('[data-field="historicalLibraryFile"]').setInputFiles({
+    name:'btc-hourly-local-library.csv',mimeType:'text/csv',buffer:Buffer.from(csv),
+  });
+  await page.locator('[data-historical-library]').getByText('Архив сохранён на этом устройстве.',{exact:false}).waitFor();
+  assert.equal(await page.locator('[data-field="historicalArchiveChoice"] option').count(),1);
+  await page.locator('[data-remove-historical-clip="0"]').click();
+  await page.locator('[data-use-historical-archive]').click();
+  await page.locator('[data-historical-clips] [role="listitem"]').waitFor();
+  assert.match(await page.locator('[data-historical-clips]').innerText(),/2018-01-02/);
+  const histResponse=page.waitForResponse(response => response.request().method()==='POST'&&new URL(response.url()).pathname.endsWith('/admin/listings'));
+  await page.locator('[data-save-draft]').click();
+  assert.equal((await histResponse).status(),201);
+  const historyListing=(await api('/admin/listings')).body.listings.find(x=>x.symbol==='QHX');
+  assert.ok(historyListing);
+  assert.equal(historyListing.activeVersion,null);
+  assert.equal(historyListing.draft.tradable,false);
+  assert.equal(historyListing.draft.simulationProgram.afterGrowth,'historical');
+  assert.equal(historyListing.draft.simulationProgram.stages.slice(-1)[0].type,'pullback');
+  assert.equal(historyListing.draft.simulationProgram.historical.clips[0].bars.length,24);
+  assert.equal(historyListing.draft.simulationProgram.historical.clips[0].sourceStart,'2018-01-02T00:00:00.000Z');
+  assert.equal(await page.locator('[data-publish]').isDisabled(),true);
+  await page.selectOption('[data-field="previewHorizon"]','afterGrowth');
+  await page.selectOption('[data-field="previewInterval"]','1h');
+  const previewPromise=page.waitForResponse(response=>response.url().includes('/preview?'));
+  await page.locator('[data-preview]').click();
+  const historyPreview=await previewPromise;
+  assert.equal(historyPreview.status(),200);
+  const histData=await historyPreview.json();
+  assert.ok(histData.candles.length>0);
+  assert.ok(histData.candles.every(c=>c.low>0&&c.high>=c.open&&c.high>=c.close));
+  await capture(page,'historical-draft-preview-1440','[data-listing-preview]');
+  const beforeBlocked=countPublished();
+  assert.equal(await page.locator('[data-publish]').isDisabled(),true);
+  assert.equal(countPublished(),beforeBlocked);
+  // A suggested ETH 2021 quarter becomes genuinely clickable only AFTER
+  // a real contiguous user-supplied local file has been validated and stored.
+  await page.selectOption('[data-field="historicalSource"]','ETH/USDT');
+  let ethPrice=100;
+  const ethCsv=Array.from({length:2160},(_,i)=>{
+    const open=ethPrice,close=open*(i%2===0?1.005:0.995);
+    ethPrice=close;
+    return [Date.parse('2021-01-01T00:00:00Z')/1000+i*3600,
+      open,Math.max(open,close)*1.01,Math.min(open,close)*.99,close].join(',');
+  }).join('\n');
+  await page.locator('[data-field="historicalLibraryFile"]').setInputFiles({
+    name:'eth-2021-local-library.csv',mimeType:'text/csv',buffer:Buffer.from(ethCsv),
+  });
+  await page.locator('[data-use-historical-preset="eth-2021-jan"]').waitFor({state:'visible'});
+  await page.waitForFunction(()=>!(document.querySelector('[data-use-historical-preset="eth-2021-jan"]'))?.hasAttribute('disabled'));
+  await page.locator('[data-use-historical-preset="eth-2021-jan"]').click();
+  // IndexedDB read + SHA-256 verification + React state commit are asynchronous.
+  // A click resolving only means the handler started; never inspect the old
+  // single-clip DOM synchronously and mistake the pending operation for failure.
+  await page.waitForFunction(() =>
+    document.querySelector('[data-historical-clips]')?.textContent?.includes('2021-01-01')
+    || document.querySelector('[data-historical-library] [role="alert"]'),
+    undefined, { timeout: 15_000 },
+  );
+  const libraryError=await page.locator('[data-historical-library] [role="alert"]').allTextContents();
+  assert.deepEqual(libraryError,[],'The historical library must import ETH without an error');
+  assert.match(await page.locator('[data-historical-clips]').innerText(),/2021-01-01/);
+  assert.equal(await page.locator('[data-historical-clips] [role="listitem"]').count(),2);
+  assert.equal(await page.locator('[data-publish]').isDisabled(),true);
+  await page.setViewportSize({width:390,height:844});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await capture(page,'historical-draft-mobile-390','[data-movement-editor]');
+  const catalogueAfter=await (await mf.dispatchFetch('http://127.0.0.1/market/listings')).json();
+  assert.equal(catalogueAfter.assets.some(x=>x.symbol==='QHX'),false);
+  check('Admin historical source/date/duration CSV → persisted draft → canonical preview; publication disabled; mobile fits');
+
+  // Scenario management (#518 completion): the active model and its future
+  // movement before saving, the whole-history preview, the list badge,
+  // reuse on another listing and the safe return to the ordinary scenario.
+  await page.setViewportSize({width:1440,height:1000});
+  assert.match(await page.locator('[data-historical-active]').innerText(),/BTC с 2018-01-02, 1 дн\. → ETH с 2021-01-01, 90 дн\./);
+  assert.equal(await page.locator('[data-historical-plan-fragment]').count(),2);
+  assert.match(await page.locator('[data-historical-plan-total]').innerText(),/2184 ч/);
+  assert.equal(await page.locator('[data-field="ownerAllocation"]').isDisabled(),true);
+  assert.equal(await page.inputValue('[data-field="ownerAllocation"]'),'0');
+  await page.locator('[data-historical-plan-candles] summary').click();
+  assert.equal(await page.locator('[data-historical-plan-chart] [data-plan-candle]').count(),Math.ceil(2184/24));
+  assert.equal(await page.locator('[data-server-candle]').count(),0,'plan candles are never labelled as server candles');
+  await capture(page,'historical-active-model-plan-1440','[data-historical-editor]');
+  const twoClipSave=page.waitForResponse(response=>response.request().method()==='PUT'&&response.url().includes('/draft'));
+  await page.locator('[data-save-draft]').click();
+  assert.equal((await twoClipSave).status(),200);
+  await page.waitForFunction(()=>!document.querySelector('[data-unsaved-draft]'));
+  await page.selectOption('[data-field="previewHorizon"]','history');
+  assert.equal(await page.inputValue('[data-field="previewInterval"]'),'4h');
+  const fullPreview=page.waitForResponse(response=>response.url().includes('/preview?')&&response.url().includes('horizon=history'));
+  await page.locator('[data-preview]').click();
+  const fullResponse=await fullPreview;
+  assert.equal(fullResponse.status(),200);
+  const fullData=await fullResponse.json();
+  assert.equal(fullData.scenarioSummary.horizon,'history');
+  assert.equal(fullData.scenarioSummary.to-fullData.scenarioSummary.from,720*3600000);
+  assert.ok(fullData.candles.length>0&&fullData.candles.length<=181);
+  await page.locator('[data-listing-preview]').waitFor();
+  await capture(page,'historical-first-30-days-preview-1440','[data-listing-preview]');
+  assert.equal(await page.locator('[data-publish]').isDisabled(),true);
+  assert.match(await page.locator('[data-listing-row="QHX"] [data-listing-model]').innerText(),/История после этапов: BTC с 2018-01-02/);
+  await capture(page,'historical-list-badge-1440','[data-listing-row="QHX"]');
+  check('Active model, per-fragment plan and daily chart of the whole replay; first-30-days server preview; list badge; owner allocation fixed at 0');
+
+  await page.locator('[data-create-listing]').click();
+  await page.fill('[data-field="name"]', 'Повтор модели');
+  await page.fill('[data-field="symbol"]', 'QHY');
+  await page.fill('[data-field="initialPrice"]', '2');
+  await page.selectOption('[data-field="timeZone"]', 'UTC');
+  await page.fill('[data-field="wallTime"]', new Date(Math.ceil((Date.now()+4*86400000)/60000)*60000).toISOString().slice(0,16));
+  await page.fill('[data-field="ownerAllocation"]', '25');
+  await page.selectOption('[data-field="afterGrowth"]', 'historical');
+  assert.equal(await page.inputValue('[data-field="ownerAllocation"]'),'0');
+  assert.match(await page.locator('[data-field="historicalSavedModel"]').innerText(),/QHX \(черновик\): BTC с 2018-01-02/);
+  await page.locator('[data-apply-saved-historical]').click();
+  assert.equal(await page.locator('[data-historical-clips] [role="listitem"]').count(),2);
+  const reuseSave=page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).pathname.endsWith('/admin/listings'));
+  await page.locator('[data-save-draft]').click();
+  assert.equal((await reuseSave).status(),201);
+  let all=(await api('/admin/listings')).body.listings;
+  const source=all.find(x=>x.symbol==='QHX'), reused=all.find(x=>x.symbol==='QHY');
+  assert.deepEqual(reused.draft.simulationProgram.historical,source.draft.simulationProgram.historical);
+  assert.equal(reused.draft.ownerAllocation,'0');
+  check('A saved model of another listing is reused from the server (no CSV, no local archive); its owner allocation is forced to 0');
+
+  const defaultStages=reused.draft.simulationProgram.stages.slice(0,-1);
+  await page.locator('[data-historical-return]').click();
+  assert.equal(await page.inputValue('[data-field="afterGrowth"]'),'range');
+  assert.equal(await page.locator('[data-historical-editor]').count(),0);
+  assert.match(await page.locator('[data-historical-returned]').innerText(),/откат −55% за 24 часа удалён/);
+  assert.equal(await page.locator('[data-field="ownerAllocation"]').isDisabled(),false);
+  await capture(page,'historical-safe-return-1440','[data-movement-editor]');
+  const returnSave=page.waitForResponse(response=>response.request().method()==='PUT'&&response.url().includes('/draft'));
+  await page.locator('[data-save-draft]').click();
+  assert.equal((await returnSave).status(),200);
+  all=(await api('/admin/listings')).body.listings;
+  const returned=all.find(x=>x.symbol==='QHY');
+  assert.equal(returned.draft.simulationProgram.afterGrowth,'range');
+  assert.equal('historical' in returned.draft.simulationProgram,false);
+  assert.deepEqual(returned.draft.simulationProgram.stages,defaultStages);
+  await page.waitForFunction(()=>!document.querySelector('[data-unsaved-draft]'));
+  assert.equal(await page.locator('[data-publish]').isDisabled(),false,'the ordinary scenario can be published again');
+  assert.equal(all.find(x=>x.symbol==='QHX').draft.simulationProgram.afterGrowth,'historical','the source listing keeps its model');
+  for (const width of [390, 320]) {
+    await page.locator('[data-edit-listing="QHX"]').click();
+    await page.setViewportSize({ width, height: 844 });
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow at ${width}`);
+    await capture(page,`historical-active-model-${width}`,'[data-historical-editor]');
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  }
+  const catalogueEnd=await (await mf.dispatchFetch('http://127.0.0.1/market/listings')).json();
+  assert.equal(catalogueEnd.assets.some(x=>['QHX','QHY'].includes(x.symbol)),false);
+  check('Safe return: fragments and the default fall removed, saved as the ordinary scenario, publishable again; 390/320 fit; nothing reached the public catalogue');
   await context.close();
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });

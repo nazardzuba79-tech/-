@@ -4,6 +4,7 @@ import { simulationFor } from './testMarketSimulation';
 import { isTestAssetPairOrSymbol, testAssetForPair, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testAssetConfig';
 import { managedListingAssets } from '../listings/managedSnapshot';
 import { managedListingRegistry } from '../listings/registry';
+import { HISTORICAL_DEMO_MESSAGE, isHistoricalDemoAsset } from '../listings/simulationContour';
 import { isAith } from '../../shared/aithPublication';
 
 const managedListingForPair = (pair: string) => {
@@ -24,6 +25,7 @@ export function assertSpotListing(pair: string, now = Date.now()): void {
   }
   const managed = managedListingForPair(pair);
   if (managed) {
+    if (isHistoricalDemoAsset(managed)) throw new Error(HISTORICAL_DEMO_MESSAGE);
     if (!managed.isTradable) throw new Error(`${managed.name} is not available for trading.`);
     if (now < managed.listingAt) throw new Error('Trading has not started yet');
     return;
@@ -47,6 +49,8 @@ export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSou
     const managed = managedListingForPair(pair);
     if (isAith(pair) && !managed) return null;
     if (!managed) return source.getTicker(pair);
+    // A historical model price never triggers a real conditional order.
+    if (isHistoricalDemoAsset(managed)) return null;
     const last = simulationFor(managed).priceAt(clock());
     return last === null ? null : { lastPrice: String(last) };
   } };
