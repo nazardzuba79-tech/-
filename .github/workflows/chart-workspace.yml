@@ -25,6 +25,7 @@ on:
       - 'frontend/src/lib/__tests__/futuresChartBlank.test.ts'
       - 'frontend/src/lib/__tests__/priceChartMarketOrders.test.ts'
       - 'scripts/qa-chart-workspace.cjs'
+      - 'scripts/qa-hover-interval-isolation.cjs'
       - '.github/workflows/chart-workspace.yml'
   workflow_dispatch: {}
 
@@ -61,6 +62,7 @@ jobs:
             frontend/src/lib/__tests__/chartViewport.test.ts \
             frontend/src/lib/__tests__/chartCandleSource.test.ts \
             frontend/src/lib/__tests__/chartWorkspace.test.ts \
+            frontend/src/lib/__tests__/chartHoverIsolation.test.ts \
             frontend/src/lib/__tests__/chartCompare.test.ts \
             frontend/src/lib/__tests__/chartIndicators.test.ts \
             frontend/src/lib/__tests__/chartCandleStats.test.ts \

@@ -6279,6 +6279,22 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
   - Local PostgreSQL 16, fresh DB after `prisma migrate deploy`: 10/10 runs, 16/16 tests each.
   - No production, financial, funding, migration or other test change.
 
+## 2026-10-17 — Codex — PR #501 current-main reconciliation
+
+- Implementation: `c8b9f25b94940ccc9ae5437149621bfe1573ccab`; reconciled existing PR #501 with fresh main `50875f2116474ce01acbb08c1d9e3e68ec99a7f3`.
+- Material files: customerError/futuresOrderErrors, spotOrderPresentation/SpotOrdersView, TestMarketTerminal/TestMarketsStrip and its TradePage error prop, seven locale dictionaries, targeted presentation tests, QA reconciliation note.
+- Preserved Funding V2 #535, current FuturesPositionsPanel P&L/closed-card behavior (only status text localized), main's Spot fresh-read controller, chart settings, Copy Trading #536, AITH safeguards and all pre-existing translations. Backend/schema/migrations/workflows/dependencies unchanged from main.
+- Local validation: 609 passing tests across 19 distinct suites; frontend TypeScript/Vite build and diff checks passed. Windows-only asset CRLF conversion corrected to Git blob bytes without repository changes or relaxed assertions.
+- Evidence and comparison: `docs/qa/pr501-main-reconciliation-20261017.md`. Historical October 7 screenshots are not new QA. Next: verify all remote CI on final pushed HEAD and prepare existing PR for owner merge. No merge to main, deployment or production migration performed.
+- CI follow-up to `0fef555667ffad78fd4cff6ff363e8c5bbb8684a`: the KYC offline browser scenario still expected its generic upload fallback; updated only that expectation to the now-specific localized network message, with exact matching. All send/idempotency/DB assertions and KYC application code remain unchanged. Revalidate on the final pushed head; no test waiver.
+
+## 2026-10-17 — Codex — PR #501 hover-only CI repair
+
+- Implementation SHA: `2c7cba37782fca768cc37ba3cfc296812c14d06c`, continuing existing #501 from `aabe8f963874fa5b8179728803cc68c49354694e`; fresh main remains `50875f2116474ce01acbb08c1d9e3e68ec99a7f3`.
+- Proven cause: the harness counted PriceChart's existing 5000 ms periodic candle fetch during the pointer window. One instrumented loopback run captured exact URLs/timestamps and Chromium async `await -> setInterval` initiators; original CI artifacts only retained aggregate counts. Evidence: `docs/qa/pr501-hover-request-cause-20261017.md`.
+- Material files: `scripts/qa-chart-workspace.cjs`, fixture-only `qa-hover-interval-isolation.cjs`, `chartHoverIsolation.test.ts`, chart workflow's helper trigger and mandatory test inclusion. Existing periodic callbacks resume in finally; hover requires zero HTTP requests, zero fetch attempts and zero newly registered intervals. No raised limits or removed tests.
+- Preserved all application source, design, Funding V2, financial logic and seven dictionaries byte-for-byte against aabe8f96. No production access, deployment, merge or production migration.
+- Local validation: 7/7 isolation/negative-control regressions; 8/8 targeted real-browser checks (`--only data`); script syntax and diff checks pass. Next: await final-head CI; do not merge until every required gate passes.
 ### Claude — 2026-10-17 — PR #500 (admin on phones) brought up to main `50875f21` without overwriting #527 / #532
 
 - Task (owner): finish PR #500. Fetch main fresh, compare with the merged #527 and #532, and port only what main still lacks. Keep the users sorting, deposits and financial operations, #532's mobile fixes, every admin confirmation and the approved design. Check 320/390/430 and desktop with the existing QA and CI. No merge, deploy or production change.
@@ -6332,3 +6348,5 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
 - Unresolved:
   - On the open phone menu at 320×568 the launcher overlaps the sidebar's lower right corner. This was already so on main (sidebar z 40, launcher z 998), and is not changed here.
   - Merge and deploy are the owner's. Not run: production, real phones.
+
+- PR #501 final integration: fresh main advanced to 5f3f981c1faa85edb4ae338b2fc9a5031b048225 (approved #500). Only AI_HANDOFF append conflict; both records preserved. Chart, Funding V2 and locale files had no upstream overlap with the hover repair. Final-head CI remains required.
