@@ -6350,3 +6350,27 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
   - Merge and deploy are the owner's. Not run: production, real phones.
 
 - PR #501 final integration: fresh main advanced to 5f3f981c1faa85edb4ae338b2fc9a5031b048225 (approved #500). Only AI_HANDOFF append conflict; both records preserved. Chart, Funding V2 and locale files had no upstream overlap with the hover repair. Final-head CI remains required.
+
+### Claude — 2026-10-17 — Ruler painted on the plot's left edge when its anchors fall between bars (AITH/USDT 4h)
+- Owner report: on AITH/USDT 4h the ruler sat on the plot's left edge with its label clamped there, though the measurement («13 баров, 2д 4ч, Объём 319.90K») was right.
+- Root cause: in Lightweight Charts 5.2.1, `logicalToCoordinate` answers 0 for any fractional logical index (`TimeScale.indexToCoordinate` returns 0 unless the index is an integer). `PriceChart` sends anchor times through `timeToLogical`. That index is fractional when a time falls between two bars of the current timeframe: a ruler drawn on 1h and read on 4h, or a time projected past the last bar off the bar grid. Such anchors were painted at x = 0.
+- Reproduced locally with the real public AITH 4h/1h candles and a ruler at 1h times (2026-10-13 15:00 → 2026-10-15 19:00 UTC). The label read exactly as in the owner's screenshot, and the body was on the left edge.
+- Fix:
+  - `logicalToX` in `frontend/src/lib/chartViewport.ts` interpolates between the two whole bars. Whole bars keep the library's own coordinate.
+  - `drawingView.x` in `PriceChart.tsx` uses it. This applies to every drawing kind, not only the ruler.
+  - Stored anchors, the measurement, `drawingPointAt` and trading overlays are unchanged.
+- Tests:
+  - `chartViewport.test.ts`: four cases.
+  - New browser regression `scripts/qa-chart-ruler-timeframes.cjs` on synthetic Futures candles. Three stored rulers read on 4h: on bars, one hour later, and into the future.
+  - It is wired into `futures-visual-polish.yml`: paths plus `PriceChart.tsx` and `chartViewport.ts`, a step, and an artifact. `chart-workspace.yml` was left alone because Codex's PR #528 edits it.
+- Verified locally on this tree:
+  - frontend `tsc` PASS, `vite build` PASS.
+  - Full frontend Jest: 261/261 suites, 4520/4520 tests.
+  - `qa-chart-ruler-timeframes.cjs`:
+    - Before (unfixed build): FAIL as expected. The between-bars ruler was 0 px wide and the future ruler stretched from the left edge.
+    - After: PASS at 1920×1080, 1440×900, 1366×768 and 390×844.
+  - `qa-chart-ruler-label.cjs` PASS (1440/1366/390), `qa-chart-ruler-measure.cjs` PASS, `qa-chart-ruler-sync.cjs` PASS (0.0 px drift).
+  - `qa-chart-workspace.cjs` after: 222/222 PASS.
+  - The AITH Spot case, checked by hand with the real candles, is on its candles at 1440 and 390.
+- Preserved: all Codex and earlier ruler work (label placement, live end, edge handles, projection watch, young-listing viewport). No files of PR #528 were touched besides this append-only log.
+- Not done: merge and deploy are the owner's. Production was not checked after the fix (not deployed).

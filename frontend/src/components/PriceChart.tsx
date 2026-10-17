@@ -51,7 +51,7 @@ import { CHART_TIMEFRAMES, LEGACY_TIMEFRAMES, isChartTimeframe, timeframeDuratio
 import { isTimeframeUnavailable, loadChartCandles, timeframeUnavailableError, workspaceCandleLoader } from '../lib/chartCandleSource';
 import { candleSourceFor, chartCapabilities, quickTimeframesFor, resolveTimeframe } from '../lib/chartCapabilities';
 import { CHART_CANDLE_LOADERS, candleHistoryStart } from '../lib/chartCandleLoaders';
-import { dataBoundsFromEdges, initialLogicalRange, safeBottomMargin, timeTickLabel } from '../lib/chartViewport';
+import { dataBoundsFromEdges, initialLogicalRange, logicalToX, safeBottomMargin, timeTickLabel } from '../lib/chartViewport';
 import {
   BUILT_IN_PRESETS, DEFAULT_WORKSPACE, MAX_WORKSPACE_PRESETS, deleteWorkspacePreset, getChartWorkspace, getWorkspacePresets, presetFromWorkspace, renameWorkspacePreset,
   saveWorkspacePreset, subscribeChartWorkspace, subscribeWorkspacePresets, updateChartWorkspace, type ChartWorkspaceState, type CompareEntry, type ComparePeriod, type WorkspaceLayout, type WorkspacePreset,
@@ -1997,8 +1997,10 @@ export function PriceChart({
     paintedProjectionRef.current = { price, key: projectionKey(chart, series, price) };
     return {
       x: (time) => {
+        // Between two bars too: the library's own call puts a fractional
+        // index on the left edge (lib/chartViewport).
         const logical = timeToLogical(time);
-        return logical === null ? null : chart.timeScale().logicalToCoordinate(logical as never);
+        return logical === null ? null : logicalToX(logical, index => chart.timeScale().logicalToCoordinate(index as never));
       },
       y: (price) => series.priceToCoordinate(price),
       width: chart.timeScale().width(),
