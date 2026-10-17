@@ -111,3 +111,22 @@ In owner-only mode, visible chart requests renew a 12-second lease and observe o
 ### Acceptance limits
 
 These owner/Wallet fixes do not resolve or replace Issue #505 capacity gates. Original 0.05-vCPU/256-MiB/disk-throttled and crypto-coexistence failures remain release blockers. Windows guarded functional tests and unthrottled browser results are not Linux capacity acceptance. No production capacity/headroom is confirmed. The catalogue remains 40 configured candidates (7 Bybit, 13 Binance, 20 MOEX), not 250 verified instruments; MOEX is blocked and commercial redistribution rights remain unconfirmed.
+
+### Opt-in Binance WS for isolated Stocks review
+
+The CLI in `services/stocks-global/server.mjs` uses the unchanged REST
+`MarketHub` unless `STOCKS_BINANCE_WS_ENABLED=true` is explicitly set. Only
+the strict, authority-backed two-trader gateway may opt in; a SQLite-only or
+legacy local ledger run is refused with `AUTH_CONFIG_INVALID` rather than
+silently starting a new market feed. This selects **one shared server socket**
+for the already verified Binance token symbols; viewers do not get individual
+connections. The socket opens only on demand and disconnects when unused.
+Bybit/MOEX and the main cryptocurrency API are unchanged.
+
+This is **code review / synthetic testing only**, not authorization to ingest
+or redistribute live Binance data. Default-off controls and existing
+`STOCKS_TEST_CASH_ENABLED`, `STOCKS_TRADE_PRINCIPALS`, and gateway
+requirements remain separate. Do not set the flag for any publicly accessible
+deployment until applicable provider rights, identities and capacity have been
+verified. The flag does not configure a live public reverse proxy, grant
+trading rights or change any balance.

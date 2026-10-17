@@ -82,6 +82,11 @@ jobs:
           services/stocks-global/cash-authority-contract.test.mjs
           services/stocks-global/two-trader-http.test.mjs
           services/stocks-global/account-existing-only.test.mjs
+      - name: Stocks-only shared trade stream bootstrap (synthetic and disconnected)
+        run: >-
+          node --test
+          services/stocks-global/runtime-market.test.mjs
+          services/stocks-global/binance-trade-feed.test.mjs
       - name: Default-disabled API, viewer no-op and wallet projection
         run: >-
           npx jest --runInBand --runTestsByPath

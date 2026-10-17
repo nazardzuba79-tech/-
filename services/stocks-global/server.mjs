@@ -11,6 +11,7 @@ import { executeAccountCommand } from './account-commands.mjs';
 import { identityResolver } from './identity.mjs';
 import { createAuthorityAdapter } from './authority-adapter.mjs';
 import { MarketHub } from './market.mjs';
+import { createStocksRuntimeMarket } from './runtime-market.mjs';
 import { CATALOG, instrument } from './catalog.mjs';
 import { check, SimError, snapshot } from './engine.mjs';
 import { projectViewerQuote } from './viewer-projection.mjs';
@@ -350,7 +351,7 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   check(accountsPath||authority||process.env.STOCKS_GLOBAL_DATA?.endsWith('.json'),'LOCAL_LEDGER_PATH_REQUIRED');
   check(accountsPath||authority||process.env.STOCKS_LEGACY_SINGLE_OWNER_REVIEW==='true','AUTH_CONFIG_INVALID');
   const authenticate=accountsPath?identityResolver({endpoint:process.env.STOCKS_IDENTITY_ENDPOINT,issuer:process.env.STOCKS_IDENTITY_ISSUER}):undefined;
-  const app=await createServer({port:Number(process.env.STOCKS_GLOBAL_PORT||4437),dataPath:process.env.STOCKS_GLOBAL_DATA?resolve(process.env.STOCKS_GLOBAL_DATA):undefined,accountsPath:accountsPath?resolve(accountsPath):undefined,accountAuthority:authority,authenticate,tradePrincipals:accountsPath||authority?configuredTraders(process.env.STOCKS_TRADE_PRINCIPALS):undefined,dist:process.env.STOCKS_GLOBAL_DIST?resolve(process.env.STOCKS_GLOBAL_DIST):undefined});
+  const app=await createServer({port:Number(process.env.STOCKS_GLOBAL_PORT||4437),hub:createStocksRuntimeMarket({enabled:process.env.STOCKS_BINANCE_WS_ENABLED ?? 'false',authorityMode:Boolean(authority)}),dataPath:process.env.STOCKS_GLOBAL_DATA?resolve(process.env.STOCKS_GLOBAL_DATA):undefined,accountsPath:accountsPath?resolve(accountsPath):undefined,accountAuthority:authority,authenticate,tradePrincipals:accountsPath||authority?configuredTraders(process.env.STOCKS_TRADE_PRINCIPALS):undefined,dist:process.env.STOCKS_GLOBAL_DIST?resolve(process.env.STOCKS_GLOBAL_DIST):undefined});
   console.log('Stocks local preview http://127.0.0.1:'+app.port+'/stocks/BYBIT%3AAAPLXUSDT');
   let stopping=false;const stop=async()=>{if(stopping)return;stopping=true;await app.close();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);
 }
