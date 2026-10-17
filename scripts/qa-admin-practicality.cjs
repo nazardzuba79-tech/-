@@ -23,8 +23,12 @@ const users = Array.from({ length: Number(process.env.QA_USERS || 40) }, (_, i) 
   kycStatus: i < 4 ? 'PENDING' : i < 10 ? 'APPROVED' : 'NOT_STARTED',
   adminPassword: null, password: null,
   balances: [{ asset: 'USDT', available: `${1500 + i * 125}.25000000`, locked: `${i * 10}.00000000` }, { asset: 'BTC', available: '0.02500000', locked: '0.00100000' }],
-  latestKyc: i < 4 ? { id: `qa-kyc-${i + 1}`, userId: `qa-user-${i + 1}`, fullName: `Тестовый клиент ${i + 1}`, country: 'UA', dateOfBirth: '1990-01-01', documentType: 'PASSPORT', status: 'PENDING', createdAt: ago(i + 1), documentUrl: null, reviewedAt: null, rejectionReason: null } : null,
+  latestKyc: i < 4 ? { id: `qa-kyc-${i + 1}`, userId: `qa-user-${i + 1}`, fullName: `Тестовый клиент ${i + 1}`, country: 'UA', dateOfBirth: '1990-01-01', documentType: 'PASSPORT', status: 'PENDING', createdAt: ago(i + 1), documentUrl: null, reviewedAt: null, rejectionReason: null,
+    // Synthetic document states for the phone review card: 2 — mailed by the KYC edge, 3 — a PDF on the server, 1 and 4 — an image.
+    ...(i === 1 ? { documentDelivery: 'EMAIL', emailMessageId: '<qa-kyc-2@example.invalid>', documentMimeType: 'image/jpeg', documentSizeBytes: 1_843_200 } : i === 2 ? { documentDelivery: 'LEGACY_FILE', documentMimeType: 'application/pdf' } : {}) }
+    : i === 4 ? { id: 'qa-kyc-5', userId: 'qa-user-5', fullName: 'Тестовый клиент 5', country: 'UA', dateOfBirth: '1990-01-01', documentType: 'ID_CARD', status: 'REJECTED', createdAt: ago(30), documentUrl: null, reviewedAt: ago(28), rejectionReason: 'Документ нечитаем: обрезан нижний край, не видны серия и номер; фото сделано под углом и с бликом, дата рождения не совпадает с анкетой. Загрузите, пожалуйста, оба разворота документа при ровном освещении.' } : null,
 }));
+users[4].kycStatus = 'REJECTED';
 const admin = { id: 'qa-admin', email: 'operator@example.invalid', displayName: 'Оператор', isAdmin: true, role: 'ADMIN', kycStatus: 'APPROVED' };
 const wallets = [['bitcoin', 'BTC', []], ['ethereum', 'ETH', ['USDT', 'USDC']], ['tron', 'TRX', ['USDT']], ['solana', 'SOL', []], ['bsc', 'BNB', []], ['ton', 'TON', []]].map(([chain, nativeAsset, tokens]) => ({
   chain, nativeAsset, tokens, nativeDepositsSupported: chain !== 'tron', address: chain === 'ethereum' || chain === 'bsc' ? `0x${'1'.repeat(40)}` : `FIXTURE_${chain.toUpperCase()}_ADDRESS_NOT_FOR_PAYMENT`,
@@ -93,7 +97,9 @@ app.get(['/api/v1/admin/users/:id/profile', '/api/v1/admin/users/:id'], (req, re
 app.get('/api/v1/admin/clients/page', (req, res) => {const query=String(req.query.search||'').toLowerCase();res.json(paged(users.filter(u=>(!req.query.status||req.query.status==='all'||u.kycStatus===req.query.status)&&(!query||`${u.email} ${u.id}`.toLowerCase().includes(query))), req.query));});
 app.get('/api/v1/admin/clients', (_, res) => res.json(users));
 app.get('/api/v1/kyc/admin/delivery', (_, res) => res.json({ mode: 'EDGE_EMAIL', configured: true, recipient: 'review@example.invalid' }));
-app.get('/api/v1/kyc/:id/document', (_, res) => res.type('svg').send('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="280"><rect width="600" height="280" fill="#eef0ff"/><text x="30" y="140" font-size="24">Synthetic QA document</text></svg>'));
+app.get('/api/v1/kyc/:id/document', (req, res) => req.params.id === 'qa-kyc-3'
+  ? res.type('application/pdf').send(Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 100]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF'))
+  : res.type('svg').send('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="280"><rect width="600" height="280" fill="#eef0ff"/><text x="30" y="140" font-size="24">Synthetic QA document</text></svg>'));
 app.get('/api/v1/admin/wallets', (_, res) => res.json(wallets));
 app.get('/api/v1/admin/deposit-catalogue', (_, res) => res.json(catalogue()));
 app.put('/api/v1/admin/deposit-catalogue', (_, res) => res.json({ revision: `fixture-revision-${++state.catalogueRevision}` }));
@@ -101,7 +107,12 @@ app.get('/api/v1/admin/deposit-queue', (_, res) => res.json(queue()));
 app.get('/api/v1/admin/deposit-watch', (_, res) => res.json(watcher));
 app.post('/api/v1/admin/deposit-watch/open', (_, res) => res.json({ ran: false, skipped: 'NOT_DUE' }));
 app.get('/api/v1/admin/deposit-packages/preview', (req, res) => res.json({ ...packages.find(p => p.userId === req.query.userId), balanceAvailable: '1500.25', balanceAfter: '2150.25' }));
-app.get('/api/v1/admin/deposit-address-copies', (_, res) => res.json({ asOf: now, items: [], nextCursor: null }));
+const addressCopies = [
+  { id: 'qa-copy-1', userId: users[0].id, email: users[0].email, displayName: users[0].displayName, asset: 'USDT', network: 'tron', networkName: 'TRON', standard: 'TRC20', destinationId: 'usdt-tron', address: 'TFixtureAddressNotForPayment0000000000001', memo: null, source: 'wallet', receivedAt: ago(0.4), clientCopiedAt: ago(0.4) },
+  { id: 'qa-copy-2', userId: users[1].id, email: users[1].email, displayName: null, asset: 'TON', network: 'ton', networkName: 'TON', standard: 'Native', destinationId: 'ton-ton', address: 'EQFixtureAddressNotForPayment00000000000000000002', memo: 'fixture-memo-7781', source: 'header', receivedAt: ago(2), clientCopiedAt: ago(2.2) },
+  { id: 'qa-copy-3', userId: users[2].id, email: 'very.long.client.address.for.phone.layout.check@example.invalid', displayName: 'Тестовый пользователь с длинным именем 3', asset: 'ETH', network: 'ethereum', networkName: 'Ethereum', standard: 'Native', destinationId: 'eth-ethereum', address: `0x${'f1x7'.repeat(10)}`, memo: null, source: 'otc', receivedAt: ago(5), clientCopiedAt: null },
+];
+app.get('/api/v1/admin/deposit-address-copies', (req, res) => { const q = String(req.query.user || '').toLowerCase(), asset = String(req.query.asset || ''); res.json({ asOf: now, items: addressCopies.filter(c => (!q || `${c.email} ${c.userId} ${c.displayName ?? ''}`.toLowerCase().includes(q)) && (!asset || c.asset === asset)), nextCursor: null }); });
 app.get('/api/v1/admin/deposits/recent-by-user', (_, res) => res.json([]));
 app.get('/api/v1/admin/deposits', (_, res) => res.json({ incoming: rows, deposits: [] }));
 app.get('/api/v1/admin/user-activity', (_, res) => res.json(activity()));

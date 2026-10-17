@@ -6295,3 +6295,58 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
 - Material files: `scripts/qa-chart-workspace.cjs`, fixture-only `qa-hover-interval-isolation.cjs`, `chartHoverIsolation.test.ts`, chart workflow's helper trigger and mandatory test inclusion. Existing periodic callbacks resume in finally; hover requires zero HTTP requests, zero fetch attempts and zero newly registered intervals. No raised limits or removed tests.
 - Preserved all application source, design, Funding V2, financial logic and seven dictionaries byte-for-byte against aabe8f96. No production access, deployment, merge or production migration.
 - Local validation: 7/7 isolation/negative-control regressions; 8/8 targeted real-browser checks (`--only data`); script syntax and diff checks pass. Next: await final-head CI; do not merge until every required gate passes.
+### Claude — 2026-10-17 — PR #500 (admin on phones) brought up to main `50875f21` without overwriting #527 / #532
+
+- Task (owner): finish PR #500. Fetch main fresh, compare with the merged #527 and #532, and port only what main still lacks. Keep the users sorting, deposits and financial operations, #532's mobile fixes, every admin confirmation and the approved design. Check 320/390/430 and desktop with the existing QA and CI. No merge, deploy or production change.
+- Branch `integration/admin-mobile-20261010`. A merge commit of `origin/main` (`50875f21`) into `7487eabd` (the commit that carries this entry); no rebase or force-push. The 9 conflicting files were resolved by hand, file by file.
+- Kept from main (#527, #532, KYC materials `ac4367d`):
+  - the users header sort;
+  - «Пополнения» as on main: folded manual check and schedule;
+  - drawer z-index 1000/1001 above the launcher;
+  - 88px at the end of admin pages;
+  - the balances table with `min-width: 0`;
+  - Escape on the phone menu;
+  - the tab strip's `scrollLeft` adjustment;
+  - KYC material statuses (`MATERIAL_FILTER_LABEL`, `stageText`, `nextStep`, `onChanged`).
+  - All `adminMobileLayout.test.ts` pins hold unchanged.
+- Ported from #500 (#489, #483), absent from main:
+  - Phone filter disclosures (`AdminFilterDisclosure`, `useAdminCompact` ≤767px) on KYC, «Выводы» and «Журнал действий». KYC status labels use main's material labels.
+  - A KYC tap scrolls the review into view.
+  - The compact users card with «Подробнее».
+  - Profile tab-strip edge fades (no scroll-snap: it undid #532's tab adjustment at 320/430 in `qa-admin-mobile-audit`).
+  - Menu a11y: focus to the close button and back, body scroll lock, inert/aria-hidden while closed, close on route change and on ≥901px, `aria-expanded`.
+  - `--admin-viewport-height` for the drawer, dialogs and the ignore modal.
+  - Modal header/body/footer.
+  - Drawer focus and scroll lock.
+  - Listing section jumps.
+  - One OTC heading plus request jumps.
+  - Deposit-copies phone cards.
+  - 44px touch targets.
+  - Publish-dialog focus and Escape.
+  - Fixture states in `qa-admin-practicality.cjs`.
+- Not taken from #500, in favour of main:
+  - hiding the support launcher on `/admin` (`body[data-admin-shell]`, the sidebar «Поддержка», `HeadsetIcon`);
+  - the stacked balances table and its `:not(.admin-balance-table)` rule;
+  - #500's compact watcher in «Пополнения»;
+  - the `scrollIntoView` tab logic.
+  - The listing form's pinned action bar is now in flow: the visible launcher (z 998) would sit on it.
+  - `docs/qa/admin-mobile-audit/README.md` got a status note saying this.
+- Verified locally on the merge tree:
+  - frontend `tsc -b` PASS.
+  - Full frontend Jest: 259/259 suites, 4354/4354 tests, on a fresh fixture build.
+  - Admin QA in the order `admin-practicality.yml` runs it, all PASS:
+    - screens;
+    - interactions 22/22;
+    - API compatibility;
+    - sort-deposits 23/23;
+    - `qa-admin-mobile-audit`: 167 screens, 0 problems, 320–1920 and 844×390;
+    - adjustment placement 26 checks.
+  - #489 `evidence.cjs`: 243 shots, 0 errors, 0 blocked, 0 overflows.
+    - Credit drawer confirm/cancel: 27/27 points at every size.
+    - Menu: Escape closes it and focus comes back.
+  - A one-off check: a KYC tap shows the review at 320/360/390/430.
+- Unresolved:
+  - On the open phone menu at 320×568 the launcher overlaps the sidebar's lower right corner. This was already so on main (sidebar z 40, launcher z 998), and is not changed here.
+  - Merge and deploy are the owner's. Not run: production, real phones.
+
+- PR #501 final integration: fresh main advanced to 5f3f981c1faa85edb4ae338b2fc9a5031b048225 (approved #500). Only AI_HANDOFF append conflict; both records preserved. Chart, Funding V2 and locale files had no upstream overlap with the hover repair. Final-head CI remains required.

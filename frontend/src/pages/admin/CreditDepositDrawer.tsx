@@ -80,6 +80,19 @@ export function CreditDepositDrawer({ userId, chain, asset, email, onClose, onDo
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [busy, onClose]);
+  // Focus moves into the drawer and returns to the opening button; the page
+  // behind does not scroll while it is open.
+  const panel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    panel.current?.focus({ preventScroll: true });
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = overflow;
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
+    };
+  }, []);
 
   async function confirm() {
     if (!preview || inFlight.current || !preview.minimumReached) return;
@@ -114,12 +127,12 @@ export function CreditDepositDrawer({ userId, chain, asset, email, onClose, onDo
   return (
     <>
       <div style={styles.drawerOverlay} onClick={() => { if (!busy) onClose(); }} />
-      <aside role="dialog" aria-modal="true" aria-labelledby="credit-package-title" data-credit-drawer={`${userId}|${chain}|${asset}`} style={styles.drawerPanel}>
-        <div style={styles.drawerHeader}>
+      <aside ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="credit-package-title" data-credit-drawer={`${userId}|${chain}|${asset}`} className="admin-drawer-panel" style={styles.drawerPanel}>
+        <div className="admin-drawer-header" style={styles.drawerHeader}>
           <strong id="credit-package-title" style={{ fontSize: 15 }}>Зачисление пакета</strong>
           <button type="button" aria-label="Закрыть" disabled={busy} onClick={onClose} style={styles.actionsMenuBtn}>✕</button>
         </div>
-        <div style={styles.drawerBody}>
+        <div className="admin-drawer-body" style={styles.drawerBody}>
           <Field label="Пользователь" value={email} />
           <Field label="User ID" value={userId} mono />
           <Field label="Актив / сеть" value={`${asset} / ${chain === 'tron' ? 'TRC20' : chain}`} />
@@ -165,7 +178,7 @@ export function CreditDepositDrawer({ userId, chain, asset, email, onClose, onDo
           )}
           {error && <div role="alert" style={styles.errorBox}>{error}</div>}
         </div>
-        <div style={{ ...styles.drawerFooter, gridTemplateColumns: '1fr 1fr' }}>
+        <div className="admin-drawer-footer" style={{ ...styles.drawerFooter, gridTemplateColumns: '1fr 1fr' }}>
           <button type="button" data-cancel-credit disabled={busy} onClick={onClose} style={styles.neutralBtn}>Отмена</button>
           <button type="button" data-confirm-credit disabled={busy || !p || !p.minimumReached || p.transfers.length === 0} onClick={confirm} style={styles.approveBtn}>
             {busy ? 'Зачисление…' : outcomeUnknown ? 'Проверить результат' : 'Подтвердить зачисление'}
