@@ -42,12 +42,14 @@ export function AdminAccountActions({ profile, onChanged }: { profile: AdminProf
   return <><details className="admin-account-actions"><summary>Управление учётной записью</summary>{/* Owner (2026-10-03): no new blocks; an account blocked earlier can still be restored. */}{profile.isBlocked && <button onClick={() => { setMode('unblock'); setConfirm(false); }}>Разблокировать</button>}<button onClick={() => { setMode('demo'); setConfirm(false); }}>Тестовое начисление</button></details>
     {message && <p role="status">{message}</p>}
     {mode && <AdminModal title={mode === 'demo' ? 'Тестовое начисление' : mode === 'unblock' ? 'Разблокировка пользователя' : 'Блокировка пользователя'} busy={busy} onClose={() => setMode(null)}>
+      <div className="admin-modal-body">
       <p><strong>{profile.email}</strong><br />ID: {profile.id}</p>
       {unknown ? <p role="alert">{message} Новый повтор здесь недоступен до проверки журнала.</p> : !confirm ? <form className="admin-form-grid" onSubmit={e => { e.preventDefault(); setConfirm(true); }}>
         {mode === 'demo' && <><p>Счёт: тестовый. Средства и резервы спотового счёта не изменятся.</p><label>Актив<input value={asset} onChange={e => setAsset(e.target.value)} required /></label><label>Сумма со знаком + / −<input value={amount} onChange={e => setAmount(e.target.value)} required inputMode="decimal" /></label></>}
         {mode !== 'unblock' && <label>Причина<textarea required value={reason} onChange={e => setReason(e.target.value)} /></label>}<button style={styles.neutralBtn}>Проверить действие</button>
       </form> : <><p>{mode === 'demo' ? `Тестовый счёт: ${amount} ${asset.toUpperCase()}` : mode === 'unblock' ? 'Доступ пользователя будет восстановлен.' : 'Доступ пользователя будет заблокирован.'}</p>{mode !== 'unblock' && <p>Причина: {reason}</p>}<button disabled={busy} style={styles.primaryBtn} onClick={apply}>Подтвердить</button></>}
-      <button disabled={busy} onClick={() => setMode(null)}>Отмена</button>
+      </div>
+      <footer><button disabled={busy} onClick={() => setMode(null)}>Отмена</button></footer>
     </AdminModal>}
   </>;
 }

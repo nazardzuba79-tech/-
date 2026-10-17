@@ -15,6 +15,7 @@ import {
   LEVERAGE_TIERS,
   FUNDING_INTERVAL_HOURS,
 } from '../../config/futuresConfig';
+import { VOLTEX_FUNDING } from '../../config/voltexFunding';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 import { isSimulationOnlyUser } from '../../private-trading/access';
 import { asyncRoute } from '../asyncRoute';
@@ -120,6 +121,10 @@ export function futuresRouter(
       // (funding lands on UTC multiples of it — see FundingRateService's
       // msUntilNextFundingBoundary). No risk or liquidation logic here.
       fundingIntervalHours: FUNDING_INTERVAL_HOURS,
+      // VOLTEX's own fixed funding per settlement, by side (signed fraction
+      // of position value: + credited, − debited) — the rates every account
+      // settles at (config/voltexFunding.ts). Display only.
+      fundingCashflow: { version: VOLTEX_FUNDING.version, long: VOLTEX_FUNDING.longCashflow, short: VOLTEX_FUNDING.shortCashflow },
       highLeverageWarningThreshold: HIGH_LEVERAGE_WARNING_THRESHOLD,
       leverageTiers: LEVERAGE_TIERS,
     });
@@ -267,6 +272,13 @@ export function futuresRouter(
     });
   }));
 
+  /** Funding settled per position (FundingPayment, signed: + received, − paid), one grouped read. */
+  const fundingByPosition = async (ids: string[]): Promise<Map<string, BigNumber>> => {
+    if (!ids.length) return new Map();
+    const rows = await prisma.fundingPayment.groupBy({ by: ['positionId'], where: { positionId: { in: ids } }, _sum: { amount: true } });
+    return new Map(rows.map((r) => [r.positionId, new BigNumber(r._sum.amount?.toString() ?? '0')]));
+  };
+
   router.get('/futures/positions', authenticate, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const positions = await prisma.futuresPosition.findMany({ where: { userId: req.userId, status: 'OPEN' } });
     const markPrices = new Map<string, BigNumber | null>();
@@ -278,6 +290,7 @@ export function futuresRouter(
     // whole list, and the positions table the trader is already watching
     // shows real server state without any new timer anywhere.
     const protection = await protectionService.activeProtectionByPosition(positions.map((p) => p.id));
+    const funding = await fundingByPosition(positions.map((p) => p.id));
 
     res.json(
       positions.map((p) => {
@@ -299,12 +312,15 @@ export function futuresRouter(
           liquidationPrice: p.liquidationPrice.toString(),
           markPrice: markPrice?.toString() ?? null,
           unrealizedPnl: unrealizedPnl?.toString() ?? null,
-          // What this position has ALREADY banked — partial closes and
-          // anything else settled into it. Reported alongside the
-          // unrealized figure, never merged into it: they are different
-          // money, and adding them would double-count a partial close that
-          // is already out of the remaining size.
-          realizedPnl: p.realizedPnl.toString(),
+          // What this position has ALREADY banked — partial closes and the
+          // funding settled on it, each counted once (funding is in the
+          // wallet since its settlement and never re-applied at the close).
+          // Reported alongside the unrealized figure, never merged into it:
+          // they are different money, and adding them would double-count a
+          // partial close that is already out of the remaining size.
+          realizedPnl: new BigNumber(p.realizedPnl.toString()).plus(funding.get(p.id) ?? 0).toString(),
+          // The funding part of `realizedPnl`, on its own.
+          fundingNet: (funding.get(p.id) ?? new BigNumber(0)).toString(),
           roe: roe ? roe.times(100).toString() : null,
           openedAt: p.openedAt,
           // Real, persisted trigger state — never an echo of something the
@@ -322,6 +338,7 @@ export function futuresRouter(
       orderBy: { closedAt: 'desc' },
       take: 100,
     });
+    const funding = await fundingByPosition(positions.map((p) => p.id));
     res.json(
       positions.map((p) => ({
         id: p.id,
@@ -330,7 +347,11 @@ export function futuresRouter(
         leverage: p.leverage,
         marginType: p.marginType,
         entryPrice: p.entryPrice.toString(),
-        realizedPnl: p.realizedPnl.toString(),
+        // The trade's net result: price P&L of every close plus all the
+        // funding the position settled while it was open (real futures
+        // charge no trading fee). Each settlement counted once.
+        realizedPnl: new BigNumber(p.realizedPnl.toString()).plus(funding.get(p.id) ?? 0).toString(),
+        fundingNet: (funding.get(p.id) ?? new BigNumber(0)).toString(),
         status: p.status,
         openedAt: p.openedAt,
         closedAt: p.closedAt,

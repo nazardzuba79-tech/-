@@ -25,6 +25,7 @@
 .markets-bolt-root .test-market-figure strong.positive { color: var(--positive); }
 .markets-bolt-root .test-market-figure strong.negative { color: var(--negative); }
 .markets-bolt-root .test-market-listing { font-size: 12px; color: var(--text-secondary); text-align: right; }
+.markets-bolt-root .test-market-listing > span { display: block; }
 
 @media (max-width: 1050px) {
   .markets-bolt-root .test-market-open { grid-template-columns: minmax(0, 1fr) repeat(2, minmax(80px, auto)); row-gap: 8px; }

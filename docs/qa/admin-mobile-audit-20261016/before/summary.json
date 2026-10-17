@@ -1,0 +1,436 @@
+{
+ "screens": 167,
+ "pageErrors": [],
+ "external": [],
+ "problems": [
+  {
+   "route": "users/qa-user-1?tab=balances",
+   "width": 320,
+   "error": null,
+   "pageOverflow": true,
+   "documentWidth": 992,
+   "blocked": [],
+   "offscreen": []
+  },
+  {
+   "route": "deposits",
+   "width": 320,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 320,
+   "blocked": [
+    {
+     "control": "Проверить и зачислить 650.00 USDT",
+     "points": "2/5",
+     "by": "button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "kyc",
+   "width": 320,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 320,
+   "blocked": [
+    {
+     "control": "Отклонить",
+     "points": "2/5",
+     "by": "svg.[object.SVGAnimatedString][svg] | button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:credit-drawer",
+   "width": 320,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 320,
+   "blocked": [
+    {
+     "control": "Подтвердить зачисление",
+     "points": "1/5",
+     "by": "svg.[object.SVGAnimatedString][svg]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:manual-check",
+   "width": 320,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 320,
+   "blocked": [
+    {
+     "control": "Проверить и зачислить 650.00 USDT",
+     "points": "2/5",
+     "by": "button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "users:kyc-tab",
+   "width": 320,
+   "error": "Error: selected tab «Проверка личности» is outside the visible strip",
+   "pageOverflow": null,
+   "documentWidth": null,
+   "blocked": null,
+   "offscreen": null
+  },
+  {
+   "route": "users:balances-fit",
+   "width": 320,
+   "error": null,
+   "pageOverflow": true,
+   "documentWidth": 992,
+   "blocked": [],
+   "offscreen": []
+  },
+  {
+   "route": "layout:menu-escape",
+   "width": 320,
+   "error": "Error: Escape does not close the phone menu",
+   "pageOverflow": null,
+   "documentWidth": null,
+   "blocked": null,
+   "offscreen": null
+  },
+  {
+   "route": "users/qa-user-1?tab=balances",
+   "width": 360,
+   "error": null,
+   "pageOverflow": true,
+   "documentWidth": 992,
+   "blocked": [],
+   "offscreen": []
+  },
+  {
+   "route": "deposits",
+   "width": 360,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 360,
+   "blocked": [
+    {
+     "control": "Проверить и зачислить 650.00 USDT",
+     "points": "1/5",
+     "by": "button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "kyc",
+   "width": 360,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 360,
+   "blocked": [
+    {
+     "control": "Отклонить",
+     "points": "2/5",
+     "by": "svg.[object.SVGAnimatedString][svg] | button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:credit-drawer",
+   "width": 360,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 360,
+   "blocked": [
+    {
+     "control": "Подтвердить зачисление",
+     "points": "1/5",
+     "by": "path.[object.SVGAnimatedString][path]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:manual-check",
+   "width": 360,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 360,
+   "blocked": [
+    {
+     "control": "Проверить и зачислить 650.00 USDT",
+     "points": "1/5",
+     "by": "button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "users:kyc-tab",
+   "width": 360,
+   "error": "Error: selected tab «Проверка личности» is outside the visible strip",
+   "pageOverflow": null,
+   "documentWidth": null,
+   "blocked": null,
+   "offscreen": null
+  },
+  {
+   "route": "users:balances-fit",
+   "width": 360,
+   "error": null,
+   "pageOverflow": true,
+   "documentWidth": 992,
+   "blocked": [],
+   "offscreen": []
+  },
+  {
+   "route": "layout:menu-escape",
+   "width": 360,
+   "error": "Error: Escape does not close the phone menu",
+   "pageOverflow": null,
+   "documentWidth": null,
+   "blocked": null,
+   "offscreen": null
+  },
+  {
+   "route": "users/qa-user-1?tab=balances",
+   "width": 390,
+   "error": null,
+   "pageOverflow": true,
+   "documentWidth": 992,
+   "blocked": [],
+   "offscreen": []
+  },
+  {
+   "route": "kyc",
+   "width": 390,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 390,
+   "blocked": [
+    {
+     "control": "Отклонить",
+     "points": "2/5",
+     "by": "svg.[object.SVGAnimatedString][svg] | button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:credit-drawer",
+   "width": 390,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 390,
+   "blocked": [
+    {
+     "control": "Подтвердить зачисление",
+     "points": "2/5",
+     "by": "svg.[object.SVGAnimatedString][svg] | button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "users:kyc-tab",
+   "width": 390,
+   "error": "Error: selected tab «Проверка личности» is outside the visible strip",
+   "pageOverflow": null,
+   "documentWidth": null,
+   "blocked": null,
+   "offscreen": null
+  },
+  {
+   "route": "users:balances-fit",
+   "width": 390,
+   "error": null,
+   "pageOverflow": true,
+   "documentWidth": 992,
+   "blocked": [],
+   "offscreen": []
+  },
+  {
+   "route": "layout:menu-escape",
+   "width": 390,
+   "error": "Error: Escape does not close the phone menu",
+   "pageOverflow": null,
+   "documentWidth": null,
+   "blocked": null,
+   "offscreen": null
+  },
+  {
+   "route": "users/qa-user-1?tab=balances",
+   "width": 430,
+   "error": null,
+   "pageOverflow": true,
+   "documentWidth": 992,
+   "blocked": [],
+   "offscreen": []
+  },
+  {
+   "route": "kyc",
+   "width": 430,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 430,
+   "blocked": [
+    {
+     "control": "Отклонить",
+     "points": "2/5",
+     "by": "svg.[object.SVGAnimatedString][svg] | button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:credit-drawer",
+   "width": 430,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 430,
+   "blocked": [
+    {
+     "control": "Подтвердить зачисление",
+     "points": "1/5",
+     "by": "svg.[object.SVGAnimatedString][svg]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "users:kyc-tab",
+   "width": 430,
+   "error": "Error: selected tab «Проверка личности» is outside the visible strip",
+   "pageOverflow": null,
+   "documentWidth": null,
+   "blocked": null,
+   "offscreen": null
+  },
+  {
+   "route": "users:balances-fit",
+   "width": 430,
+   "error": null,
+   "pageOverflow": true,
+   "documentWidth": 992,
+   "blocked": [],
+   "offscreen": []
+  },
+  {
+   "route": "layout:menu-escape",
+   "width": 430,
+   "error": "Error: Escape does not close the phone menu",
+   "pageOverflow": null,
+   "documentWidth": null,
+   "blocked": null,
+   "offscreen": null
+  },
+  {
+   "route": "kyc",
+   "width": 768,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 768,
+   "blocked": [
+    {
+     "control": "Отклонить",
+     "points": "2/5",
+     "by": "button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:credit-drawer",
+   "width": 768,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 768,
+   "blocked": [
+    {
+     "control": "Подтвердить зачисление",
+     "points": "1/5",
+     "by": "svg.[object.SVGAnimatedString][svg]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:credit-drawer",
+   "width": 1440,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 1440,
+   "blocked": [
+    {
+     "control": "Подтвердить зачисление",
+     "points": "1/5",
+     "by": "svg.[object.SVGAnimatedString][svg]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:credit-drawer",
+   "width": 1920,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 1920,
+   "blocked": [
+    {
+     "control": "Подтвердить зачисление",
+     "points": "1/5",
+     "by": "svg.[object.SVGAnimatedString][svg]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "kyc",
+   "width": 844,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 844,
+   "blocked": [
+    {
+     "control": "Отклонить",
+     "points": "2/5",
+     "by": "button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "wallets",
+   "width": 844,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 844,
+   "blocked": [
+    {
+     "control": "Изменить",
+     "points": "1/5",
+     "by": "button.support-launcher[Поддержка]"
+    }
+   ],
+   "offscreen": []
+  },
+  {
+   "route": "deposits:credit-drawer",
+   "width": 844,
+   "error": null,
+   "pageOverflow": false,
+   "documentWidth": 844,
+   "blocked": [
+    {
+     "control": "Подтвердить зачисление",
+     "points": "1/5",
+     "by": "svg.[object.SVGAnimatedString][svg]"
+    }
+   ],
+   "offscreen": []
+  }
+ ]
+}

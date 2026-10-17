@@ -57,7 +57,8 @@ test('search is debounced, server filters/sort stay in the URL, and search reset
   expect(query().get('page')).toBe('3');
   await f.setValue(f.host.querySelector('[aria-label="Поиск пользователей"]')!, 'payer');
   await tick(249); expect(f.api.getAdminUsersPage).toHaveBeenCalledTimes(1);
-  await tick(1); expect(Object.fromEntries(query())).toEqual({ page: '1', pageSize: '20', search: 'payer', status: 'blocked', sort: 'lastLoginAt', direction: 'desc' });
+  // Owner (2026-10-15): the date order now comes from the URL, so «oldest login first» survives the search.
+  await tick(1); expect(Object.fromEntries(query())).toEqual({ page: '1', pageSize: '20', search: 'payer', status: 'blocked', sort: 'lastLoginAt', direction: 'asc' });
   expect(f.host.querySelector('[data-location]')?.textContent).toContain('search=payer');
   await f.setValue(f.host.querySelector('[aria-label="Фильтр пользователей"]')!, 'kyc-pending');
   expect(query().get('status')).toBe('kyc-pending');
@@ -138,13 +139,29 @@ test('the compact owner filter includes hidden and spam views', async () => {
   await f.mount();
   const options = Array.from(f.host.querySelectorAll('[aria-label="Фильтр пользователей"] option')).map(o => (o as HTMLOptionElement).value);
   expect(options).toEqual(['all', 'new', 'kyc-pending', 'hidden', 'spam']);
-  expect(f.host.querySelector('details')).toBeNull();
+  expect(f.host.querySelector('.admin-users-filters details')).toBeNull();
   expect(f.button('Скрыть')).toBeNull();
   await f.click(f.host.querySelector('[data-user-row] .admin-action-trigger'));
   expect(document.querySelector('[role="menu"]')?.textContent).toContain('Скрыть');
   expect(document.querySelector('[role="menu"]')?.textContent).toContain('Удалить');
 });
-test('owner layout: НОВЫЙ beside the email for 24 hours, short dates, KYC pill or dash, no direction control', async () => {
+test('phone layout keeps two compact filters and expandable user details without extra reads', async () => {
+  f.api.getAdminUsersPage.mockResolvedValue(page([user('compact', { password: 'FixturePassword123', kycStatus: 'PENDING' })]));
+  await f.mount();
+  const card = f.host.querySelector('[data-user-card="compact"]')!;
+  expect(card.querySelector('.admin-user-mobile-heading .admin-user-email')).not.toBeNull();
+  expect(card.querySelector('.admin-user-mobile-summary .admin-last-login')).not.toBeNull();
+  expect(card.querySelector('.admin-user-mobile-details summary')?.textContent).toBe('Подробнее');
+  expect(card.querySelector('.admin-user-mobile-details dl')?.textContent).toContain('FixturePassword123');
+  expect(card.querySelector('.admin-user-mobile-bottom .admin-open-button')).not.toBeNull();
+  const css = readFileSync(resolve(frontend, 'src/pages/admin/adminPracticality.css'), 'utf8');
+  expect(css).toMatch(/\.admin-page-grid \.admin-users-workspace \.admin-users-filters \{/);
+  expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
+  expect(css).toContain('.admin-users-workspace .admin-users-filters input { grid-column: 1 / -1; }');
+  expect(f.api.getAdminUsersPage).toHaveBeenCalledTimes(1);
+});
+
+test('owner layout: НОВЫЙ beside the email for 24 hours, short dates, KYC pill or dash, no separate order control', async () => {
   jest.useFakeTimers({ now: Date.parse('2026-10-03T16:00:00Z'), doNotFake: ['queueMicrotask'] });
   f.api.getAdminUsersPage.mockResolvedValue(page([
     user('fresh', { createdAt: '2026-10-03T09:00:00Z', lastLoginAt: '2026-10-03T14:56:37Z', kycStatus: 'APPROVED' }),
@@ -170,11 +187,46 @@ test('owner layout: НОВЫЙ beside the email for 24 hours, short dates, KYC p
   expect(attention().textContent).not.toContain('Новые за 24 часа');
   expect(query().get('direction')).toBe('desc');
 });
-test('sorting by email reads A→Z without a direction control', async () => {
+// Owner (2026-10-15): «Регистрация» and «Последний вход» sort from their headers and a second click
+// flips the order (this replaces the 2026-10-03 «no direction» rule); email still reads A→Z only.
+test('sorting by email reads A→Z whatever the URL asks', async () => {
   await f.mount('AdminUsersPage', '/admin/users?sort=lastLoginAt&direction=asc');
-  expect(query().get('direction')).toBe('desc');
+  expect(query().get('direction')).toBe('asc');
   await f.setValue(f.host.querySelector('[aria-label="Сортировка пользователей"]')!, 'email');
   expect(query().get('sort')).toBe('email'); expect(query().get('direction')).toBe('asc');
+  expect(f.host.querySelector('[data-location]')?.textContent).not.toContain('direction=');
+});
+test('the «Регистрация» and «Последний вход» headers sort the list and flip the order on a second click', async () => {
+  await f.mount('AdminUsersPage', '/admin/users?page=4');
+  const header = (column: string) => f.host.querySelector(`[data-sort-column="${column}"]`) as HTMLButtonElement;
+  const sortState = (column: string) => header(column).closest('th')!.getAttribute('aria-sort');
+  expect(Array.from(f.host.querySelectorAll('.admin-users-table th')).map(th => th.textContent)).toEqual(['Email', 'Пароль', 'Регистрация↓', 'Последний вход↕', 'KYC', 'Баланс', 'Действия']);
+  expect([sortState('createdAt'), sortState('lastLoginAt')]).toEqual(['descending', 'none']);
+  expect(header('createdAt').type).toBe('button');
+  await f.click(header('createdAt'));
+  expect([query().get('sort'), query().get('direction'), query().get('page')]).toEqual(['createdAt', 'asc', '1']);
+  expect(sortState('createdAt')).toBe('ascending'); expect(header('createdAt').textContent).toBe('Регистрация↑');
+  expect(header('createdAt').title).toBe('Сейчас: сначала старые. Нажмите — сначала новые');
+  await f.click(header('createdAt'));
+  expect([query().get('sort'), query().get('direction')]).toEqual(['createdAt', 'desc']);
+  await f.click(header('lastLoginAt'));
+  expect([query().get('sort'), query().get('direction')]).toEqual(['lastLoginAt', 'desc']);
+  expect([sortState('createdAt'), sortState('lastLoginAt')]).toEqual(['none', 'descending']);
+  expect((f.host.querySelector('[aria-label="Сортировка пользователей"]') as HTMLSelectElement).value).toBe('lastLoginAt');
+  await f.click(header('lastLoginAt'));
+  expect([query().get('sort'), query().get('direction')]).toEqual(['lastLoginAt', 'asc']);
+  expect(f.host.querySelector('[data-location]')?.textContent).toContain('direction=asc');
+  expect((f.host.querySelector('[aria-label="Сортировка пользователей"]') as HTMLSelectElement).value).toBe('lastLoginAt:asc');
+});
+test('phones choose the same order from one select: oldest first stays in the URL', async () => {
+  await f.mount();
+  const select = f.host.querySelector('[aria-label="Сортировка пользователей"]') as HTMLSelectElement;
+  expect(Array.from(select.options).map(o => o.textContent)).toEqual(['Регистрация: новые', 'Регистрация: старые', 'Вход: недавние', 'Вход: давние', 'Email: A→Z']);
+  await f.setValue(select, 'createdAt:asc');
+  expect([query().get('sort'), query().get('direction')]).toEqual(['createdAt', 'asc']);
+  await f.setValue(select, 'lastLoginAt');
+  expect([query().get('sort'), query().get('direction')]).toEqual(['lastLoginAt', 'desc']);
+  expect(f.host.querySelector('[data-location]')?.textContent).not.toContain('direction=');
 });
 test('the deposits card rings when an address copy waits for review and opens the copy journal', async () => {
   f.fetcher.mockImplementation(async (url: string) => String(url).endsWith('/admin/work-summary') ? json(workSummary())

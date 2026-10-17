@@ -26,7 +26,7 @@ on:
       - 'frontend/src/lib/__tests__/mobileTradeDeposit.test.ts'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/lib/__tests__/terminalMobileParity.test.ts'
-      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/lib/cfdCandles.ts'
       - 'frontend/src/lib/__tests__/terminalDesignSystem.test.ts'
       - 'frontend/src/components/FuturesOrderForm.tsx'
       - 'frontend/src/components/FuturesPositionsPanel.tsx'
@@ -43,6 +43,9 @@ on:
       - 'scripts/qa-spot-cfd-terminal.cjs'
       - 'scripts/qa-vta-presentation.cjs'
       - 'scripts/qa-chart-ruler-label.cjs'
+      - 'scripts/qa-chart-ruler-timeframes.cjs'
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/lib/chartViewport.ts'
       - 'frontend/src/components/ChartDrawingLayer.tsx'
       - 'frontend/src/lib/chartDrawings.ts'
       - 'frontend/src/lib/drawingGeometry.ts'
@@ -104,6 +107,10 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
         run: node scripts/qa-chart-ruler-label.cjs --label ci --widths 1440,1366,390
+      - name: A ruler between 4h bars stays on its candles, not the plot's left edge
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-chart-ruler-timeframes.cjs --label ci
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -114,5 +121,6 @@ jobs:
             docs/qa/spot-cfd-terminal/*
             output/vta-presentation/*
             output/chart-ruler-label/*
+            output/chart-ruler-timeframes/*
           retention-days: 7
           if-no-files-found: warn

@@ -6,6 +6,7 @@ import { useLanguage } from '../../lib/i18n';
 import { CountrySelect } from '../../components/CountrySelect';
 import { getCountryName } from '../../lib/countries';
 import { KycUpload } from './KycUpload';
+import { KycMaterialsPanel } from './KycMaterialsPanel';
 import { Panel, PanelHeader } from './Panel';
 import { StatusBadge } from './StatusBadge';
 import { customerErrorText } from '../../lib/customerError';
@@ -14,6 +15,7 @@ import {
   retryKycReceipt, submitKycToEdge, type PreparedKycDocument,
 } from '../../lib/kycEdge';
 import { kycStepStates, type KycStepState as StepState } from '../../lib/kycSteps';
+import type { Key } from '../../lib/i18n/locales/keys';
 
 // One control system for every KYC field — text, date, select and the
 // country picker share height, radius, border, fill and focus ring, so the
@@ -63,6 +65,15 @@ function KycSteps({ steps }: { steps: { label: string; caption: string; state: S
     </ol>
   );
 }
+
+/** Review stages that only exist while additional materials are involved. */
+const MATERIAL_STAGE_KEY: Record<string, Key | undefined> = {
+  DOCUMENT_REQUIRED: 'kycMaterials.stage.DOCUMENT_REQUIRED',
+  SELFIE_REQUIRED: 'kycMaterials.stage.SELFIE_REQUIRED',
+  DOCUMENT_AND_SELFIE_REQUIRED: 'kycMaterials.stage.DOCUMENT_AND_SELFIE_REQUIRED',
+  MATERIALS_RECEIVED: 'kycMaterials.stage.MATERIALS_RECEIVED',
+  RE_REVIEW: 'kycMaterials.stage.RE_REVIEW',
+};
 
 // Ported from the archive's components/voltex/verification-section.tsx —
 // the archive's version is a static "100%, all verified" mock; this one
@@ -194,9 +205,15 @@ export function VerificationSection() {
   // A delivered document whose record is still being written reads as
   // «На проверке» — the user must not be asked to upload it again.
   const kycStatus = awaitingRecord && status.kycStatus !== 'APPROVED' ? 'PENDING' : status.kycStatus;
-  const badge = STATUS_LABEL[kycStatus] ?? STATUS_LABEL.NOT_STARTED;
   const approved = kycStatus === 'APPROVED';
   const pending = kycStatus === 'PENDING';
+  // While under review the server names a finer stage: the admin may have
+  // asked for a new document photo and/or a selfie, or be re-checking them.
+  const stageKey = pending ? MATERIAL_STAGE_KEY[status.reviewStage ?? ''] : undefined;
+  const badge = stageKey ? { text: t(stageKey), tone: 'warning' as const } : STATUS_LABEL[kycStatus] ?? STATUS_LABEL.NOT_STARTED;
+  const materialRequest = pending ? status.materialRequest ?? null : null;
+  const materialsAwaited = !!materialRequest && (
+    (materialRequest.documentRequested && !materialRequest.documentReceived) || (materialRequest.selfieRequested && !materialRequest.selfieReceived));
   const rejected = kycStatus === 'REJECTED';
   const canSubmit = kycStatus === 'NOT_STARTED' || rejected;
   const sub = status.latestSubmission;
@@ -241,11 +258,17 @@ export function VerificationSection() {
             {t('settings.alreadyVerified')}
           </StateNote>
         )}
-        {pending && (
+        {pending && !materialRequest && (
           <StateNote tone="warning" icon={<Clock3 className="size-5" aria-hidden="true" />} title={badge.text}>
             {t('settings.pendingReview')} {t('settings.kycPendingNoReupload')}
           </StateNote>
         )}
+        {materialRequest && !materialsAwaited && (
+          <StateNote tone="warning" icon={<Clock3 className="size-5" aria-hidden="true" />} title={badge.text}>
+            {t(status.reviewStage === 'RE_REVIEW' ? 'kycMaterials.reReviewText' : 'kycMaterials.receivedText')}
+          </StateNote>
+        )}
+        {materialRequest && <KycMaterialsPanel request={materialRequest} onChanged={reload} />}
         {rejected && (
           <StateNote tone="danger" icon={<CircleAlert className="size-5" aria-hidden="true" />} title={badge.text}>
             {status.latestSubmission?.status === 'REJECTED' && status.latestSubmission.rejectionReason && (

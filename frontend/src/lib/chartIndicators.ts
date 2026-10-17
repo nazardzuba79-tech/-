@@ -93,8 +93,18 @@ export const DEFAULT_CHART_INDICATORS: readonly IndicatorInstance[] = Object.fre
   Object.freeze({ id: 'ma-200', type: 'ma' as const, params: { period: 200 }, colors: ['#f7d51d'], lineWidth: 1 as const, visible: true }),
 ]);
 
+/**
+ * A market's first indicator list (2026-10-15). CFD opens on clean candles, as
+ * its chart always did: the provider keeps about a week of hourly bars, so a
+ * default SMA 200 could not be drawn there and would only carry a note.
+ */
+export function defaultChartIndicators(market: IndicatorMarket = 'spot'): IndicatorInstance[] {
+  return market === 'cfd' ? [] : DEFAULT_CHART_INDICATORS.map(i => ({ ...i, params: { ...i.params }, colors: [...i.colors] }));
+}
+
 export const CHART_INDICATORS_KEY = 'voltex.chartIndicators.v1'; // Spot's existing key
 export const FUTURES_CHART_INDICATORS_KEY = 'voltex.chartIndicators.futures.v1';
+export const CFD_CHART_INDICATORS_KEY = 'voltex.chartIndicators.cfd.v1';
 const HEX = /^#[0-9a-f]{6}$/i;
 const WIDTHS: readonly IndicatorLineWidth[] = [1, 2, 3, 4];
 /** Keep the chart responsive: this many instances is already more than a screen can read. */
@@ -155,6 +165,29 @@ export function normalizeIndicatorInstances(raw: unknown): IndicatorInstance[] {
 }
 
 /** «SMA 200», «BB 20 · 2», «MACD 12 · 26 · 9» — the name the legend and menus print. */
+/**
+ * How many candles an indicator needs before it draws its first value — the
+ * honest "not enough data" line of the legend on a short history (a young
+ * listing with twenty bars under an SMA 200). Mirrors the warm-up of the
+ * math in ./indicators: a moving average its period, MACD the slow EMA plus
+ * the signal, a stochastic its lookback plus both smoothings.
+ */
+export function indicatorMinBars(inst: IndicatorInstance): number {
+  const def = indicatorDefinition(inst.type);
+  const p = (key: string) => { const spec = def.params.find(x => x.key === key); const value = inst.params[key]; return Number.isFinite(value) && spec ? Math.max(spec.min, Math.min(spec.max, value)) : spec?.default ?? 1; };
+  switch (inst.type) {
+    case 'ma': case 'ema': case 'wma': case 'bollinger': case 'cci': case 'williams': return p('period');
+    case 'rsi': case 'atr': case 'supertrend': return p('period') + 1;
+    case 'adx': return 2 * p('period');
+    case 'macd': return p('slow') + p('signal') - 1;
+    case 'stochastic': return p('kPeriod') + p('kSmooth') + p('dPeriod') - 2;
+    case 'stochrsi': return p('rsiPeriod') + p('stochPeriod') + p('kSmooth') + p('dPeriod') - 2;
+    case 'obv': return 2;
+    case 'vwap': return 1;
+    default: return 1;
+  }
+}
+
 export function indicatorInstanceLabel(inst: IndicatorInstance): string {
   const def = indicatorDefinition(inst.type);
   const values = def.params.map(p => String(inst.params[p.key] ?? p.default));
@@ -193,8 +226,12 @@ export function computeIndicator(inst: IndicatorInstance, candles: Candle[], opt
   }
 }
 
-// ── Per-market browser store: Spot and Futures must not alter each other ──
-export type IndicatorMarket = 'spot' | 'futures';
+/** Indicators computed from traded volume: meaningless on a source without it (CFD, lib/chartTimeframes SOURCE_HAS_VOLUME). */
+export const VOLUME_INDICATORS: ReadonlySet<IndicatorType> = new Set<IndicatorType>(['vwap', 'obv']);
+export const indicatorNeedsVolume = (type: IndicatorType): boolean => VOLUME_INDICATORS.has(type);
+
+// ── Per-market browser store: Spot, Futures and CFD must not alter each other ──
+export type IndicatorMarket = 'spot' | 'futures' | 'cfd';
 type IndicatorStore = {
   saved: IndicatorInstance[] | null;
   applied: IndicatorInstance[] | null;
@@ -203,14 +240,16 @@ type IndicatorStore = {
 const stores: Record<IndicatorMarket, IndicatorStore> = {
   spot: { saved: null, applied: null, listeners: new Set() },
   futures: { saved: null, applied: null, listeners: new Set() },
+  cfd: { saved: null, applied: null, listeners: new Set() },
 };
-const storageKey = (market: IndicatorMarket) => market === 'futures' ? FUTURES_CHART_INDICATORS_KEY : CHART_INDICATORS_KEY;
+const storageKey = (market: IndicatorMarket) => market === 'futures' ? FUTURES_CHART_INDICATORS_KEY : market === 'cfd' ? CFD_CHART_INDICATORS_KEY : CHART_INDICATORS_KEY;
 function read(market: IndicatorMarket): IndicatorInstance[] {
   try {
     const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(storageKey(market));
-    return normalizeIndicatorInstances(raw ? JSON.parse(raw) : undefined);
+    const parsed = raw ? JSON.parse(raw) : undefined;
+    return Array.isArray(parsed) ? normalizeIndicatorInstances(parsed) : defaultChartIndicators(market);
   } catch {
-    return normalizeIndicatorInstances(undefined);
+    return defaultChartIndicators(market);
   }
 }
 const emit = (market: IndicatorMarket) => {
@@ -250,7 +289,7 @@ export function subscribeChartIndicators(fn: (list: IndicatorInstance[]) => void
 }
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', e => {
-    const market = e.key === FUTURES_CHART_INDICATORS_KEY ? 'futures' : e.key === CHART_INDICATORS_KEY ? 'spot' : null;
+    const market = e.key === FUTURES_CHART_INDICATORS_KEY ? 'futures' : e.key === CFD_CHART_INDICATORS_KEY ? 'cfd' : e.key === CHART_INDICATORS_KEY ? 'spot' : null;
     if (!market) return;
     const store = stores[market];
     store.saved = read(market);
@@ -259,7 +298,7 @@ if (typeof window !== 'undefined') {
 }
 /** For tests only: invalidate both browser-market copies (or one selected copy). */
 export function resetChartIndicatorsCache(market?: IndicatorMarket): void {
-  for (const target of market ? [market] : (['spot', 'futures'] as const)) {
+  for (const target of market ? [market] : (['spot', 'futures', 'cfd'] as const)) {
     stores[target].saved = null;
     stores[target].applied = null;
   }

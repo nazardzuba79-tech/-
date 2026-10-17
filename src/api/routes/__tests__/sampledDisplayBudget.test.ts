@@ -150,8 +150,9 @@ describe('sampled display invariants',()=>{
   expect(hero).toContain('return market');expect(code('frontend/src/pages/home/useHomeMarket.ts')).toContain('6 * 60 * 60 * 1000');
  });
  test('CFD chart uses the six-hour public cache, preserves candles, no direct racing endpoint',()=>{
-  const c=code('frontend/src/components/CfdChart.tsx');expect(c).toContain('/cfd/display/candles/');expect(c).toContain('SLOW_DISPLAY_REFRESH_MS');
-  expect(c).not.toContain('https://biquote.io');expect(c).toContain('normalizeBars');expect(c).toContain('SampledDataNote');
+  // 2026-10-15 (CFD Chart Workspace): the candles come from lib/cfdCandles, read by the shared chart.
+  const c=code('frontend/src/lib/cfdCandles.ts');expect(c).toContain('/cfd/display/candles/');expect(c).toContain('SLOW_DISPLAY_REFRESH_MS');
+  expect(c).not.toContain('https://biquote.io');expect(c).toContain('parseCfdCandles');expect(c).toContain('readDisplayJson');
  });
  test('visual motion cannot invent prices, volume, fills or depth widths',()=>{
   const css=code('frontend/src/pages/trade-terminal/SampledDisplay.css');const frames=css.slice(css.indexOf('@keyframes'),css.indexOf('html[data-sampled-motion'));

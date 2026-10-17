@@ -7,6 +7,7 @@ import { depositAssetMetadata } from '../../lib/depositAssetMetadata';
 import { CopyValue } from './AdminPrimitives';
 import { styles } from './adminStyles';
 import { ignoreCopySignal } from './depositCopyReviewClient';
+import { useAdminCompact } from './useAdminCompact';
 import './depositCopies.css';
 
 /**
@@ -80,6 +81,7 @@ async function readPage(filters: Filters, cursor: string, signal: AbortSignal): 
 }
 
 export function DepositCopiesSection({ onOpenQueue }: { onOpenQueue: () => void }) {
+  const compact = useAdminCompact();
   const [view, setView] = useState<View | null>(lastView);
   const [draft, setDraft] = useState<Filters>(lastView?.filters ?? { user: '', asset: '' });
   const [busy, setBusy] = useState(false);
@@ -162,8 +164,11 @@ export function DepositCopiesSection({ onOpenQueue }: { onOpenQueue: () => void 
       {view && view.page.items.length === 0 && (
         <p className="deposit-copies-empty" data-copies-empty>{filters.user || filters.asset ? 'По этому фильтру записей нет.' : 'Пока никто не копировал адрес.'}</p>
       )}
-      {view && view.page.items.length > 0 && (
-        <div className="deposit-copies-table" role="table" aria-label="Копировали адрес">
+      {view && view.page.items.length > 0 && (compact
+        ? <div className="deposit-copies-cards" data-copies-cards aria-label="Копировали адрес">
+          {view.page.items.map((row) => <CopyCard key={row.id} row={row} onOpenQueue={onOpenQueue} onIgnore={() => ignoreRow(row)} />)}
+        </div>
+        : <div className="deposit-copies-table" role="table" aria-label="Копировали адрес">
           <div className="deposit-copies-head" role="row">
             <span role="columnheader">Пользователь</span>
             <span role="columnheader">Криптовалюта</span>
@@ -199,10 +204,77 @@ function AdminCopyButton({ value }: { value: string }) {
   </>;
 }
 
-function CopyRow({ row, onOpenQueue, onIgnore }: { row: DepositCopyRow; onOpenQueue: () => void; onIgnore: () => Promise<void> }) {
-  const [full, setFull] = useState(false);
+/** «Обработано» with its busy and error states — the same request from the row and the card. */
+function useIgnoreAction(onIgnore: () => Promise<void>) {
   const [ignoring, setIgnoring] = useState(false);
   const [ignoreError, setIgnoreError] = useState<string | null>(null);
+  const run = async () => {
+    if (ignoring) return;
+    setIgnoring(true); setIgnoreError(null);
+    try { await onIgnore(); }
+    catch { setIgnoreError('Не удалось скрыть. Повторите.'); setIgnoring(false); }
+  };
+  return { ignoring, ignoreError, run };
+}
+
+/** Phone card: the operator sees who, which coin, which network and when at
+ * a glance; the UID, the full address, the device time, the reconciliation
+ * window and the source open under «Подробности». The delayed-delivery sign
+ * stays on top. Actions and the ignore request are the same as the row's. */
+function CopyCard({ row, onOpenQueue, onIgnore }: { row: DepositCopyRow; onOpenQueue: () => void; onIgnore: () => Promise<void> }) {
+  const [full, setFull] = useState(false);
+  const { ignoring, ignoreError, run } = useIgnoreAction(onIgnore);
+  const delay = deliveryDelayMs(row);
+  const delayed = delay !== null && delay > DELAYED_DELIVERY_MS;
+  const icon = depositAssetMetadata[row.asset]?.icon;
+  return (
+    <article className="deposit-copies-card" data-copy-row={row.id} data-copy-card>
+      <div className="deposit-copies-card-head">
+        <span className="deposit-copies-user">
+          {row.displayName && <strong>{row.displayName}</strong>}
+          <span className="deposit-copies-email">{row.email}</span>
+        </span>
+        <span className="deposit-copies-asset">
+          {icon ? <CryptoIcon symbol={row.asset} size={20} imageUrl={icon} metadataOnly /> : null}
+          <strong>{row.asset}</strong>
+        </span>
+      </div>
+      <div className="deposit-copies-card-line">
+        <span data-copy-network>{networkText(row)}</span>
+        <span className="num" data-copy-received>{formatKyivDateTime(row.receivedAt)}</span>
+      </div>
+      {delayed && <small className="deposit-copies-delayed" data-copy-delayed>Доставлено с задержкой — время копирования неточно</small>}
+      <details className="deposit-copies-card-details" data-copy-details>
+        <summary>Подробности<span>UID, адрес, окно сверки</span></summary>
+        <dl className="admin-key-values deposit-copies-card-facts">
+          <dt>UID</dt><dd className="deposit-copies-uid"><CopyValue value={row.userId} label="UID" /></dd>
+          <dt>Адрес</dt><dd className="deposit-copies-address">
+            {full ? <span className="mono deposit-copies-full" data-copy-address-full>{row.address}</span>
+              : <span className="mono" title={row.address} data-copy-address>{shortAddress(row.address)}</span>}
+            <span className="deposit-copies-address-actions">
+              <button type="button" className="deposit-copies-link" aria-expanded={full} onClick={() => setFull(!full)}>{full ? 'Скрыть' : 'Показать полностью'}</button>
+              <AdminCopyButton value={row.address} />
+            </span>
+            {row.memo && <small>Memo/Tag: <span className="mono">{row.memo}</span></small>}
+          </dd>
+          {row.clientCopiedAt && <><dt>Время устройства</dt><dd>{formatKyivDateTime(row.clientCopiedAt)}</dd></>}
+          <dt>{delayed ? 'Окно сверки (примерно)' : 'Окно сверки'}</dt><dd data-copy-window>{reconcileWindow(row.receivedAt)}</dd>
+          <dt>Открыто</dt><dd className="deposit-copies-source">{SOURCE_LABEL[row.source] ?? row.source}</dd>
+        </dl>
+      </details>
+      <div className="deposit-copies-actions">
+        <Link to={`/admin/users/${encodeURIComponent(row.userId)}`} className="deposit-copies-action">Открыть пользователя</Link>
+        <button type="button" className="deposit-copies-action" onClick={onOpenQueue}>Очередь поступлений</button>
+        <button type="button" className="deposit-copies-action" data-ignore-copy-row={row.id} disabled={ignoring} onClick={() => void run()}>{ignoring ? 'Сохраняем…' : 'Обработано'}</button>
+        {ignoreError && <small role="alert">{ignoreError}</small>}
+      </div>
+    </article>
+  );
+}
+
+function CopyRow({ row, onOpenQueue, onIgnore }: { row: DepositCopyRow; onOpenQueue: () => void; onIgnore: () => Promise<void> }) {
+  const [full, setFull] = useState(false);
+  const { ignoring, ignoreError, run } = useIgnoreAction(onIgnore);
   const delay = deliveryDelayMs(row);
   const delayed = delay !== null && delay > DELAYED_DELIVERY_MS;
   const icon = depositAssetMetadata[row.asset]?.icon;
@@ -237,12 +309,7 @@ function CopyRow({ row, onOpenQueue, onIgnore }: { row: DepositCopyRow; onOpenQu
       <span role="cell" className="deposit-copies-actions">
         <Link to={`/admin/users/${encodeURIComponent(row.userId)}`} className="deposit-copies-action">Открыть пользователя</Link>
         <button type="button" className="deposit-copies-action" onClick={onOpenQueue}>Очередь поступлений</button>
-        <button type="button" className="deposit-copies-action" data-ignore-copy-row={row.id} disabled={ignoring} onClick={async () => {
-          if (ignoring) return;
-          setIgnoring(true); setIgnoreError(null);
-          try { await onIgnore(); }
-          catch { setIgnoreError('Не удалось скрыть. Повторите.'); setIgnoring(false); }
-        }}>{ignoring ? 'Сохраняем…' : 'Обработано'}</button>
+        <button type="button" className="deposit-copies-action" data-ignore-copy-row={row.id} disabled={ignoring} onClick={() => void run()}>{ignoring ? 'Сохраняем…' : 'Обработано'}</button>
         {ignoreError && <small role="alert">{ignoreError}</small>}
       </span>
     </div>

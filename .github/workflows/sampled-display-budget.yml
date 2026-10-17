@@ -29,7 +29,7 @@ on:
       - 'frontend/src/lib/useLiveMarket.ts'
       - 'frontend/src/lib/liveMarketStore.ts'
       - 'frontend/src/lib/api.ts'
-      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/lib/cfdCandles.ts'
       - 'frontend/src/components/SampledDataNote.tsx'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/FuturesPage.tsx'
@@ -56,7 +56,7 @@ on:
       - 'frontend/src/lib/__tests__/renderBandwidthBudget.test.ts'
       - 'frontend/src/lib/sampledDepth.ts'
       - 'frontend/src/lib/useCfdTickers.ts'
-      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/lib/cfdCandles.ts'
       - 'frontend/src/pages/home/useHeroStream.ts'
       - '.github/workflows/sampled-display-budget.yml'
 permissions:

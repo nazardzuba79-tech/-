@@ -82,7 +82,7 @@ export function ListingMovementEditor({ value, initialPrice, listingAt, locked, 
     </div>
     {value.afterGrowth === 'historical' && <ListingHistoricalEditor program={value.historical ?? { version: 1, clips: [] }}
       onChange={historical => onChange({ ...value, historical })} />}
-    <details className="listing-settings-details" data-movement-stages>
+    <details className="listing-settings-details" data-movement-stages id="listing-section-stages">
       <summary>Этапы движения <span>{value.stages.length} · {formatMovementPrice(totalHours)} ч</span></summary>
       <p className="listing-hint">Цели задаются в USDT. Процент рядом всегда рассчитан от начальной цены. Один этап должен завершаться ровно через 24 часа с целью первых суток.</p>
       <div className="listing-stages">
@@ -101,7 +101,7 @@ export function ListingMovementEditor({ value, initialPrice, listingAt, locked, 
       </div>
       <button type="button" disabled={value.stages.length >= 12} onClick={() => onChange({ ...value, stages: [...value.stages, { type: 'range', durationHours: 24, targetPrice: value.stages[value.stages.length - 1]?.targetPrice ?? initialPrice }] })} data-add-stage>Добавить этап</button>
     </details>
-    <details className="listing-settings-details" data-movement-advanced>
+    <details className="listing-settings-details" data-movement-advanced id="listing-section-advanced">
       <summary>Точная настройка свечей <span>Откаты, колебания и тени</span></summary>
       <h3>Откаты</h3><p className="listing-hint">Глубина отката считается от локальной вершины, а не от начальной цены монеты.</p>
       <div className="listing-grid">

@@ -1,0 +1,251 @@
+{
+  "environment": "production bundle + real Worker core.js + real Render kyc/admin routers + PostgreSQL",
+  "scenarios": [
+    {
+      "name": "1. admin: «Запросить дополнительные материалы» → «Новое фото документа», reason «Фото размыто», preview of the user text, double click → 1 request, status stays PENDING, audit",
+      "requestCalls": 1
+    },
+    {
+      "name": "2. user (390): request with its reason in Verification, stage in the badge and Profile («Открыть запрос»), persists across reload; no selfie asked"
+    },
+    {
+      "name": "3. user: too-small photo refused with its size, offline attempt fails without sending, then double click → 1 email «[KYC] Новое фото документа», EXIF stripped, request RECEIVED, 1 audit, 1 admin notification"
+    },
+    {
+      "name": "4. admin: queue filter «Получены доп. материалы» lists the user; stage, Message-ID in the history; «Начать повторную проверку» → «Повторная проверка»"
+    },
+    {
+      "name": "5. admin: selfie request with an optional comment; preview shows the generated text + comment"
+    },
+    {
+      "name": "6. user (390): selfie via the camera (Chromium synthetic camera); PDF refused; send blocked until consent; 1 email «[KYC] Селфи…» with the consent line; consent stored"
+    },
+    {
+      "name": "7. comparison (1440 side by side, 390 stacked): local files only (< 4 KB to the server), zoom 156 % + rotate 90°, fullscreen, no face recognition text or score; four buttons present"
+    },
+    {
+      "name": "8. decision from the comparison: «Подтвердить» → confirmation dialog → APPROVED; the request closes as APPROVED, received data kept"
+    },
+    {
+      "name": "9. document + selfie: «Требуются документ и селфи» → after the PDF «Требуется селфи» → selfie from a file (record call failed once → sealed receipt retried, still 1 email) → «Дополнительные материалы получены»"
+    },
+    {
+      "name": "10. access: another user's request = 404 (same as missing), no session 401, non-admin 403 on request/acknowledge/queue, part not requested 409, already received 409, no consent 400, fake image 415, closed after decision 409 — 0 emails"
+    },
+    {
+      "name": "11. repeats: same click key → same request (201 then 200); a new request supersedes the old one (history keeps it and its files); «Отклонить» from the comparison → REJECTED, request closed, the user sees the reason"
+    },
+    {
+      "name": "12. layout: user request panel and admin request form/comparison at 320/360/390/430/1440 px — no horizontal overflow, touch targets ≥ 40 px"
+    },
+    {
+      "name": "files never reach Render (0 multipart, largest body < 4 KB, 0 document reads); edge logs carry identifiers only",
+      "requests": 125,
+      "bytesIn": 5312,
+      "maxBodyBytes": 462,
+      "multipartBodies": 0,
+      "documentReads": 0
+    }
+  ],
+  "layout": [
+    {
+      "screen": "admin-compare",
+      "width": 1440,
+      "overflow": 0,
+      "panes": [
+        {
+          "x": 35,
+          "y": 113,
+          "w": 680
+        },
+        {
+          "x": 725,
+          "y": 113,
+          "w": 680
+        }
+      ]
+    },
+    {
+      "screen": "admin-compare",
+      "width": 390,
+      "overflow": 0,
+      "panes": [
+        {
+          "x": 8,
+          "y": 150,
+          "w": 374
+        },
+        {
+          "x": 8,
+          "y": 460,
+          "w": 374
+        }
+      ]
+    },
+    {
+      "screen": "user-request",
+      "width": 320,
+      "overflow": 0,
+      "smallButtons": []
+    },
+    {
+      "screen": "user-request",
+      "width": 360,
+      "overflow": 0,
+      "smallButtons": []
+    },
+    {
+      "screen": "user-request",
+      "width": 390,
+      "overflow": 0,
+      "smallButtons": []
+    },
+    {
+      "screen": "user-request",
+      "width": 430,
+      "overflow": 0,
+      "smallButtons": []
+    },
+    {
+      "screen": "user-request",
+      "width": 1440,
+      "overflow": 0,
+      "smallButtons": []
+    },
+    {
+      "screen": "admin-request-form",
+      "width": 320,
+      "overflow": 0
+    },
+    {
+      "screen": "admin-compare-empty",
+      "width": 320,
+      "overflow": 0
+    },
+    {
+      "screen": "admin-request-form",
+      "width": 360,
+      "overflow": 0
+    },
+    {
+      "screen": "admin-compare-empty",
+      "width": 360,
+      "overflow": 0
+    },
+    {
+      "screen": "admin-request-form",
+      "width": 390,
+      "overflow": 0
+    },
+    {
+      "screen": "admin-compare-empty",
+      "width": 390,
+      "overflow": 0
+    },
+    {
+      "screen": "admin-request-form",
+      "width": 430,
+      "overflow": 0
+    },
+    {
+      "screen": "admin-compare-empty",
+      "width": 430,
+      "overflow": 0
+    },
+    {
+      "screen": "admin-request-form",
+      "width": 1440,
+      "overflow": 0
+    },
+    {
+      "screen": "admin-compare-empty",
+      "width": 1440,
+      "overflow": 0
+    }
+  ],
+  "renderMeter": {
+    "requests": 125,
+    "bytesIn": 5312,
+    "maxBodyBytes": 462,
+    "multipartBodies": 0,
+    "documentReads": 0
+  },
+  "emails": 4,
+  "adminNotifications": [
+    {
+      "eventType": "KYC_MATERIALS_RECEIVED",
+      "part": "DOCUMENT",
+      "complete": true,
+      "keys": [
+        "complete",
+        "email",
+        "eventId",
+        "eventType",
+        "fullName",
+        "part",
+        "timestamp"
+      ]
+    },
+    {
+      "eventType": "KYC_MATERIALS_RECEIVED",
+      "part": "SELFIE",
+      "complete": true,
+      "keys": [
+        "complete",
+        "email",
+        "eventId",
+        "eventType",
+        "fullName",
+        "part",
+        "timestamp"
+      ]
+    },
+    {
+      "eventType": "KYC_MATERIALS_RECEIVED",
+      "part": "DOCUMENT",
+      "complete": false,
+      "keys": [
+        "complete",
+        "email",
+        "eventId",
+        "eventType",
+        "fullName",
+        "part",
+        "timestamp"
+      ]
+    },
+    {
+      "eventType": "KYC_MATERIALS_RECEIVED",
+      "part": "SELFIE",
+      "complete": true,
+      "keys": [
+        "complete",
+        "email",
+        "eventId",
+        "eventType",
+        "fullName",
+        "part",
+        "timestamp"
+      ]
+    },
+    {
+      "eventType": "KYC_MATERIALS_RECEIVED",
+      "part": "SELFIE",
+      "complete": true,
+      "keys": [
+        "complete",
+        "email",
+        "eventId",
+        "eventType",
+        "fullName",
+        "part",
+        "timestamp"
+      ]
+    }
+  ],
+  "edgeLogLines": 10,
+  "externalRequestsBlocked": [
+    "fonts.googleapis.com"
+  ],
+  "result": "PASS"
+}

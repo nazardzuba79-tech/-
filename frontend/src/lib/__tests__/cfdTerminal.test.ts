@@ -1,5 +1,5 @@
 import * as browserActivity from '../browserActivity';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
@@ -10,6 +10,9 @@ import * as columnSort from '../marketColumnSort';
 import * as bookFreshness from '../bookFreshness';
 // Real too: TradePage asks it whether the pair is a VOLTEX test market.
 import * as testMarkets from '../testMarkets';
+// The CFD workspace (2026-10-15): the asset registry and the strip's own day-change model, real.
+import * as assetIdentity from '../cfdAssetIdentity';
+import * as infoStrip from '../cfdInfoStrip';
 
 const root=resolve(__dirname,'../../..');
 const req=createRequire(resolve(root,'package.json'));
@@ -42,6 +45,10 @@ function mount(file:string,options:any={}){
     if(name.endsWith('/testMarketStore'))return{useTestMarket:()=>({asset:null,loaded:false,error:false,clockOffsetMs:0}),useManagedListingDiscovery:()=>({assets:[],loaded:false,error:false,clockOffsetMs:0}),TEST_MARKET_TERMINAL_INTERVAL_MS:5000};
     if(name.endsWith('/useMarketData'))return{useMarketData:()=>({tickers:new Map(),loaded:false,status:'idle'})};
     if(name.endsWith('/nrxMarket'))return{isEdgeMarketPair:()=>false,isNrxPair:()=>false};
+    if(name.endsWith('/cfdAssetIdentity'))return assetIdentity;
+    if(name.endsWith('/cfdInfoStrip'))return infoStrip;
+    if(name.endsWith('/useCfdDailySeries'))return{useCfdDailySeries:()=>options.daily??new Map()};
+    if(name.endsWith('/useCfdPracticePositions'))return{useCfdPracticePositionLines:()=>[]};
     return req(name);
   },output,{setInterval,clearInterval,setTimeout,clearTimeout,location:options.location},{hidden:false,addEventListener:jest.fn(),removeEventListener:jest.fn()});
   return{components,render(props={}){index=0;const fn:any=Object.values(output).find(v=>typeof v==='function');const tree=fn(props);effects.splice(0).forEach(fn=>fn());return tree;}};
@@ -66,16 +73,31 @@ test('display states clearly distinguish live, closed, stale and unavailable',()
 test.each(['?market=cfd','?market=cfd&symbol=WTIUSD','?market=cfd&symbol=EURUSD','?market=cfd&symbol=INVALID'])('TradePage %s renders interactive three-column CFD terminal',query=>{
  const options={params:new URLSearchParams(query),feed:{tickers:rows,configured:true,loadError:false,reload:jest.fn()}};const page=mount('pages/TradePage.tsx',options),tree=page.render(),all=nodes(tree);
  expect(tree.props.className).toBe('trade-terminal cfd-terminal market-reference terminal-studio vx-terminal');const expected=query.includes('WTIUSD')?'WTIUSD':query.includes('EURUSD')?'EURUSD':'XAUUSD';
- for(const component of ['CfdChart','CfdOrderForm','CfdInstrumentList','CfdTickerBar'])expect(all.find(n=>n.type===page.components[component]).props.symbol).toBe(expected);
+ for(const component of ['CfdOrderForm','CfdInstrumentList','CfdTickerBar'])expect(all.find(n=>n.type===page.components[component]).props.symbol).toBe(expected);
+ // Chart Workspace 2.0 (2026-10-15): the Spot/Futures terminal chart with the CFD market, not the old CfdChart.
+ const chart=all.find(n=>n.type===page.components.TerminalChart);expect(chart.props.pair).toBe(expected);expect(chart.props.market).toBe('cfd');expect(chart.props.drawingTools).toBe(true);
+ expect(all.some(n=>n.type===page.components.CfdChart)).toBe(false);
  expect(all.some(n=>n.type===page.components.OrderBookPanel)).toBe(false);
 });
 
 test('all thirteen canonical display instruments render without fabricated extras',()=>{const list=mount('components/CfdInstrumentList.tsx');const tree=list.render({symbol:'XAUUSD',tickers:rows,configured:true,loadError:false,onRetry:jest.fn(),onChange:jest.fn()});expect(nodes(tree).filter(n=>n.type==='button'&&n.props.className?.includes('cfd-option'))).toHaveLength(13);for(const row of rows)expect(text(tree)).toContain(row.symbol);});
 
-test('CFD instrument icons are premium inline SVG with zero remote asset requests',()=>{
+// 2026-10-15: the marks come from one registry (lib/cfdAssetIdentity): issuer flags for a currency pair
+// (flag-icons, MIT, bundled — a few hundred bytes each, inlined by the build); for a metal or oil VOLTEX's
+// own mark (ingots, an oil drop) with the quote flag. Still no remote host, no CDN, no provider icon and no per-row request.
+test('CFD instrument marks are bundled local assets with zero remote requests',()=>{
  const icon=read('components/CfdInstrumentIcon.tsx'),iconCss=read('components/CfdInstrumentIcon.css');
  const list=read('components/CfdInstrumentList.tsx'),markets=read('components/CfdMarketsSection.tsx');
- expect(icon).toContain('<svg');expect(icon).not.toMatch(/<img\b|https?:\/\/|src=/);
+ expect(icon).not.toMatch(/https?:\/\//);
+ // Owner (2026-10-15): metals and oil show their own mark (ingots, an oil drop) with the quote flag, like other exchanges.
+ for(const [symbol,mark] of [['XAUUSD','gold'],['XAGUSD','silver'],['XPTUSD','platinum'],['XPDUSD','palladium'],['WTIUSD','wti'],['XBRUSD','brent']]){
+   expect(icon).toContain(`import ${mark} from '../assets/cfd-marks/${mark}.svg'`);expect(icon).toContain(`${symbol}: ${mark}`);
+   expect(readFileSync(resolve(root,'src/assets/cfd-marks',`${mark}.svg`),'utf8')).toMatch(/^<svg[^>]*viewBox="0 0 64 64"/);
+ }
+ expect(readFileSync(resolve(root,'src/assets/cfd-marks/SOURCES.md'),'utf8')).toContain('own drawings');
+ for(const flag of ['eu','us','gb','jp','au','ca','ch','nz']){expect(icon).toContain(`import ${flag} from '../assets/cfd-flags/${flag}.svg'`);expect(readFileSync(resolve(root,'src/assets/cfd-flags',`${flag}.svg`),'utf8')).toMatch(/^<svg[^>]*viewBox="0 0 512 512"/);}
+ expect(readFileSync(resolve(root,'src/assets/cfd-flags/LICENSE-flag-icons.txt'),'utf8')).toContain('The MIT License');
+ expect(icon).toContain('onError');expect(icon).toContain('cfd-flag-fallback');
  expect(icon).toContain("import './CfdInstrumentIcon.css'");
  expect(list).toContain("import { CfdInstrumentIcon } from './CfdInstrumentIcon'");
  expect(list).toContain('<CfdInstrumentIcon symbol={tk.symbol}/>');
@@ -83,8 +105,10 @@ test('CFD instrument icons are premium inline SVG with zero remote asset request
  expect(markets).toContain('<CfdInstrumentIcon symbol={tk.symbol} compact/>');
  expect(list).not.toContain('CFD_ICON_BY_SYMBOL');
  for(const symbol of ['XAUUSD','XAGUSD','XPTUSD','XPDUSD','WTIUSD','XBRUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD'])
-   expect(iconCss).toContain(`.cfd-instrumentIcon-${symbol}`);
- expect(iconCss).toContain('radial-gradient');expect(iconCss).toContain('linear-gradient');
+   expect(assetIdentity.cfdAsset(symbol)?.symbol).toBe(symbol);
+ expect(assetIdentity.CFD_ASSETS.filter(a=>a.assetClass==='metals').map(a=>a.mark)).toEqual(['Au','Ag','Pt','Pd']);
+ for(const asset of assetIdentity.CFD_ASSETS.filter(a=>a.assetClass==='forex'))for(const code of [asset.base,asset.quote])expect(assetIdentity.isCfdCurrency(code)).toBe(true);
+ expect(iconCss).toContain('radial-gradient');
  expect(iconCss).toContain('.cfd-instrumentIcon--compact');
 });
 
@@ -100,12 +124,14 @@ test('bottom panel provides local practice positions and history without account
  expect(source).not.toMatch(/getCfdPositions|getCfdPositionHistory|api\.closeCfdPosition|api\.getFuturesBalances/);
 });
 
-test('CFD chart is owned by VOLTEX, auto-recovers, and production never falls back to Render',()=>{
- const source=read('components/CfdChart.tsx');
- expect(source).toContain('createChart');expect(source).toContain('CandlestickSeries');expect(source).toContain('/cfd/display/candles/');
- expect(source).toContain('MARKET_EDGE_BASE');expect(source).toContain('displayRefreshDelay(snapshot.url');
+// 2026-10-15: CfdChart is gone; the CFD chart is the workspace chart, and its candles come from
+// lib/cfdCandles — the same display route, the same six-hour snapshot cache, the edge in production.
+test('CFD candles read the display route through the snapshot cache, and production never falls back to Render',()=>{
+ const source=read('lib/cfdCandles.ts');
+ expect(source).toContain('/cfd/display/candles/');expect(source).toContain('MARKET_EDGE_BASE');
+ expect(source).toContain('readDisplayJson(cfdCandleUrl(');expect(source).toContain('SLOW_DISPLAY_REFRESH_MS');
  expect(source).not.toContain('fallbackUrl');expect(source).not.toContain('bounded Render');
- expect(source).not.toContain('TradingViewAdvancedChart');expect(source).not.toContain('cfd-chart-retry');expect(source).not.toContain('Retry chart');
+ expect(existsSync(resolve(root,'src/components/CfdChart.tsx'))).toBe(false);
 });
 
 test('production CFD ticker feed reads one Cloudflare snapshot and never Render',async()=>{
@@ -130,11 +156,15 @@ test('WTI and Brent identities stay distinct in visible data',()=>{const wti=row
 
 test('display rows can never enable old execution UI helpers',()=>{const row={...rows[0],executionAllowed:true,status:'live',stale:false};expect(presentation.canExecuteCfdQuote(row as any)).toBe(false);});
 
-test('CFD practice CSS remains scoped and responsive',()=>{const css=read('pages/trade-terminal/CfdPractice.css');expect(css).toContain('.cfd-order-panel');expect(css).toContain('.cfd-owned-chart');expect(css).toContain('.cfd-bottom-panel');expect(css).toContain('@media(max-width:430px)');expect(css).not.toMatch(/^\.spot-terminal/m);});
+test('CFD practice CSS remains scoped and responsive',()=>{const css=read('pages/trade-terminal/CfdPractice.css');expect(css).toContain('.cfd-order-panel');expect(css).not.toContain('.cfd-owned-chart');expect(css).toContain('.cfd-bottom-panel');expect(css).toContain('@media(max-width:430px)');expect(css).not.toMatch(/^\.spot-terminal/m);});
 
 test.each([0,1])('CFD column %s sorts both ways, leaves missing data last and restores provider order without selecting',column=>{
-  const list=mount('components/CfdInstrumentList.tsx'),onChange=jest.fn();
-  const data=[{...rows[0],price:'100',changePercent24h:'-1'},{...rows[1],price:'200',changePercent24h:'0'},{...rows[2],price:null,changePercent24h:undefined}];
+  // 2026-10-15: the change column is the strip's own figure — the price against the previous
+  // session's close from each instrument's daily bars — not the provider's changePercent24h.
+  const asOf=Date.UTC(2026,8,15,12,0,0),day=Date.UTC(2026,8,15),bars=(prev:number)=>[{openTime:day-86400000,open:prev,high:prev,low:prev,close:prev,isOpen:false},{openTime:day,open:prev,high:prev*1.02,low:prev*.98,close:prev,isOpen:true}];
+  const daily=new Map([['XAUUSD',bars(100/0.99)],['XAGUSD',bars(200)]]);
+  const list=mount('components/CfdInstrumentList.tsx',{daily}),onChange=jest.fn();
+  const data=[{...rows[0],price:'100',asOf,changePercent24h:'5'},{...rows[1],price:'200',asOf,changePercent24h:'-5'},{...rows[2],price:null,asOf,changePercent24h:undefined}];
   const props={symbol:'XAUUSD',tickers:data,configured:true,loadError:false,onRetry:jest.fn(),onChange};
   const options=(tree:any)=>nodes(tree).filter(n=>n.type==='button'&&n.props.className?.includes('cfd-option')).map(n=>n.key);
   let tree=list.render(props);expect(options(tree)).toEqual(['XAUUSD','XAGUSD','XPTUSD']);

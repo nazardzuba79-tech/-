@@ -258,7 +258,10 @@ export function FuturesPage() {
    * it, and it is not persisted anywhere — it is the state of a toolbar.
    */
   const [chartTrading, setChartTrading] = useState(false);
-  useEffect(()=>{native.setHistoryDemand({positions:bottomTab==='positionHistory',orders:bottomTab==='orderHistory',chart:chartTrading});},[bottomTab,chartTrading,native.setHistoryDemand]);
+  // A «Позиция закрыта» card on the Positions tab reads its result from the
+  // closed row, so the native history is wanted while it is shown, too.
+  const [closeCardHistory, setCloseCardHistory] = useState(false);
+  useEffect(()=>{native.setHistoryDemand({positions:bottomTab==='positionHistory'||closeCardHistory,orders:bottomTab==='orderHistory',chart:chartTrading});},[bottomTab,chartTrading,closeCardHistory,native.setHistoryDemand]);
   /**
    * Where the chart tool menu is open, or `null` for closed.
    *
@@ -677,7 +680,7 @@ export function FuturesPage() {
                 setChartMenu({ x: event.clientX, y: event.clientY });
               } : undefined}
             >
-              <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
+              <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} onSelectPair={selectSymbol}
                 privateTrading={nativeExecution ? native.interaction : undefined}
                 positionLines={chartPositionLines} chartSettings foldHeading={false} />
               {nativeExecution && <button
@@ -828,6 +831,7 @@ export function FuturesPage() {
                 /* «История позиций →» on the «Позиция закрыта» card opens
                    this page's own Position History tab. */
                 onShowHistory={() => { setBottomTab('positionHistory'); accountPanel.reveal(); }}
+                onHistoryWanted={setCloseCardHistory}
                 onEditLeverage={nativeExecution?.ready ? (positionId) => {
                   const position = native.getState()?.positions.find(p => p.id === positionId && p.status === 'OPEN');
                   if (position && !native.busy) native.setDialog({ kind: 'leverage', position });

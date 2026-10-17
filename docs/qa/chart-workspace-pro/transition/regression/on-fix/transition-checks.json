@@ -1,0 +1,264 @@
+{
+  "from": "the final full run (docs/qa/chart-workspace-pro/after/report-after.json)",
+  "startedAt": "2026-10-14T14:30:23.770Z",
+  "finishedAt": "2026-10-14T14:36:24.567Z",
+  "git": {
+    "prHead": null,
+    "base": null,
+    "checkout": "fa76e844d69a2c924df5c820935387c43d28e3cb",
+    "ref": "claude/peaceful-volta-h5zw7g-chart-workspace-2",
+    "run": null
+  },
+  "section": {
+    "id": "transition",
+    "status": "completed",
+    "startedAt": "2026-10-14T14:31:42.343Z",
+    "finishedAt": "2026-10-14T14:32:28.583Z",
+    "checks": 28,
+    "failedChecks": []
+  },
+  "checks": [
+    {
+      "id": "transition.spot.AITH.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 950,
+        "errors": []
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.layout-2-complete",
+      "ok": true,
+      "detail": {
+        "layout": "2",
+        "panes": [
+          "ok"
+        ],
+        "tabs": 0
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.layout-1-complete",
+      "ok": true,
+      "detail": {
+        "layout": "1",
+        "panes": 0,
+        "kept": true,
+        "chart": "candles"
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.row-paints-once",
+      "ok": true,
+      "detail": {
+        "painted": [
+          "+0ms [more] [1m 5m 15m 1h 4h 1d 1w]"
+        ],
+        "flickered": []
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.goto-opens",
+      "ok": true,
+      "detail": {
+        "via": "more",
+        "menu": "more"
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.goto-answers",
+      "ok": true,
+      "detail": {
+        "status": "История за эту дату не загружена",
+        "paged": 0
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "transition.spot.AITH.1366.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 914,
+        "errors": []
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.layout-2-complete",
+      "ok": true,
+      "detail": {
+        "layout": "2",
+        "panes": [
+          "ok"
+        ],
+        "tabs": 0
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.layout-1-complete",
+      "ok": true,
+      "detail": {
+        "layout": "1",
+        "panes": 0,
+        "kept": true,
+        "chart": "candles"
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.row-paints-once",
+      "ok": true,
+      "detail": {
+        "painted": [
+          "+0ms [layout more] [1m 15m 1h 4h 1d]"
+        ],
+        "flickered": []
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.goto-opens",
+      "ok": true,
+      "detail": {
+        "via": "more",
+        "menu": "more"
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.goto-answers",
+      "ok": true,
+      "detail": {
+        "status": "История за эту дату не загружена",
+        "paged": 0
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "transition.futures.BTC.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 1102,
+        "errors": []
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.layout-2-complete",
+      "ok": true,
+      "detail": {
+        "layout": "2",
+        "panes": [
+          "ok"
+        ],
+        "tabs": 0
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.layout-1-complete",
+      "ok": true,
+      "detail": {
+        "layout": "1",
+        "panes": 0,
+        "kept": true,
+        "chart": "candles"
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.row-paints-once",
+      "ok": true,
+      "detail": {
+        "painted": [
+          "+0ms [compare layout fullscreen more] [1m 5m 15m 1h 4h 1d 1w]"
+        ],
+        "flickered": []
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.goto-opens",
+      "ok": true,
+      "detail": {
+        "via": "more",
+        "menu": "more"
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.goto-answers",
+      "ok": true,
+      "detail": {
+        "target": 1790740800,
+        "range": {
+          "from": 1790485200,
+          "to": 1791064800
+        },
+        "stillOpen": 0
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 1281,
+        "errors": []
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.layout-2-complete",
+      "ok": true,
+      "detail": {
+        "layout": "2",
+        "panes": [],
+        "tabs": 2
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.layout-1-complete",
+      "ok": true,
+      "detail": {
+        "layout": "1",
+        "panes": 0,
+        "kept": true,
+        "chart": "candles"
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.row-paints-once",
+      "ok": true,
+      "detail": {
+        "painted": [
+          "+0ms [compare] [1m 15m 1h 4h 1d]"
+        ],
+        "flickered": []
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.goto-opens",
+      "ok": true,
+      "detail": {
+        "via": "phone-sheet",
+        "menu": "phone-sheet"
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.goto-answers",
+      "ok": true,
+      "detail": {
+        "status": "История за эту дату не загружена",
+        "paged": 0
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.errors",
+      "ok": true,
+      "detail": []
+    }
+  ]
+}

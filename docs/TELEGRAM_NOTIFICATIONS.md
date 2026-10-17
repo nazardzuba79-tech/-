@@ -45,7 +45,7 @@ claimed on the basis of synthetic tests.
   A domain-separated HKDF key is derived locally from the existing server
   JWT secret; the secret and private key never leave Render. Deployment
   pins only its PUBLIC verification half in `DEPOSIT_SIGNING_PUBLIC_KEY`.
-  If JWT_SECRET is rotated, rerun the key-pinning deployment step. Missing
+  If JWT_SECRET is rotated, run `deploy-kyc-edge.yml` by hand (`notification-only`). Missing
   or mismatched keys fail closed for notification, never for discovery.
 - Public HTTP accepts ONLY signed `DEPOSIT_DISCOVERED` / `NEW_USER_REGISTERED`, ±5-minute signature
   freshness, <=4 KiB body, fixed schema, no Origin/Sec-Fetch browser request.
@@ -137,9 +137,14 @@ Real workerd/SQLite tests cover concurrency, restart and minimal storage
 cleanup; PostgreSQL tests cover committed new rows, overlap, rollback,
 publisher zero queries and notification failure isolation.
 
-CI verifies PRs before owner-authorized merge. The main-branch KYC deployment
-workflow deploys notification Worker first, then its KYC service binding,
-then pins the public Render key and checks health WITHOUT sending an event.
-Render auto-deploy is not duplicated. No production KYC/deposit is generated
+CI verifies PRs before owner-authorized merge. Since 2026-10-16 a push to
+`main` only verifies the Workers; deploying is a manual run of
+`deploy-kyc-edge.yml` from `main` (the API runs on Hetzner and is updated by
+hand, so the run first checks read-only that the live API is the named
+commit). It deploys the notification Worker first, then — in mode
+`notification-and-kyc` — its KYC service binding, then pins the API's public
+key and checks health WITHOUT sending an event. Mode `notification-only`
+redeploys the Telegram Worker alone, e.g. to re-pin the key after a JWT
+secret rotation. No production KYC/deposit is generated
 to test this feature. Enable Telegram by adding secrets in the Dashboard;
 no code deployment or production data repair is needed for those secrets.

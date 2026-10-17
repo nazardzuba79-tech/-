@@ -10,8 +10,15 @@ import type { PrivateTradingMarketData } from '../../../private-trading/marketDa
 
 const url = process.env.VOLTEX_PG_TEST_URL;
 (url ? describe : describe.skip)('VTA Spot and native Futures share the actual disposable database', () => {
-  if (url && new URL(url).hostname !== '127.0.0.1') throw new Error('Disposable localhost PostgreSQL required');
-  const db = new PrismaClient({ datasources: { db: { url } } });
+  // Jest still evaluates describe.skip callbacks during test discovery. Keep
+  // optional database construction inside lifecycle hooks, never at import time.
+  let db: PrismaClient;
+  beforeAll(() => {
+    if (!url || new URL(url).hostname !== '127.0.0.1') {
+      throw new Error('Disposable localhost PostgreSQL required');
+    }
+    db = new PrismaClient({ datasources: { db: { url } } });
+  });
   const allocated = new BigNumber(50000).div('0.011').decimalPlaces(8, BigNumber.ROUND_DOWN).toFixed();
   let actor: {userId: string; sessionId: string; expiresAt: number};
   let native: NativeDemoService, repo: PrismaNativeRepository, sales: VtaDemoSales;
@@ -32,7 +39,9 @@ const url = process.env.VOLTEX_PG_TEST_URL;
     sales = new VtaDemoSales(db, clock.now);
   });
   // Append-only native journals are intentionally retained in this disposable DB.
-  afterAll(() => db.$disconnect());
+  afterAll(async () => {
+    if (db) await db.$disconnect();
+  });
 
   test('Spot projection values VTA and cash in its own scope without changing real funds', async () => {
     const result = await sales.sell({ userId: actor.userId, requestId: randomUUID(), quantity: '100.12345678' });

@@ -1,0 +1,49 @@
+name: Regulatory documents
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/licenses/**'
+      - 'frontend/src/lib/regulatoryDocuments.ts'
+      - 'frontend/src/lib/__tests__/regulatoryDocuments.test.ts'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'frontend/src/pages/LegalPage.tsx'
+      - 'frontend/src/pages/home/HomeFooter.tsx'
+      - 'frontend/src/components/Footer.tsx'
+      - 'frontend/review/licences/**'
+      - 'scripts/qa-regulatory-documents.cjs'
+      - '.github/workflows/regulatory-documents.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: regulatory-documents-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  publication-and-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/jest/bin/jest.js --runInBand --runTestsByPath frontend/src/lib/__tests__/regulatoryDocuments.test.ts frontend/src/lib/__tests__/i18nLanguageChunks.test.ts frontend/src/lib/__tests__/aboutPage.test.ts frontend/src/lib/__tests__/academyHelpPages.test.ts
+      - run: npm run build --prefix frontend
+      - name: Disposable browser tools
+        run: |
+          npm install --prefix /tmp/voltex-regulatory-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/voltex-regulatory-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Eight widths, seven languages, publication isolation and keyboard viewer
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-regulatory-qa/node_modules/playwright
+          QA_OUT: output/regulatory-documents
+        run: node scripts/qa-regulatory-documents.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regulatory-document-review
+          path: output/regulatory-documents

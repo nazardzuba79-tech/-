@@ -5,6 +5,8 @@
 const express=require('express'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const{randomBytes,createHash}=require('node:crypto');
 const{NativeDemoService}=require('../dist/private-trading/native/service');
+// The rates the real /futures/config serves (config/voltexFunding.ts), so the stand shows what production would.
+const{VOLTEX_FUNDING}=require('../dist/config/voltexFunding');
 const{nativeDemoRoutes}=require('../dist/private-trading/native/routes');
 const{ReviewRepository,reviewExecutionActor}=require('./native-demo-review-repository.cjs');
 const{NativeLimitPass}=require('../dist/private-trading/native/limitPass');
@@ -21,7 +23,13 @@ const dataDir=path.join(os.tmpdir(),'voltex-native-demo-review');fs.mkdirSync(da
 const app=express();app.disable('x-powered-by');app.use(express.json({limit:'50kb'}));
 app.use((_req,res,next)=>{res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');next();});
 const source=new CollectorPrivateTradingSource();
-const now=()=>Date.now(),started=now();
+/* QA lever, fixture only and off by default: a server clock a QA run can move
+   FORWARD (POST /qa/clock), so 00/08/16 UTC funding settlements can be seen
+   without waiting eight hours. Every server-side reader — engine, quotes,
+   fixture candles, sessions — uses this one clock; it never moves back. */
+const clockQa=fixture&&process.env.NATIVE_PREVIEW_CLOCK_QA==='1';
+let clockOffset=0;
+const now=()=>Date.now()+clockOffset,started=now();
 /* THE FULL LINEAR-PERPETUAL UNIVERSE, not a demo short list.
    The terminal must show the markets it normally shows, so the symbol set is
    discovered from the same public ticker response the preview already fetches
@@ -100,7 +108,7 @@ async function transport(url,options={}){
   else result=await source.funding(symbol,Number(q.get('startTime')),Number(q.get('endTime')),options.signal);
   return new Response(JSON.stringify(result),{status:200,headers:{'Content-Type':'application/json'}});
 }
-const market=new PrivateTradingMarketData({collector:{url:'http://127.0.0.1',token:'preview-local-public-market-only'},request:transport});
+const market=new PrivateTradingMarketData({collector:{url:'http://127.0.0.1',token:'preview-local-public-market-only'},request:transport,now});
 const sessions=new Map();
 function session(token){if(!/^[a-f0-9]{48}$/.test(token??''))return null;let s=sessions.get(token);if(s)return s;const file=path.join(dataDir,token+'.json');if(fs.existsSync(file)){try{s=JSON.parse(fs.readFileSync(file,'utf8'));sessions.set(token,s);return s;}catch{}}return null;}
 function save(token,s){sessions.set(token,s);const file=path.join(dataDir,token+'.json'),tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(s));fs.renameSync(tmp,file);}
@@ -115,12 +123,25 @@ const performanceDb={copyPerformanceScenario:{
   async updateMany({where,data}){const row=performanceRows.get(where.id);if(!row||row.revision!==where.revision)return{count:0};performanceRows.set(where.id,{...row,revision:row.revision+1,stateText:data.stateText,simulatedAt:data.simulatedAt});return{count:1};},
 }};
 const copyPerformance=new CopyPerformanceService(performanceDb,()=>new Date());
-const service=new NativeDemoService(new ReviewRepository({session,save,now,walletBtc:PREVIEW_WALLET_BTC}),market);
+const reviewRepository=new ReviewRepository({session,save,now,walletBtc:PREVIEW_WALLET_BTC});
+/* QA lever, fixture only and off by default: the shipped VOLTEX V2 terms
+   (config/voltexFunding.ts) pinned from the 8h boundary three days before
+   this server started, so a review sees settlements priced by V2 next to the
+   P&L breakdown. Without it the stand keeps the original demo schedule. The
+   production pin lives in the NativeFundingModel table and is not touched. */
+if(fixture&&process.env.NATIVE_PREVIEW_FUNDING_V2_QA==='1'){
+  const{scheduleWith,NATIVE_CURRENT_FUNDING,NATIVE_FUNDING_INTERVAL_MS}=require('../dist/private-trading/native/fundingModel');
+  const from=Math.floor((started-3*86400000)/NATIVE_FUNDING_INTERVAL_MS)*NATIVE_FUNDING_INTERVAL_MS;
+  const schedule=scheduleWith(NATIVE_CURRENT_FUNDING,from);
+  reviewRepository.fundingSchedule=async()=>schedule;
+}
+const service=new NativeDemoService(reviewRepository,market,now);
 // The review uses the same executor after UI refresh became read-only. Only
 // admitted, per-browser synthetic accounts are eligible; no database exists here.
 const executor=new NativeLimitPass(service,async()=>[...sessions.values()].map(s=>reviewExecutionActor(s,now())).filter(Boolean));
 executor.start();
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
+if(clockQa)app.post('/qa/clock',(req,res)=>{const ms=Number(req.body?.advanceMs);if(!Number.isSafeInteger(ms)||ms<=0||ms>7*86400000)return res.status(400).json({error:'advanceMs'});clockOffset+=ms;res.json({now:now(),offsetMs:clockOffset});});
 app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,...(tinyPriceQa?{tinyPriceFixture:true}:{}),commit:process.env.RENDER_GIT_COMMIT??null}));
 if (fixture) {
   // Optional public catalogues mounted by the current header. No account/API
@@ -178,7 +199,7 @@ app.get('/api/v1/market/universe',asyncRoute(async(_req,res)=>{
    preview among them — so the stand could not show what the real backend
    shows. The shape is the client's LeverageTier; the values are the
    instrument's own. */
-app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();const i=await market.instrument('BTCUSDT');res.json({symbols:symbols.map(s=>s.replace(/USDT$/,'/USDT')),minLeverage:Number(i.leverage.min),maxLeverage:Number(i.leverage.max),fundingIntervalHours:null,highLeverageWarningThreshold:null,
+app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();const i=await market.instrument('BTCUSDT');res.json({symbols:symbols.map(s=>s.replace(/USDT$/,'/USDT')),minLeverage:Number(i.leverage.min),maxLeverage:Number(i.leverage.max),fundingIntervalHours:null,fundingCashflow:{version:VOLTEX_FUNDING.version,long:VOLTEX_FUNDING.longCashflow,short:VOLTEX_FUNDING.shortCashflow},highLeverageWarningThreshold:null,
   leverageTiers:(i.riskTiers??[]).map((t,idx,all)=>({notionalCap:idx===all.length-1?null:Number(t.riskLimitValue),maxLeverage:Number(t.maxLeverage),maintenanceMarginRate:Number(t.maintenanceMarginRate),maintenanceAmount:Number(t.maintenanceDeduction??0)}))});}));
 app.get('/api/v1/futures/mark-price/:pair',asyncRoute(async(req,res)=>{const symbol=req.params.pair.replace('-',''),q=await market.freshQuote(symbol);res.json({symbol,markPrice:q.markPrice,indexPrice:null});}));
 app.get('/api/v1/market/external/tickers',asyncRoute(async(_req,res)=>res.json(await tickers())));

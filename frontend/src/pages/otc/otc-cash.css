@@ -28,3 +28,8 @@
 .otc-cash-messages p{white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:0}.otc-cash-steps{display:grid;gap:14px;padding-left:24px;color:#353e49;max-width:850px}
 .otc-cash-geography{color:#68717d;font-size:12px;margin-top:32px}
 @media(max-width:600px){.otc-cash-fields{grid-template-columns:minmax(0,1fr)}.otc-cash-panel{padding:16px;border-radius:12px}.otc-admin-desk{padding:12px}.otc-cash-messages article{max-width:100%}.otc-cash-row>*{max-width:100%}.otc-cash-panel h2{font-size:19px}}
+/* Admin desk only (scoped): the page keeps one heading, the request card gets section jumps. */
+.otc-admin-desk .otc-admin-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.otc-admin-desk .otc-admin-nav button{padding:8px 12px;font-size:13px}
+.otc-admin-desk #otc-section-request,.otc-admin-desk #otc-section-terms,.otc-admin-desk #otc-section-chat{scroll-margin-top:12px}
+@media(max-width:600px){.otc-admin-desk .otc-admin-nav{position:sticky;top:0;z-index:2;margin:0 -16px 12px;padding:8px 16px;background:#fff;border-bottom:1px solid #e4e7eb}.otc-admin-desk .otc-admin-nav button{flex:1 1 auto;min-height:40px;padding:6px 8px;font-size:12.5px}.otc-admin-desk .otc-cash-row>button{min-height:44px}}

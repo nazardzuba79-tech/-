@@ -29,12 +29,12 @@ import { useCompactAccountPanel } from '../lib/useCompactAccountPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { CfdInstrumentList } from '../components/CfdInstrumentList';
 import { CfdTickerBar } from '../components/CfdTickerBar';
-import { resolveCfdSymbol } from '../lib/cfdPresentation';
+import { cfdChartPriceFormatter, resolveCfdSymbol } from '../lib/cfdPresentation';
 import './trade-terminal/CfdTerminal.css';
-import { CfdChart } from '../components/CfdChart';
 import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
+import { useCfdPracticePositionLines } from '../lib/useCfdPracticePositions';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import './trade-terminal/TradeTerminal.css';
@@ -54,6 +54,8 @@ import './trade-terminal/SpotCfdGraphite.css';
 // The released Futures look (PR #469) on the Spot and CFD DOM: geometry, type
 // and palette only, scoped to .spot-terminal / .cfd-terminal (owner, 2026-10-07).
 import './trade-terminal/SpotCfdParity.css';
+// CFD workspace (2026-10-15): instrument bar figures, grouped market list, market-only ticket, positions.
+import './trade-terminal/CfdWorkspace.css';
 import './trade-terminal/SpotMobileCompact.css';
 import './trade-terminal/SpotMobilePhone.css';
 import './trade-terminal/TerminalMobileHeader.css';
@@ -205,6 +207,8 @@ export function TradePage() {
   }, [searchParams]);
   const selectedCfdSymbol = resolveCfdSymbol(cfdSymbol, cfdTickers);
   const cfdTicker = cfdTickers.find((t) => t.symbol === selectedCfdSymbol);
+  // Practice entries on the chart: the fill price only (the practice has no liquidation engine, so no liquidation line).
+  const cfdPositionLines = useCfdPracticePositionLines(marketType === 'cfd');
   const selectCfdSymbol = (next: string) => {
     setCfdSymbol(next);
     setSearchParams(current => {
@@ -410,14 +414,17 @@ export function TradePage() {
                 tickers={cfdTickers} configured={cfdConfigured} loadError={cfdLoadError} onRetry={reloadCfd} />
             </aside>
             <section className="cfd-chart-area" aria-label={selectedCfdSymbol}>
-              <CfdChart symbol={selectedCfdSymbol} />
+              {/* Chart Workspace 2.0 (2026-10-15): the Spot/Futures chart with the CFD display source (lib/cfdCandles). */}
+              <PriceChart pair={selectedCfdSymbol} market="cfd" chrome="terminal" drawingTools compactTools chartSettings
+                onSelectPair={selectCfdSymbol} priceFormatter={cfdChartPriceFormatter(selectedCfdSymbol)} pairFormatter={cfdChartPriceFormatter}
+                positionLines={cfdPositionLines} />
             </section>
             <section className="cfd-form-area" aria-label={t('trade.market')}>
               <CfdOrderForm symbol={selectedCfdSymbol} ticker={cfdTicker} configured={cfdConfigured} onPlaced={handleOrderPlaced} />
             </section>
           </main>
           <div className="cfd-bottom-panel" data-mobile-account-panel>
-            <CfdPositionsPanel refreshKey={ordersRefreshKey} />
+            <CfdPositionsPanel refreshKey={ordersRefreshKey} tickers={cfdTickers} />
           </div>
         </div>
       </div>
@@ -468,10 +475,10 @@ export function TradePage() {
 
           <div className="chart-area" data-test-market={testPair || undefined}>
             {testPair
-              ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} />
+              ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} error={testMarket.error} />
               : pairResolving
                 ? <div className="chart-resolving" style={{ width: "100%", height: "100%" }} aria-busy="true" data-pair-resolving />
-                : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />}
+                : <PriceChart pair={pair} onSelectPair={selectSpotPair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />}
           </div>
 
           <div className="orderbook-area" data-sampled-book="true">

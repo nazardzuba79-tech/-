@@ -35,6 +35,13 @@ const lastLogin = (value: string | null | undefined) => {
   return <span className="admin-last-login" data-logged-today={today || undefined} title={today ? 'Заходил сегодня' : undefined}>
     {valid && <i aria-hidden="true" />}{formatLastLoginAt(value ?? null)}</span>;
 };
+type UserSort = 'createdAt' | 'lastLoginAt' | 'email';
+const SORTS: UserSort[] = ['createdAt', 'lastLoginAt', 'email'];
+const DEFAULT_DIRECTION: Record<UserSort, 'asc' | 'desc'> = { createdAt: 'desc', lastLoginAt: 'desc', email: 'asc' };
+const SORT_WORDS = { createdAt: ['сначала новые', 'сначала старые'], lastLoginAt: ['сначала недавние', 'сначала давние'] } as const;
+// One select for phones (the cards have no headers): the default order keeps the plain sort key.
+const SORT_OPTIONS: [string, string][] = [['createdAt', 'Регистрация: новые'], ['createdAt:asc', 'Регистрация: старые'],
+  ['lastLoginAt', 'Вход: недавние'], ['lastLoginAt:asc', 'Вход: давние'], ['email', 'Email: A→Z']];
 const isNewUser = (createdAt: string) => { const at = Date.parse(createdAt); return Number.isFinite(at) && Date.now() - at < NEW_USER_MS; };
 // Display strings only: no floating-point conversion or rounding of balances.
 const compactAmount = (value: string | null | undefined) => {
@@ -47,8 +54,21 @@ const compactAmount = (value: string | null | undefined) => {
 export function AdminUsersPage() {
   const { params, update, page, returnTo, scrollRef, rememberScroll, restoreScroll } = useAdminView({ deferScrollRestore: true });
   const search = params.get('search') ?? '', status = params.get('status') ?? 'all';
-  // No direction control: dates read newest first, email A→Z.
-  const sort = params.get('sort') ?? 'createdAt', direction = sort === 'email' ? 'asc' : 'desc';
+  // Owner (2026-10-15): «Регистрация» and «Последний вход» sort from their headers; a second click
+  // flips the order. Dates open newest first, email always reads A→Z. The order lives in the URL.
+  const sort = SORTS.includes(params.get('sort') as UserSort) ? params.get('sort') as UserSort : 'createdAt';
+  const direction = sort === 'email' ? 'asc' : params.get('direction') === 'asc' ? 'asc' : 'desc';
+  const sortBy = (next: UserSort, nextDirection = DEFAULT_DIRECTION[next]) =>
+    update({ sort: next, direction: nextDirection === DEFAULT_DIRECTION[next] ? '' : nextDirection, page: 1 });
+  const sortHeader = (column: 'createdAt' | 'lastLoginAt', label: string) => {
+    const active = sort === column, [newest, oldest] = SORT_WORDS[column];
+    return <th aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button type="button" className="admin-sort-header" data-sort-column={column} data-sort-active={active || undefined}
+        title={active ? `Сейчас: ${direction === 'asc' ? oldest : newest}. Нажмите — ${direction === 'asc' ? newest : oldest}` : `Сортировать: ${newest}`}
+        onClick={() => sortBy(column, active && direction === 'desc' ? 'asc' : 'desc')}>
+        {label}<span aria-hidden="true" className="admin-sort-arrow">{active ? (direction === 'asc' ? '↑' : '↓') : '↕'}</span>
+      </button></th>;
+  };
   const requestedQuery = new URLSearchParams({ page: String(page), pageSize: '20', search, status, sort, direction }).toString();
   const [query, setQuery] = useState(requestedQuery);
   const settledSearch = new URLSearchParams(query).get('search') ?? '';
@@ -123,12 +143,14 @@ export function AdminUsersPage() {
     <div className="admin-toolbar admin-users-filters">
       <input aria-label="Поиск пользователей" className="admin-user-filter-control" placeholder="Email или ID пользователя" value={search} onChange={e => update({ search: e.target.value, page: 1 })} />
       <select aria-label="Фильтр пользователей" className="admin-user-filter-control" value={status} onChange={e => update({ status: e.target.value, page: 1 })}><option value="all">Все пользователи</option><option value="new">Новые за 24 часа</option><option value="kyc-pending">KYC на проверке</option><option value="hidden">Скрытые</option><option value="spam">Спам</option></select>
-      <select aria-label="Сортировка пользователей" className="admin-user-filter-control" value={sort} onChange={e => update({ sort: e.target.value, page: 1 })}><option value="createdAt">По регистрации</option><option value="lastLoginAt">По последнему входу</option><option value="email">По email</option></select>
+      <select aria-label="Сортировка пользователей" className="admin-user-filter-control" value={direction === DEFAULT_DIRECTION[sort] ? sort : `${sort}:${direction}`}
+        onChange={e => { const [next, order] = e.target.value.split(':') as [UserSort, 'asc' | undefined]; sortBy(next, order); }}>
+        {SORT_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
     </div>{/* Owner (2026-10-03): no refresh line or result count above the list; a failed read still offers «Повторить». */}
     {read.error && <AdminReadStatus {...read} hasData={!!read.data} />}
     {notice && <p role="status">{notice}</p>}{!read.data && read.loading && <Skeleton height={240} />}
     {read.data && !users.length && <p>Никого не найдено. Измените условия поиска.</p>}
-    {!!users.length && <div className="admin-table-desktop" style={styles.table} ref={scrollRef} onScroll={rememberScroll}><table className="admin-users-table"><thead><tr><th>Email</th><th>Пароль</th><th>Регистрация</th><th>Последний вход</th><th>KYC</th><th>Баланс</th><th>Действия</th></tr></thead><tbody>{users.map(user => user.adminHidden ? <tr key={user.id} data-user-row={user.id} data-hidden-account>
+    {!!users.length && <div className="admin-table-desktop" style={styles.table} ref={scrollRef} onScroll={rememberScroll}><table className="admin-users-table"><thead><tr><th>Email</th><th>Пароль</th>{sortHeader('createdAt', 'Регистрация')}{sortHeader('lastLoginAt', 'Последний вход')}<th>KYC</th><th>Баланс</th><th>Действия</th></tr></thead><tbody>{users.map(user => user.adminHidden ? <tr key={user.id} data-user-row={user.id} data-hidden-account>
       <td className="admin-user-email-cell"><span className="admin-hidden-account">Скрытый аккаунт</span><small className="admin-hidden-id">ID ·••••{user.id.slice(-6)}</small></td>
       <td>—</td><td>{user.hiddenAt ? `Скрыт ${adminDate(user.hiddenAt, true)}` : '—'}</td><td>—</td><td>—</td><td>—</td><td>{actions(user)}</td>
     </tr> : <tr key={user.id} data-user-row={user.id}>
@@ -139,7 +161,29 @@ export function AdminUsersPage() {
       <div className="admin-user-mobile-header"><div className="admin-user-mobile-identity"><strong className="admin-hidden-account">Скрытый аккаунт</strong><small className="admin-hidden-id">ID ·••••{user.id.slice(-6)}</small></div>{actions(user)}</div>
       <p className="admin-muted">{user.hiddenAt ? `Скрыт ${adminDate(user.hiddenAt, true)}` : ''}</p>
     </article> : <article key={user.id} data-user-card={user.id} className="admin-user-mobile" style={styles.card}>
-      <div className="admin-user-mobile-header"><div className="admin-user-mobile-identity"><strong className="admin-user-email">{user.email}</strong>{newMark(user)}{spamSet.has(user.email.trim().toLowerCase()) && <span className="admin-spam-badge">Спам</span>}</div>{actions(user)}</div><dl><dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd><dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd><dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd><dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd><dt>Баланс</dt><dd>{balances(user)}</dd></dl>{signals(user)}
+      <div className="admin-user-mobile-heading">
+        <strong className="admin-user-email">{user.email}</strong>
+        {newMark(user)}
+        {spamSet.has(user.email.trim().toLowerCase()) && <span className="admin-spam-badge">Спам</span>}
+        {signals(user)}
+      </div>
+      <div className="admin-user-mobile-summary">
+        <span className="admin-user-mobile-last-login">{lastLogin(user.lastLoginAt)}</span>
+        {kycCell(user.kycStatus)}
+      </div>
+      <div className="admin-user-mobile-bottom">
+        {actions(user)}
+        <details className="admin-user-mobile-details">
+          <summary>Подробнее</summary>
+          <dl>
+            <dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd>
+            <dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd>
+            <dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd>
+            <dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd>
+            <dt>Баланс</dt><dd>{balances(user)}</dd>
+          </dl>
+        </details>
+      </div>
     </article>)}</div>
     {spamTarget && <SpamEmailDialog {...spamTarget} onClose={() => setSpamTarget(null)} onSaved={() => { setSpamTarget(null); spam.reload(); read.reload(); }} />}
     {deleting && <DeleteUserDialog user={deleting} onClose={() => setDeleting(null)} onDeleted={() => { setNotice('Аккаунт удалён.'); setDeleting(null); changed(); }} />}

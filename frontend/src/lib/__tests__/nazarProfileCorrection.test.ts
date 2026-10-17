@@ -12,7 +12,7 @@ import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
 import { isModeledTraderData } from '../modeledCopyData';
 import { periodRatioFacts } from '../syntheticCopyTrading';
 import { languageModule } from '../../../test-utils/languageStub';
-import { liveMetricModule } from '../../../test-utils/copyPresentation';
+import { liveMetricModule, demoRoiModule } from '../../../test-utils/copyPresentation';
 
 const frontend = resolve(__dirname, '../../..');
 const requireFrontend = createRequire(resolve(frontend, 'package.json'));
@@ -33,7 +33,7 @@ const empty = () => null;
 // stubbed. The period state is selected explicitly; data uses the real adapter.
 const deps = {
   isModeledTraderData, periodRatioFacts,
-  ...languageModule('ru'), ...liveMetricModule(),
+  ...languageModule('ru'), ...liveMetricModule(), ...demoRoiModule(),
   useFiguresPending: () => false, useEffect: () => {},
   useMemo: (fn: () => unknown) => fn(),
   // Render the settled analytics phase; copyFirstLoad exercises the real
