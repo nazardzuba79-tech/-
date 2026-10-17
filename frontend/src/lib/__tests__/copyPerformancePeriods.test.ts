@@ -11,6 +11,7 @@ import { privateStrategyView } from '../copyMarketplacePrivacy';
 import { formatPercent } from '../../pages/copy-trading-bolt/traders';
 import { publicSignedUsdt } from '../copyTradingMoney';
 import { languageModule } from '../../../test-utils/languageStub';
+import { DEMO_ROI_END } from '../copyDemoRoi';
 
 /**
  * «Эффективность» IN THE REAL PAGE: the selected period's figures, in the
@@ -103,7 +104,53 @@ afterEach(async () => {
       const descriptor = originalGlobals.get(key);
       if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete (globalThis as any)[key];
     }
+    jest.restoreAllMocks();
   }
+});
+
+test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('dated demo is separate from the unchanged rolling figures in %s', async lang => {
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-20T12:00:00Z'));
+  language = lang;
+  await mount(); await answer();
+  await act(async () => {
+    const buttons = Array.from(host.querySelectorAll('.period-group button'));
+    const week = buttons.find(button => button.textContent === '7Д') as HTMLButtonElement;
+    expect(week).toBeDefined(); week.click();
+  });
+  for (const [id, key, expected] of [['VX-001', 'nazar', 179], ['VX-KSENIA', 'ksenia', 132]] as const) {
+    const notice = card(id).querySelector('[data-demo-roi]')!;
+    expect(notice.textContent).toContain(`+${expected}%`);
+    expect(notice.textContent).toContain('12–18.10.2026');
+    expect(notice.textContent).toContain('UTC');
+    expect(card(id).querySelector('.card-roi-copy strong')!.textContent)
+      .toBe(formatPercent(sections[key].economics!.periods['7D'].roi));
+  }
+  await openProfile('VX-001'); await choose('7D');
+  expect(host.querySelector('[data-demo-roi]')!.textContent).toContain('+179%');
+  expect(panel().values.roi).toBe(formatPercent(selectSyntheticPeriod(sections.nazar, '7D').roi));
+  expect(panel().values.masterPnl).toBe(publicSignedUsdt(selectSyntheticPeriod(sections.nazar, '7D').pnl).replace(/ | /g, ' '));
+  await choose('30D');
+  expect(host.querySelector('[data-demo-roi]')).toBeNull();
+});
+
+test('the open page expires at midnight UTC without a reload or successful refresh, and stays expired on remount', async () => {
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(DEMO_ROI_END - 1000);
+  const timers = jest.spyOn(dom.window, 'setTimeout');
+  await mount(); await answer(); await openProfile('VX-KSENIA'); await choose('7D');
+  expect(host.querySelector('[data-demo-roi]')!.textContent).toContain('+132%');
+  const previous = panel().values;
+  const payloadBefore = JSON.stringify(store.getState().ksenia);
+  const deadline = timers.mock.calls.find(call => call[1] === 1000)![0] as () => void;
+  expect(deadline).toBeInstanceOf(Function);
+  clock.mockReturnValue(DEMO_ROI_END);
+  await act(async () => { deadline(); await flush(); });
+  expect(host.querySelector('[data-demo-roi]')).toBeNull();
+  expect(panel().values).toEqual(previous);
+  expect(JSON.stringify(store.getState().ksenia)).toBe(payloadBefore);
+  await act(async () => { root.unmount(); });
+  root = createRoot(host);
+  await mount();
+  expect(host.querySelector('[data-demo-roi]')).toBeNull();
 });
 
 const mount = () => act(async () => { root.render(React.createElement(Page)); await flush(); });

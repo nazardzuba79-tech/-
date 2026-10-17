@@ -211,7 +211,8 @@ test('opening the page reads the stored queue and asks the server for the day\'s
     expect(fetched('/admin/deposit-queue')).toHaveLength(1);
     expect(fetched('/deposit-watch/run')).toHaveLength(0);
     expect(fetched('/deposit-watch/open')).toHaveLength(1);
-    await click('Проверить ленты других сетей');
+    // Owner (2026-10-15): the button reads «Проверить другие сети» inside the check-tools card.
+    await click('Проверить другие сети');
     expect(api.getAdminIncomingDepositFeed).toHaveBeenCalledTimes(1);
   } finally { jest.useRealTimers(); }
 });
@@ -228,12 +229,39 @@ test('provider trouble is never shown as "no deposits": partial feed and watcher
   expect(watcher.textContent).toContain('есть очередь');
   expect(watcher.querySelector('[role="alert"]')!.textContent).toContain('HTTP 503');
   expect(watcher.textContent).toContain('Проверить новые поступления');
-  await click('Проверить ленты других сетей');
+  await click('Проверить другие сети');
   expect(host.textContent).toContain('загружены не полностью');
   expect(host.textContent).toContain('Это не значит, что переводов нет');
   // Unattributed transfers stay visible, with the client's claim as a hint only.
   await click('Непривязанные1');
   expect(host.querySelector('[data-deposit-section="unattributed"]')!.textContent).toContain('claimer@example.invalid');
+});
+// Owner (2026-10-15): «Пополнения» — one header with the refresh, one card for every check, the queue
+// grouped by what the admin does next, and no empty «—» lines or repeated schedule on the page.
+test('deposits read as header, one check-tools card and grouped queue tabs, without empty lines', async () => {
+  mockDepositApi(queue({ enabled: true, providerStatus: 'OK', lastSuccessAt: new Date().toISOString(), nextScheduledRunAt: new Date().toISOString() }));
+  await mountDeposits();
+  expect(host.textContent).not.toContain('Пакет становится доступным для проверки');
+  expect(host.querySelector('.dep-heading [data-deposit-refresh]')?.textContent).toBe('Обновить');
+  const tools = host.querySelector('section[aria-label="Проверка поступлений"]')!;
+  for (const hook of ['[data-watcher]', '[data-check-tx]', '[data-other-networks]', '[data-watcher-run]', '[data-watcher-toggle]']) expect(tools.querySelector(hook)).not.toBeNull();
+  const watcher = tools.querySelector('[data-watcher]')!;
+  expect(watcher.querySelector('[data-watcher-enabled]')!.textContent).toBe('Включена');
+  // OK provider, no cursors, nothing unverified: those lines are not printed as «—» / «0».
+  for (const absent of ['Провайдер', 'В норме', 'Отставание', 'ещё не запускалось', 'Не проверено']) expect(watcher.textContent).not.toContain(absent);
+  expect(watcher.querySelector('details [data-watcher-schedule]')!.textContent).toContain('Ночью 22:00–07:00 автоматическая проверка не выполняется');
+  expect(watcher.querySelector('details')!.hasAttribute('open')).toBe(false);
+  const groups = Array.from(host.querySelectorAll('[role="tablist"][aria-label="Очередь пополнений"] .dep-tab-group'));
+  expect(groups.map(g => g.querySelector('.dep-tab-group-label')!.textContent)).toEqual(['Нужно действие', 'Ожидание', 'Архив']);
+  expect(groups.map(g => Array.from(g.querySelectorAll('[role="tab"]')).map(t => t.getAttribute('data-deposit-tab')))).toEqual([['ready', 'unattributed', 'review'], ['topup', 'network'], ['credited', 'ignored']]);
+  expect(host.querySelector('[data-deposit-tab="ready"]')!.getAttribute('aria-selected')).toBe('true');
+  expect(host.querySelector('[data-deposit-tab="ready"]')!.hasAttribute('data-attention')).toBe(true);
+  expect(host.querySelector('[data-deposit-tab="review"]')!.hasAttribute('data-attention')).toBe(false);
+  // A ready package shows no «осталось 0» line, and its status is a chip.
+  const ready = host.querySelector('[data-package="ready|tron|USDT"]')!;
+  expect(ready.querySelector('[data-package-remaining]')).toBeNull();
+  expect(ready.textContent).not.toContain('Осталось доплатить');
+  expect(ready.querySelector('[data-package-status]')!.className).toContain('dep-chip-ok');
 });
 async function click(text: string) {
   const button = Array.from(host.querySelectorAll('button')).find(b => b.textContent === text)!;

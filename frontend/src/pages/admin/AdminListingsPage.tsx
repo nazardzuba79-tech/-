@@ -375,8 +375,8 @@ export function AdminListingsPage() {
           {form.simulationProgram?.kind === 'scenario-controls-v2' && <div id="listing-section-movement" className="listing-section-anchor"><ListingMovementEditor key={editing.id ?? 'new'} value={form.simulationProgram} initialPrice={form.initialPrice} listingAt={listingAtUtc} locked={editing.locked} onChange={simulationProgram => changeForm({ ...form, simulationProgram })} /></div>}
           {form.simulationProgram?.kind === 'capped-growth-range-v1' && <p className="listing-hint" data-legacy-movement>Сохранён прежний ограниченный сценарий. Его параметры и история не заменяются новым алгоритмом.</p>}
           {!form.simulationProgram && !editing.locked && <button type="button" onClick={() => changeForm({ ...form, simulationProgram: newListingMovement(form.initialPrice || '1'), tradable: false })} data-enable-movement>Настроить движение в демонстрационном режиме</button>}
-          {/* The error and the unsaved-draft note travel with the actions: on a phone the
-              dock is pinned to the bottom, so a refused save is never shown off-screen. */}
+          {/* The error and the unsaved-draft note travel with the actions, so a refused
+              save is shown next to the button that was pressed. */}
           <div className="listing-actions-dock">
             {formError && <p role="alert" style={styles.errorBox} data-listing-error>{formError}</p>}
             {editing.id && !draftIsSaved && !logoReading && <p className="listing-hint" role="status" data-unsaved-draft>Настройки изменены — обновите предпросмотр. Сначала сохраните изменения черновика, чтобы открыть предпросмотр или опубликовать их.</p>}

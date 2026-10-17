@@ -56,6 +56,8 @@ function makeApp(overrides: { protection?: any } = {}) {
       findUnique: jest.fn(async ({ where: { id } }: any) => (id === 'pos-1' ? { ...POSITION } : null)),
     },
     futuresBalance: { findMany: jest.fn(async () => []) },
+    // pos-1 has been paid funding twice: −3 and −2.5.
+    fundingPayment: { groupBy: jest.fn(async ({ where }: any) => (where.positionId.in.includes('pos-1') ? [{ positionId: 'pos-1', _sum: { amount: '-5.5' } }] : [])) },
   } as any;
 
   const markPriceService = { getMarkPrice: jest.fn(async () => new BigNumber('105000')), getIndexPrice: jest.fn(async () => new BigNumber('105000')) } as any;
@@ -229,6 +231,13 @@ describe('the positions list carries protection so the client needs no second po
       markPrice: '105000',
     });
     expect(res.body[0].unrealizedPnl).toBe('10000');
+  });
+
+  it('realized P&L carries the funding the position has settled, once, and names it apart', async () => {
+    const { app } = makeApp();
+    const res = await request(app).get('/api/v1/futures/positions').set('Authorization', authHeader('owner'));
+    // POSITION.realizedPnl is 0: everything realized here is the two funding payments.
+    expect(res.body[0]).toMatchObject({ realizedPnl: '-5.5', fundingNet: '-5.5', unrealizedPnl: '10000' });
   });
 });
 

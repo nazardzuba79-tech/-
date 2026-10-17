@@ -76,7 +76,10 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/copy-trading-bolt/FeaturedAvatarContext.tsx": "08d27c9108d4b5e0d0cd972cc1d7739ccba71c545bdb85bcc3ffebe5ddc633bd",
   "frontend/src/pages/copy-trading-bolt/KseniaReview.css": "fd12204a82592875691f06aa00400fa98ee3a75ea9257bd30dc825a435218134",
   "frontend/src/pages/copy-trading-bolt/TraderAvatarArt.tsx": "6fa00d21147656ac4ec0a56ee908bb1f1a05f777cbaf2044a7866c2bd11f51d7",
-  "frontend/src/pages/copy-trading-bolt/traderVisuals.ts": "c87ac8d078d4d9038a33b18ddded787630a93834a7444042cc7899723ae4e74a",
+  // Owner-approved PR #536: four initial avatars gain vector emblems and
+  // locked aliases gain stable mark/palette identities. Art-only baseline
+  // a94b5479; every other collateral/financial fingerprint stays unchanged.
+  "frontend/src/pages/copy-trading-bolt/traderVisuals.ts": "4a266d99fbd5a9367777489cf437cab264138b410abfc4ace641f4ad1e9ba1c4",
   "frontend/src/pages/copy-trading-bolt/useCopyLists.ts": "322cc598e49f4d64a3d058d0d8f232ddce43e5ce3e604bfd88de7cd9cac10480",
   "frontend/src/lib/dailyReturnChart.ts": "6f6e1c0394cc3c581dac03b6b2e7e2ffb4dd49fa85454135bf667c7dc82f6407",
   "frontend/src/lib/copyTradingMoney.ts": "1d29908f9517ed1f9de08965fc84cda4d39c29577dbba5dce62b50488d7da539"
@@ -159,6 +162,12 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
       text = text.replace(current, original);
     }
     if (file === 'frontend/src/components/Footer.tsx' || file === 'frontend/src/pages/home/HomeFooter.tsx') {
+      // The new legal destination is the sole regulatory-page addition.
+      const licenceLink = file === 'frontend/src/components/Footer.tsx'
+        ? "          <Link to=\"/legal/licenses\" style={styles.link}>{t('licenses.title')}</Link>\n"
+        : "      { labelKey: 'licenses.title', to: '/legal/licenses' },\n";
+      expect(text.split(licenceLink)).toHaveLength(2);
+      text = text.replace(licenceLink, '');
       // The knowledge hub adds footer links. Only these exact additions are
       // undone here so the older card-design digest remains comparable; every
       // other byte keeps the original digest.
@@ -175,6 +184,24 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
   expect(source('frontend/src/App.tsx')).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
   expect(existsSync(resolve(repository, 'frontend/src/components/PrelaunchNotice.tsx'))).toBe(false);
   expect(existsSync(resolve(repository, 'frontend/src/components/prelaunchNotice.css'))).toBe(false);
+});
+
+test('CopyTradingPage preserves the approved base except the exact display-only demo provider wiring', () => {
+  // PR #536 authorizes exactly this import and wrapper around the existing
+  // avatar/content tree. Normalize those three required lines only, then
+  // compare all remaining bytes with fresh base 2e7acf15. This protects
+  // marketplace data, financial adapters, routing and eligibility unchanged.
+  let text = source('frontend/src/pages/CopyTradingPage.tsx');
+  const additions = [
+    "import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';\n",
+    '            <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>\n',
+    '            </DemoRoiProvider>\n',
+  ];
+  for (const addition of additions) {
+    expect(text.split(addition)).toHaveLength(2);
+    text = text.replace(addition, '');
+  }
+  expect(digest(text)).toBe('920963c23a9da98710f0c4805455ddb7ba97eb9e4cababc6043d5b350d45f112');
 });
 
 test('the released currency section uses its translated balance-yield copy and unchanged currency assets', () => {

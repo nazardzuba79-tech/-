@@ -3,6 +3,7 @@ import { Copy, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../lib/api';
 import { useLanguage, localeOf } from '../../lib/i18n';
+import { copyToClipboard } from '../../lib/clipboard';
 import { Panel, PanelHeader } from './Panel';
 
 // Ported from the archive's components/voltex/referral-section.tsx — the
@@ -30,8 +31,10 @@ export function ReferralSection() {
     .join(' + ');
 
   function copy() {
-    navigator.clipboard?.writeText(link);
-    toast.success(t('deposit.copied'));
+    void copyToClipboard(link).then(
+      () => toast.success(t('deposit.copied')),
+      () => toast.error(t('deposit.ui.copyError')),
+    );
   }
 
   return (

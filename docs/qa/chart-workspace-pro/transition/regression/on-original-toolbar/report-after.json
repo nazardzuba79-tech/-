@@ -1,0 +1,461 @@
+{
+  "phase": "after",
+  "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/cw2-dist-oldtoolbar",
+  "startedAt": "2026-10-14T14:19:06.815Z",
+  "checks": [
+    {
+      "id": "transition.spot.AITH.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 1240,
+        "errors": []
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.layout-2-complete",
+      "ok": true,
+      "detail": {
+        "layout": "2",
+        "panes": [
+          "ok"
+        ],
+        "tabs": 0
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.layout-1-complete",
+      "ok": true,
+      "detail": {
+        "layout": "1",
+        "panes": 0,
+        "kept": true,
+        "chart": "candles"
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.row-paints-once",
+      "ok": false,
+      "detail": {
+        "painted": [
+          "+0ms [compare layout goto scale fullscreen more] [15m 1h 1d]",
+          "+113ms [compare scale fullscreen more] [1m 5m 15m 1h 4h 1d 1w]",
+          "+206ms [fullscreen more] [1m 5m 15m 1h 4h 1d 1w]",
+          "+298ms [more] [1m 5m 15m 1h 4h 1d 1w]"
+        ],
+        "flickered": [
+          "compare",
+          "layout",
+          "goto",
+          "scale",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.goto-opens",
+      "ok": true,
+      "detail": {
+        "via": "more",
+        "menu": "more"
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.goto-answers",
+      "ok": true,
+      "detail": {
+        "status": "История за эту дату не загружена",
+        "paged": 0
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "transition.spot.AITH.1366.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 1028,
+        "errors": []
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.layout-2-complete",
+      "ok": true,
+      "detail": {
+        "layout": "2",
+        "panes": [
+          "ok"
+        ],
+        "tabs": 0
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.layout-1-complete",
+      "ok": true,
+      "detail": {
+        "layout": "1",
+        "panes": 0,
+        "kept": true,
+        "chart": "candles"
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.row-paints-once",
+      "ok": false,
+      "detail": {
+        "painted": [
+          "+0ms [compare layout fullscreen more] [15m 1h 1d]",
+          "+102ms [compare more] [1m 5m 15m 1h 4h 1d 1w]",
+          "+291ms [layout more] [1m 15m 1h 4h 1d]",
+          "+526ms [fullscreen more] [1m 5m 15m 1h 4h 1d 1w]",
+          "+620ms [layout more] [1m 15m 1h 4h 1d]",
+          "+738ms [fullscreen more] [1m 5m 15m 1h 4h 1d 1w]",
+          "+839ms [layout more] [1m 15m 1h 4h 1d]"
+        ],
+        "flickered": [
+          "compare",
+          "fullscreen"
+        ]
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.goto-opens",
+      "ok": true,
+      "detail": {
+        "via": "more",
+        "menu": "more"
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.goto-answers",
+      "ok": true,
+      "detail": {
+        "status": "История за эту дату не загружена",
+        "paged": 0
+      }
+    },
+    {
+      "id": "transition.spot.AITH.1366.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "transition.futures.BTC.1440.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 1166,
+        "errors": []
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.layout-2-complete",
+      "ok": true,
+      "detail": {
+        "layout": "2",
+        "panes": [
+          "ok"
+        ],
+        "tabs": 0
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.layout-1-complete",
+      "ok": true,
+      "detail": {
+        "layout": "1",
+        "panes": 0,
+        "kept": true,
+        "chart": "candles"
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.row-paints-once",
+      "ok": false,
+      "detail": {
+        "painted": [
+          "+0ms [compare layout tools goto scale fullscreen more] [15m 1h 1d]",
+          "+78ms [compare layout goto scale snapshot fullscreen more] [1m 5m 15m 1h 4h 1d 1w]",
+          "+182ms [compare layout fullscreen more] [1m 5m 15m 1h 4h 1d 1w]"
+        ],
+        "flickered": [
+          "tools",
+          "goto",
+          "scale",
+          "snapshot"
+        ]
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.goto-opens",
+      "ok": true,
+      "detail": {
+        "via": "more",
+        "menu": "more"
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.goto-answers",
+      "ok": true,
+      "detail": {
+        "target": 1790740800,
+        "range": {
+          "from": 1790485200,
+          "to": 1791064800
+        },
+        "stillOpen": 0
+      }
+    },
+    {
+      "id": "transition.futures.BTC.1440.errors",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.loaded",
+      "ok": true,
+      "detail": {
+        "opened": 1510,
+        "errors": []
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.layout-2-complete",
+      "ok": true,
+      "detail": {
+        "layout": "2",
+        "panes": [],
+        "tabs": 2
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.layout-1-complete",
+      "ok": true,
+      "detail": {
+        "layout": "1",
+        "panes": 0,
+        "kept": true,
+        "chart": "candles"
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.row-paints-once",
+      "ok": true,
+      "detail": {
+        "painted": [
+          "+0ms [compare] [1m 15m 1h 4h 1d]"
+        ],
+        "flickered": []
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.goto-opens",
+      "ok": true,
+      "detail": {
+        "via": "phone-sheet",
+        "menu": "phone-sheet"
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.goto-answers",
+      "ok": true,
+      "detail": {
+        "status": "История за эту дату не загружена",
+        "paged": 0
+      }
+    },
+    {
+      "id": "transition.phone.spot.AITH.390.errors",
+      "ok": true,
+      "detail": []
+    }
+  ],
+  "perf": {},
+  "screenshots": [
+    "after-transition-spot.AITH.1440.png",
+    "after-transition-spot.AITH.1366.png",
+    "after-transition-futures.BTC.1440.png",
+    "after-transition-phone.spot.AITH.390.png"
+  ],
+  "environment": "LOCAL QA ONLY — production bundle, loopback read-only fixture",
+  "git": {
+    "prHead": null,
+    "base": null,
+    "checkout": "fa76e844d69a2c924df5c820935387c43d28e3cb",
+    "ref": "claude/peaceful-volta-h5zw7g-chart-workspace-2",
+    "run": null
+  },
+  "args": [
+    "--dist",
+    "../cw2-dist-oldtoolbar",
+    "--out",
+    "../cw2-qa-trans-old",
+    "--phase",
+    "after",
+    "--only",
+    "transition"
+  ],
+  "sections": [
+    {
+      "id": "geometry",
+      "status": "not_selected"
+    },
+    {
+      "id": "aith",
+      "status": "not_selected"
+    },
+    {
+      "id": "contexts",
+      "status": "not_selected"
+    },
+    {
+      "id": "panes",
+      "status": "not_selected"
+    },
+    {
+      "id": "keep",
+      "status": "not_selected"
+    },
+    {
+      "id": "synctf",
+      "status": "not_selected"
+    },
+    {
+      "id": "transition",
+      "status": "completed",
+      "startedAt": "2026-10-14T14:19:07.466Z",
+      "finishedAt": "2026-10-14T14:19:58.298Z",
+      "checks": 28,
+      "failedChecks": [
+        "transition.spot.AITH.1440.row-paints-once",
+        "transition.spot.AITH.1366.row-paints-once",
+        "transition.futures.BTC.1440.row-paints-once"
+      ]
+    },
+    {
+      "id": "interactions.futures",
+      "status": "not_selected"
+    },
+    {
+      "id": "interactions.spot",
+      "status": "not_selected"
+    },
+    {
+      "id": "layout4",
+      "status": "not_selected"
+    },
+    {
+      "id": "mobile",
+      "status": "not_selected"
+    },
+    {
+      "id": "zoom",
+      "status": "not_selected"
+    },
+    {
+      "id": "perf",
+      "status": "not_selected"
+    }
+  ],
+  "plan": [
+    {
+      "id": "geometry",
+      "selected": false
+    },
+    {
+      "id": "aith",
+      "selected": false
+    },
+    {
+      "id": "contexts",
+      "selected": false
+    },
+    {
+      "id": "panes",
+      "selected": false
+    },
+    {
+      "id": "keep",
+      "selected": false
+    },
+    {
+      "id": "synctf",
+      "selected": false
+    },
+    {
+      "id": "transition",
+      "selected": true
+    },
+    {
+      "id": "interactions.futures",
+      "selected": false
+    },
+    {
+      "id": "interactions.spot",
+      "selected": false
+    },
+    {
+      "id": "layout4",
+      "selected": false
+    },
+    {
+      "id": "mobile",
+      "selected": false
+    },
+    {
+      "id": "zoom",
+      "selected": false
+    },
+    {
+      "id": "perf",
+      "selected": false
+    }
+  ],
+  "pageErrors": [],
+  "fatal": null,
+  "artifacts": [
+    "transition-spot.AITH.1440.zip",
+    "transition-spot.AITH.1440.webm",
+    "transition-spot.AITH.1366.zip",
+    "transition-spot.AITH.1366.webm",
+    "transition-futures.BTC.1440.zip",
+    "transition-futures.BTC.1440.webm",
+    "transition-phone.spot.AITH.390.zip",
+    "transition-phone.spot.AITH.390.webm"
+  ],
+  "finishedAt": "2026-10-14T14:19:58.376Z",
+  "summary": {
+    "passed": 25,
+    "failed": 3,
+    "sections": {
+      "completed": [
+        "transition"
+      ],
+      "fatal": [],
+      "notRun": [],
+      "notSelected": [
+        "geometry",
+        "aith",
+        "contexts",
+        "panes",
+        "keep",
+        "synctf",
+        "interactions.futures",
+        "interactions.spot",
+        "layout4",
+        "mobile",
+        "zoom",
+        "perf"
+      ]
+    },
+    "pageErrors": 0
+  },
+  "manifest": {
+    "count": 12,
+    "bytes": 6310777,
+    "caseClashes": [],
+    "missingScreenshots": []
+  },
+  "verdict": "FAILED"
+}

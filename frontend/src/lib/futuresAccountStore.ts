@@ -50,9 +50,18 @@ import { api, getToken, onSessionChange } from './api';
  * was.
  */
 
-export type FuturesPosition = Awaited<ReturnType<typeof api.getFuturesPositions>>[number];
+/**
+ * One native-demo position's result taken apart, exactly as the engine
+ * reports it: `tradingPnl - fees + funding === netPnl`. `funding` is what
+ * has actually been settled (signed: received +, paid −), `fees` what has
+ * been paid (positive). The real endpoints never send it, so their rows and
+ * tables are unchanged; nothing here is recomputed by the terminal.
+ */
+export interface FuturesPnlBreakdown { tradingPnl: string; funding: string; fees: string; netPnl: string }
+export type FuturesPosition = Awaited<ReturnType<typeof api.getFuturesPositions>>[number] & { pnlBreakdown?: FuturesPnlBreakdown };
 export type FuturesOrder = Awaited<ReturnType<typeof api.getMyFuturesOrders>>[number];
-export type FuturesPositionHistoryRow = Awaited<ReturnType<typeof api.getFuturesPositionHistory>>[number];
+/** `realizedPnl` is the native engine's `netPnl` when `pnlBreakdown` is present. */
+export type FuturesPositionHistoryRow = Awaited<ReturnType<typeof api.getFuturesPositionHistory>>[number] & { pnlBreakdown?: FuturesPnlBreakdown };
 export type FuturesBalance = Awaited<ReturnType<typeof api.getFuturesBalances>>[number];
 
 export type ResourceKey = 'balances' | 'positions' | 'orders' | 'positionHistory' | 'orderHistory';

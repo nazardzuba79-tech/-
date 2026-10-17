@@ -148,20 +148,45 @@
   top: var(--rail-toggle-top);
   left: 100%;
   transform: translateY(-50%);
-  z-index: 7;
-  width: 16px;
-  min-width: 16px;
-  height: 30px;
-  min-height: 30px;
+  /* Above Lightweight Charts' pane-separator handles (z 50), which a chart
+     with lower-pane indicators can lay across the handle's height. */
+  z-index: 51;
+  /* 2026-10-10 (Issue #502): the 16×30 chip was still the quietest thing on
+     the chart (owner: «слабко читається»). It is now a 22×48 handle with a
+     gold edge on a lifted surface, and its hit area reaches 40×56 through
+     the transparent halo below — Enter/Space, aria-expanded and the focus
+     ring are the button's own. The halo is outside the rail's keys and
+     over nothing but the plot's first pixels, so it never intercepts a
+     drawing gesture that starts on a candle. */
+  width: 22px;
+  min-width: 22px;
+  height: 48px;
+  min-height: 48px;
   margin: 0;
-  border: 1px solid #39434f;
+  border: 1px solid #5a6474;
   border-left: 0;
-  border-radius: 0 5px 5px 0;
-  /* BRIGHT, NOT DIM. At --text-secondary on --panel-alt this chip was the
-     quietest thing in the chart area while being the only way to get the
-     tools back. Near-white on a lifted surface reads as a control. */
-  background: #1f2732;
-  color: #eef2f7;
+  border-radius: 0 7px 7px 0;
+  background: #262f3b;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+}
+@media (min-width: 901px) {
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle::before {
+    content: '';
+    position: absolute;
+    inset: -4px -18px -4px 0;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 6px; bottom: 6px; width: 2px;
+    background: #f0b90b;
+    border-radius: 0 2px 2px 0;
+  }
+}
+.trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle:focus-visible {
+  outline: 2px solid #f0c964;
+  outline-offset: 1px;
 }
 /* The hairline that separated the old top bar from the tools now sits on
    the rail's own foot, so the chip reads as below the toolbar rather than
@@ -175,8 +200,9 @@
   color: #fff;
 }
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle svg {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
 }
 
 /* COLLAPSED: THE SAME HEIGHT, A DIFFERENT SHAPE.
@@ -189,14 +215,60 @@
   left: 0;
   transform: translateY(-50%);
   margin: 0;
-  width: 16px;
-  min-width: 16px;
-  height: 30px;
-  min-height: 30px;
-  border: 1px solid #39434f;
+  width: 22px;
+  min-width: 22px;
+  height: 48px;
+  min-height: 48px;
+  border: 1px solid #5a6474;
   border-left: 0;
-  border-radius: 0 5px 5px 0;
+  border-radius: 0 7px 7px 0;
 }
+/* BYBIT'S HANDLE (owner 2026-10-11: «скрити панель не має бути таким
+   великим … як у байбіт»). Measured on the owner's Bybit capture: a light
+   10×25px pill (#aeb0b5) with a dark «‹», centred on the rail's edge. It
+   replaces the 22×48 dark tab with a gold edge from #504 on desktop only;
+   the phone strip below keeps its own column. The transparent halo keeps a
+   26×42px target, Enter/Space, aria-expanded and the focus ring are the
+   button's own, and z 51 still clears the pane-separator handles. */
+@media (min-width: 901px) {
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle,
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
+    width: 10px;
+    min-width: 10px;
+    height: 26px;
+    min-height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: #aeb0b5;
+    color: #26292f;
+    box-shadow: none;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle {
+    left: 100%;
+    transform: translate(-50%, -50%);
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
+    left: 2px;
+    transform: translateY(-50%);
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle:hover {
+    background: #c9cbd0;
+    color: #17181e;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle::before {
+    inset: -8px -14px -8px -2px;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle::after {
+    content: none;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle svg {
+    width: 10px;
+    height: 10px;
+    stroke-width: 3;
+  }
+}
+
 /* Below 900px the rail is a horizontal strip and the toggle is a column at
    its end — the existing adaptive geometry, which this change leaves alone
    rather than forcing the desktop's vertical shape onto a phone. */

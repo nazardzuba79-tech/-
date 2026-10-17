@@ -1,5 +1,22 @@
 # Admin on phones — fixes for the mobile audit of 2026-10-09
 
+> **Status after PR #500 was merged with main `50875f21` (2026-10-17).** This folder is the
+> #489 evidence as recorded on its own branch. Main already carried PR #527 (users sorting,
+> «Пополнения» layout) and PR #532 (the mobile fixes and `scripts/qa-admin-mobile-audit.cjs`),
+> so the merge keeps main where they overlap:
+> - the support launcher stays visible on `/admin`; the drawer and dialogs sit above it
+>   (#532 z-index 1000/1001), and the admin page ends with 88px of room. There is no sidebar
+>   «Поддержка» entry and no `body[data-admin-shell]`;
+> - the balances card keeps #532's three-column table (`min-width: 0`), not the stacked phone layout;
+> - «Пополнения» keeps #527's folded manual check and schedule, not the compact watcher;
+> - the user-card tab strip keeps #532's `scrollLeft` adjustment, with this branch's edge fades
+>   and no scroll-snap;
+> - the listing form's actions are not pinned to the bottom, because the visible launcher would sit
+>   on that bar. They stay in one block with the error, and the section jumps are kept.
+>
+> Everything else here was carried over. The screenshots and `results.json` below show the
+> branch before the merge.
+
 Audited main: `cb5559db24c7c8ba4cae75997a1c9145a193151f` (the admin files on this branch
 start from that exact tree). Review branch only: no merge, no deployment, no
 production, Hetzner, Cloudflare, PostgreSQL, API, schema, balance, order, KYC

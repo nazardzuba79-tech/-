@@ -6,7 +6,6 @@ import { useAdminWorkSummary, type SummaryKey } from './adminWorkSummary';
 import { adminDate } from './adminPresentation';
 import { LogoMark } from '../../components/Logo';
 import { styles } from './adminStyles';
-import { openSupportWidget } from '../../lib/supportWidget';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import './adminConsole.css';
 import {
@@ -17,7 +16,6 @@ import {
   ArrowDownCircleIcon,
   MenuIcon,
   XIcon,
-  HeadsetIcon,
   ChevronRightIcon,
   BoxesIcon,
 } from './AdminIcons';
@@ -91,19 +89,22 @@ export function AdminLayout() {
   const location = useLocation();
   const summary = useAdminWorkSummary(status === 'ok');
   useAdminSummaryChime(status === 'ok', summary.data?.alerts);
+  // The phone menu closes with Escape and gives focus back to its button.
+  const menuButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMobileOpen(false);
+      menuButton.current?.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileOpen]);
   // The sidebar is an off-canvas menu up to 900px (index.css). While it is closed
   // there, its links are not reachable by keyboard or screen reader.
   const narrow = useMediaQuery('(max-width: 900px)');
-  const menuButton = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
-
-  // The admin shell marks the body: SupportWidget.css hides its floating
-  // launcher here (it covered confirmations on phones); support is opened
-  // from the sidebar instead.
-  useEffect(() => {
-    document.body.setAttribute('data-admin-shell', '');
-    return () => document.body.removeAttribute('data-admin-shell');
-  }, []);
   // Dialogs and the credit drawer size themselves to the visible viewport
   // (keyboard, collapsing browser bars) through one CSS variable; the
   // fallback is 100dvh.
@@ -119,22 +120,19 @@ export function AdminLayout() {
   }, []);
   // Any navigation (a section link, browser Back) leaves the menu closed.
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
-  // Open menu: focus moves to its close button and comes back on close;
-  // Escape closes it; the page behind does not scroll; a wider viewport
-  // (rotation, desktop) dismisses it.
+  // Open menu: focus moves to its close button and comes back on close; the
+  // page behind does not scroll; a wider viewport (rotation, desktop)
+  // dismisses it.
   useEffect(() => {
     if (!mobileOpen) return;
     const previous = document.activeElement as HTMLElement | null;
     closeButton.current?.focus({ preventScroll: true });
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); setMobileOpen(false); } };
     const wide = typeof window.matchMedia === 'function' ? window.matchMedia('(min-width: 901px)') : null;
     const onWide = () => { if (wide?.matches) setMobileOpen(false); };
-    document.addEventListener('keydown', onKey);
     wide?.addEventListener('change', onWide);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.removeEventListener('keydown', onKey);
       wide?.removeEventListener('change', onWide);
       document.body.style.overflow = overflow;
       const target = previous?.isConnected ? previous : menuButton.current;
@@ -215,13 +213,6 @@ export function AdminLayout() {
         </nav>
 
         <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-          {/* The only support entry on /admin: the floating launcher is hidden here. */}
-          <button type="button" className="admin-nav-link admin-support-link" data-admin-support
-            style={{ ...styles.navItem, width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', fontSize: 13.5, fontWeight: 600, marginBottom: 6 }}
-            onClick={() => { setMobileOpen(false); openSupportWidget(); }}>
-            <HeadsetIcon size={17} />
-            <span>Поддержка</span>
-          </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 12px 12px' }}>
             <span style={{ ...styles.avatarCircle, background: 'var(--admin-brand)' }}>{initials || 'AD'}</span>
             <div style={{ minWidth: 0, lineHeight: 1.25 }}>
@@ -249,8 +240,8 @@ export function AdminLayout() {
         >
           <button
             ref={menuButton}
-            type="button"
             onClick={() => setMobileOpen(true)}
+            type="button"
             className="admin-mobile-menu-btn admin-nav-link"
             style={{ display: 'none', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: 8, color: 'var(--text-secondary)', cursor: 'pointer' }}
             aria-label="Открыть меню"

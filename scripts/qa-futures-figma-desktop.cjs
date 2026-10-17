@@ -46,8 +46,10 @@ const selectors = { header: '.global-header', ticker: '.ticker-bar', chart: '.ch
         return { ...parts, tabs, overflow:document.documentElement.scrollWidth-innerWidth };
       }, selectors);
       const near = (a,b,why) => assert.ok(Math.abs(a-b)<1.5, `${width}: ${why}: ${a} vs ${b}`);
-      near(geometry.header.height,40,'40px global header');
-      near(geometry.ticker.height,48,'48px instrument bar');
+      near(geometry.header.height,48,'48px global header (Bybit header above Figma 19:103; owner 2026-10-10)');
+      // Owner 2026-10-11: the pair row is Bybit's 56px (Figma 19:103 Aside 55.99); 52px on
+      // screens under 800px tall, where 56 would put the chart under the 60% floor below.
+      near(geometry.ticker.height,height>=800?56:52,`${height>=800?56:52}px instrument bar (Bybit 56; 52 under 800px tall)`);
       near(geometry.bottom.height,160,'160px empty account panel');
       near(geometry.book.width,286,'Figma orderbook width');
       near(geometry.form.width,300,'Figma order ticket width');

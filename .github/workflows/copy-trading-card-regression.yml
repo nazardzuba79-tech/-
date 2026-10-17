@@ -7,6 +7,9 @@ on:
       - 'src/api/routes/copyPerformance.ts'
       - 'src/api/routes/syntheticCopyTrading.ts'
       - 'frontend/src/lib/copyMarketplace*.ts'
+      - 'frontend/src/lib/copyDemoRoi.ts'
+      - 'frontend/src/lib/__tests__/copyDemoRoi.test.ts'
+      - 'frontend/src/lib/__tests__/copyCatalogueStatic.test.ts'
       - 'frontend/src/lib/__tests__/copyMarketplace*.test.ts'
       - 'frontend/src/lib/kseniaCopyTrading.ts'
       - 'frontend/src/lib/syntheticCopyTrading.ts'
@@ -32,6 +35,7 @@ on:
       # onSessionChange broadcast every session invariant rests on, and a
       # change to it used to run no Copy Trading test at all.
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/readCoalescer.ts'
       - 'frontend/src/lib/nrxMarket.ts'
       - 'src/shared/aithPublication.ts'
       - 'frontend/src/lib/marketEdge.ts'
@@ -79,6 +83,13 @@ on:
       - 'frontend/src/lib/cfdDisplayCopy.ts'
       - 'frontend/src/lib/cfdPresentation.ts'
       - 'frontend/src/lib/cfdTickerFreshness.ts'
+      # CFD workspace (2026-10-15): the market list's asset marks and day-change series.
+      - 'frontend/src/assets/cfd-flags/**'
+      - 'frontend/src/assets/cfd-marks/**'
+      - 'frontend/src/lib/cfdAssetIdentity.ts'
+      - 'frontend/src/lib/cfdInfoStrip.ts'
+      - 'frontend/src/lib/useCfdDailySeries.ts'
+      - 'frontend/src/lib/useCfdDailySession.ts'
       - 'frontend/src/lib/futuresDiscovery.ts'
       - 'frontend/src/lib/liveMarketTypes.ts'
       - 'frontend/src/lib/marketColumnSort.ts'
@@ -130,6 +141,7 @@ on:
       # onSessionChange broadcast every session invariant rests on, and a
       # change to it used to run no Copy Trading test at all.
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/readCoalescer.ts'
       - 'frontend/src/lib/nrxMarket.ts'
       - 'frontend/src/lib/marketEdge.ts'
       - 'frontend/src/lib/displaySnapshotCache.ts'
@@ -175,6 +187,13 @@ on:
       - 'frontend/src/lib/cfdDisplayCopy.ts'
       - 'frontend/src/lib/cfdPresentation.ts'
       - 'frontend/src/lib/cfdTickerFreshness.ts'
+      # CFD workspace (2026-10-15): the market list's asset marks and day-change series.
+      - 'frontend/src/assets/cfd-flags/**'
+      - 'frontend/src/assets/cfd-marks/**'
+      - 'frontend/src/lib/cfdAssetIdentity.ts'
+      - 'frontend/src/lib/cfdInfoStrip.ts'
+      - 'frontend/src/lib/useCfdDailySeries.ts'
+      - 'frontend/src/lib/useCfdDailySession.ts'
       - 'frontend/src/lib/futuresDiscovery.ts'
       - 'frontend/src/lib/liveMarketTypes.ts'
       - 'frontend/src/lib/marketColumnSort.ts'
@@ -273,6 +292,13 @@ jobs:
           npm test -- --runInBand --runTestsByPath
           frontend/src/lib/__tests__/copyPerformancePeriods.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+      - name: Dated demo expiry and static catalogue
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/copyDemoRoi.test.ts
+          frontend/src/lib/__tests__/copyCatalogueStatic.test.ts
+          frontend/src/lib/__tests__/traderVisuals.test.ts
+          src/services/copyTrading/__tests__/copyOctoberDemo.test.ts
       - name: Copy privacy, retry and period regressions
         run: >-
           npm test -- --runInBand --runTestsByPath

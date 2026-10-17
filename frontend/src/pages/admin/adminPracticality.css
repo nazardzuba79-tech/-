@@ -114,7 +114,7 @@
   .admin-page-grid .admin-users-workspace .admin-table-desktop { display: none !important; }
   .admin-page-grid .admin-users-workspace .admin-table-mobile { display: block !important; }
 }
-@media(max-width:767px) { .admin-attention { padding: 10px; } .admin-attention-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-users-filters,.admin-audit-filters { grid-template-columns: 1fr; } .admin-detail-overview { grid-template-columns: minmax(0, 1fr); } .admin-section-heading>span { line-height: 1.5; } .admin-tabs button { padding: 10px; } .admin-modal { box-sizing: border-box; width: calc(100vw - 24px); max-width: 600px; } .admin-modal input,.admin-modal textarea { max-width: 100%; } .admin-key-values { grid-template-columns: minmax(90px,1fr) minmax(0,1.6fr); gap: 8px; } }
+@media(max-width:767px) { .admin-attention { padding: 10px; } .admin-attention-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-users-filters,.admin-audit-filters { grid-template-columns: 1fr; } .admin-detail-overview { grid-template-columns: minmax(0,1fr); } .admin-section-heading>span { line-height: 1.5; } .admin-tabs button { padding: 10px; } .admin-modal { box-sizing: border-box; width: calc(100vw - 24px); max-width: 600px; } .admin-modal input,.admin-modal textarea { max-width: 100%; } .admin-key-values { grid-template-columns: minmax(90px,1fr) minmax(0,1.6fr); gap: 8px; } }
 
 /* Manual spam policy stays separate from account deletion and hiding. */
 .admin-spam-manager { margin: 0 0 16px; }
@@ -171,8 +171,6 @@
   .admin-user-mobile .admin-last-login { white-space: normal; }
   .admin-user-mobile > .admin-muted { margin: 0; }
 }
-
-
 /* Admin → Users: phone-only compact workspace. Desktop/tablet remain unchanged. */
 @media (max-width: 767px) {
   .admin-page-grid .admin-users-workspace { min-width: 0; }
@@ -251,3 +249,13 @@
   .admin-users-workspace .admin-pagination-top { flex-basis: 100%; }
   .admin-users-workspace .admin-users-filters .admin-user-filter-control { padding-left: 7px; }
 }
+
+/* Owner (2026-10-15): the «Регистрация» and «Последний вход» headers sort the list. */
+.admin-users-table th[aria-sort] { padding: 0; }
+.admin-sort-header { display: flex; align-items: center; gap: 6px; width: 100%; padding: 12px 10px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; white-space: nowrap; }
+.admin-sort-header:hover { color: var(--text-primary); background: var(--panel); }
+.admin-sort-header:focus-visible { outline: 2px solid var(--admin-brand, var(--accent)); outline-offset: -2px; }
+.admin-sort-header[data-sort-active] { color: var(--text-primary); }
+.admin-sort-arrow { color: var(--text-tertiary); font-size: 12px; line-height: 1; }
+.admin-sort-header[data-sort-active] .admin-sort-arrow { color: var(--admin-brand, var(--accent)); }
+@media(max-width:1440px) { .admin-sort-header { padding: 10px 7px; } }

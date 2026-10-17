@@ -366,7 +366,8 @@ let server, browser;
       const p = document.querySelector('.trader-profile-page');
       const t = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : null;
       return { readouts: t(p?.querySelector('.profile-performance-chart .chart-readouts')),
-        range: t(p?.querySelector('.profile-period-range')) };
+        // The adjacent dated demo has its own range; assert the rolling chart.
+        range: t(p?.querySelector('.profile-performance-chart .profile-period-range')) };
     });
     await page.screenshot({ path: path.join(OUT, '09c-ksenia-profile-later-week.png') });
     report.scenarios.laterWeek = { date: laterDate, cards: laterCards, cardLabel, profile: laterProfile, errors: errs };

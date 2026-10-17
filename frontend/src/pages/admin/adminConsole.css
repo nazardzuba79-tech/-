@@ -86,12 +86,18 @@
   .admin-main > header > div > div > div { display: none; }
   .admin-user-stats { grid-template-columns: minmax(0, 1fr) !important; }
   .admin-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* Wide registry tables scroll inside .admin-data-wrap; the balances table has its own phone layout below. */
-  .admin-data-table:not(.admin-balance-table) { min-width: 950px; }
+  .admin-data-table { min-width: 950px; }
+  /* Three columns (asset, available, reserved): no wide-table floor, so the
+     reserved column stays on a phone screen instead of 992px of page width. */
+  .admin-data-table.admin-balance-table { min-width: 0; }
   .admin-kyc-grid { grid-template-columns: minmax(0, 1fr); }
   .admin-kyc-grid > div:first-child { max-height: 220px !important; }
   .admin-page-grid .admin-detail-grid, .admin-page-grid .admin-detail-form { grid-template-columns: minmax(0, 1fr) !important; }
   .admin-attention a { flex-wrap: wrap; }
+}
+@media (max-width: 360px) {
+  /* 320px: the full eight-decimal amounts of both columns fit without an inner scroll. */
+  .admin-data-table.admin-balance-table th, .admin-data-table.admin-balance-table td { padding-left: 6px; padding-right: 6px; }
 }
 
 /* Users page: quick filters, СОБЫТИЕ badges and the «Зачислить» entry point. */
@@ -137,30 +143,20 @@
 .admin-inline-alert > span { min-width: 0; flex: 1 1 220px; }
 .admin-inline-retry { flex: none; min-height: 32px; padding: 0 14px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; font-weight: 700; font-size: 12px; cursor: pointer; }
 
+/* 769–900px: index.css gives the shell 20px padding; keep the same room under
+   the last control for the floating support launcher as on phones and desktop. */
+@media (max-width: 900px) {
+  .admin-page-grid .admin-main { padding-bottom: 88px !important; }
+}
+
 /* Compact admin shell on phones only. Larger layouts retain their existing spacing. */
 @media (max-width: 767px) {
-  .admin-page-grid .admin-main { padding: 12px !important; }
+  /* 88px at the bottom: the floating support launcher (bottom 24 + 50px)
+     must never sit on the last button of a page («Отклонить», «Проверить и зачислить»). */
+  .admin-page-grid .admin-main { padding: 12px 12px 88px !important; }
   .admin-main > header { margin-bottom: 10px !important; min-height: 40px !important; }
   .admin-main > header .admin-mobile-menu-btn { min-height: 40px; min-width: 40px; align-items: center; justify-content: center; }
   .admin-main h1 { font-size: 19px !important; margin-top: 0 !important; margin-bottom: 7px !important; }
-}
-
-/* Card «Балансы»: three columns on a desktop; on a phone each asset is one block
- * with its exact available and reserved values (no rounding, nothing hidden). */
-.admin-table-scroll { min-width: 0; }
-.admin-balance-table { min-width: 0; table-layout: auto; }
-.admin-balance-table th[scope=row] { font-weight: 700; }
-.admin-balance-table td.mono { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-@media (max-width: 700px) {
-  .admin-balance-table, .admin-balance-table tbody, .admin-balance-table tr { display: block; width: 100%; }
-  .admin-balance-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .admin-balance-table tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .admin-balance-table tr:last-child { border-bottom: 0; }
-  .admin-balance-table th, .admin-balance-table td { display: grid; grid-template-columns: minmax(84px, 92px) minmax(0, 1fr); gap: 8px; height: auto; padding: 2px 0; border: 0; line-height: 1.4; text-align: left; }
-  .admin-balance-table th[scope=row] { grid-template-columns: minmax(0, 1fr); font-size: 13px; }
-  .admin-balance-table th[scope=row]::before { display: none; }
-  .admin-balance-table td::before { content: attr(data-label); color: var(--text-secondary); font-size: 12px; font-weight: 500; }
-  .admin-balance-table td.mono { font-size: 12.5px; }
 }
 
 /* Credit drawer: the visible viewport (keyboard, collapsing browser bars) with a 100dvh fallback;
@@ -214,14 +210,15 @@
 .admin-queue-filters-compact > button { flex: 0 0 auto; align-self: flex-end; min-height: 38px; }
 .admin-audit-filters-compact { grid-template-columns: minmax(0, 1fr) !important; }
 
-/* Profile tabs: a strip that marks where more tabs are; the selected tab is scrolled into view. */
+/* Profile tabs: a strip that marks where more tabs are; the selected tab is scrolled inside the strip (AdminUserDetailPage). */
 .admin-tabs-wrap { position: relative; min-width: 0; }
 .admin-tabs-wrap::before, .admin-tabs-wrap::after { content: ''; position: absolute; top: 16px; bottom: 16px; width: 36px; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 1; }
 .admin-tabs-wrap::before { left: 0; background: linear-gradient(to right, var(--bg) 35%, transparent); }
 .admin-tabs-wrap::after { right: 0; background: linear-gradient(to left, var(--bg) 35%, transparent); }
 .admin-tabs-wrap[data-more~="left"]::before, .admin-tabs-wrap[data-more~="right"]::after { opacity: 1; }
-.admin-tabs { scrollbar-width: thin; scroll-snap-type: x proximity; scroll-padding: 0 24px; -webkit-overflow-scrolling: touch; }
-.admin-tabs button { scroll-snap-align: start; white-space: nowrap; }
+/* No scroll-snap: it would re-snap the strip after AdminUserDetailPage scrolls the selected tab into it. */
+.admin-tabs { scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.admin-tabs button { white-space: nowrap; }
 @media (max-width: 767px) { .admin-tabs { padding-right: 24px; } .admin-tabs-wrap::after { width: 48px; } }
 
 /* KYC queue on a phone: the chosen client is unmistakable above the review card. */

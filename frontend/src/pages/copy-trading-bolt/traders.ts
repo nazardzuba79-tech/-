@@ -260,11 +260,13 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-/** A real running total never lands on a round number. Adds a small,
- * deterministic, once-a-day offset so the figure reads as live rather
- * than as a marketing rounding — the underlying model value is unchanged. */
-function dailyJitter(id: string, magnitude: number): number {
-  const seed = hashId(id) + dayIndex() * 97;
+/** Owner-approved static catalogue snapshot. Preserve the exact displayed
+ * offset from 17 October 2026, without inventing any later daily movement.
+ * Featured strategies use their API follower ledger, never this offset. */
+export const CATALOGUE_PROFIT_AS_OF = '2026-10-17';
+function catalogueProfitOffset(id: string, magnitude: number): number {
+  const snapshotDay = Date.parse(`${CATALOGUE_PROFIT_AS_OF}T00:00:00Z`) / 86_400_000;
+  const seed = hashId(id) + snapshotDay * 97;
   return Math.round((seededRandom(seed) * 2 - 1) * magnitude);
 }
 
@@ -277,7 +279,7 @@ export function getCopierProfit(trader: Trader, period: Period = '30D'): number 
   // Today's AUM already contains the gain, so the capital that earned it
   // is aum / (1 + roi) — using aum directly would overstate the profit.
   const base = trader.aum / (1 + roi);
-  return Math.round(base * roi) + dailyJitter(trader.id + period, 60);
+  return Math.round(base * roi) + catalogueProfitOffset(trader.id + period, 60);
 }
 
 /** Always the fee applied to the copier profit above — never a separate

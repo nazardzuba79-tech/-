@@ -455,8 +455,11 @@ async function cfdBiquoteQuotes(){
     const row=raw?.[providerSymbol],price=cfdPositive(row?.mid);if(price===null)continue;
     const at=typeof row?.timestamp==="string"&&!/^\d+(?:\.\d+)?$/.test(row.timestamp)?Date.parse(row.timestamp):cfdEpochMs(row?.timestamp);
     const change=Number(row?.dayDiffPercent);
+    // The provider's own bid and ask beside the mid (display only), as a sane pair or not at all.
+    const bid=cfdPositive(row?.bid),ask=cfdPositive(row?.ask);
     out.set(symbol,{symbol,name:CFD_NAMES[symbol]??symbol,price:String(price),
       ...(Number.isFinite(change)?{changePercent24h:String(change)}:{}),
+      ...(bid!==null&&ask!==null&&ask>=bid?{bid:String(bid),ask:String(ask)}:{}),
       status:row?.marketState==="closed"?"market_closed":row?.stale===true?"stale":"sampled",
       stale:row?.stale===true,marketClosed:row?.marketState==="closed",displayOnly:true,executionAllowed:false,
       provider:"biquote",providerSymbol,providerTimestamp:Number.isFinite(at)?at:null,fetchedAt:now,

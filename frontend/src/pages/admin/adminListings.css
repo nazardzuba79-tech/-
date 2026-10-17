@@ -103,19 +103,20 @@
   .listing-settings-details summary span { display: block; margin: 4px 0 0; }
 }
 
-/* Phone form (AdminListingsPage, ≤767px): section jumps on top, the actions pinned to the bottom
- * with their own space reserved, compact inner padding. «Сохранить черновик» and «Опубликовать»
- * stay separate buttons with the same handlers and confirmation. */
+/* Phone form (AdminListingsPage, ≤767px): section jumps on top, the actions in one block with
+ * the error and the unsaved-draft note, compact inner padding. «Сохранить черновик» and
+ * «Опубликовать» stay separate buttons with the same handlers and confirmation. The block is
+ * not pinned: the support launcher (z-index 998) would sit on a bar at the bottom; the 88px
+ * at the end of the admin page (adminConsole.css) lets the last button scroll clear of it. */
 .listing-section-nav { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; margin: -4px 0 0; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
 .admin-listings .listing-section-nav button { flex: none; min-height: 36px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; }
 #listing-section-main, #listing-section-movement, #listing-section-stages, #listing-section-advanced, #listing-section-preview { scroll-margin-top: 12px; }
-.listing-form-compact { padding: 12px; padding-bottom: 76px; }
+.listing-form-compact { padding: 12px; }
 .listing-form-compact .listing-movement { padding: 12px 10px; gap: 14px; }
 .listing-form-compact .listing-movement .listing-grid { gap: 12px 14px; }
 .listing-form-compact .listing-stage { padding: 10px; }
 .listing-actions-dock { display: grid; gap: 14px; min-width: 0; }
-.listing-form-compact .listing-actions-dock { position: sticky; bottom: 0; z-index: 3; margin: 0 -12px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); gap: 8px; background: var(--panel); border-top: 1px solid var(--border); box-shadow: 0 -8px 16px -12px rgba(16, 24, 40, .25); }
+.listing-form-compact .listing-actions-dock { gap: 8px; }
 .listing-form-compact .listing-actions-dock > p { margin: 0; }
 .listing-form-compact .listing-buttons button { min-height: 44px; flex: 1 1 auto; }
 .listing-form-compact .listing-buttons .listing-primary { flex: 1 1 100%; }
-.listing-form-compact :is(input, select, textarea) { scroll-margin-bottom: 96px; }

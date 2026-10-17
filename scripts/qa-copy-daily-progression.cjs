@@ -109,7 +109,7 @@ const profileFacts = () => {
   const note = panel && panel.querySelector('.trades-hidden-note');
   return {
     name: text(page.querySelector('.trader-profile-hero h1')),
-    range: text(page.querySelector('.profile-period-range')),
+    range: text(page.querySelector('.profile-performance-chart .profile-period-range')),
     roiReadout: text(page.querySelector('.profile-performance-chart .chart-readouts')),
     tabs: [...page.querySelectorAll('.profile-primary-tabs button')].map(b => b.textContent.trim()),
     panelText: panel ? panel.textContent.replace(/\s+/g, ' ').trim() : null,

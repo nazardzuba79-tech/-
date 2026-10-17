@@ -21,6 +21,18 @@ export function formatCfdPrice(value:string|number|null,symbol:string):string{
   return price.toLocaleString('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits});
 }
 
+const chartFormatters = new Map<string, (price: number) => string>();
+/** One stable axis formatter per instrument (the chart re-applies a formatter only when its identity changes). */
+export function cfdChartPriceFormatter(symbol: string): (price: number) => string {
+  let format = chartFormatters.get(symbol);
+  if (!format) {
+    const digits = CFD_DECIMALS[symbol] ?? 5;
+    format = (price: number) => (Number.isFinite(price) ? price.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false }) : '');
+    chartFormatters.set(symbol, format);
+  }
+  return format;
+}
+
 export function formatCfdAsOf(value:number|null|undefined):string{
   if(typeof value!=='number'||!Number.isFinite(value)||value<=0)return '';
   const d=new Date(value);if(Number.isNaN(d.getTime()))return '';

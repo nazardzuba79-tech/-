@@ -1,4 +1,4 @@
-import { contractFacts, fundingCountdown } from '../contractDetails';
+import { contractFacts, fundingCountdown, fundingPercent, voltexFundingRates } from '../contractDetails';
 import type { LiveQuote } from '../liveMarketTypes';
 
 /** The reference quote as the store holds it; every figure a real number so the fallbacks below are exercised by removing them. */
@@ -23,14 +23,15 @@ describe('contractFacts', () => {
   });
 
   it('formats the header figures the way the header does', () => {
-    const facts = contractFacts(quote(), { fundingIntervalHours: 8, maxLeverage: 100 }, null);
+    const facts = contractFacts(quote(), { fundingIntervalHours: 8, maxLeverage: 100, fundingCashflow: { long: '-0.0001', short: '0.0004' } }, null);
     expect(facts).toMatchObject({
       perpetual: true,
       indexPrice: '83,860.40',
       markPrice: '83,873.75',
       openInterest: { value: '30,132.2945', unit: 'BTC' },
       turnover24h: { value: '10,930,000,000.00', unit: 'USDT' },
-      fundingRate: { value: '0.0100%', negative: false },
+      // VOLTEX's own rates from the config, never the quote's provider funding (0.0001 here).
+      funding: { long: { value: '\u22120.01%', negative: true }, short: { value: '+0.04%', negative: false } },
       settleAsset: 'USDT',
       maxLeverage: '100x',
     });
@@ -46,9 +47,17 @@ describe('contractFacts', () => {
     expect(contractFacts(quote({ openInterest: null, openInterestValue: null }), null, null).openInterest).toBeNull();
   });
 
-  it('flags negative funding and keeps four decimals', () => {
-    expect(contractFacts(quote({ fundingRate: -0.000375 }), null, null).fundingRate).toEqual({ value: '-0.0375%', negative: true });
-    expect(contractFacts(quote({ fundingRate: null }), null, null).fundingRate).toBeNull();
+  it('funding is VOLTEX\'s fixed rates by side, signed, two to four decimals; unknown until the config says', () => {
+    expect(voltexFundingRates({ fundingCashflow: { long: '-0.0001', short: '0.0004' } })).toEqual({
+      long: { value: '\u22120.01%', negative: true }, short: { value: '+0.04%', negative: false },
+    });
+    expect(fundingPercent('-0.000375')).toEqual({ value: '\u22120.0375%', negative: true });
+    expect(fundingPercent('0')).toEqual({ value: '0.00%', negative: false });
+    expect(fundingPercent('abc')).toBeNull();
+    expect(voltexFundingRates({})).toBeNull();
+    expect(voltexFundingRates(null)).toBeNull();
+    // A provider's live funding on the quote never becomes the shown rate.
+    expect(contractFacts(quote({ fundingRate: 0.0075 }), null, null).funding).toBeNull();
   });
 
   it('shows the engine limits in base units when the engine publishes them', () => {

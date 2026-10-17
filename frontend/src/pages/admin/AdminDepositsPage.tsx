@@ -12,11 +12,11 @@ import { CopyValue, RailLabel } from './AdminPrimitives';
 import { Skeleton } from '../../components/Skeleton';
 import { CreditDepositDrawer } from './CreditDepositDrawer';
 import { DepositCopiesSection } from './DepositCopiesSection';
-import { useAdminCompact } from './useAdminCompact';
 import {
   adminDepositApi, AdminDepositApiError, STATE_LABEL, IGNORE_REASON_LABEL,
   type CreditedBatch, type DepositPackage, type DepositQueue, type DepositQueueRow, type IgnoreReason, type WatcherStatus,
 } from './adminDepositApi';
+import './adminDeposits.css';
 
 type Tab = 'unattributed' | 'topup' | 'network' | 'ready' | 'review' | 'credited' | 'ignored';
 
@@ -29,6 +29,15 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'credited', label: 'Зачисленные' },
   { key: 'ignored', label: 'Игнорированные' },
 ];
+const TAB_LABEL = Object.fromEntries(TABS.map(t => [t.key, t.label])) as Record<Tab, string>;
+// Owner (2026-10-15): the queue reads by what the admin does next, not in pipeline order.
+const TAB_GROUPS: { key: 'action' | 'waiting' | 'archive'; label: string; tabs: Tab[] }[] = [
+  { key: 'action', label: 'Нужно действие', tabs: ['ready', 'unattributed', 'review'] },
+  { key: 'waiting', label: 'Ожидание', tabs: ['topup', 'network'] },
+  { key: 'archive', label: 'Архив', tabs: ['credited', 'ignored'] },
+];
+// Without a requested tab the page opens on the first list that has work in it.
+const FIRST_WORK: Tab[] = ['ready', 'unattributed', 'review', 'topup', 'network'];
 const FOCUS_FRESHNESS_MS = 30_000;
 const READ_TIMEOUT_MS = 15_000;
 const STATE_TAB: Record<string, Tab> = { UNATTRIBUTED: 'unattributed', AWAITING_TOPUP: 'topup', AWAITING_CONFIRMATIONS: 'network', READY: 'ready', NEEDS_REVIEW: 'review', CREDITED: 'credited', IGNORED: 'ignored' };
@@ -56,9 +65,6 @@ export function AdminDepositsPage() {
 
 function AdminDepositsSession({ session }: { session: string }) {
   const { hash, search } = useLocation();
-  // Phones: the queue tabs come right after the status line; the watcher's
-  // details and «Проверить TXID» open on demand. Same data, same handlers.
-  const compact = useAdminCompact();
   const params = new URLSearchParams(search);
   const requestedTab = STATE_TAB[params.get('state') ?? ''];
   const userFilter = params.get('userId') ?? '';
@@ -67,6 +73,8 @@ function AdminDepositsSession({ session }: { session: string }) {
   const [readBusy, setReadBusy] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [tab, setTab] = useState<Tab>(requestedTab ?? (hash === '#unattributed' ? 'unattributed' : 'ready'));
+  const tabChosen = useRef(!!requestedTab || hash === '#unattributed');
+  const chooseTab = (next: Tab) => { tabChosen.current = true; setTab(next); };
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [crediting, setCrediting] = useState<DepositPackage | null>(null);
@@ -165,9 +173,9 @@ function AdminDepositsSession({ session }: { session: string }) {
   }, [view, reload, cancelRead]);
 
   useEffect(() => {
-    if (hash === '#unattributed') { setTab('unattributed'); setView('queue'); }
+    if (hash === '#unattributed') { tabChosen.current = true; setTab('unattributed'); setView('queue'); }
     if (hash === '#copies') { setView('copies'); setCopiesOpened(true); }
-    if (requestedTab) { setTab(requestedTab); setView('queue'); }
+    if (requestedTab) { tabChosen.current = true; setTab(requestedTab); setView('queue'); }
   }, [hash, requestedTab]);
 
   const lists = useMemo(() => {
@@ -201,6 +209,12 @@ function AdminDepositsSession({ session }: { session: string }) {
     ignored: queue?.counts.IGNORED ?? lists.ignored.length,
   };
   const [ignoring, setIgnoring] = useState<DepositQueueRow | null>(null);
+  const firstWork = FIRST_WORK.find(key => (counts[key] ?? 0) > 0) ?? null;
+  useEffect(() => {
+    if (!queue || tabChosen.current) return;
+    tabChosen.current = true;
+    if (firstWork) setTab(firstWork);
+  }, [queue, firstWork]);
 
   async function restore(row: DepositQueueRow) {
     if (!window.confirm('Вернуть перевод в очередь «Непривязанные»? Баланс не изменится.')) return;
@@ -221,13 +235,21 @@ function AdminDepositsSession({ session }: { session: string }) {
     }
   }
 
+  const minimumUsd = queue?.minDepositUsd ?? DEPOSIT_MINIMUM_USD;
   return (
-    <div>
-      <h1 style={styles.title}>Пополнения</h1>
-      <p style={styles.hint}>
-        Зачисление — только вручную, пакетом: переводы одного пользователя в одном активе и одной сети суммируются.
-        Пакет становится доступным для проверки от {queue?.minDepositUsd ?? DEPOSIT_MINIMUM_USD} USD; ниже минимума зачислить нельзя.
-      </p>
+    <div className="dep-page">
+      {/* Owner (2026-10-15): the title, one short rule and the refresh share one header; every way of
+          finding a transfer sits in one card; the queue tabs are grouped by what the admin does next. */}
+      <div className="dep-heading">
+        <div className="dep-heading-text">
+          <h1 style={{ ...styles.title, marginBottom: 4 }}>Пополнения</h1>
+          <p className="dep-lede">Переводы одного пользователя в одном активе и сети складываются в пакет. Зачисление — вручную, от {minimumUsd} USD.</p>
+        </div>
+        {view === 'queue' && <div className="dep-refresh">
+          <span role="status">{updatedAt ? `Обновлено в ${new Date(updatedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : 'Данные ещё не загружены'}</span>
+          <button type="button" data-deposit-refresh disabled={readBusy} style={styles.neutralBtn} onClick={() => void reload()}>{readBusy ? 'Обновление…' : 'Обновить'}</button>
+        </div>}
+      </div>
       <div className="admin-user-tabs deposit-view-switch" role="tablist" aria-label="Раздел пополнений">
         <button type="button" role="tab" aria-selected={view === 'queue'} data-deposit-view="queue"
           className={view === 'queue' ? 'active' : undefined} onClick={() => openView('queue')}>Поступления</button>
@@ -236,34 +258,32 @@ function AdminDepositsSession({ session }: { session: string }) {
       </div>
       {copiesOpened && (
         <div hidden={view !== 'copies'}>
-          <DepositCopiesSection onOpenQueue={() => { openView('queue'); setTab('unattributed'); }} />
+          <DepositCopiesSection onOpenQueue={() => { openView('queue'); chooseTab('unattributed'); }} />
         </div>
       )}
 
-      {view === 'queue' && <div>
-      {error && <div role="alert" style={{ ...styles.errorBox, marginBottom: 12 }}>{error}</div>}
-      {message && <p role="status" style={{ ...styles.successBox, marginBottom: 12 }}>{message}</p>}
-      {loadError && <div role="alert" style={{ ...styles.errorBox, marginBottom: 12 }}>{loadError}{queue ? ' Показаны последние загруженные данные; они могут быть устаревшими.' : ''}</div>}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-        <button type="button" data-deposit-refresh disabled={readBusy} style={styles.neutralBtn} onClick={() => void reload()}>{readBusy ? 'Обновление…' : 'Обновить'}</button>
-        <span role="status" style={styles.hint}>{updatedAt ? `Обновлено: ${new Date(updatedAt).toLocaleTimeString('ru-RU')}` : 'Данные ещё не загружены'}</span>
-        {userFilter && <span style={styles.hint}>Пользователь: {userFilter}</span>}
-      </div>
+      {view === 'queue' && <div className="dep-queue">
+      {error && <div role="alert" style={styles.errorBox}>{error}</div>}
+      {message && <p role="status" style={{ ...styles.successBox, margin: 0 }}>{message}</p>}
+      {loadError && <div role="alert" style={styles.errorBox}>{loadError}{queue ? ' Показаны последние загруженные данные; они могут быть устаревшими.' : ''}</div>}
+      {userFilter && <p className="dep-filter">Только пользователь <span className="mono">{userFilter}</span></p>}
 
-      <WatcherPanel status={queue?.watcher ?? null} onChanged={changed} onError={setError} compact={compact} />
-      {compact
-        ? <details className="admin-disclosure" data-check-tx-disclosure>
-          <summary>Проверить TXID<span className="admin-disclosure-hint">вручную, по хэшу транзакции</span></summary>
-          <CheckTxForm onChecked={changed} compact />
-        </details>
-        : <CheckTxForm onChecked={changed} />}
+      <DepositTools status={queue?.watcher ?? null} onChanged={changed} onError={setError} />
 
-      <div className="admin-user-tabs" role="tablist" aria-label="Очередь пополнений" style={{ margin: '16px 0 10px' }}>
-        {TABS.map((t) => (
-          <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} data-deposit-tab={t.key}
-            className={tab === t.key ? 'active' : undefined} onClick={() => setTab(t.key)}>
-            {t.label}<span className="admin-user-tab-count">{counts[t.key] ?? '—'}</span>
-          </button>
+      <div className="dep-tabs" role="tablist" aria-label="Очередь пополнений">
+        {TAB_GROUPS.map((group) => (
+          <div key={group.key} className="dep-tab-group" role="presentation" data-tab-group={group.key}>
+            <span className="dep-tab-group-label" aria-hidden="true">{group.label}</span>
+            <div className="dep-tab-group-items" role="presentation">
+              {group.tabs.map((key) => (
+                <button key={key} type="button" role="tab" aria-selected={tab === key} data-deposit-tab={key}
+                  data-attention={(group.key === 'action' && !!counts[key]) || undefined}
+                  className={tab === key ? 'active' : undefined} onClick={() => chooseTab(key)}>
+                  {TAB_LABEL[key]}<span className="admin-user-tab-count">{counts[key] ?? '—'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
       {queue?.counts.truncated && <p role="alert" style={styles.errorBox}>Загружена только часть очереди из {queue.counts.uncreditedTotal} переводов. Полные количества неизвестны; отсутствие записи в этом списке не означает отсутствие перевода.</p>}
@@ -276,7 +296,7 @@ function AdminDepositsSession({ session }: { session: string }) {
         </section>
       )}
       {queue && (tab === 'topup' || tab === 'ready') && (
-        <section data-deposit-section={tab} style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
+        <section data-deposit-section={tab} className="dep-cards">
           {(tab === 'topup' ? lists.topup : lists.ready).map((p) => <PackageCard key={p.key} pkg={p} onCredit={() => setCrediting(p)} />)}
           {(tab === 'topup' ? lists.topup : lists.ready).length === 0 && <Empty partial={queue?.counts.truncated} text={tab === 'topup' ? 'Нет пакетов, ожидающих доплаты.' : 'Нет пакетов, готовых к проверке.'} />}
         </section>
@@ -288,27 +308,25 @@ function AdminDepositsSession({ session }: { session: string }) {
         </section>
       )}
       {queue && tab === 'review' && (
-        <section data-deposit-section="review" style={{ display: 'grid', gap: 12 }}>
+        <section data-deposit-section="review" className="dep-stack">
           {lists.reviewPackages.map((p) => <PackageCard key={p.key} pkg={p} onCredit={() => setCrediting(p)} />)}
           {lists.review.map((r) => <TransferRow key={r.id} row={r} onAttribute={attribute} />)}
           {lists.review.length + lists.reviewPackages.length === 0 && <Empty partial={queue?.counts.truncated} text="Нет переводов, требующих уточнения." />}
         </section>
       )}
       {queue && tab === 'credited' && (
-        <section data-deposit-section="credited" style={{ display: 'grid', gap: 12 }}>
+        <section data-deposit-section="credited" className="dep-stack">
           {lists.batches.length === 0 && lists.credited.length === 0 && <Empty partial={queue?.counts.truncated} text="Зачисленных пополнений пока нет." />}
-          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
+          {lists.batches.length > 0 && <div className="dep-cards">
             {lists.batches.map((b) => <CreditedBatchCard key={b.id} batch={b} />)}
-          </div>
+          </div>}
           {/* Transfers credited before packages existed (no batch). */}
           {lists.credited.filter((r) => !r.batchId).map((r) => <TransferRow key={r.id} row={r} />)}
         </section>
       )}
       {queue && tab === 'ignored' && (
         <section data-deposit-section="ignored">
-          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 8px' }}>
-            Не являются депозитами клиентов. Записи сохранены, в накопления и зачисления не входят.
-          </p>
+          <p className="dep-muted" style={{ margin: '0 0 8px' }}>Не депозиты клиентов: в накопления и зачисления не входят. Записи сохранены.</p>
           {lists.ignored.length === 0 && <Empty partial={queue?.counts.truncated} text="Игнорированных переводов нет." />}
           {lists.ignored.map((r) => <IgnoredRow key={r.id} row={r} onRestore={() => restore(r)} />)}
         </section>
@@ -318,8 +336,6 @@ function AdminDepositsSession({ session }: { session: string }) {
           setIgnoring(null); await changed(); setMessage('Перевод перенесён в «Игнорированные». Запись сохранена, баланс не изменён.');
         }} />
       )}
-
-      <OtherNetworksFeed onDone={changed} />
       </div>}
 
       {crediting && (
@@ -340,43 +356,44 @@ function Empty({ text, partial }: { text: string; partial?: boolean }) {
   return <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{partial ? 'В загруженной части очереди подходящих записей нет.' : text}</p>;
 }
 
-function Line({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 13, padding: '3px 0' }}>
-      <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
-      <span style={{ textAlign: 'right', minWidth: 0, overflowWrap: 'anywhere' }}>{children}</span>
-    </div>
-  );
-}
-
-/** The accumulation card, exactly the fields the admin decides on. */
+/** The accumulation card, exactly the fields the admin decides on: who, how much, how far from the
+ * minimum, which transfers. Owner (2026-10-15): no «Пользователь / Статус / Зачислить» labels, the
+ * status is a chip and «осталось» shows only while the minimum is not reached. */
 function PackageCard({ pkg: p, onCredit }: { pkg: DepositPackage; onCredit: () => void }) {
   const ready = p.state === 'READY';
+  const tone = ready ? 'ok' : p.state === 'NEEDS_REVIEW' ? 'bad' : 'wait';
+  const share = p.usdValue !== null && Number(p.minDepositUsd) > 0 ? Number(p.usdValue) / Number(p.minDepositUsd) : NaN;
   return (
-    <article data-package={p.key} data-package-state={p.state} style={{ ...styles.card, display: 'grid', gap: 2 }}>
-      <Line label="Пользователь">{p.userEmail ?? p.userId}</Line>
-      <Line label="Актив / сеть">{p.asset} / {network(p.chain)}</Line>
-      <Line label="Подтверждённые переводы"><span className="mono" data-package-parts>{p.transfers.map((t) => t.amount).join(' + ')} {p.asset}</span></Line>
-      <ul data-package-transfer-list style={{ listStyle: 'none', margin: '2px 0 4px', padding: 0, display: 'grid', gap: 4 }}>
-        {p.transfers.map((t) => (
-          <li key={t.id} data-package-transfer={t.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 11.5, padding: '4px 8px', borderRadius: 6, background: 'var(--panel-alt)', minWidth: 0 }}>
-            <span style={{ minWidth: 0 }}>
-              <span className="mono" title={t.txHash} style={{ display: 'block', overflowWrap: 'anywhere', color: 'var(--text-secondary)' }}>{t.txHash.slice(0, 8)}…{t.txHash.slice(-6)}</span>
-              <span style={{ color: 'var(--text-tertiary)' }}>{t.blockTimestamp ? when(t.blockTimestamp) : 'время блока неизвестно'} · подтв. {t.confirmations}/{t.minConfirmations}{t.finalized ? ' ✓' : ''} · подтверждён сетью</span>
-            </span>
-            <strong className="mono" style={{ whiteSpace: 'nowrap' }}>{t.amount} {p.asset}</strong>
-          </li>
-        ))}
-      </ul>
-      <Line label="Всего накоплено"><strong className="mono" data-package-total>{p.total} {p.asset}</strong></Line>
-      {p.unconfirmedCount > 0 && <Line label="Ещё не подтверждено сетью"><span className="mono">{p.unconfirmedTotal} {p.asset} ({p.unconfirmedCount})</span></Line>}
-      <Line label="Минимум">{p.minDepositUsd} USD</Line>
-      {p.remaining !== null && <Line label="Осталось доплатить"><span className="mono" data-package-remaining>{p.remaining} {p.asset}</span></Line>}
-      {!p.minimumReached && p.remaining === null && p.remainingUsd !== null && <Line label="Осталось доплатить"><span className="mono">≈ {p.remainingUsd} USD</span></Line>}
-      <Line label="Статус"><span data-package-status>{STATE_LABEL[p.state]}</span></Line>
+    <article data-package={p.key} data-package-state={p.state} className="dep-card">
+      <div className="dep-card-head">
+        <div className="dep-card-who"><strong className="admin-user-email">{p.userEmail ?? p.userId}</strong><span>{p.asset} / {network(p.chain)}</span></div>
+        <span data-package-status className={`dep-chip dep-chip-${tone}`}>{STATE_LABEL[p.state]}</span>
+      </div>
+      <div className="dep-card-total"><span>Всего накоплено</span><strong className="mono" data-package-total>{p.total} {p.asset}</strong></div>
+      {!ready && Number.isFinite(share) && <div className="dep-progress" aria-hidden="true"><i style={{ width: `${Math.min(100, Math.max(0, share * 100))}%` }} /></div>}
+      <div className="dep-card-min">
+        <span>Минимум {p.minDepositUsd} USD</span>
+        {!p.minimumReached && p.remaining !== null && <span>Осталось доплатить <b className="mono" data-package-remaining>{p.remaining} {p.asset}</b></span>}
+        {!p.minimumReached && p.remaining === null && p.remainingUsd !== null && <span>Осталось доплатить <b className="mono">≈ {p.remainingUsd} USD</b></span>}
+      </div>
+      {p.unconfirmedCount > 0 && <p className="dep-card-note">Ещё не подтверждено сетью: <span className="mono">{p.unconfirmedTotal} {p.asset} ({p.unconfirmedCount})</span></p>}
+      <div className="dep-card-parts">
+        {p.transfers.length > 1 && <div className="dep-card-parts-head">Переводы: <span className="mono" data-package-parts>{p.transfers.map((t) => t.amount).join(' + ')} {p.asset}</span></div>}
+        <ul data-package-transfer-list>
+          {p.transfers.map((t) => (
+            <li key={t.id} data-package-transfer={t.id}>
+              <span className="dep-card-tx">
+                <span className="mono" title={t.txHash}>{t.txHash.slice(0, 8)}…{t.txHash.slice(-6)}</span>
+                <small>{t.blockTimestamp ? when(t.blockTimestamp) : 'время блока неизвестно'} · подтв. {t.confirmations}/{t.minConfirmations}{t.finalized ? ' ✓' : ''}</small>
+              </span>
+              <strong className="mono">{t.amount} {p.asset}</strong>
+            </li>
+          ))}
+        </ul>
+      </div>
       {ready
-        ? <button type="button" data-open-package={p.key} onClick={onCredit} style={{ ...styles.approveBtn, marginTop: 8 }}>Проверить и зачислить {p.total} {p.asset}</button>
-        : <Line label="Зачислить"><span data-package-credit="unavailable" style={{ color: 'var(--text-tertiary)' }}>недоступно</span></Line>}
+        ? <button type="button" data-open-package={p.key} onClick={onCredit} style={styles.approveBtn}>Проверить и зачислить {p.total} {p.asset}</button>
+        : <p className="dep-card-locked" data-package-credit="unavailable">{p.state === 'AWAITING_TOPUP' ? 'Зачисление недоступно: сумма ниже минимума' : 'Зачисление недоступно'}</p>}
     </article>
   );
 }
@@ -532,13 +549,13 @@ function IgnoredRow({ row, onRestore }: { row: DepositQueueRow; onRestore: () =>
 
 function CreditedBatchCard({ batch: b }: { batch: CreditedBatch }) {
   return (
-    <article data-credited-batch={b.id} style={{ ...styles.card, display: 'grid', gap: 2 }}>
-      <Line label="Пользователь">{b.userEmail ?? b.userId}</Line>
-      <Line label="Актив / сеть">{b.asset} / {network(b.chain)}</Line>
-      <Line label="Переводы"><span className="mono">{b.transfers.map((t) => t.amount).join(' + ')} {b.asset}</span></Line>
-      <Line label="Зачислено"><strong className="mono" style={{ color: 'var(--buy)' }}>{b.totalAmount} {b.asset}</strong></Line>
-      <Line label="Дата">{when(b.createdAt)}</Line>
-      <Line label="Статус">{STATE_LABEL.CREDITED}</Line>
+    <article data-credited-batch={b.id} className="dep-card">
+      <div className="dep-card-head">
+        <div className="dep-card-who"><strong className="admin-user-email">{b.userEmail ?? b.userId}</strong><span>{b.asset} / {network(b.chain)} · {when(b.createdAt)}</span></div>
+        <span className="dep-chip dep-chip-ok">{STATE_LABEL.CREDITED}</span>
+      </div>
+      <div className="dep-card-total"><span>Зачислено</span><strong className="mono" style={{ color: 'var(--buy)' }}>{b.totalAmount} {b.asset}</strong></div>
+      {b.transfers.length > 1 && <div className="dep-card-parts-head">Переводы: <span className="mono">{b.transfers.map((t) => t.amount).join(' + ')} {b.asset}</span></div>}
     </article>
   );
 }
@@ -567,109 +584,86 @@ function TransferRow({ row, onAttribute }: { row: DepositQueueRow; onAttribute?:
   );
 }
 
-function WatcherPanel({ status, onChanged, onError, compact = false }: { status: WatcherStatus | null; onChanged: () => Promise<void>; onError: (m: string | null) => void; compact?: boolean }) {
-  const [busy, setBusy] = useState<'run' | 'toggle' | null>(null);
-  const [result, setResult] = useState<string | null>(null);
-  if (!status) return null;
-  const provider = status.providerStatus?.startsWith('RATE_LIMITED') ? 'Лимит запросов провайдера' : status.providerStatus === 'UNAVAILABLE' ? 'Провайдер недоступен'
-    : status.providerStatus === 'ERROR' ? 'Ошибка' : status.providerStatus === 'NOT_CONFIGURED' ? 'Сеть не настроена' : status.providerStatus === 'OK' ? 'В норме' : '—';
-  const lag = status.cursors.length ? Math.max(...status.cursors.map((c) => c.lagMs)) : null;
-  const backlog = status.cursors.some((c) => c.windowInProgress) || !!status.lastRunSummary?.backlog;
-  const schedule = `при первом открытии после ${status.policy.dayStart}, в ${status.policy.slots.join(', ')} (Киев)`;
-  const scannedThrough = status.cursors.length ? when(status.cursors.reduce((m, c) => (c.scannedThrough < m ? c.scannedThrough : m), status.cursors[0].scannedThrough)) : 'ещё не запускалось';
-  const lagText = `${lag === null ? '—' : lagLabel(lag)}${backlog ? ' · есть очередь' : ''}`;
-  const runButton = <button type="button" data-watcher-run disabled={busy !== null || status.running} style={styles.neutralBtn} onClick={async () => {
-    setBusy('run'); onError(null); setResult(null);
-    try {
-      const r = await adminDepositApi.runWatcher();
-      setResult(r.skipped === 'LEASE_HELD' ? 'Проверка уже выполняется.' : r.ok ? `Проверка выполнена. Новых переводов: ${r.newTransfers}.` : `Проверка не завершена: ${r.error ?? 'ошибка провайдера'}.`);
-    } catch (err) { onError(err instanceof AdminDepositApiError ? err.message : 'Не удалось запустить проверку.'); }
-    finally { setBusy(null); await onChanged(); }
-  }}>{busy === 'run' ? 'Проверка…' : 'Проверить новые поступления'}</button>;
-  const toggleButton = <button type="button" data-watcher-toggle disabled={busy !== null} style={styles.neutralBtn} onClick={async () => {
-    if (!window.confirm(status.enabled ? 'Выключить автоматическую проверку? Очередь и прогресс сохранятся.' : `Включить автоматическую проверку (${schedule}; ночью ${status.policy.nightStart}–${status.policy.dayStart} — нет)? Она только находит переводы: без уведомлений и без зачисления.`)) return;
-    setBusy('toggle'); onError(null);
-    try { await adminDepositApi.setWatcherEnabled(!status.enabled); }
-    catch (err) { onError(err instanceof AdminDepositApiError ? err.message : 'Не удалось изменить режим.'); }
-    finally { setBusy(null); await onChanged(); }
-  }}>{status.enabled ? 'Выключить автопроверку' : 'Включить автопроверку'}</button>;
-  const scheduleNote = <p data-watcher-schedule style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '6px 0 0' }}>
-    Ночью {status.policy.nightStart}–{status.policy.dayStart} автоматическая проверка не выполняется. Уведомлений нет — ручная проверка доступна всегда.
-  </p>;
-  const runError = status.lastRunSummary?.error && <p role="alert" style={{ ...styles.errorBox, marginTop: 8 }}>Последняя проверка не завершена: {status.lastRunSummary.error}. Сохранённые переводы доступны.</p>;
-  const runResult = result && <p role="status" style={{ fontSize: 12, marginTop: 8 }}>{result}</p>;
-  if (compact) {
-    // One status line that never hides a problem: the last success, the
-    // provider, the lag and anything unverified stay in view; the schedule,
-    // the cursor and the mode switch open under «Подробности».
-    const attention = status.providerStatus !== 'OK' || backlog || status.unverifiedOrUnfinalized > 0 || !status.enabled;
-    return (
-      <section data-watcher data-watcher-compact style={{ ...styles.card, marginBottom: 12, padding: 12, gap: 6 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-          <strong style={{ fontSize: 13.5 }}>Наблюдение USDT / TRC20</strong>
-          <span data-watcher-enabled={status.enabled ? 'on' : 'off'} style={{ fontSize: 12, fontWeight: 700, color: status.enabled ? 'var(--buy)' : 'var(--sell)' }}>
-            {status.enabled ? 'Автоматически' : 'Автопроверка выключена'}
-          </span>
-        </div>
-        <p data-watcher-summary style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: attention ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-          Последняя успешная: <b>{when(status.lastSuccessAt)}</b> · Провайдер: <b style={{ color: status.providerStatus === 'OK' ? 'inherit' : 'var(--sell)' }}>{provider}</b> · Отставание: <b style={{ color: backlog ? 'var(--sell)' : 'inherit' }}>{lagText}</b>
-          {status.unverifiedOrUnfinalized > 0 && <> · <b style={{ color: 'var(--sell)' }}>Не проверено: {status.unverifiedOrUnfinalized}</b></>}
-        </p>
-        {runError}
-        {runResult}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 2 }}>{runButton}</div>
-        <details className="admin-disclosure admin-disclosure-plain" data-watcher-details>
-          <summary>Подробности и расписание</summary>
-          <div style={{ display: 'grid', rowGap: 2, marginTop: 4 }}>
-            <Line label="Последняя успешная">{when(status.lastSuccessAt)}</Line>
-            <Line label="Следующая автоматическая">{status.enabled ? when(status.nextScheduledRunAt) : '—'}</Line>
-            <Line label="Провайдер">{provider}</Line>
-            <Line label="Проверено до">{scannedThrough}</Line>
-            <Line label="Отставание">{lagText}</Line>
-            <Line label="Не проверено / не окончательно">{status.unverifiedOrUnfinalized}</Line>
-            <Line label="Режим">{status.enabled ? `Автоматически: ${schedule}` : 'Автоматическая проверка выключена'}</Line>
-          </div>
-          {scheduleNote}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>{toggleButton}</div>
-        </details>
-      </section>
-    );
-  }
+/** Owner (2026-10-15): every way a transfer is found, in one card — the USDT / TRC20 watcher, then the
+ * manual checks (one TXID, the other networks' feeds). Problems stay in sight; the schedule waits
+ * behind «Расписание» and empty «—» lines are not shown. */
+function DepositTools({ status, onChanged, onError }: { status: WatcherStatus | null; onChanged: () => Promise<void>; onError: (m: string | null) => void }) {
+  const [manualOpen, setManualOpen] = useState(() => !(typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px)').matches));
   return (
-    <section data-watcher style={{ ...styles.card, marginBottom: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <strong style={{ fontSize: 14 }}>Наблюдение USDT / TRC20</strong>
-        <span data-watcher-enabled={status.enabled ? 'on' : 'off'} style={{ fontSize: 12, fontWeight: 700, color: status.enabled ? 'var(--buy)' : 'var(--text-tertiary)' }}>
-          {status.enabled ? `Автоматически: ${schedule}` : 'Автоматическая проверка выключена'}
-        </span>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', columnGap: 24, rowGap: 2, marginTop: 8 }}>
-        <Line label="Последняя успешная">{when(status.lastSuccessAt)}</Line>
-        <Line label="Следующая автоматическая">{status.enabled ? when(status.nextScheduledRunAt) : '—'}</Line>
-        <Line label="Провайдер">{provider}</Line>
-        <Line label="Проверено до">{scannedThrough}</Line>
-        <Line label="Отставание">{lagText}</Line>
-        <Line label="Не проверено / не окончательно">{status.unverifiedOrUnfinalized}</Line>
-      </div>
-      {scheduleNote}
-      {runError}
-      {runResult}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-        {runButton}
-        {toggleButton}
-      </div>
+    <section className="dep-tools" aria-label="Проверка поступлений">
+      <WatcherPanel status={status} onChanged={onChanged} onError={onError} />
+      {/* Open on a desktop; folded on a phone, where the TXID form would push the queue a screen down. */}
+      <details className="dep-manual" open={manualOpen} onToggle={(e) => setManualOpen(e.currentTarget.open)}>
+        <summary className="dep-tools-title">Проверить вручную</summary>
+        <CheckTxForm onChecked={onChanged} />
+        <OtherNetworksFeed onDone={onChanged} />
+      </details>
     </section>
   );
 }
 
-function CheckTxForm({ onChecked, compact = false }: { onChecked: () => Promise<void>; compact?: boolean }) {
+function WatcherPanel({ status, onChanged, onError }: { status: WatcherStatus | null; onChanged: () => Promise<void>; onError: (m: string | null) => void }) {
+  const [busy, setBusy] = useState<'run' | 'toggle' | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  if (!status) return null;
+  const provider = status.providerStatus?.startsWith('RATE_LIMITED') ? 'Лимит запросов провайдера' : status.providerStatus === 'UNAVAILABLE' ? 'Провайдер недоступен'
+    : status.providerStatus === 'ERROR' ? 'Ошибка' : status.providerStatus === 'NOT_CONFIGURED' ? 'Сеть не настроена' : status.providerStatus === 'OK' ? 'В норме' : null;
+  const lag = status.cursors.length ? Math.max(...status.cursors.map((c) => c.lagMs)) : null;
+  const backlog = status.cursors.some((c) => c.windowInProgress) || !!status.lastRunSummary?.backlog;
+  const schedule = `при первом открытии после ${status.policy.dayStart}, в ${status.policy.slots.join(', ')} (Киев)`;
+  const scannedThrough = status.cursors.length ? status.cursors.reduce((m, c) => (c.scannedThrough < m ? c.scannedThrough : m), status.cursors[0].scannedThrough) : null;
+  return (
+    <div data-watcher className="dep-watcher">
+      <div className="dep-watcher-head">
+        <h2 className="dep-tools-title">Автопроверка USDT / TRC20</h2>
+        <span data-watcher-enabled={status.enabled ? 'on' : 'off'} className={`dep-chip ${status.enabled ? 'dep-chip-ok' : 'dep-chip-off'}`}>{status.enabled ? 'Включена' : 'Выключена'}</span>
+        {provider && provider !== 'В норме' && <span className="dep-chip dep-chip-bad">{provider}</span>}
+      </div>
+      <dl className="dep-facts">
+        <div><dt>Последняя</dt><dd>{status.lastSuccessAt ? when(status.lastSuccessAt) : 'ещё не было'}</dd></div>
+        {status.enabled && status.nextScheduledRunAt && <div><dt>Следующая</dt><dd>{when(status.nextScheduledRunAt)}</dd></div>}
+        {scannedThrough && <div><dt>Проверено до</dt><dd>{when(scannedThrough)}{lag !== null ? ` · отставание ${lagLabel(lag)}` : ''}{backlog ? ' · есть очередь' : ''}</dd></div>}
+        {!scannedThrough && backlog && <div><dt>Очередь</dt><dd>есть очередь</dd></div>}
+        {status.unverifiedOrUnfinalized > 0 && <div><dt>Не проверено / не окончательно</dt><dd>{status.unverifiedOrUnfinalized}</dd></div>}
+      </dl>
+      {status.lastRunSummary?.error && <p role="alert" style={styles.errorBox}>Последняя проверка не завершена: {status.lastRunSummary.error}. Сохранённые переводы доступны.</p>}
+      {result && <p role="status" className="dep-result">{result}</p>}
+      <div className="dep-actions">
+        <button type="button" data-watcher-run disabled={busy !== null || status.running} className="dep-btn-brand" onClick={async () => {
+          setBusy('run'); onError(null); setResult(null);
+          try {
+            const r = await adminDepositApi.runWatcher();
+            setResult(r.skipped === 'LEASE_HELD' ? 'Проверка уже выполняется.' : r.ok ? `Проверка выполнена. Новых переводов: ${r.newTransfers}.` : `Проверка не завершена: ${r.error ?? 'ошибка провайдера'}.`);
+          } catch (err) { onError(err instanceof AdminDepositApiError ? err.message : 'Не удалось запустить проверку.'); }
+          finally { setBusy(null); await onChanged(); }
+        }}>{busy === 'run' ? 'Проверка…' : 'Проверить новые поступления'}</button>
+        <button type="button" data-watcher-toggle disabled={busy !== null} style={styles.neutralBtn} onClick={async () => {
+          if (!window.confirm(status.enabled ? 'Выключить автоматическую проверку? Очередь и прогресс сохранятся.' : `Включить автоматическую проверку (${schedule}; ночью ${status.policy.nightStart}–${status.policy.dayStart} — нет)? Она только находит переводы: без уведомлений и без зачисления.`)) return;
+          setBusy('toggle'); onError(null);
+          try { await adminDepositApi.setWatcherEnabled(!status.enabled); }
+          catch (err) { onError(err instanceof AdminDepositApiError ? err.message : 'Не удалось изменить режим.'); }
+          finally { setBusy(null); await onChanged(); }
+        }}>{status.enabled ? 'Выключить автопроверку' : 'Включить автопроверку'}</button>
+      </div>
+      <details className="dep-schedule">
+        <summary>Расписание</summary>
+        <p data-watcher-schedule>
+          {status.enabled ? `Автоматически: ${schedule}. ` : 'Автоматическая проверка выключена. '}
+          Ночью {status.policy.nightStart}–{status.policy.dayStart} автоматическая проверка не выполняется. Уведомлений нет — ручная проверка доступна всегда.
+        </p>
+      </details>
+    </div>
+  );
+}
+
+function CheckTxForm({ onChecked }: { onChecked: () => Promise<void> }) {
   const [chain, setChain] = useState('tron');
   const [asset, setAsset] = useState('USDT');
   const [txHash, setTxHash] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   return (
-    <form data-check-tx style={{ ...styles.card, display: 'grid', gap: 8, ...(compact ? { border: 'none', boxShadow: 'none', padding: '4px 0 8px' } : {}) }} onSubmit={async (e) => {
+    <form data-check-tx className="dep-txid" onSubmit={async (e) => {
       e.preventDefault();
       if (!txHash.trim() || busy) return;
       setBusy(true); setResult(null);
@@ -683,16 +677,15 @@ function CheckTxForm({ onChecked, compact = false }: { onChecked: () => Promise<
         setResult({ ok: false, text: err instanceof AdminDepositApiError ? err.message : 'Проверка не выполнена.' });
       } finally { setBusy(false); }
     }}>
-      {!compact && <strong style={{ fontSize: 14 }}>Проверить TXID</strong>}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <select aria-label="Сеть" value={chain} onChange={(e) => setChain(e.target.value)} style={{ ...styles.input, width: 140 }}>
+      <div className="dep-txid-fields">
+        <select aria-label="Сеть" value={chain} onChange={(e) => setChain(e.target.value)} style={styles.input}>
           {['tron', 'ethereum', 'bsc', 'bitcoin', 'solana', 'ton'].map((c) => <option key={c} value={c}>{c === 'tron' ? 'TRON (TRC20)' : c}</option>)}
         </select>
-        <input aria-label="Актив" value={asset} onChange={(e) => setAsset(e.target.value.toUpperCase())} style={{ ...styles.input, width: 90 }} />
-        <input aria-label="TXID" placeholder="Хэш транзакции" value={txHash} onChange={(e) => setTxHash(e.target.value)} style={{ ...styles.input, flex: '1 1 260px', minWidth: 0 }} />
+        <input aria-label="Актив" value={asset} onChange={(e) => setAsset(e.target.value.toUpperCase())} style={styles.input} />
+        <input aria-label="TXID" placeholder="TXID — хэш транзакции" value={txHash} onChange={(e) => setTxHash(e.target.value)} style={styles.input} />
         <button type="submit" disabled={busy || !txHash.trim()} style={styles.neutralBtn}>{busy ? 'Проверка…' : 'Проверить'}</button>
       </div>
-      {result && <p role={result.ok ? 'status' : 'alert'} style={result.ok ? styles.successBox : styles.errorBox}>{result.text}</p>}
+      {result && <p role={result.ok ? 'status' : 'alert'} style={{ ...(result.ok ? styles.successBox : styles.errorBox), margin: 0 }}>{result.text}</p>}
     </form>
   );
 }
@@ -703,16 +696,17 @@ function OtherNetworksFeed({ onDone }: { onDone: () => Promise<void> }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   return (
-    <section style={{ marginTop: 20 }}>
-      <button type="button" data-other-networks disabled={busy} style={styles.neutralBtn} onClick={async () => {
+    <div className="dep-other">
+      <button type="button" data-other-networks disabled={busy} style={styles.neutralBtn}
+        title="Читает последние переводы на адреса остальных сетей. Найденные переводы попадают в очередь без зачисления." onClick={async () => {
         setBusy(true); setNote(null);
         try {
           const r = await api.getAdminIncomingDepositFeed();
           setNote(r.failedChains.length ? `Ленты загружены не полностью (${r.failedChains.join(', ')}). Это не значит, что переводов нет.` : 'Ленты сетей проверены.');
         } catch (err) { setNote(err instanceof ApiError ? err.message : 'Не удалось загрузить ленты сетей.'); }
         finally { setBusy(false); await onDone(); }
-      }}>{busy ? 'Загрузка…' : 'Проверить ленты других сетей'}</button>
-      {note && <p role="status" style={{ fontSize: 12, marginTop: 6 }}>{note}</p>}
-    </section>
+      }}>{busy ? 'Загрузка…' : 'Проверить другие сети'}</button>
+      {note && <p role="status" className="dep-result">{note}</p>}
+    </div>
   );
 }

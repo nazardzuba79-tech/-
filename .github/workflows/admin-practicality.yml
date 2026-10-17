@@ -11,6 +11,8 @@ on:
       - 'scripts/qa-admin-workflow-interactions.cjs'
       - 'scripts/qa-admin-api-compatibility.cjs'
       - 'scripts/qa-admin-adjustment-placement.cjs'
+      - 'scripts/qa-admin-sort-deposits.cjs'
+      - 'scripts/qa-admin-mobile-audit.cjs'
       - '.github/workflows/admin-practicality.yml'
 permissions:
   contents: read
@@ -20,7 +22,7 @@ concurrency:
 jobs:
   fixtures:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,6 +60,15 @@ jobs:
           QA_COMPATIBILITY: '1'
           QA_OUT: output/admin-practicality/api-compatibility
         run: node scripts/qa-admin-practicality.cjs
+      - name: Users header sorting and the Пополнения layout at six widths
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright
+        run: node scripts/qa-admin-sort-deposits.cjs --dist frontend/dist --out output/admin-practicality/sort-deposits
+      - name: Phone/tablet/desktop audit — no sideways page, no covered or off-screen controls, dialogs reachable (320–1920 and 844×390)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright
+          QA_OUT: output/admin-practicality/mobile-audit
+        run: node scripts/qa-admin-mobile-audit.cjs
       - name: Deposits adjustment entry, confirmation and timeout recovery
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright

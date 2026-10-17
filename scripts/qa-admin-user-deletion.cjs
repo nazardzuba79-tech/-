@@ -104,6 +104,8 @@ async function main() {
   await seed('FuturesPosition',{id:'fixture-position'});
   const list=['Session','ApiKey','EmailVerificationChallenge','DepositClaim','CardApplication','KycSubmission','Purchase','PortfolioSnapshot','FuturesPositionProtection','FundingPayment','FuturesOrder','FuturesBalance','CfdPosition','Order','Balance','Wallet','DemoOrder','DemoBalance','PrivateTradingPreview','PrivateTradingCommand','PrivateTradingLedger','PrivateTradingCard','PrivateTradingAccount','NativeDemoLiveProjection','NativeDemoRevision','NativeDemoAccount'];
   for(const m of list) await seed(m);
+  // A KYC material request points at the submission (FK RESTRICT); deletion must remove it first.
+  await seed('KycMaterialRequest',{submissionId:(await prisma.kycSubmission.findFirst({where:{userId:id}})).id});
   await user('referred',{referredById:id});
   const now=new Date();
   const deposit=await prisma.deposit.create({data:{id:'uncredited',userId:id,asset:'USDT',chain:'tron',txHash:'a'.repeat(64),amount:'15',status:'DETECTED'}});
@@ -144,7 +146,7 @@ async function main() {
   });
   await test('all owned records removed including balances/orders/positions/security/KYC/private/native/banking/card',async()=>{
    const res=await remove(id);assert.equal(res.status,200,JSON.stringify(res.body));
-   for(const m of [...list,'FuturesPosition']) assert.equal(await prisma[m[0].toLowerCase()+m.slice(1)].count({where:{userId:id}}),0,m);
+   for(const m of [...list,'KycMaterialRequest','FuturesPosition']) assert.equal(await prisma[m[0].toLowerCase()+m.slice(1)].count({where:{userId:id}}),0,m);
    for(const table of ['banking_placements','banking_ledger_entries','banking_commands']) assert.equal((await database.db.query('SELECT count(*)::int AS n FROM '+table+' WHERE user_id=$1',[id])).rows[0].n,0,table);
    assert.equal(books.spot.getBook(spot.pair).bestBid(),undefined);assert.equal(books.futures.getBook(fut.symbol).bestBid(),undefined);assert.equal(books.demo.getBook(demo.pair).bestBid(),undefined);
   });

@@ -78,6 +78,11 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
   };
   // Same pinned owner configuration as the route gate; every repository read/write re-checks it.
   const native = service.market ? new NativeDemoService(new PrismaNativeRepository(prisma, service.store?.config), service.market) : null;
+  // Pin the shipped funding version at start-up, so its first settlement is
+  // the first 8h boundary after this deploy rather than after the first
+  // request. Best effort: every native read and command awaits the same
+  // schedule and fails closed if it still cannot be read.
+  native?.funding().catch((error) => console.error('[native] funding schedule unavailable', error));
   // `simulationOnly` is what lets the terminal render as an ordinary Futures
   // page with no mode switch: the SERVER states that this account trades the
   // native engine, so the client never has to be told by a query parameter.

@@ -1,0 +1,168 @@
+ 320 users                        ok
+ 320 users/qa-user-1              ok  [scrollers: admin-tabs hides 57%]
+ 320 users/qa-user-1?tab=balances ok  [scrollers: admin-tabs hides 57%]
+ 320 deposits                     ok
+ 320 withdrawals                  ok
+ 320 kyc                          ok
+ 320 otc                          ok
+ 320 wallets                      ok
+ 320 listings                     ok
+ 320 audit-log                    ok
+ 320 deposits:credit-drawer       ok
+ 320 deposits:manual-check        ok
+ 320 withdrawals:approve-dialog   ok
+ 320 kyc:decision-dialog          ok
+ 320 users:actions                ok  [scrollers: admin-tabs hides 57%]
+ 320 otc:first-request            ok
+ 320 listings:create              ok
+ 320 users:kyc-tab                ok  [scrollers: admin-tabs hides 58%]
+ 320 users:balances-fit           ok  [scrollers: admin-tabs hides 57%]
+ 320 support:panel                ok
+ 320 layout:menu-escape           ok
+ 320 layout:menu                  ok
+ 360 users                        ok
+ 360 users/qa-user-1              ok  [scrollers: admin-tabs hides 52%]
+ 360 users/qa-user-1?tab=balances ok  [scrollers: admin-tabs hides 52%]
+ 360 deposits                     ok
+ 360 withdrawals                  ok
+ 360 kyc                          ok
+ 360 otc                          ok
+ 360 wallets                      ok
+ 360 listings                     ok
+ 360 audit-log                    ok
+ 360 deposits:credit-drawer       ok
+ 360 deposits:manual-check        ok
+ 360 withdrawals:approve-dialog   ok
+ 360 kyc:decision-dialog          ok
+ 360 users:actions                ok  [scrollers: admin-tabs hides 52%]
+ 360 otc:first-request            ok
+ 360 listings:create              ok
+ 360 users:kyc-tab                ok  [scrollers: admin-tabs hides 52%]
+ 360 users:balances-fit           ok  [scrollers: admin-tabs hides 52%]
+ 360 support:panel                ok
+ 360 layout:menu-escape           ok
+ 360 layout:menu                  ok
+ 390 users                        ok
+ 390 users/qa-user-1              ok  [scrollers: admin-tabs hides 47%]
+ 390 users/qa-user-1?tab=balances ok  [scrollers: admin-tabs hides 47%]
+ 390 deposits                     ok
+ 390 withdrawals                  ok
+ 390 kyc                          ok
+ 390 otc                          ok
+ 390 wallets                      ok
+ 390 listings                     ok
+ 390 audit-log                    ok
+ 390 deposits:credit-drawer       ok
+ 390 deposits:manual-check        ok
+ 390 withdrawals:approve-dialog   ok
+ 390 kyc:decision-dialog          ok
+ 390 users:actions                ok  [scrollers: admin-tabs hides 47%]
+ 390 otc:first-request            ok
+ 390 listings:create              ok
+ 390 users:kyc-tab                ok  [scrollers: admin-tabs hides 47%]
+ 390 users:balances-fit           ok  [scrollers: admin-tabs hides 47%]
+ 390 support:panel                ok
+ 390 layout:menu-escape           ok
+ 390 layout:menu                  ok
+ 430 users                        ok
+ 430 users/qa-user-1              ok  [scrollers: admin-tabs hides 41%]
+ 430 users/qa-user-1?tab=balances ok  [scrollers: admin-tabs hides 42%]
+ 430 deposits                     ok
+ 430 withdrawals                  ok
+ 430 kyc                          ok
+ 430 otc                          ok
+ 430 wallets                      ok
+ 430 listings                     ok
+ 430 audit-log                    ok
+ 430 deposits:credit-drawer       ok
+ 430 deposits:manual-check        ok
+ 430 withdrawals:approve-dialog   ok
+ 430 kyc:decision-dialog          ok
+ 430 users:actions                ok  [scrollers: admin-tabs hides 41%]
+ 430 otc:first-request            ok
+ 430 listings:create              ok
+ 430 users:kyc-tab                ok  [scrollers: admin-tabs hides 42%]
+ 430 users:balances-fit           ok  [scrollers: admin-tabs hides 42%]
+ 430 support:panel                ok
+ 430 layout:menu-escape           ok
+ 430 layout:menu                  ok
+ 768 users                        ok  [scrollers: admin-table-desktop hides 16%]
+ 768 users/qa-user-1              ok  [scrollers: admin-tabs hides 3%]
+ 768 users/qa-user-1?tab=balances ok  [scrollers: admin-tabs hides 3%]
+ 768 deposits                     ok
+ 768 withdrawals                  ok
+ 768 kyc                          ok
+ 768 otc                          ok
+ 768 wallets                      ok
+ 768 listings                     ok
+ 768 audit-log                    ok
+ 768 deposits:credit-drawer       ok
+ 768 deposits:manual-check        ok
+ 768 withdrawals:approve-dialog   ok
+ 768 kyc:decision-dialog          ok
+ 768 users:actions                ok  [scrollers: admin-tabs hides 3%]
+ 768 otc:first-request            ok
+ 768 listings:create              ok
+ 768 users:kyc-tab                ok  [scrollers: admin-tabs hides 3%]
+ 768 users:balances-fit           ok  [scrollers: admin-tabs hides 3%]
+ 768 support:panel                ok
+1440 users                        ok
+1440 users/qa-user-1              ok
+1440 users/qa-user-1?tab=balances ok
+1440 deposits                     ok
+1440 withdrawals                  ok
+1440 kyc                          ok
+1440 otc                          ok
+1440 wallets                      ok
+1440 listings                     ok
+1440 audit-log                    ok
+1440 deposits:credit-drawer       ok
+1440 deposits:manual-check        ok
+1440 withdrawals:approve-dialog   ok
+1440 kyc:decision-dialog          ok
+1440 users:actions                ok
+1440 otc:first-request            ok
+1440 listings:create              ok
+1440 users:kyc-tab                ok
+1440 users:balances-fit           ok
+1440 support:panel                ok
+1920 users                        ok
+1920 users/qa-user-1              ok
+1920 users/qa-user-1?tab=balances ok
+1920 deposits                     ok
+1920 withdrawals                  ok
+1920 kyc                          ok
+1920 otc                          ok
+1920 wallets                      ok
+1920 listings                     ok
+1920 audit-log                    ok
+1920 deposits:credit-drawer       ok
+1920 deposits:manual-check        ok
+1920 withdrawals:approve-dialog   ok
+1920 kyc:decision-dialog          ok
+1920 users:actions                ok
+1920 otc:first-request            ok
+1920 listings:create              ok
+1920 users:kyc-tab                ok
+1920 users:balances-fit           ok
+1920 support:panel                ok
+ 844 users                        ok  [scrollers: admin-table-desktop hides 7%]
+ 844 users/qa-user-1              ok
+ 844 users/qa-user-1?tab=balances ok
+ 844 deposits                     ok
+ 844 withdrawals                  ok
+ 844 kyc                          ok
+ 844 otc                          ok
+ 844 wallets                      ok
+ 844 listings                     ok
+ 844 audit-log                    ok
+ 844 deposits:credit-drawer       ok
+ 844 deposits:manual-check        ok
+ 844 withdrawals:approve-dialog   ok
+ 844 kyc:decision-dialog          ok
+ 844 users:actions                ok
+ 844 otc:first-request            ok
+ 844 listings:create              ok
+ 844 users:kyc-tab                ok
+ 844 users:balances-fit           ok
+{"screens":167,"withProblems":0,"pageErrors":0,"external":[]}

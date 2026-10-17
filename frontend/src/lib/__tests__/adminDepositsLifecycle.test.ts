@@ -35,8 +35,7 @@ function load(file: string) {
     if (name.endsWith('/adminWorkSummary')) return { refreshAdminSummary: summary };
     if (name.endsWith('/useAdminRead')) return load('src/pages/admin/useAdminRead.ts');
     if (name.endsWith('/adminPageSupport')) return load('src/pages/admin/adminPageSupport.tsx');
-    // Phone arrangement only (matchMedia); desktop markup under test.
-    if (name.endsWith('/useAdminCompact')) return { useAdminCompact: () => false };
+    if (name === './adminDeposits.css') return {}; // the page's own stylesheet (2026-10-15)
     throw new Error(`Unexpected import ${name}`);
   });
   return output;
@@ -163,4 +162,18 @@ test('typing an attribution email makes no request until explicit search submiss
   expect(clientsRead).toHaveBeenCalledTimes(1);
   await React.act(async () => { input.closest('form')!.dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true })); await flush(); });
   expect(clientsRead).toHaveBeenCalledTimes(2); expect(new URLSearchParams(clientsRead.mock.calls[1][0]).get('search')).toBe('alice@example.invalid');
+});
+// Owner (2026-10-15): without a requested tab the page opens on the first list that has work in it;
+// the admin's own choice then stays, refresh after refresh.
+test('the queue opens on the first list with work, and a chosen tab survives a refresh', async () => {
+  deposits.queue.mockResolvedValue(queue([row('free')])); await mount();
+  const selected = () => document.querySelector('[data-deposit-tab][aria-selected="true"]')?.getAttribute('data-deposit-tab');
+  expect(selected()).toBe('unattributed');
+  expect(document.querySelector('[data-deposit-row="free"]')).not.toBeNull();
+  await click('[data-deposit-tab="ready"]'); expect(selected()).toBe('ready');
+  await click('[data-deposit-refresh]'); expect(deposits.queue).toHaveBeenCalledTimes(2); expect(selected()).toBe('ready');
+});
+test('an empty queue stays on «Готовы к проверке»', async () => {
+  await mount();
+  expect(document.querySelector('[data-deposit-tab][aria-selected="true"]')?.getAttribute('data-deposit-tab')).toBe('ready');
 });

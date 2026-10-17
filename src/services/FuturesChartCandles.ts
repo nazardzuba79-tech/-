@@ -5,7 +5,8 @@ export class FuturesChartCandles {
   constructor(private request:typeof fetch=fetch,private now:()=>number=Date.now,
     private collector?: {url:string;token:string}) {}
   async get(pair:string,interval:string,limit:number,endTime?:number):Promise<unknown> {
-    const intervals:Record<string,string>={'5m':'5','15m':'15','1h':'60','4h':'240','1d':'D','1w':'W'};
+    // Every public kline code the chart workspace (2026-10-13) may ask for; the collector keeps its own allow-list.
+    const intervals:Record<string,string>={'1m':'1','3m':'3','5m':'5','15m':'15','30m':'30','1h':'60','2h':'120','4h':'240','6h':'360','12h':'720','1d':'D','1w':'W','1M':'M'};
     if(!/^[A-Z0-9]{1,32}-USDT$/.test(pair)||!intervals[interval]||!Number.isInteger(limit)||limit<1||limit>1000||
       (endTime!==undefined&&(!Number.isSafeInteger(endTime)||endTime<=0))) throw new RangeError('Invalid candle request');
     const symbol=pair.replace('-','');const key=`${symbol}:${interval}:${limit}:${endTime??'latest'}`;

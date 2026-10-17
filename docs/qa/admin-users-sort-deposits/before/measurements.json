@@ -1,0 +1,104 @@
+[
+ {
+  "page": "deposits",
+  "w": 1920,
+  "overflowX": false,
+  "pageH": 1080,
+  "tools": null,
+  "tabs": null,
+  "tabRows": 0,
+  "card": {
+   "top": 587,
+   "h": 316,
+   "w": 405
+  },
+  "selected": "ready",
+  "manualOpen": null,
+  "errors": []
+ },
+ {
+  "page": "deposits",
+  "w": 1440,
+  "overflowX": false,
+  "pageH": 1040,
+  "tools": null,
+  "tabs": null,
+  "tabRows": 0,
+  "card": {
+   "top": 649,
+   "h": 316,
+   "w": 384
+  },
+  "selected": "ready",
+  "manualOpen": null,
+  "errors": []
+ },
+ {
+  "page": "deposits",
+  "w": 1366,
+  "overflowX": false,
+  "pageH": 1057,
+  "tools": null,
+  "tabs": null,
+  "tabRows": 0,
+  "card": {
+   "top": 666,
+   "h": 316,
+   "w": 359
+  },
+  "selected": "ready",
+  "manualOpen": null,
+  "errors": []
+ },
+ {
+  "page": "deposits",
+  "w": 1024,
+  "overflowX": false,
+  "pageH": 1065,
+  "tools": null,
+  "tabs": null,
+  "tabRows": 0,
+  "card": {
+   "top": 674,
+   "h": 316,
+   "w": 374
+  },
+  "selected": "ready",
+  "manualOpen": null,
+  "errors": []
+ },
+ {
+  "page": "deposits",
+  "w": 390,
+  "overflowX": false,
+  "pageH": 1422,
+  "tools": null,
+  "tabs": null,
+  "tabRows": 0,
+  "card": {
+   "top": 1042,
+   "h": 316,
+   "w": 366
+  },
+  "selected": "ready",
+  "manualOpen": null,
+  "errors": []
+ },
+ {
+  "page": "deposits",
+  "w": 320,
+  "overflowX": false,
+  "pageH": 1583,
+  "tools": null,
+  "tabs": null,
+  "tabRows": 0,
+  "card": {
+   "top": 1185,
+   "h": 334,
+   "w": 296
+  },
+  "selected": "ready",
+  "manualOpen": null,
+  "errors": []
+ }
+]

@@ -1,0 +1,2976 @@
+{
+ "base": "main 9226c30dbcee58c505a2895eb75583b6424bd162",
+ "method": "Playwright Chromium on scripts/qa-futures-proportions.cjs --serve (read-only loopback fixture, external requests aborted); zoom = CSS viewport width/zoom with deviceScaleFactor zoom; language forced through the exchange_lang storage key",
+ "zoom": {
+  "before": [
+   {
+    "width": 1366,
+    "zoom": 0.9,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 553,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 473
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 0.9,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 700,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 620
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1707,
+    "zoom": 0.9,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 700,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 620
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 0.9,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 900,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 820
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 468,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 388
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 600,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 520
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1707,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 600,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 520
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 780,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 700
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1.1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 398,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 318
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 122,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1.1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 518,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 438
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 55,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1707,
+    "zoom": 1.1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 518,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 438
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1.1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 682,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 602
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1.25,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 314,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 234
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 271,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1.25,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 420,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 340
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 212,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1707,
+    "zoom": 1.25,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 420,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 340
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1.25,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 564,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 484
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   }
+  ],
+  "after": [
+   {
+    "width": 1366,
+    "zoom": 0.9,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 553,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 477
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 0.9,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 700,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 624
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1707,
+    "zoom": 0.9,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 700,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 624
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 0.9,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 900,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 824
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 468,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 392
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 600,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 524
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1707,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 600,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 524
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 780,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 704
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1.1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 398,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 322
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 122,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1.1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 518,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 442
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 55,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1707,
+    "zoom": 1.1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 518,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 442
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1.1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 682,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 606
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1.25,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 314,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 238
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 271,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1.25,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 420,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 344
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 212,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1707,
+    "zoom": 1.25,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 420,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 344
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1.25,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 564,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 488
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   }
+  ]
+ },
+ "languages": {
+  "before": [
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 468,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 388
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 600,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 520
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 780,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 700
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "en",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 468,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 388
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "en",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 600,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 520
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "en",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 780,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 700
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "zh",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 468,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 388
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "zh",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 600,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 520
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "zh",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 780,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 700
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "es",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 468,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 388
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "es",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 600,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 520
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "es",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 780,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 700
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "hi",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 468,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 388
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "hi",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 600,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 520
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "hi",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 780,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 700
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "ja",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 468,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 388
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "ja",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 600,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 520
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "ja",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 780,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 700
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "ko",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 468,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 388
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "ko",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 600,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 520
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "ko",
+    "header": 48,
+    "headerRule": "none",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "43px 0px"
+    },
+    "tickerTextAir": {
+     "top": 2,
+     "bottom": 7
+    },
+    "chartTile": 780,
+    "heading": 40,
+    "tabLabelY": 112,
+    "toolbarY": 144,
+    "plot": {
+     "y": 184,
+     "h": 700
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 194,
+     "w": 78.63,
+     "h": 14,
+     "b": 208
+    },
+    "legend": {
+     "x": 68,
+     "y": 216,
+     "w": 84.36,
+     "h": 31.94,
+     "b": 247.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   }
+  ],
+  "after": [
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 468,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 392
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 600,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 524
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "ru",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 780,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 704
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "en",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 468,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 392
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "en",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 600,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 524
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "en",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 780,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 704
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "zh",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 468,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 392
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "zh",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 600,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 524
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "zh",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 780,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 704
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "es",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 468,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 392
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "es",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 600,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 524
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "es",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 780,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 704
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "hi",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 468,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 392
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "hi",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 600,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 524
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "hi",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 780,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 704
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "ja",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 468,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 392
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "ja",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 600,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 524
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "ja",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 780,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 704
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1366,
+    "zoom": 1,
+    "lang": "ko",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 468,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 392
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1440,
+    "zoom": 1,
+    "lang": "ko",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 600,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 524
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   },
+   {
+    "width": 1920,
+    "zoom": 1,
+    "lang": "ko",
+    "header": 48,
+    "headerRule": "rgb(42, 43, 49) 0px -1px 0px 0px inset",
+    "ticker": {
+     "y": 52,
+     "h": 48,
+     "rows": "48px"
+    },
+    "tickerTextAir": {
+     "top": 4.5,
+     "bottom": 4.5
+    },
+    "chartTile": 780,
+    "heading": 36,
+    "tabLabelY": 116,
+    "toolbarY": 140,
+    "plot": {
+     "y": 180,
+     "h": 704
+    },
+    "plotTitle": {
+     "x": 72,
+     "y": 190,
+     "w": 78.63,
+     "h": 14,
+     "b": 204
+    },
+    "legend": {
+     "x": 72,
+     "y": 208,
+     "w": 62.36,
+     "h": 15.94,
+     "b": 223.94
+    },
+    "statsScrollOverflow": 0,
+    "pageOverflowX": 0
+   }
+  ]
+ }
+}

@@ -4,8 +4,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createPublicKey, verify as nodeVerify, webcrypto } from 'node:crypto';
 import {
-  handle, sniffDocument, buildKycMime, encodeHeaderWords, kycSubject, base64Lines,
-  KYC_RECIPIENT, MAX_DOCUMENT_BYTES, VERSION,
+  handle, sniffDocument, buildKycMime, encodeHeaderWords, kycSubject, kycMaterialSubject, base64Lines,
+  KYC_RECIPIENT, MAX_DOCUMENT_BYTES, VERSION, SELFIE_CONSENT_VERSION,
 } from './src/core.js';
 
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
@@ -403,4 +403,254 @@ test('MIME: 76-char base64 lines and a 4 MB build stays cheap', () => {
   const ms = performance.now() - t;
   console.error(`# mime build 4 MB: ${ms.toFixed(1)} ms (Node; informational)`);
   assert.ok(raw.length < 6 * 1024 * 1024, 'fits the 25 MiB verified-destination limit with a wide margin');
+});
+
+// ---------------------------------------------------------------- additional materials (/v1/materials)
+
+const MATERIAL_REQUEST = '6f1d2c3b-4a5e-4f60-8172-93a4b5c6d7e8';
+const DELIVERY = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
+
+function materialHarness({ authorize, confirm, send } = {}) {
+  const calls = { authorize: [], confirm: [], sent: [] };
+  const store = new Map();
+  const deps = {
+    now: () => Date.parse('2026-10-15T09:00:00Z'),
+    cache: {
+      match: async (req) => (store.has(req.url) ? new Response(store.get(req.url)) : undefined),
+      put: async (req, res) => { store.set(req.url, await res.text()); },
+    },
+    sendEmail: async (from, to, raw) => {
+      calls.sent.push({ from, to, raw: new TextDecoder().decode(raw) });
+      return send ? send(calls.sent.length) : undefined;
+    },
+    fetch: async (url, init) => {
+      const path = new URL(url).pathname;
+      const entry = { path, body: JSON.parse(init.body), headers: init.headers, rawBody: init.body };
+      if (path === '/api/v1/internal/kyc/materials/authorize') {
+        calls.authorize.push(entry);
+        const r = authorize ? authorize(entry, calls) : {
+          status: 200,
+          data: { deliveryId: DELIVERY, userId: 'user-1', email: USER_EMAIL, fullName: SYNTHETIC_NAME, submissionId: SUBMISSION, alreadyReceived: false },
+        };
+        return new Response(JSON.stringify(r.data ?? {}), { status: r.status });
+      }
+      if (path === '/api/v1/internal/kyc/materials/confirmed') {
+        calls.confirm.push(entry);
+        const r = confirm ? confirm(entry, calls) : { status: 201, data: { status: 'created', complete: true } };
+        if (r === 'throw') throw new TypeError('network down');
+        return new Response(JSON.stringify(r.data ?? {}), { status: r.status });
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    },
+  };
+  return { deps, calls };
+}
+
+let MREQ = uuid();
+async function materialRequest({ part = 'DOCUMENT', bytes = JPEG, type = 'image/jpeg', fields = {}, omit = [], auth = TOKEN } = {}) {
+  const form = new FormData();
+  const values = {
+    requestId: MREQ, materialRequestId: MATERIAL_REQUEST, part,
+    ...(part === 'SELFIE' ? { selfieConsent: 'true', consentVersion: SELFIE_CONSENT_VERSION } : {}),
+    userId: 'someone-else', email: 'attacker@evil.test', ...fields,
+  };
+  for (const [k, v] of Object.entries(values)) if (!omit.includes(k)) form.append(k, v);
+  if (!omit.includes('file')) form.append('file', new Blob([bytes], { type }), 'IMG_20261015_selfie.jpg');
+  const probe = new Request('https://kyc.example.test/v1/materials', { method: 'POST', body: form });
+  const buf = await probe.arrayBuffer();
+  const headers = new Headers(probe.headers);
+  headers.set('content-length', String(buf.byteLength));
+  if (auth) headers.set('authorization', auth);
+  headers.set('origin', 'https://voltextech.net');
+  headers.set('cf-connecting-ip', `203.0.113.${Math.floor(Math.random() * 250)}`);
+  return new Request('https://kyc.example.test/v1/materials', { method: 'POST', headers, body: buf });
+}
+
+for (const part of ['DOCUMENT', 'SELFIE']) {
+  test(`material ${part}: authorize → one email to the fixed mailbox → one signed confirm`, async () => {
+    MREQ = uuid();
+    const h = materialHarness();
+    const res = await handle(await materialRequest({ part }), envFor(), ctx, h.deps);
+    assert.equal(res.status, 201);
+    assert.deepEqual(await res.json(), { status: 'RECEIVED', part, deliveryId: DELIVERY, confirmed: true, complete: true });
+    assert.equal(h.calls.authorize.length, 1);
+    const a = h.calls.authorize[0];
+    assert.equal(a.headers.authorization, TOKEN);
+    assert.deepEqual(Object.keys(a.body).sort(), (part === 'SELFIE'
+      ? ['consentVersion', 'materialRequestId', 'mimeType', 'part', 'requestId', 'selfieConsent', 'sizeBytes']
+      : ['materialRequestId', 'mimeType', 'part', 'requestId', 'sizeBytes']).sort(), 'browser userId/email are never forwarded');
+    assert.equal(h.calls.sent.length, 1);
+    const mail = h.calls.sent[0];
+    assert.equal(mail.to, KYC_RECIPIENT);
+    assert.match(mail.raw, /^To: <voltex\.crypto@gmail\.com>\r$/m);
+    assert.doesNotMatch(mail.raw, /evil\.test|someone-else/);
+    assert.doesNotMatch(mail.raw, /IMG_20261015/, 'the browser file name never reaches the email');
+    assert.match(mail.raw, new RegExp(`filename="kyc-${SUBMISSION}-${part === 'SELFIE' ? 'selfie' : 'document'}-${DELIVERY.slice(0, 8)}\\.jpg"`));
+    assert.match(mail.raw, new RegExp(`Message-ID: <${DELIVERY}@voltextech\\.net>`));
+    assert.match(mail.raw, new RegExp(`X-Voltex-Kyc-Material: ${MATERIAL_REQUEST}; part=${part}`));
+    const text = Buffer.from(mail.raw.split('Content-Transfer-Encoding: base64\r\n\r\n')[1].split('--')[0].replace(/\r\n/g, ''), 'base64').toString('utf8');
+    assert.match(text, new RegExp(`Material request ID: ${MATERIAL_REQUEST}`));
+    if (part === 'SELFIE') {
+      assert.match(text, /Согласие .* получено 2026-10-15T09:00:00\.000Z \(версия kyc-selfie-v1\)/);
+      assert.match(text, /Автоматическое распознавание лиц не используется/);
+    }
+    assert.equal(h.calls.confirm.length, 1);
+    const c = h.calls.confirm[0].body;
+    assert.equal(c.deliveryId, DELIVERY);
+    assert.equal(c.userId, 'user-1', 'identity from Render, not the form');
+    assert.equal(c.part, part);
+    assert.equal(c.emailMessageId, `${DELIVERY}@voltextech.net`);
+    if (part === 'SELFIE') assert.equal(c.consentVersion, SELFIE_CONSENT_VERSION);
+    else assert.equal('selfieConsentAt' in c, false);
+  });
+}
+
+test('material confirm signature verifies over the materials path', async () => {
+  MREQ = uuid();
+  const h = materialHarness();
+  await handle(await materialRequest(), envFor(), ctx, h.deps);
+  const { key } = await (await handle(new Request('https://kyc.example.test/v1/public-key'), envFor(), ctx, h.deps)).json();
+  const c = h.calls.confirm[0];
+  const message = `v1\n${c.headers['x-voltex-kyc-edge-ts']}\n/api/v1/internal/kyc/materials/confirmed\n${c.rawBody}`;
+  assert.equal(nodeVerify(null, Buffer.from(message), createPublicKey({ key, format: 'jwk' }), Buffer.from(c.headers['x-voltex-kyc-edge-sig'], 'base64url')), true);
+});
+
+test('selfie without consent → 400 before Render; selfie PDF → 415; bad fields → 400', async () => {
+  const h = materialHarness();
+  for (const [omit, fields, expected, code] of [
+    [['selfieConsent'], {}, 400, 'kyc_selfie_consent_required'],
+    [[], { consentVersion: 'kyc-selfie-v0' }, 400, 'kyc_selfie_consent_required'],
+    [[], { part: 'PASSPORT' }, 400, 'kyc_bad_request'],
+    [[], { materialRequestId: 'not-a-uuid' }, 400, 'kyc_bad_request'],
+    [[], { requestId: 'nope' }, 400, 'kyc_bad_request'],
+    [['file'], {}, 400, 'kyc_file_required'],
+  ]) {
+    const res = await handle(await materialRequest({ part: 'SELFIE', omit, fields }), envFor(), ctx, h.deps);
+    assert.equal(res.status, expected, JSON.stringify(fields));
+    assert.equal((await res.json()).code, code);
+  }
+  const pdf = await handle(await materialRequest({ part: 'SELFIE', bytes: PDF, type: 'application/pdf' }), envFor(), ctx, h.deps);
+  assert.equal(pdf.status, 415);
+  const fake = await handle(await materialRequest({ part: 'DOCUMENT', bytes: new TextEncoder().encode('<svg onload=alert(1)>'), type: 'image/png' }), envFor(), ctx, h.deps);
+  assert.equal(fake.status, 415);
+  assert.equal(h.calls.authorize.length, 0);
+  assert.equal(h.calls.sent.length, 0);
+});
+
+test('a document PDF is accepted as a new document photo', async () => {
+  MREQ = uuid();
+  const h = materialHarness();
+  const res = await handle(await materialRequest({ part: 'DOCUMENT', bytes: PDF, type: 'application/pdf' }), envFor(), ctx, h.deps);
+  assert.equal(res.status, 201);
+  assert.match(h.calls.sent[0].raw, /-document-1a2b3c4d\.pdf"/);
+});
+
+test('Render refusals (foreign/closed/not requested/no session) → no email, code passed through', async () => {
+  for (const [status, code] of [[404, 'kyc_material_request_not_found'], [409, 'kyc_material_request_closed'], [409, 'kyc_material_not_requested'], [409, 'kyc_material_already_received'], [429, 'kyc_rate_limited'], [401, 'whatever']]) {
+    const h = materialHarness({ authorize: () => ({ status, data: { code } }) });
+    const res = await handle(await materialRequest(), envFor(), ctx, h.deps);
+    assert.equal(res.status, status);
+    assert.equal((await res.json()).code, status === 401 ? 'kyc_auth_required' : code);
+    assert.equal(h.calls.sent.length, 0);
+    assert.equal(h.calls.confirm.length, 0);
+  }
+  const unauth = materialHarness();
+  assert.equal((await handle(await materialRequest({ auth: null }), envFor(), ctx, unauth.deps)).status, 401);
+  assert.equal(unauth.calls.authorize.length, 0);
+  const down = materialHarness({ authorize: () => ({ status: 500, data: {} }) });
+  assert.equal((await handle(await materialRequest(), envFor(), ctx, down.deps)).status, 503);
+  const odd = materialHarness({ authorize: () => ({ status: 200, data: { deliveryId: DELIVERY, userId: 'user-1', email: 'not-an-email', fullName: SYNTHETIC_NAME, submissionId: SUBMISSION } }) });
+  assert.equal((await handle(await materialRequest(), envFor(), ctx, odd.deps)).status, 503);
+  assert.equal(odd.calls.sent.length, 0);
+});
+
+test('material double click → one email; already received → 200 duplicate, no email', async () => {
+  MREQ = uuid();
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const h = materialHarness({ send: () => gate });
+  const a = handle(await materialRequest(), envFor(), ctx, h.deps);
+  const b = handle(await materialRequest(), envFor(), ctx, h.deps);
+  await new Promise((r) => setTimeout(r, 20));
+  release();
+  const [ra, rb] = await Promise.all([a, b]);
+  assert.equal(ra.status, 201);
+  assert.equal(rb.status, 201);
+  assert.equal(h.calls.sent.length, 1);
+
+  const again = materialHarness({ authorize: () => ({ status: 200, data: { deliveryId: DELIVERY, userId: 'user-1', email: USER_EMAIL, fullName: SYNTHETIC_NAME, submissionId: SUBMISSION, alreadyReceived: true } }) });
+  const dup = await handle(await materialRequest(), envFor(), ctx, again.deps);
+  assert.equal(dup.status, 200);
+  assert.equal((await dup.json()).duplicate, true);
+  assert.equal(again.calls.sent.length, 0);
+});
+
+test('material confirm fails after email → 202 + sealed receipt; /v1/confirm retries the materials path, no second email', async () => {
+  MREQ = uuid();
+  let down = true;
+  const h = materialHarness({ confirm: () => (down ? 'throw' : { status: 201, data: { status: 'created', complete: false } }) });
+  const events = [];
+  const env = envFor({ NOTIFICATIONS: { notifyMaterials: async (event) => { events.push(event); return { status: 'SENT' }; } } });
+  const res = await handle(await materialRequest({ part: 'SELFIE' }), env, { waitUntil: () => {} }, h.deps);
+  assert.equal(res.status, 202);
+  const body = await res.json();
+  assert.equal(body.confirmed, false);
+  assert.doesNotMatch(body.receipt, /Synthetic|qa-synthetic/);
+  assert.equal(events.length, 0);
+
+  down = false;
+  const retry = await handle(new Request('https://kyc.example.test/v1/confirm', {
+    method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://voltextech.net' },
+    body: JSON.stringify({ receipt: body.receipt }),
+  }), env, { waitUntil: (p) => p }, h.deps);
+  assert.equal(retry.status, 200);
+  assert.deepEqual(await retry.json(), { status: 'RECEIVED', part: 'SELFIE', deliveryId: DELIVERY, confirmed: true, complete: false });
+  assert.equal(h.calls.sent.length, 1, 'no second email');
+  assert.equal(h.calls.confirm.at(-1).path, '/api/v1/internal/kyc/materials/confirmed');
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(events.length, 1);
+  assert.deepEqual(Object.keys(events[0]).sort(), ['complete', 'email', 'eventId', 'eventType', 'fullName', 'part', 'timestamp']);
+  assert.equal(events[0].eventType, 'KYC_MATERIALS_RECEIVED');
+});
+
+test('material notification: missing notifyMaterials (older notification Worker) cannot break the upload', async () => {
+  MREQ = uuid();
+  const tasks = [];
+  const warn = console.warn; const warned = [];
+  console.warn = (...a) => warned.push(a.join(' '));
+  try {
+    const h = materialHarness();
+    const env = envFor({ NOTIFICATIONS: { notify: async () => ({ status: 'SENT' }) } });
+    const res = await handle(await materialRequest(), env, { waitUntil: (p) => tasks.push(p) }, h.deps);
+    await Promise.all(tasks);
+    assert.equal(res.status, 201);
+  } finally {
+    console.warn = warn;
+  }
+  assert.deepEqual(warned, ['[notifications] DELIVERY_UNAVAILABLE']);
+});
+
+test('material logs carry identifiers only', async () => {
+  MREQ = uuid();
+  const lines = [];
+  const orig = console.log;
+  console.log = (...a) => lines.push(a.join(' '));
+  try {
+    const h = materialHarness({ confirm: () => ({ status: 503, data: {} }) });
+    await handle(await materialRequest({ part: 'SELFIE' }), envFor(), ctx, h.deps);
+    MREQ = uuid();
+    const bad = materialHarness({ send: () => { throw new Error(`relay said no for ${SYNTHETIC_NAME}`); } });
+    assert.equal((await handle(await materialRequest(), envFor(), ctx, bad.deps)).status, 502);
+  } finally {
+    console.log = orig;
+  }
+  const all = lines.join('\n');
+  assert.ok(lines.length >= 2);
+  for (const secret of [SYNTHETIC_NAME, USER_EMAIL, '/9j/']) assert.equal(all.includes(secret), false, secret);
+});
+
+test('material subject cannot inject headers', () => {
+  const encoded = encodeHeaderWords(kycMaterialSubject('SELFIE', 'Evil\r\nBcc: x@evil.test', USER_EMAIL));
+  assert.doesNotMatch(encoded, /\r\n(?! )/);
+  assert.doesNotMatch(encoded, /Bcc:/);
 });
