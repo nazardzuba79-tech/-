@@ -39,6 +39,7 @@ export function AdminBalanceAdjustment({ profile, onClose, onChanged }: { profil
     } finally { clearTimeout(timer); if (owns()) { request.current = null; setBusy(false); } }
   }
   return <AdminModal title="Корректировка спотового баланса" onClose={onClose} busy={busy}>
+    <div className="admin-modal-body">
     <p><strong>{profile.email}</strong></p><CopyValue value={profile.id} label="ID пользователя" full /><p>Счёт: Спот. Резерв и тестовый счёт не изменяются.</p>
     {phase === 'edit' && <form className="admin-form-grid" onSubmit={event => { event.preventDefault(); if (after === null || after.startsWith('-') || !reason.trim()) { setError('Проверьте сумму, доступный баланс и обязательную причину.'); return; } setIntent({ asset: canonicalAsset, amount: amount.trim(), reason: reason.trim(), idempotencyKey: crypto.randomUUID() }); setError(''); setPhase('confirm'); }}>
       <label>Актив<input required maxLength={10} value={asset} onChange={e => setAsset(e.target.value.toUpperCase())} /></label>
@@ -50,6 +51,7 @@ export function AdminBalanceAdjustment({ profile, onClose, onChanged }: { profil
     {phase === 'unknown' && <><p role="status">Не создавайте повторную корректировку с новым ключом.</p><CopyValue value={intent?.idempotencyKey} label="ключ операции" full /><p>{intent?.amount} {intent?.asset} · {intent?.reason}</p><div className="admin-dialog-actions"><button disabled={busy} onClick={() => perform(true)}>Проверить результат</button><button disabled={busy} onClick={() => perform(false)}>Повторить с исходным ключом</button></div></>}
     {phase === 'success' && receipt && <div role="status"><h3>Корректировка подтверждена</h3><p>{receipt.availableBefore} → {receipt.available} {receipt.asset}</p><p>В резерве: {receipt.locked} {receipt.asset}</p><CopyValue value={receipt.operationId} label="ключ операции" full /></div>}
     {error && <p role="alert">{error}</p>}{busy && <p role="status">Ожидаем подтверждение…</p>}
-    <button disabled={busy} style={styles.neutralBtn} onClick={onClose}>{phase === 'success' ? 'Закрыть' : 'Отмена'}</button>
+    </div>
+    <footer><button disabled={busy} style={styles.neutralBtn} onClick={onClose}>{phase === 'success' ? 'Закрыть' : 'Отмена'}</button></footer>
   </AdminModal>;
 }
