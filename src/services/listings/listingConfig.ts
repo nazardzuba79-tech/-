@@ -17,6 +17,7 @@ import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
 import { SIMULATION_PROFILES, profileForOrdinal } from '../testMarkets/simulationRealism';
 import { LISTING_SCENARIOS, normalizeScenarioDecimal, validateScenarioControls } from '../../shared/listingScenarioControls';
 import { historicalSerializedBytes, freezeHistoricalMoveProgram } from '../../shared/listingHistoricalReplay';
+import { HISTORICAL_DEMO_NO_LEDGER, isHistoricalDemoConfig } from './simulationContour';
 
 export const LISTING_QUOTE = 'USDT' as const;
 export const LISTING_SCHEMA_VERSION = 1 as const;
@@ -155,6 +156,9 @@ export function parseListingConfig(input: unknown): ListingConfig {
     catch (error) { throw new ListingValidationError('INVALID_SCENARIO', error instanceof Error ? error.message : 'Проверьте настройки движения цены'); }
   }
   if (config.simulationProgram && config.tradable) throw new ListingValidationError('DEMO_ONLY', 'Bounded scenarios require a non-tradable demo listing');
+  // The historical demo contour has no real inventory to allocate (simulationContour).
+  if (isHistoricalDemoConfig(config) && Number(config.ownerAllocation) !== 0)
+    throw new ListingValidationError(HISTORICAL_DEMO_NO_LEDGER, 'Историческая симуляция не выдаёт актив: распределение владельцу должно быть 0');
   if (RESERVED_LISTING_SYMBOLS.has(config.symbol)) throw new ListingValidationError('RESERVED_TICKER', `Ticker ${config.symbol} is reserved`);
   if (logoBytes(config.logo) > LOGO_MAX_BYTES) throw new ListingValidationError('LOGO_TOO_LARGE', `Logo must be at most ${LOGO_MAX_BYTES / 1024} KB`);
   return config;
