@@ -26,6 +26,23 @@ export function initialLogicalRange(count: number, visible: number): { from: num
 }
 
 /**
+ * A logical index → x, fractional indexes included. Lightweight Charts
+ * places whole bars only: `logicalToCoordinate` answers 0 — the plot's left
+ * edge — for any index between two bars (TimeScale.indexToCoordinate), so a
+ * drawing anchored between bars (a ruler drawn on 1h and read on 4h, a time
+ * projected past the last bar) was painted on the left edge. Bars are evenly
+ * spaced, so the x between two whole bars is a straight interpolation.
+ */
+export function logicalToX(logical: number, barX: (index: number) => number | null): number | null {
+  if (!Number.isFinite(logical)) return null;
+  const index = Math.floor(logical);
+  const x = barX(index);
+  if (logical === index || x === null) return x;
+  const next = barX(index + 1);
+  return next === null ? null : x + (logical - index) * (next - x);
+}
+
+/**
  * The bounds of the bars on a price scale, read back from the prices at the
  * pane's top and bottom edges with the margins in force: Lightweight Charts
  * keeps the bars inside [bottom, 1 − top] of the pane height and extends the

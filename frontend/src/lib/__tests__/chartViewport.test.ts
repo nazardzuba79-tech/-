@@ -1,4 +1,4 @@
-import { SHORT_HISTORY_RIGHT_PADDING, SHORT_HISTORY_SLOTS, dataBoundsFromEdges, initialLogicalRange, safeBottomMargin } from '../chartViewport';
+import { SHORT_HISTORY_RIGHT_PADDING, SHORT_HISTORY_SLOTS, dataBoundsFromEdges, initialLogicalRange, logicalToX, safeBottomMargin } from '../chartViewport';
 
 describe('the first view of a loaded series', () => {
   it('shows the newest window when there is more history than the window', () => {
@@ -44,5 +44,31 @@ describe('a positive-price axis never extends below zero', () => {
   it('leaves bars at or below zero alone: an oscillator or a percent scale may be negative', () => {
     expect(safeBottomMargin(-30, 70, 0.1, 0.3)).toBe(0.3);
     expect(safeBottomMargin(0, 10, 0.1, 0.3)).toBe(0.3);
+  });
+});
+
+describe('a drawing anchor between two bars', () => {
+  // Lightweight Charts 5.2 TimeScale.indexToCoordinate: whole bars only, 0 for anything else.
+  const width = 800, barSpacing = 12, rightOffset = 4, baseIndex = 24;
+  const library = (index: number) => (index % 1 === 0 ? width - (baseIndex + rightOffset - index + 0.5) * barSpacing - 1 : 0);
+
+  it('is placed between them, not on the plot\'s left edge', () => {
+    // AITH/USDT 4h, 2026-10-17: a ruler drawn on 1h read an hour after bar 0 and bar 13.
+    expect(library(0.25)).toBe(0);
+    expect(logicalToX(0.25, library)).toBeCloseTo(library(0) + 3, 9);
+    expect(logicalToX(13.25, library)).toBeCloseTo(library(13) + 3, 9);
+    expect(logicalToX(13.25, library)! - logicalToX(0.25, library)!).toBeCloseTo(13 * barSpacing, 9);
+  });
+  it('keeps whole bars exactly where the chart paints them', () => {
+    for (const index of [-3, 0, 7, 24, 30]) expect(logicalToX(index, library)).toBe(library(index));
+  });
+  it('projects before the first bar and past the last one at the same spacing', () => {
+    expect(logicalToX(-0.5, library)).toBeCloseTo(library(0) - 6, 9);
+    expect(logicalToX(26.5, library)).toBeCloseTo(library(26) + 6, 9);
+  });
+  it('has no position when the chart has none', () => {
+    expect(logicalToX(3.5, () => null)).toBeNull();
+    expect(logicalToX(Number.NaN, library)).toBeNull();
+    expect(logicalToX(Number.POSITIVE_INFINITY, library)).toBeNull();
   });
 });
