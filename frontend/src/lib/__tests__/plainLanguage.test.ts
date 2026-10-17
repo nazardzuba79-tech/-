@@ -13,7 +13,8 @@ import { LOCALES, readLocale } from '../../../test-utils/i18nSource';
  * the rendered copy — the seven dictionaries, and string/JSX text in the
  * components — and fails on the vocabulary below. It deliberately does NOT
  * look at identifiers, imports, types, CSS classes or comments: naming a
- * variable `nativeDemoApi` is fine, printing "демо" on a panel is not.
+ * variable `nativeDemoApi` is fine. The dated owner-approved Copy ROI scenario
+ * is explicitly simulated: its exact disclosure is required, not hidden.
  */
 
 const root = resolve(__dirname, '../../../..');
@@ -61,6 +62,35 @@ const ALLOWED = [
 ];
 
 const allowed = (text: string) => ALLOWED.some((r) => r.test(text));
+
+const demoNoticeFile = 'frontend/src/pages/copy-trading-bolt/DemoRoiContext.tsx';
+// Only these exact disclosures in this one component are allowed. Neither
+// the general vocabulary rules nor any other file receive an exemption.
+const demoDisclosures = [
+  ['Демо · симуляция', 'Не фактическая доходность. До 22.10.2026 00:00 UTC.'],
+  ['Demo · simulated', 'Not actual returns. Until 22 Oct 2026 00:00 UTC.'],
+  ['演示 · 模拟', '非实际收益。截止：2026年10月22日 00:00 UTC。'],
+  ['Demo · simulación', 'No es rentabilidad real. Hasta 22 oct 2026 00:00 UTC.'],
+  ['डेमो · सिमुलेटेड', 'वास्तविक रिटर्न नहीं। 22 अक्टूबर 2026 00:00 UTC तक।'],
+  ['デモ · シミュレーション', '実際の収益ではありません。2026年10月22日 00:00 UTCまで。'],
+  ['데모 · 시뮬레이션', '실제 수익이 아닙니다. 2026년 10월 22일 00:00 UTC까지.'],
+];
+const allowedDemoDisclosure = (file: string, text: string) =>
+  file === demoNoticeFile && demoDisclosures.some(pair => pair.includes(text));
+
+test('dated simulated ROI keeps all seven disclosures and the exception stays exact and file-scoped', () => {
+  const notice = readFileSync(resolve(root, demoNoticeFile), 'utf8');
+  for (const pair of demoDisclosures) for (const text of pair) {
+    expect(notice).toContain("'" + text + "'");
+    expect(allowedDemoDisclosure(demoNoticeFile, text)).toBe(true);
+    expect(allowedDemoDisclosure('frontend/src/pages/CopyTradingPage.tsx', text)).toBe(false);
+    expect(allowedDemoDisclosure(demoNoticeFile, text + ' backend')).toBe(false);
+  }
+  expect(notice).toContain('{label} · {demo.period} (UTC)');
+  expect(notice).toContain('<small>{description}</small>');
+  expect(allowedDemoDisclosure(demoNoticeFile, 'Demo guaranteed profit')).toBe(false);
+  expect(PLUMBING.some(rule => rule.test('Demo guaranteed profit'))).toBe(true);
+});
 
 /** Every `'key': 'value'` row of a dictionary, values only. */
 function localeStrings(source: string): { key: string; value: string }[] {
@@ -146,7 +176,7 @@ test('hardcoded component copy speaks about the product, not about the plumbing'
     // against this same vocabulary, in every language.
     if (rel === 'frontend/src/lib/customerError.ts') continue;
     for (const text of visibleStrings(readFileSync(path, 'utf8'))) {
-      if (allowed(text)) continue;
+      if (allowed(text) || allowedDemoDisclosure(rel, text)) continue;
       if (PLUMBING.some((r) => r.test(text))) offenders.push(`${rel}: ${text.slice(0, 120)}`);
     }
   }

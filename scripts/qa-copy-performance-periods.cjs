@@ -145,7 +145,7 @@ const readPanel = () => {
     units: node.querySelector('.profile-metrics-units')?.textContent.trim(), rows,
     skeletons: node.querySelectorAll('.copy-metric-skeleton').length,
     buttons: [...document.querySelectorAll('.profile-periods button')].map(b => b.textContent.trim()),
-    range: document.querySelector('.profile-period-range')?.textContent.replace(/\s+/g, ' ').trim() ?? null };
+    range: document.querySelector('.profile-performance-chart .profile-period-range')?.textContent.replace(/\s+/g, ' ').trim() ?? null };
 };
 
 async function newPage(browser, viewport, token, lang = 'ru') {
