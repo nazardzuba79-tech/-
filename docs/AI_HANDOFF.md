@@ -6278,3 +6278,11 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
   - With `check.` read as `db.`, the file is identical except the new client and `afterAll`. 60 `expect(` before and after; no assertion changed.
   - Local PostgreSQL 16, fresh DB after `prisma migrate deploy`: 10/10 runs, 16/16 tests each.
   - No production, financial, funding, migration or other test change.
+
+## 2026-10-17 — Codex — PR #501 current-main reconciliation
+
+- Implementation: `c8b9f25b94940ccc9ae5437149621bfe1573ccab`; reconciled existing PR #501 with fresh main `50875f2116474ce01acbb08c1d9e3e68ec99a7f3`.
+- Material files: customerError/futuresOrderErrors, spotOrderPresentation/SpotOrdersView, TestMarketTerminal/TestMarketsStrip and its TradePage error prop, seven locale dictionaries, targeted presentation tests, QA reconciliation note.
+- Preserved Funding V2 #535, current FuturesPositionsPanel P&L/closed-card behavior (only status text localized), main's Spot fresh-read controller, chart settings, Copy Trading #536, AITH safeguards and all pre-existing translations. Backend/schema/migrations/workflows/dependencies unchanged from main.
+- Local validation: 609 passing tests across 19 distinct suites; frontend TypeScript/Vite build and diff checks passed. Windows-only asset CRLF conversion corrected to Git blob bytes without repository changes or relaxed assertions.
+- Evidence and comparison: `docs/qa/pr501-main-reconciliation-20261017.md`. Historical October 7 screenshots are not new QA. Next: verify all remote CI on final pushed HEAD and prepare existing PR for owner merge. No merge to main, deployment or production migration performed.
