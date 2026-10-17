@@ -159,6 +159,16 @@ describe('the adapter projects native state into the terminal shapes', () => {
     expect(row.marginType).toBe('CROSS');
   });
 
+  test('the engine\'s P&L split travels with the row untouched; an older server sends none', () => {
+    const split = { ...position, tradingPnl: '520', feesPaid: '33', fundingNet: '-1.2', netPnl: '485.8' };
+    expect(adapter.nativePositionToTerminal(split).pnlBreakdown).toEqual({ tradingPnl: '520', funding: '-1.2', fees: '33', netPnl: '485.8' });
+    expect(adapter.nativePositionToTerminal(position)).not.toHaveProperty('pnlBreakdown');
+    // A closed row's total is the engine's netPnl, and its split is the same one.
+    const closed = adapter.nativePositionToHistoryRow({ ...split, status: 'CLOSED' as const, closedAt: 1_728_100_000_000 });
+    expect(closed).toMatchObject({ realizedPnl: '485.8', pnlBreakdown: { tradingPnl: '520', funding: '-1.2', fees: '33', netPnl: '485.8' } });
+    expect(adapter.nativePositionToHistoryRow({ ...position, status: 'CLOSED' as const, closedAt: 1 })).not.toHaveProperty('pnlBreakdown');
+  });
+
   test('an isolated position reports its own posted margin, not its cross basis', () => {
     const row = adapter.nativePositionToTerminal({
       ...position, marginMode: 'ISOLATED' as const, isolatedMargin: '900', roiBasis: '1500',

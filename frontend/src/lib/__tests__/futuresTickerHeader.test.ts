@@ -100,7 +100,7 @@ function normalizeApiTs(text: string): string {
 // are still read from the futures services, per symbol, exactly as before.
 // No external venue's derivatives metric is read here, and the seven-block
 // header hierarchy is untouched.
-test('VOLTEX derivatives reads (mark, index, funding) stay on the futures services', () => {
+test('VOLTEX derivatives reads (mark, index, funding) stay VOLTEX\'s own', () => {
   // The per-symbol VOLTEX loop, isolated from the separate external
   // market-stats effect beside it.
   const voltexLoop = source.slice(
@@ -110,13 +110,15 @@ test('VOLTEX derivatives reads (mark, index, funding) stay on the futures servic
   // The VOLTEX financial reads are still here, still per symbol.
   expect(source).toContain('useFuturesMark(symbol)');
   expect(read('frontend/src/lib/useFuturesMark.ts')).toContain('api.getFuturesMarkPrice(symbol)');
-  expect(voltexLoop).toContain('.getFuturesFundingRate(symbol, 1)');
+  // Funding is VOLTEX's fixed rates by side from its own /futures/config
+  // (the rates every position settles at), so nothing polls for it — and
+  // neither the settled-record read nor a provider's live rate is used.
+  expect(source).toContain('voltexFundingRates(futuresConfig)');
+  expect(source).not.toContain('getFuturesFundingRate');
   // Financial display freshness is bounded by what can actually change:
-  // mark/index keep 4s, settled funding is one visible-minute read, and
-  // hidden tabs make neither request until visibility returns.
+  // mark/index keep their shared read; hidden tabs make no request until
+  // visibility returns.
   expect(read('frontend/src/lib/useFuturesMark.ts')).toContain('30_000, true');
-  expect(voltexLoop).toContain('60_000, true');
-  expect(voltexLoop).toContain('fundingReader.stop()');
   // And no external venue's data may enter this loop or substitute for
   // one of its figures.
   expect(voltexLoop).not.toMatch(/binance|bybit|okx|deribit|bitget|MarketStats/i);
@@ -159,19 +161,25 @@ test('market-data reads use perpetual references and preserve financial inputs',
   const reads = source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('));
   // What the re-take is allowed to have changed, pinned so the digest
   // cannot be advanced again for something else without deleting these.
-  expect(reads).toContain('useFuturesConfig().config?.fundingIntervalHours ?? null');
+  expect(reads).toContain('const futuresConfig = useFuturesConfig().config;');
+  expect(reads).toContain('futuresConfig?.fundingIntervalHours ?? null');
   expect(reads).not.toContain('getFuturesConfig');
   // The caption's read, pinned by name so this re-take is bounded to it.
   expect(reads).toContain("useAssetMetadata([baseAsset])[baseAsset.toUpperCase()]?.name ?? null");
   // And it must stay display-only: no price, size or money enters here.
   expect(reads).not.toMatch(/assetMetadata[^;]*(price|balance|position|margin)/i);
   // What it is not allowed to have changed.
-  for (const read of ['useFuturesMark', 'getFuturesFundingRate']) {
+  for (const read of ['useFuturesMark', 'voltexFundingRates(futuresConfig)']) {
     expect(reads).toContain(read);
   }
+  expect(reads).not.toContain('getFuturesFundingRate');
   // Previous digest, before the caption's read: 27318636…a152e.
   // Retaken only for shared mark reads and visibility-aware read scheduling.
-  expect(hash(reads)).toBe('45ca07c99985789e9f7c301b41ad1cd8bee6721a2897e5d3d5c282452e9eee3c');
+  // Retaken 2026-10-16 for VOLTEX funding V2 (previous 45ca07c9…9eee3c):
+  // the settled-record funding poll (getFuturesFundingRate, one visible
+  // minute) is replaced by VOLTEX's fixed rates by side from the same shared
+  // /futures/config read, asserted by name above. Mark/index reads unchanged.
+  expect(hash(reads)).toBe('1cf80b0fc54545841fed49fb274cc34c7c18c59512d96a3372297e6b2b1c25c8');
 });
 test('funding countdown arithmetic is unchanged and only its scheduler gains browser sleep', () => {
   const countdown = source.slice(source.indexOf('const NextFundingCountdown'));
@@ -201,7 +209,12 @@ test.each([
   // 2026-10-14: exact source re-reviewed after account-scoped Spot order
   // coalescing and a post-session-response guard. Financial writes and
   // Futures/Spot trading endpoints are unchanged; keep the byte-pin active.
-  ['frontend/src/lib/api.ts', 'adae38b50ae173bb9a537bbbabff275a7065275fda66663f090089ab8ed6b8d2'],
+  // Re-taken 2026-10-16 for VOLTEX funding V2 (previous adae38b5…ed6b8d2):
+  // types only — `getFuturesConfig` gains the optional `fundingCashflow`, and
+  // the positions/history rows gain the optional `fundingNet` with their
+  // `realizedPnl` documented as including settled funding. No request,
+  // route, transport or auth line changed.
+  ['frontend/src/lib/api.ts', 'e163d3511b852f72b394b175f030578be1c16ef6eea412cf43b0de36048930ce'],
   // 2026-09-30: reviewed Express 4 async-error containment. All fourteen
   // handler bodies are byte-identical to f62d28da; only asyncRoute and the
   // local wrapped auth binding changed. Pin the complete reviewed file;
@@ -213,7 +226,13 @@ test.each([
   // now answer `futuresRefusalBody(err)` — the same sentence plus a code for
   // the two known engine refusals (thin book, self-match). One import, no
   // route added, no read touched.
-  ['src/api/routes/futures.ts', '35a60abfc6f963cb257b3f3048341e07c21055af8795385e0349d8c5f0787fb5'],
+  // Re-taken 2026-10-16 for VOLTEX funding V2 (previous 35a60abf…787fb5):
+  // /futures/config adds `fundingCashflow` (config/voltexFunding), and
+  // /futures/positions and /futures/positions/history add the funding each
+  // position settled — one grouped FundingPayment read — into `realizedPnl`
+  // and as `fundingNet`. No order, close, transfer, margin or auth handler
+  // changed; covered by futuresProtection.test.ts.
+  ['src/api/routes/futures.ts', '3db9e99effe204f478d8a2c06a2bfa8571064c8adb401bffe14169f3779610a4'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
   // getAnalyticsOverview and its response types. Every futures method,
@@ -403,7 +422,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false, doc?: any
     },
   };
   const api = {
-    getFuturesConfig: jest.fn(async () => ({ fundingIntervalHours: 8 })),
+    getFuturesConfig: jest.fn(async () => ({ fundingIntervalHours: 8, fundingCashflow: { version: 'VOLTEX_FIXED_V2', long: '-0.0001', short: '0.0004' } })),
     getFuturesMarkPrice: jest.fn(async () => ({ markPrice: '72340.12', indexPrice: '71999.88' })),
     getFuturesFundingRate: jest.fn(async () => ({ history: [{ rate: '0.00003' }] })),
     getFuturesMarketStats: jest.fn(async () => marketStats),
@@ -497,6 +516,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false, doc?: any
     if (name === '../lib/formatNumber') return numbers;
     if (name === '../lib/priceChange') return changes;
     if (name === '../lib/terminalPresentation') return require('../terminalPresentation');
+    if (name === '../lib/contractDetails') return require('../contractDetails');
     return req(name);
   }, output);
   return { api, render(props: any = { symbol: 'BTC/USDT' }) {
@@ -601,7 +621,8 @@ test('visible metrics follow price, market, derivatives order, with the mark as 
   // Base volume still does not render, and no upstream venue is named.
   expect(text(tree)).not.toMatch(/volume24h|123,456/);
   expect(text(tree)).toContain('987.65M');
-  expect(text(blocks[6])).toContain('0.0030% / ');
+  // VOLTEX's fixed rates by side, from /futures/config — the rates positions settle at.
+  expect(text(blocks[6])).toContain('futures.long \u22120.01% · futures.short +0.04% / ');
   expect(nodes(blocks[6]).find(n => typeof n.type === 'function')?.props.intervalHours).toBe(8);
 });
 const oiStats = (value: Record<string, unknown>) =>
@@ -638,7 +659,8 @@ test.each([
 test('unavailable data stays unavailable rather than becoming fake zero', async () => {
   const component = mount({
     getFuturesMarketStats: async () => ({ available: false, reason: 'provider_unavailable' }),
-    getFuturesFundingRate: async () => ({ history: [] }),
+    // A config without funding rates (an older backend): the cell shows a dash, never a guess.
+    getFuturesConfig: async () => ({ fundingIntervalHours: 8 }),
   });
   component.render(); await flush();
   const tree = component.render();
@@ -869,7 +891,7 @@ describe('the instrument cluster is one node, and its caption is real', () => {
 // approved blocks, once each, and nothing else — a change to any protected read
 // or to the transport still trips the original pin.
 test('api.ts KYC additions are stripped exactly once; any other change still breaks the pin', () => {
-  const PIN = 'adae38b50ae173bb9a537bbbabff275a7065275fda66663f090089ab8ed6b8d2';
+  const PIN = 'e163d3511b852f72b394b175f030578be1c16ef6eea412cf43b0de36048930ce'; // re-taken for funding V2, see the api.ts pin above
   const api = read('frontend/src/lib/api.ts');
   expect(KYC_MATERIALS_API_ADDITIONS).toHaveLength(4);
   for (const block of KYC_MATERIALS_API_ADDITIONS) expect(api.split(block).length - 1).toBe(1);

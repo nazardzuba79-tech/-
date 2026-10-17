@@ -433,7 +433,12 @@ test.each([
     // whole terminal through the same path the pair list already uses.
     // No order, execution, account, depth or layout byte changed.
     // Re-taken again on the merge of main d694b2a0 (#517): both props above.
-    "623c6a72523b5d6bcd24ddab94c60027715865301c585a03baf7f184a637e536"
+    // Re-taken 2026-10-16 (funding V2, P&L split): one state flag and one prop.
+    // `onHistoryWanted={setCloseCardHistory}` on FuturesPositionsPanel lets a
+    // «Позиция закрыта» card ask for the native position history, which the
+    // page's existing `setHistoryDemand` effect now also loads while the card
+    // is shown. No order, execution, account, depth or layout byte changed.
+    "ac101210d56f6a487dd29bc16de067fc450ac5adfc9ae79c031a0a7a87291076"
   ],
   [
     "components/FuturesPairList.tsx",

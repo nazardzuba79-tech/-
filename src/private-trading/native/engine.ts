@@ -2,6 +2,7 @@ import BigNumber from 'bignumber.js';
 import { createHash } from 'crypto';
 import { validateLeverageRange, amount, decimal, linearPnl, selectRiskTier, validateContractOrder, validateProfile, weightedEntry, consumeBook } from '../math';
 import type { ContractRules, ModelProfile, RiskTier, Side } from '../types';
+import { fundingFlow, fundingSideRate, fundingTermsAt, isLegacyFunding, LEGACY_FUNDING_SCHEDULE, NATIVE_FUNDING_INTERVAL_MS, type NativeFundingSchedule } from './fundingModel';
 
 const D = BigNumber.clone({ DECIMAL_PLACES: 36, ROUNDING_MODE: BigNumber.ROUND_HALF_EVEN, EXPONENTIAL_AT: 100 });
 const n = (x: string) => decimal(x);
@@ -17,7 +18,11 @@ export const NATIVE_DEMO_MODEL = Object.freeze({
   /** Both are real here: see `demoAccount` for the split and `positionRisk` for the per-bucket tier. */
   marginModes: Object.freeze(['CROSS', 'ISOLATED'] as const),
   settlementAsset: 'USDT',
-  /** Owner-set custom demo cash-flow per 8h UTC settlement (signed fraction of position value). NOT provider funding. */
+  /**
+   * Owner-set custom demo cash-flow per 8h UTC settlement (signed fraction of position value). NOT provider funding.
+   * This is version VOLTEX_CUSTOM_DEMO_V1 of the funding schedule (see fundingModel.ts): it prices every settlement
+   * before the first later version's pinned start, and only those. The terms in force now are the schedule's.
+   */
   funding: Object.freeze({ longCashflow: '-0.001', shortCashflow: '0.004', unit: 'FRACTION', intervalMs: 28_800_000 }),
   fundingSource: 'CUSTOM_DEMO_MODEL',
   historicalPath: 'OPEN_LOW_HIGH_CLOSE', simulated: true,
@@ -155,6 +160,15 @@ export interface DemoEvent {
    * took back. '0' for a cross position. Absent on older events.
    */
   marginDelta?: string;
+  /**
+   * FUNDING only, and only on settlements priced by a version after the
+   * original one: the signed per-side fraction this position settled at and
+   * the schedule version that priced it. Absent on
+   * every VOLTEX_CUSTOM_DEMO_V1 settlement, whose events keep their original
+   * shape so an old journal replays to exactly the state it was stored with.
+   */
+  fundingRate?: string;
+  fundingModel?: string;
 }
 export interface BookConsumption {
   /** Legacy field kept for states persisted before the identity change; unused. */
@@ -482,7 +496,12 @@ export function demoPositionView(s: DemoState,p: DemoPosition) {
   const unrealized = p.status === 'OPEN' ? linearPnl(p.side,p.quantity,p.entryPrice,p.markPrice) : '0';
   const realized = out(n(p.realizedGross).minus(p.openingFees).minus(p.closingFees).plus(p.fundingNet));
   const net = out(n(unrealized).plus(realized));
-  return { ...p, unrealizedPnl: unrealized, realizedPnl: realized, netPnl: net,
+  // The same net, taken apart: what the price did (open and already closed
+  // slices), what was paid in fees, and the funding actually settled so far.
+  // tradingPnl - feesPaid + fundingNet === netPnl, exactly.
+  const tradingPnl = out(n(unrealized).plus(p.realizedGross));
+  const feesPaid = out(n(p.openingFees).plus(p.closingFees));
+  return { ...p, unrealizedPnl: unrealized, realizedPnl: realized, netPnl: net, tradingPnl, feesPaid,
     roiPercent: n(p.status==='OPEN'?p.roiBasis:p.closedRoiBasis).gt(0) ? out(n(p.status==='OPEN'?unrealized:net).div(p.status==='OPEN'?p.roiBasis:p.closedRoiBasis).times(100)) : null,
     liquidationPrice: p.status === 'OPEN' ? estimateDemoLiquidationPrice(s,p.id) : null,
     // The basis is named, because the two are not the same number: one is
@@ -716,12 +735,24 @@ export function markDemoAccount(s:DemoState,marks:Record<string,{mark:string;las
   for(const p of s.positions.filter(p=>p.status==='OPEN'&&(!historicalOnly||(p.historical&&p.executionMode!=='HISTORICAL_DEMO')))){const v=p.historical&&p.executionMode!=='HISTORICAL_DEMO'?s.historicalMarks?.[p.symbol]??s.marks[p.symbol]:s.marks[p.symbol];if(!v)throw new DemoEngineError('MARK_MISSING');p.markPrice=v.mark;p.lastPrice=v.last;}
   s.time=time;
 }
-export function settleDemoFunding(s:DemoState,time:number) {
-  requireTime(s,time);if(time%NATIVE_DEMO_MODEL.funding.intervalMs!==0)throw new DemoEngineError('NOT_FUNDING_BOUNDARY');
+/**
+ * One funding settlement at `time`, priced by the schedule version in force
+ * at that instant (fundingModel.ts). The legacy default keeps every caller
+ * that does not pass a schedule on exactly the arithmetic it always had.
+ *
+ * Only OPEN positions opened before the boundary and not yet settled at it
+ * take part, on the quantity they hold at the boundary: a position closed
+ * before it owes nothing, a partly closed one settles its remainder, and a
+ * second call for the same boundary (a replay, a restart) settles nothing.
+ * The notional is quantity × the boundary mark — the full value, so leverage
+ * is never applied a second time.
+ */
+export function settleDemoFunding(s:DemoState,time:number,schedule:NativeFundingSchedule=LEGACY_FUNDING_SCHEDULE) {
+  requireTime(s,time);if(time%NATIVE_FUNDING_INTERVAL_MS!==0)throw new DemoEngineError('NOT_FUNDING_BOUNDARY');
+  const terms=fundingTermsAt(schedule,time);
   for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.openedAt<time&&p.lastFundingAt<time)){
     if(s.marks[p.symbol]?.time!==time)throw new DemoEngineError('FUNDING_MARK_NOT_AT_SETTLEMENT');
-    const rate=p.side==='LONG'?NATIVE_DEMO_MODEL.funding.longCashflow:NATIVE_DEMO_MODEL.funding.shortCashflow;
-    const flow=n(p.quantity).times(p.markPrice).times(rate);
+    const flow=fundingFlow(terms,p.side,n(p.quantity).times(p.markPrice));
     let charged=flow;
     if(p.marginType==='ISOLATED'){
       // Into and out of the post, so funding can actually walk an isolated
@@ -733,7 +764,8 @@ export function settleDemoFunding(s:DemoState,time:number) {
       p.isolatedMargin=out(n(p.isolatedMargin).plus(charged));
     } else s.walletBalance=out(n(s.walletBalance).plus(flow));
     p.fundingNet=out(n(p.fundingNet).plus(charged));p.lastFundingAt=time;
-    emit(s,{kind:'FUNDING',time,positionId:p.id,orderId:null,symbol:p.symbol,quantity:p.quantity,price:p.markPrice,fee:'0',cashflow:out(charged),pricing:'MARK_SETTLEMENT'});
+    emit(s,{kind:'FUNDING',time,positionId:p.id,orderId:null,symbol:p.symbol,quantity:p.quantity,price:p.markPrice,fee:'0',cashflow:out(charged),pricing:'MARK_SETTLEMENT',
+      ...(isLegacyFunding(terms)?{}:{fundingRate:fundingSideRate(terms,p.side),fundingModel:terms.version})});
   }s.time=time;
 }
 export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:DemoEvent['pricing']='OHLC_PATH_MODEL',historicalOnly=false) {

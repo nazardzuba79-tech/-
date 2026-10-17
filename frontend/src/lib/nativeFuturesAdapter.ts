@@ -1,7 +1,7 @@
 import type { FuturesProtectionTrigger } from './api';
 import type { NativeState, NativePosition, NativeOrder, NativeDraft, NativeCandle } from './nativeDemoApi';
 import type {
-  FuturesAccountState, FuturesBalance, FuturesPosition, FuturesOrder, FuturesPositionHistoryRow, ResourceState,
+  FuturesAccountState, FuturesBalance, FuturesPnlBreakdown, FuturesPosition, FuturesOrder, FuturesPositionHistoryRow, ResourceState,
 } from './futuresAccountStore';
 
 /**
@@ -92,7 +92,18 @@ function nativeTrigger(
   };
 }
 
+/**
+ * The engine's own split of `netPnl`, passed through untouched. Fees are
+ * reported as paid (a positive figure), funding signed as settled. A server
+ * older than the split sends none, and the row keeps its two columns.
+ */
+export function nativePnlBreakdown(position: NativePosition): FuturesPnlBreakdown | undefined {
+  if (position.tradingPnl === undefined || position.feesPaid === undefined) return undefined;
+  return { tradingPnl: position.tradingPnl, funding: position.fundingNet, fees: position.feesPaid, netPnl: position.netPnl };
+}
+
 export function nativePositionToTerminal(position: NativePosition): FuturesPosition {
+  const pnlBreakdown = nativePnlBreakdown(position);
   return {
     id: position.id,
     symbol: nativeSymbolToPair(position.symbol),
@@ -113,6 +124,7 @@ export function nativePositionToTerminal(position: NativePosition): FuturesPosit
     // it already contains the fees and funding the realized figure carries,
     // so showing it here would count them twice.
     realizedPnl: position.realizedPnl,
+    ...(pnlBreakdown ? { pnlBreakdown } : {}),
     roe: position.roiPercent,
     openedAt: new Date(position.openedAt).toISOString(),
     // The native engine keeps TP/SL as prices on the position rather than
@@ -128,6 +140,7 @@ export function nativePositionToTerminal(position: NativePosition): FuturesPosit
 }
 
 export function nativePositionToHistoryRow(position: NativePosition): FuturesPositionHistoryRow {
+  const pnlBreakdown = nativePnlBreakdown(position);
   return {
     id: position.id,
     symbol: nativeSymbolToPair(position.symbol),
@@ -136,6 +149,7 @@ export function nativePositionToHistoryRow(position: NativePosition): FuturesPos
     marginType: position.marginMode,
     entryPrice: position.entryPrice,
     realizedPnl: position.netPnl,
+    ...(pnlBreakdown ? { pnlBreakdown } : {}),
     status: position.status,
     openedAt: new Date(position.openedAt).toISOString(),
     closedAt: position.closedAt === null ? null : new Date(position.closedAt).toISOString(),

@@ -67,6 +67,37 @@ describe('the «Позиция закрыта» card after a market close', () =
     expect(props.notice.pnl).toEqual({ text: '+2,018.50 USDT', positive: true });
   });
 
+  it('wants the position history while the card is shown, and releases it with the card', async () => {
+    // The native demo loads history only on demand (useNativeHistory); the
+    // page passes this on, so the card's result arrives on the Positions tab.
+    const wanted: boolean[] = [];
+    const s = setup(jest.fn().mockResolvedValue({ quantity: '0.5', averagePrice: '84037' }),
+      { tab: 'open', refreshKey: 0, onHistoryWanted: (w: boolean) => wanted.push(w) });
+    expect(wanted).toEqual([false]);
+    s.closeMarket(s.render());
+    await tick();
+    const props = s.notice(s.render());
+    expect(wanted[wanted.length - 1]).toBe(true);
+    props.onDismiss();
+    s.render();
+    expect(wanted[wanted.length - 1]).toBe(false);
+    const page = readSource('pages/FuturesPage.tsx');
+    expect(page).toContain("positions:bottomTab==='positionHistory'||closeCardHistory");
+    expect(page).toContain('onHistoryWanted={setCloseCardHistory}');
+  });
+
+  it('a native demo close carries the trade apart: trading, funding and fees above the Net P&L', async () => {
+    const s = setup(jest.fn().mockResolvedValue({ quantity: '0.5', averagePrice: '84037' }));
+    s.closeMarket(s.render());
+    await tick();
+    // 2 018.50 - 46.25 fees - 3.75 funding paid = 1 968.50, as the engine reports it.
+    s.account.positionHistory = { ...settled([{ id: 'p1', realizedPnl: '1968.5', pnlBreakdown: { tradingPnl: '2018.5', funding: '-3.75', fees: '46.25', netPnl: '1968.5' } }]), fetchedAt: Date.now() };
+    expect(s.notice(s.render()).notice.pnl).toEqual({
+      text: '+1,968.50 USDT', positive: true,
+      breakdown: { trading: '+2,018.50 USDT', funding: '-3.75 USDT', fees: '-46.25 USDT' },
+    });
+  });
+
   it('a loss is a loss: signed and coloured as one', async () => {
     const s = setup(jest.fn().mockResolvedValue({ quantity: '0.5', averagePrice: '79000' }));
     s.closeMarket(s.render());
@@ -149,5 +180,9 @@ describe('the card itself', () => {
   });
   it('does not repeat the generic refusal under the same title', () => {
     expect(source).toContain('notice.reason && notice.reason !== title &&');
+  });
+  it('a native close lists trading, funding and fees, and names its total Net P&L', () => {
+    for (const row of ['data-closed-trading', 'data-closed-funding', 'data-closed-fees']) expect(source).toContain(row);
+    expect(source).toContain("notice.pnl?.breakdown ? t('futures.colNetPnl') : t('futures.colRealized')");
   });
 });
