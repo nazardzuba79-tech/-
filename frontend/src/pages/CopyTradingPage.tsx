@@ -13,6 +13,7 @@ import { FeaturedAvatarProvider } from './copy-trading-bolt/FeaturedAvatarContex
 import { syntheticNazaraTrader } from '../lib/syntheticCopyTrading';
 import { kseniaTrader, KSENIA_TRADER_ID, withStrategyIdentityVerification } from '../lib/kseniaCopyTrading';
 import { useCopyMarketplace } from '../lib/useCopyMarketplace';
+import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';
 
 // Integration of the approved Bolt.new Copy Trading / Marketplace archive
 // (see copy-trading-bolt/) — same Marketplace/Profile views, same trader
@@ -74,11 +75,13 @@ export function CopyTradingPage() {
       <div className="app">
         <div className="content-wrap">
           <CopyEligibilityProvider depositUsd={depositUsd}>
+            <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>
             <FeaturedAvatarProvider ownerAvatar={identities.find(i => i.traderId === nazarTrader.id)?.avatarUrl ?? null}>
               {view === 'marketplace'
                 ? <Marketplace onOpen={openProfile} nazara={liveNazara} synthetic={synthetic} ksenia={liveKsenia} kseniaSynthetic={ksenia} availability={marketplace} />
                 : <Profile trader={visibleTrader} onBack={backToMarketplace} synthetic={visibleTrader.id === KSENIA_TRADER_ID ? ksenia : synthetic} />}
             </FeaturedAvatarProvider>
+            </DemoRoiProvider>
           </CopyEligibilityProvider>
         </div>
       </div>
