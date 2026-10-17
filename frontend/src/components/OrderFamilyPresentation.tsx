@@ -13,9 +13,9 @@ const families = [
  * supported type stays reachable without four or five cramped tabs. One or
  * the other is rendered, never both.
  */
-export function OrderFamilyTabs({ value, onChange, archive = false, compact = false }: { value: OrderFamily; onChange: (value: OrderFamily) => void; archive?: boolean; compact?: boolean }) {
+export function OrderFamilyTabs({ value, onChange, archive = false, compact = false, allowedFamilies }: { value: OrderFamily; onChange: (value: OrderFamily) => void; archive?: boolean; compact?: boolean; allowedFamilies?: readonly OrderFamily[] }) {
   const { t } = useLanguage();
-  const options = families.filter(([family]) => !archive || family !== 'OCO').map(([family, label]) => ({ family,
+  const options = families.filter(([family]) => (!archive || family !== 'OCO') && (!allowedFamilies || allowedFamilies.includes(family))).map(([family, label]) => ({ family,
     text: archive ? family === 'TAKE_PROFIT' ? 'Take Profit' : family === 'LIMIT' ? t('futures.closeLimit') : family === 'MARKET' ? t('futures.closeMarket') : t(label) : t(label) }));
   if (compact) return <label className="order-family-select">
     <span className="order-family-select-label">{t('trade.orderType')}</span>

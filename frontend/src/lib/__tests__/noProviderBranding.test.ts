@@ -74,7 +74,7 @@ describe('customer-facing components render no provider branding', () => {
   // These exact modules carry provider identities or public transport URLs,
   // not rendered labels. Their no-rendering boundary is checked below; do
   // not exclude all lib files because formatters can contain customer copy.
-  const DATA_MODULES = ['api.ts', 'liveMarketTypes.ts', 'referenceAssets.ts',
+  const DATA_MODULES = ['api.ts', 'stocksIdentity.ts', 'liveMarketTypes.ts', 'referenceAssets.ts',
     'directFuturesReference.ts', 'futuresCandles.ts', 'futuresDepth.ts', 'spotPublicMarket.ts', 'terminalPresentation.ts'];
   const EXCLUDED = new Set(DATA_MODULES.map(file => `src/lib/${file}`));
 
