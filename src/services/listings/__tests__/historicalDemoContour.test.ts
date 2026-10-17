@@ -8,6 +8,7 @@ import { importHistoricalHourlyCsv } from '../../../shared/listingHistoricalRepl
 import { defaultScenarioControls, type ScenarioControlsProgram } from '../../../shared/listingScenarioControls';
 import { checkPublishable, listingSimulationConfig, parseListingConfig, type ListingConfig, type PublishedListing } from '../listingConfig';
 import { setManagedListingAssets } from '../managedSnapshot';
+import { listingScenarioPreview } from '../listingPreview';
 import { allocateListingOwner } from '../ownerAllocation';
 import { HISTORICAL_DEMO_MESSAGE, isHistoricalDemoAsset, isHistoricalDemoConfig } from '../simulationContour';
 import { assertSpotListing, spotPriceSource } from '../../testMarkets/nrxSpot';
@@ -180,5 +181,40 @@ describe('historical demo contour: one continuous, restart-proof model', () => {
     });
     expect(cold!.prices).toEqual(warmPrices);
     expect(cold!.candles).toEqual(warmCandles);
+  });
+});
+
+describe('historical demo contour: the admin sees the whole future movement', () => {
+  test('the «history» preview covers every replayed hour and a day of neutral motion, on the same model (short replay)', () => {
+    const preview = listingScenarioPreview(config(), '1h', 'history');
+    const end = FROM + STAGES_END * HOUR;
+    expect(preview.scenarioSummary).toMatchObject({ horizon: 'history', from: end, to: end + (REPLAY_HOURS + 24) * HOUR });
+    expect(preview.candles).toHaveLength(REPLAY_HOURS + 25);
+    // The candle closing each replayed hour is the model's own price there.
+    const sim = simulationFor(listingSimulationConfig(config()));
+    const closeAt = (hour: number) => preview.candles.find(c => c.time * 1000 === end + hour * HOUR)!.close;
+    expect(closeAt(0)).toBeCloseTo(sim.priceAt(end + HOUR)!, 4);
+    expect(closeAt(BTC.bars.length)).toBeCloseTo(sim.priceAt(end + (BTC.bars.length + 1) * HOUR)!, 4);
+    expect(preview.scenarioSummary.observedLow).toBeLessThanOrEqual(preview.scenarioSummary.observedHigh);
+  });
+
+  test('a long replay is previewed for its first 30 days only: as bounded as the growth horizon', () => {
+    // 100 synthetic days with no overall drift: +0.6 % and back, every two hours.
+    let price = 100;
+    const flat = Array.from({ length: 2400 }, (_, i) => {
+      const open = price, close = i % 2 ? open / 1.006 : open * 1.006;
+      price = close;
+      return [Date.parse('2018-01-01T00:00:00Z') / 1000 + i * 3600, open, Math.max(open, close) * 1.002, Math.min(open, close) * .998, close].join(',');
+    }).join('\n');
+    const long = importHistoricalHourlyCsv(flat, 'BTC/USDT');
+    const preview = listingScenarioPreview(config({ simulationProgram: { ...program(), historical: { version: 1, clips: [long] } } }), '4h', 'history');
+    const end = FROM + STAGES_END * HOUR;
+    expect(preview.scenarioSummary).toMatchObject({ from: end, to: end + 720 * HOUR });
+    expect(preview.candles.length).toBeLessThanOrEqual(181);
+  });
+
+  test('without historical fragments there is no «history» horizon', () => {
+    expect(() => listingScenarioPreview(config({ simulationProgram: program('range') }), '1h', 'history'))
+      .toThrow(expect.objectContaining({ code: 'INVALID_PREVIEW_HORIZON' }));
   });
 });

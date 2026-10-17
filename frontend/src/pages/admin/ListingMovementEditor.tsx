@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import BigNumber from 'bignumber.js';
-import { ListingHistoricalEditor } from './ListingHistoricalEditor';
+import { ListingHistoricalEditor, type SavedHistoricalModel } from './ListingHistoricalEditor';
 import {
   MOVEMENT_SCENARIOS, formatMovementPrice, movementDuration, movementGainFromPrice, movementPriceFromGain,
-  normalizeMovementDecimal, parseMovementHours, movementStageMoment, selectMovementScenario, type ListingMovement, type MovementFrequency,
+  normalizeMovementDecimal, parseMovementHours, movementStageMoment, selectMovementScenario, withHistoricalContinuation,
+  withoutHistoricalContinuation, type ListingMovement, type MovementFrequency,
 } from './listingMovementModel';
 
 const FREQUENCIES: { value: MovementFrequency; label: string }[] = [{ value: 'rare', label: 'Редко' }, { value: 'moderate', label: 'Умеренно' }, { value: 'often', label: 'Часто' }];
@@ -13,8 +13,10 @@ function Frequency({ value, onChange, field }: { value: MovementFrequency; onCha
   return <select value={value} onChange={e => onChange(e.target.value as MovementFrequency)} data-field={field}>{FREQUENCIES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select>;
 }
 
-export function ListingMovementEditor({ value, initialPrice, listingAt, locked, onChange }: {
+export function ListingMovementEditor({ value, initialPrice, listingAt, locked, onChange, savedModels = [] }: {
   value: ListingMovement; initialPrice: string; listingAt: string | null; locked: boolean; onChange: (value: ListingMovement) => void;
+  /** Historical models already saved on other listings, for reuse. */
+  savedModels?: readonly SavedHistoricalModel[];
 }) {
   const [scenarioOpen, setScenarioOpen] = useState(false);
   const [durationUnit, setDurationUnit] = useState<'hours' | 'days'>('days');
@@ -23,6 +25,13 @@ export function ListingMovementEditor({ value, initialPrice, listingAt, locked, 
   const maxGain = gainText?.price === value.maxPrice && gainText.initial === initialPrice ? gainText.text : movementGainFromPrice(initialPrice, value.maxPrice);
   const selected = MOVEMENT_SCENARIOS.find(item => item.id === value.scenario);
   const totalHours = movementDuration(value);
+  const [returnNotice, setReturnNotice] = useState<string | null>(null);
+  /** Safe return to the ordinary scenario: fragments out, the editor's own default fall out, nothing else touched. */
+  const returnToRange = () => {
+    const { movement, removedDefaultFall } = withoutHistoricalContinuation(value);
+    setReturnNotice(`Обычный сценарий восстановлен: исторические фрагменты убраны${removedDefaultFall ? ', автоматически добавленный откат −55% за 24 часа удалён' : ''}. Сохраните черновик, чтобы изменение вступило в силу.`);
+    onChange(movement);
+  };
   const updateStage = (index: number, changes: Partial<ListingMovement['stages'][number]>) => onChange({ ...value, stages: value.stages.map((stage, i) => i === index ? { ...stage, ...changes } : stage) });
 
   return <fieldset className="listing-movement" disabled={locked} data-movement-editor>
@@ -61,26 +70,17 @@ export function ListingMovementEditor({ value, initialPrice, listingAt, locked, 
       }} /><small>Общий верхний предел относительно начальной цены, а не цены первых суток.</small></label>
       <label>Максимальная цена, USDT<input inputMode="decimal" value={value.maxPrice} data-field="maxPrice" onChange={e => { setGainText(null); onChange({ ...value, maxPrice: normalizeMovementDecimal(e.target.value) }); }} /><small>Единственная сохранённая граница, включая верхние тени. Не округляется вверх.</small><strong data-maximum-price>{formatMovementPrice(value.maxPrice)} USDT</strong></label>
       <label className="listing-wide">Поведение после всех этапов<select value={value.afterGrowth} data-field="afterGrowth" onChange={e => {
-        const next = e.target.value;
-        if (next === 'range') {
-          const { historical: _old, ...rest } = value;
-          onChange({ ...rest, afterGrowth: 'range' });
-          return;
-        }
+        if (e.target.value === 'range') { returnToRange(); return; }
+        setReturnNotice(null);
         // The owner's sequence is scripted GROWTH → FALL → historic rhythm.
-        // Supply a default 24h, −55% fall if one was not configured.
-        let stages = value.stages;
-        if (stages[stages.length - 1]?.type !== 'pullback' && totalHours <= 696 && stages.length < 24) {
-          const previous = stages[stages.length - 1].targetPrice;
-          const target = new BigNumber(previous).times('.45').decimalPlaces(10, BigNumber.ROUND_DOWN).toFixed();
-          stages = [...stages, { type: 'pullback', durationHours: 24, targetPrice: target }];
-        }
-        onChange({ ...value, afterGrowth: 'historical', historical: value.historical ?? { version: 1, clips: [] }, stages });
+        onChange(withHistoricalContinuation(value));
       }}><option value="range">Боковик без дальнейшего направленного роста</option>
       <option value="historical">Исторический ритм BTC / ETH / SOL (после падения)</option></select>
-      <small>Исторический ритм начинается только после последнего этапа-падения; одна исходная часовая свеча занимает ровно один час, без ускорения. Граница максимальной цены остаётся в силе.</small></label>
+      <small>Исторический ритм начинается только после последнего этапа-падения; одна исходная часовая свеча занимает ровно один час, без ускорения. Граница максимальной цены остаётся в силе.</small>
+      {returnNotice && <strong role="status" data-historical-returned>{returnNotice}</strong>}</label>
     </div>
-    {value.afterGrowth === 'historical' && <ListingHistoricalEditor program={value.historical ?? { version: 1, clips: [] }}
+    {value.afterGrowth === 'historical' && <ListingHistoricalEditor program={value.historical ?? { version: 1, clips: [] }} movement={value} listingAt={listingAt}
+      savedModels={savedModels} onReturn={returnToRange}
       onChange={historical => onChange({ ...value, historical })} />}
     <details className="listing-settings-details" data-movement-stages id="listing-section-stages">
       <summary>Этапы движения <span>{value.stages.length} · {formatMovementPrice(totalHours)} ч</span></summary>

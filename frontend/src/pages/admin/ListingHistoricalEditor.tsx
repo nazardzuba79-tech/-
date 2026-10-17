@@ -1,15 +1,31 @@
 import { useRef, useState, type ChangeEvent } from 'react';
 import { importHistoricalCsv, type HistoricalClip, type HistoricalProgram, type HistoricalSource } from './listingHistoricalImport';
 import { ListingHistoricalLibrary } from './ListingHistoricalLibrary';
+import { formatMovementPrice, historicalModelLabel, historicalPlan, historicalPlanCandles, movementDuration, type ListingMovement } from './listingMovementModel';
+import { ListingCandlePreview } from './ListingCandlePreview';
+
+/** A historical model already saved with another listing (its draft or its published version). */
+export interface SavedHistoricalModel { key: string; label: string; program: HistoricalProgram }
+
+const percent = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(2).replace('.', ',')}%`;
+const price = (value: number) => formatMovementPrice(Number(value.toPrecision(8)));
 
 /**
  * Draft-only historical continuation after the final programmed pullback.
  * A user-supplied CSV is not evidence of rights: server refuses publication.
  */
-export function ListingHistoricalEditor({ program, onChange }: {
+export function ListingHistoricalEditor({ program, movement, listingAt = null, savedModels = [], onReturn, onChange }: {
   program: HistoricalProgram;
+  /** UTC listing time: the history starts when the stages end. */
+  listingAt?: string | null;
+  /** The whole movement program: the fall's target is where history starts, the maximum price bounds it. */
+  movement?: ListingMovement;
+  savedModels?: readonly SavedHistoricalModel[];
+  /** Back to the ordinary scenario (the movement editor removes fragments and its own default fall). */
+  onReturn?: () => void;
   onChange: (next: HistoricalProgram) => void;
 }) {
+  const [savedKey,setSavedKey] = useState('');
   const [source,setSource] = useState<HistoricalSource>('BTC/USDT');
   const [startDateUtc,setStartDateUtc] = useState('');
   const [hours,setHours] = useState<'all'|'24'|'168'|'720'|'2160'>('2160');
@@ -46,10 +62,41 @@ export function ListingHistoricalEditor({ program, onChange }: {
     }finally {if(run===loadId.current)setBusy(false);}
   }
   const total=program.clips.reduce((n,clip)=>n+clip.bars.length,0);
+  const plan=movement?historicalPlan({...movement,afterGrowth:'historical',historical:program}):null;
+  const label=movement?historicalModelLabel({...movement,afterGrowth:'historical',historical:program}):null;
+  const saved=savedModels.find(m=>m.key===savedKey)??savedModels[0];
+  function applySaved() {
+    if(!saved)return;
+    if(program.clips.length&&!window.confirm('Заменить текущие исторические фрагменты моделью «'+saved.label+'»?'))return;
+    loadId.current++;setError(null);
+    onChange({version:1,clips:saved.program.clips.map(clip=>({...clip,bars:clip.bars.map(bar=>[...bar] as [number,number,number])}))});
+  }
   return <div className="listing-historical-editor" data-historical-editor>
     <h3>Историческая модель движения</h3>
-    <p className="listing-hint">После завершения заданного роста <strong>и заключительного отката</strong> цена повторяет относительные движения выбранного исторического актива. 1 час источника = 1 реальный час VOLTEX. Ускорения нет, исходные цены и объёмы не переносятся.</p>
-    <p className="listing-hint" role="status">Только черновик и закрытый предпросмотр. Источники и права на публикацию НЕ подтверждены. Публикация этого режима запрещена сервером.</p>
+    <div className="listing-historical-active" data-historical-active role="status">
+      <strong>Активная модель после этапов: {label ? `рост → откат → ${label} → нейтральное движение` : 'исторические фрагменты не выбраны'}</strong>
+      <span>Черновик и закрытый предпросмотр. Публикация и торговля заблокированы: права на данные не подтверждены, у симуляции нет реальных балансов, ордеров и оценки.</span>
+    </div>
+    {plan&&<div className="listing-historical-plan" data-historical-plan>
+      <p className="listing-hint">Будущее движение этого листинга (относительные изменения источника, применённые к цене после отката):</p>
+      <ol>
+        {plan.fragments.map((f,i)=><li key={i} data-historical-plan-fragment={i}>
+          <b>{f.source.split('/')[0]} с {f.sourceStart.slice(0,10)}</b> · {f.hours} ч ({Math.round(f.hours/24*10)/10} дн.): {price(f.startPrice)} → {price(f.endPrice)} USDT ({percent(f.changePercent)}; максимум {percent(f.highPercent)}, минимум {percent(f.lowPercent)})
+        </li>)}
+      </ol>
+      <p className="listing-hint" data-historical-plan-total>Всего {plan.hours} ч ≈ {Math.round(plan.hours/24*10)/10} дн. в реальном времени. Цена: от {price(plan.startPrice)} до {price(plan.endPrice)} USDT, диапазон {price(plan.lowPrice)} — {price(plan.highPrice)} USDT.{plan.withinMaxPrice?'':' Превышает максимальную цену листинга: выберите другой фрагмент или увеличьте максимум.'}</p>
+      {movement&&listingAt&&<details className="listing-settings-details" data-historical-plan-candles>
+        <summary>График всего исторического отрезка ({Math.ceil(plan.hours/24)} дн.)</summary>
+        <p className="listing-hint">Дневные свечи по относительным часовым движениям источника, без модельных теней. Точные свечи первых 30 дней — в «Предпросмотре» после сохранения черновика.</p>
+        <ListingCandlePreview plan candles={historicalPlanCandles({...movement,afterGrowth:'historical',historical:program}, Date.parse(listingAt)+movementDuration(movement)*3_600_000)} />
+      </details>}
+    </div>}
+    {savedModels.length>0&&<div className="listing-grid" data-historical-saved>
+      <label>Сохранённая модель другого листинга<select value={saved?.key??''} data-field="historicalSavedModel" onChange={e=>setSavedKey(e.target.value)}>
+        {savedModels.map(m=><option key={m.key} value={m.key}>{m.label}</option>)}
+      </select><small>Модели хранятся вместе с листингами на сервере: подходят для повторного использования на любом устройстве.</small></label>
+      <div className="listing-buttons"><button type="button" onClick={applySaved} data-apply-saved-historical>Применить модель</button></div>
+    </div>}
     <div className="listing-grid">
       <label>Исторический источник<select value={source} data-field="historicalSource" onChange={e=>setSource(e.target.value as HistoricalSource)}>
         <option value="BTC/USDT">Bitcoin (BTC)</option>
@@ -85,5 +132,6 @@ export function ListingHistoricalEditor({ program, onChange }: {
       </div>}
     <p className="listing-hint">Всего {total} исторических часов; затем — нейтральный модельный диапазон без возврата к начальной цене. Добавление отрезка ETH после BTC продолжает движение с последней цены BTC без скачка.</p>
     <p className="listing-hint">Почасовые High/Low известны, но их порядок внутри часа неизвестен. Десятисекундные тики и модельные объёмы достраиваются детерминированно, не выдаются за настоящие исторические сделки.</p>
+    {onReturn&&<div className="listing-buttons"><button type="button" onClick={onReturn} data-historical-return>Вернуться к обычному сценарию</button></div>}
   </div>;
 }

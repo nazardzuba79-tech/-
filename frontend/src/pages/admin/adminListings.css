@@ -148,3 +148,13 @@
 @media(max-width:390px) {
   .listing-history-preset { align-items:flex-start; }
 }
+
+/* Historical model: what runs after the stages, and what it will do (no new panels or colours). */
+.listing-historical-active { display:grid; gap:4px; padding:10px 12px; border:1px solid var(--border); border-left:3px solid #2f6fd6; border-radius:7px; background:var(--panel); font-size:12px; line-height:1.4; overflow-wrap:anywhere; }
+.listing-historical-active strong { color:var(--text-primary); font-size:13px; }
+.listing-historical-active span { color:var(--text-tertiary); }
+.listing-historical-plan { display:grid; gap:6px; min-width:0; }
+.listing-historical-plan ol { margin:0; padding-left:20px; display:grid; gap:4px; font-size:12px; line-height:1.45; overflow-wrap:anywhere; }
+.listing-historical-plan p { margin:0; }
+.listing-ident small.listing-model { display:block; color:#2f6fd6; overflow-wrap:anywhere; }
+[data-historical-returned] { display:block; margin-top:6px; font-size:12px; font-weight:500; color:var(--text-primary); }

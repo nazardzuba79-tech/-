@@ -73,6 +73,7 @@ jobs:
           src/services/listings/__tests__/aithReplacement.test.ts
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
+          src/services/listings/__tests__/historicalDemoContour.pg.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
@@ -80,10 +81,10 @@ jobs:
           frontend/src/lib/__tests__/testMarkets.test.ts
       - name: Durable Object store on real workerd (Miniflare)
         run: npm run test:listings --prefix workers/market-edge
-      - name: Saved scenario controls, bounds and legacy-history preservation
+      - name: Saved scenario controls, bounds, legacy-history preservation and the historical demo contour
         run: >-
           npx jest --runInBand --silent
-          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary'
+          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary|historicalDemoContour'
       - name: Historical replay CPU/RAM diagnostic (synthetic fixtures, not CX23)
         run: |
           mkdir -p /tmp/listings-qa-report

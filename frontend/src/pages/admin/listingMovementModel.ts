@@ -137,3 +137,116 @@ export function validateListingMovement(initial: string, program: ListingMovemen
   } else if (program.historical) return 'Исторический набор должен быть выключен вместе с историческим режимом.';
   return null;
 }
+
+// ── Historical continuation (PR #518): switching in and out, and what it will do ──
+
+/** The fall the editor appends when the historical continuation is chosen: 24 h down to 45 % of the previous target. */
+export function defaultHistoricalPullback(previousTarget: string): ListingMovement['stages'][number] {
+  return { type: 'pullback', durationHours: 24, targetPrice: decimal(previousTarget).times('.45').decimalPlaces(10, BigNumber.ROUND_DOWN).toFixed() };
+}
+
+/** GROWTH → FALL → historical rhythm: the default fall is added when the program does not end on one (and there is room). */
+export function withHistoricalContinuation(value: ListingMovement): ListingMovement {
+  let stages = value.stages;
+  if (stages[stages.length - 1]?.type !== 'pullback' && movementDuration(value) <= 696 && stages.length < 24) {
+    stages = [...stages, defaultHistoricalPullback(stages[stages.length - 1].targetPrice)];
+  }
+  return { ...value, afterGrowth: 'historical', historical: value.historical ?? { version: 1, clips: [] }, stages };
+}
+
+/**
+ * Back to the ordinary range after all stages: the historical fragments
+ * leave the program, and the fall the editor added for them goes too while it
+ * is still exactly the default one. A fall the admin changed stays.
+ */
+export function withoutHistoricalContinuation(value: ListingMovement): { movement: ListingMovement; removedDefaultFall: boolean } {
+  const { historical: _dropped, ...rest } = value;
+  const stages = value.stages, last = stages[stages.length - 1], previous = stages[stages.length - 2];
+  const removedDefaultFall = Boolean(previous && last && last.type === 'pullback' && last.durationHours === 24
+    && last.targetPrice === defaultHistoricalPullback(previous.targetPrice).targetPrice);
+  return { movement: { ...rest, afterGrowth: 'range', stages: removedDefaultFall ? stages.slice(0, -1) : stages }, removedDefaultFall };
+}
+
+export interface HistoricalPlanFragment {
+  source: string;
+  sourceStart: string;
+  hours: number;
+  /** Close of the fragment against its first open, and its extremes against that open, in percent. */
+  changePercent: number;
+  highPercent: number;
+  lowPercent: number;
+  /** Prices in USDT on this listing: where the fragment starts and ends. */
+  startPrice: number;
+  endPrice: number;
+}
+export interface HistoricalPlan {
+  fragments: HistoricalPlanFragment[];
+  hours: number;
+  startPrice: number;
+  endPrice: number;
+  lowPrice: number;
+  highPrice: number;
+  /** The replay keeps the 0.5 % headroom below the maximum price the server requires. */
+  withinMaxPrice: boolean;
+}
+
+/**
+ * What the historical continuation will do to THIS listing's price, from the
+ * fall's target onwards: the same relative moves the server replays (hourly
+ * close compounded, hourly high/low against the hour's open). Display only;
+ * the server validates again on save.
+ */
+export function historicalPlan(program: ListingMovement): HistoricalPlan | null {
+  const clips = program.afterGrowth === 'historical' ? program.historical?.clips ?? [] : [];
+  const anchor = Number(program.stages[program.stages.length - 1]?.targetPrice);
+  if (!clips.length || !(anchor > 0)) return null;
+  let price = anchor, low = anchor, high = anchor;
+  const fragments = clips.map((clip) => {
+    const start = price;
+    let clipLow = start, clipHigh = start;
+    for (const [h, l, c] of clip.bars) {
+      clipHigh = Math.max(clipHigh, price * (1 + h / 1_000_000));
+      clipLow = Math.min(clipLow, price * (1 + l / 1_000_000));
+      price *= 1 + c / 1_000_000;
+    }
+    low = Math.min(low, clipLow); high = Math.max(high, clipHigh);
+    return { source: clip.source, sourceStart: clip.sourceStart, hours: clip.bars.length,
+      changePercent: (price / start - 1) * 100, highPercent: (clipHigh / start - 1) * 100, lowPercent: (clipLow / start - 1) * 100,
+      startPrice: start, endPrice: price };
+  });
+  return { fragments, hours: fragments.reduce((n, f) => n + f.hours, 0), startPrice: anchor, endPrice: price, lowPrice: low, highPrice: high,
+    withinMaxPrice: high < Number(program.maxPrice) * .995 };
+}
+
+/** One line for a list or a select: «BTC с 2018-01-01, 90 дн. → ETH с 2021-01-01, 90 дн.». */
+export function historicalModelLabel(program: ListingMovement | undefined | null): string | null {
+  const clips = program?.afterGrowth === 'historical' ? program.historical?.clips ?? [] : [];
+  if (!clips.length) return null;
+  return clips.map(clip => {
+    const hours = clip.bars.length;
+    return `${clip.source.split('/')[0]} с ${clip.sourceStart.slice(0, 10)}, ${hours % 24 === 0 ? `${hours / 24} дн.` : `${hours} ч`}`;
+  }).join(' → ');
+}
+
+/**
+ * Candles of the WHOLE historical continuation, straight from its relative
+ * hourly moves (hour open compounded, high/low against it), grouped by
+ * `hoursPerCandle` from `startMs` (the end of the stages). The server adds
+ * the model's ten-second path and wicks on top; these show the replay's shape
+ * without asking it to compute up to 4800 hours. Display only.
+ */
+export function historicalPlanCandles(program: ListingMovement, startMs: number, hoursPerCandle = 24) {
+  const clips = program.afterGrowth === 'historical' ? program.historical?.clips ?? [] : [];
+  let price = Number(program.stages[program.stages.length - 1]?.targetPrice);
+  const candles: { time: number; open: number; high: number; low: number; close: number; volume: number }[] = [];
+  if (!clips.length || !(price > 0) || !Number.isFinite(startMs)) return candles;
+  let hour = 0;
+  for (const clip of clips) for (const [h, l, c] of clip.bars) {
+    const open = price, close = open * (1 + c / 1_000_000);
+    const high = open * (1 + h / 1_000_000), low = open * (1 + l / 1_000_000);
+    if (hour % hoursPerCandle === 0) candles.push({ time: (startMs + hour * 3_600_000) / 1000, open, high, low, close, volume: 0 });
+    else { const last = candles[candles.length - 1]; last.high = Math.max(last.high, high); last.low = Math.min(last.low, low); last.close = close; }
+    price = close; hour++;
+  }
+  return candles;
+}
