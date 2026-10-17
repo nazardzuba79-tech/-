@@ -10,7 +10,7 @@ const { createRoot } = req('react-dom/client');
 const { JSDOM } = req('jsdom');
 const source = readFileSync(resolve(frontend, 'src/components/HeaderDropdown.tsx'), 'utf8');
 const expected = {
-  TRADING_LINKS: ['/trade', '/trade?market=cfd'], MARKET_LINKS: ['/tools'],
+  TRADING_LINKS: ['/trade', '/futures', '/trade?market=cfd'], MARKET_LINKS: ['/tools'],
   OTC_LINKS: ['/otc', '/arbitrage'],
   KNOWLEDGE_LINKS: ['/academy/learn', '/academy/knowledge', '/academy/faq', '/academy/glossary'],
 };
@@ -66,9 +66,9 @@ describe('shared header dropdown presentation and navigation', () => {
       expect(document.getElementById(toggle().getAttribute('aria-controls')!)).not.toBeNull();
     });
   }
-  test('each of the nine products has a distinct icon', () => {
+  test('each of the ten products has a distinct icon', () => {
     const items = Object.keys(expected).flatMap(key => dropdown[key]);
-    expect(items).toHaveLength(9); expect(new Set(items.map(item => item.icon)).size).toBe(9);
+    expect(items).toHaveLength(10); expect(new Set(items.map(item => item.icon)).size).toBe(10);
   });
   test('Escape closes the panel and returns keyboard focus; outside focus closes it', async () => {
     await mount(); await open();

@@ -6350,3 +6350,11 @@ Branch `codex/futures-chart-priority-20261010` from fresh main `a3e4cca42c0851f5
   - Merge and deploy are the owner's. Not run: production, real phones.
 
 - PR #501 final integration: fresh main advanced to 5f3f981c1faa85edb4ae338b2fc9a5031b048225 (approved #500). Only AI_HANDOFF append conflict; both records preserved. Chart, Funding V2 and locale files had no upstream overlap with the hover repair. Final-head CI remains required.
+
+### 2026-10-17T14:35:52.686Z — Codex / local Stocks integration for independent review
+
+Base a9d40edeca55f23af3211abe0c92b5b2025f6fca includes PR501 9740b3b0ba4bd4b952588435877a082f392f43e4; source frozen runtime 8871a0d40e72a212dc2eba809dd918fd0ca02001. Local patch/hunk integration only in codex/stocks-main-integration-20261017:151 exact new Stocks files and25 existing files with additive Stocks hunks; reconciled7locales/i18n assertions/handoff and preserved all main PR501 client messages, FundingV2, KYC/NativeFunding schema and existing DemoBalance. All4financial fixes, ACK fix,7lineSQLJOIN revert and WS8871/default-off behavior preserved. Containing commit is local review SHA; exact SHA/tree and binary patch recorded in external evidence.
+
+Current integration:351 targeted regressionsPASS/11suites (i18n,PR501 messages/listing,Stocks routing/catalogue/viewer/Wallet/shared navigation,API), backend/frontend no-emit typecheckPASS, Prisma schema validation/private client generationPASS without DB connection/migrations. Historical119PASS and strictHTTP two-winner proof remain frozen-source baseline, not tests of this integration SHA. No CPU/load/full audit/24h/external workflow. Stocks workflow/historical profiler tooling not blindly imported:CI guards/dependencies recorded externally for separate review. Existing root lock already pins transitive ts-node10.9.2; no package install or lock rewrite.
+
+Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherry-pick, push,newPR,deploy,production/balance mutation. WS bootstrap,reviewed external route/Host-Origin,real immutable bindings,rights and agreed environment remain open. Current unprofiled crypto gate NOTRUN; <=+5% required before production/shared-production pilot, not alone a blocker for genuinely isolated agreed testing. Publication BLOCKED pending freshCF/NF/otherauto-deploy receipts.

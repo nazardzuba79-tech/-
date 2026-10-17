@@ -5,6 +5,48 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/// Opt-in Stocks test trading. Spendable USDT remains ONLY in DemoBalance.
+/// Ledger wallets.USDT omits cash; the repository derives it under row locks.
+model StocksTestAccount {
+  principalHash String @id
+  issuer String
+  subject String
+  userId String @unique
+  user User @relation(fields:[userId], references:[id], onDelete:Restrict)
+  receipts StocksTestReceipt[]
+  revision Int @default(0)
+  ledger Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([issuer, subject])
+}
+
+model StocksTestReceipt {
+  principalHash String
+  account StocksTestAccount @relation(fields:[principalHash], references:[principalHash], onDelete:Restrict)
+  intentId String
+  payloadHash String
+  revision Int
+  receipt Json
+  audit StocksTestAudit?
+  createdAt DateTime @default(now())
+  @@id([principalHash, intentId])
+}
+
+model StocksTestAudit {
+  principalHash String
+  intentId String
+  userId String
+  user User @relation(fields:[userId], references:[id], onDelete:Restrict)
+  receipt StocksTestReceipt @relation(fields:[principalHash,intentId], references:[principalHash,intentId], onDelete:Restrict)
+  sessionId String
+  kind String
+  revision Int
+  payloadHash String
+  createdAt DateTime @default(now())
+  @@id([principalHash, intentId])
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
@@ -144,6 +186,8 @@ model User {
   futuresRiskAckAt DateTime?
   supportConversations SupportConversation[]
   demoBalances  DemoBalance[]
+  stocksTestAccount StocksTestAccount?
+  stocksTestAudit StocksTestAudit[]
   demoOrders    DemoOrder[]
   portfolioSnapshots PortfolioSnapshot[]
 
