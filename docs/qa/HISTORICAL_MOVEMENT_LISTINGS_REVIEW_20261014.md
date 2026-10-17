@@ -67,3 +67,75 @@ This branch is deliberately **draft-only**. Neither merging unrelated PRs nor de
 ## 2026-10-14 — privacy improvement: movement-only local library
 
 The original Draft implementation cached raw CSV prices in browser IndexedDB even though the saved listing used PPM movements. The follow-up refactor now parses and validates the complete CSV in memory, then **persists only relative movement triples**, period metadata and two separate SHA-256 digests; source prices and source volumes are discarded after the import operation completes. A new local database name `voltex.admin.historical-movements.v2` prevents compatibility ambiguity with the experimental (never released) raw-CSV schema. Imported clips and public DTOs have not changed. This does **not** grant publication rights or turn a simulated asset into a real token.
+
+## 2026-10-17 — completion on current main: demo contour, scenario management
+
+**Base:** `main` `db844642` merged into this branch (merge commit `a1cd0218`). Three conflicts were reconciled by intent:
+- `AdminListingsPage.tsx`: main's action dock from #500 is kept, and the historical publish note and the disabled «Опубликовать» moved into it.
+- `ListingMovementEditor.tsx`: the historical editor and main's `listing-section-stages` anchor are both kept.
+- `adminListings.css`: both blocks are kept.
+
+NRX, AITH and VTA keep their histories. The NRX legacy identity and source projection, AITH replacement, capped demo listings, and VTA demo and coexistence tests all pass on the merged tree.
+
+### How managed listings touch money today (research, `origin/main`)
+
+- Managed listings are restricted test assets for deposits, withdrawals, balance adjustments, futures collateral and demo orders (`isTestAssetPairOrSymbol`).
+- Spot accepts orders only for a published, `tradable`, started listing. Any listing with a movement program is non-tradable (`DEMO_ONLY`).
+- The published-listing price feeds:
+  - wallet valuation (`WalletPortfolioService.pricesFor`);
+  - conditional-order triggers (`spotPriceSource`);
+  - card eligibility.
+- Owner allocation writes real `Balance` inventory, with no USDT.
+- Drafts live only in the Durable Object. Preview is pure computation.
+- No simulation state is stored in PostgreSQL, so there is no table of model events to duplicate.
+
+A historical draft never reaches Render's catalogue because publication is refused. Before this change, nothing else stopped the model price from flowing into those paths if that one gate were ever lifted.
+
+### Historical demo contour (`src/services/listings/simulationContour.ts`)
+
+A historical simulation (`scenario-controls-v2`, `afterGrowth: 'historical'`) has **no identity in the real ledger**. The refusals below hold even if it ever reached the published catalogue:
+
+- It stays a restricted test asset everywhere, as every managed listing.
+- The Spot gate refuses it outright, before the owner's simulation sale.
+- Its model price never triggers a conditional order and never values a wallet. It gets no price at all, not even a colliding venue ticker.
+- It holds no inventory:
+  - `ownerAllocation` must be `0` (`HISTORICAL_DEMO_NO_LEDGER`);
+  - `allocateListingOwner` refuses it before any database call.
+
+Existing listings are untouched: no stored record changes, and NRX, AITH, VTA and other managed listings behave as before. Public trading of simulated assets stays off.
+
+### Scenario management in Admin → Listings (no global design change)
+
+- **Choosing the model.**
+  - The historical continuation can be chosen after the stages.
+  - Fragments come from the 8 dated presets (BTC 2018, ETH 2021, SOL 2022). A preset activates only after an operator CSV import.
+  - The admin can also import their own CSV, or reuse a locally saved archive.
+- **Active model.** It is spelled out as stages → fall → each fragment → neutral motion. The list shows which listings carry a historical model.
+- **Future movement before saving.**
+  - For each fragment: start and end price on this listing, change, high and low.
+  - The whole replay is drawn as daily candles from its relative moves. This needs no server work and adds no model wicks.
+- **Server preview.** A new «Исторический отрезок» horizon is bounded like the growth horizon: the first 30 days, at most 720 simulated hours per request. Computing the maximum 4800-hour replay whole took about 11 s of CPU here (synthetic movements), so it is not offered.
+- **Reuse.** A saved model of another listing (its draft or published version) can be applied without a CSV or a local archive. It is stored on the server with the listing.
+- **Safe return to the ordinary scenario.** The fragments are removed, and so is the default −55 % fall the editor added. A fall the admin edited stays. The editor says what it removed. The listing can be published again after the draft is saved.
+
+### Verification added
+
+- `historicalDemoContour.test.ts`:
+  - ledger refusals;
+  - phases run in order;
+  - no price jump at the stage → BTC → ETH → neutral seams;
+  - every ten-second model event is unique and identical when recomputed;
+  - a restart (fresh modules, configuration re-read) continues the same market;
+  - the history preview.
+- `historicalDemoContour.pg.test.ts`: nine real-money entry points refuse the asset on disposable PostgreSQL, and no row of any other module changes. The tables checked are balances, Spot and demo orders and trades, deposits, withdrawals, futures balances, snapshots and the audit log.
+- `listingMovementHistorical.test.ts`: switching in and out, the plan, plan candles and the label.
+- `qa-listing-controls.cjs`: active model, plan, first-30-days preview, list badge, reuse, safe return, and layout at 1440, 390 and 320 px.
+
+### Still blocked (unchanged, deliberately)
+
+`HISTORICAL_RIGHTS_UNVERIFIED` stays fail-closed in the UI and on the server. Publication needs:
+- documented rights for each dataset and its derived use;
+- credible provenance for each uploaded CSV (a hash is not provenance);
+- an explicit legal presentation of the simulation.
+
+No merge, deploy, production migration, paid resource or real balance change was made.
