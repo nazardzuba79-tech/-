@@ -71,7 +71,7 @@ export function AssetLedger({
       // "Скрыть небольшие суммы (< $1)": a zero holding, or one the server
       // valued under a dollar. An UNPRICED holding is never hidden — its
       // value is unknown, not small.
-      if (hideZero && (r.total === 0 || (r.valueUsd !== null && r.valueUsd < 1))) return false;
+      if (hideZero && (r.total === 0 || (!r.stockPosition && r.valueUsd !== null && r.valueUsd < 1))) return false;
       if (!q) return true;
       return r.symbol.toLowerCase().includes(q) || r.name.toLowerCase().includes(q);
     });
@@ -116,6 +116,7 @@ export function AssetLedger({
   }, [query, hideZero, sortKey, sortDir, unavailable, loading]);
 
   function rowActions(row: LedgerRow) {
+    if (row.stockPosition) return <div className="wallet-ledger-row-actions"><Link className="wallet-ledger-trade wallet-link" to={'/stocks/' + encodeURIComponent(row.stockPosition.instrumentId)}>{t('wallet.tradeAction')}</Link></div>;
     // One line, never wrapping: a wrapped action stack was inflating every
     // row to ~110px and clipping the column. `Торговать` is the one action
     // worth a click of its own; the rest live in the menu.
@@ -157,7 +158,7 @@ export function AssetLedger({
   };
 
   const collateralSwitch = (row: LedgerRow) => {
-    if (!collateral) return <span className="text-[13px] text-ink-4">{EM_DASH}</span>;
+    if (!collateral || row.stockPosition) return <span className="text-[13px] text-ink-4">{EM_DASH}</span>;
     const pending = collateralPending.has(row.symbol);
     const locked = !row.collateralToggleable || !onCollateralChange;
     return (
@@ -305,7 +306,7 @@ export function AssetLedger({
                     const dp = decimalsFor(r.symbol);
                     return (
                       <tr
-                        key={r.symbol}
+                        key={r.stockPosition?.instrumentId ?? r.symbol}
                         className="wallet-ledger-tr group border-b border-hair-soft transition-colors duration-150 ease-exp last:border-b-0 hover:bg-panel-2"
                       >
                         <td className="py-3.5 pl-5 pr-3">
@@ -332,10 +333,13 @@ export function AssetLedger({
                           <span className="num mt-0.5 block text-[11px] leading-4 text-ink-4">
                             {r.priced && !hidden ? '≈ ' : ''}
                             <small className="wallet-ledger-value text-[11px]">
-                              {hidden ? MASK : formatUsd(r.valueUsd, lang)}
-                              {!r.priced && <span className="wallet-ledger-unpriced ml-1">{t('wallet.noQuote')}</span>}
+                              {hidden ? MASK : r.stockPosition ? (r.stockPosition.valueUSDT === null ? t('wallet.noQuote') : `≈ ${formatAmount(r.stockPosition.valueUSDT, lang, 2)} USDT`) : formatUsd(r.valueUsd, lang)}
+                              {!r.priced && !r.stockPosition && <span className="wallet-ledger-unpriced ml-1">{t('wallet.noQuote')}</span>}
                             </small>
                           </span>
+                          {r.stockPosition && <span className="num block text-[11px] leading-4 text-ink-4">
+                            {hidden ? MASK : `Вход: ${r.stockPosition.entryUSDT === null ? EM_DASH : formatAmount(r.stockPosition.entryUSDT, lang, 8)} USDT · PnL: ${r.stockPosition.unrealizedUSDT === null ? EM_DASH : formatAmount(r.stockPosition.unrealizedUSDT, lang, 2)} USDT`}
+                          </span>}
                         </td>
                         <td className="num px-3 py-3.5 text-[13px] font-medium text-ink">
                           {/* The wallet row on its own: on a margin account
@@ -365,7 +369,7 @@ export function AssetLedger({
                 const dp = decimalsFor(r.symbol);
                 const open = expanded === r.symbol;
                 return (
-                  <li key={r.symbol} className="border-b border-hair-soft last:border-b-0">
+                  <li key={r.stockPosition?.instrumentId ?? r.symbol} className="border-b border-hair-soft last:border-b-0">
                     <button
                       type="button"
                       onClick={() => setExpanded((cur) => (cur === r.symbol ? null : r.symbol))}
@@ -382,8 +386,9 @@ export function AssetLedger({
                           {hidden ? MASK : `${formatAmount(r.total, lang, dp)} ${r.symbol}`}
                         </p>
                         <p className="wallet-ledger-mobile-value num text-[12px] leading-4 text-ink-3">
-                          {hidden ? MASK : r.priced ? `${r.valueUsd !== null ? '≈ ' : ''}${formatUsd(r.valueUsd, lang)}` : t('wallet.noQuote')}
+                          {hidden ? MASK : r.stockPosition ? (r.stockPosition.valueUSDT === null ? t('wallet.noQuote') : `≈ ${formatAmount(r.stockPosition.valueUSDT, lang, 2)} USDT`) : r.priced ? `${r.valueUsd !== null ? '≈ ' : ''}${formatUsd(r.valueUsd, lang)}` : t('wallet.noQuote')}
                         </p>
+                        {r.stockPosition && <p className="num text-[11px] leading-4 text-ink-4">{hidden ? MASK : `Вход: ${r.stockPosition.entryUSDT === null ? EM_DASH : formatAmount(r.stockPosition.entryUSDT, lang, 8)} USDT · PnL: ${r.stockPosition.unrealizedUSDT === null ? EM_DASH : formatAmount(r.stockPosition.unrealizedUSDT, lang, 2)} USDT`}</p>}
                       </div>
                       <ChevronDownIcon aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 text-ink-4 transition-transform ${open ? 'rotate-180' : ''}`} />
                     </button>
@@ -402,7 +407,7 @@ export function AssetLedger({
                           <dt className="text-[12px] normal-case tracking-normal text-ink-3">{t('wallet.col24h')}</dt>
                           <dd className={`num mt-1 text-[14px] font-medium ${toneOf(r.changePercent24h)}`}>{formatPercent(r.changePercent24h, lang)}</dd>
                         </div>
-                        {collateral && (
+                        {collateral && !r.stockPosition && (
                           <div>
                             <dt className="text-[12px] normal-case tracking-normal text-ink-3">{t('wallet.colAsCollateral')}</dt>
                             <dd className="mt-1">{collateralSwitch(r)}</dd>

@@ -68,6 +68,7 @@ import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoTradingRouter } from './api/routes/demoTrading';
+import { stocksTestCashRouter } from './api/routes/stocksTestCash';
 import { VtaDemoSales } from './services/testMarkets/VtaDemoSales';
 import { privateTradingRouter } from './api/routes/privateTrading';
 import { createNativeLimitPass } from './private-trading/native/limitPass';
@@ -257,6 +258,7 @@ app.get('/notifications/public-key', (_req, res) => {
 // Test markets first: they answer the shared Spot endpoints for test pairs
 // only (simulated, never tradable) and pass every other pair through.
 app.use('/api/v1', testMarketsRouter());
+app.use('/api/v1', stocksTestCashRouter(prisma));
 app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, marketDataService, marketUniverse));
 app.use('/api/v1', ordersRouter(prisma, engine, marketDataService, bestEffortWake(() => priceWatcherService.wake(), 'spot-conditional')));
 app.use('/api/v1', tradesRouter(prisma));

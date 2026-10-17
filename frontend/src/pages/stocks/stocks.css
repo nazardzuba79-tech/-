@@ -1,0 +1,14 @@
+/* Stocks roots. Every token and rule of the Stocks surfaces is scoped to one of
+ * these two roots (stocksTerminal.css, stocksOverview.css). Nothing here or
+ * there sets :root, html, body, select/option or the shared --vx-* and terminal
+ * variables, so switching panel ↔ overview ↔ any other VOLTEX page changes no
+ * other page's theme. The shared header keeps its own styles. */
+.vx-stocks-terminal,
+.vx-stocks-overview { display:flex; flex-direction:column; min-height:100dvh; }
+.vx-stocks-terminal { height:100dvh; background:#000000; }
+.vx-stocks-overview { background:#f6f7f9; }
+:is(.vx-stocks-terminal, .vx-stocks-overview) > .vxs-main { flex:1; min-height:0; min-width:0; display:flex; flex-direction:column; }
+:is(.vx-stocks-terminal, .vx-stocks-overview) .vxs-route-hold { flex:1; }
+@media (max-width:860px) {
+  .vx-stocks-terminal { height:auto; }
+}
