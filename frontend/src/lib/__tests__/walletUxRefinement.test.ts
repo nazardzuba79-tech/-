@@ -469,7 +469,8 @@ test('the account header reports unknown margin figures as dashes, never as zero
   expect(rendered).not.toMatch(/EUR[^<]*\$0[,.]00/);
 });
 
-test('Convert is offered as unavailable rather than wired to nothing', () => {
+test('Convert opens the funded account flow without fetching or mutating from the strip', () => {
+  const onConvert = jest.fn();
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
     // The idle-margin note routes to the terminal, so the header now has a
@@ -480,15 +481,12 @@ test('Convert is offered as unavailable rather than wired to nothing', () => {
   const tree = PortfolioStrip({ account: null, performance: null, performanceLoading: false,
     period: '7d', onPeriodChange: jest.fn(), hidden: false, unavailable: false,
     onToggleHidden: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
-    onHistory: jest.fn() });
+    onHistory: jest.fn(), onConvert });
   const convert = byClass(tree, 'wallet-action-convert');
   expect(convert).toHaveLength(1);
-  // Disabled and labelled, with no onClick at all: there is no convert flow
-  // on this exchange, and a button that quietly does nothing is worse than
-  // one that says it cannot.
-  expect(convert[0].props.disabled).toBe(true);
-  expect(convert[0].props['aria-disabled']).toBe('true');
-  expect(convert[0].props.onClick).toBeUndefined();
+  expect(convert[0].props.disabled).not.toBe(true);
+  convert[0].props.onClick();
+  expect(onConvert).toHaveBeenCalledTimes(1);
   expect(read(wallet + 'PortfolioStrip.tsx')).not.toMatch(/\bapi\.|\bfetch\(/);
 });
 
@@ -648,11 +646,10 @@ test.each([
   [wallet + 'format.ts', '2ffab4fe344b95d04379ac3a85663ffde5a94cf5fbe171a80973c67494d846a0'],
   [wallet + 'TransferModal.tsx', '27eb01d9c3404b3134e9fbfe7622b4f6c2e69ffbd40d3e6824f919c8c7f856b3'],
   [wallet + 'ui.tsx', '304d71b9ab5a64d3d92c301bb42a9faf277647c840e38e923014e513a7b50f33'],
-  [wallet + 'TransactionHistory.tsx', 'b9b0b0c274bef595780cf7b748685b6486a72765af6af575a170f307a5b999b3'],
   ['src/services/PortfolioPerformanceEngine.ts', '7df2bd63857e0f710d020caaabcdc7b42f3269d8949ae03e908251562ab523b6'],
   ['src/api/routes/portfolio.ts', '3b4708bd2376dfd12d359645f866853f00f36a8967d104c1fec775f31dfdd051'],
 ])('preserves unchanged financial/data/format/modal source %s exactly', (file, hash) => {
-  const source = file === wallet + 'TransactionHistory.tsx' ? restoreApprovedHistoryTypography(read(file)) : read(file);
+  const source = read(file);
   expect(createHash('sha256').update(source).digest('hex')).toBe(hash);
 });
 
