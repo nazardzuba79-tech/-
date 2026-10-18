@@ -285,7 +285,17 @@ describe('translation integrity', () => {
           'draw.clone', 'draw.deleteObject', 'draw.dash.solid', 'draw.dash.dashed', 'draw.dash.dotted',
           // Ruler exact prices and its drag guide (owner, 2026-10-04): `git diff
           // --numstat` over the locales reports `7 0` per language, additions only.
-          'draw.measureSettings', 'draw.priceFrom', 'draw.priceTo', 'draw.toCurrentPrice', 'draw.apply', 'draw.priceInvalid', 'draw.currentPrice'];
+          'draw.measureSettings', 'draw.priceFrom', 'draw.priceTo', 'draw.toCurrentPrice', 'draw.apply', 'draw.priceInvalid', 'draw.currentPrice',
+          // TradingView's object toolbar, «…» menu and settings dialog for drawings
+          // (owner, 2026-10-18): `git diff --numstat` over the locales reports
+          // `46 0` per language, additions only.
+          'draw.settings', 'draw.more', 'draw.moveToolbar', 'draw.templates', 'draw.template', 'draw.templateSave', 'draw.templateName',
+          'draw.templateDefault', 'draw.templateRemove', 'draw.templateFailed', 'draw.save', 'draw.textColor', 'draw.customColor', 'draw.opacity',
+          'draw.background', 'draw.color', 'draw.line', 'draw.label', 'draw.labelBackground', 'draw.fontSize', 'draw.bold', 'draw.italic',
+          'draw.textPlaceholder', 'draw.info', 'draw.info.price', 'draw.info.percent', 'draw.info.ticks', 'draw.info.bars', 'draw.info.time',
+          'draw.info.volume', 'draw.tab.style', 'draw.tab.text', 'draw.tab.coordinates', 'draw.tab.visibility', 'draw.vis.minutes', 'draw.vis.hours',
+          'draw.vis.days', 'draw.vis.weeks', 'draw.vis.months', 'draw.point', 'draw.price', 'draw.morePoints', 'draw.bringToFront', 'draw.sendToBack',
+          'draw.cancel', 'draw.ok'];
     for (const code of LOCALES) {
       for (const key of drawingPanelKeys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
     }

@@ -6449,3 +6449,47 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - the listing gate fails open for pairs Render does not know (empty or stale snapshot, draft tickers);
   - `/trades/me` does not filter simulation sales.
 - **Not done:** merge, deploy, production migration, real balances or paid resources. Codex's Stocks #538 was not touched.
+
+### Claude — 2026-10-18 — Drawings: TradingView's object toolbar, «…» menu and settings dialog (ruler first)
+
+- **Owner request:** «Зроби дослідження лінійки на трейдінгвю … зроби 1:1 … не понятно як закривається. Я хочу щоб при нажатті на неї, відкривалось таке меню, де можна і настроїти, і видалити» (with two TradingView screenshots).
+- **Base and branch:** branch `claude/voltex-mobile-audit-7rpjni`, from `origin/main` `5d14647c`. `integration/claude-codex` no longer exists on the remote.
+- **Clicking a drawing (the ruler included) opens TradingView's floating toolbar.**
+  - Buttons: grip (drag), templates, line colour, background, text colour (measurements), width, line style (lines and shapes), text (text kinds), settings, lock, delete, «…».
+  - It docks in the plot's top band: centre, then right, then left. It avoids the label and every handle; when the band is taken it docks below them.
+  - A dragged position is remembered in `voltex.drawing-toolbar.position` and is clamped inside the chart.
+  - Its menus are fixed to the screen, so the chart edge never cuts them off. On a phone they open upward.
+- **«…» and a right click on the drawing** offer: settings, clone, bring to front, send to back, lock, delete. The right-click menu stays inside the chart.
+- **Settings dialog** (gear, double click, or «…» → Настройки). Tabs:
+  - Стиль: line, background on/off with colour and opacity, the «Информация» checklist, the label's text colour and size, label background on/off;
+  - Текст: own line, bold, italic;
+  - Координаты: the ruler's exact prices and «До текущей цены», which replaced the old «Точные цены» form; other kinds edit point prices;
+  - Видимость: minutes, hours, days, weeks, months.
+  - Footer: Шаблон / Отмена / Ок. Every change previews live; Отмена, Esc or a backdrop click restores the drawing.
+- **Ruler label is TradingView's:** a solid card in the measurement's colour with white text. A fall turns it red unless the trader picked a colour.
+  - This replaces the dark `#161e2c` card with an accent border from `0d955b29`/`de8252bb`.
+  - Kept from that work: card clamping, the flip away from an edge handle, the phone split at « (», and the handles left reachable.
+- **Data model** (`chartDrawings.ts`): new optional `DrawingStyle` fields and `StoredDrawing.intervals`. All are sanitized on load; old saved drawings load unchanged.
+- **Templates:** `drawingTemplates.ts`, key `voltex.drawing-templates.v1`, at most 20 per kind, this browser only.
+- **i18n:** 46 new `draw.*` keys in all 7 locales; `git diff --numstat` shows `46 0` per locale. They are listed in `i18nLanguageChunks.test.ts`.
+  - `draw.measureSettings`, `draw.priceFrom`, `draw.priceTo` and `draw.apply` are now unused. They are left in place.
+- **Material files:**
+  - `frontend/src/components/DrawingObjectToolbar.tsx` (new), `DrawingSettingsDialog.tsx` (new), `ChartDrawingLayer.tsx`, `DrawingTools.css`, `PriceChart.tsx` (passes `intervalSeconds`);
+  - `frontend/src/lib/chartDrawings.ts`, `drawingGeometry.ts`, `drawingTemplates.ts` (new);
+  - the 7 locales;
+  - tests: `drawingObjectSettings.test.ts` (new, 29); updated `chartDrawings`, `rulerPresentation`, `priceChartMarketOrders`, `futuresChartBlank` (they compile the new sibling components) and `i18nLanguageChunks`;
+  - QA scripts `qa-chart-ruler-measure.cjs` and `qa-chart-ruler-label.cjs` now reach exact prices through settings → «Координаты».
+- **Verified locally:**
+  - Frontend `tsc -b` and `vite build`: PASS.
+  - Full frontend Jest: 286/286 suites, 4781/4781 tests. A mutation check of placement and of «Фон метки» made the new tests fail.
+  - Browser on the AITH 4h fixture, real candles, 1440 and 390:
+    - interaction run: 46/46;
+    - drag, remembered position and clamping checked by probe;
+    - `qa-chart-ruler-measure`, `qa-chart-ruler-label`, `qa-chart-ruler-sync`, `qa-chart-ruler-timeframes`: PASS.
+  - `qa-chart-toolbar.cjs` fails the same way on a clean `main` build: its fixture chart shows `data-chart-error="failed"`. It is not caused by this change.
+  - `qa-chart-workspace.cjs --phase after`: first run 265/266. The failure was `spot.1440.data.window`: a `/market/listings` poll fired inside the hover window, which this change does not touch. Rerun 266/266. A clean `main` build gave 266/266.
+- **Unresolved:**
+  - TradingView's per-tool icons inside the «…» menu are not drawn; the menu has text rows only.
+  - Templates live in this browser only; there is no server sync.
+  - The Coordinates tab edits prices only; a point's time is still changed by dragging.
+- **Not done:** merge, deploy, PR, production migration, real data. Codex's Stocks files were not touched.

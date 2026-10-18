@@ -97,14 +97,22 @@ describe('shared drawing toolbar presentation and chart integration', () => {
   const tsx = (code: string) => ts.transpileModule(code, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  // The drawing layer is its own module, compiled against the same real helpers.
-  const layer: Record<string, any> = {};
-  new Function('require', 'exports', tsx(layerSource))((id: string) => {
-    if (id.endsWith('/browserActivity')) return browserActivity;
-    if (id === '../lib/chartDrawings') return drawings;
-    if (id === '../lib/drawingGeometry') return geometry;
-    return localRequire(id);
-  }, layer);
+  // The drawing layer is its own module, compiled against the same real helpers;
+  // so are its object toolbar and settings dialog.
+  const component = (file: string): Record<string, any> => {
+    const out: Record<string, any> = {};
+    const code = file === 'ChartDrawingLayer' ? layerSource : fs.readFileSync(path.resolve(__dirname, `../../components/${file}.tsx`), 'utf8');
+    new Function('require', 'exports', tsx(code))((id: string) => {
+      if (id.endsWith('/browserActivity')) return browserActivity;
+      if (id === '../lib/chartDrawings') return drawings;
+      if (id === '../lib/drawingGeometry') return geometry;
+      if (id === '../lib/drawingTemplates') return require('../drawingTemplates');
+      if (id === './DrawingObjectToolbar' || id === './DrawingSettingsDialog') return component(id.slice(2));
+      return localRequire(id);
+    }, out);
+    return out;
+  };
+  const layer = component('ChartDrawingLayer');
   const compiled = tsx(`${source}\nexport { DrawToolbar, DrawingDialog, drawingToolGroups };`);
   const exports: Record<string, any> = {};
   new Function('require', 'exports', compiled)((id: string) => {
@@ -180,12 +188,14 @@ describe('shared drawing toolbar presentation and chart integration', () => {
   test('the object toolbar is TradingView\'s: a grip that moves it, colour bars under pencil and bucket', () => {
     const html = renderToStaticMarkup(React.createElement(layer.DrawingObjectToolbar, {
       drawing: { id: 1, kind: 'rectangle', points: [{ time: 0, price: 1 }, { time: 1, price: 2 }], style: { ...drawings.drawingStyle({ kind: 'rectangle' }), color: '#ffffff' } },
-      locked: false, t: (k: string) => k, onStyle: () => {}, onToggleLock: () => {}, onClone: () => {}, onDelete: () => {}, onClose: () => {},
+      locked: false, t: (k: string) => k, onStyle: () => {}, onToggleLock: () => {}, onClone: () => {}, onDelete: () => {}, onClose: () => {}, onSettings: () => {},
     }));
     expect(html.indexOf('data-object-action="drag"')).toBeLessThan(html.indexOf('data-object-action="color"'));
     expect(html).toMatch(/data-object-action="color"[^]*?drawing-object-swatch" style="background:#ffffff"/);
     expect(html).toContain('data-object-action="fill"');
-    for (const action of ['width', 'dash', 'lock', 'clone', 'delete']) expect(html).toContain(`data-object-action="${action}"`);
+    // Clone moved into «…» with TradingView's other object commands.
+    const actions = [...html.matchAll(/data-object-action="([^"]+)"/g)].map((m) => m[1]);
+    expect(actions).toEqual(['drag', 'templates', 'color', 'fill', 'width', 'dash', 'settings', 'lock', 'delete', 'more']);
     expect(css).toMatch(/\.drawing-object-grip \{[^}]*cursor: grab/);
   });
 

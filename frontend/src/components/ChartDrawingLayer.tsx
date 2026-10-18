@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from 'react';
 import {
-  DRAWING_PALETTE, DRAWING_POINTS, DRAWING_TEXT_KINDS, DRAWING_WIDTHS, FREEHAND_KINDS, LIVE_END_KINDS, LIVE_SNAP_PX,
-  applyRulerPrices, drawingPriceInput, drawingStyle, livePoints, parseDrawingPrice, readableTextOn, settleLiveEnd, trackDrawingGesture,
-  type DrawingDash, type DrawingKind, type DrawingPoint, type DrawingStyle, type StoredDrawing,
+  DRAWING_POINTS, DRAWING_TEXT_KINDS, FREEHAND_KINDS, LIVE_SNAP_PX,
+  drawingStyle, drawingVisibleOn, readableTextOn, settleLiveEnd, trackDrawingGesture,
+  type DrawingKind, type DrawingPoint, type StoredDrawing,
 } from '../lib/chartDrawings';
-import { anchorAt, drawingGeometry, geometryDistance, labelBox, moveAnchor, rulerToolbarTop, HIT_RADIUS, type DrawingAnchor, type DrawingGeometry, type DrawingView, type Primitive } from '../lib/drawingGeometry';
+import { anchorAt, drawingGeometry, drawingToolbarPlacement, geometryDistance, labelBox, measurementLine, moveAnchor, HIT_RADIUS, type DrawingAnchor, type DrawingGeometry, type DrawingView, type Primitive } from '../lib/drawingGeometry';
+import { DrawingActions, DrawingObjectToolbar, TOOLBAR_HEIGHT } from './DrawingObjectToolbar';
+import { DrawingSettingsDialog } from './DrawingSettingsDialog';
+
+export { DrawingObjectToolbar };
 
 /** A drawing on the chart: the stored form plus a session id. */
 export type ChartDrawing = StoredDrawing & { id: number };
@@ -38,10 +42,10 @@ export interface ChartDrawingLayerProps {
   onRequestText: (request: TextRequest) => void;
   /** The chart's hook to abandon a half-placed shape or a drag (Clear, Lock, a pair change). */
   cancelRef?: MutableRefObject<(() => void) | null>;
+  /** The chart's interval: a drawing set to other timeframes («Видимость») is not shown on it. */
+  intervalSeconds?: number;
   t: (key: any) => string;
 }
-
-const DASHES: DrawingDash[] = ['solid', 'dashed', 'dotted'];
 
 /**
  * THE DRAWING LAYER. Every user drawing is painted here from its stored
@@ -57,8 +61,13 @@ const DASHES: DrawingDash[] = ['solid', 'dashed', 'dotted'];
  * locks, clones or deletes the object. Delete removes the selection.
  */
 export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
-  const { drawings, setDrawings, tool, view, pointAt, locked, blocked, selectedId, onSelect, t } = props;
+  const { drawings: everyDrawing, setDrawings, tool, view, pointAt, locked, blocked, selectedId, onSelect, t } = props;
+  // A drawing set to other timeframes («Видимость») is neither painted nor hit on this one.
+  const drawings = useMemo(() => everyDrawing.filter((d) => drawingVisibleOn(d, props.intervalSeconds)), [everyDrawing, props.intervalSeconds]);
   const svgRef = useRef<SVGSVGElement>(null);
+  // TradingView's settings dialog (gear, double click, «…» → Настройки) and the right-click menu.
+  const [settingsId, setSettingsId] = useState<number | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ id: number; x: number; y: number } | null>(null);
   const [pending, setPending] = useState<{ kind: DrawingKind; points: DrawingPoint[] } | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const cancelRef = useRef<(() => void) | null>(null);
@@ -221,7 +230,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
       const target = event.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
       if (event.key === 'Enter' && pendingRef.current?.kind === 'polyline') { event.preventDefault(); finishPolyline(); return; }
-      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedId !== null && !lockedRef.current) {
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedId !== null && !lockedRef.current && settingsId === null) {
         const selected = drawingsRef.current.find((d) => d.id === selectedId);
         if (!selected || selected.locked) return;
         event.preventDefault();
@@ -231,7 +240,43 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedId, finishPolyline, onSelect, setDrawings]);
+  }, [selectedId, settingsId, finishPolyline, onSelect, setDrawings]);
+
+  // A selection that goes away takes its menu with it.
+  useEffect(() => { if (selectedId === null) setContextMenu(null); }, [selectedId]);
+  useEffect(() => {
+    if (!contextMenu) return;
+    const away = (event: PointerEvent) => { if (!(event.target as Element | null)?.closest?.('[data-drawing-context-menu]')) setContextMenu(null); };
+    const esc = (event: KeyboardEvent) => { if (event.key === 'Escape') setContextMenu(null); };
+    window.addEventListener('pointerdown', away, true);
+    window.addEventListener('keydown', esc);
+    return () => { window.removeEventListener('pointerdown', away, true); window.removeEventListener('keydown', esc); };
+  }, [contextMenu]);
+
+  const openSettings = (drawing: ChartDrawing) => { if (blocked) return; onSelect(drawing.id); setContextMenu(null); setSettingsId(drawing.id); };
+  const openContextMenu = (event: React.MouseEvent, drawing: ChartDrawing) => {
+    if (blocked) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const at = local(event.clientX, event.clientY);
+    onSelect(drawing.id);
+    if (at) setContextMenu({ id: drawing.id, x: at.x, y: at.y });
+  };
+  const replace = (next: ChartDrawing) => setDrawings((previous) => previous.map((d) => (d.id === next.id ? next : d)));
+  const remove = (id: number) => { setDrawings((previous) => previous.filter((d) => d.id !== id)); onSelect(null); setSettingsId(null); setContextMenu(null); };
+  const clone = (source: ChartDrawing) => {
+    const copy: ChartDrawing = { ...source, id: newDrawingId(), locked: undefined, points: source.points.map((p) => ({ ...p })) };
+    setDrawings((previous) => [...previous, copy]);
+    onSelect(copy.id);
+  };
+  // Visual order: TradingView's «На передний план» / «На задний план» — the paint order is the list order.
+  const reorder = (id: number, to: 'front' | 'back') => setDrawings((previous) => {
+    const item = previous.find((d) => d.id === id);
+    if (!item) return previous;
+    const rest = previous.filter((d) => d.id !== id);
+    return to === 'front' ? [...rest, item] : [item, ...rest];
+  });
+  const toggleLock = (id: number) => setDrawings((previous) => previous.map((d) => (d.id === id ? { ...d, locked: !d.locked || undefined } : d)));
 
   /** Press on a drawing in a cursor mode: select it and drag the body. */
   const startMove = (event: React.PointerEvent, drawing: ChartDrawing) => {
@@ -330,7 +375,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
           return <g key={d.id} data-drawing-kind={d.kind} data-drawing-selected={d.id === selectedId || undefined} data-drawing-live={d.followLast || undefined}
             onPointerEnter={d.kind === 'ruler' ? () => hoverRulerOn(d.id) : undefined} onPointerLeave={d.kind === 'ruler' ? hoverRulerOff : undefined}>
             <Primitives prims={guided ? g.prims.filter((p) => p.t !== 'label') : g.prims} />
-            {!capture && !blocked && <HitTargets geometry={g} onPointerDown={(e) => startMove(e, d)} />}
+            {!capture && !blocked && <HitTargets geometry={g} onPointerDown={(e) => startMove(e, d)} onDoubleClick={() => openSettings(d)} onContextMenu={(e) => openContextMenu(e, d)} />}
           </g>;
         })}
         {preview && <g opacity={0.85}><Primitives prims={preview.prims} /></g>}
@@ -353,26 +398,47 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
           color={drawingStyle(drawings.find((d) => d.id === guide.id) ?? { kind: 'ruler' }).color} t={t} />}
       </g>
     </svg>
-    {selected && !blocked && <DrawingObjectToolbar key={selected.id} drawing={selected} locked={locked} t={t}
-      top={selected.kind === 'ruler' ? rulerToolbarTop(geometries.get(selected.id)) : undefined}
+    {selected && !blocked && settingsId === null && <DrawingObjectToolbar key={selected.id} drawing={selected} locked={locked} t={t}
+      placement={view ? drawingToolbarPlacement(geometries.get(selected.id), { width: view.width, height: view.height }, { w: toolbarWidth(selected), h: TOOLBAR_HEIGHT }) : undefined}
       onStyle={(style) => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...d, style } : d)))}
-      onToggleLock={() => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...d, locked: !d.locked || undefined } : d)))}
-      onClone={() => {
-        const copy: ChartDrawing = { ...selected, id: newDrawingId(), locked: undefined, points: selected.points.map((p) => ({ ...p })) };
-        setDrawings((previous) => [...previous, copy]);
-        onSelect(copy.id);
-      }}
-      onDelete={() => { setDrawings((previous) => previous.filter((d) => d.id !== selected.id)); onSelect(null); }}
+      onToggleLock={() => toggleLock(selected.id)}
+      onClone={() => clone(selected)}
+      onDelete={() => remove(selected.id)}
       onEditText={DRAWING_TEXT_KINDS.includes(selected.kind) ? () => props.onRequestText({ edit: selected }) : undefined}
-      measure={LIVE_END_KINDS.includes(selected.kind) ? {
-        from: selected.points[0].price,
-        to: livePoints(selected, view?.live)[1].price,
-        followLast: !!selected.followLast,
-        live: view?.live ?? null,
-      } : undefined}
-      onMeasure={(prices) => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...applyRulerPrices(d, prices, view?.live), id: d.id } : d)))}
+      onSettings={() => openSettings(selected)}
+      onOrder={(to) => reorder(selected.id, to)}
       onClose={() => onSelect(null)} />}
+    {contextMenu && (() => {
+      const target = drawings.find((d) => d.id === contextMenu.id);
+      if (!target) return null;
+      return <ContextMenu key={`${contextMenu.id}:${contextMenu.x}:${contextMenu.y}`} x={contextMenu.x} y={contextMenu.y}>
+        <DrawingActions t={t} drawing={target} locked={locked} onSettings={() => openSettings(target)} onClone={() => clone(target)}
+          onOrder={(to) => reorder(target.id, to)} onToggleLock={() => toggleLock(target.id)} onDelete={() => remove(target.id)} onDone={() => setContextMenu(null)} />
+      </ContextMenu>;
+    })()}
+    {settingsId !== null && (() => {
+      const target = everyDrawing.find((d) => d.id === settingsId);
+      return target ? <DrawingSettingsDialog key={target.id} drawing={target} locked={locked} live={view?.live ?? null} t={t}
+        onPreview={replace} onClose={() => setSettingsId(null)} /> : null;
+    })()}
   </>;
+}
+
+/** The right-click menu at the pointer, kept inside the chart: it opens upward or leftward where there is no room. */
+function ContextMenu({ x, y, children }: { x: number; y: number; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [at, setAt] = useState({ left: x, top: y });
+  useLayoutEffect(() => {
+    const node = ref.current, parent = node?.offsetParent as HTMLElement | null;
+    if (!node || !parent) return;
+    const w = node.offsetWidth, h = node.offsetHeight;
+    setAt({
+      left: x + w + 4 > parent.clientWidth ? Math.max(4, x - w) : x,
+      top: y + h + 4 > parent.clientHeight ? Math.max(4, Math.min(y - h, parent.clientHeight - h - 4)) : y,
+    });
+  }, [x, y]);
+  return <div ref={ref} className="drawing-object-menu drawing-context-menu" role="menu" data-drawing-context-menu
+    style={{ left: at.left, top: at.top }} onPointerDown={(e) => e.stopPropagation()}>{children}</div>;
 }
 
 /**
@@ -416,15 +482,18 @@ function Primitives({ prims }: { prims: Primitive[] }) {
         const box = labelBox(p);
         const size = p.size ?? 11;
         if (p.variant === 'measurement') {
+          // TradingView's measurement label: a solid card in the measurement's
+          // colour, every line in the label colour; «Фон метки» off leaves the text alone.
+          const pitch = measurementLine(size);
           return <g key={i} data-ruler-label style={{ userSelect: 'none', fontVariantNumeric: 'tabular-nums' }}>
             <title>{p.lines.join('\n')}</title>
-            <rect x={box.x} y={box.y} width={box.w} height={box.h} rx={6} fill={p.bg} stroke={p.accent} strokeOpacity={0.65} strokeWidth={1} />
+            {p.bg !== 'none' && <rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={p.bg} />}
             {p.lines.map((line, n) => {
-              const fontSize = n === 0 ? size : size - 1;
+              const note = p.note?.line === n ? p.note : undefined;
               const available = Math.max(1, box.w - 24);
-              const fits = line.length * 6.4 * (fontSize / 11) <= available;
-              return <text key={n} x={box.x + box.w / 2} y={box.y + 8 + n * 18 + 12}
-                fill={n === 0 ? p.color : '#bac6d8'} fontSize={fontSize} fontWeight={n === 0 ? 600 : 400}
+              const fits = line.length * 6.4 * (size / 11) <= available;
+              return <text key={n} x={box.x + box.w / 2} y={box.y + 8 + n * pitch + Math.round(pitch * 0.68)}
+                fill={p.color} fontSize={size} fontWeight={note ? (note.bold ? 700 : 400) : n === 0 ? 600 : 500} fontStyle={note?.italic ? 'italic' : undefined}
                 textAnchor="middle" {...(!fits ? { textLength: available, lengthAdjust: 'spacingAndGlyphs' as const } : {})}>{line}</text>;
             })}
           </g>;
@@ -439,146 +508,24 @@ function Primitives({ prims }: { prims: Primitive[] }) {
 }
 
 /** Invisible, wider targets over what is painted, live only in cursor modes. */
-function HitTargets({ geometry, onPointerDown }: { geometry: DrawingGeometry; onPointerDown: (e: React.PointerEvent) => void }) {
+function HitTargets({ geometry, onPointerDown, onDoubleClick, onContextMenu }: {
+  geometry: DrawingGeometry; onPointerDown: (e: React.PointerEvent) => void; onDoubleClick?: () => void; onContextMenu?: (e: React.MouseEvent) => void;
+}) {
   const style: CSSProperties = { cursor: 'pointer' };
-  return <g onPointerDown={onPointerDown}>
+  return <g onPointerDown={onPointerDown} onDoubleClick={onDoubleClick ? (e) => { e.stopPropagation(); onDoubleClick(); } : undefined} onContextMenu={onContextMenu}>
     {geometry.strokes.map((s, i) => <polyline key={`s${i}`} points={s.map((q) => `${q.x},${q.y}`).join(' ')} fill="none" stroke="transparent" strokeWidth={HIT_RADIUS * 2} style={{ ...style, pointerEvents: 'stroke' }} />)}
     {geometry.areas.map((a, i) => <polygon key={`a${i}`} points={a.map((q) => `${q.x},${q.y}`).join(' ')} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
     {geometry.boxes.map((b, i) => <rect key={`b${i}`} x={b.x} y={b.y} width={b.w} height={b.h} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
   </g>;
 }
 
-/**
- * The floating toolbar over a selected drawing, as in TradingView: line
- * colour, fill, width, line style, the object's own lock, clone and
- * delete, plus text for the kinds that carry words.
- */
-export interface RulerPrices { from: number; to: number; followLast: boolean }
-
-export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock, onClone, onDelete, onEditText, measure, onMeasure, onClose, top }: {
-  drawing: ChartDrawing; locked: boolean; t: (key: any) => string;
-  onStyle: (style: DrawingStyle) => void; onToggleLock: () => void; onClone: () => void; onDelete: () => void;
-  onEditText?: () => void;
-  /** A ruler's exact prices: shown in its settings, applied by `onMeasure`. */
-  measure?: RulerPrices & { live: DrawingPoint | null };
-  onMeasure?: (prices: RulerPrices) => void;
-  onClose: () => void;
-  top?: number;
-}) {
-  const [menu, setMenu] = useState<null | 'color' | 'fill' | 'width' | 'dash' | 'measure'>(null);
-  // TradingView's toolbar is moved by its grip; the offset lives as long as the selection.
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+/** The toolbar's width before it has rendered: 36px a button, plus its grip and padding (DrawingObjectToolbar). */
+function toolbarWidth(drawing: ChartDrawing): number {
   const style = drawingStyle(drawing);
-  const startDrag = (event: React.PointerEvent) => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    const origin = { x: event.clientX - offset.x, y: event.clientY - offset.y };
-    const move = (ev: PointerEvent) => setOffset({ x: ev.clientX - origin.x, y: ev.clientY - origin.y });
-    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-  };
-  const frozen = locked || !!drawing.locked;
-  const set = (patch: Partial<DrawingStyle>) => { onStyle({ ...style, ...patch }); setMenu(null); };
-  const canFill = style.fill !== undefined;
-  return <div className="drawing-object-toolbar" role="toolbar" aria-label={t('draw.objectToolbar')} data-drawing-object-toolbar
-    style={{ top, ...(offset.x || offset.y ? { transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)` } : {}) }}
-    onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); if (menu) setMenu(null); else onClose(); } }}>
-    <span className="drawing-object-grip" data-object-action="drag" aria-hidden="true" onPointerDown={startDrag}>
-      <svg width="8" height="16" viewBox="0 0 8 16"><g fill="currentColor"><circle cx="2" cy="3" r="1.2" /><circle cx="6" cy="3" r="1.2" /><circle cx="2" cy="8" r="1.2" /><circle cx="6" cy="8" r="1.2" /><circle cx="2" cy="13" r="1.2" /><circle cx="6" cy="13" r="1.2" /></g></svg>
-    </span>
-    <button type="button" data-object-action="color" title={t('draw.lineColor')} aria-label={t('draw.lineColor')} disabled={frozen} aria-expanded={menu === 'color'} onClick={() => setMenu(menu === 'color' ? null : 'color')}>
-      <span className="drawing-object-swatched">
-        <svg width="20" height="20" viewBox="0 0 28 28" aria-hidden="true"><path d="m17.5 5.5 5 5L10 23H5v-5zM15 8l5 5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
-        <i className="drawing-object-swatch" style={{ background: style.color }} />
-      </span>
-    </button>
-    {canFill && <button type="button" data-object-action="fill" title={t('draw.fillColor')} aria-label={t('draw.fillColor')} disabled={frozen} aria-expanded={menu === 'fill'} onClick={() => setMenu(menu === 'fill' ? null : 'fill')}>
-      <span className="drawing-object-swatched">
-        <svg width="20" height="20" viewBox="0 0 28 28" aria-hidden="true"><path d="m12.5 4.5 9 9-7 7-9-9zM5.5 11.5h16M23 16s-2 2.6-2 4a2 2 0 0 0 4 0c0-1.4-2-4-2-4z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
-        <i className="drawing-object-swatch" style={{ background: style.fill }} />
-      </span>
-    </button>}
-    <button type="button" data-object-action="width" title={t('draw.lineWidth')} aria-label={t('draw.lineWidth')} disabled={frozen} aria-expanded={menu === 'width'} onClick={() => setMenu(menu === 'width' ? null : 'width')}>
-      <span className="drawing-object-width"><i style={{ height: Math.max(1, Math.min(4, style.width)) }} />{style.width}px</span>
-    </button>
-    <button type="button" data-object-action="dash" title={t('draw.lineStyle')} aria-label={t('draw.lineStyle')} disabled={frozen} aria-expanded={menu === 'dash'} onClick={() => setMenu(menu === 'dash' ? null : 'dash')}>
-      <svg width="22" height="18" viewBox="0 0 24 18" aria-hidden="true"><line x1="2" y1="9" x2="22" y2="9" stroke="currentColor" strokeWidth="2" strokeDasharray={style.dash === 'dashed' ? '5 3' : style.dash === 'dotted' ? '1 3' : undefined} strokeLinecap="round" /></svg>
-    </button>
-    {measure && onMeasure && <button type="button" data-object-action="measure" title={t('draw.measureSettings')} aria-label={t('draw.measureSettings')} disabled={frozen} aria-expanded={menu === 'measure'} onClick={() => setMenu(menu === 'measure' ? null : 'measure')}>
-      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.7" /><circle cx="8" cy="17" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.7" /></svg>
-    </button>}
-    {onEditText && <button type="button" data-object-action="text" title={t('draw.editText')} aria-label={t('draw.editText')} disabled={frozen} onClick={onEditText}>
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6V4h14v2M12 4v16M9 20h6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-    </button>}
-    <span className="drawing-object-sep" />
-    <button type="button" data-object-action="lock" title={drawing.locked ? t('draw.unlockObject') : t('draw.lockObject')} aria-label={drawing.locked ? t('draw.unlockObject') : t('draw.lockObject')} aria-pressed={!!drawing.locked} disabled={locked} onClick={onToggleLock}>
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7" /><path d={drawing.locked ? 'M8 11V8a4 4 0 0 1 8 0v3' : 'M8 11V8a4 4 0 0 1 7.5-2'} fill="none" stroke="currentColor" strokeWidth="1.7" /></svg>
-    </button>
-    <button type="button" data-object-action="clone" title={t('draw.clone')} aria-label={t('draw.clone')} disabled={locked} onClick={onClone}>
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7" /><path d="M16 5H6a2 2 0 0 0-2 2v10" fill="none" stroke="currentColor" strokeWidth="1.7" /></svg>
-    </button>
-    <button type="button" data-object-action="delete" title={t('draw.deleteObject')} aria-label={t('draw.deleteObject')} disabled={frozen} onClick={onDelete}>
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></svg>
-    </button>
-    {menu === 'measure' && measure && onMeasure && <RulerPricesForm measure={measure} t={t}
-      onApply={(prices) => { onMeasure(prices); setMenu(null); }} />}
-    {menu && menu !== 'measure' && <div className="drawing-object-menu" role="menu" data-object-menu={menu}>
-      {(menu === 'color' || menu === 'fill') && <div className="drawing-object-palette">
-        {DRAWING_PALETTE.map((c) => <button key={c} type="button" role="menuitemradio" aria-checked={(menu === 'color' ? style.color : style.fill) === c} aria-label={c} title={c}
-          style={{ background: c }} onClick={() => set(menu === 'color' ? { color: c } : { fill: c })} />)}
-      </div>}
-      {menu === 'width' && DRAWING_WIDTHS.map((w) => <button key={w} type="button" role="menuitemradio" aria-checked={style.width === w} className="drawing-object-menu-row" onClick={() => set({ width: w })}>
-        <i style={{ height: w }} /><span>{w}px</span>
-      </button>)}
-      {menu === 'dash' && DASHES.map((d) => <button key={d} type="button" role="menuitemradio" aria-checked={style.dash === d} className="drawing-object-menu-row" onClick={() => set({ dash: d })}>
-        <svg width="40" height="10" viewBox="0 0 40 10" aria-hidden="true"><line x1="2" y1="5" x2="38" y2="5" stroke="currentColor" strokeWidth="2" strokeDasharray={d === 'dashed' ? '6 4' : d === 'dotted' ? '1 4' : undefined} strokeLinecap="round" /></svg>
-        <span>{t(`draw.dash.${d}`)}</span>
-      </button>)}
-    </div>}
-  </div>;
-}
-
-/**
- * A ruler's exact prices (owner, 2026-10-04: «вписую ціну 0.81 … і ленійка
- * сама розгортається до поточної ціни»): the start price, and an end price
- * typed in or the latest price, followed as it moves.
- */
-function RulerPricesForm({ measure, t, onApply }: { measure: RulerPrices & { live: DrawingPoint | null }; t: (key: any) => string; onApply: (prices: RulerPrices) => void }) {
-  const [from, setFrom] = useState(() => drawingPriceInput(measure.from));
-  const [to, setTo] = useState(() => drawingPriceInput(measure.to));
-  const [followLast, setFollowLast] = useState(measure.followLast);
-  const [error, setError] = useState(false);
-  const fromRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { fromRef.current?.focus(); fromRef.current?.select(); }, []);
-  const liveText = measure.live ? drawingPriceInput(measure.live.price) : '';
-  const submit = (event: React.FormEvent) => {
-    event.preventDefault();
-    const start = parseDrawingPrice(from);
-    const end = followLast ? (measure.live?.price ?? measure.to) : parseDrawingPrice(to);
-    if (start === null || end === null) { setError(true); return; }
-    onApply({ from: start, to: end, followLast });
-  };
-  return <form className="drawing-object-menu drawing-measure-form" data-object-menu="measure" onSubmit={submit} noValidate>
-    <label className="drawing-measure-field">
-      <span>{t('draw.priceFrom')}</span>
-      <input ref={fromRef} name="from" inputMode="decimal" autoComplete="off" value={from} aria-invalid={error && parseDrawingPrice(from) === null}
-        onChange={(e) => { setFrom(e.target.value); setError(false); }} />
-    </label>
-    <label className="drawing-measure-field">
-      <span>{t('draw.priceTo')}</span>
-      <input name="to" inputMode="decimal" autoComplete="off" value={followLast ? liveText : to} disabled={followLast}
-        aria-invalid={!followLast && error && parseDrawingPrice(to) === null}
-        onChange={(e) => { setTo(e.target.value); setError(false); }} />
-    </label>
-    <label className="drawing-measure-check">
-      <input type="checkbox" name="followLast" checked={followLast} disabled={!measure.live && !measure.followLast}
-        onChange={(e) => { setFollowLast(e.target.checked); setError(false); }} />
-      <span>{t('draw.toCurrentPrice')}</span>
-    </label>
-    {error && <p className="drawing-measure-error" role="alert">{t('draw.priceInvalid')}</p>}
-    <button type="submit" className="drawing-measure-apply">{t('draw.apply')}</button>
-  </form>;
+  const measure = drawing.kind === 'ruler' || drawing.kind === 'pricerange' || drawing.kind === 'daterange';
+  const text = DRAWING_TEXT_KINDS.includes(drawing.kind);
+  const buttons = 7 + (style.fill !== undefined || measure ? 1 : 0) + (measure ? 1 : 0) + (!measure && !text ? 1 : 0) + (text ? 1 : 0);
+  return buttons * 36 + 30;
 }
 
 /** The hit-testing a click-to-erase and a click-to-select both use. */
