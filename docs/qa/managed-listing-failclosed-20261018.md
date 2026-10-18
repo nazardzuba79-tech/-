@@ -1,22 +1,46 @@
-# Managed listings fail closed: P0 follow-up to PR #546 (2026-10-18)
+# Managed listings: preserved bot triggers, fail-closed unresolved pairs, ledger map (2026-10-18)
 
-This follows the CTO triage on PR #546. Base: main `f81df788`. Code and tests only: no migration, deploy, balance, order or flag was changed, and production was not touched.
+This follows the CTO triage on PR #546, as edited by the owner's override of 08:32 UTC. Base: main `f81df788`. Code and tests only: no migration, deploy, balance, order or flag was changed, and production was not touched.
 
-## P0-1: a paused managed listing never executes a conditional or OCO order
+## P0-1: withdrawn by the owner. Bot triggers are preserved, not blocked
 
-**Before.**
+The owner withdrew «block PENDING_TRIGGER for a non-tradable managed listing». Model prices must keep triggering bots' STOP, TAKE_PROFIT, OCO and limit tests. `tradable:false` closes new **public** orders only.
 
-- `spotPriceSource` gave a non-historical managed listing its model price even with `tradable:false`, so `PriceWatcherService` fired its pending orders.
-- `OrderService.triggerOrder` did not re-check the listing gate, so a triggered order filled against real resting orders.
+**What this PR does about it:**
 
-**Now.**
+- The first commit `e7e04f2` had added that block. **It is reverted here.** `spotPriceSource` and `OrderService.triggerOrder` are byte-identical to main, apart from the gate's `venue` argument from P0-2.
+- The behaviour is now pinned so it cannot be removed by accident:
+  - **Unit test.** A `tradable:false` listing refuses new public orders, yet still returns its model price to the trigger engine.
+  - **PostgreSQL test.** A TAKE_PROFIT and an OCO placed on an open listing still trigger on the model price after the listing is closed to the public. The test checks:
+    - exactly 2 fills;
+    - the OCO stop leg is cancelled;
+    - the base asset is conserved;
+    - the reserve is consumed exactly once.
+- NRX is unchanged.
 
-- `spotPriceSource` returns no price for a managed listing that is not tradable or not open yet (`src/services/testMarkets/nrxSpot.ts`). The watcher skips it.
-- `triggerOrder` waits for the registry, bounded at 1.5 s, before its transaction. Inside the transaction it re-checks the gate at the execution boundary: `spotListingOpen(row.pair)`.
-  - If the gate is closed, the order **stays `PENDING_TRIGGER` with its reserve**. Nothing is refunded, cancelled or lost.
-  - The OCO sibling is untouched.
-  - Once the listing reopens, the orders trigger normally.
-- **NRX is unchanged:** `assertSpotListing` keeps its exact NRX rule, and `nrxSpot.pg.test.ts` passes.
+## Ledger map: read-only, verified in source on main `f81df788`
+
+| Path | Price | Ledger written | Withdrawable afterwards? |
+|---|---|---|---|
+| NRX and managed-listing Spot orders between users (LIMIT and MARKET) | internal book | `balance` (ordinary Spot) and `trade` (real user ids on both sides) | the base asset no (`WithdrawalService.ts:50,116` refuses test assets); **the USDT received yes** |
+| Conditional, TP and OCO triggers on NRX or managed listings (`PriceWatcherService` → `triggerOrder`) | model price (`spotPriceSource`) | same as above: fills against real resting orders | **USDT proceeds yes** |
+| Admin or simulation-only MARKET SELL (`OrderService.ts:85-92` → `sellTeamSpotSimulation`) | NRX at model price; other pairs at the venue price | `balance`: base debited and **USDT credited from `simulation:NRX`**, which no user funds | **USDT yes**; no idempotency key (P1-3) |
+| Owner allocation of NRX or a managed listing (`nrxAllocation.ts`, `ownerAllocation.ts`) | — | `balance` (base asset only) | no (test asset) |
+| Native demo / bot engine (`private-trading/native`) | its own | `DemoBalance` and demo orders and trades | not a withdrawable ledger |
+| Futures account (`/futures/orders/me`, `/futures/positions/history`, `/futures/balances`) | venue marks | `FuturesBalance`, `FuturesPosition`, futures orders and funding | its own; untouched by any change here |
+
+**Risk for owner review. Not changed here, and no claim is made about production balances.**
+
+- Model-priced practice markets settle in the **same Spot USDT ledger as deposits and withdrawals**.
+- USDT that moves through them, or that the admin simulation sale credits, becomes withdrawable USDT.
+- «Simulation» in a name does not isolate a ledger.
+
+**Smallest separation to consider:**
+
+1. Mark proceeds from `simulation:*` counterparties, and from practice-market fills, as non-withdrawable practice USDT, using a separate asset code or balance column. This needs a migration and a financial review.
+2. Alternatively, quote practice markets in a practice unit, as History20 already does (`SIMUSDT`), with no deposit or withdrawal path.
+
+Either option needs explicit owner approval and its own tests: duplicate POST, unknown outcome, retry, and already-settled history.
 
 ## P0-2: an unresolved pair is never treated as ordinary
 
@@ -37,6 +61,7 @@ This follows the CTO triage on PR #546. Base: main `f81df788`. Code and tests on
 
 **Unit (`tradingGates.test.ts`, 10/10):**
 
+- the owner-required trigger price for a `tradable:false` listing;
 - registry resolution across:
   - unconfigured;
   - cold start;
@@ -47,19 +72,19 @@ This follows the CTO triage on PR #546. Base: main `f81df788`. Code and tests on
   - recovery;
 - the gate for an unknown pair while unresolved, with the venue unpriced or failing;
 - venue pairs, NRX, and tradable or paused known listings;
-- no trigger price and a closed gate for a paused or not-yet-open listing, with the venue never asked.
 
 **Disposable PostgreSQL (`managedListingFailClosed.pg.test.ts`, 4/4; added to `admin-listings.yml`):**
 
-1. A conditional TAKE_PROFIT and an OCO are placed on a tradable listing, against a resting bid. The model price then passes both triggers and the listing is paused.
-   - The watcher triggers 0, and a direct `triggerOrder` returns null.
-   - Balances, orders and trades are unchanged, and new orders are refused.
-   - After reopening, exactly 2 orders fill, the OCO stop leg is cancelled, and the base asset is conserved (seller 8 available / 0 locked).
+1. **Owner-required behaviour.** A TAKE_PROFIT and an OCO are placed on an open listing. The listing is then closed to new public orders.
+   - New orders are refused.
+   - The existing orders still trigger on the model price: 2 fills, and the OCO stop leg is cancelled.
+   - The base asset is conserved (seller 8 available / 0 locked).
+   - The proceeds land in the seller's ordinary Spot `balance` USDT; nothing goes to `DemoBalance`.
 2. With the registry unresolved, the service refuses LIMIT, STOP_LIMIT and OCO on a Worker-only pair before any lock or row. A venue pair is accepted.
 3. With the registry unresolved, REST `POST /orders` (LIMIT and STOP_MARKET) and `POST /orders/oco` answer 400 with the customer-safe refusal and write nothing.
 4. After recovery, the ordinary path is unchanged.
 
-**Mutation check:** with the three guards removed, 5 of these tests fail.
+**Mutation check** on the first commit: with its guards removed, 5 tests failed. The P0-2 guard is still covered by the unit and REST tests above.
 
 ## P1/P2: plan only (financial changes gated for owner review; no code here)
 
@@ -83,7 +108,7 @@ This follows the CTO triage on PR #546. Base: main `f81df788`. Code and tests on
 
 **P2: admin pause / stop / unpublish**
 
-- An auditable state on the published version (`ACTIVE | PAUSED | STOPPED`), not a delete.
+- An auditable state on the published version (`ACTIVE | PAUSED | STOPPED`), not a delete. It must keep bot paper triggers running unless the owner chooses otherwise, as with `tradable:false` today.
 - Define, per state, what happens to:
   - quotes and charts (frozen or continuing model);
   - resting orders (kept, or cancelled with release);

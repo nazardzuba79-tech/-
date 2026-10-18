@@ -5,9 +5,7 @@ import BigNumber from 'bignumber.js';
 import { v4 as uuidv4 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
-import { assertSpotListingReady, spotListingOpen, spotPriceSource } from './testMarkets/nrxSpot';
-import { managedListingRegistry } from './listings/registry';
-import { isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
+import { assertSpotListingReady, spotPriceSource } from './testMarkets/nrxSpot';
 import { NEURIX } from './testMarkets/neurix';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
@@ -415,21 +413,12 @@ export class OrderService {
    * time, so it's read back from the stored row instead of recomputed.
    * Returns null if the order is no longer PENDING_TRIGGER (already
    * cancelled by the user, or by its OCO sibling triggering first) — a
-   * normal, expected race, not an error — and while its listing is closed
-   * (a paused managed listing): it then stays pending with its reserve.
+   * normal, expected race, not an error.
    */
   async triggerOrder(orderId: string) {
-    // For a listing or test-market pair, learn the current published listings
-    // before the transaction (bounded wait). Ordinary pairs never wait on it.
-    const pending = await this.prisma.order.findUnique({ where: { id: orderId }, select: { pair: true } });
-    if (pending && isTestAssetPairOrSymbol(pending.pair)) await managedListingRegistry.ensureFresh();
     return SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
       const row = await tx.order.findUnique({ where: { id: orderId } });
       if (!row || row.status !== 'PENDING_TRIGGER') return null;
-      // Re-check the listing gate at the execution boundary: a listing that was
-      // paused (tradable:false) after the price check never executes. The order
-      // stays PENDING_TRIGGER with its reserve intact; nothing is refunded or lost.
-      if (!spotListingOpen(row.pair)) return null;
       const staged = await session.book(row.pair);
 
       const [base, quote] = row.pair.split('/');

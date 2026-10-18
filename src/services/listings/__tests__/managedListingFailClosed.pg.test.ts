@@ -1,10 +1,12 @@
 /**
- * Managed listings fail closed, against a real (disposable, loopback)
- * PostgreSQL. A paused (tradable:false) listing never activates an existing
- * conditional or OCO order, and its reserve is neither lost nor refunded.
- * While Render cannot tell which pairs are managed listings, an unknown,
- * venue-unpriced pair is refused through the service and the REST routes.
- * Synthetic users and fixtures only.
+ * Managed listings against a real (disposable, loopback) PostgreSQL.
+ * Owner-required behaviour is pinned: a listing closed to new public orders
+ * (tradable:false) keeps triggering existing conditional and OCO orders on its
+ * model price (bot training), and those executions settle in the ordinary
+ * Spot ledger (`balance`, `trade`), which is documented for review, not changed.
+ * Fail closed: while Render cannot tell which pairs are managed listings, an
+ * unknown, venue-unpriced pair is refused through the service and the REST
+ * routes. Synthetic users and fixtures only.
  */
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'listing-fail-closed-fixture-secret';
 process.env.API_KEY_ENCRYPTION_SECRET = process.env.API_KEY_ENCRYPTION_SECRET || '0'.repeat(64);
@@ -68,7 +70,7 @@ pg('managed listings fail closed on disposable PostgreSQL', () => {
   });
   afterEach(() => { jest.restoreAllMocks(); setManagedListingAssets([]); });
 
-  test('a paused listing activates no existing conditional or OCO order; nothing is lost or refunded; reopening executes them normally', async () => {
+  test('owner-required: closed to new public orders, existing conditional and OCO orders still trigger on the model price; settlement is the ordinary Spot ledger', async () => {
     const placedAt = LISTING_AT + 2 * 3_600_000;
     jest.spyOn(Date, 'now').mockReturnValue(placedAt);
     publish(true);
@@ -86,22 +88,10 @@ pg('managed listings fail closed on disposable PostgreSQL', () => {
     while (priceAt(firesAt).lt(p1.times(1.0002))) { firesAt += 60_000; if (firesAt > placedAt + 7 * 86_400_000) throw new Error('fixture: no crossing found'); }
     (Date.now as jest.Mock).mockReturnValue(firesAt);
 
-    // The owner pauses the listing (tradable:false) before the watcher sweeps.
+    // Closed to new public orders...
     publish(false);
-    const [beforeBalances, beforeOrders] = [await balances(), await orders()];
-    await expect(watcher.checkAndTrigger()).resolves.toBe(0);
-    // Execution boundary: even a direct trigger (a price read before the pause) does nothing.
-    await expect(service.triggerOrder(tp.order.id)).resolves.toBeNull();
-    await expect(service.triggerOrder(oco.takeProfitOrderId)).resolves.toBeNull();
-    expect(await balances()).toEqual(beforeBalances);
-    expect(await orders()).toEqual(beforeOrders);
-    expect((await db.order.findMany({ where: { userId: seller } })).every(o => o.status === 'PENDING_TRIGGER')).toBe(true);
-    expect(await trades()).toBe(0);
-    // A paused listing also refuses new orders of every kind.
     await expect(service.placeOrder({ userId: seller, pair, side: 'SELL', type: 'LIMIT', price: p1, quantity: new BigNumber(1) })).rejects.toThrow('Fail-closed QA is not available for trading.');
-
-    // Reopened: the same orders trigger once, the OCO sibling is cancelled, the shared reserve is accounted once.
-    publish(true);
+    // ...but the resting orders keep running on the model price, exactly as before.
     await expect(watcher.checkAndTrigger()).resolves.toBe(2);
     const after = await db.order.findMany({ where: { userId: seller } });
     expect(after.find(o => o.id === oco.stopOrderId)!.status).toBe('CANCELLED');
@@ -112,6 +102,12 @@ pg('managed listings fail closed on disposable PostgreSQL', () => {
     expect(base.toString()).toBe('10');
     const sellerBase = await db.balance.findUnique({ where: { userId_asset: { userId: seller, asset: symbol } } });
     expect([sellerBase!.available.toString(), sellerBase!.locked.toString()]).toEqual(['8', '0']);
+    // Ledger boundary, for review: the proceeds are USDT in the seller's ordinary Spot `balance` row
+    // (the table deposits and withdrawals use), between two real user ids; nothing in DemoBalance.
+    const sellerUsdt = await db.balance.findUnique({ where: { userId_asset: { userId: seller, asset: 'USDT' } } });
+    expect(new BigNumber(sellerUsdt!.available.toString()).gt(0)).toBe(true);
+    expect(await db.trade.count({ where: { pair, makerUserId: buyer, takerUserId: seller } })).toBe(2);
+    expect(await db.demoBalance.count({ where: { userId: { in: [seller, buyer] } } })).toBe(0);
   });
 
   describe('while Render cannot tell which pairs are managed listings (cold start, failed or stale registry)', () => {

@@ -53,11 +53,6 @@ export async function assertSpotListingReady(pair: string, venue: PriceSource, n
   if (!ticker) throw new Error(SPOT_PAIR_UNRESOLVED_MESSAGE);
 }
 
-/** True when a Spot order on `pair` may execute now (the synchronous listing gate); never throws. */
-export function spotListingOpen(pair: string, now = Date.now()): boolean {
-  try { assertSpotListing(pair, now); return true; } catch { return false; }
-}
-
 /** Same canonical price as Cloudflare, used for conditional Spot validation/triggering. */
 export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSource {
   return { getTicker: async (pair) => {
@@ -68,9 +63,10 @@ export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSou
     const managed = managedListingForPair(pair);
     if (isAith(pair) && !managed) return null;
     if (!managed) return source.getTicker(pair);
-    // A historical model price never triggers a real conditional order;
-    // neither does a paused (non-tradable) or not-yet-open listing.
-    if (isHistoricalDemoAsset(managed) || !managed.isTradable || clock() < managed.listingAt) return null;
+    // A historical model price never triggers a real conditional order.
+    // A listing closed to new public orders (tradable:false) keeps its model
+    // price for already-resting conditional orders: bot training relies on it.
+    if (isHistoricalDemoAsset(managed)) return null;
     const last = simulationFor(managed).priceAt(clock());
     return last === null ? null : { lastPrice: String(last) };
   } };

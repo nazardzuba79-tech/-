@@ -6494,31 +6494,28 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - The Coordinates tab edits prices only; a point's time is still changed by dragging.
 - **Not done:** merge, deploy, PR, production migration, real data. Codex's Stocks files were not touched.
 
-### Claude — 2026-10-18 — Managed listings fail closed: paused listings never trigger; unresolved pairs are never ordinary (CTO triage on PR #546, P0)
-- **Branch / PR:** `claude/peaceful-volta-h5zw7g-managed-failclosed` from main `f81df788`, separate Draft PR. Commit: see the PR.
-- **P0-1:**
-  - `spotPriceSource` returns no price for a managed listing that is not tradable or not open yet.
-  - `OrderService.triggerOrder` re-checks the listing gate (`spotListingOpen`) inside its transaction. It waits for the registry (bounded) only for listing and test-market pairs, so ordinary pairs never wait.
-  - A closed gate leaves the order `PENDING_TRIGGER` with its reserve: no refund, no cancel, no loss. NRX is unchanged.
-- **P0-2:**
-  - `ManagedListingRegistry.resolved()` reports a successful read within `STALE_MS` (2 × `REFRESH_MS`).
+### Claude — 2026-10-18 — Managed listings: bot triggers preserved, unresolved pairs fail closed, ledger map (CTO triage on PR #546, as overridden by the owner)
+- **Branch / PR:** `claude/peaceful-volta-h5zw7g-managed-failclosed` (#548) from main `f81df788`.
+  - The first commit `e7e04f2` also blocked triggers for `tradable:false` listings. The owner withdrew that instruction (override at 08:32 UTC, before this PR was opened), so the block is **reverted**.
+  - `spotPriceSource` and `triggerOrder` are as on main.
+- **Kept, P0-2:**
+  - `ManagedListingRegistry.resolved()`: a successful read within `STALE_MS` (2 × `REFRESH_MS`).
   - While the registry is unresolved, `assertSpotListingReady(pair, venue)` refuses a pair that is not NRX, not a known listing or test asset, and not venue-priced, with `Операция временно недоступна` (an existing localized phrase).
-  - Venue pairs are never rejected.
+  - Venue pairs are never rejected, and bot triggers are not affected.
+- **Pinned, owner-required:** a listing closed to new public orders keeps triggering resting conditional and OCO orders on its model price (unit + PostgreSQL characterization).
+- **Ledger map** (read-only, in `docs/qa/managed-listing-failclosed-20261018.md`):
+  - Practice-market fills, model-price triggers and the admin `simulation:NRX` sale settle in the ordinary Spot `balance`, the ledger deposits and withdrawals use.
+  - Test assets are not withdrawable, but the USDT proceeds are.
+  - Futures and the native demo engine use their own tables.
+  - This is reported for owner review and not changed.
 - **Material files:**
-  - `src/services/testMarkets/nrxSpot.ts`;
-  - `src/services/listings/registry.ts`;
-  - `src/services/OrderService.ts`;
-  - tests `src/services/listings/__tests__/tradingGates.test.ts` (+3) and new `managedListingFailClosed.pg.test.ts` (wired into `.github/workflows/admin-listings.yml`);
-  - `docs/qa/managed-listing-failclosed-20261018.md`, which also holds the P1/P2 plan.
-- **Verified locally:**
-  - backend `tsc` and `npm run build`;
-  - unit `tradingGates` 10/10; OrderService, PriceWatcher, OrderBookRecovery and gates 46/46; listings, testMarkets and order routes 442 passed;
-  - disposable PostgreSQL 16 (loopback, fresh DBs): `managedListingFailClosed.pg` 4/4, `ownerAllocation.pg` + `historicalDemoContour.pg` 15/15, `nrxSpot.pg` + `vtaDemoSales.pg` + `vtaNativeCoexistence.pg` 31/31;
-  - mutation check: without the guards, 5 tests fail;
-  - full Jest: 528 suites passed. The 4 suites / 9 tests that fail are the same as on clean main (CFD, provider matrix, live isolation, copy canonical). `nativeReviewHarness` passes once `dist/` is built;
-  - NRX fingerprint `63610d3e…` unchanged.
-- **Preserved:** NRX rules; settlement and reserve accounting (no new refund or cancel path); Wallet (#543); Stocks; locales (no new keys).
-- **Not done (needs separate owner and financial review):**
-  - P1: an idempotency key for the admin simulation sale; labelling simulation fills and excluding them from card eligibility; Wallet modeled valuation;
-  - P2: a pause/stop/unpublish lifecycle.
+  - `src/services/testMarkets/nrxSpot.ts`, `src/services/listings/registry.ts`, `src/services/OrderService.ts` (gate argument only);
+  - tests `tradingGates.test.ts` and `managedListingFailClosed.pg.test.ts` (wired into `.github/workflows/admin-listings.yml`);
+  - the doc above.
+- **Verified locally:** see the PR for the exact head.
+  - Unit `tradingGates` 10/10.
+  - Disposable PostgreSQL 16: `managedListingFailClosed.pg` 4/4, `ownerAllocation.pg` + `historicalDemoContour.pg` 15/15, `nrxSpot.pg` + `vta*.pg` 31/31.
+  - Full Jest: same 4 pre-existing local failures as on clean main.
+- **Preserved:** bot paper triggers and execution; NRX; settlement and reserves; Futures history; Wallet (#543); Stocks; locales.
+- **Not done (needs owner and financial review):** P1 (idempotency key, simulation-fill labelling and card eligibility, Wallet modeled valuation, practice-ledger separation) and P2 (pause/stop/unpublish).
 - **Not run:** production, migrations, deploy.

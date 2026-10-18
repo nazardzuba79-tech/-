@@ -2,7 +2,7 @@ import { setManagedListingAssets } from '../managedSnapshot';
 import { listingSimulationConfig, type ListingConfig, type PublishedListing } from '../listingConfig';
 import { ManagedListingRegistry, REFRESH_MS, STALE_MS } from '../registry';
 import { UnconfiguredListingStore, type ListingStore } from '../store';
-import { assertSpotListing, assertSpotListingReady, SPOT_PAIR_UNRESOLVED_MESSAGE, spotListingOpen, spotPriceSource } from '../../testMarkets/nrxSpot';
+import { assertSpotListing, assertSpotListingReady, SPOT_PAIR_UNRESOLVED_MESSAGE, spotPriceSource } from '../../testMarkets/nrxSpot';
 import { NEURIX } from '../../testMarkets/neurix';
 import { isTestAssetPairOrSymbol, testAssetForSymbol } from '../../testMarkets/testAssetConfig';
 import { collateralMarket } from '../../../private-trading/native/service';
@@ -99,26 +99,21 @@ describe('Render registry budget', () => {
   });
 });
 
-describe('fail closed: paused listings never trigger, unresolved pairs are never ordinary', () => {
+describe('bot triggers are preserved; unresolved pairs are never ordinary', () => {
   const storeWith = (published: () => Promise<{ revision: string; listings: PublishedListing[] }>): ListingStore =>
     ({ published: jest.fn(published), list: jest.fn(), saveDraft: jest.fn(), publish: jest.fn() } as unknown as ListingStore);
   // The venue prices ordinary crypto only; a Worker-only listing has no venue price.
   const venue = { getTicker: jest.fn(async (pair: string) => (pair === 'BTC/USDT' ? { lastPrice: '60000' } : null)) };
   beforeEach(() => venue.getTicker.mockClear());
 
-  test('a paused or not-yet-open managed listing has no trigger price and its gate is closed; the venue is never asked', async () => {
+  test('owner-required: a listing closed to new public orders (tradable:false) keeps its model price for resting bot triggers', async () => {
     const at = listingAt + 3_600_000;
+    const model = String(simulationFor(listingSimulationConfig(config())).priceAt(at));
     setManagedListingAssets([listingSimulationConfig(config({ tradable: false }))]);
-    expect(await spotPriceSource(venue, () => at).getTicker('QAX/USDT')).toBeNull();
-    expect(spotListingOpen('QAX/USDT', at)).toBe(false);
-    setManagedListingAssets([listingSimulationConfig(config())]);
-    expect(await spotPriceSource(venue, () => listingAt - 1).getTicker('QAX/USDT')).toBeNull();
-    expect(spotListingOpen('QAX/USDT', listingAt - 1)).toBe(false);
-    expect(await spotPriceSource(venue, () => at).getTicker('QAX/USDT')).not.toBeNull();
-    expect(spotListingOpen('QAX/USDT', at)).toBe(true);
+    // New public orders stay refused, but the model price still drives existing STOP/TAKE_PROFIT/OCO orders.
+    expect(() => assertSpotListing('QAX/USDT', at)).toThrow('QA Example is not available for trading.');
+    expect(await spotPriceSource(venue, () => at).getTicker('QAX/USDT')).toEqual({ lastPrice: model });
     expect(venue.getTicker).not.toHaveBeenCalled();
-    // Ordinary pairs keep their exact behaviour.
-    expect(spotListingOpen('BTC/USDT', at)).toBe(true);
   });
 
   test('registry resolution: unconfigured; cold start; success; failures until stale; upstream timeout; recovery', async () => {
