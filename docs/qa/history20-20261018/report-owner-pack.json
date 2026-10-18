@@ -1,0 +1,37 @@
+{
+  "scope": "Loopback production bundle + real router/workerd; fixture accounts; no database or financial writes",
+  "data": "owner pack imported in the page (derived charts: keep out of the repository)",
+  "checks": [
+    "The owner's ZIP is verified and imported in the page: Пакет проверен: 41 файлов по SHA-256, 20 окон, 8637 суток. Совпадение с normalized_path: отклонение не более 1.3e-8. Сохранены только ln(P/A), 267 КБ; цены и объёмы источника не сохраняются.",
+    "BotLab 01 proposal prefilled (VHX01, P0 = 2, no start time), 20 cards, rotation VHX-01-BTC, peak 239,449 SIMUSDT, nothing saved",
+    "Private draft saved through the real router and Durable Object (11302 bytes): window VHX-01-BTC, cap 239.449, no stages, no allocation, not tradable, not published",
+    "Bounded private previews: first day opens at P0 = 2, a 30-day fragment from day 831; every high ≤ 239.449 SIMUSDT",
+    "Publication refused by the Durable Object itself (HISTORICAL_RIGHTS_UNVERIFIED); the public catalogue stays empty",
+    "Draft export: max_price 239.449, REAL_TIME, 120 h compression inactive, rights gate kept",
+    "Clone into a new listing ID keeps the window; the rotation cursor advances per listing ID (next VHX-03-SOL); return to stages restores the legacy editor",
+    "390 px: saved window draft, 20 cards in one column, bounded preview, no sideways scroll",
+    "No external calls, financial writes or page exceptions"
+  ],
+  "timings": {
+    "importMs": 285,
+    "saveMs": 169,
+    "preview_first24h_5m_ms": 93,
+    "preview_window_4h_ms": 181
+  },
+  "draftBytes": 11302,
+  "preview_first24h": {
+    "candles": 289,
+    "observedHigh": 2,
+    "fromDay": 0,
+    "toDay": 1
+  },
+  "preview_window": {
+    "candles": 181,
+    "observedHigh": 239.449,
+    "fromDay": 831,
+    "toDay": 861
+  },
+  "outbound": 0,
+  "financialWrites": [],
+  "errors": []
+}

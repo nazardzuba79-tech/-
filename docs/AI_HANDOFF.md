@@ -6449,3 +6449,43 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - the listing gate fails open for pairs Render does not know (empty or stale snapshot, draft tickers);
   - `/trades/me` does not filter simulation sales.
 - **Not done:** merge, deploy, production migration, real balances or paid resources. Codex's Stocks #538 was not touched.
+
+### Claude — 2026-10-18 — History20: historical growth window in Admin → Listings (private preview only)
+
+- **Task (owner pack «VOLTEX_History20_Claude_20261018», `03_CLAUDE_TASK_UA.md`):** 20 reusable historical growth windows for separate model listings, as an isolated, labelled bot-research simulator / private preview, plus the BotLab 01 draft. No merge, deploy, migration or new service.
+- **Branch:** `claude/peaceful-volta-h5zw7g-history20` from main `5d14647c` (the pack's control main, unchanged at fetch); the commit carrying this entry.
+- **Pack verified independently** (own Node check, not the pack's script):
+  - archive 100/100 and pack 97/97 SHA-256;
+  - 20 distinct scenarios, 8637 daily rows, no gaps, no BLOCKED_DATA, VALIDATION_REPORT PASS;
+  - the alpha transform reproduces normalized_path to 1.1e-15.
+- **Material files:**
+  - `src/shared/listingHistoricalGrowth.ts` (new reference: format, maths, checksum, observation, folds);
+  - `src/shared/listingScenarioControls.ts` (inert validation, mutual exclusion);
+  - `src/services/testMarkets/simulationScenarioControls.ts` (inert tick generator inside the existing v2 dispatch);
+  - `src/services/listings/{listingConfig,listingPreview,simulationContour}.ts`, `src/api/routes/adminListings.ts` (bounded preview);
+  - `frontend/src/pages/admin/{historicalGrowthModel,historicalGrowthPack,historicalGrowthCatalog,ListingHistoricalGrowthPanel}.ts(x)`, `AdminListingsPage.tsx`, `listingMovementModel.ts`, `adminListingsApi.ts`, `adminListings.css`;
+  - tests, `scripts/qa-listing-history20.cjs`, `.github/workflows/admin-listings.yml`, `docs/HISTORY20_GROWTH_WINDOW.md`.
+- **Preserved:**
+  - Legacy stages and the PR #518 hourly continuation are untouched; the new mode is a separate, mutually exclusive branch.
+  - The NRX/VTA/AITH release identity and projection guards pass unchanged: no edit to `simulationSchedule.ts` or `testMarketSimulation.ts`, and the v2 modules stay inert.
+  - Funding, KYC, Stocks #538–#540, Copy Trading, the mobile admin (#500) and the seven locales are not touched.
+  - `HISTORICAL_RIGHTS_UNVERIFIED` and the contour isolation now also cover the window.
+- **Rights:**
+  - The repository is public and the sources are non-commercial (CC BY-NC / CC BY-NC-SA + Binance Vision Terms). Only code, synthetic tests and catalogue metadata/hashes are committed.
+  - The trajectories are imported on the admin's device from the owner's ZIP (hash-checked against the committed metadata, rebuilt from source CSV, parity ≤ 1e-7, `ln(P/A)` only).
+  - Screenshots from the real pack are kept out of the repository.
+- **Verified locally:**
+  - backend `tsc` and frontend `tsc -b`; Worker listings integration on workerd 18/18;
+  - new suites: `historicalGrowthWindow` 31/31, `historicalGrowthLibrary` 10/10 (including the real ZIP via `HISTORY20_ZIP`), `adminListings` 18/18;
+  - local-only pack suite 3/3 (`HISTORY20_PACK_DIR`):
+    - all 20 windows ≤ 1.31e-8 vs normalized_path, drafts 5–33 KB;
+    - VHX-01 all 7,439,040 ticks of 861 days peak exactly 239.449;
+  - full Jest 530 passed / 4 failed suites (9 tests). The same 9 fail on clean main `5d14647c` (market-data provider matrix, CFD, live isolation, copy canonical pins);
+  - QA script at 1440/390: synthetic 8/8 and real pack 9/9 (import 0.3 s, previews 0.1–0.2 s, no sideways scroll, publish refused by the Durable Object).
+- **Not run:** production, real phones, any bot execution (no offline harness exists; none added; ordinary Spot not opened).
+- **Unresolved, for the owner:**
+  - a licence for the intended use;
+  - a unique symbol and start time for BotLab 01;
+  - an authorised isolated bot harness;
+  - bearish/range/OOD control sets;
+  - the 120 h compression mode (inactive, needs explicit approval).

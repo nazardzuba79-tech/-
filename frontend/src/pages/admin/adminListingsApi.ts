@@ -37,6 +37,7 @@ export interface AdminListing {
   versions: { version: number; publishedAt: string; publishedBy: string }[];
 }
 
+export type ListingPreviewHorizon = 'first24h' | 'growth' | 'afterGrowth' | 'history' | 'window';
 export interface ListingPreview {
   listingId: string;
   draftRevision: number;
@@ -47,7 +48,11 @@ export interface ListingPreview {
   candles: { time: number; open: number; high: number; low: number; close: number; volume: number }[];
   book: { available: boolean; bids: { price: string; quantity: string }[]; asks: { price: string; quantity: string }[] };
   trades: { id: string; price: string; quantity: string; side: 'BUY' | 'SELL'; time: number }[];
-  scenarioSummary?: { horizon: 'first24h' | 'growth' | 'afterGrowth' | 'history'; interval: string; from: number; to: number; initialPrice: string; first24hPrice: string; maxPrice: string; observedHigh: number; observedLow?: number; candleLimit: number };
+  scenarioSummary?: {
+    horizon: ListingPreviewHorizon; interval: string; from: number; to: number; initialPrice: string; first24hPrice: string; maxPrice: string; observedHigh: number; observedLow?: number; candleLimit: number;
+    /** Present for a historical growth window (admin preview only). */
+    historicalGrowth?: { scenarioId: string; unit: string; alpha: number; targetPeakGrowthPercent: string; windowDays: number; fromDay: number; toDay: number; clock: 'REAL_TIME'; dataKind: string; rights: string };
+  };
 }
 
 export class ListingApiError extends Error {
@@ -115,8 +120,8 @@ export const adminListingsApi = {
   create: (config: ListingForm) => call<{ id: string; draftRevision: number; draft: ListingConfig }>('/admin/listings', { method: 'POST', body: { config } }),
   saveDraft: (id: string, config: ListingForm, draftRevision: number) =>
     call<{ id: string; draftRevision: number; draft: ListingConfig }>(`/admin/listings/${encodeURIComponent(id)}/draft`, { method: 'PUT', body: { config }, ifMatch: draftRevision }),
-  preview: (id: string, at: string | null, interval = '5m', horizon?: 'first24h' | 'growth' | 'afterGrowth' | 'history') =>
-    call<ListingPreview>(`/admin/listings/${encodeURIComponent(id)}/preview?${new URLSearchParams({ interval, ...(at ? { at } : {}), ...(horizon ? { horizon } : {}) })}`),
+  preview: (id: string, at: string | null, interval = '5m', horizon?: ListingPreviewHorizon, fromDay?: number) =>
+    call<ListingPreview>(`/admin/listings/${encodeURIComponent(id)}/preview?${new URLSearchParams({ interval, ...(at ? { at } : {}), ...(horizon ? { horizon } : {}), ...(horizon === 'window' && fromDay !== undefined ? { fromDay: String(fromDay) } : {}) })}`),
   publish: (id: string, draftRevision: number, publishKey: string) =>
     call<{ id: string; version: number; replayed: boolean; publishedAt: string }>(`/admin/listings/${encodeURIComponent(id)}/publish`, { method: 'POST', body: { draftRevision, publishKey } }),
 };

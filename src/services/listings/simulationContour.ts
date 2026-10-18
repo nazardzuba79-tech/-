@@ -1,8 +1,9 @@
 /**
- * The historical demo contour (PR #518): a managed listing whose price,
- * after its planned growth and final fall, repeats imported historical
- * hourly moves. Such a market is a model, not an asset. It has no identity
- * in the real ledger:
+ * The historical demo contour: a managed listing whose price, after its
+ * planned growth and final fall, repeats imported historical hourly moves
+ * (PR #518), or whose whole growth follows a scaled historical window
+ * (voltex.historical-growth.v1). Such a market is a model, not an asset. It
+ * has no identity in the real ledger:
  *
  * - every real-money path already treats it as a restricted test asset
  *   (Spot orders, deposits, withdrawals, balance adjustments, futures
@@ -26,11 +27,11 @@ export const HISTORICAL_DEMO_MESSAGE = 'This market is a historical simulation: 
 /** A listing configuration in the historical demo contour. */
 export function isHistoricalDemoConfig(config: Pick<ListingConfig, 'simulationProgram'>): boolean {
   const program = config.simulationProgram;
-  return program?.kind === 'scenario-controls-v2' && program.afterGrowth === 'historical';
+  return program?.kind === 'scenario-controls-v2' && (program.afterGrowth === 'historical' || program.growth === 'historical-window');
 }
 
 /** The same test for the simulation input Render keeps (listingSimulationConfig). */
 export function isHistoricalDemoAsset(asset: TestAssetConfig | null | undefined): boolean {
   const scenario = asset?.scheduledScenario;
-  return scenario?.mode === 'scenario-controls-v2' && scenario.controls.afterGrowth === 'historical';
+  return scenario?.mode === 'scenario-controls-v2' && (scenario.controls.afterGrowth === 'historical' || scenario.controls.growth === 'historical-window');
 }

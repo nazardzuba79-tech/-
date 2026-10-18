@@ -5,6 +5,7 @@
 import type { ListingScenario, ScenarioControlsProgram } from '../../shared/listingScenarioControls';
 import type { RealismTick } from './simulationRealism';
 import type { HistoricalMoveClip, HistoricalMoveProgram, HistoricalMoveBar } from '../../shared/listingHistoricalReplay';
+import type { HistoricalGrowthProgram } from '../../shared/listingHistoricalGrowth';
 import { seededRandom } from './simulationRandom';
 
 const HOUR = 3_600_000, MINUTE = 60_000, TICK = 10_000;
@@ -219,7 +220,75 @@ function historicalReplayHour(program: HistoricalMoveProgram, anchor: number, ho
   return {open,ticks,regime:delta > 0.001 ? 'impulse' : delta < -0.001 ? 'pullback' : 'consolidation'};
 }
 
+/* Historical GROWTH WINDOW (voltex.historical-growth.v1): inlined copy of
+ * historicalGrowthLogAt / historicalGrowthPrice in shared/listingHistoricalGrowth.ts
+ * (pinned equal by test). REAL_TIME: tick t of the listing reads source day
+ * ceil(t / 1 day) - 1. A reference is log-linear between samples; an OHLC
+ * day runs open → extreme (8 h) → extreme (16 h) → close (24 h), its order
+ * drawn from the seed. After the last source value the price stops. */
+function historicalGrowthDayHash(seed: string, scenarioId: string, day: number): number {
+  let h = 5381;
+  for (const ch of `${seed}:${scenarioId}:${day}`) h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0;
+  return h;
+}
+function historicalGrowthLog(program: HistoricalGrowthProgram, seed: string, seconds: number): number {
+  const rows = program.logs;
+  if (!(seconds > 0)) return rows[0][0];
+  const day = Math.ceil(seconds / 86400) - 1;
+  const into = seconds - day * 86400;
+  if (program.source.dataKind === 'daily_reference') {
+    if (day >= rows.length - 1) return rows[rows.length - 1][0];
+    const a = rows[day][0], b = rows[day + 1][0];
+    return a + (b - a) * into / 86400;
+  }
+  if (day >= rows.length) return rows[rows.length - 1][3];
+  const [o, h, l, c] = rows[day];
+  const upFirst = (historicalGrowthDayHash(seed, program.scenarioId, day) & 1) === 0;
+  const points = upFirst ? [o, h, l, c] : [o, l, h, c];
+  const third = 86400 / 3;
+  const leg = Math.min(2, Math.floor((into - 1e-9) / third));
+  const u = (into - leg * third) / third;
+  return points[leg] + (points[leg + 1] - points[leg]) * u;
+}
+function historicalGrowthHour(program: HistoricalGrowthProgram, initialPrice: number, cap: number, hour: number, seed: string): { open: number; ticks: RealismTick[]; regime: Regime } {
+  // Persisted configurations are validated by parseListingConfig (with the
+  // logs checksum) and validateScheduledScenario before reaching here.
+  if (!Number.isSafeInteger(hour) || hour < 0) throw new RangeError('Час истории должен быть неотрицательным');
+  const ohlc = program.source.dataKind === 'exchange_ohlcv';
+  let max = -Infinity;
+  for (const row of program.logs) max = Math.max(max, ohlc ? row[1] : row[0]);
+  const alpha = Math.log(1 + Number(program.targetPeakGrowthPercent) / 100) / (max / 100000000);
+  const priceOf = (log: number) => {
+    const price = initialPrice * Math.exp(alpha * log / 100000000);
+    if (!Number.isFinite(price) || price <= 0) throw new RangeError('Историческая цена не представима');
+    // Only the floating-point rounding of the peak (P0 · M) is floored to the cap.
+    if (price > cap) {
+      if (price > cap * (1 + 1e-9) + 1e-10) throw new RangeError('Историческое окно превышает максимальную цену');
+      return cap;
+    }
+    return price;
+  };
+  const start = hour * 3600;
+  const open = priceOf(historicalGrowthLog(program, seed, start));
+  const ticks: RealismTick[] = [];
+  let previous = open;
+  for (let i = 1; i <= 360; i++) {
+    const price = priceOf(historicalGrowthLog(program, seed, start + i * 10));
+    const move = Math.abs(Math.log(price / previous));
+    // Model-only activity; the source's volume is neither imported nor claimed.
+    const quoteVolume = 20 + Math.min(300, move * 20000);
+    ticks.push({ price, high: Math.max(previous, price), low: Math.min(previous, price), quoteVolume, volume: quoteVolume / ((previous + price) / 2) });
+    previous = price;
+  }
+  const delta = Math.log(previous / open);
+  return { open, ticks, regime: delta > 0.001 ? 'impulse' : delta < -0.001 ? 'pullback' : 'consolidation' };
+}
+
 export function controlledScenarioHour(config: ControlledScenarioConfig, seed: string, hour: number): { open: number; ticks: RealismTick[]; regime: Regime } {
+  if (config.controls.growth === 'historical-window' && config.controls.historicalGrowth) {
+    // The growth window replaces the stages: no stage, pullback or wick model applies.
+    return historicalGrowthHour(config.controls.historicalGrowth, Number(config.initialPrice), Number(config.controls.maxPrice), hour, seed);
+  }
   const stagesEnd = config.controls.stages.reduce((total, stage) => total + stage.durationHours, 0);
   if (config.controls.afterGrowth === 'historical' && config.controls.historical && hour >= stagesEnd) {
     // A 10-second synthetic tick is drawn once per real 10 seconds. Hour N

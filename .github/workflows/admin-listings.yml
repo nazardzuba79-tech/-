@@ -5,6 +5,7 @@ on:
       - 'src/services/listings/**'
       - 'src/shared/listingScenarioControls.ts'
       - 'src/shared/listingHistoricalReplay.ts'
+      - 'src/shared/listingHistoricalGrowth.ts'
       - 'src/shared/aithPublication.ts'
       - 'config/test-markets/aith.draft.json'
       - 'src/services/testMarkets/**'
@@ -29,6 +30,8 @@ on:
       - 'scripts/qa-listing-controls.cjs'
       - 'scripts/benchmark-historical-replay.cjs'
       - 'scripts/qa-historical-archive-storage.cjs'
+      - 'scripts/qa-listing-history20.cjs'
+      - 'frontend/src/lib/__tests__/historicalGrowthLibrary.test.ts'
       - 'frontend/src/lib/__tests__/listingMovement*.test.ts'
       - 'frontend/src/lib/__tests__/listingHistoricalLibrary.test.ts'
       - 'scripts/smoke-market-edge-listings.mjs'
@@ -84,7 +87,7 @@ jobs:
       - name: Saved scenario controls, bounds, legacy-history preservation and the historical demo contour
         run: >-
           npx jest --runInBand --silent
-          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary|historicalDemoContour'
+          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary|historicalDemoContour|historicalGrowth'
       - name: Historical replay CPU/RAM diagnostic (synthetic fixtures, not CX23)
         run: |
           mkdir -p /tmp/listings-qa-report
@@ -115,6 +118,12 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report
+      - name: History20 growth window at 1440/390 (one synthetic window; the owner's pack is not in the repository)
+        run: node scripts/qa-listing-history20.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report/history20
       - name: Scenario controls desktop/mobile, saved preview and Worker restart
         run: node scripts/qa-listing-controls.cjs
         env:
