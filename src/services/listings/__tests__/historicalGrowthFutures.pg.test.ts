@@ -25,8 +25,6 @@ import { defaultScenarioControls } from '../../../shared/listingScenarioControls
 import { checkPublishable, listingSimulationConfig, parseListingConfig, type ListingConfig } from '../listingConfig';
 import { listingScenarioPreview } from '../listingPreview';
 import { setManagedListingAssets } from '../managedSnapshot';
-import { allocateListingOwner } from '../ownerAllocation';
-import { HISTORICAL_DEMO_MESSAGE } from '../simulationContour';
 import { TEST_ASSET_NOT_TRADABLE_MESSAGE } from '../../testMarkets/testAssetConfig';
 import { controlledScenarioHour } from '../../testMarkets/simulationScenarioControls';
 import { TestMarketSimulation } from '../../testMarkets/testMarketSimulation';
@@ -164,19 +162,19 @@ pg('History20 growth windows leave the Futures account exactly as it was', () =>
       new TestMarketSimulation(asset).candles5m(start + 3 * DAY, start);
       historicalGrowthObservation(growth, '2', config.seed, start, start + 5 * DAY + 7 * HOUR);
 
-      // As if the catalogue ever carried it: every real-money entry refuses, Futures collateral included.
+      // As if the catalogue carried it: the Spot rules of any scenario listing apply (not tradable),
+      // the restricted test asset is no Futures collateral, and the wallet values it at its model price.
       setManagedListingAssets([asset]);
       jest.spyOn(Date, 'now').mockReturnValue(start + 2 * DAY);
-      const pair = `${symbol}/USDT`, one = new BigNumber(1);
+      const pair = `${symbol}/USDT`, one = new BigNumber(1), closed = 'History20 Futures check is not available for trading.';
       const orders = new OrderService(db, new MatchingEngine(), { getTicker: jest.fn(async () => ({ lastPrice: '1' })) });
-      await expect(orders.placeOrder({ userId: user, pair, side: 'BUY', type: 'LIMIT', price: new BigNumber(5), quantity: one })).rejects.toThrow(HISTORICAL_DEMO_MESSAGE);
-      await expect(orders.placeOrder({ userId: admin, pair, side: 'SELL', type: 'MARKET', quantity: one })).rejects.toThrow(HISTORICAL_DEMO_MESSAGE);
-      await expect(orders.placeOcoOrder({ userId: user, pair, side: 'SELL', quantity: one, takeProfitPrice: new BigNumber(9), stopTriggerPrice: new BigNumber(3), stopLimitPrice: new BigNumber('2.9') })).rejects.toThrow(HISTORICAL_DEMO_MESSAGE);
+      await expect(orders.placeOrder({ userId: user, pair, side: 'BUY', type: 'LIMIT', price: new BigNumber(5), quantity: one })).rejects.toThrow(closed);
+      await expect(orders.placeOrder({ userId: admin, pair, side: 'SELL', type: 'MARKET', quantity: one })).rejects.toThrow(closed);
+      await expect(orders.placeOcoOrder({ userId: user, pair, side: 'SELL', quantity: one, takeProfitPrice: new BigNumber(9), stopTriggerPrice: new BigNumber(3), stopLimitPrice: new BigNumber('2.9') })).rejects.toThrow(closed);
       await expect(new DemoTradingService(db, new MatchingEngine()).placeOrder({ userId: admin, pair, side: 'BUY', type: 'LIMIT', price: new BigNumber(5), quantity: one })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-      await expect(allocateListingOwner(db, { id: 'h20f-1', version: 1, publishedAt: LISTING_AT, config: { ...config, ownerAllocation: '1000' } }, admin)).rejects.toThrow();
       expect(collateralMarket(symbol)).toBeNull();
       const wallet = new WalletPortfolioService(db, { getTickers: jest.fn(async () => [{ pair: 'BTC/USDT', lastPrice: '60000' }]) } as never, { isConfigured: () => false } as never);
-      expect((await wallet.pricesFor([symbol])).get(symbol)).toBeNull();
+      expect((await wallet.pricesFor([symbol])).get(symbol)).toBe(new TestMarketSimulation(asset).priceAt(start + 2 * DAY));
       jest.restoreAllMocks(); setManagedListingAssets([]);
     }
 

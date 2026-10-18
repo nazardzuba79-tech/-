@@ -15,7 +15,7 @@ import { checkPublishable, listingSimulationConfig, parseListingConfig, type Lis
 import { listingScenarioPreview } from '../listingPreview';
 import { setManagedListingAssets } from '../managedSnapshot';
 import { HISTORICAL_DEMO_MESSAGE, isHistoricalDemoAsset, isHistoricalDemoConfig } from '../simulationContour';
-import { assertSpotListing } from '../../testMarkets/nrxSpot';
+import { assertSpotListing, spotPriceSource } from '../../testMarkets/nrxSpot';
 import { isTestAssetPairOrSymbol } from '../../testMarkets/testAssetConfig';
 import { simulationFor, TestMarketSimulation } from '../../testMarkets/testMarketSimulation';
 import { controlledScenarioHour } from '../../testMarkets/simulationScenarioControls';
@@ -175,20 +175,31 @@ describe('a listing configuration', () => {
   });
 });
 
-describe('isolation and the publication gate', () => {
-  test('a window is a historical demo: never published, never tradable, nothing allocated', () => {
-    expect(isHistoricalDemoConfig(config())).toBe(true);
-    expect(isHistoricalDemoAsset(listingSimulationConfig(config()))).toBe(true);
+describe('a price path for an ordinary scenario listing; the publication gate', () => {
+  test('a window is not the no-ledger contour: the rules of every scenario listing apply; publication stays refused', () => {
+    expect(isHistoricalDemoConfig(config())).toBe(false);
+    expect(isHistoricalDemoAsset(listingSimulationConfig(config()))).toBe(false);
     expect(code(() => checkPublishable(config(), null, FROM - 7 * DAY))).toBe('HISTORICAL_RIGHTS_UNVERIFIED');
-    expect(code(() => config(reference, { ownerAllocation: '5' }))).toBe('HISTORICAL_DEMO_NO_LEDGER');
+    // The owner allocation is the listing's own parameter, as for any scenario listing; a scenario is never tradable.
+    expect(config(reference, { ownerAllocation: '5' }).ownerAllocation).toBe('5');
     expect(code(() => config(reference, { tradable: true }))).toBe('DEMO_ONLY');
   });
 
-  test('if it ever reached the catalogue, the real-money paths still refuse it', () => {
+  test('in the catalogue it is priced by the existing Spot model and admitted as any scenario listing; restricted test asset, no collateral', async () => {
     setManagedListingAssets([listingSimulationConfig(config())]);
     expect(isTestAssetPairOrSymbol('VHXT/USDT')).toBe(true);
     expect(collateralMarket('VHXT')).toBeNull();
-    for (const at of [FROM - HOUR, FROM, FROM + 10 * DAY, FROM + 400 * DAY]) expect(() => assertSpotListing('VHXT/USDT', at)).toThrow(HISTORICAL_DEMO_MESSAGE);
+    // The admission every scenario listing has (tradable: false), not a separate historical refusal.
+    for (const at of [FROM, FROM + 10 * DAY, FROM + 400 * DAY]) {
+      expect(() => assertSpotListing('VHXT/USDT', at)).toThrow('BotLab synthetic is not available for trading.');
+      expect(() => assertSpotListing('VHXT/USDT', at)).not.toThrow(HISTORICAL_DEMO_MESSAGE);
+    }
+    // The model price reaches the Spot price source (chart, conditional triggers), never the venue.
+    const venue = { getTicker: jest.fn(async () => ({ lastPrice: '1' })) };
+    for (const at of [FROM, FROM + 3 * DAY + 7 * HOUR + 41_000, FROM + 20 * DAY]) {
+      await expect(spotPriceSource(venue, () => at).getTicker('VHXT/USDT')).resolves.toEqual({ lastPrice: String(simulationFor(listingSimulationConfig(config())).priceAt(at)) });
+    }
+    expect(venue.getTicker).not.toHaveBeenCalled();
   });
 });
 

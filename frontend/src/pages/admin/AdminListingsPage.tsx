@@ -167,6 +167,8 @@ export function AdminListingsPage() {
   // server refuses to publish it (HISTORICAL_RIGHTS_UNVERIFIED), so does the form.
   const windowMode = isHistoricalWindow(form.simulationProgram);
   const historicalMode = form.simulationProgram?.kind === 'scenario-controls-v2' && (form.simulationProgram.afterGrowth === 'historical' || windowMode);
+  // Only the #518 continuation is a no-ledger model; a History20 window is an ordinary scenario listing's price path.
+  const noLedger = form.simulationProgram?.kind === 'scenario-controls-v2' && form.simulationProgram.afterGrowth === 'historical';
   const windowDays = windowMode && form.simulationProgram?.kind === 'scenario-controls-v2' && form.simulationProgram.historicalGrowth ? historicalGrowthDays(form.simulationProgram.historicalGrowth) : 0;
   // The rotation's saved cursor: one step per OTHER listing ID that already uses a growth window.
   const rotationCursor = (listings ?? []).filter(listing => listing.id !== editing?.id
@@ -227,7 +229,8 @@ export function AdminListingsPage() {
     changeForm(previous => {
       const base = previous.simulationProgram?.kind === 'scenario-controls-v2' ? previous.simulationProgram : newListingMovement(previous.initialPrice || '1');
       if (!isHistoricalWindow(base)) stagesProgram.current = base;
-      return { ...previous, ownerAllocation: '0', tradable: false, simulationProgram: historicalWindowMovement(base, previous.initialPrice || '1', program) };
+      // A scenario listing is never tradable (DEMO_ONLY); its owner allocation is the listing's own parameter, as for any scenario.
+      return { ...previous, tradable: false, simulationProgram: historicalWindowMovement(base, previous.initialPrice || '1', program) };
     });
     setWindowPending(false); setAutoChoose(undefined);
     setPreviewHorizon('first24h'); setPreviewInterval('5m');
@@ -428,8 +431,8 @@ export function AdminListingsPage() {
               const anchor = initialPriceAnchor.current;
               changeForm({ ...form, initialPrice, ...(anchor ? { simulationProgram: rebaseListingMovement(anchor.program, anchor.initial, initialPrice) } : {}) });
             }} data-field="initialPrice" required /></label>
-            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={historicalMode ? '0' : form.ownerAllocation} inputMode="decimal" disabled={historicalMode} onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
-              <small>{historicalMode ? 'Историческая симуляция не выдаёт актив: всегда 0.' : 'Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.'}</small></label>
+            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={noLedger ? '0' : form.ownerAllocation} inputMode="decimal" disabled={noLedger} onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
+              <small>{noLedger ? 'Историческая симуляция не выдаёт актив: всегда 0.' : 'Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.'}</small></label>
             <label>Дата и время листинга<input type="datetime-local" value={form.wallTime} onChange={(e) => changeForm({ ...form, wallTime: e.target.value })} data-field="wallTime" required /></label>
             <label>Часовой пояс<select value={form.timeZone} onChange={(e) => changeForm({ ...form, timeZone: e.target.value })} data-field="timeZone">
               {LISTING_TIME_ZONES.map((zone) => <option key={zone} value={zone}>{listingTimeZoneLabel(zone)}</option>)}

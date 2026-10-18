@@ -148,18 +148,31 @@ A saved draft carries the selected window's `ln(P/A)` values to the operator's o
 
 **Publication stays blocked.** `checkPublishable` refuses with `HISTORICAL_RIGHTS_UNVERIFIED`, and the Durable Object enforces it.
 
-## Isolation
+## Spot connection (owner instruction 2026-10-18 10:08: Spot only)
 
-`isHistoricalDemoConfig` / `isHistoricalDemoAsset` cover the window. This means:
+A History20 window is **only the price path of an ordinary managed Spot scenario listing**. It has no contour, account, wallet, engine or Futures path of its own. The existing Spot mechanism prices, charts and values it:
 
-- no ordinary Spot order;
-- no conditional-order trigger;
-- no wallet valuation or collateral;
-- no deposits, withdrawals or adjustments;
-- owner allocation is always 0;
-- the listing is never tradable.
+| Step | Existing code |
+| --- | --- |
+| Historical move → stored `ln(P/A)` program | `buildHistoricalGrowthProgram` (`src/shared/listingHistoricalGrowth.ts`) |
+| Listing config → model asset | `listingSimulationConfig` (`listingConfig.ts`) → `TestAssetConfig` |
+| Model price, 1m/5m candles | `simulationFor` / `TestMarketSimulation.priceAt`, `candles1m`, `candles5m` |
+| Ticker, conditional triggers, PriceWatcher | `spotPriceSource` (`testMarkets/nrxSpot.ts`): the model price, never the venue |
+| Public Spot chart | `GET /market/test-assets/:pair/candles` → `testMarketCandles` (`testMarkets/testMarketService.ts`) |
+| Admin preview | `listingScenarioPreview`: the same candles the published market serves |
+| Wallet value | `WalletPortfolioService.pricesFor`: the model price, as for any managed listing |
 
-`SIMUSDT` is only the preview's accounting unit. It is not added to any currency, deposit or balance.
+The rules are the ones every scenario listing already has; none were added or relaxed:
+
+- **No new orders.** Any `simulationProgram` requires `tradable: false` (`DEMO_ONLY`), so `assertSpotListing` refuses Buy/Sell/OCO with «… is not available for trading.» for everyone, owner included.
+- **Triggers are not suppressed.** A conditional order that already rests on the book fires from the model price.
+- **Not collateral.** `collateralMarket` is null; withdrawals list no test asset.
+- **Owner allocation** is the listing's own parameter, as for any scenario listing. It is credited only by the explicit `scripts/allocate-listing-owner.cjs` → `allocateListingOwner` (once, verified ADMIN, audit receipt, no USDT moved), and only for a published listing.
+- **Publication stays refused** (`HISTORICAL_RIGHTS_UNVERIFIED`), so none of this is live in production.
+
+The PR #518 continuation (`afterGrowth: 'historical'`) is unchanged: it alone is the no-ledger contour of `isHistoricalDemoConfig` / `isHistoricalDemoAsset`. NRX, AITH, their schedules, published quotes and trade records are unchanged.
+
+`SIMUSDT` is only the preview's accounting unit. It is not added to any currency, deposit or balance. A published listing is quoted in USDT like any managed listing.
 
 ## Admin
 
@@ -188,7 +201,7 @@ It never returns the peak, the target, alpha, the scenario id or any later value
 
 `historicalGrowthFold(asset)` assigns train / validation / test **by source asset**, never by candles. A window on another timeframe or seed stays in the same fold.
 
-**There is no offline bot-execution harness in this repository.** None was added, and ordinary Spot was not opened to get "working trades".
+**There is no offline bot-execution harness in this repository.** None was added. Spot admission was not changed: a scenario listing admits no new orders (`DEMO_ONLY`), and opening it is an owner decision.
 
 The pack is a strong-growth set. It is not evidence that a bot is profitable. Bearish, range and out-of-distribution controls must come separately.
 
@@ -209,6 +222,13 @@ The pack is a strong-growth set. It is not evidence that a bot is profitable. Be
   - cost.
 - `frontend/src/lib/__tests__/historicalGrowthLibrary.test.ts`: synthetic data. Its last test runs only with `HISTORY20_ZIP`.
 - `src/api/routes/__tests__/adminListings.test.ts`: window drafts through the router.
+- `src/services/listings/__tests__/historicalGrowthSpot.pg.test.ts` (disposable loopback PostgreSQL, synthetic window and users):
+  - one model for the Spot price source, the public chart and the Admin preview; the venue is never asked;
+  - Buy/Sell/OCO refused with the ordinary scenario-listing refusal, no order rows;
+  - owner allocation once, to the ADMIN only, no USDT moved, no DemoBalance or FuturesBalance rows;
+  - wallet value = model price;
+  - a resting take-profit fires when the model price crosses it.
+- `src/services/listings/__tests__/historicalGrowthFutures.pg.test.ts`: Futures balances, orders and positions stay byte-identical.
 - `src/services/listings/__tests__/historicalGrowthPack.local.test.ts`:
   - It always checks that no pack file is in the repository.
   - The pack suite itself is **registered only** with `HISTORY20_PACK_DIR`, so there is no skip in CI. Not running it is NOT_RUN, not PASS.
@@ -221,6 +241,6 @@ The pack is a strong-growth set. It is not evidence that a bot is profitable. Be
 
 1. A licence that covers the exact intended use. Binance Vision §3.4 requires a separate written licence for commercial use.
 2. A unique simulation-only symbol and an explicit start time.
-3. An isolated, authorised bot harness, if trades are wanted. Its execution, liquidity, spread, fee and latency must be named models.
+3. If trades are wanted: an owner decision on Spot admission for scenario listings (today `DEMO_ONLY`), or an isolated, authorised bot harness. Execution, liquidity, spread, fee and latency must be named models.
 4. Bearish, range and out-of-distribution control sets.
 5. Optionally, the 120 h compression: only with explicit owner confirmation, as a separate, labelled laboratory mode.

@@ -313,11 +313,11 @@ describe('aggregation, reproducibility and no look-ahead', () => {
 });
 
 describe('guards and resources', () => {
-  test('publication stays refused (HISTORICAL_RIGHTS_UNVERIFIED) and the listing stays a non-executable demo', () => {
+  test('publication stays refused (HISTORICAL_RIGHTS_UNVERIFIED); the window is an ordinary non-tradable scenario listing', () => {
     for (const growth of [reference, ohlc]) {
       const c = config(growth);
       expect(code(() => checkPublishable(c, null, FROM - 30 * DAY))).toBe('HISTORICAL_RIGHTS_UNVERIFIED');
-      expect(isHistoricalDemoConfig(c)).toBe(true);
+      expect(isHistoricalDemoConfig(c)).toBe(false);
       expect(c.tradable).toBe(false);
       expect(c.ownerAllocation).toBe('0');
     }

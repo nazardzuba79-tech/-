@@ -248,12 +248,13 @@ describe('Admin → Listings: historical growth window drafts', () => {
     expect(outside.status).toBe(422);
   });
 
-  test('a tradable or allocated window is refused before any store write', async () => {
+  test('a tradable window is refused before any store write; an owner allocation is the ordinary scenario parameter', async () => {
     const { server, store } = app();
     const tradable = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: { ...windowForm(), tradable: true } });
     expect(tradable.body.error).toBe('DEMO_ONLY');
-    const allocated = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: { ...windowForm(), ownerAllocation: '5' } });
-    expect(allocated.body.error).toBe('HISTORICAL_DEMO_NO_LEDGER');
     expect(store.calls).toEqual([]);
+    const allocated = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: { ...windowForm(), ownerAllocation: '5' } });
+    expect(allocated.status).toBe(201);
+    expect(allocated.body.draft.ownerAllocation).toBe('5');
   });
 });

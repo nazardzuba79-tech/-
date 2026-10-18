@@ -6595,3 +6595,21 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - backend `tsc` passes.
 - **Material files:** the test only. No production code changed in this commit. It runs in CI through the existing `historicalGrowth` pattern step of `admin-listings.yml`, which has the disposable database.
 - **Not done:** wiring History20 windows into the native Futures TEST account. A proposal only, in the PR comment; it needs owner approval.
+
+### Claude — 2026-10-18 — History20: price path of an ordinary Spot scenario listing (owner final instruction, Spot only)
+- **Task:** owner comment on PR #544 (10:08 UTC): Futures work stopped (#549 closed by the owner; my #550 closed unmerged, nothing carried over). History20 is only the price-shape source of new Spot scenario listings, on the existing Spot price model, chart and market; no new wallet, engine or funds; no change to admission, roles, fees, accounting, NRX/AITH or published history.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-history20` (PR #544), on top of `e7f2667a`; no rebase, no force-push.
+- **Finding:** the window was already priced by the existing Spot path (`listingSimulationConfig` → `simulationFor` → `spotPriceSource`, `testMarketCandles`, preview, wallet). The only detachment was this PR's own extension of the #518 no-ledger contour to windows.
+- **What changed:**
+  - `src/services/listings/simulationContour.ts`: back to main's predicates (comment only); a window is no longer in the no-ledger contour.
+  - `frontend/src/pages/admin/AdminListingsPage.tsx`: the owner-allocation field is locked only for the #518 continuation; choosing a window no longer forces it to 0. The publish gate is unchanged.
+  - Tests: new `historicalGrowthSpot.pg.test.ts` (one model for Spot ticker, public chart and Admin preview; Buy/Sell/OCO refused with the ordinary `DEMO_ONLY` refusal and no order rows; allocation once to ADMIN, no USDT moved, no DemoBalance/FuturesBalance rows; wallet = model price; a resting take-profit fires on the model crossing; venue never asked). `historicalGrowthWindow`, `historicalGrowthIntraday`, `historicalGrowthFutures.pg` and `adminListings` updated to the ordinary scenario-listing rules.
+  - `docs/HISTORY20_GROWTH_WINDOW.md`: Spot connection map and rules.
+- **Preserved:** `checkPublishable` / `HISTORICAL_RIGHTS_UNVERIFIED`; `DEMO_ONLY`; HISTORY_LOCKED; the #518 continuation contour; NRX/AITH configs, schedules, quotes and trade records; Futures and NativeDemo untouched; Codex Stocks files and Wallet #543 files untouched.
+- **Verified locally (this working tree):**
+  - `historicalGrowthSpot.pg` 3/3 on disposable loopback PostgreSQL 16; mutation (window back in the contour) makes all 3 fail;
+  - `historicalGrowthWindow`, `historicalGrowthIntraday`, `historicalGrowthFutures.pg`, `adminListings` pass; broader listings/testMarkets/OrderService/PriceWatcher/WalletPortfolio/routes run: 40 suites passed;
+  - `nrxSpot.pg`, `vtaDemoSales`, `vtaNativeCoexistence` 31/31 on a freshly migrated database (a first run on a stale database failed on leftover rows);
+  - frontend `tsc -b`; admin-related frontend suites 7/7; `scripts/qa-listing-history20.cjs` 9/9 at 1440/390 (synthetic).
+- **Not run:** CI on this commit (pending at time of writing); production; real phones; any bot execution.
+- **Unresolved (owner):** rights (publication refused); Buy/Sell on a scenario listing needs an owner decision on `DEMO_ONLY` admission; Spot `Balance` USDT from legacy NRX sales may be withdrawable (unchanged, no isolation claimed); the preview's `SIMUSDT` unit vs the listing's USDT quote; the #544 PR body still says no allocations.
