@@ -11,7 +11,7 @@ import { HISTORY20_CATALOG, HISTORY20_PACK, HISTORY20_ROTATION } from '../../pag
 import * as browser from '../../pages/admin/historicalGrowthModel';
 import * as server from '../../../../src/shared/listingHistoricalGrowth';
 import { importHistory20, packFiles, readZipEntries } from '../../pages/admin/historicalGrowthPack';
-import { nextRotationScenario } from '../../pages/admin/ListingHistoricalGrowthPanel';
+import { historicalGrowthProvenance, nextRotationScenario } from '../../pages/admin/ListingHistoricalGrowthPanel';
 import { newListingMovement, rebaseListingMovement, validateListingMovement } from '../../pages/admin/listingMovementModel';
 
 const DAY = 86_400_000;
@@ -65,6 +65,33 @@ describe('the browser model equals the server reference', () => {
     expect(browser.historicalGrowthFold('LINK')).toBe(server.historicalGrowthFold('LINK'));
     expect(browser.historicalGrowthProblem(a)).toBeNull();
     expect(browser.historicalGrowthProblem({ ...a, logsSha256: '0'.repeat(64) })).toContain('Контрольная сумма');
+  });
+
+  test('intraday model: v2 by default on both sides, v1 on request; switching keeps the stored logs; ids are bound to the data kind', () => {
+    for (const [source, ohlc] of [[OHLC, true], [REF, false]] as const) {
+      const input = { scenarioId: 'VHX-07-LINK', source, targetPeakGrowthPercent: '10084', rows: rows(60, ohlc) };
+      const v2 = browser.buildHistoricalGrowthProgram(input), v1 = browser.buildHistoricalGrowthProgram({ ...input, intrabarVersion: 1 });
+      expect(v2.intrabar).toBe(ohlc ? 'SEEDED_BRIDGE_OHLC_V2' : 'SEEDED_BRIDGE_REFERENCE_V2');
+      expect(JSON.stringify(v1)).toBe(JSON.stringify(server.buildHistoricalGrowthProgram({ ...input, intrabarVersion: 1 })));
+      expect(browser.historicalGrowthWithIntrabar(v2, 1)).toEqual(v1);
+      expect(browser.historicalGrowthWithIntrabar(v1, 2)).toEqual(v2);
+      expect(browser.historicalGrowthIntrabarVersion(v1)).toBe(1);
+      expect(browser.historicalGrowthProblem(v1)).toBeNull();
+      expect(browser.historicalGrowthProblem({ ...v2, intrabar: ohlc ? 'SEEDED_BRIDGE_REFERENCE_V2' : 'SEEDED_BRIDGE_OHLC_V2' })).toContain('Модель внутри суток');
+    }
+  });
+
+  test('labels: daily values are the observation; intraday paths, reference wicks and volume are the MODEL', () => {
+    const ref = historicalGrowthProvenance({ intrabar: 'SEEDED_BRIDGE_REFERENCE_V2', source: { dataKind: 'daily_reference', provider: 'Coin Metrics', metric: 'PriceUSD' } });
+    expect(ref.observed).toContain('одна опорная цена Coin Metrics PriceUSD на сутки');
+    expect(ref.observed).toContain('Дневного максимума и минимума в источнике нет');
+    expect(ref.modeled).toMatch(/^МОДЕЛЬ v2/);
+    expect(ref.modeled).toContain('тени, максимум и минимум выдуманы моделью');
+    expect(ref.modeled).toContain('не объём площадки');
+    const ohlc = historicalGrowthProvenance({ intrabar: 'SEEDED_BRIDGE_OHLC_V2', source: { dataKind: 'exchange_ohlcv', provider: 'Binance Vision', metric: 'spot daily OHLCV' } });
+    expect(ohlc.observed).toContain('Свеча 1d в симуляции равна дневному бару источника');
+    expect(ohlc.modeled).toContain('порядок и время максимума и минимума неизвестны');
+    expect(historicalGrowthProvenance({ intrabar: 'SEEDED_OHLC_PATH_V1', source: { dataKind: 'exchange_ohlcv', provider: 'Binance Vision', metric: 'spot daily OHLCV' } }).modeled).toMatch(/^МОДЕЛЬ v1 \(базовая линия/);
   });
 
   test('the source CSV parser keeps no volume and refuses a malformed row', () => {

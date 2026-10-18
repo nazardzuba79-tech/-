@@ -12,4 +12,12 @@
     - first-day preview 289 × 5m candles in ≈0.1 s, opening at 2;
     - days 831–861 fragment 181 × 4h candles in ≈0.2 s, high exactly 239.449.
 
+**Intraday model v2 (re-run 2026-10-18).** The checks also cover:
+
+- the model selector (v2 by default, v1 as the baseline);
+- the «Наблюдение» / «МОДЕЛЬ» labels;
+- a 1d preview labelled as observation.
+
+`history20-preview-first24h-1440.png` shows the synthetic first day at 5m under v2: 143 turns of the 5m closes. With the owner's pack the BTC first day had 142 turns; v1 had none. Each run uses a new listing seed, so these counts vary a little.
+
 Not run: production, real phones, an offline bot harness (none exists in the repository).

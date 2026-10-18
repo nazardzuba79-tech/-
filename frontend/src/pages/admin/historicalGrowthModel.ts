@@ -22,6 +22,18 @@ export const HISTORICAL_GROWTH_PREVIEW_UNIT = 'SIMUSDT';
 export const HISTORICAL_GROWTH_LABEL = 'Симуляция • обучение ботов • не реальный торговый актив';
 
 export type HistoricalGrowthDataKind = 'daily_reference' | 'exchange_ohlcv';
+/** Intraday model: v1 = straight-line baseline, v2 = seeded bridge (default). Daily source values are the same in both. */
+export type HistoricalGrowthIntrabar = 'LOG_LINEAR_REFERENCE_V1' | 'SEEDED_OHLC_PATH_V1' | 'SEEDED_BRIDGE_REFERENCE_V2' | 'SEEDED_BRIDGE_OHLC_V2';
+export function historicalGrowthIntrabarFor(kind: HistoricalGrowthDataKind, version: 1 | 2 = 2): HistoricalGrowthIntrabar {
+  if (kind === 'exchange_ohlcv') return version === 1 ? 'SEEDED_OHLC_PATH_V1' : 'SEEDED_BRIDGE_OHLC_V2';
+  return version === 1 ? 'LOG_LINEAR_REFERENCE_V1' : 'SEEDED_BRIDGE_REFERENCE_V2';
+}
+export const historicalGrowthIntrabarVersion = (program: Pick<HistoricalGrowthProgram, 'intrabar'>): 1 | 2 => program.intrabar.endsWith('_V1') ? 1 : 2;
+/** The same stored window with another intraday model: the logs and their checksum do not change. */
+export function historicalGrowthWithIntrabar(program: HistoricalGrowthProgram, version: 1 | 2): HistoricalGrowthProgram {
+  const intrabar = historicalGrowthIntrabarFor(program.source.dataKind, version);
+  return program.intrabar === intrabar ? program : { ...program, intrabar };
+}
 export interface HistoricalGrowthSource {
   provider: 'Coin Metrics' | 'Binance Vision';
   asset: string;
@@ -42,7 +54,7 @@ export interface HistoricalGrowthProgram {
   rights: 'HISTORICAL_RIGHTS_UNVERIFIED';
   clock: { mode: 'REAL_TIME'; sourceStepSeconds: 86400; scenarioStepSeconds: 86400 };
   targetPeakGrowthPercent: string;
-  intrabar: 'LOG_LINEAR_REFERENCE_V1' | 'SEEDED_OHLC_PATH_V1';
+  intrabar: HistoricalGrowthIntrabar;
   logs: number[][];
   logsSha256: string;
 }
@@ -107,7 +119,7 @@ export function historicalGrowthProblem(program: HistoricalGrowthProgram | undef
   if (!known || !/^[A-Z0-9]{2,10}$/.test(s.asset) || s.timeframe !== '1d' || !/^[a-f0-9]{64}$/.test(s.sliceSha256)) return 'Источник исторического окна описан не полностью';
   const c = program.clock;
   if (!c || c.mode !== 'REAL_TIME' || c.sourceStepSeconds !== 86400 || c.scenarioStepSeconds !== 86400) return 'Историческое окно работает только в реальном времени: сутки источника = сутки сценария';
-  if (program.intrabar !== (ohlc ? 'SEEDED_OHLC_PATH_V1' : 'LOG_LINEAR_REFERENCE_V1')) return 'Модель внутри суток не соответствует типу данных';
+  if (program.intrabar !== historicalGrowthIntrabarFor(s.dataKind, 1) && program.intrabar !== historicalGrowthIntrabarFor(s.dataKind, 2)) return 'Модель внутри суток не соответствует типу данных';
   const target = program.targetPeakGrowthPercent;
   if (!/^\d{4,5}(?:\.\d{1,2})?$/.test(target) || Number(target) < HISTORICAL_GROWTH_MIN_PEAK_PERCENT || Number(target) > HISTORICAL_GROWTH_MAX_PEAK_PERCENT)
     return 'Пик сценария должен быть от +7248% до +15324% от начальной цены';
@@ -199,6 +211,7 @@ export function parseHistoricalGrowthCsv(text: string, dataKind: HistoricalGrowt
 /** Reject gaps, duplicates, non-positive/non-finite prices, invalid OHLC and H ≤ A; keep ln(P/A) only. */
 export function buildHistoricalGrowthProgram(input: {
   scenarioId: string; source: Omit<HistoricalGrowthSource, 'firstDate' | 'lastDate'>; targetPeakGrowthPercent: string; rows: HistoricalGrowthSourceRow[];
+  intrabarVersion?: 1 | 2;
 }): HistoricalGrowthProgram {
   const rows = input.rows, ohlc = input.source.dataKind === 'exchange_ohlcv';
   if (!Array.isArray(rows) || rows.length < 30 || rows.length > 1500) throw new Error('Историческое окно: от 30 до 1500 суток источника');
@@ -217,7 +230,7 @@ export function buildHistoricalGrowthProgram(input: {
     rights: 'HISTORICAL_RIGHTS_UNVERIFIED',
     clock: { mode: 'REAL_TIME', sourceStepSeconds: 86400, scenarioStepSeconds: 86400 },
     targetPeakGrowthPercent: input.targetPeakGrowthPercent,
-    intrabar: ohlc ? 'SEEDED_OHLC_PATH_V1' : 'LOG_LINEAR_REFERENCE_V1',
+    intrabar: historicalGrowthIntrabarFor(input.source.dataKind, input.intrabarVersion ?? 2),
     logs, logsSha256: sha256HexUtf8(JSON.stringify(logs)),
   };
   const problem = historicalGrowthProblem(program);

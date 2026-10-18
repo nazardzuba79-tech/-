@@ -155,6 +155,15 @@ async function acceptance() {
   assert.equal(await page.inputValue('[data-field="ownerAllocation"]'), '0');
   assert.equal(calls.filter(call => call.startsWith('POST') || call.startsWith('PUT')).length, 0, 'choosing a window writes nothing');
   check('BotLab 01 proposal prefilled (VHX01, P0 = 2, no start time), 20 cards, rotation VHX-01-BTC, peak 239,449 SIMUSDT, nothing saved');
+  // Intraday model: v2 by default, v1 only as the labelled baseline; daily values are the observation.
+  assert.equal(await page.locator('[data-field="history20IntrabarV2"]').isChecked(), true);
+  assert.match(await page.locator('[data-provenance="observed"]').innerText(), /одна опорная цена Coin Metrics PriceUSD на сутки/);
+  assert.match(await page.locator('[data-provenance="modeled"]').innerText(), /^МОДЕЛЬ v2 \(SEEDED_BRIDGE_REFERENCE_V2\).*выдуманы моделью.*не объём площадки/);
+  await page.locator('[data-field="history20IntrabarV1"]').check();
+  assert.match(await page.locator('[data-provenance="modeled"]').innerText(), /^МОДЕЛЬ v1 \(базовая линия, LOG_LINEAR_REFERENCE_V1\)/);
+  await page.locator('[data-field="history20IntrabarV2"]').check();
+  assert.match(await page.locator('[data-provenance="modeled"]').innerText(), /^МОДЕЛЬ v2/);
+  check('Intraday model selector: v2 seeded bridge by default, v1 straight-line baseline on request; observed vs MODELED labels shown');
   await capture(page, 'history20-library-1440');
   await capture(page, 'history20-panel-1440', '[data-historical-growth]');
 
@@ -170,6 +179,7 @@ async function acceptance() {
   const program = listing.draft.simulationProgram;
   assert.equal(program.growth, 'historical-window');
   assert.equal(program.historicalGrowth.scenarioId, 'VHX-01-BTC');
+  assert.equal(program.historicalGrowth.intrabar, 'SEEDED_BRIDGE_REFERENCE_V2');
   assert.equal(program.maxPrice, '239.449');
   assert.deepEqual(program.stages, []);
   assert.equal(listing.draft.ownerAllocation, '0');
@@ -180,7 +190,7 @@ async function acceptance() {
 
   const windowDays = program.historicalGrowth.source.dataKind === 'exchange_ohlcv' ? program.historicalGrowth.logs.length : program.historicalGrowth.logs.length - 1;
   const fromDay = Math.max(0, windowDays - 30);
-  for (const [horizon, interval] of [['first24h', '5m'], ['window', '4h']]) {
+  for (const [horizon, interval] of [['first24h', '5m'], ['window', '4h'], ['window', '1d']]) {
     await page.selectOption('[data-field="previewHorizon"]', horizon);
     if (horizon === 'window') await page.fill('[data-field="previewFromDay"]', String(fromDay));
     await page.selectOption('[data-field="previewInterval"]', interval);
@@ -196,10 +206,22 @@ async function acceptance() {
     assert.ok(preview.candles.every(c => c.high <= 239.449 && c.low > 0));
     assert.equal(preview.scenarioSummary.historicalGrowth.unit, 'SIMUSDT');
     if (horizon === 'first24h') assert.equal(preview.candles[0].open, 2);
+    assert.equal(preview.scenarioSummary.historicalGrowth.intrabar, 'SEEDED_BRIDGE_REFERENCE_V2');
+    const provenance = page.locator('[data-preview-provenance]');
+    assert.equal(await provenance.getAttribute('data-preview-provenance'), interval === '1d' ? 'daily' : 'intraday');
+    assert.match(await provenance.innerText(), interval === '1d' ? /Наблюдение: одна опорная цена/ : /синтетическая модель внутри суток.*МОДЕЛЬ v2/s);
+    if (interval === '5m') {
+      // Not straight lines: the 5-minute closes turn many times a day (v1 had none).
+      let turns = 0;
+      for (let i = 2; i < preview.candles.length; i++) if (Math.sign(preview.candles[i].close - preview.candles[i - 1].close) * Math.sign(preview.candles[i - 1].close - preview.candles[i - 2].close) < 0) turns++;
+      report.preview5mTurns = turns;
+      assert.ok(turns > 40, `5m candles turn (${turns})`);
+    }
+    if (interval === '1d') { await capture(page, 'history20-preview-window-1d-1440', '[data-listing-preview]'); continue; }
     report[`preview_${horizon}`] = { candles: preview.candles.length, observedHigh: preview.scenarioSummary.observedHigh, fromDay: preview.scenarioSummary.historicalGrowth.fromDay, toDay: preview.scenarioSummary.historicalGrowth.toDay };
     await capture(page, `history20-preview-${horizon}-1440`, '[data-listing-preview]');
   }
-  check(`Bounded private previews: first day opens at P0 = 2, a ${report.preview_window.toDay - report.preview_window.fromDay}-day fragment from day ${fromDay}; every high ≤ 239.449 SIMUSDT`);
+  check(`Bounded private previews: first day opens at P0 = 2 (v2: ${report.preview5mTurns} turns of the 5m closes), a ${report.preview_window.toDay - report.preview_window.fromDay}-day fragment from day ${fromDay}; every high ≤ 239.449 SIMUSDT; 1d labelled as observation, finer candles as the model`);
 
   assert.equal(await page.locator('[data-publish]').isDisabled(), true);
   const publish = await api(`/admin/listings/${saved.id}/publish`, { method: 'POST', body: { draftRevision: listing.draftRevision, publishKey: 'history20-qa-key-0000000001' } });

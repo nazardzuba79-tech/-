@@ -10,7 +10,7 @@ import { ListingScenarioLab } from './ListingScenarioLab';
 import { ListingMovementEditor } from './ListingMovementEditor';
 import { ListingCandlePreview } from './ListingCandlePreview';
 import { formatMovementPrice, historicalModelLabel, isHistoricalWindow, newListingMovement, rebaseListingMovement, validateListingMovement, type ListingMovement, type ListingProgram } from './listingMovementModel';
-import { ListingHistoricalGrowthPanel } from './ListingHistoricalGrowthPanel';
+import { historicalGrowthProvenance, ListingHistoricalGrowthPanel } from './ListingHistoricalGrowthPanel';
 import { HISTORICAL_GROWTH_LABEL, HISTORICAL_GROWTH_PREVIEW_UNIT, historicalGrowthDays, historicalWindowMovement, type HistoricalGrowthProgram } from './historicalGrowthModel';
 import { useAdminCompact } from './useAdminCompact';
 import './adminListings.css';
@@ -528,6 +528,14 @@ export function AdminListingsPage() {
               })()}
               <ListingCandlePreview candles={preview.candles} />
               <small className="listing-hint">{preview.candles.length} свечей · время на графике: Всемирное время (UTC). Объём — модельная активность.</small>
+              {preview.scenarioSummary?.historicalGrowth && (() => {
+                const window = preview.scenarioSummary.historicalGrowth;
+                const provenance = historicalGrowthProvenance({ intrabar: window.intrabar, source: { dataKind: window.dataKind, provider: window.provider, metric: window.metric } });
+                // 1d candles of an OHLC source are the observed bars; every finer candle is the intraday model.
+                return <p className="listing-hint" data-preview-provenance={preview.scenarioSummary.interval === '1d' ? 'daily' : 'intraday'}>
+                  {preview.scenarioSummary.interval === '1d' ? provenance.observed : 'Свечи этого интервала — синтетическая модель внутри суток, а не исторические наблюдения.'} {provenance.modeled}
+                </p>;
+              })()}
               <div className="listing-preview-grid">
                 <div><h3>Стакан (симуляция)</h3>{preview.book.available ? preview.book.asks.slice(0, 5).reverse().concat(preview.book.bids.slice(0, 5)).map((level, i) =>
                   <div key={i} className={i < 5 ? 'ask' : 'bid'}><span>{level.price}</span><span>{level.quantity}</span></div>) : <p className="listing-muted">—</p>}</div>

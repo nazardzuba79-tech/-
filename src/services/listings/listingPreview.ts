@@ -54,6 +54,8 @@ function historicalWindowPreview(config: ListingConfig, interval: string, horizo
         scenarioId: growth.scenarioId, unit: HISTORICAL_GROWTH_PREVIEW_UNIT, alpha: historicalGrowthAlpha(growth),
         targetPeakGrowthPercent: growth.targetPeakGrowthPercent, windowDays: windowHours / 24, fromDay: day, toDay: day + (to - from) / (24 * HOUR),
         clock: growth.clock.mode, dataKind: growth.source.dataKind, rights: growth.rights,
+        // Daily values are observed; every intraday value (and all volume) comes from this model.
+        intrabar: growth.intrabar, provider: growth.source.provider, metric: growth.source.metric,
       },
     },
   };

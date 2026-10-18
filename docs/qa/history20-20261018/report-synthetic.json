@@ -3,8 +3,9 @@
   "data": "one synthetic window with VHX-01-BTC metadata (not market data)",
   "checks": [
     "BotLab 01 proposal prefilled (VHX01, P0 = 2, no start time), 20 cards, rotation VHX-01-BTC, peak 239,449 SIMUSDT, nothing saved",
-    "Private draft saved through the real router and Durable Object (2780 bytes): window VHX-01-BTC, cap 239.449, no stages, no allocation, not tradable, not published",
-    "Bounded private previews: first day opens at P0 = 2, a 30-day fragment from day 89; every high ≤ 239.449 SIMUSDT",
+    "Intraday model selector: v2 seeded bridge by default, v1 straight-line baseline on request; observed vs MODELED labels shown",
+    "Private draft saved through the real router and Durable Object (2783 bytes): window VHX-01-BTC, cap 239.449, no stages, no allocation, not tradable, not published",
+    "Bounded private previews: first day opens at P0 = 2 (v2: 143 turns of the 5m closes), a 30-day fragment from day 89; every high ≤ 239.449 SIMUSDT; 1d labelled as observation, finer candles as the model",
     "Publication refused by the Durable Object itself (HISTORICAL_RIGHTS_UNVERIFIED); the public catalogue stays empty",
     "Draft export: max_price 239.449, REAL_TIME, 120 h compression inactive, rights gate kept",
     "Clone into a new listing ID keeps the window; the rotation cursor advances per listing ID (next VHX-03-SOL); return to stages restores the legacy editor",
@@ -12,15 +13,17 @@
     "No external calls, financial writes or page exceptions"
   ],
   "timings": {
-    "saveMs": 127,
-    "preview_first24h_5m_ms": 71,
-    "preview_window_4h_ms": 163
+    "saveMs": 149,
+    "preview_first24h_5m_ms": 121,
+    "preview_window_4h_ms": 452,
+    "preview_window_1d_ms": 87
   },
   "screenshots": [
     "history20-library-1440.png",
     "history20-panel-1440.png",
     "history20-preview-first24h-1440.png",
     "history20-preview-window-1440.png",
+    "history20-preview-window-1d-1440.png",
     "history20-form-390.png",
     "history20-panel-390.png",
     "history20-preview-390.png"
@@ -28,10 +31,11 @@
   "errors": [],
   "outbound": 0,
   "financialWrites": [],
-  "draftBytes": 2780,
+  "draftBytes": 2783,
+  "preview5mTurns": 143,
   "preview_first24h": {
     "candles": 289,
-    "observedHigh": 2.1304869494,
+    "observedHigh": 2.1940110903,
     "fromDay": 0,
     "toDay": 1
   },

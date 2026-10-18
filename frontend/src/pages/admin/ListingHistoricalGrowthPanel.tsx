@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { HISTORY20_CATALOG, HISTORY20_PACK, HISTORY20_ROTATION, type HistoricalGrowthCatalogItem } from './historicalGrowthCatalog';
 import {
   HISTORICAL_GROWTH_LABEL, HISTORICAL_GROWTH_PREVIEW_UNIT, historicalGrowthCandles, historicalGrowthDailyModel, historicalGrowthFold,
-  historicalGrowthMaxPrice, historicalGrowthSummary, type HistoricalGrowthProgram,
+  historicalGrowthIntrabarVersion, historicalGrowthMaxPrice, historicalGrowthSummary, historicalGrowthWithIntrabar,
+  type HistoricalGrowthIntrabar, type HistoricalGrowthProgram, type HistoricalGrowthSource,
 } from './historicalGrowthModel';
 import {
   clearHistoricalGrowthWindows, importHistory20FromFiles, listHistoricalGrowthWindows, saveHistoricalGrowthWindows,
@@ -16,6 +17,19 @@ const FOLD = { train: 'обучение', validation: 'валидация', test
 const percent = (value: number | string) => `+${Number(value).toLocaleString('ru-RU', { maximumFractionDigits: 2 })}%`;
 const days = (item: HistoricalGrowthCatalogItem) => item.dataKind === 'exchange_ohlcv' ? item.rows : item.rows - 1;
 const price = (value: number) => formatMovementPrice(Number(value.toPrecision(10)));
+
+/** What is observed and what is modeled, by data kind and intraday model; shown wherever the window is charted. */
+export function historicalGrowthProvenance(program: { intrabar: HistoricalGrowthIntrabar; source: Pick<HistoricalGrowthSource, 'dataKind' | 'provider' | 'metric'> }): { observed: string; modeled: string } {
+  const reference = program.source.dataKind === 'daily_reference', v1 = historicalGrowthIntrabarVersion(program) === 1;
+  return {
+    observed: reference
+      ? `Наблюдение: одна опорная цена ${program.source.provider} ${program.source.metric} на сутки (граница суток), нормирована в единицы модели. Дневного максимума и минимума в источнике нет.`
+      : `Наблюдение: дневные O/H/L/C ${program.source.provider}, нормированы в единицы модели.${v1 ? '' : ' Свеча 1d в симуляции равна дневному бару источника.'}`,
+    modeled: v1
+      ? `МОДЕЛЬ v1 (базовая линия, ${program.intrabar}): ${reference ? 'прямая между опорными ценами' : 'три прямых отрезка open → экстремум → экстремум → close'}; объём — модель.`
+      : `МОДЕЛЬ v2 (${program.intrabar}): путь внутри суток — детерминированный мост по коду варианта с паузами и всплесками активности${reference ? '; внутрисуточные тени, максимум и минимум выдуманы моделью в пределах полосы и ниже потолка' : '; порядок и время максимума и минимума неизвестны и задаются моделью, диапазон суток источника не превышается'}. Объём — модельная активность, не объём площадки.`,
+  };
+}
 
 /** The next scenario of the deterministic 20-ID cycle: one step per listing ID that already uses a window. */
 export function nextRotationScenario(usedByOtherListings: number): { id: string; position: number } {
@@ -54,6 +68,10 @@ export function ListingHistoricalGrowthPanel({ program, initialPrice, listingAt,
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [weekly, setWeekly] = useState(true);
+  // New choices use the v2 bridge; v1 stays available as the straight-line baseline.
+  const [preferredVersion, setPreferredVersion] = useState<1 | 2>(2);
+  // A chosen window shows its own model; before a choice, the admin's preference (v2 by default) applies.
+  const intrabarVersion = program ? historicalGrowthIntrabarVersion(program) : preferredVersion;
   const active = useRef(true);
   useEffect(() => {
     active.current = true;
@@ -64,8 +82,8 @@ export function ListingHistoricalGrowthPanel({ program, initialPrice, listingAt,
   const byId = useMemo(() => new Map(records.map(r => [r.scenarioId, r])), [records]);
   useEffect(() => {
     const record = autoChoose && !program ? byId.get(autoChoose) : undefined;
-    if (record) onChoose(record.program);
-  }, [autoChoose, program, byId, onChoose]);
+    if (record) onChoose(historicalGrowthWithIntrabar(record.program, preferredVersion));
+  }, [autoChoose, program, byId, onChoose, preferredVersion]);
   const next = nextRotationScenario(rotationCursor);
   const selected = program ? HISTORY20_CATALOG.find(item => item.id === program.scenarioId) : undefined;
   const p0 = Number(initialPrice) > 0 ? initialPrice : '1';
@@ -95,8 +113,13 @@ export function ListingHistoricalGrowthPanel({ program, initialPrice, listingAt,
   function choose(id: string) {
     const record = byId.get(id);
     if (!record) { setError('Сначала загрузите пакет History20 на это устройство'); return; }
-    setError(null); onChoose(record.program);
+    setError(null); onChoose(historicalGrowthWithIntrabar(record.program, intrabarVersion));
   }
+  function chooseIntrabar(version: 1 | 2) {
+    setPreferredVersion(version);
+    if (program) onChoose(historicalGrowthWithIntrabar(program, version));
+  }
+  const provenance = program ? historicalGrowthProvenance(program) : null;
   function exportDraft() {
     if (!program || !selected) return;
     const s = historicalGrowthSummary(program, p0);
@@ -134,6 +157,11 @@ export function ListingHistoricalGrowthPanel({ program, initialPrice, listingAt,
     {report && <p role="status" className="listing-hint" data-history20-report>Пакет проверен: {report.filesVerified} файлов по SHA-256, {report.scenarios} окон, {report.rows} суток. Совпадение с normalized_path: отклонение не более {report.maxParityRelError.toExponential(1)}. Сохранены только ln(P/A), {Math.round(report.storedBytes / 1024)} КБ; цены и объёмы источника не сохраняются.</p>}
     {busy && <p role="status">Проверка пакета…</p>}
     {error && <p role="alert" className="listing-error">{error}</p>}
+    <fieldset className="listing-growth-intrabar" data-history20-intrabar disabled={busy || locked}>
+      <legend>Модель внутри суток (одинаковые дневные значения источника)</legend>
+      <label className="listing-check"><input type="radio" name="history20Intrabar" checked={intrabarVersion === 2} onChange={() => chooseIntrabar(2)} data-field="history20IntrabarV2" /> v2 — детерминированный мост с паузами и всплесками (по умолчанию)</label>
+      <label className="listing-check"><input type="radio" name="history20Intrabar" checked={intrabarVersion === 1} onChange={() => chooseIntrabar(1)} data-field="history20IntrabarV1" /> v1 — прямые отрезки (базовая линия для сравнения)</label>
+    </fieldset>
     <div className="listing-growth-rotation" data-history20-rotation>
       <span>Следующий по ротации: <b>{next.id}</b> (позиция {next.position} из {HISTORY20_ROTATION.length}; по одному шагу на каждый новый листинг)</span>
       <button type="button" disabled={busy || locked || !byId.has(next.id)} onClick={() => choose(next.id)} data-choose-rotation>Выбрать</button>
@@ -175,8 +203,9 @@ export function ListingHistoricalGrowthPanel({ program, initialPrice, listingAt,
       </dl>
       <div className="listing-growth-chart-tools">
         <label className="listing-check"><input type="checkbox" checked={weekly} onChange={e => setWeekly(e.target.checked)} data-field="history20Weekly" /> Недельные группы сценарных суток</label>
-        <small>Таймфрейм графика не меняет прошедшее время сценария. {program.source.dataKind === 'daily_reference' ? 'Опорная цена за сутки: внутрисуточные тени не придумываются.' : 'Порядок максимума и минимума внутри суток неизвестен; в симуляции он задаётся по коду варианта.'}</small>
+        <small>Таймфрейм графика не меняет прошедшее время сценария. Этот график — только дневные значения источника, без внутрисуточной модели.</small>
       </div>
+      {provenance && <p className="listing-hint" data-history20-provenance><span data-provenance="observed">{provenance.observed}</span> <span data-provenance="modeled">{provenance.modeled}</span></p>}
       <ListingCandlePreview plan candles={historicalGrowthCandles(program, p0, listingAt ? Date.parse(listingAt) : Date.UTC(2026, 0, 1), weekly ? 7 : 1)} />
       <p className="listing-hint">Сжатие всего окна, например в 120 часов, — отдельный лабораторный режим. Он не активен и включается только по отдельному подтверждению владельца. Точные свечи с тиками — в «Предпросмотре» после сохранения черновика (до 30 дней за запрос).</p>
       <div className="listing-buttons">

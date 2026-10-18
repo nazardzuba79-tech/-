@@ -1,6 +1,7 @@
 import { browserFetch as fetch } from '../../lib/browserActivity';
 import { API_BASE, getToken } from '../../lib/api';
 import type { ListingProgram } from './listingMovementModel';
+import type { HistoricalGrowthDataKind, HistoricalGrowthIntrabar, HistoricalGrowthSource } from './historicalGrowthModel';
 
 /** Admin → Listings calls (Render, ADMIN only; Render forwards to the Cloudflare store). */
 
@@ -51,7 +52,8 @@ export interface ListingPreview {
   scenarioSummary?: {
     horizon: ListingPreviewHorizon; interval: string; from: number; to: number; initialPrice: string; first24hPrice: string; maxPrice: string; observedHigh: number; observedLow?: number; candleLimit: number;
     /** Present for a historical growth window (admin preview only). */
-    historicalGrowth?: { scenarioId: string; unit: string; alpha: number; targetPeakGrowthPercent: string; windowDays: number; fromDay: number; toDay: number; clock: 'REAL_TIME'; dataKind: string; rights: string };
+    historicalGrowth?: { scenarioId: string; unit: string; alpha: number; targetPeakGrowthPercent: string; windowDays: number; fromDay: number; toDay: number; clock: 'REAL_TIME'; dataKind: HistoricalGrowthDataKind; rights: string;
+      intrabar: HistoricalGrowthIntrabar; provider: HistoricalGrowthSource['provider']; metric: HistoricalGrowthSource['metric'] };
   };
 }
 

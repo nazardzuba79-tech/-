@@ -7,7 +7,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import {
   buildHistoricalGrowthProgram, historicalGrowthAlpha, historicalGrowthCap, historicalGrowthDailyModel, historicalGrowthElapsedSeconds,
-  historicalGrowthFold, historicalGrowthLogAt, historicalGrowthMaxPrice, historicalGrowthObservation, historicalGrowthPrice, sha256HexUtf8,
+  historicalGrowthFold, historicalGrowthLogAt, historicalGrowthMaxPrice, historicalGrowthObservation, historicalGrowthOpenLogAt, historicalGrowthPrice, sha256HexUtf8,
   validateHistoricalGrowthProgram, type HistoricalGrowthProgram, type HistoricalGrowthSourceRow,
 } from '../../../shared/listingHistoricalGrowth';
 import { defaultScenarioControls, type ScenarioControlsProgram } from '../../../shared/listingScenarioControls';
@@ -41,8 +41,10 @@ function walk(days: number, ohlc: boolean, salt = 7): HistoricalGrowthSourceRow[
 const REFERENCE_SOURCE = { provider: 'Coin Metrics', asset: 'BTC', quote: 'USD', metric: 'PriceUSD', dataKind: 'daily_reference', timeframe: '1d', sliceSha256: 'a'.repeat(64), license: 'CC-BY-NC-4.0' } as const;
 const OHLC_SOURCE = { provider: 'Binance Vision', asset: 'SOL', quote: 'USDT', metric: 'spot daily OHLCV', dataKind: 'exchange_ohlcv', timeframe: '1d', sliceSha256: 'b'.repeat(64), license: 'CC-BY-NC-SA-4.0 plus Binance Vision Dataset Terms' } as const;
 const REFERENCE_ROWS = walk(41, false), OHLC_ROWS = walk(40, true);
+// New programs use the intraday model v2 (seeded bridge); v1 is kept as the straight-line baseline.
 const reference = buildHistoricalGrowthProgram({ scenarioId: 'VHX-01-BTC', source: REFERENCE_SOURCE, targetPeakGrowthPercent: '11872.45', rows: REFERENCE_ROWS });
 const ohlc = buildHistoricalGrowthProgram({ scenarioId: 'VHX-03-SOL', source: OHLC_SOURCE, targetPeakGrowthPercent: '9348', rows: OHLC_ROWS });
+const referenceV1 = { ...reference, intrabar: 'LOG_LINEAR_REFERENCE_V1' as const };
 
 function windowProgram(growth: HistoricalGrowthProgram, initialPrice = '2', patch: Partial<ScenarioControlsProgram> = {}): ScenarioControlsProgram {
   const base = defaultScenarioControls(initialPrice, 'CALM');
@@ -199,7 +201,7 @@ describe('the simulation: REAL_TIME, one canonical path', () => {
     const scheduled = asset().scheduledScenario as Parameters<typeof controlledScenarioHour>[0];
     for (const hour of [0, 1, 7, 8, 15, 16, 23, 24, 25, 200, 40 * 24 - 1, 40 * 24, 40 * 24 + 5]) {
       const generated = controlledScenarioHour(scheduled, SEED, hour);
-      expect(generated.open).toBe(historicalGrowthPrice(growth, 2, cap, historicalGrowthLogAt(growth, SEED, hour * 3600), alpha));
+      expect(generated.open).toBe(historicalGrowthPrice(growth, 2, cap, historicalGrowthOpenLogAt(growth, SEED, hour * 3600), alpha));
       generated.ticks.forEach((tick, i) => expect(tick.price).toBe(historicalGrowthPrice(growth, 2, cap, historicalGrowthLogAt(growth, SEED, hour * 3600 + (i + 1) * 10), alpha)));
     }
   });
@@ -217,7 +219,11 @@ describe('the simulation: REAL_TIME, one canonical path', () => {
   test('one source day is 24 scenario hours: each day ends on the model close', () => {
     const sim = simulationFor(asset());
     const model = historicalGrowthDailyModel(growth, '2');
-    for (const day of [0, 1, 9, 20, 39]) expect(sim.priceAt(FROM + (day + 1) * DAY)! / model[day].close).toBeCloseTo(1, 9);
+    // The last completed 5-minute candle of scenario day d closes on the source close of day d.
+    for (const day of [0, 1, 9, 20, 39]) {
+      const end = FROM + (day + 1) * DAY, last = sim.candles5m(end, end - 10 * 60_000).find(c => c.openTime === end - 5 * 60_000)!;
+      expect(last.close / model[day].close).toBeCloseTo(1, 9);
+    }
   });
 
   test('restart and query continuity: a fresh process and a split query see the same market', () => {
@@ -238,13 +244,15 @@ describe('the simulation: REAL_TIME, one canonical path', () => {
     for (const h of [1, 24, 24 * 30]) expect(sim.priceAt(end + h * HOUR)).toBe(last);
   });
 
-  test('a daily reference has no invented wick: every tick moves along its log-linear line', () => {
-    const scheduled = listingSimulationConfig(config(reference)).scheduledScenario as Parameters<typeof controlledScenarioHour>[0];
+  test('v1 baseline: a daily reference moves along its log-linear line, with no tick wick', () => {
+    const scheduled = listingSimulationConfig(config(referenceV1)).scheduledScenario as Parameters<typeof controlledScenarioHour>[0];
     const hour = controlledScenarioHour(scheduled, SEED, 30);
+    const a = referenceV1.logs[1][0], b = referenceV1.logs[2][0], rAlpha = historicalGrowthAlpha(referenceV1), rCap = historicalGrowthCap('2', referenceV1.targetPeakGrowthPercent);
     hour.ticks.forEach((tick, i) => {
       const previous = i ? hour.ticks[i - 1].price : hour.open;
       expect(tick.high).toBe(Math.max(previous, tick.price));
       expect(tick.low).toBe(Math.min(previous, tick.price));
+      expect(tick.price).toBe(historicalGrowthPrice(referenceV1, 2, rCap, a + (b - a) * (6 * 3600 + (i + 1) * 10) / 86400, rAlpha));
     });
   });
 });
@@ -267,11 +275,13 @@ describe('what a bot may observe', () => {
     const day10 = historicalGrowthDailyModel(ohlc, '2')[10];
     expect(seen.forming!.high).toBeLessThanOrEqual(day10.high);
     expect(seen.forming!.low).toBeGreaterThanOrEqual(day10.low);
-    // A closed day as the simulation draws it: it opens on the previous close (the canonical
-    // tick stream is continuous), then reaches the source day's high, low and close.
+    // A closed day as the simulation draws it (v2): the source day's own bar — open, high, low, close.
     const later = historicalGrowthObservation(ohlc, '2', SEED, FROM, FROM + 11 * DAY);
-    const day9 = historicalGrowthDailyModel(ohlc, '2')[9];
-    expect(later.closed[10]).toEqual({ openTime: FROM + 10 * DAY, open: day9.close, high: Math.max(day9.close, day10.high), low: Math.min(day9.close, day10.low), close: day10.close });
+    expect(later.closed[10]).toEqual({ openTime: FROM + 10 * DAY, open: day10.open, high: day10.high, low: day10.low, close: day10.close });
+    // The v1 baseline is continuous: its day opens on the previous close.
+    const ohlcV1 = { ...ohlc, intrabar: 'SEEDED_OHLC_PATH_V1' as const }, day9 = historicalGrowthDailyModel(ohlc, '2')[9];
+    expect(historicalGrowthObservation(ohlcV1, '2', SEED, FROM, FROM + 11 * DAY).closed[10]).toEqual({ openTime: FROM + 10 * DAY, open: day9.close,
+      high: Math.max(day9.close, day10.high), low: Math.min(day9.close, day10.low), close: day10.close });
     const ticks = sim.candles5m(FROM + 11 * DAY - 1, FROM + 10 * DAY);
     expect(Math.max(...ticks.map(c => c.high)) / later.closed[10].high).toBeCloseTo(1, 9);
     expect(Math.min(...ticks.map(c => c.low)) / later.closed[10].low).toBeCloseTo(1, 9);

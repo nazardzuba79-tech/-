@@ -136,7 +136,9 @@ export function validateHistoricalGrowthStructure(program: HistoricalGrowthProgr
   const c = program.clock;
   if (!c || c.mode !== 'REAL_TIME' || c.sourceStepSeconds !== 86400 || c.scenarioStepSeconds !== 86400)
     throw new RangeError('Историческое окно работает только в реальном времени: сутки источника = сутки сценария');
-  if (program.intrabar !== (ohlc ? 'SEEDED_OHLC_PATH_V1' : 'LOG_LINEAR_REFERENCE_V1'))
+  // v1 = straight-line baseline, v2 = seeded bridge; each only for its data kind.
+  if (ohlc ? program.intrabar !== 'SEEDED_OHLC_PATH_V1' && program.intrabar !== 'SEEDED_BRIDGE_OHLC_V2'
+    : program.intrabar !== 'LOG_LINEAR_REFERENCE_V1' && program.intrabar !== 'SEEDED_BRIDGE_REFERENCE_V2')
     throw new RangeError('Модель внутри суток не соответствует типу данных');
   const target = program.targetPeakGrowthPercent;
   if (typeof target !== 'string' || !/^\d{4,5}(?:\.\d{1,2})?$/.test(target) || Number(target) < L.minPeakPercent || Number(target) > L.maxPeakPercent)

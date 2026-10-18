@@ -6533,3 +6533,47 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - an authorised isolated bot harness;
   - bearish/range/OOD control sets;
   - the 120 h compression mode (inactive, needs explicit approval).
+
+### Claude — 2026-10-18 — History20 intraday model v2: seeded bridge instead of straight lines (PR #544, owner work order Phase 1)
+- **Task:** the owner/CTO found the 5m/1h previews unnaturally straight. Replace the piecewise straight intraday paths with a deterministic, bounded, realistic-looking synthetic model. Keep the daily source truths, REAL_TIME, the cap and every guard; label observed vs modeled.
+- **Commit:** see PR #544 (branch `claude/peaceful-volta-h5zw7g-history20`, on top of the owner's `c0e7777f`; no reset, no force-push).
+- **What changed:**
+  - `intrabar` now versions the intraday model.
+    - `SEEDED_BRIDGE_REFERENCE_V2` / `SEEDED_BRIDGE_OHLC_V2` are the default for new choices.
+    - The v1 ids stay valid as the labelled straight-line baseline (admin selector «Модель внутри суток»).
+    - Stored logs and their checksum do not change.
+  - v2 is a seeded Lévy Brownian bridge on an activity clock (bursts and pauses), with random access in O(14) per tick and no state. Near a source high or low it uses a Bessel-3 bridge, so there is no flat top.
+  - **OHLC day:** opens at the source open, reaches the source H and L exactly, never leaves [L, H] and closes on C.
+    - So the 1d candle is the source bar. v1 differed by up to 1.8e-3.
+    - The source's own close→open gap stays at 00:00.
+  - **Reference day:** both samples are exact. Wicks stay in a modeled band (± 1.25 σ of local daily moves, under the cap) and are labelled MODELED.
+  - Volume is modeled from activity and moves.
+  - The preview summary carries `intrabar/provider/metric`. The admin shows «Наблюдение» / «МОДЕЛЬ» lines, and the preview marks 1d as observation and finer candles as the model.
+- **Material files:**
+  - `src/shared/listingHistoricalGrowth.ts` (reference v2, `historicalGrowthOpenLogAt`, `historicalGrowthTickVolume`, observation by ticks);
+  - `src/services/testMarkets/simulationScenarioControls.ts` (inert verbatim copy);
+  - `src/shared/listingScenarioControls.ts` and `src/services/listings/listingConfig.ts` (accept v2 ids per data kind);
+  - `src/services/listings/listingPreview.ts`;
+  - `frontend/src/pages/admin/{historicalGrowthModel.ts,ListingHistoricalGrowthPanel.tsx,AdminListingsPage.tsx,adminListingsApi.ts,adminListings.css}`;
+  - tests: new `historicalGrowthIntraday.test.ts`, `historicalGrowthWindow.test.ts`, `historicalGrowthPack.local.test.ts` (opt-in registration plus an always-on "no pack file in repo" check), `historicalGrowthLibrary.test.ts`;
+  - `scripts/qa-listing-history20.cjs`, `docs/HISTORY20_GROWTH_WINDOW.md`, `docs/qa/history20-20261018/` (synthetic evidence only).
+- **Preserved:**
+  - The owner's opt-in ZIP test and the bounded ZIP inflation (`67a755cc`, `c0e7777f`).
+  - The NRX/VTA/AITH projection and release identity: NRX fingerprint `63610d3e…` is identical on main `f81df788` and on this branch.
+  - The legacy stages and the #518 continuation.
+  - `HISTORICAL_RIGHTS_UNVERIFIED` and the demo isolation.
+  - No change to `simulationSchedule.ts`, `testMarketSimulation.ts`, Stocks, Wallet or #543 files.
+- **Verified locally (exact working tree before commit):**
+  - backend `npm run build`, frontend `tsc -b` and `vite build`;
+  - `historicalGrowthIntraday` 16/16, `historicalGrowthWindow` 31/31, `historicalGrowthLibrary` 12/12, `adminListings`;
+  - local pack (`HISTORY20_PACK_DIR`) 5/5: all 20 windows under v2 with 0 mismatches vs the daily source values and 0 cap breaches on sampled days; BotLab 01 all 7,439,040 ticks peak exactly 239.449;
+  - ZIP import test (`HISTORY20_ZIP`) PASS;
+  - Worker `test:listings` 18/18 and `test:smoke` 4/4 on workerd, plus the Worker contract;
+  - browser QA at 1440/390: synthetic 9/9, real pack 10/10.
+- **Not run locally:**
+  - the `*.pg.test.ts` suites. A local PostgreSQL could not reach the root-only scratch directory, so these are left to CI's disposable PostgreSQL;
+  - production, real phones, any bot execution.
+- **Unresolved:**
+  - The forming day's bridge is conditioned on that day's own source bar, so it is training data, not evidence of bot profitability.
+  - The price stays flat after the window ends (no tail by design).
+  - The licence, a unique symbol and start time, the bot harness and the control sets remain the owner's.
