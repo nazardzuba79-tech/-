@@ -6577,3 +6577,21 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - The forming day's bridge is conditioned on that day's own source bar, so it is training data, not evidence of bot profitability.
   - The price stays flat after the window ends (no tail by design).
   - The licence, a unique symbol and start time, the bot harness and the control sets remain the owner's.
+
+### Claude — 2026-10-18 — History20: Futures account non-interference regression (owner contract on PR #544)
+- **Task:** the owner requires that «Угоди на історії мають залишатись як і були на фючерсному акаунті». Prove that the History20 changes leave Futures history, positions, balances and funding unchanged.
+- **Added:** `src/services/listings/__tests__/historicalGrowthFutures.pg.test.ts`, a disposable PostgreSQL test.
+  - **Seeded data:**
+    - a Futures account: margin balance; an open LONG with SL/TP; a closed SHORT and a liquidation with realized PnL; open, filled and reduce-only orders; a funding rate record and funding payments;
+    - the native Futures TEST account (state, revisions, live projection) with a HISTORICAL_DEMO deal;
+    - Spot and demo rows.
+  - **History20 paths exercised**, for v1 and v2, reference and OHLC:
+    - the draft gate, the first24h and window previews, 48 h of ticks, 5m candles and a bot observation;
+    - every real-money refusal: Spot order, admin simulation sale, OCO, demo order, owner allocation, Futures collateral, wallet price.
+  - **Assertions:** every row is byte-for-byte unchanged, and the served `/futures/balances`, `/futures/orders/me` and `/futures/positions/history` are equal.
+- **Verified locally:**
+  - the new test passes, on PostgreSQL 16 loopback;
+  - a mutation check (one funding payment changed by 1e-10) makes it fail;
+  - backend `tsc` passes.
+- **Material files:** the test only. No production code changed in this commit. It runs in CI through the existing `historicalGrowth` pattern step of `admin-listings.yml`, which has the disposable database.
+- **Not done:** wiring History20 windows into the native Futures TEST account. A proposal only, in the PR comment; it needs owner approval.
