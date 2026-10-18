@@ -86,6 +86,27 @@ Either option needs explicit owner approval and its own tests: duplicate POST, u
 
 **Mutation check** on the first commit: with its guards removed, 5 tests failed. The P0-2 guard is still covered by the unit and REST tests above.
 
+## Owner's required demo-trading tests on a model price (correction of 09:04 UTC)
+
+The owner allows demo debits and asks to keep the existing flow. `modeledPriceDemoTrading.pg.test.ts` pins that flow on the managed-listing Spot path (OrderService, PriceWatcherService, `balance`). No production code was changed: every requirement already holds.
+
+| Owner requirement | Where it is pinned |
+|---|---|
+| Manual Buy/Sell changes the demo balance correctly | new test 1: the reserve is exactly price × quantity; the fill spends it at the bid; the sell credits exactly |
+| Insufficient balance is refused | new test 1: LIMIT BUY, LIMIT SELL and TAKE_PROFIT BUY are refused, with no order row and no lock |
+| Cancel releases the reservation | new test 1: the remaining reserve comes back; a retried cancel is a no-op |
+| Retries do not double-debit | new test 1: the same cancel sent 3 times at once releases once. New test 2: 4 concurrent sweeps from 2 watcher instances trigger each order once; an OCO with both legs cancelled at once refunds once |
+| STOP / TP and bot triggers work on model prices | new test 2: STOP_LIMIT and TAKE_PROFIT_LIMIT fire at the first model-price crossing; `managedListingFailClosed.pg` covers TP + OCO after `tradable:false` |
+| Futures history intact | both new tests: the seeded `FuturesBalance` rows are byte-identical afterwards, and no `DemoBalance` row appears. History20 paths: `historicalGrowthFutures.pg` on #544 |
+| No real-money or venue call | both new tests: the venue price source is never asked for the model pair |
+
+**Mutation check.** I let `cancelOrder` accept an already-cancelled order and `triggerOrder` accept a filled one. Both new tests then fail (for example, 4 triggers instead of 1).
+
+**Still open, needs owner review:**
+
+- A retried admin MARKET SELL (`sellTeamSpotSimulation`) is a second sale, because there is no idempotency key (P1-3 below). The fix needs a migration.
+- History20 windows have no execution path: they are preview-only and cannot be published. The proposal, a model-backed market for the native Futures TEST account, is on #544 and needs a design approval.
+
 ## P1/P2: plan only (financial changes gated for owner review; no code here)
 
 **P1-3: idempotent admin simulation sale**

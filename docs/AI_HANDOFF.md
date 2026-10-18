@@ -6519,3 +6519,19 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Preserved:** bot paper triggers and execution; NRX; settlement and reserves; Futures history; Wallet (#543); Stocks; locales.
 - **Not done (needs owner and financial review):** P1 (idempotency key, simulation-fill labelling and card eligibility, Wallet modeled valuation, practice-ledger separation) and P2 (pause/stop/unpublish).
 - **Not run:** production, migrations, deploy.
+
+### Claude — 2026-10-18 — Owner-required demo trading on a model price, pinned (PR #548, follow-up)
+- **Task:** the owner's correction of 09:04 UTC. Demo debits are allowed, and the existing flow must be kept. Tests were required for: Buy/Sell balance, insufficient funds, cancel release, retries, STOP/TP on model prices, Futures history, and no venue call.
+- **Done:** new `src/services/listings/__tests__/modeledPriceDemoTrading.pg.test.ts` (2 tests), wired into `.github/workflows/admin-listings.yml`. A requirements-to-test table is in `docs/qa/managed-listing-failclosed-20261018.md`.
+- **Production code:** none changed. Every requirement already holds on the existing OrderService / PriceWatcherService / `balance` path.
+- **Mutation check:** I let `cancelOrder` and `triggerOrder` act on an already-cancelled or filled order. Both new tests fail; the code was restored.
+- **Verified locally:**
+  - disposable PostgreSQL 16 (loopback, port 55432);
+  - the new test 2/2;
+  - together with `managedListingFailClosed.pg`, `tradingGates`, `ownerAllocation.pg` and `historicalDemoContour.pg`: 31/31.
+- **Preserved:** P0-2 gate, bot triggers on `tradable:false`, NRX, Futures, Wallet (#543), Stocks, locales.
+- **Not done:**
+  - idempotency of the admin simulation sale (P1-3, needs a migration);
+  - History20 execution (proposal on #544, needs owner design approval).
+- **Not run:** production, migrations, deploy, full Jest on this commit.
+
