@@ -159,6 +159,7 @@ export function WalletPage() {
                 onDeposit={() => setModal('deposit')}
                 onWithdraw={() => setModal('withdraw')}
                 onTransfer={() => setModal('transfer')}
+                onConvert={() => setModal('convert')}
                 onHistory={() => setSection('orders')}
                 onOpenUnified={() => setSection('unified')}
                 onOpenFunding={() => setSection('funding')}
@@ -207,7 +208,6 @@ export function WalletPage() {
                     onDeposit={() => setModal('deposit')}
                     onWithdraw={() => setModal('withdraw')}
                     onTransfer={() => setModal('transfer')}
-                  onConvert={() => setModal('convert')}
                   />
                   {/* The approved design's footnote: the valuation status
                       under the table. Complete → said so; incomplete → the
