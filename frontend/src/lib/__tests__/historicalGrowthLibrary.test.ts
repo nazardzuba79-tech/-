@@ -126,7 +126,11 @@ describe('the pack import', () => {
 });
 
 const ZIP = process.env.HISTORY20_ZIP ?? '';
-(ZIP && existsSync(ZIP) ? test : test.skip)('local only: the owner\'s ZIP imports all 20 windows, each reproducing normalized_path', async () => {
+// Register the licensed owner-pack test only when explicitly supplied.
+// With a wrong local path it FAILS; without a private ZIP CI runs all feasible tests.
+if (ZIP) {
+  test('local only: the owner\'s ZIP imports all 20 windows, each reproducing normalized_path', async () => {
+  expect(existsSync(ZIP)).toBe(true);
   const { records, report } = await importHistory20(packFiles(await readZipEntries(new Uint8Array(readFileSync(ZIP)), () => true)));
   expect(records.map(r => r.scenarioId)).toEqual(HISTORY20_ROTATION);
   expect(report.scenarios).toBe(20);
@@ -137,3 +141,4 @@ const ZIP = process.env.HISTORY20_ZIP ?? '';
   // eslint-disable-next-line no-console
   console.log(JSON.stringify(report));
 });
+}
