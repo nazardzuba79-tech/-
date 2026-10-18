@@ -4,6 +4,9 @@
 // Uses the built CommonJS API, not ts-jest or a mocked ESM factory.
 const test = require('node:test');
 const assert = require('node:assert/strict');
+// JWT auth middleware validates the secret during module import, before any
+// route is constructed. Use an explicitly synthetic value in this test ONLY.
+process.env.JWT_SECRET = 'synthetic-stocks-node22-jwt-unit-test-secret-long-enough';
 const { stocksTestCashRouter } = require('../../../dist/api/routes/stocksTestCash.js');
 const { openPostgresAuthority } = require('../postgres-authority.mjs');
 
