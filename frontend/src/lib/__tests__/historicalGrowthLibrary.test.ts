@@ -118,6 +118,18 @@ describe('the pack import', () => {
     expect(new TextDecoder().decode(files.get('catalog.json'))).toBe('{"x":1}');
   });
 
+  test('bounds ZIP inflation before hashing when declared plain size is forged', async () => {
+    const bytes = zip([['VOLTEX_History20_Claude_20261018/catalog.json', 'X'.repeat(128 * 1024), 'deflate']]);
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    // One stored local record followed directly by its central-directory header.
+    const central = 30 + view.getUint16(26, true) + view.getUint32(18, true);
+    expect(view.getUint32(central, true)).toBe(0x02014b50);
+    view.setUint32(central + 24, 16, true); // lies about actual 128 KiB payload
+    await expect(readZipEntries(bytes, () => true)).rejects.toThrow('Размер распакованного файла');
+    const importer = readFileSync(resolve(__dirname, '../../pages/admin/historicalGrowthPack.ts'), 'utf8');
+    expect(importer).not.toContain('new Response(stream).arrayBuffer()');
+  });
+
   test('refuses an unsafe path and a catalogue that is not the committed one', async () => {
     await expect(readZipEntries(zip([['../evil/catalog.json', '{}', 'store']]), () => true)).rejects.toThrow('Небезопасный путь');
     const forged = new Map([['catalog.json', new TextEncoder().encode('{"scenarios":[]}')]]);

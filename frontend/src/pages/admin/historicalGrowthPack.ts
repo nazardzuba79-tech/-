@@ -43,10 +43,32 @@ export async function sha256Bytes(bytes: Uint8Array): Promise<string> {
 
 async function inflateRaw(bytes: Uint8Array, expected: number): Promise<Uint8Array> {
   if (typeof DecompressionStream === 'undefined') throw new Error('Браузер не умеет распаковывать ZIP: выберите распакованную папку пакета');
+  // ZIP's declared uncompressed size is untrusted: do NOT buffer the whole
+  // stream before checking it. An attacker could advertise 1 KB but inflate
+  // several GB in an admin browser, before file hashes are checked.
+  if (!Number.isSafeInteger(expected) || expected > HISTORY20_MAX_ENTRY_BYTES) throw new Error('Файл в архиве слишком большой');
   const stream = new Blob([bytes as Uint8Array<ArrayBuffer>]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-  const out = new Uint8Array(await new Response(stream).arrayBuffer());
-  if (out.length !== expected) throw new Error('Размер распакованного файла не совпадает с ZIP');
-  return out;
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > expected || total > HISTORY20_MAX_ENTRY_BYTES) throw new Error('Размер распакованного файла не совпадает с ZIP');
+      chunks.push(value);
+    }
+    if (total !== expected) throw new Error('Размер распакованного файла не совпадает с ZIP');
+    const result = new Uint8Array(total);
+    let cursor = 0;
+    for (const chunk of chunks) { result.set(chunk, cursor); cursor += chunk.byteLength; }
+    return result;
+  } finally {
+    // Stop remaining decompression on a dishonest size, regardless of hash.
+    try { await reader.cancel(); } catch { /* stream already closed or errored */ }
+    reader.releaseLock();
+  }
 }
 
 /** Minimal ZIP reader (stored/deflate, no ZIP64, no encryption) for the entries `wanted` accepts. */
