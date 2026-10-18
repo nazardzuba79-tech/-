@@ -6493,3 +6493,12 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - Templates live in this browser only; there is no server sync.
   - The Coordinates tab edits prices only; a point's time is still changed by dragging.
 - **Not done:** merge, deploy, PR, production migration, real data. Codex's Stocks files were not touched.
+
+
+### 2026-10-18T08:32:06.471Z — Codex / Stocks505 isolated recovery and fail-closed migration preflight
+
+Base PR545 3e6b88d3daf9d83068c9d911b5ba0e109a2511b6 on main f81df788. Recovered only scripts/qa/stocks-migration-review.cjs and its tests from unpublished8331513; original clean worktree/ref preserved. No duplicate Node22 constructor/workflow or historical production snapshots/Stocks-only allowlist imported. This containing commit adds a private-data-free review runbook, migration-attempt unit/real disposable PG regression, and narrows the CI label to Node-version/module-load smoke.
+
+Proven defect: one success plus an unresolved active migration attempt could pass; now exactly one non-rolled-back success and no unresolved attempt are required for both Stocks and Funding. Resolved rolled-back history remains allowed. RED16PASS/2FAIL; GREEN26/26; real disposable PostgreSQL1PASS/12scenarios, transaction_read_only on and account rows unchanged. Initial new PG fixture lacked Prisma implicit id columns; fixture only corrected, raw failure retained. Local draft YAML serialization issue caught and fixed before commit; no-skip guards retained. All own PG/test processes stopped. Financial engine/API/auth/DemoBalance files, defaults, schema/migration SQL, Claude simulator/UX and prior evidence preserved. No large suites, feeds, profiling, capacity run, production/host changes, merge or deploy.
+
+Actual Hetzner/image/full fresh migration-chain/staging evidence ACCESS_BLOCKED in this executor; saved02:50 operator receipt is historical. Existing545 CI39105379688 is module-load smoke, not actual-image proof. Offline Git chain44→46 includes Stocks and Funding; historical CRLF/LF byte mismatch fails closed without normalization. Real identity protocol remains private/outsideGit, bindings blocked. Provider rights NOT CLEARED; previous+14.3481%FAIL unchanged. Exact commit/patch and local validation evidence recorded externally.

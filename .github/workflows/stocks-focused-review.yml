@@ -13,6 +13,7 @@ on:
       - 'frontend/src/lib/__tests__/stocksViewerNoop.test.ts'
       - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
       - '.github/workflows/stocks-focused-review.yml'
+      - 'scripts/qa/stocks-migration-review*.cjs'
   workflow_dispatch: {}
 
 permissions:
@@ -84,6 +85,14 @@ jobs:
           services/stocks-global/account-existing-only.test.mjs
       - name: Pilot read-only preflight contract (mock database only)
         run: node --test services/stocks-global/pilot-preflight.test.cjs
+      - name: Read-only preflight attempt gate on disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap services/stocks-global/pilot-preflight.pg.test.cjs | tee /tmp/stocks-preflight-pg.tap
+          grep -Eq '^# skipped 0$' /tmp/stocks-preflight-pg.tap
+          grep -Eq '^# fail 0$' /tmp/stocks-preflight-pg.tap
+          grep -Eq '^# pass [1-9][0-9]*$' /tmp/stocks-preflight-pg.tap
       - name: Stocks-only shared trade stream bootstrap (synthetic and disconnected)
         run: >-
           node --test
@@ -109,8 +118,8 @@ jobs:
           retention-days: 5
 
   node22-hetzner-module-load:
-    # Production-image runtime compatibility only. No live database, ingress,
-    # providers, deployment or migration. Separate from the Node 24 PG gate.
+    # Node-version/module-load smoke only; not actual production-image proof.
+    # No live database, ingress, providers, deployment or migration.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -132,3 +141,6 @@ jobs:
         run: npm run build
       - name: Load actual ESM Stocks authority and default-off routes on Node 22.23.3
         run: node --test services/stocks-global/testing/node22-route-load.test.cjs
+
+      - name: Offline migration manifest contract (no SQL or image proof)
+        run: node --test scripts/qa/stocks-migration-review.test.cjs

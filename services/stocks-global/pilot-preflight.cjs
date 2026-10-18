@@ -38,7 +38,11 @@ async function inspectReadOnly(prisma, env) {
     const hasBalance = new Set(cash.map(row => row.userId));
     const funded = new Set(cash.filter(row => Number(row.available.toString()) > 0).map(row => row.userId));
     const hasSession = new Set(sessions.map(row => row.userId));
-    const applied = name => migrations.filter(row => row.migration_name === name && row.finished_at !== null && row.rolled_back_at === null).length === 1;
+    // Resolved rollback history is allowed; unresolved or duplicate active attempts block.
+    const applied = name => {
+      const active = migrations.filter(row => row.migration_name === name && row.rolled_back_at === null);
+      return active.length === 1 && active[0].finished_at !== null;
+    };
     const migrationApplied = applied(MIGRATION), fundingMigrationApplied = applied(FUNDING_MIGRATION);
     return {
       configuredPrincipals: 2,
