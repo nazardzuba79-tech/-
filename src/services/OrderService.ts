@@ -75,7 +75,7 @@ export class OrderService {
   }) {
     // Listing gates remain authoritative for every path, including the
     // owner's NRX simulation sale below.
-    await assertSpotListingReady(params.pair);
+    await assertSpotListingReady(params.pair, this.priceSource);
 
     // Owner/admin and explicitly allowlisted team test accounts trade with
     // simulation-only Spot settlement for MARKET SELL. Their synthetic/test
@@ -341,7 +341,7 @@ export class OrderService {
     stopTriggerPrice: BigNumber;
     stopLimitPrice: BigNumber;
   }) {
-    await assertSpotListingReady(params.pair);
+    await assertSpotListingReady(params.pair, this.priceSource);
     const [base, quote] = params.pair.split('/');
     const ticker = await spotPriceSource(this.priceSource).getTicker(params.pair);
     if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger prices');
