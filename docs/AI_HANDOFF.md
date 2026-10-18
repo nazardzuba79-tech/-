@@ -6595,3 +6595,36 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - backend `tsc` passes.
 - **Material files:** the test only. No production code changed in this commit. It runs in CI through the existing `historicalGrowth` pattern step of `admin-listings.yml`, which has the disposable database.
 - **Not done:** wiring History20 windows into the native Futures TEST account. A proposal only, in the PR comment; it needs owner approval.
+
+### Claude — 2026-10-18 — History20 → native Futures TEST: price-source seam (CTO final scope correction on #544)
+- **Task:** History20 is a price-path input. Map the native demo quote/mark/candle path, and implement the smallest price-source adapter without touching the financial write path. Where that is not possible, report the exact missing hooks.
+- **Branch:** `claude/peaceful-volta-h5zw7g-history20-native-prices`, stacked on #544 (`e7f2667`). Separate Draft PR.
+- **New, wired nowhere:** `src/private-trading/native/history20Prices.ts`.
+  - **Selection:** a saved window draft, read through the existing `ListingStore.list()` and re-validated (logs checksum). Published, unaligned and non-window drafts are refused.
+  - **`History20PriceSource`:** the same simulation the Admin preview reads. It serves the last completed tick and closed bars only.
+  - **`withHistory20Prices`:** a Proxy around `PrivateTradingMarketData` that routes only `<SYMBOL>SIMUSDT`. Book, candle entry, chart and venue funding are refused by name. With no selected window it returns the original object.
+- **Tests:** `src/private-trading/__tests__/nativeHistory20Prices.test.ts`, 9 tests, added to `private-trading.yml`. They drive the existing `NativeDemoService` on the model price:
+  - LIMIT fill;
+  - insufficient demo margin;
+  - cancel release;
+  - resting fill;
+  - TP/SL;
+  - funding at the boundary;
+  - idempotent retry;
+  - restart replay;
+  - no venue call;
+  - a venue contract identical with or without the seam.
+- **Mutation checks:** 3, each caught.
+- **Verified locally:**
+  - the new suite 9/9;
+  - all `src/private-trading` suites 50 PASS, 4 skipped (need a database);
+  - backend build PASS.
+- **Preserved:** the engine, replay, journal, store, routes, the frontend, every existing contract and account, NRX, #548, Stocks, locales.
+- **Blockers (owner decisions, see `docs/HISTORY20_NATIVE_PRICE_SOURCE.md`):**
+  - model contract parameters, and the `provider`/`parameterModel` literals;
+  - MARKET entry and chart: the `BYBIT_LINEAR` candle-source literals;
+  - a terminal symbol entry;
+  - wiring at 4 construction sites, with draft pinning against retroactive changes;
+  - bots: the native engine is JWT-only;
+  - the existing withdrawal cap from native PnL.
+- **Not run:** production, a database, the browser, deploy.
