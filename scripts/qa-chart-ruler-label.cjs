@@ -181,15 +181,17 @@ function verify(m, expected, context) {
           verify(view.afterTick, '+259,19 (+31\u00a0998,77%)', `${width}/live/refresh`);
           assert.equal(view.afterTick.live, true, 'refresh keeps live end enabled');
           assert.deepEqual(view.afterTick.handles.map(h => h.id), ['0', '1', 'edge0', 'edge1'], 'live refresh keeps all handles');
-          await page.locator('[data-object-action="measure"]').click();
-          const form = page.locator('form[data-object-menu="measure"]');
+          // TradingView's path to exact prices: the toolbar's gear → «Координаты».
+          await page.locator('[data-drawing-object-toolbar] [data-object-action="settings"]').click();
+          await page.locator('[data-settings-tab="coordinates"]').click();
+          const form = page.locator('[data-drawing-settings] [data-object-menu="measure"]');
           assert.equal(await form.locator('input[name="to"]').inputValue(), '260', 'exact end field follows latest candle');
           assert.equal(await form.locator('input[name="followLast"]').isChecked(), true, 'live checkbox stays checked');
           await page.screenshot({ path: path.join(OUT, `${LABEL}-${width}-live-refreshed-settings.png`), fullPage: true });
           // Exact prices stay editable and stop following when requested.
           await form.locator('input[name="followLast"]').uncheck();
           await form.locator('input[name="to"]').fill('200');
-          await form.locator('button[type="submit"]').click();
+          await page.locator('[data-settings-action="ok"]').click();
           view.fixed = await measurement(page);
           verify(view.fixed, '+199,19 (+24\u00a0591,36%)', `${width}/fixed-price`);
           assert.equal(view.fixed.live, false, 'exact fixed-price edit clears live end');

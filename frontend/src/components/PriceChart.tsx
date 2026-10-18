@@ -2381,6 +2381,7 @@ export function PriceChart({
             onSelect={setSelectedDrawing}
             onRequestText={(request) => { cancelGestureRef.current?.(); setDrawDialog({ kind: 'text', request }); }}
             cancelRef={cancelGestureRef}
+            intervalSeconds={INTERVAL_SECONDS[interval]}
             t={t}
           />}
 
