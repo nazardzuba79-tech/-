@@ -19,6 +19,8 @@ import { useStockPortfolio } from './wallet-v3/useStockPortfolio';
 import './wallet-v3/wallet.css';
 
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
+// Missing/false build flag keeps the existing Convert buttons disabled.
+const WALLET_CONVERSION_ENABLED = import.meta.env.VITE_WALLET_CONVERSION_ENABLED === 'true';
 
 function loadFlag(key: string): boolean {
   try {
@@ -159,7 +161,7 @@ export function WalletPage() {
                 onDeposit={() => setModal('deposit')}
                 onWithdraw={() => setModal('withdraw')}
                 onTransfer={() => setModal('transfer')}
-                onConvert={() => setModal('convert')}
+                onConvert={WALLET_CONVERSION_ENABLED ? () => setModal('convert') : undefined}
                 onHistory={() => setSection('orders')}
                 onOpenUnified={() => setSection('unified')}
                 onOpenFunding={() => setSection('funding')}
@@ -193,7 +195,7 @@ export function WalletPage() {
                   onDeposit={() => setModal('deposit')}
                   onWithdraw={() => setModal('withdraw')}
                   onTransfer={() => setModal('transfer')}
-                  onConvert={() => setModal('convert')}
+                  onConvert={WALLET_CONVERSION_ENABLED ? () => setModal('convert') : undefined}
                   onHistory={() => setSection('orders')}
                 />
 
@@ -243,7 +245,7 @@ export function WalletPage() {
       <DepositModal open={modal === 'deposit'} onClose={() => setModal(null)} />
       <WithdrawModal open={modal === 'withdraw'} onClose={() => setModal(null)} onSubmitted={refresh} onTransfer={() => setModal('transfer')} />
       <TransferModal open={modal === 'transfer'} onClose={() => setModal(null)} onSubmitted={refresh} />
-      <ConversionModal open={modal === 'convert'} onClose={() => setModal(null)} onSubmitted={() => { refresh(); setActivityVersion(v => v + 1); }} />
+      {WALLET_CONVERSION_ENABLED && <ConversionModal open={modal === 'convert'} onClose={() => setModal(null)} onSubmitted={() => { refresh(); setActivityVersion(v => v + 1); }} />}
     </div>
   );
 }

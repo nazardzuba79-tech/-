@@ -294,7 +294,8 @@ app.use('/api/v1', supportRequestRouter(prisma));
 app.use('/api/v1', candlesRouter(prisma));
 app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
-app.use('/api/v1', walletActivityRouter(prisma, new WalletConversionService(prisma, new KrakenConversionPrices(marketDataService))));
+// Real Funding/Spot conversions require explicit server-side release approval.
+app.use('/api/v1', walletActivityRouter(prisma, new WalletConversionService(prisma, new KrakenConversionPrices(marketDataService)), process.env.WALLET_CONVERSION_ENABLED === 'true'));
 app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService, prisma));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
 app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService));

@@ -37,7 +37,11 @@ jobs:
       - run: npx prisma generate
       - name: Backend build
         run: npm run build
-      - name: Frontend build
+      # Enable frontend Convert only in this disposable CI/browser QA build.
+      # This artifact is never deployed; every real frontend build is OFF by default.
+      - name: Frontend build (isolated QA)
+        env:
+          VITE_WALLET_CONVERSION_ENABLED: 'true'
         run: npm run build
         working-directory: frontend
       - name: Financial and wallet UI regressions

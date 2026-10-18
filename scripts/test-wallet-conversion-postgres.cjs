@@ -57,7 +57,9 @@ async function main() {
     await prisma.auditLog.create({ data: { userId: user, action: 'DEMO_BALANCE_ADJUSTED', metadata: { asset: 'USD', delta: '999999' } } });
     const app = express(); app.use(express.json());
     app.use((req, res, next) => { if (req.headers['x-fixture-drop-response'] === 'yes') res.json = () => { res.socket.destroy(); return res; }; next(); });
-    app.use('/api/v1', walletActivityRouter(prisma, conversion));
+    // Opt-in fixture remains disposable. Second mount verifies API default OFF.
+    app.use('/__wallet_default_off', walletActivityRouter(prisma, conversion));
+    app.use('/api/v1', walletActivityRouter(prisma, conversion, true));
     if (process.env.WALLET_QA_BROWSER === '1') {
       app.use('/api', (_, res) => res.status(404).json({ code: 'UNEXPECTED_FIXTURE_ROUTE' }));
       app.use(express.static(path.join(root, 'frontend/dist')));
@@ -70,6 +72,31 @@ async function main() {
       const response = await fetch(origin + '/api/v1' + route, { method: body === undefined ? 'GET' : 'POST', headers: { ...(actor ? { Authorization: 'Bearer ' + jwt.sign({ sub: actor, ...(purpose ? { purpose } : {}) }, process.env.JWT_SECRET) } : {}), 'Content-Type': 'application/json', ...(drop ? { 'X-Fixture-Drop-Response': 'yes' } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
       return { status: response.status, body: await response.json() };
     };
+    await check('default-OFF conversion denies quote/confirm/receipt without any write', async () => {
+      const before = await snapshot();
+      const quotesBefore = await prisma.auditLog.count({ where: { userId: user, action: 'WALLET_CONVERSION_QUOTED' } });
+      const disabled = async (route, body) => {
+        const response = await fetch(origin + '/__wallet_default_off' + route, {
+          method: body === undefined ? 'GET' : 'POST',
+          headers: { Authorization: 'Bearer ' + jwt.sign({ sub: user }, process.env.JWT_SECRET), 'Content-Type': 'application/json' },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        });
+        return { status: response.status, body: await response.json() };
+      };
+      for (const [path, body] of [
+        ['/wallet/conversion/assets', undefined],
+        ['/wallet/conversion/quote', { fromAsset: 'USD', toAsset: 'EUR', amount: '1' }],
+        ['/wallet/conversion/confirm', { quoteId: randomUUID() }],
+        ['/wallet/conversion/receipt/' + randomUUID(), undefined],
+      ]) {
+        const result = await disabled(path, body);
+        assert.equal(result.status, 404);
+        assert.equal(result.body.code, 'NOT_FOUND');
+      }
+      assert.equal((await disabled('/wallet/activity')).status, 200);
+      assert.equal(await prisma.auditLog.count({ where: { userId: user, action: 'WALLET_CONVERSION_QUOTED' } }), quotesBefore);
+      assert.deepEqual(await snapshot(), before);
+    });
     await check('owner-filtered adjustment history; admin reason/actor and Demo excluded', async () => {
       const result = await api('/wallet/activity'); assert.equal(result.status, 200); assert.equal(result.body.length, 1);
       assert.equal(result.body[0].amount, '100'); assert.equal(result.body[0].kind, 'adjustment');

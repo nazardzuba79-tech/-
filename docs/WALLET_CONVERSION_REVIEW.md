@@ -97,3 +97,20 @@ review, database schema compatibility and actual active financial writers.
 Existing migration/operational release procedures still apply. No server access,
 settings changes, production migration/audit, real financial QA or automatic
 rollout is authorized by this implementation task. OTC policy remains unchanged.
+
+## Feature activation — explicit opt-in, default OFF
+
+This feature debits and credits the **real** Funding/Spot `Balance` ledger.
+`WALLET_CONVERSION_ENABLED=true` must be set explicitly on the deployed API;
+without it, all `/wallet/conversion/*` paths return 404, with neither quote
+creation nor balance writes. Existing read-only `/wallet/activity` remains
+available. The frontend independently requires a **build-time**
+`VITE_WALLET_CONVERSION_ENABLED=true`. Without that flag the existing Convert
+buttons remain visible but disabled and the ConversionModal is not mounted.
+
+Neither flag implies or authorizes the other. The GitHub Action enables the
+frontend flag only for its **disposable PostgreSQL/browser acceptance build**
+(not deployable production output) and separately tests the default-OFF API
+with real PostgreSQL. Production use requires another explicit owner-approved
+coordinated backend/frontend release, independent financial review and
+pricing/liquidity/rights clearance. No activation or deployment in this Draft.

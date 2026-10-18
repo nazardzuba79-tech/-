@@ -8,7 +8,7 @@ import { AuthedRequest, requireAuth } from '../middleware/auth';
 import { ConversionError, WalletConversionService } from '../../services/WalletConversionService';
 
 /** Owner-filtered projection only. Never expose admin reasons, identities, balances or demo activity. */
-export function walletActivityRouter(prisma: PrismaClient, conversion: WalletConversionService): Router {
+export function walletActivityRouter(prisma: PrismaClient, conversion: WalletConversionService, conversionEnabled = false): Router {
   const router = Router();
   router.use('/wallet/activity', asyncRoute(requireAuth(prisma)));
   router.use('/wallet/conversion', asyncRoute(requireAuth(prisma)));
@@ -34,6 +34,12 @@ export function walletActivityRouter(prisma: PrismaClient, conversion: WalletCon
     });
     res.json(items);
   }));
+  // Default-OFF: history remains readable; conversion commands do not exist
+  // until separately authorized by an explicit server-side release flag.
+  if (!conversionEnabled) {
+    router.use('/wallet/conversion', (_req, res) => res.status(404).json({ code: 'NOT_FOUND' }));
+    return router;
+  }
   function guarded(fn: (req: AuthedRequest) => Promise<unknown>) {
     return asyncRoute(async (req: AuthedRequest, res) => {
       res.setHeader('Cache-Control', 'private, no-store');

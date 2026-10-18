@@ -5,7 +5,17 @@ const root = resolve(__dirname, '../../../..');
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8');
 const modal = read('frontend/src/pages/wallet-v3/ConversionModal.tsx');
 const history = read('frontend/src/pages/wallet-v3/TransactionHistory.tsx');
+const walletPage = read('frontend/src/pages/WalletPage.tsx');
+const overview = read('frontend/src/pages/wallet-v3/WalletOverview.tsx');
+const strip = read('frontend/src/pages/wallet-v3/PortfolioStrip.tsx');
 describe('wallet conversion UI safety boundaries', () => {
+  test('default-OFF keeps Convert controls disabled and cannot mount the modal', () => {
+    expect(walletPage).toContain("import.meta.env.VITE_WALLET_CONVERSION_ENABLED === 'true'");
+    expect(walletPage).toContain("onConvert={WALLET_CONVERSION_ENABLED ? () => setModal('convert') : undefined}");
+    expect(walletPage).toContain('{WALLET_CONVERSION_ENABLED && <ConversionModal');
+    expect(overview).toContain('disabled={!onConvert}');
+    expect(strip).toContain('disabled={!onConvert}');
+  });
   test('quote and confirmation are separate explicit actions; zero fee and decimal strings', () => {
     expect(modal).toContain('api.quoteConversion({ fromAsset: from, toAsset: to, amount })');
     expect(modal).toContain('api.confirmConversion(id)');
