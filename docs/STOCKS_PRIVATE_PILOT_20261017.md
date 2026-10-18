@@ -28,8 +28,14 @@ tokens are displayed. **PASS means only DB structural precheck**, not
 confirmation the IDs belong to the requested people, no rights clearance,
 no live authentication, no trading acceptance or deployment permission.
 
-If migration is not applied, the result is `BLOCKED`, by design. Do not
+Both known pending migration names must have successful, non-rolled-back
+rows for this *structural* gate: `20261016000000_stocks_test_cash_authority`
+and `20261016170000_native_funding_model`. The read-only report exposes only
+the two boolean statuses, not SQL secrets or account records. This does NOT
+confirm the full migration chain from the actually running production image.
+If either is missing or failed, the result is `BLOCKED`. Do not
 make the test pass by modifying the production DB or test assertions.
+Confirm any other pending migrations separately before planning a release.
 
 ## 3. First isolated acceptance — after separate approval
 
