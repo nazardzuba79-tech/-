@@ -17,15 +17,17 @@ const source = readFileSync(resolve(frontend, 'src/components/PriceChart.tsx'), 
 // The drawing layer is its own module. It is compiled the same way as the
 // chart, against the same real drawing helpers, so the chart's imports are
 // genuine; the layer component itself is never invoked by this harness.
-const layerSource = readFileSync(resolve(frontend, 'src/components/ChartDrawingLayer.tsx'), 'utf8');
-function drawingLayer() {
-  const compiled = ts.transpileModule(layerSource, { compilerOptions: {
+// Its object toolbar and settings dialog are sibling components, compiled the same way.
+function drawingLayer(file = 'ChartDrawingLayer') {
+  const compiled = ts.transpileModule(readFileSync(resolve(frontend, `src/components/${file}.tsx`), 'utf8'), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText;
   const layer: any = {};
   new Function('require', 'exports', compiled)((name: string) => {
     if (name === '../lib/chartDrawings') return drawings;
     if (name === '../lib/drawingGeometry') return drawingGeometry;
+    if (name === '../lib/drawingTemplates') return require('../drawingTemplates');
+    if (name === './DrawingObjectToolbar' || name === './DrawingSettingsDialog') return drawingLayer(name.slice(2));
     return (name.endsWith('/browserActivity') ? browserActivity : req(name));
   }, layer);
   return layer;

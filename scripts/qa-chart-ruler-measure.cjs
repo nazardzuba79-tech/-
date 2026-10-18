@@ -88,6 +88,14 @@ const handle = async (page, id) => {
   const b = await circle.boundingBox();
   return b && { x: b.x + b.width / 2, y: b.y + b.height / 2 };
 };
+/** The selected ruler's exact prices: the toolbar's gear, then the dialog's «Координаты» tab. */
+const openCoordinates = async (page) => {
+  await page.locator('[data-drawing-object-toolbar] [data-object-action="settings"]').click();
+  await page.locator('[data-settings-tab="coordinates"]').click();
+  const form = page.locator('[data-drawing-settings] [data-object-menu="measure"]');
+  await form.waitFor();
+  return form;
+};
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -130,14 +138,13 @@ const handle = async (page, id) => {
 
       // 2. Settings: start 95, end at the current price.
       await page.mouse.click(rb.x + rb.width * 0.3, rb.y + rb.height * 0.5);
-      await page.locator('[data-object-action="measure"]').click();
-      const form = page.locator('form[data-object-menu="measure"]');
-      await form.waitFor();
+      // TradingView's path to exact prices: the toolbar's gear → «Координаты».
+      const form = await openCoordinates(page);
       await form.locator('input[name="from"]').fill('95');
       await form.locator('input[name="followLast"]').check();
       view.toWhileLive = await form.locator('input[name="to"]').inputValue();
-      await page.screenshot({ path: path.join(OUT, `${LABEL}-${width}-settings.png`), clip: { x: box.x, y: box.y, width: box.width, height: box.height } });
-      await form.locator('button[type="submit"]').click();
+      await page.screenshot({ path: path.join(OUT, `${LABEL}-${width}-settings.png`), fullPage: true });
+      await page.locator('[data-settings-action="ok"]').click();
       await page.waitForTimeout(300);
       assert.equal(await page.locator('g[data-drawing-live]').count(), 1, `${width}: the ruler follows the latest price`);
       view.liveLabel = (await rulerLabel(page))[0];
@@ -153,23 +160,22 @@ const handle = async (page, id) => {
       const liveEnd = await handle(page, 1);
 
       // 4. A fixed end price instead.
-      await page.locator('[data-object-action="measure"]').click();
+      await openCoordinates(page);
       await form.locator('input[name="followLast"]').uncheck();
       await form.locator('input[name="to"]').fill('101,5');
-      await form.locator('button[type="submit"]').click();
+      await page.locator('[data-settings-action="ok"]').click();
       await page.waitForTimeout(300);
       assert.equal(await page.locator('g[data-drawing-live]').count(), 0, `${width}: no longer live`);
       view.fixedLabel = (await rulerLabel(page))[0];
       assert.equal(view.fixedLabel, pct(95, 101.5), `${width}: measured from 95 to 101.5`);
-      // A bad price is refused inside the form.
-      await page.locator('[data-object-action="measure"]').click();
+      // A bad price is refused inside the dialog; Esc (Cancel) leaves the ruler as it was.
+      await openCoordinates(page);
       await form.locator('input[name="from"]').fill('0');
-      await form.locator('button[type="submit"]').click();
       view.badPriceRefused = await form.locator('[role="alert"]').innerText();
       assert.equal(view.badPriceRefused, 'Введите цену больше 0', `${width}: zero is refused`);
       await page.keyboard.press('Escape');
       await page.waitForTimeout(200);
-      if (await form.count()) await page.locator('[data-object-action="measure"]').click();
+      assert.equal(await page.locator('[data-drawing-settings]').count(), 0, `${width}: Esc closes the settings`);
       assert.equal((await rulerLabel(page))[0], pct(95, 101.5), `${width}: a refused edit changed nothing`);
 
       // 5. Drag the end edge towards the current price: guide, no label, snap.

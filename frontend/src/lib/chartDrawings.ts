@@ -177,11 +177,28 @@ export const DRAWING_TEXT_KINDS: readonly DrawingKind[] = ['text', 'note', 'call
 export const FREEHAND_KINDS: readonly DrawingKind[] = ['brush', 'highlighter'];
 
 export type DrawingDash = 'solid' | 'dashed' | 'dotted';
-export interface DrawingStyle { color: string; width: number; dash: DrawingDash; fill?: string }
+
+/** What a measurement label reports: TradingView's «Информация» checklist. */
+export interface MeasureInfo { price: boolean; percent: boolean; ticks: boolean; bars: boolean; time: boolean; volume: boolean }
+/** The ruler's label as the owner settled it (price and %, bars and time, volume); ticks are TradingView's extra. */
+export const DEFAULT_MEASURE_INFO: MeasureInfo = { price: true, percent: true, ticks: false, bars: true, time: true, volume: true };
+export const MEASURE_INFO_KEYS = ['price', 'percent', 'ticks', 'bars', 'time', 'volume'] as const;
+
+export interface DrawingStyle {
+  color: string; width: number; dash: DrawingDash; fill?: string;
+  /** Background («Фон»): switched off, or its opacity 0–1. */
+  fillOff?: true; fillOpacity?: number;
+  /** Label («Метка»): text colour, font size, and its background colour or none. */
+  textColor?: string; fontSize?: number; labelBg?: string; labelBgOff?: true;
+  /** The trader's own text under a measurement (Text tab). */
+  bold?: true; italic?: true;
+  /** A measurement's lines; absent means DEFAULT_MEASURE_INFO. */
+  info?: MeasureInfo;
+}
 
 /** TradingView's own defaults: its blue for lines and measurements, purple
  *  for shapes, green / red for the position tools and arrow marks. */
-const TV_BLUE = '#2962ff';
+export const TV_BLUE = '#2962ff';
 export const DEFAULT_DRAWING_STYLES: Record<DrawingKind, DrawingStyle> = {
   trendline: { color: TV_BLUE, width: 2, dash: 'solid' }, rayline: { color: TV_BLUE, width: 2, dash: 'solid' },
   infoline: { color: TV_BLUE, width: 2, dash: 'solid' }, extended: { color: TV_BLUE, width: 2, dash: 'solid' },
@@ -221,6 +238,8 @@ export const DRAWING_PALETTE = [
 ] as const;
 export const DRAWING_WIDTHS = [1, 2, 3, 4] as const;
 
+export const DRAWING_FONT_SIZES = [10, 11, 12, 14, 16, 20, 24] as const;
+
 export function sanitizeDrawingStyle(value: unknown): DrawingStyle | undefined {
   if (!value || typeof value !== 'object') return undefined;
   const v = value as Record<string, unknown>;
@@ -229,6 +248,18 @@ export function sanitizeDrawingStyle(value: unknown): DrawingStyle | undefined {
   const dash = v.dash === 'dashed' || v.dash === 'dotted' ? v.dash : 'solid';
   const style: DrawingStyle = { color: v.color as string, width: Math.max(1, Math.min(24, Math.round(v.width))), dash };
   if (hex(v.fill)) style.fill = v.fill as string;
+  if (v.fillOff === true) style.fillOff = true;
+  if (typeof v.fillOpacity === 'number' && Number.isFinite(v.fillOpacity)) style.fillOpacity = Math.max(0, Math.min(1, Math.round(v.fillOpacity * 100) / 100));
+  if (hex(v.textColor)) style.textColor = v.textColor as string;
+  if (typeof v.fontSize === 'number' && Number.isFinite(v.fontSize)) style.fontSize = Math.max(8, Math.min(32, Math.round(v.fontSize)));
+  if (hex(v.labelBg)) style.labelBg = v.labelBg as string;
+  if (v.labelBgOff === true) style.labelBgOff = true;
+  if (v.bold === true) style.bold = true;
+  if (v.italic === true) style.italic = true;
+  if (v.info && typeof v.info === 'object') {
+    const info = v.info as Record<string, unknown>;
+    style.info = Object.fromEntries(MEASURE_INFO_KEYS.map((key) => [key, info[key] === true])) as unknown as MeasureInfo;
+  }
   return style;
 }
 
@@ -318,19 +349,26 @@ export function drawingRange(a: DrawingPoint, b: DrawingPoint, candles: readonly
  * нормальною як у байбіт і трейдінгвю»); the tick count stays off
  * (owner, 2026-09-26: «значення цих цифр не знає»).
  */
-export function drawingRangeLines(range: DrawingRange, lang = 'en', parts: { price?: boolean; date?: boolean } = { price: true, date: true }): string[] {
+export function drawingRangeLines(range: DrawingRange, lang = 'en', parts: { price?: boolean; date?: boolean } = { price: true, date: true }, info: MeasureInfo = DEFAULT_MEASURE_INFO): string[] {
   const lines: string[] = [];
-  if (parts.price !== false) {
+  if (parts.price !== false && (info.price || info.percent || info.ticks)) {
     const percent = range.pct;
     const pctText = percent === null || !Number.isFinite(percent) ? '—'
       : `${percent > 0 ? '+' : ''}${percent.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}%`;
     // A zero/negative starting price has no percentage, but its finite price
     // move is still measurable. Keep that value and mark only the % unavailable.
-    lines.push(Number.isFinite(range.priceDiff) ? `${formatDrawingPriceDiff(range.priceDiff, lang)} (${pctText === '—' ? '—%' : pctText})` : pctText);
+    const head = !info.price ? (info.percent ? (pctText === '—' ? '—%' : pctText) : '')
+      : !Number.isFinite(range.priceDiff) ? (info.percent ? pctText : '—')
+      : info.percent ? `${formatDrawingPriceDiff(range.priceDiff, lang)} (${pctText === '—' ? '—%' : pctText})` : formatDrawingPriceDiff(range.priceDiff, lang);
+    // TradingView prints the move in ticks after it: «18 940,04 (11 872,45%) 1 894 004».
+    const ticks = info.ticks && range.ticks !== null ? range.ticks.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { useGrouping: true }) : '';
+    const line = [head, ticks].filter(Boolean).join(' ');
+    if (line) lines.push(line);
   }
   if (parts.date !== false) {
-    lines.push(`${drawingBarsText(range.bars, lang)}, ${formatDrawingDuration(range.seconds, lang)}`);
-    if (range.volume !== null) lines.push(`${VOLUME_WORD[lang] ?? VOLUME_WORD.en} ${formatDrawingVolume(range.volume)}`);
+    const when = [info.bars ? drawingBarsText(range.bars, lang) : '', info.time ? formatDrawingDuration(range.seconds, lang) : ''].filter(Boolean).join(', ');
+    if (when) lines.push(when);
+    if (info.volume && range.volume !== null) lines.push(`${VOLUME_WORD[lang] ?? VOLUME_WORD.en} ${formatDrawingVolume(range.volume)}`);
   }
   return lines;
 }
@@ -379,6 +417,27 @@ export interface StoredDrawing {
   /** A ruler whose end is the latest candle, re-measured as the price moves
    *  (owner, 2026-10-04: «лінійка сама … розгортається до поточної ціни»). */
   followLast?: true;
+  /** Timeframe units it shows on («Видимость»); absent means all of them. */
+  intervals?: DrawingIntervals;
+}
+
+export const DRAWING_INTERVAL_UNITS = ['minutes', 'hours', 'days', 'weeks', 'months'] as const;
+export type DrawingIntervalUnit = typeof DRAWING_INTERVAL_UNITS[number];
+export type DrawingIntervals = Record<DrawingIntervalUnit, boolean>;
+
+/** The unit a chart interval belongs to: 1m–30m minutes, 1h–12h hours, 1D days, 1W weeks, 1M months. */
+export function drawingIntervalUnit(intervalSeconds: number): DrawingIntervalUnit {
+  if (intervalSeconds < 3600) return 'minutes';
+  if (intervalSeconds < 86400) return 'hours';
+  if (intervalSeconds < 604800) return 'days';
+  if (intervalSeconds < 2419200) return 'weeks';
+  return 'months';
+}
+
+/** Whether a drawing shows on a chart of this interval (unknown interval: always). */
+export function drawingVisibleOn(drawing: Pick<StoredDrawing, 'intervals'>, intervalSeconds: number | undefined): boolean {
+  if (!drawing.intervals || !intervalSeconds || !(intervalSeconds > 0)) return true;
+  return drawing.intervals[drawingIntervalUnit(intervalSeconds)] !== false;
 }
 
 export interface StoredDrawingState {
@@ -459,6 +518,12 @@ export function parseStoredDrawings(raw: string | null): StoredDrawingState {
     if (style) drawing.style = style;
     if (d.locked === true) drawing.locked = true;
     if (d.followLast === true && LIVE_END_KINDS.includes(kind)) drawing.followLast = true;
+    if (d.intervals && typeof d.intervals === 'object') {
+      const units = d.intervals as Record<string, unknown>;
+      const intervals = Object.fromEntries(DRAWING_INTERVAL_UNITS.map((unit) => [unit, units[unit] !== false])) as DrawingIntervals;
+      // All on is the same as none: store only a real restriction.
+      if (DRAWING_INTERVAL_UNITS.some((unit) => !intervals[unit])) drawing.intervals = intervals;
+    }
     drawings.push(drawing);
     if (drawings.length >= MAX_STORED_DRAWINGS) break;
   }
