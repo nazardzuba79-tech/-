@@ -198,6 +198,9 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === './SpotOrdersView') return { SpotAssetsView: () => null };
     if (name === '../lib/futuresDepth') return { setFuturesDepthFallbackBase: () => {}, subscribeFuturesDepth: (symbol: string, callback: any) => overrides.socket.subscribeBook(symbol, callback) };
     if (name === '../lib/tradingMode') return { rememberTradingMode: jest.fn() };
+    // History20 model contracts are served only to a native Futures TEST account; this harness drives an ordinary one.
+    if (name === '../lib/history20Models') return { useHistory20Models: () => ({ loaded: true, models: [] }), isHistory20Pair: () => false,
+      history20MarkOf: () => null, history20CandleLoader: async () => ({ candles: [] }) };
     // Phone header switch and breakpoint (2026-10-04). The switch is a pure
     // pair of links rendered through Nav (stubbed here); this harness drives
     // the page at desktop width, so the breakpoint hook answers false.

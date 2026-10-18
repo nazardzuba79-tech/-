@@ -14,6 +14,7 @@ import { OwnerSession, PrivateTradingError, TradeRequest } from '../../private-t
 import { PrivateMarketDataError } from '../../private-trading/marketData';
 import { isSimulationOnlyUser } from '../../private-trading/access';
 import { bestEffortWake } from '../../services/IdleBackoffScheduler';
+import { history20Models } from '../../private-trading/native/history20Prices';
 
 const signed = z.string().max(60).regex(/^-?\d{1,18}(?:\.\d{1,18})?$/).refine(v => new BigNumber(v).isFinite());
 const positive = signed.refine(v => new BigNumber(v).gt(0));
@@ -92,11 +93,11 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
     allowed: true, mode: 'PRIVATE_SIMULATION', nativeAvailable: !!native,
     simulationOnly: !!native && isSimulationOnlyUser(actor(res).userId),
   })));
-  if (native) router.use('/private-trading/native', nativeDemoRoutes(native, actor, onNativeWork));
+  if (native) router.use('/private-trading/native', nativeDemoRoutes(native, actor, onNativeWork, 'SUPREME_VIP', () => history20Models(service.market)));
   router.get('/private-trading/state', handle(async (_req, res) => service.state(actor(res))));
   router.get('/private-trading/market', handle(async (req, res) => service.getMarket(actor(res), z.string().min(1).max(40).parse(req.query.symbol))));
   router.get('/private-trading/candles', handle(async (req, res) => {
-    const input = z.object({ symbol: z.string().min(1).max(40), source: z.literal('BYBIT_LINEAR'),
+    const input = z.object({ symbol: z.string().min(1).max(40), source: z.enum(['BYBIT_LINEAR', 'VOLTEX_HISTORY20_MODEL']),
       interval: candleSelection.shape.interval, endTime: z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
       limit: z.coerce.number().int().min(1).max(1500).optional() }).strict().parse(req.query);
     const abort = new AbortController(), disconnect = () => { if (!res.writableEnded) abort.abort(); };

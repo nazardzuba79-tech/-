@@ -11,54 +11,13 @@ import { NativeCommand, NativeDemoService } from '../native/service';
 import { demoAccount, DemoState } from '../native/engine';
 import { checkCoverage, replayNativeDemoAsync, BarRequest, ReplayBar } from '../native/replay';
 import { nativeHistoryCache } from '../native/historyCache';
-import { assertHistoricalDemoCurrentPrice, PrivateInstrument, PrivateTradingMarketData } from '../marketData';
+import { assertHistoricalDemoCurrentPrice, PrivateTradingMarketData } from '../marketData';
 import {
-  HISTORY20_PRICE_SOURCE, History20PriceSource, history20Selection, loadHistory20Selection, withHistory20Prices, type History20Choice,
+  HISTORY20_PRICE_SOURCE, History20PriceSource, history20Selection, loadHistory20Selection, withHistory20Prices,
 } from '../native/history20Prices';
-import { buildHistoricalGrowthProgram, historicalGrowthMaxPrice, type HistoricalGrowthSourceRow } from '../../shared/listingHistoricalGrowth';
-import { defaultScenarioControls } from '../../shared/listingScenarioControls';
-import { listingSimulationConfig, parseListingConfig, type ListingConfig } from '../../services/listings/listingConfig';
-import type { AdminListing } from '../../services/listings/store';
-import { simulationFor, TestMarketSimulation } from '../../services/testMarkets/testMarketSimulation';
-
-const DAY = 86_400_000, M = 60_000;
-const LISTING_AT = '2026-09-13T00:00:00.000Z', FROM = Date.parse(LISTING_AT);
-function walk(days: number): HistoricalGrowthSourceRow[] {
-  let x = 7, price = 100;
-  const random = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648;
-  return Array.from({ length: days }, (_, d) => {
-    const date = new Date(Date.UTC(2020, 0, 1) + d * DAY).toISOString().slice(0, 10);
-    const open = d ? price * (1 + (random() - .5) * .006) : 100, close = open * Math.exp(Math.log(80) / days + (random() - .5) * .12);
-    price = close;
-    return { date, open, high: Math.max(open, close) * (1 + random() * .04), low: Math.min(open, close) * (1 - random() * .04), close };
-  });
-}
-const growth = buildHistoricalGrowthProgram({ scenarioId: 'VHX-03-SOL', targetPeakGrowthPercent: '9348', rows: walk(40),
-  source: { provider: 'Binance Vision', asset: 'SOL', quote: 'USDT', metric: 'spot daily OHLCV', dataKind: 'exchange_ohlcv', timeframe: '1d', sliceSha256: 'b'.repeat(64), license: 'CC-BY-NC-SA-4.0 plus Binance Vision Dataset Terms' } });
-const windowConfig = (overrides: Partial<ListingConfig> = {}): ListingConfig => parseListingConfig({
-  schemaVersion: 1, symbol: 'VHXT', name: 'VOLTEX History Test', logo: null, initialPrice: '2', listingAt: LISTING_AT, displayTimeZone: 'UTC',
-  ownerAllocation: '0', seedMode: 'manual', seed: 'vhxt-native-20260913-synthetic', tradable: false,
-  simulationProgram: { ...defaultScenarioControls('2', 'CALM'), stages: [], first24hGainPercent: '0', afterGrowth: 'range', growth: 'historical-window',
-    historicalGrowth: growth, maxPrice: historicalGrowthMaxPrice('2', growth.targetPeakGrowthPercent) },
-  ...overrides,
-});
-const adminListing = (id: string, draft: ListingConfig, activeVersion: number | null = null): AdminListing => ({
-  id, symbol: draft.symbol, draft, draftRevision: 3, draftUpdatedAt: LISTING_AT, draftUpdatedBy: 'fixture-admin', activeVersion, active: activeVersion ? draft : null, versions: [],
-});
-const CHOICE: History20Choice = history20Selection(adminListing('vhxt', windowConfig()));
-const CONTRACT = CHOICE.selection.contract;
-/** A TEST-ONLY contract so the engine can run on the model; no model contract is defined for production. */
-const MODEL_CONTRACT: PrivateInstrument = { ...instrument(CONTRACT), parameterVersion: 'TEST_ONLY_HISTORY20_CONTRACT', fundingIntervalMinutes: 480,
-  filters: { tickSize: '0.00000001', minPrice: '0.00000001', maxPrice: '1000000', qtyStep: '0.1', minOrderQty: '0.1', maxOrderQty: '1000000', maxMarketOrderQty: '1000000', minNotionalValue: '5' },
-  leverage: { min: '1', max: '10', step: '1' },
-  riskTiers: [{ riskLimitValue: '1000000000', maintenanceMarginRate: '0.05', initialMarginRate: '0.1', maintenanceDeduction: '0', maxLeverage: '10' }] };
-const model = (): TestMarketSimulation => simulationFor(listingSimulationConfig(CHOICE.config));
-const modelPrice = (t: number) => new BigNumber(model().priceAt(t)!);
-/** The first 10-second model tick after `from` where `hit` holds. */
-function firstTick(from: number, hit: (price: BigNumber) => boolean, within = 3 * DAY) {
-  for (let t = Math.ceil((from + 1) / 10_000) * 10_000; t <= from + within; t += 10_000) if (hit(modelPrice(t))) return t;
-  throw new Error('fixture: the model never reaches the level');
-}
+import { listingSimulationConfig, parseListingConfig } from '../../services/listings/listingConfig';
+import { TestMarketSimulation } from '../../services/testMarkets/testMarketSimulation';
+import { DAY, M, LISTING_AT, FROM, growth, windowConfig, adminListing, CHOICE, CONTRACT, MODEL_CONTRACT, modelPrice, firstTick } from '../native/testing/history20Fixture';
 
 /** The fixture venue, recording every symbol the seam lets through. */
 function engine(deposit = '1000', withContract = true) {
@@ -163,7 +122,10 @@ describe('the seam around the existing market', () => {
     await expect(f.market.instrument(CONTRACT)).rejects.toMatchObject({ code: 'history20_contract_undefined' });
     await expect(f.market.freshQuote(CONTRACT)).rejects.toMatchObject({ code: 'history20_no_book' });
     await expect(f.market.resolveCandle({ symbol: CONTRACT, source: 'BYBIT_LINEAR', interval: '1h', openTime: FROM, pricePoint: 'OPEN' })).rejects.toMatchObject({ code: 'history20_candle_source_unsupported' });
-    await expect(f.market.chartCandles({ symbol: CONTRACT, interval: '1h' })).rejects.toMatchObject({ code: 'history20_chart_source_unsupported' });
+    // The chart is served only under its own label: never as venue candles, never a venue's candles as the model.
+    await expect(f.market.chartCandles({ symbol: CONTRACT, interval: '1h' })).rejects.toMatchObject({ code: 'chart_source_mismatch' });
+    await expect(f.market.chartCandles({ symbol: CONTRACT, interval: '1h', source: 'BYBIT_LINEAR' })).rejects.toMatchObject({ code: 'chart_source_mismatch' });
+    await expect(f.market.chartCandles({ symbol: 'BTCUSDT', interval: '1h', source: 'VOLTEX_HISTORY20_MODEL' })).rejects.toMatchObject({ code: 'chart_source_mismatch' });
     await expect(f.market.funding(CONTRACT, FROM, FROM + H)).rejects.toMatchObject({ code: 'history20_no_venue_funding' });
     await f.service.initialize(actor, key());
     const initialized = f.repo.commits;

@@ -8,7 +8,7 @@ export type PrivateDecimal = string | null;
 export interface PrivateCandleSelection { source:'BYBIT_LINEAR';interval:string;openTime:number;pricePoint:'OPEN'|'CLOSE' }
 export interface PrivateResolvedCandleSelection extends PrivateCandleSelection { effectiveAt?:number;closeTime?:number }
 export interface PrivateReplayFill { id:string;effectiveAt:number;kind:'OPEN'|'CLOSE'|'TAKE_PROFIT'|'STOP_LOSS'|'LIQUIDATION';quantity:string;price:string;fee:string;realizedGross:string }
-export interface PrivateChartCandles { source:'BYBIT_LINEAR';symbol:string;interval:string;candles:{time:number;open:number;high:number;low:number;close:number;volume:number}[] }
+export interface PrivateChartCandles { source:'BYBIT_LINEAR'|'VOLTEX_HISTORY20_MODEL';symbol:string;interval:string;candles:{time:number;open:number;high:number;low:number;close:number;volume:number}[] }
 export interface PrivatePosition {
   id:string; mode:PrivateMode; symbol:string; side:PrivateSide; leverage:string; quantity:string;
   entryPrice:PrivateDecimal; markPrice:PrivateDecimal; allocatedMargin:PrivateDecimal;
@@ -85,7 +85,7 @@ export function createPrivateTradingClient(base:string,token:()=>string|null,fet
     },
     state:(signal?:AbortSignal)=>request<PrivateState>('/state','GET',undefined,signal),
     market:(symbol:string,signal?:AbortSignal)=>request<PrivateMarket>(`/market?symbol=${encodeURIComponent(symbol)}`,'GET',undefined,signal),
-    candles:(symbol:string,interval:string,limit:number,signal?:AbortSignal,endTime?:number)=>request<PrivateChartCandles>(`/candles?${new URLSearchParams({source:'BYBIT_LINEAR',symbol,interval,limit:String(limit),...(endTime===undefined?{}:{endTime:String(endTime)})})}`,'GET',undefined,signal),
+    candles:(symbol:string,interval:string,limit:number,signal?:AbortSignal,endTime?:number,source:PrivateChartCandles['source']='BYBIT_LINEAR')=>request<PrivateChartCandles>(`/candles?${new URLSearchParams({source,symbol,interval,limit:String(limit),...(endTime===undefined?{}:{endTime:String(endTime)})})}`,'GET',undefined,signal),
     closeOnChart:(scenarioId:string,candle:PrivateCandleSelection,idempotencyKey:string)=>request<PrivatePreview>(`/scenarios/${id(scenarioId)}/close-on-chart`,'POST',{candle,idempotencyKey}),
     allocate:(amount:string,idempotencyKey:string)=>request('/allocate','POST',{amount,idempotencyKey}),
     preview:(body:PrivatePreviewRequest)=>request<PrivatePreview>('/previews','POST',body),

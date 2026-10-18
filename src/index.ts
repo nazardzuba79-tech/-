@@ -76,6 +76,7 @@ import { PrivateTradingService } from './private-trading/service';
 import { PrivateTradingStore } from './private-trading/store';
 import { PrivateTradingMarketData } from './private-trading/marketData';
 import { nativeWithdrawableRows } from './private-trading/native/withdrawable';
+import { guardHistory20Listings, history20Market, history20PinsFromEnvironment, nativeJournalReferences } from './private-trading/native/history20Prices';
 import { portfolioRouter } from './api/routes/portfolio';
 import { WalletPortfolioService } from './services/WalletPortfolioService';
 import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
@@ -154,9 +155,14 @@ const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, ma
 const demoEngine = new MatchingEngine();
 const demoTradingService = accountDeletionGate.guard(new DemoTradingService(prisma, demoEngine), ['placeOrder', 'cancelOrder', 'topUp']);
 const adminUserDeletion = new AdminUserDeletionService(prisma, accountDeletionGate, { spot: engine, futures: futuresEngine, demo: demoEngine });
+// Admin → Listings storage (Cloudflare); also the source of server-pinned History20 price paths.
+const listingStore = listingStoreFromEnvironment();
+// NATIVE_HISTORY20_PINS unset (the default): the collector market itself, unchanged. Set: pinned History20
+// windows become private model contracts of the native Futures TEST account, wherever this market is used.
+const history20Pins = history20PinsFromEnvironment();
 const privateTradingService = new PrivateTradingService(new PrivateTradingStore(prisma),
   process.env.MARKET_DATA_COLLECTOR_URL && process.env.MARKET_DATA_COLLECTOR_TOKEN
-    ? new PrivateTradingMarketData({ collector: { url: process.env.MARKET_DATA_COLLECTOR_URL, token: process.env.MARKET_DATA_COLLECTOR_TOKEN } })
+    ? history20Market(new PrivateTradingMarketData({ collector: { url: process.env.MARKET_DATA_COLLECTOR_URL, token: process.env.MARKET_DATA_COLLECTOR_TOKEN } }), listingStore, history20Pins)
     : null);
 const nativeLimitPass=privateTradingService.market?createNativeLimitPass(prisma,privateTradingService.market):null;
 const background = createServerBackground({
@@ -275,7 +281,7 @@ app.use('/api/v1', adminDepositsRouter(prisma, marketDataService, { watch: depos
 app.use('/api/v1', adminWalletsRouter(prisma));
 // Admin → Listings: configs live in Cloudflare (market-edge Durable Object); Render validates,
 // forwards with the server secret and computes the private Preview. No Neon writes.
-app.use('/api/v1', adminListingsRouter(prisma, listingStoreFromEnvironment(), {
+app.use('/api/v1', adminListingsRouter(prisma, guardHistory20Listings(listingStore, history20Pins, nativeJournalReferences(prisma)), {
   hasSpotPair: (pair) => marketUniverse.spot().some((instrument) => `${instrument.baseAsset}/${instrument.quoteAsset}` === pair),
 }));
 // One read at boot so the restricted-asset guards know published listings; afterwards

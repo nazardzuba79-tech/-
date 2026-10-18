@@ -89,6 +89,8 @@ jobs:
           src/private-trading/__tests__/nativeDemoService.test.ts
           src/private-trading/__tests__/nativeHistoricalCurrent.test.ts
           src/private-trading/__tests__/nativeHistory20Prices.test.ts
+          src/private-trading/__tests__/nativeHistory20Wiring.test.ts
+          frontend/src/lib/__tests__/history20Models.test.ts
           src/private-trading/__tests__/historicalPriceFallback.test.ts
           src/private-trading/__tests__/nativeThinContract.test.ts
           src/private-trading/__tests__/nativeLiveProjection.test.ts

@@ -48,6 +48,7 @@ import { accountLedger, AccountLedger } from './ledger';
 import { applyLatestQuotes, BarRequest, compareInstructions, exposedSymbols, instructionDigest, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
 import type { PrivateFreshQuote } from '../marketData';
 import { markDemoAccount } from './engine';
+import { isHistory20Contract } from './history20Contract';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
 export type NativeCommand = {idempotencyKey:string;executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO'} & (
   | {kind:'REFRESH'}
@@ -936,7 +937,11 @@ export class NativeDemoService {
       const symbol=request.symbol.replace(/[^A-Z0-9]/g,'');symbols.add(symbol);required.add(symbol);
       const target=request.reduceOnly?this.reduceTarget(row,{positionId:request.positionId!,symbol,side:request.side,quantity:request.quantity,marginType:request.marginType}):null;
       if(!target)this.admitNewRisk(row,symbol);
-      if(!target&&request.type==='MARKET'&&!request.candle)throw new DemoEngineError('HISTORICAL_ENTRY_REQUIRED');
+      // A History20 model contract has no historical bar to select: its MARKET entry is the
+      // sampled model price now, journaled as a reducing MARKET already is (point = last).
+      const modelEntry=!target&&request.type==='MARKET'&&!request.candle&&isHistory20Contract(symbol);
+      if(!target&&request.type==='MARKET'&&!request.candle&&!modelEntry)throw new DemoEngineError('HISTORICAL_ENTRY_REQUIRED');
+      if(modelEntry&&request.quantity===undefined)throw new DemoEngineError('QUANTITY_REQUIRED');
       const instrument=await commandRead('market.instrument',()=>this.market.instrument(symbol,commandSignal())),rules=contractRules(instrument),profile=simulationProfile(instrument);
       profile.riskModelVersion='NATIVE_MARGIN_V3:'+instrument.parameterVersion;
       const selected=request.candle&&!target?await commandRead('market.historical_entry',()=>this.market.resolveCandle({...request.candle!,symbol,signal:commandSignal()})):null;
@@ -976,7 +981,8 @@ export class NativeDemoService {
       draft.at=at;draft.recordedAt=at;draft.executionMode='HISTORICAL_DEMO';draft.collateral=collateral;draft.context={marks,observedAt};
       if(draft.kind==='OPEN'){
         const q=prices.get(draft.order.symbol)!;draft.mark=q.markPrice;draft.last=q.lastPrice;
-        if(draft.order.reduceOnly&&draft.order.type==='MARKET')draft.point=q.lastPrice;
+        // A reducing MARKET, or a History20 model MARKET entry, executes at the sampled last price.
+        if(draft.order.type==='MARKET'&&draft.point===undefined)draft.point=q.lastPrice;
       }else if(draft.kind==='CLOSE')draft.price=prices.get(row.snapshot.positions.find(p=>p.id===draft!.positionId)!.symbol)!.lastPrice;
     }
     const observation:NativeInstruction={id:`observe-${randomUUID()}`,seq:seq+(draft?1:0),at,recordedAt:at,kind:'OBSERVE',executionMode:'HISTORICAL_DEMO',marks,observedAt,collateral};

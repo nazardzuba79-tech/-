@@ -349,3 +349,9 @@
   overscroll-behavior: contain;
   padding-bottom: 2px;
 }
+
+/* History20 model contract tag in the market chooser (lib/history20Models). */
+.futures-pair-list .pair-row .p-name .p-model {
+  margin-left: 6px; padding: 0 5px; border: 1px solid var(--border-color); border-radius: 3px;
+  color: var(--text-tertiary); font-size: 10px; font-weight: 500; line-height: 14px; text-transform: none;
+}

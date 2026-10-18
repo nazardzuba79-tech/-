@@ -101,8 +101,10 @@ export const FuturesPairList = forwardRef<
     searchable?: boolean;
     /** Escape in the field asks the container to close. See FuturesPage. */
     onDismiss?: () => void;
+    /** History20 model contracts among `symbols`: tagged as models (lib/history20Models). */
+    modelPairs?: ReadonlySet<string>;
   }
->(function FuturesPairList({ symbols, symbol, onChange, searchable = false, onDismiss }, ref) {
+>(function FuturesPairList({ symbols, symbol, onChange, searchable = false, onDismiss, modelPairs }, ref) {
   const { t } = useLanguage();
   const tickers = useFuturesReference();
   const [search, setSearch] = useState('');
@@ -305,6 +307,7 @@ export const FuturesPairList = forwardRef<
               </span>
               <span className="p-name">
                   <b className="p-base">{r.symbol.split('/')[0]}</b>
+                  {modelPairs?.has(r.symbol) && <span className="p-model" title={t('futures.history20Hint')}>{t('futures.history20Short')}</span>}
                   {r.symbol.split('/')[1] !== 'USDT' && <span className="p-quote">/{r.symbol.split('/')[1]}</span>}
                 </span>
               <span className="p-price">{r.lastPrice !== null ? formatPrice(r.lastPrice) : '—'}</span>

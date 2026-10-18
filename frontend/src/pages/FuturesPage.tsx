@@ -70,6 +70,7 @@ import './trade-terminal/FuturesBybitParity.css';
 import './trade-terminal/FuturesFigmaDesktop.css';
 import './trade-terminal/FuturesMobileLargeText.css';
 import './trade-terminal/TerminalPanelTiles.css';
+import { history20CandleLoader, history20MarkOf, isHistory20Pair, useHistory20Models } from '../lib/history20Models';
 
 // Hard fallback only for a browser that has never loaded Futures before.
 // Returning visitors paint the last real discovered universe immediately
@@ -145,6 +146,20 @@ export function FuturesPage() {
   const symbolRef = useRef(symbol);
   symbolRef.current = symbol;
   const native = useNativeDemo(symbol,selectSymbol);
+  /**
+   * History20 model contracts: private, server-pinned, synthetic prices. A
+   * native Futures TEST account finds them in the same market chooser; the
+   * terminal is unchanged, only their price source differs (lib/history20Models).
+   */
+  const history20 = useHistory20Models(native.allowed);
+  const modelPair = isHistory20Pair(symbol);
+  const modelLast = modelPair ? history20MarkOf(history20.models, symbol) : null;
+  const modelPairs = useMemo(() => new Set(history20.models.map(m => m.pair)), [history20.models]);
+  const pickerSymbols = useMemo(() => [...symbols.filter(s => !isHistory20Pair(s)), ...modelPairs], [symbols, modelPairs]);
+  // A model contract stays selected only while this account is served it.
+  useEffect(() => {
+    if (modelPair && ((native.checked && !native.allowed) || (history20.loaded && !history20.models.some(m => m.pair === symbol)))) selectSymbol('BTC/USDT');
+  }, [modelPair, native.checked, native.allowed, history20, symbol, selectSymbol]);
   /**
    * The selected contract's quantity rules, from the engine that will
    * enforce them. Loaded once per symbol — they are static instrument
@@ -403,7 +418,8 @@ export function FuturesPage() {
     // gone instead of restoring it again on the next refresh.
     // The updater itself stays PURE — React may run it twice — so the
     // address is corrected outside it, and only when the pair really moved.
-    const resolved = resolveListedFuturesPair(symbolRef.current, listed);
+    // A History20 model contract is not a venue listing; its own check is above.
+    const resolved = isHistory20Pair(symbolRef.current) ? symbolRef.current : resolveListedFuturesPair(symbolRef.current, listed);
     if (resolved !== symbolRef.current) selectSymbol(resolved);
   }, [futuresConfig, universe, selectSymbol]);
 
@@ -466,11 +482,15 @@ export function FuturesPage() {
   // the bundler; the page hands it the API origin the rest of the app uses.
   useEffect(() => { setFuturesDepthFallbackBase(API_BASE, false, 'https://market.voltextech.net'); }, []);
 
-  useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot }), incoming => {
-    setTape(previous => ({symbol,rows:incoming.length ? [...incoming,...(previous.symbol===symbol?previous.rows:[])]
-      .filter((row,index,all)=>all.findIndex(other=>other.id===row.id)===index)
-      .sort((a,b)=>b.time-a.time).slice(0,40) : []}));
-  }), [symbol]);
+  useEffect(() => {
+    // A model contract has no venue book or tape: nothing is subscribed for it.
+    if (isHistory20Pair(symbol)) { setBook({ symbol, bids: [], asks: [], status: 'unavailable', asOf: null }); setTape({ symbol, rows: [] }); return; }
+    return subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot }), incoming => {
+      setTape(previous => ({symbol,rows:incoming.length ? [...incoming,...(previous.symbol===symbol?previous.rows:[])]
+        .filter((row,index,all)=>all.findIndex(other=>other.id===row.id)===index)
+        .sort((a,b)=>b.time-a.time).slice(0,40) : []}));
+    });
+  }, [symbol]);
 
   /** Newest execution on the selected contract, or null while unknown. */
   const tapeLastPrice = useMemo(() => {
@@ -486,9 +506,9 @@ export function FuturesPage() {
    * tick-sized figure loses its last digit.
    */
   const livePrice = useMemo(() => {
-    const value = tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null;
+    const value = tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? modelLast;
     return value === null ? null : String(value);
-  }, [tapeLastPrice, reference, symbol]);
+  }, [tapeLastPrice, reference, symbol, modelLast]);
 
   /**
    * The open positions the chart draws, and ONLY when the chart is not
@@ -624,7 +644,8 @@ export function FuturesPage() {
               <FuturesPairList
                 searchable
                 onDismiss={() => setChooserOpen(false)}
-                symbols={symbols}
+                symbols={pickerSymbols}
+                modelPairs={modelPairs}
                 symbol={symbol}
                 onChange={next => { selectSymbol(next); setChooserOpen(false); }}
               />
@@ -680,10 +701,13 @@ export function FuturesPage() {
                 setChartMenu({ x: event.clientX, y: event.clientY });
               } : undefined}
             >
+              {modelPair && <p className="history20-model-badge" role="note" title={t('futures.history20Hint')}>{t('futures.history20Badge')}</p>}
               <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} onSelectPair={selectSymbol}
+                candleLoader={modelPair ? history20CandleLoader : undefined}
                 privateTrading={nativeExecution ? native.interaction : undefined}
                 positionLines={chartPositionLines} chartSettings foldHeading={false} />
-              {nativeExecution && <button
+              {/* Trading from a picked bar selects a venue candle; a model contract has none. */}
+              {nativeExecution && !modelPair && <button
                 type="button"
                 /* Touch has no double click. This is a compact control that
                    floats in the chart's own corner rather than a strip
@@ -702,7 +726,7 @@ export function FuturesPage() {
                   <path d="M2 11.5 6 7l3 2.5L14 4" /><path d="M2 14h12" />
                 </svg>
               </button>}
-              {nativeExecution && <ChartTradingMenu
+              {nativeExecution && !modelPair && <ChartTradingMenu
                 anchor={chartMenu}
                 enabled={chartTrading}
                 picking={native.interaction.selecting !== null}
@@ -727,7 +751,7 @@ export function FuturesPage() {
                 bids-only view, the grouping step — and forced a fresh DOM
                 tree for a panel that already handles a pair change itself. */}
             <FuturesReferenceBook
-              lastPrice={reference.get(symbol)?.lastPrice ?? null}
+              lastPrice={reference.get(symbol)?.lastPrice ?? modelLast}
               trades={tape.symbol===symbol?tape.rows:[]}
               status={book.symbol === symbol ? book.status : 'connecting'}
               bids={book.symbol === symbol ? book.bids : []}
@@ -773,7 +797,7 @@ export function FuturesPage() {
                  shared ticker stream: it is the same quantity, arrives on
                  the connection the book is already using, and so is
                  available whenever the book is. */
-              lastPrice={tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null}
+              lastPrice={tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? modelLast}
               calculatorDraft={calculatorDraft ?? undefined}
               onOpenCalculator={() => setCalculatorOpen(true)}
               compact={compact}
@@ -870,7 +894,7 @@ export function FuturesPage() {
         {switchNote && <p className="terminal-switch-note" role="status">{t('terminal.noFuturesContract', { pair: switchNote })}</p>}
         <div className="left-panel">
           <FuturesPairList ref={pairListRef} searchable onDismiss={() => marketDialogRef.current?.close()}
-            symbols={symbols} symbol={symbol} onChange={next => {
+            symbols={pickerSymbols} modelPairs={modelPairs} symbol={symbol} onChange={next => {
               // The same pair closes the list too, and either way the trader
               // lands on the trading workspace, not wherever the list was opened.
               selectSymbol(next); marketDialogRef.current?.close(); selectMobileTab('trade');

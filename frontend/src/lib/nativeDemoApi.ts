@@ -79,6 +79,11 @@ export interface AccountLedgerView{
   totals:{realizedPnl:string;fees:string;funding:string;net:string};
   walletBalance:string;reconciled:boolean;
 }
+/** A server-pinned History20 model contract: provenance and the current model price (synthetic, never a venue's). */
+export interface NativeHistory20Model{
+  symbol:string;pair:string;source:'VOLTEX_HISTORY20_MODEL';rights:'HISTORICAL_RIGHTS_UNVERIFIED';scenarioId:string;intrabar:string;
+  listingAt:number;draftRevision:number;logsSha256:string;mark:{symbol:string;markPrice:string;lastPrice:string;markProviderTimestamp:number}|null;
+}
 export interface NativeContract{
   symbol:string;tickSize:string;qtyStep:string;minOrderQty:string;maxOrderQty:string;maxMarketOrderQty:string;minNotionalValue:string;
   minLeverage:string;maxLeverage:string;leverageStep:string;
@@ -215,6 +220,8 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     /** The contract's own trading rules — what the engine will accept as a
      *  quantity. The order form sizes against these instead of guessing. */
     contract:(symbol:string,signal?:AbortSignal)=>request<NativeContract>(`/native/contracts/${encodeURIComponent(symbol)}`,undefined,signal),
+    /** The History20 model contracts the server serves (empty unless pinned). */
+    models:(signal?:AbortSignal)=>request<{models:NativeHistory20Model[]}>('/native/models',undefined,signal),
     /**
      * The authoritative account: the one object the terminal, the wallet
      * card and the P&L card all read. Whoever renders a figure from

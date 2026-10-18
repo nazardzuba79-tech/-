@@ -32,7 +32,10 @@ export const privateInstrumentSchema = z.object({
     initialMarginRate: positive, maintenanceDeduction: nonnegative, maxLeverage: positive })).min(1).max(200),
   parameterModel: z.literal('CURRENT_INSTRUMENT_PARAMETERS'), parameterVersion: z.string().min(1).max(100),
 });
-export type PrivateInstrument = z.infer<typeof privateInstrumentSchema>;
+/** A synthetic contract the server defines itself (a History20 model): never read from the collector, never a venue's parameters. */
+export type PrivateModelInstrument = Omit<z.infer<typeof privateInstrumentSchema>, 'provider' | 'parameterModel'>
+  & { provider: 'voltex-model'; parameterModel: 'VOLTEX_HISTORY20_TEST_CONTRACT_V1' };
+export type PrivateInstrument = z.infer<typeof privateInstrumentSchema> | PrivateModelInstrument;
 export const privateQuoteSchema = z.object({
   provider: z.literal('bybit'), symbol: symbolSchema,
   bids: z.array(levelSchema).min(1).max(1000), asks: z.array(levelSchema).min(1).max(1000),
@@ -43,7 +46,9 @@ export type PrivateFreshQuote = z.infer<typeof privateQuoteSchema>;
 export interface PrivateCandle { timestamp: number; open: string; high: string; low: string; close: string }
 export const PRIVATE_CHART_INTERVALS = ['1m', '5m', '15m', '1h', '4h', '1d', '1w'] as const;
 export type PrivateChartInterval = typeof PRIVATE_CHART_INTERVALS[number];
-export interface PrivateChartRequest { symbol: string; interval: PrivateChartInterval; limit?: number; endTime?: number; signal?: AbortSignal }
+/** Where chart candles come from: the venue, or a server-pinned History20 model (synthetic, labelled as such). */
+export type PrivateChartSource = 'BYBIT_LINEAR' | 'VOLTEX_HISTORY20_MODEL';
+export interface PrivateChartRequest { symbol: string; interval: PrivateChartInterval; limit?: number; endTime?: number; signal?: AbortSignal; source?: PrivateChartSource }
 export interface PrivateCandleSelection { symbol: string; source: 'BYBIT_LINEAR'; interval: PrivateChartInterval; openTime: number; pricePoint: 'OPEN' | 'CLOSE'; signal?: AbortSignal }
 export interface ResolvedPrivateCandle {
   symbol: string; source: 'BYBIT_LINEAR'; interval: PrivateChartInterval; intervalMs: number; openTime: number; closeTime: number;
@@ -506,7 +511,7 @@ export class PrivateTradingMarketData {
     } finally { this.chartActive--; }
   }
   async chartCandles(request: PrivateChartRequest): Promise<{
-    source: 'BYBIT_LINEAR'; symbol: string; interval: PrivateChartInterval;
+    source: PrivateChartSource; symbol: string; interval: PrivateChartInterval;
     candles: Array<{ time: number; open: number; high: number; low: number; close: number; volume: number }>;
   }> {
     abort(request.signal);

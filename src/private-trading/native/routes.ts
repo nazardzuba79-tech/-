@@ -10,6 +10,7 @@ import { ContractRuleError } from '../math';
 import { PrivateTradingError } from '../serviceTypes';
 import BigNumber from 'bignumber.js';
 import { historyQuery } from './historyPage';
+import { isHistory20Contract } from './history20Contract';
 import { bestEffortWake } from '../../services/IdleBackoffScheduler';
 const key=z.string().min(8).max(100).regex(/^[a-zA-Z0-9:_-]+$/);
 const positive=z.string().max(60).regex(/^\d{1,18}(?:\.\d{1,18})?$/).refine(x=>new BigNumber(x).gt(0));
@@ -99,7 +100,7 @@ export function nativeReplyHasWork(reply:unknown):boolean{
  * `onWork` wakes the server-side limit pass after the COMMITTED command that
  * leaves it something to do, and after a session admission (which is what
  * lets a sleeping pass act for an account whose previous session expired). */
-export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=>OwnerSession,onWork:()=>void=()=>{},clientTier:'SUPREME_VIP'|null='SUPREME_VIP'){
+export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=>OwnerSession,onWork:()=>void=()=>{},clientTier:'SUPREME_VIP'|null='SUPREME_VIP',models:()=>unknown[]=()=>[]){
   const r=Router();const wake=bestEffortWake(onWork,'native-limit-pass');const handle=(run:(req:Request,res:Response)=>Promise<unknown>)=>(req:Request,res:Response,next:NextFunction)=>void run(req,res).then(result=>res.json(result)).catch(next);
   r.get('/state',handle((_req,res)=>service.state(actor(res))));
   r.get('/live',handle((_req,res)=>service.live(actor(res))));
@@ -139,6 +140,8 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
     if(!result)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
     return {...result,clientTier};
   }));
+  // Server-pinned History20 model contracts (private, synthetic prices); empty unless the server pins one.
+  r.get('/models',handle(async(_req,res)=>{actor(res);return{models:models()};}));
   r.get('/contracts/:symbol',handle((req,res)=>service.contract(actor(res),z.string().regex(/^[A-Z0-9]{1,32}USDT$/).parse(req.params.symbol))));
   r.post('/initialize',handle((req,res)=>{const input=z.object({idempotencyKey:key,acceptedModel:z.literal(NATIVE_DEMO_MODEL.version)}).strict().parse(req.body);return service.initialize(actor(res),input.idempotencyKey);}));
   r.post('/commands',handle((req,res)=>{
@@ -147,6 +150,8 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
     // the mode field existed. New HTTP entries use the hybrid policy; stored
     // journal instructions are never rewritten or reinterpreted here.
     if(input.kind==='OPEN'&&input.candle&&!input.reduceOnly&&!input.executionMode)input.executionMode='HISTORICAL_DEMO';
+    // A History20 model contract has only sampled model prices (no book): it trades under the same hybrid policy.
+    if(input.kind==='OPEN'&&!input.executionMode&&isHistory20Contract(input.symbol))input.executionMode='HISTORICAL_DEMO';
     const scope=new CommandScope(input.kind);
     res.setHeader('X-Native-Request-Id',scope.id);
     scope.trace('http.accepted',{keyHash:createHash('sha256').update(input.idempotencyKey).digest('hex').slice(0,16)});

@@ -108,7 +108,19 @@ async function transport(url,options={}){
   else result=await source.funding(symbol,Number(q.get('startTime')),Number(q.get('endTime')),options.signal);
   return new Response(JSON.stringify(result),{status:200,headers:{'Content-Type':'application/json'}});
 }
-const market=new PrivateTradingMarketData({collector:{url:'http://127.0.0.1',token:'preview-local-public-market-only'},request:transport,now});
+const venueMarket=new PrivateTradingMarketData({collector:{url:'http://127.0.0.1',token:'preview-local-public-market-only'},request:transport,now});
+/* QA lever, fixture only and off by default: one SYNTHETIC History20 window
+   (a deterministic walk, not market data) served as the private model
+   contract VHXTSIM/USDT through the same seam production uses, opened two
+   days before this server started. Every other contract is unchanged. */
+const history20Qa=fixture&&process.env.NATIVE_PREVIEW_HISTORY20_QA==='1';
+const h20=history20Qa?require('../dist/private-trading/native/history20Prices'):null;
+const market=history20Qa?(()=>{
+  const{windowConfig,adminListing}=require('../dist/private-trading/native/testing/history20Fixture');
+  const listingAt=new Date(Math.floor(started/3600000)*3600000-2*86400000).toISOString();
+  const source=new h20.History20PriceSource(h20.history20Selection(adminListing('vhxt-qa',windowConfig({listingAt}))),now);
+  return h20.withHistory20Prices(venueMarket,{sources:[source],contract:s=>h20.history20TestContract(s,now)});
+})():venueMarket;
 const sessions=new Map();
 function session(token){if(!/^[a-f0-9]{48}$/.test(token??''))return null;let s=sessions.get(token);if(s)return s;const file=path.join(dataDir,token+'.json');if(fs.existsSync(file)){try{s=JSON.parse(fs.readFileSync(file,'utf8'));sessions.set(token,s);return s;}catch{}}return null;}
 function save(token,s){sessions.set(token,s);const file=path.join(dataDir,token+'.json'),tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(s));fs.renameSync(tmp,file);}
@@ -142,7 +154,7 @@ const executor=new NativeLimitPass(service,async()=>[...sessions.values()].map(s
 executor.start();
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
 if(clockQa)app.post('/qa/clock',(req,res)=>{const ms=Number(req.body?.advanceMs);if(!Number.isSafeInteger(ms)||ms<=0||ms>7*86400000)return res.status(400).json({error:'advanceMs'});clockOffset+=ms;res.json({now:now(),offsetMs:clockOffset});});
-app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,...(tinyPriceQa?{tinyPriceFixture:true}:{}),commit:process.env.RENDER_GIT_COMMIT??null}));
+app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,...(tinyPriceQa?{tinyPriceFixture:true}:{}),...(history20Qa?{history20Fixture:true}:{}),commit:process.env.RENDER_GIT_COMMIT??null}));
 if (fixture) {
   // Optional public catalogues mounted by the current header. No account/API
   // forwarding: these fixture-only reads describe an empty public catalogue.
@@ -153,8 +165,8 @@ app.use('/api/v1/private-trading',(req,res,next)=>{const token=req.headers.autho
 // The preview mirrors the production contract: this session is a
 // simulation-only account, so the terminal renders with no mode switch.
 app.get('/api/v1/private-trading/access',(_req,res)=>res.json({allowed:true,nativeAvailable:true,simulationOnly:true,mode:'PRIVATE_SIMULATION'}));
-app.use('/api/v1/private-trading/native',nativeDemoRoutes(service,res=>res.locals.actor));
-app.get('/api/v1/private-trading/candles',asyncRoute(async(req,res)=>res.json(await market.chartCandles({symbol:String(req.query.symbol).replace('/',''),interval:req.query.interval,limit:Number(req.query.limit||520),...(req.query.endTime?{endTime:Number(req.query.endTime)}:{})}))));
+app.use('/api/v1/private-trading/native',nativeDemoRoutes(service,res=>res.locals.actor,undefined,'SUPREME_VIP',()=>h20?h20.history20Models(market):[]));
+app.get('/api/v1/private-trading/candles',asyncRoute(async(req,res)=>res.json(await market.chartCandles({symbol:String(req.query.symbol).replace('/',''),interval:req.query.interval,limit:Number(req.query.limit||520),...(req.query.endTime?{endTime:Number(req.query.endTime)}:{}),...(req.query.source?{source:String(req.query.source)}:{})}))));
 /* The production Futures chart is display-only and now reads the public
    exact-contract candle route even while this fixture account is bound to
    the native engine. Mirror that public route here so the browser QA tests

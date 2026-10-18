@@ -438,7 +438,14 @@ test.each([
     // «Позиция закрыта» card ask for the native position history, which the
     // page's existing `setHistoryDemand` effect now also loads while the card
     // is shown. No order, execution, account, depth or layout byte changed.
-    "ac101210d56f6a487dd29bc16de067fc450ac5adfc9ae79c031a0a7a87291076"
+    // Re-taken for History20 model contracts (owner decision, 2026-10-18): the
+    // served model pairs join the same chooser for a native Futures TEST
+    // account; such a pair is kept only while served, subscribes no venue
+    // book or tape, reads its chart through the private route under the
+    // model's own label, takes its last price from the model, hides the
+    // venue-candle trading menu and shows one model note. Every venue pair
+    // renders, subscribes and resolves exactly as before.
+    "3c98abd6ab88eff1c6cccc50854603d8069cc4af013027e9048fb5d243767fa7"
   ],
   [
     "components/FuturesPairList.tsx",
@@ -472,7 +479,9 @@ test.each([
     // GreenHood's +190.54% under the HOOD perpetual. Price, 24h change and
     // turnover all still come from `tickers.get(symbol)`, so the sentence
     // above is now true of every column rather than most of them.
-    "0bcf05430051f9ec9d75f9717c3658e1c20e57117a01cb68a85a9467ecc30bfa"
+    // Re-taken for History20 model contracts: an optional `modelPairs` prop
+    // tags those rows as models. Rows, sorting and prices are unchanged.
+    "23dda691bc1d0edd0c42416481217a87fbe39a246f44ced735b6896f1b3c6fd9"
   ],
   [
     "components/OrderBookPanel.tsx",

@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import BigNumber from 'bignumber.js';
 import { PrivateTradingStore, json, money, hash, AccountTx } from './store';
-import { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateFundingEvent, PrivateChartInterval, PrivateCandleSelection, assertPrivateFreshQuote, PRIVATE_QUOTE_MAX_AGE_MS } from './marketData';
+import { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateFundingEvent, PrivateChartInterval, PrivateChartSource, PrivateCandleSelection, assertPrivateFreshQuote, PRIVATE_QUOTE_MAX_AGE_MS } from './marketData';
 import { amount, calculatePosition, consumeBook, decimal, quoteOrderCost, roiPercent, validateContractOrder } from './math';
 import { replayScenario } from './replay';
 import { CandleSelection, ContractRules, ModelProfile, ReplayResult, ResolvedCandleSelection } from './types';
@@ -131,11 +131,13 @@ export class PrivateTradingService {
     await this.store.authorized(actor);
     return { ...quote, instrument: { ...instrument, ...contractRules(instrument) } };
   }
-  async getChartCandles(actor: OwnerSession, input: { symbol: string; source: 'BYBIT_LINEAR'; interval: PrivateChartInterval; endTime?: number; limit?: number }, signal?: AbortSignal) {
+  async getChartCandles(actor: OwnerSession, input: { symbol: string; source: PrivateChartSource; interval: PrivateChartInterval; endTime?: number; limit?: number }, signal?: AbortSignal) {
     await this.store.authorized(actor);
     const candles = await this.data().chartCandles({ ...input, symbol: normalize(input.symbol), signal });
     if (signal?.aborted) throw new PrivateTradingError('cancelled', 'Запрос отменён', 409);
     await this.store.authorized(actor);
+    // A label is a promise about the data: venue candles are never served as a model, nor a model as venue candles.
+    if (candles.source !== input.source) throw new PrivateTradingError('chart_source_mismatch', 'Источник свечей не совпадает с выбранным инструментом', 409);
     return candles;
   }
   async state(actor: OwnerSession) {

@@ -241,3 +241,18 @@
 .futures-terminal .chart-tools-action.primary:hover { background: rgba(240,201,100,.12); }
 .futures-terminal .chart-tools-menu :is(button, input):focus-visible { outline: 1px solid #f0c964; outline-offset: 1px; }
 
+
+/* History20 model contract: a quiet, always-visible note that the chart and
+   its prices are a model, not market data (lib/history20Models). */
+.futures-terminal .history20-model-badge {
+  position: absolute; z-index: 3; top: 8px; left: 50%; transform: translateX(-50%); margin: 0;
+  max-width: calc(100% - 24px); padding: 3px 10px; border: 1px solid var(--border-color); border-radius: 4px;
+  background: var(--panel); color: var(--text-secondary); font-size: 11px; line-height: 16px; letter-spacing: .02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: auto;
+}
+/* On a phone the chart's own header strip is full; the note takes one quiet line above the chart instead. */
+@media (max-width: 900px) {
+  .futures-terminal .chart-surface > .history20-model-badge:not(.chart-tools-menu):not(.chart-tools-trigger) {
+    position: static; transform: none; flex: 0 0 auto; align-self: center; margin: 4px 0 2px; max-width: calc(100% - 16px);
+  }
+}

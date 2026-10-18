@@ -5,10 +5,16 @@ import { createVisibleRead } from './visibleRead';
 type Mark = { markPrice: number | null; indexPrice: number | null };
 const EMPTY: Mark = { markPrice: null, indexPrice: null };
 const entries = new Map<string, { value: Mark; listeners: Set<(mark: Mark) => void>; stop: () => void }>();
+/** A mark source for contracts no venue prices (History20 model contracts), registered by the module that owns them. */
+export interface FuturesMarkSource { owns(symbol: string): boolean; subscribe(symbol: string, listener: (mark: Mark) => void): () => void }
+let alternate: FuturesMarkSource | null = null;
+export function registerFuturesMarkSource(source: FuturesMarkSource | null) { alternate = source; }
 /** Header and sizing form share one genuine server mark/index read per symbol.
  * No session data, no risk decisions; final subscriber departure drops the cache.
  */
 export function subscribeFuturesMark(symbol: string, listener: (mark: Mark) => void) {
+  // Such a contract has no venue mark, and the venue route is never asked about it.
+  if (alternate?.owns(symbol)) return alternate.subscribe(symbol, listener);
   let entry = entries.get(symbol);
   if (!entry) {
     const next = { value: EMPTY, listeners: new Set<(mark: Mark) => void>(), stop: () => {} };

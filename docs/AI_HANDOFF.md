@@ -6628,3 +6628,40 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - bots: the native engine is JWT-only;
   - the existing withdrawal cap from native PnL.
 - **Not run:** production, a database, the browser, deploy.
+
+### Claude — 2026-10-18 — History20 wired into the native Futures TEST account (CTO/owner decision on #549)
+- **Branch:** `claude/peaceful-volta-h5zw7g-history20-native-wiring`, a Draft stacked on #549 (`43da83a`), which is on #544 (`e7f2667`).
+- **Server.** Off unless `NATIVE_HISTORY20_PINS` is set.
+  - **Pins and registry:** read through the existing `ListingStore.list()`. A pin must match the stored draft exactly, otherwise `history20_unavailable`, never the venue.
+  - **One wrapped `PrivateTradingService.market`:** covers the owner and tester routes, the withdrawal projection and the limit pass.
+  - **Draft freeze:** `HISTORY20_PRICE_PATH_IN_USE` while any native row or revision mentions the contract.
+  - **Model contract:** synthetic and test-only (`provider: 'voltex-model'`). The path is pinned in `parameterVersion`.
+  - **MARKET entry:** a model contract needs no candle; it fills at the sampled model price (`point` = last, as a reducing MARKET). A venue contract still requires its candle.
+  - **Chart:** model candles under `VOLTEX_HISTORY20_MODEL`, with a label check after authorization.
+  - **`/native/models`:** lists the served contracts.
+  - **Withdrawal hold:** positive model-contract net PnL is held back. Venue contracts are unchanged.
+- **Terminal.** The same page and components.
+  - Model pairs appear in the chooser, tagged.
+  - The chart uses the model loader.
+  - The model note is shown.
+  - The mark comes from the model; no venue book, tape or mark call is made.
+  - Three locale keys in 7 languages.
+  - The fingerprints are re-taken.
+- **Preserved:**
+  - every venue contract path; this is pinned by tests, including the existing historical-entry and reduce-only suites;
+  - native engine, replay and journal semantics;
+  - #548, NRX, Stocks, #543 locale hunks.
+- **Verified locally:**
+  - backend `npm run build`;
+  - frontend `tsc -b` and `npm run build`;
+  - `src/private-trading` plus routes plus listings: 70 suites PASS, 4 skipped (need a DB). The 2 combined-run failures were a parallel-PG artefact and an order bug I fixed; both pass in band;
+  - disposable PostgreSQL: listing PG suites 50/50, including the new guard query;
+  - frontend lib Jest 282/282 suites (4540 tests);
+  - browser QA (1440, 390) PASS.
+- **Not run:** production, Render configuration, deploy, migrations, CI on this head (pending).
+- **Owner decisions open:**
+  - contract parameters;
+  - withdrawal hold confirmation and the pin;
+  - ticket leverage cap;
+  - API-key bot hook;
+  - licence.

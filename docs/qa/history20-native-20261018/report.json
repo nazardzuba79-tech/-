@@ -1,0 +1,46 @@
+{
+  "checks": [
+    {
+      "name": "history20-model-contract-1440",
+      "passed": true,
+      "detail": {
+        "modelCandleIntervals": [
+          "1h"
+        ],
+        "entries": [
+          [
+            "LONG",
+            "2.6914421073"
+          ],
+          [
+            "SHORT",
+            "2.6914421073"
+          ]
+        ],
+        "externalAborted": 10
+      }
+    },
+    {
+      "name": "history20-model-contract-390",
+      "passed": true,
+      "detail": {
+        "modelCandleIntervals": [
+          "1h"
+        ],
+        "entries": [
+          [
+            "LONG",
+            "2.6914421073"
+          ],
+          [
+            "SHORT",
+            "2.6914421073"
+          ]
+        ],
+        "externalAborted": 10
+      }
+    }
+  ],
+  "errors": [],
+  "passed": true
+}
