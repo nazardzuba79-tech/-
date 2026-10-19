@@ -6649,3 +6649,44 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Research (no repo change):** no free, clearly redistributable daily 2013–2024 series found; candidates are paid commercial licences (CoinGecko Enterprise, CoinMarketCap paid, Kaiko, Coinpaprika, CoinAPI). Several popular CC0/CC BY uploads re-license exchange or CoinMarketCap data, so their labels are likely invalid. `HISTORICAL_RIGHTS_UNVERIFIED` is kept.
 - **Not run:** CI on this commit (pending at time of writing); production.
 - **Unresolved (owner):** one decision. Approve `SIMUSDT` as the non-withdrawable settlement unit with per-tester test allocations, or a restricted-credit migration. Until then History20 windows admit no orders (`DEMO_ONLY`) and the managed-listing synthetic sale stays stopped.
+### Claude — 2026-10-18 — Managed listings: bot triggers preserved, unresolved pairs fail closed, ledger map (CTO triage on PR #546, as overridden by the owner)
+- **Branch / PR:** `claude/peaceful-volta-h5zw7g-managed-failclosed` (#548) from main `f81df788`.
+  - The first commit `e7e04f2` also blocked triggers for `tradable:false` listings. The owner withdrew that instruction (override at 08:32 UTC, before this PR was opened), so the block is **reverted**.
+  - `spotPriceSource` and `triggerOrder` are as on main.
+- **Kept, P0-2:**
+  - `ManagedListingRegistry.resolved()`: a successful read within `STALE_MS` (2 × `REFRESH_MS`).
+  - While the registry is unresolved, `assertSpotListingReady(pair, venue)` refuses a pair that is not NRX, not a known listing or test asset, and not venue-priced, with `Операция временно недоступна` (an existing localized phrase).
+  - Venue pairs are never rejected, and bot triggers are not affected.
+- **Pinned, owner-required:** a listing closed to new public orders keeps triggering resting conditional and OCO orders on its model price (unit + PostgreSQL characterization).
+- **Ledger map** (read-only, in `docs/qa/managed-listing-failclosed-20261018.md`):
+  - Practice-market fills, model-price triggers and the admin `simulation:NRX` sale settle in the ordinary Spot `balance`, the ledger deposits and withdrawals use.
+  - Test assets are not withdrawable, but the USDT proceeds are.
+  - Futures and the native demo engine use their own tables.
+  - This is reported for owner review and not changed.
+- **Material files:**
+  - `src/services/testMarkets/nrxSpot.ts`, `src/services/listings/registry.ts`, `src/services/OrderService.ts` (gate argument only);
+  - tests `tradingGates.test.ts` and `managedListingFailClosed.pg.test.ts` (wired into `.github/workflows/admin-listings.yml`);
+  - the doc above.
+- **Verified locally:** see the PR for the exact head.
+  - Unit `tradingGates` 10/10.
+  - Disposable PostgreSQL 16: `managedListingFailClosed.pg` 4/4, `ownerAllocation.pg` + `historicalDemoContour.pg` 15/15, `nrxSpot.pg` + `vta*.pg` 31/31.
+  - Full Jest: same 4 pre-existing local failures as on clean main.
+- **Preserved:** bot paper triggers and execution; NRX; settlement and reserves; Futures history; Wallet (#543); Stocks; locales.
+- **Not done (needs owner and financial review):** P1 (idempotency key, simulation-fill labelling and card eligibility, Wallet modeled valuation, practice-ledger separation) and P2 (pause/stop/unpublish).
+- **Not run:** production, migrations, deploy.
+
+### Claude — 2026-10-18 — Owner-required demo trading on a model price, pinned (PR #548, follow-up)
+- **Task:** the owner's correction of 09:04 UTC. Demo debits are allowed, and the existing flow must be kept. Tests were required for: Buy/Sell balance, insufficient funds, cancel release, retries, STOP/TP on model prices, Futures history, and no venue call.
+- **Done:** new `src/services/listings/__tests__/modeledPriceDemoTrading.pg.test.ts` (2 tests), wired into `.github/workflows/admin-listings.yml`. A requirements-to-test table is in `docs/qa/managed-listing-failclosed-20261018.md`.
+- **Production code:** none changed. Every requirement already holds on the existing OrderService / PriceWatcherService / `balance` path.
+- **Mutation check:** I let `cancelOrder` and `triggerOrder` act on an already-cancelled or filled order. Both new tests fail; the code was restored.
+- **Verified locally:**
+  - disposable PostgreSQL 16 (loopback, port 55432);
+  - the new test 2/2;
+  - together with `managedListingFailClosed.pg`, `tradingGates`, `ownerAllocation.pg` and `historicalDemoContour.pg`: 31/31.
+- **Preserved:** P0-2 gate, bot triggers on `tradable:false`, NRX, Futures, Wallet (#543), Stocks, locales.
+- **Not done:**
+  - idempotency of the admin simulation sale (P1-3, needs a migration);
+  - History20 execution (proposal on #544, needs owner design approval).
+- **Not run:** production, migrations, deploy, full Jest on this commit.
+

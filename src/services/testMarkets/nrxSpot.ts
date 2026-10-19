@@ -3,7 +3,7 @@ import { NEURIX } from './neurix';
 import { simulationFor } from './testMarketSimulation';
 import { isTestAssetPairOrSymbol, testAssetForPair, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testAssetConfig';
 import { managedListingAssets } from '../listings/managedSnapshot';
-import { managedListingRegistry } from '../listings/registry';
+import { managedListingRegistry, type ManagedListingRegistry } from '../listings/registry';
 import { HISTORICAL_DEMO_MESSAGE, isHistoricalDemoAsset } from '../listings/simulationContour';
 import { isAith } from '../../shared/aithPublication';
 
@@ -33,10 +33,24 @@ export function assertSpotListing(pair: string, now = Date.now()): void {
   if (isTestAssetPairOrSymbol(pair)) throw new Error(TEST_ASSET_NOT_TRADABLE_MESSAGE);
 }
 
-/** The same gate after making sure Render knows the current published listings (bounded wait). */
-export async function assertSpotListingReady(pair: string, now?: number): Promise<void> {
-  await managedListingRegistry.ensureFresh();
+/** Refusal while Render cannot tell whether a pair is a managed listing; customers see a localized «temporarily unavailable». */
+export const SPOT_PAIR_UNRESOLVED_MESSAGE = 'Операция временно недоступна';
+
+/**
+ * The same gate after making sure Render knows the current published
+ * listings (bounded wait). While it does not (cold start, failed or slow
+ * reads, a stale snapshot), default deny: a pair that is not NRX, not a known
+ * listing or test asset and has no venue price may be a Worker-only managed
+ * listing, and is never traded as an ordinary pair. Venue-priced pairs
+ * (BTC/USDT…) are unaffected.
+ */
+export async function assertSpotListingReady(pair: string, venue: PriceSource, now?: number,
+  registry: Pick<ManagedListingRegistry, 'ensureFresh' | 'resolved'> = managedListingRegistry): Promise<void> {
+  await registry.ensureFresh();
   assertSpotListing(pair, now);
+  if (registry.resolved() || pair === NEURIX.pair || managedListingForPair(pair)) return;
+  const ticker = await venue.getTicker(pair).catch(() => null);
+  if (!ticker) throw new Error(SPOT_PAIR_UNRESOLVED_MESSAGE);
 }
 
 /** Same canonical price as Cloudflare, used for conditional Spot validation/triggering. */
@@ -50,6 +64,8 @@ export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSou
     if (isAith(pair) && !managed) return null;
     if (!managed) return source.getTicker(pair);
     // A historical model price never triggers a real conditional order.
+    // A listing closed to new public orders (tradable:false) keeps its model
+    // price for already-resting conditional orders: bot training relies on it.
     if (isHistoricalDemoAsset(managed)) return null;
     const last = simulationFor(managed).priceAt(clock());
     return last === null ? null : { lastPrice: String(last) };
