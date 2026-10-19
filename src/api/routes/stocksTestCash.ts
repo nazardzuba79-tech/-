@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, createPublicKey, createSecretKey } from 'crypto';
 import { resolve } from 'path';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 
@@ -19,10 +19,12 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
   // Node24 is the pinned local integration runtime (native require(ESM)).
   // This lazy load is never reached by the default, disabled API surface.
   const authority: Authority = injected ?? require(resolve(__dirname, '../../../services/stocks-global/postgres-authority.mjs')).openPostgresAuthority(prisma, { issuer, tradePrincipals: principals });
+  // Normalize the immutable key once; signature/expiry checks still run on every request.
+  const verificationKey = (() => { try { return createPublicKey(secret); } catch { return createSecretKey(Buffer.from(secret)); } })();
   const auth = requireAuth(prisma);
   const actor = (req: AuthedRequest): Actor => {
     if (!req.userId || !req.sessionId) throw Object.assign(Error('AUTH_REQUIRED'), { code: 'AUTH_REQUIRED' });
-    const payload = jwt.verify(req.headers.authorization!.slice(7), secret) as jwt.JwtPayload;
+    const payload = jwt.verify(req.headers.authorization!.slice(7), verificationKey) as jwt.JwtPayload;
     if (payload.sub !== req.userId || payload.sid !== req.sessionId || !Number.isSafeInteger(payload.exp)) throw Object.assign(Error('AUTH_REQUIRED'), { code: 'AUTH_REQUIRED' });
     return { issuer, subject: req.userId, userId: req.userId, sessionId: req.sessionId, expiresAt: payload.exp! * 1000 };
   };
