@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url');
 const {database,loopback,sha}=require('./policy.cjs');
-let f,market,cleanup=[],configuration;
+let f,market,cleanup=[],configuration,diagnostics;
 const send=(id,value,error)=>process.send?.({id,value,error});
 async function initialize(c){
  configuration=c;database(c.dbUrl,c.dbName);
@@ -13,6 +13,7 @@ async function initialize(c){
  process.env.TS_NODE_COMPILER_OPTIONS=JSON.stringify({module:'commonjs',moduleResolution:'node'});
  const realLoad=Module._load;
  Module._load=function(request,parent,isMain){return realLoad.call(this,request==='@prisma/client'?generated:request,parent,isMain);};
+ if(c.diagnostics)diagnostics=require('./spans.cjs').install({generated,root});
  const load=p=>import(pathToFileURL(path.join(root,p)).href);
  const {syntheticPublicMarket,loopbackFetch}=await load('services/stocks-global/testing/synthetic-public-market.mjs');
  const {BinanceStreamMarketHub}=await load('services/stocks-global/binance-stream-market.mjs');
@@ -74,6 +75,8 @@ async function close(){
 }
 process.on('message',async m=>{try{
  let value;if(m.command==='init')value=await initialize(m.value);
+ else if(m.command==='spans-start')value=await diagnostics?.start(configuration.dbUrl);
+ else if(m.command==='spans-stop')value=await diagnostics?.stop()??{enabled:false};
  else if(m.command==='snapshot')value=await snapshot();
  else if(m.command==='qualify')value=await qualification();
  else if(m.command==='ready')value=await ready(m.value.index);

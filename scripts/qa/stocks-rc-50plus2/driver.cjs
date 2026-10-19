@@ -29,9 +29,10 @@ async function window(info,{mixed=false,warmup=false,arm,signal}={}){
  async function request(origin,route,{method='GET',body,token,csrf,view,expected=200,kind,op}){
   if(signal?.aborted)throw Error('RUN_ABORTED');
   if(++r.requests>2500)throw Error('HTTP_BUDGET_EXCEEDED');
-  const at=performance.now(),response=await fetch(origin+route,{method,headers:{authorization:'Bearer '+token,...(view?{'x-stocks-view':view}:{}),...(body===undefined?{}:{'content-type':'application/json','x-stocks-token':csrf??''})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(PLAN.timeoutMs)}).catch(e=>{if(e.name==='TimeoutError'||e.name==='AbortError')r.timeouts++;throw e;});
+  const requestId=arm+'-'+(warmup?'warm':'measure')+'-'+r.requests;
+  const at=performance.now(),response=await fetch(origin+route,{method,headers:{'x-rc50-request':requestId,authorization:'Bearer '+token,...(view?{'x-stocks-view':view}:{}),...(body===undefined?{}:{'content-type':'application/json','x-stocks-token':csrf??''})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(PLAN.timeoutMs)}).catch(e=>{if(e.name==='TimeoutError'||e.name==='AbortError')r.timeouts++;throw e;});
   const text=await response.text().catch(e=>{if(e.name==='TimeoutError'||e.name==='AbortError')r.timeouts++;throw e;}),value=text?JSON.parse(text):null,ms=performance.now()-at;
-  r.samples.push({kind,op,status:response.status,ms,at:at-start});if(kind==='crypto')r.cryptoLatencies.push(ms);
+  r.samples.push({requestId,kind,op,status:response.status,ms,at:at-start});if(kind==='crypto')r.cryptoLatencies.push(ms);
   if(response.status!==expected)throw Error('HTTP_'+response.status+'_'+op+'_'+JSON.stringify(value?.error??null));
   return value;
  }
