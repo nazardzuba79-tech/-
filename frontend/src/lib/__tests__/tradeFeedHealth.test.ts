@@ -67,7 +67,7 @@ beforeEach(() => {
         isEdgeMarketPair: (pair: string) => pair === 'NRX/USDT', isEdgeMarketUrl: () => false,
         fetchNrxPublic: async () => ({ serverTime: Date.now(), assets: [] }),
       };
-      if (name.endsWith('/api')) return { API_BASE: '/api/v1' };
+      if (name.endsWith('/api')) return { API_BASE: '/api/v1', getToken: () => null, onSessionChange: () => () => {} };
       if (name.endsWith('/spotPublicMarket')) return { readSpotPublicBook: (...args: any[]) => readBook(...args) };
       if (name.endsWith('/useMarketData')) return { useMarketData: () => ({ loaded: true, status: 'ready', tickers: new Map([['BTC/USDT', {}], ['ETH/USDT', {}]]) }) };
       if (name.endsWith('/useCfdTickers')) return { useCfdTickers: () => cfdFeed };

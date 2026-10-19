@@ -1,8 +1,8 @@
 import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, browserFetch as fetch, trackBrowserRead } from './browserActivity';
 import { useEffect, useMemo, useState } from 'react';
-import { API_BASE } from './api';
+import { API_BASE, getToken, onSessionChange } from './api';
 import { fetchNrxPublic, isEdgeMarketUrl, isNrxPair, NRX_EDGE_BASE } from './nrxMarket';
-import { isManagedListingPair, parseTestMarkets, registerManagedListings, SIMULATION_PREVIEW_PARAM, withSimulationPreview, type TestAsset } from './testMarkets';
+import { isManagedListingPair, isPrivateTestPair, parseTestMarkets, registerManagedListings, registerPrivateTestMarkets, SIMULATION_PREVIEW_PARAM, withSimulationPreview, type TestAsset } from './testMarkets';
 import { aithLeaseDeadline, aithReadClock, isAith } from '../../../src/shared/aithPublication';
 
 /**
@@ -46,6 +46,26 @@ export async function fetchTestMarketJson(url: string, signal?: AbortSignal): Pr
   return response.json();
 }
 
+/**
+ * An authenticated read of the History20 private test API (owner and
+ * allowlisted testers only). Never the edge, never a venue, never the
+ * preview clock. Without a session it does not ask at all.
+ */
+/** The session token, or null where there is no browser storage (tests, prerender). */
+function sessionToken(): string | null {
+  try { return getToken(); } catch { return null; }
+}
+
+export async function fetchPrivateTestMarketJson(url: string, signal?: AbortSignal): Promise<unknown> {
+  const token = sessionToken();
+  if (!token) throw new Error('private_test_no_session');
+  const response = await fetch(url, {
+    signal, credentials: 'omit', cache: 'no-store', headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error(`private_test_http_${response.status}`);
+  return response.json();
+}
+
 export interface TestMarketsState {
   loaded: boolean;
   error: boolean;
@@ -57,7 +77,7 @@ export interface TestMarketsState {
 type Listener = (state: TestMarketsState) => void;
 
 export class TestMarketStore {
-  constructor(private readonly endpoint = `${API_BASE}/market/test-assets`, private readonly catalogue = false) {}
+  constructor(private readonly endpoint = `${API_BASE}/market/test-assets`, private readonly catalogue = false, private readonly privateSource = false) {}
   private state: TestMarketsState = { loaded: false, error: false, assets: [], clockOffsetMs: 0 };
   private subscribers = new Map<symbol, { listener: Listener; intervalMs: number }>();
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -79,6 +99,17 @@ export class TestMarketStore {
     if (this.leaseTimer) clearTimeout(this.leaseTimer);
     const asset = this.state.assets.find(asset => isAith(asset.pair));
     this.leaseTimer = asset ? setTimeout(() => this.expireAith(), Math.max(0, (asset.leaseDeadline ?? 0) - aithReadClock())) : null;
+  }
+
+  /** Forget everything (a session change): nothing this account was served may reach the next one. */
+  reset(): void {
+    this.controller?.abort();
+    this.inFlight = null;
+    if (this.privateSource) registerPrivateTestMarkets([]);
+    this.state = { loaded: false, error: false, assets: [], clockOffsetMs: 0 };
+    this.fetchedAt = 0;
+    for (const { listener } of this.subscribers.values()) listener(this.state);
+    if (this.subscribers.size > 0) void this.refresh();
   }
 
   getState(): TestMarketsState {
@@ -112,10 +143,10 @@ export class TestMarketStore {
     const requestStartedAt = aithReadClock();
     this.controller = controller;
     this.refreshAfterFlight = false;
-    this.inFlight = trackBrowserRead(fetchTestMarketJson(this.endpoint, controller.signal)
+    this.inFlight = trackBrowserRead((this.privateSource ? fetchPrivateTestMarketJson : fetchTestMarketJson)(this.endpoint, controller.signal)
       .then((body) => {
         if (controller.signal.aborted || this.refreshAfterFlight) return;
-        const snapshot = parseTestMarkets(body);
+        const snapshot = parseTestMarkets(body, this.privateSource ? 'private' : 'public');
         if (!snapshot) throw new Error('test_market_shape');
         snapshot.assets = snapshot.assets.filter(asset => {
           if (!isAith(asset.pair)) return true;
@@ -125,12 +156,20 @@ export class TestMarketStore {
           this.highestAithVersion = asset.version;
           return true;
         });
-        registerManagedListings(snapshot.assets);
+        if (this.privateSource) registerPrivateTestMarkets(snapshot.assets);
+        else registerManagedListings(snapshot.assets);
         this.state = { loaded: true, error: false, assets: snapshot.assets, clockOffsetMs: snapshot.serverTime - Date.now() };
         this.scheduleLease();
       }))
       .catch(() => {
         if (controller.signal.aborted || this.refreshAfterFlight) return;
+        // Private test markets fail closed and quietly: no session, not a participant (404)
+        // or an outage all mean "nothing to show", never an alert to everyone else.
+        if (this.privateSource) {
+          registerPrivateTestMarkets([]);
+          this.state = { ...this.state, loaded: true, error: false, assets: [] };
+          return;
+        }
         // AITH must fail closed; other markets retain their existing last-good policy.
         this.state = { ...this.state, loaded: true, error: true, assets: this.state.assets.filter(asset => !isAith(asset.pair)) };
         this.scheduleLease();
@@ -200,10 +239,14 @@ export const testMarketStore = new TestMarketStore();
 export const nrxMarketStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/nrx`);
 /** Published managed listings (Admin → Listings), straight from the market edge. */
 export const managedListingStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/listings`, true);
+/** History20 private test markets for this session (authenticated API; empty for everyone but participants). */
+export const privateTestMarketStore = new TestMarketStore(`${API_BASE}/private-test/markets`, true, true);
+onSessionChange(() => privateTestMarketStore.reset());
 /** A deep link to a pair the tab has never seen learns whether it is a listing; re-read rarely, and at each listing moment. */
 export const MANAGED_LISTING_DISCOVERY_INTERVAL_MS = 15 * 60_000;
 
-const storeForPair = (pair: string) => (isNrxPair(pair) ? nrxMarketStore : isManagedListingPair(pair) ? managedListingStore : testMarketStore);
+const storeForPair = (pair: string) => (isNrxPair(pair) ? nrxMarketStore : isPrivateTestPair(pair) ? privateTestMarketStore
+  : isManagedListingPair(pair) ? managedListingStore : testMarketStore);
 
 /** The listing instant of a test market the tab has already read (epoch ms), or null: the chart's derived first bucket may open there. */
 export function testMarketListingAt(pair: string): number | null {
@@ -232,14 +275,17 @@ function useStore(store: TestMarketStore, intervalMs: number, enabled: boolean):
 }
 
 export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enabled = true, pair?: string): TestMarketsState {
-  const kind = pair ? (isNrxPair(pair) ? 'nrx' : isManagedListingPair(pair) ? 'managed' : 'vta') : null;
+  const kind = pair ? (isNrxPair(pair) ? 'nrx' : isPrivateTestPair(pair) ? 'private' : isManagedListingPair(pair) ? 'managed' : 'vta') : null;
   const vta = useStore(testMarketStore, intervalMs, enabled && (!kind || kind === 'vta'));
   const nrx = useStore(nrxMarketStore, intervalMs, enabled && (!kind || kind === 'nrx'));
   const managed = useStore(managedListingStore, intervalMs, enabled && (!kind || kind === 'managed'));
+  // Signed-in sessions only; the server answers participants and nobody else.
+  const privateTests = useStore(privateTestMarketStore, intervalMs, enabled && sessionToken() !== null && (!kind || kind === 'private'));
   // One array per store change, not per render: consumers memoise on it (useMarketTickers), and a
   // fresh array each render kept the Markets page re-rendering and starved route transitions.
-  const assets = useMemo(() => [...vta.assets, ...nrx.assets, ...managed.assets], [vta.assets, nrx.assets, managed.assets]);
-  if (kind) return kind === 'nrx' ? nrx : kind === 'managed' ? managed : vta;
+  const assets = useMemo(() => [...vta.assets, ...nrx.assets, ...managed.assets, ...privateTests.assets], [vta.assets, nrx.assets, managed.assets, privateTests.assets]);
+  if (kind) return kind === 'nrx' ? nrx : kind === 'private' ? privateTests : kind === 'managed' ? managed : vta;
+  // The private list never decides whether the public markets loaded or failed.
   return { loaded: vta.loaded && nrx.loaded && managed.loaded, error: vta.error || nrx.error || managed.error,
     assets, clockOffsetMs: nrx.loaded ? nrx.clockOffsetMs : managed.loaded ? managed.clockOffsetMs : vta.clockOffsetMs };
 }
@@ -247,6 +293,11 @@ export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enable
 /** The Trade page asks the edge once whether its pair is a managed listing (the store re-reads only rarely). */
 export function useManagedListingDiscovery(enabled: boolean): TestMarketsState {
   return useStore(managedListingStore, MANAGED_LISTING_DISCOVERY_INTERVAL_MS, enabled);
+}
+
+/** The Trade page asks once whether its SIMUSDT pair is a private test market this session may open. */
+export function usePrivateTestMarketDiscovery(enabled: boolean): TestMarketsState {
+  return useStore(privateTestMarketStore, MANAGED_LISTING_DISCOVERY_INTERVAL_MS, enabled && sessionToken() !== null);
 }
 
 /** One test market, or nothing for an ordinary pair (which then costs no request). */

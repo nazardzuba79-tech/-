@@ -60,9 +60,9 @@ import './trade-terminal/SpotMobileCompact.css';
 import './trade-terminal/SpotMobilePhone.css';
 import './trade-terminal/TerminalMobileHeader.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
-import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
+import { isKnownPrivateTestMarket, isManagedListingPair, isPrivateTestPair, isTestMarketPair } from '../lib/testMarkets';
 import { isEdgeMarketPair } from '../lib/nrxMarket';
-import { useManagedListingDiscovery, useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
+import { useManagedListingDiscovery, usePrivateTestMarketDiscovery, useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
 import { useMarketData } from '../lib/useMarketData';
 import { TestMarketChart } from '../components/TestMarketTerminal';
 import { TerminalMarketSwitch } from '../components/TerminalMarketSwitch';
@@ -115,13 +115,16 @@ export function TradePage() {
   // A pair not built into the code may be a managed listing (Admin → Listings):
   // one catalogue read from the market edge tells this tab. Built-in test
   // pairs and a loaded catalogue need nothing more.
-  const managedCatalogue = useManagedListingDiscovery(searchParams.get('market') !== 'cfd' && !isTestMarketPair(pair));
-  const testPair = isTestMarketPair(pair) || (managedCatalogue.loaded && isManagedListingPair(pair));
+  const managedCatalogue = useManagedListingDiscovery(searchParams.get('market') !== 'cfd' && !isTestMarketPair(pair) && !isPrivateTestPair(pair));
+  // A History20 private test pair (VHX…/SIMUSDT) is asked of the authenticated private list only.
+  const privateCatalogue = usePrivateTestMarketDiscovery(searchParams.get('market') !== 'cfd' && isPrivateTestPair(pair) && !isTestMarketPair(pair));
+  const testPair = isTestMarketPair(pair) || (managedCatalogue.loaded && isManagedListingPair(pair)) || (privateCatalogue.loaded && isKnownPrivateTestMarket(pair));
   // A deep link to a pair this tab cannot place yet (neither in the venue snapshot nor a built-in test
   // market) waits for whichever answers first — the shared venue snapshot (same store and cadence as the
   // ticker bar) or the listings catalogue — so a managed listing never fetches venue candles or depth.
   const venueSnapshot = useMarketData(3000);
-  const pairResolving = !isTestMarketPair(pair) && !managedCatalogue.loaded && !venueSnapshot.tickers.has(pair.toUpperCase());
+  // A private pair this session may not open never resolves to a venue chart or book.
+  const pairResolving = !isTestMarketPair(pair) && (isPrivateTestPair(pair) || (!managedCatalogue.loaded && !venueSnapshot.tickers.has(pair.toUpperCase())));
   const testMarket = useTestMarket(testPair && searchParams.get('market') !== 'cfd' ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   // A phone opens a tradable pair on the trading workspace — book beside

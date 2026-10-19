@@ -192,3 +192,7 @@ Cases first present in #552 and now covered here:
 - the transfer/purchase refusal text.
 
 Adopting #553's guard keeps every #552 refusal.
+
+## Wired private mode (integration, 2026-10-19)
+
+The owner assigned the final #553 integration to the #551/#552 session. The private mode is now wired on this branch, still default off: `docs/HISTORY20_PRIVATE_SPOT_MODE.md` covers rules, admission, the registry-independent cash-out guard (CTO P0), funding, the private channel, the reads, the terminal and the admin control, plus the evidence and the remaining blockers. The "not wired" notes above describe the spike as it was before.

@@ -27,6 +27,7 @@ on:
       - 'frontend/src/lib/nrxMarket.ts'
       - 'frontend/src/lib/testMarket*.ts'
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/spotPublicMarket.ts'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/markets-bolt/**'
       - 'frontend/src/pages/admin/**'
@@ -100,6 +101,7 @@ jobs:
           frontend/src/lib/__tests__/managedListings.test.ts
           frontend/src/lib/__tests__/listingTimeSafety.test.ts
           frontend/src/lib/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/privateTestMarkets.test.ts
       - name: Durable Object store on real workerd (Miniflare)
         run: npm run test:listings --prefix workers/market-edge
       - name: Saved scenario controls, bounds, legacy-history preservation and the historical demo contour

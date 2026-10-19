@@ -21,7 +21,11 @@ export interface ListingConfig {
   simulationProfile?: 'CALM_TREND' | 'IMPULSE_TREND' | 'PULLBACK_TREND' | 'COMPRESSION_BREAKOUT';
   wickModel?: 'NATURAL_V1';
   simulationProgram?: ListingProgram;
+  /** History20 private test (owner and allowlisted testers, SIMUSDT, never public); fixed once started. */
+  privateTest?: PrivateTestSettings;
 }
+
+export interface PrivateTestSettings { settlement: 'SIMUSDT'; funding: { base: string; quote: string } }
 
 /** What the form sends. The server fills schemaVersion and an automatic seed; the store assigns the profile. */
 export type ListingForm = Omit<ListingConfig, 'schemaVersion' | 'seed' | 'simulationProfile'> & { seed?: string };

@@ -6803,3 +6803,42 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - the reserved-ticker caveat for any existing non-window `VHX01`–`VHX99` listing (production store not checked);
   - consolidating with #552 (refusal text, compact form);
   - the legacy NRX cross-pair, transfer and purchase findings.
+
+### Claude — 2026-10-19 — #553 final integration: cold-registry cash-out fixed, History20 private Spot test wired, participant terminal (owner assignment)
+- **Task:** the owner assigned this session (#551/#552) the final #553 integration: port the needed parts of reference branch `538926e2` without duplicating code; first fix the confirmed cold-registry cash-out (a private History20 token must never become real USDT/BTC or reach Futures, whatever the cache or registry state); then the private Spot terminal (owner and allowlisted testers only), one-time audited SIMUSDT funding and the tests. NRX/AITH unchanged, no public trading, no merge/deploy.
+- **Commits on `claude/voltex-mobile-audit-7rpjni`:**
+  - `78f7ad6c`: P0, on top of the #553 session's `c7561624`. Reconciled with its reserved `VHX01`–`VHX99` rule as the one canonical guard; my duplicate helper was dropped.
+  - `6c9b951f`: wiring.
+  - The commit that adds this entry: frontend, docs, timeout.
+- **P0:**
+  - the exploit is preserved as `history20ColdRegistryCashout.pg` (empty registry, `VHX07/USDT` into a real USDT bid);
+  - RED on `fa6b2cb9` (4/5) and on `c7561624` (3/5: venue-priced USD valuation, venue price fallback, publish reservation); GREEN now;
+  - added: no venue price for an unknown private pair; never USD-valued; public routes 404; a reserved ticker never trades as an ordinary managed listing even if the registry says so; no ordinary publication under a reserved ticker.
+- **Wired (adapted, not merged):**
+  - `privateTest` config;
+  - DB-verified `privateTestAdmitted` before and inside every financial transaction;
+  - SIMUSDT-only synthetic sale;
+  - Worker private channel and `HISTORY20_PRIVATE_TEST` switch;
+  - `privateTestFunding` and its script;
+  - `/api/v1/private-test/markets` reads;
+  - card volume skip;
+  - frontend private store, chart, book and discovery, plus the Admin control.
+- **Material files:**
+  - `src/shared/history20PrivateSymbol.ts`, `testAssetConfig.ts`, `nrxSpot.ts`, `OrderService.ts`;
+  - `listings/{listingConfig,listingPublic,privateTest,privateTestFunding}.ts`, `api/routes/{privateTestMarkets,testMarkets,candles,orders}.ts`, `index.ts`;
+  - `WalletPortfolioService.ts`, `CardApplicationService.ts`;
+  - `workers/market-edge/src/listingsStore.ts`, `scripts/fund-history20-private.cjs`;
+  - frontend `lib/{testMarkets,testMarketStore,testMarketCandles,spotPublicMarket}.ts`, `pages/TradePage.tsx`, `components/TestMarketTerminal.tsx`, `pages/admin/{AdminListingsPage.tsx,adminListingsApi.ts}`;
+  - tests (4 new), `admin-listings.yml`, `docs/HISTORY20_PRIVATE_SPOT_MODE.md`.
+- **Preserved:**
+  - the #553 session's guard, tests and docs, with its tests updated only where the wired gate changes behaviour (stub removed, admission now real, card completeness, a USDT fixture moved off the reserved namespace);
+  - #548's fail-closed registry, now also given a non-reserved unknown pair;
+  - NRX/AITH code and configs; #552 untouched.
+- **Verified locally** (disposable PostgreSQL 16, fresh DBs):
+  - `--findRelatedTests` over every changed backend file: 101 suites passed, 1528 tests. One timeout, fixed with a 30 s limit and re-run;
+  - Worker `test:listings` 22/22 and `test.mjs`;
+  - backend and frontend `tsc`;
+  - frontend `jest frontend/src`: 284/288 suites passed in a run that started mid-edit; the 4 suites edited during it re-ran 82/82. Frontend `npm run build` passed.
+- **Regression found by CI and fixed:** `78f7ad6c` added a static import to `WalletPortfolioService.ts`. The `walletUxRefinement` harness evaluates that module and could not resolve it; CI `complete-suite` failed 1/4794. It is now a dynamic import like the file's others.
+- **Not run:** CI on the final commit (pending at time of writing); production.
+- **Unresolved:** activation approval (deploy, both switches, start, `--confirm` funding); data rights; checking the production store for non-window `VHX01`–`VHX99` drafts; the legacy NRX cross-pair findings (owner decision).

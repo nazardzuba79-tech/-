@@ -4,6 +4,7 @@ import { styles } from './adminStyles';
 import {
   adminListingsApi, ListingApiError, LISTING_TIME_ZONES, newPublishKey, utcOffsetLabel, utcToZonedWallTime, zonedWallTimeToUtc,
   type AdminListing, type ListingConfig, type ListingForm, type ListingPreview,
+  type PrivateTestSettings,
 } from './adminListingsApi';
 import { LISTING_REVISION_CONFLICT, listingProfileLabel, listingRequestError, listingTimeZoneLabel } from './adminListingsCopy';
 import { ListingScenarioLab } from './ListingScenarioLab';
@@ -27,7 +28,11 @@ interface FormState {
   simulationProfile: ListingConfig['simulationProfile'] | null;
   simulationProgram?: ListingProgram;
   wickModel?: 'NATURAL_V1';
+  privateTest?: PrivateTestSettings;
 }
+
+/** The reserved private ticker of a History20 window (`VHX-07-SOL` → `VHX07`); every guard knows it without the registry. */
+const privateTestSymbol = (scenarioId: string | undefined) => /^VHX-(\d{2})-/.exec(scenarioId ?? '')?.[1] ? `VHX${/^VHX-(\d{2})-/.exec(scenarioId ?? '')![1]}` : '';
 
 const emptyForm = (): FormState => ({
   name: '', symbol: '', logo: null, initialPrice: '', wallTime: '', timeZone: 'Europe/Kyiv', ownerAllocation: '0',
@@ -47,6 +52,7 @@ const fromConfig = (config: ListingConfig): FormState => ({
   ownerAllocation: config.ownerAllocation, seedMode: config.seedMode, seed: config.seed, tradable: config.tradable,
   simulationProfile: config.simulationProfile ?? null,
   simulationProgram: config.simulationProgram, wickModel: config.wickModel,
+  ...(config.privateTest ? { privateTest: config.privateTest } : {}),
 });
 
 // Compare editable values, including exact text drafts. An automatic seed is
@@ -54,7 +60,7 @@ const fromConfig = (config: ListingConfig): FormState => ({
 const formSignature = (form: FormState): string => JSON.stringify([
   form.name, form.symbol, form.logo, form.initialPrice, form.wallTime, form.timeZone,
   form.ownerAllocation, form.seedMode, form.seedMode === 'manual' ? form.seed : null, form.tradable,
-  form.simulationProgram, form.wickModel,
+  form.simulationProgram, form.wickModel, form.privateTest ?? null,
 ]);
 
 /** The instant in the listing's own zone and in UTC, always both. */
@@ -169,6 +175,8 @@ export function AdminListingsPage() {
   const historicalMode = form.simulationProgram?.kind === 'scenario-controls-v2' && (form.simulationProgram.afterGrowth === 'historical' || windowMode);
   // Only the #518 continuation is a no-ledger model; a History20 window is an ordinary scenario listing's price path.
   const noLedger = form.simulationProgram?.kind === 'scenario-controls-v2' && form.simulationProgram.afterGrowth === 'historical';
+  // A History20 window run as a private test: the one way it may start (SIMUSDT, participants only, never public).
+  const privateMode = windowMode && Boolean(form.privateTest);
   const windowDays = windowMode && form.simulationProgram?.kind === 'scenario-controls-v2' && form.simulationProgram.historicalGrowth ? historicalGrowthDays(form.simulationProgram.historicalGrowth) : 0;
   // The rotation's saved cursor: one step per OTHER listing ID that already uses a growth window.
   const rotationCursor = (listings ?? []).filter(listing => listing.id !== editing?.id
@@ -285,13 +293,14 @@ export function AdminListingsPage() {
       seedMode: form.seedMode, ...(form.seedMode === 'manual' ? { seed: form.seed.trim() } : {}), tradable: form.tradable,
       ...(form.simulationProgram ? { simulationProgram: form.simulationProgram } : {}),
       ...(form.wickModel ? { wickModel: form.wickModel } : {}),
+      ...(windowMode && form.privateTest ? { privateTest: { settlement: 'SIMUSDT' as const, funding: { base: form.privateTest.funding.base.trim() || '0', quote: form.privateTest.funding.quote.trim() || '0' } } } : {}),
     };
     setBusy(true); setFormError(null);
     try {
       const saved = editing.id ? await adminListingsApi.saveDraft(editing.id, payload, editing.revision) : await adminListingsApi.create(payload);
       setEditing({ id: saved.id, revision: saved.draftRevision, locked: editing.locked });
       changeForm(fromConfig(saved.draft));
-      setNotice(`Черновик ${saved.draft.symbol}/USDT сохранён (ревизия ${saved.draftRevision}). Код варианта: ${saved.draft.seed}`);
+      setNotice(`Черновик ${saved.draft.symbol}/${saved.draft.privateTest ? 'SIMUSDT' : 'USDT'} сохранён (ревизия ${saved.draftRevision}). Код варианта: ${saved.draft.seed}`);
       await load();
     } catch (error) {
       setFormError(errorText(error));
@@ -389,7 +398,7 @@ export function AdminListingsPage() {
               <div className="listing-row" role="row" key={listing.id} data-listing-row={listing.draft.symbol}>
                 <span className="listing-ident">
                   {listing.draft.logo ? <img src={listing.draft.logo} alt="" width={28} height={28} /> : <span className="listing-letter">{listing.draft.symbol[0]}</span>}
-                  <span><b>{listing.draft.symbol}/USDT</b><small>{listing.draft.name}</small>
+                  <span><b>{listing.draft.symbol}/{listing.draft.privateTest ? 'SIMUSDT' : 'USDT'}</b><small>{listing.draft.name}</small>
                     {(() => {
                       const program = listing.draft.simulationProgram?.kind === 'scenario-controls-v2' ? listing.draft.simulationProgram : null;
                       if (program?.growth === 'historical-window' && program.historicalGrowth)
@@ -402,7 +411,7 @@ export function AdminListingsPage() {
                 <span className={`listing-status listing-status-${status.tone}`} data-listing-status={status.tone}>{status.text}</span>
                 <span className="listing-actions">
                   <button type="button" onClick={() => openEdit(listing)} data-edit-listing={listing.draft.symbol}>Изменить</button>
-                  {listing.activeVersion !== null && <Link to={`/trade?pair=${listing.draft.symbol}/USDT`} data-open-market={listing.draft.symbol}>Открыть рынок</Link>}
+                  {listing.activeVersion !== null && <Link to={`/trade?pair=${listing.draft.symbol}/${listing.active?.privateTest ? 'SIMUSDT' : 'USDT'}`} data-open-market={listing.draft.symbol}>Открыть рынок</Link>}
                 </span>
               </div>
             );
@@ -412,7 +421,7 @@ export function AdminListingsPage() {
 
       {editing && (
         <form className={`listing-form${compact ? ' listing-form-compact' : ''}`} onSubmit={save} data-listing-form noValidate>
-          <h2>{editing.id ? `Листинг ${form.symbol}/USDT` : 'Новый листинг'}</h2>
+          <h2>{editing.id ? `Листинг ${form.symbol}/${privateMode ? 'SIMUSDT' : 'USDT'}` : 'Новый листинг'}</h2>
           {editing.locked && <p className="listing-hint">Опубликован: тикер, код варианта, начальная цена и настройки движения больше не меняются — это защищает историю цен. Время можно перенести только до открытия.</p>}
           {compact && <ListingSectionNav sections={[
             { id: 'listing-section-main', label: 'Параметры' },
@@ -431,8 +440,8 @@ export function AdminListingsPage() {
               const anchor = initialPriceAnchor.current;
               changeForm({ ...form, initialPrice, ...(anchor ? { simulationProgram: rebaseListingMovement(anchor.program, anchor.initial, initialPrice) } : {}) });
             }} data-field="initialPrice" required /></label>
-            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={noLedger ? '0' : form.ownerAllocation} inputMode="decimal" disabled={noLedger} onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
-              <small>{noLedger ? 'Историческая симуляция не выдаёт актив: всегда 0.' : 'Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.'}</small></label>
+            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={noLedger || privateMode ? '0' : form.ownerAllocation} inputMode="decimal" disabled={noLedger || privateMode} onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
+              <small>{noLedger ? 'Историческая симуляция не выдаёт актив: всегда 0.' : privateMode ? 'Приватный тест пополняется только разовым тестовым финансированием: всегда 0.' : 'Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.'}</small></label>
             <label>Дата и время листинга<input type="datetime-local" value={form.wallTime} onChange={(e) => changeForm({ ...form, wallTime: e.target.value })} data-field="wallTime" required /></label>
             <label>Часовой пояс<select value={form.timeZone} onChange={(e) => changeForm({ ...form, timeZone: e.target.value })} data-field="timeZone">
               {LISTING_TIME_ZONES.map((zone) => <option key={zone} value={zone}>{listingTimeZoneLabel(zone)}</option>)}
@@ -473,6 +482,23 @@ export function AdminListingsPage() {
           {form.simulationProgram?.kind === 'scenario-controls-v2' && (windowMode || windowPending) && <div id="listing-section-movement" className="listing-section-anchor">
             <ListingHistoricalGrowthPanel program={windowMode ? form.simulationProgram.historicalGrowth : undefined} initialPrice={form.initialPrice} listingAt={listingAtUtc}
               rotationCursor={rotationCursor} locked={editing.locked} draftSymbol={form.symbol} autoChoose={autoChoose} onChoose={chooseWindow} onReturn={returnToStages} />
+            {windowMode && <fieldset className="listing-private-test" disabled={Boolean(current?.active)} data-private-test>
+              <legend>Приватный тест (SIMUSDT)</legend>
+              <label><input type="checkbox" checked={privateMode} data-private-test-toggle onChange={(e) => {
+                const program = form.simulationProgram?.kind === 'scenario-controls-v2' ? form.simulationProgram : undefined;
+                const symbol = privateTestSymbol(program?.historicalGrowth?.scenarioId);
+                changeForm(e.target.checked
+                  ? { ...form, ownerAllocation: '0', ...(/^VHX\d{2}$/.test(form.symbol) || !symbol ? {} : { symbol }), privateTest: { settlement: 'SIMUSDT', funding: { base: '100', quote: '1000' } } }
+                  : { ...form, privateTest: undefined });
+              }} /> Только владелец и тестеры из списка, расчёты в SIMUSDT</label>
+              {privateMode && form.privateTest && <>
+                <label>Разовое финансирование, {form.symbol || 'актив'}<input value={form.privateTest.funding.base} inputMode="decimal" data-field="privateFundingBase"
+                  onChange={(e) => changeForm({ ...form, privateTest: { ...form.privateTest!, funding: { ...form.privateTest!.funding, base: e.target.value.replace(',', '.') } } })} /></label>
+                <label>Разовое финансирование, SIMUSDT<input value={form.privateTest.funding.quote} inputMode="decimal" data-field="privateFundingQuote"
+                  onChange={(e) => changeForm({ ...form, privateTest: { ...form.privateTest!, funding: { ...form.privateTest!.funding, quote: e.target.value.replace(',', '.') } } })} /></label>
+                <small data-private-test-hint>Тикер VHX01–VHX99. Рынок не виден публично; SIMUSDT и актив нельзя вывести, перевести или обменять. Зачисление — отдельный аудируемый шаг (один раз на участника), запуск требует HISTORY20_PRIVATE_TEST=enabled на сервере. Режим и суммы не меняются после запуска.</small>
+              </>}
+            </fieldset>}
           </div>}
           {form.simulationProgram?.kind === 'scenario-controls-v2' && !windowMode && !windowPending && <div id="listing-section-movement" className="listing-section-anchor"><ListingMovementEditor key={editing.id ?? 'new'} value={form.simulationProgram} initialPrice={form.initialPrice} listingAt={listingAtUtc} locked={editing.locked} savedModels={savedModels} onChange={simulationProgram => changeForm({ ...form, simulationProgram,
             ...(simulationProgram.afterGrowth === 'historical' ? { ownerAllocation: '0' } : {}) })} /></div>}
@@ -483,12 +509,13 @@ export function AdminListingsPage() {
           <div className="listing-actions-dock">
             {formError && <p role="alert" style={styles.errorBox} data-listing-error>{formError}</p>}
             {editing.id && !draftIsSaved && !logoReading && <p className="listing-hint" role="status" data-unsaved-draft>Настройки изменены — обновите предпросмотр. Сначала сохраните изменения черновика, чтобы открыть предпросмотр или опубликовать их.</p>}
-            {historicalMode && <p className="listing-hint" role="status" data-historical-publish-gate>Историческая модель: сохранение черновика и предпросмотр доступны, публичный запуск заблокирован до подтверждения прав и полной изоляции симуляционных счетов.{windowMode ? ` ${HISTORICAL_GROWTH_LABEL}.` : ''}</p>}
+            {privateMode && <p className="listing-hint" role="status" data-private-test-gate>Приватный тест History20: только владелец и тестеры из списка, расчёты в SIMUSDT без вывода. Публичный запуск по-прежнему заблокирован до подтверждения прав на данные.</p>}
+            {historicalMode && !privateMode && <p className="listing-hint" role="status" data-historical-publish-gate>Историческая модель: сохранение черновика и предпросмотр доступны, публичный запуск заблокирован до подтверждения прав и полной изоляции симуляционных счетов.{windowMode ? ` ${HISTORICAL_GROWTH_LABEL}.` : ''}</p>}
             {windowPending && !windowMode && <p className="listing-hint" role="status" data-window-pending>Выберите окно в библиотеке: до этого черновик сохраняется с этапами.</p>}
             <div className="listing-buttons">
               <button type="submit" className="listing-primary" disabled={busy || logoReading} data-save-draft>Сохранить черновик</button>
               {editing.id && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
-              {current && <button type="button" disabled={busy || !draftIsSaved || historicalMode} onClick={openPublish} data-publish>Опубликовать</button>}
+              {current && <button type="button" disabled={busy || !draftIsSaved || (historicalMode && !privateMode)} onClick={openPublish} data-publish>{privateMode ? 'Запустить приватный тест' : 'Опубликовать'}</button>}
               {editing.id && windowMode && <button type="button" disabled={busy} onClick={cloneWindow} data-clone-window>Клонировать в новый листинг</button>}
               <button type="button" onClick={() => { cancelLogoRead(); setEditing(null); setPublishing(null); invalidatePreview(); }}>Закрыть</button>
             </div>
@@ -559,10 +586,12 @@ export function AdminListingsPage() {
       {publishing && (
         <div className="listing-dialog-backdrop" role="presentation">
           <div className="listing-dialog" role="dialog" aria-modal="true" aria-label="Публикация листинга" data-publish-dialog ref={publishDialog} tabIndex={-1}>
-            <h2>Опубликовать {publishing.listing.draft.symbol}/USDT?</h2>
-            <p>{publishing.listing.draft.name} · начальная цена {publishing.listing.draft.initialPrice} USDT</p>
+            <h2>{publishing.listing.draft.privateTest ? 'Запустить приватный тест' : 'Опубликовать'} {publishing.listing.draft.symbol}/{publishing.listing.draft.privateTest ? 'SIMUSDT' : 'USDT'}?</h2>
+            <p>{publishing.listing.draft.name} · начальная цена {publishing.listing.draft.initialPrice} {publishing.listing.draft.privateTest ? 'SIMUSDT' : 'USDT'}</p>
             <p>Листинг: {listingMoment(publishing.listing.draft.listingAt, publishing.listing.draft.displayTimeZone)}</p>
-            <p className="listing-hint">После публикации рынок виден всем. Тикер, код варианта, начальная цена и настройки движения фиксируются. Баланс владельца не зачисляется.</p>
+            <p className="listing-hint">{publishing.listing.draft.privateTest
+              ? 'Рынок виден только владельцу и тестерам из списка, никогда публично. Тикер, код варианта, цена, окно и суммы финансирования фиксируются. Ничего не зачисляется: финансирование — отдельный аудируемый шаг.'
+              : 'После публикации рынок виден всем. Тикер, код варианта, начальная цена и настройки движения фиксируются. Баланс владельца не зачисляется.'}</p>
             <div className="listing-buttons">
               <button type="button" className="listing-primary" disabled={busy || !draftIsSaved} onClick={() => void confirmPublish()} data-confirm-publish>Опубликовать</button>
               <button type="button" disabled={busy} onClick={() => setPublishing(null)}>Отмена</button>

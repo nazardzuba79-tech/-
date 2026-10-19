@@ -395,7 +395,8 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
     delete process.env.HISTORY20_PRIVATE_TEST;
     expect((await request(app).get('/private-test/markets').set('Authorization', token(owner))).status).toBe(404);
     expect(venue.getTicker).not.toHaveBeenCalled();
-  });
+  // Many HTTP reads with model candles: ~4 s alone, at Jest's default limit under a full run.
+  }, 30_000);
 
   test('legacy unchanged: a USDT managed listing, a public History20 window, VTA, NRX and AITH keep their gate and guard results', async () => {
     const orders = new OrderService(db, new MatchingEngine(), venue), legacyPair = `${legacy.symbol}/USDT`;

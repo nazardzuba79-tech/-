@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { KrakenMarketDataService } from './KrakenMarketDataService';
 import { CfdMarketDataService } from './CfdMarketDataService';
-import { isSimulationSettled } from './testMarkets/testAssetConfig';
 import {
   PerformancePeriod,
   PerformancePoint,
@@ -173,6 +172,7 @@ export class WalletPortfolioService {
     // Managed listings (Admin → Listings) the same way: their own canonical
     // price, never a colliding venue symbol. Only held assets are looked up.
     const { managedListingAssets } = await import('./listings/managedSnapshot');
+    const { isSimulationSettled } = await import('./testMarkets/testAssetConfig');
     const { isHistoricalDemoAsset } = await import('./listings/simulationContour');
     // A historical simulation (demo contour) is never valued: no price at all, not its model's.
     for (const asset of managedListingAssets()) if (wanted.has(asset.symbol) && isHistoricalDemoAsset(asset)) byBase.delete(asset.symbol);
