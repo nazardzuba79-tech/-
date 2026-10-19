@@ -112,6 +112,9 @@ Pairs are shown as `…/SIMUSDT`.
 
 ## Not done: remaining blockers
 
+The dry-run merge, deploy, activation, financial-check and rollback playbook is `docs/HISTORY20_PRIVATE_SPOT_LAUNCH_PLAN.md`.
+
+
 1. **Activation.** Each step needs the owner's separate approval: deploy; `HISTORY20_PRIVATE_TEST=enabled` on Render **and** the Worker; starting each private test; one `--confirm` funding per account.
 2. **Rights.** `HISTORICAL_RIGHTS_UNVERIFIED` still blocks any public or commercial use of History20 data. Private validation should use synthetic or licensed data.
 3. **Production check.** The production store's drafts were not checked for a non-window `VHX01`–`VHX99` name: the guard would refuse such a listing everywhere. The public catalogue held only AITH/USDT on 2026-10-19.

@@ -6888,3 +6888,55 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - with it, 74/74 pass.
 - **Preserved:** every CFD, chart-workspace and Codex file.
 - **Unresolved:** none for this check.
+
+### Claude — 2026-10-19 — History20 night shift: final read-only security review of #553 and the launch playbook (owner night-shift comment on #553)
+- **Task:** a final code and security review of Draft #553, then a dry-run integration, activation and rollback playbook. Fix only a reproducible defect. No merge, deploy, switch change, funding or production write.
+- **Reviewed head:** `c28689dc` (base `main` `f81df788`). 31 workflows / 36 check runs: 35 success, `deploy` skipped. Heads were re-fetched before the review; nothing had changed.
+- **Result:** no reproducible defect, so no code changed. This commit adds documentation only.
+- **Verified, with the evidence used:**
+  - **Every order and balance path.** The only engine submissions are `OrderService` (the gate) and `DemoTradingService` (`isTestAssetPairOrSymbol`, which includes `isSimulationSettled`).
+    - Every `DemoBalance` write refuses the reserved assets or is USDT/VTA only.
+    - Funding credits Spot `Balance`: once, under an advisory lock, with an AuditLog receipt, re-checking admission inside the transaction, never USDT.
+  - **Admission:**
+    - the owner needs `PRIVATE_TRADING_ENABLED=true`, a matching `PRIVATE_TRADING_OWNER_ID` and an unblocked `ADMIN`;
+    - a tester needs a valid UUID allowlist (an invalid list disables it all) and must be unblocked;
+    - any other ADMIN is refused;
+    - `HISTORY20_PRIVATE_TEST` must be exactly `enabled`.
+  - **Public surfaces:**
+    - Render's test-market, ticker, book and trades routes answer 404 for a private pair before any registry lookup;
+    - `/orderbook/:pair` answers 404;
+    - `/market/tradable` lists venue symbols only;
+    - no engine event is broadcast over a socket; the only WebSocket server is the venue collector;
+    - the Worker serves private tests only behind `authorizeListingsAdmin` (`/internal/listings/published`).
+  - **No dependency or schema change:** the Worker `package.json` diff only adds a test file to a script. No Prisma change, and no file under `src/futures`, `src/private-trading`, Stocks or Codex paths.
+  - **NRX and AITH:**
+    - in `nrxSpot.ts` the NRX branch and the AITH refusal are untouched;
+    - CI on `c28689dc` passed NRX investor market review (28 suites / 386 tests) and Admin Listings (`aithReplacement`, `legacySimulationSaleEquivalence`).
+  - **Production public catalogue:** a read-only GET of `market.voltextech.net/market/listings` at about 19:45 UTC returned `revision 4`, one listing, `AITH/USDT`. The repository's configs and seeds contain no `VHX\d{2}` or `SIMUSDT` symbol.
+- **Observations, not defects (not changed):**
+  - Render parses published listings by shape only (`publishedListingSchema` → `listingConfigSchema`). The semantic private-test rules are enforced when the Worker publishes:
+    - reserved ticker;
+    - funding ≤ 1e6;
+    - `ownerAllocation` 0.
+    A forged store entry could therefore exceed the funding bound or carry an owner allocation. That yields only non-withdrawable units: VHX and SIMUSDT stay refused syntactically on every exit. Possible hardening: re-check the bound in `fundPrivateTestAccount`, and refuse `privateTest` in `ownerAllocation`.
+  - The Native Futures TEST collateral filter (`src/private-trading/native/service.ts`, `testAssetForSymbol`) does not recognise SIMUSDT or a VHX asset on a cold registry. It is not reachable: native holdings are `DemoBalance` rows, and no `DemoBalance` write admits those assets.
+- **BLOCKED (no production access):**
+  - drafts in the production Worker store;
+  - production database rows for VHX/SIMUSDT;
+  - venue symbol lists for `VHX01`–`VHX99`.
+  The read-only queries are in the playbook.
+- **Material files:**
+  - `docs/HISTORY20_PRIVATE_SPOT_LAUNCH_PLAN.md` (new): switches, data-rights restrictions, merge order, deploy with switches off, production checks, activation, financial checks, rollback, monitoring;
+  - a pointer in `docs/HISTORY20_PRIVATE_SPOT_MODE.md`;
+  - this entry.
+- **Preserved:** all #553 code and tests unchanged; #555 untouched; Stocks and Codex files untouched.
+- **Not run:**
+  - local test re-runs (the exact-head CI evidence was used);
+  - production checks;
+  - CI on the commit that adds this entry, at the time of writing.
+- **Unresolved:**
+  - owner approvals for each launch step;
+  - data rights;
+  - the production checks above;
+  - a post-test cleanup procedure for inert VHX/SIMUSDT balances (not implemented; the admin adjustment refuses them by design);
+  - the legacy NRX findings (owner decision).
