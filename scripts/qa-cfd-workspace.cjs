@@ -395,6 +395,8 @@ async function main() {
       await waitCandles(page);
       await openFeatureOn(page, 'goto');
       const twoDays = new Date(Date.now() - 2 * 86400000); twoDays.setUTCMinutes(0, 0, 0);
+      // CFD bars stop at the weekend: step back to the last weekday so the target is inside the loaded bars.
+      while ([0, 6].includes(twoDays.getUTCDay())) twoDays.setUTCDate(twoDays.getUTCDate() - 1);
       await page.locator('[data-cw-goto-input]').fill(twoDays.toISOString().slice(0, 16));
       await page.locator('[data-cw-goto-apply]').click(); await page.waitForTimeout(700);
       const gotoClosed = !(await page.locator('[data-cw-goto]').count());

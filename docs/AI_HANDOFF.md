@@ -6493,3 +6493,13 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - Templates live in this browser only; there is no server sync.
   - The Coordinates tab edits prices only; a point's time is still changed by dragging.
 - **Not done:** merge, deploy, PR, production migration, real data. Codex's Stocks files were not touched.
+
+### Claude — 2026-10-19 — CFD QA: `cfd.1440.goto` target stepped off the weekend (QA script only; owner and CTO on PR #553)
+- **Task:** `scripts/qa-cfd-workspace.cjs` jumped to "now − 2 days". On Monday and Tuesday that is a weekend, when CFD has no bars, so `cfd.1440.goto` failed with `{"gotoClosed":false,"futureWarn":"Дата в будущем"}` on every PR that ran the CFD workflow. Fix it separately, without changing the CFD terminal.
+- **Change:** that target now steps back to the last weekday. The future-date refusal check, the dialog and the terminal are unchanged.
+- **Material file:** `scripts/qa-cfd-workspace.cjs` (+2 lines).
+- **Verified locally** on 2026-10-19 (Monday) on `main` `f81df788`, with Playwright 1.56.1 and the preinstalled Chromium:
+  - without the change, `cfd.1440.goto` fails with the CI detail;
+  - with it, 74/74 pass.
+- **Preserved:** every CFD, chart-workspace and Codex file.
+- **Unresolved:** none for this check.
