@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { OrderService, PriceSource } from '../../services/OrderService';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
+import { isSimulationSettled } from '../../services/testMarkets/testAssetConfig';
 
 const CONDITIONAL_TYPES = ['STOP_LIMIT', 'STOP_MARKET', 'TAKE_PROFIT_LIMIT', 'TAKE_PROFIT_MARKET'];
 const LIMIT_FAMILY = ['LIMIT', 'STOP_LIMIT', 'TAKE_PROFIT_LIMIT'];
@@ -145,6 +146,8 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
   }));
 
   router.get('/orderbook/:pair', asyncRoute(async (req, res) => {
+    // A History20 private test book is never public market data.
+    if (isSimulationSettled(req.params.pair)) return res.status(404).json({ error: 'unknown_pair' });
     const snapshot = engine.getBook(req.params.pair.toUpperCase()).snapshot();
     res.json({
       pair: snapshot.pair,

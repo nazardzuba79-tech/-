@@ -1,7 +1,7 @@
 import type { PriceSource } from '../OrderService';
 import { NEURIX } from './neurix';
 import { simulationFor } from './testMarketSimulation';
-import { isTestAssetPairOrSymbol, testAssetForPair, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testAssetConfig';
+import { isSimulationSettled, isTestAssetPairOrSymbol, testAssetForPair, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testAssetConfig';
 import { managedListingAssets } from '../listings/managedSnapshot';
 import { managedListingRegistry, type ManagedListingRegistry } from '../listings/registry';
 import { HISTORICAL_DEMO_MESSAGE, isHistoricalDemoAsset } from '../listings/simulationContour';
@@ -62,7 +62,8 @@ export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSou
     }
     const managed = managedListingForPair(pair);
     if (isAith(pair) && !managed) return null;
-    if (!managed) return source.getTicker(pair);
+    // A private-test pair the registry does not know (cold, stale) has no price: never the venue's.
+    if (!managed) return isSimulationSettled(pair) ? null : source.getTicker(pair);
     // A historical model price never triggers a real conditional order.
     // A listing closed to new public orders (tradable:false) keeps its model
     // price for already-resting conditional orders: bot training relies on it.

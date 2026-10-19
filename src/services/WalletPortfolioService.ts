@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { KrakenMarketDataService } from './KrakenMarketDataService';
 import { CfdMarketDataService } from './CfdMarketDataService';
+import { isSimulationSettled } from './testMarkets/testAssetConfig';
 import {
   PerformancePeriod,
   PerformancePoint,
@@ -196,7 +197,9 @@ export class WalletPortfolioService {
     }
 
     for (const asset of wanted) {
-      if (USD_PEGGED.has(asset)) out.set(asset, 1);
+      // SIMUSDT-settled value is never USD, whatever the registry or a venue says.
+      if (isSimulationSettled(asset)) out.set(asset, null);
+      else if (USD_PEGGED.has(asset)) out.set(asset, 1);
       else if (asset === 'EUR') out.set(asset, eurUsd);
       else out.set(asset, byBase.get(asset) ?? null);
     }

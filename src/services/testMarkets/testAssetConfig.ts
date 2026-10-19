@@ -10,7 +10,7 @@
 
 import { NEURIX } from './neurix';
 import { managedListingAssets } from '../listings/managedSnapshot';
-import { HISTORY20_PRIVATE_SYMBOL } from '../../shared/history20PrivateSymbol';
+import { HISTORY20_PRIVATE_SYMBOL, SIMULATION_QUOTE } from '../../shared/history20PrivateSymbol';
 import type { SimulationProfile } from './simulationRealism';
 import type { CyclicImpulseConfig } from './simulationCycles';
 import type { NaturalWickConfig } from './simulationNaturalWicks';
@@ -157,7 +157,7 @@ export function testAssetForSymbol(symbol: string | null | undefined): TestAsset
  * deposited, adjusted, transferred, spent, valued in USD or traded on a pair
  * the server does not know.
  */
-export const SIMULATION_QUOTE = 'SIMUSDT' as const;
+export { SIMULATION_QUOTE };
 
 /** The parts of an asset or pair: `/`, `-` or `_` separated, or compact (`XSIMUSDT`, `XUSDT`). */
 function pairParts(value: string): string[] {

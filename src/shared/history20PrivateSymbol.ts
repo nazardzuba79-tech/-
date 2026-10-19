@@ -6,4 +6,7 @@
  */
 export const HISTORY20_PRIVATE_SYMBOL = /^VHX\d{2}$/;
 
+/** The restricted settlement unit every private-test market is quoted in. */
+export const SIMULATION_QUOTE = 'SIMUSDT' as const;
+
 export const isHistory20PrivateSymbol = (symbol: string): boolean => HISTORY20_PRIVATE_SYMBOL.test(symbol.trim().toUpperCase());

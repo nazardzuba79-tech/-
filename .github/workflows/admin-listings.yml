@@ -87,6 +87,7 @@ jobs:
           src/services/listings/__tests__/modeledPriceDemoTrading.pg.test.ts
           src/services/listings/__tests__/legacySimulationSaleEquivalence.pg.test.ts
           src/services/listings/__tests__/history20SimusdtSettlement.pg.test.ts
+          src/services/listings/__tests__/history20ColdRegistryCashout.pg.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts

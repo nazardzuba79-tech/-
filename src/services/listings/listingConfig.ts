@@ -14,7 +14,7 @@
  */
 import { z } from 'zod';
 import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
-import { isHistory20PrivateSymbol } from '../../shared/history20PrivateSymbol';
+import { isHistory20PrivateSymbol, SIMULATION_QUOTE } from '../../shared/history20PrivateSymbol';
 import { SIMULATION_PROFILES, profileForOrdinal } from '../testMarkets/simulationRealism';
 import { LISTING_SCENARIOS, normalizeScenarioDecimal, validateScenarioControls } from '../../shared/listingScenarioControls';
 import { historicalSerializedBytes, freezeHistoricalMoveProgram } from '../../shared/listingHistoricalReplay';
@@ -22,11 +22,15 @@ import { HISTORICAL_GROWTH_LICENSES, HISTORICAL_GROWTH_PROVIDERS, validateHistor
 import { HISTORICAL_DEMO_NO_LEDGER, isHistoricalDemoConfig } from './simulationContour';
 
 export const LISTING_QUOTE = 'USDT' as const;
+/** Upper bound of one account's one-time private test funding, per asset. */
+export const MAX_PRIVATE_TEST_FUNDING = 1_000_000;
 export const LISTING_SCHEMA_VERSION = 1 as const;
 
 /** Tickers a managed listing may never take: settlement/fiat, the built-in test assets and major venue coins. */
 export const RESERVED_LISTING_SYMBOLS: ReadonlySet<string> = new Set([
   'USDT', 'USDC', 'USD', 'EUR', 'DAI', 'BUSD', 'TUSD', 'FDUSD',
+  // The restricted settlement unit of History20 private tests.
+  'SIMUSDT',
   'VTA', 'NRX',
   'BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'TON', 'TRX', 'ADA', 'DOGE', 'AVAX', 'DOT', 'LINK', 'MATIC', 'POL', 'LTC', 'BCH',
   'XAU', 'XAG',
@@ -139,6 +143,22 @@ export const listingConfigSchema = z.object({
   simulationProfile: z.enum(SIMULATION_PROFILES).optional(),
   /** Persisted range model assigned on new INSERT; absent means the original shadows. */
   wickModel: z.literal('NATURAL_V1').optional(),
+  /**
+   * History20 private test (owner decision 2026-10-19): only a History20
+   * growth window with a reserved ticker (VHX01…VHX99) may carry it. It is
+   * quoted and settled in the restricted SIMUSDT unit, traded only by the
+   * verified owner and the allowlisted testers (privateTest.isPrivateTestParticipant),
+   * kept out of every public catalogue and route, and funded only by the
+   * explicit one-time `funding` per account (privateTestFunding.ts). It cannot
+   * be added, removed or changed once the private test has started.
+   */
+  privateTest: z.object({
+    settlement: z.literal(SIMULATION_QUOTE),
+    funding: z.object({
+      base: z.string().regex(QUANTITY, 'funding: a plain quantity with at most 8 decimals'),
+      quote: z.string().regex(QUANTITY, 'funding: a plain quantity with at most 8 decimals'),
+    }).strict(),
+  }).strict().optional(),
   /** Optional immutable bounded lifecycle; only non-executable demo listings. */
   simulationProgram: z.union([z.object({
     kind: z.literal('capped-growth-range-v1'),
@@ -155,8 +175,10 @@ export class ListingValidationError extends Error {
   constructor(readonly code: string, message: string) { super(message); }
 }
 
-export const listingPair = (symbol: string) => `${symbol.toUpperCase()}/${LISTING_QUOTE}`;
-export const listingSlug = (symbol: string) => `${symbol.toUpperCase()}-${LISTING_QUOTE}`;
+export const listingPair = (symbol: string, quote: string = LISTING_QUOTE) => `${symbol.toUpperCase()}/${quote}`;
+export const listingSlug = (symbol: string, quote: string = LISTING_QUOTE) => `${symbol.toUpperCase()}-${quote}`;
+/** The quote a configuration trades in: SIMUSDT for a History20 private test, USDT otherwise. */
+export const listingQuote = (config: Pick<ListingConfig, 'privateTest'>) => config.privateTest ? SIMULATION_QUOTE : LISTING_QUOTE;
 
 /** Byte size of a base64 data URL payload. */
 export function logoBytes(logo: string | null): number {
@@ -190,6 +212,19 @@ export function parseListingConfig(input: unknown): ListingConfig {
     catch (error) { throw new ListingValidationError('INVALID_SCENARIO', error instanceof Error ? error.message : 'Проверьте настройки движения цены'); }
   }
   if (config.simulationProgram && config.tradable) throw new ListingValidationError('DEMO_ONLY', 'Bounded scenarios require a non-tradable demo listing');
+  if (config.privateTest) {
+    if (!isHistoricalGrowthWindowConfig(config))
+      throw new ListingValidationError('PRIVATE_TEST_WINDOW_ONLY', 'Приватный тест доступен только для листинга с историческим окном роста (History20)');
+    if (!isHistory20PrivateSymbol(config.symbol)) throw new ListingValidationError('PRIVATE_TEST_SYMBOL', PRIVATE_TEST_SYMBOL_MESSAGE);
+    // One funding path only: the explicit one-time test funding, never the owner allocation.
+    if (Number(config.ownerAllocation) !== 0)
+      throw new ListingValidationError('PRIVATE_TEST_FUNDING_ONLY', 'Приватный тест пополняется только разовым тестовым финансированием: распределение владельцу должно быть 0');
+    const { base, quote } = config.privateTest.funding;
+    if (Number(base) > MAX_PRIVATE_TEST_FUNDING || Number(quote) > MAX_PRIVATE_TEST_FUNDING)
+      throw new ListingValidationError('PRIVATE_TEST_FUNDING_BOUND', `Тестовое финансирование: не более ${MAX_PRIVATE_TEST_FUNDING} на актив`);
+    if (Number(base) === 0 && Number(quote) === 0)
+      throw new ListingValidationError('PRIVATE_TEST_FUNDING_BOUND', 'Тестовое финансирование: укажите количество актива или SIMUSDT');
+  }
   // The historical demo contour has no real inventory to allocate (simulationContour).
   if (isHistoricalDemoConfig(config) && Number(config.ownerAllocation) !== 0)
     throw new ListingValidationError(HISTORICAL_DEMO_NO_LEDGER, 'Историческая симуляция не выдаёт актив: распределение владельцу должно быть 0');
@@ -265,6 +300,10 @@ export function checkPrivateTestable(next: ListingConfig, active: ListingConfig 
   }
   // A reserved ticker stays restricted by every guard even when the registry does not know the listing.
   if (!isHistory20PrivateSymbol(next.symbol)) throw new ListingValidationError('PRIVATE_TEST_SYMBOL', PRIVATE_TEST_SYMBOL_MESSAGE);
+  // A replayed historical move after the window has no private exception.
+  if (next.simulationProgram?.kind === 'scenario-controls-v2' && next.simulationProgram.afterGrowth === 'historical')
+    throw new ListingValidationError('HISTORICAL_RIGHTS_UNVERIFIED',
+      'Историческое движение доступно для сохранённого черновика и приватного предпросмотра. Публикация запрещена до проверки прав на данные и изоляции торговли.');
   checkHistoryLocks(next, active, now, minLeadMs);
 }
 
@@ -274,6 +313,9 @@ export function checkPrivateTestable(next: ListingConfig, active: ListingConfig 
  * shapes that history can change.
  */
 export function checkPublishable(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs = MIN_LEAD_MS): void {
+  // The one exception to the rights gate below: a History20 window run as a
+  // private test (SIMUSDT, owner and allowlisted testers, never public).
+  if (next.privateTest) return checkPrivateTestable(next, active, now, minLeadMs);
   // Administrative draft+private preview are functional, but a user-provided
   // historical dataset has no independently verified redistribution rights.
   // Never publish it to a market whose synthetic reference can affect Spot.
@@ -283,11 +325,16 @@ export function checkPublishable(next: ListingConfig, active: ListingConfig | nu
       && (next.simulationProgram.afterGrowth === 'historical' || next.simulationProgram.growth === 'historical-window'))
     throw new ListingValidationError('HISTORICAL_RIGHTS_UNVERIFIED',
       'Историческое движение доступно для сохранённого черновика и приватного предпросмотра. Публикация запрещена до проверки прав на данные и изоляции торговли.');
+  // A reserved History20 private ticker is never published as an ordinary listing.
+  if (isHistory20PrivateSymbol(next.symbol)) throw new ListingValidationError('RESERVED_TICKER', `Ticker ${next.symbol} is reserved for History20 private tests`);
   checkHistoryLocks(next, active, now, minLeadMs);
 }
 
 /** What once-live history forbids, for a public publication and a private test alike. */
 function checkHistoryLocks(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs: number): void {
+  // Private stays private, public stays public, and the test funding is fixed once live.
+  if (active && JSON.stringify(next.privateTest ?? null) !== JSON.stringify(active.privateTest ?? null))
+    throw new ListingValidationError('HISTORY_LOCKED', 'Режим приватного теста опубликованного листинга изменить нельзя');
   const at = Date.parse(next.listingAt);
   if (!active) {
     if (at < now + minLeadMs) throw new ListingValidationError('LISTING_TIME_PAST', 'The listing time must be at least one minute in the future');
@@ -314,10 +361,11 @@ export function listingSimulationConfig(config: ListingConfig): TestAssetConfig 
   return {
     symbol: config.symbol,
     name: config.name,
-    quote: LISTING_QUOTE,
-    pair: listingPair(config.symbol),
+    quote: listingQuote(config),
+    pair: listingPair(config.symbol, listingQuote(config)),
     isTestAsset: true,
     isTradable: config.tradable,
+    ...(config.privateTest ? { privateTest: true as const } : {}),
     listingArmed: true,
     listingAt: Date.parse(config.listingAt),
     initialPrice: Number(config.initialPrice),
