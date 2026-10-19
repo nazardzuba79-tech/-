@@ -144,6 +144,15 @@ jobs:
         run: npm run build
       - name: Load actual ESM Stocks authority and default-off routes on Node 22.23.3
         run: node --test services/stocks-global/testing/node22-route-load.test.cjs
+      - name: Stocks HTTP reuse and bounded CPU diagnostics (sequential loopback only)
+        run: >-
+          node --test
+          services/stocks-global/http-reuse.test.mjs
+          scripts/qa/stocks-rc-50plus2/cpu-http-profile.test.cjs
+          scripts/qa/stocks-rc-50plus2/profile-summary.test.cjs
+          scripts/qa/stocks-rc-50plus2/profile-session.test.cjs
+      - name: Reused connection lifetime cannot retain trading authorization
+        run: node --test services/stocks-global/two-trader-auth-lifetime.test.mjs
 
       - name: Offline migration manifest contract (no SQL or image proof)
         run: node --test scripts/qa/stocks-migration-review.test.cjs

@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url');
 const {database,loopback,sha}=require('./policy.cjs');
-let f,market,cleanup=[],configuration,diagnostics;
+let f,market,cleanup=[],configuration,diagnostics,cpuHttpProfile;
 const send=(id,value,error)=>process.send?.({id,value,error});
 async function initialize(c){
  configuration=c;database(c.dbUrl,c.dbName);
@@ -70,11 +70,18 @@ async function qualification(){
  return{status:'PASS_WIRING_QUALIFICATION_ONLY',realCryptoHttp:true,realStocksHttp:true,viewerDeny:true,cashRoundTrip:true,full50Plus2Runs:0};
 }
 async function close(){
+ await cpuHttpProfile?.stop();
  for(const fn of cleanup.reverse())await fn();cleanup=[];
  await market?.close();return{closed:true,network:global.__rc50Network};
 }
 process.on('message',async m=>{try{
  let value;if(m.command==='init')value=await initialize(m.value);
+ else if(m.command==='profile-start'){
+  if(!configuration?.diagnostics||cpuHttpProfile)throw Error('PROFILE_DIAGNOSTIC_SINGLE_USE_REQUIRED');
+  cpuHttpProfile=require('./cpu-http-profile.cjs').createProfiler({enabled:true,role:'api',root:configuration.root});
+  value=await cpuHttpProfile.start();
+ }
+ else if(m.command==='profile-stop')value=await cpuHttpProfile?.stop()??{enabled:false};
  else if(m.command==='spans-start')value=await diagnostics?.start(configuration.dbUrl);
  else if(m.command==='spans-stop')value=await diagnostics?.stop()??{enabled:false};
  else if(m.command==='snapshot')value=await snapshot();
