@@ -6613,3 +6613,10 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - frontend `tsc -b`; admin-related frontend suites 7/7; `scripts/qa-listing-history20.cjs` 9/9 at 1440/390 (synthetic).
 - **Not run:** CI on this commit (pending at time of writing); production; real phones; any bot execution.
 - **Unresolved (owner):** rights (publication refused); Buy/Sell on a scenario listing needs an owner decision on `DEMO_ONLY` admission; Spot `Balance` USDT from legacy NRX sales may be withdrawable (unchanged, no isolation claimed); the preview's `SIMUSDT` unit vs the listing's USDT quote; the #544 PR body still says no allocations.
+
+### Claude — 2026-10-19 — History20: explicit time limit for the heavy Futures-account regression
+- **Task:** during the #551 compatibility review (CTO, 19.10), `historicalGrowthFutures.pg.test.ts` timed out at Jest's 5 s default. It ran 4920–5593 ms on this branch alone and on the #551+#548+#544+#546 review tree, so the cause is pre-existing and was not introduced by the merge.
+- **Commit:** the commit that adds this entry (branch `claude/peaceful-volta-h5zw7g-history20`, PR #544), on top of `6a0f5599`.
+- **Changed:** only that test's limit (30 s). No assertion changed; nothing skipped.
+- **Verified locally:** 3 consecutive runs pass (4648–5034 ms) on disposable PostgreSQL.
+- **Not run:** CI on this commit (pending at time of writing).
