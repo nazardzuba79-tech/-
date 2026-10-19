@@ -6613,3 +6613,20 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - frontend `tsc -b`; admin-related frontend suites 7/7; `scripts/qa-listing-history20.cjs` 9/9 at 1440/390 (synthetic).
 - **Not run:** CI on this commit (pending at time of writing); production; real phones; any bot execution.
 - **Unresolved (owner):** rights (publication refused); Buy/Sell on a scenario listing needs an owner decision on `DEMO_ONLY` admission; Spot `Balance` USDT from legacy NRX sales may be withdrawable (unchanged, no isolation claimed); the preview's `SIMUSDT` unit vs the listing's USDT quote; the #544 PR body still says no allocations.
+
+### Claude — 2026-10-19 — Managed-listing simulation sale priced by the model, not the venue (CTO review on PR #544, Spot only)
+- **Task:** CTO comment on #544 (19.10, 07:01 UTC): `OrderService.sellTeamSpotSimulation` priced NRX with `spotPriceSource` but every other pair with the raw venue `getTicker`, so the owner/test-account MARKET SELL of a published managed listing asked the venue for a simulated pair. Use the same server model price the Spot ticker, chart and triggers use; change nothing else.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, from `main` `f81df788`.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource(this.priceSource)` for every pair (NRX and published managed listings: model price; ordinary pairs: the venue, as before).
+- **Added:** `src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts` (disposable loopback PostgreSQL, synthetic users/listings), wired into `admin-listings.yml`:
+  - owner (ADMIN) and an allowlisted tester sell at the model price, equal to the Spot ticker/trigger source and the chart's last 5m close; exact debit/credit; audit row; the venue is never asked; no book liquidity; no Futures/DemoBalance rows;
+  - refused before any write: before the listing time, a non-tradable listing, a scenario listing (DEMO_ONLY, the kind a History20 window is), more than the available balance;
+  - an ordinary user and a blocked admin get no synthetic fill (normal book path);
+  - a stale snapshot (refresh fails) keeps the last good listing and its model price;
+  - an unknown pair the venue cannot price is refused before any write;
+  - ordinary pair (ETH) keeps the venue price; NRX keeps its canonical model price.
+  - Mutation: with main's line restored, 3 of 6 fail (the modeled pair is priced by the venue).
+- **Preserved:** NRX pricing and records, listing gates, `isSimulationOnlyUser` policy, atomic debit/credit, no artificial liquidity, `DEMO_ONLY`, `HISTORICAL_RIGHTS_UNVERIFIED`; #544/#546/#548 untouched; Stocks/#543/Futures/NativeDemo untouched.
+- **Verified locally:** new test 6/6; with `ownerAllocation.pg`, `historicalDemoContour.pg`, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `adminListings`: 165/165; `nrxSpot.pg` 12/12 on a fresh database (it fails on a database other suites have written DemoBalance rows into, as before); broader listings/testMarkets/OrderService/PriceWatcher/matching-engine/routes run 39/40 suites, the 40th being that `nrxSpot.pg` shared-database case; backend `tsc` and `npm run build`.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** the sale credits ordinary Spot `Balance` USDT, potentially withdrawable (unchanged); a pair Render does not yet know (cold registry) still falls to the venue read, which refuses only if the venue cannot price it — #548's unresolved-pair gate closes that case; Buy/Sell on scenario listings stays `DEMO_ONLY`.

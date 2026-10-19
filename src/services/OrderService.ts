@@ -221,9 +221,10 @@ export class OrderService {
     const [base, quote] = pair.split('/');
     if (!base || !quote) throw new Error('Invalid Spot pair');
 
-    const ticker = pair === NEURIX.pair
-      ? await spotPriceSource(this.priceSource).getTicker(pair)
-      : await this.priceSource.getTicker(pair);
+    // The same server price the pair's Spot ticker, chart and conditional
+    // triggers use: NRX and a published managed listing their model price,
+    // an ordinary pair the venue. A modeled pair is never priced by the venue.
+    const ticker = await spotPriceSource(this.priceSource).getTicker(pair);
     const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
     if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
     const proceeds = price.times(quantity);
