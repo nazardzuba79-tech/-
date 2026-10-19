@@ -6655,3 +6655,24 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Research (no repo change):** no free, clearly redistributable daily 2013–2024 series found; candidates are paid commercial licences (CoinGecko Enterprise, CoinMarketCap paid, Kaiko, Coinpaprika, CoinAPI). Several popular CC0/CC BY uploads re-license exchange or CoinMarketCap data, so their labels are likely invalid. `HISTORICAL_RIGHTS_UNVERIFIED` is kept.
 - **Not run:** CI on this commit (pending at time of writing); production.
 - **Unresolved (owner):** one decision. Approve `SIMUSDT` as the non-withdrawable settlement unit with per-tester test allocations, or a restricted-credit migration. Until then History20 windows admit no orders (`DEMO_ONLY`) and the managed-listing synthetic sale stays stopped.
+### Claude — 2026-10-19 — SIMUSDT restricted settlement unit: feasibility spike, default off (CTO task on PR #551)
+- **Task:** CTO comment on #551 (19.10, 08:04 UTC). Prepare the smallest non-withdrawable settlement for History20 private Spot pairs with focused tests on every money path. Do not roll `SIMUSDT` out as a live unit before the owner approves the settlement choice.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-simusdt-spike`, from `main` `f81df788`.
+- **Changed (refusals only; nothing credits `SIMUSDT`, no pair quotes it, no ledger row is written):**
+  - `testAssetConfig.ts`: `RESTRICTED_SETTLEMENT_UNITS = {SIMUSDT}` and `isRestrictedSettlementUnit` (exact token, before pair normalisation); `isTestAssetPairOrSymbol` includes it. That covers withdrawals (both paths), the options list, deposits, admin adjustments and Spot orders on any `X/SIMUSDT` pair.
+  - `WalletTransferService.ts` and `PurchaseService.ts`: refuse `SIMUSDT` only. Every other asset is unchanged.
+- **Tests:** `restrictedSettlementUnit.pg.test.ts`, 7 tests, wired into `admin-listings.yml`.
+  - Recognition; legacy guard results (USDT, ordinary pairs, VTA, NRX, AITH) unchanged.
+  - A user with 1000 deposited USDT plus a 250 `SIMUSDT` fixture: the unit leaves through no withdrawal, deposit, adjustment, transfer, purchase, OTC, banking, valuation or Spot-order path; USDT withdrawals stop at 1000.
+  - RED with the restriction disabled (7/7 fail: withdrawn, transferred, spent, traded; the deposit reaches the chain RPC), GREEN here.
+- **Verified locally:** 13 suites / 167 tests incl. `nrxSpot.pg` on a fresh DB, `OrderService`, `WithdrawalService`, `DepositService`, `BalanceAdjustmentService`, `PurchaseService`, `withdrawals`, `testMarkets`; 32 transfer/futures-route/purchase/deposit suites / 379 tests; backend `tsc`.
+- **Plan (not implemented):** `docs/SIMUSDT_SETTLEMENT_SPIKE.md` covers:
+  - per-listing quote (`LISTING_QUOTE`, `TestAssetConfig.quote`, Worker catalogue, frontend `/USDT` builders);
+  - reserving ticker `SIM`;
+  - exact owner/allowlist admission;
+  - private publication;
+  - tester funding;
+  - fill/cancel/OCO/concurrency proofs.
+- **Not touched:** Futures/NativeDemo engines and accounts, Stocks, #543 files, NRX/AITH configs and records.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** approve `SIMUSDT` as the settlement unit (or the migration alternative) before any of the plan is built.
