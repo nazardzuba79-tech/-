@@ -6809,7 +6809,8 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Commits on `claude/voltex-mobile-audit-7rpjni`:**
   - `78f7ad6c`: P0, on top of the #553 session's `c7561624`. Reconciled with its reserved `VHX01`–`VHX99` rule as the one canonical guard; my duplicate helper was dropped.
   - `6c9b951f`: wiring.
-  - The commit that adds this entry: frontend, docs, timeout.
+  - `f23ca6b3`: frontend, docs, timeout, the `walletUxRefinement` fix.
+  - The commit that updates this entry: the `idle-sleep` fix.
 - **P0:**
   - the exploit is preserved as `history20ColdRegistryCashout.pg` (empty registry, `VHX07/USDT` into a real USDT bid);
   - RED on `fa6b2cb9` (4/5) and on `c7561624` (3/5: venue-priced USD valuation, venue price fallback, publish reservation); GREEN now;
@@ -6840,5 +6841,13 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - backend and frontend `tsc`;
   - frontend `jest frontend/src`: 284/288 suites passed in a run that started mid-edit; the 4 suites edited during it re-ran 82/82. Frontend `npm run build` passed.
 - **Regression found by CI and fixed:** `78f7ad6c` added a static import to `WalletPortfolioService.ts`. The `walletUxRefinement` harness evaluates that module and could not resolve it; CI `complete-suite` failed 1/4794. It is now a dynamic import like the file's others.
-- **Not run:** CI on the final commit (pending at time of writing); production.
+- **Regression found by CI and fixed (`idle-sleep` on `f23ca6b3`):** `/trade` stayed in the wake barrier's `error` phase. The private list's 404 (any non-participant) rejected a tracked read during `syncing`.
+  - Now a 404 is an answer: the store goes dormant until the session changes, so it asks once per session.
+  - The private read uses `browserFallbackFetch`, and its tracked read never reports a failure, so a 401 or outage on this optional list cannot hold the page.
+  - Regression test added to `privateTestMarkets.test.ts`; RED on the old store, GREEN now.
+  - `scripts/qa-browser-sleep.cjs` was run locally with `QA_LABEL=candidate`, using preinstalled Chromium through a Playwright shim (CI uses msedge on Windows):
+    - old store: `/trade` wake `TimeoutError`, as in CI;
+    - fixed: PASS, 16 scenarios.
+  - `node --test scripts/test-browser-activity.cjs scripts/test-idle-read-budget.cjs` 53/53; related frontend suites 233/233; frontend `tsc` and build passed.
+- **Not run:** CI on the final commit (pending at time of writing); the PostgreSQL and native parts of the idle-sleep job (`qa-browser-sleep-postgres.cjs`, `qa-browser-sleep-native.cjs`); production.
 - **Unresolved:** activation approval (deploy, both switches, start, `--confirm` funding); data rights; checking the production store for non-window `VHX01`–`VHX99` drafts; the legacy NRX cross-pair findings (owner decision).

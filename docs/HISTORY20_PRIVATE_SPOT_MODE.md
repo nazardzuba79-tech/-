@@ -74,6 +74,8 @@ The reported exploit is preserved as a test, `history20ColdRegistryCashout.pg`. 
 
 **Terminal.** `VHXnn/SIMUSDT` is recognised by its shape and never routed to the edge or a venue.
 - A signed-in session reads `/private-test/markets` with its token. A non-participant gets 404, which means "nothing", never an error banner for everyone else.
+  - The store then stays quiet until the session changes, so it asks once per session.
+  - Its reads never fail the page's wake barrier.
 - The chart, book and ticker of a private pair come from the private API. An empty book shows as unavailable.
 - The status line shows the provenance label.
 - A session change forgets every private market.
@@ -102,7 +104,7 @@ Pairs are shown as `…/SIMUSDT`.
 - `history20SimusdtSettlement.pg` (11, #553's suite): now runs on the real wired gate.
 - `history20PrivateConfig` (9): config rules, 20-window rotation, all 20 model paths (Spot price = chart close, no future candle, no venue), the public read model, and legacy simulation input byte-identical.
 - `workers/market-edge/private-test.integration.test.mjs` (4): switch off/on, never public, mode locked across a restart.
-- `frontend/src/lib/__tests__/privateTestMarkets.test.ts` (4): pair-shape routing, private-only parse, private chart and book reads with no venue call, the real store's token, 404 and session reset.
+- `frontend/src/lib/__tests__/privateTestMarkets.test.ts` (5): pair-shape routing, private-only parse, private chart and book reads with no venue call, the real store's token, 404 and session reset, and the wake barrier: a non-participant's 404 never holds the page in error, and the store asks once per session.
 
 ## Not done: remaining blockers
 

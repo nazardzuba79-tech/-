@@ -1,4 +1,4 @@
-import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, browserFetch as fetch, trackBrowserRead } from './browserActivity';
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, browserFetch as fetch, browserFallbackFetch, trackBrowserRead } from './browserActivity';
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE, getToken, onSessionChange } from './api';
 import { fetchNrxPublic, isEdgeMarketUrl, isNrxPair, NRX_EDGE_BASE } from './nrxMarket';
@@ -59,7 +59,8 @@ function sessionToken(): string | null {
 export async function fetchPrivateTestMarketJson(url: string, signal?: AbortSignal): Promise<unknown> {
   const token = sessionToken();
   if (!token) throw new Error('private_test_no_session');
-  const response = await fetch(url, {
+  // Optional for everyone but participants: its status never fails the wake barrier (the store tracks the whole read).
+  const response = await browserFallbackFetch(url, {
     signal, credentials: 'omit', cache: 'no-store', headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   });
   if (!response.ok) throw new Error(`private_test_http_${response.status}`);
@@ -87,6 +88,8 @@ export class TestMarketStore {
   private fetchedAt = 0;
   private leaseTimer: ReturnType<typeof setTimeout> | null = null;
   private highestAithVersion = 0;
+  /** Private source only: the server said this session is not a participant (404); ask again only after a session change. */
+  private dormant = false;
 
   private expireAith(): void {
     const assets = this.state.assets.filter(asset => !isAith(asset.pair) || aithReadClock() < (asset.leaseDeadline ?? 0));
@@ -106,6 +109,7 @@ export class TestMarketStore {
     this.controller?.abort();
     this.inFlight = null;
     if (this.privateSource) registerPrivateTestMarkets([]);
+    this.dormant = false;
     this.state = { loaded: false, error: false, assets: [], clockOffsetMs: 0 };
     this.fetchedAt = 0;
     for (const { listener } of this.subscribers.values()) listener(this.state);
@@ -137,13 +141,22 @@ export class TestMarketStore {
   }
 
   refresh(): Promise<void> {
+    if (this.privateSource && this.dormant) return Promise.resolve();
     if (this.inFlight) return this.inFlight;
     if (typeof document !== 'undefined' && isBrowserInactive() && this.state.loaded) return Promise.resolve();
     const controller = new AbortController();
     const requestStartedAt = aithReadClock();
     this.controller = controller;
     this.refreshAfterFlight = false;
-    this.inFlight = trackBrowserRead((this.privateSource ? fetchPrivateTestMarketJson : fetchTestMarketJson)(this.endpoint, controller.signal)
+    const read = this.privateSource
+      // Not a participant (404) is an answer, not a failure: nothing to show, nothing to poll.
+      ? fetchPrivateTestMarketJson(this.endpoint, controller.signal).catch((error: unknown) => {
+        if (error instanceof Error && error.message === 'private_test_http_404') { this.dormant = true; return { serverTime: Date.now(), assets: [] }; }
+        throw error;
+      })
+      : fetchTestMarketJson(this.endpoint, controller.signal);
+    // An optional private list never holds the page's wake barrier in error.
+    this.inFlight = trackBrowserRead(read
       .then((body) => {
         if (controller.signal.aborted || this.refreshAfterFlight) return;
         const snapshot = parseTestMarkets(body, this.privateSource ? 'private' : 'public');
@@ -160,7 +173,7 @@ export class TestMarketStore {
         else registerManagedListings(snapshot.assets);
         this.state = { loaded: true, error: false, assets: snapshot.assets, clockOffsetMs: snapshot.serverTime - Date.now() };
         this.scheduleLease();
-      }))
+      }), !this.privateSource)
       .catch(() => {
         if (controller.signal.aborted || this.refreshAfterFlight) return;
         // Private test markets fail closed and quietly: no session, not a participant (404)
@@ -217,7 +230,7 @@ export class TestMarketStore {
   private schedule(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
-    if (!this.subscribers.size || isBrowserInactive()) return;
+    if (!this.subscribers.size || isBrowserInactive() || (this.privateSource && this.dormant)) return;
     const cadence = Math.min(this.catalogue && this.highestAithVersion > 0 ? 15_000 : Infinity, ...[...this.subscribers.values()].map((s) => s.intervalMs));
     let delay = Math.max(0, cadence - (Date.now() - this.fetchedAt));
     if (this.state.loaded && !this.state.error && this.state.assets.length > 0 && !this.anyLive()) {

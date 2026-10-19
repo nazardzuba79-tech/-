@@ -37,13 +37,21 @@ const compile = (file: string) => ts.transpileModule(readFileSync(file, 'utf8').
 }).outputText;
 
 /** The real store, parser and registry; transport and session are fixtures. */
-function realStore(read: (url: string, init: any) => { ok: boolean; status: number; body: unknown }) {
+function realStore(read: (url: string, init: any) => { ok: boolean; status: number; body: unknown }, tracked?: Array<{ promise: Promise<unknown>; reportFailure: boolean }>) {
   const session = { token: null as string | null, listeners: new Set<() => void>() };
   const calls: Array<{ url: string; init: any }> = [];
   const document = { hidden: false, addEventListener: () => {}, removeEventListener: () => {} };
   const fetch = async (url: string, init: any) => { calls.push({ url, init }); const r = read(url, init); return { ok: r.ok, status: r.status, json: async () => r.body }; };
   const activity: any = {};
   new Function('exports', 'document', 'globalThis', compile(resolve(frontend, 'src/lib/browserActivity.ts')))(activity, document, { fetch });
+  // Record what the store hands to the wake barrier (the real tracker otherwise).
+  if (tracked) activity.trackBrowserRead = (promise: Promise<unknown>, reportFailure = true) => { tracked.push({ promise, reportFailure }); return promise; };
+  // Which display transport each read used: the reporting one can fail the wake barrier on a 401/403/5xx.
+  const transports: string[] = [];
+  for (const [name, kind] of [['browserFetch', 'reporting'], ['browserFallbackFetch', 'fallback']] as const) {
+    const real = activity[name];
+    activity[name] = (url: string, init: any) => { transports.push(kind); return real(url, init); };
+  }
   const output: any = {};
   new Function('require', 'exports', 'document', 'fetch', compile(resolve(frontend, 'src/lib/testMarketStore.ts')))((name: string) => {
     if (name === './api') return { API_BASE: '/api/v1', getToken: () => session.token, onSessionChange: (fn: () => void) => { session.listeners.add(fn); return () => session.listeners.delete(fn); } };
@@ -53,7 +61,7 @@ function realStore(read: (url: string, init: any) => { ok: boolean; status: numb
     if (name === '../../../src/shared/aithPublication') return aithPublication;
     return req(name);
   }, output, document, fetch);
-  return { ...output, calls, session, changeSession(token: string | null) { session.token = token; for (const fn of session.listeners) fn(); } };
+  return { ...output, calls, transports, session, changeSession(token: string | null) { session.token = token; for (const fn of session.listeners) fn(); } };
 }
 
 afterEach(() => { registerPrivateTestMarkets([]); jest.clearAllMocks(); });
@@ -116,5 +124,24 @@ describe('History20 private test markets in the frontend', () => {
     await store.privateTestMarketStore.refresh();
     expect(store.privateTestMarketStore.getState()).toMatchObject({ loaded: true, error: false, assets: [] });
     expect(isKnownPrivateTestMarket('VHX07/SIMUSDT')).toBe(false);
+  });
+
+  test('a non-participant never holds the page in a wake error, and asks once per session (browser idle budget)', async () => {
+    const tracked: Array<{ promise: Promise<unknown>; reportFailure: boolean }> = [];
+    const store = realStore(() => ({ ok: false, status: 404, body: { error: 'unknown_pair' } }), tracked);
+    store.session.token = 'session-token-fixture';
+    await store.privateTestMarketStore.refresh();
+    expect(tracked).toHaveLength(1);
+    // The tracked read resolves (404 is an answer) and never reports a failure to the wake barrier.
+    await expect(tracked[0].promise).resolves.toBeUndefined();
+    expect(tracked[0].reportFailure).toBe(false);
+    // Nor does its transport: an expired session's 401 or an outage on this optional list is not the page's failure.
+    expect(store.transports).toEqual(['fallback']);
+    expect(store.privateTestMarketStore.getState()).toMatchObject({ loaded: true, error: false, assets: [] });
+    await store.privateTestMarketStore.refresh();
+    expect(store.calls).toHaveLength(1);
+    store.changeSession('another-session');
+    await store.privateTestMarketStore.refresh();
+    expect(store.calls).toHaveLength(2);
   });
 });
