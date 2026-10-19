@@ -2,6 +2,7 @@ import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { CandleService, INTERVALS, IntervalKey } from '../../services/CandleService';
+import { isRestrictedSettlementUnit } from '../../services/testMarkets/testAssetConfig';
 
 export function candlesRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -13,6 +14,8 @@ export function candlesRouter(prisma: PrismaClient): Router {
       return res.status(400).json({ error: `interval must be one of: ${Object.keys(INTERVALS).join(', ')}` });
     }
     const limit = Math.min(Number(req.query.limit) || 200, 1000);
+    // History20 private test fills (SIMUSDT) are never public market data.
+    if (isRestrictedSettlementUnit(req.params.pair)) return res.status(404).json({ error: 'unknown_pair' });
 
     const candles = await candleService.getCandles(req.params.pair.toUpperCase(), interval as IntervalKey, limit);
     res.json({ pair: req.params.pair.toUpperCase(), interval, candles });

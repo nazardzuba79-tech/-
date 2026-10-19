@@ -12,6 +12,13 @@ on:
       - 'src/services/OrderService.ts'
       - 'src/services/WalletPortfolioService.ts'
       - 'src/api/routes/adminListings.ts'
+      - 'src/api/routes/privateTestMarkets.ts'
+      - 'src/api/routes/testMarkets.ts'
+      - 'src/api/routes/candles.ts'
+      - 'src/api/routes/orders.ts'
+      - 'src/services/WalletTransferService.ts'
+      - 'src/services/PurchaseService.ts'
+      - 'src/services/CardApplicationService.ts'
       - 'src/index.ts'
       - 'workers/market-edge/**'
       - 'frontend/src/lib/marketEdge.ts'
@@ -37,6 +44,7 @@ on:
       - 'scripts/smoke-market-edge-listings.mjs'
       - 'render.yaml'
       - 'scripts/allocate-listing-owner.cjs'
+      - 'scripts/fund-history20-private.cjs'
       - '.github/workflows/admin-listings.yml'
 permissions:
   contents: read
@@ -79,6 +87,8 @@ jobs:
           src/services/listings/__tests__/historicalDemoContour.pg.test.ts
           src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts
           src/services/testMarkets/__tests__/restrictedSettlementUnit.pg.test.ts
+          src/services/listings/__tests__/history20PrivateConfig.test.ts
+          src/services/listings/__tests__/history20PrivateSpot.pg.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts

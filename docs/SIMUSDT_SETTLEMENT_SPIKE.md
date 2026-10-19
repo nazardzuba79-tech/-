@@ -1,5 +1,7 @@
 # SIMUSDT restricted settlement unit: feasibility spike (default off)
 
+> **Update (2026-10-19, 08:07 UTC):** the owner approved SIMUSDT on PR #551. The private mode built on this spike is described in `docs/HISTORY20_PRIVATE_SPOT_MODE.md`. The text below records the spike as it was.
+
 This spike prepares History20's private Spot test mode (owner decision of 2026-10-19 on PR #544): profit made at a model price must not be withdrawable. The proposed design is in PR #551 (`docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`): History20 private pairs settle in `SIMUSDT`, a restricted unit held in the existing Spot `Balance` rows. It is not a second wallet.
 
 **The owner has not chosen this settlement yet.** So this spike adds refusals only:

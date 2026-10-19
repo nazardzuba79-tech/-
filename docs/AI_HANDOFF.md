@@ -6676,3 +6676,40 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Not touched:** Futures/NativeDemo engines and accounts, Stocks, #543 files, NRX/AITH configs and records.
 - **Not run:** CI on this commit (pending at time of writing); production.
 - **Unresolved (owner):** approve `SIMUSDT` as the settlement unit (or the migration alternative) before any of the plan is built.
+### Claude — 2026-10-19 — History20 private Spot test mode in SIMUSDT, code only, default off (owner approval on PR #551, 08:07 UTC)
+- **Task:** owner approval «Погоджуєш SIMUSDT для нових History20-симуляцій?» — «так». Implement the approved settlement design as code only: SIMUSDT-settled private History20 Spot listings for the verified owner and allowlisted testers in the existing Spot accounting; no cash-out or conversion path; explicit one-time audited funding; legacy unchanged; `HISTORICAL_RIGHTS_UNVERIFIED` kept for public use. Not an activation.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-history20-private`. Base: #544 `46e2024f`, merged with #551 (`e392ca00`) and #552 (`ee42a0d1`).
+- **Changed:**
+  - `listingConfig.ts`: optional `privateTest {settlement:'SIMUSDT', funding}`; History20 window only; owner allocation 0; funding ≤ 1e6 per asset; private publication allowed, public stays `HISTORICAL_RIGHTS_UNVERIFIED`; the mode is locked once published; quote and pair are `SIMUSDT` for private configs only; ticker `SIMUSDT` reserved.
+  - `testAssetConfig.ts`: `quote: 'USDT' | 'SIMUSDT'`, `privateTest`; `isPrivateTestAssetOrPair`; a private base on any other pair is restricted.
+  - `privateTestAccess.ts` (new): `HISTORY20_PRIVATE_SPOT_ENABLED=true` and `isSimulationOnlyUser`. ADMIN alone never qualifies.
+  - `nrxSpot.ts` / `OrderService.ts`: user-scoped gate for private pairs, the narrow `DEMO_ONLY` exception. The synthetic MARKET SELL credits SIMUSDT for admitted users only, re-checked in the transaction. The #551 stop stays for USDT managed listings.
+  - `privateTestFunding.ts` (new) and `scripts/fund-history20-private.cjs` (dry run without `--confirm`): once per (listing, account), advisory lock, AuditLog receipt, base and SIMUSDT only.
+  - `WalletTransferService.ts` / `PurchaseService.ts` refuse the private base too; `WalletPortfolioService.ts` leaves private bases unpriced; `CardApplicationService.ts` skips SIMUSDT fills.
+  - Public hiding:
+    - `listingPublic.ts` and the Worker DO `published()`;
+    - `testMarkets.ts` public routes;
+    - `/candles` and `/orderbook` refuse SIMUSDT pairs.
+  - The Worker refuses private publication unless its own `HISTORY20_PRIVATE_SPOT_ENABLED=true` (`PRIVATE_TEST_DISABLED`).
+  - `privateTestMarkets.ts` (new, mounted in `index.ts`): authenticated reads (markets with provenance, candles, ticker, internal book) for admitted users, 404 for everyone else, server clock only.
+- **Tests (new):**
+  - `history20PrivateSpot.pg.test.ts` (9, disposable PG): the full matrix in `docs/HISTORY20_PRIVATE_SPOT_MODE.md`.
+  - `history20PrivateConfig.test.ts` (8): config rules, 20-window rotation, public read model, legacy simulation input byte-identical.
+  - `workers/market-edge/private-test.integration.test.mjs` (4, workerd).
+  - Wired into `admin-listings.yml` and `test:listings`.
+  - RED → GREEN: each of the 13 new refusals was disabled on its own and the suite failed. The two Worker catalogue filters are defence in depth: the suite fails only with both removed.
+- **Preserved:**
+  - Codex work and every legacy path: USDT managed listings, NRX, AITH, VTA, ordinary pairs, the #551 stop, the #552 SIMUSDT refusals.
+  - Futures/NativeDemo, Stocks and #549/#550 untouched. No Spot `Balance`→`DemoBalance` bridge exists, so SIMUSDT cannot reach the native wallet.
+  - No migration.
+- **Verified locally:**
+  - Jest `--findRelatedTests` over every changed source file: 98 suites / 1472 tests passed, 3 suites skipped (no PG URL for them).
+  - Worker: `test:listings` 22/22, `test.mjs`, `test:smoke` 4/4.
+  - Backend and frontend `tsc`.
+  - Not run: CI on this branch (no PR), production.
+- **Coordination (CTO, 08:56 UTC on #552/#553):** #553 (another Claude session) is the candidate integration line. This branch is pushed as a **reference only**: no PR, no merge into #553, no further edits to the overlapping files until one session is assigned the integration.
+- **Open defect, both here and in #553:** with a cold or stale Render registry a private base is not recognised. A local probe showed it sold on `X/USDT` for real USDT and transferred to Futures. Proposed fix: registry-independent recognition (a reserved private ticker namespace) and a fail-closed test. Activation is blocked until then.
+- **Unresolved:**
+  - Frontend: no Admin control for `privateTest`/funding; the terminal does not list `/private-test/markets` and still builds `${symbol}/USDT`. Mapped: about 6 source files.
+  - Activation needs separate owner approval: deploy, both switches, publish, `--confirm` funding.
+  - Rights for any public use.

@@ -1,7 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
-import { isRestrictedSettlementUnit, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
+import { isPrivateTestAssetOrPair, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 
 export class PurchaseError extends Error {}
 
@@ -28,7 +28,7 @@ export class PurchaseService {
         throw new PurchaseError('Product not found or no longer available');
       }
       // Simulation value never pays for a real product.
-      if (isRestrictedSettlementUnit(product.priceAsset)) throw new PurchaseError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      if (isPrivateTestAssetOrPair(product.priceAsset)) throw new PurchaseError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
 
       const price = new BigNumber(product.priceAmount.toString());
       try {

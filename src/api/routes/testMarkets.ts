@@ -43,7 +43,7 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
   });
 
   router.get('/market/test-assets/:pair', (req, res) => {
-    const asset = testAssetForPair(pairFromSlug(req.params.pair));
+    const asset = publicTestAssetForPair(pairFromSlug(req.params.pair));
     if (!asset) return res.status(404).json({ error: 'unknown_test_asset' });
     noStore(res);
     res.json(publicTestAsset(asset, nowFor(req)));
@@ -63,7 +63,7 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
     }
   };
   router.get('/market/test-assets/:pair/candles', (req, res) => {
-    const asset = testAssetForPair(pairFromSlug(req.params.pair));
+    const asset = publicTestAssetForPair(pairFromSlug(req.params.pair));
     if (!asset) return res.status(404).json({ error: 'unknown_test_asset' });
     sendCandles(asset, req, res);
   });
@@ -73,6 +73,8 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
     (req: Request, res: Response, next: NextFunction) => {
       const asset = testAssetForPair(pairFromSlug(req.params.pair));
       if (!asset) return next();
+      // A History20 private test pair is answered nowhere public, and never handed to a venue route.
+      if (asset.privateTest) return res.status(404).json({ error: 'unknown_test_asset' });
       handler(asset, req, res);
     };
 
@@ -113,4 +115,10 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
 
 function pairFromSlug(slug: string): string {
   return decodeURIComponent(slug).toUpperCase().replace('-', '/');
+}
+
+/** A test asset the public may read: never a History20 private test listing. */
+function publicTestAssetForPair(pair: string): TestAssetConfig | null {
+  const asset = testAssetForPair(pair);
+  return asset && !asset.privateTest ? asset : null;
 }

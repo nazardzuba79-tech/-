@@ -8,6 +8,7 @@ import { Order, OrderSide, OrderType } from '../matching-engine/types';
 import { assertSpotListingReady, managedListingForPair, spotPriceSource } from './testMarkets/nrxSpot';
 import { NEURIX } from './testMarkets/neurix';
 import { isSimulationOnlyUser } from '../private-trading/access';
+import { canUsePrivateTestListing } from './listings/privateTestAccess';
 import { mutateSpotBalance } from './WalletMutation';
 import { SpotBookTransaction } from './SpotBookTransaction';
 
@@ -75,7 +76,7 @@ export class OrderService {
   }) {
     // Listing gates remain authoritative for every path, including the
     // owner's NRX simulation sale below.
-    await assertSpotListingReady(params.pair);
+    await assertSpotListingReady(params.pair, undefined, params.userId);
 
     // Owner/admin and explicitly allowlisted team test accounts trade with
     // simulation-only Spot settlement for MARKET SELL. Their synthetic/test
@@ -228,10 +229,15 @@ export class OrderService {
     const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
     if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
     // A managed listing's proceeds would be ordinary Spot USDT, which can be
-    // withdrawn, and model-priced earnings must not be. Until a non-withdrawable
-    // settlement exists its synthetic sale stops here, before any write.
-    // NRX (legacy) and ordinary pairs are unchanged.
-    if (pair !== NEURIX.pair && managedListingForPair(pair)) throw new Error('Simulation Spot sale is not available for this listing');
+    // withdrawn, and model-priced earnings must not be: its synthetic sale
+    // stops here, before any write. The one exception is a History20 private
+    // test listing, whose quote is the restricted SIMUSDT unit (never
+    // withdrawn, transferred, converted or valued) and whose sellers are the
+    // owner and the allowlisted testers only. NRX (legacy) and ordinary pairs
+    // are unchanged.
+    const managed = pair === NEURIX.pair ? null : managedListingForPair(pair);
+    if (managed && !managed.privateTest) throw new Error('Simulation Spot sale is not available for this listing');
+    if (managed?.privateTest && (quote !== managed.quote || !canUsePrivateTestListing(userId))) throw new Error('Simulation Spot sale is not available for this account');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
 
@@ -239,7 +245,7 @@ export class OrderService {
     const orderId = uuidv4();
     const tradeId = uuidv4();
     const syntheticMaker = `simulation:${base}`;
-    const auditAction = pair === NEURIX.pair ? 'NRX_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
+    const auditAction = pair === NEURIX.pair ? 'NRX_SIMULATION_SOLD' : managed?.privateTest ? 'HISTORY20_PRIVATE_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
 
     return this.prisma.$transaction(async tx => {
       // Re-check server-side test identity and block state inside the financial
@@ -248,7 +254,8 @@ export class OrderService {
         where: { id: userId },
         select: { role: true, blockedAt: true },
       });
-      if (!user || user.blockedAt || (user.role !== 'ADMIN' && !isSimulationOnlyUser(userId))) {
+      if (!user || user.blockedAt || (user.role !== 'ADMIN' && !isSimulationOnlyUser(userId))
+          || (managed?.privateTest && !canUsePrivateTestListing(userId))) {
         throw new Error('Simulation Spot sale is not available for this account');
       }
 
@@ -297,7 +304,8 @@ export class OrderService {
             price: price.toFixed(),
             proceeds: proceeds.toFixed(),
             counterparty: syntheticMaker,
-            source: pair === NEURIX.pair ? 'NEURIX canonical simulation' : 'VOLTEX team test Spot simulation',
+            source: pair === NEURIX.pair ? 'NEURIX canonical simulation'
+              : managed?.privateTest ? 'History20 private test model (SIMUSDT, non-withdrawable)' : 'VOLTEX team test Spot simulation',
           },
         },
       });
@@ -347,7 +355,7 @@ export class OrderService {
     stopTriggerPrice: BigNumber;
     stopLimitPrice: BigNumber;
   }) {
-    await assertSpotListingReady(params.pair);
+    await assertSpotListingReady(params.pair, undefined, params.userId);
     const [base, quote] = params.pair.split('/');
     const ticker = await spotPriceSource(this.priceSource).getTicker(params.pair);
     if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger prices');

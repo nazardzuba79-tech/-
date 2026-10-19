@@ -22,11 +22,17 @@ export interface TestAssetConfig {
   symbol: string;
   /** Display name, e.g. VOLTORA. */
   name: string;
-  quote: 'USDT';
+  /** USDT, or the restricted SIMUSDT unit of a History20 private test listing. */
+  quote: 'USDT' | 'SIMUSDT';
   /** The pair as the rest of VOLTEX spells it: `VTA/USDT`. */
   pair: string;
   isTestAsset: true;
   isTradable: boolean;
+  /**
+   * History20 private test listing: settled in SIMUSDT, traded only by the
+   * verified owner and the allowlisted testers, never served publicly.
+   */
+  privateTest?: true;
   /** Operational gate. False holds the asset before its listing: no countdown, candles or automatic listing. */
   listingArmed: boolean;
   /** First simulated tick, epoch ms. Used only after listingArmed is true. */
@@ -146,10 +152,11 @@ export function testAssetForSymbol(symbol: string | null | undefined): TestAsset
 }
 
 /**
- * Settlement units that would carry model-priced value (History20 private
- * pairs; owner decision pending). Nothing credits them and no pair quotes
- * them; until then they are only refused: never deposited, withdrawn,
- * adjusted, transferred, spent or traded on an ordinary pair.
+ * Settlement units that carry model-priced value: SIMUSDT, the quote of the
+ * History20 private test listings (owner decision 2026-10-19). Only the
+ * explicit one-time test funding (privateTestFunding.ts) and fills on those
+ * private pairs credit it. Everywhere else it is refused: never deposited,
+ * withdrawn, adjusted, transferred, spent, valued or traded on an ordinary pair.
  */
 export const RESTRICTED_SETTLEMENT_UNITS: ReadonlySet<string> = new Set(['SIMUSDT']);
 
@@ -159,9 +166,24 @@ export function isRestrictedSettlementUnit(value: string | null | undefined): bo
   return value.trim().toUpperCase().replace(/[-_]/g, '/').split('/').some((part) => RESTRICTED_SETTLEMENT_UNITS.has(part));
 }
 
+/**
+ * A History20 private test asset: the SIMUSDT unit, a private listing's base
+ * symbol, or its pair. Used where the wider guard below would also change a
+ * legacy asset's behaviour (transfers, purchases, valuation).
+ */
+export function isPrivateTestAssetOrPair(value: string | null | undefined): boolean {
+  if (isRestrictedSettlementUnit(value)) return true;
+  if (!value) return false;
+  return Boolean(testAssetForPair(value)?.privateTest || testAssetForSymbol(value)?.privateTest);
+}
+
 /** Restricted-asset guard (VTA, NRX, every published managed listing and the restricted settlement units). Only ordinary Spot admits listed NRX and tradable managed listings. */
 export function isTestAssetPairOrSymbol(value: string | null | undefined): boolean {
   if (isRestrictedSettlementUnit(value)) return true;
+  // A History20 private base on any other pair (X/USDT, X-BTC) is a route to a
+  // withdrawable asset: as restricted as the base itself. Only its own private
+  // pair admits it, in the Spot gate, before this guard.
+  if (value && value.trim().toUpperCase().replace(/[-_]/g, '/').split('/').some((part) => testAssetForSymbol(part)?.privateTest)) return true;
   // AITH remains restricted even while its publication is unavailable or changing generations.
   if (value && ['AITH', 'AITH/USDT'].includes(normalizePair(value))) return true;
   return testAssetForPair(value) !== null || testAssetForSymbol(value) !== null;

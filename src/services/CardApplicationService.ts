@@ -1,5 +1,6 @@
 import { CardProduct, Prisma, PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
+import { isRestrictedSettlementUnit } from './testMarkets/testAssetConfig';
 
 /** Only the real quote method is injected; never Wallet presentation holdings. */
 export interface CardUsdPriceSource {
@@ -83,7 +84,8 @@ export class CardApplicationService {
   private assets(inputs: Awaited<ReturnType<CardApplicationService['inputs']>>): string[] {
     return [...new Set([
       ...inputs.deposits.map((deposit) => deposit.asset.toUpperCase()),
-      ...inputs.trades.map((trade) => trade.pair.split('/')[1]?.toUpperCase()).filter(Boolean),
+      ...inputs.trades.filter((trade) => !isRestrictedSettlementUnit(trade.pair))
+        .map((trade) => trade.pair.split('/')[1]?.toUpperCase()).filter(Boolean),
     ])];
   }
 
@@ -109,6 +111,9 @@ export class CardApplicationService {
       else depositUsd = depositUsd.plus(usd);
     }
     for (const trade of inputs.trades) {
+      // A History20 private test fill settles in SIMUSDT: simulation, not
+      // trading volume. It is neither counted nor an unpriced gap.
+      if (isRestrictedSettlementUnit(trade.pair)) continue;
       // Defence in depth: count a fill once for a participant, never twice
       // or for an account matching against itself (wash volume).
       if (trade.takerUserId === trade.makerUserId
