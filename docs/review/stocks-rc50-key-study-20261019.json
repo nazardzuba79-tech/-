@@ -1702,5 +1702,29 @@
         7.634200000000419
       ]
     }
-  ]
+  ],
+  "finalInitializationCompatibility": {
+    "measuredSourceSha": "f7bec33b9996c55087cb354e095e8bc00f5fd1e9",
+    "change": "Move crypto import from auth module scope to Stocks-only key preparation factory; no request callback change",
+    "requestHandlerTextSha256": "1c278f90add1be7018c9f4b9d9039b5972f5ad691fed4f062f9cea80c14b2c15",
+    "handlerUnchanged": true,
+    "defaultImportGraphRestored": true,
+    "localSpotIdleTests": {
+      "pass": 14,
+      "fail": 0,
+      "skipped": 0
+    },
+    "localRouteSecurityTests": {
+      "pass": 12,
+      "fail": 0,
+      "skipped": 0
+    },
+    "noComparisonRepeated": true,
+    "initialFailedCI": {
+      "run": 39233719540,
+      "job": 117997608927,
+      "reason": "VM dependency allowlist rejected new top-level crypto import"
+    },
+    "assertionsOrSpotTestsModified": false
+  }
 }

@@ -44,7 +44,7 @@ const ORDINARY_SESSION_MS = 12 * 60 * 60_000;
 export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = false }: { prepareVerificationKey?: boolean } = {}) {
   // Stocks opt-in only; the default auth path keeps the original string key.
   const verificationKey = prepareVerificationKey
-    ? (() => { try { return createPublicKey(JWT_SECRET!); } catch { return createSecretKey(Buffer.from(JWT_SECRET!)); } })()
+    ? (() => { const { createPublicKey, createSecretKey } = require('crypto') as typeof import('crypto'); try { return createPublicKey(JWT_SECRET!); } catch { return createSecretKey(Buffer.from(JWT_SECRET!)); } })()
     : JWT_SECRET!;
   return async function (req: AuthedRequest, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
