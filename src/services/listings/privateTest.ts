@@ -1,9 +1,10 @@
 /**
- * HISTORY20 PRIVATE SPOT TEST — feasibility spike, NOT WIRED (owner decision
- * 2026-10-19 on PR #544; CTO review on PR #551). Nothing imports this module
- * on a request path: no route, registry, gate or worker reads it, so it
- * changes no behaviour. It holds the pieces the design in
- * docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md needs, pinned by tests:
+ * HISTORY20 PRIVATE SPOT TEST (owner decision 2026-10-19 on PR #544; SIMUSDT
+ * settlement approved on PR #551). Default off. Wired into the Spot gate and
+ * OrderService (admission before and inside every financial transaction),
+ * the private listing channel (Worker DO → Render registry only), the
+ * one-time funding (privateTestFunding.ts) and the authenticated private
+ * reads (api/routes/privateTestMarkets.ts):
  *
  * - the private market is `<SYMBOL>/SIMUSDT`: every fill and the owner's
  *   simulation sale settle in the restricted `SIMUSDT` row of the ordinary
@@ -30,7 +31,7 @@ import { isHistory20PrivateSymbol } from '../../shared/history20PrivateSymbol';
 
 export { SIMULATION_QUOTE };
 
-/** Off unless exactly `enabled`. Nothing reads it yet. */
+/** Off unless exactly `enabled` (Render; the Worker has its own switch of the same name). */
 export function privateTestEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.HISTORY20_PRIVATE_TEST === 'enabled';
 }
@@ -65,4 +66,13 @@ export async function isPrivateTestParticipant(
   const user = await db.user.findUnique({ where: { id: userId }, select: { role: true, blockedAt: true } });
   if (!user || user.blockedAt) return false;
   return owner ? user.role === 'ADMIN' : true;
+}
+
+/**
+ * Whether this account may trade, be funded or read a private test market now:
+ * the mode is on and it is a verified participant (database-checked). Callers
+ * check it before and again inside any financial transaction.
+ */
+export async function privateTestAdmitted(db: Pick<PrismaClient, 'user'>, userId: string | null | undefined): Promise<boolean> {
+  return privateTestEnabled() && await isPrivateTestParticipant(db, userId);
 }

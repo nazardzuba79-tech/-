@@ -9,15 +9,15 @@
  *    the real USDT — no more. Every pair that names SIMUSDT is refused while
  *    no such market exists (today: always).
  * 2. Settlement. With a SIMUSDT-quoted History20 market set up in Render's
- *    registry BY THE TEST (nothing in production can create one), every path
+ *    registry by the test and the private test switched on, every path
  *    — the owner's simulation sale, a book fill, a conditional fill, a
  *    cancel, concurrent sales — moves only the window asset and SIMUSDT;
  *    no USDT row moves and the venue is never asked. The window asset never
  *    trades on another pair (`X/USDT`, `USDT/X`…), transfers, pays, or leaves.
- * 3. Admission (unwired): exactly the verified owner and allowlisted testers.
+ * 3. Admission: exactly the verified owner and allowlisted testers, and only
+ *    while HISTORY20_PRIVATE_TEST=enabled (default off).
  *
- * Nothing here is enabled: no route, store or registry creates a SIMUSDT
- * market, and HISTORICAL_RIGHTS_UNVERIFIED still refuses publication.
+ * HISTORICAL_RIGHTS_UNVERIFIED still refuses every public publication.
  */
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'h20-simusdt-fixture-secret';
 process.env.API_KEY_ENCRYPTION_SECRET = process.env.API_KEY_ENCRYPTION_SECRET || '0'.repeat(64);
@@ -33,7 +33,7 @@ import { defaultScenarioControls } from '../../../shared/listingScenarioControls
 import { checkPrivateTestable, checkPublishable, ListingValidationError, listingSimulationConfig, parseListingConfig, type ListingConfig } from '../listingConfig';
 import { setManagedListingAssets } from '../managedSnapshot';
 import { allocateListingOwner } from '../ownerAllocation';
-import { isPrivateTestParticipant, privateTestPair, privateTestSimulationConfig, SIMULATION_QUOTE } from '../privateTest';
+import { isPrivateTestParticipant, privateTestAdmitted, privateTestPair, privateTestSimulationConfig, SIMULATION_QUOTE } from '../privateTest';
 import * as nrxSpot from '../../testMarkets/nrxSpot';
 import { spotPriceSource } from '../../testMarkets/nrxSpot';
 import { TestMarketSimulation } from '../../testMarkets/testMarketSimulation';
@@ -140,7 +140,8 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
     owner = randomUUID(); tester = randomUUID(); plain = randomUUID(); otherAdmin = randomUUID();
     // A reserved History20 private ticker (VHX01…VHX99). Counts below are scoped to this test's users.
     symbol = `VHX${String(Math.floor(Math.random() * 100)).padStart(2, '0')}`;
-    saved = { enabled: process.env.PRIVATE_TRADING_ENABLED, ownerId: process.env.PRIVATE_TRADING_OWNER_ID, testers: process.env.PRIVATE_TRADING_TEST_USER_IDS };
+    saved = { enabled: process.env.PRIVATE_TRADING_ENABLED, ownerId: process.env.PRIVATE_TRADING_OWNER_ID, testers: process.env.PRIVATE_TRADING_TEST_USER_IDS, privateTest: process.env.HISTORY20_PRIVATE_TEST };
+    delete process.env.HISTORY20_PRIVATE_TEST;
     process.env.PRIVATE_TRADING_ENABLED = 'true';
     process.env.PRIVATE_TRADING_OWNER_ID = owner;
     process.env.PRIVATE_TRADING_TEST_USER_IDS = tester;
@@ -154,7 +155,7 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
   afterEach(() => {
     jest.restoreAllMocks();
     setManagedListingAssets([]);
-    for (const [key, env] of [['enabled', 'PRIVATE_TRADING_ENABLED'], ['ownerId', 'PRIVATE_TRADING_OWNER_ID'], ['testers', 'PRIVATE_TRADING_TEST_USER_IDS']] as const) {
+    for (const [key, env] of [['enabled', 'PRIVATE_TRADING_ENABLED'], ['ownerId', 'PRIVATE_TRADING_OWNER_ID'], ['testers', 'PRIVATE_TRADING_TEST_USER_IDS'], ['privateTest', 'HISTORY20_PRIVATE_TEST']] as const) {
       if (saved[key] === undefined) delete process.env[env]; else process.env[env] = saved[key];
     }
   });
@@ -210,7 +211,8 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
     await db.trade.create({ data: { id: randomUUID(), pair: `${symbol}/SIMUSDT`, takerOrderId: randomUUID(), makerOrderId: randomUUID(), takerUserId: owner, makerUserId: tester,
       price: '1000', quantity: '1000', side: 'BUY', executedAt: new Date(AT) } });
     const card = await new CardApplicationService(db, wallet).getSnapshot(owner);
-    expect(card.eligibility).toMatchObject({ tradingVolumeEligible: false, qualifyingTradingVolumeUsd: 0, tradingVolumeValuationComplete: false });
+    // A SIMUSDT fill is simulation, not trading volume: not counted, and not an unpriced gap either.
+    expect(card.eligibility).toMatchObject({ tradingVolumeEligible: false, qualifyingTradingVolumeUsd: 0, tradingVolumeValuationComplete: true });
 
     // No pair that names SIMUSDT trades while no such market exists — for anyone, before any write.
     const orders = new OrderService(db, new MatchingEngine(), venue);
@@ -241,12 +243,8 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
     const reference = new TestMarketSimulation(listingSimulationConfig(config));
     for (const t of [START + 3_600_000, START + DAY, AT, AT + DAY]) expect(model.priceAt(t)).toBe(reference.priceAt(t));
     expect(testMarketCandles(market, '1h', AT, 24)).toEqual(testMarketCandles(listingSimulationConfig(config), '1h', AT, 24));
-    // STAND-IN for the unwired participant admission (privateTest.isPrivateTestParticipant): the
-    // listing gate is opened in this test only, and only for this one private pair; every other
-    // pair keeps the real gate. Nothing in production opens it; a later test shows the real gate
-    // refusing this market.
-    const realGate = nrxSpot.assertSpotListingReady;
-    jest.spyOn(nrxSpot, 'assertSpotListingReady').mockImplementation(async (asked, ...rest) => (asked === pair ? undefined : realGate(asked, ...rest)));
+    // The real gate: the private test switched on, the owner and the tester verified participants.
+    process.env.HISTORY20_PRIVATE_TEST = 'enabled';
     const before = await usdtRows();
     await allocateListingOwner(db, { id: `h20-simusdt-${symbol.toLowerCase()}-${owner}`, version: 1, publishedAt: LISTING_AT, config }, owner);
     await db.balance.create({ data: { userId: tester, asset: SIMULATION_QUOTE, available: '1000' } });
@@ -261,7 +259,7 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
     expect(new BigNumber(sale.trades[0].price).eq(price)).toBe(true);
     expect(await balance(owner, symbol)).toEqual(['990', '0']);
     expect(new BigNumber((await balance(owner, 'SIMUSDT'))![0]).eq(price.times(10))).toBe(true);
-    expect((await db.auditLog.findFirst({ where: { userId: owner, action: 'TEAM_SPOT_SIMULATION_SOLD' } }))?.metadata).toMatchObject({ pair, quote: 'SIMUSDT' });
+    expect((await db.auditLog.findFirst({ where: { userId: owner, action: 'HISTORY20_PRIVATE_SIMULATION_SOLD' } }))?.metadata).toMatchObject({ pair, quote: 'SIMUSDT' });
 
     // A book fill between two participants: the tester buys from the owner in SIMUSDT.
     const fillPrice = price.decimalPlaces(8);
@@ -336,13 +334,18 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
     expect((await wallet.pricesFor([symbol])).get(symbol)).toBeNull();
   });
 
-  test('without the (unwired) admission the real gate refuses the private market for everyone, before any write', async () => {
+  test('switched off (the default), the real gate refuses the private market for everyone, before any write; switched on, still for non-participants', async () => {
     const config = windowConfig(), pair = privateTestPair(symbol);
     setManagedListingAssets([privateTestSimulationConfig(config)]);
     await allocateListingOwner(db, { id: `h20-closed-${symbol.toLowerCase()}-${owner}`, version: 1, publishedAt: LISTING_AT, config }, owner);
     await db.balance.create({ data: { userId: tester, asset: SIMULATION_QUOTE, available: '10' } });
     const orders = new OrderService(db, new MatchingEngine(), venue);
     for (const userId of [owner, tester, plain, otherAdmin]) {
+      await expect(orders.placeOrder({ userId, pair, side: 'SELL', type: 'MARKET', quantity: new BigNumber(1) })).rejects.toThrow('History20 private QA is not available for trading.');
+      await expect(orders.placeOrder({ userId, pair, side: 'BUY', type: 'LIMIT', price: new BigNumber(1), quantity: new BigNumber(1) })).rejects.toThrow('History20 private QA is not available for trading.');
+    }
+    process.env.HISTORY20_PRIVATE_TEST = 'enabled';
+    for (const userId of [plain, otherAdmin]) {
       await expect(orders.placeOrder({ userId, pair, side: 'SELL', type: 'MARKET', quantity: new BigNumber(1) })).rejects.toThrow('History20 private QA is not available for trading.');
       await expect(orders.placeOrder({ userId, pair, side: 'BUY', type: 'LIMIT', price: new BigNumber(1), quantity: new BigNumber(1) })).rejects.toThrow('History20 private QA is not available for trading.');
     }
@@ -390,17 +393,24 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
   });
 
   test('the same market quoted in USDT (any published managed listing today): the owner\'s synthetic sale stays stopped before any write (#551)', async () => {
-    const config = windowConfig();
-    setManagedListingAssets([{ ...privateTestSimulationConfig(config), quote: 'USDT', pair: `${symbol}/USDT`, isTradable: true }]);
-    await allocateListingOwner(db, { id: `h20-usdt-${symbol.toLowerCase()}-${owner}`, version: 1, publishedAt: LISTING_AT, config }, owner);
+    // An ordinary ticker: a reserved one is refused even earlier, by the gate (below).
+    const usdtSymbol = `QW${randomUUID().replace(/[^A-F]/gi, '').slice(0, 4).toUpperCase()}`;
+    const config = windowConfigFor(usdtSymbol);
+    setManagedListingAssets([{ ...listingSimulationConfig(config), isTradable: true }]);
+    await allocateListingOwner(db, { id: `h20-usdt-${usdtSymbol.toLowerCase()}-${owner}`, version: 1, publishedAt: LISTING_AT, config }, owner);
     const orders = new OrderService(db, new MatchingEngine(), venue);
-    await expect(orders.placeOrder({ userId: owner, pair: `${symbol}/USDT`, side: 'SELL', type: 'MARKET', quantity: new BigNumber(10) })).rejects.toThrow('Simulation Spot sale is not available for this listing');
+    await expect(orders.placeOrder({ userId: owner, pair: `${usdtSymbol}/USDT`, side: 'SELL', type: 'MARKET', quantity: new BigNumber(10) })).rejects.toThrow('Simulation Spot sale is not available for this listing');
     expect(await balance(owner, 'USDT')).toEqual(['500', '0']);
-    expect(await balance(owner, symbol)).toEqual(['1000', '0']);
+    expect(await balance(owner, usdtSymbol)).toEqual(['1000', '0']);
+    // The same market under a reserved ticker, even marked private by a forged registry entry: refused by the gate itself.
+    setManagedListingAssets([{ ...privateTestSimulationConfig(windowConfig()), quote: 'USDT', pair: `${symbol}/USDT`, isTradable: true }]);
+    process.env.HISTORY20_PRIVATE_TEST = 'enabled';
+    await expect(orders.placeOrder({ userId: owner, pair: `${symbol}/USDT`, side: 'SELL', type: 'MARKET', quantity: new BigNumber(10) })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    expect(await balance(owner, 'USDT')).toEqual(['500', '0']);
     expect(await db.order.count({ where: { userId: owner } })).toBe(0);
   });
 
-  test('admission (not wired): exactly the verified owner and the allowlisted testers', async () => {
+  test('admission: exactly the verified owner and the allowlisted testers, and only while the private test is on', async () => {
     const blocked = randomUUID();
     await db.user.create({ data: { id: blocked, email: `${blocked}@h20-simusdt.invalid`, referralCode: blocked, passwordHash: 'fixture', role: 'USER', blockedAt: new Date(AT) } });
     process.env.PRIVATE_TRADING_TEST_USER_IDS = `${tester},${blocked}`;
@@ -409,6 +419,12 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
     process.env.PRIVATE_TRADING_ENABLED = 'false';
     expect(await isPrivateTestParticipant(db, owner)).toBe(false);
     process.env.PRIVATE_TRADING_ENABLED = 'true';
+    await db.user.update({ where: { id: owner }, data: { role: 'ADMIN' } });
+    expect(await privateTestAdmitted(db, owner)).toBe(false); // switched off by default
+    process.env.HISTORY20_PRIVATE_TEST = 'enabled';
+    expect(await Promise.all([owner, tester, plain, otherAdmin, blocked].map(id => privateTestAdmitted(db, id)))).toEqual([true, true, false, false, false]);
+    process.env.HISTORY20_PRIVATE_TEST = 'on'; // anything but exactly `enabled` is off
+    expect(await privateTestAdmitted(db, owner)).toBe(false);
     await db.user.update({ where: { id: owner }, data: { role: 'USER' } });
     expect(await isPrivateTestParticipant(db, owner)).toBe(false);
   });

@@ -7,7 +7,8 @@ import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
 import { assertSpotListingReady, managedListingForPair, spotPriceSource } from './testMarkets/nrxSpot';
 import { NEURIX } from './testMarkets/neurix';
-import { isSimulationSettled } from './testMarkets/testAssetConfig';
+import { isSimulationSettled, SIMULATION_QUOTE } from './testMarkets/testAssetConfig';
+import { privateTestAdmitted } from './listings/privateTest';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
 import { SpotBookTransaction } from './SpotBookTransaction';
@@ -75,8 +76,10 @@ export class OrderService {
     ocoGroupId?: string; // internal — set by placeOcoOrder, not exposed on the public route
   }) {
     // Listing gates remain authoritative for every path, including the
-    // owner's NRX simulation sale below.
-    await assertSpotListingReady(params.pair, this.priceSource);
+    // owner's NRX simulation sale below. A History20 private test pair admits
+    // only a database-verified participant while the mode is on.
+    const privateAdmitted = await this.privateAdmitted(params.pair, params.userId);
+    await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
 
     // Owner/admin and explicitly allowlisted team test accounts trade with
     // simulation-only Spot settlement for MARKET SELL. Their synthetic/test
@@ -132,6 +135,7 @@ export class OrderService {
     }
 
     const placed = await SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
+      await this.reassertPrivateAdmission(tx, params.pair, params.userId, privateAdmitted);
       const staged = conditional ? undefined : await session.book(params.pair);
       if (!conditional && params.type === 'MARKET' && params.side === 'BUY') {
         const bestAsk = staged!.getBook(params.pair).bestAsk()?.price;
@@ -229,12 +233,14 @@ export class OrderService {
     const price = ticker ? new BigNumber(ticker.lastPrice) : new BigNumber(NaN);
     if (!price.isFinite() || price.lte(0)) throw new Error('Simulation price is temporarily unavailable');
     // A managed listing's proceeds would be ordinary Spot USDT, which can be
-    // withdrawn, and model-priced earnings must not be. Until a non-withdrawable
-    // settlement exists its synthetic sale stops here, before any write.
-    // NRX (legacy) and ordinary pairs are unchanged.
-    // A market settled in the restricted SIMUSDT unit (History20 private-test
-    // design; no such market exists) is the one managed sale allowed through.
-    if (pair !== NEURIX.pair && managedListingForPair(pair) && !isSimulationSettled(quote)) throw new Error('Simulation Spot sale is not available for this listing');
+    // withdrawn, and model-priced earnings must not be: its synthetic sale
+    // stops here, before any write. NRX (legacy) and ordinary pairs are
+    // unchanged. The one exception is a History20 private test market quoted
+    // exactly in the restricted SIMUSDT unit, sold by a verified participant.
+    const managed = pair === NEURIX.pair ? null : managedListingForPair(pair);
+    const privateMarket = !!managed?.privateTest && quote === SIMULATION_QUOTE && managed.quote === SIMULATION_QUOTE;
+    if (managed && !privateMarket) throw new Error('Simulation Spot sale is not available for this listing');
+    if (privateMarket && !(await privateTestAdmitted(this.prisma, userId))) throw new Error('Simulation Spot sale is not available for this account');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
 
@@ -242,7 +248,7 @@ export class OrderService {
     const orderId = uuidv4();
     const tradeId = uuidv4();
     const syntheticMaker = `simulation:${base}`;
-    const auditAction = pair === NEURIX.pair ? 'NRX_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
+    const auditAction = pair === NEURIX.pair ? 'NRX_SIMULATION_SOLD' : privateMarket ? 'HISTORY20_PRIVATE_SIMULATION_SOLD' : 'TEAM_SPOT_SIMULATION_SOLD';
 
     return this.prisma.$transaction(async tx => {
       // Re-check server-side test identity and block state inside the financial
@@ -251,7 +257,8 @@ export class OrderService {
         where: { id: userId },
         select: { role: true, blockedAt: true },
       });
-      if (!user || user.blockedAt || (user.role !== 'ADMIN' && !isSimulationOnlyUser(userId))) {
+      if (!user || user.blockedAt || (user.role !== 'ADMIN' && !isSimulationOnlyUser(userId))
+          || (privateMarket && !(await privateTestAdmitted(tx, userId)))) {
         throw new Error('Simulation Spot sale is not available for this account');
       }
 
@@ -300,7 +307,8 @@ export class OrderService {
             price: price.toFixed(),
             proceeds: proceeds.toFixed(),
             counterparty: syntheticMaker,
-            source: pair === NEURIX.pair ? 'NEURIX canonical simulation' : 'VOLTEX team test Spot simulation',
+            source: pair === NEURIX.pair ? 'NEURIX canonical simulation'
+              : privateMarket ? 'History20 private test model (SIMUSDT, non-withdrawable)' : 'VOLTEX team test Spot simulation',
           },
         },
       });
@@ -350,7 +358,8 @@ export class OrderService {
     stopTriggerPrice: BigNumber;
     stopLimitPrice: BigNumber;
   }) {
-    await assertSpotListingReady(params.pair, this.priceSource);
+    const privateAdmitted = await this.privateAdmitted(params.pair, params.userId);
+    await assertSpotListingReady(params.pair, this.priceSource, undefined, undefined, privateAdmitted);
     const [base, quote] = params.pair.split('/');
     const ticker = await spotPriceSource(this.priceSource).getTicker(params.pair);
     if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger prices');
@@ -369,6 +378,7 @@ export class OrderService {
         : params.quantity;
 
     const oco = await SpotBookTransaction.run(this.prisma, this.engine, async tx => {
+      await this.reassertPrivateAdmission(tx, params.pair, params.userId, privateAdmitted);
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
 
       const ocoGroupId = uuidv4();
@@ -663,6 +673,16 @@ export class OrderService {
     if (!mustBeBelow && triggerPrice.isLessThanOrEqualTo(currentPrice)) {
       throw new Error(`Trigger price must be above the current price (${currentPrice.toString()})`);
     }
+  }
+
+  /** A History20 private test pair's admission (privateTest.privateTestAdmitted); false for every other pair. */
+  private async privateAdmitted(pair: string, userId: string): Promise<boolean> {
+    return isSimulationSettled(pair) && await privateTestAdmitted(this.prisma, userId);
+  }
+
+  /** The same admission again inside the financial transaction: removed or blocked since is refused. */
+  private async reassertPrivateAdmission(tx: TxClient, pair: string, userId: string, admitted: boolean) {
+    if (admitted && !(await privateTestAdmitted(tx, userId))) throw new Error(`${pair} is not available for this account`);
   }
 
   private async lockFunds(tx: TxClient, userId: string, asset: string, amount: BigNumber) {

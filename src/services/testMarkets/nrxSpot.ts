@@ -1,7 +1,7 @@
 import type { PriceSource } from '../OrderService';
 import { NEURIX } from './neurix';
 import { simulationFor } from './testMarketSimulation';
-import { isSimulationSettled, isTestAssetPairOrSymbol, testAssetForPair, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testAssetConfig';
+import { isSimulationSettled, isTestAssetPairOrSymbol, SIMULATION_QUOTE, testAssetForPair, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testAssetConfig';
 import { managedListingAssets } from '../listings/managedSnapshot';
 import { managedListingRegistry, type ManagedListingRegistry } from '../listings/registry';
 import { HISTORICAL_DEMO_MESSAGE, isHistoricalDemoAsset } from '../listings/simulationContour';
@@ -16,8 +16,14 @@ export const managedListingForPair = (pair: string) => {
  * NRX and tradable managed listings use ordinary Spot accounts/orders; display
  * depth is NEVER executable liquidity. Before its listing time a listed pair
  * refuses orders; a non-tradable one refuses them always.
+ *
+ * A History20 private test market (`privateTest`, quoted exactly in SIMUSDT)
+ * is the one narrow exception to "non-tradable": it admits a caller the
+ * database verified as a participant while the mode is on
+ * (privateTest.privateTestAdmitted, passed in as `privateAdmitted`), and
+ * refuses everyone else like any non-tradable listing.
  */
-export function assertSpotListing(pair: string, now = Date.now()): void {
+export function assertSpotListing(pair: string, now = Date.now(), privateAdmitted = false): void {
   if (isAith(pair.replace(/[_-]/g, '/').replace(/^AITHUSDT$/i, 'AITH/USDT'))) throw new Error('Aitheron AI is not available for trading.');
   if (pair === NEURIX.pair) {
     if (!NEURIX.listingArmed || now < NEURIX.listingAt) throw new Error('Trading has not started yet');
@@ -26,6 +32,13 @@ export function assertSpotListing(pair: string, now = Date.now()): void {
   const managed = managedListingForPair(pair);
   if (managed) {
     if (isHistoricalDemoAsset(managed)) throw new Error(HISTORICAL_DEMO_MESSAGE);
+    if (managed.privateTest && managed.quote === SIMULATION_QUOTE && pair === managed.pair) {
+      if (!privateAdmitted) throw new Error(`${managed.name} is not available for trading.`);
+      if (now < managed.listingAt) throw new Error('Trading has not started yet');
+      return;
+    }
+    // SIMUSDT and a reserved private ticker never trade as an ordinary managed listing, whatever the registry says.
+    if (isSimulationSettled(pair)) throw new Error(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     if (!managed.isTradable) throw new Error(`${managed.name} is not available for trading.`);
     if (now < managed.listingAt) throw new Error('Trading has not started yet');
     return;
@@ -45,9 +58,9 @@ export const SPOT_PAIR_UNRESOLVED_MESSAGE = 'Операция временно �
  * (BTC/USDT…) are unaffected.
  */
 export async function assertSpotListingReady(pair: string, venue: PriceSource, now?: number,
-  registry: Pick<ManagedListingRegistry, 'ensureFresh' | 'resolved'> = managedListingRegistry): Promise<void> {
+  registry: Pick<ManagedListingRegistry, 'ensureFresh' | 'resolved'> = managedListingRegistry, privateAdmitted = false): Promise<void> {
   await registry.ensureFresh();
-  assertSpotListing(pair, now);
+  assertSpotListing(pair, now, privateAdmitted);
   if (registry.resolved() || pair === NEURIX.pair || managedListingForPair(pair)) return;
   const ticker = await venue.getTicker(pair).catch(() => null);
   if (!ticker) throw new Error(SPOT_PAIR_UNRESOLVED_MESSAGE);

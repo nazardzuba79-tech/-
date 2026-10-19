@@ -152,6 +152,18 @@ pg('History20 private asset with a cold, stale or empty registry: no real money,
     expect(venue.getTicker.mock.calls.some(([asked]) => /VHX/i.test(asked))).toBe(false);
   });
 
+  test('a registry that wrongly lists a reserved ticker as an ordinary tradable USDT listing still never trades it', async () => {
+    const forged = { ...listingSimulationConfig(parseListingConfig({ schemaVersion: 1, symbol: 'QAX', name: 'Forged', logo: null, initialPrice: '1', listingAt: LISTING_AT,
+      displayTimeZone: 'UTC', ownerAllocation: '0', seedMode: 'manual', seed: 'forged-registry-synthetic', tradable: true })), symbol: X, pair: `${X}/USDT` };
+    setManagedListingAssets([forged]);
+    const orders = new OrderService(db, new MatchingEngine(), venue);
+    await expect(orders.placeOrder({ userId: owner, pair: `${X}/USDT`, side: 'SELL', type: 'LIMIT', price: new BigNumber(5), quantity: new BigNumber(10) })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    await expect(orders.placeOrder({ userId: owner, pair: `${X}/USDT`, side: 'SELL', type: 'MARKET', quantity: new BigNumber(1) })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    await expect(orders.placeOrder({ userId: buyer, pair: `${X}/USDT`, side: 'BUY', type: 'LIMIT', price: new BigNumber(5), quantity: new BigNumber(10) })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    expect(await balance(owner, 'USDT')).toBeNull();
+    expect(await db.order.count({ where: { userId: { in: [owner, buyer] } } })).toBe(0);
+  });
+
   test('no other exit with an empty registry: transfer, purchase, withdrawal, deposit, adjustment, demo, banking, valuation', async () => {
     for (const asset of [X, 'VHX99', 'vhx07']) {
       for (const direction of ['TO_FUTURES', 'TO_SPOT'] as const) await expect(transferWalletBalance(db, tester, asset, new BigNumber(1), direction)).rejects.toThrow('This asset cannot be transferred');

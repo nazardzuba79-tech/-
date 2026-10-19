@@ -95,6 +95,7 @@ import { CoinGlassAnalyticsService } from './services/analytics/CoinGlassAnalyti
 import { marketDataRouter } from './api/routes/marketData';
 import { displaySnapshotsRouter } from './api/routes/displaySnapshots';
 import { testMarketsRouter } from './api/routes/testMarkets';
+import { privateTestMarketsRouter } from './api/routes/privateTestMarkets';
 import { marketOptionsRouter } from './api/routes/marketOptions';
 import { resolveBuildCommit } from './buildCommit';
 import { createServerBackground } from './serverBackground';
@@ -258,6 +259,8 @@ app.get('/notifications/public-key', (_req, res) => {
 // Test markets first: they answer the shared Spot endpoints for test pairs
 // only (simulated, never tradable) and pass every other pair through.
 app.use('/api/v1', testMarketsRouter());
+// History20 private test markets: verified participants only, never public.
+app.use('/api/v1', privateTestMarketsRouter(prisma, engine));
 app.use('/api/v1', stocksTestCashRouter(prisma));
 app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, marketDataService, marketUniverse));
 app.use('/api/v1', ordersRouter(prisma, engine, marketDataService, bestEffortWake(() => priceWatcherService.wake(), 'spot-conditional')));
