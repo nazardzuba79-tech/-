@@ -6811,7 +6811,9 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - `6c9b951f`: wiring.
   - `f23ca6b3`: frontend, docs, timeout, the `walletUxRefinement` fix.
   - `4d5092da`: the `idle-sleep` fix.
-  - The commit that updates this entry: the second CI round below.
+  - `895e7d72`: the second CI round below.
+  - `dc4abc63`: merge of Draft #555 (the CFD QA fix).
+  - The commit that updates this entry: the Mobile analysis.
 - **P0:**
   - the exploit is preserved as `history20ColdRegistryCashout.pg` (empty registry, `VHX07/USDT` into a real USDT bid);
   - RED on `fa6b2cb9` (4/5) and on `c7561624` (3/5: venue-priced USD valuation, venue price fallback, publish reservation); GREEN now;
@@ -6861,6 +6863,15 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Not this PR's:** CFD `validate` fails `cfd.1440.goto` (`gotoClosed:false`). The check goes to "now − 2 days", which on Monday 2026-10-19 is Saturday, when the CFD market has no bars.
   - `qa-cfd-workspace.cjs` on clean `main` `f81df788`, run locally today, fails the same check with the same detail.
   - #553 changes no CFD or chart-workspace code; only the `cfdTerminal.test.ts` stub.
+  - Fixed separately in Draft #555 (`b387d4b6`, QA script only; the terminal is unchanged). The same commit is merged into #553 (`dc4abc63`) so this PR's exact-head check is meaningful; it no-ops once `main` carries #555.
+- **Mobile clients `fixtures-only` on `895e7d72`:** `report.errors = ['Value is null']`. Green on every earlier #553 head, including `4d5092da`.
+  - The message is `lightweight-charts`' `ensureNotNull`; the artifact holds no stack or route.
+  - The only frontend source change since `4d5092da` is `testMarketStore.ts`. In mobile-review it is inert:
+    - the only consumer, `TerminalChart` → `useCompareInstruments`, mounts with `market="futures"`, so `useTestMarkets(…, market === 'spot')` is disabled before and after;
+    - there is no session token;
+    - there is no subscription, watcher or request either way.
+  - CI's own Playwright 1.63.0 / Chromium headless shell 153.0.8010.12, local, on `895e7d72`: 7/7 runs PASS with no page error, 3 of them pinned to one CPU. Page errors were logged with stack and URL.
+  - No concrete regression found, so nothing was changed. The assertion stays. The next exact-head run on this PR is the re-check: a second failure is real and gets a root cause.
 - **Local-only timing observation:** `qa-chart-workspace.cjs` locally failed `spot.1440.data.window` twice on this branch: one `/market/listings` fetch in the 400 ms hover window, at about 15.3 s. `main` passed locally, hovering at about 16.25 s.
   - That fetch is the existing 15 s AITH catalogue poll (`setTimeout`, identical on `main`). The fixture's isolation defers only `setInterval`.
   - CI passed this check on both #553 runs.
