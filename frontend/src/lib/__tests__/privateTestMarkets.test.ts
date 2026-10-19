@@ -56,7 +56,8 @@ function realStore(read: (url: string, init: any) => { ok: boolean; status: numb
   new Function('require', 'exports', 'document', 'fetch', compile(resolve(frontend, 'src/lib/testMarketStore.ts')))((name: string) => {
     if (name === './api') return { API_BASE: '/api/v1', getToken: () => session.token, onSessionChange: (fn: () => void) => { session.listeners.add(fn); return () => session.listeners.delete(fn); } };
     if (name === './testMarkets') return testMarketHelpers;
-    if (name === './nrxMarket') return nrxHelpers;
+    // The edge is a fixture too: nothing here reaches a network.
+    if (name === './nrxMarket') return { ...nrxHelpers, fetchNrxPublic: async (url: string) => { calls.push({ url, init: null }); return { serverTime: 1, assets: [] }; } };
     if (name === './browserActivity') return activity;
     if (name === '../../../src/shared/aithPublication') return aithPublication;
     return req(name);
@@ -143,5 +144,40 @@ describe('History20 private test markets in the frontend', () => {
     store.changeSession('another-session');
     await store.privateTestMarketStore.refresh();
     expect(store.calls).toHaveLength(2);
+  });
+
+  test('an ordinary page never asks for private markets; only a private pair\'s terminal does, and the lists then show what it found', async () => {
+    const { JSDOM } = require('jsdom');
+    const React = req('react');
+    const { createRoot } = req('react-dom/client');
+    const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
+    Object.assign(globalThis, { window: dom.window, IS_REACT_ACT_ENVIRONMENT: true });
+    const store = realStore((url) => ({ ok: true, status: 200, body: { serverTime: 1, assets: url.includes('/private-test/') ? [privateRow()] : [] } }));
+    store.session.token = 'session-token-fixture';
+    const asked = () => store.calls.filter((call: { url: string }) => call.url.includes('/private-test/')).length;
+    const lists: string[][] = [];
+    const List = () => { lists.push(store.useTestMarkets().assets.map((asset: { pair: string }) => asset.pair)); return null; };
+    const Terminal = () => { store.useTestMarket('VHX07/SIMUSDT'); return null; };
+    const root = createRoot(dom.window.document.getElementById('root'));
+    const settle = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+    try {
+      // A signed-in Spot or Markets page: every public catalogue is read, the private list never.
+      await React.act(async () => { root.render(React.createElement(List)); await settle(); });
+      expect(store.calls.length).toBeGreaterThan(0);
+      expect(asked()).toBe(0);
+      // A participant opens the private pair (Admin → Listings → Открыть рынок): its terminal asks once.
+      await React.act(async () => { root.render(React.createElement(React.Fragment, null, React.createElement(List), React.createElement(Terminal))); await settle(); });
+      expect(asked()).toBe(1);
+      expect(lists.at(-1)).toContain('VHX07/SIMUSDT');
+      // The session ends: the list forgets it, and nothing asks for the next session on its behalf.
+      await React.act(async () => { root.render(React.createElement(List)); await settle(); });
+      await React.act(async () => { store.changeSession('another-session'); await settle(); });
+      expect(lists.at(-1)).not.toContain('VHX07/SIMUSDT');
+      expect(asked()).toBe(1);
+    } finally {
+      await React.act(async () => root.unmount());
+      dom.window.close();
+      for (const key of ['window', 'IS_REACT_ACT_ENVIRONMENT']) Reflect.deleteProperty(globalThis, key);
+    }
   });
 });

@@ -73,7 +73,11 @@ The reported exploit is preserved as a test, `history20ColdRegistryCashout.pg`. 
 ## Terminal and admin (existing UI, no new design)
 
 **Terminal.** `VHXnn/SIMUSDT` is recognised by its shape and never routed to the edge or a venue.
-- A signed-in session reads `/private-test/markets` with its token. A non-participant gets 404, which means "nothing", never an error banner for everyone else.
+- Only a private pair's own terminal asks. It is opened from Admin → Listings → «Открыть рынок» or by a link to `/trade?pair=VHXnn/SIMUSDT`.
+  - It reads `/private-test/markets` with the session token.
+  - Every other page and list sends nothing. The Spot pair list shows only what this session's terminal already found.
+  - So an ordinary user never makes the request, and no console 404 appears on any public page.
+- A non-participant who opens such a link gets 404. That means "nothing": never an error banner, never a venue chart.
   - The store then stays quiet until the session changes, so it asks once per session.
   - Its reads never fail the page's wake barrier.
 - The chart, book and ticker of a private pair come from the private API. An empty book shows as unavailable.
@@ -104,7 +108,7 @@ Pairs are shown as `…/SIMUSDT`.
 - `history20SimusdtSettlement.pg` (11, #553's suite): now runs on the real wired gate.
 - `history20PrivateConfig` (9): config rules, 20-window rotation, all 20 model paths (Spot price = chart close, no future candle, no venue), the public read model, and legacy simulation input byte-identical.
 - `workers/market-edge/private-test.integration.test.mjs` (4): switch off/on, never public, mode locked across a restart.
-- `frontend/src/lib/__tests__/privateTestMarkets.test.ts` (5): pair-shape routing, private-only parse, private chart and book reads with no venue call, the real store's token, 404 and session reset, and the wake barrier: a non-participant's 404 never holds the page in error, and the store asks once per session.
+- `frontend/src/lib/__tests__/privateTestMarkets.test.ts` (6): pair-shape routing, private-only parse, private chart and book reads with no venue call, the real store's token, 404 and session reset, the wake barrier (a non-participant's 404 never holds the page in error; one ask per session), and rendered hooks: an ordinary page never asks, only the private pair's terminal does, and the list then shows what it found.
 
 ## Not done: remaining blockers
 

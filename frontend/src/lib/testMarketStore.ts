@@ -56,6 +56,11 @@ function sessionToken(): string | null {
   try { return getToken(); } catch { return null; }
 }
 
+/** The private API's answer status; 404 means not a participant (or no such market), never an outage. */
+export class PrivateTestHttpError extends Error {
+  constructor(readonly status: number) { super(`private_test_http_${status}`); }
+}
+
 export async function fetchPrivateTestMarketJson(url: string, signal?: AbortSignal): Promise<unknown> {
   const token = sessionToken();
   if (!token) throw new Error('private_test_no_session');
@@ -63,7 +68,7 @@ export async function fetchPrivateTestMarketJson(url: string, signal?: AbortSign
   const response = await browserFallbackFetch(url, {
     signal, credentials: 'omit', cache: 'no-store', headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new Error(`private_test_http_${response.status}`);
+  if (!response.ok) throw new PrivateTestHttpError(response.status);
   return response.json();
 }
 
@@ -81,6 +86,8 @@ export class TestMarketStore {
   constructor(private readonly endpoint = `${API_BASE}/market/test-assets`, private readonly catalogue = false, private readonly privateSource = false) {}
   private state: TestMarketsState = { loaded: false, error: false, assets: [], clockOffsetMs: 0 };
   private subscribers = new Map<symbol, { listener: Listener; intervalMs: number }>();
+  /** Follow the state without asking for it (see watch). */
+  private readonly watchers = new Set<Listener>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private inFlight: Promise<void> | null = null;
   private controller: AbortController | null = null;
@@ -95,7 +102,7 @@ export class TestMarketStore {
     const assets = this.state.assets.filter(asset => !isAith(asset.pair) || aithReadClock() < (asset.leaseDeadline ?? 0));
     if (assets.length === this.state.assets.length) return;
     this.state = { ...this.state, assets };
-    for (const { listener } of this.subscribers.values()) listener(this.state);
+    this.publish();
   }
 
   private scheduleLease(): void {
@@ -112,8 +119,20 @@ export class TestMarketStore {
     this.dormant = false;
     this.state = { loaded: false, error: false, assets: [], clockOffsetMs: 0 };
     this.fetchedAt = 0;
-    for (const { listener } of this.subscribers.values()) listener(this.state);
+    this.publish();
     if (this.subscribers.size > 0) void this.refresh();
+  }
+
+  private publish(): void {
+    for (const { listener } of this.subscribers.values()) listener(this.state);
+    for (const watcher of this.watchers) watcher(this.state);
+  }
+
+  /** Receive every state change and never cause a request: a list shows what a terminal already read. */
+  watch(listener: Listener): () => void {
+    this.watchers.add(listener);
+    listener(this.getState());
+    return () => { this.watchers.delete(listener); };
   }
 
   getState(): TestMarketsState {
@@ -151,7 +170,7 @@ export class TestMarketStore {
     const read = this.privateSource
       // Not a participant (404) is an answer, not a failure: nothing to show, nothing to poll.
       ? fetchPrivateTestMarketJson(this.endpoint, controller.signal).catch((error: unknown) => {
-        if (error instanceof Error && error.message === 'private_test_http_404') { this.dormant = true; return { serverTime: Date.now(), assets: [] }; }
+        if (error instanceof PrivateTestHttpError && error.status === 404) { this.dormant = true; return { serverTime: Date.now(), assets: [] }; }
         throw error;
       })
       : fetchTestMarketJson(this.endpoint, controller.signal);
@@ -195,7 +214,7 @@ export class TestMarketStore {
           return;
         }
         if (!controller.signal.aborted) this.fetchedAt = Date.now();
-        for (const { listener } of this.subscribers.values()) listener(this.state);
+        this.publish();
         this.schedule();
       });
     return this.inFlight;
@@ -287,13 +306,23 @@ function useStore(store: TestMarketStore, intervalMs: number, enabled: boolean):
   return state;
 }
 
+/** A store's state without any request of its own. */
+function useWatchedStore(store: TestMarketStore, enabled: boolean): TestMarketsState {
+  const [state, setState] = useState<TestMarketsState>(() => store.getState());
+  useEffect(() => (enabled ? store.watch(setState) : undefined), [store, enabled]);
+  return state;
+}
+
 export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enabled = true, pair?: string): TestMarketsState {
   const kind = pair ? (isNrxPair(pair) ? 'nrx' : isPrivateTestPair(pair) ? 'private' : isManagedListingPair(pair) ? 'managed' : 'vta') : null;
   const vta = useStore(testMarketStore, intervalMs, enabled && (!kind || kind === 'vta'));
   const nrx = useStore(nrxMarketStore, intervalMs, enabled && (!kind || kind === 'nrx'));
   const managed = useStore(managedListingStore, intervalMs, enabled && (!kind || kind === 'managed'));
-  // Signed-in sessions only; the server answers participants and nobody else.
-  const privateTests = useStore(privateTestMarketStore, intervalMs, enabled && sessionToken() !== null && (!kind || kind === 'private'));
+  // Only a private pair's own terminal asks (a participant's link; the server answers participants and nobody
+  // else). Every list just shows what this session already found, so an ordinary page never sends the request.
+  const privateAsked = useStore(privateTestMarketStore, intervalMs, enabled && kind === 'private' && sessionToken() !== null);
+  const privateSeen = useWatchedStore(privateTestMarketStore, enabled && !kind);
+  const privateTests = kind === 'private' ? privateAsked : privateSeen;
   // One array per store change, not per render: consumers memoise on it (useMarketTickers), and a
   // fresh array each render kept the Markets page re-rendering and starved route transitions.
   const assets = useMemo(() => [...vta.assets, ...nrx.assets, ...managed.assets, ...privateTests.assets], [vta.assets, nrx.assets, managed.assets, privateTests.assets]);

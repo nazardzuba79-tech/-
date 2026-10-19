@@ -6810,7 +6810,8 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - `78f7ad6c`: P0, on top of the #553 session's `c7561624`. Reconciled with its reserved `VHX01`–`VHX99` rule as the one canonical guard; my duplicate helper was dropped.
   - `6c9b951f`: wiring.
   - `f23ca6b3`: frontend, docs, timeout, the `walletUxRefinement` fix.
-  - The commit that updates this entry: the `idle-sleep` fix.
+  - `4d5092da`: the `idle-sleep` fix.
+  - The commit that updates this entry: the second CI round below.
 - **P0:**
   - the exploit is preserved as `history20ColdRegistryCashout.pg` (empty registry, `VHX07/USDT` into a real USDT bid);
   - RED on `fa6b2cb9` (4/5) and on `c7561624` (3/5: venue-priced USD valuation, venue price fallback, publish reservation); GREEN now;
@@ -6849,5 +6850,20 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
     - old store: `/trade` wake `TimeoutError`, as in CI;
     - fixed: PASS, 16 scenarios.
   - `node --test scripts/test-browser-activity.cjs scripts/test-idle-read-budget.cjs` 53/53; related frontend suites 233/233; frontend `tsc` and build passed.
+- **Second CI round (on `f23ca6b3`/`4d5092da`), fixed:**
+  - `wording`, `complete-suite`, `isolated-review` and `api-and-browser` all failed on one line: `customerFacingErrors` forbids reading `error.message` outside the display boundary, and `4d5092da` compared it to `private_test_http_404`. It is now a typed `PrivateTestHttpError` with a `status`.
+  - `browser` (chart workspace): `spot.1440.errors`, `aith.spot.1440.errors` and three `transition…AITH` checks failed on `console: Failed to load resource: 404`. Cause: the Spot pair list subscribed every signed-in session to `/private-test/markets`.
+    - Now only a private pair's terminal subscribes; lists `watch` the store and never cause a request.
+    - A rendered-hook test proves it (RED with the old subscription).
+    - Locally the five `errors` checks pass.
+  - Frontend `jest frontend/src`: 288/288 suites, 4800 tests. `tsc` and build pass.
+  - `idle-sleep` locally: PASS, 16 scenarios, with no `/private-test/markets` request in any of them.
+- **Not this PR's:** CFD `validate` fails `cfd.1440.goto` (`gotoClosed:false`). The check goes to "now − 2 days", which on Monday 2026-10-19 is Saturday, when the CFD market has no bars.
+  - `qa-cfd-workspace.cjs` on clean `main` `f81df788`, run locally today, fails the same check with the same detail.
+  - #553 changes no CFD or chart-workspace code; only the `cfdTerminal.test.ts` stub.
+- **Local-only timing observation:** `qa-chart-workspace.cjs` locally failed `spot.1440.data.window` twice on this branch: one `/market/listings` fetch in the 400 ms hover window, at about 15.3 s. `main` passed locally, hovering at about 16.25 s.
+  - That fetch is the existing 15 s AITH catalogue poll (`setTimeout`, identical on `main`). The fixture's isolation defers only `setInterval`.
+  - CI passed this check on both #553 runs.
+  - Not changed here; recorded so it is not mistaken for new traffic.
 - **Not run:** CI on the final commit (pending at time of writing); the PostgreSQL and native parts of the idle-sleep job (`qa-browser-sleep-postgres.cjs`, `qa-browser-sleep-native.cjs`); production.
 - **Unresolved:** activation approval (deploy, both switches, start, `--confirm` funding); data rights; checking the production store for non-window `VHX01`–`VHX99` drafts; the legacy NRX cross-pair findings (owner decision).
