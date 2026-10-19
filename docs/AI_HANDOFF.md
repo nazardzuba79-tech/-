@@ -6713,3 +6713,10 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - full frontend lib Jest 280/280 suites, 4525/4525 tests, 0 skipped;
   - on clean main for Phase 3: `customerFacingErrors` 64/64, `qa-customer-error-wording` 200/200, `qa-futures-chart-ux` 4 cases / 129 assertions / 0 failed.
 - **Not run:** production, PostgreSQL suites (no change to those paths), real accounts.
+
+### Claude — 2026-10-19 — History20: explicit time limit for the heavy Futures-account regression
+- **Task:** during the #551 compatibility review (CTO, 19.10), `historicalGrowthFutures.pg.test.ts` timed out at Jest's 5 s default. It ran 4920–5593 ms on this branch alone and on the #551+#548+#544+#546 review tree, so the cause is pre-existing and was not introduced by the merge.
+- **Commit:** the commit that adds this entry (branch `claude/peaceful-volta-h5zw7g-history20`, PR #544), on top of `6a0f5599`.
+- **Changed:** only that test's limit (30 s). No assertion changed; nothing skipped.
+- **Verified locally:** 3 consecutive runs pass (4648–5034 ms) on disposable PostgreSQL.
+- **Not run:** CI on this commit (pending at time of writing).

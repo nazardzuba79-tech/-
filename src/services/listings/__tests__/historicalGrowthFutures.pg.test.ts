@@ -180,5 +180,6 @@ pg('History20 growth windows leave the Futures account exactly as it was', () =>
 
     expect(await futuresLedger()).toBe(beforeLedger);
     expect(await futuresViews()).toEqual(beforeViews);
-  });
+    // Four full model builds and 48 h of ticks: ~5 s, at Jest's default limit.
+  }, 30_000);
 });
