@@ -6630,3 +6630,22 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Verified locally:** new test 6/6; with `ownerAllocation.pg`, `historicalDemoContour.pg`, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `adminListings`: 165/165; `nrxSpot.pg` 12/12 on a fresh database (it fails on a database other suites have written DemoBalance rows into, as before); broader listings/testMarkets/OrderService/PriceWatcher/matching-engine/routes run 39/40 suites, the 40th being that `nrxSpot.pg` shared-database case; backend `tsc` and `npm run build`.
 - **Not run:** CI on this commit (pending at time of writing); production.
 - **Unresolved (owner):** the sale credits ordinary Spot `Balance` USDT, potentially withdrawable (unchanged); a pair Render does not yet know (cold registry) still falls to the venue read, which refuses only if the venue cannot price it — #548's unresolved-pair gate closes that case; Buy/Sell on scenario listings stays `DEMO_ONLY`.
+
+### Claude — 2026-10-19 — Managed-listing simulation sale: no withdrawable model proceeds (owner decision on PR #544, 07:18 UTC)
+- **Task:** owner decision «так без змін»: History20 is a private Spot test mode (verified owner and allowlisted testers only); profit from a model price must not be withdrawable; NRX/AITH byte-for-byte unchanged; fix the non-NRX owner SELL price source; if non-withdrawability cannot be guaranteed with the existing data model, stop before real credits and propose a design.
+- **Commit:** the commit that adds this entry, on top of `a495d030` (branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, PR #551). It supersedes `a495d030`'s behaviour, which let that sale credit model-priced USDT.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource` for every pair, then stops before any write for a published managed listing (`Simulation Spot sale is not available for this listing`). `src/services/testMarkets/nrxSpot.ts`: `managedListingForPair` exported. NRX and ordinary pairs are unchanged.
+- **Tests:** `managedListingSimulationSale.pg.test.ts`, 7 tests, disposable PostgreSQL:
+  - Spot USDT is withdrawable and the listing asset is not (the blocker, shown);
+  - owner/tester sale reads ticker = chart = valuation = model, never the venue, and writes nothing;
+  - prelisting / non-tradable / scenario refused before any venue read;
+  - ordinary user and blocked admin: normal book, no synthetic fill;
+  - stale snapshot: still stopped;
+  - unknown unpriced pair: refused;
+  - ETH and NRX sales unchanged.
+  - RED on `main` and on `a495d030` (2 of 7: model proceeds credited), GREEN here; mutation (venue price with the stop kept) also fails 2.
+- **Design:** `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`. Blocker: one fungible Spot USDT row backs withdrawals, and owner/testers fall back to it when their native wallet is unavailable. Proposal without a migration: a restricted `SIMUSDT` quote for History20 private pairs, exact admission via `isSimulationOnlyUser`, private publication, audited per-tester allocations. Not implemented.
+- **Verified locally:** 12 suites / 200 tests (`managedListingSimulationSale.pg`, `ownerAllocation.pg`, `historicalDemoContour.pg`, `nrxSpot.pg` on a fresh DB, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `WithdrawalService`, `adminListings`, `withdrawals`); backend `tsc`.
+- **Research (no repo change):** no free, clearly redistributable daily 2013–2024 series found; candidates are paid commercial licences (CoinGecko Enterprise, CoinMarketCap paid, Kaiko, Coinpaprika, CoinAPI). Several popular CC0/CC BY uploads re-license exchange or CoinMarketCap data, so their labels are likely invalid. `HISTORICAL_RIGHTS_UNVERIFIED` is kept.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** one decision. Approve `SIMUSDT` as the non-withdrawable settlement unit with per-tester test allocations, or a restricted-credit migration. Until then History20 windows admit no orders (`DEMO_ONLY`) and the managed-listing synthetic sale stays stopped.
