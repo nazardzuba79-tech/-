@@ -9,7 +9,7 @@
  */
 
 import { NEURIX } from './neurix';
-import { managedListingAssets } from '../listings/managedSnapshot';
+import { managedListingAssets, privateTestListingAssets } from '../listings/managedSnapshot';
 import type { SimulationProfile } from './simulationRealism';
 import type { CyclicImpulseConfig } from './simulationCycles';
 import type { NaturalWickConfig } from './simulationNaturalWicks';
@@ -22,11 +22,14 @@ export interface TestAssetConfig {
   symbol: string;
   /** Display name, e.g. VOLTORA. */
   name: string;
-  quote: 'USDT';
+  /** USDT; SIMUSDT only for a History20 private test market (listings/privateTest.ts). */
+  quote: 'USDT' | 'SIMUSDT';
   /** The pair as the rest of VOLTEX spells it: `VTA/USDT`. */
   pair: string;
   isTestAsset: true;
   isTradable: boolean;
+  /** A History20 private test market: the owner and allowlisted testers only. */
+  privateTest?: true;
   /** Operational gate. False holds the asset before its listing: no countdown, candles or automatic listing. */
   listingArmed: boolean;
   /** First simulated tick, epoch ms. Used only after listingArmed is true. */
@@ -127,27 +130,45 @@ export const TEST_ASSETS: readonly TestAssetConfig[] = [VOLTORA];
 /** The single sentence every refused trading action shows. */
 export const TEST_ASSET_NOT_TRADABLE_MESSAGE = 'VOLTORA is a test asset and is not available for trading.';
 
+/** The demo quote of History20 private test markets (listings/privateTest.ts). */
+const SIMULATION_QUOTE = 'SIMUSDT';
+
 function normalizePair(pair: string): string {
-  return pair.trim().toUpperCase().replace(/[-_]/g, '/').replace(/^([A-Z0-9]+)(USDT)$/, '$1/$2');
+  const upper = pair.trim().toUpperCase().replace(/[-_]/g, '/');
+  if (upper === SIMULATION_QUOTE) return upper;
+  return upper.replace(/^([A-Z0-9]+?)(SIMUSDT)$/, '$1/$2').replace(/^([A-Z0-9]+)(USDT)$/, (whole, base: string, quote: string) => (whole.includes('/') ? whole : `${base}/${quote}`));
 }
 
-/** The test asset behind a pair (`VTA/USDT`, `VTAUSDT`, `vta-usdt`), if any. */
+const knownTestAssets = (): TestAssetConfig[] => [NEURIX, ...TEST_ASSETS, ...managedListingAssets(), ...privateTestListingAssets()];
+
+/** The test asset behind a pair (`VTA/USDT`, `VTAUSDT`, `vta-usdt`, `VHX01/SIMUSDT`), if any. */
 export function testAssetForPair(pair: string | null | undefined): TestAssetConfig | null {
   if (!pair) return null;
   const normalized = normalizePair(pair);
-  return [NEURIX, ...TEST_ASSETS, ...managedListingAssets()].find((asset) => asset.pair === normalized) ?? null;
+  return knownTestAssets().find((asset) => asset.pair === normalized) ?? null;
 }
 
 /** The test asset behind a bare symbol (`VTA`), if any. */
 export function testAssetForSymbol(symbol: string | null | undefined): TestAssetConfig | null {
   if (!symbol) return null;
   const normalized = symbol.trim().toUpperCase();
-  return [NEURIX, ...TEST_ASSETS, ...managedListingAssets()].find((asset) => asset.symbol === normalized) ?? null;
+  return knownTestAssets().find((asset) => asset.symbol === normalized) ?? null;
 }
 
-/** Restricted-asset guard (VTA, NRX and every published managed listing). Only ordinary Spot admits listed NRX and tradable managed listings. */
+/**
+ * SIMUSDT, or any pair that names it: the History20 private test unit. It is
+ * restricted everywhere, whether or not a private market is currently known,
+ * so it can never be withdrawn, deposited, adjusted, transferred or traded
+ * outside a private test market (where nrxSpot admits it for participants).
+ */
+export function isSimulationQuote(value: string | null | undefined): boolean {
+  return !!value && normalizePair(value).split('/').includes(SIMULATION_QUOTE);
+}
+
+/** Restricted-asset guard (VTA, NRX, every published managed listing, History20 private tests and SIMUSDT). Only ordinary Spot admits listed NRX, tradable managed listings and, for their participants, private tests. */
 export function isTestAssetPairOrSymbol(value: string | null | undefined): boolean {
   // AITH remains restricted even while its publication is unavailable or changing generations.
   if (value && ['AITH', 'AITH/USDT'].includes(normalizePair(value))) return true;
+  if (isSimulationQuote(value)) return true;
   return testAssetForPair(value) !== null || testAssetForSymbol(value) !== null;
 }

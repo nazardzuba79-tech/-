@@ -241,6 +241,28 @@ export function withStableProfile(next: ListingConfig, previous: ListingConfig |
   return creationOrdinal === null ? created : { ...created, simulationProfile: profileForOrdinal(creationOrdinal), wickModel: 'NATURAL_V1' };
 }
 
+/** A History20 growth window (`growth: 'historical-window'`): the price path of an ordinary scenario listing. */
+export function isHistoricalGrowthWindowConfig(config: Pick<ListingConfig, 'simulationProgram'>): boolean {
+  const program = config.simulationProgram;
+  return program?.kind === 'scenario-controls-v2' && program.growth === 'historical-window';
+}
+
+/**
+ * Rules for the PRIVATE TEST of a History20 growth window (owner decision,
+ * 2026-10-19, PR #544): the verified owner and the allowlisted testers only,
+ * quoted in the non-withdrawable SIMUSDT unit (privateTest.ts). It is not a
+ * publication: the public catalogue and edge never serve it, and
+ * `checkPublishable` still refuses every public listing of a window with
+ * HISTORICAL_RIGHTS_UNVERIFIED. Once a private test starts, its history is
+ * locked exactly as a published market's is.
+ */
+export function checkPrivateTestable(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs = MIN_LEAD_MS): void {
+  if (!isHistoricalGrowthWindowConfig(next)) {
+    throw new ListingValidationError('PRIVATE_TEST_WINDOW_ONLY', 'Приватный тест доступен только для листинга с историческим окном роста (History20)');
+  }
+  checkHistoryLocks(next, active, now, minLeadMs);
+}
+
 /**
  * Rules for publishing `next` over the currently active version, at server
  * time `now`. They protect the past: once a market has history, nothing that
@@ -256,6 +278,11 @@ export function checkPublishable(next: ListingConfig, active: ListingConfig | nu
       && (next.simulationProgram.afterGrowth === 'historical' || next.simulationProgram.growth === 'historical-window'))
     throw new ListingValidationError('HISTORICAL_RIGHTS_UNVERIFIED',
       'Историческое движение доступно для сохранённого черновика и приватного предпросмотра. Публикация запрещена до проверки прав на данные и изоляции торговли.');
+  checkHistoryLocks(next, active, now, minLeadMs);
+}
+
+/** What once-live history forbids, for a public publication and a private test alike. */
+function checkHistoryLocks(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs: number): void {
   const at = Date.parse(next.listingAt);
   if (!active) {
     if (at < now + minLeadMs) throw new ListingValidationError('LISTING_TIME_PAST', 'The listing time must be at least one minute in the future');
