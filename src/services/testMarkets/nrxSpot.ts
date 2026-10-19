@@ -7,7 +7,7 @@ import { managedListingRegistry } from '../listings/registry';
 import { HISTORICAL_DEMO_MESSAGE, isHistoricalDemoAsset } from '../listings/simulationContour';
 import { isAith } from '../../shared/aithPublication';
 
-const managedListingForPair = (pair: string) => {
+export const managedListingForPair = (pair: string) => {
   const asset = testAssetForPair(pair);
   return asset && managedListingAssets().includes(asset) ? asset : null;
 };
