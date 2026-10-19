@@ -1,6 +1,7 @@
 import { isBlockedContactEmail, isRevokedContactToken } from '../../services/ContactEmailPolicy';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { createPublicKey, createSecretKey } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
 export interface AuthedRequest extends Request {
@@ -40,7 +41,11 @@ const ORDINARY_SESSION_MS = 12 * 60 * 60_000;
  * just hiding a row in a list. A token from before this model existed has
  * no `sid` claim and must still belong to an existing user. Deleted accounts
  * cannot keep access through legacy tokens. */
-export function requireAuth(prisma: PrismaClient) {
+export function requireAuth(prisma: PrismaClient, { prepareVerificationKey = false }: { prepareVerificationKey?: boolean } = {}) {
+  // Stocks opt-in only; the default auth path keeps the original string key.
+  const verificationKey = prepareVerificationKey
+    ? (() => { try { return createPublicKey(JWT_SECRET!); } catch { return createSecretKey(Buffer.from(JWT_SECRET!)); } })()
+    : JWT_SECRET!;
   return async function (req: AuthedRequest, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) {
@@ -48,7 +53,7 @@ export function requireAuth(prisma: PrismaClient) {
     }
     let payload: { sub: string; sid?: string; purpose?: string; iat?: number };
     try {
-      payload = jwt.verify(header.slice(7), JWT_SECRET!) as typeof payload;
+      payload = jwt.verify(header.slice(7), verificationKey) as typeof payload;
     } catch {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }

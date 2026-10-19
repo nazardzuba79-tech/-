@@ -21,7 +21,7 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
   const authority: Authority = injected ?? require(resolve(__dirname, '../../../services/stocks-global/postgres-authority.mjs')).openPostgresAuthority(prisma, { issuer, tradePrincipals: principals });
   // Normalize the immutable key once; signature/expiry checks still run on every request.
   const verificationKey = (() => { try { return createPublicKey(secret); } catch { return createSecretKey(Buffer.from(secret)); } })();
-  const auth = requireAuth(prisma);
+  const auth = requireAuth(prisma, { prepareVerificationKey: true });
   const actor = (req: AuthedRequest): Actor => {
     if (!req.userId || !req.sessionId) throw Object.assign(Error('AUTH_REQUIRED'), { code: 'AUTH_REQUIRED' });
     const payload = jwt.verify(req.headers.authorization!.slice(7), verificationKey) as jwt.JwtPayload;

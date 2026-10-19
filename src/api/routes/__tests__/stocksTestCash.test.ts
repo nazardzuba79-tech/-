@@ -69,3 +69,22 @@ test('contact block decisions are re-read after a successful request with the sa
  expect(f.authority.execute).toHaveBeenCalledTimes(1);
  expect(f.prisma.auditLog.findFirst).toHaveBeenCalledTimes(2);
 });
+
+test('Stocks key preparation cannot replace the module auth key with a different router key',async()=>{
+ const replacement='replacement-synthetic-router-key',f=fixture(true,replacement);
+ const token=jwt.sign({sub:'synthetic-a',sid:'session-synthetic-a'},replacement,{expiresIn:'1h'});
+ expect((await request(f.app).get('/api/v1/stocks-test-cash/wallet').set('Authorization','Bearer '+token)).status).toBe(401);
+ expect(f.prisma.session.findUnique).not.toHaveBeenCalled();
+ expect(f.authority.execute).not.toHaveBeenCalled();
+});
+test('default auth keeps its original string-key verification path',async()=>{
+ const {requireAuth}=require('../../middleware/auth'),f=fixture(),app=express();
+ app.get('/default-auth',requireAuth(f.prisma),(req:any,res)=>res.json({subject:req.userId}));
+ const token=f.token(),verify=jest.spyOn(jwt,'verify');
+ try{
+  const response=await request(app).get('/default-auth').set('Authorization','Bearer '+token);
+  expect(response.status).toBe(200);
+  expect(verify).toHaveBeenCalledTimes(1);
+  expect(verify.mock.calls[0][1]).toBe(process.env.JWT_SECRET);
+ }finally{verify.mockRestore();}
+});
