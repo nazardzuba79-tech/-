@@ -6690,3 +6690,26 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - History20 execution (proposal on #544, needs owner design approval).
 - **Not run:** production, migrations, deploy, full Jest on this commit.
 
+### Claude — 2026-10-18 — Simulated listings flow review on main f81df788 (owner work order Phase 2)
+- **Task:** verify NRX/AITH scheduling, admin scenario management, candle precision, observed vs modeled feeds, pause/stop/delete, status and accidental live trading. Collect source repros first; fix only what does not alter settlement.
+- **Branch / PR:** `claude/peaceful-volta-h5zw7g-sim-flows` from main `f81df788`, separate Draft PR. Commit: see the PR.
+- **Fixed:** test-market price display.
+  - Below 0.01 a price keeps ≥ 4 significant digits, down to the 1e-10 listing step (`frontend/src/lib/testMarkets.ts`).
+  - On main, 1e-7 showed as 0.000000.
+  - The repro test is in `frontend/src/lib/__tests__/testMarkets.test.ts`; existing expectations are kept.
+- **Documented with proposals, not changed** (`docs/qa/simulator-flows-20261018/README.md`):
+  - admin MARKET SELL against `simulation:NRX` has no idempotency key;
+  - model prices of non-tradable managed listings still trigger pending conditional orders, and `triggerOrder` does not re-check the listing gate;
+  - a Worker-only managed pair passes the Spot gate before the registry loads;
+  - `/trades/me` mixes simulation sales unlabelled, and card eligibility counts them;
+  - Wallet values NRX at the model price without a label;
+  - the Spot pair list carries no practice badge (an owner design choice per `qa-nrx-market.cjs`);
+  - there is no pause/stop/delete/unpublish lifecycle.
+- **NRX/AITH:** no scheduling defect. The NRX fingerprint `63610d3e…` is identical on main and on PR #544.
+- **Preserved:** settlement, the trading engine, Wallet (#543 files), Stocks, the locales (no new keys), and the NRX/VTA/AITH history.
+- **Verified locally:**
+  - frontend `tsc -b` and `npm run build`;
+  - test-market suites 76/76;
+  - full frontend lib Jest 280/280 suites, 4525/4525 tests, 0 skipped;
+  - on clean main for Phase 3: `customerFacingErrors` 64/64, `qa-customer-error-wording` 200/200, `qa-futures-chart-ux` 4 cases / 129 assertions / 0 failed.
+- **Not run:** production, PostgreSQL suites (no change to those paths), real accounts.
