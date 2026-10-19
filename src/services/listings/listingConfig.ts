@@ -17,6 +17,7 @@ import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
 import { SIMULATION_PROFILES, profileForOrdinal } from '../testMarkets/simulationRealism';
 import { LISTING_SCENARIOS, normalizeScenarioDecimal, validateScenarioControls } from '../../shared/listingScenarioControls';
 import { historicalSerializedBytes, freezeHistoricalMoveProgram } from '../../shared/listingHistoricalReplay';
+import { HISTORICAL_GROWTH_LICENSES, HISTORICAL_GROWTH_PROVIDERS, validateHistoricalGrowthProgram } from '../../shared/listingHistoricalGrowth';
 import { HISTORICAL_DEMO_NO_LEDGER, isHistoricalDemoConfig } from './simulationContour';
 
 export const LISTING_QUOTE = 'USDT' as const;
@@ -49,6 +50,30 @@ export const MAX_INITIAL_PRICE = 1_000_000;
 const trimmed = (min: number, max: number) => z.string().trim().min(min).max(max).refine((v) => !/[\u0000-\u001f\u007f<>]/.test(v), 'invalid characters');
 const scenarioDecimal = z.string().trim().regex(/^\d{1,12}(?:[.,]\d{1,10})?$/, 'Введите число, не более 10 знаков после запятой').transform(normalizeScenarioDecimal);
 const frequency = z.enum(['rare', 'moderate', 'often']);
+/** voltex.historical-growth.v1: the growth window that replaces the stages (listingHistoricalGrowth.ts). */
+export const historicalGrowthSchema = z.object({
+  format: z.literal('voltex.historical-growth.v1'),
+  scenarioId: z.string().regex(/^VHX-\d{2}-[A-Z0-9]{2,10}$/),
+  scenarioVersion: z.literal(1),
+  source: z.object({
+    provider: z.enum(HISTORICAL_GROWTH_PROVIDERS),
+    asset: z.string().regex(/^[A-Z0-9]{2,10}$/),
+    quote: z.enum(['USD', 'USDT']),
+    metric: z.enum(['PriceUSD', 'spot daily OHLCV']),
+    dataKind: z.enum(['daily_reference', 'exchange_ohlcv']),
+    timeframe: z.literal('1d'),
+    firstDate: z.string().max(10),
+    lastDate: z.string().max(10),
+    sliceSha256: z.string().regex(/^[a-f0-9]{64}$/),
+    license: z.enum(HISTORICAL_GROWTH_LICENSES),
+  }).strict(),
+  rights: z.literal('HISTORICAL_RIGHTS_UNVERIFIED'),
+  clock: z.object({ mode: z.literal('REAL_TIME'), sourceStepSeconds: z.literal(86400), scenarioStepSeconds: z.literal(86400) }).strict(),
+  targetPeakGrowthPercent: z.string().max(8),
+  intrabar: z.enum(['LOG_LINEAR_REFERENCE_V1', 'SEEDED_OHLC_PATH_V1', 'SEEDED_BRIDGE_REFERENCE_V2', 'SEEDED_BRIDGE_OHLC_V2']),
+  logs: z.array(z.array(z.number().int()).min(1).max(4)).min(30).max(1500),
+  logsSha256: z.string().regex(/^[a-f0-9]{64}$/),
+}).strict();
 export const scenarioControlsSchema = z.object({
   kind: z.literal('scenario-controls-v2'),
   scenario: z.enum(['AUTO', ...LISTING_SCENARIOS]),
@@ -58,7 +83,8 @@ export const scenarioControlsSchema = z.object({
     type: z.enum(['growth', 'range', 'pullback', 'recovery']),
     durationHours: z.number().int().min(1).max(720),
     targetPrice: scenarioDecimal,
-  }).strict()).min(1).max(24),
+  // Empty only in the historical growth window, where it replaces the stages (validateScenarioControls).
+  }).strict()).min(0).max(24),
   afterGrowth: z.enum(['range', 'historical']),
   historical: z.object({
     version: z.literal(1),
@@ -70,6 +96,8 @@ export const scenarioControlsSchema = z.object({
       bars: z.array(z.tuple([z.number().int(), z.number().int(), z.number().int()])).min(24).max(2400),
     }).strict()).min(1).max(3),
   }).strict().optional(),
+  growth: z.literal('historical-window').optional(),
+  historicalGrowth: historicalGrowthSchema.optional(),
   pullbacks: z.object({ frequency, minDepthPercent: scenarioDecimal.refine(v => Number(v) <= 60, 'Глубина отката должна быть не выше 60%'), maxDepthPercent: scenarioDecimal.refine(v => Number(v) <= 60, 'Глубина отката должна быть не выше 60%'), durationMinutes: z.number().int().min(5).max(360) }).strict(),
   candles: z.object({ intensity: z.enum(['low', 'medium', 'high']), diversity: z.number().min(0).max(1), pauseFrequency: frequency }).strict(),
   wicks: z.object({ length: z.enum(['short', 'normal', 'pronounced']), longFrequency: frequency }).strict(),
@@ -150,9 +178,14 @@ export function parseListingConfig(input: unknown): ListingConfig {
   const config = parsed.data;
   if (config.simulationProgram?.kind === 'scenario-controls-v2') {
     if (Date.parse(config.listingAt) % 10_000 !== 0) throw new ListingValidationError('INVALID_SCENARIO', 'Время запуска должно совпадать с границей 10 секунд');
-    if (config.simulationProgram.afterGrowth === 'historical' && historicalSerializedBytes(config) > 80 * 1024)
+    if ((config.simulationProgram.afterGrowth === 'historical' || config.simulationProgram.growth === 'historical-window')
+        && historicalSerializedBytes(config) > 80 * 1024)
       throw new ListingValidationError('HISTORICAL_DATA_TOO_LARGE', 'Файл движения слишком большой для сохранения в листинге (80 КБ с логотипом)');
-    try { validateScenarioControls(config.simulationProgram, config.initialPrice); }
+    try {
+      // The window's stored logs must match their checksum before any simulation reads them.
+      if (config.simulationProgram.historicalGrowth) validateHistoricalGrowthProgram(config.simulationProgram.historicalGrowth);
+      validateScenarioControls(config.simulationProgram, config.initialPrice);
+    }
     catch (error) { throw new ListingValidationError('INVALID_SCENARIO', error instanceof Error ? error.message : 'Проверьте настройки движения цены'); }
   }
   if (config.simulationProgram && config.tradable) throw new ListingValidationError('DEMO_ONLY', 'Bounded scenarios require a non-tradable demo listing');
@@ -219,7 +252,8 @@ export function checkPublishable(next: ListingConfig, active: ListingConfig | nu
   // Never publish it to a market whose synthetic reference can affect Spot.
   // A future license-approved rollout must explicitly replace this gate
   // after legal review, isolated paper accounting and full QA.
-  if (next.simulationProgram?.kind === 'scenario-controls-v2' && next.simulationProgram.afterGrowth === 'historical')
+  if (next.simulationProgram?.kind === 'scenario-controls-v2'
+      && (next.simulationProgram.afterGrowth === 'historical' || next.simulationProgram.growth === 'historical-window'))
     throw new ListingValidationError('HISTORICAL_RIGHTS_UNVERIFIED',
       'Историческое движение доступно для сохранённого черновика и приватного предпросмотра. Публикация запрещена до проверки прав на данные и изоляции торговли.');
   const at = Date.parse(next.listingAt);

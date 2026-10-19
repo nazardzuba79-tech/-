@@ -6493,3 +6493,130 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - Templates live in this browser only; there is no server sync.
   - The Coordinates tab edits prices only; a point's time is still changed by dragging.
 - **Not done:** merge, deploy, PR, production migration, real data. Codex's Stocks files were not touched.
+
+### Claude — 2026-10-18 — History20: historical growth window in Admin → Listings (private preview only)
+
+- **Task (owner pack «VOLTEX_History20_Claude_20261018», `03_CLAUDE_TASK_UA.md`):** 20 reusable historical growth windows for separate model listings, as an isolated, labelled bot-research simulator / private preview, plus the BotLab 01 draft. No merge, deploy, migration or new service.
+- **Branch:** `claude/peaceful-volta-h5zw7g-history20` from main `5d14647c` (the pack's control main, unchanged at fetch); the commit carrying this entry.
+- **Pack verified independently** (own Node check, not the pack's script):
+  - archive 100/100 and pack 97/97 SHA-256;
+  - 20 distinct scenarios, 8637 daily rows, no gaps, no BLOCKED_DATA, VALIDATION_REPORT PASS;
+  - the alpha transform reproduces normalized_path to 1.1e-15.
+- **Material files:**
+  - `src/shared/listingHistoricalGrowth.ts` (new reference: format, maths, checksum, observation, folds);
+  - `src/shared/listingScenarioControls.ts` (inert validation, mutual exclusion);
+  - `src/services/testMarkets/simulationScenarioControls.ts` (inert tick generator inside the existing v2 dispatch);
+  - `src/services/listings/{listingConfig,listingPreview,simulationContour}.ts`, `src/api/routes/adminListings.ts` (bounded preview);
+  - `frontend/src/pages/admin/{historicalGrowthModel,historicalGrowthPack,historicalGrowthCatalog,ListingHistoricalGrowthPanel}.ts(x)`, `AdminListingsPage.tsx`, `listingMovementModel.ts`, `adminListingsApi.ts`, `adminListings.css`;
+  - tests, `scripts/qa-listing-history20.cjs`, `.github/workflows/admin-listings.yml`, `docs/HISTORY20_GROWTH_WINDOW.md`.
+- **Preserved:**
+  - Legacy stages and the PR #518 hourly continuation are untouched; the new mode is a separate, mutually exclusive branch.
+  - The NRX/VTA/AITH release identity and projection guards pass unchanged: no edit to `simulationSchedule.ts` or `testMarketSimulation.ts`, and the v2 modules stay inert.
+  - Funding, KYC, Stocks #538–#540, Copy Trading, the mobile admin (#500) and the seven locales are not touched.
+  - `HISTORICAL_RIGHTS_UNVERIFIED` and the contour isolation now also cover the window.
+- **Rights:**
+  - The repository is public and the sources are non-commercial (CC BY-NC / CC BY-NC-SA + Binance Vision Terms). Only code, synthetic tests and catalogue metadata/hashes are committed.
+  - The trajectories are imported on the admin's device from the owner's ZIP (hash-checked against the committed metadata, rebuilt from source CSV, parity ≤ 1e-7, `ln(P/A)` only).
+  - Screenshots from the real pack are kept out of the repository.
+- **Verified locally:**
+  - backend `tsc` and frontend `tsc -b`; Worker listings integration on workerd 18/18;
+  - new suites: `historicalGrowthWindow` 31/31, `historicalGrowthLibrary` 10/10 (including the real ZIP via `HISTORY20_ZIP`), `adminListings` 18/18;
+  - local-only pack suite 3/3 (`HISTORY20_PACK_DIR`):
+    - all 20 windows ≤ 1.31e-8 vs normalized_path, drafts 5–33 KB;
+    - VHX-01 all 7,439,040 ticks of 861 days peak exactly 239.449;
+  - full Jest 530 passed / 4 failed suites (9 tests). The same 9 fail on clean main `5d14647c` (market-data provider matrix, CFD, live isolation, copy canonical pins);
+  - QA script at 1440/390: synthetic 8/8 and real pack 9/9 (import 0.3 s, previews 0.1–0.2 s, no sideways scroll, publish refused by the Durable Object).
+- **Not run:** production, real phones, any bot execution (no offline harness exists; none added; ordinary Spot not opened).
+- **Unresolved, for the owner:**
+  - a licence for the intended use;
+  - a unique symbol and start time for BotLab 01;
+  - an authorised isolated bot harness;
+  - bearish/range/OOD control sets;
+  - the 120 h compression mode (inactive, needs explicit approval).
+
+### Claude — 2026-10-18 — History20 intraday model v2: seeded bridge instead of straight lines (PR #544, owner work order Phase 1)
+- **Task:** the owner/CTO found the 5m/1h previews unnaturally straight. Replace the piecewise straight intraday paths with a deterministic, bounded, realistic-looking synthetic model. Keep the daily source truths, REAL_TIME, the cap and every guard; label observed vs modeled.
+- **Commit:** see PR #544 (branch `claude/peaceful-volta-h5zw7g-history20`, on top of the owner's `c0e7777f`; no reset, no force-push).
+- **What changed:**
+  - `intrabar` now versions the intraday model.
+    - `SEEDED_BRIDGE_REFERENCE_V2` / `SEEDED_BRIDGE_OHLC_V2` are the default for new choices.
+    - The v1 ids stay valid as the labelled straight-line baseline (admin selector «Модель внутри суток»).
+    - Stored logs and their checksum do not change.
+  - v2 is a seeded Lévy Brownian bridge on an activity clock (bursts and pauses), with random access in O(14) per tick and no state. Near a source high or low it uses a Bessel-3 bridge, so there is no flat top.
+  - **OHLC day:** opens at the source open, reaches the source H and L exactly, never leaves [L, H] and closes on C.
+    - So the 1d candle is the source bar. v1 differed by up to 1.8e-3.
+    - The source's own close→open gap stays at 00:00.
+  - **Reference day:** both samples are exact. Wicks stay in a modeled band (± 1.25 σ of local daily moves, under the cap) and are labelled MODELED.
+  - Volume is modeled from activity and moves.
+  - The preview summary carries `intrabar/provider/metric`. The admin shows «Наблюдение» / «МОДЕЛЬ» lines, and the preview marks 1d as observation and finer candles as the model.
+- **Material files:**
+  - `src/shared/listingHistoricalGrowth.ts` (reference v2, `historicalGrowthOpenLogAt`, `historicalGrowthTickVolume`, observation by ticks);
+  - `src/services/testMarkets/simulationScenarioControls.ts` (inert verbatim copy);
+  - `src/shared/listingScenarioControls.ts` and `src/services/listings/listingConfig.ts` (accept v2 ids per data kind);
+  - `src/services/listings/listingPreview.ts`;
+  - `frontend/src/pages/admin/{historicalGrowthModel.ts,ListingHistoricalGrowthPanel.tsx,AdminListingsPage.tsx,adminListingsApi.ts,adminListings.css}`;
+  - tests: new `historicalGrowthIntraday.test.ts`, `historicalGrowthWindow.test.ts`, `historicalGrowthPack.local.test.ts` (opt-in registration plus an always-on "no pack file in repo" check), `historicalGrowthLibrary.test.ts`;
+  - `scripts/qa-listing-history20.cjs`, `docs/HISTORY20_GROWTH_WINDOW.md`, `docs/qa/history20-20261018/` (synthetic evidence only).
+- **Preserved:**
+  - The owner's opt-in ZIP test and the bounded ZIP inflation (`67a755cc`, `c0e7777f`).
+  - The NRX/VTA/AITH projection and release identity: NRX fingerprint `63610d3e…` is identical on main `f81df788` and on this branch.
+  - The legacy stages and the #518 continuation.
+  - `HISTORICAL_RIGHTS_UNVERIFIED` and the demo isolation.
+  - No change to `simulationSchedule.ts`, `testMarketSimulation.ts`, Stocks, Wallet or #543 files.
+- **Verified locally (exact working tree before commit):**
+  - backend `npm run build`, frontend `tsc -b` and `vite build`;
+  - `historicalGrowthIntraday` 16/16, `historicalGrowthWindow` 31/31, `historicalGrowthLibrary` 12/12, `adminListings`;
+  - local pack (`HISTORY20_PACK_DIR`) 5/5: all 20 windows under v2 with 0 mismatches vs the daily source values and 0 cap breaches on sampled days; BotLab 01 all 7,439,040 ticks peak exactly 239.449;
+  - ZIP import test (`HISTORY20_ZIP`) PASS;
+  - Worker `test:listings` 18/18 and `test:smoke` 4/4 on workerd, plus the Worker contract;
+  - browser QA at 1440/390: synthetic 9/9, real pack 10/10.
+- **Not run locally:**
+  - the `*.pg.test.ts` suites. A local PostgreSQL could not reach the root-only scratch directory, so these are left to CI's disposable PostgreSQL;
+  - production, real phones, any bot execution.
+- **Unresolved:**
+  - The forming day's bridge is conditioned on that day's own source bar, so it is training data, not evidence of bot profitability.
+  - The price stays flat after the window ends (no tail by design).
+  - The licence, a unique symbol and start time, the bot harness and the control sets remain the owner's.
+
+### Claude — 2026-10-18 — History20: Futures account non-interference regression (owner contract on PR #544)
+- **Task:** the owner requires that «Угоди на історії мають залишатись як і були на фючерсному акаунті». Prove that the History20 changes leave Futures history, positions, balances and funding unchanged.
+- **Added:** `src/services/listings/__tests__/historicalGrowthFutures.pg.test.ts`, a disposable PostgreSQL test.
+  - **Seeded data:**
+    - a Futures account: margin balance; an open LONG with SL/TP; a closed SHORT and a liquidation with realized PnL; open, filled and reduce-only orders; a funding rate record and funding payments;
+    - the native Futures TEST account (state, revisions, live projection) with a HISTORICAL_DEMO deal;
+    - Spot and demo rows.
+  - **History20 paths exercised**, for v1 and v2, reference and OHLC:
+    - the draft gate, the first24h and window previews, 48 h of ticks, 5m candles and a bot observation;
+    - every real-money refusal: Spot order, admin simulation sale, OCO, demo order, owner allocation, Futures collateral, wallet price.
+  - **Assertions:** every row is byte-for-byte unchanged, and the served `/futures/balances`, `/futures/orders/me` and `/futures/positions/history` are equal.
+- **Verified locally:**
+  - the new test passes, on PostgreSQL 16 loopback;
+  - a mutation check (one funding payment changed by 1e-10) makes it fail;
+  - backend `tsc` passes.
+- **Material files:** the test only. No production code changed in this commit. It runs in CI through the existing `historicalGrowth` pattern step of `admin-listings.yml`, which has the disposable database.
+- **Not done:** wiring History20 windows into the native Futures TEST account. A proposal only, in the PR comment; it needs owner approval.
+
+### Claude — 2026-10-18 — History20: price path of an ordinary Spot scenario listing (owner final instruction, Spot only)
+- **Task:** owner comment on PR #544 (10:08 UTC): Futures work stopped (#549 closed by the owner; my #550 closed unmerged, nothing carried over). History20 is only the price-shape source of new Spot scenario listings, on the existing Spot price model, chart and market; no new wallet, engine or funds; no change to admission, roles, fees, accounting, NRX/AITH or published history.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-history20` (PR #544), on top of `e7f2667a`; no rebase, no force-push.
+- **Finding:** the window was already priced by the existing Spot path (`listingSimulationConfig` → `simulationFor` → `spotPriceSource`, `testMarketCandles`, preview, wallet). The only detachment was this PR's own extension of the #518 no-ledger contour to windows.
+- **What changed:**
+  - `src/services/listings/simulationContour.ts`: back to main's predicates (comment only); a window is no longer in the no-ledger contour.
+  - `frontend/src/pages/admin/AdminListingsPage.tsx`: the owner-allocation field is locked only for the #518 continuation; choosing a window no longer forces it to 0. The publish gate is unchanged.
+  - Tests: new `historicalGrowthSpot.pg.test.ts` (one model for Spot ticker, public chart and Admin preview; Buy/Sell/OCO refused with the ordinary `DEMO_ONLY` refusal and no order rows; allocation once to ADMIN, no USDT moved, no DemoBalance/FuturesBalance rows; wallet = model price; a resting take-profit fires on the model crossing; venue never asked). `historicalGrowthWindow`, `historicalGrowthIntraday`, `historicalGrowthFutures.pg` and `adminListings` updated to the ordinary scenario-listing rules.
+  - `docs/HISTORY20_GROWTH_WINDOW.md`: Spot connection map and rules.
+- **Preserved:** `checkPublishable` / `HISTORICAL_RIGHTS_UNVERIFIED`; `DEMO_ONLY`; HISTORY_LOCKED; the #518 continuation contour; NRX/AITH configs, schedules, quotes and trade records; Futures and NativeDemo untouched; Codex Stocks files and Wallet #543 files untouched.
+- **Verified locally (this working tree):**
+  - `historicalGrowthSpot.pg` 3/3 on disposable loopback PostgreSQL 16; mutation (window back in the contour) makes all 3 fail;
+  - `historicalGrowthWindow`, `historicalGrowthIntraday`, `historicalGrowthFutures.pg`, `adminListings` pass; broader listings/testMarkets/OrderService/PriceWatcher/WalletPortfolio/routes run: 40 suites passed;
+  - `nrxSpot.pg`, `vtaDemoSales`, `vtaNativeCoexistence` 31/31 on a freshly migrated database (a first run on a stale database failed on leftover rows);
+  - frontend `tsc -b`; admin-related frontend suites 7/7; `scripts/qa-listing-history20.cjs` 9/9 at 1440/390 (synthetic).
+- **Not run:** CI on this commit (pending at time of writing); production; real phones; any bot execution.
+- **Unresolved (owner):** rights (publication refused); Buy/Sell on a scenario listing needs an owner decision on `DEMO_ONLY` admission; Spot `Balance` USDT from legacy NRX sales may be withdrawable (unchanged, no isolation claimed); the preview's `SIMUSDT` unit vs the listing's USDT quote; the #544 PR body still says no allocations.
+
+### Claude — 2026-10-19 — History20: explicit time limit for the heavy Futures-account regression
+- **Task:** during the #551 compatibility review (CTO, 19.10), `historicalGrowthFutures.pg.test.ts` timed out at Jest's 5 s default. It ran 4920–5593 ms on this branch alone and on the #551+#548+#544+#546 review tree, so the cause is pre-existing and was not introduced by the merge.
+- **Commit:** the commit that adds this entry (branch `claude/peaceful-volta-h5zw7g-history20`, PR #544), on top of `6a0f5599`.
+- **Changed:** only that test's limit (30 s). No assertion changed; nothing skipped.
+- **Verified locally:** 3 consecutive runs pass (4648–5034 ms) on disposable PostgreSQL.
+- **Not run:** CI on this commit (pending at time of writing).
