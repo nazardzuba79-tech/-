@@ -175,7 +175,9 @@ export class WalletPortfolioService {
     const { isHistoricalDemoAsset } = await import('./listings/simulationContour');
     // A historical simulation (demo contour) is never valued: no price at all, not its model's.
     for (const asset of managedListingAssets()) if (wanted.has(asset.symbol) && isHistoricalDemoAsset(asset)) byBase.delete(asset.symbol);
-    const held = managedListingAssets().filter((asset) => wanted.has(asset.symbol) && !isHistoricalDemoAsset(asset));
+    // A market quoted in the restricted SIMUSDT unit (History20 private-test design) is not USD money: no USD value.
+    for (const asset of managedListingAssets()) if (wanted.has(asset.symbol) && asset.quote !== 'USDT') byBase.delete(asset.symbol);
+    const held = managedListingAssets().filter((asset) => wanted.has(asset.symbol) && !isHistoricalDemoAsset(asset) && asset.quote === 'USDT');
     if (held.length) {
       const { simulationFor } = await import('./testMarkets/testMarketSimulation');
       for (const asset of held) byBase.set(asset.symbol, simulationFor(asset).priceAt(Date.now()) ?? asset.initialPrice);

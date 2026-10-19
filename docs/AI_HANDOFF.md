@@ -6720,3 +6720,49 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Changed:** only that test's limit (30 s). No assertion changed; nothing skipped.
 - **Verified locally:** 3 consecutive runs pass (4648–5034 ms) on disposable PostgreSQL.
 - **Not run:** CI on this commit (pending at time of writing).
+
+### Claude — 2026-10-19 — History20 SIMUSDT settlement spike and #551 legacy audit (CTO review on PR #551, owner approval 08:07; code only, default off)
+- **Task:** CTO comment on #551 (08:04 UTC):
+  - audit AITH and older managed-listing sales before/after #551;
+  - confirm #551 compatibility with #544, #546 and #548;
+  - build and test the smallest non-withdrawable History20 settlement (`SIMUSDT` restricted unit in the existing Spot `Balance`), covering every withdrawal, deposit, transfer, collateral and conversion path.
+
+  The owner approved `SIMUSDT` as the design at 08:07, not activation.
+- **Branch / commit:** `claude/voltex-mobile-audit-7rpjni`, the commit that adds this entry. The review merges #544 `46e2024f`, #546 `1a575d5a`, #548 `bc329bb4` and #551 `a9aee9cc`. Conflicts were only in this file and in `admin-listings.yml`; both sides were kept.
+- **Not merged: #552** (another Claude session's SIMUSDT refusals spike, `99064e93`). An automated permission check refused merging another session's open PR into this branch. The two overlap in `testAssetConfig.ts`, `WalletTransferService.ts` and `PurchaseService.ts`; see the "Overlap with #552" section in `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`.
+- **Material files:**
+  - `testAssetConfig.ts`: `SIMULATION_QUOTE`, `isSimulationQuote`, `isSimulationSettled`; `isTestAssetPairOrSymbol` includes them.
+  - `OrderService.ts`: the #551 stop lets through only a `SIMUSDT`-quoted market.
+  - `WalletTransferService.ts`, `PurchaseService.ts`: refuse `SIMUSDT`-settled value.
+  - `WalletPortfolioService.ts`: no USD value for a non-USDT quote.
+  - `listings/privateTest.ts`: unwired helpers.
+  - `managedSnapshot.ts`: back to `main`.
+  - New `history20SimusdtSettlement.pg.test.ts`.
+  - `legacySimulationSaleEquivalence.pg.test.ts` (earlier commit `d8e2a462`).
+  - `admin-listings.yml`: both tests added; the transfer and purchase files added to the trigger paths.
+  - `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`: evidence section.
+- **Preserved from the other session:**
+  - #551's model-priced sale and its stop for `/USDT` managed pairs;
+  - #551's legacy pins;
+  - #544's 30 s limit for `historicalGrowthFutures.pg` (my own 60 s change was dropped in its favour);
+  - #548's fail-closed registry;
+  - #546's precision work;
+  - NRX and AITH code and configs, untouched.
+- **Defect found and fixed (RED→GREEN):** the window asset bought with `SIMUSDT` could rest as a LIMIT SELL on `X/USDT` in the ordinary book, an indirect cash-out. `isSimulationSettled` now refuses any other pair for a `SIMUSDT`-quoted base.
+- **Verified locally** (disposable loopback PostgreSQL 16, fresh migrated DBs):
+  - `history20SimusdtSettlement.pg` 6/6. Mutation check: each of the 6 new guards, when removed, fails at least one test.
+  - listings + testMarkets + `adminListings`: 41 suites / 510 tests, including `nrxSpot.pg`, `vtaDemoSales.pg`, `vtaNativeCoexistence.pg`, `legacySimulationSaleEquivalence.pg`, `managedListingSimulationSale.pg` and `historicalGrowthFutures.pg`.
+  - services, routes, private-trading, banking, OTC and futures: 147 suites passed, 2397 tests. 1 failure, `CfdMarketDataService` "Gold Spot" vs "Gold US Dollar": also present on `main` (catalog vs test), not touched here.
+  - Backend `tsc` clean.
+- **Legacy behaviour found, not changed** (NRX rule; probed on synthetic rows): an NRX holder can sell on `NRX/BTC` to another user for withdrawable BTC; `USDT/NRX` is accepted; NRX moves to `FuturesBalance` via transfer; a product priced in NRX can be bought. Owner decision.
+- **Not run:**
+  - frontend (no frontend change);
+  - Worker tests;
+  - CI on this commit (pending at time of writing);
+  - production, real accounts, any activation.
+- **Unresolved:**
+  - wiring: private channel (Worker DO + Render registry), per-user admission ahead of the ADMIN synthetic-sale branch, terminal, one-time audited tester funding, OCO/stop-loss and restart proofs on the private pair;
+  - activation approval;
+  - rights for any non-synthetic data (`HISTORICAL_RIGHTS_UNVERIFIED` stays);
+  - pick one name between this branch and #552;
+  - the legacy NRX cross-pair, transfer and purchase findings.

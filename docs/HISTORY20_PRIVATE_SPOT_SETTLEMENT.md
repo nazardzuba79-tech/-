@@ -68,3 +68,90 @@ Settle History20 private pairs in a **restricted test unit, `SIMUSDT`**, instead
 ## Owner decision still needed (one)
 
 Approve `SIMUSDT` as the non-withdrawable settlement unit for History20 private pairs, with explicit per-tester test allocations (design above), or choose the migration alternative. Until then the synthetic sale of a managed listing stays stopped, and History20 windows admit no orders (`DEMO_ONLY`).
+
+**Update 2026-10-19 08:07 (owner, PR #551):** `SIMUSDT` approved as the settlement **design** and for code-only implementation. This is not approval to activate it or to move real balances.
+
+## Spike and evidence (review branch `claude/voltex-mobile-audit-7rpjni`, 2026-10-19)
+
+The branch includes #544, #546, #548 and #551 (head `a9aee9cc`). It does not include #552, which another session opened in parallel and which covers the same refusals; see "Overlap with #552" below. Everything listed here is **inert in production**: the registry builds only `/USDT` pairs, and no route, store or Worker creates a `SIMUSDT` market. `listings/privateTest.ts` is not imported on any request path.
+
+### Legacy sales before and after #551 (disposable PostgreSQL)
+
+Covered by `legacySimulationSaleEquivalence.pg` and #551's pins in `managedListingSimulationSale.pg`.
+
+| Case | `main` | This branch |
+|---|---|---|
+| AITH under a valid lease, MARKET and LIMIT | refused by its own gate, no write | identical |
+| Older managed listing, owner MARKET SELL | no sale: the venue has no price, no write | no sale, no write; only the reason changes |
+| Ordinary user, book path | unchanged | identical |
+| NRX legacy sale | credits USDT at the model price | identical |
+| Venue pair (`ETH/USDT`) owner sale | venue price | identical |
+
+No legacy managed-listing sale ever executed, so #551 removed nothing that worked. The `SIMUSDT` exception does not reopen the stop for any `/USDT` pair.
+
+### What the spike adds (default off)
+
+- `testAssetConfig.ts`:
+  - `SIMULATION_QUOTE`;
+  - `isSimulationQuote` (bare `SIMUSDT`, or either side of a `/`/`-` pair);
+  - `isSimulationSettled`, which also matches a base quoted in `SIMUSDT`, on any pair.
+  - `isTestAssetPairOrSymbol` includes it, so every existing guard refuses it.
+- `OrderService.sellTeamSpotSimulation`: the #551 stop now lets through only a market quoted in `SIMUSDT`. Its proceeds land in the `SIMUSDT` row.
+- `WalletTransferService` and `PurchaseService`: refuse `SIMUSDT`-settled value (the #552 session found the purchase path first). Other assets are unchanged.
+- `WalletPortfolioService.pricesFor`: a base quoted in anything but USDT has no USD value.
+- `listings/privateTest.ts` (unwired): the pair builder, the `SIMUSDT` market config, `privateTestEnabled` (`HISTORY20_PRIVATE_TEST=enabled`) and `isPrivateTestParticipant` (the verified owner, an ADMIN, plus allowlisted testers; never another ADMIN or a blocked account).
+
+### Paths proven on disposable PostgreSQL (`history20SimusdtSettlement.pg`)
+
+The fixture account holds 500 real USDT next to `SIMUSDT` (simulated profit).
+
+| Path | Result |
+|---|---|
+| Withdrawal: Spot (held) and trading account (unheld) | `SIMUSDT` and the window asset refused; `/withdrawals/options` shows USDT 500 only |
+| Deposit claim and observation | refused before any write |
+| Admin adjustment (`adjust`, `adjustOnce`), demo top-up | refused |
+| Spot↔Futures transfer | `SIMUSDT` and the window asset refused; USDT unchanged |
+| Banking placement | `asset_unavailable` |
+| Product purchase | `SIMUSDT` and the window asset refused; USDT product unchanged |
+| OTC cash | not in the route's asset enum, USDT/USDC/BTC/ETH (code reading, `otcCash.ts`; not exercised by this test) |
+| Wallet valuation, card trading-volume test | no USD value; not eligible |
+| Pairs naming `SIMUSDT` (`SIMUSDT/USDT`, `BTC/SIMUSDT`, `X/SIMUSDT`) with no admission | refused for everyone before any row |
+| **Indirect cash-out:** the window asset bought with `SIMUSDT`, then sold on `X/USDT`, `X/BTC`, `USDT/X` or `X-USDT` | refused before any row. **RED→GREEN:** before `isSimulationSettled`, a LIMIT SELL on `X/USDT` rested in the ordinary book |
+| Settlement, with a test-only stand-in for admission on that one pair | the owner sale is priced at the canonical model price (= ticker = chart close); book fill, cancel (lock released exactly), conditional take-profit fired by `PriceWatcherService` and concurrent owner sales all move only the window asset and `SIMUSDT`. No USDT row moves; the venue is never asked |
+| Without the stand-in | the real gate refuses the private market for everyone |
+| Same window quoted in USDT | owner sale still stopped (#551) |
+| Publication | `HISTORICAL_RIGHTS_UNVERIFIED` unchanged |
+
+**Mutation check:** each new guard was removed in turn and the file re-run. Every one makes at least one test fail:
+- `isSimulationSettled` base match;
+- the `SIMUSDT` entry in the guard;
+- the transfer guard;
+- the purchase guard;
+- the sale narrowing;
+- the valuation quote check.
+
+### Findings that shape the wiring
+
+1. **Admission cannot reuse `isTradable`.** `testMarketSimulation.ts` applies a listing's scenario path only while it is not tradable. A tradable private market would lose its History20 prices, so admission must be a separate, per-user gate in `assertSpotListingReady`/`placeOrder`.
+2. **The synthetic sale is reachable by any ADMIN** (`role === 'ADMIN' || isSimulationOnlyUser`). The per-user admission must run before that branch, so another ADMIN is refused on a private pair.
+3. **Still to build before activation:**
+   - the private listing channel (the Worker DO and the Render registry; the public catalogue never shows it);
+   - per-user admission;
+   - the terminal for participants;
+   - one-time audited test funding (the `allocateListingOwner` pattern, per tester);
+   - OCO/stop-loss and restart proofs on the private pair.
+
+### Legacy behaviour found, not changed (NRX unchanged by owner rule)
+
+Probed on synthetic rows on this branch. Its NRX paths are unchanged from `main`.
+- An NRX holder's LIMIT SELL on `NRX/BTC` filled against another user's BTC bid, so the holder received withdrawable BTC. `USDT/NRX` is also accepted. The guard knows only each test asset's own `/USDT` pair.
+- `transferWalletBalance` moves NRX into `FuturesBalance`.
+- A product priced in NRX can be bought.
+
+These are transfers between users, not minted value. Closing them would change legacy NRX behaviour, so that is a separate owner decision.
+
+### Overlap with #552
+
+#552 (`claude/peaceful-volta-h5zw7g-simusdt-spike`, `99064e93`) adds the same refusals under the names `RESTRICTED_SETTLEMENT_UNITS` and `isRestrictedSettlementUnit`, plus a `PurchaseService` guard and `restrictedSettlementUnit.pg`. It was not merged here. An automated permission check stopped the merge of another session's open PR into this branch.
+
+To integrate, keep one name for the unit check. #552's refusals are a subset of this branch, which also covers the window asset across pairs, the settlement path and the narrowed sale.

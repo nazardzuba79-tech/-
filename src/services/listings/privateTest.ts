@@ -1,53 +1,49 @@
 /**
- * HISTORY20 PRIVATE TEST (owner decision, 2026-10-19, PR #544).
+ * HISTORY20 PRIVATE SPOT TEST — feasibility spike, NOT WIRED (owner decision
+ * 2026-10-19 on PR #544; CTO review on PR #551). Nothing imports this module
+ * on a request path: no route, registry, gate or worker reads it, so it
+ * changes no behaviour. It holds the pieces the design in
+ * docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md needs, pinned by tests:
  *
- * The first History20 listings are traded privately: by the verified owner
- * and the server's allowlisted testers only, on the EXISTING Spot path
- * (orders, matching, conditional triggers, the owner's simulation sale), at
- * the listing's own model price. Nothing here is a second engine or wallet.
+ * - the private market is `<SYMBOL>/SIMUSDT`: every fill and the owner's
+ *   simulation sale settle in the restricted `SIMUSDT` row of the ordinary
+ *   Spot `Balance` table (no new wallet, no schema change), which every
+ *   withdrawal, deposit, adjustment, transfer, purchase, collateral and
+ *   valuation path already refuses, and the window asset trades on no other
+ *   pair (testAssetConfig.isSimulationSettled);
+ * - exact admission: the verified owner and the allowlisted testers only;
+ * - default off (HISTORY20_PRIVATE_TEST=enabled), and a window is never
+ *   published (HISTORICAL_RIGHTS_UNVERIFIED stays in checkPublishable).
  *
- * The isolation is the quote. A private market is `<SYMBOL>/SIMUSDT`, never
- * `<SYMBOL>/USDT`: every fill, every simulation sale and every conditional
- * fill settles in the `SIMUSDT` row of the ordinary Spot `Balance` table.
- * SIMUSDT is a restricted test asset (testAssetConfig): it cannot be
- * withdrawn, deposited, adjusted, transferred, used as collateral, priced in
- * USD or traded on any other pair. So profit made at a model price can never
- * become withdrawable USDT, and no USDT row moves. Legacy NRX/AITH keep
- * their `/USDT` pairs and every existing rule.
- *
- * Default off: Render loads, serves and trades private tests only with
- * HISTORY20_PRIVATE_TEST=enabled. The rights gate is untouched — a window is
- * never published (HISTORICAL_RIGHTS_UNVERIFIED), and its private market is
- * never served by the public catalogue or the public edge.
+ * The owner approved SIMUSDT as the settlement design (2026-10-19, PR #551),
+ * not its activation. Wiring it (a private channel in the listings store,
+ * the per-user Spot gate, the terminal, test funding) is a separate step.
  */
 import type { PrismaClient } from '@prisma/client';
 import { isNativeTestAccount } from '../../private-trading/native/testAccounts';
 import { privateTradingConfig, type PrivateTradingConfig } from '../../private-trading/access';
 import { listingSimulationConfig, type ListingConfig } from './listingConfig';
-import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
+import { SIMULATION_QUOTE, type TestAssetConfig } from '../testMarkets/testAssetConfig';
 
-/** The quote of every private History20 market: a demo unit, never USD money. */
-export const SIMULATION_QUOTE = 'SIMUSDT' as const;
+export { SIMULATION_QUOTE };
 
-/** Render serves and trades private tests only when this is exactly `enabled`. */
+/** Off unless exactly `enabled`. Nothing reads it yet. */
 export function privateTestEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.HISTORY20_PRIVATE_TEST === 'enabled';
 }
 
 export const privateTestPair = (symbol: string) => `${symbol.toUpperCase()}/${SIMULATION_QUOTE}`;
-export const privateTestSlug = (symbol: string) => `${symbol.toUpperCase()}-${SIMULATION_QUOTE}`;
 
-/** The private market's simulation input: the listing's own model, quoted in SIMUSDT. */
+/** The private market's simulation input: the listing's own model (same prices and candles), quoted in SIMUSDT. */
 export function privateTestSimulationConfig(config: ListingConfig): TestAssetConfig {
   return { ...listingSimulationConfig(config), quote: SIMULATION_QUOTE, pair: privateTestPair(config.symbol), isTradable: false, privateTest: true };
 }
 
 /**
- * Who may see and trade a private test: the verified owner (the configured
- * PRIVATE_TRADING_OWNER_ID while private trading is enabled, and an ADMIN) or
- * an allowlisted tester (PRIVATE_TRADING_TEST_USER_IDS) — the same server
- * identities the existing simulation sale admits — and never a blocked
- * account. Not every ADMIN, never a client claim.
+ * Who would be admitted: the verified owner (the configured
+ * PRIVATE_TRADING_OWNER_ID while private trading is enabled, an ADMIN) or an
+ * allowlisted tester (PRIVATE_TRADING_TEST_USER_IDS) — never another ADMIN,
+ * an ordinary user or a blocked account, and never a client claim.
  */
 export async function isPrivateTestParticipant(
   db: Pick<PrismaClient, 'user'>,

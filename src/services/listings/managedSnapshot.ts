@@ -18,18 +18,3 @@ export function setManagedListingAssets(next: readonly TestAssetConfig[], validU
 export function managedListingAssets(): readonly TestAssetConfig[] {
   return assets.filter(asset => !isAith(asset.symbol) || Date.now() < aithValidUntil);
 }
-
-/**
- * History20 private test markets (privateTest.ts), `<SYMBOL>/SIMUSDT`. Kept
- * apart from the published listings: the public routes never serve them, and
- * only the owner and allowlisted testers may trade them.
- */
-let privateTestAssets: readonly TestAssetConfig[] = Object.freeze([]);
-
-export function setPrivateTestListingAssets(next: readonly TestAssetConfig[]): void {
-  privateTestAssets = Object.freeze([...next]);
-}
-
-export function privateTestListingAssets(): readonly TestAssetConfig[] {
-  return privateTestAssets;
-}
