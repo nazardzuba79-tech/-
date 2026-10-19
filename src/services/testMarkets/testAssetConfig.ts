@@ -145,8 +145,23 @@ export function testAssetForSymbol(symbol: string | null | undefined): TestAsset
   return [NEURIX, ...TEST_ASSETS, ...managedListingAssets()].find((asset) => asset.symbol === normalized) ?? null;
 }
 
-/** Restricted-asset guard (VTA, NRX and every published managed listing). Only ordinary Spot admits listed NRX and tradable managed listings. */
+/**
+ * Settlement units that would carry model-priced value (History20 private
+ * pairs; owner decision pending). Nothing credits them and no pair quotes
+ * them; until then they are only refused: never deposited, withdrawn,
+ * adjusted, transferred, spent or traded on an ordinary pair.
+ */
+export const RESTRICTED_SETTLEMENT_UNITS: ReadonlySet<string> = new Set(['SIMUSDT']);
+
+/** A restricted settlement unit, bare (`SIMUSDT`) or as either side of a pair (`X/SIMUSDT`). Matched before pair normalisation, which reads `SIMUSDT` as `SIM/USDT`. */
+export function isRestrictedSettlementUnit(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return value.trim().toUpperCase().replace(/[-_]/g, '/').split('/').some((part) => RESTRICTED_SETTLEMENT_UNITS.has(part));
+}
+
+/** Restricted-asset guard (VTA, NRX, every published managed listing and the restricted settlement units). Only ordinary Spot admits listed NRX and tradable managed listings. */
 export function isTestAssetPairOrSymbol(value: string | null | undefined): boolean {
+  if (isRestrictedSettlementUnit(value)) return true;
   // AITH remains restricted even while its publication is unavailable or changing generations.
   if (value && ['AITH', 'AITH/USDT'].includes(normalizePair(value))) return true;
   return testAssetForPair(value) !== null || testAssetForSymbol(value) !== null;
