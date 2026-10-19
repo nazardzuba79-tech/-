@@ -17,6 +17,8 @@ process.env.API_KEY_ENCRYPTION_SECRET = process.env.API_KEY_ENCRYPTION_SECRET ||
 
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import BigNumber from 'bignumber.js';
 import { defaultScenarioControls } from '../../../shared/listingScenarioControls';
 import { listingSimulationConfig, parseListingConfig, type ListingConfig, type PublishedListing } from '../listingConfig';
@@ -196,6 +198,31 @@ pg('managed listing simulation sale: canonical model price, no withdrawable mode
     expect(await balance(admin, symbol)).toEqual(['3', '0']);
     expect(await balance(admin, 'USDT')).toEqual(['500', '0']);
     expect(await writes(admin)).toEqual([0, 0, 0]);
+  });
+
+  test('legacy AITH under a valid read lease: refused by its own gate before any price read or write (identical on main)', async () => {
+    const aith = listingSimulationConfig(parseListingConfig(JSON.parse(readFileSync(resolve(__dirname, '../../../../config/test-markets/aith.draft.json'), 'utf8'))));
+    const aithAt = Date.parse('2026-10-19T08:00:00.000Z');
+    (Date.now as jest.Mock).mockReturnValue(aithAt);
+    setManagedListingAssets([aith], aithAt + HOUR);
+    expect(managedListingAssets().map(a => a.symbol)).toContain('AITH');
+    await db.balance.create({ data: { userId: admin, asset: 'AITH', available: '10' } });
+    await expect(sell(admin, 1, 'AITH/USDT')).rejects.toThrow('Aitheron AI is not available for trading.');
+    expect(await balance(admin, 'AITH')).toEqual(['10', '0']);
+    expect(await balance(admin, 'USDT')).toEqual(['500', '0']);
+    expect(await writes(admin)).toEqual([0, 0, 0]);
+    expect(venue.getTicker).not.toHaveBeenCalled();
+  });
+
+  test('an older tradable managed listing with the production venue (no such market): no sale and no write, as on main; the venue is no longer asked', async () => {
+    // KrakenMarketDataService.getTicker returns null for a pair Kraken does not list.
+    venue.getTicker.mockImplementation(async (asked: string) => (asked === 'ETH/USDT' ? { lastPrice: '2500' } : null));
+    await allocateListingOwner(db, published(config()), admin);
+    await expect(sell(admin, 10)).rejects.toThrow(CLOSED);
+    expect(await balance(admin, symbol)).toEqual(['1000', '0']);
+    expect(await balance(admin, 'USDT')).toEqual(['500', '0']);
+    expect(await writes(admin)).toEqual([0, 0, 0]);
+    expect(askedFor(pair)).toBe(false);
   });
 
   test('unchanged: an ordinary pair keeps the venue-priced sale and NRX its canonical model-priced sale', async () => {
