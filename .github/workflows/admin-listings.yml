@@ -74,6 +74,7 @@ jobs:
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
           src/services/listings/__tests__/historicalDemoContour.pg.test.ts
+          src/services/testMarkets/__tests__/restrictedSettlementUnit.pg.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
