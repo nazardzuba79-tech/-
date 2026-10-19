@@ -1,11 +1,14 @@
 /**
  * The owner/test-account Spot simulation sale (SELL + MARKET) of a published
- * managed listing, against a real (disposable, loopback) PostgreSQL: it is
- * priced by the same server model the pair's Spot ticker, chart and
- * conditional triggers use, never by the venue. Everything else is the
- * existing path, unchanged: the listing gates, the server-side account check,
- * the atomic debit/credit and the explicit synthetic counterparty (no book
- * liquidity). NRX and ordinary pairs keep their price sources.
+ * managed listing, against a real (disposable, loopback) PostgreSQL.
+ *
+ * Its proceeds would be ordinary Spot USDT, and that ledger backs withdrawals
+ * (shown below), while model-priced earnings must not be withdrawable (owner
+ * decision 19.10). So the sale reads the pair's canonical server price (the
+ * one its Spot ticker, chart, triggers and wallet valuation use; never the
+ * venue) and then stops before any write. NRX (legacy) and ordinary pairs
+ * keep their existing sale; the listing gates, the account policy and the
+ * normal book path are unchanged.
  *
  * Synthetic users, listings and fixtures only; no venue or broker order.
  */
@@ -26,6 +29,8 @@ import { spotPriceSource } from '../../testMarkets/nrxSpot';
 import { simulationFor } from '../../testMarkets/testMarketSimulation';
 import { testMarketCandles } from '../../testMarkets/testMarketService';
 import { OrderService } from '../../OrderService';
+import { WalletPortfolioService } from '../../WalletPortfolioService';
+import { WithdrawalService } from '../../WithdrawalService';
 import { MatchingEngine } from '../../../matching-engine/MatchingEngine';
 
 const url = process.env.VOLTEX_LISTING_TEST_URL;
@@ -38,9 +43,10 @@ const pg = url ? describe : describe.skip;
 const HOUR = 3_600_000;
 const LISTING_AT = Date.parse('2026-10-01T12:00:00.000Z');
 const AT = LISTING_AT + 2 * HOUR + 17_000;
+const CLOSED = 'Simulation Spot sale is not available for this listing';
 const dec = (v: { toString(): string }) => new BigNumber(v.toString());
 
-pg('managed listing simulation sale on the model price (disposable PostgreSQL)', () => {
+pg('managed listing simulation sale: canonical model price, no withdrawable model proceeds (disposable PostgreSQL)', () => {
   let db: PrismaClient, engine: MatchingEngine, service: OrderService;
   let admin: string, tester: string, plain: string, symbol: string, pair: string;
   // A venue that would price anything: a modeled pair must never be asked.
@@ -87,43 +93,41 @@ pg('managed listing simulation sale on the model price (disposable PostgreSQL)',
     else process.env.PRIVATE_TRADING_TEST_USER_IDS = savedTesters;
   });
 
-  test('the owner and an allowlisted tester sell at the model price the ticker, triggers and chart serve; the venue is never asked; no book liquidity', async () => {
+  test('why the sale stops: USDT in the Spot ledger is withdrawable, the listing asset itself is not', async () => {
+    const withdrawals = new WithdrawalService(db);
+    await expect(withdrawals.requestWithdrawal({ userId: admin, asset: 'USDT', network: 'TRC20', toAddress: 'TQ-synthetic-fixture', amount: '100' }))
+      .resolves.toBeTruthy();
+    expect(await balance(admin, 'USDT')).toEqual(['400', '100']);
+    await db.balance.create({ data: { userId: admin, asset: symbol, available: '5' } });
+    await expect(withdrawals.requestWithdrawal({ userId: admin, asset: symbol, network: 'TRC20', toAddress: 'TQ-synthetic-fixture', amount: '1' })).rejects.toThrow();
+    expect(await balance(admin, symbol)).toEqual(['5', '0']);
+  });
+
+  test('the owner and an allowlisted tester: the sale reads the canonical model price (ticker = chart = valuation), never the venue, and stops before any write', async () => {
     const asset = listingSimulationConfig(config()), model = simulationFor(asset);
     await expect(allocateListingOwner(db, published(config()), admin)).resolves.toMatchObject({ applied: true, quantity: '1000' });
     await db.balance.create({ data: { userId: tester, asset: symbol, available: '50' } });
 
-    const price = new BigNumber(model.priceAt(AT)!);
-    const sold = await sell(admin, 10);
-    expect([sold.order.status, sold.trades.length]).toEqual(['FILLED', 1]);
-    expect(sold.trades[0]).toMatchObject({ pair, takerUserId: admin, makerUserId: `simulation:${symbol}`, side: 'SELL' });
-    expect(dec(sold.trades[0].price).eq(price)).toBe(true);
-    // One model everywhere: the Spot ticker/trigger source and the public chart at the same instant.
-    expect((await spotPriceSource(venue, () => AT).getTicker(pair))!.lastPrice).toBe(price.toString());
-    expect(testMarketCandles(asset, '5m', AT, 3).at(-1)!.close).toBe(price.toNumber());
-    // Exact atomic debit and credit; nothing locked.
-    expect(await balance(admin, symbol)).toEqual(['990', '0']);
-    expect(dec((await balance(admin, 'USDT'))![0]).eq(price.times(10).plus(500))).toBe(true);
-    const audit = await db.auditLog.findFirstOrThrow({ where: { userId: admin, action: 'TEAM_SPOT_SIMULATION_SOLD' } });
-    expect(audit.metadata).toMatchObject({ pair, price: price.toFixed(), quantity: '10', counterparty: `simulation:${symbol}` });
+    const price = model.priceAt(AT)!;
+    expect((await spotPriceSource(venue, () => AT).getTicker(pair))!.lastPrice).toBe(String(price));
+    expect(testMarketCandles(asset, '5m', AT, 3).at(-1)!.close).toBe(price);
+    const wallet = new WalletPortfolioService(db, { getTickers: jest.fn(async () => [{ pair: 'BTC/USDT', lastPrice: '60000' }]) } as never, { isConfigured: () => false } as never);
+    expect((await wallet.pricesFor([symbol])).get(symbol)).toBe(price);
 
-    const later = AT + 41 * 60_000;
-    (Date.now as jest.Mock).mockReturnValue(later);
-    const testerPrice = new BigNumber(model.priceAt(later)!);
-    const testerSold = await sell(tester, '2.5');
-    expect(dec(testerSold.trades[0].price).eq(testerPrice)).toBe(true);
-    expect(await balance(tester, symbol)).toEqual(['47.5', '0']);
-    expect(dec((await balance(tester, 'USDT'))![0]).eq(testerPrice.times('2.5').plus(500))).toBe(true);
-
+    for (const [userId, held] of [[admin, '1000'], [tester, '50']] as const) {
+      await expect(sell(userId, 10)).rejects.toThrow(CLOSED);
+      expect(await balance(userId, symbol)).toEqual([held, '0']);
+      expect(await balance(userId, 'USDT')).toEqual(['500', '0']);
+      expect(await writes(userId)).toEqual([0, 0, 0]);
+    }
     expect(askedFor(pair)).toBe(false);
-    // The synthetic counterparty is explicit; nothing rests on or comes from the book.
     expect(engine.getBook(pair).bestBid()).toBeUndefined();
     expect(engine.getBook(pair).bestAsk()).toBeUndefined();
-    expect(await db.trade.count({ where: { pair, makerUserId: { not: `simulation:${symbol}` } } })).toBe(0);
     expect(await db.futuresBalance.count({ where: { userId: { in: [admin, tester] } } })).toBe(0);
     expect(await db.demoBalance.count({ where: { userId: { in: [admin, tester] } } })).toBe(0);
   });
 
-  test('refused before any write: before the listing time, a non-tradable listing, a scenario listing, more than the available balance', async () => {
+  test('refused before any write and before any venue read: before the listing time, a non-tradable listing, a scenario listing', async () => {
     await allocateListingOwner(db, published(config()), admin);
     const unchanged = async () => {
       expect(await balance(admin, symbol)).toEqual(['1000', '0']);
@@ -144,11 +148,7 @@ pg('managed listing simulation sale on the model price (disposable PostgreSQL)',
     setManagedListingAssets([listingSimulationConfig(config({ tradable: false, simulationProgram: defaultScenarioControls('0.25', 'CALM') }))]);
     await expect(sell(admin, 1)).rejects.toThrow('Managed sale QA is not available for trading.');
     await unchanged();
-
-    setManagedListingAssets([listingSimulationConfig(config())]);
-    await expect(sell(admin, 1001)).rejects.toThrow();
-    await unchanged();
-    expect(askedFor(pair)).toBe(false);
+    expect(venue.getTicker).not.toHaveBeenCalled();
   });
 
   test('accounts outside the simulation policy get no synthetic fill: an ordinary user and a blocked admin keep the normal book path', async () => {
@@ -165,7 +165,7 @@ pg('managed listing simulation sale on the model price (disposable PostgreSQL)',
     expect(askedFor(pair)).toBe(false);
   });
 
-  test('a stale snapshot (failed refresh) keeps the last good listing: the sale keeps the price the chart and triggers serve', async () => {
+  test('a stale snapshot (failed refresh) keeps the last good listing: still model-priced and still stopped, never handed to the venue', async () => {
     setManagedListingAssets([]);
     let clock = AT, failing = false;
     const store = { published: jest.fn(async () => {
@@ -181,10 +181,10 @@ pg('managed listing simulation sale on the model price (disposable PostgreSQL)',
     expect(managedListingAssets().map(a => a.symbol)).toEqual([symbol]);
 
     await db.balance.create({ data: { userId: admin, asset: symbol, available: '3' } });
-    const price = new BigNumber(simulationFor(managedListingAssets()[0]).priceAt(AT)!);
-    const sold = await sell(admin, 1);
-    expect(dec(sold.trades[0].price).eq(price)).toBe(true);
-    expect((await spotPriceSource(venue, () => AT).getTicker(pair))!.lastPrice).toBe(price.toString());
+    await expect(sell(admin, 1)).rejects.toThrow(CLOSED);
+    expect(await balance(admin, 'USDT')).toEqual(['500', '0']);
+    expect(await writes(admin)).toEqual([0, 0, 0]);
+    expect((await spotPriceSource(venue, () => AT).getTicker(pair))!.lastPrice).toBe(String(simulationFor(managedListingAssets()[0]).priceAt(AT)));
     expect(askedFor(pair)).toBe(false);
   });
 
@@ -198,7 +198,7 @@ pg('managed listing simulation sale on the model price (disposable PostgreSQL)',
     expect(await writes(admin)).toEqual([0, 0, 0]);
   });
 
-  test('an ordinary pair keeps the venue price and NRX its canonical model price', async () => {
+  test('unchanged: an ordinary pair keeps the venue-priced sale and NRX its canonical model-priced sale', async () => {
     await db.balance.createMany({ data: [{ userId: admin, asset: 'ETH', available: '2' }, { userId: admin, asset: 'NRX', available: '4' }] });
     const eth = await sell(admin, '1.25', 'ETH/USDT');
     expect(dec(eth.trades[0].price).eq(2500)).toBe(true);
