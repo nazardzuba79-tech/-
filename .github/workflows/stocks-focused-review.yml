@@ -14,6 +14,7 @@ on:
       - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
       - '.github/workflows/stocks-focused-review.yml'
       - 'scripts/qa/stocks-migration-review*.cjs'
+      - 'scripts/qa/stocks-rc-50plus2/**'
   workflow_dispatch: {}
 
 permissions:
@@ -104,6 +105,8 @@ jobs:
           src/api/routes/__tests__/stocksTestCash.test.ts
           frontend/src/lib/__tests__/stocksViewerNoop.test.ts
           frontend/src/lib/__tests__/stockWalletProjection.test.ts
+      - name: Bounded harness admission and financial assertion regressions (no workload run)
+        run: node --test scripts/qa/stocks-rc-50plus2/self-test.cjs
       - name: Confirm no production activation by source defaults
         shell: bash
         run: |
