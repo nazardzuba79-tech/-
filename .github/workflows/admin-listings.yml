@@ -7,6 +7,7 @@ on:
       - 'src/shared/listingHistoricalReplay.ts'
       - 'src/shared/listingHistoricalGrowth.ts'
       - 'src/shared/aithPublication.ts'
+      - 'src/shared/history20PrivateSymbol.ts'
       - 'config/test-markets/aith.draft.json'
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'

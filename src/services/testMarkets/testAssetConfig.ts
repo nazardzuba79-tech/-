@@ -10,6 +10,7 @@
 
 import { NEURIX } from './neurix';
 import { managedListingAssets } from '../listings/managedSnapshot';
+import { HISTORY20_PRIVATE_SYMBOL } from '../../shared/history20PrivateSymbol';
 import type { SimulationProfile } from './simulationRealism';
 import type { CyclicImpulseConfig } from './simulationCycles';
 import type { NaturalWickConfig } from './simulationNaturalWicks';
@@ -149,28 +150,35 @@ export function testAssetForSymbol(symbol: string | null | undefined): TestAsset
 }
 
 /**
- * The restricted settlement unit proposed for History20 private Spot tests
- * (docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md). No market is quoted in it and
- * no row holds it today; refusing it everywhere now means that if one ever
- * does, it can never be withdrawn, deposited, adjusted, transferred, valued
- * in USD or traded on a pair the server does not know.
+ * The restricted settlement unit of History20 private Spot tests (owner
+ * approved the design 2026-10-19, PR #551; not activated, see
+ * docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md). No market is quoted in it in
+ * production; it is refused everywhere so it can never be withdrawn,
+ * deposited, adjusted, transferred, spent, valued in USD or traded on a pair
+ * the server does not know.
  */
 export const SIMULATION_QUOTE = 'SIMUSDT' as const;
 
-/** `SIMUSDT` itself, or a `/` or `-` separated pair that names it. Compact forms (`XSIMUSDT`) are not parsed. */
-export function isSimulationQuote(value: string | null | undefined): boolean {
-  return !!value && value.trim().toUpperCase().replace(/[-_]/g, '/').split('/').includes(SIMULATION_QUOTE);
+/** The parts of an asset or pair: `/`, `-` or `_` separated, or compact (`XSIMUSDT`, `XUSDT`). */
+function pairParts(value: string): string[] {
+  const upper = value.trim().toUpperCase().replace(/[-_]/g, '/');
+  if (upper.includes('/')) return upper.split('/');
+  // Before pair normalisation, which would read `SIMUSDT` itself as `SIM/USDT`.
+  if (upper.endsWith(SIMULATION_QUOTE)) return upper === SIMULATION_QUOTE ? [upper] : [upper.slice(0, -SIMULATION_QUOTE.length), SIMULATION_QUOTE];
+  return normalizePair(upper).split('/');
 }
 
 /**
- * SIMUSDT, or the base of a market quoted in it, bare or on either side of a
- * pair: value that exists only inside the private Spot test. `X/USDT`, `X/BTC`
- * or `USDT/X` would sell what SIMUSDT bought for a real asset. Bases quoted in
- * USDT (NRX, VTA, managed listings) are not matched.
+ * SIMUSDT-settled value, bare or on either side of any pair: the SIMUSDT unit,
+ * a reserved History20 private ticker (shared/history20PrivateSymbol, no
+ * registry needed), or a base the registry quotes in SIMUSDT. `X/USDT`, `X/BTC` or `USDT/X` would sell what SIMUSDT bought for a
+ * real asset. NRX, VTA, AITH and USDT-quoted listings are not matched.
  */
 export function isSimulationSettled(value: string | null | undefined): boolean {
-  if (isSimulationQuote(value)) return true;
-  return !!value && managedListingAssets().some((asset) => asset.quote === SIMULATION_QUOTE && normalizePair(value).split('/').includes(asset.symbol));
+  if (!value) return false;
+  const parts = pairParts(value);
+  return parts.some((part) => part === SIMULATION_QUOTE || HISTORY20_PRIVATE_SYMBOL.test(part))
+    || managedListingAssets().some((asset) => asset.quote === SIMULATION_QUOTE && parts.includes(asset.symbol));
 }
 
 /** Restricted-asset guard (VTA, NRX, every published managed listing, and SIMUSDT-settled value). Only ordinary Spot admits listed NRX and tradable managed listings. */

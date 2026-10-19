@@ -7,7 +7,7 @@ import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
 import { assertSpotListingReady, managedListingForPair, spotPriceSource } from './testMarkets/nrxSpot';
 import { NEURIX } from './testMarkets/neurix';
-import { isSimulationQuote } from './testMarkets/testAssetConfig';
+import { isSimulationSettled } from './testMarkets/testAssetConfig';
 import { isSimulationOnlyUser } from '../private-trading/access';
 import { mutateSpotBalance } from './WalletMutation';
 import { SpotBookTransaction } from './SpotBookTransaction';
@@ -234,7 +234,7 @@ export class OrderService {
     // NRX (legacy) and ordinary pairs are unchanged.
     // A market settled in the restricted SIMUSDT unit (History20 private-test
     // design; no such market exists) is the one managed sale allowed through.
-    if (pair !== NEURIX.pair && managedListingForPair(pair) && !isSimulationQuote(quote)) throw new Error('Simulation Spot sale is not available for this listing');
+    if (pair !== NEURIX.pair && managedListingForPair(pair) && !isSimulationSettled(quote)) throw new Error('Simulation Spot sale is not available for this listing');
     const proceeds = price.times(quantity);
     if (!proceeds.isFinite() || proceeds.gte('1000000000000000000')) throw new Error('Simulation proceeds exceed supported precision');
 

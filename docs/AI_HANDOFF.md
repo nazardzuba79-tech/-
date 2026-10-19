@@ -6766,3 +6766,40 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - rights for any non-synthetic data (`HISTORICAL_RIGHTS_UNVERIFIED` stays);
   - pick one name between this branch and #552;
   - the legacy NRX cross-pair, transfer and purchase findings.
+
+### Claude — 2026-10-19 — History20 SIMUSDT: fail closed without the registry, one guard, scope diff with #552 (CTO coordination on PR #553)
+- **Task:** the CTO coordination comment on #553 (08:56 UTC):
+  - exact-head CI for #553;
+  - a scope diff #552↔#553 without merging #552;
+  - one canonical guard name;
+  - prove base-token guards fail closed when the private asset is absent from `managedListingAssets()` (cold, stale or withheld registry);
+  - keep NRX and AITH unchanged.
+- **Branch / commit:** `claude/voltex-mobile-audit-7rpjni`, the commit that adds this entry, on top of `fa6b2cb9`.
+- **CI on `fa6b2cb9`:** 21 workflows / 24 check runs: 23 succeeded, `deploy` skipped. Includes "Admin Listings (managed simulated markets)" run 39225835398, which runs `history20SimusdtSettlement.pg` and `legacySimulationSaleEquivalence.pg`.
+- **Defect (RED→GREEN):** with the listing absent from the registry, `VHX86/USDT` was not recognised as restricted, so a holder's base token would have counted as an ordinary asset. Fixed with reserved History20 private tickers `VHX01`–`VHX99`, matched without the registry. `privateTestSimulationConfig` and `checkPrivateTestable` (`PRIVATE_TEST_SYMBOL`) now refuse any other ticker.
+- **Bug found by the new tests before commit:** the first version read bare `SIMUSDT` through pair normalisation as `SIM/USDT`. Fixed: the unit is matched first.
+- **One guard:** `isSimulationSettled` everywhere. `isSimulationQuote` was removed; `OrderService` uses `isSimulationSettled(quote)`.
+- **Worker safety:** the reserved-ticker rule lives in the pure `src/shared/history20PrivateSymbol.ts`. `listingConfig.ts`, which the market-edge Worker imports, therefore still imports only a type from `testAssetConfig.ts`; that file reads `process.env` at load. A first draft imported it as a value; it was moved before commit as a precaution. The broken state was not tested.
+- **Material files:**
+  - `testAssetConfig.ts`, `OrderService.ts`, `listings/privateTest.ts`;
+  - `listings/listingConfig.ts`: `checkPrivateTestable` and `PRIVATE_TEST_SYMBOL_MESSAGE`;
+  - `history20SimusdtSettlement.pg.test.ts`: now 11 tests, including a no-database recognition block, the cold/withheld registry case and per-owner fixture listing ids;
+  - `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`: the scope diff and the reserved-ticker caveat.
+- **Preserved:** #552 untouched and not merged. No #552 code was copied; the missing cases (recognition negatives, legacy guard results, OTC assets, no venue call) were written independently. NRX and AITH code, configs and the legacy sale tests are unchanged.
+- **Verified locally** (disposable PostgreSQL 16):
+  - `history20SimusdtSettlement.pg` 11/11, five consecutive runs on a reused database;
+  - 10/10 guard mutations caught;
+  - listings + testMarkets + `adminListings`: 41 suites / 515 tests (fresh NRX database);
+  - services, routes, private-trading, banking, OTC and futures: 147 suites passed, 2397 tests. The same single failure, `CfdMarketDataService`, is also present on `main`;
+  - backend `tsc` and frontend `tsc -b` clean;
+  - Worker `test:listings` on workerd: 18/18.
+- **Not run:**
+  - CI on this commit (pending at time of writing);
+  - production.
+- **Unresolved:**
+  - wiring: private channel, per-user admission ahead of the ADMIN synthetic-sale branch, participant terminal, one-time audited tester funding, OCO/stop-loss and restart proofs on the private pair;
+  - activation approval;
+  - rights;
+  - the reserved-ticker caveat for any existing non-window `VHX01`–`VHX99` listing (production store not checked);
+  - consolidating with #552 (refusal text, compact form);
+  - the legacy NRX cross-pair, transfer and purchase findings.

@@ -11,6 +11,8 @@
  *   withdrawal, deposit, adjustment, transfer, purchase, collateral and
  *   valuation path already refuses, and the window asset trades on no other
  *   pair (testAssetConfig.isSimulationSettled);
+ * - a reserved ticker (VHX01…VHX99): those guards hold without the listing
+ *   registry, while the listing is cold, stale, withheld or unpublished;
  * - exact admission: the verified owner and the allowlisted testers only;
  * - default off (HISTORY20_PRIVATE_TEST=enabled), and a window is never
  *   published (HISTORICAL_RIGHTS_UNVERIFIED stays in checkPublishable).
@@ -22,8 +24,9 @@
 import type { PrismaClient } from '@prisma/client';
 import { isNativeTestAccount } from '../../private-trading/native/testAccounts';
 import { privateTradingConfig, type PrivateTradingConfig } from '../../private-trading/access';
-import { listingSimulationConfig, type ListingConfig } from './listingConfig';
+import { listingSimulationConfig, ListingValidationError, PRIVATE_TEST_SYMBOL_MESSAGE, type ListingConfig } from './listingConfig';
 import { SIMULATION_QUOTE, type TestAssetConfig } from '../testMarkets/testAssetConfig';
+import { isHistory20PrivateSymbol } from '../../shared/history20PrivateSymbol';
 
 export { SIMULATION_QUOTE };
 
@@ -34,8 +37,13 @@ export function privateTestEnabled(env: NodeJS.ProcessEnv = process.env): boolea
 
 export const privateTestPair = (symbol: string) => `${symbol.toUpperCase()}/${SIMULATION_QUOTE}`;
 
-/** The private market's simulation input: the listing's own model (same prices and candles), quoted in SIMUSDT. */
+/**
+ * The private market's simulation input: the listing's own model (same prices
+ * and candles), quoted in SIMUSDT. Only for a reserved ticker (VHX01…VHX99),
+ * which the guards recognise even when the registry does not know the listing.
+ */
 export function privateTestSimulationConfig(config: ListingConfig): TestAssetConfig {
+  if (!isHistory20PrivateSymbol(config.symbol)) throw new ListingValidationError('PRIVATE_TEST_SYMBOL', PRIVATE_TEST_SYMBOL_MESSAGE);
   return { ...listingSimulationConfig(config), quote: SIMULATION_QUOTE, pair: privateTestPair(config.symbol), isTradable: false, privateTest: true };
 }
 

@@ -14,6 +14,7 @@
  */
 import { z } from 'zod';
 import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
+import { isHistory20PrivateSymbol } from '../../shared/history20PrivateSymbol';
 import { SIMULATION_PROFILES, profileForOrdinal } from '../testMarkets/simulationRealism';
 import { LISTING_SCENARIOS, normalizeScenarioDecimal, validateScenarioControls } from '../../shared/listingScenarioControls';
 import { historicalSerializedBytes, freezeHistoricalMoveProgram } from '../../shared/listingHistoricalReplay';
@@ -256,10 +257,14 @@ export function isHistoricalGrowthWindowConfig(config: Pick<ListingConfig, 'simu
  * HISTORICAL_RIGHTS_UNVERIFIED. Once a private test starts, its history is
  * locked exactly as a published market's is.
  */
+export const PRIVATE_TEST_SYMBOL_MESSAGE = 'Приватный тест History20 доступен только для тикеров VHX01–VHX99';
+
 export function checkPrivateTestable(next: ListingConfig, active: ListingConfig | null, now: number, minLeadMs = MIN_LEAD_MS): void {
   if (!isHistoricalGrowthWindowConfig(next)) {
     throw new ListingValidationError('PRIVATE_TEST_WINDOW_ONLY', 'Приватный тест доступен только для листинга с историческим окном роста (History20)');
   }
+  // A reserved ticker stays restricted by every guard even when the registry does not know the listing.
+  if (!isHistory20PrivateSymbol(next.symbol)) throw new ListingValidationError('PRIVATE_TEST_SYMBOL', PRIVATE_TEST_SYMBOL_MESSAGE);
   checkHistoryLocks(next, active, now, minLeadMs);
 }
 

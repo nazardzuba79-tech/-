@@ -91,11 +91,13 @@ No legacy managed-listing sale ever executed, so #551 removed nothing that worke
 
 ### What the spike adds (default off)
 
-- `testAssetConfig.ts`:
-  - `SIMULATION_QUOTE`;
-  - `isSimulationQuote` (bare `SIMUSDT`, or either side of a `/`/`-` pair);
-  - `isSimulationSettled`, which also matches a base quoted in `SIMUSDT`, on any pair.
-  - `isTestAssetPairOrSymbol` includes it, so every existing guard refuses it.
+- `testAssetConfig.ts`: `SIMULATION_QUOTE` and **one canonical guard, `isSimulationSettled`**, used at every call site. It matches, bare or on either side of any pair (`/`, `-`, `_` or compact):
+  - the `SIMUSDT` unit itself;
+  - a **reserved History20 private ticker, `VHX01`–`VHX99`** (the `VHX-NN` scenario numbering; the owner's BotLab 01 draft already uses `VHX01`). This match needs no registry. The rule is in the pure `src/shared/history20PrivateSymbol.ts`, which is safe for the Worker;
+  - as a second line, any base the registry quotes in `SIMUSDT`.
+
+  `isTestAssetPairOrSymbol` includes it, so every existing guard refuses it.
+- `privateTestSimulationConfig` and `checkPrivateTestable` (`PRIVATE_TEST_SYMBOL`): a private `SIMUSDT` market can be built only for a reserved ticker.
 - `OrderService.sellTeamSpotSimulation`: the #551 stop now lets through only a market quoted in `SIMUSDT`. Its proceeds land in the `SIMUSDT` row.
 - `WalletTransferService` and `PurchaseService`: refuse `SIMUSDT`-settled value (the #552 session found the purchase path first). Other assets are unchanged.
 - `WalletPortfolioService.pricesFor`: a base quoted in anything but USDT has no USD value.
@@ -119,22 +121,32 @@ The fixture account holds 500 real USDT next to `SIMUSDT` (simulated profit).
 | **Indirect cash-out:** the window asset bought with `SIMUSDT`, then sold on `X/USDT`, `X/BTC`, `USDT/X` or `X-USDT` | refused before any row. **RED→GREEN:** before `isSimulationSettled`, a LIMIT SELL on `X/USDT` rested in the ordinary book |
 | Settlement, with a test-only stand-in for admission on that one pair | the owner sale is priced at the canonical model price (= ticker = chart close); book fill, cancel (lock released exactly), conditional take-profit fired by `PriceWatcherService` and concurrent owner sales all move only the window asset and `SIMUSDT`. No USDT row moves; the venue is never asked |
 | Without the stand-in | the real gate refuses the private market for everyone |
+| **Registry cold, stale, withheld or unpublished** (the listing is absent from `managedListingAssets()`; fixture holdings remain) | every pair with the reserved ticker (`X/USDT`, `X/BTC`, `USDT/X`, `X/SIMUSDT`) refused for the tester, an ordinary user and the owner, before any row and before asking the venue. `assertSpotListingReady` with an unresolved registry refuses the same way. Withdrawal (both), transfer, deposit claim, adjustment, demo top-up and purchase are refused for the ticker and for `SIMUSDT`; options show USDT 500 only. **RED→GREEN:** before the reserved-ticker rule, `X/USDT` was not recognised once the registry no longer knew the listing |
 | Same window quoted in USDT | owner sale still stopped (#551) |
 | Publication | `HISTORICAL_RIGHTS_UNVERIFIED` unchanged |
 
-**Mutation check:** each new guard was removed in turn and the file re-run. Every one makes at least one test fail:
-- `isSimulationSettled` base match;
-- the `SIMUSDT` entry in the guard;
+**Mutation check:** each guard was removed in turn and the file re-run. All 10 mutations make at least one test fail:
+- the reserved-ticker match;
+- the registry second line (pinned by a test that bypasses the builder);
+- compact `XSIMUSDT` parsing;
+- `isSimulationSettled` in the restricted-asset guard;
 - the transfer guard;
 - the purchase guard;
 - the sale narrowing;
-- the valuation quote check.
+- the valuation quote check;
+- the builder's reserved-ticker rule;
+- `checkPrivateTestable`'s reserved-ticker rule.
+
+The file passed 11/11 five times in a row on the same reused database.
+
+The unit is matched before pair normalisation, which reads `SIMUSDT` itself as `SIM/USDT` (#552 noted this trap). The recognition test pins it.
 
 ### Findings that shape the wiring
 
 1. **Admission cannot reuse `isTradable`.** `testMarketSimulation.ts` applies a listing's scenario path only while it is not tradable. A tradable private market would lose its History20 prices, so admission must be a separate, per-user gate in `assertSpotListingReady`/`placeOrder`.
 2. **The synthetic sale is reachable by any ADMIN** (`role === 'ADMIN' || isSimulationOnlyUser`). The per-user admission must run before that branch, so another ADMIN is refused on a private pair.
-3. **Still to build before activation:**
+3. **Reserved tickers make the guards independent of the registry, not the market.** The registry must still know a private market to price and trade it. When it does not, the market simply closes (fail closed). Caveat: a non-window listing already published under a `VHX01`–`VHX99` ticker would also lose transfer and purchase. The production listing store could not be checked from here; a window listing can never be published (rights gate).
+4. **Still to build before activation:**
    - the private listing channel (the Worker DO and the Render registry; the public catalogue never shows it);
    - per-user admission;
    - the terminal for participants;
@@ -150,8 +162,33 @@ Probed on synthetic rows on this branch. Its NRX paths are unchanged from `main`
 
 These are transfers between users, not minted value. Closing them would change legacy NRX behaviour, so that is a separate owner decision.
 
-### Overlap with #552
+### Scope diff: #552 (`99064e93`) ↔ #553 (this branch)
 
-#552 (`claude/peaceful-volta-h5zw7g-simusdt-spike`, `99064e93`) adds the same refusals under the names `RESTRICTED_SETTLEMENT_UNITS` and `isRestrictedSettlementUnit`, plus a `PurchaseService` guard and `restrictedSettlementUnit.pg`. It was not merged here. An automated permission check stopped the merge of another session's open PR into this branch.
+CTO coordination (#553, 19.10): #553 is the candidate integration line and #552 a reference. #552 is **not merged** here: an automated permission check stopped merging another session's open PR, and the CTO asked not to merge it automatically. No #552 code was copied. Missing regression cases were written here independently.
 
-To integrate, keep one name for the unit check. #552's refusals are a subset of this branch, which also covers the window asset across pairs, the settlement path and the narrowed sale.
+| Aspect | #552 | #553 |
+|---|---|---|
+| Canonical guard | `isRestrictedSettlementUnit` + `RESTRICTED_SETTLEMENT_UNITS` | `isSimulationSettled` (single exported guard) |
+| `SIMUSDT` bare, `/` or `-` pair, either side | yes | yes (also `_`) |
+| Compact `XSIMUSDT` | **no** (pinned as false) | yes |
+| History20 base on another pair (`X/USDT`, `USDT/X`, `X/BTC`) | no (no base concept) | yes |
+| Base while the registry is cold, withheld or unpublished | n/a | yes (reserved `VHX01`–`VHX99`) |
+| Withdrawal, deposit, adjustment | via `isTestAssetPairOrSymbol` | same, plus the base |
+| Transfer, purchase | refused with `TEST_ASSET_NOT_TRADABLE_MESSAGE` | refused with "This asset cannot be transferred" / "…cannot be used for purchases" |
+| Owner synthetic sale | #551 stop (not in #552) | #551 stop narrowed to a `SIMUSDT`-quoted market |
+| Valuation | `SIMUSDT` unpriced | same, plus a non-USDT-quoted base |
+| Settlement path (fills, cancel, take-profit, concurrency) | none | proven with a test-only admission stand-in |
+| Tests | `restrictedSettlementUnit.pg` (7) | `history20SimusdtSettlement.pg` (11) |
+
+Cases first present in #552 and now covered here:
+- the recognition matrix, including the negatives `SIM`, `SIM/USDT`, `BTCUSDT`, null and empty;
+- legacy guard results for USDT, BTC, ETH, VTA, NRX and AITH;
+- OTC assets;
+- no venue call for `SIMUSDT` pairs;
+- the purchase guard.
+
+**Semantic differences to settle when consolidating:**
+- compact `XSIMUSDT`: #553 refuses it, #552 does not. #553 is stricter.
+- the transfer/purchase refusal text.
+
+Adopting #553's guard keeps every #552 refusal.

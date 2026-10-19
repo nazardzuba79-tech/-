@@ -30,7 +30,7 @@ import { randomUUID } from 'crypto';
 import BigNumber from 'bignumber.js';
 import { buildHistoricalGrowthProgram, historicalGrowthMaxPrice, type HistoricalGrowthSourceRow } from '../../../shared/listingHistoricalGrowth';
 import { defaultScenarioControls } from '../../../shared/listingScenarioControls';
-import { checkPublishable, ListingValidationError, listingSimulationConfig, parseListingConfig, type ListingConfig } from '../listingConfig';
+import { checkPrivateTestable, checkPublishable, ListingValidationError, listingSimulationConfig, parseListingConfig, type ListingConfig } from '../listingConfig';
 import { setManagedListingAssets } from '../managedSnapshot';
 import { allocateListingOwner } from '../ownerAllocation';
 import { isPrivateTestParticipant, privateTestPair, privateTestSimulationConfig, SIMULATION_QUOTE } from '../privateTest';
@@ -38,7 +38,7 @@ import * as nrxSpot from '../../testMarkets/nrxSpot';
 import { spotPriceSource } from '../../testMarkets/nrxSpot';
 import { TestMarketSimulation } from '../../testMarkets/testMarketSimulation';
 import { testMarketCandles } from '../../testMarkets/testMarketService';
-import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from '../../testMarkets/testAssetConfig';
+import { isSimulationSettled, isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from '../../testMarkets/testAssetConfig';
 import { OrderService } from '../../OrderService';
 import { PriceWatcherService } from '../../PriceWatcherService';
 import { WalletPortfolioService } from '../../WalletPortfolioService';
@@ -53,6 +53,7 @@ import { BankingService } from '../../../banking/service';
 import { BANKING_PROGRAMS } from '../../../banking/config';
 import { withdrawalsRouter } from '../../../api/routes/withdrawals';
 import { MatchingEngine } from '../../../matching-engine/MatchingEngine';
+import { OTC_ASSETS } from '../../../otc/policy';
 
 const url = process.env.VOLTEX_LISTING_TEST_URL;
 if (url) {
@@ -78,16 +79,50 @@ function walk(days: number): HistoricalGrowthSourceRow[] {
 const growth = buildHistoricalGrowthProgram({ scenarioId: 'VHX-03-SOL', targetPeakGrowthPercent: '9348', rows: walk(40),
   source: { provider: 'Binance Vision', asset: 'SOL', quote: 'USDT', metric: 'spot daily OHLCV', dataKind: 'exchange_ohlcv', timeframe: '1d', sliceSha256: 'c'.repeat(64), license: 'CC-BY-NC-SA-4.0 plus Binance Vision Dataset Terms' } });
 
+const windowConfigFor = (symbol: string): ListingConfig => parseListingConfig({
+  schemaVersion: 1, symbol, name: 'History20 private QA', logo: null, initialPrice: '2', listingAt: LISTING_AT, displayTimeZone: 'UTC',
+  ownerAllocation: '1000', seedMode: 'manual', seed: 'h20-simusdt-synthetic', tradable: false,
+  simulationProgram: { ...defaultScenarioControls('2', 'CALM'), stages: [], first24hGainPercent: '0', afterGrowth: 'range', growth: 'historical-window',
+    historicalGrowth: growth, maxPrice: historicalGrowthMaxPrice('2', growth.targetPeakGrowthPercent) },
+});
+
+describe('History20 SIMUSDT-settled value: recognition without the registry (no database)', () => {
+  test('the unit and the reserved History20 tickers (VHX01…VHX99), bare or on either side of any pair, separated or compact', () => {
+    for (const value of ['SIMUSDT', 'simusdt', ' SIMUSDT ', 'VHX01/SIMUSDT', 'VHX01-SIMUSDT', 'VHX01_SIMUSDT', 'VHX01SIMUSDT', 'SIMUSDT/USDT', 'USDT/SIMUSDT', 'BTC/SIMUSDT',
+      'VHX01', 'vhx99', 'VHX07/USDT', 'VHX07USDT', 'VHX07-USDT', 'USDT/VHX07', 'VHX07/BTC']) expect([value, isSimulationSettled(value)]).toEqual([value, true]);
+    for (const value of ['USDT', 'USDC', 'BTC', 'BTC/USDT', 'BTCUSDT', 'ETH/USDT', 'NRX', 'NRX/USDT', 'VTA/USDT', 'AITH/USDT', 'SIM', 'SIM/USDT', 'SIMUSD',
+      'VHX', 'VHX1', 'VHX001', 'XVHX01', 'VHXAB', '', null, undefined]) expect([value, isSimulationSettled(value)]).toEqual([value, false]);
+  });
+
+  test('the restricted-asset guard keeps every legacy result and adds only SIMUSDT-settled value', () => {
+    for (const value of ['USDT', 'USDC', 'BTC', 'BTC/USDT', 'BTCUSDT', 'ETH/USDT']) expect([value, isTestAssetPairOrSymbol(value)]).toEqual([value, false]);
+    for (const value of ['VTA', 'VTA/USDT', 'NRX', 'NRX/USDT', 'AITH', 'AITH/USDT', 'SIMUSDT', 'VHX01', 'VHX01/USDT']) expect([value, isTestAssetPairOrSymbol(value)]).toEqual([value, true]);
+  });
+
+  test('second line: a SIMUSDT-quoted market in the registry restricts its base even outside the reserved tickers', () => {
+    // Built by hand, bypassing privateTestSimulationConfig (which refuses this ticker).
+    setManagedListingAssets([{ ...privateTestSimulationConfig(windowConfigFor('VHX07')), symbol: 'SOLX', pair: 'SOLX/SIMUSDT' }]);
+    try {
+      for (const value of ['SOLX', 'SOLX/USDT', 'USDT/SOLX', 'SOLXUSDT']) expect([value, isSimulationSettled(value)]).toEqual([value, true]);
+    } finally { setManagedListingAssets([]); }
+    expect(isSimulationSettled('SOLX/USDT')).toBe(false);
+  });
+
+  test('a private SIMUSDT market can only be built for a reserved ticker', () => {
+    const outside = windowConfigFor('SOLX');
+    const code = (run: () => unknown) => { try { run(); return null; } catch (error) { return (error as ListingValidationError).code; } };
+    expect(code(() => privateTestSimulationConfig(outside))).toBe('PRIVATE_TEST_SYMBOL');
+    expect(code(() => checkPrivateTestable(outside, null, START - DAY))).toBe('PRIVATE_TEST_SYMBOL');
+    expect(code(() => privateTestSimulationConfig(windowConfigFor('VHX07')))).toBeNull();
+    expect(code(() => checkPrivateTestable(windowConfigFor('VHX07'), null, START - DAY))).toBeNull();
+  });
+});
+
 pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (disposable PostgreSQL)', () => {
   let db: PrismaClient;
   let owner: string, tester: string, plain: string, otherAdmin: string, symbol: string;
   const venue = { getTicker: jest.fn(async (asked: string) => (asked === 'BTC/USDT' ? { lastPrice: '60000' } : asked === 'ETH/USDT' ? { lastPrice: '2500' } : null)) };
-  const windowConfig = (): ListingConfig => parseListingConfig({
-    schemaVersion: 1, symbol, name: 'History20 private QA', logo: null, initialPrice: '2', listingAt: LISTING_AT, displayTimeZone: 'UTC',
-    ownerAllocation: '1000', seedMode: 'manual', seed: 'h20-simusdt-synthetic', tradable: false,
-    simulationProgram: { ...defaultScenarioControls('2', 'CALM'), stages: [], first24hGainPercent: '0', afterGrowth: 'range', growth: 'historical-window',
-      historicalGrowth: growth, maxPrice: historicalGrowthMaxPrice('2', growth.targetPeakGrowthPercent) },
-  });
+  const windowConfig = (): ListingConfig => windowConfigFor(symbol);
   const balance = async (userId: string, asset: string) => {
     const row = await db.balance.findUnique({ where: { userId_asset: { userId, asset } } });
     return row ? [row.available.toString(), row.locked.toString()] : null;
@@ -103,7 +138,8 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
   afterAll(async () => { setManagedListingAssets([]); await db.$disconnect(); });
   beforeEach(async () => {
     owner = randomUUID(); tester = randomUUID(); plain = randomUUID(); otherAdmin = randomUUID();
-    symbol = `V${randomUUID().replace(/[^A-Z]/gi, '').slice(0, 5).toUpperCase()}`;
+    // A reserved History20 private ticker (VHX01…VHX99). Counts below are scoped to this test's users.
+    symbol = `VHX${String(Math.floor(Math.random() * 100)).padStart(2, '0')}`;
     saved = { enabled: process.env.PRIVATE_TRADING_ENABLED, ownerId: process.env.PRIVATE_TRADING_OWNER_ID, testers: process.env.PRIVATE_TRADING_TEST_USER_IDS };
     process.env.PRIVATE_TRADING_ENABLED = 'true';
     process.env.PRIVATE_TRADING_OWNER_ID = owner;
@@ -126,10 +162,9 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
   test('restricted unit: an account with real USDT and SIMUSDT — every outflow refuses SIMUSDT and USDT withdrawable stays the real 500', async () => {
     await db.balance.create({ data: { userId: owner, asset: SIMULATION_QUOTE, available: '1000' } });
     const before = await usdtRows();
-    expect(isTestAssetPairOrSymbol('SIMUSDT')).toBe(true);
-    expect(isTestAssetPairOrSymbol('simusdt')).toBe(true);
-    expect(isTestAssetPairOrSymbol(`${symbol}/SIMUSDT`)).toBe(true);
-    expect(isTestAssetPairOrSymbol('USDT')).toBe(false);
+    // OTC cash takes only its own assets (the route's enum mirrors them).
+    expect(Object.keys(OTC_ASSETS)).not.toContain('SIMUSDT');
+    expect(Object.keys(OTC_ASSETS)).not.toContain(symbol);
 
     // Withdrawals: held (Spot) and unheld (trading account) requests, and the options the Wallet shows.
     const withdrawals = new WithdrawalService(db);
@@ -187,6 +222,7 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
       }
     }
     expect(await db.order.count({ where: { userId: { in: [owner, tester, plain, otherAdmin] } } })).toBe(0);
+    expect(venue.getTicker).not.toHaveBeenCalled();
     expect(await balance(owner, 'SIMUSDT')).toEqual(['1000', '0']);
     expect(await usdtRows()).toEqual(before);
     expect(await db.futuresBalance.count({ where: { userId: owner } })).toBe(0);
@@ -212,7 +248,7 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
     const realGate = nrxSpot.assertSpotListingReady;
     jest.spyOn(nrxSpot, 'assertSpotListingReady').mockImplementation(async (asked, ...rest) => (asked === pair ? undefined : realGate(asked, ...rest)));
     const before = await usdtRows();
-    await allocateListingOwner(db, { id: `h20-simusdt-${symbol.toLowerCase()}`, version: 1, publishedAt: LISTING_AT, config }, owner);
+    await allocateListingOwner(db, { id: `h20-simusdt-${symbol.toLowerCase()}-${owner}`, version: 1, publishedAt: LISTING_AT, config }, owner);
     await db.balance.create({ data: { userId: tester, asset: SIMULATION_QUOTE, available: '1000' } });
     const orders = new OrderService(db, new MatchingEngine(), venue);
 
@@ -303,22 +339,60 @@ pg('History20 private Spot test: SIMUSDT, the non-withdrawable settlement unit (
   test('without the (unwired) admission the real gate refuses the private market for everyone, before any write', async () => {
     const config = windowConfig(), pair = privateTestPair(symbol);
     setManagedListingAssets([privateTestSimulationConfig(config)]);
-    await allocateListingOwner(db, { id: `h20-closed-${symbol.toLowerCase()}`, version: 1, publishedAt: LISTING_AT, config }, owner);
+    await allocateListingOwner(db, { id: `h20-closed-${symbol.toLowerCase()}-${owner}`, version: 1, publishedAt: LISTING_AT, config }, owner);
     await db.balance.create({ data: { userId: tester, asset: SIMULATION_QUOTE, available: '10' } });
     const orders = new OrderService(db, new MatchingEngine(), venue);
     for (const userId of [owner, tester, plain, otherAdmin]) {
       await expect(orders.placeOrder({ userId, pair, side: 'SELL', type: 'MARKET', quantity: new BigNumber(1) })).rejects.toThrow('History20 private QA is not available for trading.');
       await expect(orders.placeOrder({ userId, pair, side: 'BUY', type: 'LIMIT', price: new BigNumber(1), quantity: new BigNumber(1) })).rejects.toThrow('History20 private QA is not available for trading.');
     }
-    expect(await db.order.count({ where: { pair } })).toBe(0);
+    expect(await db.order.count({ where: { pair, userId: { in: [owner, tester, plain, otherAdmin] } } })).toBe(0);
     expect(await balance(owner, symbol)).toEqual(['1000', '0']);
     expect(await balance(tester, SIMULATION_QUOTE)).toEqual(['10', '0']);
+  });
+
+  test('fail closed without the registry: a reserved History20 ticker stays restricted while its listing is cold, withheld or unpublished', async () => {
+    // FIXTURE rows: holdings left from an earlier private test after the listing left Render's registry.
+    setManagedListingAssets([]);
+    await db.balance.createMany({ data: [{ userId: tester, asset: symbol, available: '100' }, { userId: tester, asset: SIMULATION_QUOTE, available: '50' }] });
+    const before = await usdtRows();
+    const orders = new OrderService(db, new MatchingEngine(), venue);
+    for (const other of [`${symbol}/USDT`, `${symbol}/BTC`, `USDT/${symbol}`, `${symbol}/SIMUSDT`]) {
+      expect([other, isTestAssetPairOrSymbol(other)]).toEqual([other, true]);
+      await expect(orders.placeOrder({ userId: tester, pair: other, side: 'SELL', type: 'LIMIT', price: new BigNumber(1), quantity: new BigNumber(1) })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      await expect(orders.placeOrder({ userId: plain, pair: other, side: 'BUY', type: 'LIMIT', price: new BigNumber(1), quantity: new BigNumber(1) })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      await expect(orders.placeOrder({ userId: owner, pair: other, side: 'SELL', type: 'MARKET', quantity: new BigNumber(1) })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      // A cold registry (Render has not loaded the listings yet) refuses the same way, before asking the venue.
+      await expect(nrxSpot.assertSpotListingReady(other, venue, AT, { ensureFresh: async () => undefined, resolved: () => false })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    }
+    expect(venue.getTicker).not.toHaveBeenCalled();
+    expect(await db.order.count({ where: { userId: { in: [owner, tester, plain] } } })).toBe(0);
+
+    // Every other way out of the Spot ledger, for the window asset and SIMUSDT alike.
+    const withdrawals = new WithdrawalService(db);
+    const to = { network: 'TRC20', toAddress: 'TQ-synthetic-fixture' };
+    for (const asset of [symbol, SIMULATION_QUOTE]) {
+      await expect(withdrawals.requestWithdrawal({ userId: tester, asset, amount: '1', ...to })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      await expect(withdrawals.requestUnheldWithdrawal({ userId: tester, asset, amount: '1', available: '100', ...to })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      await expect(transferWalletBalance(db, tester, asset, new BigNumber(1), 'TO_FUTURES')).rejects.toThrow('This asset cannot be transferred');
+      await expect(new DepositService(db, {} as never).submitClaim({ userId: tester, txHash: '0x' + 'd'.repeat(64), asset })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      await expect(new BalanceAdjustmentService(db).adjust({ userId: tester, asset, amount: '5', reason: 'fixture', performedByAdminId: otherAdmin })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      await expect(new DemoTradingService(db, new MatchingEngine()).topUp({ userId: tester, asset, amount: '5', performedByAdminId: otherAdmin })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+      const product = await db.product.create({ data: { name: `Fixture ${asset} product`, description: 'fixture', priceAmount: '1', priceAsset: asset } });
+      await expect(new PurchaseService(db).purchaseProduct(tester, product.id)).rejects.toThrow('This asset cannot be used for purchases');
+    }
+    expect(await withdrawable(tester)).toEqual({ source: 'SPOT', assets: [{ asset: 'USDT', available: '500' }], futures: [] });
+    expect([await balance(tester, symbol), await balance(tester, SIMULATION_QUOTE)]).toEqual([['100', '0'], ['50', '0']]);
+    expect(await usdtRows()).toEqual(before);
+    expect(await db.futuresBalance.count({ where: { userId: tester } })).toBe(0);
+    expect(await db.withdrawal.count({ where: { userId: tester } })).toBe(0);
+    expect(await db.purchase.count({ where: { userId: tester } })).toBe(0);
   });
 
   test('the same market quoted in USDT (any published managed listing today): the owner\'s synthetic sale stays stopped before any write (#551)', async () => {
     const config = windowConfig();
     setManagedListingAssets([{ ...privateTestSimulationConfig(config), quote: 'USDT', pair: `${symbol}/USDT`, isTradable: true }]);
-    await allocateListingOwner(db, { id: `h20-usdt-${symbol.toLowerCase()}`, version: 1, publishedAt: LISTING_AT, config }, owner);
+    await allocateListingOwner(db, { id: `h20-usdt-${symbol.toLowerCase()}-${owner}`, version: 1, publishedAt: LISTING_AT, config }, owner);
     const orders = new OrderService(db, new MatchingEngine(), venue);
     await expect(orders.placeOrder({ userId: owner, pair: `${symbol}/USDT`, side: 'SELL', type: 'MARKET', quantity: new BigNumber(10) })).rejects.toThrow('Simulation Spot sale is not available for this listing');
     expect(await balance(owner, 'USDT')).toEqual(['500', '0']);
