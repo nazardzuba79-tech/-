@@ -22,7 +22,9 @@ import { DesktopMarketStats, DesktopQuotes, DesktopFooter, DesktopAllocation } f
 import './desktopProfessional.css';
 import './stocksOriginal.css';
 const API='/__stocks_global/';
-const STOCKS_USDT_ONLY = import.meta.env.VITE_STOCKS_OWNER_USDT_ONLY === 'true';
+declare const __VOLTEX_STOCKS_CATALOGUE_VISIBLE__: boolean;
+const hostedStocks = typeof __VOLTEX_STOCKS_CATALOGUE_VISIBLE__ !== 'undefined' && __VOLTEX_STOCKS_CATALOGUE_VISIBLE__;
+const STOCKS_USDT_ONLY = hostedStocks || import.meta.env.VITE_STOCKS_OWNER_USDT_ONLY === 'true';
 const fmt=(v:string|number|null|undefined,d=6)=>v==null?'—':new BigNumber(v).toFixed(d).replace(/\.?0+$/,'')||'0';
 const valid=(s:string)=>/^\d+(\.\d{1,8})?$/.test(s)&&new BigNumber(s).gt(0);
 
@@ -98,8 +100,8 @@ export default function GlobalStocks(){
   const admission=state?.errors[id]||(q?.status[currency]&&q.status[currency]!=='READY'?q.status[currency]:'');
   // Viewers (including unresolved sessions) keep interactive controls. Their
   // submit is a silent no-op before validation or any trading side effect.
-  const readOnlyOrderPreview=!mayTrade();
-  const canOrder=readOnlyOrderPreview || (!STOCKS_USDT_ONLY || currency === 'USDT')&&connected&&!busy&&!overload&&asset?.provider!=='moex'&&valid(quantity)&&valid(price)&&(type==='LIMIT'||ready)&&!!state&&(side==='BUY'?new BigNumber(total||0).lte(available||0):new BigNumber(quantity).lte(available||0));
+  const readOnlyOrderPreview=!hostedStocks&&!mayTrade();
+  const canOrder=readOnlyOrderPreview || (!hostedStocks||mayTrade())&& (!STOCKS_USDT_ONLY || currency === 'USDT')&&connected&&!busy&&!overload&&asset?.provider!=='moex'&&valid(quantity)&&valid(price)&&(type==='LIMIT'||ready)&&!!state&&(side==='BUY'?new BigNumber(total||0).lte(available||0):new BigNumber(quantity).lte(available||0));
   const history=useCallback((before?:number,recovery=false):Promise<StockReadResult>=>{
     if(circuit.current.paused&&!recovery)return Promise.resolve({kind:'failed'});
     return reads.current.run(`history:${historyGeneration.current}:${id}:${interval}:${before||''}`,async():Promise<StockReadResult>=>{

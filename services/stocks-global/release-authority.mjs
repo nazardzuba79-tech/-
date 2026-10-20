@@ -7,9 +7,9 @@ export const isReleaseAuthority = authority => verified.has(authority);
 
 export async function openReleaseAuthority(env = process.env) {
   const config = releaseConfig(env);
-  await verifyReleaseAuthority(config);
+  const capabilities = await verifyReleaseAuthority(config);
   const { createAuthorityAdapter } = await import('./authority-adapter.mjs');
   const authority = createAuthorityAdapter(config);
   verified.add(authority);
-  return { config, authority };
+  return { config: { ...config, ...capabilities }, authority };
 }
