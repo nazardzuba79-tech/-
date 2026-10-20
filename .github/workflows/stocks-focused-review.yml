@@ -13,6 +13,7 @@ on:
       - 'frontend/src/lib/__tests__/stocksViewerNoop.test.ts'
       - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
       - '.github/workflows/stocks-focused-review.yml'
+      - '.github/workflows/stocks-legacy-unsupported.yml'
       - 'scripts/qa/stocks-migration-review*.cjs'
       - 'scripts/qa/stocks-release-package*.cjs'
       - 'scripts/qa/stocks-rc-50plus2/**'
@@ -182,8 +183,31 @@ jobs:
           scripts/qa/stocks-rc-50plus2/profile-summary.test.cjs
           scripts/qa/stocks-rc-50plus2/profile-session.test.cjs
           scripts/qa/stocks-rc-50plus2/profile-contract.test.cjs
-      - name: Reused connection lifetime cannot retain trading authorization
-        run: node --test services/stocks-global/two-trader-auth-lifetime.test.mjs
+      - name: Production factories reject all local ledgers and unverified authorities
+        run: node --test services/stocks-global/release-boundary.test.mjs
 
       - name: Offline migration manifest contract (no SQL or image proof)
         run: node --test scripts/qa/stocks-migration-review.test.cjs scripts/qa/stocks-release-package.test.cjs
+      - name: Preserve exact-head Node22 PostgreSQL evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-node22-pg-${{ github.sha }}
+          path: /tmp/stocks-node22-pg.tap
+          if-no-files-found: warn
+
+  pg-release-required:
+    name: Stocks PostgreSQL release contract
+    needs: [financial-review, node22-hetzner-module-load]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require both complete financial suites without skips or failures
+        env:
+          FINANCIAL_RESULT: ${{ needs.financial-review.result }}
+          NODE22_RESULT: ${{ needs.node22-hetzner-module-load.result }}
+        run: |
+          test "$FINANCIAL_RESULT" = success
+          test "$NODE22_RESULT" = success
+          echo "PostgreSQL code contract PASS. Legacy SQLite is unsupported and reported separately." >> "$GITHUB_STEP_SUMMARY"
+          echo "This is not production topology, image, ingress, migration, capacity or release approval." >> "$GITHUB_STEP_SUMMARY"

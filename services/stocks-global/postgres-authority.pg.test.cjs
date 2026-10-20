@@ -57,6 +57,47 @@ pg('lost ACK/reopened repository replays the durable receipt without double debi
   assert.deepEqual(await f.rows(),before);
 });
 
+pg('lost ACK survives fresh authority processes and restart cannot retain a revoked Session',async t=>{
+  const f=await fixture(t),token=await f.ready();
+  f.setAfter(()=>{throw Error('synthetic lost ACK before process restart');});
+  const intent=order('pg-process-restart-001');
+  const first=await f.request('orders',{body:{gatewayToken:token,...intent}});
+  assert.equal(first.status,503);assert.equal(first.data.error,'ACCOUNT_OUTCOME_UNKNOWN');
+  const durable=await f.rows();
+  const {promisify}=require('node:util'),{execFile}=require('node:child_process');
+  const {pathToFileURL}=require('node:url'),path=require('node:path');
+  const authorityUrl=pathToFileURL(path.join(__dirname,'postgres-authority.mjs')).href;
+  const script=`
+    const {PrismaClient}=require('@prisma/client');
+    (async()=>{
+      const input=JSON.parse(process.env.STOCKS_RESTART_FIXTURE);
+      const db=new PrismaClient({datasources:{db:{url:process.env.STOCKS_DISPOSABLE_PG_URL}}});
+      try {
+        const {openPostgresAuthority}=await import(${JSON.stringify(authorityUrl)});
+        const authority=openPostgresAuthority(db,{issuer:input.actor.issuer,tradePrincipals:input.principals});
+        try {
+          const result=await authority.execute(input.actor,'submitObserved',{order:input.order,sourceBlocked:true});
+          console.log(JSON.stringify({receipt:result.receipt,pid:process.pid}));
+        } catch(error) { console.log(JSON.stringify({error:error.code,pid:process.pid})); }
+      } finally {await db.$disconnect();}
+    })().catch(()=>{process.exitCode=1;});
+  `;
+  const restart=async()=>{
+    const {stdout}=await promisify(execFile)(process.execPath,['-e',script],{
+      cwd:path.resolve(__dirname,'../..'),windowsHide:true,timeout:8000,
+      env:{...process.env,STOCKS_RESTART_FIXTURE:JSON.stringify({actor:f.actors[0],principals:f.actors,order:intent})},
+    });
+    return JSON.parse(stdout.trim());
+  };
+  const a=await restart(),b=await restart();
+  assert.notEqual(a.pid,process.pid);assert.notEqual(b.pid,process.pid);
+  assert.equal(a.receipt.intentId,intent.id);assert.deepEqual(b.receipt,a.receipt);
+  assert.deepEqual(await f.rows(),durable,'fresh processes must replay COMMIT, never debit again');
+  await f.other.session.update({where:{id:f.sessions[0]},data:{revokedAt:new Date()}});
+  const denied=await restart();assert.equal(denied.error,'AUTH_REQUIRED');
+  assert.deepEqual(await f.rows(),durable,'restart must not cache the previous authorization');
+});
+
 pg('both permitted accounts trade independently and retain18-place shared Wallet remainder',async t=>{
   const f=await fixture(t);await f.db.demoBalance.update({where:{userId_asset:{userId:f.users[0],asset:'USDT'}},data:{available:'731.250000001234567890',locked:'0.000000000000000001'}});
   const [a,b]=await Promise.all([f.ready(0),f.ready(1)]);

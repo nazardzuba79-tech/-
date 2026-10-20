@@ -10,6 +10,7 @@ import { openAccountWorker } from './account-worker.mjs';
 import { executeAccountCommand } from './account-commands.mjs';
 import { identityResolver } from './identity.mjs';
 import { createAuthorityAdapter } from './authority-adapter.mjs';
+import { isReleaseAuthority } from './release-authority.mjs';
 import { MarketHub } from './market.mjs';
 import { createStocksRuntimeMarket } from './runtime-market.mjs';
 import { CATALOG, instrument } from './catalog.mjs';
@@ -134,6 +135,9 @@ export function createQuoteReader({hub,now=Date.now,sourceAllowed=()=>{},monoton
   return quote;
 }
 export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountAuthority,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined}={}){
+  check(process.env.NODE_ENV !== 'production' ||
+    (isReleaseAuthority(accountAuthority) && !accountsPath && !dataPath && !authenticate),
+  'STOCKS_RELEASE_PG_AUTHORITY_REQUIRED');
   const twoTraderMode=tradePrincipals!==undefined;
   const mayTrade=twoTraderMode?twoTraderPolicy(tradePrincipals):null;
   if(twoTraderMode)ownerOnlyMode=true;
