@@ -7,6 +7,8 @@ const inspector = require('node:inspector');
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
 const { performance, monitorEventLoopDelay, PerformanceObserver } = require('node:perf_hooks');
+const LIMITS = Object.freeze({ durationMs: 5000, maxEvents: 20000, maxNodes: 10000,
+  maxSamples: 12000, maxBytes: 4 * 1024 * 1024, maxStopOverrunMs: 250 });
 
 const ROUTES = new Map([
   ['/__stocks_global/state', 'stocks.state'], ['/__stocks_global/portfolio', 'stocks.portfolio'],
@@ -19,7 +21,7 @@ const ROUTES = new Map([
   ['/api/v1/stocks-test-cash/wallet', 'authority.wallet'],
   ['/api/v1/orders', 'crypto.orders'], ['/api/v1/balances', 'crypto.balances'],
 ]);
-const CHANNELS = ['request:create', 'client:sendHeaders', 'request:headers',
+const CHANNELS = ['request:create', 'client:sendHeaders', 'request:bodySent', 'request:headers',
   'request:trailers', 'request:error', 'client:beforeConnect', 'client:connected', 'client:connectError'];
 const correlation = headers => {
   let raw;
@@ -44,7 +46,7 @@ const errorCode = error => ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'UND_ERR_
   'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT',
   'UND_ERR_ABORTED'].includes(error?.code) ? error.code : 'OTHER';
 
-function safeProfile(profile, root, maxNodes = 20000, maxSamples = 60000) {
+function safeProfile(profile, root, maxNodes = LIMITS.maxNodes, maxSamples = LIMITS.maxSamples) {
   const base = path.resolve(root) + path.sep;
   const nodes = (profile.nodes ?? []).slice(0, maxNodes);
   const ids = new Set(nodes.map(n => n.id));
@@ -77,12 +79,24 @@ function safeProfile(profile, root, maxNodes = 20000, maxSamples = 60000) {
     droppedSamples: Math.max(0, (profile.samples?.length ?? 0) - samples.length) };
 }
 
-function createProfiler({ enabled = false, role, root = __dirname, maxEvents = 20000,
-  durationMs = 45000, cpu = true } = {}) {
+function captureValidity(result, durationMs = LIMITS.durationMs) {
+  const reasons = [];
+  if (result.droppedEvents || result.profile?.droppedNodes || result.profile?.droppedSamples) reasons.push('DROPPED_DATA');
+  if (result.profileError) reasons.push('CPU_PROFILE_ERROR');
+  if (!Number.isFinite(result.elapsedMs) || result.elapsedMs > durationMs + LIMITS.maxStopOverrunMs ||
+      (result.captureStopElapsedMs !== undefined && (!Number.isFinite(result.captureStopElapsedMs) ||
+        result.captureStopElapsedMs > durationMs + LIMITS.maxStopOverrunMs))) reasons.push('STOP_OVERRUN');
+  if (!Number.isFinite(result.clockDriftMs) || Math.abs(result.clockDriftMs) > 5) reasons.push('CLOCK_DRIFT');
+  const bytes = Buffer.byteLength(JSON.stringify(result));
+  if (bytes > LIMITS.maxBytes) reasons.push('BYTE_CAP');
+  return { valid: reasons.length === 0, reasons, observedBytes: bytes, limits: LIMITS };
+}
+function createProfiler({ enabled = false, role, root = __dirname, maxEvents = LIMITS.maxEvents,
+  durationMs = LIMITS.durationMs, cpu = true } = {}) {
   if (!enabled) return { start: async () => ({ enabled: false }), stop: async () => ({ enabled: false }) };
   if (!['api', 'generator', 'test'].includes(role)) throw Error('PROFILE_ROLE_REQUIRED');
-  if (!Number.isInteger(maxEvents) || maxEvents < 1 || maxEvents > 20000 ||
-      !Number.isInteger(durationMs) || durationMs < 1 || durationMs > 45000) throw Error('PROFILE_BOUND_REQUIRED');
+  if (!Number.isInteger(maxEvents) || maxEvents < 1 || maxEvents > LIMITS.maxEvents ||
+      !Number.isInteger(durationMs) || durationMs < 1 || durationMs > LIMITS.durationMs) throw Error('PROFILE_BOUND_REQUIRED');
   let state = 'new', stopPromise, timer, session, baseline, cpuBefore, eluBefore, delay, gc;
   let requestSequence = 0, socketSequence = 0, dropped = 0, gcCount = 0, gcMs = 0;
   const requests = new WeakMap(), sockets = new WeakMap(), events = [], unsubscribers = [], listeners = new Set();
@@ -161,19 +175,28 @@ function createProfiler({ enabled = false, role, root = __dirname, maxEvents = 2
         catch { profileError = 'CPU_PROFILE_STOP_FAILED'; }
         finally { session.disconnect(); session = null; }
       }
-      return { enabled: true, schema: 1, role, node: process.version,
+      const result = { enabled: true, schema: 1, role, node: process.version,
         reason: reason === 'deadline' ? 'deadline' : 'requested', start: baseline, end,
         clockDriftMs: (end.epochMs - baseline.epochMs) - (end.monotonicMs - baseline.monotonicMs),
         cpuMicroseconds: usage, elapsedMs: end.monotonicMs - baseline.monotonicMs,
+        captureStopElapsedMs: performance.now() - baseline.monotonicMs,
         memory: process.memoryUsage(), elu, gc: { count: gcCount, durationMs: gcMs },
         eventLoopDelayMs: delay ? { p50: delay.percentile(50) / 1e6, p95: delay.percentile(95) / 1e6,
           max: delay.max / 1e6 } : null, events, droppedEvents: dropped, profile, profileError,
         limitations: ['Opt-in instrumentation adds CPU and memory overhead; no acceptance evidence.',
           'CPU samples exclude PostgreSQL and Prisma engine processes.',
-          'Same-process monotonic timing only. Cross-process clock uncertainty is not measured.',
+          'Cross-process inference requires the separate valid IPC clock brackets from withProfiles.',
           'Undici create-to-send includes dispatcher wait and connection setup; it is not pure network latency.',
           'The timer deadline is cooperative; a blocked JS loop can delay capture shutdown.',
           'Socket IDs are process-local. No identity, authorization result, body or headers are exported.'] };
+      result.validity = captureValidity(result, durationMs);
+      // Reject oversized evidence, never silently present a truncated capture as valid.
+      if (Buffer.byteLength(JSON.stringify(result)) > LIMITS.maxBytes) {
+        if (!result.validity.reasons.includes('BYTE_CAP')) result.validity.reasons.push('BYTE_CAP');
+        result.validity.valid = false;
+        result.events = []; delete result.profile;
+      }
+      return result;
     })();
     return stopPromise;
   }
@@ -202,4 +225,4 @@ function createProfiler({ enabled = false, role, root = __dirname, maxEvents = 2
   return { start, stop };
 }
 
-module.exports = { createProfiler, safeProfile, correlation, route };
+module.exports = { createProfiler, safeProfile, correlation, route, captureValidity, LIMITS };

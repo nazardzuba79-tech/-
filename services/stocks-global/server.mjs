@@ -349,6 +349,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,quoteMetrics:()=>quote.metrics(),refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;hub.close?.();const quoteClosed=quote.close();if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await quoteClosed;await Promise.allSettled([...refreshTasks,...contextFlights.values(),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  check(process.env.NODE_ENV!=='production','STOCKS_RELEASE_ENTRYPOINT_REQUIRED');
   const accountsPath=process.env.STOCKS_ACCOUNTS_DATA;
   const authority=process.env.STOCKS_TEST_CASH_AUTHORITY_URL?createAuthorityAdapter({endpoint:process.env.STOCKS_TEST_CASH_AUTHORITY_URL,issuer:process.env.STOCKS_IDENTITY_ISSUER,gatewayKey:process.env.STOCKS_TEST_CASH_GATEWAY_KEY}):undefined;
   check(accountsPath||authority||process.env.STOCKS_GLOBAL_DATA?.endsWith('.json'),'LOCAL_LEDGER_PATH_REQUIRED');

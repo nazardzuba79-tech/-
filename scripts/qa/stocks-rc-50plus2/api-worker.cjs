@@ -76,6 +76,10 @@ async function close(){
 }
 process.on('message',async m=>{try{
  let value;if(m.command==='init')value=await initialize(m.value);
+ else if(m.command==='profile-clock'){
+  if(!configuration?.diagnostics)throw Error('PROFILE_DIAGNOSTIC_REQUIRED');
+  value=require('./profile-clock.cjs').stamp();
+ }
  else if(m.command==='profile-start'){
   if(!configuration?.diagnostics||cpuHttpProfile)throw Error('PROFILE_DIAGNOSTIC_SINGLE_USE_REQUIRED');
   cpuHttpProfile=require('./cpu-http-profile.cjs').createProfiler({enabled:true,role:'api',root:configuration.root});
