@@ -1,0 +1,46 @@
+# One isolated positive PG/TLS smoke
+
+Owner authorization: Issue #558, CTO comment 6295088442.
+
+Application SHA: `98c577d4241ce527f7bfca3b78dd7bb78255e300` (unchanged).
+Harness: this separate review commit, verified against the labeled PR head.
+Base: PR #559 branch `codex/stocks-build-only-f97b7f9c-20261020`, exactly that application SHA.
+Review branch: `codex/stocks-pg-tls-smoke-98c577d4-20261020`.
+Workflow: **Stocks Isolated Positive PG TLS — 98c577d4**.
+Trigger: one `stocks-positive-pg-tls-approved` label event; attempt must be 1.
+
+One standard public-repository GitHub-hosted ubuntu-24.04 job rebuilds API and
+gateway with the existing original strict 44+2 SQL packager and pinned Node
+22.23.3 image. Neither image is pushed. The API and gateway use their unchanged
+default image CMDs. The actual production runtime-bootstrap is not copied or
+executed: **REAL_PRODUCTION_BOOTSTRAP=NOT_RUN**.
+
+PostgreSQL 18.6 runs in a new internal Docker network with no published ports,
+new tmpfs data directory, random ephemeral credentials and a `stocks_disposable_*`
+database. Setup checks version, TLS, exact database name and empty schema before
+using the existing acceptance base schema and only the Stocks migration. This
+is disposable fixture setup, not deployment or a production migration.
+
+A locally generated one-day certificate enables PostgreSQL TLS and an HTTPS
+proxy. Verification remains enabled. Hostname overrides inside the network
+route provider requests to a bounded fictional transport. No real provider
+requests are made and no production feed entitlement is claimed. Application
+parsers, order matching, freshness, PostgreSQL authority, accounting and
+authorization remain unchanged. MOEX has no fixture data and stays unavailable.
+
+Three newly generated technical users exercise the normal HTTP password/session
+flow: two permitted traders and one viewer. The only balances are two fabricated
+USDT DemoBalance rows. Checks cover API SHA/health, positive PG-only startup,
+HTTPS, quotes/candles parsing, BUY, partial/full SELL, same-intent replay,
+LIMIT/cancel/reservation, overspend/oversell, persistent cash/history, denied
+viewer/invalid JWT/revoked session, finance-off authority, private-route fencing,
+and hostile forwarded headers. These are bounded smoke checks, not a repeat of
+the PG regression suites or a capacity test.
+
+Each first failure stops subsequent checks. Logs and partial receipts are retained
+in the GitHub job output and summary, with generated passwords, URLs and JWTs
+redacted. Container cleanup runs afterwards. No automatic retry or rerun; no
+upload of private keys, environment files or database contents.
+
+A PASS does not close production-bootstrap/topology, actual account binding,
+backup/restore/OTC, provider rights/data, or 50+2 performance gates.
