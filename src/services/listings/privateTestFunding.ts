@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
-import type { PublishedListing } from './listingConfig';
+import { checkPrivateTestable, parseListingConfig, type PublishedListing } from './listingConfig';
 import { privateTestAdmitted, SIMULATION_QUOTE } from './privateTest';
 import { isHistory20PrivateSymbol } from '../../shared/history20PrivateSymbol';
 
@@ -8,6 +8,14 @@ import { isHistory20PrivateSymbol } from '../../shared/history20PrivateSymbol';
 export const privateTestFundingReceiptId = (listingId: string, userId: string) => `history20-funding:${listingId}:${userId}`;
 
 export const PRIVATE_TEST_FUNDING_ACTION = 'HISTORY20_PRIVATE_TEST_FUNDING';
+
+/** A reserved ticker, a History20 window, no owner allocation, funding within bounds, no replay after the window. */
+function assertFundablePrivateListing(listing: PublishedListing): void {
+  const config = parseListingConfig(listing.config);
+  if (!config.privateTest) throw new Error('Only a History20 private test listing has test funding');
+  // Checked against itself: nothing to lock, only the private-test rules (window, ticker, rights gate).
+  checkPrivateTestable(config, config, Date.now());
+}
 
 /**
  * Fund one account for a PUBLISHED History20 private test listing, once.
@@ -25,11 +33,16 @@ export const PRIVATE_TEST_FUNDING_ACTION = 'HISTORY20_PRIVATE_TEST_FUNDING';
  *   reads USDT or any other asset, and never touches another account.
  * - A repeat (or a concurrent second call) credits nothing; a receipt that
  *   disagrees with the listing, or unexplained prior base inventory, fails closed.
+ * - Every private-listing rule is re-checked here from the raw configuration
+ *   (assertFundablePrivateListing). The Worker enforces the same rules when it
+ *   publishes, but this is the authoritative financial write, and Render's
+ *   registry parses the store's answer by shape only: a forged or stale store
+ *   entry must fail here, before any balance changes.
  */
 export async function fundPrivateTestAccount(db: PrismaClient, listing: PublishedListing, userId: string) {
   if (!userId.trim()) throw new Error('Explicit tester account ID required');
-  const privateTest = listing.config.privateTest;
-  if (!privateTest) throw new Error('Only a History20 private test listing has test funding');
+  assertFundablePrivateListing(listing);
+  const privateTest = listing.config.privateTest!;
   if (!(await privateTestAdmitted(db, userId))) throw new Error('This account is not admitted to the private test');
   const base = listing.config.symbol;
   // Only a reserved ticker is funded: every guard refuses it outside the private pair, registry or not.

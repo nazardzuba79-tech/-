@@ -6940,3 +6940,16 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - the production checks above;
   - a post-test cleanup procedure for inert VHX/SIMUSDT balances (not implemented; the admin adjustment refuses them by design);
   - the legacy NRX findings (owner decision).
+
+### Claude — 2026-10-20 — History20 funding: every private-listing rule re-checked before any write (CTO morning follow-up on #553; owner asked for it in-session)
+- **Task:** the CTO asked whether `fundPrivateTestAccount` enforces every private-listing constraint itself, since Render parses the Worker's published listings by shape only. It did not: it required `privateTest`, admission and a reserved ticker, and trusted the stored funding and owner allocation. The owner asked to do the proposed hardening in this session.
+- **Change (new commits on `claude/voltex-mobile-audit-7rpjni`):**
+  - `src/services/listings/privateTestFunding.ts`: `assertFundablePrivateListing` runs `parseListingConfig` and `checkPrivateTestable(config, config, now)` on the listing before the transaction. That is the Worker's own publish-time rule set: reserved ticker, History20 window, owner allocation 0, funding ≤ 1 000 000 and not both zero, no replay after the window, reserved names. Checked against itself, so nothing is locked and no clock dependence is introduced.
+  - `src/services/listings/ownerAllocation.ts`: a listing with `privateTest` is refused.
+  - `history20PrivateSpot.pg` gains one test: seven forged entries, six concurrent calls each, never credit; the genuine listing still funds once; the allocation path refuses the private test. USDT untouched throughout.
+- **RED→GREEN (disposable PostgreSQL 16, loopback):** with the old two files restored, the forged "funding 1 000 001" entry credited on all six concurrent calls (`FULFILLED`); with the change every row is refused and no balance or receipt exists.
+- **Not changed, by rule:** the Native Futures TEST collateral filter (`src/private-trading/native/service.ts`). Futures/NativeDemo are frozen for this work, and the path is unreachable: native holdings are `DemoBalance` rows, and no `DemoBalance` write admits VHX or SIMUSDT. Recorded as an observation.
+- **Verified locally:** the Admin Listings backend list (16 suites) on a fresh cluster; backend `tsc`.
+- **Preserved:** every other #553 guard and test; NRX, AITH, ordinary Spot and Futures code untouched; #555 untouched.
+- **Not run:** exact-head CI at the time of writing; production checks (still BLOCKED).
+- **Unresolved:** the launch approvals, data rights, the production checks and a post-test cleanup plan (separate review, no automatic deletion).

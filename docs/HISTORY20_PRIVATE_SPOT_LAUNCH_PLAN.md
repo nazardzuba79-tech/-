@@ -85,6 +85,7 @@ There are no migrations, no new dependencies and no schema change.
    - then run the same command with `--confirm`, once;
    - verify the AuditLog receipt `history20-funding:<listingId>:<userId>` and the balances: base and SIMUSDT credited, **USDT unchanged**;
    - a repeated `--confirm` must answer `applied: false`.
+   - The script re-validates the listing's full configuration before any write, so a forged or stale store entry (funding above 1 000 000, an owner allocation, a non-reserved ticker, a replay) is refused with the Worker's own message.
 
 ## 7. Financial checks before testers trade
 

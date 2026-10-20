@@ -62,6 +62,7 @@ The reported exploit is preserved as a test, `history20ColdRegistryCashout.pg`. 
   - It runs once per (listing, account), under an advisory lock, with the AuditLog receipt `history20-funding:<listingId>:<userId>`.
   - It credits the reserved base and SIMUSDT, never USDT.
   - It fails closed on a conflicting receipt or unexplained inventory.
+  - It re-checks every private-listing rule from the raw configuration itself (`parseListingConfig` + `checkPrivateTestable`): reserved ticker, History20 window, owner allocation 0, funding within bounds, no replay. Render's registry parses the store's answer by shape only, so a forged or stale store entry fails here, before any write. The owner-allocation path refuses a private test outright.
   - There is no migration.
 - **Private channel:** the Worker DO serves private tests to Render's Bearer registry only (`/internal/listings/published`). The public catalogue and pair paths never see them.
 - **Reads:** `GET /api/v1/private-test/markets[/:pair/{candles,ticker,orderbook}]`.
@@ -94,9 +95,10 @@ Pairs are shown as `…/SIMUSDT`.
 ## Evidence (disposable PostgreSQL 16 and workerd/Miniflare; synthetic data only)
 
 - `history20ColdRegistryCashout.pg` (6): the P0 cases above.
-- `history20PrivateSpot.pg` (10):
+- `history20PrivateSpot.pg` (11):
   - admission matrix;
   - funding: concurrent calls credit once, conflict, prior inventory;
+  - funding re-checks every rule: seven forged store entries (funding above the bound, an owner allocation, a non-reserved ticker, `SIMUSDT` as ticker, a replay, no window, no funding), six concurrent calls each, never credit; the owner-allocation path refuses a private test;
   - owner↔tester fill, cancel, double spend, concurrent takers, conserved totals;
   - restart;
   - STOP/OCO/TP on the model price;

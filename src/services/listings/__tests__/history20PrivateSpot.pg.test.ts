@@ -20,6 +20,7 @@ import { defaultScenarioControls } from '../../../shared/listingScenarioControls
 import { listingSimulationConfig, parseListingConfig, type ListingConfig, type PublishedListing } from '../listingConfig';
 import { setManagedListingAssets } from '../managedSnapshot';
 import { fundPrivateTestAccount, privateTestFundingReceiptId } from '../privateTestFunding';
+import { allocateListingOwner, allocationReceiptId } from '../ownerAllocation';
 import { spotPriceSource, assertSpotListing } from '../../testMarkets/nrxSpot';
 import { TestMarketSimulation } from '../../testMarkets/testMarketSimulation';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from '../../testMarkets/testAssetConfig';
@@ -176,6 +177,36 @@ pg('History20 private Spot test mode in SIMUSDT (disposable PostgreSQL)', () => 
     expect(receipts.every((r) => (r.metadata as Record<string, unknown>).usdtCredit === '0' || r.id === privateTestFundingReceiptId(published.id, owner))).toBe(true);
     expect(await db.futuresBalance.count({ where: { userId: { in: [owner, tester] } } })).toBe(0);
     expect(await db.demoBalance.count({ where: { userId: { in: [owner, tester] } } })).toBe(0);
+    await usdtUntouched();
+  });
+
+  test('funding re-checks every private-listing rule itself: a forged or stale store entry never credits, even under concurrent calls; a private test has no owner allocation', async () => {
+    // Render parses the store's answer by shape only; these entries would pass that parse and
+    // (apart from the ticker) the Worker's own publish-time checks are not re-run anywhere else.
+    const forged: Array<[string, PublishedListing, RegExp]> = [
+      ['funding above the bound', { ...published, config: { ...config, privateTest: { settlement: 'SIMUSDT', funding: { base: '100', quote: '1000001' } } } }, /не более 1000000/],
+      ['an owner allocation next to the test funding', { ...published, config: { ...config, ownerAllocation: '500' } }, /распределение владельцу должно быть 0/],
+      ['a non-reserved ticker', { ...published, config: { ...config, symbol: randomSymbol('P') } }, /VHX01/],
+      ['SIMUSDT itself as the ticker', { ...published, config: { ...config, symbol: 'SIMUSDT' } }, /VHX01|reserved/],
+      ['a replay after the window (the rights gate)', { ...published, config: { ...config, simulationProgram: { ...config.simulationProgram!, afterGrowth: 'historical' } as ListingConfig['simulationProgram'] } }, /Историческое движение|Историческое окно заменяет этапы/],
+      ['a listing without a History20 window', { ...published, config: { ...legacy, privateTest: { settlement: 'SIMUSDT', funding: { base: '100', quote: '1000' } } } }, /исторического окна|History20/],
+      ['no funding at all', { ...published, config: { ...config, privateTest: { settlement: 'SIMUSDT', funding: { base: '0', quote: '0' } } } }, /укажите количество/],
+    ];
+    for (const [, entry] of forged) setManagedListingAssets([listingSimulationConfig(entry.config), listingSimulationConfig(legacy)]);
+    for (const [, entry, message] of forged) {
+      // Six concurrent calls on a forged entry: none credits anything.
+      const outcomes = await Promise.allSettled(Array.from({ length: 6 }, () => fundPrivateTestAccount(db, entry, owner)));
+      expect(outcomes.map((o) => (o.status === 'rejected' ? String((o as PromiseRejectedResult).reason) : 'FULFILLED')))
+        .toEqual(Array.from({ length: 6 }, () => expect.stringMatching(message)));
+    }
+    for (const sym of [symbol, 'SIMUSDT', 'P', legacy.symbol]) expect(await db.balance.findMany({ where: { userId: owner, asset: { startsWith: sym } } })).toEqual([]);
+    expect(await db.auditLog.count({ where: { action: 'HISTORY20_PRIVATE_TEST_FUNDING', userId: owner } })).toBe(0);
+    // The genuine listing still funds once; the owner allocation path refuses the private test.
+    setManagedListingAssets([listingSimulationConfig(config), listingSimulationConfig(legacy)]);
+    await expect(fundPrivateTestAccount(db, published, owner)).resolves.toMatchObject({ applied: true });
+    await expect(allocateListingOwner(db, { ...published, config: { ...config, ownerAllocation: '500' } }, owner)).rejects.toThrow('no owner allocation');
+    expect(await balance(owner, symbol)).toEqual(['100', '0']);
+    expect(await db.auditLog.findUnique({ where: { id: allocationReceiptId(published.id) } })).toBeNull();
     await usdtUntouched();
   });
 
