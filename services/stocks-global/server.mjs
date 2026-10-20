@@ -10,6 +10,7 @@ import { openAccountWorker } from './account-worker.mjs';
 import { executeAccountCommand } from './account-commands.mjs';
 import { identityResolver } from './identity.mjs';
 import { createAuthorityAdapter } from './authority-adapter.mjs';
+import { isReleaseAuthority } from './release-authority.mjs';
 import { MarketHub } from './market.mjs';
 import { createStocksRuntimeMarket } from './runtime-market.mjs';
 import { CATALOG, instrument } from './catalog.mjs';
@@ -134,6 +135,9 @@ export function createQuoteReader({hub,now=Date.now,sourceAllowed=()=>{},monoton
   return quote;
 }
 export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountAuthority,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined}={}){
+  check(process.env.NODE_ENV !== 'production' ||
+    (isReleaseAuthority(accountAuthority) && !accountsPath && !dataPath && !authenticate),
+  'STOCKS_RELEASE_PG_AUTHORITY_REQUIRED');
   const twoTraderMode=tradePrincipals!==undefined;
   const mayTrade=twoTraderMode?twoTraderPolicy(tradePrincipals):null;
   if(twoTraderMode)ownerOnlyMode=true;
@@ -330,7 +334,10 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     send(res,e.code==='AUTH_REQUIRED'?401:['AUTH_UNAVAILABLE','ACCOUNT_CAPACITY','SOURCE_BUSY','ACCOUNT_BUSY','ACCOUNT_UNAVAILABLE','ACCOUNT_STORAGE_ERROR','ACCOUNT_OUTCOME_UNKNOWN'].includes(e.code)?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR',...(retryAfterMs===null?{}:{retryAfterMs})},retryAfterMs===null?{}:{'Retry-After':String(retryAfterMs/1000)});
   }else res.end();}finally{cleanupRequest?.();}};
   const server=http.createServer((req,res)=>accountAuthority?accountAuthority.runWithRequest(req,()=>handle(req,res)):handle(req,res));
-  server.requestTimeout=15000;server.headersTimeout=10000;server.keepAliveTimeout=2000;server.maxConnections=128;
+  // Node 22 native fetch subtracts a 2000 ms keep-alive safety margin. Advertising
+  // exactly 2 s makes every response non-reusable. Keep the normal 5 s HTTP idle
+  // window; request deadlines, admission bounds and per-request auth stay intact.
+  server.requestTimeout=15000;server.headersTimeout=10000;server.keepAliveTimeout=5000;server.maxConnections=128;
   await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,'127.0.0.1',ok);}).catch(async e=>{await accounts?.close();await legacy?.close();throw e;});address=server.address();
   let tick=null;
   const timer=autoPoll&&!ownerOnlyMode?setInterval(()=>{
@@ -346,6 +353,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
   return{server,store:legacy,port:address.port,accountMetrics:()=>accounts?.metrics()??null,quoteMetrics:()=>quote.metrics(),refresh:async id=>{check(legacy,'AUTH_REQUIRED');await refreshContext(contexts.get('legacy'),id);},async close(){closing=true;hub.close?.();const quoteClosed=quote.close();if(timer)clearInterval(timer);server.closeIdleConnections();await new Promise(ok=>server.close(ok));await tick;await quoteClosed;await Promise.allSettled([...refreshTasks,...contextFlights.values(),catalogueTask].filter(Boolean));await accounts?.close();await legacy?.close();}};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  check(process.env.NODE_ENV!=='production','STOCKS_RELEASE_ENTRYPOINT_REQUIRED');
   const accountsPath=process.env.STOCKS_ACCOUNTS_DATA;
   const authority=process.env.STOCKS_TEST_CASH_AUTHORITY_URL?createAuthorityAdapter({endpoint:process.env.STOCKS_TEST_CASH_AUTHORITY_URL,issuer:process.env.STOCKS_IDENTITY_ISSUER,gatewayKey:process.env.STOCKS_TEST_CASH_GATEWAY_KEY}):undefined;
   check(accountsPath||authority||process.env.STOCKS_GLOBAL_DATA?.endsWith('.json'),'LOCAL_LEDGER_PATH_REQUIRED');

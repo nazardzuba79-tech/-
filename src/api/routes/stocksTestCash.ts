@@ -16,9 +16,32 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
   const secret = config.secret ?? process.env.JWT_SECRET;
   const principals = config.principals ?? JSON.parse(process.env.STOCKS_TRADE_PRINCIPALS ?? 'null');
   if (!issuer || !secret || !gatewayKey || gatewayKey.length < 32 || !Array.isArray(principals) || principals.length !== 2) throw Error('STOCKS_AUTHORITY_CONFIG_INVALID');
-  // Node24 is the pinned local integration runtime (native require(ESM)).
+  // Node 22.23.3 supports this synchronous require(ESM) path.
   // This lazy load is never reached by the default, disabled API surface.
   const authority: Authority = injected ?? require(resolve(__dirname, '../../../services/stocks-global/postgres-authority.mjs')).openPostgresAuthority(prisma, { issuer, tradePrincipals: principals });
+  // A release readiness assertion is offered only by the real PostgreSQL path.
+  // No account creation, balance read/write, session decision or cached grant.
+  if (!injected) {
+    const { releasePrincipals, principalsDigest } = require(resolve(__dirname, '../../../services/stocks-global/release-config.mjs'));
+    const bindings = releasePrincipals(issuer, principals);
+    router.get('/stocks-test-cash/readiness', async (req, res) => {
+      res.set('Cache-Control', 'no-store');
+      const provided = Buffer.from(String(req.headers['x-stocks-authority-key'] ?? ''));
+      const expected = Buffer.from(gatewayKey);
+      if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+        res.status(401).json({ error: 'AUTH_REQUIRED' }); return;
+      }
+      try {
+        const users = await prisma.user.findMany({ where: { id: { in: bindings.map((p: {subject:string}) => p.subject) }, blockedAt: null }, select: { id: true } });
+        if (users.length !== 2) throw Error('BINDINGS_UNVERIFIED');
+        // Resolve the required schema without reading private rows.
+        await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAccount" WHERE false');
+        await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestReceipt" WHERE false');
+        await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAudit" WHERE false');
+        res.json({ version: 1, authority: 'postgres', issuer, principalsDigest: principalsDigest(bindings) });
+      } catch { res.status(503).json({ error: 'STOCKS_AUTHORITY_UNREADY' }); }
+    });
+  }
   // Normalize the immutable key once; signature/expiry checks still run on every request.
   const verificationKey = (() => { try { return createPublicKey(secret); } catch { return createSecretKey(Buffer.from(secret)); } })();
   const auth = requireAuth(prisma, { prepareVerificationKey: true });

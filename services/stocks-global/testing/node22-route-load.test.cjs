@@ -56,6 +56,7 @@ test('enabled route loads its REAL ESM authority on Node 22 and declares only ex
   assert.deepEqual(paths, [
     '/stocks-test-cash/command',
     '/stocks-test-cash/identity',
+    '/stocks-test-cash/readiness',
     '/stocks-test-cash/wallet',
   ]);
 });

@@ -13,6 +13,7 @@ export function accountId(principal) {
 }
 
 export function openAccounts(path, { now = Date.now, beforeCommit = () => {}, beforeRegistrationCommit = () => {}, diagnostics = false } = {}) {
+  check(process.env.NODE_ENV !== 'production', 'STOCKS_LEGACY_STORAGE_UNSUPPORTED');
   check(path?.endsWith('.sqlite'), 'LOCAL_LEDGER_PATH_REQUIRED');
   mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);

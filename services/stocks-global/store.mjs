@@ -3,6 +3,7 @@ import { dirname } from 'node:path';
 import { createState, validate, snapshot } from './engine.mjs';
 
 export async function openStore(path, { now = Date.now, persist: override } = {}) {
+  if (process.env.NODE_ENV === 'production') throw new Error('STOCKS_LEGACY_STORAGE_UNSUPPORTED');
   await mkdir(dirname(path), { recursive: true });
   // A second simulator cannot open this ledger, even on a different port.
   const lock = await open(path + '.lock', 'wx');

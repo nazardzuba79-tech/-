@@ -13,12 +13,20 @@ on:
       - 'frontend/src/lib/__tests__/stocksViewerNoop.test.ts'
       - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
       - '.github/workflows/stocks-focused-review.yml'
+      - '.github/workflows/stocks-legacy-unsupported.yml'
       - 'scripts/qa/stocks-migration-review*.cjs'
+      - 'scripts/qa/stocks-release-package*.cjs'
+      - 'scripts/qa/stocks-ci-source-head.test.cjs'
       - 'scripts/qa/stocks-rc-50plus2/**'
   workflow_dispatch: {}
 
 permissions:
   contents: read
+
+# PR source HEAD, never the synthetic pull_request merge commit in github.sha.
+# Manual review is only a source definition here, not authorization to dispatch.
+env:
+  EXPECTED_SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
 
 concurrency:
   group: stocks-focused-${{ github.event.pull_request.number || github.ref_name }}
@@ -26,6 +34,8 @@ concurrency:
 
 jobs:
   financial-review:
+    outputs:
+      source-sha: ${{ steps.source-check.outputs.sha }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -54,6 +64,25 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+      - name: Assert captured immutable source HEAD
+        id: source-check
+        env:
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_REPO: ${{ github.event_name == 'workflow_dispatch' && github.repository || github.event.pull_request.head.repo.full_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), cp = require('node:child_process');
+          const expected = process.env.EXPECTED_SOURCE_SHA;
+          const actual = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
+          console.log(`Expected source SHA: ${expected}\nActual checkout SHA: ${actual}`);
+          if (!['pull_request','workflow_dispatch'].includes(process.env.SOURCE_EVENT) ||
+              process.env.SOURCE_REPO !== process.env.GITHUB_REPOSITORY ||
+              !/^[0-9a-f]{40}$/.test(expected ?? '') || actual !== expected) {
+            throw new Error('STOCKS_CI_SOURCE_HEAD_MISMATCH');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${actual}\n`);
+          NODE
       - name: Obtain pinned disposable-only base schema
         shell: bash
         run: |
@@ -115,35 +144,130 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stocks-focused-synthetic-pg
+          name: stocks-focused-synthetic-pg-${{ env.EXPECTED_SOURCE_SHA }}
           path: /tmp/stocks-financial-pg.tap
           if-no-files-found: ignore
           retention-days: 5
 
   node22-hetzner-module-load:
-    # Node-version/module-load smoke only; not actual production-image proof.
-    # No live database, ingress, providers, deployment or migration.
+    outputs:
+      source-sha: ${{ steps.source-check.outputs.sha }}
+    # Compiled API + disposable PostgreSQL on the exact runtime.
+    # No production-image, ingress, provider or deployment attestation.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       STOCKS_TEST_CASH_ENABLED: 'false'
-      DATABASE_URL: postgresql://synthetic:synthetic@127.0.0.1:9/unused_db
-      DIRECT_URL: postgresql://synthetic:synthetic@127.0.0.1:9/unused_db
+      DATABASE_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      DIRECT_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      STOCKS_DISPOSABLE_PG_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      STOCKS_PG_DISPOSABLE_CONFIRM: stocks_disposable_ci
+      STOCKS_PG_COMPILED_ROUTER: 'true'
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: stocks_ci
+          POSTGRES_PASSWORD: synthetic-only
+          POSTGRES_DB: stocks_disposable_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U stocks_ci -d stocks_disposable_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+      - name: Assert captured immutable source HEAD
+        id: source-check
+        env:
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_REPO: ${{ github.event_name == 'workflow_dispatch' && github.repository || github.event.pull_request.head.repo.full_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), cp = require('node:child_process');
+          const expected = process.env.EXPECTED_SOURCE_SHA;
+          const actual = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
+          console.log(`Expected source SHA: ${expected}\nActual checkout SHA: ${actual}`);
+          if (!['pull_request','workflow_dispatch'].includes(process.env.SOURCE_EVENT) ||
+              process.env.SOURCE_REPO !== process.env.GITHUB_REPOSITORY ||
+              !/^[0-9a-f]{40}$/.test(expected ?? '') || actual !== expected) {
+            throw new Error('STOCKS_CI_SOURCE_HEAD_MISMATCH');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${actual}\n`);
+          NODE
       - uses: actions/setup-node@v4
         with:
           node-version: '22.23.3'
+      - name: Obtain pinned disposable-only base schema
+        run: git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
       - name: Install exact locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Offline immutable-source CI contract
+        run: node --test scripts/qa/stocks-ci-source-head.test.cjs
       - name: Generate API client locally (does not open any database)
         run: npx prisma generate
       - name: Compile production CommonJS API
         run: npm run build
       - name: Load actual ESM Stocks authority and default-off routes on Node 22.23.3
         run: node --test services/stocks-global/testing/node22-route-load.test.cjs
+      - name: Release startup fails closed before listening
+        run: node --test services/stocks-global/release-startup.test.mjs
+      - name: Compiled authority financial fences and real release startup on disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs services/stocks-global/release-authority.pg.test.cjs | tee /tmp/stocks-node22-pg.tap
+          grep -Eq '^# skipped 0$' /tmp/stocks-node22-pg.tap
+          grep -Eq '^# fail 0$' /tmp/stocks-node22-pg.tap
+          grep -Eq '^# pass [1-9][0-9]*$' /tmp/stocks-node22-pg.tap
+      - name: Stocks HTTP reuse and bounded CPU diagnostics (sequential loopback only)
+        run: >-
+          node --test
+          services/stocks-global/http-reuse.test.mjs
+          scripts/qa/stocks-rc-50plus2/cpu-http-profile.test.cjs
+          scripts/qa/stocks-rc-50plus2/profile-summary.test.cjs
+          scripts/qa/stocks-rc-50plus2/profile-session.test.cjs
+          scripts/qa/stocks-rc-50plus2/profile-contract.test.cjs
+      - name: Production factories reject all local ledgers and unverified authorities
+        run: node --test services/stocks-global/release-boundary.test.mjs
 
       - name: Offline migration manifest contract (no SQL or image proof)
-        run: node --test scripts/qa/stocks-migration-review.test.cjs
+        run: node --test scripts/qa/stocks-migration-review.test.cjs scripts/qa/stocks-release-package.test.cjs
+      - name: Preserve exact-head Node22 PostgreSQL evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-node22-pg-${{ env.EXPECTED_SOURCE_SHA }}
+          path: /tmp/stocks-node22-pg.tap
+          if-no-files-found: warn
+
+  pg-release-required:
+    name: Stocks PostgreSQL release contract
+    needs: [financial-review, node22-hetzner-module-load]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require both complete financial suites without skips or failures
+        env:
+          FINANCIAL_RESULT: ${{ needs.financial-review.result }}
+          NODE22_RESULT: ${{ needs.node22-hetzner-module-load.result }}
+          FINANCIAL_SHA: ${{ needs.financial-review.outputs.source-sha }}
+          NODE22_SHA: ${{ needs.node22-hetzner-module-load.outputs.source-sha }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), env = process.env;
+          console.log(`Expected source SHA: ${env.EXPECTED_SOURCE_SHA}\nFinancial checkout SHA: ${env.FINANCIAL_SHA}\nNode22 checkout SHA: ${env.NODE22_SHA}`);
+          if (!/^[0-9a-f]{40}$/.test(env.EXPECTED_SOURCE_SHA ?? '') ||
+              env.FINANCIAL_RESULT !== 'success' || env.NODE22_RESULT !== 'success' ||
+              env.FINANCIAL_SHA !== env.EXPECTED_SOURCE_SHA || env.NODE22_SHA !== env.EXPECTED_SOURCE_SHA) {
+            throw new Error('STOCKS_CI_REQUIRED_HEAD_OR_RESULT_MISMATCH');
+          }
+          fs.appendFileSync(env.GITHUB_STEP_SUMMARY,
+            `PostgreSQL code contract PASS at source ${env.EXPECTED_SOURCE_SHA}. Legacy SQLite is unsupported and reported separately.\n` +
+            'This is not production topology, image, ingress, migration, capacity or release approval.\n');
+          NODE
