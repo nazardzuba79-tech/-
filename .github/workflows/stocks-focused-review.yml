@@ -128,18 +128,15 @@ jobs:
           node --test
           services/stocks-global/runtime-market.test.mjs
           services/stocks-global/binance-trade-feed.test.mjs
-      - name: Default-disabled API, viewer no-op and wallet projection
+      - name: Viewer no-op and wallet projection
         run: >-
           npx jest --runInBand --runTestsByPath
-          src/api/routes/__tests__/stocksTestCash.test.ts
           frontend/src/lib/__tests__/stocksViewerNoop.test.ts
           frontend/src/lib/__tests__/stockWalletProjection.test.ts
       - name: Bounded harness admission and financial assertion regressions (no workload run)
         run: node --test scripts/qa/stocks-rc-50plus2/self-test.cjs
-      - name: Confirm no production activation by source defaults
-        shell: bash
-        run: |
-          node -e "const fs=require('fs');const route=fs.readFileSync('src/api/routes/stocksTestCash.ts','utf8');if(!route.includes(\"process.env.STOCKS_TEST_CASH_ENABLED === 'true'\")||!route.includes('if (!enabled) return router'))process.exit(1)"
+      - name: Behavioral default-OFF, catalogue-only and explicit financial opt-in contract
+        run: npx jest --runInBand --runTestsByPath src/api/routes/__tests__/stocksTestCash.test.ts
       - name: Review evidence (synthetic, no customer information)
         if: always()
         uses: actions/upload-artifact@v4

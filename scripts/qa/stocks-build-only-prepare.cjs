@@ -47,28 +47,40 @@ function exactBytes(raw, row) {
   if (status === 'MISMATCH') throw Error('SQL_BYTE_MISMATCH ' + JSON.stringify(result));
   return { bytes: status === 'RAW_MATCH' ? raw : derived, result };
 }
-function prepare(source, output) {
+function expectedSource(env = process.env) {
+  const sha = env.SOURCE_SHA ?? SOURCE;
+  if (!/^[a-f0-9]{40}$/.test(sha) ||
+      env.GITHUB_ACTIONS === 'true' && sha !== env.CONTROL_SHA) throw Error('SOURCE_CONTROL_HEAD_MISMATCH');
+  return sha;
+}
+function prepare(source, output, sourceSha = expectedSource()) {
   source = fs.realpathSync(source);
   output = path.resolve(output);
   if (fs.existsSync(output)) throw Error('NEW_OUTPUT_DIRECTORY_REQUIRED');
-  if (command('git', ['rev-parse', 'HEAD'], source).toString().trim() !== SOURCE) throw Error('SOURCE_HEAD_MISMATCH');
-  command('git', ['merge-base', '--is-ancestor', BASE, SOURCE], source);
+  if (!/^[a-f0-9]{40}$/.test(sourceSha) || command('git', ['rev-parse', 'HEAD'], source).toString().trim() !== sourceSha) throw Error('SOURCE_HEAD_MISMATCH');
+  command('git', ['merge-base', '--is-ancestor', SOURCE, sourceSha], source);
+  // Updated package recipe may come from the next explicitly reviewed HEAD;
+  // the original strict checker and all SQL remain immutable.
+  for (const file of ['scripts/qa/stocks-release-package.cjs', 'scripts/qa/stocks-migration-review.cjs']) {
+    if (!command('git', ['show', `${SOURCE}:${file}`], source).equals(
+      command('git', ['show', `${sourceSha}:${file}`], source))) throw Error('STRICT_CHECKER_CHANGED ' + file);
+  }
   const manifestBytes = fs.readFileSync(path.join(__dirname, 'fixtures/stocks-production-files-20261020.json'));
   if (hash(manifestBytes) !== MANIFEST_SHA) throw Error('ATTESTED_MANIFEST_HASH_MISMATCH');
   const manifest = JSON.parse(manifestBytes);
   validateManifest(manifest);
   // Verify EVERY file before creating any output or invoking Docker.
   const history = manifest.map(row => exactBytes(command('git',
-    ['show', `${SOURCE}:prisma/migrations/${row.migration_name}/migration.sql`], source), row));
+    ['show', `${sourceSha}:prisma/migrations/${row.migration_name}/migration.sql`], source), row));
   const pending = PENDING.map(row => {
-    const bytes = command('git', ['show', `${SOURCE}:prisma/migrations/${row.name}/migration.sql`], source);
+    const bytes = command('git', ['show', `${sourceSha}:prisma/migrations/${row.name}/migration.sql`], source);
     if (hash(bytes) !== row.sha256) throw Error('PENDING_SQL_MISMATCH ' + row.name);
     return { ...row, bytes };
   });
   fs.mkdirSync(output); // non-recursive; never overwrites an existing context
   const context = path.join(output, 'context');
   command('git', ['clone', '--no-checkout', '--shared', source, context], output);
-  command('git', ['-c', 'core.autocrlf=false', 'checkout', '--detach', SOURCE], context);
+  command('git', ['-c', 'core.autocrlf=false', 'checkout', '--detach', sourceSha], context);
   const snapshot = path.join(output, 'derived44'), pendingDir = path.join(output, 'pending2');
   for (const file of history) {
     const dir = path.join(snapshot, file.result.name);
@@ -95,14 +107,14 @@ function prepare(source, output) {
   });
   if (packageResult.status !== 'PASS_FILE_REVIEW_ONLY' ||
       packageResult.historicalCount !== 44 || packageResult.pendingCount !== 2) throw Error('STRICT_PACKAGE_GATE_FAILED');
-  const receipt = { source: SOURCE, base: BASE, manifestSha256: MANIFEST_SHA,
+  const receipt = { source: sourceSha, applicationAncestor: SOURCE, base: BASE, manifestSha256: MANIFEST_SHA,
     provenance: 'EXACT_BYTES_DERIVED_AND_HASH_VERIFIED; not original export receipt',
     rows: history.map(file => file.result), pending: PENDING,
     packageResult, originalSqlFilesChanged: false, sqlExecuted: false };
   fs.writeFileSync(path.join(output, 'sql-byte-receipt.json'), JSON.stringify(receipt, null, 2) + '\n');
   return receipt;
 }
-module.exports = { SOURCE, BASE, MANIFEST_SHA, PENDING, hash, validateManifest, exactBytes, prepare };
+module.exports = { SOURCE, BASE, MANIFEST_SHA, PENDING, hash, validateManifest, exactBytes, expectedSource, prepare };
 if (require.main === module) {
   try {
     if (process.argv.length !== 4) throw Error('USAGE: source-checkout NEW-output-directory');

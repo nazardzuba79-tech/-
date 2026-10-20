@@ -3,9 +3,17 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { exactBytes, hash, validateManifest, MANIFEST_SHA } = require('./stocks-build-only-prepare.cjs');
+const { exactBytes, hash, validateManifest, MANIFEST_SHA, expectedSource, SOURCE } = require('./stocks-build-only-prepare.cjs');
 
 const row = bytes => ({ migration_name: '20260101000000_example', bytes: bytes.length, sha256: hash(bytes) });
+test('next reviewed image source must equal the captured exact control HEAD', () => {
+  assert.equal(expectedSource({}), SOURCE);
+  const sha='a'.repeat(40);
+  assert.equal(expectedSource({GITHUB_ACTIONS:'true',SOURCE_SHA:sha,CONTROL_SHA:sha}),sha);
+  assert.throws(()=>expectedSource({GITHUB_ACTIONS:'true',SOURCE_SHA:sha,CONTROL_SHA:SOURCE}),/SOURCE_CONTROL_HEAD_MISMATCH/);
+  assert.throws(()=>expectedSource({GITHUB_ACTIONS:'true',SOURCE_SHA:sha}),/SOURCE_CONTROL_HEAD_MISMATCH/);
+  assert.throws(()=>expectedSource({SOURCE_SHA:'main'}),/SOURCE_CONTROL_HEAD_MISMATCH/);
+});
 test('raw equality needs BOTH bytes and SHA; preserves the input bytes', () => {
   const bytes = Buffer.from('SELECT 1;\r\n');
   const result = exactBytes(bytes, row(bytes));

@@ -15,19 +15,53 @@ function fixture(enabled=true,verificationSecret=process.env.JWT_SECRET!,routerF
 }
 test('Stocks authority API is absent by default/disabled and performs no account lookup',async()=>{const f=fixture(false);expect((await request(f.app).get('/api/v1/stocks-test-cash/wallet')).status).toBe(404);expect(f.prisma.session.findUnique).not.toHaveBeenCalled();});
 
+test('release default-OFF uses actual environment defaults and registers no surfaces',async()=>{
+ const keys=['STOCKS_TEST_CASH_ENABLED','STOCKS_CATALOGUE_ENABLED'] as const;
+ const previous=keys.map(k=>process.env[k]);
+ try{
+  for(const value of [undefined,'false','TRUE','1']){
+   for(const k of keys)if(value===undefined)delete process.env[k];else process.env[k]=value;
+   const f=fixture(false),router=stocksTestCashRouter(f.prisma,{principals:[]});
+   expect(router.stack).toHaveLength(0);
+   const app=express();app.use('/api/v1',router);
+   for(const route of ['identity','readiness','wallet','command'])
+    for(const method of ['get','post'] as const)
+     expect((await request(app)[method]('/api/v1/stocks-test-cash/'+route)).status).toBe(404);
+   expect(f.prisma.user.findUnique).not.toHaveBeenCalled();
+   expect(f.prisma.session.findUnique).not.toHaveBeenCalled();
+  }
+ }finally{keys.forEach((k,i)=>{if(previous[i]===undefined)delete process.env[k];else process.env[k]=previous[i];});}
+});
+
 test('catalogue-only gate authenticates normal sessions but cannot invoke any financial authority operation',async()=>{
  const f=fixture(false,process.env.JWT_SECRET!,stocksTestCashRouter,true);
  expect((await request(f.app).get('/api/v1/stocks-test-cash/identity')).status).toBe(401);
+ for(const route of ['wallet','command']){
+  expect((await request(f.app).post('/api/v1/stocks-test-cash/'+route).set('x-stocks-authority-key',key).send({type:'ensure'})).status).toBe(401);
+ }
  for(const subject of ['synthetic-a','synthetic-b','viewer']){
    const token=f.token(subject);
    expect((await request(f.app).get('/api/v1/stocks-test-cash/identity').set('Authorization','Bearer '+token)).status).toBe(200);
-   expect((await request(f.app).get('/api/v1/stocks-test-cash/wallet').set('Authorization','Bearer '+token)).status).toBe(403);
+   const wallet=await request(f.app).get('/api/v1/stocks-test-cash/wallet').set('Authorization','Bearer '+token);
+   expect(wallet.status).toBe(403);expect(wallet.body.error).toBe('STOCKS_TRADING_DISABLED');
    const result=await request(f.app).post('/api/v1/stocks-test-cash/command').set('Authorization','Bearer '+token).set('x-stocks-authority-key',key).send({type:'ensure'});
    expect(result.status).toBe(403);expect(result.body.error).toBe('STOCKS_TRADING_DISABLED');
  }
  expect(f.authority.execute).not.toHaveBeenCalled();
  f.prisma.session.findUnique.mockResolvedValue(null);
  expect((await request(f.app).get('/api/v1/stocks-test-cash/identity').set('Authorization','Bearer '+f.token())).status).toBe(401);
+});
+test('explicit finance opt-in still rejects forged viewer commands and selector escalation',async()=>{
+ const f=fixture();
+ const forged=jwt.sign({sub:'viewer',sid:'session-viewer',role:'admin',isOwner:true},process.env.JWT_SECRET!,{expiresIn:'1h'});
+ const result=await request(f.app).post('/api/v1/stocks-test-cash/command')
+  .set('Authorization','Bearer '+forged).set('x-stocks-authority-key',key).send({type:'ensure'});
+ expect(result.status).toBe(401);expect(result.body.error).toBe('AUTH_REQUIRED');
+ expect(f.authority.execute).toHaveBeenCalledWith(expect.objectContaining({subject:'viewer'}),'ensure',undefined);
+ f.authority.execute.mockClear();
+ const selector=await request(f.app).post('/api/v1/stocks-test-cash/command')
+  .set('Authorization','Bearer '+forged).set('x-stocks-authority-key',key).send({type:'ensure',userId:'synthetic-a'});
+ expect(selector.status).toBe(422);expect(f.authority.execute).not.toHaveBeenCalled();
 });
 test('browser bearer alone cannot inject quote/order commands into the cash authority',async()=>{const f=fixture();const res=await request(f.app).post('/api/v1/stocks-test-cash/command').set('Authorization','Bearer '+f.token()).send({type:'observe',input:{ask:'1'}});expect(res.status).toBe(403);expect(f.authority.execute).not.toHaveBeenCalled();});
 test('fixed authority capability and valid Xenia-analogue session reach only the authenticated actor',async()=>{const f=fixture();const res=await request(f.app).post('/api/v1/stocks-test-cash/command').set('Authorization','Bearer '+f.token('synthetic-b')).set('x-stocks-authority-key',key).send({type:'ensure'});expect(res.status).toBe(200);expect(f.authority.execute).toHaveBeenCalledWith(expect.objectContaining({subject:'synthetic-b',userId:'synthetic-b',sessionId:'session-synthetic-b'}),'ensure',undefined);});

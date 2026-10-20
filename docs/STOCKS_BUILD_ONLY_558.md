@@ -1,5 +1,11 @@
 # Stocks Docker Build Only — f97b7f9c
 
+Historical first-run specification below. PR559 run39436792657 actually ran once
+and failed; see `STOCKS_BUILD_FIX_559_20261020.md` for the bounded local follow-up.
+The prepared next run uses the captured immutable PR HEAD for both application
+and helpers, retains f97 as required ancestor and pins the original SQL checkers.
+It has NOT been authorized or executed. The old receipt is not a current PASS.
+
 Prepared for CTO request6291480864 in Issue558. NOT published or run.
 No application, SQL, financial logic, release checks or production state changes.
 

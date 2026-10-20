@@ -4,13 +4,27 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const cp = require('node:child_process');
-const { SOURCE, hash } = require('./stocks-build-only-prepare.cjs');
+const { SOURCE, hash, expectedSource } = require('./stocks-build-only-prepare.cjs');
 
+function boundedText(value) {
+  const clean = String(value ?? '').replace(/\x1b\[[0-9;]*[A-Za-z]/g, '')
+    .replace(/(https?:\/\/)[^/\s:@]+:[^/\s@]+@/gi, '$1[REDACTED]@')
+    .replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]')
+    .replace(/((?:password|secret|token|gateway[_-]?key|authorization)\s*["']?\s*[:=]\s*["']?)[^\s"',;}]+/gi, '$1[REDACTED]')
+    .replace(/```/g, "'''");
+  const bytes = Buffer.from(clean);
+  return bytes.length > 8192 ? bytes.subarray(0, 8192).toString('utf8') + '\n[TRUNCATED]' : clean;
+}
+function diagnostic(result) {
+  return { exit: result.status ?? null, signal: result.signal ?? null,
+    stdout: boundedText(result.stdout), stderr: boundedText(result.stderr),
+    ...(result.error ? { error: boundedText(result.error.message) } : {}) };
+}
 function run(args, { timeout = 60000, expected = 0, inherit = false } = {}) {
   const result = cp.spawnSync('docker', ['--context', 'default', ...args],
     { encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024, ...(inherit ? { stdio: 'inherit' } : {}) });
   if (result.error || result.status !== expected) {
-    throw Error(`DOCKER_COMMAND_FAILED ${args[0]}: exit=${result.status}\n${result.error?.message ?? ''}\n${result.stdout ?? ''}\n${result.stderr ?? ''}`);
+    throw Object.assign(Error(`DOCKER_COMMAND_FAILED ${args[0]}: exit=${result.status}`), { diagnostic: diagnostic(result) });
   }
   return result;
 }
@@ -29,10 +43,11 @@ function smoke(id, suffix, env, args, expected) {
       { timeout: 10000, stdio: 'ignore' });
   }
 }
-function main(output) {
+function main(output, receipt) {
   if (process.env.GITHUB_ACTIONS !== 'true' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted' ||
       process.env.RUNNER_OS !== 'Linux' || process.env.GITHUB_REPOSITORY !== 'nazardzuba79-tech/-') throw Error('ISOLATED_GITHUB_LINUX_RUNNER_REQUIRED');
   if (process.version !== 'v22.23.3') throw Error('NODE_22_23_3_REQUIRED');
+  const source = expectedSource();
   for (const key of ['DOCKER_HOST', 'DOCKER_CONTEXT', 'BUILDX_BUILDER', 'BUILDKIT_HOST',
     'DATABASE_URL', 'JWT_SECRET', 'STOCKS_TEST_CASH_GATEWAY_KEY']) {
     if (process.env[key]) throw Error('FORBIDDEN_RUNNER_ENV_' + key);
@@ -40,7 +55,7 @@ function main(output) {
   const contextInfo = JSON.parse(run(['context', 'inspect', 'default']).stdout)[0];
   if (contextInfo.Endpoints.docker.Host !== 'unix:///var/run/docker.sock') throw Error('LOCAL_DOCKER_REQUIRED');
   const byteReceipt = JSON.parse(fs.readFileSync(path.join(output, 'sql-byte-receipt.json')));
-  if (byteReceipt.source !== SOURCE || byteReceipt.rows.length !== 44 ||
+  if (byteReceipt.source !== source || byteReceipt.rows.length !== 44 ||
       byteReceipt.rows.some(r => !['RAW_MATCH', 'EXACT_BYTES_DERIVED_AND_HASH_VERIFIED'].includes(r.status)) ||
       byteReceipt.packageResult.status !== 'PASS_FILE_REVIEW_ONLY') throw Error('BYTE_GATE_REQUIRED');
   const context = path.join(output, 'context');
@@ -54,32 +69,36 @@ function main(output) {
   const pinned = recipe.replaceAll('node:22.23.3-bookworm-slim', digests[0]);
   const recipePath = path.join(output, 'Dockerfile.pinned-build-only');
   fs.writeFileSync(recipePath, pinned, { flag: 'wx' });
-  const receipt = {
-    source: SOURCE, controlHead: process.env.CONTROL_SHA,
+  Object.assign(receipt, {
+    source, controlHead: process.env.CONTROL_SHA,
     originalRecipeSha256: hash(Buffer.from(recipe)), pinnedRecipeSha256: hash(Buffer.from(pinned)),
     baseDigest: digests[0], runner: 'ubuntu-24.04 standard GitHub-hosted',
     historical44: 'PASS_HASH_AND_LENGTH', pending2: 'PASS_HASH',
     images: [], failClosed: [], positivePgStartup: 'NOT_RUN_NO_DISPOSABLE_PG_AUTHORITY_IN_THIS_IMAGE_SMOKE',
     ingress: 'NOT_RUN_NO_TLS_FIXTURE', production: 'UNCHANGED',
     migrationsApplied: false, imagePublished: false, capacity: 'NOT_RUN',
-  };
+  });
   for (const target of ['api', 'gateway']) {
     const iid = path.join(output, `${target}.iid`);
     run(['build', '--builder', 'default', '--target', target, '--file', recipePath,
-      '--iidfile', iid, '--label', `org.opencontainers.image.revision=${SOURCE}`, context],
+      '--iidfile', iid, '--label', `org.opencontainers.image.revision=${source}`, context],
     { timeout: 720000, inherit: true });
     const id = fs.readFileSync(iid, 'utf8').trim(), image = inspect(id);
+    const imageReceipt = { target, imageId: id, cmd: image.Config.Cmd,
+      entrypoint: image.Config.Entrypoint, user: image.Config.User,
+      exposedPorts: Object.keys(image.Config.ExposedPorts ?? {}) };
+    receipt.images.push(imageReceipt);
     const expected = target === 'api' ? 'dist/index.js' : 'services/stocks-global/release-entrypoint.mjs';
     if (JSON.stringify(image.Config.Cmd) !== JSON.stringify(['node', expected]) ||
         image.Config.User !== 'node' || JSON.stringify(image.Config.Entrypoint) !== '["docker-entrypoint.sh"]' ||
         Object.keys(image.Config.ExposedPorts ?? {}).length !== 0) throw Error('IMAGE_RUNTIME_CONFIG_MISMATCH');
     const version = smoke(id, `${target}-version`, {}, ['node', '--version'], 0).stdout.trim();
+    imageReceipt.node = version;
     if (version !== 'v22.23.3') throw Error('IMAGE_NODE_VERSION_MISMATCH');
     const entrypoint = smoke(id, `${target}-entrypoint`, {}, ['node', '-e',
       "const fs=require('fs'),crypto=require('crypto');const b=fs.readFileSync('/usr/local/bin/docker-entrypoint.sh');if(/prisma|migrate|seed|reset/i.test(b.toString()))process.exit(8);console.log(crypto.createHash('sha256').update(b).digest('hex'));"], 0).stdout.trim();
     if (!/^[a-f0-9]{64}$/.test(entrypoint)) throw Error('ENTRYPOINT_DIGEST_INVALID');
-    receipt.images.push({ target, imageId: id, node: version, cmd: image.Config.Cmd,
-      entrypoint: image.Config.Entrypoint, entrypointSha256: entrypoint, exposedPorts: [] });
+    imageReceipt.entrypointSha256 = entrypoint;
     if (target === 'gateway') {
       const cases = [
         ['no-authority', {}, 'STOCKS_RELEASE_AUTHORITY_REQUIRED'],
@@ -96,29 +115,48 @@ function main(output) {
         }, 'STOCKS_RELEASE_AUTHORITY_UNREADY'],
       ];
       for (const [name, env, code] of cases) {
-        const result = smoke(id, name, env, [], 1); // actual inherited ENTRYPOINT + release CMD
-        if (!result.stderr.split(/\r?\n/).includes(code) ||
-            (result.stdout + result.stderr).includes('STOCKS_RELEASE_LISTENING')) throw Error('FAIL_CLOSED_SMOKE_FAILED_' + name);
-        receipt.failClosed.push({ name, status: 'PASS', code, exit: 1, network: 'none' });
+        let result;
+        try { result = smoke(id, name, env, [], 1); } // actual inherited ENTRYPOINT + release CMD
+        catch (error) {
+          receipt.failClosed.push({ name, status: 'FAIL', expectedCode: code, network: 'none', ...error.diagnostic });
+          throw error;
+        }
+        recordNegativeSmoke(receipt, name, result, code);
       }
     }
   }
   return receipt;
 }
+function recordNegativeSmoke(receipt, name, result, code) {
+  const pass = !result.error && result.status === 1 &&
+    String(result.stderr).split(/\r?\n/).includes(code) &&
+    !(String(result.stdout) + String(result.stderr)).includes('STOCKS_RELEASE_LISTENING');
+  receipt.failClosed.push({ name, status: pass ? 'PASS' : 'FAIL',
+    expectedCode: code, network: 'none', ...diagnostic(result) });
+  if (!pass) throw Error('FAIL_CLOSED_SMOKE_FAILED_' + name);
+}
+function execute(output, build = main) {
+  // Allocate before any operation: failures must not discard already measured images.
+  const receipt = { source: process.env.SOURCE_SHA ?? SOURCE, controlHead: process.env.CONTROL_SHA,
+    images: [], failClosed: [], positivePgStartup: 'NOT_RUN', ingress: 'NOT_RUN',
+    production: 'UNCHANGED', migrationsApplied: false, imagePublished: false, capacity: 'NOT_RUN' };
+  try { build(output, receipt); receipt.imageBuildOrSmoke = 'PASS'; }
+  catch (error) {
+    receipt.imageBuildOrSmoke = 'FAIL';
+    receipt.error = boundedText(error.message);
+    if (error.diagnostic) receipt.commandDiagnostic = error.diagnostic;
+  }
+  return receipt;
+}
+module.exports = { boundedText, diagnostic, recordNegativeSmoke, execute };
 if (require.main === module) {
-  let receipt;
-  try {
+  const receipt = execute(process.argv[2] && path.resolve(process.argv[2]), (output, partial) => {
     if (process.argv.length !== 3) throw Error('USAGE: prepared-output-directory');
-    receipt = main(path.resolve(process.argv[2]));
-    console.log(JSON.stringify(receipt, null, 2));
-  } catch (error) {
-    console.error(error.message);
-    receipt = { source: SOURCE, imageBuildOrSmoke: 'FAIL', positivePgStartup: 'NOT_RUN',
-      ingress: 'NOT_RUN', production: 'UNCHANGED', imagePublished: false };
-    process.exitCode = 1;
-  } finally {
-    if (process.env.GITHUB_STEP_SUMMARY && receipt) {
-      fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '## Stocks image-only receipt\n```json\n' + JSON.stringify(receipt, null, 2) + '\n```\n');
-    }
+    return main(output, partial);
+  });
+  console.log(JSON.stringify(receipt, null, 2));
+  if (receipt.imageBuildOrSmoke !== 'PASS') process.exitCode = 1;
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '## Stocks image-only receipt\n```json\n' + JSON.stringify(receipt, null, 2) + '\n```\n');
   }
 }
