@@ -330,8 +330,8 @@ export async function createServer({financialEnabled=true,port=4437,dataPath,dis
   }catch(e){if(res.destroyed)return;if(!res.headersSent){
     // Advisory minimum wait for a manual read probe, never permission to replay
     // a trade. Unknown mutation outcomes deliberately have no retry hint.
-    const retryAfterMs=e instanceof SimError?(e.code==='RATE_LIMIT'?60000:['SOURCE_BUSY','ACCOUNT_BUSY'].includes(e.code)?3000:null):null;
-    send(res,e.code==='AUTH_REQUIRED'?401:['AUTH_UNAVAILABLE','ACCOUNT_CAPACITY','SOURCE_BUSY','ACCOUNT_BUSY','ACCOUNT_UNAVAILABLE','ACCOUNT_STORAGE_ERROR','ACCOUNT_OUTCOME_UNKNOWN'].includes(e.code)?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR',...(retryAfterMs===null?{}:{retryAfterMs})},retryAfterMs===null?{}:{'Retry-After':String(retryAfterMs/1000)});
+    const retryAfterMs=e instanceof SimError?(e.code==='AUTH_RATE_LIMIT'?(Number.isInteger(e.retryAfterMs)?Math.max(1000,Math.min(60000,e.retryAfterMs)):60000):e.code==='RATE_LIMIT'?60000:['SOURCE_BUSY','ACCOUNT_BUSY'].includes(e.code)?3000:null):null;
+    send(res,e.code==='AUTH_RATE_LIMIT'?429:e.code==='AUTH_REQUIRED'?401:['AUTH_UNAVAILABLE','ACCOUNT_CAPACITY','SOURCE_BUSY','ACCOUNT_BUSY','ACCOUNT_UNAVAILABLE','ACCOUNT_STORAGE_ERROR','ACCOUNT_OUTCOME_UNKNOWN'].includes(e.code)?503:e.code==='ENOENT'||e.code==='ROUTE_NOT_FOUND'?404:e instanceof SimError?422:500,{error:e instanceof SimError?e.code:'LOCAL_SERVICE_ERROR',...(retryAfterMs===null?{}:{retryAfterMs})},retryAfterMs===null?{}:{'Retry-After':String(retryAfterMs/1000)});
   }else res.end();}finally{cleanupRequest?.();}};
   const server=http.createServer((req,res)=>accountAuthority?accountAuthority.runWithRequest(req,()=>handle(req,res)):handle(req,res));
   // Node 22 native fetch subtracts a 2000 ms keep-alive safety margin. Advertising
