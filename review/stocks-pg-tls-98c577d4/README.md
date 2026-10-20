@@ -57,18 +57,34 @@ New fake-Docker subprocess tests: Node 22.23.3, 6 PASS. A temporary mutant that
 restores exit-zero stderr loss produces 4 FAIL / 2 PASS. No real Docker, server,
 database or old suite is run by these tests.
 
-Read-only source review found an omitted startup prerequisite:
-`src/index.ts` imports `apiKeysRouter`, which imports `ApiKeyService.ts`.
-That module unconditionally rejects missing `API_KEY_ENCRYPTION_SECRET`; the
-smoke API env does not provide it. Transpiling/executing only that unchanged
-module in an empty synthetic environment reproduces the exact required-secret
-error. This establishes a configuration blocker, not recovery of the discarded
-historical API stderr or proof that no earlier startup error exists. No secret
-or application configuration is changed by this logging-only patch.
+The subsequent code-only setup fix generates `API_KEY_ENCRYPTION_SECRET` with
+`crypto.randomBytes(32).toString('hex')` alongside the other disposable credentials.
+Only the two API env files receive it; the fixture config, gateway and PostgreSQL
+env files do not. It is registered for the existing raw/URL-encoded redaction.
+No actual key is stored in this repository. The unchanged API module still
+rejects missing or malformed keys.
 
-The existing `HEAD^ == application SHA` single-commit guard is also unchanged.
-A follow-up commit has the former harness as its parent; a future run needs a
-separately reviewed ancestry-guard adjustment or approved packaging decision.
-Do not trigger this local candidate as-is. Publication and another single smoke
-require separate owner approval. The prior smoke remains FAIL, financial HTTP
-checks remain NOT_RUN, and REAL_PRODUCTION_BOOTSTRAP remains NOT_RUN.
+`source-guard.cjs` accepts multiple harness commits only when APP is their
+ancestor, the independent source checkout is exactly APP, and the review
+checkout is exactly the event head. Both checkouts must be clean. A NUL-delimited
+diff with rename detection disabled allows only this harness directory, this
+workflow file and `docs/AI_HANDOFF.md`; changes/deletions/renames involving
+application paths fail. Existing label, branch, base, same-repo, runner and
+one-attempt gates are unchanged. Both workflow checkouts already fetch full history.
+
+New setup tests: Node 22.23.3, **11 PASS**. Restoring either the missing env key
+or the single-parent assertion in a temporary copy causes its targeted new test
+to FAIL. The previous six diagnostics tests were not rerun; their code and helper
+remain byte-identical to c7306b5b. See [startup-preflight.md](startup-preflight.md)
+for the source-only startup review and its limits.
+
+Run only these new tests with `STOCKS_SMOKE_TEST_SOURCE` set to an existing
+checkout of APP with its existing TypeScript dependency installed:
+`node --test review/stocks-pg-tls-98c577d4/setup-guards.test.cjs`.
+They use temporary Git repositories and isolated module evaluation; no Docker,
+HTTP server, database, external provider or production secret is used.
+
+Publication and another single smoke require separate owner approval. The prior
+smoke remains FAIL, financial HTTP checks remain NOT_RUN, and
+REAL_PRODUCTION_BOOTSTRAP remains NOT_RUN. Fixing these two source-proven
+prerequisites does not establish that API readiness will pass.

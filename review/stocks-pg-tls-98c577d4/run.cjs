@@ -5,6 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
+const { verifySource } = require('./source-guard.cjs');
 const { createDiagnostics } = require('./diagnostics.cjs');
 const APP = '98c577d4241ce527f7bfca3b78dd7bb78255e300';
 const NODE = 'node@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392';
@@ -65,16 +66,9 @@ async function main() {
   assert.equal(event.pull_request.draft, true);
   const source = path.resolve(process.argv[2]);
   const harness = path.resolve(__dirname, '../..');
-  const sourceHead = command('git', ['rev-parse', 'HEAD'], { cwd: source }).trim();
-  const harnessHead = command('git', ['rev-parse', 'HEAD'], { cwd: harness }).trim();
-  assert.equal(sourceHead, APP);
-  assert.equal(harnessHead, event.pull_request.head.sha);
-  assert.equal(command('git', ['status', '--porcelain'], { cwd: source }).trim(), '');
-  assert.equal(command('git', ['status', '--porcelain'], { cwd: harness }).trim(), '');
-  assert.equal(command('git', ['rev-parse', 'HEAD^'], { cwd: harness }).trim(), APP);
-  const changed = command('git', ['diff', '--name-only', APP, harnessHead], { cwd: harness }).trim().split('\n');
-  assert.ok(changed.every(f => f.startsWith('review/stocks-pg-tls-98c577d4/') ||
-    f === '.github/workflows/stocks-positive-pg-tls.yml' || f === 'docs/AI_HANDOFF.md'));
+  const { sourceHead, harnessHead, changed } = verifySource({
+    command, source, harness, app: APP, expectedHead: event.pull_request.head.sha,
+  });
   receipt.harnessSha = harnessHead;
   receipt.runId = process.env.GITHUB_RUN_ID;
   receipt.runAttempt = process.env.GITHUB_RUN_ATTEMPT;
@@ -132,7 +126,8 @@ async function main() {
   // All credentials are created in this job, never read from repository secrets/.env.
   const random = () => crypto.randomBytes(32).toString('hex');
   const password = random(), pgPassword = random(), jwt = random(), gatewayKey = random();
-  secretValues.push(password, pgPassword, jwt, gatewayKey);
+  const apiEncryptionSecret = random();
+  secretValues.push(password, pgPassword, jwt, gatewayKey, apiEncryptionSecret);
   const databaseName = 'stocks_disposable_pg_tls_' + process.env.GITHUB_RUN_ID;
   const databaseUrl = `postgresql://stocks_fixture:${pgPassword}@127.0.0.1:5432/${databaseName}?sslmode=require&sslaccept=strict&sslcert=/smoke-private/cert.pem`;
   secretValues.push(databaseUrl);
@@ -147,6 +142,7 @@ async function main() {
   fs.chmodSync(path.join(work, 'private', 'key.pem'), 0o444);
   const common = { NODE_EXTRA_CA_CERTS: '/smoke-private/cert.pem' };
   const shared = { ...common, NODE_ENV: 'production', JWT_SECRET: jwt,
+    API_KEY_ENCRYPTION_SECRET: apiEncryptionSecret,
     DATABASE_URL: databaseUrl, DIRECT_URL: databaseUrl, GIT_COMMIT: APP,
     STOCKS_CATALOGUE_ENABLED: 'true', STOCKS_TEST_CASH_ENABLED: 'true',
     STOCKS_IDENTITY_ISSUER: issuer, STOCKS_TEST_CASH_GATEWAY_KEY: gatewayKey,
