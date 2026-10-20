@@ -4,37 +4,21 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
-const cp = require('node:child_process');
 const assert = require('node:assert/strict');
+const { createDiagnostics } = require('./diagnostics.cjs');
 const APP = '98c577d4241ce527f7bfca3b78dd7bb78255e300';
 const NODE = 'node@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392';
 const PG = 'postgres@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336';
 const BRANCH = 'codex/stocks-pg-tls-smoke-98c577d4-20261020';
 const BASE = 'codex/stocks-build-only-f97b7f9c-20261020';
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const receipt = { applicationSha: APP, result: 'NOT_RUN', realProductionBootstrap: 'NOT_RUN',
   marketData: 'CI-only fictional transport; unchanged application parsers/accounting',
   productionAccess: false, images: {}, stages: [] };
 const secretValues = [];
 const names = [];
 let work, network;
-function redact(value) {
-  let text = String(value);
-  for (const secret of secretValues) text = text.split(secret).join('[CI-secret-redacted]');
-  return text.replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[JWT-redacted]')
-    .replace(/postgres(?:ql)?:\/\/[^\s"']+/g, '[disposable-PG-URL-redacted]');
-}
-function command(binary, args, options = {}) {
-  try {
-    return cp.execFileSync(binary, args, { encoding: 'utf8', timeout: options.timeout || 60000,
-      maxBuffer: 24 * 1024 * 1024, stdio: 'pipe', ...options });
-  } catch (error) {
-    if (error.stdout) console.log(redact(String(error.stdout).slice(-16000)));
-    if (error.stderr) console.error(redact(String(error.stderr).slice(-16000)));
-    throw new Error(redact(`${binary} failed (status ${error.status}, signal ${error.signal}): ${error.message}`));
-  }
-}
-function docker(args, options) { return command('docker', args, options).trim(); }
+const { command, docker, dockerLogs, redact, captureContainer, waitFor } =
+  createDiagnostics({ secrets: secretValues });
 function stage(name, data = {}) {
   receipt.stages.push({ name, result: 'PASS', ...data });
   console.log(JSON.stringify({ stage: name, result: 'PASS', ...data }));
@@ -59,16 +43,6 @@ function runNode(name, image, env, args = []) {
     ...(env ? ['--env-file', env] : []), image, ...args]);
 }
 function inspect(name) { return JSON.parse(docker(['inspect', name]))[0]; }
-async function waitFor(name, predicate, max = 60000) {
-  const deadline = Date.now() + max;
-  while (Date.now() < deadline) {
-    const state = inspect(name).State;
-    if (!state.Running) throw new Error(`${name} exited ${state.ExitCode} during readiness`);
-    if (predicate()) return;
-    await sleep(1000);
-  }
-  throw new Error(name + ' readiness timeout');
-}
 async function main() {
   assert.equal(process.platform, 'linux');
   assert.equal(process.versions.node, '22.23.3');
@@ -218,12 +192,12 @@ async function main() {
   const setup = containerName('setup');
   runNode(setup, receipt.images.api.tag, envFile('fixture', common), ['node', '/smoke/fixture.cjs', 'setup']);
   const setupExit = docker(['wait', setup], { timeout: 120000 });
-  console.log(redact(docker(['logs', setup])));
+  dockerLogs(setup, 'schema-setup-exit');
   assert.equal(setupExit, '0', 'disposable schema/bindings setup failed');
   stage('disposable-schema-and-identities-created');
   const transport = containerName('transport');
   runNode(transport, receipt.images.api.tag, envFile('transport', common), ['node', '/smoke/fixture.cjs', 'transport']);
-  await waitFor(transport, () => docker(['logs', transport]).includes('local-tls-proxy-listening'));
+  await waitFor(transport, () => dockerLogs(transport, 'transport-readiness').includes('local-tls-proxy-listening'));
   const api = containerName('api');
   runNode(api, receipt.images.api.tag, apiEnv); // image's unchanged default CMD
   await waitFor(api, () => {
@@ -241,7 +215,7 @@ async function main() {
   });
   const gateway = containerName('gateway');
   runNode(gateway, receipt.images.gateway.tag, gatewayEnv); // unchanged PG-only default CMD
-  await waitFor(gateway, () => docker(['logs', gateway]).includes('STOCKS_RELEASE_LISTENING'));
+  await waitFor(gateway, () => dockerLogs(gateway, 'gateway-readiness').includes('STOCKS_RELEASE_LISTENING'));
   for (const name of [api, disabled, gateway]) {
     const current = inspect(name);
     assert.equal(current.State.Running, true);
@@ -258,23 +232,22 @@ async function main() {
   const driver = containerName('checks');
   runNode(driver, receipt.images.api.tag, envFile('checks', common), ['node', '/smoke/fixture.cjs', 'check']);
   const result = docker(['wait', driver], { timeout: 240000 });
-  console.log(redact(docker(['logs', driver])));
+  dockerLogs(driver, 'financial-checks-exit');
   assert.equal(result, '0', 'positive HTTP/PG/TLS smoke failed; rerun not authorized');
   receipt.result = 'PASS';
 }
 main().catch(error => {
   receipt.result = 'FAIL';
   receipt.error = redact(error.stack || error.message);
+  if (Object.hasOwn(error, 'status')) receipt.commandFailure = {
+    exitCode: error.status, signal: error.signal, errorCode: error.errorCode,
+  };
   console.error(receipt.error);
   process.exitCode = 1;
 }).finally(() => {
   // Logs and partial receipts are printed even when a build/start/check fails.
   for (const name of names) {
-    try {
-      const state = inspect(name).State;
-      console.log(JSON.stringify({ container: name, running: state.Running, exitCode: state.ExitCode }));
-      console.log(redact(docker(['logs', '--tail', '100', name]).slice(-12000)));
-    } catch (error) { console.error(redact(error.message)); }
+    captureContainer(name, 'finalize-before-removal');
   }
   console.log('STOCKS_POSITIVE_SMOKE_RECEIPT\n' + JSON.stringify(receipt, null, 2));
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,

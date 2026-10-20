@@ -44,3 +44,31 @@ upload of private keys, environment files or database contents.
 
 A PASS does not close production-bootstrap/topology, actual account binding,
 backup/restore/OTC, provider rights/data, or 50+2 performance gates.
+
+The code-only diagnostics follow-up to run 39456249348 captures Docker CLI
+stdout and stderr separately, including exit-zero `docker logs`. It records
+CLI exit/signal separately from container state and startup stage, removes
+generated secrets/credential URLs/bearer tokens before limiting each emitted
+stream to 12,000 characters, and retains both the beginning and end of long
+output. Early readiness exit and finalization capture logs before removal.
+Diagnostic failure cannot replace the original readiness failure.
+
+New fake-Docker subprocess tests: Node 22.23.3, 6 PASS. A temporary mutant that
+restores exit-zero stderr loss produces 4 FAIL / 2 PASS. No real Docker, server,
+database or old suite is run by these tests.
+
+Read-only source review found an omitted startup prerequisite:
+`src/index.ts` imports `apiKeysRouter`, which imports `ApiKeyService.ts`.
+That module unconditionally rejects missing `API_KEY_ENCRYPTION_SECRET`; the
+smoke API env does not provide it. Transpiling/executing only that unchanged
+module in an empty synthetic environment reproduces the exact required-secret
+error. This establishes a configuration blocker, not recovery of the discarded
+historical API stderr or proof that no earlier startup error exists. No secret
+or application configuration is changed by this logging-only patch.
+
+The existing `HEAD^ == application SHA` single-commit guard is also unchanged.
+A follow-up commit has the former harness as its parent; a future run needs a
+separately reviewed ancestry-guard adjustment or approved packaging decision.
+Do not trigger this local candidate as-is. Publication and another single smoke
+require separate owner approval. The prior smoke remains FAIL, financial HTTP
+checks remain NOT_RUN, and REAL_PRODUCTION_BOOTSTRAP remains NOT_RUN.
