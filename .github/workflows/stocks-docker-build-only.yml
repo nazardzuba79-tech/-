@@ -1,0 +1,79 @@
+name: Stocks Docker Build Only — f97b7f9c
+
+# A new workflow_dispatch file cannot be dispatched until registered on default.
+# Do not merge for registration. A separately approved explicit PR label can run
+# this review-only workflow without adding it to main. Opening a PR does not run it.
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stocks-docker-build-only-f97b7f9c
+  cancel-in-progress: false
+
+jobs:
+  images:
+    if: >-
+      github.repository == 'nazardzuba79-tech/-' &&
+      github.event.repository.private == false &&
+      github.event.label.name == 'stocks-build-only-approved' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'codex/stocks-build-only-f97b7f9c-20261020'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE_SHA: f97b7f9c6cf9086887101db33c3daa9fb98101cc
+      BASE_SHA: 59db30e27a9803a879ca1f714055b34093bbad2a
+      CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Checkout exact review helpers
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: control
+          persist-credentials: false
+      - name: Checkout immutable application source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: f97b7f9c6cf9086887101db33c3daa9fb98101cc
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Assert exact heads and standard isolated runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$(git -C source rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git -C control rev-parse HEAD)" = "$CONTROL_SHA"
+          git -C source merge-base --is-ancestor "$BASE_SHA" "$SOURCE_SHA"
+          test -z "$(git -C source status --porcelain)"
+          printf 'Application SHA: `%s`\n\nReview helper SHA: `%s`\n' "$SOURCE_SHA" "$CONTROL_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: Node 22.23.3
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.23.3
+      - name: Reconstruct exact historical bytes and run original strict package gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node control/scripts/qa/stocks-build-only-prepare.cjs \
+            "$GITHUB_WORKSPACE/source" "$RUNNER_TEMP/stocks-build-only"
+      - name: Build local API and gateway; bounded offline image smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          node control/scripts/qa/stocks-build-only-images.cjs "$RUNNER_TEMP/stocks-build-only"
+      - name: Preserve explicit failure status
+        if: failure()
+        shell: bash
+        run: |
+          printf '\n**BUILD OR PREPARATION FAIL.** See the exact failing step; no production/capacity PASS. No image published.\n' >> "$GITHUB_STEP_SUMMARY"
+
+# No push/deployment/registry-login/cache-export/upload-artifact step.
+# No production secrets, services, databases, provider requests or paid runner.
+# All contexts/images die with the disposable runner; only sanitized job summary.
