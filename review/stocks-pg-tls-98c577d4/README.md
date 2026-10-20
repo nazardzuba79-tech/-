@@ -84,7 +84,15 @@ checkout of APP with its existing TypeScript dependency installed:
 They use temporary Git repositories and isolated module evaluation; no Docker,
 HTTP server, database, external provider or production secret is used.
 
-Publication and another single smoke require separate owner approval. The prior
-smoke remains FAIL, financial HTTP checks remain NOT_RUN, and
-REAL_PRODUCTION_BOOTSTRAP remains NOT_RUN. Fixing these two source-proven
-prerequisites does not establish that API readiness will pass.
+The subsequent authorized run 39463377193 at harness3387ffb1 passed API/gateway
+startup, PG/TLS, login and the first trader's full cycle, then failed at the second
+trader's LIMIT with HTTP503 AUTH_UNAVAILABLE. No retry was made. The later
+security/final-ledger checks and REAL_PRODUCTION_BOOTSTRAP remain NOT_RUN.
+
+The current code-only follow-up adds a gated fixture-only auth observer. See
+[auth-boundary-investigation.md](auth-boundary-investigation.md) for the exact
+source path, retained-log limitations, safe trace fields and new targeted tests.
+The original cause remains UNKNOWN; no application/auth/financial rule was
+changed. Run the new local observer tests with
+`node --test review/stocks-pg-tls-98c577d4/auth-trace.test.cjs` on Node22.23.3.
+Publication and any further single smoke require separate owner approval.

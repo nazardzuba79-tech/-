@@ -83,6 +83,7 @@ async function main() {
   // Docker non-root process can traverse only this run's new fixture directories.
   fs.chmodSync(work, 0o755);
   fs.copyFileSync(path.join(__dirname, 'fixture.cjs'), path.join(work, 'fixture', 'fixture.cjs'));
+  fs.copyFileSync(path.join(__dirname, 'auth-trace.cjs'), path.join(work, 'fixture', 'auth-trace.cjs'));
   fs.writeFileSync(path.join(work, 'fixture', 'base-schema.prisma'),
     command('git', ['show', '58540f49aed5d47a4458ab11270e0cb3aa7d26ce:prisma/schema.prisma'], { cwd: source }));
   const { prepare } = require(path.join(source, 'scripts/qa/stocks-build-only-prepare.cjs'));
@@ -141,15 +142,18 @@ async function main() {
     '-addext', 'subjectAltName=DNS:stocks.fixture.invalid,DNS:localhost,IP:127.0.0.1,DNS:api.bybit.com,DNS:api.binance.com,DNS:iss.moex.com,DNS:www.cbr.ru,DNS:api.kraken.com']);
   fs.chmodSync(path.join(work, 'private', 'key.pem'), 0o444);
   const common = { NODE_EXTRA_CA_CERTS: '/smoke-private/cert.pem' };
+  const trace = { NODE_OPTIONS: '--require=/smoke/auth-trace.cjs',
+    STOCKS_SMOKE_TRACE: 'isolated-v1', STOCKS_SMOKE_TRACE_APP: APP };
   const shared = { ...common, NODE_ENV: 'production', JWT_SECRET: jwt,
     API_KEY_ENCRYPTION_SECRET: apiEncryptionSecret,
     DATABASE_URL: databaseUrl, DIRECT_URL: databaseUrl, GIT_COMMIT: APP,
     STOCKS_CATALOGUE_ENABLED: 'true', STOCKS_TEST_CASH_ENABLED: 'true',
     STOCKS_IDENTITY_ISSUER: issuer, STOCKS_TEST_CASH_GATEWAY_KEY: gatewayKey,
     STOCKS_TRADE_PRINCIPALS: JSON.stringify(principals), ALLOWED_ORIGINS: 'https://stocks.fixture.invalid:4443' };
-  const apiEnv = envFile('api', { ...shared, PORT: '3000' });
-  const disabledEnv = envFile('disabled', { ...shared, PORT: '3001', STOCKS_TEST_CASH_ENABLED: 'false' });
-  const gatewayEnv = envFile('gateway', { ...common, STOCKS_IDENTITY_ISSUER: issuer,
+  const apiEnv = envFile('api', { ...shared, ...trace, STOCKS_SMOKE_TRACE_ROLE: 'api', PORT: '3000' });
+  const disabledEnv = envFile('disabled', { ...shared, ...trace, STOCKS_SMOKE_TRACE_ROLE: 'finance-off',
+    PORT: '3001', STOCKS_TEST_CASH_ENABLED: 'false' });
+  const gatewayEnv = envFile('gateway', { ...common, ...trace, STOCKS_SMOKE_TRACE_ROLE: 'gateway', STOCKS_IDENTITY_ISSUER: issuer,
     STOCKS_TEST_CASH_GATEWAY_KEY: gatewayKey, STOCKS_TRADE_PRINCIPALS: JSON.stringify(principals),
     STOCKS_TEST_CASH_AUTHORITY_URL: 'http://127.0.0.1:3000/api/v1/stocks-test-cash',
     STOCKS_MARKET_DATA_ENABLED: 'true', STOCKS_BINANCE_WS_ENABLED: 'false',
