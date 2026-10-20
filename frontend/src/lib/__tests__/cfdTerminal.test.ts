@@ -42,7 +42,7 @@ function mount(file:string,options:any={}){
     if(name.endsWith('/sampledDepth'))return{readSpotDisplayBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
     if(name.endsWith('/spotPublicMarket'))return{readSpotPublicBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
     if(name.endsWith('/testMarkets'))return testMarkets;
-    if(name.endsWith('/testMarketStore'))return{useTestMarket:()=>({asset:null,loaded:false,error:false,clockOffsetMs:0}),useManagedListingDiscovery:()=>({assets:[],loaded:false,error:false,clockOffsetMs:0}),TEST_MARKET_TERMINAL_INTERVAL_MS:5000};
+    if(name.endsWith('/testMarketStore'))return{useTestMarket:()=>({asset:null,loaded:false,error:false,clockOffsetMs:0}),useManagedListingDiscovery:()=>({assets:[],loaded:false,error:false,clockOffsetMs:0}),usePrivateTestMarketDiscovery:()=>({assets:[],loaded:false,error:false,clockOffsetMs:0}),TEST_MARKET_TERMINAL_INTERVAL_MS:5000};
     if(name.endsWith('/useMarketData'))return{useMarketData:()=>({tickers:new Map(),loaded:false,status:'idle'})};
     if(name.endsWith('/nrxMarket'))return{isEdgeMarketPair:()=>false,isNrxPair:()=>false};
     if(name.endsWith('/cfdAssetIdentity'))return assetIdentity;

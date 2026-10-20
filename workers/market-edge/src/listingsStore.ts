@@ -34,6 +34,8 @@ export interface ListingsEnv {
   LISTINGS_MIN_LEAD_MS?: string;
   /** Test environments only: the public catalogue cache window. Unset in production = 15 s. */
   LISTINGS_PUBLIC_CACHE_MS?: string;
+  /** History20 private tests may be started (published privately) only when exactly `enabled`. Unset = off. */
+  HISTORY20_PRIVATE_TEST?: string;
 }
 
 function envMs(value: string | undefined, fallback: number, floor: number): number {
@@ -176,8 +178,12 @@ export class ManagedListingsDO {
     });
   }
 
-  /** Every active version, as the public catalogue and Render's trading registry read it. */
-  published(): { revision: string; listings: PublishedListing[] } {
+  /**
+   * Every active version, as the public catalogue and Render's trading
+   * registry read it. A History20 private test goes to Render's Bearer
+   * registry only (`includePrivate`), never to the public read.
+   */
+  published(includePrivate = false): { revision: string; listings: PublishedListing[] } {
     const rows = this.sql.exec(`SELECT l.id, v.version, v.config, v.published_at FROM listing l
       JOIN listing_version v ON v.listing_id = l.id AND v.version = l.active_version ORDER BY v.published_at, l.id`).toArray();
     const now = Date.now();
@@ -185,6 +191,7 @@ export class ManagedListingsDO {
     const listings: PublishedListing[] = [];
     for (const row of rows) {
       const config = JSON.parse(String(row.config)) as ListingConfig;
+      if (config.privateTest && !includePrivate) continue;
       const listing: PublishedListing = { id: String(row.id), version: Number(row.version), publishedAt: new Date(Number(row.published_at)).toISOString(), config };
       if (isAith(config.symbol)) {
         if (pending) continue;
@@ -284,6 +291,9 @@ export class ManagedListingsDO {
           return reply({ id, version: Number(row.active_version), replayed: true, publishedAt: new Date(Number(current.published_at)).toISOString() });
         }
         checkPublishable(config, active, now, envMs(this.env.LISTINGS_MIN_LEAD_MS, MIN_LEAD_MS, MIN_LEAD_FLOOR_MS));
+        // Default off: a private test also needs the explicit switch on this Worker.
+        if (config.privateTest && this.env.HISTORY20_PRIVATE_TEST !== 'enabled')
+          throw new ListingValidationError('PRIVATE_TEST_DISABLED', 'Приватный тест History20 выключен на этом сервере');
       } catch (error) { return validationReply(error); }
       const version = (row.active_version === null ? 0 : Number(this.sql.exec('SELECT MAX(version) AS v FROM listing_version WHERE listing_id = ?', id).toArray()[0].v)) + 1;
       this.sql.exec('INSERT INTO listing_version (listing_id, version, config, publish_key, published_at, published_by) VALUES (?, ?, ?, ?, ?, ?)',
@@ -305,7 +315,7 @@ export class ManagedListingsDO {
       const actor = request.headers.get('X-Voltex-Admin-Id') ?? '';
       if (url.pathname === '/internal/listings' && request.method === 'GET') return reply(this.adminList());
       // Render's trading registry: published configurations INCLUDING the seed (never served publicly).
-      if (url.pathname === '/internal/listings/published' && request.method === 'GET') return reply(this.published());
+      if (url.pathname === '/internal/listings/published' && request.method === 'GET') return reply(this.published(true));
       // Authenticated, read-only audit of an immutable publication; never exposed by public catalogue paths.
       const history = /^\/internal\/listings\/([^/]+)\/versions\/([1-9]\d{0,8})$/.exec(url.pathname);
       if (history && request.method === 'GET' && LISTING_ID_PATTERN.test(history[1])) {

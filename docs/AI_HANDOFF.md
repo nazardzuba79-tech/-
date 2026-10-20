@@ -6493,3 +6493,463 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - Templates live in this browser only; there is no server sync.
   - The Coordinates tab edits prices only; a point's time is still changed by dragging.
 - **Not done:** merge, deploy, PR, production migration, real data. Codex's Stocks files were not touched.
+
+### Claude — 2026-10-18 — History20: historical growth window in Admin → Listings (private preview only)
+
+- **Task (owner pack «VOLTEX_History20_Claude_20261018», `03_CLAUDE_TASK_UA.md`):** 20 reusable historical growth windows for separate model listings, as an isolated, labelled bot-research simulator / private preview, plus the BotLab 01 draft. No merge, deploy, migration or new service.
+- **Branch:** `claude/peaceful-volta-h5zw7g-history20` from main `5d14647c` (the pack's control main, unchanged at fetch); the commit carrying this entry.
+- **Pack verified independently** (own Node check, not the pack's script):
+  - archive 100/100 and pack 97/97 SHA-256;
+  - 20 distinct scenarios, 8637 daily rows, no gaps, no BLOCKED_DATA, VALIDATION_REPORT PASS;
+  - the alpha transform reproduces normalized_path to 1.1e-15.
+- **Material files:**
+  - `src/shared/listingHistoricalGrowth.ts` (new reference: format, maths, checksum, observation, folds);
+  - `src/shared/listingScenarioControls.ts` (inert validation, mutual exclusion);
+  - `src/services/testMarkets/simulationScenarioControls.ts` (inert tick generator inside the existing v2 dispatch);
+  - `src/services/listings/{listingConfig,listingPreview,simulationContour}.ts`, `src/api/routes/adminListings.ts` (bounded preview);
+  - `frontend/src/pages/admin/{historicalGrowthModel,historicalGrowthPack,historicalGrowthCatalog,ListingHistoricalGrowthPanel}.ts(x)`, `AdminListingsPage.tsx`, `listingMovementModel.ts`, `adminListingsApi.ts`, `adminListings.css`;
+  - tests, `scripts/qa-listing-history20.cjs`, `.github/workflows/admin-listings.yml`, `docs/HISTORY20_GROWTH_WINDOW.md`.
+- **Preserved:**
+  - Legacy stages and the PR #518 hourly continuation are untouched; the new mode is a separate, mutually exclusive branch.
+  - The NRX/VTA/AITH release identity and projection guards pass unchanged: no edit to `simulationSchedule.ts` or `testMarketSimulation.ts`, and the v2 modules stay inert.
+  - Funding, KYC, Stocks #538–#540, Copy Trading, the mobile admin (#500) and the seven locales are not touched.
+  - `HISTORICAL_RIGHTS_UNVERIFIED` and the contour isolation now also cover the window.
+- **Rights:**
+  - The repository is public and the sources are non-commercial (CC BY-NC / CC BY-NC-SA + Binance Vision Terms). Only code, synthetic tests and catalogue metadata/hashes are committed.
+  - The trajectories are imported on the admin's device from the owner's ZIP (hash-checked against the committed metadata, rebuilt from source CSV, parity ≤ 1e-7, `ln(P/A)` only).
+  - Screenshots from the real pack are kept out of the repository.
+- **Verified locally:**
+  - backend `tsc` and frontend `tsc -b`; Worker listings integration on workerd 18/18;
+  - new suites: `historicalGrowthWindow` 31/31, `historicalGrowthLibrary` 10/10 (including the real ZIP via `HISTORY20_ZIP`), `adminListings` 18/18;
+  - local-only pack suite 3/3 (`HISTORY20_PACK_DIR`):
+    - all 20 windows ≤ 1.31e-8 vs normalized_path, drafts 5–33 KB;
+    - VHX-01 all 7,439,040 ticks of 861 days peak exactly 239.449;
+  - full Jest 530 passed / 4 failed suites (9 tests). The same 9 fail on clean main `5d14647c` (market-data provider matrix, CFD, live isolation, copy canonical pins);
+  - QA script at 1440/390: synthetic 8/8 and real pack 9/9 (import 0.3 s, previews 0.1–0.2 s, no sideways scroll, publish refused by the Durable Object).
+- **Not run:** production, real phones, any bot execution (no offline harness exists; none added; ordinary Spot not opened).
+- **Unresolved, for the owner:**
+  - a licence for the intended use;
+  - a unique symbol and start time for BotLab 01;
+  - an authorised isolated bot harness;
+  - bearish/range/OOD control sets;
+  - the 120 h compression mode (inactive, needs explicit approval).
+
+### Claude — 2026-10-18 — History20 intraday model v2: seeded bridge instead of straight lines (PR #544, owner work order Phase 1)
+- **Task:** the owner/CTO found the 5m/1h previews unnaturally straight. Replace the piecewise straight intraday paths with a deterministic, bounded, realistic-looking synthetic model. Keep the daily source truths, REAL_TIME, the cap and every guard; label observed vs modeled.
+- **Commit:** see PR #544 (branch `claude/peaceful-volta-h5zw7g-history20`, on top of the owner's `c0e7777f`; no reset, no force-push).
+- **What changed:**
+  - `intrabar` now versions the intraday model.
+    - `SEEDED_BRIDGE_REFERENCE_V2` / `SEEDED_BRIDGE_OHLC_V2` are the default for new choices.
+    - The v1 ids stay valid as the labelled straight-line baseline (admin selector «Модель внутри суток»).
+    - Stored logs and their checksum do not change.
+  - v2 is a seeded Lévy Brownian bridge on an activity clock (bursts and pauses), with random access in O(14) per tick and no state. Near a source high or low it uses a Bessel-3 bridge, so there is no flat top.
+  - **OHLC day:** opens at the source open, reaches the source H and L exactly, never leaves [L, H] and closes on C.
+    - So the 1d candle is the source bar. v1 differed by up to 1.8e-3.
+    - The source's own close→open gap stays at 00:00.
+  - **Reference day:** both samples are exact. Wicks stay in a modeled band (± 1.25 σ of local daily moves, under the cap) and are labelled MODELED.
+  - Volume is modeled from activity and moves.
+  - The preview summary carries `intrabar/provider/metric`. The admin shows «Наблюдение» / «МОДЕЛЬ» lines, and the preview marks 1d as observation and finer candles as the model.
+- **Material files:**
+  - `src/shared/listingHistoricalGrowth.ts` (reference v2, `historicalGrowthOpenLogAt`, `historicalGrowthTickVolume`, observation by ticks);
+  - `src/services/testMarkets/simulationScenarioControls.ts` (inert verbatim copy);
+  - `src/shared/listingScenarioControls.ts` and `src/services/listings/listingConfig.ts` (accept v2 ids per data kind);
+  - `src/services/listings/listingPreview.ts`;
+  - `frontend/src/pages/admin/{historicalGrowthModel.ts,ListingHistoricalGrowthPanel.tsx,AdminListingsPage.tsx,adminListingsApi.ts,adminListings.css}`;
+  - tests: new `historicalGrowthIntraday.test.ts`, `historicalGrowthWindow.test.ts`, `historicalGrowthPack.local.test.ts` (opt-in registration plus an always-on "no pack file in repo" check), `historicalGrowthLibrary.test.ts`;
+  - `scripts/qa-listing-history20.cjs`, `docs/HISTORY20_GROWTH_WINDOW.md`, `docs/qa/history20-20261018/` (synthetic evidence only).
+- **Preserved:**
+  - The owner's opt-in ZIP test and the bounded ZIP inflation (`67a755cc`, `c0e7777f`).
+  - The NRX/VTA/AITH projection and release identity: NRX fingerprint `63610d3e…` is identical on main `f81df788` and on this branch.
+  - The legacy stages and the #518 continuation.
+  - `HISTORICAL_RIGHTS_UNVERIFIED` and the demo isolation.
+  - No change to `simulationSchedule.ts`, `testMarketSimulation.ts`, Stocks, Wallet or #543 files.
+- **Verified locally (exact working tree before commit):**
+  - backend `npm run build`, frontend `tsc -b` and `vite build`;
+  - `historicalGrowthIntraday` 16/16, `historicalGrowthWindow` 31/31, `historicalGrowthLibrary` 12/12, `adminListings`;
+  - local pack (`HISTORY20_PACK_DIR`) 5/5: all 20 windows under v2 with 0 mismatches vs the daily source values and 0 cap breaches on sampled days; BotLab 01 all 7,439,040 ticks peak exactly 239.449;
+  - ZIP import test (`HISTORY20_ZIP`) PASS;
+  - Worker `test:listings` 18/18 and `test:smoke` 4/4 on workerd, plus the Worker contract;
+  - browser QA at 1440/390: synthetic 9/9, real pack 10/10.
+- **Not run locally:**
+  - the `*.pg.test.ts` suites. A local PostgreSQL could not reach the root-only scratch directory, so these are left to CI's disposable PostgreSQL;
+  - production, real phones, any bot execution.
+- **Unresolved:**
+  - The forming day's bridge is conditioned on that day's own source bar, so it is training data, not evidence of bot profitability.
+  - The price stays flat after the window ends (no tail by design).
+  - The licence, a unique symbol and start time, the bot harness and the control sets remain the owner's.
+
+### Claude — 2026-10-18 — History20: Futures account non-interference regression (owner contract on PR #544)
+- **Task:** the owner requires that «Угоди на історії мають залишатись як і були на фючерсному акаунті». Prove that the History20 changes leave Futures history, positions, balances and funding unchanged.
+- **Added:** `src/services/listings/__tests__/historicalGrowthFutures.pg.test.ts`, a disposable PostgreSQL test.
+  - **Seeded data:**
+    - a Futures account: margin balance; an open LONG with SL/TP; a closed SHORT and a liquidation with realized PnL; open, filled and reduce-only orders; a funding rate record and funding payments;
+    - the native Futures TEST account (state, revisions, live projection) with a HISTORICAL_DEMO deal;
+    - Spot and demo rows.
+  - **History20 paths exercised**, for v1 and v2, reference and OHLC:
+    - the draft gate, the first24h and window previews, 48 h of ticks, 5m candles and a bot observation;
+    - every real-money refusal: Spot order, admin simulation sale, OCO, demo order, owner allocation, Futures collateral, wallet price.
+  - **Assertions:** every row is byte-for-byte unchanged, and the served `/futures/balances`, `/futures/orders/me` and `/futures/positions/history` are equal.
+- **Verified locally:**
+  - the new test passes, on PostgreSQL 16 loopback;
+  - a mutation check (one funding payment changed by 1e-10) makes it fail;
+  - backend `tsc` passes.
+- **Material files:** the test only. No production code changed in this commit. It runs in CI through the existing `historicalGrowth` pattern step of `admin-listings.yml`, which has the disposable database.
+- **Not done:** wiring History20 windows into the native Futures TEST account. A proposal only, in the PR comment; it needs owner approval.
+
+### Claude — 2026-10-18 — History20: price path of an ordinary Spot scenario listing (owner final instruction, Spot only)
+- **Task:** owner comment on PR #544 (10:08 UTC): Futures work stopped (#549 closed by the owner; my #550 closed unmerged, nothing carried over). History20 is only the price-shape source of new Spot scenario listings, on the existing Spot price model, chart and market; no new wallet, engine or funds; no change to admission, roles, fees, accounting, NRX/AITH or published history.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-history20` (PR #544), on top of `e7f2667a`; no rebase, no force-push.
+- **Finding:** the window was already priced by the existing Spot path (`listingSimulationConfig` → `simulationFor` → `spotPriceSource`, `testMarketCandles`, preview, wallet). The only detachment was this PR's own extension of the #518 no-ledger contour to windows.
+- **What changed:**
+  - `src/services/listings/simulationContour.ts`: back to main's predicates (comment only); a window is no longer in the no-ledger contour.
+  - `frontend/src/pages/admin/AdminListingsPage.tsx`: the owner-allocation field is locked only for the #518 continuation; choosing a window no longer forces it to 0. The publish gate is unchanged.
+  - Tests: new `historicalGrowthSpot.pg.test.ts` (one model for Spot ticker, public chart and Admin preview; Buy/Sell/OCO refused with the ordinary `DEMO_ONLY` refusal and no order rows; allocation once to ADMIN, no USDT moved, no DemoBalance/FuturesBalance rows; wallet = model price; a resting take-profit fires on the model crossing; venue never asked). `historicalGrowthWindow`, `historicalGrowthIntraday`, `historicalGrowthFutures.pg` and `adminListings` updated to the ordinary scenario-listing rules.
+  - `docs/HISTORY20_GROWTH_WINDOW.md`: Spot connection map and rules.
+- **Preserved:** `checkPublishable` / `HISTORICAL_RIGHTS_UNVERIFIED`; `DEMO_ONLY`; HISTORY_LOCKED; the #518 continuation contour; NRX/AITH configs, schedules, quotes and trade records; Futures and NativeDemo untouched; Codex Stocks files and Wallet #543 files untouched.
+- **Verified locally (this working tree):**
+  - `historicalGrowthSpot.pg` 3/3 on disposable loopback PostgreSQL 16; mutation (window back in the contour) makes all 3 fail;
+  - `historicalGrowthWindow`, `historicalGrowthIntraday`, `historicalGrowthFutures.pg`, `adminListings` pass; broader listings/testMarkets/OrderService/PriceWatcher/WalletPortfolio/routes run: 40 suites passed;
+  - `nrxSpot.pg`, `vtaDemoSales`, `vtaNativeCoexistence` 31/31 on a freshly migrated database (a first run on a stale database failed on leftover rows);
+  - frontend `tsc -b`; admin-related frontend suites 7/7; `scripts/qa-listing-history20.cjs` 9/9 at 1440/390 (synthetic).
+- **Not run:** CI on this commit (pending at time of writing); production; real phones; any bot execution.
+- **Unresolved (owner):** rights (publication refused); Buy/Sell on a scenario listing needs an owner decision on `DEMO_ONLY` admission; Spot `Balance` USDT from legacy NRX sales may be withdrawable (unchanged, no isolation claimed); the preview's `SIMUSDT` unit vs the listing's USDT quote; the #544 PR body still says no allocations.
+
+### Claude — 2026-10-19 — Managed-listing simulation sale priced by the model, not the venue (CTO review on PR #544, Spot only)
+- **Task:** CTO comment on #544 (19.10, 07:01 UTC): `OrderService.sellTeamSpotSimulation` priced NRX with `spotPriceSource` but every other pair with the raw venue `getTicker`, so the owner/test-account MARKET SELL of a published managed listing asked the venue for a simulated pair. Use the same server model price the Spot ticker, chart and triggers use; change nothing else.
+- **Commit:** the commit that adds this entry, branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, from `main` `f81df788`.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource(this.priceSource)` for every pair (NRX and published managed listings: model price; ordinary pairs: the venue, as before).
+- **Added:** `src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts` (disposable loopback PostgreSQL, synthetic users/listings), wired into `admin-listings.yml`:
+  - owner (ADMIN) and an allowlisted tester sell at the model price, equal to the Spot ticker/trigger source and the chart's last 5m close; exact debit/credit; audit row; the venue is never asked; no book liquidity; no Futures/DemoBalance rows;
+  - refused before any write: before the listing time, a non-tradable listing, a scenario listing (DEMO_ONLY, the kind a History20 window is), more than the available balance;
+  - an ordinary user and a blocked admin get no synthetic fill (normal book path);
+  - a stale snapshot (refresh fails) keeps the last good listing and its model price;
+  - an unknown pair the venue cannot price is refused before any write;
+  - ordinary pair (ETH) keeps the venue price; NRX keeps its canonical model price.
+  - Mutation: with main's line restored, 3 of 6 fail (the modeled pair is priced by the venue).
+- **Preserved:** NRX pricing and records, listing gates, `isSimulationOnlyUser` policy, atomic debit/credit, no artificial liquidity, `DEMO_ONLY`, `HISTORICAL_RIGHTS_UNVERIFIED`; #544/#546/#548 untouched; Stocks/#543/Futures/NativeDemo untouched.
+- **Verified locally:** new test 6/6; with `ownerAllocation.pg`, `historicalDemoContour.pg`, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `adminListings`: 165/165; `nrxSpot.pg` 12/12 on a fresh database (it fails on a database other suites have written DemoBalance rows into, as before); broader listings/testMarkets/OrderService/PriceWatcher/matching-engine/routes run 39/40 suites, the 40th being that `nrxSpot.pg` shared-database case; backend `tsc` and `npm run build`.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** the sale credits ordinary Spot `Balance` USDT, potentially withdrawable (unchanged); a pair Render does not yet know (cold registry) still falls to the venue read, which refuses only if the venue cannot price it — #548's unresolved-pair gate closes that case; Buy/Sell on scenario listings stays `DEMO_ONLY`.
+
+### Claude — 2026-10-19 — Managed-listing simulation sale: no withdrawable model proceeds (owner decision on PR #544, 07:18 UTC)
+- **Task:** owner decision «так без змін»: History20 is a private Spot test mode (verified owner and allowlisted testers only); profit from a model price must not be withdrawable; NRX/AITH byte-for-byte unchanged; fix the non-NRX owner SELL price source; if non-withdrawability cannot be guaranteed with the existing data model, stop before real credits and propose a design.
+- **Commit:** the commit that adds this entry, on top of `a495d030` (branch `claude/peaceful-volta-h5zw7g-managed-sale-price`, PR #551). It supersedes `a495d030`'s behaviour, which let that sale credit model-priced USDT.
+- **Changed:** `src/services/OrderService.ts`: the sale reads `spotPriceSource` for every pair, then stops before any write for a published managed listing (`Simulation Spot sale is not available for this listing`). `src/services/testMarkets/nrxSpot.ts`: `managedListingForPair` exported. NRX and ordinary pairs are unchanged.
+- **Tests:** `managedListingSimulationSale.pg.test.ts`, 7 tests, disposable PostgreSQL:
+  - Spot USDT is withdrawable and the listing asset is not (the blocker, shown);
+  - owner/tester sale reads ticker = chart = valuation = model, never the venue, and writes nothing;
+  - prelisting / non-tradable / scenario refused before any venue read;
+  - ordinary user and blocked admin: normal book, no synthetic fill;
+  - stale snapshot: still stopped;
+  - unknown unpriced pair: refused;
+  - ETH and NRX sales unchanged.
+  - RED on `main` and on `a495d030` (2 of 7: model proceeds credited), GREEN here; mutation (venue price with the stop kept) also fails 2.
+- **Design:** `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`. Blocker: one fungible Spot USDT row backs withdrawals, and owner/testers fall back to it when their native wallet is unavailable. Proposal without a migration: a restricted `SIMUSDT` quote for History20 private pairs, exact admission via `isSimulationOnlyUser`, private publication, audited per-tester allocations. Not implemented.
+- **Verified locally:** 12 suites / 200 tests (`managedListingSimulationSale.pg`, `ownerAllocation.pg`, `historicalDemoContour.pg`, `nrxSpot.pg` on a fresh DB, `tradingGates`, `listingConfig`, `OrderService`, `PriceWatcherService`, `WalletPortfolioService`, `WithdrawalService`, `adminListings`, `withdrawals`); backend `tsc`.
+- **Research (no repo change):** no free, clearly redistributable daily 2013–2024 series found; candidates are paid commercial licences (CoinGecko Enterprise, CoinMarketCap paid, Kaiko, Coinpaprika, CoinAPI). Several popular CC0/CC BY uploads re-license exchange or CoinMarketCap data, so their labels are likely invalid. `HISTORICAL_RIGHTS_UNVERIFIED` is kept.
+- **Not run:** CI on this commit (pending at time of writing); production.
+- **Unresolved (owner):** one decision. Approve `SIMUSDT` as the non-withdrawable settlement unit with per-tester test allocations, or a restricted-credit migration. Until then History20 windows admit no orders (`DEMO_ONLY`) and the managed-listing synthetic sale stays stopped.
+### Claude — 2026-10-18 — Managed listings: bot triggers preserved, unresolved pairs fail closed, ledger map (CTO triage on PR #546, as overridden by the owner)
+- **Branch / PR:** `claude/peaceful-volta-h5zw7g-managed-failclosed` (#548) from main `f81df788`.
+  - The first commit `e7e04f2` also blocked triggers for `tradable:false` listings. The owner withdrew that instruction (override at 08:32 UTC, before this PR was opened), so the block is **reverted**.
+  - `spotPriceSource` and `triggerOrder` are as on main.
+- **Kept, P0-2:**
+  - `ManagedListingRegistry.resolved()`: a successful read within `STALE_MS` (2 × `REFRESH_MS`).
+  - While the registry is unresolved, `assertSpotListingReady(pair, venue)` refuses a pair that is not NRX, not a known listing or test asset, and not venue-priced, with `Операция временно недоступна` (an existing localized phrase).
+  - Venue pairs are never rejected, and bot triggers are not affected.
+- **Pinned, owner-required:** a listing closed to new public orders keeps triggering resting conditional and OCO orders on its model price (unit + PostgreSQL characterization).
+- **Ledger map** (read-only, in `docs/qa/managed-listing-failclosed-20261018.md`):
+  - Practice-market fills, model-price triggers and the admin `simulation:NRX` sale settle in the ordinary Spot `balance`, the ledger deposits and withdrawals use.
+  - Test assets are not withdrawable, but the USDT proceeds are.
+  - Futures and the native demo engine use their own tables.
+  - This is reported for owner review and not changed.
+- **Material files:**
+  - `src/services/testMarkets/nrxSpot.ts`, `src/services/listings/registry.ts`, `src/services/OrderService.ts` (gate argument only);
+  - tests `tradingGates.test.ts` and `managedListingFailClosed.pg.test.ts` (wired into `.github/workflows/admin-listings.yml`);
+  - the doc above.
+- **Verified locally:** see the PR for the exact head.
+  - Unit `tradingGates` 10/10.
+  - Disposable PostgreSQL 16: `managedListingFailClosed.pg` 4/4, `ownerAllocation.pg` + `historicalDemoContour.pg` 15/15, `nrxSpot.pg` + `vta*.pg` 31/31.
+  - Full Jest: same 4 pre-existing local failures as on clean main.
+- **Preserved:** bot paper triggers and execution; NRX; settlement and reserves; Futures history; Wallet (#543); Stocks; locales.
+- **Not done (needs owner and financial review):** P1 (idempotency key, simulation-fill labelling and card eligibility, Wallet modeled valuation, practice-ledger separation) and P2 (pause/stop/unpublish).
+- **Not run:** production, migrations, deploy.
+
+### Claude — 2026-10-18 — Owner-required demo trading on a model price, pinned (PR #548, follow-up)
+- **Task:** the owner's correction of 09:04 UTC. Demo debits are allowed, and the existing flow must be kept. Tests were required for: Buy/Sell balance, insufficient funds, cancel release, retries, STOP/TP on model prices, Futures history, and no venue call.
+- **Done:** new `src/services/listings/__tests__/modeledPriceDemoTrading.pg.test.ts` (2 tests), wired into `.github/workflows/admin-listings.yml`. A requirements-to-test table is in `docs/qa/managed-listing-failclosed-20261018.md`.
+- **Production code:** none changed. Every requirement already holds on the existing OrderService / PriceWatcherService / `balance` path.
+- **Mutation check:** I let `cancelOrder` and `triggerOrder` act on an already-cancelled or filled order. Both new tests fail; the code was restored.
+- **Verified locally:**
+  - disposable PostgreSQL 16 (loopback, port 55432);
+  - the new test 2/2;
+  - together with `managedListingFailClosed.pg`, `tradingGates`, `ownerAllocation.pg` and `historicalDemoContour.pg`: 31/31.
+- **Preserved:** P0-2 gate, bot triggers on `tradable:false`, NRX, Futures, Wallet (#543), Stocks, locales.
+- **Not done:**
+  - idempotency of the admin simulation sale (P1-3, needs a migration);
+  - History20 execution (proposal on #544, needs owner design approval).
+- **Not run:** production, migrations, deploy, full Jest on this commit.
+
+### Claude — 2026-10-18 — Simulated listings flow review on main f81df788 (owner work order Phase 2)
+- **Task:** verify NRX/AITH scheduling, admin scenario management, candle precision, observed vs modeled feeds, pause/stop/delete, status and accidental live trading. Collect source repros first; fix only what does not alter settlement.
+- **Branch / PR:** `claude/peaceful-volta-h5zw7g-sim-flows` from main `f81df788`, separate Draft PR. Commit: see the PR.
+- **Fixed:** test-market price display.
+  - Below 0.01 a price keeps ≥ 4 significant digits, down to the 1e-10 listing step (`frontend/src/lib/testMarkets.ts`).
+  - On main, 1e-7 showed as 0.000000.
+  - The repro test is in `frontend/src/lib/__tests__/testMarkets.test.ts`; existing expectations are kept.
+- **Documented with proposals, not changed** (`docs/qa/simulator-flows-20261018/README.md`):
+  - admin MARKET SELL against `simulation:NRX` has no idempotency key;
+  - model prices of non-tradable managed listings still trigger pending conditional orders, and `triggerOrder` does not re-check the listing gate;
+  - a Worker-only managed pair passes the Spot gate before the registry loads;
+  - `/trades/me` mixes simulation sales unlabelled, and card eligibility counts them;
+  - Wallet values NRX at the model price without a label;
+  - the Spot pair list carries no practice badge (an owner design choice per `qa-nrx-market.cjs`);
+  - there is no pause/stop/delete/unpublish lifecycle.
+- **NRX/AITH:** no scheduling defect. The NRX fingerprint `63610d3e…` is identical on main and on PR #544.
+- **Preserved:** settlement, the trading engine, Wallet (#543 files), Stocks, the locales (no new keys), and the NRX/VTA/AITH history.
+- **Verified locally:**
+  - frontend `tsc -b` and `npm run build`;
+  - test-market suites 76/76;
+  - full frontend lib Jest 280/280 suites, 4525/4525 tests, 0 skipped;
+  - on clean main for Phase 3: `customerFacingErrors` 64/64, `qa-customer-error-wording` 200/200, `qa-futures-chart-ux` 4 cases / 129 assertions / 0 failed.
+- **Not run:** production, PostgreSQL suites (no change to those paths), real accounts.
+
+### Claude — 2026-10-19 — History20: explicit time limit for the heavy Futures-account regression
+- **Task:** during the #551 compatibility review (CTO, 19.10), `historicalGrowthFutures.pg.test.ts` timed out at Jest's 5 s default. It ran 4920–5593 ms on this branch alone and on the #551+#548+#544+#546 review tree, so the cause is pre-existing and was not introduced by the merge.
+- **Commit:** the commit that adds this entry (branch `claude/peaceful-volta-h5zw7g-history20`, PR #544), on top of `6a0f5599`.
+- **Changed:** only that test's limit (30 s). No assertion changed; nothing skipped.
+- **Verified locally:** 3 consecutive runs pass (4648–5034 ms) on disposable PostgreSQL.
+- **Not run:** CI on this commit (pending at time of writing).
+
+### Claude — 2026-10-19 — History20 SIMUSDT settlement spike and #551 legacy audit (CTO review on PR #551, owner approval 08:07; code only, default off)
+- **Task:** CTO comment on #551 (08:04 UTC):
+  - audit AITH and older managed-listing sales before/after #551;
+  - confirm #551 compatibility with #544, #546 and #548;
+  - build and test the smallest non-withdrawable History20 settlement (`SIMUSDT` restricted unit in the existing Spot `Balance`), covering every withdrawal, deposit, transfer, collateral and conversion path.
+
+  The owner approved `SIMUSDT` as the design at 08:07, not activation.
+- **Branch / commit:** `claude/voltex-mobile-audit-7rpjni`, the commit that adds this entry. The review merges #544 `46e2024f`, #546 `1a575d5a`, #548 `bc329bb4` and #551 `a9aee9cc`. Conflicts were only in this file and in `admin-listings.yml`; both sides were kept.
+- **Not merged: #552** (another Claude session's SIMUSDT refusals spike, `99064e93`). An automated permission check refused merging another session's open PR into this branch. The two overlap in `testAssetConfig.ts`, `WalletTransferService.ts` and `PurchaseService.ts`; see the "Overlap with #552" section in `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`.
+- **Material files:**
+  - `testAssetConfig.ts`: `SIMULATION_QUOTE`, `isSimulationQuote`, `isSimulationSettled`; `isTestAssetPairOrSymbol` includes them.
+  - `OrderService.ts`: the #551 stop lets through only a `SIMUSDT`-quoted market.
+  - `WalletTransferService.ts`, `PurchaseService.ts`: refuse `SIMUSDT`-settled value.
+  - `WalletPortfolioService.ts`: no USD value for a non-USDT quote.
+  - `listings/privateTest.ts`: unwired helpers.
+  - `managedSnapshot.ts`: back to `main`.
+  - New `history20SimusdtSettlement.pg.test.ts`.
+  - `legacySimulationSaleEquivalence.pg.test.ts` (earlier commit `d8e2a462`).
+  - `admin-listings.yml`: both tests added; the transfer and purchase files added to the trigger paths.
+  - `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`: evidence section.
+- **Preserved from the other session:**
+  - #551's model-priced sale and its stop for `/USDT` managed pairs;
+  - #551's legacy pins;
+  - #544's 30 s limit for `historicalGrowthFutures.pg` (my own 60 s change was dropped in its favour);
+  - #548's fail-closed registry;
+  - #546's precision work;
+  - NRX and AITH code and configs, untouched.
+- **Defect found and fixed (RED→GREEN):** the window asset bought with `SIMUSDT` could rest as a LIMIT SELL on `X/USDT` in the ordinary book, an indirect cash-out. `isSimulationSettled` now refuses any other pair for a `SIMUSDT`-quoted base.
+- **Verified locally** (disposable loopback PostgreSQL 16, fresh migrated DBs):
+  - `history20SimusdtSettlement.pg` 6/6. Mutation check: each of the 6 new guards, when removed, fails at least one test.
+  - listings + testMarkets + `adminListings`: 41 suites / 510 tests, including `nrxSpot.pg`, `vtaDemoSales.pg`, `vtaNativeCoexistence.pg`, `legacySimulationSaleEquivalence.pg`, `managedListingSimulationSale.pg` and `historicalGrowthFutures.pg`.
+  - services, routes, private-trading, banking, OTC and futures: 147 suites passed, 2397 tests. 1 failure, `CfdMarketDataService` "Gold Spot" vs "Gold US Dollar": also present on `main` (catalog vs test), not touched here.
+  - Backend `tsc` clean.
+- **Legacy behaviour found, not changed** (NRX rule; probed on synthetic rows): an NRX holder can sell on `NRX/BTC` to another user for withdrawable BTC; `USDT/NRX` is accepted; NRX moves to `FuturesBalance` via transfer; a product priced in NRX can be bought. Owner decision.
+- **Not run:**
+  - frontend (no frontend change);
+  - Worker tests;
+  - CI on this commit (pending at time of writing);
+  - production, real accounts, any activation.
+- **Unresolved:**
+  - wiring: private channel (Worker DO + Render registry), per-user admission ahead of the ADMIN synthetic-sale branch, terminal, one-time audited tester funding, OCO/stop-loss and restart proofs on the private pair;
+  - activation approval;
+  - rights for any non-synthetic data (`HISTORICAL_RIGHTS_UNVERIFIED` stays);
+  - pick one name between this branch and #552;
+  - the legacy NRX cross-pair, transfer and purchase findings.
+
+### Claude — 2026-10-19 — History20 SIMUSDT: fail closed without the registry, one guard, scope diff with #552 (CTO coordination on PR #553)
+- **Task:** the CTO coordination comment on #553 (08:56 UTC):
+  - exact-head CI for #553;
+  - a scope diff #552↔#553 without merging #552;
+  - one canonical guard name;
+  - prove base-token guards fail closed when the private asset is absent from `managedListingAssets()` (cold, stale or withheld registry);
+  - keep NRX and AITH unchanged.
+- **Branch / commit:** `claude/voltex-mobile-audit-7rpjni`, the commit that adds this entry, on top of `fa6b2cb9`.
+- **CI on `fa6b2cb9`:** 21 workflows / 24 check runs: 23 succeeded, `deploy` skipped. Includes "Admin Listings (managed simulated markets)" run 39225835398, which runs `history20SimusdtSettlement.pg` and `legacySimulationSaleEquivalence.pg`.
+- **Defect (RED→GREEN):** with the listing absent from the registry, `VHX86/USDT` was not recognised as restricted, so a holder's base token would have counted as an ordinary asset. Fixed with reserved History20 private tickers `VHX01`–`VHX99`, matched without the registry. `privateTestSimulationConfig` and `checkPrivateTestable` (`PRIVATE_TEST_SYMBOL`) now refuse any other ticker.
+- **Bug found by the new tests before commit:** the first version read bare `SIMUSDT` through pair normalisation as `SIM/USDT`. Fixed: the unit is matched first.
+- **One guard:** `isSimulationSettled` everywhere. `isSimulationQuote` was removed; `OrderService` uses `isSimulationSettled(quote)`.
+- **Worker safety:** the reserved-ticker rule lives in the pure `src/shared/history20PrivateSymbol.ts`. `listingConfig.ts`, which the market-edge Worker imports, therefore still imports only a type from `testAssetConfig.ts`; that file reads `process.env` at load. A first draft imported it as a value; it was moved before commit as a precaution. The broken state was not tested.
+- **Material files:**
+  - `testAssetConfig.ts`, `OrderService.ts`, `listings/privateTest.ts`;
+  - `listings/listingConfig.ts`: `checkPrivateTestable` and `PRIVATE_TEST_SYMBOL_MESSAGE`;
+  - `history20SimusdtSettlement.pg.test.ts`: now 11 tests, including a no-database recognition block, the cold/withheld registry case and per-owner fixture listing ids;
+  - `docs/HISTORY20_PRIVATE_SPOT_SETTLEMENT.md`: the scope diff and the reserved-ticker caveat.
+- **Preserved:** #552 untouched and not merged. No #552 code was copied; the missing cases (recognition negatives, legacy guard results, OTC assets, no venue call) were written independently. NRX and AITH code, configs and the legacy sale tests are unchanged.
+- **Verified locally** (disposable PostgreSQL 16):
+  - `history20SimusdtSettlement.pg` 11/11, five consecutive runs on a reused database;
+  - 10/10 guard mutations caught;
+  - listings + testMarkets + `adminListings`: 41 suites / 515 tests (fresh NRX database);
+  - services, routes, private-trading, banking, OTC and futures: 147 suites passed, 2397 tests. The same single failure, `CfdMarketDataService`, is also present on `main`;
+  - backend `tsc` and frontend `tsc -b` clean;
+  - Worker `test:listings` on workerd: 18/18.
+- **Not run:**
+  - CI on this commit (pending at time of writing);
+  - production.
+- **Unresolved:**
+  - wiring: private channel, per-user admission ahead of the ADMIN synthetic-sale branch, participant terminal, one-time audited tester funding, OCO/stop-loss and restart proofs on the private pair;
+  - activation approval;
+  - rights;
+  - the reserved-ticker caveat for any existing non-window `VHX01`–`VHX99` listing (production store not checked);
+  - consolidating with #552 (refusal text, compact form);
+  - the legacy NRX cross-pair, transfer and purchase findings.
+
+### Claude — 2026-10-19 — #553 final integration: cold-registry cash-out fixed, History20 private Spot test wired, participant terminal (owner assignment)
+- **Task:** the owner assigned this session (#551/#552) the final #553 integration: port the needed parts of reference branch `538926e2` without duplicating code; first fix the confirmed cold-registry cash-out (a private History20 token must never become real USDT/BTC or reach Futures, whatever the cache or registry state); then the private Spot terminal (owner and allowlisted testers only), one-time audited SIMUSDT funding and the tests. NRX/AITH unchanged, no public trading, no merge/deploy.
+- **Commits on `claude/voltex-mobile-audit-7rpjni`:**
+  - `78f7ad6c`: P0, on top of the #553 session's `c7561624`. Reconciled with its reserved `VHX01`–`VHX99` rule as the one canonical guard; my duplicate helper was dropped.
+  - `6c9b951f`: wiring.
+  - `f23ca6b3`: frontend, docs, timeout, the `walletUxRefinement` fix.
+  - `4d5092da`: the `idle-sleep` fix.
+  - `895e7d72`: the second CI round below.
+  - `dc4abc63`: merge of Draft #555 (the CFD QA fix).
+  - The commit that updates this entry: the Mobile analysis.
+- **P0:**
+  - the exploit is preserved as `history20ColdRegistryCashout.pg` (empty registry, `VHX07/USDT` into a real USDT bid);
+  - RED on `fa6b2cb9` (4/5) and on `c7561624` (3/5: venue-priced USD valuation, venue price fallback, publish reservation); GREEN now;
+  - added: no venue price for an unknown private pair; never USD-valued; public routes 404; a reserved ticker never trades as an ordinary managed listing even if the registry says so; no ordinary publication under a reserved ticker.
+- **Wired (adapted, not merged):**
+  - `privateTest` config;
+  - DB-verified `privateTestAdmitted` before and inside every financial transaction;
+  - SIMUSDT-only synthetic sale;
+  - Worker private channel and `HISTORY20_PRIVATE_TEST` switch;
+  - `privateTestFunding` and its script;
+  - `/api/v1/private-test/markets` reads;
+  - card volume skip;
+  - frontend private store, chart, book and discovery, plus the Admin control.
+- **Material files:**
+  - `src/shared/history20PrivateSymbol.ts`, `testAssetConfig.ts`, `nrxSpot.ts`, `OrderService.ts`;
+  - `listings/{listingConfig,listingPublic,privateTest,privateTestFunding}.ts`, `api/routes/{privateTestMarkets,testMarkets,candles,orders}.ts`, `index.ts`;
+  - `WalletPortfolioService.ts`, `CardApplicationService.ts`;
+  - `workers/market-edge/src/listingsStore.ts`, `scripts/fund-history20-private.cjs`;
+  - frontend `lib/{testMarkets,testMarketStore,testMarketCandles,spotPublicMarket}.ts`, `pages/TradePage.tsx`, `components/TestMarketTerminal.tsx`, `pages/admin/{AdminListingsPage.tsx,adminListingsApi.ts}`;
+  - tests (4 new), `admin-listings.yml`, `docs/HISTORY20_PRIVATE_SPOT_MODE.md`.
+- **Preserved:**
+  - the #553 session's guard, tests and docs, with its tests updated only where the wired gate changes behaviour (stub removed, admission now real, card completeness, a USDT fixture moved off the reserved namespace);
+  - #548's fail-closed registry, now also given a non-reserved unknown pair;
+  - NRX/AITH code and configs; #552 untouched.
+- **Verified locally** (disposable PostgreSQL 16, fresh DBs):
+  - `--findRelatedTests` over every changed backend file: 101 suites passed, 1528 tests. One timeout, fixed with a 30 s limit and re-run;
+  - Worker `test:listings` 22/22 and `test.mjs`;
+  - backend and frontend `tsc`;
+  - frontend `jest frontend/src`: 284/288 suites passed in a run that started mid-edit; the 4 suites edited during it re-ran 82/82. Frontend `npm run build` passed.
+- **Regression found by CI and fixed:** `78f7ad6c` added a static import to `WalletPortfolioService.ts`. The `walletUxRefinement` harness evaluates that module and could not resolve it; CI `complete-suite` failed 1/4794. It is now a dynamic import like the file's others.
+- **Regression found by CI and fixed (`idle-sleep` on `f23ca6b3`):** `/trade` stayed in the wake barrier's `error` phase. The private list's 404 (any non-participant) rejected a tracked read during `syncing`.
+  - Now a 404 is an answer: the store goes dormant until the session changes, so it asks once per session.
+  - The private read uses `browserFallbackFetch`, and its tracked read never reports a failure, so a 401 or outage on this optional list cannot hold the page.
+  - Regression test added to `privateTestMarkets.test.ts`; RED on the old store, GREEN now.
+  - `scripts/qa-browser-sleep.cjs` was run locally with `QA_LABEL=candidate`, using preinstalled Chromium through a Playwright shim (CI uses msedge on Windows):
+    - old store: `/trade` wake `TimeoutError`, as in CI;
+    - fixed: PASS, 16 scenarios.
+  - `node --test scripts/test-browser-activity.cjs scripts/test-idle-read-budget.cjs` 53/53; related frontend suites 233/233; frontend `tsc` and build passed.
+- **Second CI round (on `f23ca6b3`/`4d5092da`), fixed:**
+  - `wording`, `complete-suite`, `isolated-review` and `api-and-browser` all failed on one line: `customerFacingErrors` forbids reading `error.message` outside the display boundary, and `4d5092da` compared it to `private_test_http_404`. It is now a typed `PrivateTestHttpError` with a `status`.
+  - `browser` (chart workspace): `spot.1440.errors`, `aith.spot.1440.errors` and three `transition…AITH` checks failed on `console: Failed to load resource: 404`. Cause: the Spot pair list subscribed every signed-in session to `/private-test/markets`.
+    - Now only a private pair's terminal subscribes; lists `watch` the store and never cause a request.
+    - A rendered-hook test proves it (RED with the old subscription).
+    - Locally the five `errors` checks pass.
+  - Frontend `jest frontend/src`: 288/288 suites, 4800 tests. `tsc` and build pass.
+  - `idle-sleep` locally: PASS, 16 scenarios, with no `/private-test/markets` request in any of them.
+- **Not this PR's:** CFD `validate` fails `cfd.1440.goto` (`gotoClosed:false`). The check goes to "now − 2 days", which on Monday 2026-10-19 is Saturday, when the CFD market has no bars.
+  - `qa-cfd-workspace.cjs` on clean `main` `f81df788`, run locally today, fails the same check with the same detail.
+  - #553 changes no CFD or chart-workspace code; only the `cfdTerminal.test.ts` stub.
+  - Fixed separately in Draft #555 (`b387d4b6`, QA script only; the terminal is unchanged). The same commit is merged into #553 (`dc4abc63`) so this PR's exact-head check is meaningful; it no-ops once `main` carries #555.
+- **Mobile clients `fixtures-only` on `895e7d72`:** `report.errors = ['Value is null']`. Green on every earlier #553 head, including `4d5092da`.
+  - The message is `lightweight-charts`' `ensureNotNull`; the artifact holds no stack or route.
+  - The only frontend source change since `4d5092da` is `testMarketStore.ts`. In mobile-review it is inert:
+    - the only consumer, `TerminalChart` → `useCompareInstruments`, mounts with `market="futures"`, so `useTestMarkets(…, market === 'spot')` is disabled before and after;
+    - there is no session token;
+    - there is no subscription, watcher or request either way.
+  - CI's own Playwright 1.63.0 / Chromium headless shell 153.0.8010.12, local, on `895e7d72`: 7/7 runs PASS with no page error, 3 of them pinned to one CPU. Page errors were logged with stack and URL.
+  - No concrete regression found, so nothing was changed. The assertion stays. The next exact-head run on this PR is the re-check: a second failure is real and gets a root cause.
+- **Local-only timing observation:** `qa-chart-workspace.cjs` locally failed `spot.1440.data.window` twice on this branch: one `/market/listings` fetch in the 400 ms hover window, at about 15.3 s. `main` passed locally, hovering at about 16.25 s.
+  - That fetch is the existing 15 s AITH catalogue poll (`setTimeout`, identical on `main`). The fixture's isolation defers only `setInterval`.
+  - CI passed this check on both #553 runs.
+  - Not changed here; recorded so it is not mistaken for new traffic.
+- **Not run:** CI on the final commit (pending at time of writing); the PostgreSQL and native parts of the idle-sleep job (`qa-browser-sleep-postgres.cjs`, `qa-browser-sleep-native.cjs`); production.
+- **Unresolved:** activation approval (deploy, both switches, start, `--confirm` funding); data rights; checking the production store for non-window `VHX01`–`VHX99` drafts; the legacy NRX cross-pair findings (owner decision).
+
+### Claude — 2026-10-19 — CFD QA: `cfd.1440.goto` target stepped off the weekend (QA script only; owner and CTO on PR #553)
+- **Task:** `scripts/qa-cfd-workspace.cjs` jumped to "now − 2 days". On Monday and Tuesday that is a weekend, when CFD has no bars, so `cfd.1440.goto` failed with `{"gotoClosed":false,"futureWarn":"Дата в будущем"}` on every PR that ran the CFD workflow. Fix it separately, without changing the CFD terminal.
+- **Change:** that target now steps back to the last weekday. The future-date refusal check, the dialog and the terminal are unchanged.
+- **Material file:** `scripts/qa-cfd-workspace.cjs` (+2 lines).
+- **Verified locally** on 2026-10-19 (Monday) on `main` `f81df788`, with Playwright 1.56.1 and the preinstalled Chromium:
+  - without the change, `cfd.1440.goto` fails with the CI detail;
+  - with it, 74/74 pass.
+- **Preserved:** every CFD, chart-workspace and Codex file.
+- **Unresolved:** none for this check.
+
+### Claude — 2026-10-19 — History20 night shift: final read-only security review of #553 and the launch playbook (owner night-shift comment on #553)
+- **Task:** a final code and security review of Draft #553, then a dry-run integration, activation and rollback playbook. Fix only a reproducible defect. No merge, deploy, switch change, funding or production write.
+- **Reviewed head:** `c28689dc` (base `main` `f81df788`). 31 workflows / 36 check runs: 35 success, `deploy` skipped. Heads were re-fetched before the review; nothing had changed.
+- **Result:** no reproducible defect, so no code changed. This commit adds documentation only.
+- **Verified, with the evidence used:**
+  - **Every order and balance path.** The only engine submissions are `OrderService` (the gate) and `DemoTradingService` (`isTestAssetPairOrSymbol`, which includes `isSimulationSettled`).
+    - Every `DemoBalance` write refuses the reserved assets or is USDT/VTA only.
+    - Funding credits Spot `Balance`: once, under an advisory lock, with an AuditLog receipt, re-checking admission inside the transaction, never USDT.
+  - **Admission:**
+    - the owner needs `PRIVATE_TRADING_ENABLED=true`, a matching `PRIVATE_TRADING_OWNER_ID` and an unblocked `ADMIN`;
+    - a tester needs a valid UUID allowlist (an invalid list disables it all) and must be unblocked;
+    - any other ADMIN is refused;
+    - `HISTORY20_PRIVATE_TEST` must be exactly `enabled`.
+  - **Public surfaces:**
+    - Render's test-market, ticker, book and trades routes answer 404 for a private pair before any registry lookup;
+    - `/orderbook/:pair` answers 404;
+    - `/market/tradable` lists venue symbols only;
+    - no engine event is broadcast over a socket; the only WebSocket server is the venue collector;
+    - the Worker serves private tests only behind `authorizeListingsAdmin` (`/internal/listings/published`).
+  - **No dependency or schema change:** the Worker `package.json` diff only adds a test file to a script. No Prisma change, and no file under `src/futures`, `src/private-trading`, Stocks or Codex paths.
+  - **NRX and AITH:**
+    - in `nrxSpot.ts` the NRX branch and the AITH refusal are untouched;
+    - CI on `c28689dc` passed NRX investor market review (28 suites / 386 tests) and Admin Listings (`aithReplacement`, `legacySimulationSaleEquivalence`).
+  - **Production public catalogue:** a read-only GET of `market.voltextech.net/market/listings` at about 19:45 UTC returned `revision 4`, one listing, `AITH/USDT`. The repository's configs and seeds contain no `VHX\d{2}` or `SIMUSDT` symbol.
+- **Observations, not defects (not changed):**
+  - Render parses published listings by shape only (`publishedListingSchema` → `listingConfigSchema`). The semantic private-test rules are enforced when the Worker publishes:
+    - reserved ticker;
+    - funding ≤ 1e6;
+    - `ownerAllocation` 0.
+    A forged store entry could therefore exceed the funding bound or carry an owner allocation. That yields only non-withdrawable units: VHX and SIMUSDT stay refused syntactically on every exit. Possible hardening: re-check the bound in `fundPrivateTestAccount`, and refuse `privateTest` in `ownerAllocation`.
+  - The Native Futures TEST collateral filter (`src/private-trading/native/service.ts`, `testAssetForSymbol`) does not recognise SIMUSDT or a VHX asset on a cold registry. It is not reachable: native holdings are `DemoBalance` rows, and no `DemoBalance` write admits those assets.
+- **BLOCKED (no production access):**
+  - drafts in the production Worker store;
+  - production database rows for VHX/SIMUSDT;
+  - venue symbol lists for `VHX01`–`VHX99`.
+  The read-only queries are in the playbook.
+- **Material files:**
+  - `docs/HISTORY20_PRIVATE_SPOT_LAUNCH_PLAN.md` (new): switches, data-rights restrictions, merge order, deploy with switches off, production checks, activation, financial checks, rollback, monitoring;
+  - a pointer in `docs/HISTORY20_PRIVATE_SPOT_MODE.md`;
+  - this entry.
+- **Preserved:** all #553 code and tests unchanged; #555 untouched; Stocks and Codex files untouched.
+- **Not run:**
+  - local test re-runs (the exact-head CI evidence was used);
+  - production checks;
+  - CI on the commit that adds this entry, at the time of writing.
+- **Unresolved:**
+  - owner approvals for each launch step;
+  - data rights;
+  - the production checks above;
+  - a post-test cleanup procedure for inert VHX/SIMUSDT balances (not implemented; the admin adjustment refuses them by design);
+  - the legacy NRX findings (owner decision).
+
+### Claude — 2026-10-20 — History20 funding: every private-listing rule re-checked before any write (CTO morning follow-up on #553; owner asked for it in-session)
+- **Task:** the CTO asked whether `fundPrivateTestAccount` enforces every private-listing constraint itself, since Render parses the Worker's published listings by shape only. It did not: it required `privateTest`, admission and a reserved ticker, and trusted the stored funding and owner allocation. The owner asked to do the proposed hardening in this session.
+- **Change (new commits on `claude/voltex-mobile-audit-7rpjni`):**
+  - `src/services/listings/privateTestFunding.ts`: `assertFundablePrivateListing` runs `parseListingConfig` and `checkPrivateTestable(config, config, now)` on the listing before the transaction. That is the Worker's own publish-time rule set: reserved ticker, History20 window, owner allocation 0, funding ≤ 1 000 000 and not both zero, no replay after the window, reserved names. Checked against itself, so nothing is locked and no clock dependence is introduced.
+  - `src/services/listings/ownerAllocation.ts`: a listing with `privateTest` is refused.
+  - `history20PrivateSpot.pg` gains one test: seven forged entries, six concurrent calls each, never credit; the genuine listing still funds once; the allocation path refuses the private test. USDT untouched throughout.
+- **RED→GREEN (disposable PostgreSQL 16, loopback):** with the old two files restored, the forged "funding 1 000 001" entry credited on all six concurrent calls (`FULFILLED`); with the change every row is refused and no balance or receipt exists.
+- **Not changed, by rule:** the Native Futures TEST collateral filter (`src/private-trading/native/service.ts`). Futures/NativeDemo are frozen for this work, and the path is unreachable: native holdings are `DemoBalance` rows, and no `DemoBalance` write admits VHX or SIMUSDT. Recorded as an observation.
+- **Verified locally:** the Admin Listings backend list (16 suites) on a fresh cluster; backend `tsc`.
+- **Preserved:** every other #553 guard and test; NRX, AITH, ordinary Spot and Futures code untouched; #555 untouched.
+- **Not run:** exact-head CI at the time of writing; production checks (still BLOCKED).
+- **Unresolved:** the launch approvals, data rights, the production checks and a post-test cleanup plan (separate review, no automatic deletion).

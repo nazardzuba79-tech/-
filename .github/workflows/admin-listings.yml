@@ -5,18 +5,29 @@ on:
       - 'src/services/listings/**'
       - 'src/shared/listingScenarioControls.ts'
       - 'src/shared/listingHistoricalReplay.ts'
+      - 'src/shared/listingHistoricalGrowth.ts'
       - 'src/shared/aithPublication.ts'
+      - 'src/shared/history20PrivateSymbol.ts'
       - 'config/test-markets/aith.draft.json'
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
+      - 'src/services/PriceWatcherService.ts'
+      - 'src/api/routes/orders.ts'
       - 'src/services/WalletPortfolioService.ts'
+      - 'src/services/WalletTransferService.ts'
+      - 'src/services/PurchaseService.ts'
       - 'src/api/routes/adminListings.ts'
+      - 'src/api/routes/privateTestMarkets.ts'
+      - 'src/api/routes/testMarkets.ts'
+      - 'src/api/routes/candles.ts'
+      - 'src/services/CardApplicationService.ts'
       - 'src/index.ts'
       - 'workers/market-edge/**'
       - 'frontend/src/lib/marketEdge.ts'
       - 'frontend/src/lib/nrxMarket.ts'
       - 'frontend/src/lib/testMarket*.ts'
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/spotPublicMarket.ts'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/markets-bolt/**'
       - 'frontend/src/pages/admin/**'
@@ -29,11 +40,14 @@ on:
       - 'scripts/qa-listing-controls.cjs'
       - 'scripts/benchmark-historical-replay.cjs'
       - 'scripts/qa-historical-archive-storage.cjs'
+      - 'scripts/qa-listing-history20.cjs'
+      - 'frontend/src/lib/__tests__/historicalGrowthLibrary.test.ts'
       - 'frontend/src/lib/__tests__/listingMovement*.test.ts'
       - 'frontend/src/lib/__tests__/listingHistoricalLibrary.test.ts'
       - 'scripts/smoke-market-edge-listings.mjs'
       - 'render.yaml'
       - 'scripts/allocate-listing-owner.cjs'
+      - 'scripts/fund-history20-private.cjs'
       - '.github/workflows/admin-listings.yml'
 permissions:
   contents: read
@@ -74,17 +88,26 @@ jobs:
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
           src/services/listings/__tests__/historicalDemoContour.pg.test.ts
+          src/services/listings/__tests__/managedListingSimulationSale.pg.test.ts
+          src/services/listings/__tests__/managedListingFailClosed.pg.test.ts
+          src/services/listings/__tests__/modeledPriceDemoTrading.pg.test.ts
+          src/services/listings/__tests__/legacySimulationSaleEquivalence.pg.test.ts
+          src/services/listings/__tests__/history20SimusdtSettlement.pg.test.ts
+          src/services/listings/__tests__/history20ColdRegistryCashout.pg.test.ts
+          src/services/listings/__tests__/history20PrivateSpot.pg.test.ts
+          src/services/listings/__tests__/history20PrivateConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
           frontend/src/lib/__tests__/listingTimeSafety.test.ts
           frontend/src/lib/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/privateTestMarkets.test.ts
       - name: Durable Object store on real workerd (Miniflare)
         run: npm run test:listings --prefix workers/market-edge
       - name: Saved scenario controls, bounds, legacy-history preservation and the historical demo contour
         run: >-
           npx jest --runInBand --silent
-          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary|historicalDemoContour'
+          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary|historicalDemoContour|historicalGrowth'
       - name: Historical replay CPU/RAM diagnostic (synthetic fixtures, not CX23)
         run: |
           mkdir -p /tmp/listings-qa-report
@@ -115,6 +138,12 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report
+      - name: History20 growth window at 1440/390 (one synthetic window; the owner's pack is not in the repository)
+        run: node scripts/qa-listing-history20.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report/history20
       - name: Scenario controls desktop/mobile, saved preview and Worker restart
         run: node scripts/qa-listing-controls.cjs
         env:

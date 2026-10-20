@@ -38,7 +38,8 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
   const counting = preListing && asset?.listingArmed === true && Number.isFinite(listingAt);
   const now = useServerNow(clockOffsetMs, counting);
   const presentation = asset ? testMarketPresentation(asset, now) : null;
-  const marketLabel = presentation ? [t(presentation.simulationKey), presentation.availabilityKey && t(presentation.availabilityKey)].filter(Boolean).join(' · ') : null;
+  // A History20 private test market also says what it is: a model, settled in SIMUSDT, never withdrawable.
+  const marketLabel = presentation ? [t(presentation.simulationKey), presentation.availabilityKey && t(presentation.availabilityKey), asset?.provenanceLabel].filter(Boolean).join(' · ') : null;
   const reachedRef = useRef(false);
   const left = counting ? listingAt - now : NaN;
 
