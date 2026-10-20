@@ -50,5 +50,6 @@ export async function verifyReleaseAuthority(config, fetchImpl = fetch) {
     const data = JSON.parse(text);
     if (data.version !== 1 || data.authority !== 'postgres' || data.issuer !== config.issuer ||
         data.principalsDigest !== principalsDigest(config.tradePrincipals)) fail('STOCKS_RELEASE_AUTHORITY_UNREADY');
+    return { tradingEnabled: data.tradingEnabled === true };
   } catch { fail('STOCKS_RELEASE_AUTHORITY_UNREADY'); }
 }

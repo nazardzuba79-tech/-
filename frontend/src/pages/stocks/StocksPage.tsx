@@ -13,9 +13,11 @@ import { isStocksLocalPreviewHost } from './stockHostPolicy';
 const StocksTerminal = lazy(() => import('./StocksTerminal'));
 const StocksOverview = lazy(() => import('./StocksOverview'));
 declare const __VOLTEX_STOCKS_GLOBAL_SIMULATOR__: boolean;
-const GlobalStocks = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__
+declare const __VOLTEX_STOCKS_CATALOGUE_VISIBLE__: boolean;
+const hostedStocks = typeof __VOLTEX_STOCKS_CATALOGUE_VISIBLE__ !== 'undefined' && __VOLTEX_STOCKS_CATALOGUE_VISIBLE__;
+const GlobalStocks = hostedStocks || (typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__)
   ? lazy(() => import('./global/GlobalStocks')) : null;
-const GlobalStocksCatalogue = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__
+const GlobalStocksCatalogue = hostedStocks || (typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__)
   ? lazy(() => import('./global/GlobalStocksCatalogue')) : null;
 
 /**
@@ -27,7 +29,7 @@ const GlobalStocksCatalogue = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'und
 export function StocksPage() {
   const {t}=useLanguage();
   const { instrumentId } = useParams();
-  if (GlobalStocks && GlobalStocksCatalogue && isStocksLocalPreviewHost(typeof window === 'undefined' ? undefined : window.location.hostname)) return <Suspense fallback={<div>{t('stocks.loading')}</div>}>{instrumentId ? <GlobalStocks /> : <GlobalStocksCatalogue />}</Suspense>;
+  if (GlobalStocks && GlobalStocksCatalogue && (hostedStocks || isStocksLocalPreviewHost(typeof window === 'undefined' ? undefined : window.location.hostname))) return <Suspense fallback={<div>{t('stocks.loading')}</div>}>{instrumentId ? <GlobalStocks /> : <GlobalStocksCatalogue />}</Suspense>;
   return widgetPreview ? <StocksLayout catalogue={widgetCatalogue} /> : <LegacyStocksPage />;
 }
 function LegacyStocksPage() {

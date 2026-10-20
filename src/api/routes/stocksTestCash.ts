@@ -5,12 +5,13 @@ import { timingSafeEqual, createPublicKey, createSecretKey } from 'crypto';
 import { resolve } from 'path';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 
-interface Config { enabled?: boolean; issuer?: string; principals?: Array<{issuer:string;subject:string}>; gatewayKey?: string; secret?: string }
+interface Config { catalogueEnabled?: boolean; enabled?: boolean; issuer?: string; principals?: Array<{issuer:string;subject:string}>; gatewayKey?: string; secret?: string }
 interface Actor { issuer:string;subject:string;userId:string;sessionId:string;expiresAt:number }
 interface Authority { execute(actor:Actor,type:string,input?:unknown,options?:{signal?:AbortSignal;occurrenceId?:string}):Promise<any>; metrics():unknown }
 export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, injected?: Authority): Router {
   const router = Router(), enabled = config.enabled ?? process.env.STOCKS_TEST_CASH_ENABLED === 'true';
-  if (!enabled) return router;
+  const catalogueEnabled = config.catalogueEnabled ?? process.env.STOCKS_CATALOGUE_ENABLED === 'true';
+  if (!enabled && !catalogueEnabled) return router;
   const issuer = config.issuer ?? process.env.STOCKS_IDENTITY_ISSUER;
   const gatewayKey = config.gatewayKey ?? process.env.STOCKS_TEST_CASH_GATEWAY_KEY;
   const secret = config.secret ?? process.env.JWT_SECRET;
@@ -38,7 +39,7 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
         await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAccount" WHERE false');
         await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestReceipt" WHERE false');
         await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAudit" WHERE false');
-        res.json({ version: 1, authority: 'postgres', issuer, principalsDigest: principalsDigest(bindings) });
+        res.json({ version: 1, authority: 'postgres', tradingEnabled: enabled, issuer, principalsDigest: principalsDigest(bindings) });
       } catch { res.status(503).json({ error: 'STOCKS_AUTHORITY_UNREADY' }); }
     });
   }
@@ -57,6 +58,12 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
     res.status(status).json({ error: code });
   };
   router.get('/stocks-test-cash/identity', auth, (req: AuthedRequest, res) => { try { const value = actor(req); res.set('Cache-Control','no-store').json({ issuer: value.issuer, subject: value.subject }); } catch (error) { failure(res,error); } });
+  // Catalogue/identity access never grants a financial capability. Off means no
+  // wallet or command route, even for an allowed principal or forged gateway call.
+  if (!enabled) {
+    router.all(['/stocks-test-cash/wallet','/stocks-test-cash/command'], auth, (_req, res) => { res.status(403).json({ error: 'STOCKS_TRADING_DISABLED' }); });
+    return router;
+  }
   // This is a read of the same authority, available only to the two bindings.
   // No role promotion or change to Funding/real Wallet routes is involved.
   router.get('/stocks-test-cash/wallet', auth, async (req: AuthedRequest, res) => { try { const value=await authority.execute(actor(req),'readView'); res.set('Cache-Control','no-store').json({ asset:'USDT',...value.wallets.USDT,authorityCash:value.authorityCash }); } catch (error) { failure(res,error); } });

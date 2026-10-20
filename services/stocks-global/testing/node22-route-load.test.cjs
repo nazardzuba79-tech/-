@@ -67,3 +67,55 @@ test('misconfigured enabled route fails closed before reading the database', () 
     /STOCKS_AUTHORITY_CONFIG_INVALID/,
   );
 });
+
+test('compiled catalogue-only API permits authenticated identity/readiness but never finance', async () => {
+  const express = require('express'), request = require('supertest'), jwt = require('jsonwebtoken');
+  const counts = { transactions: 0, writes: 0, schema: 0 };
+  const fakeDb = {
+    user: {
+      findUnique: async ({where}) => ({id: where.id}),
+      findMany: async () => principals.map(p => ({id: p.subject})),
+    },
+    session: { findUnique: async ({where}) => ({
+      id: where.id, userId: where.id.slice('session-'.length), revokedAt: null,
+      lastSeenAt: new Date(), remembered: false, user: {email: 'fixture@example.invalid'},
+    }) },
+    auditLog: {findFirst: async () => null},
+    $queryRawUnsafe: async query => {
+      assert.match(query, /^SELECT "principalHash" FROM "StocksTest(Account|Receipt|Audit)" WHERE false$/);
+      counts.schema++; return [];
+    },
+    $executeRawUnsafe: async () => { counts.writes++; throw Error('FINANCIAL_WRITE_FORBIDDEN'); },
+    $transaction: async () => { counts.transactions++; throw Error('FINANCIAL_TRANSACTION_FORBIDDEN'); },
+  };
+  const cfg = {...config, enabled: false, catalogueEnabled: true, secret: process.env.JWT_SECRET};
+  const app = express(); app.use(express.json());
+  app.use('/api/v1', stocksTestCashRouter(fakeDb, cfg)); // REAL PostgreSQL authority factory.
+  const base = '/api/v1/stocks-test-cash';
+  assert.equal((await request(app).get(base+'/readiness')).status, 401);
+  assert.equal(counts.schema, 0);
+  const proof = await request(app).get(base+'/readiness').set('x-stocks-authority-key', config.gatewayKey);
+  assert.equal(proof.status, 200);
+  assert.equal(proof.body.authority, 'postgres');
+  assert.equal(proof.body.tradingEnabled, false);
+  assert.equal(counts.schema, 3);
+  for (const subject of [...principals.map(p => p.subject), 'fixture-viewer']) {
+    const token = jwt.sign({sub: subject, sid: 'session-'+subject, role: 'admin'}, process.env.JWT_SECRET, {expiresIn:'1h'});
+    assert.equal((await request(app).get(base+'/identity').set('Authorization','Bearer '+token)).status, 200);
+    for (const [route,method] of [['wallet','get'],['command','post']]) {
+      const response = await request(app)[method](base+'/'+route).set('Authorization','Bearer '+token)
+        .set('x-stocks-authority-key', config.gatewayKey).send({type:'ensure'});
+      assert.equal(response.status,403);
+      assert.equal(response.body.error,'STOCKS_TRADING_DISABLED');
+      assert.equal((await request(app)[method](base+'/'+route).set('x-stocks-authority-key', config.gatewayKey)).status,401);
+    }
+  }
+  // Enabling finance still does not let a forged viewer reach a transaction.
+  const enabledApp = express(); enabledApp.use(express.json());
+  enabledApp.use('/api/v1', stocksTestCashRouter(fakeDb, {...cfg, enabled:true}));
+  const forged = jwt.sign({sub:'fixture-viewer',sid:'session-fixture-viewer',isOwner:true},process.env.JWT_SECRET,{expiresIn:'1h'});
+  const denied = await request(enabledApp).post(base+'/command').set('Authorization','Bearer '+forged)
+    .set('x-stocks-authority-key',config.gatewayKey).send({type:'ensure'});
+  assert.equal(denied.status,401); assert.equal(denied.body.error,'AUTH_REQUIRED');
+  assert.equal(counts.transactions,0); assert.equal(counts.writes,0);
+});

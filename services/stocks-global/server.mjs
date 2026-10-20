@@ -134,7 +134,7 @@ export function createQuoteReader({hub,now=Date.now,sourceAllowed=()=>{},monoton
   };
   return quote;
 }
-export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountAuthority,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined}={}){
+export async function createServer({financialEnabled=true,port=4437,dataPath,dist=resolve(ROOT,'frontend/dist-stocks-global'),hub=new MarketHub(),now=Date.now,autoPoll=true,authenticate,accountsPath,accountAuthority,accountDiagnostics=false,accountWorkerOptions={},ownerOnlyMode=false,tradeOwnerSubject=undefined,tradePrincipals=undefined}={}){
   check(process.env.NODE_ENV !== 'production' ||
     (isReleaseAuthority(accountAuthority) && !accountsPath && !dataPath && !authenticate),
   'STOCKS_RELEASE_PG_AUTHORITY_REQUIRED');
@@ -184,7 +184,7 @@ export async function createServer({port=4437,dataPath,dist=resolve(ROOT,'fronte
     }
     const ctx=contexts.get(id);ctx.accessed=now();ctx.principal=principal;
     // Every request rechecks the trusted identity. Client-provided roles never authorize trade.
-    ctx.ownerMayTrade = twoTraderMode?mayTrade(principal):!ownerOnlyMode || principal.subject === tradeOwnerSubject;
+    ctx.ownerMayTrade = financialEnabled && (twoTraderMode?mayTrade(principal):!ownerOnlyMode || principal.subject === tradeOwnerSubject);
     return ctx;
   };
   const requireAccount=async ctx=>{
