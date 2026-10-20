@@ -16,11 +16,17 @@ on:
       - '.github/workflows/stocks-legacy-unsupported.yml'
       - 'scripts/qa/stocks-migration-review*.cjs'
       - 'scripts/qa/stocks-release-package*.cjs'
+      - 'scripts/qa/stocks-ci-source-head.test.cjs'
       - 'scripts/qa/stocks-rc-50plus2/**'
   workflow_dispatch: {}
 
 permissions:
   contents: read
+
+# PR source HEAD, never the synthetic pull_request merge commit in github.sha.
+# Manual review is only a source definition here, not authorization to dispatch.
+env:
+  EXPECTED_SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
 
 concurrency:
   group: stocks-focused-${{ github.event.pull_request.number || github.ref_name }}
@@ -28,6 +34,8 @@ concurrency:
 
 jobs:
   financial-review:
+    outputs:
+      source-sha: ${{ steps.source-check.outputs.sha }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -56,6 +64,25 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+      - name: Assert captured immutable source HEAD
+        id: source-check
+        env:
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_REPO: ${{ github.event_name == 'workflow_dispatch' && github.repository || github.event.pull_request.head.repo.full_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), cp = require('node:child_process');
+          const expected = process.env.EXPECTED_SOURCE_SHA;
+          const actual = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
+          console.log(`Expected source SHA: ${expected}\nActual checkout SHA: ${actual}`);
+          if (!['pull_request','workflow_dispatch'].includes(process.env.SOURCE_EVENT) ||
+              process.env.SOURCE_REPO !== process.env.GITHUB_REPOSITORY ||
+              !/^[0-9a-f]{40}$/.test(expected ?? '') || actual !== expected) {
+            throw new Error('STOCKS_CI_SOURCE_HEAD_MISMATCH');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${actual}\n`);
+          NODE
       - name: Obtain pinned disposable-only base schema
         shell: bash
         run: |
@@ -117,12 +144,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stocks-focused-synthetic-pg
+          name: stocks-focused-synthetic-pg-${{ env.EXPECTED_SOURCE_SHA }}
           path: /tmp/stocks-financial-pg.tap
           if-no-files-found: ignore
           retention-days: 5
 
   node22-hetzner-module-load:
+    outputs:
+      source-sha: ${{ steps.source-check.outputs.sha }}
     # Compiled API + disposable PostgreSQL on the exact runtime.
     # No production-image, ingress, provider or deployment attestation.
     runs-on: ubuntu-latest
@@ -152,6 +181,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+      - name: Assert captured immutable source HEAD
+        id: source-check
+        env:
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_REPO: ${{ github.event_name == 'workflow_dispatch' && github.repository || github.event.pull_request.head.repo.full_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), cp = require('node:child_process');
+          const expected = process.env.EXPECTED_SOURCE_SHA;
+          const actual = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
+          console.log(`Expected source SHA: ${expected}\nActual checkout SHA: ${actual}`);
+          if (!['pull_request','workflow_dispatch'].includes(process.env.SOURCE_EVENT) ||
+              process.env.SOURCE_REPO !== process.env.GITHUB_REPOSITORY ||
+              !/^[0-9a-f]{40}$/.test(expected ?? '') || actual !== expected) {
+            throw new Error('STOCKS_CI_SOURCE_HEAD_MISMATCH');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${actual}\n`);
+          NODE
       - uses: actions/setup-node@v4
         with:
           node-version: '22.23.3'
@@ -159,6 +207,8 @@ jobs:
         run: git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
       - name: Install exact locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Offline immutable-source CI contract
+        run: node --test scripts/qa/stocks-ci-source-head.test.cjs
       - name: Generate API client locally (does not open any database)
         run: npx prisma generate
       - name: Compile production CommonJS API
@@ -192,7 +242,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stocks-node22-pg-${{ github.sha }}
+          name: stocks-node22-pg-${{ env.EXPECTED_SOURCE_SHA }}
           path: /tmp/stocks-node22-pg.tap
           if-no-files-found: warn
 
@@ -206,8 +256,18 @@ jobs:
         env:
           FINANCIAL_RESULT: ${{ needs.financial-review.result }}
           NODE22_RESULT: ${{ needs.node22-hetzner-module-load.result }}
+          FINANCIAL_SHA: ${{ needs.financial-review.outputs.source-sha }}
+          NODE22_SHA: ${{ needs.node22-hetzner-module-load.outputs.source-sha }}
         run: |
-          test "$FINANCIAL_RESULT" = success
-          test "$NODE22_RESULT" = success
-          echo "PostgreSQL code contract PASS. Legacy SQLite is unsupported and reported separately." >> "$GITHUB_STEP_SUMMARY"
-          echo "This is not production topology, image, ingress, migration, capacity or release approval." >> "$GITHUB_STEP_SUMMARY"
+          node <<'NODE'
+          const fs = require('node:fs'), env = process.env;
+          console.log(`Expected source SHA: ${env.EXPECTED_SOURCE_SHA}\nFinancial checkout SHA: ${env.FINANCIAL_SHA}\nNode22 checkout SHA: ${env.NODE22_SHA}`);
+          if (!/^[0-9a-f]{40}$/.test(env.EXPECTED_SOURCE_SHA ?? '') ||
+              env.FINANCIAL_RESULT !== 'success' || env.NODE22_RESULT !== 'success' ||
+              env.FINANCIAL_SHA !== env.EXPECTED_SOURCE_SHA || env.NODE22_SHA !== env.EXPECTED_SOURCE_SHA) {
+            throw new Error('STOCKS_CI_REQUIRED_HEAD_OR_RESULT_MISMATCH');
+          }
+          fs.appendFileSync(env.GITHUB_STEP_SUMMARY,
+            `PostgreSQL code contract PASS at source ${env.EXPECTED_SOURCE_SHA}. Legacy SQLite is unsupported and reported separately.\n` +
+            'This is not production topology, image, ingress, migration, capacity or release approval.\n');
+          NODE

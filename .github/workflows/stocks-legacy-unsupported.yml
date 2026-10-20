@@ -9,10 +9,14 @@ on:
       - 'services/stocks-global/**'
       - '.github/workflows/stocks-focused-review.yml'
       - '.github/workflows/stocks-legacy-unsupported.yml'
+      - 'scripts/qa/stocks-ci-source-head.test.cjs'
   workflow_dispatch: {}
 
 permissions:
   contents: read
+
+env:
+  EXPECTED_SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
 
 concurrency:
   group: stocks-legacy-unsupported-${{ github.event.pull_request.number || github.ref_name }}
@@ -29,6 +33,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+      - name: Assert captured immutable source HEAD
+        id: source-check
+        env:
+          SOURCE_EVENT: ${{ github.event_name }}
+          SOURCE_REPO: ${{ github.event_name == 'workflow_dispatch' && github.repository || github.event.pull_request.head.repo.full_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), cp = require('node:child_process');
+          const expected = process.env.EXPECTED_SOURCE_SHA;
+          const actual = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
+          console.log(`Expected source SHA: ${expected}\nActual checkout SHA: ${actual}`);
+          if (!['pull_request','workflow_dispatch'].includes(process.env.SOURCE_EVENT) ||
+              process.env.SOURCE_REPO !== process.env.GITHUB_REPOSITORY ||
+              !/^[0-9a-f]{40}$/.test(expected ?? '') || actual !== expected) {
+            throw new Error('STOCKS_CI_SOURCE_HEAD_MISMATCH');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${actual}\n`);
+          NODE
       - uses: actions/setup-node@v4
         with:
           node-version: '22.23.3'
@@ -44,8 +67,10 @@ jobs:
         if: always()
         env:
           LEGACY_OUTCOME: ${{ steps.legacy.outcome }}
+          VERIFIED_SOURCE_SHA: ${{ steps.source-check.outputs.sha }}
         run: |
           echo "## Unsupported SQLite trading: $LEGACY_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+          echo "Expected source SHA: $EXPECTED_SOURCE_SHA; verified checkout SHA: $VERIFIED_SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
           echo "Known pre-COMMIT revocation defect: expected 401, observed 200. No assertion was changed." >> "$GITHUB_STEP_SUMMARY"
           echo "This job keeps its failing exit status; it is not part of the PostgreSQL production contract." >> "$GITHUB_STEP_SUMMARY"
           if test -f legacy-unsupported.tap; then
@@ -56,6 +81,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stocks-legacy-unsupported-${{ github.sha }}
+          name: stocks-legacy-unsupported-${{ env.EXPECTED_SOURCE_SHA }}
           path: legacy-unsupported.tap
           if-no-files-found: error
