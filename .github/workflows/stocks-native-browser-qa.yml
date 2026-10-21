@@ -1,0 +1,107 @@
+name: Stocks native browser QA — one owner-approved run
+on:
+  pull_request:
+    types: [labeled]
+permissions:
+  contents: read
+concurrency:
+  group: stocks-native-browser-5ed-once
+  cancel-in-progress: false
+jobs:
+  browser:
+    if: >-
+      github.repository == 'nazardzuba79-tech/-' &&
+      github.event.repository.private == false &&
+      github.event.label.name == 'owner-approved-stocks-browser-qa' &&
+      github.actor == 'nazardzuba79-tech' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'review/stocks-native-browser-qa-20261021' &&
+      github.event.pull_request.base.ref == 'codex/stocks-private-topology-133cb85a-20261021' &&
+      github.event.pull_request.base.sha == '42c6aca1f8ce1071b0447d0d8c7f39295b85569a' &&
+      github.event.pull_request.draft == true &&
+      github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: control
+    env:
+      SOURCE_SHA: 5ed0d70b9efd1b2922d9e234fd2546be1468fbfb
+      REVIEWED_SHA: 534736a09202d0b4ee96e743a3fd930c3307ae16
+      CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
+      STOCKS_BROWSER_SOURCE_ROOT: ${{ github.workspace }}/source
+      STOCKS_BROWSER_EVIDENCE: ${{ runner.temp }}/stocks-browser-evidence
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: control
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.23.3'
+      - name: Verify control head and import exact reviewed candidate offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$ImageOS" = ubuntu24
+          test "$(git rev-parse HEAD)" = "$CONTROL_SHA"
+          python3 - <<'PYCODE'
+          import subprocess, os, hashlib, pathlib
+          files = subprocess.check_output(['git','diff','--name-only','42c6aca1f8ce1071b0447d0d8c7f39295b85569a','HEAD'],text=True).splitlines()
+          assert all(f.startswith('review/stocks-native-browser-20261021/') or f in {'docs/AI_HANDOFF.md','.github/workflows/stocks-native-browser-qa.yml'} for f in files), files
+          data=pathlib.Path('review/stocks-native-browser-20261021/reviewed-candidate.bundle').read_bytes()
+          assert len(data)==153823
+          assert hashlib.sha256(data).hexdigest()=='2a80000f043412eb65e908a2cf58453a3067bc166005b1e7144e35b53a5f43ee'
+          PYCODE
+          git bundle verify review/stocks-native-browser-20261021/reviewed-candidate.bundle
+          git fetch review/stocks-native-browser-20261021/reviewed-candidate.bundle refs/heads/archive/stocks-browser-534736a0
+          git worktree add --detach ../source "$REVIEWED_SHA"
+          test "$(git -C ../source rev-parse HEAD)" = "$REVIEWED_SHA"
+          git -C ../source diff --exit-code "$SOURCE_SHA" -- src frontend services prisma package.json package-lock.json
+          test -z "$(git -C ../source status --porcelain)"
+          mkdir -p "$STOCKS_BROWSER_EVIDENCE"
+          printf 'source=%s\nreviewed=%s\ncontrol=%s\n' "$SOURCE_SHA" "$REVIEWED_SHA" "$CONTROL_SHA" > "$STOCKS_BROWSER_EVIDENCE/source.txt"
+      - name: Install locked dependencies without lifecycle scripts
+        working-directory: source
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Bundle the local hosted frontend only
+        working-directory: source/frontend
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+          VITE_API_URL: /api/v1
+        run: node node_modules/vite/bin/vite.js build
+      - name: Existing chart-workspace Playwright Chromium install recipe
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix /tmp/voltex-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-browser/node_modules/playwright/cli.js install --with-deps chromium 2>&1 | tee "$STOCKS_BROWSER_EVIDENCE/chromium-install.txt"
+      - name: One native browser attempt — shared local namespace
+        env:
+          STOCKS_PLAYWRIGHT_MODULE: /tmp/voltex-browser/node_modules/playwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          node review/stocks-native-browser-20261021/run.cjs 2>&1 | tee "$STOCKS_BROWSER_EVIDENCE/attempt.txt"
+      - name: Evidence checksums
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$STOCKS_BROWSER_EVIDENCE" ]; then
+            cd "$STOCKS_BROWSER_EVIDENCE"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > SHA256SUMS
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: stocks-browser-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/stocks-browser-evidence/
+          if-no-files-found: error
+          retention-days: 3
