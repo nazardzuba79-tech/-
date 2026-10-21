@@ -4,7 +4,7 @@ import {
   drawingStyle, drawingVisibleOn, readableTextOn, settleLiveEnd, trackDrawingGesture,
   type DrawingKind, type DrawingPoint, type StoredDrawing,
 } from '../lib/chartDrawings';
-import { anchorAt, drawingGeometry, drawingToolbarPlacement, geometryDistance, labelBox, measurementLine, moveAnchor, HIT_RADIUS, type DrawingAnchor, type DrawingGeometry, type DrawingView, type Primitive } from '../lib/drawingGeometry';
+import { anchorAt, drawingGeometry, drawingToolbarPlacement, geometryDistance, hitGeometry, labelBox, measurementLine, moveAnchor, HIT_RADIUS, type DrawingAnchor, type DrawingGeometry, type DrawingView, type Primitive } from '../lib/drawingGeometry';
 import { DrawingActions, DrawingObjectToolbar, TOOLBAR_HEIGHT } from './DrawingObjectToolbar';
 import { DrawingSettingsDialog } from './DrawingSettingsDialog';
 
@@ -375,7 +375,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
           return <g key={d.id} data-drawing-kind={d.kind} data-drawing-selected={d.id === selectedId || undefined} data-drawing-live={d.followLast || undefined}
             onPointerEnter={d.kind === 'ruler' ? () => hoverRulerOn(d.id) : undefined} onPointerLeave={d.kind === 'ruler' ? hoverRulerOff : undefined}>
             <Primitives prims={guided ? g.prims.filter((p) => p.t !== 'label') : g.prims} />
-            {!capture && !blocked && <HitTargets geometry={g} onPointerDown={(e) => startMove(e, d)} onDoubleClick={() => openSettings(d)} onContextMenu={(e) => openContextMenu(e, d)} />}
+            {!capture && !blocked && <HitTargets geometry={g} frozen={locked || !!d.locked} onPointerDown={(e) => startMove(e, d)} onDoubleClick={() => openSettings(d)} onContextMenu={(e) => openContextMenu(e, d)} />}
           </g>;
         })}
         {preview && <g opacity={0.85}><Primitives prims={preview.prims} /></g>}
@@ -507,15 +507,23 @@ function Primitives({ prims }: { prims: Primitive[] }) {
   })}</>;
 }
 
-/** Invisible, wider targets over what is painted, live only in cursor modes. */
-function HitTargets({ geometry, onPointerDown, onDoubleClick, onContextMenu }: {
-  geometry: DrawingGeometry; onPointerDown: (e: React.PointerEvent) => void; onDoubleClick?: () => void; onContextMenu?: (e: React.MouseEvent) => void;
+/**
+ * The invisible shapes a pointer meets before the chart's canvas. The SVG
+ * itself passes the pointer through (pointer-events: none outside a tool),
+ * so only these take a press. A frozen drawing — locked itself, or every
+ * drawing locked — offers its outline and labels only (lib/drawingGeometry
+ * hitGeometry): its body would swallow the press and move nothing, and the
+ * chart under it could not be panned (owner, 2026-10-21).
+ */
+function HitTargets({ geometry, frozen, onPointerDown, onDoubleClick, onContextMenu }: {
+  geometry: DrawingGeometry; frozen: boolean; onPointerDown: (e: React.PointerEvent) => void; onDoubleClick?: () => void; onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const style: CSSProperties = { cursor: 'pointer' };
-  return <g onPointerDown={onPointerDown} onDoubleClick={onDoubleClick ? (e) => { e.stopPropagation(); onDoubleClick(); } : undefined} onContextMenu={onContextMenu}>
-    {geometry.strokes.map((s, i) => <polyline key={`s${i}`} points={s.map((q) => `${q.x},${q.y}`).join(' ')} fill="none" stroke="transparent" strokeWidth={HIT_RADIUS * 2} style={{ ...style, pointerEvents: 'stroke' }} />)}
-    {geometry.areas.map((a, i) => <polygon key={`a${i}`} points={a.map((q) => `${q.x},${q.y}`).join(' ')} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
-    {geometry.boxes.map((b, i) => <rect key={`b${i}`} x={b.x} y={b.y} width={b.w} height={b.h} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
+  const hit = hitGeometry(geometry, frozen);
+  return <g data-drawing-hit={frozen ? 'outline' : 'body'} onPointerDown={onPointerDown} onDoubleClick={onDoubleClick ? (e) => { e.stopPropagation(); onDoubleClick(); } : undefined} onContextMenu={onContextMenu}>
+    {hit.strokes.map((s, i) => <polyline key={`s${i}`} points={s.map((q) => `${q.x},${q.y}`).join(' ')} fill="none" stroke="transparent" strokeWidth={HIT_RADIUS * 2} style={{ ...style, pointerEvents: 'stroke' }} />)}
+    {hit.areas.map((a, i) => <polygon key={`a${i}`} points={a.map((q) => `${q.x},${q.y}`).join(' ')} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
+    {hit.boxes.map((b, i) => <rect key={`b${i}`} x={b.x} y={b.y} width={b.w} height={b.h} fill="transparent" style={{ ...style, pointerEvents: 'fill' }} />)}
   </g>;
 }
 

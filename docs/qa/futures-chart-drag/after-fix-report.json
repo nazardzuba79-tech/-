@@ -1,0 +1,153 @@
+{
+  "label": "after-fix",
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "origin": "http://127.0.0.1:4179",
+  "checks": [
+    {
+      "name": "normal-drag-right-shows-older-bars",
+      "passed": true,
+      "evidence": {
+        "shifted": 35.56,
+        "nominal": 44.44,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "normal-drag-left-shows-newer-bars",
+      "passed": true,
+      "evidence": {
+        "shifted": -21.88,
+        "nominal": -27.35,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "normal-range-holds-through-candle-poll",
+      "passed": true,
+      "evidence": {
+        "held": 345.29914529914527,
+        "later": 345.29914529914527
+      }
+    },
+    {
+      "name": "normal-wheel-still-zooms",
+      "passed": true,
+      "evidence": {
+        "before": 5.85,
+        "after": 6.435
+      }
+    },
+    {
+      "name": "picking-drag-pans-and-posts-nothing",
+      "passed": true,
+      "evidence": {
+        "right": {
+          "shifted": 33.15,
+          "nominal": 41.44,
+          "top": "canvas"
+        },
+        "left": {
+          "shifted": -16.58,
+          "nominal": -20.72,
+          "top": "canvas"
+        }
+      }
+    },
+    {
+      "name": "picking-short-click-selects-a-completed-bar",
+      "passed": true,
+      "evidence": {
+        "entryReference": "{\"source\":\"BYBIT_LINEAR\",\"interval\":\"1h\",\"openTime\":1792285200000,\"pricePoint\":\"CLOSE\"}",
+        "bar": 1792285200
+      }
+    },
+    {
+      "name": "picking-jittery-click-under-threshold-still-selects",
+      "passed": true,
+      "evidence": {
+        "bar": 1792249200,
+        "entryReference": "{\"source\":\"BYBIT_LINEAR\",\"interval\":\"1h\",\"openTime\":1792249200000,\"pricePoint\":\"CLOSE\"}"
+      }
+    },
+    {
+      "name": "picking-drag-past-threshold-does-not-select",
+      "passed": true,
+      "evidence": {
+        "shifted": 0.52
+      }
+    },
+    {
+      "name": "after-timeframe-change-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 35.56,
+        "nominal": 44.44,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "after-reload-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 35.56,
+        "nominal": 44.44,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "after-bottom-panel-resize-drag-pans",
+      "passed": true,
+      "skipped": true,
+      "error": "Error: the bottom panel handle (PR #566) is not in this bundle\n    at skip (/home/user/-/scripts/qa-futures-chart-drag.cjs:61:37)\n    at /home/user/-/scripts/qa-futures-chart-drag.cjs:278:40\n    at async check (/home/user/-/scripts/qa-futures-chart-drag.cjs:52:26)\n    at async /home/user/-/scripts/qa-futures-chart-drag.cjs:276:3"
+    },
+    {
+      "name": "press-at-the-bottom-of-the-price-pane-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "locked-rectangle-over-the-plot-does-not-block-panning",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "ruler-under-lock-all-does-not-block-panning",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "unlocked-rectangle-moves-with-the-drag-as-on-tradingview",
+      "passed": true,
+      "evidence": {
+        "top": "polygon"
+      }
+    },
+    {
+      "name": "locked-drawing-is-still-selectable-on-its-outline",
+      "passed": true,
+      "evidence": {
+        "x": 456.8000030517578,
+        "y": 223.8000030517578
+      }
+    }
+  ],
+  "errors": [],
+  "summary": {
+    "checks": 16,
+    "failed": 0,
+    "skipped": 1
+  }
+}

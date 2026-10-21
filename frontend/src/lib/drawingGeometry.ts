@@ -501,6 +501,18 @@ const POSITION_WORDS: Record<string, { target: string; stop: string; ratio: stri
 
 export const HIT_RADIUS = 6;
 
+/**
+ * What the pointer can grab of a drawing. A locked object — its own lock or
+ * «Заблокировать рисунки» — keeps its outline and labels, so a click still
+ * selects it and its toolbar can unlock it, but gives up its filled body:
+ * a press inside a locked rectangle or ruler box belongs to the chart, so
+ * the drag pans as on TradingView instead of dying on a shape that cannot
+ * move (owner, 2026-10-21: «графік не переміщується»).
+ */
+export function hitGeometry(geometry: DrawingGeometry, frozen: boolean): Pick<DrawingGeometry, 'strokes' | 'areas' | 'boxes'> {
+  return frozen ? { strokes: geometry.strokes, areas: [], boxes: geometry.boxes } : geometry;
+}
+
 /** How close the pointer is to this drawing: 0 inside an area or label, else the stroke distance. */
 export function geometryDistance(geometry: DrawingGeometry, p: ScreenPoint): number {
   for (const box of geometry.boxes) if (p.x >= box.x && p.x <= box.x + box.w && p.y >= box.y && p.y <= box.y + box.h) return 0;

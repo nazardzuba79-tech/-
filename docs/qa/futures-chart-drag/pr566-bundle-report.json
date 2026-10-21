@@ -1,0 +1,151 @@
+{
+  "label": "pr566-bundle",
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "origin": "http://127.0.0.1:4179",
+  "checks": [
+    {
+      "name": "normal-drag-right-shows-older-bars",
+      "passed": true,
+      "evidence": {
+        "shifted": 35.56,
+        "nominal": 44.44,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "normal-drag-left-shows-newer-bars",
+      "passed": true,
+      "evidence": {
+        "shifted": -21.88,
+        "nominal": -27.35,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "normal-range-holds-through-candle-poll",
+      "passed": true,
+      "evidence": {
+        "held": 345.29914529914527,
+        "later": 345.29914529914527
+      }
+    },
+    {
+      "name": "normal-wheel-still-zooms",
+      "passed": true,
+      "evidence": {
+        "before": 5.85,
+        "after": 6.435
+      }
+    },
+    {
+      "name": "picking-drag-pans-and-posts-nothing",
+      "passed": true,
+      "evidence": {
+        "right": {
+          "shifted": 33.15,
+          "nominal": 41.44,
+          "top": "canvas"
+        },
+        "left": {
+          "shifted": -16.58,
+          "nominal": -20.72,
+          "top": "canvas"
+        }
+      }
+    },
+    {
+      "name": "picking-short-click-selects-a-completed-bar",
+      "passed": true,
+      "evidence": {
+        "entryReference": "{\"source\":\"BYBIT_LINEAR\",\"interval\":\"1h\",\"openTime\":1792285200000,\"pricePoint\":\"CLOSE\"}",
+        "bar": 1792285200
+      }
+    },
+    {
+      "name": "picking-jittery-click-under-threshold-still-selects",
+      "passed": true,
+      "evidence": {
+        "bar": 1792249200,
+        "entryReference": "{\"source\":\"BYBIT_LINEAR\",\"interval\":\"1h\",\"openTime\":1792249200000,\"pricePoint\":\"CLOSE\"}"
+      }
+    },
+    {
+      "name": "picking-drag-past-threshold-does-not-select",
+      "passed": true,
+      "evidence": {
+        "shifted": 0.52
+      }
+    },
+    {
+      "name": "after-timeframe-change-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 35.56,
+        "nominal": 44.44,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "after-reload-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 35.56,
+        "nominal": 44.44,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "after-bottom-panel-resize-drag-pans",
+      "passed": true,
+      "evidence": {
+        "panelHeight": "357px",
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "press-at-the-bottom-of-the-price-pane-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "locked-rectangle-over-the-plot-does-not-block-panning",
+      "passed": false,
+      "skipped": false,
+      "error": "AssertionError [ERR_ASSERTION]: drag inside a locked rectangle: expected the visible range to move by about 37.6 bars, it moved 0.00 (range 400.0,519.0 → 400.0,519.0; under the pointer: polygon)\n    at assertPanned (/home/user/-/scripts/qa-futures-chart-drag.cjs:112:3)\n    at /home/user/-/scripts/qa-futures-chart-drag.cjs:310:20\n    at async check (/home/user/-/scripts/qa-futures-chart-drag.cjs:52:26)\n    at async /home/user/-/scripts/qa-futures-chart-drag.cjs:307:3"
+    },
+    {
+      "name": "ruler-under-lock-all-does-not-block-panning",
+      "passed": false,
+      "skipped": false,
+      "error": "AssertionError [ERR_ASSERTION]: drag inside a ruler with every drawing locked: expected the visible range to move by about 37.6 bars, it moved 0.00 (range 400.0,519.0 → 400.0,519.0; under the pointer: polygon)\n    at assertPanned (/home/user/-/scripts/qa-futures-chart-drag.cjs:112:3)\n    at /home/user/-/scripts/qa-futures-chart-drag.cjs:319:20\n    at async check (/home/user/-/scripts/qa-futures-chart-drag.cjs:52:26)\n    at async /home/user/-/scripts/qa-futures-chart-drag.cjs:314:3"
+    },
+    {
+      "name": "unlocked-rectangle-moves-with-the-drag-as-on-tradingview",
+      "passed": true,
+      "evidence": {
+        "top": "polygon"
+      }
+    },
+    {
+      "name": "locked-drawing-is-still-selectable-on-its-outline",
+      "passed": true,
+      "evidence": {
+        "x": 456.8000030517578,
+        "y": 211.10000610351562
+      }
+    }
+  ],
+  "errors": [],
+  "summary": {
+    "checks": 16,
+    "failed": 2,
+    "skipped": 0
+  }
+}
