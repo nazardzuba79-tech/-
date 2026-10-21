@@ -38,7 +38,7 @@ jobs:
         run: npm run build --prefix frontend
       - name: Disposable browser tools
         run: |
-          npm install --prefix /tmp/voltex-auth-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          npm install --prefix /tmp/voltex-auth-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/voltex-auth-qa/node_modules/playwright/cli.js install --with-deps chromium
       - name: Actual Login/Register bundle at seven widths, strictly offline fixtures
         env:
