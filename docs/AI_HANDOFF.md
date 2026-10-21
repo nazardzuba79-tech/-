@@ -6520,7 +6520,6 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - Tests: `futuresPanelHeight.test.ts` (+`effectivePanelHeight`, stored preference above 640, page wiring), the page-mount harness in `futuresFinalPolish.test.ts` learns `useLayoutEffect` and the new export, `futuresUiPolish.test.ts` fingerprint re-taken (`7baea15c…`).
 - **Verified locally:** frontend `tsc --noEmit` PASS, `vite build` PASS; Jest `futuresPanelHeight` + `futuresFinalPolish` + `futuresUiPolish` 50/50 (the `React.jsx: type is invalid` console warning in the harness predates this change: 35 lines on the untouched branch too); `qa-futures-panel-resize.cjs` on the fixed bundle 36/36.
 - **Not touched:** trading, orders, balances, PnL, funding, TP/SL, liquidation, design, Stocks, listings. No merge, no deploy.
-<<<<<<< HEAD
 
 ### Claude — 2026-10-21 — Futures chart: a left-button drag over a locked drawing did not pan
 
@@ -6557,5 +6556,3 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - `qa-futures-chart-drag.cjs` on the joint bundle: 48/48, nothing skipped — drag after the panel resize, the way back into history with an older pick, short/jittery click vs a 14px drag, no trading write during the whole run, the panel after a shrink to 1366×768 and a reload all PASS.
 - `qa-futures-panel-resize.cjs` on the joint bundle: 36/36 (552 → 324 → 552, preference kept).
 - No merge, no deploy; both PRs stay Draft for the owner's decision.
-=======
->>>>>>> origin/main
