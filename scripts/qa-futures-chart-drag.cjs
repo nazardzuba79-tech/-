@@ -91,7 +91,13 @@ const readChart = () => page.evaluate(() => {
     picking: !!document.querySelector('.chart-surface[data-chart-picking]'),
     entryReference: document.querySelector('[data-entry-reference]')?.getAttribute('data-entry-reference') ?? null };
 });
-const topElementAt = (x, y) => page.evaluate(([x, y]) => { const el = document.elementsFromPoint(x, y)[0]; return el ? `${el.tagName.toLowerCase()}${el.getAttribute('data-drawing-hit') ? '[hit=' + el.getAttribute('data-drawing-hit') + ']' : ''}` : null; }, [x, y]);
+const topElementAt = (x, y) => page.evaluate(([x, y]) => {
+  const el = document.elementsFromPoint(x, y)[0];
+  if (!el) return null;
+  const cls = typeof el.className === 'string' ? el.className.split(' ').filter(Boolean).slice(0, 2).join('.') : '';
+  const label = el.getAttribute('aria-label') || el.getAttribute('title') || (el.tagName === 'BUTTON' ? (el.textContent || '').trim().slice(0, 24) : '');
+  return `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}${el.getAttribute('data-drawing-hit') ? '[hit=' + el.getAttribute('data-drawing-hit') + ']' : ''}${label ? '«' + label + '»' : ''}`;
+}, [x, y]);
 /** Press, move by dx with the button held, release. Returns bars shifted (positive: older bars came into view). */
 async function drag(dx, fx = 0.5, fy = 0.45, steps = 10) {
   const before = await readChart();
@@ -113,16 +119,28 @@ function assertPanned(result, dx, what) {
     `${what}: expected the visible range to move by about ${result.nominal.toFixed(1)} bars, it moved ${result.shifted.toFixed(2)} (range ${result.before.map((v) => v.toFixed(1))} → ${result.after.map((v) => v.toFixed(1))}; under the pointer: ${result.top})`);
   return { shifted: Math.round(result.shifted * 100) / 100, nominal: Math.round(result.nominal * 100) / 100, top: result.top };
 }
+/**
+ * A completed bar to click, `offsetFromRight` bars before the right edge or
+ * the nearest older one whose body sits in the upper three quarters of the
+ * pane: the picker ignores the lowest fifth, where the volume bars live
+ * (lib/chartTrading isCandleHit), so a bar that happens to sit there is not
+ * a pick target.
+ */
 async function candlePoint(offsetFromRight) {
   return page.evaluate(([offset]) => {
     const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart);
     const { chart, series } = host.__voltexChart;
     const r = chart.timeScale().getVisibleLogicalRange();
-    const index = Math.floor(r.to) - offset;
-    const bar = series.dataByIndex(index);
-    if (!bar) return null;
     const box = host.getBoundingClientRect();
-    return { x: box.x + chart.timeScale().logicalToCoordinate(index), y: box.y + series.priceToCoordinate((bar.high + bar.low) / 2), time: bar.time };
+    const paneHeight = chart.paneSize(0).height;
+    for (let index = Math.floor(r.to) - offset; index >= Math.ceil(r.from); index--) {
+      const bar = series.dataByIndex(index);
+      if (!bar || !('high' in bar)) continue;
+      const y = series.priceToCoordinate((bar.high + bar.low) / 2);
+      if (y === null || y < paneHeight * 0.05 || y > paneHeight * 0.72) continue;
+      return { x: box.x + chart.timeScale().logicalToCoordinate(index), y: box.y + y, time: bar.time, index };
+    }
+    return null;
   }, [offsetFromRight]);
 }
 async function settle() {
@@ -453,24 +471,25 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
   const KINDS = {
     rectangle: { points: [cover.a, cover.b], area: true }, ellipse: { points: [cover.a, cover.b], area: true },
     ruler: { points: [cover.a, cover.b], area: true, offset: [0.38, 0.3] }, // The position tool: entry at the middle, target at the top, stop at the bottom; pressed inside the profit zone, off the entry line and its cards.
-    long: { points: [{ time: cover.a.time, price: mid }, { time: cover.b.time, price: cover.a.price }, { time: cover.b.time, price: cover.b.price }], area: true, offset: [0.5, 0.28] },
+    long: { points: [{ time: cover.a.time, price: mid }, { time: cover.b.time, price: cover.a.price }, { time: cover.b.time, price: cover.b.price }], area: true, zone: true },
     fib: { points: [cover.a, cover.b], area: false }, trendline: { points: [cover.a, cover.b], area: false },
     horizontal: { points: [{ time: cover.a.time, price: mid }], area: false }, vertical: { points: [{ time: midTime, price: cover.a.price }], area: false },
     text: { points: [{ time: midTime, price: mid }], text: 'QA', area: false },
   };
-  const pressPoint = (kind, spec) => page.evaluate(([kind, area, offset]) => {
+  const pressPoint = (kind, spec) => page.evaluate(([kind, area, offset, zone]) => {
     const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart);
     const box = host.getBoundingClientRect();
     const g = document.querySelector(`[data-drawing-kind="${kind}"]`);
     if (!g) return null;
     const r = g.getBoundingClientRect();
+    if (zone) { const z = g.querySelector('polygon')?.getBoundingClientRect(); if (!z) return null; return { x: z.x + z.width / 2, y: z.y + z.height / 2 }; }
     if (area) return offset ? { x: box.x + box.width * offset[0], y: box.y + box.height * offset[1] } : { x: r.x + r.width / 2, y: r.y + r.height / 2 };
     // A line: its midpoint (for a horizontal line the plot's middle x, for a vertical one the plot's middle y).
     const onLine = { x: r.width > 4 ? r.x + r.width / 2 : r.x + r.width / 2, y: r.height > 4 ? r.y + r.height / 2 : r.y + r.height / 2 };
     if (kind === 'horizontal') onLine.x = box.x + box.width * 0.45;
     if (kind === 'vertical') onLine.y = box.y + box.height * 0.4;
     return { ...onLine, beside: { x: onLine.x + (kind === 'vertical' ? 24 : 0), y: onLine.y + (kind === 'vertical' ? 0 : 24) } };
-  }, [kind, spec.area, spec.offset ?? null]);
+  }, [kind, spec.area, spec.offset ?? null, !!spec.zone]);
   const press = async (x, y, dx = 200) => {
     const before = await readChart(); const storedBefore = await storedPoints(); const top = await topElementAt(x, y);
     await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + dx, y, { steps: 10 }); await page.mouse.up(); await delay(350);
