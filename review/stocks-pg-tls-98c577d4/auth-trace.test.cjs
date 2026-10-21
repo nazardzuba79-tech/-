@@ -40,7 +40,7 @@ function noSecrets(messages) {
     'DO_NOT_LOG_BODY', 'DO_NOT_LOG_ERROR_MESSAGE']) assert.ok(!encoded.includes(secret));
 }
 
-test('non-JSON HTTP429: unchanged adapter still fails closed, trace reveals status and limiter without body', async t => {
+test('non-JSON HTTP429: classified denial stays fail-closed and trace observes headers without consuming body', async t => {
   const api = await server(t, (req, res) => {
     assert.equal(req.headers.authorization, AUTH);
     res.writeHead(429, { 'content-type': 'text/plain', 'ratelimit-limit': '120',
@@ -48,10 +48,11 @@ test('non-JSON HTTP429: unchanged adapter still fails closed, trace reveals stat
     res.end('DO_NOT_LOG_BODY ' + PRIVATE_SUBJECT);
   });
   const a = await adapter(api.port);
-  // RED evidence: the original error alone does not reveal status or parse failure.
+  // Diagnostic preload must preserve the new status-first adapter behavior.
   let original;
   try { await identity(a); } catch (error) { original = error; }
-  assert.equal(original.code, 'AUTH_UNAVAILABLE');
+  assert.equal(original.code, 'AUTH_RATE_LIMIT');
+  assert.equal(original.retryAfterMs, 60000);
   assert.equal(original.status, undefined);
   const messages = trace(t, api.port);
   await assert.rejects(identity(await adapter(api.port)), error => error.code === original.code);
@@ -59,7 +60,7 @@ test('non-JSON HTTP429: unchanged adapter still fails closed, trace reveals stat
   assert.equal(headers.status, 429); assert.equal(headers.media, 'text');
   assert.equal(headers.rateLimit, 120); assert.equal(headers.rateRemaining, 0);
   assert.equal(headers.retryAfter, 60);
-  assert.ok(messages.some(m => m.stage === 'authority-body-end' && m.json === 'INVALID' && m.complete));
+  assert.equal(messages.some(m => m.stage === 'authority-body-end'), false);
   noSecrets(messages);
 });
 

@@ -20,12 +20,21 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
     let response;
     try {
       counters.requests++;
-      response = await fetchImpl(base.href + '/' + path, { method: encoded === undefined ? 'GET' : 'POST', redirect: 'error', headers: { Authorization: ctx.authorization, Accept: 'application/json', ...(encoded === undefined ? {} : { 'Content-Type': 'application/json', 'X-Stocks-Authority-Key': gatewayKey }) }, body: encoded, signal: controller.signal });
+      response = await fetchImpl(base.href + '/' + path, { method: encoded === undefined ? 'GET' : 'POST', redirect: 'error', headers: { Authorization: ctx.authorization, Accept: 'application/json', 'X-Stocks-Authority-Key': gatewayKey, ...(encoded === undefined ? {} : { 'Content-Type': 'application/json' }) }, body: encoded, signal: controller.signal });
+      // A proxy/limiter may return text. Classify rejection before parsing its
+      // body; never retry a command, including a known rate-limit rejection.
+      if (!response.ok) {
+        if ([401,403].includes(response.status)) throw new SimError('AUTH_REQUIRED');
+        if (response.status === 429) {
+          const value = response.headers.get('retry-after');
+          const seconds = /^\d{1,6}$/.test(value ?? '') ? Math.max(1, Math.min(60, Number(value))) : 60;
+          throw Object.assign(new SimError('AUTH_RATE_LIMIT'), { retryAfterMs: seconds * 1000 });
+        }
+      }
       const chunks = []; let size = 0;
       for await (const chunk of response.body) { size += chunk.byteLength; check(size <= 8 * 1024 * 1024, 'ACCOUNT_RESPONSE_TOO_LARGE'); chunks.push(Buffer.from(chunk)); }
       const result = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       if (!response.ok) {
-        if ([401,403].includes(response.status)) throw new SimError('AUTH_REQUIRED');
         throw new SimError(typeof result.error === 'string' && /^[A-Z_]+$/.test(result.error) ? result.error : 'ACCOUNT_UNAVAILABLE');
       }
       return result;
@@ -33,7 +42,7 @@ export function createAuthorityAdapter({ endpoint, issuer, gatewayKey, fetchImpl
       counters.failures++;
       if (error instanceof SimError) throw error;
       throw new SimError(encoded === undefined ? 'AUTH_UNAVAILABLE' : 'ACCOUNT_OUTCOME_UNKNOWN');
-    } finally { clearTimeout(timer); signal?.removeEventListener('abort', abort); if (controller.signal.aborted) { try { await response?.body?.cancel(); } catch {} } }
+    } finally { clearTimeout(timer); signal?.removeEventListener('abort', abort); if (controller.signal.aborted || response && !response.ok) { try { await response?.body?.cancel(); } catch {} } }
   }
   const authenticate = async (_req, { signal } = {}) => {
     const result = await transport('identity', { signal }); check(result.issuer === issuer, 'AUTH_REQUIRED');
