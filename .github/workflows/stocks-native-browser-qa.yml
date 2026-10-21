@@ -30,7 +30,7 @@ jobs:
       REVIEWED_SHA: 534736a09202d0b4ee96e743a3fd930c3307ae16
       CONTROL_SHA: ${{ github.event.pull_request.head.sha }}
       STOCKS_BROWSER_SOURCE_ROOT: ${{ github.workspace }}/source
-      STOCKS_BROWSER_EVIDENCE: ${{ runner.temp }}/stocks-browser-evidence
+      STOCKS_BROWSER_EVIDENCE: ${{ github.workspace }}/stocks-browser-evidence
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -102,6 +102,6 @@ jobs:
         if: always()
         with:
           name: stocks-browser-${{ github.event.pull_request.head.sha }}
-          path: ${{ runner.temp }}/stocks-browser-evidence/
+          path: ${{ env.STOCKS_BROWSER_EVIDENCE }}/
           if-no-files-found: error
           retention-days: 3
