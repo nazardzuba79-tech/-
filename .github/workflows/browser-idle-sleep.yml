@@ -43,7 +43,7 @@ jobs:
       - name: Lifecycle and existing visible-read invariants
         run: node --test scripts/test-browser-activity.cjs scripts/test-idle-read-budget.cjs
       - name: Isolated PostgreSQL and browser tools
-        run: npm install --prefix node_modules/.cache/browser-sleep-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+        run: npm install --prefix node_modules/.cache/browser-sleep-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.63.0
       - name: Persistence, browser request budget and native cold restart
         shell: pwsh
         run: |
