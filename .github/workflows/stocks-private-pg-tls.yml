@@ -1,0 +1,56 @@
+name: Stocks Private Namespace PG TLS — 133cb85a
+
+# Preparation only. This distinct label requires a NEW explicit owner approval.
+on:
+  pull_request:
+    types: [labeled]
+permissions:
+  contents: read
+concurrency:
+  group: stocks-private-pg-tls-133cb85a-once
+  cancel-in-progress: false
+jobs:
+  private-pg-tls:
+    if: >-
+      github.repository == 'nazardzuba79-tech/-' &&
+      github.event.repository.private == false &&
+      github.event.label.name == 'stocks-private-pg-tls-133cb85a-approved' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'codex/stocks-private-topology-133cb85a-20261021' &&
+      github.event.pull_request.base.ref == 'codex/stocks-pg-tls-smoke-98c577d4-20261020' &&
+      github.event.pull_request.base.sha == '086a25a360caac261666c2d36148188294e99d74' &&
+      github.event.pull_request.draft == true &&
+      github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact event harness
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: control
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout exact private-quota application
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 133cb85a95003c229829b1ecef3d8d0e6308db95
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Node 22.23.3
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.3
+      - name: One isolated build and positive topology smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          node control/review/stocks-private-pg-tls/run.cjs "$GITHUB_WORKSPACE/source"
+      - name: Preserve failure status
+        if: failure()
+        shell: bash
+        run: |
+          printf '\nFAIL. No rerun authorized. Inspect sanitized stdout/stderr and partial receipt. REAL_PRODUCTION_BOOTSTRAP=NOT_RUN.\n' >> "$GITHUB_STEP_SUMMARY"
+# No push/dispatch/schedule, secrets, OIDC, environment, deploy, registry push,
+# reusable workflows, self-hosted runner or paid resource. Not run by this task.

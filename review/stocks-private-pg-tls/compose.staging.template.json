@@ -1,0 +1,463 @@
+{
+  "name": "stocks-private-${GITHUB_RUN_ID:?required}",
+  "services": {
+    "postgres": {
+      "image": "${PG_IMAGE_ID:?required}",
+      "networks": [
+        "isolated"
+      ],
+      "restart": "no",
+      "mem_limit": "768m",
+      "env_file": [
+        "${STAGING_ROOT:?required}/postgres.env"
+      ],
+      "tmpfs": [
+        "/var/lib/postgresql:rw,nosuid,nodev,size=512m",
+        "/tmp:rw,nosuid,nodev,size=32m"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/tls",
+          "target": "/smoke-private",
+          "read_only": true
+        }
+      ],
+      "command": [
+        "sh",
+        "-ec",
+        "cp /smoke-private/key.pem /tmp/pg.key; cp /smoke-private/cert.pem /tmp/pg.crt; chown postgres:postgres /tmp/pg.key /tmp/pg.crt; chmod 600 /tmp/pg.key; exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/pg.crt -c ssl_key_file=/tmp/pg.key"
+      ]
+    },
+    "api-production": {
+      "image": "${API_IMAGE_ID:?required}",
+      "user": "1000:1000",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "pids_limit": 128,
+      "mem_limit": "768m",
+      "tmpfs": [
+        "/tmp:rw,nosuid,nodev,size=64m"
+      ],
+      "restart": "no",
+      "networks": [
+        "isolated"
+      ],
+      "env_file": [
+        "${STAGING_ROOT:?required}/api.env"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/fixture",
+          "target": "/smoke",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/ca/cert.pem",
+          "target": "/smoke-private/cert.pem",
+          "read_only": true
+        }
+      ],
+      "extra_hosts": [
+        "api.bybit.com=127.0.0.1",
+        "api.binance.com=127.0.0.1",
+        "iss.moex.com=127.0.0.1",
+        "www.cbr.ru=127.0.0.1",
+        "api.kraken.com=127.0.0.1"
+      ],
+      "sysctls": {
+        "net.ipv4.ip_unprivileged_port_start": "0"
+      }
+    },
+    "setup": {
+      "image": "${API_IMAGE_ID:?required}",
+      "user": "1000:1000",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "pids_limit": 128,
+      "mem_limit": "768m",
+      "tmpfs": [
+        "/tmp:rw,nosuid,nodev,size=64m"
+      ],
+      "restart": "no",
+      "networks": [
+        "isolated"
+      ],
+      "env_file": [
+        "${STAGING_ROOT:?required}/checks.env"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/fixture",
+          "target": "/smoke",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/ca/cert.pem",
+          "target": "/smoke-private/cert.pem",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/checks/config.json",
+          "target": "/smoke-private/config.json",
+          "read_only": true
+        }
+      ],
+      "command": [
+        "node",
+        "/smoke/fixture.cjs",
+        "setup"
+      ],
+      "profiles": [
+        "checks"
+      ]
+    },
+    "provider": {
+      "image": "${API_IMAGE_ID:?required}",
+      "user": "1000:1000",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "pids_limit": 128,
+      "mem_limit": "768m",
+      "tmpfs": [
+        "/tmp:rw,nosuid,nodev,size=64m"
+      ],
+      "restart": "no",
+      "network_mode": "service:api-production",
+      "depends_on": [
+        "api-production"
+      ],
+      "env_file": [
+        "${STAGING_ROOT:?required}/provider.env"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/fixture",
+          "target": "/smoke",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/ca/cert.pem",
+          "target": "/smoke-private/cert.pem",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/tls/key.pem",
+          "target": "/smoke-private/key.pem",
+          "read_only": true
+        }
+      ],
+      "command": [
+        "node",
+        "/smoke/fixture.cjs",
+        "provider"
+      ]
+    },
+    "finance-off": {
+      "image": "${API_IMAGE_ID:?required}",
+      "user": "1000:1000",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "pids_limit": 128,
+      "mem_limit": "768m",
+      "tmpfs": [
+        "/tmp:rw,nosuid,nodev,size=64m"
+      ],
+      "restart": "no",
+      "network_mode": "service:api-production",
+      "depends_on": [
+        "api-production"
+      ],
+      "env_file": [
+        "${STAGING_ROOT:?required}/disabled.env"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/fixture",
+          "target": "/smoke",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/ca/cert.pem",
+          "target": "/smoke-private/cert.pem",
+          "read_only": true
+        }
+      ]
+    },
+    "gateway": {
+      "image": "${GATEWAY_IMAGE_ID:?required}",
+      "user": "1000:1000",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "pids_limit": 128,
+      "mem_limit": "768m",
+      "tmpfs": [
+        "/tmp:rw,nosuid,nodev,size=64m"
+      ],
+      "restart": "no",
+      "network_mode": "service:api-production",
+      "depends_on": [
+        "api-production"
+      ],
+      "env_file": [
+        "${STAGING_ROOT:?required}/gateway.env"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/fixture",
+          "target": "/smoke",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/ca/cert.pem",
+          "target": "/smoke-private/cert.pem",
+          "read_only": true
+        }
+      ]
+    },
+    "unix-ingress": {
+      "image": "${API_IMAGE_ID:?required}",
+      "user": "10001:10002",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "pids_limit": 128,
+      "mem_limit": "768m",
+      "tmpfs": [
+        "/tmp:rw,nosuid,nodev,size=64m"
+      ],
+      "restart": "no",
+      "network_mode": "service:api-production",
+      "depends_on": [
+        "api-production"
+      ],
+      "env_file": [
+        "${STAGING_ROOT:?required}/proxy.env"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/fixture/unix-proxy.cjs",
+          "target": "/smoke/unix-proxy.cjs",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/socket",
+          "target": "/run/stocks-ingress",
+          "read_only": false
+        }
+      ],
+      "command": [
+        "node",
+        "/smoke/unix-proxy.cjs"
+      ]
+    },
+    "frontend": {
+      "image": "${API_IMAGE_ID:?required}",
+      "user": "10002:10002",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "pids_limit": 128,
+      "mem_limit": "768m",
+      "tmpfs": [
+        "/tmp:rw,nosuid,nodev,size=64m"
+      ],
+      "restart": "no",
+      "networks": {
+        "isolated": {
+          "aliases": [
+            "stocks.fixture.invalid"
+          ]
+        }
+      },
+      "env_file": [
+        "${STAGING_ROOT:?required}/frontend.env"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/fixture",
+          "target": "/smoke",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/ca/cert.pem",
+          "target": "/smoke-private/cert.pem",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/tls/key.pem",
+          "target": "/smoke-private/key.pem",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/socket",
+          "target": "/run/stocks-ingress",
+          "read_only": true
+        }
+      ],
+      "command": [
+        "node",
+        "/smoke/fixture.cjs",
+        "frontend"
+      ]
+    },
+    "checks": {
+      "image": "${API_IMAGE_ID:?required}",
+      "user": "1000:1000",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "pids_limit": 128,
+      "mem_limit": "768m",
+      "tmpfs": [
+        "/tmp:rw,nosuid,nodev,size=64m"
+      ],
+      "restart": "no",
+      "network_mode": "service:api-production",
+      "depends_on": [
+        "api-production"
+      ],
+      "env_file": [
+        "${STAGING_ROOT:?required}/checks.env"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/fixture",
+          "target": "/smoke",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/ca/cert.pem",
+          "target": "/smoke-private/cert.pem",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/checks/config.json",
+          "target": "/smoke-private/config.json",
+          "read_only": true
+        }
+      ],
+      "command": [
+        "node",
+        "/smoke/fixture.cjs",
+        "check"
+      ],
+      "profiles": [
+        "checks"
+      ]
+    },
+    "outsider": {
+      "image": "${API_IMAGE_ID:?required}",
+      "user": "10003:10003",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "pids_limit": 128,
+      "mem_limit": "768m",
+      "tmpfs": [
+        "/tmp:rw,nosuid,nodev,size=64m"
+      ],
+      "restart": "no",
+      "networks": [
+        "isolated"
+      ],
+      "env_file": [
+        "${STAGING_ROOT:?required}/proxy.env"
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/fixture",
+          "target": "/smoke",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/ca/cert.pem",
+          "target": "/smoke-private/cert.pem",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${STAGING_ROOT:?required}/socket",
+          "target": "/run/stocks-ingress",
+          "read_only": true
+        }
+      ],
+      "command": [
+        "node",
+        "/smoke/boundary.cjs"
+      ],
+      "profiles": [
+        "checks"
+      ]
+    }
+  },
+  "networks": {
+    "isolated": {
+      "internal": true
+    }
+  }
+}
