@@ -28,6 +28,13 @@
     "1366x768: the ceiling keeps the chart ≥ 300px and the page fixed",
     "1366x768: the floor keeps the tabs, the heads and one row",
     "1366x768: no page errors",
+    "resize: End at 1920×1000 takes the panel to the ceiling, the chart keeps 300px, the preference is the shown height",
+    "resize: at 1366×768 the shown height is the new ceiling, the chart keeps 300px, the page and the terminal do not overflow, ARIA follows the shown height",
+    "resize: the large-screen preference is kept while the small window limits it",
+    "resize: a reload at 1366×768 keeps the limit, the fixed page and the preference",
+    "resize: back at 1920×1000 the panel returns to its preference, nothing overflows",
+    "resize: a drag on the small window becomes the new preference",
+    "resize: no page errors",
     "390 phone: no handle",
     "1440 folded empty panel: the handle hides with the fold"
   ],
@@ -41,6 +48,9 @@
     "1366x768-initial.png",
     "1366x768-dragged.png",
     "1366x768-maxed.png",
+    "resize-1920-tall.png",
+    "resize-1366-limited.png",
+    "resize-1920-restored.png",
     "390-phone.png",
     "1440-folded.png"
   ],
@@ -69,6 +79,8 @@
         "pageOverflow": 0,
         "terminalOverflow": 0,
         "userHeight": null,
+        "limited": null,
+        "stored": null,
         "handle": {
           "box": {
             "top": 711,
@@ -147,6 +159,8 @@
         "pageOverflow": 0,
         "terminalOverflow": 0,
         "userHeight": null,
+        "limited": null,
+        "stored": null,
         "handle": {
           "box": {
             "top": 611,
@@ -225,6 +239,8 @@
         "pageOverflow": 0,
         "terminalOverflow": 0,
         "userHeight": null,
+        "limited": null,
+        "stored": null,
         "handle": {
           "box": {
             "top": 479,
@@ -276,6 +292,51 @@
         "top": 552,
         "bottom": 736,
         "height": 184
+      },
+      "errors": []
+    },
+    "resize": {
+      "tall": {
+        "panel": {
+          "top": 416,
+          "bottom": 968,
+          "height": 552
+        },
+        "chart": {
+          "top": 112,
+          "bottom": 412,
+          "height": 300
+        },
+        "max": 552
+      },
+      "small": {
+        "panel": {
+          "top": 412,
+          "bottom": 736,
+          "height": 324
+        },
+        "chart": {
+          "top": 108,
+          "bottom": 408,
+          "height": 300
+        },
+        "max": 324,
+        "stored": 552
+      },
+      "reloaded": {
+        "top": 412,
+        "bottom": 736,
+        "height": 324
+      },
+      "back": {
+        "top": 416,
+        "bottom": 968,
+        "height": 552
+      },
+      "chosen": {
+        "top": 472,
+        "bottom": 736,
+        "height": 264
       },
       "errors": []
     }

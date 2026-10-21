@@ -13,7 +13,11 @@
  *     the chart never drops under its 300px track, the page never overflows;
  *   - the height survives a reload; ArrowDown/ArrowUp move it; a double-click
  *     returns the stylesheet's height;
- *   - the folded (empty) panel and a phone show no handle.
+ *   - the folded (empty) panel and a phone show no handle;
+ *   - (CTO, 2026-10-21) a tall panel chosen on a large screen is only limited
+ *     while the window is small: the shown height follows the live ceiling,
+ *     the chart keeps 300px, nothing overflows, ARIA follows, the preference
+ *     survives a reload there and comes back with the large screen.
  *
  *   node scripts/qa-futures-panel-resize.cjs [--dist path] [--out dir]
  */
@@ -76,6 +80,8 @@ const measure = (page) => page.evaluate(() => {
     pageOverflow: document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight,
     terminalOverflow: terminal ? terminal.scrollHeight - terminal.clientHeight : null,
     userHeight: terminal?.getAttribute('data-account-height'),
+    limited: terminal?.getAttribute('data-account-height-limited'),
+    stored: Number(localStorage.getItem('voltex.futures.accountPanelHeight')) || null,
     handle: handle && hb && hb.height > 0 && getComputedStyle(handle).display !== 'none' ? { box: hb, now: Number(handle.getAttribute('aria-valuenow')), min: Number(handle.getAttribute('aria-valuemin')), max: Number(handle.getAttribute('aria-valuemax')) } : null,
   };
 });
@@ -159,6 +165,48 @@ const check = (name, ok, detail) => { if (!ok) throw new Error(`${name}: ${JSON.
       await handle.dblclick(); await page.waitForTimeout(150);
       report.measurements[key] = { initial, wheeled: { scrollTop: wheeled.scrollTop, pageY: wheeled.pageY }, dragged: dragged.panel, reloaded: reloaded.panel, keyed: keyed.panel, reset: reset.panel, maxed: { panel: maxed.panel, chart: maxed.chart }, floored: floored.panel, errors };
       check(`${key}: no page errors`, errors.length === 0, errors);
+      await context.close();
+    }
+
+    // Resize regression (CTO, 2026-10-21): large screen → tall panel → small
+    // window → reload → large screen again.
+    {
+      const context = await browser.newContext({ viewport: { width: 1920, height: 1000 } });
+      const page = await context.newPage();
+      const errors = []; page.on('pageerror', (e) => errors.push(String(e)));
+      await page.addInitScript(() => { localStorage.setItem('exchange_token', 'qa-token'); localStorage.setItem('exchange_lang', 'ru'); });
+      await open(page);
+      const handle = page.locator('.bottom-panel [role="separator"]');
+      await handle.focus(); await page.keyboard.press('End'); await page.waitForTimeout(300);
+      const tall = await measure(page);
+      await shot(page, 'resize-1920-tall.png');
+      check('resize: End at 1920×1000 takes the panel to the ceiling, the chart keeps 300px, the preference is the shown height',
+        tall.panel.height === tall.handle.max && tall.chart.height >= 300 && tall.pageOverflow === 0 && tall.stored === tall.panel.height && tall.limited === null, tall);
+      await page.setViewportSize({ width: 1366, height: 768 }); await page.waitForTimeout(500);
+      const small = await measure(page);
+      await shot(page, 'resize-1366-limited.png');
+      check('resize: at 1366×768 the shown height is the new ceiling, the chart keeps 300px, the page and the terminal do not overflow, ARIA follows the shown height',
+        small.handle.max < tall.handle.max && small.panel.height === small.handle.max && small.chart.height >= 300 && small.pageOverflow === 0 && small.terminalOverflow <= 0
+          && small.handle.now === small.panel.height && small.limited === 'true', { tall: { panel: tall.panel, max: tall.handle.max }, small });
+      check('resize: the large-screen preference is kept while the small window limits it', small.stored === tall.panel.height, { stored: small.stored, tall: tall.panel });
+      await open(page);
+      const reloaded = await measure(page);
+      check('resize: a reload at 1366×768 keeps the limit, the fixed page and the preference',
+        reloaded.panel.height === small.panel.height && reloaded.pageOverflow === 0 && reloaded.terminalOverflow <= 0 && reloaded.stored === tall.panel.height && reloaded.limited === 'true', { small: small.panel, reloaded });
+      await page.setViewportSize({ width: 1920, height: 1000 }); await page.waitForTimeout(500);
+      const back = await measure(page);
+      await shot(page, 'resize-1920-restored.png');
+      check('resize: back at 1920×1000 the panel returns to its preference, nothing overflows',
+        back.panel.height === tall.panel.height && back.pageOverflow === 0 && back.handle.now === back.panel.height && back.limited === null, { tall: tall.panel, back });
+      // A drag on the small window is a new choice: it replaces the preference.
+      await page.setViewportSize({ width: 1366, height: 768 }); await page.waitForTimeout(500);
+      const limitedAgain = await measure(page);
+      const y = limitedAgain.handle.box.top + Math.round(limitedAgain.handle.box.height / 2);
+      await page.mouse.move(700, y); await page.mouse.down(); await page.mouse.move(700, y + 60, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(300);
+      const chosen = await measure(page);
+      check('resize: a drag on the small window becomes the new preference', chosen.panel.height === limitedAgain.panel.height - 60 && chosen.stored === chosen.panel.height && chosen.limited === null, { limitedAgain: limitedAgain.panel, chosen });
+      report.measurements.resize = { tall: { panel: tall.panel, chart: tall.chart, max: tall.handle.max }, small: { panel: small.panel, chart: small.chart, max: small.handle.max, stored: small.stored }, reloaded: reloaded.panel, back: back.panel, chosen: chosen.panel, errors };
+      check('resize: no page errors', errors.length === 0, errors);
       await context.close();
     }
 

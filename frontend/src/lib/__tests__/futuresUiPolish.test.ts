@@ -447,7 +447,12 @@ test.each([
     // `--futures-account-height` inline with `data-account-height`; the
     // panel's first child is the Spot terminal's `orders-resize-handle`.
     // No order, position, balance, book, chart or execution wiring changed.
-    "3da0b356f7fec5d07e57e5cdbb81d7b218990149e3a3e0cd8311bc7406532e3c"
+    // Re-taken 2026-10-21 (CTO): the ceiling is measured in a layout effect,
+    // the grid gets `effectivePanelHeight` (the preference held inside the
+    // live ceiling, `panelShown`), the terminal flags
+    // `data-account-height-limited`, the handle's ARIA value is the shown
+    // height. Still no trading wiring changed.
+    "7baea15cd68298b92f574cc022d2dc4d427d0ffedd2ee94f1eb2cc54706a4111"
   ],
   [
     "components/FuturesPairList.tsx",

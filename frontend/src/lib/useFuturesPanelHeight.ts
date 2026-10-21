@@ -23,6 +23,8 @@ export const FUTURES_PANEL_MAX_HEIGHT_FALLBACK = 640;
 /** The chart keeps at least this much (the grid's own `minmax(300px, 1fr)` track). */
 export const FUTURES_CHART_MIN_HEIGHT = 300;
 export const FUTURES_PANEL_KEY_STEP = 24;
+/** A remembered preference is never taller than any screen's room (a 4K display: 2160 minus the header, the pair row and the chart's 300). */
+export const FUTURES_PANEL_PREFERENCE_CEILING = 1600;
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
@@ -38,7 +40,19 @@ export function clampPanelHeight(value: unknown, min = FUTURES_PANEL_MIN_HEIGHT,
 }
 
 export function readStoredPanelHeight(store: StorageLike | null = storage()): number | null {
-  try { return clampPanelHeight(store?.getItem(FUTURES_PANEL_HEIGHT_KEY) ?? null); } catch { return null; }
+  try { return clampPanelHeight(store?.getItem(FUTURES_PANEL_HEIGHT_KEY) ?? null, FUTURES_PANEL_MIN_HEIGHT, FUTURES_PANEL_PREFERENCE_CEILING); } catch { return null; }
+}
+
+/**
+ * The height the panel actually gets right now: the remembered preference
+ * held inside what the terminal's box allows (`maxPanelHeightFor`). A tall
+ * panel chosen on a large screen is only limited while the window is small
+ * (CTO, 2026-10-21: 552px chosen at 1920×1000, then the window shrunk to
+ * 1366×768 where the chart's 300 leaves 324) — the preference itself is kept,
+ * so the large screen gets it back. `null` keeps the stylesheet's own height.
+ */
+export function effectivePanelHeight(preference: number | null, max: number): number | null {
+  return preference === null ? null : clampPanelHeight(preference, FUTURES_PANEL_MIN_HEIGHT, max);
 }
 
 export function writeStoredPanelHeight(height: number | null, store: StorageLike | null = storage()): void {
