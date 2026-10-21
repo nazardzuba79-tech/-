@@ -6522,3 +6522,10 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Tests:** `lockedDrawingPan.test.ts` 6 (cards of a frozen drawing, a locked text keeps its card, the eraser rule); `chartDrawings`, `drawingObjectSettings`, `rulerMeasure`, `priceChartMarketOrders`, `futuresChartBlank` 205/205; frontend `tsc` and `vite build` PASS.
 - **Honest limit:** the owner's exact environment is still unknown. The eraser is the one found condition that leaves nothing visible on the chart.
 - **Not touched:** trading, orders, balances, PnL, funding, TP/SL, liquidation, design, Stocks, listings. No merge, no deploy.
+
+### Claude — 2026-10-21 — Integration check of PR #566 + PR #569 on one isolated build (CTO review)
+
+- Local merge `44e92987` = `4ee5faab` (#566) + `10017171` (#569); only `docs/AI_HANDOFF.md` conflicted (both entries kept). Not pushed as a branch; the evidence is in `docs/qa/futures-chart-drag/integration-*` on the #569 branch.
+- `qa-futures-chart-drag.cjs` on the joint bundle: 48/48, nothing skipped — drag after the panel resize, the way back into history with an older pick, short/jittery click vs a 14px drag, no trading write during the whole run, the panel after a shrink to 1366×768 and a reload all PASS.
+- `qa-futures-panel-resize.cjs` on the joint bundle: 36/36 (552 → 324 → 552, preference kept).
+- No merge, no deploy; both PRs stay Draft for the owner's decision.

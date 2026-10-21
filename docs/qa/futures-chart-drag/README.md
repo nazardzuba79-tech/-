@@ -160,3 +160,45 @@ chart pan; a locked line only selects, the chart beside it pans.
 | twoPaneLayout | panes 2, price scale mode 0, canvases 18 | 75 |
 | compareEth | panes 1, price scale mode 0, canvases 7 | 29.58 |
 | railCollapsed | panes 2, price scale mode 0, canvases 11 | 27.86 |
+
+## Integration: one isolated build with PR #566 and PR #569 (CTO, 2026-10-21)
+
+Local merge `44e92987` = PR #566 head `4ee5faab` + PR #569 head `10017171`
+(the only conflict was `docs/AI_HANDOFF.md`, both entries kept). Built with
+`VITE_API_URL=/api/v1`; served by the isolated native demo review server
+(synthetic candles, a disposable fixture account) and by the panel QA's own
+fixture server. Nothing reached production.
+
+- `scripts/qa-futures-chart-drag.cjs --label integration`: 48/48, 0 skipped — the two bottom-panel
+  checks ran this time (the handle is in the joint bundle). Report:
+  `integration-report.json`, screenshots `integration-*.png`.
+- `scripts/qa-futures-panel-resize.cjs --dist <joint bundle>`: 36/36. The
+  resize regression on the joint bundle: 1920×1000 End → 552px (chart 300),
+  1366×768 → 324px shown (chart 300, stored preference 552),
+  reload → 324px, back at 1920×1000 → 552px, a drag on the small
+  window → 264px as the new preference. Report
+  `integration-panel-resize-report.json`, screenshots `integration-panel-resize-*.png`.
+
+The five integration points the CTO listed, on the joint build:
+
+| Check | Result |
+| --- | --- |
+| `normal-drag-right-shows-older-bars` | PASS |
+| `picking-short-click-selects-a-completed-bar` | PASS |
+| `picking-jittery-click-under-threshold-still-selects` | PASS |
+| `picking-drag-past-threshold-does-not-select` | PASS |
+| `picking-older-bars-load-on-the-way-back-and-one-of-them-can-be-picked` | PASS |
+| `after-bottom-panel-resize-drag-pans` | PASS |
+| `after-shrink-and-reload-the-panel-holds-and-the-chart-pans` | PASS |
+| `no-trading-write-left-the-page-during-the-whole-run` | PASS |
+
+Mouse drag after the panel height changed: `after-bottom-panel-resize-drag-pans`.
+Return to historical bars: `normal-drag-right-shows-older-bars` and
+`picking-older-bars-load-on-the-way-back-and-one-of-them-can-be-picked`.
+Short click vs drag: `picking-short-click-selects-a-completed-bar`,
+`picking-jittery-click-under-threshold-still-selects`,
+`picking-drag-past-threshold-does-not-select`. No trading command from a plain
+pan: `picking-drag-pans-and-posts-nothing` and
+`no-trading-write-left-the-page-during-the-whole-run`. The panel after a
+shrink and a reload: `after-shrink-and-reload-the-panel-holds-and-the-chart-pans`
+and the panel QA's resize section.
