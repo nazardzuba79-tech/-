@@ -181,20 +181,34 @@ One instant: `2026-10-26T13:00:00Z`. The admin shows it as «26.10.2026 13:00
 Всемирное время (UTC) · 15:00 Киев (UTC+2) · 16:00 Москва (UTC+3)»; the
 exchange shows «26.10.2026 — 13:00 UTC / 16:00 МСК» next to the timer.
 
-**No asset is approved for this date in the repository.** The AITH draft
-(`config/test-markets/aith.draft.json`) targets 2026-10-11 and the BotLab 01
-draft (`VHX01`) is a History20 window, which the rights gate refuses to publish.
-Nothing here invents a ticker. Before the steps below the owner decides:
+**Approved asset (owner, 21.10.2026): TERYVANE, ticker `TYVN`, pair
+`TYVN/USDT`, initial price `0.0250` USDT, total emission 100 000 000 TYVN.**
+The candidate draft is `config/test-markets/tyvn.draft.json`; its exact values
+are checked by `src/services/listings/__tests__/tyvnDraft.test.ts` and the
+local end-to-end run `scripts/qa-listing-tyvn.cjs` (`docs/qa/listing-tyvn/`).
 
-1. name, ticker (2–10 Latin letters/digits, not reserved, not a venue pair) and logo;
-2. initial price in USDT;
-3. owner allocation (a separate audited step, `scripts/allocate-listing-owner.cjs`, after publication, with the owner's go);
-4. Spot trading after listing (`tradable`) or a non-executable demo scenario (movement settings);
-5. candle character is assigned by the store; the seed is automatic unless given.
+| Field | Value | Note |
+| --- | --- | --- |
+| Name / ticker | TERYVANE / `TYVN` | 2–10 Latin characters; not reserved; not NRX/VTA/AITH; not a CFD, futures, stocks or icon entry of the repository. Not on Kraken's public pair list. The production venue list (`marketUniverse.spot()`) and the production Durable Object can be checked only by the real admin: it refuses `TICKER_ON_MARKET` / `DUPLICATE_TICKER` itself. |
+| Initial price | `0.0250` USDT | Stored as entered; the exchange shows `0.025000 USDT`. |
+| Listing | `2026-10-26T13:00:00Z` | Admin form: **26.10.2026 16:00**, zone **Москва**; the admin row shows «13:00 Всемирное время (UTC) · 15:00 Киев (UTC+2) · 16:00 Москва (UTC+3)», the exchange «26.10.2026 — 13:00 UTC / 16:00 МСК». Kyiv is UTC+2 on that Monday (winter time from 25.10.2026). |
+| Emission | 100 000 000 TYVN | The listing system has no supply field; this is documentation. `ownerAllocation: "100000000"` is a parameter only: nothing is credited until the separate audited allocation step with the owner's go. |
+| Trading | `tradable: false` | A non-executable demo scenario: the Spot gate refuses every order before and after the opening. Making it tradable is a separate owner decision and a different draft. |
+| Price path | `scenario-controls-v2`, defaults | Scenario `AUTO`, which the manual seed `teryvane-20261026-v1` resolves to **FREQUENT_PULLBACKS** (deterministic); first 24 h +1725 % → `0.45625`; growth 168 h in two stages (24 h → `0.45625`, 144 h → `2.009605`); hard cap `2.33675` (+9247 %); then a range. Moderate pullbacks 2–8 % / 45 min, medium candles, normal wicks. No new generator; other listings' scenarios untouched. |
+| Logo | none | Not provided; the exchange shows the letter badge. Can be added to the draft before publication (≤ 64 KB). |
+| Timer | **off** | Publish with «Запустить таймер сразу после публикации» unticked; start only on the owner's command. |
+
+The draft exists in the repository as a file only: nothing has been created on
+the production Durable Object, published, started, traded or credited.
 
 Steps, all in Admin → Listings, no deploy between them:
-1. «Создать листинг»: time **26.10.2026 16:00** with the zone «Москва» (the
-   field under it confirms 13:00 UTC). Save the draft, Preview.
+1. «Создать листинг»: ticker `TYVN`, name `TERYVANE`, price `0.0250`, time
+   **26.10.2026 16:00** with the zone «Москва» (the field under it confirms
+   13:00 UTC), «Спотовая торговля после листинга» off, seed `teryvane-20261026-v1`
+   entered manually, movement settings left at their defaults (the saved
+   scenario must read «Рост с частыми откатами», 24 h price 0,45625, cap
+   2,33675). Save the draft, Preview: the first 24 h must start at 0.025
+   and end at 0.45625.
 2. «Опубликовать» with «Запустить таймер сразу после публикации» **unticked**.
    The listing is validated and locked, Render learns the ticker, the
    exchange shows nothing yet; the row reads «Таймер не запущен».

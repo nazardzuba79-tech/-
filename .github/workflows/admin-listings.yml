@@ -7,6 +7,7 @@ on:
       - 'src/shared/listingHistoricalReplay.ts'
       - 'src/shared/aithPublication.ts'
       - 'config/test-markets/aith.draft.json'
+      - 'config/test-markets/tyvn.draft.json'
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
       - 'src/services/WalletPortfolioService.ts'
@@ -26,6 +27,7 @@ on:
       - 'frontend/vite.config.ts'
       - 'scripts/qa-admin-listings.cjs'
       - 'scripts/qa-listing-timer.cjs'
+      - 'scripts/qa-listing-tyvn.cjs'
       - 'scripts/qa-aith-replacement.cjs'
       - 'scripts/qa-listing-controls.cjs'
       - 'scripts/benchmark-historical-replay.cjs'
@@ -72,6 +74,7 @@ jobs:
           src/services/listings/__tests__/listingConfig.test.ts
           src/services/listings/__tests__/tradingGates.test.ts
           src/services/listings/__tests__/listingCountdown.test.ts
+          src/services/listings/__tests__/tyvnDraft.test.ts
           src/services/listings/__tests__/aithReplacement.test.ts
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
@@ -123,6 +126,12 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUT: /tmp/listings-qa-report/listing-timer
+      - name: TERYVANE (TYVN/USDT) 26.10.2026 draft — created through the real admin route on workerd, previewed, never published
+        run: node scripts/qa-listing-tyvn.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUT: /tmp/listings-qa-report/listing-tyvn
       - name: Scenario controls desktop/mobile, saved preview and Worker restart
         run: node scripts/qa-listing-controls.cjs
         env:

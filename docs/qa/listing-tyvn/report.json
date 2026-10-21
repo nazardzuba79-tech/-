@@ -1,0 +1,152 @@
+{
+  "scope": "Local only: real Worker (workerd) + real Render admin router + production bundle. Draft only — nothing published, started or credited.",
+  "asset": {
+    "name": "TERYVANE",
+    "symbol": "TYVN",
+    "pair": "TYVN/USDT",
+    "initialPrice": "0.0250",
+    "listingAt": "2026-10-26T13:00:00Z",
+    "displayTimeZone": "Europe/Moscow",
+    "emission": "100000000 (no supply field in the listing system; recorded in docs)"
+  },
+  "checks": [
+    "draft created through the real admin route: tyvn-3a79a567 — TERYVANE TYVN/USDT, 0.0250 USDT, 2026-10-26T13:00:00Z (Europe/Moscow), scenario FREQUENT_PULLBACKS, profile CALM_TREND",
+    "uniqueness: a second TYVN is 409 DUPLICATE_TICKER; a reserved ticker is 422 RESERVED_TICKER; TYVN itself is not reserved and not on the venue fixture",
+    "draft only: public catalogue empty, pair paths refuse, Render does not list TYVN, no version, no timer, the Worker called out to nothing",
+    "private preview: first 24 h 0.0250 → 0.45625 USDT (cap 2.33675), 289 candles of 5m; 12:59 UTC pre-listing with no candles, 13:00 UTC live",
+    "admin 1440: draft row and form show TYVN/USDT TERYVANE, 0.0250 USDT, 26.10.2026 16:00 Москва = 13:00 UTC; private preview rendered; publish never opened",
+    "exchange preview 1440: TERYVANE TYVN/USDT counts 5 d 03 h to 26.10.2026 — 13:00 UTC / 16:00 МСК, start price 0.025000 USDT, trading unavailable; Markets row carries the date",
+    "admin 390: draft row and form show TYVN/USDT TERYVANE, 0.0250 USDT, 26.10.2026 16:00 Москва = 13:00 UTC; private preview rendered; publish never opened",
+    "exchange preview 390: TERYVANE TYVN/USDT counts 5 d 03 h to 26.10.2026 — 13:00 UTC / 16:00 МСК, start price 0.025000 USDT, trading unavailable; Markets row carries the date",
+    "after every step: catalogue still empty, no publish / timer / replacement request reached Render, no outbound call, no page error"
+  ],
+  "screenshots": [
+    "admin-draft-row-1440.png",
+    "admin-draft-preview-1440.png",
+    "trade-preview-running-1440.png",
+    "markets-preview-1440.png",
+    "admin-draft-row-390.png",
+    "admin-draft-preview-390.png",
+    "trade-preview-running-390.png",
+    "markets-preview-390.png"
+  ],
+  "preview": {
+    "first24h": {
+      "horizon": "first24h",
+      "interval": "5m",
+      "from": 1793019600000,
+      "to": 1793106000000,
+      "initialPrice": "0.0250",
+      "first24hPrice": "0.45625",
+      "maxPrice": "2.33675",
+      "observedHigh": 0.4565964518,
+      "observedLow": 0.0229403998,
+      "candleLimit": 360,
+      "candles": 289,
+      "firstCandle": {
+        "time": 1793019600,
+        "open": 0.025,
+        "high": 0.0253448692,
+        "low": 0.0247681539,
+        "close": 0.0250919573,
+        "volume": 169316.7288
+      },
+      "lastCandle": {
+        "time": 1793106000,
+        "open": 0.45625,
+        "high": 0.45625,
+        "low": 0.45625,
+        "close": 0.45625,
+        "volume": 0
+      }
+    },
+    "growth": {
+      "horizon": "growth",
+      "interval": "1h",
+      "from": 1793019600000,
+      "to": 1793624400000,
+      "initialPrice": "0.0250",
+      "first24hPrice": "0.45625",
+      "maxPrice": "2.33675",
+      "observedHigh": 2.0158470051,
+      "observedLow": 0.0229403998,
+      "candleLimit": 360,
+      "candles": 169
+    },
+    "oneMinuteBefore": "pre-listing",
+    "atTheInstant": "live"
+  },
+  "renderCalls": [
+    "POST /admin/listings",
+    "POST /admin/listings",
+    "POST /admin/listings",
+    "POST /admin/listings",
+    "GET /admin/listings",
+    "GET /admin/listings/tyvn-3a79a567/preview",
+    "GET /admin/listings/tyvn-3a79a567/preview",
+    "GET /admin/listings/tyvn-3a79a567/preview",
+    "GET /admin/listings/tyvn-3a79a567/preview",
+    "GET /me",
+    "GET /admin/listings",
+    "GET /admin/work-summary",
+    "GET /admin/listings/tyvn-3a79a567/preview",
+    "GET /me",
+    "GET /market/display/spot-snapshot",
+    "GET /balances",
+    "GET /orders/me",
+    "GET /market/test-assets",
+    "GET /market/assets/icons",
+    "GET /market/assets/icons",
+    "GET /market/display/spot-snapshot",
+    "GET /me",
+    "GET /market/test-assets",
+    "GET /market/assets",
+    "GET /futures/config",
+    "GET /market/display",
+    "GET /market/external/rankings",
+    "GET /market/assets/icons",
+    "GET /me",
+    "GET /admin/listings",
+    "GET /admin/work-summary",
+    "GET /admin/listings/tyvn-3a79a567/preview",
+    "GET /market/display/spot-snapshot",
+    "GET /me",
+    "GET /market/test-assets",
+    "GET /balances",
+    "GET /orders/me",
+    "GET /market/assets/icons",
+    "GET /market/assets/icons",
+    "GET /market/display/spot-snapshot",
+    "GET /market/test-assets",
+    "GET /market/display",
+    "GET /me",
+    "GET /market/assets",
+    "GET /futures/config",
+    "GET /market/external/rankings",
+    "GET /market/assets/icons"
+  ],
+  "pageErrors": [],
+  "outbound": 0,
+  "draft": {
+    "id": "tyvn-3a79a567",
+    "draftRevision": 1,
+    "scenario": "FREQUENT_PULLBACKS",
+    "simulationProfile": "CALM_TREND",
+    "wickModel": "NATURAL_V1",
+    "first24hGainPercent": "1725",
+    "maxPrice": "2.33675",
+    "stages": [
+      {
+        "type": "growth",
+        "durationHours": 24,
+        "targetPrice": "0.45625"
+      },
+      {
+        "type": "growth",
+        "durationHours": 144,
+        "targetPrice": "2.009605"
+      }
+    ],
+    "afterGrowth": "range"
+  }
+}
