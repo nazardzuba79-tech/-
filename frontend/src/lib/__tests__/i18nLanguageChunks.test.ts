@@ -364,6 +364,10 @@ describe('translation integrity', () => {
           'deposit.transferCreditNote', // New manual-catalogue copy; preserve every existing dictionary byte.
           'trade.assetNotTradingYet', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
           'listing.initialPrice', 'listing.startTime', 'listing.newListing',
+          // Pre-listing timer (2026-10-20): the one line a paused countdown shows
+          // instead of the ticking cells. `git diff --numstat` over the locales
+          // reports `1 0` per language, additions only.
+          'listing.countdownPaused',
           'support.formSent', 'support.formSentHint', 'support.formFailed', 'support.formEmailHint', 'support.formCheck',
           // KYC edge (2026-09-26): the verification form's file-preparation
           // line and the edge's refusals; the existing KYC copy is unchanged.

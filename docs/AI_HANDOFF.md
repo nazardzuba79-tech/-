@@ -6493,3 +6493,26 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - Templates live in this browser only; there is no server sync.
   - The Coordinates tab edits prices only; a point's time is still changed by dragging.
 - **Not done:** merge, deploy, PR, production migration, real data. Codex's Stocks files were not touched.
+
+### Claude — 2026-10-21 — Next listing (26.10.2026 13:00 UTC / 16:00 МСК): pre-listing timer with start / pause / stop, UTC + МСК everywhere, runbook
+- **Task:** prepare the next listing in the existing listings system: the fixed instant `2026-10-26T13:00:00Z` shown in both UTC and МСК (admin, listing page, timer); a countdown that is inactive until the admin presses «Запустить таймер», always counts to that instant by server time, survives a reload, can be paused or hidden without changing the date, and never activates anything by itself when the date passes; orders refused before the opening; automatic status transition at 13:00 UTC; tests; before/after screenshots. No new engine, no new design.
+- **Branch / commit:** `claude/voltex-mobile-audit-7rpjni-listing-20261026` from `main` `f81df788`, the commit that adds this entry. A separate branch: the session's earlier branch is PR #553 (History20), which another session now drives.
+- **Asset:** none is approved for 26.10 in the repository (AITH draft targets 11.10; BotLab 01 `VHX01` is a rights-gated History20 window). Nothing invented: the feature is generic; the QA fixture ticker `QTM` is synthetic. `docs/LISTINGS.md` lists what the owner must decide (name/ticker/logo, price, allocation, tradable vs demo scenario).
+- **Material files:**
+  - `src/services/listings/listingConfig.ts`: `ListingCountdown` (`staged` / `running` / `paused`), `listingCountdownArmed`, `publishedListingAsset`, `listingOpened`, `nextListingCountdown`; `checkPublishable(…, opened)` so a never-started listing may move a passed date.
+  - `workers/market-edge/src/listingsStore.ts`: timer state in `meta` (`countdown:<id>`), `POST /internal/listings/:id/countdown`, `publish { countdown: 'staged' }` on a first publication, `published(includeStaged)`: public catalogue excludes staged listings, Render's route includes them.
+  - `src/services/listings/store.ts`, `src/api/routes/adminListings.ts`: `POST /admin/listings/:id/countdown`, publish forwards `countdown`; registry invalidated.
+  - `src/services/listings/registry.ts`, `src/services/testMarkets/nrxSpot.ts`: a staged/paused listing reaches Render unarmed; the Spot gate refuses an unarmed managed listing («Trading has not started yet»), `spotPriceSource` gives no trigger price.
+  - `src/services/listings/listingPublic.ts`: `listingArmed` and `countdown` on the public asset; book/trades frozen like candles.
+  - Frontend: `testMarkets.ts` (`countdown`, paused presentation, Moscow format «26.10.2026 — 13:00 UTC / 16:00 МСК»), `TestMarketTerminal.tsx` (`data-countdown`), `AdminListingsPage.tsx` (timer block with status, UTC/МСК line, start/pause/stop, overdue alert, publish-dialog checkbox, server-clock offset), `adminListingsApi.ts`, `adminListingsCopy.ts`, `adminListings.css`, 7 locales (`listing.countdownPaused`).
+  - Tests: new `listingCountdown.test.ts`; `listings.integration.test.mjs` (+5 timer tests, lead lowered to the 5 s floor in that suite only, the frozen-clock Worker of the previous test is replaced first); `adminListings.test.ts` (+3); `managedListings.test.ts` (+6); `customerListingPresentation.test.ts` (+1 per locale); `i18nLanguageChunks.test.ts` (one added key named); new `scripts/qa-listing-timer.cjs` wired into `admin-listings.yml`.
+  - Docs: `docs/LISTINGS.md` (timer protocol, API, limits, 26.10 runbook), `docs/qa/listing-timer/` (20 PNG + report).
+- **Preserved:** every existing listing keeps today's behaviour (no timer state = running); NRX/VTA/AITH, Stocks, PostgreSQL, DemoBalance, Futures untouched; publish/draft/preview flows and `qa-admin-listings.cjs` unchanged (the dialog default keeps the timer on).
+- **Verified locally:**
+  - Worker `test:listings` on workerd 23/23 (18 existing + 5 timer);
+  - backend: listings + testMarkets + admin/testMarkets routes 28 suites / 403 tests; new `listingCountdown.test.ts` 8/8; mutation checks: the gate without the armed check fails 1 test, `publishedListingAsset` without the mapping fails 4;
+  - frontend: 39 suites / 751 tests over listing, test-market, admin and i18n files; `managedListings` 43/43; `customerListingPresentation` all locales;
+  - backend `tsc` and frontend `tsc -b` clean;
+  - browser QA `scripts/qa-listing-timer.cjs` on the production bundle: 14/14 cases at 1440 and 390 — countdown 5 d 03 h with the viewer's clock 6 h wrong, identical after a reload; paused card; 00:00:00:02 → live at 13:00:00 UTC; admin before/after start, pause, stop, overdue alert; markets list before/after; 0 page errors, 0 writes.
+- **Not run:** CI on this commit (pending at time of writing); production; real Worker/Render deploy; the real admin.
+- **Unresolved (owner):** the asset itself (see runbook); production activation (Worker first, then Render and frontend); whether to pre-stage the listing before 26.10 and when to press «Запустить таймер».

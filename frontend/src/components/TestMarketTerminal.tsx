@@ -75,7 +75,8 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
   const name = asset?.name ?? (pair === 'NRX/USDT' ? 'NEURIX' : pair === 'VTA/USDT' ? 'VOLTORA' : pair.split('/')[0]);
 
   return (
-    <section className="vta-prelisting" aria-label={`${name} ${pair}`} data-state={asset ? 'pre-listing' : 'loading'}>
+    <section className="vta-prelisting" aria-label={`${name} ${pair}`} data-state={asset ? 'pre-listing' : 'loading'}
+      data-countdown={asset?.managed ? asset.countdown ?? 'running' : undefined}>
       <div className="vta-prelisting-card">
         <div className="vta-prelisting-mark"><CryptoIcon symbol={pair.split('/')[0]} size={64} /></div>
         <h2 className="vta-prelisting-name">{name}</h2>

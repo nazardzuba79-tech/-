@@ -1967,6 +1967,7 @@ export const ZH: Record<Key, string> = {
   'listing.marketLive': "市场已开放",
   'listing.dateUnconfirmed': "上市日期尚未确认",
   'listing.awaitingStart': "等待确认市场启动",
+  'listing.countdownPaused': "上市倒计时已暂停",
   'listing.untilListing': "距离上市",
   'listing.scheduledAt': "上市日期",
   'listing.loadFailed': "无法加载上市数据，请重试。",

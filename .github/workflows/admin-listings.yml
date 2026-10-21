@@ -25,6 +25,7 @@ on:
       - 'frontend/src/components/CryptoIcon.tsx'
       - 'frontend/vite.config.ts'
       - 'scripts/qa-admin-listings.cjs'
+      - 'scripts/qa-listing-timer.cjs'
       - 'scripts/qa-aith-replacement.cjs'
       - 'scripts/qa-listing-controls.cjs'
       - 'scripts/benchmark-historical-replay.cjs'
@@ -70,6 +71,7 @@ jobs:
           npx jest --runInBand --silent --runTestsByPath
           src/services/listings/__tests__/listingConfig.test.ts
           src/services/listings/__tests__/tradingGates.test.ts
+          src/services/listings/__tests__/listingCountdown.test.ts
           src/services/listings/__tests__/aithReplacement.test.ts
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
@@ -115,6 +117,12 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report
+      - name: Pre-listing timer — exchange card (running / paused / 13:00 UTC) and admin start / pause / stop, by server time
+        run: node scripts/qa-listing-timer.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUT: /tmp/listings-qa-report/listing-timer
       - name: Scenario controls desktop/mobile, saved preview and Worker restart
         run: node scripts/qa-listing-controls.cjs
         env:

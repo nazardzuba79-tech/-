@@ -1944,6 +1944,7 @@ export const JA: Record<Key, string> = {
   'listing.marketLive': "市場は開始しています",
   'listing.dateUnconfirmed': "上場日はまだ確定していません",
   'listing.awaitingStart': "市場の開始確認を待っています",
+  'listing.countdownPaused': "上場までのカウントダウンは一時停止中です",
   'listing.untilListing': "上場まで",
   'listing.scheduledAt': "上場日",
   'listing.loadFailed': "上場データを読み込めませんでした。もう一度お試しください。",
