@@ -33,30 +33,130 @@ a login, so it was not measured. The production bundle carries the same
 Lightweight Charts defaults (`handleScroll.pressedMouseMove: true`); nothing in
 `frontend/src` history ever set `handleScroll`.
 
-## The one failure found in code
+## What does reproduce the dead drag, in code
 
-A saved drawing with a filled body (a rectangle, a ruler's box) that is
-**locked** — its own lock, or «Заблокировать рисунки» — swallowed the press:
-`ChartDrawingLayer`'s `startMove` stopped and prevented the pointerdown before
-checking the lock, the browser then skipped the compatibility `mousedown`, and
-Lightweight Charts (which listens to mouse events only) never saw the gesture.
-Nothing moved. An unlocked body moves the drawing, as on TradingView.
+1. **A locked drawing with a body under the press** — a rectangle, an ellipse,
+   a ruler's box, a position tool's zones or cards; its own lock or
+   «Заблокировать рисунки». `ChartDrawingLayer.startMove` prevented and
+   stopped the pointerdown before checking the lock; the browser then skipped
+   the compatibility `mousedown` and Lightweight Charts (mouse events only)
+   never saw the gesture. Nothing moved. (An unlocked body moves the drawing,
+   as on TradingView.)
+2. **The eraser selected** (cursors group → «Ластик»). The drawing layer took
+   the whole plot while the eraser was the tool, so a press anywhere did
+   nothing unless a drawing was under it — and the eraser stays selected after
+   use, so every later drag was dead too. Nothing is visible on such a chart.
 
-Fix: a frozen drawing keeps its outline and labels as hit targets (a click still
-selects it, so its toolbar can unlock it) and gives up its body to the chart
-(`hitGeometry` in `lib/drawingGeometry.ts`).
+Fixes (PR #569): a frozen drawing keeps its lines as hit targets (a text-only
+drawing keeps its card) and gives up its body and cards to the chart
+(`hitGeometry` in `lib/drawingGeometry.ts`); the eraser acts on a drawing's
+own hit target and leaves the bare plot to the chart.
 
-## `scripts/qa-futures-chart-drag.cjs`
+Whether the owner's own chart had a locked drawing or the eraser selected
+could not be checked from here; without either, no scenario below fails on
+`main`.
 
-| Run | Bundle | Result |
+## `scripts/qa-futures-chart-drag.cjs` — every check, `main` vs this branch
+
+Totals: `main` `f81df788` 41/48 (2 skipped); this branch 48/48 (2 skipped); PR #566 bundle `99bc15a6` (earlier script, 16 checks) 14/16.
+The two skipped checks need the PR #566 bottom-panel handle, which is not in
+this bundle; they run on the joint build (see the integration section below
+when present).
+
+| Check | `main` | this branch |
 | --- | --- | --- |
-| `before-main` | `main` `f81df788` | 14/16 — the two locked-drawing checks fail (0 bars moved, `polygon` under the pointer) |
-| `pr566-bundle` | PR #566 head `99bc15a6` | 14/16 — same two; the bottom-panel checks pass (handle present) |
-| `after-fix` | this branch | 16/16 (bottom-panel handle check skipped: not in this bundle) |
+| `normal-drag-right-shows-older-bars` | PASS | PASS |
+| `normal-drag-left-shows-newer-bars` | PASS | PASS |
+| `normal-range-holds-through-candle-poll` | PASS | PASS |
+| `normal-wheel-still-zooms` | PASS | PASS |
+| `picking-drag-pans-and-posts-nothing` | PASS | PASS |
+| `picking-short-click-selects-a-completed-bar` | PASS | PASS |
+| `picking-jittery-click-under-threshold-still-selects` | PASS | PASS |
+| `picking-drag-past-threshold-does-not-select` | PASS | PASS |
+| `picking-older-bars-load-on-the-way-back-and-one-of-them-can-be-picked` | PASS | PASS |
+| `after-timeframe-change-drag-pans` | PASS | PASS |
+| `after-reload-drag-pans` | PASS | PASS |
+| `after-bottom-panel-resize-drag-pans` | SKIP | SKIP |
+| `press-at-the-bottom-of-the-price-pane-pans` | PASS | PASS |
+| `after-shrink-and-reload-the-panel-holds-and-the-chart-pans` | SKIP | SKIP |
+| `locked-rectangle-over-the-plot-does-not-block-panning` | FAIL | PASS |
+| `ruler-under-lock-all-does-not-block-panning` | FAIL | PASS |
+| `unlocked-rectangle-moves-with-the-drag-as-on-tradingview` | PASS | PASS |
+| `locked-drawing-is-still-selectable-on-its-outline` | PASS | PASS |
+| `matrix-tool-cursor-drag-pans` | PASS | PASS |
+| `matrix-tool-dot-drag-pans` | PASS | PASS |
+| `matrix-tool-arrowcursor-drag-pans` | PASS | PASS |
+| `matrix-tool-erase-drag-pans` | FAIL | PASS |
+| `matrix-tool-erase-removes-a-free-drawing-and-spares-a-locked-one` | PASS | PASS |
+| `matrix-drawing-rectangle-free` | PASS | PASS |
+| `matrix-drawing-rectangle-locked` | FAIL | PASS |
+| `matrix-drawing-ellipse-free` | PASS | PASS |
+| `matrix-drawing-ellipse-locked` | FAIL | PASS |
+| `matrix-drawing-ruler-free` | PASS | PASS |
+| `matrix-drawing-ruler-locked` | FAIL | PASS |
+| `matrix-drawing-long-free` | PASS | PASS |
+| `matrix-drawing-long-locked` | FAIL | PASS |
+| `matrix-drawing-fib-free` | PASS | PASS |
+| `matrix-drawing-fib-locked` | PASS | PASS |
+| `matrix-drawing-trendline-free` | PASS | PASS |
+| `matrix-drawing-trendline-locked` | PASS | PASS |
+| `matrix-drawing-horizontal-free` | PASS | PASS |
+| `matrix-drawing-horizontal-locked` | PASS | PASS |
+| `matrix-drawing-vertical-free` | PASS | PASS |
+| `matrix-drawing-vertical-locked` | PASS | PASS |
+| `matrix-drawing-text-free` | PASS | PASS |
+| `matrix-drawing-text-locked` | PASS | PASS |
+| `matrix-settings-logScale-drag-pans` | PASS | PASS |
+| `matrix-settings-gridWatermarkNoVolumeNoTimeAxis-drag-pans` | PASS | PASS |
+| `matrix-settings-rsiLowerPane-drag-pans` | PASS | PASS |
+| `matrix-settings-twoPaneLayout-drag-pans` | PASS | PASS |
+| `matrix-settings-compareEth-drag-pans` | PASS | PASS |
+| `matrix-settings-railCollapsed-drag-pans` | PASS | PASS |
+| `no-trading-write-left-the-page-during-the-whole-run` | PASS | PASS |
 
-Checks: normal drag right/left, range holds through the candle poll, wheel
-zoom; picking mode — drag pans and posts nothing, short click picks a completed
-bar, a 2px jittery click still picks, a 14px drag does not; after a timeframe
-change; after a reload; after the PR #566 panel resize; a press at the bottom of
-the price pane; locked rectangle, ruler under lock-all, unlocked rectangle
-(moves instead), a locked drawing is still selectable on its outline.
+### Matrix: cursor tools (this branch; bars shifted by a 220px drag, element under the pointer)
+
+| Tool | shifted | under the pointer |
+| --- | --- | --- |
+| cursor | 30.09 | canvas |
+| dot | 30.09 | canvas |
+| arrowcursor | 30.09 | canvas |
+| erase | 30.09 | canvas |
+
+### Matrix: drawing kinds, free and locked (this branch)
+
+«on» is a press on the body (area kinds) or on the line itself; «beside» is 24px
+off a line. A free body moves the drawing (TradingView); a locked body lets the
+chart pan; a locked line only selects, the chart beside it pans.
+
+| Kind | lock | on: under the pointer | on: bars shifted | on: drawing moved | beside: shifted / drawing |
+| --- | --- | --- | --- | --- | --- |
+| rectangle | free | polygon | 0 | yes | — |
+| rectangle | locked | canvas | 27.35 | no | — |
+| ellipse | free | polygon | 0 | yes | — |
+| ellipse | locked | canvas | 27.35 | no | — |
+| ruler | free | polygon | 0 | yes | — |
+| ruler | locked | canvas | 27.35 | no | — |
+| long | free | polygon | 0 | yes | — |
+| long | locked | canvas | 27.35 | no | — |
+| fib | free | polyline | 0 | yes | 27.35 / stayed |
+| fib | locked | polyline | 0 | no | 27.35 / stayed |
+| trendline | free | polyline | 0 | yes | 27.35 / stayed |
+| trendline | locked | polyline | 0 | no | 27.35 / stayed |
+| horizontal | free | polyline | 0 | yes | 27.35 / stayed |
+| horizontal | locked | polyline | 0 | no | 27.35 / stayed |
+| vertical | free | polyline | 0 | yes | 27.35 / stayed |
+| vertical | locked | polyline | 0 | no | 27.35 / stayed |
+| text | free | rect | 0 | yes | 27.35 / stayed |
+| text | locked | rect | 0 | no | 27.35 / stayed |
+
+### Matrix: saved chart settings from this browser (this branch)
+
+| Setting | applied | bars shifted |
+| --- | --- | --- |
+| logScale | panes 2, price scale mode 1, canvases 11 | 30.09 |
+| gridWatermarkNoVolumeNoTimeAxis | panes 1, price scale mode 0, canvases 7 | 30.09 |
+| rsiLowerPane | panes 3, price scale mode 0, canvases 15 | 30.09 (lower pane 27.35) |
+| twoPaneLayout | panes 2, price scale mode 0, canvases 18 | 75 |
+| compareEth | panes 1, price scale mode 0, canvases 7 | 29.58 |
+| railCollapsed | panes 2, price scale mode 0, canvases 11 | 27.86 |

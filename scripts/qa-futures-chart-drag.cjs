@@ -181,11 +181,15 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
   if (!state.positions.some((p) => p.symbol === 'BTCUSDT' && p.status === 'OPEN')) await api('commands', { kind: 'OPEN', symbol: 'BTCUSDT', side: 'LONG', type: 'MARKET', quantity: '1', leverage: '10', idempotencyKey: 'chart-drag-qa-seed' });
   await context.route('**/*', (route) => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
   await context.routeWebSocket('**/*', (socket) => socket.close());
-  const commands = [];
+  const commands = [], tradingWrites = [];
   page = await context.newPage();
   page.setDefaultTimeout(25000);
   page.on('pageerror', (error) => report.errors.push(error.message));
-  page.on('request', (request) => { if (request.url().endsWith('/native/commands') && request.method() === 'POST') commands.push(request.postDataJSON()?.kind ?? 'POST'); });
+  page.on('request', (request) => {
+    if (request.url().endsWith('/native/commands') && request.method() === 'POST') commands.push(request.postDataJSON()?.kind ?? 'POST');
+    const path = new URL(request.url()).pathname;
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) && /^\/api\/v1\/(futures|orders|private-trading\/native\/(commands|initialize|close|reset))/.test(path)) tradingWrites.push(`${request.method()} ${path}`);
+  });
   // A clean slate once: later navigations keep what a check seeded.
   await page.addInitScript((key) => { try { if (!sessionStorage.getItem('chart-drag-qa-clean')) { localStorage.removeItem(key); sessionStorage.setItem('chart-drag-qa-clean', '1'); } } catch {} }, DRAWINGS_KEY);
 
@@ -260,6 +264,36 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
     return { shifted: Math.round((before.from - chart.from) * 100) / 100 };
   });
 
+  await check('picking-older-bars-load-on-the-way-back-and-one-of-them-can-be-picked', async () => {
+    // Dragging towards history past the loaded bars asks the source for
+    // older ones; the picker stays armed, nothing is posted, an older bar
+    // picks like any other, and Alt+N brings the latest bars back.
+    await armPicker();
+    const start = await readChart();
+    const earliestBar = () => page.evaluate(() => { const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart); return host.__voltexChart.series.dataByIndex(0, 0)?.time ?? null; });
+    const earliest = await earliestBar();
+    const before = commands.length;
+    let chart = start, steps = 0;
+    while (steps++ < 14 && chart.from > 10) { await drag(600, 0.3, 0.45, 6); chart = await readChart(); }
+    await delay(1500);
+    const loaded = await earliestBar();
+    assert(earliest !== null && loaded !== null && loaded < earliest, `no older bars arrived on the way back (first bar ${earliest} → ${loaded} after ${steps} drags)`);
+    chart = await readChart();
+    assert(chart.picking && chart.entryReference === null, 'the way back disarmed the picker or picked a bar');
+    assert.equal(commands.length - before, 0, `the way back posted ${commands.length - before} command(s)`);
+    const pt = await candlePoint(30); assert(pt, 'no older bar to pick');
+    await page.mouse.move(pt.x, pt.y); await page.mouse.down(); await page.mouse.up();
+    await page.locator('[data-entry-reference]').waitFor({ timeout: 5000 });
+    const picked = await readChart();
+    assert.equal(JSON.parse(picked.entryReference).openTime, pt.time * 1000, 'the picked bar is not the one under the pointer');
+    assert(pt.time < earliest, 'the picked bar is not one of the older bars');
+    await disarm();
+    await page.keyboard.press('Alt+N'); await delay(800);
+    const home = await readChart();
+    assert(home.to >= start.to - 1, `Alt+N did not return to the latest bars (${home.to.toFixed(1)} vs ${start.to.toFixed(1)})`);
+    return { drags: steps, firstBar: { before: earliest, after: loaded }, picked: pt.time, home: Math.round(home.to) };
+  });
+
   // 3. Timeframe change; 4. reload.
   await check('after-timeframe-change-drag-pans', async () => {
     const tf = page.locator('[data-cw-tf="4h"]').first();
@@ -290,6 +324,34 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
     const chart = await readChart();
     const fy = (chart.paneHeight - 12) / chart.box.h;
     return assertPanned(await drag(220, 0.5, fy), 220, 'drag from 12px above the time axis');
+  });
+  await check('after-shrink-and-reload-the-panel-holds-and-the-chart-pans', async () => {
+    const handle = page.locator('.bottom-panel .orders-resize-handle').first();
+    if (!(await handle.count())) throw skip('the bottom panel handle (PR #566) is not in this bundle');
+    const panel = () => page.evaluate(() => ({
+      panel: Math.round(document.querySelector('.bottom-panel').getBoundingClientRect().height),
+      chart: Math.round(document.querySelector('.chart-area').getBoundingClientRect().height),
+      overflow: document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight,
+      limited: document.querySelector('.terminal').getAttribute('data-account-height-limited'),
+      stored: Number(localStorage.getItem('voltex.futures.accountPanelHeight')) || null,
+      ariaNow: Number(document.querySelector('.bottom-panel [role="separator"]').getAttribute('aria-valuenow')),
+    }));
+    await handle.focus(); await page.keyboard.press('End'); await delay(400);
+    const tall = await panel();
+    await page.setViewportSize({ width: 1366, height: 768 }); await delay(700);
+    const small = await panel();
+    assert(small.panel < tall.panel && small.overflow === 0 && small.chart >= 300 && small.stored === tall.panel && small.limited === 'true' && small.ariaNow === small.panel,
+      `the panel did not adapt to 1366×768: ${JSON.stringify({ tall, small })}`);
+    const pannedSmall = assertPanned(await drag(220), 220, 'drag at 1366×768 under the limited panel');
+    await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
+    const reloaded = await panel();
+    assert(reloaded.panel === small.panel && reloaded.overflow === 0 && reloaded.stored === tall.panel && reloaded.limited === 'true', `a reload at 1366×768 changed the panel: ${JSON.stringify({ small, reloaded })}`);
+    const pannedReloaded = assertPanned(await drag(220), 220, 'drag after the reload at 1366×768');
+    await page.setViewportSize({ width: 1440, height: 900 }); await delay(700);
+    const back = await panel();
+    assert(back.panel > small.panel && back.overflow === 0, `the panel did not grow back at 1440×900: ${JSON.stringify({ small, back })}`);
+    await page.locator('.bottom-panel .orders-resize-handle').first().dblclick(); await delay(300);
+    return { tall: tall.panel, small: small.panel, back: back.panel, pannedSmall, pannedReloaded };
   });
   await page.screenshot({ path: path.join(out, `${label}-panel.png`) });
 
@@ -338,6 +400,143 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
     return edge;
   });
   await page.evaluate((key) => localStorage.removeItem(key), DRAWINGS_KEY);
+  await page.reload({ waitUntil: 'domcontentloaded' }); await settle(); // a bare plot again: the seeded rectangle is gone
+
+  // 7. Matrix (CTO, 2026-10-21): the owner's conditions are not known, so
+  // every cursor tool, every common drawing kind free and locked, and the
+  // saved chart settings are tried in turn. Each cell measures the same
+  // thing as above: the chart's visible range before and after a press-
+  // and-move on the plot, and whether a drawing under the press moved.
+  report.matrix = { tools: [], drawings: [], settings: [] };
+  const pickTool = async (id) => {
+    await page.locator('[data-tool-group="cursors"] .tool-group-chevron').click();
+    await page.locator(`.tool-flyout [data-drawing-tool="${id}"]`).click();
+    await delay(250);
+  };
+  const activeTool = () => page.evaluate(() => document.querySelector('[data-tool-group="cursors"] > [data-drawing-tool]')?.getAttribute('data-drawing-tool') ?? null);
+  for (const id of ['cursor', 'dot', 'arrowcursor', 'erase']) {
+    await check(`matrix-tool-${id}-drag-pans`, async () => {
+      await pickTool(id);
+      const tool = await activeTool();
+      const result = await drag(220);
+      report.matrix.tools.push({ tool: id, shown: tool, shifted: Math.round(result.shifted * 100) / 100, top: result.top });
+      assert.equal(tool, id, `the ${id} tool was not selected (shown: ${tool})`);
+      return assertPanned(result, 220, `drag with the ${id} tool`);
+    });
+  }
+  await check('matrix-tool-erase-removes-a-free-drawing-and-spares-a-locked-one', async () => {
+    // Anchored to the bars a fresh load opens on, so the rectangle is on screen after the seeding reload.
+    await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
+    const shapeNow = await coveringShape();
+    const outcomes = {};
+    for (const locked of [false, true]) {
+      await page.evaluate(([key, value]) => localStorage.setItem(key, JSON.stringify({ version: 1, hidden: false, locked: false, drawings: [value] })), [DRAWINGS_KEY, { kind: 'rectangle', points: [shapeNow.a, shapeNow.b], ...(locked ? { locked: true } : {}) }]);
+      await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
+      await pickTool('erase');
+      const r = await page.evaluate(() => { const b = document.querySelector('[data-drawing-kind="rectangle"]').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+      await page.mouse.click(r.x, r.y); await delay(400);
+      outcomes[locked ? 'locked' : 'free'] = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).drawings.length, DRAWINGS_KEY);
+    }
+    assert.equal(outcomes.free, 0, 'the eraser did not remove the free rectangle');
+    assert.equal(outcomes.locked, 1, 'the eraser removed a locked rectangle');
+    await pickTool('cursor');
+    await page.evaluate((key) => localStorage.removeItem(key), DRAWINGS_KEY);
+    return outcomes;
+  });
+  await pickTool('cursor');
+
+  // Drawing kinds, free and locked. Area kinds are pressed on their body;
+  // line kinds on the line itself and 24px beside it.
+  await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
+  const cover = await coveringShape();
+  const mid = (cover.a.price + cover.b.price) / 2, midTime = Math.round((cover.a.time + cover.b.time) / 2);
+  const KINDS = {
+    rectangle: { points: [cover.a, cover.b], area: true }, ellipse: { points: [cover.a, cover.b], area: true },
+    ruler: { points: [cover.a, cover.b], area: true, offset: [0.38, 0.3] }, // The position tool: entry at the middle, target at the top, stop at the bottom; pressed inside the profit zone, off the entry line and its cards.
+    long: { points: [{ time: cover.a.time, price: mid }, { time: cover.b.time, price: cover.a.price }, { time: cover.b.time, price: cover.b.price }], area: true, offset: [0.5, 0.28] },
+    fib: { points: [cover.a, cover.b], area: false }, trendline: { points: [cover.a, cover.b], area: false },
+    horizontal: { points: [{ time: cover.a.time, price: mid }], area: false }, vertical: { points: [{ time: midTime, price: cover.a.price }], area: false },
+    text: { points: [{ time: midTime, price: mid }], text: 'QA', area: false },
+  };
+  const pressPoint = (kind, spec) => page.evaluate(([kind, area, offset]) => {
+    const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart);
+    const box = host.getBoundingClientRect();
+    const g = document.querySelector(`[data-drawing-kind="${kind}"]`);
+    if (!g) return null;
+    const r = g.getBoundingClientRect();
+    if (area) return offset ? { x: box.x + box.width * offset[0], y: box.y + box.height * offset[1] } : { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    // A line: its midpoint (for a horizontal line the plot's middle x, for a vertical one the plot's middle y).
+    const onLine = { x: r.width > 4 ? r.x + r.width / 2 : r.x + r.width / 2, y: r.height > 4 ? r.y + r.height / 2 : r.y + r.height / 2 };
+    if (kind === 'horizontal') onLine.x = box.x + box.width * 0.45;
+    if (kind === 'vertical') onLine.y = box.y + box.height * 0.4;
+    return { ...onLine, beside: { x: onLine.x + (kind === 'vertical' ? 24 : 0), y: onLine.y + (kind === 'vertical' ? 0 : 24) } };
+  }, [kind, spec.area, spec.offset ?? null]);
+  const press = async (x, y, dx = 200) => {
+    const before = await readChart(); const storedBefore = await storedPoints(); const top = await topElementAt(x, y);
+    await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + dx, y, { steps: 10 }); await page.mouse.up(); await delay(350);
+    const after = await readChart();
+    return { top, panned: before.from - after.from, drawingMoved: (await storedPoints()) !== storedBefore };
+  };
+  for (const [kind, spec] of Object.entries(KINDS)) for (const locked of [false, true]) {
+    await check(`matrix-drawing-${kind}-${locked ? 'locked' : 'free'}`, async () => {
+      const drawing = { kind, points: spec.points, ...(spec.text ? { text: spec.text } : {}), ...(locked ? { locked: true } : {}) };
+      await page.evaluate(([key, value]) => localStorage.setItem(key, JSON.stringify({ version: 1, hidden: false, locked: false, drawings: [value] })), [DRAWINGS_KEY, drawing]);
+      await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
+      const at = await pressPoint(kind, spec);
+      assert(at, `the ${kind} was not drawn`);
+      const on = await press(at.x, at.y);
+      const row = { kind, locked, on: { top: on.top, panned: Math.round(on.panned * 100) / 100, drawingMoved: on.drawingMoved } };
+      if (at.beside) { const beside = await press(at.beside.x, at.beside.y); row.beside = { top: beside.top, panned: Math.round(beside.panned * 100) / 100, drawingMoved: beside.drawingMoved }; }
+      report.matrix.drawings.push(row);
+      if (spec.area) {
+        if (locked) assert(on.panned > 5 && !on.drawingMoved, `a press on a locked ${kind} body did not pan the chart (${JSON.stringify(row.on)})`);
+        else assert(on.drawingMoved && Math.abs(on.panned) < 0.01, `a press on a free ${kind} body neither moved it nor left the chart alone (${JSON.stringify(row.on)})`);
+      } else {
+        // On the line: a free line moves, a locked one only selects (its outline stays grabbable). Beside it: the chart pans either way.
+        if (!locked) assert(on.drawingMoved || on.panned > 5, `a press on a free ${kind} did nothing (${JSON.stringify(row.on)})`);
+        assert(row.beside.panned > 5 && !row.beside.drawingMoved, `a press beside a ${locked ? 'locked' : 'free'} ${kind} did not pan (${JSON.stringify(row.beside)})`);
+      }
+      return row;
+    });
+  }
+  await page.evaluate((key) => localStorage.removeItem(key), DRAWINGS_KEY);
+
+  // Saved chart settings, workspace and indicators from this browser.
+  const SETTINGS = {
+    logScale: { 'voltex.chartSettings.v1': { scaleMode: 'logarithmic' } },
+    gridWatermarkNoVolumeNoTimeAxis: { 'voltex.chartSettings.v1': { grid: 'all', crosshairStyle: 'solid', watermark: true, volume: false, timeScaleVisible: false } },
+    rsiLowerPane: { 'voltex.chartIndicators.futures.v1': [{ id: 'ma-200', type: 'ma', params: { period: 200 }, colors: ['#f7d51d'], lineWidth: 1, visible: true }, { id: 'rsi-qa', type: 'rsi', params: { period: 14 }, colors: ['#c084fc'], lineWidth: 1, visible: true }] },
+    twoPaneLayout: { 'voltex.chartWorkspace.futures.v1': { version: 1, layout: 2 } },
+    compareEth: { 'voltex.chartWorkspace.futures.v1': { version: 1, compare: [{ pair: 'ETH/USDT', color: '#2962ff', visible: true }], comparePeriod: 'all' } },
+    railCollapsed: { 'voltex.drawingRail.collapsed': '1' },
+  };
+  const SETTING_KEYS = ['voltex.chartSettings.v1', 'voltex.chartIndicators.futures.v1', 'voltex.chartWorkspace.futures.v1', 'voltex.drawingRail.collapsed'];
+  for (const [name, seedValues] of Object.entries(SETTINGS)) {
+    await check(`matrix-settings-${name}-drag-pans`, async () => {
+      await page.evaluate(([keys, values]) => { for (const k of keys) localStorage.removeItem(k); for (const [k, v] of Object.entries(values)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); }, [SETTING_KEYS, seedValues]);
+      await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
+      const applied = await page.evaluate(() => { const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart); const { chart } = host.__voltexChart; return { panes: chart.panes().length, priceScaleMode: chart.priceScale('right').options().mode, canvases: document.querySelectorAll('canvas').length, railCollapsed: localStorage.getItem('voltex.drawingRail.collapsed') }; });
+      const result = await drag(220);
+      const row = { setting: name, applied, shifted: Math.round(result.shifted * 100) / 100, top: result.top };
+      if (name === 'rsiLowerPane') {
+        // A press inside the indicator's own pane pans the whole chart too.
+        const chart = await readChart();
+        const lower = await drag(200, 0.5, (chart.paneHeight + 30) / chart.box.h);
+        row.lowerPane = { shifted: Math.round(lower.shifted * 100) / 100, top: lower.top };
+        assert(applied.panes >= 2, `the RSI pane did not open (panes: ${applied.panes})`);
+        assertPanned(lower, 200, 'drag inside the RSI pane');
+      }
+      report.matrix.settings.push(row);
+      return assertPanned(result, 220, `drag with saved ${name}`);
+    });
+  }
+  await page.evaluate((keys) => { for (const k of keys) localStorage.removeItem(k); }, SETTING_KEYS);
+
+  await check('no-trading-write-left-the-page-during-the-whole-run', async () => {
+    assert.equal(tradingWrites.length, 0, `the page sent ${tradingWrites.length} trading write(s): ${tradingWrites.slice(0, 5).join(', ')}`);
+    assert.equal(commands.length, 0, `the page posted ${commands.length} native command(s): ${commands.join(', ')}`);
+    return { tradingWrites: tradingWrites.length, nativeCommands: commands.length };
+  });
 })().catch((error) => { report.errors.push(String(error.stack || error)); console.error(error); })
   .finally(async () => {
     const failed = report.checks.filter((c) => !c.passed);

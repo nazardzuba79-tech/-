@@ -28,6 +28,8 @@ function view(): geometry.DrawingView {
 }
 const box: drawings.StoredDrawing = { kind: 'rectangle', points: [{ time: 3000, price: 100 }, { time: 12000, price: 200 }] };
 const ruler: drawings.StoredDrawing = { kind: 'ruler', points: [{ time: 3000, price: 100 }, { time: 12000, price: 200 }] };
+const position: drawings.StoredDrawing = { kind: 'long', points: [{ time: 3000, price: 150 }, { time: 12000, price: 200 }, { time: 12000, price: 100 }] };
+const note: drawings.StoredDrawing = { kind: 'text', points: [{ time: 6000, price: 150 }], text: 'level' };
 
 describe('hitGeometry: what a press on a drawing can reach', () => {
   test('a free drawing is grabbed by its outline, its body and its labels', () => {
@@ -39,14 +41,29 @@ describe('hitGeometry: what a press on a drawing can reach', () => {
     expect(hit.boxes).toBe(g.boxes);
   });
 
-  test.each([['rectangle', box], ['ruler', ruler]] as const)('a locked %s gives up its body and keeps its outline', (_kind, drawing) => {
+  test.each([['rectangle', box], ['ruler', ruler], ['long position', position]] as const)('a locked %s gives up its body and its cards and keeps its lines', (_kind, drawing) => {
     const g = geometry.drawingGeometry(drawing, view())!;
     expect(g.areas.length).toBeGreaterThan(0);
     const hit = geometry.hitGeometry(g, true);
     expect(hit.areas).toEqual([]);
+    expect(hit.boxes).toEqual([]);
     expect(hit.strokes).toBe(g.strokes);
     expect(hit.strokes.length).toBeGreaterThan(0);
-    expect(hit.boxes).toBe(g.boxes);
+  });
+
+  test('a locked text keeps its card: it has no line to grab', () => {
+    const g = geometry.drawingGeometry(note, view())!;
+    expect(g.strokes).toEqual([]);
+    expect(g.boxes.length).toBeGreaterThan(0);
+    expect(geometry.hitGeometry(g, true).boxes).toBe(g.boxes);
+  });
+
+  test('the eraser acts on a drawing\'s own hit target and leaves the plot to the chart', () => {
+    const source = fs.readFileSync(path.resolve(__dirname, '../../components/ChartDrawingLayer.tsx'), 'utf8');
+    expect(source).toContain("const erasing = tool === 'erase';\n  const capture = drawingTool && !erasing && !blocked;");
+    const move = source.slice(source.indexOf('const startMove = '), source.indexOf('const startAnchor = '));
+    expect(move).toMatch(/if \(erasing\) \{\s*if \(!lockedRef\.current && !drawing\.locked\)/);
+    expect(source).not.toContain('topmostAt');
   });
 
   test('the layer passes the lock — the object\'s own or the global one — into its hit targets', () => {
