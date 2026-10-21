@@ -46,7 +46,7 @@ import {
 import type { DrawingView } from '../lib/drawingGeometry';
 import { ChartDrawingLayer, CURSOR_TOOLS, newDrawingId, type ChartDrawing, type DrawingTool, type TextRequest } from './ChartDrawingLayer';
 import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
-import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_INTERVAL_MS, type ChartCandleLoader, type ChartTradingInteraction, type ChartPositionLine } from '../lib/chartTrading';
+import { chartEntryAnchor, chartEventBar, chartOverlayBottomFraction, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_BAND_OVERLAY_TOP, CHART_INTERVAL_MS, CHART_VOLUME_OVERLAY_TOP, type ChartCandleLoader, type ChartTradingInteraction, type ChartPositionLine } from '../lib/chartTrading';
 import { CHART_TIMEFRAMES, LEGACY_TIMEFRAMES, isChartTimeframe, timeframeDurationMs, timeframeLabelKey, timeframeSpec, type CandleSourceKind, type ChartTimeframe } from '../lib/chartTimeframes';
 import { isTimeframeUnavailable, loadChartCandles, timeframeUnavailableError, workspaceCandleLoader } from '../lib/chartCandleSource';
 import { candleSourceFor, chartCapabilities, quickTimeframesFor, resolveTimeframe } from '../lib/chartCapabilities';
@@ -637,7 +637,7 @@ export function PriceChart({
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
     });
-    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: CHART_VOLUME_OVERLAY_TOP, bottom: 0 } });
 
     // Bars, hollow candles and Heikin Ashi: hidden until picked. The
     // candlestick series above stays the coordinate authority for every
@@ -717,13 +717,28 @@ export function PriceChart({
           if (!param.point || !data || !('open' in data) || typeof data.time !== 'number') return;
           const candle = candlesRef.current.find(item => item.time === data.time);
           if (!candle) return;
+          // The price pane (pane 0) is the pick area. Volume is in its own
+          // pane when shown and parked invisible in this one when hidden, so
+          // it only narrows the area while it is actually drawn here; the
+          // Spot/CFD oscillator band does the same (lib/chartTrading).
           const pane = chart.paneSize(0);
           const hovered = param.hoveredInfo?.series ?? param.hoveredSeries;
+          // A price-pane overlay drawn through the bar — the default SMA 200
+          // runs exactly along a flat run of old candles — never takes the
+          // pick from the candle under it: while picking, the candle's own
+          // geometry decides. Only a series from another pane under the
+          // pointer is an indicator hit (owner, 2026-10-21: «індикатор усе ще
+          // накладений на головну панель»).
+          const hoveredElsewhere = !!hovered && hovered !== series
+            && typeof hovered.getPane === 'function' && hovered.getPane().paneIndex() !== 0;
+          const volumeVisibleInPricePane = volumeSeries.options().visible !== false
+            && (typeof volumeSeries.getPane !== 'function' || volumeSeries.getPane().paneIndex() === 0);
           if (!isCandleHit({ x: param.point.x, y: param.point.y,
             candleX: chart.timeScale().timeToCoordinate(data.time), highY: series.priceToCoordinate(candle.high), lowY: series.priceToCoordinate(candle.low),
             paneWidth: pane.width, paneHeight: pane.height, barSpacing: chart.timeScale().options().barSpacing,
-            paneIndex: param.paneIndex, dragged, indicatorHovered: !!hovered && hovered !== series,
-            indicatorPanelVisible: chartHitRef.current.bandOscillators })) return;
+            paneIndex: param.paneIndex, dragged, indicatorHovered: hoveredElsewhere,
+            overlayBottomFraction: chartOverlayBottomFraction({ volumeVisibleInPricePane,
+              volumeScaleTop: volumeSeries.priceScale().options().scaleMargins?.top, bandOscillators: chartHitRef.current.bandOscillators }) })) return;
           const selected = completeChartCandle(candle, chartHitRef.current.pair, chartHitRef.current.interval);
           if (!selected) return;
           const bounds = host.getBoundingClientRect();
@@ -882,7 +897,7 @@ export function PriceChart({
       layoutPanes();
       volume.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0 } });
     } else {
-      volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+      volume.priceScale().applyOptions({ scaleMargins: { top: CHART_VOLUME_OVERLAY_TOP, bottom: 0 } });
     }
     chart.applyOptions({ layout: { panes: { separatorColor: 'rgba(255, 255, 255, 0.08)', separatorHoverColor: 'rgba(255, 255, 255, 0.16)' } } });
     setBaseMargins(0.1, bandOscillators ? 0.3 : 0.06);
@@ -936,7 +951,7 @@ export function PriceChart({
         set = { signature: '', paintSignature: '', computed: null, pane, lines, histogram, levels: [] };
         map.set(inst.id, set);
         const first = Object.values(lines)[0];
-        if (pane === 'band') first?.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 }, visible: false });
+        if (pane === 'band') first?.priceScale().applyOptions({ scaleMargins: { top: CHART_BAND_OVERLAY_TOP, bottom: 0.02 }, visible: false });
       }
       const all = [...Object.values(set.lines), ...(set.histogram ? [set.histogram] : [])];
       if (pane === 'lower') {

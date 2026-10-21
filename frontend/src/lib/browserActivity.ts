@@ -2,6 +2,12 @@
 export const BROWSER_IDLE_MS = 300_000;
 export const BROWSER_ACTIVITY_EVENT = 'voltex:browser-activity';
 export type BrowserPhase = 'active' | 'sleeping' | 'validating' | 'syncing' | 'error';
+/** Why the last wake ended in `error`: the session check, the first current-session read that failed
+ *  (its label is the request as the transport saw it), or the 30 s barrier with the reads still pending. */
+export type BrowserResumeFailure =
+  | { kind: 'session'; detail: string }
+  | { kind: 'read'; detail: string; status?: number }
+  | { kind: 'timeout'; pending: string[] };
 type Listener = () => void;
 let phase: BrowserPhase = 'active';
 let started = false;
@@ -18,8 +24,16 @@ let briefReturnScope: () => string | null = () => null;
 let keepVisibleActive: () => boolean = () => false;
 let briefReturn: { scope: string; owner: string; deadline: number } | null = null;
 const listeners = new Set<Listener>();
-const reads = new Map<Promise<unknown>, { generation: number; owner: string | null }>();
+const reads = new Map<Promise<unknown>, { generation: number; owner: string | null; label?: string }>();
 let readFailed = false;
+let readFailure: BrowserResumeFailure | null = null;
+let failure: BrowserResumeFailure | null = null;
+const describeError = (error: unknown): string => {
+  const named = error as { name?: unknown; message?: unknown; status?: unknown } | null;
+  const message = typeof named?.message === 'string' ? named.message : String(error);
+  const text = typeof named?.name === 'string' && named.name && named.name !== 'Error' ? `${named.name}: ${message}` : message;
+  return `${text.slice(0, 200)}${typeof named?.status === 'number' ? ` (${named.status})` : ''}`;
+};
 const hidden = () => typeof document !== 'undefined' && document.hidden;
 /** Cross-origin frame input cannot reach the parent. Keep an actually focused
  * owned chart active while visible; arbitrary/background frames get no exemption. */
@@ -31,6 +45,8 @@ function focusedOwnedChart(): boolean {
     && (typeof document.hasFocus !== 'function' || document.hasFocus());
 }
 export const getBrowserPhase = () => phase;
+/** Read beside `error` only; cleared when the next wake starts. */
+export const getBrowserResumeFailure = () => failure;
 export const isBrowserInactive = () => hidden() || (started && phase !== 'active' && phase !== 'syncing');
 export const onBrowserPhase = (listener: Listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 const activityListeners = new Map<EventListenerOrEventListenerObject, EventListener>();
@@ -73,17 +89,22 @@ export function sleepBrowser() {
   generation++; clearTimeout(idle); idle = undefined;
   phase = 'sleeping'; publish(true);
 }
-/** Track reads only; a submitted mutation is never aborted, queued or replayed here. */
-export function trackBrowserRead<T>(promise: Promise<T>, reportFailure = true): Promise<T> {
+/** Track reads only; a submitted mutation is never aborted, queued or replayed here.
+ *  `label` names the read in the failure the notice shows (the transport passes "GET url"). */
+export function trackBrowserRead<T>(promise: Promise<T>, reportFailure = true, label?: string): Promise<T> {
   const epoch = generation;
   const owner = identity();
-  reads.set(promise, { generation: epoch, owner });
+  reads.set(promise, { generation: epoch, owner, label });
   void promise.then(() => reads.delete(promise), error => {
     reads.delete(promise);
-    if (reportFailure && phase === 'syncing' && epoch === generation && owner === identity() && error?.name !== 'AbortError') readFailed = true;
+    if (reportFailure && phase === 'syncing' && epoch === generation && owner === identity() && error?.name !== 'AbortError') {
+      readFailed = true;
+      if (!readFailure) readFailure = { kind: 'read', detail: label ? `${label}: ${describeError(error)}` : describeError(error) };
+    }
   });
   return promise;
 }
+const pendingReads = () => [...reads.values()].filter(value => value.owner === identity());
 export function resumeBrowser(): Promise<void> {
   if (!started || hidden() || phase === 'active') return Promise.resolve();
   if (wake) return wake;
@@ -99,12 +120,12 @@ export function resumeBrowser(): Promise<void> {
     return Promise.resolve();
   }
   const epoch = ++generation;
-  phase = 'validating'; publish();
+  phase = 'validating'; failure = null; publish();
   const current = async () => {
     try {
-      await validate();
+      try { await validate(); } catch (error) { failure = { kind: 'session', detail: describeError(error) }; throw error; }
       if (epoch !== generation || hidden()) return;
-      readFailed = false; phase = 'syncing'; publish(true);
+      readFailed = false; readFailure = null; phase = 'syncing'; publish(true);
       // Keep the barrier through current-session reads started before sleep,
       // their response processing and the fresh reads queued by mounted consumers.
       // A previous account can never delay or supply this session.
@@ -112,12 +133,17 @@ export function resumeBrowser(): Promise<void> {
       do {
         await new Promise(resolve => setTimeout(resolve, 150));
         if (epoch !== generation || hidden()) return;
-        if (Date.now() >= deadline) throw new Error('Resume timed out');
-      } while ([...reads.values()].some(value => value.owner === identity()));
-      if (readFailed) throw new Error('Resume read failed');
-      phase = 'active'; lastActivity = Date.now(); arm(); publish();
+        if (Date.now() >= deadline) {
+          failure = { kind: 'timeout', pending: pendingReads().map(value => value.label ?? 'read') };
+          throw new Error('Resume timed out');
+        }
+      } while (pendingReads().length);
+      if (readFailed) { failure = readFailure ?? { kind: 'read', detail: 'read' }; throw new Error('Resume read failed'); }
+      phase = 'active'; failure = null; lastActivity = Date.now(); arm(); publish();
     } catch {
       if (epoch !== generation) return;
+      // The failure stays readable (getBrowserResumeFailure) for the notice's
+      // retry/reload controls; every other input is still refused below.
       phase = 'error'; publish(true);
     }
   };
@@ -204,11 +230,14 @@ async function fetchDisplay(input: RequestInfo | URL, init?: RequestInit, report
       // Consume a clone so the resume indicator also covers the body download.
       await response.clone().arrayBuffer();
       if (identity() !== owner) throw new DOMException('Session changed', 'AbortError');
-      if (reportFailure && phase === 'syncing' && epoch === generation && (response.status >= 500 || response.status === 401 || response.status === 403)) readFailed = true;
+      if (reportFailure && phase === 'syncing' && epoch === generation && (response.status >= 500 || response.status === 401 || response.status === 403)) {
+        readFailed = true;
+        if (!readFailure) readFailure = { kind: 'read', detail: `${method} ${String(request?.url ?? input)}`, status: response.status };
+      }
       return response;
     });
     shared = entry;
-    trackBrowserRead(entry.task, reportFailure);
+    trackBrowserRead(entry.task, reportFailure, `${method} ${String(request?.url ?? input)}`);
     void entry.task.finally(() => {
       entry.settled = true;
       if (wakeReads.get(key) === entry) wakeReads.delete(key);
@@ -235,6 +264,11 @@ async function fetchDisplay(input: RequestInfo | URL, init?: RequestInit, report
   });
 }
 
+/** Input aimed at the resume notice (components/BrowserSleepNotice) — its retry and reload buttons. */
+function noticeTarget(event: Event): boolean {
+  const target = event.target as { closest?: (selector: string) => unknown } | null;
+  return typeof target?.closest === 'function' && !!target.closest('[data-browser-notice]');
+}
 export function startBrowserActivity(options: { validate: () => Promise<void>; identity: () => string | null; briefReturnScope?: () => string | null; keepVisibleActive?: () => boolean }) {
   if (started) return () => {};
   started = true; validate = options.validate; identity = options.identity;
@@ -246,7 +280,14 @@ export function startBrowserActivity(options: { validate: () => Promise<void>; i
     const key = event as KeyboardEvent;
     // Reload is the user's explicit recovery path, including while asleep.
     if (event.type === 'keydown' && (key.key === 'F5' || ((key.ctrlKey || key.metaKey) && key.key?.toLowerCase() === 'r'))) return;
-    const action = ['pointerdown','click','keydown','touchstart','submit'].includes(event.type);
+    // A double click is an action too: letting it through while the single
+    // clicks were refused opened the chart menu with controls that could not
+    // answer (owner, 2026-10-21).
+    const action = ['pointerdown','click','dblclick','keydown','touchstart','submit'].includes(event.type);
+    // The resume notice's own controls — retry, reload — are the deliberate
+    // recovery path while a wake has failed. Nothing else is reachable
+    // through them: a retry is the same validation and sync barrier.
+    if (phase === 'error' && action && noticeTarget(event)) return;
     // Suppress the waking gesture's trailing click, not a new deliberate gesture
     // after synchronization has completed.
     if (phase === 'active' && ['pointerdown','keydown','touchstart'].includes(event.type) && !key.repeat) suppressGesture = false;
@@ -255,7 +296,7 @@ export function startBrowserActivity(options: { validate: () => Promise<void>; i
         event.preventDefault(); event.stopImmediatePropagation();
         // A held pointer/key can finish long after synchronization. Only a
         // new deliberate gesture, or consuming this gesture's click, clears it.
-        suppressGesture = event.type !== 'click';
+        suppressGesture = event.type !== 'click' && event.type !== 'dblclick';
       }
       // Errors require deliberate retry, not another mousemove loop.
       if (phase !== 'error' || action) void resumeBrowser();
@@ -292,7 +333,7 @@ export function startBrowserActivity(options: { validate: () => Promise<void>; i
   const pageshow = (event: PageTransitionEvent) => { if (event.persisted) { sleepBrowser(); void resumeBrowser(); } };
   // Scroll events can also be emitted by script/layout. Wheel, touch and keyboard
   // already capture genuine scrolling without treating an auto-scroll as activity.
-  const events = ['pointerdown','click','keydown','wheel','touchstart','touchmove','pointermove','submit'];
+  const events = ['pointerdown','click','dblclick','keydown','wheel','touchstart','touchmove','pointermove','submit'];
   for (const event of events) window.addEventListener(event, input, { capture: true, passive: false });
   document.addEventListener('visibilitychange', visible);
   window.addEventListener('focus', focus);
@@ -306,6 +347,6 @@ export function startBrowserActivity(options: { validate: () => Promise<void>; i
     document.removeEventListener('visibilitychange', visible);
     window.removeEventListener('focus', focus); window.removeEventListener('blur', blur); document.removeEventListener('focusin', focus); window.removeEventListener('pageshow', pageshow);
     window.removeEventListener('pagehide', sleepBrowser);
-    phase = 'active'; briefReturn = null; briefReturnScope = () => null; keepVisibleActive = () => false; suppressGesture = false; publish();
+    phase = 'active'; failure = null; readFailure = null; briefReturn = null; briefReturnScope = () => null; keepVisibleActive = () => false; suppressGesture = false; publish();
   };
 }

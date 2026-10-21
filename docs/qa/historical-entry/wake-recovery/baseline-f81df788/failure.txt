@@ -1,0 +1,2 @@
+page.waitForFunction: Timeout 15000ms exceeded.
+    at scenario (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-browser-sleep-native.cjs:92:14)
