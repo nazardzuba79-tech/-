@@ -1,0 +1,171 @@
+{
+  "reviewBranch": "review/stocks-native-browser-qa-20261021",
+  "main": "f81df788a8ddcc5d925b827b6e783f6e21dc39fa",
+  "base": "42c6aca1f8ce1071b0447d0d8c7f39295b85569a",
+  "cloudflare": {
+    "pages": {
+      "project": "voltex-exchange",
+      "productionBranch": "main",
+      "automaticProduction": false,
+      "previewBranchPolicy": "None (Disable automatic branch deployments)",
+      "deployHooks": "No deploy hooks defined"
+    },
+    "workers": [
+      {
+        "name": "voltex-market-edge",
+        "settingsBuilds": "Git repository: Connect (no connected repository)"
+      },
+      {
+        "name": "voltex-kyc-edge",
+        "settingsBuilds": "Git repository: Connect (no connected repository)"
+      },
+      {
+        "name": "voltex-notification-edge",
+        "settingsBuilds": "Git repository: Connect (no connected repository)"
+      },
+      {
+        "name": "voltex-telegram-bot",
+        "settingsBuilds": "Git repository: Connect (no connected repository)"
+      },
+      {
+        "name": "voltex-support-edge",
+        "settingsBuilds": "Git repository: Connect (no connected repository)"
+      },
+      {
+        "name": "voltex-deposit-catalogue-production",
+        "settingsBuilds": "Git repository: Connect (no connected repository)"
+      },
+      {
+        "name": "voltex-deposit-catalogue-staging",
+        "settingsBuilds": "Git repository: Connect (no connected repository)"
+      },
+      {
+        "name": "voltex-notification-synthetic-once",
+        "settingsBuilds": "Git repository: Connect (no connected repository)"
+      }
+    ]
+  },
+  "northflank": {
+    "teams": 1,
+    "otherTeams": false,
+    "github": "No GitHub accounts linked",
+    "projects": "Deploy your first workload"
+  },
+  "render": [
+    {
+      "service": "voltex-copy-locked-review",
+      "branch": "codex/copy-trading-locked-list",
+      "autoDeploy": "yes",
+      "trigger": "commit",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-native-demo-review",
+      "branch": "codex/private-cross-demo-bybit-model",
+      "autoDeploy": "yes",
+      "trigger": "commit",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-banking-review",
+      "branch": "codex/banking-earn",
+      "autoDeploy": "yes",
+      "trigger": "commit",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-private-terminal-review",
+      "branch": "codex/private-trading-replay",
+      "autoDeploy": "yes",
+      "trigger": "commit",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-cfd-collector-review",
+      "branch": "fix/cfd-working-terminal",
+      "autoDeploy": "no",
+      "trigger": "off",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-cfd-free-display-staging",
+      "branch": "feat/cfd-multi-provider-admission",
+      "autoDeploy": "no",
+      "trigger": "off",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-cfd-reference-staging",
+      "branch": "feat/cfd-multi-provider-admission",
+      "autoDeploy": "no",
+      "trigger": "off",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-market-data-prod",
+      "branch": "main",
+      "autoDeploy": "no",
+      "trigger": "off",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "exchange-api-staging",
+      "branch": "codex/bybit-live-market-data",
+      "autoDeploy": "no",
+      "trigger": "off",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-market-data-staging",
+      "branch": "codex/bybit-live-market-data",
+      "autoDeploy": "no",
+      "trigger": "off",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-exchange",
+      "branch": "main",
+      "autoDeploy": "yes",
+      "trigger": "commit",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "exchange-api",
+      "branch": "main",
+      "autoDeploy": "no",
+      "trigger": "off",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    },
+    {
+      "service": "voltex-api",
+      "branch": "main",
+      "autoDeploy": "no",
+      "trigger": "off",
+      "prPreviews": "no",
+      "previewGeneration": "off"
+    }
+  ],
+  "recordedAt": "2026-10-21T10:32:47.525326+00:00",
+  "observationWindowUTC": "2026-10-21 10:25 UTC through recordedAt",
+  "github": {
+    "openedMatchingWorkflows": [],
+    "labeledBrowserJob": "Only stocks-native-browser-qa; other label-gated jobs have different labels/branches and do not execute",
+    "deploymentJobs": "Only explicit deploy branches or workflow_dispatch, none matching this branch/PR label",
+    "playwrightRegistryVersion": "1.63.0",
+    "playwrightNodeEngine": ">=20",
+    "node": "22.23.3",
+    "repositoryPublic": true
+  }
+}
