@@ -356,7 +356,7 @@ describe('translation integrity', () => {
         const addedSinceDigest = ['browserSleeping', 'browserSyncing', 'browserSyncError', 'browserContinue',
           // Failed-wake notice (2026-10-21): the retry/reload controls and the named failure, additions only.
           'browserResumeBlocked', 'browserRetry', 'browserReload', 'browserFailure.session', 'browserFailure.read', 'browserFailure.timeout',
-          'futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
+          'futures.positionLimits', 'futures.allMarkets', 'futures.panelHeight', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
           // Native demo P&L breakdown columns (2026-10-16): four new keys, additions only.

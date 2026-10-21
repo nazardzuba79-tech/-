@@ -1528,6 +1528,7 @@ export const RU = {
   'futures.liqPrice': 'Цена ликвидации',
   'futures.colContracts': 'Контракты',
   'futures.allMarkets': 'Все рынки',
+  'futures.panelHeight': 'Высота панели позиций',
   'futures.allPositions': 'Все фьючерсные позиции',
   'futures.currentPositions': 'Текущие позиции:',
   'futures.totalPnl': 'Совокупный P&L',

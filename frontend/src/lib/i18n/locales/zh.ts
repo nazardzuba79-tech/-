@@ -1509,6 +1509,7 @@ export const ZH: Record<Key, string> = {
   'futures.liqPrice': '强平价格',
   'futures.colContracts': '合约',
   'futures.allMarkets': '全部市场',
+  'futures.panelHeight': '持仓面板高度',
   'futures.allPositions': '全部合约仓位',
   'futures.currentPositions': '当前仓位：',
   'futures.totalPnl': '总盈亏',

@@ -1,0 +1,344 @@
+{
+  "scope": "Local only: fixture positions on the production bundle; nothing written.",
+  "checks": [
+    "1920x1000: arrival — two whole rows of three on screen, page does not scroll, handle present with a sane range",
+    "1920x1000: wheel over the panel scrolls the positions list, never the page",
+    "1920x1000: drag up 200px — panel +200, chart −200, three rows visible, page still fixed",
+    "1920x1000: the height survives a reload",
+    "1920x1000: arrow keys move the edge by 24px steps",
+    "1920x1000: double-click returns the stylesheet's height",
+    "1920x1000: the ceiling keeps the chart ≥ 300px and the page fixed",
+    "1920x1000: the floor keeps the tabs, the heads and one row",
+    "1920x1000: no page errors",
+    "1440x900: arrival — two whole rows of three on screen, page does not scroll, handle present with a sane range",
+    "1440x900: wheel over the panel scrolls the positions list, never the page",
+    "1440x900: drag up 200px — panel +200, chart −200, three rows visible, page still fixed",
+    "1440x900: the height survives a reload",
+    "1440x900: arrow keys move the edge by 24px steps",
+    "1440x900: double-click returns the stylesheet's height",
+    "1440x900: the ceiling keeps the chart ≥ 300px and the page fixed",
+    "1440x900: the floor keeps the tabs, the heads and one row",
+    "1440x900: no page errors",
+    "1366x768: arrival — two whole rows of three on screen, page does not scroll, handle present with a sane range",
+    "1366x768: wheel over the panel scrolls the positions list, never the page",
+    "1366x768: drag up 200px — panel +72, chart −72, three rows visible, page still fixed",
+    "1366x768: the height survives a reload",
+    "1366x768: arrow keys move the edge by 24px steps",
+    "1366x768: double-click returns the stylesheet's height",
+    "1366x768: the ceiling keeps the chart ≥ 300px and the page fixed",
+    "1366x768: the floor keeps the tabs, the heads and one row",
+    "1366x768: no page errors",
+    "resize: End at 1920×1000 takes the panel to the ceiling, the chart keeps 300px, the preference is the shown height",
+    "resize: at 1366×768 the shown height is the new ceiling, the chart keeps 300px, the page and the terminal do not overflow, ARIA follows the shown height",
+    "resize: the large-screen preference is kept while the small window limits it",
+    "resize: a reload at 1366×768 keeps the limit, the fixed page and the preference",
+    "resize: back at 1920×1000 the panel returns to its preference, nothing overflows",
+    "resize: a drag on the small window becomes the new preference",
+    "resize: no page errors",
+    "390 phone: no handle",
+    "1440 folded empty panel: the handle hides with the fold"
+  ],
+  "screenshots": [
+    "1920x1000-initial.png",
+    "1920x1000-dragged.png",
+    "1920x1000-maxed.png",
+    "1440x900-initial.png",
+    "1440x900-dragged.png",
+    "1440x900-maxed.png",
+    "1366x768-initial.png",
+    "1366x768-dragged.png",
+    "1366x768-maxed.png",
+    "resize-1920-tall.png",
+    "resize-1366-limited.png",
+    "resize-1920-restored.png",
+    "390-phone.png",
+    "1440-folded.png"
+  ],
+  "measurements": {
+    "1920x1000": {
+      "initial": {
+        "terminal": {
+          "top": 48,
+          "bottom": 972,
+          "height": 924
+        },
+        "panel": {
+          "top": 716,
+          "bottom": 968,
+          "height": 252
+        },
+        "chart": {
+          "top": 112,
+          "bottom": 712,
+          "height": 600
+        },
+        "rows": 3,
+        "visibleRows": 2,
+        "scrollTop": 0,
+        "pageY": 0,
+        "pageOverflow": 0,
+        "terminalOverflow": 0,
+        "userHeight": null,
+        "limited": null,
+        "stored": null,
+        "handle": {
+          "box": {
+            "top": 711,
+            "bottom": 721,
+            "height": 10
+          },
+          "now": 252,
+          "min": 184,
+          "max": 552
+        }
+      },
+      "wheeled": {
+        "scrollTop": 62,
+        "pageY": 0
+      },
+      "dragged": {
+        "top": 516,
+        "bottom": 968,
+        "height": 452
+      },
+      "reloaded": {
+        "top": 516,
+        "bottom": 968,
+        "height": 452
+      },
+      "keyed": {
+        "top": 540,
+        "bottom": 968,
+        "height": 428
+      },
+      "reset": {
+        "top": 716,
+        "bottom": 968,
+        "height": 252
+      },
+      "maxed": {
+        "panel": {
+          "top": 416,
+          "bottom": 968,
+          "height": 552
+        },
+        "chart": {
+          "top": 112,
+          "bottom": 412,
+          "height": 300
+        }
+      },
+      "floored": {
+        "top": 784,
+        "bottom": 968,
+        "height": 184
+      },
+      "errors": []
+    },
+    "1440x900": {
+      "initial": {
+        "terminal": {
+          "top": 48,
+          "bottom": 872,
+          "height": 824
+        },
+        "panel": {
+          "top": 616,
+          "bottom": 868,
+          "height": 252
+        },
+        "chart": {
+          "top": 112,
+          "bottom": 612,
+          "height": 500
+        },
+        "rows": 3,
+        "visibleRows": 2,
+        "scrollTop": 0,
+        "pageY": 0,
+        "pageOverflow": 0,
+        "terminalOverflow": 0,
+        "userHeight": null,
+        "limited": null,
+        "stored": null,
+        "handle": {
+          "box": {
+            "top": 611,
+            "bottom": 621,
+            "height": 10
+          },
+          "now": 252,
+          "min": 184,
+          "max": 452
+        }
+      },
+      "wheeled": {
+        "scrollTop": 62,
+        "pageY": 0
+      },
+      "dragged": {
+        "top": 416,
+        "bottom": 868,
+        "height": 452
+      },
+      "reloaded": {
+        "top": 416,
+        "bottom": 868,
+        "height": 452
+      },
+      "keyed": {
+        "top": 440,
+        "bottom": 868,
+        "height": 428
+      },
+      "reset": {
+        "top": 616,
+        "bottom": 868,
+        "height": 252
+      },
+      "maxed": {
+        "panel": {
+          "top": 416,
+          "bottom": 868,
+          "height": 452
+        },
+        "chart": {
+          "top": 112,
+          "bottom": 412,
+          "height": 300
+        }
+      },
+      "floored": {
+        "top": 684,
+        "bottom": 868,
+        "height": 184
+      },
+      "errors": []
+    },
+    "1366x768": {
+      "initial": {
+        "terminal": {
+          "top": 48,
+          "bottom": 740,
+          "height": 692
+        },
+        "panel": {
+          "top": 484,
+          "bottom": 736,
+          "height": 252
+        },
+        "chart": {
+          "top": 108,
+          "bottom": 480,
+          "height": 372
+        },
+        "rows": 3,
+        "visibleRows": 2,
+        "scrollTop": 0,
+        "pageY": 0,
+        "pageOverflow": 0,
+        "terminalOverflow": 0,
+        "userHeight": null,
+        "limited": null,
+        "stored": null,
+        "handle": {
+          "box": {
+            "top": 479,
+            "bottom": 489,
+            "height": 10
+          },
+          "now": 252,
+          "min": 184,
+          "max": 324
+        }
+      },
+      "wheeled": {
+        "scrollTop": 62,
+        "pageY": 0
+      },
+      "dragged": {
+        "top": 412,
+        "bottom": 736,
+        "height": 324
+      },
+      "reloaded": {
+        "top": 412,
+        "bottom": 736,
+        "height": 324
+      },
+      "keyed": {
+        "top": 436,
+        "bottom": 736,
+        "height": 300
+      },
+      "reset": {
+        "top": 484,
+        "bottom": 736,
+        "height": 252
+      },
+      "maxed": {
+        "panel": {
+          "top": 412,
+          "bottom": 736,
+          "height": 324
+        },
+        "chart": {
+          "top": 108,
+          "bottom": 408,
+          "height": 300
+        }
+      },
+      "floored": {
+        "top": 552,
+        "bottom": 736,
+        "height": 184
+      },
+      "errors": []
+    },
+    "resize": {
+      "tall": {
+        "panel": {
+          "top": 416,
+          "bottom": 968,
+          "height": 552
+        },
+        "chart": {
+          "top": 112,
+          "bottom": 412,
+          "height": 300
+        },
+        "max": 552
+      },
+      "small": {
+        "panel": {
+          "top": 412,
+          "bottom": 736,
+          "height": 324
+        },
+        "chart": {
+          "top": 108,
+          "bottom": 408,
+          "height": 300
+        },
+        "max": 324,
+        "stored": 552
+      },
+      "reloaded": {
+        "top": 412,
+        "bottom": 736,
+        "height": 324
+      },
+      "back": {
+        "top": 416,
+        "bottom": 968,
+        "height": 552
+      },
+      "chosen": {
+        "top": 472,
+        "bottom": 736,
+        "height": 264
+      },
+      "errors": []
+    }
+  }
+}
