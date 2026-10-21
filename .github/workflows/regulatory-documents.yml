@@ -35,7 +35,7 @@ jobs:
       - run: npm run build --prefix frontend
       - name: Disposable browser tools
         run: |
-          npm install --prefix /tmp/voltex-regulatory-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          npm install --prefix /tmp/voltex-regulatory-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/voltex-regulatory-qa/node_modules/playwright/cli.js install --with-deps chromium
       - name: Eight widths, seven languages, publication isolation and keyboard viewer
         env:

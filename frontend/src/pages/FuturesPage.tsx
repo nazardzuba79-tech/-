@@ -1,9 +1,10 @@
 import { useNativeDemo } from './private-trading/useNativeDemo';
 import { NativeDemoDialogs } from './private-trading/NativeDemoControls';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, API_BASE } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { useFuturesPanelHeight, maxPanelHeightFor, FUTURES_PANEL_MIN_HEIGHT, FUTURES_PANEL_MAX_HEIGHT_FALLBACK, FUTURES_PANEL_KEY_STEP, effectivePanelHeight } from '../lib/useFuturesPanelHeight';
 import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
@@ -69,6 +70,8 @@ import './trade-terminal/FuturesMobileCompact.css';
 import './trade-terminal/FuturesBybitParity.css';
 import './trade-terminal/FuturesFigmaDesktop.css';
 import './trade-terminal/FuturesMobileLargeText.css';
+// The account panel's draggable top edge (owner, 2026-10-21); TerminalPanelTiles stays last.
+import './trade-terminal/FuturesPanelResize.css';
 import './trade-terminal/TerminalPanelTiles.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
@@ -76,6 +79,15 @@ import './trade-terminal/TerminalPanelTiles.css';
 // from localStorage and then reconcile it with the same network calls that
 // already existed — no extra request is introduced.
 const CORE_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
+
+/** The pair row's height inside the terminal grid (the account panel's ceiling leaves it alone). */
+const tickerHeightOf = (terminal: HTMLElement) => terminal.querySelector<HTMLElement>('.ticker-bar')?.offsetHeight ?? 56;
+/** The grid's own padding and its two row gaps: what the three tracks cannot use. */
+const gridChromeOf = (terminal: HTMLElement) => {
+  const cs = getComputedStyle(terminal);
+  const px = (v: string) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+  return px(cs.paddingTop) + px(cs.paddingBottom) + 2 * px(cs.rowGap || cs.gap);
+};
 
 // Orders and their history share /futures/orders/me with different filters.
 type BottomTab = 'orders' | 'positions' | 'orderHistory' | 'positionHistory' | 'assets';
@@ -234,6 +246,60 @@ export function FuturesPage() {
     window.requestAnimationFrame(() => window.scrollTo({ top: resetScroll ? 0 : mobileScroll.current[next] ?? 0, behavior: 'instant' }));
   }, [mobileTab]);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
+  /* The account panel's height on desktop: the trader drags its top edge
+     (Bybit), the arrow keys move it, a double-click gives the stylesheet's
+     height back. `null` = the stylesheet's own geometry. The measured values
+     feed the handle's ARIA range and the drag's start/ceiling; nothing else
+     reads them. */
+  const panelHeight = useFuturesPanelHeight();
+  const terminalRef = useRef<HTMLDivElement | null>(null);
+  const bottomPanelRef = useRef<HTMLDivElement | null>(null);
+  const [panelMeasured, setPanelMeasured] = useState<number>(FUTURES_PANEL_MIN_HEIGHT);
+  const [panelMax, setPanelMax] = useState<number>(FUTURES_PANEL_MAX_HEIGHT_FALLBACK);
+  const [panelDragging, setPanelDragging] = useState(false);
+  /* The ceiling is measured BEFORE the first paint (layout effect), so a
+     height remembered on a large screen is already held inside a small
+     window's room when the grid first appears — never a frame of overflow
+     and page scroll — and re-measured on every terminal resize. */
+  useLayoutEffect(() => {
+    const terminal = terminalRef.current, panel = bottomPanelRef.current;
+    if (!terminal || !panel || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      setPanelMeasured(Math.round(panel.getBoundingClientRect().height));
+      setPanelMax(maxPanelHeightFor(terminal.clientHeight, tickerHeightOf(terminal), gridChromeOf(terminal)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(terminal); observer.observe(panel);
+    return () => observer.disconnect();
+  }, []);
+  /* What the grid gets: the remembered preference, held inside today's
+     ceiling. The preference itself stays (localStorage) while a small
+     window limits it, so the large screen gets its height back. */
+  const panelShown = effectivePanelHeight(panelHeight.height, panelMax);
+  const panelLimited = panelShown !== null && panelHeight.height !== null && panelShown < panelHeight.height;
+  const resizePanelBy = useCallback((delta: number) => {
+    panelHeight.set((panelShown ?? panelMeasured) + delta, panelMax);
+  }, [panelHeight, panelShown, panelMeasured, panelMax]);
+  const startPanelResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    const terminal = terminalRef.current, panel = bottomPanelRef.current;
+    const startY = event.clientY;
+    const startHeight = panelShown ?? Math.round(panel?.getBoundingClientRect().height ?? panelMeasured);
+    const max = terminal ? maxPanelHeightFor(terminal.clientHeight, tickerHeightOf(terminal), gridChromeOf(terminal)) : panelMax;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setPanelDragging(true);
+    const move = (e: PointerEvent) => panelHeight.set(startHeight + startY - e.clientY, max);
+    const stop = () => {
+      setPanelDragging(false);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+  }, [panelHeight, panelShown, panelMeasured, panelMax]);
   const accountPanel = useCompactAccountPanel(
     (bottomTab === 'orders' || bottomTab === 'positions')
       && isVerifiedEmptyAccountResource(visibleAccount.orders)
@@ -571,7 +637,10 @@ export function FuturesPage() {
 
       <FuturesExecutionProvider value={execution}>
       <FuturesAccountSourceContext.Provider value={execution.account}>
-      <div className="terminal" data-account-compact={accountPanel.compact} data-mobile-tab={mobileTab} data-mobile-chart={mobileChartTab}>
+      <div className="terminal" ref={terminalRef} data-account-compact={accountPanel.compact} data-mobile-tab={mobileTab} data-mobile-chart={mobileChartTab}
+        data-account-height={panelHeight.height !== null ? 'user' : undefined}
+        data-account-height-limited={panelLimited ? 'true' : undefined}
+        style={panelShown !== null ? ({ '--futures-account-height': `${panelShown}px` } as React.CSSProperties) : undefined}>
         {/* On a phone the calculator rides in the instrument row: the
             ticket's own heading row is not drawn there (see below). */}
         <FuturesTickerBar archive={archivePreview} symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} onOpenCalculator={archivePreview && !compact ? undefined : () => setCalculatorOpen(true)} />
@@ -786,7 +855,16 @@ export function FuturesPage() {
           </div>
         </div>
 
-        <div id="mobile-futures-panel-positions" className="bottom-panel" data-account-compact={accountPanel.compact}>
+        <div id="mobile-futures-panel-positions" className="bottom-panel" ref={bottomPanelRef} data-account-compact={accountPanel.compact}>
+          <div className="orders-resize-handle" role="separator" tabIndex={0} aria-label={t('futures.panelHeight')} title={t('futures.panelHeight')}
+            aria-orientation="horizontal" aria-valuemin={FUTURES_PANEL_MIN_HEIGHT} aria-valuemax={panelMax} aria-valuenow={panelShown ?? panelMeasured}
+            data-dragging={panelDragging || undefined} data-user-height={panelHeight.height ?? undefined} data-shown-height={panelShown ?? undefined}
+            onPointerDown={startPanelResize} onDoubleClick={panelHeight.reset}
+            onKeyDown={event => {
+              if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); resizePanelBy(event.key === 'ArrowUp' ? FUTURES_PANEL_KEY_STEP : -FUTURES_PANEL_KEY_STEP); }
+              else if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); panelHeight.set(event.key === 'End' ? panelMax : FUTURES_PANEL_MIN_HEIGHT, panelMax); }
+              else if (event.key === 'Escape') { event.preventDefault(); panelHeight.reset(); }
+            }} />
           <div className="terminal-account-header">
           <div className="bottom-tabs" role="tablist" aria-label={t('futures.positions')}>
             {BOTTOM_TABS.map((tab) => (

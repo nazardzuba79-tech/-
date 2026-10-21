@@ -1,0 +1,40 @@
+/* The account panel's top edge is a handle, as on Bybit (owner, 2026-10-21:
+   «не можу як у байбіт перегорнути … щоб показати дві угоди разом, чи
+   більше»). Dragging it, or the arrow keys on it, change the panel's height;
+   a double-click returns the stylesheet's height. The page itself never
+   scrolls: the panel grows into the chart's track and its own content scrolls.
+   The handle reuses the Spot terminal's `orders-resize-handle` (TradePage),
+   so the folded panel hides it through the existing TerminalAccountPanel rule.
+   Desktop only — a phone stacks the panel under the chart. */
+@media (min-width: 901px) {
+  /* Two whole three-line position rows on arrival: the tab strip (44), the
+     «Все фьючерсные позиции · Совокупный P&L» line (36), the column heads
+     (30), two 68px rows and the 4px scrollbar track = 250. The owner opens
+     the terminal with two trades and wants both on screen without a gesture;
+     the 200px of FuturesFigmaDesktop showed one. The 160px status variant
+     and the 44px fold are untouched. */
+  #archive-terminal-preview.futures-terminal .terminal { --futures-account-height: 252px; }
+  /* A height the trader set is written inline on the grid by the page
+     (`--futures-account-height`), so it beats the 160px status variant
+     below as well as this default. */
+  #archive-terminal-preview.futures-terminal .bottom-panel { position: relative; }
+  #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle {
+    position: absolute; top: -5px; left: 0; right: 0; height: 10px; z-index: 9;
+    cursor: row-resize; touch-action: none; user-select: none;
+  }
+  #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle::after {
+    content: ''; position: absolute; left: 50%; top: 3px; width: 44px; height: 4px; margin-left: -22px;
+    border-radius: 2px; background: rgba(132, 142, 156, .45); opacity: 0; transition: opacity .12s;
+  }
+  #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle:hover::after,
+  #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle:focus-visible::after,
+  #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle[data-dragging='true']::after { opacity: 1; }
+  #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle:focus-visible { outline: none; background: #7d9ab133; }
+  #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle[data-dragging='true'] { background: #7d9ab122; }
+  /* Every tab's body scrolls inside the panel (the positions table keeps its
+     own two-axis scroller; the others gain a vertical one), never the page. */
+  #archive-terminal-preview.futures-terminal .bottom-content { overflow-x: hidden; overflow-y: auto; }
+}
+@media (max-width: 900px) {
+  #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle { display: none; }
+}

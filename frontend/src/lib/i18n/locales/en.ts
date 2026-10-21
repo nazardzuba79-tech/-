@@ -1506,6 +1506,7 @@ export const EN: Record<Key, string> = {
   'futures.liqPrice': 'Liq. Price',
   'futures.colContracts': 'Contracts',
   'futures.allMarkets': 'All markets',
+  'futures.panelHeight': 'Positions panel height',
   'futures.allPositions': 'All futures positions',
   'futures.currentPositions': 'Current positions:',
   'futures.totalPnl': 'Total P&L',
