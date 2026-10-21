@@ -1479,6 +1479,7 @@ export const KO: Record<Key, string> = {
   'futures.liqPrice': '청산 가격',
   'futures.colContracts': '계약',
   'futures.allMarkets': '모든 시장',
+  'futures.panelHeight': '포지션 패널 높이',
   'futures.allPositions': '모든 선물 포지션',
   'futures.currentPositions': '현재 포지션:',
   'futures.totalPnl': '총 손익',
