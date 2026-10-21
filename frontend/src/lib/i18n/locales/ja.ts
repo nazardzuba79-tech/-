@@ -1479,6 +1479,7 @@ export const JA: Record<Key, string> = {
   'futures.liqPrice': '清算価格',
   'futures.colContracts': '契約',
   'futures.allMarkets': 'すべての市場',
+  'futures.panelHeight': 'ポジションパネルの高さ',
   'futures.allPositions': 'すべての先物ポジション',
   'futures.currentPositions': '現在のポジション:',
   'futures.totalPnl': '合計損益',

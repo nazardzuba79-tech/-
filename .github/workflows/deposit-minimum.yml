@@ -89,7 +89,7 @@ jobs:
           frontend/src/lib/__tests__/adminUsersActivity.test.ts
           frontend/src/lib/__tests__/renderBandwidthBudget.test.ts
       - name: Install isolated PostgreSQL and browser tools
-        run: npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+        run: npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.63.0
       - name: Real PostgreSQL packages, watcher recovery and production-bundle browser acceptance
         run: |
           $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path
