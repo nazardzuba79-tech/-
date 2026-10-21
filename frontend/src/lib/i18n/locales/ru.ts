@@ -1730,6 +1730,7 @@ export const RU = {
   'futures.chartTradingPicking': 'Выберите свечу на графике',
   'futures.chartTools': 'Инструменты графика',
   'futures.chartTradingCancel': 'Отменить выбор',
+  'futures.accountPanelHeight': 'Высота панели позиций',
   'futures.contractLimit': 'Контракт не примет такой размер. {limit}: {allowed}.',
   'futures.positionValue': 'Стоимость позиции',
   'futures.closeBy': 'Закрыть по',

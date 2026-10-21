@@ -203,6 +203,17 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     // the page at desktop width, so the breakpoint hook answers false.
     if (name === '../components/TerminalMarketSwitch') return { TerminalMarketSwitch: () => null };
     if (name === '../lib/terminalMarketSwitch') return jest.requireActual('../terminalMarketSwitch');
+    // The chart / account divider's height module (2026-10-21): real logic on
+    // the harness's React, as useCompactAccountPanel above. JSDOM has no
+    // ResizeObserver, so the hook keeps the design default; the separator renders.
+    if (name === '../lib/futuresAccountPanelHeight') {
+      const module: any = {};
+      const code = ts.transpileModule(source('lib/futuresAccountPanelHeight.ts'), { compilerOptions: {
+        module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
+      } }).outputText;
+      new Function('require', 'exports', code)(() => react, module);
+      return module;
+    }
     if (name === '../lib/useMediaQuery') return { MOBILE_TERMINAL_QUERY: '(max-width: 900px)', useMediaQuery: () => false };
     // The owner-only native demo is server-gated; an ordinary account keeps the public terminal.
     if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true, state: null, setHistoryDemand: () => {}, interaction: { selecting: null, onCancelSelection: overrides.cancelSelection ?? jest.fn() } }) };

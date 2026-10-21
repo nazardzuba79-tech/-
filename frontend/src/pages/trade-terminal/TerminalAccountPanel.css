@@ -1257,3 +1257,41 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-selector:focus-visible .pair-arrow {
   color: #fff;
 }
+
+/* CHART / ACCOUNT DIVIDER (desktop)
+   The control the Spot terminal already has above its orders panel: a thin
+   strip on the account panel's top edge that drags (row-resize) or moves with
+   the arrow keys, and goes back to the design default on a double click. It
+   only sets --futures-account-height on .terminal (lib/futuresAccountPanelHeight);
+   the desktop grid rows read that variable, so the chart row's
+   minmax(300px,1fr) gives back exactly what the panel takes and keeps its
+   floor. Phones keep their page-scrolling cascade: no divider there.
+   Presentation only: no table, reader or action changes. */
+@media (min-width:901px) {
+  .trade-terminal.futures-terminal .bottom-panel { position:relative; }
+  .trade-terminal.futures-terminal .bottom-panel .orders-resize-handle {
+    position:absolute; top:-4px; left:0; right:0; height:8px; z-index:9;
+    cursor:row-resize; touch-action:none;
+  }
+  .trade-terminal.futures-terminal .bottom-panel .orders-resize-handle::after {
+    content:''; position:absolute; left:50%; top:3px; width:40px; height:2px; margin-left:-20px;
+    border-radius:1px; background:#8a94a3; opacity:0; transition:opacity .12s;
+  }
+  .trade-terminal.futures-terminal .bottom-panel .orders-resize-handle:hover,
+  .trade-terminal.futures-terminal .bottom-panel .orders-resize-handle:focus-visible { background:#7d9ab12e; outline:none; }
+  .trade-terminal.futures-terminal .bottom-panel .orders-resize-handle:hover::after,
+  .trade-terminal.futures-terminal .bottom-panel .orders-resize-handle:focus-visible::after,
+  .trade-terminal.futures-terminal .terminal[data-account-resizing=true] .orders-resize-handle::after { opacity:1; }
+  .trade-terminal.futures-terminal .terminal[data-account-resizing=true] { cursor:row-resize; user-select:none; }
+  /* A height the trader chose wins over the design's populated/empty defaults
+     in every desktop layout; the compact (folded) row stays 44px. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal[data-account-height=user]:not([data-account-compact=true]) {
+    grid-template-rows:70px minmax(0,1fr) var(--futures-account-height);
+  }
+  #archive-terminal-preview.futures-terminal .terminal[data-account-height=user]:not([data-account-compact=true]) {
+    grid-template-rows:var(--futures-ticker-height) minmax(300px,1fr) var(--futures-account-height);
+  }
+}
+@media (max-width:900px) {
+  .trade-terminal.futures-terminal .orders-resize-handle { display:none; }
+}

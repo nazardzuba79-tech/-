@@ -359,6 +359,8 @@ describe('translation integrity', () => {
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
           // Native demo P&L breakdown columns (2026-10-16): four new keys, additions only.
           'futures.colTradingPnl', 'futures.colFunding', 'futures.colFees', 'futures.colNetPnl',
+          // Chart / account divider on the Futures terminal (2026-10-21): the separator's accessible name, additive only.
+          'futures.accountPanelHeight',
           'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable',
           'markets.new', // Spot rail newest-listing sorter (2026-10-04), additive only.
           'deposit.transferCreditNote', // New manual-catalogue copy; preserve every existing dictionary byte.

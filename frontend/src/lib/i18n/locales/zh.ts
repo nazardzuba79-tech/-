@@ -1694,6 +1694,7 @@ export const ZH: Record<Key, string> = {
   'futures.chartTradingPicking': '在图表上选择K线',
   'futures.chartTools': '图表工具',
   'futures.chartTradingCancel': '取消选择',
+  'futures.accountPanelHeight': '持仓面板高度',
   'futures.contractLimit': '该合约不接受此数量。{limit}：{allowed}。',
   'futures.positionValue': '仓位价值',
   'futures.closeBy': '平仓方式',

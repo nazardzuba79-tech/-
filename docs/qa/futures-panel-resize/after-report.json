@@ -1,0 +1,2603 @@
+{
+  "label": "after",
+  "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-fpanel/frontend/dist",
+  "measureOnly": false,
+  "runs": [
+    {
+      "count": 2,
+      "viewport": "1440x900",
+      "steps": {
+        "initial": {
+          "viewport": {
+            "w": 1440,
+            "h": 900
+          },
+          "terminal": {
+            "left": 0,
+            "top": 48,
+            "right": 1440,
+            "bottom": 872,
+            "width": 1440,
+            "height": 824
+          },
+          "terminalRows": "56px 552px 200px",
+          "accountHeightVar": "200px",
+          "chart": {
+            "left": 4,
+            "top": 112,
+            "right": 842,
+            "bottom": 664,
+            "width": 838,
+            "height": 552
+          },
+          "chartCanvas": {
+            "left": 60,
+            "top": 188,
+            "right": 786,
+            "bottom": 546,
+            "width": 726,
+            "height": 358
+          },
+          "panel": {
+            "left": 4,
+            "top": 668,
+            "right": 1132,
+            "bottom": 868,
+            "width": 1128,
+            "height": 200
+          },
+          "content": {
+            "left": 4,
+            "top": 712,
+            "right": 1132,
+            "bottom": 868,
+            "width": 1128,
+            "height": 156
+          },
+          "region": {
+            "left": 4,
+            "top": 746,
+            "right": 1132,
+            "bottom": 868,
+            "width": 1128,
+            "height": 122
+          },
+          "regionScroll": {
+            "clientH": 122,
+            "scrollH": 168,
+            "top": 0,
+            "clientW": 1128,
+            "scrollW": 1249,
+            "left": 0,
+            "overflowY": "auto",
+            "overflowX": "scroll"
+          },
+          "contentOverflow": {
+            "clientH": 156,
+            "scrollH": 156,
+            "overflowY": "hidden"
+          },
+          "headSticky": "sticky",
+          "head": {
+            "left": 4,
+            "top": 746,
+            "right": 177,
+            "bottom": 778,
+            "width": 173,
+            "height": 32
+          },
+          "handle": {
+            "box": {
+              "left": 4,
+              "top": 664,
+              "right": 1132,
+              "bottom": 672,
+              "width": 1128,
+              "height": 8
+            },
+            "role": "separator",
+            "min": "160",
+            "max": "460",
+            "now": "200",
+            "cursor": "row-resize"
+          },
+          "rows": [
+            {
+              "symbol": "DOODUSDTБесс",
+              "box": {
+                "left": 4,
+                "top": 778,
+                "right": 1253,
+                "bottom": 846,
+                "width": 1249,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 795,
+                "right": 106,
+                "bottom": 809,
+                "width": 80,
+                "height": 14
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            },
+            {
+              "symbol": "IOSTUSDTБесс",
+              "box": {
+                "left": 4,
+                "top": 846,
+                "right": 1253,
+                "bottom": 914,
+                "width": 1249,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 863,
+                "right": 97,
+                "bottom": 877,
+                "width": 71,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            }
+          ],
+          "pageOverflowX": 0,
+          "pageH": 900,
+          "tabs": [
+            {
+              "id": "futures-tab-orders",
+              "text": "Открытые ордера(0)",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positions",
+              "text": "Позиции(2)",
+              "selected": "true"
+            },
+            {
+              "id": "futures-tab-orderHistory",
+              "text": "История ордеров",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positionHistory",
+              "text": "История позиций",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-assets",
+              "text": "Активы",
+              "selected": "false"
+            }
+          ]
+        },
+        "reach": [
+          {
+            "symbol": "DOODUSDTБесс",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 0
+          },
+          {
+            "symbol": "IOSTUSDTБесс",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 46
+          }
+        ],
+        "wheel": {
+          "before": 0,
+          "after": 46
+        },
+        "horizontal": {
+          "left": 121,
+          "lastCloseVisible": true
+        },
+        "dragUp": {
+          "panelBefore": 200,
+          "panelAfter": 360,
+          "chartBefore": 552,
+          "chartAfter": 392,
+          "canvas": {
+            "left": 60,
+            "top": 188,
+            "right": 786,
+            "bottom": 418,
+            "width": 726,
+            "height": 230
+          },
+          "now": "360"
+        },
+        "dragUpRows": [
+          true,
+          true
+        ],
+        "reload": {
+          "panel": 360,
+          "expected": 360
+        },
+        "keyboard": {
+          "before": 360,
+          "after": 312
+        },
+        "dragDown": {
+          "panel": 160,
+          "chart": 592,
+          "min": "160"
+        },
+        "dragMax": {
+          "panel": 460,
+          "chart": 300,
+          "max": "460"
+        },
+        "tabs": [
+          {
+            "id": "orders",
+            "selected": "true",
+            "panel": "futures-tab-orders"
+          },
+          {
+            "id": "positions",
+            "selected": "true",
+            "panel": "futures-tab-positions"
+          },
+          {
+            "id": "orderHistory",
+            "selected": "true",
+            "panel": "futures-tab-orderHistory"
+          },
+          {
+            "id": "positionHistory",
+            "selected": "true",
+            "panel": "futures-tab-positionHistory"
+          }
+        ]
+      }
+    },
+    {
+      "count": 2,
+      "viewport": "1280x720",
+      "steps": {
+        "initial": {
+          "viewport": {
+            "w": 1280,
+            "h": 720
+          },
+          "terminal": {
+            "left": 0,
+            "top": 48,
+            "right": 1280,
+            "bottom": 692,
+            "width": 1280,
+            "height": 644
+          },
+          "terminalRows": "52px 376px 200px",
+          "accountHeightVar": "200px",
+          "chart": {
+            "left": 4,
+            "top": 108,
+            "right": 682,
+            "bottom": 484,
+            "width": 678,
+            "height": 376
+          },
+          "chartCanvas": {
+            "left": 60,
+            "top": 184,
+            "right": 626,
+            "bottom": 401,
+            "width": 566,
+            "height": 217
+          },
+          "panel": {
+            "left": 4,
+            "top": 488,
+            "right": 972,
+            "bottom": 688,
+            "width": 968,
+            "height": 200
+          },
+          "content": {
+            "left": 4,
+            "top": 532,
+            "right": 972,
+            "bottom": 688,
+            "width": 968,
+            "height": 156
+          },
+          "region": {
+            "left": 4,
+            "top": 566,
+            "right": 972,
+            "bottom": 688,
+            "width": 968,
+            "height": 122
+          },
+          "regionScroll": {
+            "clientH": 122,
+            "scrollH": 168,
+            "top": 0,
+            "clientW": 968,
+            "scrollW": 1238,
+            "left": 0,
+            "overflowY": "auto",
+            "overflowX": "scroll"
+          },
+          "contentOverflow": {
+            "clientH": 156,
+            "scrollH": 156,
+            "overflowY": "hidden"
+          },
+          "headSticky": "sticky",
+          "head": {
+            "left": 4,
+            "top": 566,
+            "right": 177,
+            "bottom": 598,
+            "width": 173,
+            "height": 32
+          },
+          "handle": {
+            "box": {
+              "left": 4,
+              "top": 484,
+              "right": 972,
+              "bottom": 492,
+              "width": 968,
+              "height": 8
+            },
+            "role": "separator",
+            "min": "160",
+            "max": "284",
+            "now": "200",
+            "cursor": "row-resize"
+          },
+          "rows": [
+            {
+              "symbol": "DOODUSDTБесс",
+              "box": {
+                "left": 4,
+                "top": 598,
+                "right": 1242,
+                "bottom": 666,
+                "width": 1238,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 615,
+                "right": 106,
+                "bottom": 629,
+                "width": 80,
+                "height": 14
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            },
+            {
+              "symbol": "IOSTUSDTБесс",
+              "box": {
+                "left": 4,
+                "top": 666,
+                "right": 1242,
+                "bottom": 734,
+                "width": 1238,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 683,
+                "right": 97,
+                "bottom": 697,
+                "width": 71,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            }
+          ],
+          "pageOverflowX": 0,
+          "pageH": 720,
+          "tabs": [
+            {
+              "id": "futures-tab-orders",
+              "text": "Открытые ордера(0)",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positions",
+              "text": "Позиции(2)",
+              "selected": "true"
+            },
+            {
+              "id": "futures-tab-orderHistory",
+              "text": "История ордеров",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positionHistory",
+              "text": "История позиций",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-assets",
+              "text": "Активы",
+              "selected": "false"
+            }
+          ]
+        },
+        "reach": [
+          {
+            "symbol": "DOODUSDTБесс",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 0
+          },
+          {
+            "symbol": "IOSTUSDTБесс",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 46
+          }
+        ],
+        "wheel": {
+          "before": 0,
+          "after": 46
+        },
+        "horizontal": {
+          "left": 270,
+          "lastCloseVisible": true
+        },
+        "dragUp": {
+          "panelBefore": 200,
+          "panelAfter": 284,
+          "chartBefore": 376,
+          "chartAfter": 300,
+          "canvas": {
+            "left": 60,
+            "top": 184,
+            "right": 626,
+            "bottom": 340,
+            "width": 566,
+            "height": 156
+          },
+          "now": "284"
+        },
+        "dragUpRows": [
+          true,
+          true
+        ],
+        "reload": {
+          "panel": 284,
+          "expected": 284
+        },
+        "keyboard": {
+          "before": 284,
+          "after": 236
+        },
+        "dragDown": {
+          "panel": 160,
+          "chart": 416,
+          "min": "160"
+        },
+        "dragMax": {
+          "panel": 284,
+          "chart": 300,
+          "max": "284"
+        },
+        "tabs": [
+          {
+            "id": "orders",
+            "selected": "true",
+            "panel": "futures-tab-orders"
+          },
+          {
+            "id": "positions",
+            "selected": "true",
+            "panel": "futures-tab-positions"
+          },
+          {
+            "id": "orderHistory",
+            "selected": "true",
+            "panel": "futures-tab-orderHistory"
+          },
+          {
+            "id": "positionHistory",
+            "selected": "true",
+            "panel": "futures-tab-positionHistory"
+          }
+        ]
+      }
+    },
+    {
+      "count": 2,
+      "viewport": "390x844",
+      "steps": {
+        "initial": {
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "terminal": {
+            "left": 0,
+            "top": 61,
+            "right": 390,
+            "bottom": 1556,
+            "width": 390,
+            "height": 1495
+          },
+          "terminalRows": "56px minmax(280px, 1fr) 230px",
+          "accountHeightVar": "",
+          "chart": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "chartCanvas": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "panel": {
+            "left": 0,
+            "top": 168,
+            "right": 390,
+            "bottom": 1556,
+            "width": 390,
+            "height": 1388
+          },
+          "content": {
+            "left": 0,
+            "top": 326,
+            "right": 390,
+            "bottom": 1556,
+            "width": 390,
+            "height": 1230
+          },
+          "region": {
+            "left": 0,
+            "top": 381,
+            "right": 390,
+            "bottom": 1556,
+            "width": 390,
+            "height": 1175
+          },
+          "regionScroll": {
+            "clientH": 1175,
+            "scrollH": 1175,
+            "top": 0,
+            "clientW": 390,
+            "scrollW": 390,
+            "left": 0,
+            "overflowY": "visible",
+            "overflowX": "visible"
+          },
+          "contentOverflow": {
+            "clientH": 1230,
+            "scrollH": 1230,
+            "overflowY": "hidden"
+          },
+          "headSticky": "sticky",
+          "head": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "handle": null,
+          "rows": [
+            {
+              "symbol": "DOODUSDTБесс",
+              "box": {
+                "left": 12,
+                "top": 393,
+                "right": 378,
+                "bottom": 963,
+                "width": 366,
+                "height": 570
+              },
+              "closeBox": {
+                "left": 37,
+                "top": 408,
+                "right": 117,
+                "bottom": 452,
+                "width": 80,
+                "height": 44
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            },
+            {
+              "symbol": "IOSTUSDTБесс",
+              "box": {
+                "left": 12,
+                "top": 975,
+                "right": 378,
+                "bottom": 1544,
+                "width": 366,
+                "height": 570
+              },
+              "closeBox": {
+                "left": 37,
+                "top": 990,
+                "right": 109,
+                "bottom": 1034,
+                "width": 72,
+                "height": 44
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            }
+          ],
+          "pageOverflowX": 0,
+          "pageH": 1632,
+          "tabs": [
+            {
+              "id": "futures-tab-orders",
+              "text": "Открытые ордера(0)",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positions",
+              "text": "Позиции(2)",
+              "selected": "true"
+            },
+            {
+              "id": "futures-tab-orderHistory",
+              "text": "История ордеров",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positionHistory",
+              "text": "История позиций",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-assets",
+              "text": "Активы",
+              "selected": "false"
+            }
+          ]
+        },
+        "reach": [
+          {
+            "top": 105,
+            "bottom": 675,
+            "inView": true,
+            "closeInView": true
+          },
+          {
+            "top": 187,
+            "bottom": 756,
+            "inView": true,
+            "closeInView": true
+          }
+        ]
+      }
+    },
+    {
+      "count": 5,
+      "viewport": "1440x900",
+      "steps": {
+        "initial": {
+          "viewport": {
+            "w": 1440,
+            "h": 900
+          },
+          "terminal": {
+            "left": 0,
+            "top": 48,
+            "right": 1440,
+            "bottom": 872,
+            "width": 1440,
+            "height": 824
+          },
+          "terminalRows": "56px 552px 200px",
+          "accountHeightVar": "200px",
+          "chart": {
+            "left": 4,
+            "top": 112,
+            "right": 842,
+            "bottom": 664,
+            "width": 838,
+            "height": 552
+          },
+          "chartCanvas": {
+            "left": 60,
+            "top": 188,
+            "right": 786,
+            "bottom": 546,
+            "width": 726,
+            "height": 358
+          },
+          "panel": {
+            "left": 4,
+            "top": 668,
+            "right": 1132,
+            "bottom": 868,
+            "width": 1128,
+            "height": 200
+          },
+          "content": {
+            "left": 4,
+            "top": 712,
+            "right": 1132,
+            "bottom": 868,
+            "width": 1128,
+            "height": 156
+          },
+          "region": {
+            "left": 4,
+            "top": 746,
+            "right": 1132,
+            "bottom": 868,
+            "width": 1128,
+            "height": 122
+          },
+          "regionScroll": {
+            "clientH": 122,
+            "scrollH": 372,
+            "top": 0,
+            "clientW": 1128,
+            "scrollW": 1253,
+            "left": 0,
+            "overflowY": "auto",
+            "overflowX": "scroll"
+          },
+          "contentOverflow": {
+            "clientH": 156,
+            "scrollH": 156,
+            "overflowY": "hidden"
+          },
+          "headSticky": "sticky",
+          "head": {
+            "left": 4,
+            "top": 746,
+            "right": 177,
+            "bottom": 778,
+            "width": 173,
+            "height": 32
+          },
+          "handle": {
+            "box": {
+              "left": 4,
+              "top": 664,
+              "right": 1132,
+              "bottom": 672,
+              "width": 1128,
+              "height": 8
+            },
+            "role": "separator",
+            "min": "160",
+            "max": "460",
+            "now": "200",
+            "cursor": "row-resize"
+          },
+          "rows": [
+            {
+              "symbol": "DOODUSDTБесс",
+              "box": {
+                "left": 4,
+                "top": 778,
+                "right": 1257,
+                "bottom": 846,
+                "width": 1253,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 795,
+                "right": 106,
+                "bottom": 809,
+                "width": 80,
+                "height": 14
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            },
+            {
+              "symbol": "IOSTUSDTБесс",
+              "box": {
+                "left": 4,
+                "top": 846,
+                "right": 1257,
+                "bottom": 914,
+                "width": 1253,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 863,
+                "right": 97,
+                "bottom": 877,
+                "width": 71,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            },
+            {
+              "symbol": "BTCUSDTБесср",
+              "box": {
+                "left": 4,
+                "top": 914,
+                "right": 1257,
+                "bottom": 982,
+                "width": 1253,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 931,
+                "right": 92,
+                "bottom": 945,
+                "width": 66,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            },
+            {
+              "symbol": "ETHUSDTБесср",
+              "box": {
+                "left": 4,
+                "top": 982,
+                "right": 1257,
+                "bottom": 1050,
+                "width": 1253,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 999,
+                "right": 92,
+                "bottom": 1013,
+                "width": 66,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            },
+            {
+              "symbol": "SOLUSDTБесср",
+              "box": {
+                "left": 4,
+                "top": 1050,
+                "right": 1257,
+                "bottom": 1118,
+                "width": 1253,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 1067,
+                "right": 92,
+                "bottom": 1081,
+                "width": 66,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            }
+          ],
+          "pageOverflowX": 0,
+          "pageH": 900,
+          "tabs": [
+            {
+              "id": "futures-tab-orders",
+              "text": "Открытые ордера(0)",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positions",
+              "text": "Позиции(5)",
+              "selected": "true"
+            },
+            {
+              "id": "futures-tab-orderHistory",
+              "text": "История ордеров",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positionHistory",
+              "text": "История позиций",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-assets",
+              "text": "Активы",
+              "selected": "false"
+            }
+          ]
+        },
+        "reach": [
+          {
+            "symbol": "DOODUSDTБесс",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 0
+          },
+          {
+            "symbol": "IOSTUSDTБесс",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 46
+          },
+          {
+            "symbol": "BTCUSDTБесср",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 114
+          },
+          {
+            "symbol": "ETHUSDTБесср",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 182
+          },
+          {
+            "symbol": "SOLUSDTБесср",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 250
+          }
+        ],
+        "wheel": {
+          "before": 0,
+          "after": 240
+        },
+        "horizontal": {
+          "left": 125,
+          "lastCloseVisible": true
+        },
+        "dragUp": {
+          "panelBefore": 200,
+          "panelAfter": 360,
+          "chartBefore": 552,
+          "chartAfter": 392,
+          "canvas": {
+            "left": 60,
+            "top": 188,
+            "right": 786,
+            "bottom": 418,
+            "width": 726,
+            "height": 230
+          },
+          "now": "360"
+        },
+        "dragUpRows": [
+          true,
+          true,
+          true,
+          false,
+          false
+        ],
+        "reload": {
+          "panel": 360,
+          "expected": 360
+        },
+        "keyboard": {
+          "before": 360,
+          "after": 312
+        },
+        "dragDown": {
+          "panel": 160,
+          "chart": 592,
+          "min": "160"
+        },
+        "dragMax": {
+          "panel": 460,
+          "chart": 300,
+          "max": "460"
+        },
+        "maxRows": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "tabs": [
+          {
+            "id": "orders",
+            "selected": "true",
+            "panel": "futures-tab-orders"
+          },
+          {
+            "id": "positions",
+            "selected": "true",
+            "panel": "futures-tab-positions"
+          },
+          {
+            "id": "orderHistory",
+            "selected": "true",
+            "panel": "futures-tab-orderHistory"
+          },
+          {
+            "id": "positionHistory",
+            "selected": "true",
+            "panel": "futures-tab-positionHistory"
+          }
+        ]
+      }
+    },
+    {
+      "count": 5,
+      "viewport": "1280x720",
+      "steps": {
+        "initial": {
+          "viewport": {
+            "w": 1280,
+            "h": 720
+          },
+          "terminal": {
+            "left": 0,
+            "top": 48,
+            "right": 1280,
+            "bottom": 692,
+            "width": 1280,
+            "height": 644
+          },
+          "terminalRows": "52px 376px 200px",
+          "accountHeightVar": "200px",
+          "chart": {
+            "left": 4,
+            "top": 108,
+            "right": 682,
+            "bottom": 484,
+            "width": 678,
+            "height": 376
+          },
+          "chartCanvas": {
+            "left": 60,
+            "top": 184,
+            "right": 626,
+            "bottom": 401,
+            "width": 566,
+            "height": 217
+          },
+          "panel": {
+            "left": 4,
+            "top": 488,
+            "right": 972,
+            "bottom": 688,
+            "width": 968,
+            "height": 200
+          },
+          "content": {
+            "left": 4,
+            "top": 532,
+            "right": 972,
+            "bottom": 688,
+            "width": 968,
+            "height": 156
+          },
+          "region": {
+            "left": 4,
+            "top": 566,
+            "right": 972,
+            "bottom": 688,
+            "width": 968,
+            "height": 122
+          },
+          "regionScroll": {
+            "clientH": 122,
+            "scrollH": 372,
+            "top": 0,
+            "clientW": 968,
+            "scrollW": 1244,
+            "left": 0,
+            "overflowY": "auto",
+            "overflowX": "scroll"
+          },
+          "contentOverflow": {
+            "clientH": 156,
+            "scrollH": 156,
+            "overflowY": "hidden"
+          },
+          "headSticky": "sticky",
+          "head": {
+            "left": 4,
+            "top": 566,
+            "right": 177,
+            "bottom": 598,
+            "width": 173,
+            "height": 32
+          },
+          "handle": {
+            "box": {
+              "left": 4,
+              "top": 484,
+              "right": 972,
+              "bottom": 492,
+              "width": 968,
+              "height": 8
+            },
+            "role": "separator",
+            "min": "160",
+            "max": "284",
+            "now": "200",
+            "cursor": "row-resize"
+          },
+          "rows": [
+            {
+              "symbol": "DOODUSDTБесс",
+              "box": {
+                "left": 4,
+                "top": 598,
+                "right": 1248,
+                "bottom": 666,
+                "width": 1244,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 615,
+                "right": 106,
+                "bottom": 629,
+                "width": 80,
+                "height": 14
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            },
+            {
+              "symbol": "IOSTUSDTБесс",
+              "box": {
+                "left": 4,
+                "top": 666,
+                "right": 1248,
+                "bottom": 734,
+                "width": 1244,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 683,
+                "right": 97,
+                "bottom": 697,
+                "width": 71,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            },
+            {
+              "symbol": "BTCUSDTБесср",
+              "box": {
+                "left": 4,
+                "top": 734,
+                "right": 1248,
+                "bottom": 802,
+                "width": 1244,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 751,
+                "right": 92,
+                "bottom": 765,
+                "width": 66,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            },
+            {
+              "symbol": "ETHUSDTБесср",
+              "box": {
+                "left": 4,
+                "top": 802,
+                "right": 1248,
+                "bottom": 870,
+                "width": 1244,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 819,
+                "right": 92,
+                "bottom": 833,
+                "width": 66,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            },
+            {
+              "symbol": "SOLUSDTБесср",
+              "box": {
+                "left": 4,
+                "top": 870,
+                "right": 1248,
+                "bottom": 938,
+                "width": 1244,
+                "height": 68
+              },
+              "closeBox": {
+                "left": 26,
+                "top": 887,
+                "right": 92,
+                "bottom": 901,
+                "width": 66,
+                "height": 14
+              },
+              "rowVisible": false,
+              "closeVisible": false
+            }
+          ],
+          "pageOverflowX": 0,
+          "pageH": 720,
+          "tabs": [
+            {
+              "id": "futures-tab-orders",
+              "text": "Открытые ордера(0)",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positions",
+              "text": "Позиции(5)",
+              "selected": "true"
+            },
+            {
+              "id": "futures-tab-orderHistory",
+              "text": "История ордеров",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positionHistory",
+              "text": "История позиций",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-assets",
+              "text": "Активы",
+              "selected": "false"
+            }
+          ]
+        },
+        "reach": [
+          {
+            "symbol": "DOODUSDTБесс",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 0
+          },
+          {
+            "symbol": "IOSTUSDTБесс",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 46
+          },
+          {
+            "symbol": "BTCUSDTБесср",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 114
+          },
+          {
+            "symbol": "ETHUSDTБесср",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 182
+          },
+          {
+            "symbol": "SOLUSDTБесср",
+            "rowVisible": true,
+            "closeVisible": true,
+            "scrollTop": 250
+          }
+        ],
+        "wheel": {
+          "before": 0,
+          "after": 240
+        },
+        "horizontal": {
+          "left": 276,
+          "lastCloseVisible": true
+        },
+        "dragUp": {
+          "panelBefore": 200,
+          "panelAfter": 284,
+          "chartBefore": 376,
+          "chartAfter": 300,
+          "canvas": {
+            "left": 60,
+            "top": 184,
+            "right": 626,
+            "bottom": 340,
+            "width": 566,
+            "height": 156
+          },
+          "now": "284"
+        },
+        "dragUpRows": [
+          true,
+          true,
+          false,
+          false,
+          false
+        ],
+        "reload": {
+          "panel": 284,
+          "expected": 284
+        },
+        "keyboard": {
+          "before": 284,
+          "after": 236
+        },
+        "dragDown": {
+          "panel": 160,
+          "chart": 416,
+          "min": "160"
+        },
+        "dragMax": {
+          "panel": 284,
+          "chart": 300,
+          "max": "284"
+        },
+        "maxRows": [
+          true,
+          true,
+          false,
+          false,
+          false
+        ],
+        "tabs": [
+          {
+            "id": "orders",
+            "selected": "true",
+            "panel": "futures-tab-orders"
+          },
+          {
+            "id": "positions",
+            "selected": "true",
+            "panel": "futures-tab-positions"
+          },
+          {
+            "id": "orderHistory",
+            "selected": "true",
+            "panel": "futures-tab-orderHistory"
+          },
+          {
+            "id": "positionHistory",
+            "selected": "true",
+            "panel": "futures-tab-positionHistory"
+          }
+        ]
+      }
+    },
+    {
+      "count": 5,
+      "viewport": "390x844",
+      "steps": {
+        "initial": {
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "terminal": {
+            "left": 0,
+            "top": 61,
+            "right": 390,
+            "bottom": 3301,
+            "width": 390,
+            "height": 3240
+          },
+          "terminalRows": "56px minmax(280px, 1fr) 230px",
+          "accountHeightVar": "",
+          "chart": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "chartCanvas": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "panel": {
+            "left": 0,
+            "top": 168,
+            "right": 390,
+            "bottom": 3301,
+            "width": 390,
+            "height": 3133
+          },
+          "content": {
+            "left": 0,
+            "top": 326,
+            "right": 390,
+            "bottom": 3301,
+            "width": 390,
+            "height": 2975
+          },
+          "region": {
+            "left": 0,
+            "top": 381,
+            "right": 390,
+            "bottom": 3301,
+            "width": 390,
+            "height": 2920
+          },
+          "regionScroll": {
+            "clientH": 2920,
+            "scrollH": 2920,
+            "top": 0,
+            "clientW": 390,
+            "scrollW": 390,
+            "left": 0,
+            "overflowY": "visible",
+            "overflowX": "visible"
+          },
+          "contentOverflow": {
+            "clientH": 2975,
+            "scrollH": 2975,
+            "overflowY": "hidden"
+          },
+          "headSticky": "sticky",
+          "head": {
+            "left": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "handle": null,
+          "rows": [
+            {
+              "symbol": "DOODUSDTБесс",
+              "box": {
+                "left": 12,
+                "top": 393,
+                "right": 378,
+                "bottom": 963,
+                "width": 366,
+                "height": 570
+              },
+              "closeBox": {
+                "left": 37,
+                "top": 408,
+                "right": 117,
+                "bottom": 452,
+                "width": 80,
+                "height": 44
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            },
+            {
+              "symbol": "IOSTUSDTБесс",
+              "box": {
+                "left": 12,
+                "top": 975,
+                "right": 378,
+                "bottom": 1544,
+                "width": 366,
+                "height": 570
+              },
+              "closeBox": {
+                "left": 37,
+                "top": 990,
+                "right": 109,
+                "bottom": 1034,
+                "width": 72,
+                "height": 44
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            },
+            {
+              "symbol": "BTCUSDTБесср",
+              "box": {
+                "left": 12,
+                "top": 1556,
+                "right": 378,
+                "bottom": 2126,
+                "width": 366,
+                "height": 570
+              },
+              "closeBox": {
+                "left": 37,
+                "top": 1571,
+                "right": 104,
+                "bottom": 1615,
+                "width": 67,
+                "height": 44
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            },
+            {
+              "symbol": "ETHUSDTБесср",
+              "box": {
+                "left": 12,
+                "top": 2138,
+                "right": 378,
+                "bottom": 2707,
+                "width": 366,
+                "height": 570
+              },
+              "closeBox": {
+                "left": 37,
+                "top": 2153,
+                "right": 105,
+                "bottom": 2197,
+                "width": 68,
+                "height": 44
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            },
+            {
+              "symbol": "SOLUSDTБесср",
+              "box": {
+                "left": 12,
+                "top": 2719,
+                "right": 378,
+                "bottom": 3289,
+                "width": 366,
+                "height": 570
+              },
+              "closeBox": {
+                "left": 37,
+                "top": 2734,
+                "right": 104,
+                "bottom": 2778,
+                "width": 67,
+                "height": 44
+              },
+              "rowVisible": true,
+              "closeVisible": true
+            }
+          ],
+          "pageOverflowX": 0,
+          "pageH": 3377,
+          "tabs": [
+            {
+              "id": "futures-tab-orders",
+              "text": "Открытые ордера(0)",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positions",
+              "text": "Позиции(5)",
+              "selected": "true"
+            },
+            {
+              "id": "futures-tab-orderHistory",
+              "text": "История ордеров",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-positionHistory",
+              "text": "История позиций",
+              "selected": "false"
+            },
+            {
+              "id": "futures-tab-assets",
+              "text": "Активы",
+              "selected": "false"
+            }
+          ]
+        },
+        "reach": [
+          {
+            "top": 105,
+            "bottom": 675,
+            "inView": true,
+            "closeInView": true
+          },
+          {
+            "top": 106,
+            "bottom": 675,
+            "inView": true,
+            "closeInView": true
+          },
+          {
+            "top": 105,
+            "bottom": 675,
+            "inView": true,
+            "closeInView": true
+          },
+          {
+            "top": 106,
+            "bottom": 675,
+            "inView": true,
+            "closeInView": true
+          },
+          {
+            "top": 186,
+            "bottom": 756,
+            "inView": true,
+            "closeInView": true
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "checks": [
+    {
+      "name": "2pos 1440x900 rows rendered",
+      "passed": true,
+      "detail": 2
+    },
+    {
+      "name": "2pos 1440x900 vertical scroll container is the table region",
+      "passed": true,
+      "detail": {
+        "clientH": 122,
+        "scrollH": 168,
+        "top": 0,
+        "clientW": 1128,
+        "scrollW": 1249,
+        "left": 0,
+        "overflowY": "auto",
+        "overflowX": "scroll"
+      }
+    },
+    {
+      "name": "2pos 1440x900 every row and its close button reachable by scrolling",
+      "passed": true,
+      "detail": [
+        {
+          "symbol": "DOODUSDTБесс",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 0
+        },
+        {
+          "symbol": "IOSTUSDTБесс",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 46
+        }
+      ]
+    },
+    {
+      "name": "2pos 1440x900 wheel over the table scrolls the rows",
+      "passed": true,
+      "detail": {
+        "before": 0,
+        "after": 46
+      }
+    },
+    {
+      "name": "2pos 1440x900 column headings stay pinned while rows scroll",
+      "passed": true,
+      "detail": {
+        "sticky": "sticky",
+        "head": {
+          "left": 4,
+          "top": 746,
+          "right": 177,
+          "bottom": 778,
+          "width": 173,
+          "height": 32
+        },
+        "region": {
+          "left": 4,
+          "top": 746,
+          "right": 1132,
+          "bottom": 868,
+          "width": 1128,
+          "height": 122
+        }
+      }
+    },
+    {
+      "name": "2pos 1440x900 horizontal scroll keeps the close column on screen",
+      "passed": true,
+      "detail": {
+        "left": 121,
+        "lastCloseVisible": true
+      }
+    },
+    {
+      "name": "2pos 1440x900 divider present",
+      "passed": true,
+      "detail": {
+        "box": {
+          "left": 4,
+          "top": 664,
+          "right": 1132,
+          "bottom": 672,
+          "width": 1128,
+          "height": 8
+        },
+        "role": "separator",
+        "min": "160",
+        "max": "460",
+        "now": "200",
+        "cursor": "row-resize"
+      }
+    },
+    {
+      "name": "2pos 1440x900 drag up grows the panel and shrinks the chart",
+      "passed": true,
+      "detail": {
+        "panelBefore": 200,
+        "panelAfter": 360,
+        "chartBefore": 552,
+        "chartAfter": 392,
+        "canvas": {
+          "left": 60,
+          "top": 188,
+          "right": 786,
+          "bottom": 418,
+          "width": 726,
+          "height": 230
+        },
+        "now": "360",
+        "expected": 360
+      }
+    },
+    {
+      "name": "2pos 1440x900 chart keeps its floor and the panel does not cover the ticket",
+      "passed": true,
+      "detail": {
+        "chart": {
+          "left": 4,
+          "top": 112,
+          "right": 842,
+          "bottom": 504,
+          "width": 838,
+          "height": 392
+        },
+        "panel": {
+          "left": 4,
+          "top": 508,
+          "right": 1132,
+          "bottom": 868,
+          "width": 1128,
+          "height": 360
+        }
+      }
+    },
+    {
+      "name": "2pos 1440x900 two positions fully visible after enlarging",
+      "passed": true,
+      "detail": [
+        [
+          "DOODUSDTБесс",
+          true,
+          true
+        ],
+        [
+          "IOSTUSDTБесс",
+          true,
+          true
+        ]
+      ]
+    },
+    {
+      "name": "2pos 1440x900 height survives a reload",
+      "passed": true,
+      "detail": {
+        "panel": 360,
+        "expected": 360
+      }
+    },
+    {
+      "name": "2pos 1440x900 ArrowDown on the separator shrinks the panel",
+      "passed": true,
+      "detail": {
+        "before": 360,
+        "after": 312
+      }
+    },
+    {
+      "name": "2pos 1440x900 drag down stops at the minimum and the chart grows back",
+      "passed": true,
+      "detail": {
+        "panel": 160,
+        "chart": 592,
+        "min": "160"
+      }
+    },
+    {
+      "name": "2pos 1440x900 drag beyond the ceiling clamps and keeps the chart floor",
+      "passed": true,
+      "detail": {
+        "panel": 460,
+        "chart": 300,
+        "max": "460"
+      }
+    },
+    {
+      "name": "2pos 1440x900 tabs switch",
+      "passed": true,
+      "detail": [
+        {
+          "id": "orders",
+          "selected": "true",
+          "panel": "futures-tab-orders"
+        },
+        {
+          "id": "positions",
+          "selected": "true",
+          "panel": "futures-tab-positions"
+        },
+        {
+          "id": "orderHistory",
+          "selected": "true",
+          "panel": "futures-tab-orderHistory"
+        },
+        {
+          "id": "positionHistory",
+          "selected": "true",
+          "panel": "futures-tab-positionHistory"
+        }
+      ]
+    },
+    {
+      "name": "2pos 1280x720 rows rendered",
+      "passed": true,
+      "detail": 2
+    },
+    {
+      "name": "2pos 1280x720 vertical scroll container is the table region",
+      "passed": true,
+      "detail": {
+        "clientH": 122,
+        "scrollH": 168,
+        "top": 0,
+        "clientW": 968,
+        "scrollW": 1238,
+        "left": 0,
+        "overflowY": "auto",
+        "overflowX": "scroll"
+      }
+    },
+    {
+      "name": "2pos 1280x720 every row and its close button reachable by scrolling",
+      "passed": true,
+      "detail": [
+        {
+          "symbol": "DOODUSDTБесс",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 0
+        },
+        {
+          "symbol": "IOSTUSDTБесс",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 46
+        }
+      ]
+    },
+    {
+      "name": "2pos 1280x720 wheel over the table scrolls the rows",
+      "passed": true,
+      "detail": {
+        "before": 0,
+        "after": 46
+      }
+    },
+    {
+      "name": "2pos 1280x720 column headings stay pinned while rows scroll",
+      "passed": true,
+      "detail": {
+        "sticky": "sticky",
+        "head": {
+          "left": 4,
+          "top": 566,
+          "right": 177,
+          "bottom": 598,
+          "width": 173,
+          "height": 32
+        },
+        "region": {
+          "left": 4,
+          "top": 566,
+          "right": 972,
+          "bottom": 688,
+          "width": 968,
+          "height": 122
+        }
+      }
+    },
+    {
+      "name": "2pos 1280x720 horizontal scroll keeps the close column on screen",
+      "passed": true,
+      "detail": {
+        "left": 270,
+        "lastCloseVisible": true
+      }
+    },
+    {
+      "name": "2pos 1280x720 divider present",
+      "passed": true,
+      "detail": {
+        "box": {
+          "left": 4,
+          "top": 484,
+          "right": 972,
+          "bottom": 492,
+          "width": 968,
+          "height": 8
+        },
+        "role": "separator",
+        "min": "160",
+        "max": "284",
+        "now": "200",
+        "cursor": "row-resize"
+      }
+    },
+    {
+      "name": "2pos 1280x720 drag up grows the panel and shrinks the chart",
+      "passed": true,
+      "detail": {
+        "panelBefore": 200,
+        "panelAfter": 284,
+        "chartBefore": 376,
+        "chartAfter": 300,
+        "canvas": {
+          "left": 60,
+          "top": 184,
+          "right": 626,
+          "bottom": 340,
+          "width": 566,
+          "height": 156
+        },
+        "now": "284",
+        "expected": 284
+      }
+    },
+    {
+      "name": "2pos 1280x720 chart keeps its floor and the panel does not cover the ticket",
+      "passed": true,
+      "detail": {
+        "chart": {
+          "left": 4,
+          "top": 108,
+          "right": 682,
+          "bottom": 408,
+          "width": 678,
+          "height": 300
+        },
+        "panel": {
+          "left": 4,
+          "top": 412,
+          "right": 972,
+          "bottom": 696,
+          "width": 968,
+          "height": 284
+        }
+      }
+    },
+    {
+      "name": "2pos 1280x720 two positions fully visible after enlarging",
+      "passed": true,
+      "detail": [
+        [
+          "DOODUSDTБесс",
+          true,
+          true
+        ],
+        [
+          "IOSTUSDTБесс",
+          true,
+          true
+        ]
+      ]
+    },
+    {
+      "name": "2pos 1280x720 height survives a reload",
+      "passed": true,
+      "detail": {
+        "panel": 284,
+        "expected": 284
+      }
+    },
+    {
+      "name": "2pos 1280x720 ArrowDown on the separator shrinks the panel",
+      "passed": true,
+      "detail": {
+        "before": 284,
+        "after": 236
+      }
+    },
+    {
+      "name": "2pos 1280x720 drag down stops at the minimum and the chart grows back",
+      "passed": true,
+      "detail": {
+        "panel": 160,
+        "chart": 416,
+        "min": "160"
+      }
+    },
+    {
+      "name": "2pos 1280x720 drag beyond the ceiling clamps and keeps the chart floor",
+      "passed": true,
+      "detail": {
+        "panel": 284,
+        "chart": 300,
+        "max": "284"
+      }
+    },
+    {
+      "name": "2pos 1280x720 tabs switch",
+      "passed": true,
+      "detail": [
+        {
+          "id": "orders",
+          "selected": "true",
+          "panel": "futures-tab-orders"
+        },
+        {
+          "id": "positions",
+          "selected": "true",
+          "panel": "futures-tab-positions"
+        },
+        {
+          "id": "orderHistory",
+          "selected": "true",
+          "panel": "futures-tab-orderHistory"
+        },
+        {
+          "id": "positionHistory",
+          "selected": "true",
+          "panel": "futures-tab-positionHistory"
+        }
+      ]
+    },
+    {
+      "name": "2pos 390x844 rows rendered",
+      "passed": true,
+      "detail": 2
+    },
+    {
+      "name": "2pos 390x844 no desktop divider on a phone",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "2pos 390x844 no horizontal page overflow",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "2pos 390x844 every card and its close button reachable by page scroll",
+      "passed": true,
+      "detail": [
+        {
+          "top": 105,
+          "bottom": 675,
+          "inView": true,
+          "closeInView": true
+        },
+        {
+          "top": 187,
+          "bottom": 756,
+          "inView": true,
+          "closeInView": true
+        }
+      ]
+    },
+    {
+      "name": "5pos 1440x900 rows rendered",
+      "passed": true,
+      "detail": 5
+    },
+    {
+      "name": "5pos 1440x900 vertical scroll container is the table region",
+      "passed": true,
+      "detail": {
+        "clientH": 122,
+        "scrollH": 372,
+        "top": 0,
+        "clientW": 1128,
+        "scrollW": 1253,
+        "left": 0,
+        "overflowY": "auto",
+        "overflowX": "scroll"
+      }
+    },
+    {
+      "name": "5pos 1440x900 every row and its close button reachable by scrolling",
+      "passed": true,
+      "detail": [
+        {
+          "symbol": "DOODUSDTБесс",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 0
+        },
+        {
+          "symbol": "IOSTUSDTБесс",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 46
+        },
+        {
+          "symbol": "BTCUSDTБесср",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 114
+        },
+        {
+          "symbol": "ETHUSDTБесср",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 182
+        },
+        {
+          "symbol": "SOLUSDTБесср",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 250
+        }
+      ]
+    },
+    {
+      "name": "5pos 1440x900 wheel over the table scrolls the rows",
+      "passed": true,
+      "detail": {
+        "before": 0,
+        "after": 240
+      }
+    },
+    {
+      "name": "5pos 1440x900 column headings stay pinned while rows scroll",
+      "passed": true,
+      "detail": {
+        "sticky": "sticky",
+        "head": {
+          "left": 4,
+          "top": 746,
+          "right": 177,
+          "bottom": 778,
+          "width": 173,
+          "height": 32
+        },
+        "region": {
+          "left": 4,
+          "top": 746,
+          "right": 1132,
+          "bottom": 868,
+          "width": 1128,
+          "height": 122
+        }
+      }
+    },
+    {
+      "name": "5pos 1440x900 horizontal scroll keeps the close column on screen",
+      "passed": true,
+      "detail": {
+        "left": 125,
+        "lastCloseVisible": true
+      }
+    },
+    {
+      "name": "5pos 1440x900 divider present",
+      "passed": true,
+      "detail": {
+        "box": {
+          "left": 4,
+          "top": 664,
+          "right": 1132,
+          "bottom": 672,
+          "width": 1128,
+          "height": 8
+        },
+        "role": "separator",
+        "min": "160",
+        "max": "460",
+        "now": "200",
+        "cursor": "row-resize"
+      }
+    },
+    {
+      "name": "5pos 1440x900 drag up grows the panel and shrinks the chart",
+      "passed": true,
+      "detail": {
+        "panelBefore": 200,
+        "panelAfter": 360,
+        "chartBefore": 552,
+        "chartAfter": 392,
+        "canvas": {
+          "left": 60,
+          "top": 188,
+          "right": 786,
+          "bottom": 418,
+          "width": 726,
+          "height": 230
+        },
+        "now": "360",
+        "expected": 360
+      }
+    },
+    {
+      "name": "5pos 1440x900 chart keeps its floor and the panel does not cover the ticket",
+      "passed": true,
+      "detail": {
+        "chart": {
+          "left": 4,
+          "top": 112,
+          "right": 842,
+          "bottom": 504,
+          "width": 838,
+          "height": 392
+        },
+        "panel": {
+          "left": 4,
+          "top": 508,
+          "right": 1132,
+          "bottom": 868,
+          "width": 1128,
+          "height": 360
+        }
+      }
+    },
+    {
+      "name": "5pos 1440x900 height survives a reload",
+      "passed": true,
+      "detail": {
+        "panel": 360,
+        "expected": 360
+      }
+    },
+    {
+      "name": "5pos 1440x900 ArrowDown on the separator shrinks the panel",
+      "passed": true,
+      "detail": {
+        "before": 360,
+        "after": 312
+      }
+    },
+    {
+      "name": "5pos 1440x900 drag down stops at the minimum and the chart grows back",
+      "passed": true,
+      "detail": {
+        "panel": 160,
+        "chart": 592,
+        "min": "160"
+      }
+    },
+    {
+      "name": "5pos 1440x900 drag beyond the ceiling clamps and keeps the chart floor",
+      "passed": true,
+      "detail": {
+        "panel": 460,
+        "chart": 300,
+        "max": "460"
+      }
+    },
+    {
+      "name": "5pos 1440x900 at the ceiling the five rows need no scroll or scroll freely",
+      "passed": true,
+      "detail": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "name": "5pos 1440x900 tabs switch",
+      "passed": true,
+      "detail": [
+        {
+          "id": "orders",
+          "selected": "true",
+          "panel": "futures-tab-orders"
+        },
+        {
+          "id": "positions",
+          "selected": "true",
+          "panel": "futures-tab-positions"
+        },
+        {
+          "id": "orderHistory",
+          "selected": "true",
+          "panel": "futures-tab-orderHistory"
+        },
+        {
+          "id": "positionHistory",
+          "selected": "true",
+          "panel": "futures-tab-positionHistory"
+        }
+      ]
+    },
+    {
+      "name": "5pos 1280x720 rows rendered",
+      "passed": true,
+      "detail": 5
+    },
+    {
+      "name": "5pos 1280x720 vertical scroll container is the table region",
+      "passed": true,
+      "detail": {
+        "clientH": 122,
+        "scrollH": 372,
+        "top": 0,
+        "clientW": 968,
+        "scrollW": 1244,
+        "left": 0,
+        "overflowY": "auto",
+        "overflowX": "scroll"
+      }
+    },
+    {
+      "name": "5pos 1280x720 every row and its close button reachable by scrolling",
+      "passed": true,
+      "detail": [
+        {
+          "symbol": "DOODUSDTБесс",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 0
+        },
+        {
+          "symbol": "IOSTUSDTБесс",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 46
+        },
+        {
+          "symbol": "BTCUSDTБесср",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 114
+        },
+        {
+          "symbol": "ETHUSDTБесср",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 182
+        },
+        {
+          "symbol": "SOLUSDTБесср",
+          "rowVisible": true,
+          "closeVisible": true,
+          "scrollTop": 250
+        }
+      ]
+    },
+    {
+      "name": "5pos 1280x720 wheel over the table scrolls the rows",
+      "passed": true,
+      "detail": {
+        "before": 0,
+        "after": 240
+      }
+    },
+    {
+      "name": "5pos 1280x720 column headings stay pinned while rows scroll",
+      "passed": true,
+      "detail": {
+        "sticky": "sticky",
+        "head": {
+          "left": 4,
+          "top": 566,
+          "right": 177,
+          "bottom": 598,
+          "width": 173,
+          "height": 32
+        },
+        "region": {
+          "left": 4,
+          "top": 566,
+          "right": 972,
+          "bottom": 688,
+          "width": 968,
+          "height": 122
+        }
+      }
+    },
+    {
+      "name": "5pos 1280x720 horizontal scroll keeps the close column on screen",
+      "passed": true,
+      "detail": {
+        "left": 276,
+        "lastCloseVisible": true
+      }
+    },
+    {
+      "name": "5pos 1280x720 divider present",
+      "passed": true,
+      "detail": {
+        "box": {
+          "left": 4,
+          "top": 484,
+          "right": 972,
+          "bottom": 492,
+          "width": 968,
+          "height": 8
+        },
+        "role": "separator",
+        "min": "160",
+        "max": "284",
+        "now": "200",
+        "cursor": "row-resize"
+      }
+    },
+    {
+      "name": "5pos 1280x720 drag up grows the panel and shrinks the chart",
+      "passed": true,
+      "detail": {
+        "panelBefore": 200,
+        "panelAfter": 284,
+        "chartBefore": 376,
+        "chartAfter": 300,
+        "canvas": {
+          "left": 60,
+          "top": 184,
+          "right": 626,
+          "bottom": 340,
+          "width": 566,
+          "height": 156
+        },
+        "now": "284",
+        "expected": 284
+      }
+    },
+    {
+      "name": "5pos 1280x720 chart keeps its floor and the panel does not cover the ticket",
+      "passed": true,
+      "detail": {
+        "chart": {
+          "left": 4,
+          "top": 108,
+          "right": 682,
+          "bottom": 408,
+          "width": 678,
+          "height": 300
+        },
+        "panel": {
+          "left": 4,
+          "top": 412,
+          "right": 972,
+          "bottom": 696,
+          "width": 968,
+          "height": 284
+        }
+      }
+    },
+    {
+      "name": "5pos 1280x720 height survives a reload",
+      "passed": true,
+      "detail": {
+        "panel": 284,
+        "expected": 284
+      }
+    },
+    {
+      "name": "5pos 1280x720 ArrowDown on the separator shrinks the panel",
+      "passed": true,
+      "detail": {
+        "before": 284,
+        "after": 236
+      }
+    },
+    {
+      "name": "5pos 1280x720 drag down stops at the minimum and the chart grows back",
+      "passed": true,
+      "detail": {
+        "panel": 160,
+        "chart": 416,
+        "min": "160"
+      }
+    },
+    {
+      "name": "5pos 1280x720 drag beyond the ceiling clamps and keeps the chart floor",
+      "passed": true,
+      "detail": {
+        "panel": 284,
+        "chart": 300,
+        "max": "284"
+      }
+    },
+    {
+      "name": "5pos 1280x720 at the ceiling the five rows need no scroll or scroll freely",
+      "passed": true,
+      "detail": [
+        true,
+        true,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "name": "5pos 1280x720 tabs switch",
+      "passed": true,
+      "detail": [
+        {
+          "id": "orders",
+          "selected": "true",
+          "panel": "futures-tab-orders"
+        },
+        {
+          "id": "positions",
+          "selected": "true",
+          "panel": "futures-tab-positions"
+        },
+        {
+          "id": "orderHistory",
+          "selected": "true",
+          "panel": "futures-tab-orderHistory"
+        },
+        {
+          "id": "positionHistory",
+          "selected": "true",
+          "panel": "futures-tab-positionHistory"
+        }
+      ]
+    },
+    {
+      "name": "5pos 390x844 rows rendered",
+      "passed": true,
+      "detail": 5
+    },
+    {
+      "name": "5pos 390x844 no desktop divider on a phone",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "5pos 390x844 no horizontal page overflow",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "5pos 390x844 every card and its close button reachable by page scroll",
+      "passed": true,
+      "detail": [
+        {
+          "top": 105,
+          "bottom": 675,
+          "inView": true,
+          "closeInView": true
+        },
+        {
+          "top": 106,
+          "bottom": 675,
+          "inView": true,
+          "closeInView": true
+        },
+        {
+          "top": 105,
+          "bottom": 675,
+          "inView": true,
+          "closeInView": true
+        },
+        {
+          "top": 106,
+          "bottom": 675,
+          "inView": true,
+          "closeInView": true
+        },
+        {
+          "top": 186,
+          "bottom": 756,
+          "inView": true,
+          "closeInView": true
+        }
+      ]
+    }
+  ]
+}

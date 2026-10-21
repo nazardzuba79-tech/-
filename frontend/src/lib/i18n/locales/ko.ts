@@ -1671,6 +1671,7 @@ export const KO: Record<Key, string> = {
   'futures.chartTradingPicking': '차트에서 캔들을 선택하세요',
   'futures.chartTools': '차트 도구',
   'futures.chartTradingCancel': '선택 취소',
+  'futures.accountPanelHeight': '포지션 패널 높이',
   'futures.contractLimit': '이 계약은 해당 수량을 받지 않습니다. {limit}: {allowed}.',
   'futures.positionValue': '포지션 가치',
   'futures.closeBy': '청산 방식',

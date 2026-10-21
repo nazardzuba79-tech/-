@@ -32,6 +32,7 @@ import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
 import { AccountPanelToggle } from '../components/AccountPanelToggle';
 import { useCompactAccountPanel } from '../lib/useCompactAccountPanel';
+import { useFuturesAccountPanelHeight } from '../lib/futuresAccountPanelHeight';
 import { isVerifiedEmptyAccountResource } from '../lib/terminalAccountPanel';
 import { subscribeFuturesDepth, setFuturesDepthFallbackBase, type FuturesTrade, type FuturesDepthStatus } from '../lib/futuresDepth';
 
@@ -240,6 +241,11 @@ export function FuturesPage() {
       && isVerifiedEmptyAccountResource(visibleAccount.positions),
     `futures:${bottomTab}`,
   );
+  /** The divider under the chart (desktop only): how tall the account panel
+   *  is, kept in this browser. A folded panel has no divider; phones scroll
+   *  the page instead (FuturesMobile.css). Presentation only. */
+  const terminalRef = useRef<HTMLDivElement | null>(null);
+  const accountHeight = useFuturesAccountPanelHeight(!compact && !accountPanel.compact, terminalRef);
   // `status` rides with the levels so the panel can tell "this is the book"
   // from "this WAS the book" from "we do not know" — three different things
   // that all used to render as an empty table.
@@ -571,7 +577,7 @@ export function FuturesPage() {
 
       <FuturesExecutionProvider value={execution}>
       <FuturesAccountSourceContext.Provider value={execution.account}>
-      <div className="terminal" data-account-compact={accountPanel.compact} data-mobile-tab={mobileTab} data-mobile-chart={mobileChartTab}>
+      <div className="terminal" ref={terminalRef} style={accountHeight.style} data-account-height={accountHeight.active ? 'user' : undefined} data-account-resizing={accountHeight.resizing || undefined} data-account-compact={accountPanel.compact} data-mobile-tab={mobileTab} data-mobile-chart={mobileChartTab}>
         {/* On a phone the calculator rides in the instrument row: the
             ticket's own heading row is not drawn there (see below). */}
         <FuturesTickerBar archive={archivePreview} symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} onOpenCalculator={archivePreview && !compact ? undefined : () => setCalculatorOpen(true)} />
@@ -787,6 +793,23 @@ export function FuturesPage() {
         </div>
 
         <div id="mobile-futures-panel-positions" className="bottom-panel" data-account-compact={accountPanel.compact}>
+          {/* The chart / account divider, as on the Spot terminal: drag, or
+              ArrowUp / ArrowDown with the keyboard; a double click returns
+              the design default. Only on a desktop with the panel open. */}
+          {!compact && !accountPanel.compact && <div
+            className="orders-resize-handle"
+            role="separator"
+            tabIndex={0}
+            aria-label={t('futures.accountPanelHeight')}
+            aria-orientation="horizontal"
+            aria-valuemin={accountHeight.min}
+            aria-valuemax={accountHeight.max}
+            aria-valuenow={accountHeight.valueNow}
+            title={t('futures.accountPanelHeight')}
+            onPointerDown={accountHeight.onPointerDown}
+            onKeyDown={accountHeight.onKeyDown}
+            onDoubleClick={accountHeight.reset}
+          />}
           <div className="terminal-account-header">
           <div className="bottom-tabs" role="tablist" aria-label={t('futures.positions')}>
             {BOTTOM_TABS.map((tab) => (

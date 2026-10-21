@@ -1671,6 +1671,7 @@ export const ES: Record<Key, string> = {
   'futures.chartTradingPicking': 'Elige una vela en el gráfico',
   'futures.chartTools': 'Herramientas del gráfico',
   'futures.chartTradingCancel': 'Cancelar la selección',
+  'futures.accountPanelHeight': 'Altura del panel de posiciones',
   'futures.contractLimit': 'El contrato no acepta este tamaño. {limit}: {allowed}.',
   'futures.positionValue': 'Valor de la posición',
   'futures.closeBy': 'Cerrar con',

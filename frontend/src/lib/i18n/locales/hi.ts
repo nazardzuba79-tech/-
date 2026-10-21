@@ -1671,6 +1671,7 @@ export const HI: Record<Key, string> = {
   'futures.chartTradingPicking': 'चार्ट पर कैंडल चुनें',
   'futures.chartTools': 'चार्ट टूल',
   'futures.chartTradingCancel': 'चयन रद्द करें',
+  'futures.accountPanelHeight': 'पोज़िशन पैनल की ऊँचाई',
   'futures.contractLimit': 'यह अनुबंध इस आकार को स्वीकार नहीं करेगा। {limit}: {allowed}।',
   'futures.positionValue': 'पोज़िशन मूल्य',
   'futures.closeBy': 'इससे बंद करें',

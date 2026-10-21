@@ -1671,6 +1671,7 @@ export const JA: Record<Key, string> = {
   'futures.chartTradingPicking': 'チャート上でローソク足を選択',
   'futures.chartTools': 'チャートツール',
   'futures.chartTradingCancel': '選択を取消',
+  'futures.accountPanelHeight': 'ポジションパネルの高さ',
   'futures.contractLimit': 'この契約はこの数量を受け付けません。{limit}：{allowed}。',
   'futures.positionValue': 'ポジション価値',
   'futures.closeBy': '決済方法',

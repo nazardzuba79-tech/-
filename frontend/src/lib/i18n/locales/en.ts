@@ -1700,6 +1700,7 @@ export const EN: Record<Key, string> = {
   'futures.chartTradingPicking': 'Pick a candle on the chart',
   'futures.chartTools': 'Chart tools',
   'futures.chartTradingCancel': 'Cancel selection',
+  'futures.accountPanelHeight': 'Positions panel height',
   'futures.contractLimit': 'The contract will not take this size. {limit}: {allowed}.',
   'futures.positionValue': 'Position value',
   'futures.closeBy': 'Close by',

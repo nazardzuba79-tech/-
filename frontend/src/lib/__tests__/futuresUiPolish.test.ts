@@ -438,7 +438,13 @@ test.each([
     // «Позиция закрыта» card ask for the native position history, which the
     // page's existing `setHistoryDemand` effect now also loads while the card
     // is shown. No order, execution, account, depth or layout byte changed.
-    "ac101210d56f6a487dd29bc16de067fc450ac5adfc9ae79c031a0a7a87291076"
+    // Re-taken 2026-10-21 for the chart / account divider: a `terminalRef`
+    // on `.terminal`, the `--futures-account-height` style and two data
+    // attributes it carries, and the `orders-resize-handle` separator at
+    // the top of the bottom panel (desktop with the panel open only), all
+    // from `lib/futuresAccountPanelHeight`. Presentation only: no order,
+    // execution, account, depth, chart-wiring or routing byte changed.
+    "066c9b405bd9b0e8ef7b7c2fb6cd122bb28d80f9eeda0089f228769f5c0de99e"
   ],
   [
     "components/FuturesPairList.tsx",
