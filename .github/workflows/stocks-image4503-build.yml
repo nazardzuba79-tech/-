@@ -1,0 +1,96 @@
+name: Stocks 4503 non-secret image build once
+on:
+  push:
+    branches: [codex/stocks-image4503-build-20261021]
+    paths: [.github/workflows/stocks-image4503-build.yml]
+permissions:
+  contents: read
+concurrency:
+  group: stocks-image4503-build-once
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.repository == 'nazardzuba79-tech/-' && github.event.repository.private == false && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 42c6aca1f8ce1071b0447d0d8c7f39295b85569a
+          fetch-depth: 0
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.3
+      - name: Import hash-verified public candidate (no private bootstrap)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$ImageOS" = ubuntu24
+          test -z "${DOCKER_HOST:-}${DOCKER_CONTEXT:-}"
+          test "$(docker context show)" = default
+          python3 - <<'PY'
+          import urllib.request,json,re,base64,hashlib,pathlib
+          url='https://api.github.com/repos/nazardzuba79-tech/-/issues/comments/6309296269'
+          body=json.load(urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'VOLTEX-nonsecret-build'}),timeout=30))['body']
+          encoded=re.search(r'```text\s+([A-Za-z0-9+/=\s]+)```',body).group(1)
+          data=base64.b64decode(''.join(encoded.split()),validate=True)
+          assert len(data)==19986
+          assert hashlib.sha256(data).hexdigest()=='af2f9d6a1c2a68ef7495b123738a6b5884363d480d235f7f4d0bfd25585bac60'
+          pathlib.Path('candidate.bundle').write_bytes(data)
+          print('PUBLIC_BUNDLE_INTEGRITY_PASS')
+          PY
+          git -C source bundle verify ../candidate.bundle
+          git -C source fetch ../candidate.bundle HEAD
+          git -C source -c core.autocrlf=false checkout --detach 4503d4c811ab9630cc502a535e6f7f79dedd4305
+          test "$(git -C source rev-parse HEAD^{tree})" = 679772052af559027133f74a3ae2e55336820c65
+          test -z "$(git -C source status --porcelain)"
+      - name: Prepare exact source, launcher and unchanged 44+2 SQL bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'JS'
+          const fs=require('fs'),path=require('path'),crypto=require('crypto');
+          const source=path.resolve('source'),out=path.join(process.env.RUNNER_TEMP,'voltex4503-prepared');
+          const sha='4503d4c811ab9630cc502a535e6f7f79dedd4305';
+          const result=require(source+'/scripts/qa/stocks-build-only-prepare.cjs').prepare(source,out,sha);
+          const context=path.join(process.env.RUNNER_TEMP,'voltex4503-context');
+          const files=require(source+'/review/stocks-private-pg-tls/image-context.cjs').stage(out+'/context',context);
+          if(Object.keys(files).length!==379 || files['scripts/start-render-single-service.cjs']!=='7265eaeb4b1a9ccf7edb935b14b9fb2157e5d5df56d54ad7ff2b6764b4cc3337')throw Error('CONTEXT_MISMATCH');
+          const recipe=fs.readFileSync(context+'/services/stocks-global/Dockerfile.release','utf8');
+          if((recipe.match(/FROM node:22\.23\.3-bookworm-slim/g)||[]).length!==2)throw Error('BASE_CHANGED');
+          const pinned=recipe.replaceAll('node:22.23.3-bookworm-slim','node@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392');
+          if(crypto.createHash('sha256').update(pinned).digest('hex')!=='274ade201f881ef911d37bfed71962f28e075b3b47fefaa9480f96b894bfd3fc')throw Error('RECIPE_MISMATCH');
+          fs.writeFileSync(context+'/Dockerfile.release.pinned',pinned);
+          console.log(JSON.stringify({source:sha,files:Object.keys(files).length,sql:result.packageResult,recipeSha256:'274ade201f881ef911d37bfed71962f28e075b3b47fefaa9480f96b894bfd3fc',privateBootstrap:'NOT_INCLUDED',sqlExecuted:false}));
+          JS
+      - name: Build exact API and Gateway; filesystem-only image check
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker version --format '{{.Server.Version}}'
+          for target in api gateway; do
+            tag="voltex4503-$target:$GITHUB_RUN_ID"
+            docker build --builder default --target "$target" \
+              --label org.opencontainers.image.revision=4503d4c811ab9630cc502a535e6f7f79dedd4305 \
+              --iidfile "$RUNNER_TEMP/$target.iid" --tag "$tag" \
+              --file "$RUNNER_TEMP/voltex4503-context/Dockerfile.release.pinned" "$RUNNER_TEMP/voltex4503-context"
+            docker image inspect "$tag" --format '{{json .Id}} {{json .Config.Cmd}} {{json .Config.User}} {{json .Config.Labels}}'
+            docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+              --entrypoint node "$tag" -e '
+              const fs=require("fs"),c=require("crypto"),assert=require("assert");
+              assert.equal(process.versions.node,"22.23.3");
+              for(const p of ["dist/index.js","dist/marketDataCollector.js","scripts/start-render-single-service.cjs","services/stocks-global/release-entrypoint.mjs"])assert.ok(fs.statSync(p).isFile());
+              assert.equal(c.createHash("sha256").update(fs.readFileSync("scripts/start-render-single-service.cjs")).digest("hex"),"7265eaeb4b1a9ccf7edb935b14b9fb2157e5d5df56d54ad7ff2b6764b4cc3337");
+              const engines="node_modules/@prisma/engines";
+              const engine=fs.readdirSync(engines).find(n=>n.startsWith("schema-engine-")&&!n.endsWith(".sha256"));
+              console.log(JSON.stringify({node:process.versions.node,prisma:require("./node_modules/prisma/package.json").version,engine,engineSha256:c.createHash("sha256").update(fs.readFileSync(engines+"/"+engine)).digest("hex"),launcherPresent:true,collectorPresent:true,privateBootstrap:"NOT_RUN",apiStarted:false,databaseAccess:false}));'
+          done
+          printf 'NON_SECRET_IMAGE_BUILD_PASS\n' >> "$GITHUB_STEP_SUMMARY"
+          printf 'Application 4503d4c811ab9630cc502a535e6f7f79dedd4305; actual private bootstrap NOT_RUN.\n' >> "$GITHUB_STEP_SUMMARY"
+          # No cache/artifact uploads or registry push: avoid any storage charges.
+          # Image IDs attest this runner build, not retained/pullable release digests.
