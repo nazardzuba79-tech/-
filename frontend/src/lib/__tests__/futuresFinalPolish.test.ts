@@ -203,6 +203,15 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     // the page at desktop width, so the breakpoint hook answers false.
     if (name === '../components/TerminalMarketSwitch') return { TerminalMarketSwitch: () => null };
     if (name === '../lib/terminalMarketSwitch') return jest.requireActual('../terminalMarketSwitch');
+    // The account panel's draggable edge (2026-10-21). This harness drives
+    // the page's hooks through its own `react` object, so the hook is
+    // stubbed like `useMediaQuery` above: no remembered height, the
+    // stylesheet's geometry, the handle rendered inert. The hook's own
+    // behaviour is covered by futuresPanelHeight.test.ts.
+    if (name === '../lib/useFuturesPanelHeight') return {
+      useFuturesPanelHeight: () => ({ height: null, set: () => {}, reset: () => {} }),
+      maxPanelHeightFor: () => 640, FUTURES_PANEL_MIN_HEIGHT: 184, FUTURES_PANEL_MAX_HEIGHT_FALLBACK: 640, FUTURES_PANEL_KEY_STEP: 24, FUTURES_CHART_MIN_HEIGHT: 300,
+    };
     if (name === '../lib/useMediaQuery') return { MOBILE_TERMINAL_QUERY: '(max-width: 900px)', useMediaQuery: () => false };
     // The owner-only native demo is server-gated; an ordinary account keeps the public terminal.
     if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true, state: null, setHistoryDemand: () => {}, interaction: { selecting: null, onCancelSelection: overrides.cancelSelection ?? jest.fn() } }) };

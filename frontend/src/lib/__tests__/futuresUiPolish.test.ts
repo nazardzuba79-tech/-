@@ -438,7 +438,16 @@ test.each([
     // «Позиция закрыта» card ask for the native position history, which the
     // page's existing `setHistoryDemand` effect now also loads while the card
     // is shown. No order, execution, account, depth or layout byte changed.
-    "ac101210d56f6a487dd29bc16de067fc450ac5adfc9ae79c031a0a7a87291076"
+    // Re-taken for the account panel's draggable top edge (owner, 2026-10-21,
+    // «як у байбіт … показати дві угоди разом»). What differs: one hook
+    // import (`useFuturesPanelHeight`) and one stylesheet import; two module
+    // helpers that read the pair row's height and the grid's padding and
+    // gaps; the height state, two refs, a ResizeObserver effect and the
+    // drag/keyboard handlers beside `accountPanel`; the grid div carries
+    // `--futures-account-height` inline with `data-account-height`; the
+    // panel's first child is the Spot terminal's `orders-resize-handle`.
+    // No order, position, balance, book, chart or execution wiring changed.
+    "3da0b356f7fec5d07e57e5cdbb81d7b218990149e3a3e0cd8311bc7406532e3c"
   ],
   [
     "components/FuturesPairList.tsx",
