@@ -1,0 +1,53 @@
+name: Production Pages preflight (read-only)
+on:
+  push:
+    branches: [review/pages-production-preflight-20261022]
+    paths: [.github/workflows/pages-production-preflight.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
+    steps:
+      - name: Inspect production Pages project without changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "Cloudflare GitHub secret is missing"; exit 1
+          fi
+          status="$(curl -sS -o /tmp/pages-project.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/voltex-exchange")"
+          if [ "$status" != 200 ]; then echo "Pages project metadata cannot be read; HTTP $status"; exit 1; fi
+          node <<'NODE'
+          const fs = require('node:fs');
+          const j = JSON.parse(fs.readFileSync('/tmp/pages-project.json','utf8'));
+          if (!j.success || j.result?.name !== 'voltex-exchange') throw new Error('Unexpected Pages project');
+          const p=j.result, production=p.deployment_configs?.production||{};
+          const dep=p.latest_deployment||{};
+          const info={
+            project:p.name,
+            production_branch:p.production_branch,
+            production_builds_enabled:p.build_config?.build_caching,
+            source_provider:p.source?.type,
+            source_repo:p.source?.config?.repo_name,
+            source_production_branch:p.source?.config?.production_branch,
+            source_deployments_enabled:p.source?.config?.deployments_enabled,
+            production_deployments_enabled:p.source?.config?.production_deployments_enabled,
+            preview_deployment_setting:p.source?.config?.preview_deployment_setting,
+            build_command:p.build_config?.build_command,
+            build_root_dir:p.build_config?.root_dir,
+            destination_dir:p.build_config?.destination_dir,
+            production_env_keys:Object.keys(production.env_vars||{}),
+            latest_deployment:{id:dep.id,environment:dep.environment,created_on:dep.created_on,sha:dep.deployment_trigger?.metadata?.commit_hash,stage:dep.latest_stage?.name,status:dep.latest_stage?.status}
+          };
+          const out=JSON.stringify(info,null,2);
+          console.log(out);
+          if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,'## Pages production read-only preflight\n\n```json\n'+out+'\n```\n');
+          NODE
