@@ -1,0 +1,28 @@
+name: TYVN live public frontend guard (GET only)
+on:
+  push:
+    branches: [review/tyvn-live-frontend-audit-20261022]
+    paths:
+      - scripts/qa-tyvn-live-ui.cjs
+      - .github/workflows/tyvn-live-ui-audit.yml
+  pull_request:
+    paths:
+      - scripts/qa-tyvn-live-ui.cjs
+      - .github/workflows/tyvn-live-ui-audit.yml
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JS syntax
+        run: node --check scripts/qa-tyvn-live-ui.cjs
+      - name: Read-only live frontend / API / listing gate
+        run: node scripts/qa-tyvn-live-ui.cjs
