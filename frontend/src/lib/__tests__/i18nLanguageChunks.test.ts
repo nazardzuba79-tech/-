@@ -61,7 +61,9 @@ const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 
 const CUSTOMER_PRESENTATION_KEYS = [
   'trade.statusUnavailable', 'trade.orderTypeUnavailable', 'trade.status.REJECTED', 'trade.status.EXPIRED',
   'futures.positionStatus.OPEN', 'futures.positionStatus.CLOSED', 'futures.positionStatus.LIQUIDATED',
-  'listing.simulation', 'listing.tradingUnavailable', 'listing.marketLive', 'listing.dateUnconfirmed',
+  // 'listing.simulation', 'listing.tradingUnavailable' and 'listing.marketLive' were removed with the
+  // market notice they formed (owner, 2026-10-22: «забороняю такі надписи … інтерфейс має бути чистий»).
+  'listing.dateUnconfirmed',
   'listing.awaitingStart', 'listing.untilListing', 'listing.scheduledAt', 'listing.loadFailed',
   'listing.dataStale', 'listing.volume24h', 'serverError.forbidden', 'serverError.network', 'serverError.timeout',
 ];
@@ -83,8 +85,8 @@ const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySub
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
-  it('provides the twenty new customer state labels in every locale', () => {
-    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(20);
+  it('provides the seventeen remaining customer state labels in every locale', () => {
+    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(17);
     for (const code of LOCALES) for (const key of CUSTOMER_PRESENTATION_KEYS) {
       expect(dicts[code][key]?.trim()).toBeTruthy();
       expect(dicts[code][key]).not.toBe(key);

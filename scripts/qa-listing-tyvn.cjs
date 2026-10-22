@@ -229,14 +229,16 @@ const render = async (p, { method = 'GET', body, ifMatch } = {}) => {
       const cells = await trade.locator('.vta-countdown-cell strong').allInnerTexts();
       assert.deepEqual(cells.slice(0, 2), ['05', '03']);
       const card = await trade.locator('.vta-prelisting').innerText();
-      for (const text of ['TERYVANE', 'TYVN/USDT', TIMER_LINE, '0.025000 USDT', 'Торговля пока недоступна']) assert.ok(card.includes(text), `${width}: ${text}`);
+      for (const text of ['TERYVANE', 'TYVN/USDT', TIMER_LINE, '0.025000 USDT']) assert.ok(card.includes(text), `${width}: ${text}`);
+      // Owner, 2026-10-22: no market notice on the card («Учебный рынок · Торговля пока недоступна»).
+      for (const text of ['Учебный рынок', 'Торговля пока недоступна']) assert.ok(!card.includes(text), `${width}: notice «${text}» on the card`);
       await shot(trade, `trade-preview-running-${width}.png`);
       await trade.goto(`${origin}/markets`);
       await trade.locator('.test-market-row[data-pair="TYVN/USDT"]').waitFor({ timeout: 20000 });
       assert.ok((await trade.locator('.test-market-row[data-pair="TYVN/USDT"]').innerText()).includes(TIMER_LINE));
       await shot(trade, `markets-preview-${width}.png`);
       await trade.context().close();
-      check(`exchange preview ${width}: TERYVANE TYVN/USDT counts 5 d 03 h to ${TIMER_LINE}, start price 0.025000 USDT, trading unavailable; Markets row carries the date`);
+      check(`exchange preview ${width}: TERYVANE TYVN/USDT counts 5 d 03 h to ${TIMER_LINE}, start price 0.025000 USDT, no market notice on the card; Markets row carries the date`);
     }
 
     /* 6. Still nothing published or started after everything above. */

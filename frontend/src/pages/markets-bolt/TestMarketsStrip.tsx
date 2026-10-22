@@ -60,7 +60,6 @@ export function TestMarketsStrip({ search, favoritesOnly, favorites, onToggleFav
                 <strong>{live ? `${formatTestCompact(state.quoteVolume24h)} ${asset.quote}` : '—'}</strong>
               </span>
               <span className="test-market-listing">
-                <span>{t(presentation.simulationKey)}{presentation.availabilityKey && <> · {t(presentation.availabilityKey)}</>}</span>
                 {!live && <span>{presentation.scheduleKey ? t(presentation.scheduleKey)
                   : `${t('listing.scheduledAt')}: ${asset.symbol === 'NRX' ? nrxListingTime(asset.listingAt)
                     : asset.managed ? managedListingTime(asset.listingAt, asset.displayTimeZone ?? 'UTC', localeOf(lang)) : formatListingMoment(asset.listingAt, localeOf(lang))}`}</span>}
