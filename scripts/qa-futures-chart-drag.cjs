@@ -516,7 +516,25 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
       await page.evaluate(([key, value]) => localStorage.setItem(key, JSON.stringify({ version: 1, hidden: false, locked: false, drawings: [value] })), [DRAWINGS_KEY, { kind: 'rectangle', points: [shapeNow.a, shapeNow.b], ...(locked ? { locked: true } : {}) }]);
       await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
       await pickTool('erase');
-      const r = await page.evaluate(() => { const b = document.querySelector('[data-drawing-kind="rectangle"]').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+      // Choose an actual, unobstructed drawing hit target. At some fixture
+      // prices the live position label covers the rectangle's geometric centre.
+      // Clicking that label tests the wrong UI and incorrectly reports an eraser bug.
+      const r = await page.evaluate((isLocked) => {
+        const group = document.querySelector('[data-drawing-kind="rectangle"]');
+        const hit = group?.querySelector(isLocked ? '[data-drawing-hit="outline"]' : '[data-drawing-hit="body"]');
+        if (!hit) return null;
+        const box = hit.getBoundingClientRect();
+        const body = [0.5, 0.3, 0.7, 0.15, 0.85];
+        const edges = [0.01, 0.99, 0.05, 0.95, 0.5];
+        for (const ry of isLocked ? edges : body) for (const rx of isLocked ? edges : body) {
+          const x = Math.round(box.left + box.width * rx), y = Math.round(box.top + box.height * ry);
+          if (x <= 0 || y <= 0 || x >= innerWidth || y >= innerHeight) continue;
+          const top = document.elementFromPoint(x, y);
+          if (top && top.closest('[data-drawing-hit]') === hit) return { x, y, top: top.tagName.toLowerCase() };
+        }
+        return null;
+      }, locked);
+      assert(r, `no unobstructed ${locked ? 'outline' : 'body'} hit target for eraser`);
       await page.mouse.click(r.x, r.y); await delay(400);
       outcomes[locked ? 'locked' : 'free'] = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).drawings.length, DRAWINGS_KEY);
     }
