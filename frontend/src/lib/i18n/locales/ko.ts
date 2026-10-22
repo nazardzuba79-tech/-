@@ -1945,6 +1945,7 @@ export const KO: Record<Key, string> = {
   'listing.marketLive': "시장 개장",
   'listing.dateUnconfirmed': "상장 날짜가 아직 확정되지 않았습니다",
   'listing.awaitingStart': "시장 시작 확인을 기다리고 있습니다",
+  'listing.countdownPaused': "상장 카운트다운이 일시 중지되었습니다",
   'listing.untilListing': "상장까지",
   'listing.scheduledAt': "상장 날짜",
   'listing.loadFailed': "상장 데이터를 불러오지 못했습니다. 다시 시도해 주세요.",

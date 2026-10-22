@@ -7,6 +7,7 @@ on:
       - 'src/shared/listingHistoricalReplay.ts'
       - 'src/shared/aithPublication.ts'
       - 'config/test-markets/aith.draft.json'
+      - 'config/test-markets/tyvn.draft.json'
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
       - 'src/services/WalletPortfolioService.ts'
@@ -25,6 +26,8 @@ on:
       - 'frontend/src/components/CryptoIcon.tsx'
       - 'frontend/vite.config.ts'
       - 'scripts/qa-admin-listings.cjs'
+      - 'scripts/qa-listing-timer.cjs'
+      - 'scripts/qa-listing-tyvn.cjs'
       - 'scripts/qa-aith-replacement.cjs'
       - 'scripts/qa-listing-controls.cjs'
       - 'scripts/benchmark-historical-replay.cjs'
@@ -70,6 +73,8 @@ jobs:
           npx jest --runInBand --silent --runTestsByPath
           src/services/listings/__tests__/listingConfig.test.ts
           src/services/listings/__tests__/tradingGates.test.ts
+          src/services/listings/__tests__/listingCountdown.test.ts
+          src/services/listings/__tests__/tyvnDraft.test.ts
           src/services/listings/__tests__/aithReplacement.test.ts
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
@@ -102,7 +107,7 @@ jobs:
           VITE_MARKET_EDGE_URL: http://127.0.0.1:8787
       - name: Install browser
         run: |
-          npm install --prefix /tmp/listings-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          npm install --prefix /tmp/listings-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/listings-qa/node_modules/playwright/cli.js install --with-deps chromium
       - name: Historical archive integrity on real Chromium / IndexedDB
         run: node scripts/qa-historical-archive-storage.cjs
@@ -115,6 +120,18 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report
+      - name: Pre-listing timer — exchange card (running / paused / 13:00 UTC) and admin start / pause / stop, by server time
+        run: node scripts/qa-listing-timer.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUT: /tmp/listings-qa-report/listing-timer
+      - name: TERYVANE (TYVN/USDT) 26.10.2026 draft — created through the real admin route on workerd, previewed, never published
+        run: node scripts/qa-listing-tyvn.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUT: /tmp/listings-qa-report/listing-tyvn
       - name: Scenario controls desktop/mobile, saved preview and Worker restart
         run: node scripts/qa-listing-controls.cjs
         env:

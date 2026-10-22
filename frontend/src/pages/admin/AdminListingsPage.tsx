@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { styles } from './adminStyles';
 import {
   adminListingsApi, ListingApiError, LISTING_TIME_ZONES, newPublishKey, utcOffsetLabel, utcToZonedWallTime, zonedWallTimeToUtc,
-  type AdminListing, type ListingConfig, type ListingForm, type ListingPreview,
+  type AdminListing, type ListingConfig, type ListingCountdownAction, type ListingForm, type ListingPreview,
 } from './adminListingsApi';
 import { LISTING_REVISION_CONFLICT, listingProfileLabel, listingRequestError, listingTimeZoneLabel } from './adminListingsCopy';
 import { ListingScenarioLab } from './ListingScenarioLab';
@@ -48,14 +48,24 @@ const formSignature = (form: FormState): string => JSON.stringify([
   form.simulationProgram, form.wickModel,
 ]);
 
-/** The instant in the listing's own zone and in UTC, always both. */
+/** The instant in UTC, Kyiv and Moscow (the owner reads both UTC and МСК), plus the listing's own zone when it is another one. */
 function listingMoment(iso: string, timeZone: string): string {
   const instant = Date.parse(iso);
   if (!Number.isFinite(instant)) return '—';
   const fmt = (zone: string, date: boolean) => new Intl.DateTimeFormat('ru-RU', {
     ...(date ? { day: '2-digit', month: '2-digit', year: 'numeric' } : {}), hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone,
   }).format(new Date(instant)).replace(',', '');
-  return `${fmt('UTC', true)} Всемирное время (UTC) · ${fmt('Europe/Kyiv', true)} Киев (${utcOffsetLabel(instant, 'Europe/Kyiv')})${timeZone !== 'UTC' && timeZone !== 'Europe/Kyiv' ? ` · ${fmt(timeZone, true)} ${listingTimeZoneLabel(timeZone)}` : ''}`;
+  const own = !['UTC', 'Europe/Kyiv', 'Europe/Moscow'].includes(timeZone) ? ` · ${fmt(timeZone, true)} ${listingTimeZoneLabel(timeZone)}` : '';
+  return `${fmt('UTC', true)} Всемирное время (UTC) · ${fmt('Europe/Kyiv', true)} Киев (${utcOffsetLabel(instant, 'Europe/Kyiv')}) · ${fmt('Europe/Moscow', true)} Москва (${utcOffsetLabel(instant, 'Europe/Moscow')})${own}`;
+}
+
+/** The timer line as the exchange shows it: «26.10.2026 — 13:00 UTC / 16:00 МСК». */
+export function listingTimerLine(iso: string): string {
+  const instant = Date.parse(iso);
+  if (!Number.isFinite(instant)) return '—';
+  const time = (timeZone: string) => new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone }).format(instant);
+  const day = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(instant);
+  return `${day} — ${time('UTC')} UTC / ${time('Europe/Moscow')} МСК`;
 }
 
 function statusOf(listing: AdminListing): { text: string; tone: 'draft' | 'live' | 'changed' } {
@@ -63,6 +73,27 @@ function statusOf(listing: AdminListing): { text: string; tone: 'draft' | 'live'
   const changed = JSON.stringify(listing.active) !== JSON.stringify(listing.draft);
   return changed ? { text: `Опубликован: версия ${listing.activeVersion} · есть неопубликованные изменения`, tone: 'changed' } : { text: `Опубликован: версия ${listing.activeVersion}`, tone: 'live' };
 }
+
+export type ListingTimerTone = 'staged' | 'running' | 'paused' | 'open' | 'overdue';
+
+/**
+ * The pre-listing timer of a PUBLISHED listing, by server time. Nothing starts
+ * by itself: a passed date with a timer that never ran is «overdue» — the
+ * owner moves the date, then starts the timer. A listing published before the
+ * timer existed counts as running (today's behaviour).
+ */
+export function listingTimerStatus(listing: AdminListing, serverNow: number): { tone: ListingTimerTone; text: string; actions: ListingCountdownAction[] } | null {
+  if (listing.activeVersion === null || !listing.active) return null;
+  const state = listing.countdown?.state ?? 'running';
+  const at = Date.parse(listing.active.listingAt);
+  if (state === 'running' && at <= serverNow) return { tone: 'open', text: 'Рынок открыт', actions: [] };
+  if (at <= serverNow) return { tone: 'overdue', text: 'Дата листинга прошла, таймер не был запущен — назначьте новую дату', actions: state === 'paused' ? ['stop'] : [] };
+  if (state === 'running') return { tone: 'running', text: 'Таймер запущен: отсчёт виден на бирже', actions: ['pause', 'stop'] };
+  if (state === 'paused') return { tone: 'paused', text: 'Таймер приостановлен: дата видна, отсчёт скрыт', actions: ['start', 'stop'] };
+  return { tone: 'staged', text: 'Таймер не запущен: рынок скрыт с биржи', actions: ['start'] };
+}
+
+const TIMER_ACTION_LABELS: Record<ListingCountdownAction, string> = { start: 'Запустить таймер', pause: 'Приостановить', stop: 'Остановить и скрыть' };
 
 const errorText = (error: unknown) => {
   if (!(error instanceof ListingApiError)) return 'Не удалось выполнить запрос.';
@@ -101,7 +132,10 @@ export function AdminListingsPage() {
   const [previewAt, setPreviewAt] = useState('');
   const [previewHorizon, setPreviewHorizon] = useState<'first24h' | 'growth' | 'afterGrowth' | 'history'>('first24h');
   const [previewInterval, setPreviewInterval] = useState('5m');
-  const [publishing, setPublishing] = useState<{ listing: AdminListing; key: string } | null>(null);
+  const [publishing, setPublishing] = useState<{ listing: AdminListing; key: string; startTimer: boolean } | null>(null);
+  // Server clock from the last list read: the timer statuses never trust the browser's clock alone.
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
+  const [timerError, setTimerError] = useState<string | null>(null);
   const loading = useRef(false);
   const mounted = useRef(false);
   const listRequest = useRef<AbortController | null>(null);
@@ -129,6 +163,7 @@ export function AdminListingsPage() {
       const body = await adminListingsApi.list(controller.signal);
       if (controller.signal.aborted) return;
       setListings(body.listings);
+      setClockOffsetMs(body.serverTime - Date.now());
       setLoadError(null);
       setNotConnected(false);
     } catch (error) {
@@ -270,7 +305,9 @@ export function AdminListingsPage() {
       setFormError('Историческое движение пока только для закрытого предпросмотра. Публикация требует проверки прав на источник и отдельного торгового счёта.');
       return;
     }
-    setPublishing({ listing: current, key: newPublishKey() });
+    // A first publication may stay hidden until «Запустить таймер» (the box is ticked by default, as before the
+    // timer existed); a re-publication keeps the timer it has.
+    setPublishing({ listing: current, key: newPublishKey(), startTimer: true });
   }
 
   async function confirmPublish() {
@@ -279,14 +316,34 @@ export function AdminListingsPage() {
     setBusy(true);
     try {
       // The key was fixed when this confirmation opened: a retry is the same publish.
-      const result = await adminListingsApi.publish(publishing.listing.id, publishing.listing.draftRevision, publishing.key);
+      const staged = publishing.listing.activeVersion === null && !publishing.startTimer;
+      const result = await adminListingsApi.publish(publishing.listing.id, publishing.listing.draftRevision, publishing.key, staged ? 'staged' : undefined);
       setEditing(previous => previous?.id === publishing.listing.id ? { ...previous, locked: true } : previous);
-      setNotice(result.replayed ? `Уже опубликовано: версия ${result.version}.` : `Опубликовано: версия ${result.version}. Рынок появится при ближайшем обновлении списка.`);
+      setNotice(result.replayed ? `Уже опубликовано: версия ${result.version}.`
+        : result.countdown?.state === 'staged' ? `Опубликовано: версия ${result.version}. Таймер не запущен — рынок скрыт с биржи до нажатия «Запустить таймер».`
+        : `Опубликовано: версия ${result.version}. Рынок появится при ближайшем обновлении списка.`);
       setPublishing(null);
       await load();
     } catch (error) {
       setFormError(errorText(error));
       if (error instanceof ListingApiError && error.status !== 0 && error.status < 500) setPublishing(null);
+    } finally { setBusy(false); }
+  }
+
+  /** Start, pause or stop the public timer of a published listing. The listing time itself never moves here. */
+  async function timer(listing: AdminListing, action: ListingCountdownAction) {
+    if (busy || !listing.active) return;
+    setBusy(true); setTimerError(null);
+    try {
+      const result = await adminListingsApi.countdown(listing.id, action);
+      const pair = `${listing.symbol}/USDT`, line = listingTimerLine(listing.active.listingAt);
+      setNotice(!result.changed ? `Таймер ${pair}: состояние не изменилось.`
+        : result.countdown.state === 'running' ? `Таймер ${pair} запущен: отсчёт до ${line}. Биржа покажет его при ближайшем обновлении списка.`
+        : result.countdown.state === 'paused' ? `Таймер ${pair} приостановлен: дата ${line} видна, отсчёт скрыт. Рынок не откроется, пока таймер не запущен.`
+        : `Таймер ${pair} остановлен: рынок скрыт с биржи до нового запуска. Дата ${line} сохранена.`);
+      await load();
+    } catch (error) {
+      setTimerError(errorText(error));
     } finally { setBusy(false); }
   }
 
@@ -305,6 +362,8 @@ export function AdminListingsPage() {
       </div>
       <ListingScenarioLab />
       {notice && <p style={styles.successBox} role="status" data-listing-notice>{notice}</p>}
+      {timerError && <p role="alert" style={styles.errorBox} className="admin-inline-alert" data-timer-error><span>{timerError}</span>
+        <button type="button" className="admin-inline-retry" onClick={() => setTimerError(null)}>Закрыть</button></p>}
       {loadError && (
         <p role="alert" style={styles.errorBox} className="admin-inline-alert" data-listings-state={notConnected ? 'not-connected' : 'error'}>
           <span>{loadError}</span>
@@ -319,6 +378,7 @@ export function AdminListingsPage() {
         <div className="listing-table" role="table" aria-label="Листинги">
           {visibleListings?.map((listing) => {
             const status = statusOf(listing);
+            const timerStatus = listingTimerStatus(listing, Date.now() + clockOffsetMs);
             return (
               <div className="listing-row" role="row" key={listing.id} data-listing-row={listing.draft.symbol}>
                 <span className="listing-ident">
@@ -336,6 +396,17 @@ export function AdminListingsPage() {
                   <button type="button" onClick={() => openEdit(listing)} data-edit-listing={listing.draft.symbol}>Изменить</button>
                   {listing.activeVersion !== null && <Link to={`/trade?pair=${listing.draft.symbol}/USDT`} data-open-market={listing.draft.symbol}>Открыть рынок</Link>}
                 </span>
+                {timerStatus && listing.active && (
+                  <span className={`listing-timer listing-timer-${timerStatus.tone}`} data-listing-timer={timerStatus.tone} role={timerStatus.tone === 'overdue' ? 'alert' : undefined}>
+                    <b>{timerStatus.text}</b>
+                    <small data-listing-timer-line>Листинг: {listingTimerLine(listing.active.listingAt)} · таймер считает до этого момента по серверному времени</small>
+                    {timerStatus.tone === 'overdue' && <small>Ничего не запускается автоматически. Откройте листинг, задайте новую дату и опубликуйте её, затем нажмите «Запустить таймер».</small>}
+                    {timerStatus.actions.length > 0 && <span className="listing-timer-actions">
+                      {timerStatus.actions.map(action => <button type="button" key={action} disabled={busy} className={action === 'start' ? 'listing-primary' : undefined}
+                        onClick={() => void timer(listing, action)} data-timer-action={action} data-timer-listing={listing.draft.symbol}>{TIMER_ACTION_LABELS[action]}</button>)}
+                    </span>}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -345,7 +416,7 @@ export function AdminListingsPage() {
       {editing && (
         <form className={`listing-form${compact ? ' listing-form-compact' : ''}`} onSubmit={save} data-listing-form noValidate>
           <h2>{editing.id ? `Листинг ${form.symbol}/USDT` : 'Новый листинг'}</h2>
-          {editing.locked && <p className="listing-hint">Опубликован: тикер, код варианта, начальная цена и настройки движения больше не меняются — это защищает историю цен. Время можно перенести только до открытия.</p>}
+          {editing.locked && <p className="listing-hint">Опубликован: тикер, код варианта, начальная цена и настройки движения больше не меняются — это защищает историю цен. Время можно перенести только до открытия рынка; запуск, пауза и остановка таймера — в списке листингов, они дату не меняют.</p>}
           {compact && <ListingSectionNav sections={[
             { id: 'listing-section-main', label: 'Параметры' },
             ...(form.simulationProgram?.kind === 'scenario-controls-v2' ? [{ id: 'listing-section-movement', label: 'Движение' }, { id: 'listing-section-stages', label: 'Этапы' }, { id: 'listing-section-advanced', label: 'Точная настройка' }] : []),
@@ -462,7 +533,14 @@ export function AdminListingsPage() {
             <h2>Опубликовать {publishing.listing.draft.symbol}/USDT?</h2>
             <p>{publishing.listing.draft.name} · начальная цена {publishing.listing.draft.initialPrice} USDT</p>
             <p>Листинг: {listingMoment(publishing.listing.draft.listingAt, publishing.listing.draft.displayTimeZone)}</p>
-            <p className="listing-hint">После публикации рынок виден всем. Тикер, код варианта, начальная цена и настройки движения фиксируются. Баланс владельца не зачисляется.</p>
+            <p data-publish-timer-line>Таймер на бирже: {listingTimerLine(publishing.listing.draft.listingAt)}</p>
+            {publishing.listing.activeVersion === null ? (
+              <label className="listing-check"><input type="checkbox" checked={publishing.startTimer} disabled={busy}
+                onChange={(e) => setPublishing({ ...publishing, startTimer: e.target.checked })} data-field="publishStartTimer" /> Запустить таймер сразу после публикации
+                <small>{publishing.startTimer ? 'Рынок и обратный отсчёт появятся на бирже при ближайшем обновлении списка.'
+                  : 'Рынок останется скрытым с биржи до нажатия «Запустить таймер» в списке листингов. Дата при этом не меняется.'}</small></label>
+            ) : <p className="listing-hint">Состояние таймера сохраняется: публикация новой версии его не запускает и не останавливает.</p>}
+            <p className="listing-hint">Тикер, код варианта, начальная цена и настройки движения фиксируются. Баланс владельца не зачисляется.</p>
             <div className="listing-buttons">
               <button type="button" className="listing-primary" disabled={busy || !draftIsSaved} onClick={() => void confirmPublish()} data-confirm-publish>Опубликовать</button>
               <button type="button" disabled={busy} onClick={() => setPublishing(null)}>Отмена</button>

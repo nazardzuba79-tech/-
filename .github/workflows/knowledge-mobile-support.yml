@@ -32,7 +32,7 @@ jobs:
           VITE_API_URL: /api/v1
         run: npm run build --prefix frontend
       - name: Disposable browser tools
-        run: npm install --prefix /tmp/voltex-reading-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+        run: npm install --prefix /tmp/voltex-reading-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
       - run: node /tmp/voltex-reading-qa/node_modules/playwright/cli.js install --with-deps chromium
       - name: Actual bundle, six widths, guest/account, navigation and support keyboard actions
         env:

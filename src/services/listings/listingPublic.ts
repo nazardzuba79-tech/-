@@ -9,8 +9,8 @@
  */
 import { simulationFor } from '../testMarkets/testMarketSimulation';
 import { testMarketDepth } from '../testMarkets/testMarketDepth';
-import { publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../testMarkets/testMarketService';
-import { listingPair, listingSimulationConfig, listingSlug, type PublishedListing } from './listingConfig';
+import { effectiveTestMarketNow, publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../testMarkets/testMarketService';
+import { listingPair, listingSlug, publishedListingAsset, type PublishedListing } from './listingConfig';
 import { isAith, validAithLease } from '../../shared/aithPublication';
 
 const headers = {
@@ -20,7 +20,7 @@ const headers = {
 
 /** The public record of one listing: the ordinary test-asset shape plus its logo and identity. */
 export function publicListingAsset(listing: PublishedListing, now: number) {
-  const asset = listingSimulationConfig(listing.config);
+  const asset = publishedListingAsset(listing);
   return {
     ...publicTestAsset(asset, now),
     managed: true as const,
@@ -29,6 +29,9 @@ export function publicListingAsset(listing: PublishedListing, now: number) {
     ...(listing.readLease ? { readLease: listing.readLease } : {}),
     logo: listing.config.logo,
     displayTimeZone: listing.config.displayTimeZone,
+    // The public timer: anything but `running` shows the date without a countdown (the market stays frozen).
+    // A staged listing never reaches this edge; if one ever did, it would read as paused, never as counting.
+    countdown: !listing.countdown || listing.countdown.state === 'running' ? 'running' as const : 'paused' as const,
   };
 }
 
@@ -66,8 +69,10 @@ export function managedListingResponse(request: Request, listings: readonly Publ
   if (isAith(current.config.symbol) && url.searchParams.has('listingVersion') && url.searchParams.get('listingVersion') !== String(current.version)) {
     return respond({ error: 'listing_version_changed', version: current.version }, 409);
   }
-  const asset = listingSimulationConfig(current.config);
+  const asset = publishedListingAsset(current);
   const simulation = simulationFor(asset);
+  // A paused timer holds the market one millisecond before its first tick (candles do the same inside testMarketCandles).
+  const marketNow = effectiveTestMarketNow(asset, now);
   const slug = listingSlug(current.config.symbol);
   const upper = path.toUpperCase();
   if (upper === `/MARKET/TEST-ASSETS/${slug}`) return respond(publicListingAsset(current, now));
@@ -82,16 +87,16 @@ export function managedListingResponse(request: Request, listings: readonly Publ
     }
   }
   if (upper.startsWith('/MARKET/DISPLAY/SPOT-BOOK/') || upper.startsWith('/MARKET/EXTERNAL/ORDERBOOK/') || upper.startsWith('/ORDERBOOK/')) {
-    return respond(testMarketDepth(simulation, now));
+    return respond(testMarketDepth(simulation, marketNow));
   }
   if (upper.startsWith('/MARKET/DISPLAY/SPOT-TRADES/') || upper.startsWith('/MARKET/EXTERNAL/TRADES/')) {
     return respond({ source: 'simulation', pair: asset.pair,
-      trades: simulation.recentTrades(now).map((trade) => ({ ...trade, time: trade.timestamp })), serverTime: now });
+      trades: simulation.recentTrades(marketNow).map((trade) => ({ ...trade, time: trade.timestamp })), serverTime: now });
   }
   // Ticker (both aliases).
   const { state } = publicTestAsset(asset, now);
   if (state.lastPrice === null) return respond({ error: 'not_listed', listingAt: asset.listingAt }, 404);
-  const book = testMarketDepth(simulation, now);
+  const book = testMarketDepth(simulation, marketNow);
   return respond({ source: 'simulation', ticker: {
     pair: asset.pair, lastPrice: String(state.lastPrice),
     bidPrice: book.bids[0].price, askPrice: book.asks[0].price,
