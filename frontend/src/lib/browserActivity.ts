@@ -206,6 +206,12 @@ async function fetchDisplay(input: RequestInfo | URL, init?: RequestInit, report
   const request = typeof Request !== 'undefined' && input instanceof Request ? input : null;
   const method = (init?.method ?? request?.method ?? 'GET').toUpperCase();
   if (!['GET', 'HEAD'].includes(method)) return globalThis.fetch(input, init);
+  // The read-only Futures mark/index reference must not block all trading UI
+  // on a tab wake if this extra display request cannot be fetched.
+  // The error still propagates to its caller; session/account reads stay critical.
+  const rawUrl = String(request?.url ?? input);
+  const wakeCritical = reportFailure && !(method === 'GET'
+    && /\/futures\/mark-price\/[^/?#]+(?:[?#]|$)/.test(rawUrl));
   const owner = identity();
   const signal = init?.signal ?? request?.signal;
   await waitUntilActive(signal);
@@ -217,7 +223,7 @@ async function fetchDisplay(input: RequestInfo | URL, init?: RequestInit, report
   new Headers(init?.headers ?? request?.headers).forEach((value, name) => headers.push([name, value]));
   headers.sort();
   const epoch = generation;
-  const key = JSON.stringify([epoch, reportFailure, method, String(request?.url ?? input), owner, headers,
+  const key = JSON.stringify([epoch, wakeCritical, method, String(request?.url ?? input), owner, headers,
     init?.credentials ?? request?.credentials, init?.cache ?? request?.cache,
     init?.mode ?? request?.mode, init?.redirect ?? request?.redirect,
     init?.integrity ?? request?.integrity, init?.referrer ?? request?.referrer]);
@@ -230,14 +236,14 @@ async function fetchDisplay(input: RequestInfo | URL, init?: RequestInit, report
       // Consume a clone so the resume indicator also covers the body download.
       await response.clone().arrayBuffer();
       if (identity() !== owner) throw new DOMException('Session changed', 'AbortError');
-      if (reportFailure && phase === 'syncing' && epoch === generation && (response.status >= 500 || response.status === 401 || response.status === 403)) {
+      if (wakeCritical && phase === 'syncing' && epoch === generation && (response.status >= 500 || response.status === 401 || response.status === 403)) {
         readFailed = true;
         if (!readFailure) readFailure = { kind: 'read', detail: `${method} ${String(request?.url ?? input)}`, status: response.status };
       }
       return response;
     });
     shared = entry;
-    trackBrowserRead(entry.task, reportFailure, `${method} ${String(request?.url ?? input)}`);
+    trackBrowserRead(entry.task, wakeCritical, `${method} ${String(request?.url ?? input)}`);
     void entry.task.finally(() => {
       entry.settled = true;
       if (wakeReads.get(key) === entry) wakeReads.delete(key);
