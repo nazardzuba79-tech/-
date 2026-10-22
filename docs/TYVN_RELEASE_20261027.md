@@ -29,7 +29,7 @@ STATUS: API candidate prepared; NOT DEPLOYED. TYVN NOT PUBLISHED. TIMER OFF. NO 
 6. Build an INACTIVE Docker image offline from the ACTUAL current immutable image ID, not from a guessed old KYC base image.
 7. Prepare a Compose overlay for ONLY api-production.image and api-production.environment.VOLTEX_RELEASE_SHA. Compare sanitized effective Compose config with the running configuration: all other fields/ports/mounts/dependencies/DB settings must be identical; do not print environment variable values.
 8. Switch only api-production with the approved compose overlay AFTER explicit final deployment approval, in an operator-controlled maintenance window. Keep the old image/overlay as immediate rollback.
-9. Require /health revision == exact approved SHA. Without authentication Admin Listings must return 401. With authorized owner admin verify read-only listings and preview. AITH and NRX quotes/candles must be unchanged, normal Spot/Futures/Wallet smoke must work.
+9. Require /health revision == exact approved SHA (the isolated API candidate gives the validated `VOLTEX_RELEASE_SHA` priority over stale platform metadata; an invalid pinned SHA returns null). Without authentication Admin Listings must return 401. With authorized owner admin verify read-only listings and preview. AITH and NRX quotes/candles must be unchanged, normal Spot/Futures/Wallet smoke must work.
 
 ## Source archive and offline build (after explicit operator approval)
 
