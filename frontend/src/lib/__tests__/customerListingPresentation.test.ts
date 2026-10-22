@@ -150,8 +150,11 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
         expect(html.includes(t('listing.awaitingStart'))).toBe(waiting);
         expect(html.includes('role="timer"')).toBe(phase === 'pre-listing' && delta < 0);
         expect(html.includes('data-chart')).toBe(phase === 'live');
-        expect(html.includes(t('listing.marketLive'))).toBe(phase === 'live' && isTradable);
-        expect(html.includes(t('listing.tradingUnavailable'))).toBe(!isTradable);
+        // The completed-candle chart needs no extra full-width market status stripe.
+        expect(html.includes(t('listing.marketLive'))).toBe(false);
+        // Before opening, the countdown card still states restrictions clearly.
+        // Once live, that information is in the ordinary order panel instead.
+        expect(html.includes(t('listing.tradingUnavailable'))).toBe(phase === 'pre-listing' && !isTradable);
         expect(html).not.toContain(raw.status);
         expect(JSON.stringify(raw)).toBe(original);
       }
