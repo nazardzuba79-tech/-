@@ -6681,3 +6681,12 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Pending at commit time:** CI on this follow-up SHA. Merge is authorized by the owner only after all final checks pass; use `[CF-Pages-Skip] [skip render]`. Production deployment, TYVN publication/timer/trading, Stocks and History20 integration remain outside this task.
 - **Next:** complete the CI gate, merge #568 without deployment, then compare #570 against the resulting code before deciding whether its QA additions are still useful.
 
+### Claude — 2026-10-22 — PR #568: chart-drag 48/49 on `a2062e13`, the text drawing under the position label
+
+- **Agent:** Claude. **Trigger:** CI `chart-drag` on `a2062e13` (Codex's workflow follow-up, which changed only `native-demo-qa.yml` and this file) failed 48/49: `matrix-drawing-text-free: a press on a free text did nothing`, the element under the press being the position label («Разворот недоступен … no clear rect within 150px»).
+- **Cause:** a gap in my harness fix `ff7e9209`, not product code. At that fixture price phase the live position's label covered the matrix's text card itself; a text card is a point, so no slide stays on it.
+- **Fix, harness only:** the text drawing is placed a quarter of the price span away from the label's entry price when that price is within 15 % of the span of the middle; otherwise it stays at the middle as before. No product file changed.
+- **Proof** (fixture clock moved to the 06:00Z phase): the script on `a2062e13` 48/49 with the identical message; the fix 49/49; the fix merged with PR #570's head `b720dd7e` 49/49, and the QA file still merges cleanly with #570 (only this handoff conflicts, both entries appended).
+- **Preserved:** Codex's `native-demo-qa.yml` step and handoff entry; every existing check.
+- **Not run:** CI on the new head (pending at commit time). **Not done:** merge, deploy.
+

@@ -523,13 +523,18 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
   await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
   const cover = await coveringShape();
   const mid = (cover.a.price + cover.b.price) / 2, midTime = Math.round((cover.a.time + cover.b.time) / 2);
+  // A text card is a point: no press can slide along it. When the live position's label sits at its price
+  // (the entry follows the fixture clock, see clearOfForeignUi), the card goes a quarter of the span away from it.
+  const entry = await page.evaluate(() => Number(document.querySelector('.private-position-line-label')?.getAttribute('data-entry-price')) || null);
+  const span = cover.a.price - cover.b.price;
+  const textPrice = entry !== null && Math.abs(entry - mid) < span * 0.15 ? (entry >= mid ? mid - span * 0.25 : mid + span * 0.25) : mid;
   const KINDS = {
     rectangle: { points: [cover.a, cover.b], area: true }, ellipse: { points: [cover.a, cover.b], area: true },
     ruler: { points: [cover.a, cover.b], area: true, offset: [0.38, 0.3] }, // The position tool: entry at the middle, target at the top, stop at the bottom; pressed inside the profit zone, off the entry line and its cards.
     long: { points: [{ time: cover.a.time, price: mid }, { time: cover.b.time, price: cover.a.price }, { time: cover.b.time, price: cover.b.price }], area: true, zone: true },
     fib: { points: [cover.a, cover.b], area: false }, trendline: { points: [cover.a, cover.b], area: false },
     horizontal: { points: [{ time: cover.a.time, price: mid }], area: false }, vertical: { points: [{ time: midTime, price: cover.a.price }], area: false },
-    text: { points: [{ time: midTime, price: mid }], text: 'QA', area: false },
+    text: { points: [{ time: midTime, price: textPrice }], text: 'QA', area: false },
   };
   const pressPoint = (kind, spec) => page.evaluate(([kind, area, offset, zone]) => {
     const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart);

@@ -239,3 +239,15 @@ slide is written into the check's `top` («press slid −30px off …»). A new 
 and drags the label itself. It posts no command, sends no trading write, and
 leaves all four controls in place, with «Закрыть позицию» enabled. The label is
 not hidden, moved or disabled anywhere.
+
+**Follow-up, 2026-10-22 06:00Z (head `a2062e13`, 48/49).** At another price
+phase the label covered the matrix's text drawing itself. A text card is a
+point, so no press can slide along it, and «a press on a free text did
+nothing» named the label. The text drawing now goes a quarter of the price span
+away from the label when the label sits within 15 % of the span of its usual
+middle price; otherwise it stays at the middle as before. Same phase, fixture
+clock moved: the merged harness 48/49 with the same message
+(`phase0600-a2062e13-text-anchor-at-mid-report.json`), this fix 49/49
+(`phase0600-text-anchor-moved-report.json`), this fix merged with #570's head
+`b720dd7e` 49/49.
+
