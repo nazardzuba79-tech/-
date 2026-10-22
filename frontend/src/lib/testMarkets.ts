@@ -227,25 +227,36 @@ export function formatTestPercent(value: number | null): string {
   return `${sign}${Math.abs(rounded).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 }
 
-/** Six decimals below 1 USDT (0.010000), four up to 10, two above. */
+/**
+ * Two decimals from 10 USDT, four from 1, six below 1 (0.010000). Below 0.01
+ * a price keeps at least four significant digits, down to the listing price
+ * step (1e-10): a managed listing may start at 1e-8, which six fixed
+ * decimals printed as 0.000000.
+ */
+function testPriceDecimals(abs: number): number {
+  if (abs >= 10) return 2;
+  if (abs >= 1) return 4;
+  if (!(abs > 0)) return 6;
+  return Math.min(10, Math.max(6, 3 - Math.floor(Math.log10(abs))));
+}
+
 export function formatTestPrice(value: number | null): string {
   if (value === null || !Number.isFinite(value) || value <= 0) return '—';
-  const decimals = value >= 10 ? 2 : value >= 1 ? 4 : 6;
+  const decimals = testPriceDecimals(value);
   return value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
 /** Chart axis and crosshair: the same magnitude rule, no dash (the axis always has a value). */
 export function formatTestAxisPrice(value: number): string {
   if (!Number.isFinite(value)) return '';
-  const abs = Math.abs(value);
-  const decimals = abs >= 10 ? 2 : abs >= 1 ? 4 : 6;
+  const decimals = testPriceDecimals(Math.abs(value));
   return value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
 /** A signed price move, at the decimals of the price it moved from. Zero is "0.000000", never a dash. */
 export function formatTestPriceChange(change: number | null, reference: number | null): string {
   if (change === null || reference === null || !Number.isFinite(change) || !Number.isFinite(reference) || reference <= 0) return '—';
-  const decimals = reference >= 10 ? 2 : reference >= 1 ? 4 : 6;
+  const decimals = testPriceDecimals(reference);
   const rounded = Number(change.toFixed(decimals));
   const sign = rounded > 0 ? '+' : rounded < 0 ? '-' : '';
   return `${sign}${Math.abs(rounded).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
