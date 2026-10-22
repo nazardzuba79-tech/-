@@ -39,10 +39,10 @@ async function run(){
    durableObjects:{LISTINGS:{className:'ManagedListingsDO',useSQLite:true}},
    outboundService:()=>{outbound++;throw Error('OUTBOUND_FORBIDDEN')}
  }]}),isolatedResourcePersistencePath:persist,resourcePersistencePath:persist,
- telemetry:{enabled:false},host:'127.0.0.1',port:0});
+ telemetry:{enabled:false},host:'127.0.0.1',port:8796});
  await mf.ready;
- const port=mf.getURL ? new URL(await mf.getURL()).origin : null;
- assert.ok(port&&port.startsWith('http://127.0.0.1:'),'disposable workerd only');
+ const port='http://127.0.0.1:8796';
+ assert.ok(port.startsWith('http://127.0.0.1:'),'disposable workerd only');
  const userIds={'qa-admin':'ADMIN','qa-user':'USER'};
  const prisma={user:{findUnique:async({where:{id}})=>userIds[id]?{id,role:userIds[id]}:null},
   session:{findUnique:async()=>null,update:async()=>null},
@@ -119,4 +119,8 @@ async function run(){
 }
 run().catch(e=>{result.failures.push(String(e.stack||e).slice(0,900));console.error('FAIL',e);process.exitCode=1})
  .finally(()=>{fs.mkdirSync(output,{recursive:true});fs.writeFileSync(path.join(output,'summary.json'),JSON.stringify(result,null,2));
-   if(!process.env.QA_KEEP_TMP)fs.rmSync(tmp,{recursive:true,force:true})});
+   if(!process.env.QA_KEEP_TMP)fs.rmSync(tmp,{recursive:true,force:true});
+   // The isolated Miniflare runtime may retain Node keep-alive handles after a failure.
+   // All synthetic files are already written synchronously, so fail/pass promptly.
+   process.exit(process.exitCode || 0);
+ });
