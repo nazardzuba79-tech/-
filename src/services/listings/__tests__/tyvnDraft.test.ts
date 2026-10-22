@@ -35,7 +35,7 @@ test('the file is the approved asset, exactly, and a valid draft of the listing 
   expect(listingSimulationConfig(draft)).toMatchObject({ pair: 'TYVN/USDT', symbol: 'TYVN', name: 'TERYVANE', initialPrice: 0.025, listingAt: START, isTradable: false, quote: 'USDT' });
   expect(START % 10_000).toBe(0); // scenario-controls-v2 requires a listing instant on a whole 10 s
   expect(new Date(START).toISOString()).toBe('2026-10-27T13:00:00.000Z'); // Tuesday, 13:00 UTC = 16:00 Moscow (UTC+3)
-  expect(new Date(START).getUTCDay()).toBe(1);
+  expect(new Date(START).getUTCDay()).toBe(2);
   // No supply field exists: the emission (100 000 000 TYVN) is documentation; ownerAllocation is a parameter and credits nothing by itself.
   expect(draft.ownerAllocation).toBe('100000000');
 });
