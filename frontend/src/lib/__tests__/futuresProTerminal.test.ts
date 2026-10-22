@@ -379,15 +379,22 @@ describe('the position overlay never invents a level', () => {
   const chart = readSource(CHART);
   const page = readSource(PAGE);
 
-  it('a null liquidation price draws no line', () => {
-    // `add` returns on null before it touches `createPriceLine`.
-    const overlay = chart.slice(chart.indexOf('THE POSITION OVERLAY'));
-    expect(overlay).toContain('if (raw === null) return;');
-    expect(overlay).toContain("add(position.liquidationPrice, 'LIQ'");
+  it('does not draw a liquidation line in either real Futures or private simulation', () => {
+    const serverOverlay = chart.slice(chart.indexOf('THE POSITION OVERLAY'), chart.indexOf('Native price lines', chart.indexOf('THE POSITION OVERLAY')));
+    const privateOverlay = chart.slice(chart.indexOf('for (const protectedTrade of relevant.filter'), chart.indexOf('// Near-live marks/position overlays'));
+    expect(serverOverlay).toContain('if (raw === null) return;');
+    expect(serverOverlay).toContain("add(position.takeProfit, 'TP'");
+    expect(serverOverlay).toContain("add(position.stopLoss, 'SL'");
+    expect(serverOverlay).not.toContain('add(position.liquidationPrice');
+    expect(privateOverlay).toContain("addLine(protectedTrade.takeProfit, 'TP'");
+    expect(privateOverlay).toContain("addLine(protectedTrade.stopLoss, 'SL'");
+    expect(privateOverlay).not.toContain('addLine(protectedTrade.liquidationPrice');
+    // The liquidation price is still held by the server and shown in the bottom positions table.
+    expect(readSource('components/FuturesPositionsPanel.tsx')).toContain("{t('futures.colLiq')}");
   });
 
   it('the estimate used by the order form is not consulted', () => {
-    const overlay = chart.slice(chart.indexOf('THE POSITION OVERLAY'), chart.indexOf('Native price lines'));
+    const overlay = chart.slice(chart.indexOf('THE POSITION OVERLAY'), chart.indexOf('Native price lines', chart.indexOf('THE POSITION OVERLAY')));
     expect(overlay).not.toContain('previewLiquidationPrice(');
   });
 
