@@ -1,0 +1,49 @@
+name: TYVN production preflight (read-only)
+on:
+  push:
+    branches:
+      - review/tyvn-prod-preflight-20261022
+    paths:
+      - .github/workflows/tyvn-production-preflight.yml
+permissions:
+  contents: read
+jobs:
+  verify-current-deployments:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Read-only market-edge, Hetzner API and public TYVN presence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const urls = [
+            ['edge-health','https://market.voltextech.net/health'],
+            ['edge-listings','https://market.voltextech.net/market/listings'],
+            ['edge-tyvn','https://market.voltextech.net/market/test-assets/TYVN-USDT'],
+            ['api-health','https://api.voltextech.net/health'],
+            ['api-health-v1','https://api.voltextech.net/api/v1/health'],
+            ['api-listings-unauthorized','https://api.voltextech.net/api/v1/admin/listings'],
+            ['frontend','https://voltextech.net/voltex-ui-release-20261022.txt']
+          ];
+          (async () => {
+            for (const [name,url] of urls) {
+              let row={name, status:null};
+              try {
+                const response=await fetch(url,{method:'GET',headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000),redirect:'follow'});
+                row.status=response.status;
+                const text=(await response.text()).slice(0,250000);
+                if(name==='edge-health'||name.startsWith('api-health')) {
+                  try {const j=JSON.parse(text); row.service=j.service??null;row.version=j.version??null;row.commit=j.commit??j.releaseCommit??j.sha??null;row.ok=j.ok??null;}catch {row.contentType=response.headers.get('content-type');}
+                }else if(name==='edge-listings') {
+                  try {const j=JSON.parse(text);row.symbols=Array.isArray(j.assets)?j.assets.map(x=>x.symbol):null;row.hasTYVN=row.symbols?.includes('TYVN')??false;row.jsonOk=Array.isArray(j.assets);}catch{row.jsonOk=false;}
+                }else if(name==='edge-tyvn') {
+                  try {const j=JSON.parse(text);row.symbol=j.symbol??j.asset?.symbol??null;row.countdown=j.countdown??j.state?.countdown??null;row.phase=j.state?.phase??null;}catch{}
+                }else if(name==='api-listings-unauthorized') {
+                  row.authRequired=[401,403].includes(response.status);
+                }else if(name==='frontend')row.releaseMarkerPresent=text.includes('VOLTEX frontend release verification marker');
+              }catch(e){row.error=e instanceof Error?e.name:'fetch_failed';}
+              console.log('preflight='+JSON.stringify(row));
+            }
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
