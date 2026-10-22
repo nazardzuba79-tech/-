@@ -123,8 +123,8 @@ export function CfdOrderForm({
       <div className="order-family-tabs cfd-order-type" role="group" aria-label={t('trade.orderType')}>
         <span className="active" aria-current="true">{copy.marketOrder}</span>
       </div>
+      {/* No «SIM» / practice badge (owner, 2026-10-22: «такі надписи всюди видалити … і схожих»). */}
       <div className="cfd-product-terms">
-        <span className="terminal-practice-label" aria-label={copy.practice}>SIM</span>
         <span>{t('futures.isolated')}</span>
       </div>
       <form onSubmit={handleSubmit} className="cfd-form">

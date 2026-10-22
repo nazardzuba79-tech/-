@@ -320,9 +320,9 @@ describe('the stats bar and the market list read only real figures', () => {
     expect(indicators.defaultChartIndicators('spot').map(i => i.id)).toEqual(['ma-200']);
     expect(indicators.defaultChartIndicators('futures').map(i => i.id)).toEqual(['ma-200']);
   });
-  it('shows no explanatory hover notes: SIM, order type, quote currency, 52-week range (owner, 2026-10-15)', () => {
+  it('shows no explanatory hover notes (order type, quote currency, 52-week range; owner, 2026-10-15) and no SIM badge (owner, 2026-10-22)', () => {
     const form = readFileSync(resolve(frontend, 'src/components/CfdOrderForm.tsx'), 'utf8');
-    expect(form).toMatch(/<span className="terminal-practice-label" aria-label=\{copy\.practice\}>SIM<\/span>/);
+    expect(form).not.toMatch(/terminal-practice-label|>SIM<\/span>|copy\.practice/);
     expect(form).not.toMatch(/practiceNote|marketOnlyNote/);
     expect(readFileSync(resolve(frontend, 'src/components/CfdPositionsPanel.tsx'), 'utf8')).not.toMatch(/quoteCurrencyNote|cfd-tabs-note/);
     expect(readFileSync(resolve(frontend, 'src/components/CfdTickerBar.tsx'), 'utf8')).not.toContain('closedSessionsOnly');

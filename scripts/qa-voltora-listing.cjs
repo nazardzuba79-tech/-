@@ -153,8 +153,9 @@ function testAssets(now) {
       const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
       const expectedStart = `Дата листинга: ${date.getUTCDate()} ${months[date.getUTCMonth()]} в ${String(date.getUTCHours()).padStart(2,'0')}:${String(date.getUTCMinutes()).padStart(2,'0')} UTC`;
       assert.ok((await row.innerText()).includes(expectedStart), `markets row start time @${width}: expected ${expectedStart}`);
-      assert.ok((await row.innerText()).includes('Учебный рынок'), `simulation disclosure @${width}`);
-      assert.ok((await row.innerText()).includes('Торговля пока недоступна'), `trading refusal @${width}`);
+      // Owner, 2026-10-22: «забороняю такі надписи» — no market notice on the row.
+      assert.ok(!(await row.innerText()).includes('Учебный рынок'), `notice «Учебный рынок» on the markets row @${width}`);
+      assert.ok(!(await row.innerText()).includes('Торговля пока недоступна'), `notice «Торговля пока недоступна» on the markets row @${width}`);
       assert.doesNotMatch(await row.innerText(), TECHNICAL, `technical wording on the markets row @${width}`);
       // The row itself stays inside the viewport (the rest of the Markets
       // page is not what this script checks).

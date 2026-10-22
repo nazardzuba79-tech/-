@@ -61,7 +61,9 @@ const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 
 const CUSTOMER_PRESENTATION_KEYS = [
   'trade.statusUnavailable', 'trade.orderTypeUnavailable', 'trade.status.REJECTED', 'trade.status.EXPIRED',
   'futures.positionStatus.OPEN', 'futures.positionStatus.CLOSED', 'futures.positionStatus.LIQUIDATED',
-  'listing.simulation', 'listing.tradingUnavailable', 'listing.marketLive', 'listing.dateUnconfirmed',
+  // 'listing.simulation', 'listing.tradingUnavailable' and 'listing.marketLive' were removed with the
+  // market notice they formed (owner, 2026-10-22: «забороняю такі надписи … інтерфейс має бути чистий»).
+  'listing.dateUnconfirmed',
   'listing.awaitingStart', 'listing.untilListing', 'listing.scheduledAt', 'listing.loadFailed',
   'listing.dataStale', 'listing.volume24h', 'serverError.forbidden', 'serverError.network', 'serverError.timeout',
 ];
@@ -83,8 +85,8 @@ const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySub
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
-  it('provides the twenty new customer state labels in every locale', () => {
-    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(20);
+  it('provides the seventeen remaining customer state labels in every locale', () => {
+    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(17);
     for (const code of LOCALES) for (const key of CUSTOMER_PRESENTATION_KEYS) {
       expect(dicts[code][key]?.trim()).toBeTruthy();
       expect(dicts[code][key]).not.toBe(key);
@@ -333,6 +335,15 @@ describe('translation integrity', () => {
       ko: { label: 'Supreme VIP', title: 'Supreme VIP 등급' },
       zh: { label: 'Supreme VIP', title: 'Supreme VIP 状态' },
     };
+    const removedPracticeCopy: Record<string, string> = {
+      ru: 'Этот аккаунт работает только в тренировочном режиме.',
+      en: 'This account works in practice mode only.',
+      es: 'Esta cuenta funciona solo en modo de práctica.',
+      hi: 'यह खाता केवल अभ्यास मोड में काम करता है।',
+      ja: 'このアカウントは練習モードでのみ利用できます。',
+      ko: '이 계정은 연습 모드에서만 사용할 수 있습니다.',
+      zh: '该账户仅可用于练习模式。',
+    };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
@@ -485,7 +496,11 @@ describe('translation integrity', () => {
         // translations remain byte-frozen.
         .replace("'wallet.superVip': '" + approvedVipCopy[code].label + "'", "'wallet.superVip': '" + previousVipCopy[code].label + "'")
         .replace("'wallet.superVipTitle': '" + approvedVipCopy[code].title + "'", "'wallet.superVipTitle': '" + previousVipCopy[code].title + "'")
-        .replace(code === 'ru' ? "'futures.colMark': 'Цена марк.'" : '\u0000', "'futures.colMark': 'Цена маркировки'");
+        .replace(code === 'ru' ? "'futures.colMark': 'Цена марк.'" : '\u0000', "'futures.colMark': 'Цена маркировки'")
+        // `serverError.practiceOnly` («…только в тренировочном режиме») was removed with every
+        // practice/demo notice (owner, 2026-10-22: «щоб більше ніколи … не появлялись»); the refusal
+        // now reads `serverError.forbidden`. Its original line is put back here for the old digest.
+        .replace(/(\n  'serverError\.notFound': [^\n]*)/, `$1\n  'serverError.practiceOnly': '${removedPracticeCopy[code]}',`);
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });

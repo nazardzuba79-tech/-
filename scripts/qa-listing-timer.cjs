@@ -145,7 +145,8 @@ const check = (name) => { report.cases.push(name); console.log('✓', name); };
       assert.deepEqual((await cells(page)).slice(0, 2), ['05', '03'], 'countdown follows the server clock, not the viewer\'s');
       const facts = await page.locator('.vta-prelisting-facts').innerText();
       assert.ok(facts.includes(TIMER_LINE), facts);
-      assert.ok((await page.locator('body').innerText()).includes('Торговля пока недоступна'));
+      // Owner, 2026-10-22: no market notice («Учебный рынок · Торговля пока недоступна») anywhere on the page.
+      for (const text of ['Учебный рынок', 'Торговля пока недоступна']) assert.ok(!(await page.locator('body').innerText()).includes(text), `notice «${text}» on the page`);
       await shot(page, `trade-running-${width}.png`);
       // Reload: the same server clock, the same remaining time — nothing resets.
       await page.reload();

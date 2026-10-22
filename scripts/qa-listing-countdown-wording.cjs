@@ -67,9 +67,9 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
         const check = async (waiting, live) => {
           const body = await page.locator('body').innerText();
           assert.equal(body.includes(texts[lang][0]), waiting);
-          const status = await page.locator('.managed-demo-status').first().innerText();
-          assert.equal(status.includes(texts[lang][1]), !isTradable);
-          assert.equal(status.includes(texts[lang][2]), live && isTradable);
+          // Owner, 2026-10-22: no market notice in any state («Торговля пока недоступна», «Рынок открыт»).
+          assert.equal(await page.locator('.managed-demo-status').count(), 0);
+          assert(!body.includes(texts[lang][1]) && !body.includes(texts[lang][2]));
           assert(!body.includes('TEST · NOT TRADABLE'));
           if (!live) assert.equal(await page.locator('.vta-prelisting-facts').innerText(), facts);
         };
