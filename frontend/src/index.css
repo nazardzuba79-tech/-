@@ -1327,6 +1327,28 @@ textarea:focus-visible {
   padding: 5px 7px;
   border-radius: 12px;
 }
+/* CFD prices loading (or not loaded): rows of the same height, no wording (owner, 2026-10-22). */
+.market-dashboard__row--placeholder,
+.market-dashboard__row--placeholder:hover {
+  background: none;
+}
+.market-dashboard__placeholder-mark {
+  width: 100%;
+  max-width: 40px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.045);
+}
+.market-dashboard__placeholder-bar {
+  width: min(160px, 70%);
+  height: 14px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.045);
+}
+.market-dashboard__placeholder-bar--short {
+  width: 72px;
+  justify-self: end;
+}
 .market-dashboard__coin {
   width: 40px;
   height: 40px;

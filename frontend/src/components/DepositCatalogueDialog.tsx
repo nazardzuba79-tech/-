@@ -162,7 +162,7 @@ export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header
       <div className="dc-content">
         {!loaded ? <div className="dc-state" role="status"><span className="dc-loading"/>{t('wallet.loading')}</div>
         : error ? <div className="dc-state" role="alert"><Info size={28}/><p>{t('deposit.loadAddressError')}</p><button className="dc-primary" onClick={() => { resetCopy(); setRetry(x => x + 1); }}>{t('deposit.ui.retry')}</button></div>
-        : !wallet ? <div className="dc-state">{t('deposit.noneConfigured')}</div>
+        : !wallet ? <div className="dc-state" aria-hidden="true">—</div>
         : <>
           <section className="dc-identity">{icon(asset, 52)}<h3>{t('deposit.ui.yourAddress', { asset })}</h3></section>
           {/* Asset: a field that reads as one — label, the chosen asset in

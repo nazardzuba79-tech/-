@@ -80,7 +80,16 @@ function restoreFormPresentation(source) {
  expect(text.split(propsAnchor).length - 1).toBe(1);
  expect(text.split(renderAnchor).length - 1).toBe(1);
  expect(text).not.toContain('className="archive-calculator-trigger"');
+ // 2026-10-22 (owner: no «Недоступно» / «not trading yet» line anywhere): the red «Недоступно» row and the
+ // buttons' «Недоступно» tooltip are gone — the buttons were already disabled. Put back exactly those for the
+ // fingerprint; `canSubmit`, the guards and the payload stay frozen.
+ const ctaAnchor = '\n\n        {/* The shared terminal CTA';
+ expect(text.split(ctaAnchor).length - 1).toBe(1);
+ expect(text).not.toContain("t('analytics.unavailable')");
  return text
+  .replace(ctaAnchor, "\n        {!executionEnabled && <div className=\"fo-error\" role=\"status\">{t('analytics.unavailable')}</div>}" + ctaAnchor)
+  .replace("title={!connectedFamily ? undefined : reduceBlockedReason('BUY')}", "title={!connectedFamily ? t('analytics.unavailable') : reduceBlockedReason('BUY')}")
+  .replace("title={!connectedFamily ? undefined : reduceBlockedReason('SELL')}", "title={!connectedFamily ? t('analytics.unavailable') : reduceBlockedReason('SELL')}")
   .replace(propsAnchor, '  calculatorDraft,\n  onOpenCalculator,\n  lastPrice = null,\n')
   .replace(renderAnchor, '      </form>\n' + removedCalculator + '\n      {/* The compact account summary')
   .replace('  pickedPriceSequence,\n','')

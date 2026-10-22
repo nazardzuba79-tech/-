@@ -172,7 +172,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                     </Link>
                   );
                 })}
-                {cfdTickers.length === 0 && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
+                {cfdTickers.length === 0 && <CfdRowPlaceholders count={3} rowClass="market-dashboard__cfd-row" />}
               </div>
             </article>
           </div>
@@ -241,7 +241,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                     </Link>
                   );
                 })}
-              {popularTab === 'cfd' && cfdTickers.length === 0 && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
+              {popularTab === 'cfd' && cfdTickers.length === 0 && <CfdRowPlaceholders count={4} rowClass="market-dashboard__popular-row" />}
             </div>
           </article>
         </div>
@@ -289,9 +289,26 @@ function PerformanceChart({ points }: { points: number[] }) {
   );
 }
 
+/**
+ * Quiet rows of the real rows' height while CFD prices load, or if they could not be loaded: no wording
+ * (owner, 2026-10-22: no «trading unavailable» line on the exchange). The hook retries on its own.
+ */
+function CfdRowPlaceholders({ count, rowClass }: { count: number; rowClass: string }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className={`market-dashboard__row ${rowClass} market-dashboard__row--placeholder`} aria-hidden="true">
+          <span className="market-dashboard__placeholder-mark" />
+          <span className="market-dashboard__placeholder-bar" />
+          <span className="market-dashboard__placeholder-bar market-dashboard__placeholder-bar--short" />
+        </div>
+      ))}
+    </>
+  );
+}
+
 const styles: Record<string, React.CSSProperties> = {
   overview: { borderTop: '1px solid var(--border)', background: 'var(--panel-alt)' },
   tickerStrip: { display: 'flex', gap: 28, overflowX: 'auto', padding: '12px 20px', borderBottom: '1px solid var(--border)' },
   tickerStripItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0 },
-  hint: { padding: 14, color: 'var(--text-secondary)', fontSize: 12 },
 };

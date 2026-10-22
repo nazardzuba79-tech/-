@@ -61,6 +61,37 @@ const PRACTICE_NOTICES = [
 ];
 
 /**
+ * «Trading (temporarily) unavailable», in all seven languages — the same kind
+ * of line (owner, 2026-10-22, on «Торговля CFD временно недоступна»:
+ * «виправляй»). Only Stocks' own `stocks.tradingUnavailable` still says it:
+ * Codex's switched-off work, exempt as below, to go before Stocks is switched on.
+ */
+const TRADING_UNAVAILABLE = [
+  /торгов(ля|ли|ать)[^.]{0,40}(недоступн|не доступн|приостановлен|закрыт|не работает)/i,
+  /\btrad(ing|e)\b[^.]{0,40}\b(unavailable|not available|disabled|suspended|closed)\b/i,
+  /(negociación|trading|operar)[^.]{0,40}(no (está |estará )?disponible|suspendid|cerrad)/i,
+  /ट्रेडिंग[^।]{0,40}(अनुपलब्ध|उपलब्ध नहीं|बंद)/,
+  /取引(?!量|額|条件)[^。]{0,20}(利用できません|ご利用いただけません|停止|休止)|取引できません/,
+  /거래[^.]{0,20}(이용할 수 없|할 수 없|중단|중지)/,
+  /交易(?!量|额|对|所)[^。]{0,10}(暂不可用|暂未开放|不可用|暂停|关闭)/,
+  // …and its «coming soon» form: trading or quotes that «will be available» («TradFi скоро появится · Торговля
+  // традиционными активами станет доступна…», «Котировки CFD скоро появятся»).
+  /(торгов(ля|ли|ать)|котировк|цены)[^.]{0,60}(скоро появ|станет доступн|будет доступн|появятся)/i,
+  /\b(trading|quotes|prices)\b[^.]{0,40}\b(coming soon|will be available|available soon)\b/i,
+  /(negociación|cotizaciones|precios)[^.]{0,40}(pronto|estará(n)? disponible)/i,
+  /(ट्रेडिंग|कोटेशन|कोट्स|कीमतें|कीमत)[^।]{0,40}(जल्द|उपलब्ध होगी|उपलब्ध होंगी)/,
+  /(取引|相場|価格|気配)(?!量|額)[^。]{0,20}(近日|まもなく|予定です)/,
+  /(거래|시세|가격)[^.]{0,20}(곧 |예정)/,
+  /(交易|报价|价格)(?!量|额)[^。]{0,10}(即将|敬请期待)/,
+  // …and «not yet / for now» about the product itself (owner, 2026-10-22, «Этот актив пока не торгуется» on the
+  // phone: «ти мав всі знайти і видалити»): deposits, convert, borrow, reserves, the card, an asset.
+  /пока (не (торгу|подключ|определ|подтвержд|доступ)|недоступ)|не торгуется|ещё не (подключ|торгу)|еще не (подключ|торгу)/i,
+  /\bnot (available|trading) yet\b|\bnot available\b[^.]{0,40}\byet\b|\bnot connected yet\b|\bare connected yet\b/i,
+  /aún no (está |están )?disponible|todavía no (hay|se negocia)/i,
+];
+const saysTradingUnavailable = (text: string) => TRADING_UNAVAILABLE.some((r) => r.test(text));
+
+/**
  * Only a dictionary value gets this one. A deploy-time variable's name on a
  * screen is a leak; the same shape inside a component is almost always an
  * order status or a colour constant that the reader never sees.
@@ -97,8 +128,9 @@ function localeStrings(source: string): { key: string; value: string }[] {
 describe.each(LOCALES)('%s dictionary', (code) => {
   test('speaks about the product, not about the plumbing', () => {
     const offenders = localeStrings(readLocale(code))
-      .filter(({ value }) => !allowed(value)
-        && [...PLUMBING, ...PRACTICE_NOTICES, ENV_VAR_NAME].some((r) => r.test(value)))
+      .filter(({ key, value }) => !allowed(value)
+        && ([...PLUMBING, ...PRACTICE_NOTICES, ENV_VAR_NAME].some((r) => r.test(value))
+          || (!key.startsWith('stocks.') && saysTradingUnavailable(value))))
       .map(({ key, value }) => `${key}: ${value}`);
     expect(offenders).toEqual([]);
   });
@@ -203,7 +235,9 @@ test('no component copy, in any of the seven languages, is a practice / training
       for (const m of line.matchAll(/(['"`])((?:[^'"`\\\n]|\\.){2,300}?)\1/g)) candidates.push(m[2]);
     }
     for (const text of candidates.filter(isAnyCopy)) {
-      if (!allowed(text) && PRACTICE_NOTICES.some((r) => r.test(text))) offenders.push(`${rel}: ${text.slice(0, 120)}`);
+      // The dictionaries get the trading vocabulary in their own test above, where Stocks' keys are exempt.
+      const trading = !rel.startsWith('frontend/src/lib/i18n/locales/') && saysTradingUnavailable(text);
+      if (!allowed(text) && (PRACTICE_NOTICES.some((r) => r.test(text)) || trading)) offenders.push(`${rel}: ${text.slice(0, 120)}`);
     }
     for (const m of source.matchAll(/>\s*(SIM|DEMO|TEST|PRACTICE|ДЕМО|ТЕСТ)\s*</g)) offenders.push(`${rel}: badge «${m[1]}»`);
   }
@@ -219,4 +253,34 @@ test('the practice vocabulary catches every former notice and leaves ordinary wo
     expect({ text, hit: hit(text) || PLUMBING.some((r) => r.test(text)) }).toEqual({ text, hit: true });
   for (const text of ['Рынки', 'Купить', 'Дата листинга', 'Данные временно недоступны', 'Торговля акциями пока недоступна.', 'Market', 'Price', '市场', '价格'])
     expect({ text, hit: hit(text) }).toEqual({ text, hit: false });
+});
+
+test('the «trading unavailable / coming soon» vocabulary catches the former CFD, TradFi and home lines in every language and leaves data wording alone', () => {
+  for (const text of ['Торговля CFD временно недоступна.', 'CFD trading temporarily unavailable.', 'La negociación de CFD no está disponible temporalmente.',
+    'CFD ट्रेडिंग अस्थायी रूप से अनुपलब्ध है।', 'CFD取引は一時的に利用できません。', 'CFD 거래를 일시적으로 이용할 수 없습니다.', 'CFD 交易暂不可用。',
+    'Торговля пока недоступна', 'Trading is currently unavailable',
+    'Торговля традиционными активами станет доступна в одном из следующих обновлений.', 'Котировки CFD скоро появятся', 'CFD quotes are coming soon',
+    'Las cotizaciones de CFD llegarán pronto', 'CFD कोट्स जल्द आ रहे हैं', 'CFD の気配値は近日公開', 'CFD 시세가 곧 제공됩니다', 'CFD 报价即将上线',
+    'Этот актив пока не торгуется', 'This asset is not trading yet', 'Este activo todavía no se negocia',
+    'Пополнение пока недоступно: адреса кошельков ещё не подключены.', 'Deposits are not available yet: no wallet addresses are connected.',
+    'Конвертация пока недоступна', 'Convert is not available yet', 'Заём пока недоступен', 'Ни одна сеть пока не подключена.',
+    'No networks are connected yet.', 'Todavía no hay redes conectadas.', 'Пока недоступно', 'Aún no disponible',
+    'Карта пока недоступна для этого аккаунта.', 'The card is not available for this account yet.',
+    'Условия досрочного возврата основной суммы пока не определены.', 'Направление пока не подтверждено.', 'Лимитное закрытие пока недоступно в приватном режиме'])
+    expect({ text, hit: saysTradingUnavailable(text) }).toEqual({ text, hit: true });
+  for (const text of ['Данные временно недоступны', 'Не удалось обновить данные. Показаны последние полученные значения.', 'График временно недоступен',
+    'Цена сейчас недоступна, поэтому расчёт не подтверждён.', 'Data temporarily unavailable', 'Trading', 'Торговля', '交易', '取引', '거래',
+    '等面积：交易量不可用', '等面積：取引量は取得できません', '資金・取引条件を確認できませんでした。データを更新してください。', 'Эта страница недоступна для вашего аккаунта.',
+    'Операций пока нет', 'Депозитов пока нет.', 'Сделок по этой паре ещё не было.', 'Исходная заявка пока не найдена.', 'La fecha de listado aún no está confirmada', 'Data temporarily unavailable'])
+    expect({ text, hit: saysTradingUnavailable(text) }).toEqual({ text, hit: false });
+});
+
+// Owner, 2026-10-22: the order forms say nothing when an order cannot be placed — the button is disabled.
+test('the Spot and Futures order forms have no «not trading yet» / «Недоступно» line', () => {
+  const spot = readFileSync(resolve(root, 'frontend/src/components/OrderForm.tsx'), 'utf8');
+  const futures = readFileSync(resolve(root, 'frontend/src/components/FuturesOrderForm.tsx'), 'utf8');
+  expect(spot).not.toMatch(/assetNotTradingYet|assetPurchaseUnavailable|assetOrderTypeUnavailable/);
+  expect(spot).toContain('<button type="submit" disabled={submitting || orderBlocked}');
+  expect(futures).not.toContain("t('analytics.unavailable')");
+  expect(futures).toContain('disabled={!canSubmit || protectionBreachFor(\'BUY\') || !reducible(\'BUY\')}');
 });

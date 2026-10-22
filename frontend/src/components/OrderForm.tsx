@@ -89,6 +89,8 @@ export function OrderForm({
   // The server refuses the pair on its own as well (OrderService).
   // NRX and a tradable managed listing use the ordinary Spot order path (the server refuses them before listing).
   const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !isManagedTradablePair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;
+  // A market that is not open, or what a private VTA account may not do: the button is simply disabled.
+  const orderBlocked = notTradingYet || (privateVta && (side === 'BUY' || family !== 'MARKET'));
   const vtaLocked = privateVta && (submitting || vtaUnconfirmed);
   useEffect(() => onSessionChange(() => {
     if (!privateVta) return;
@@ -258,16 +260,8 @@ export function OrderForm({
     e.preventDefault();
     if (submittingRef.current) return;
     setError(null);
-    if (privateVta && (side === 'BUY' || family !== 'MARKET')) {
-      const message = t(side === 'BUY' ? 'trade.assetPurchaseUnavailable' : 'trade.assetOrderTypeUnavailable');
-      setError(message); toast.error(message); return;
-    }
-    if (notTradingYet) {
-      const message = t('trade.assetNotTradingYet');
-      setError(message);
-      toast.error(message);
-      return;
-    }
+    // The button is disabled for these; no «not trading yet» line or toast (owner, 2026-10-22).
+    if (orderBlocked) return;
     const requiredValues = [quantity, ...(family === 'OCO' ? [ocoTakeProfitPrice, ocoStopTriggerPrice, ocoStopLimitPrice] : [
       ...(family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? [price] : []),
       ...(isConditional ? [triggerPrice] : []),
@@ -607,7 +601,7 @@ export function OrderForm({
           </div>
         )}
 
-        <button type="submit" disabled={submitting} className={`submit-btn ${sideClass}`}>
+        <button type="submit" disabled={submitting || orderBlocked} className={`submit-btn ${sideClass}`}>
           {submitting ? t('auth.wait') : side === 'BUY' ? t('trade.buy') : t('trade.sell')}
         </button>
 

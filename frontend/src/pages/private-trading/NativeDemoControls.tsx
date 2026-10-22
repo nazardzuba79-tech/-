@@ -25,7 +25,7 @@ export function NativeDemoTicket({controller:c,symbol,pickedPrice,pickedSequence
       :{kind:'OPEN',symbol,side,type,margin:amount,leverage,...(type==='LIMIT'?{price}:{}),...(candle?{candle}:{}),protection:{takeProfit:tp||null,stopLoss:sl||null}};
     if(await c.run(draft)){c.setCandle(null);c.setExitId(null);}
   }
-  if(!c.allowed)return <div className="native-demo-controls" role="status">{c.checked?'Торговля недоступна для этого аккаунта.':'Загрузка…'}</div>;
+  if(!c.allowed)return <div className="native-demo-controls" role="status">{c.checked?'Эта страница недоступна для вашего аккаунта.':'Загрузка…'}</div>;
   const state=c.state,a=state?.account;
   return <div className="native-demo-controls">
     {c.error&&<p role="alert">{c.error}</p>}

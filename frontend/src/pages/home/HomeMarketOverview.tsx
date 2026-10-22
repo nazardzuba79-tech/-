@@ -231,8 +231,8 @@ export function HomeMarketOverview({ market }: { market: HomeMarket }) {
       </Panel>
 
       {/* 5 — CFD. Only actionable when the product is actually configured
-              on this deployment; otherwise it states that plainly instead
-              of showing quotes that do not exist. */}
+              on this deployment; otherwise the same neutral data line as the
+              other panels, never a «coming soon» (owner, 2026-10-22). */}
       <Panel title={t('home.overview.cfd')}>
         {market.cfdStatus === 'loading' ? (
           <Skeleton />
@@ -268,7 +268,7 @@ export function HomeMarketOverview({ market }: { market: HomeMarket }) {
             </Link>
           </>
         ) : (
-          <Unavailable label={t('home.cfdSoon')} />
+          <Unavailable label={t('home.dataUnavailable')} />
         )}
       </Panel>
     </div>

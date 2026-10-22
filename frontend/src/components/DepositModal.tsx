@@ -83,7 +83,7 @@ function LegacyDepositModal({ onClose }: { onClose: () => void }) {
         )}
 
         {loaded && wallets.length === 0 && !error && (
-          <p style={{ color: 'var(--text-tertiary)', fontSize: 12, lineHeight: 1.6 }}>{t('deposit.noneConfigured')}</p>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 12, lineHeight: 1.6 }} aria-hidden="true">—</p>
         )}
 
         {wallets.length > 0 && (

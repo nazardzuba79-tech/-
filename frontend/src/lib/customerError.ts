@@ -44,7 +44,7 @@ const CODE_KEY: Record<string, Key> = {
   NOT_FOUND: 'serverError.notFound',
   MARK_PRICE_UNAVAILABLE: 'serverError.priceUnavailable',
   CARD_VALUATION_UNAVAILABLE: 'serverError.priceUnavailable',
-  CARD_NOT_ELIGIBLE: 'serverError.cardNotEligible',
+  CARD_NOT_ELIGIBLE: 'serverError.forbidden',
   CARD_APPLICATION_REQUIRED: 'serverError.cardApplicationRequired',
   CARD_APPLICATION_ALREADY_EXISTS: 'serverError.cardApplicationExists',
   INVALID_CARD_PRODUCT: 'serverError.checkFields',

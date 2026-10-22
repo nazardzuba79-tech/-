@@ -116,7 +116,6 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
     if (tab === 'favorites') return t('home.markets.noFavorites');
     if (tab === 'cfd') {
       if (market.cfdStatus === 'loading') return t('home.markets.loading');
-      if (market.cfd && !market.cfd.configured) return t('home.markets.cfdNotConfigured');
       return t('home.marketDataUnavailable');
     }
     if (tab === 'futures') {
