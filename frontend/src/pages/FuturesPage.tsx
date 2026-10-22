@@ -579,8 +579,8 @@ export function FuturesPage() {
    * already drawing them from somewhere else.
    *
    * `privateTrading` gives the chart the simulation transcript, which
-   * already puts an entry line on every open trade and TP/SL/LIQ on the
-   * selected one. Handing it this list as well would draw a second entry
+   * already puts an entry line on every open trade and TP/SL on the
+   * selected one. LIQ is displayed only in the positions table. Handing it this list as well would draw a second entry
    * line over the first for the same position — the duplicate the brief
    * explicitly rules out. So this is the REAL engine's equivalent of that
    * path, not a second copy of it.
