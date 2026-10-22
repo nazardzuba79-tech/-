@@ -1,6 +1,6 @@
 'use strict';
 /**
- * TERYVANE (TYVN/USDT), the listing of 2026-10-26 13:00 UTC = 16:00 Moscow —
+ * TERYVANE (TYVN/USDT), the listing of 2026-10-27 13:00 UTC = 16:00 Moscow —
  * the DRAFT only, in the real managed-listings system, local and disposable.
  *
  * Real pieces: the market-edge Worker bundle in workerd (Miniflare, SQLite
@@ -50,7 +50,7 @@ const STORE_TOKEN = 'synthetic-local-only-listings-secret-0001';
 const draft = JSON.parse(fs.readFileSync(path.join(root, 'config/test-markets/tyvn.draft.json'), 'utf8'));
 const LISTING_AT = draft.listingAt, START = Date.parse(LISTING_AT);
 const HOUR = 3_600_000, DAY = 24 * HOUR;
-const TIMER_LINE = '26.10.2026 — 13:00 UTC / 16:00 МСК';
+const TIMER_LINE = '27.10.2026 — 13:00 UTC / 16:00 МСК';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.json': 'application/json' };
 fs.mkdirSync(output, { recursive: true });
 
@@ -158,7 +158,7 @@ const render = async (p, { method = 'GET', body, ifMatch } = {}) => {
     assert.ok(first24h.body.candles.every((c) => c.high <= Number(summary.maxPrice) && c.low > 0));
     const growth = await render(`/admin/listings/${id}/preview?horizon=growth&interval=1h`);
     assert.equal(growth.status, 200);
-    const before = await render(`/admin/listings/${id}/preview?at=2026-10-26T12:59:00Z&interval=5m`);
+    const before = await render(`/admin/listings/${id}/preview?at=2026-10-27T12:59:00Z&interval=5m`);
     assert.deepEqual([before.body.asset.state.phase, before.body.candles], ['pre-listing', []]);
     const atInstant = await render(`/admin/listings/${id}/preview?at=${LISTING_AT}&interval=5m`);
     assert.equal(atInstant.body.asset.state.phase, 'live');
@@ -198,7 +198,7 @@ const render = async (p, { method = 'GET', body, ifMatch } = {}) => {
       const row = page.locator('[data-listing-row="TYVN"]');
       await row.waitFor({ timeout: 20000 });
       const rowText = await row.innerText();
-      for (const text of ['TYVN/USDT', 'TERYVANE', 'Черновик', '26.10.2026 13:00 Всемирное время (UTC)', '26.10.2026 16:00 Москва (UTC+3)']) assert.ok(rowText.includes(text), `${width}: ${text}`);
+      for (const text of ['TYVN/USDT', 'TERYVANE', 'Черновик', '27.10.2026 13:00 Всемирное время (UTC)', '27.10.2026 16:00 Москва (UTC+3)']) assert.ok(rowText.includes(text), `${width}: ${text}`);
       assert.equal(await page.locator('[data-listing-timer]').count(), 0, 'a draft has no timer yet');
       await shot(page, `admin-draft-row-${width}.png`);
       await page.locator('[data-edit-listing="TYVN"]').click();
@@ -206,17 +206,17 @@ const render = async (p, { method = 'GET', body, ifMatch } = {}) => {
       assert.equal(await page.inputValue('[data-field="symbol"]'), 'TYVN');
       assert.equal(await page.inputValue('[data-field="name"]'), 'TERYVANE');
       assert.equal(await page.inputValue('[data-field="initialPrice"]'), '0.0250');
-      assert.equal(await page.inputValue('[data-field="wallTime"]'), '2026-10-26T16:00');
+      assert.equal(await page.inputValue('[data-field="wallTime"]'), '2026-10-27T16:00');
       assert.equal(await page.inputValue('[data-field="timeZone"]'), 'Europe/Moscow');
       const utcLine = await page.locator('[data-listing-utc]').innerText();
-      assert.ok(utcLine.includes('26.10.2026 13:00 Всемирное время (UTC)') && utcLine.includes('26.10.2026 16:00 Москва (UTC+3)'), utcLine);
+      assert.ok(utcLine.includes('27.10.2026 13:00 Всемирное время (UTC)') && utcLine.includes('27.10.2026 16:00 Москва (UTC+3)'), utcLine);
       await page.locator('[data-preview]').click();
       await page.locator('[data-listing-preview]').waitFor({ timeout: 30000 });
       assert.equal(await page.locator('[data-publish-dialog]').count(), 0);
       await page.locator('[data-preview-summary]').scrollIntoViewIfNeeded();
       await shot(page, `admin-draft-preview-${width}.png`);
       await page.context().close();
-      check(`admin ${width}: draft row and form show TYVN/USDT TERYVANE, 0.0250 USDT, 26.10.2026 16:00 Москва = 13:00 UTC; private preview rendered; publish never opened`);
+      check(`admin ${width}: draft row and form show TYVN/USDT TERYVANE, 0.0250 USDT, 27.10.2026 16:00 Москва = 13:00 UTC; private preview rendered; publish never opened`);
 
       /* 5. The exchange, as it WOULD look once published with a running timer: 5 d 03 h 30 min before the instant. */
       const serverTime = START - 5 * DAY - 3 * HOUR - 30 * 60_000;
