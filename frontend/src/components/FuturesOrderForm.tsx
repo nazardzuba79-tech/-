@@ -1201,7 +1201,6 @@ export function FuturesOrderForm({
             })}
           </div>
         )}
-        {!executionEnabled && <div className="fo-error" role="status">{t('analytics.unavailable')}</div>}
 
         {/* The shared terminal CTA, same as spot — this used to be a
             flat accent fill under a coloured outer glow, which is the one
@@ -1225,7 +1224,7 @@ export function FuturesOrderForm({
           <button
             type="button"
             disabled={!canSubmit || protectionBreachFor('BUY') || !reducible('BUY')}
-            title={!connectedFamily ? t('analytics.unavailable') : reduceBlockedReason('BUY')}
+            title={!connectedFamily ? undefined : reduceBlockedReason('BUY')}
             data-reduce-blocked={reducible('BUY') ? undefined : 'true'}
             onClick={() => place('BUY')}
             className="submit-btn buy"
@@ -1235,7 +1234,7 @@ export function FuturesOrderForm({
           <button
             type="button"
             disabled={!canSubmit || protectionBreachFor('SELL') || !reducible('SELL')}
-            title={!connectedFamily ? t('analytics.unavailable') : reduceBlockedReason('SELL')}
+            title={!connectedFamily ? undefined : reduceBlockedReason('SELL')}
             data-reduce-blocked={reducible('SELL') ? undefined : 'true'}
             onClick={() => place('SELL')}
             className="submit-btn sell"

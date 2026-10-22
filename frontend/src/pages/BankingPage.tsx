@@ -151,7 +151,7 @@ export function BankingPage() {
                   <dt>Капитализация</dt><dd>{item.compound ? 'Ежемесячная' : 'Без auto-compound'}</dd>
                   <dt>Выплата</dt><dd>{item.payoutFrequency === 'MONTHLY' ? 'Ежемесячно' : 'После завершения срока'}</dd>
                 </dl>
-                <p className="banking-condition">{item.lockRule === 'PRINCIPAL_RETURN_UNDEFINED' ? 'Условия досрочного возврата основной суммы пока не определены.' : `Основная сумма и вознаграждения заблокированы на ${item.termMonths} месяцев.`}</p>
+                {item.lockRule !== 'PRINCIPAL_RETURN_UNDEFINED' && <p className="banking-condition">{`Основная сумма и вознаграждения заблокированы на ${item.termMonths} месяцев.`}</p>}
                 <div className="banking-assets">USDT · USDC · BTC · ETH · SOL</div>
                 <button type="button" onClick={(event) => { event.stopPropagation(); setProgramId(item.id); document.getElementById('banking-calculator')?.scrollIntoView({ behavior: 'smooth' }); }}>Рассчитать</button>
               </article>

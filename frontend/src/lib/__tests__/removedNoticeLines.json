@@ -1,0 +1,240 @@
+{
+ "en": [
+  {
+   "after": "analytics.unavailable",
+   "line": "  'analytics.noSource': 'Not available yet',"
+  },
+  {
+   "after": "deposit.loadingNetworks",
+   "line": "  'deposit.noneConfigured': 'Deposits are not available yet: no wallet addresses are connected.',"
+  },
+  {
+   "after": "settings.reservesDisclaimer",
+   "line": "  'settings.reservesEmpty': 'No networks are connected yet.',"
+  },
+  {
+   "after": "wallet.convert",
+   "line": "  'wallet.convertUnavailable': 'Convert is not available yet',"
+  },
+  {
+   "after": "wallet.navSection",
+   "line": "  'wallet.navUnavailable': 'This section is not available yet',"
+  },
+  {
+   "after": "wallet.borrow",
+   "line": "  'wallet.borrowUnavailable': 'Borrowing is not available yet',"
+  },
+  {
+   "after": "home.marketDataUnavailable",
+   "line": "  'home.markets.cfdNotConfigured': 'CFD prices are not available right now',"
+  },
+  {
+   "after": "serverError.notFound",
+   "line": "  'serverError.cardNotEligible': 'The card is not available for this account yet.',"
+  }
+ ],
+ "es": [
+  {
+   "after": "analytics.unavailable",
+   "line": "  'analytics.noSource': 'Aún no disponible',"
+  },
+  {
+   "after": "deposit.loadingNetworks",
+   "line": "  'deposit.noneConfigured': 'Los depósitos aún no están disponibles: no hay direcciones de billetera conectadas.',"
+  },
+  {
+   "after": "settings.reservesDisclaimer",
+   "line": "  'settings.reservesEmpty': 'Todavía no hay redes conectadas.',"
+  },
+  {
+   "after": "wallet.convert",
+   "line": "  'wallet.convertUnavailable': 'Convertir aún no está disponible',"
+  },
+  {
+   "after": "wallet.navSection",
+   "line": "  'wallet.navUnavailable': 'Esta sección aún no está disponible',"
+  },
+  {
+   "after": "wallet.borrow",
+   "line": "  'wallet.borrowUnavailable': 'El préstamo aún no está disponible',"
+  },
+  {
+   "after": "home.marketDataUnavailable",
+   "line": "  'home.markets.cfdNotConfigured': 'Los precios de CFD no están disponibles por ahora',"
+  },
+  {
+   "after": "serverError.notFound",
+   "line": "  'serverError.cardNotEligible': 'La tarjeta aún no está disponible para esta cuenta.',"
+  }
+ ],
+ "hi": [
+  {
+   "after": "analytics.unavailable",
+   "line": "  'analytics.noSource': 'अभी उपलब्ध नहीं',"
+  },
+  {
+   "after": "deposit.loadingNetworks",
+   "line": "  'deposit.noneConfigured': 'डिपॉज़िट अभी उपलब्ध नहीं हैं: कोई वॉलेट पता जुड़ा नहीं है।',"
+  },
+  {
+   "after": "settings.reservesDisclaimer",
+   "line": "  'settings.reservesEmpty': 'अभी कोई नेटवर्क जुड़ा नहीं है।',"
+  },
+  {
+   "after": "wallet.convert",
+   "line": "  'wallet.convertUnavailable': 'कन्वर्ट अभी उपलब्ध नहीं है',"
+  },
+  {
+   "after": "wallet.navSection",
+   "line": "  'wallet.navUnavailable': 'यह अनुभाग अभी उपलब्ध नहीं है',"
+  },
+  {
+   "after": "wallet.borrow",
+   "line": "  'wallet.borrowUnavailable': 'उधार अभी उपलब्ध नहीं है',"
+  },
+  {
+   "after": "home.marketDataUnavailable",
+   "line": "  'home.markets.cfdNotConfigured': 'CFD कीमतें अभी उपलब्ध नहीं हैं',"
+  },
+  {
+   "after": "serverError.notFound",
+   "line": "  'serverError.cardNotEligible': 'इस खाते के लिए कार्ड अभी उपलब्ध नहीं है।',"
+  }
+ ],
+ "ja": [
+  {
+   "after": "analytics.unavailable",
+   "line": "  'analytics.noSource': '現在ご利用いただけません',"
+  },
+  {
+   "after": "deposit.loadingNetworks",
+   "line": "  'deposit.noneConfigured': '入金はまだご利用いただけません。ウォレットアドレスが接続されていません。',"
+  },
+  {
+   "after": "settings.reservesDisclaimer",
+   "line": "  'settings.reservesEmpty': '接続されているネットワークはまだありません。',"
+  },
+  {
+   "after": "wallet.convert",
+   "line": "  'wallet.convertUnavailable': 'コンバートはまだ利用できません',"
+  },
+  {
+   "after": "wallet.navSection",
+   "line": "  'wallet.navUnavailable': 'このセクションはまだ利用できません',"
+  },
+  {
+   "after": "wallet.borrow",
+   "line": "  'wallet.borrowUnavailable': '借入はまだ利用できません',"
+  },
+  {
+   "after": "home.marketDataUnavailable",
+   "line": "  'home.markets.cfdNotConfigured': 'CFD の価格は現在ご利用いただけません',"
+  },
+  {
+   "after": "serverError.notFound",
+   "line": "  'serverError.cardNotEligible': 'このアカウントではまだカードをご利用いただけません。',"
+  }
+ ],
+ "ko": [
+  {
+   "after": "analytics.unavailable",
+   "line": "  'analytics.noSource': '아직 제공되지 않습니다',"
+  },
+  {
+   "after": "deposit.loadingNetworks",
+   "line": "  'deposit.noneConfigured': '입금은 아직 사용할 수 없습니다. 연결된 지갑 주소가 없습니다.',"
+  },
+  {
+   "after": "settings.reservesDisclaimer",
+   "line": "  'settings.reservesEmpty': '아직 연결된 네트워크가 없습니다.',"
+  },
+  {
+   "after": "wallet.convert",
+   "line": "  'wallet.convertUnavailable': '전환은 아직 제공되지 않습니다',"
+  },
+  {
+   "after": "wallet.navSection",
+   "line": "  'wallet.navUnavailable': '아직 제공되지 않는 섹션입니다',"
+  },
+  {
+   "after": "wallet.borrow",
+   "line": "  'wallet.borrowUnavailable': '대출은 아직 이용할 수 없습니다',"
+  },
+  {
+   "after": "home.marketDataUnavailable",
+   "line": "  'home.markets.cfdNotConfigured': 'CFD 시세를 현재 이용할 수 없습니다',"
+  },
+  {
+   "after": "serverError.notFound",
+   "line": "  'serverError.cardNotEligible': '이 계정에서는 아직 카드를 이용할 수 없습니다.',"
+  }
+ ],
+ "ru": [
+  {
+   "after": "analytics.unavailable",
+   "line": "  'analytics.noSource': 'Пока недоступно',"
+  },
+  {
+   "after": "deposit.loadingNetworks",
+   "line": "  'deposit.noneConfigured': 'Пополнение пока недоступно: адреса кошельков ещё не подключены.',"
+  },
+  {
+   "after": "settings.reservesDisclaimer",
+   "line": "  'settings.reservesEmpty': 'Ни одна сеть пока не подключена.',"
+  },
+  {
+   "after": "wallet.convert",
+   "line": "  'wallet.convertUnavailable': 'Конвертация пока недоступна',"
+  },
+  {
+   "after": "wallet.navSection",
+   "line": "  'wallet.navUnavailable': 'Раздел пока недоступен',"
+  },
+  {
+   "after": "wallet.borrow",
+   "line": "  'wallet.borrowUnavailable': 'Заём пока недоступен',"
+  },
+  {
+   "after": "home.marketDataUnavailable",
+   "line": "  'home.markets.cfdNotConfigured': 'Котировки CFD сейчас недоступны',"
+  },
+  {
+   "after": "serverError.notFound",
+   "line": "  'serverError.cardNotEligible': 'Карта пока недоступна для этого аккаунта.',"
+  }
+ ],
+ "zh": [
+  {
+   "after": "analytics.unavailable",
+   "line": "  'analytics.noSource': '暂不可用',"
+  },
+  {
+   "after": "deposit.loadingNetworks",
+   "line": "  'deposit.noneConfigured': '暂时无法充值：尚未接入钱包地址。',"
+  },
+  {
+   "after": "settings.reservesDisclaimer",
+   "line": "  'settings.reservesEmpty': '尚未连接任何网络。',"
+  },
+  {
+   "after": "wallet.convert",
+   "line": "  'wallet.convertUnavailable': '闪兑暂未开放',"
+  },
+  {
+   "after": "wallet.navSection",
+   "line": "  'wallet.navUnavailable': '该分区暂未开放',"
+  },
+  {
+   "after": "wallet.borrow",
+   "line": "  'wallet.borrowUnavailable': '借款暂不可用',"
+  },
+  {
+   "after": "home.marketDataUnavailable",
+   "line": "  'home.markets.cfdNotConfigured': 'CFD 行情暂时不可用',"
+  },
+  {
+   "after": "serverError.notFound",
+   "line": "  'serverError.cardNotEligible': '该账户暂时无法申请卡片。',"
+  }
+ ]
+}

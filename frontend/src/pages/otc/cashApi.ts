@@ -17,7 +17,7 @@ export const CASH_STATUSES: Record<string,string> = { RESERVED:'В резерв�
   PICKUP_READY:'Выдача подготовлена', PAYOUT_IN_PROGRESS:'Выдача начата — резерв сохраняется', COMPLETED:'Наличные выданы', CANCELLED:'Отменена', REJECTED:'Отклонена' };
 export const dateTime = (value: string) => `${new Intl.DateTimeFormat('ru-RU',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'}).format(new Date(value))} UTC`;
 const ERRORS: Record<string,string> = {
-  DIRECTION_NOT_APPROVED:'Это направление пока не подтверждено. Обратитесь в поддержку без резервирования средств.',
+  DIRECTION_NOT_APPROVED:'Обмен по этому направлению оформляется через поддержку.',
   CUSTOMER_REVIEW_REQUIRED:'Для обмена нужны подтверждённые KYC и проверка клиента оператором OTC.',
   INSUFFICIENT_BALANCE:'Недостаточно доступных средств. Пополните обычный баланс и обновите его вручную.',
   PRICE_UNAVAILABLE:'Свежая оценка актива недоступна. Создание заявки не разрешено.',

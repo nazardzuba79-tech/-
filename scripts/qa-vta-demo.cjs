@@ -177,8 +177,10 @@ async function marketDisplayQA(browser,origin,width) {
  await page.waitForFunction(p=>document.querySelector('.order-form-area input[aria-label="Цена"]')?.value===p,price);
  await form.locator('.order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
  await form.locator('input[type="number"][aria-label="Количество"]').fill('100');
- await form.locator('button[type="submit"]').click();
- await form.getByRole('alert').filter({hasText:'Этот тип ордера для данного актива недоступен.'}).waitFor();
+ // Owner, 2026-10-22: a LIMIT the VTA account may not place is a disabled button — no refusal line.
+ if(!await form.locator('button[type="submit"]').isDisabled())throw Error('Book click LIMIT is not disabled');
+ await form.locator('button[type="submit"]').click({force:true});await page.waitForTimeout(300);
+ if(/Этот тип ордера для данного актива недоступен/.test(await page.locator('body').innerText()))throw Error('Refusal line returned after book click');
  if(financialAttempts.length!==writes)throw Error('Book click LIMIT mutated finances');
  // owner, 2026-10-04: order type is one select on a phone.
  if(width<900)await phoneType(form,'Рынок');else
@@ -237,13 +239,18 @@ async function panelStates(page, width, expected) {
   if(width<900)geometry.push(await typeSelect(form).evaluate(e=>{const r=e.getBoundingClientRect(),o=e.closest('.order-form-area').getBoundingClientRect(),css=getComputedStyle(e);return {tag:e.tagName,value:e.value,x:Math.round(r.x-o.x),y:Math.round(r.y-o.y),w:Math.round(r.width),h:Math.round(r.height),font:css.font,padding:css.padding,color:css.color,background:css.backgroundColor};}));
   const key=side+'/'+type;states[key]=geometry;
   if(expected){
-   if(JSON.stringify(geometry)!==JSON.stringify(expected[key])){fs.writeFileSync(OUT+'/parity-failure-'+width+'.json',JSON.stringify({key,ordinary:expected[key],vta:geometry},null,2));throw Error('Standard form geometry differs: '+key+' '+width);}
+   // Owner, 2026-10-22: what VTA may not do is a disabled (grey) submit. Placement, size and font stay identical;
+   // only that button's colours are left out, and it is asserted disabled just below.
+   const quiet=side==='Купить'||type!=='Рынок';
+   const comparable=g=>quiet?g.map(e=>e.type==='submit'?{...e,color:null,background:null}:e):g;
+   if(JSON.stringify(comparable(geometry))!==JSON.stringify(comparable(expected[key]))){fs.writeFileSync(OUT+'/parity-failure-'+width+'.json',JSON.stringify({key,ordinary:expected[key],vta:geometry},null,2));throw Error('Standard form geometry differs: '+key+' '+width);}
    if(side==='Купить'||type!=='Рынок'){
     await form.locator('input[type="number"][aria-label="Количество"]').fill('100');
     const attempts=financialAttempts.length;
-    await form.locator('button[type="submit"]').click();
-    const message=side==='Купить'?'Покупка этого актива недоступна.':'Этот тип ордера для данного актива недоступен.';
-    await form.getByRole('alert').filter({hasText:message}).waitFor();
+    // Owner, 2026-10-22: what a VTA account may not do is a disabled button — no refusal line, no toast.
+    if(!await form.locator('button[type="submit"]').isDisabled())throw Error('Unsupported operation is not disabled: '+key);
+    await form.locator('button[type="submit"]').click({force:true});await page.waitForTimeout(300);
+    if(/Покупка этого актива недоступна|Этот тип ордера для данного актива недоступен/.test(await page.locator('body').innerText()))throw Error('Refusal line returned: '+key);
     if(financialAttempts.length!==attempts)throw Error('Unsupported operation reached a trading endpoint');
    }
   }
@@ -284,8 +291,10 @@ async function panelStates(page, width, expected) {
   // owner, 2026-10-04: order type is one select on a phone.
   if(width<900)await phoneType(form,'Рынок');else
   await form.locator('.order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
-  await quantity.fill('100'); const preListingWrites=saleRequests; await button.click();
-  await form.getByRole('alert').filter({hasText:'Этот актив пока не торгуется'}).waitFor();
+  await quantity.fill('100'); const preListingWrites=saleRequests;
+  if(!await button.isDisabled())throw Error('prelisting submit is not disabled');
+  await button.click({force:true}); await page.waitForTimeout(300);
+  if(/Этот актив пока не торгуется/.test(await page.locator('body').innerText()))throw Error('prelisting refusal line returned');
   if(saleRequests!==preListingWrites)throw Error('prelisting write');
   if(await page.locator('.vta-demo-spot').count())throw Error('custom panel returned');
   await page.evaluate(()=>window.__saleListingDocument=true);
@@ -454,8 +463,11 @@ async function panelStates(page, width, expected) {
  await page.locator('.order-form-area .order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
  await page.locator('.order-form-area .order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
  await page.locator('.order-form-area input[type="number"][aria-label="Количество"]').fill('100');
- const ordinaryWrites=saleRequests; await page.locator('.order-form-area button[type="submit"]').click();
- await page.locator('.order-form-area [role="alert"]').waitFor();
+ // Owner, 2026-10-22: a non-admin on VTA gets a disabled submit — no refusal line.
+ const ordinaryWrites=saleRequests;
+ if(!await page.locator('.order-form-area button[type="submit"]').isDisabled())throw Error('non-admin VTA submit is not disabled');
+ await page.locator('.order-form-area button[type="submit"]').click({force:true});await page.waitForTimeout(300);
+ if(await page.locator('.order-form-area [role="alert"]').count())throw Error('non-admin VTA shows a refusal line');
  if(saleRequests!==ordinaryWrites)throw Error('non-admin private sale submitted');
  if(privateReads!==before)throw Error('non-admin private read');
  rows.push({ordinarySpot:'all controls enabled, zero private reads',nonAdmin:'blocked, zero private reads'});
