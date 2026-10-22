@@ -1,5 +1,6 @@
 name: TYVN live public frontend guard (GET only)
 on:
+  workflow_dispatch:
   push:
     branches: [review/tyvn-live-frontend-audit-20261022]
     paths:
