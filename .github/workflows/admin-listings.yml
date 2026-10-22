@@ -27,6 +27,7 @@ on:
       - 'frontend/vite.config.ts'
       - 'scripts/qa-admin-listings.cjs'
       - 'scripts/qa-listing-timer.cjs'
+      - 'scripts/qa-listing-timer-api.cjs'
       - 'scripts/qa-listing-tyvn.cjs'
       - 'scripts/qa-aith-replacement.cjs'
       - 'scripts/qa-listing-controls.cjs'
@@ -120,6 +121,10 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report
+      - name: Pre-listing timer through the real admin router and the Worker — staged stays hidden, start / pause / stop, Spot refuses
+        run: node scripts/qa-listing-timer-api.cjs
+        env:
+          QA_OUT: /tmp/listings-qa-report/listing-timer-api
       - name: Pre-listing timer — exchange card (running / paused / 13:00 UTC) and admin start / pause / stop, by server time
         run: node scripts/qa-listing-timer.cjs
         env:

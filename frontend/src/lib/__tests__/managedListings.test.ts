@@ -384,7 +384,8 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     modules.clear(); sessionListeners.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = []; malformedPublish = false; serverTime = null;
     listing = {
       id: 'qax-1', symbol: 'QAX', draftRevision: 2, draftUpdatedAt: '2026-09-29T00:00:00Z', draftUpdatedBy: 'fixture-admin',
-      activeVersion: null, active: null, versions: [],
+      // A timer-capable API returns the countdown key on every listing, null until a timer exists.
+      activeVersion: null, active: null, versions: [], countdown: null,
       draft: { schemaVersion: 1, symbol: 'QAX', name: 'QA Example', logo: null, initialPrice: '0.25',
         listingAt: '2026-10-01T12:00:00Z', displayTimeZone: 'Europe/Kyiv', ownerAllocation: '0', seedMode: 'auto',
         seed: 'qax-fixed-seed', tradable: false, simulationProfile: 'CALM_TREND' },
@@ -794,6 +795,28 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('Таймер не запущен');
     expect(timerBox()?.getAttribute('data-listing-timer')).toBe('staged');
     expect(timerActions()).toEqual(['start']);
+  });
+
+  // Owner, 2026-10-22: the API deployed before the timer (2e7acf1) drops «staged» and has no timer route
+  // (scripts/qa-listing-timer-api.cjs). Against it the page offers no hidden publication and no timer buttons.
+  test('an API without the timer: no «hidden» option, an honest warning, no staged flag', async () => {
+    serverTime = beforeListing;
+    delete listing.countdown;
+    await mount();
+    await click('[data-publish]');
+    expect(host.querySelector('[data-field="publishStartTimer"]')).toBeNull();
+    expect(host.querySelector('[data-publish-timer-unsupported]')?.textContent).toContain('появятся на бирже сразу после публикации');
+    await click('[data-confirm-publish]');
+    expect('countdown' in JSON.parse(calls('/publish')[0][1].body)).toBe(false);
+  });
+
+  test('an API without the timer: a published listing shows its running state and no timer buttons (they would 404)', async () => {
+    serverTime = beforeListing;
+    listing = publishedListing(null);
+    delete listing.countdown;
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('running');
+    expect(timerActions()).toEqual([]);
   });
 
   test('publishing with the timer sends no timer field and shows the running countdown', async () => {

@@ -11,6 +11,7 @@ import { ListingMovementEditor } from './ListingMovementEditor';
 import { ListingCandlePreview } from './ListingCandlePreview';
 import { formatMovementPrice, historicalModelLabel, newListingMovement, rebaseListingMovement, validateListingMovement, type ListingMovement, type ListingProgram } from './listingMovementModel';
 import { useAdminCompact } from './useAdminCompact';
+import { listingTimerSupported } from './listingTimerCapability';
 import './adminListings.css';
 
 const LOGO_MAX_BYTES = 64 * 1024;
@@ -82,8 +83,13 @@ export type ListingTimerTone = 'staged' | 'running' | 'paused' | 'open' | 'overd
  * owner moves the date, then starts the timer. A listing published before the
  * timer existed counts as running (today's behaviour).
  */
-export function listingTimerStatus(listing: AdminListing, serverNow: number): { tone: ListingTimerTone; text: string; actions: ListingCountdownAction[] } | null {
+export function listingTimerStatus(listing: AdminListing, serverNow: number, timerSupported = true): { tone: ListingTimerTone; text: string; actions: ListingCountdownAction[] } | null {
   if (listing.activeVersion === null || !listing.active) return null;
+  // An API without the timer (listingTimerCapability) answers 404 to every action: offer none.
+  if (!timerSupported) {
+    const status = listingTimerStatus(listing, serverNow);
+    return status && { ...status, actions: [] };
+  }
   const state = listing.countdown?.state ?? 'running';
   const at = Date.parse(listing.active.listingAt);
   if (state === 'running' && at <= serverNow) return { tone: 'open', text: 'Рынок открыт', actions: [] };
@@ -136,6 +142,7 @@ export function AdminListingsPage() {
   // Server clock from the last list read: the timer statuses never trust the browser's clock alone.
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
   const [timerError, setTimerError] = useState<string | null>(null);
+  const timerSupported = listingTimerSupported(listings);
   const loading = useRef(false);
   const mounted = useRef(false);
   const listRequest = useRef<AbortController | null>(null);
@@ -316,7 +323,8 @@ export function AdminListingsPage() {
     setBusy(true);
     try {
       // The key was fixed when this confirmation opened: a retry is the same publish.
-      const staged = publishing.listing.activeVersion === null && !publishing.startTimer;
+      // Only an API that runs the timer keeps a «staged» publication hidden; another would publish it at once.
+      const staged = timerSupported && publishing.listing.activeVersion === null && !publishing.startTimer;
       const result = await adminListingsApi.publish(publishing.listing.id, publishing.listing.draftRevision, publishing.key, staged ? 'staged' : undefined);
       setEditing(previous => previous?.id === publishing.listing.id ? { ...previous, locked: true } : previous);
       setNotice(result.replayed ? `Уже опубликовано: версия ${result.version}.`
@@ -378,7 +386,7 @@ export function AdminListingsPage() {
         <div className="listing-table" role="table" aria-label="Листинги">
           {visibleListings?.map((listing) => {
             const status = statusOf(listing);
-            const timerStatus = listingTimerStatus(listing, Date.now() + clockOffsetMs);
+            const timerStatus = listingTimerStatus(listing, Date.now() + clockOffsetMs, timerSupported);
             return (
               <div className="listing-row" role="row" key={listing.id} data-listing-row={listing.draft.symbol}>
                 <span className="listing-ident">
@@ -534,7 +542,9 @@ export function AdminListingsPage() {
             <p>{publishing.listing.draft.name} · начальная цена {publishing.listing.draft.initialPrice} USDT</p>
             <p>Листинг: {listingMoment(publishing.listing.draft.listingAt, publishing.listing.draft.displayTimeZone)}</p>
             <p data-publish-timer-line>Таймер на бирже: {listingTimerLine(publishing.listing.draft.listingAt)}</p>
-            {publishing.listing.activeVersion === null ? (
+            {publishing.listing.activeVersion === null && !timerSupported ? (
+              <p className="listing-hint" role="alert" data-publish-timer-unsupported>Сервер API пока без таймера листинга: рынок и обратный отсчёт появятся на бирже сразу после публикации, скрыть или приостановить их будет нельзя.</p>
+            ) : publishing.listing.activeVersion === null ? (
               <label className="listing-check"><input type="checkbox" checked={publishing.startTimer} disabled={busy}
                 onChange={(e) => setPublishing({ ...publishing, startTimer: e.target.checked })} data-field="publishStartTimer" /> Запустить таймер сразу после публикации
                 <small>{publishing.startTimer ? 'Рынок и обратный отсчёт появятся на бирже при ближайшем обновлении списка.'
