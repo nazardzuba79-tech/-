@@ -1,0 +1,61 @@
+name: TYVN immutable API source archive (no deploy)
+on:
+  push:
+    branches:
+      - review/tyvn-public-prod-gate-20261022
+    paths:
+      - .github/workflows/tyvn-source-archive.yml
+permissions:
+  contents: read
+jobs:
+  source-package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 6f082a98d0c97c28215e6c5c8056b786d6fa6c99
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify exact released candidate and untouched dependency/DB package
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE=6f082a98d0c97c28215e6c5c8056b786d6fa6c99
+          BASE=2e7acf158000404133db85723bac13695215e25c
+          test "$(git rev-parse HEAD)" = "$RELEASE"
+          git fetch --no-tags --depth=1 origin "$BASE"
+          git diff --exit-code "$BASE" "$RELEASE" -- package.json package-lock.json prisma Dockerfile render.yaml scripts/start-render-single-service.cjs
+          test -f scripts/tyvn-hetzner.Dockerfile
+          test -f tsconfig.json
+          test -f src/buildCommit.ts
+          grep -Fq 'VOLTEX_RELEASE_SHA' src/buildCommit.ts
+      - name: Build pinned git archive and validate its exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE=6f082a98d0c97c28215e6c5c8056b786d6fa6c99
+          mkdir -p "$RUNNER_TEMP/tyvn-archive"
+          DEST="$RUNNER_TEMP/tyvn-archive/tyvn-api-source.tar"
+          git archive --format=tar --output="$DEST" "$RELEASE" src tsconfig.json scripts/tyvn-hetzner.Dockerfile
+          test "$(git get-tar-commit-id < "$DEST")" = "$RELEASE"
+          tar -tf "$DEST" | grep -Fxq 'tsconfig.json'
+          tar -tf "$DEST" | grep -Fxq 'scripts/tyvn-hetzner.Dockerfile'
+          tar -tf "$DEST" | grep -Fxq 'src/buildCommit.ts'
+          if tar -tf "$DEST" | grep -Ei '(^|/)(\.env($|\.|/)|[^/]*\.(pem|key|p12|pfx)$)'; then
+            echo 'ERROR: source archive contains an environment or key file'; exit 1
+          fi
+          cd "$RUNNER_TEMP/tyvn-archive"
+          sha256sum tyvn-api-source.tar > SHA256SUMS
+          printf 'release_sha=%s\nbase_sha=%s\nstatus=source-archive-only; not deployed\n' "$RELEASE" '2e7acf158000404133db85723bac13695215e25c' > MANIFEST.txt
+          echo 'Validated immutable source archive:'
+          cat MANIFEST.txt SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tyvn-api-source-6f082a98
+          path: |
+            ${{ runner.temp }}/tyvn-archive/tyvn-api-source.tar
+            ${{ runner.temp }}/tyvn-archive/SHA256SUMS
+            ${{ runner.temp }}/tyvn-archive/MANIFEST.txt
+          if-no-files-found: error
+          retention-days: 14
