@@ -202,3 +202,13 @@ pan: `picking-drag-pans-and-posts-nothing` and
 `no-trading-write-left-the-page-during-the-whole-run`. The panel after a
 shrink and a reload: `after-shrink-and-reload-the-panel-holds-and-the-chart-pans`
 and the panel QA's resize section.
+
+## Follow-up (PR #570): hit-target evidence for the pick and the position tool
+
+Run `merged-local` (`merged-local-report.json`, `merged-local-*.png`): the
+final script on the `main` tree after PR #566 and PR #569 merged, 48/48 with
+nothing skipped. The pick checks now carry the bar chosen, what the DOM put
+under it (`canvas`) and every bar skipped with its reason — this run skipped
+one bar for «body in the lowest fifth of the pane (the volume area the picker
+ignores)»; the position tool was pressed on its own hit `polygon` when free
+(moved) and on the chart's `canvas` when locked (panned ≈27 bars).
