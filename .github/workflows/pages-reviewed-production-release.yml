@@ -1,0 +1,114 @@
+name: Deploy reviewed VOLTEX frontend to Cloudflare Pages
+
+# Manual production frontend publication ONLY. Cloudflare fetches the exact
+# Git commit and builds with the project's existing production build settings
+# and env vars. No backend, database or Worker deployment is performed.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type deploy-voltex-pages-production"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: voltex-pages-production-release
+  cancel-in-progress: false
+
+jobs:
+  deploy-frontend:
+    if: github.ref == 'refs/heads/main' && inputs.confirm == 'deploy-voltex-pages-production'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    environment: pages-production
+    env:
+      CF_ACCOUNT: c379227476dedde6dff09c787ffdb510
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
+      COMMIT_SHA: ${{ github.sha }}
+    steps:
+      - name: Reject missing Pages-specific production token
+        run: |
+          if [ -z "${CF_TOKEN:-}" ]; then
+            echo "::error::GitHub secret CLOUDFLARE_PAGES_TOKEN is missing. Grant only Account / Cloudflare Pages / Edit, scoped to the VOLTEX Cloudflare account."
+            exit 1
+          fi
+
+      - name: Verify production Pages project and source repository (read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl -sS -o /tmp/voltex-pages.json -w '%{http_code}' \
+            --connect-timeout 15 --max-time 30 \
+            -H "Authorization: Bearer ${CF_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/voltex-exchange")"
+          if [ "$status" != "200" ]; then
+            echo "::error::Pages project cannot be read; HTTP $status. Production unchanged."
+            exit 1
+          fi
+          node <<'NODE'
+          const fs = require('node:fs');
+          const p = JSON.parse(fs.readFileSync('/tmp/voltex-pages.json','utf8'));
+          const r = p.result, repo = r?.source?.config?.repo_name;
+          if(!p.success || r?.name !== 'voltex-exchange' || r?.production_branch !== 'main'
+              || r?.source?.type !== 'github' || !['-', 'nazardzuba79-tech/-'].includes(repo))
+            throw new Error('Pages project, production branch, or repository mismatch. No deployment made.');
+          console.log('Verified Cloudflare Pages project voltex-exchange, Github source, main production branch.');
+          console.log('Build location and production environment settings remain managed by Cloudflare.');
+          NODE
+
+      - name: Ask Cloudflare to build exact main commit using existing Pages settings
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl -sS -o /tmp/voltex-new-deploy.json -w '%{http_code}' \
+            --connect-timeout 15 --max-time 60 \
+            -H "Authorization: Bearer ${CF_TOKEN}" \
+            -F "branch=main" -F "commit_hash=${COMMIT_SHA}" -F "commit_dirty=false" \
+            -F "commit_message=Reviewed VOLTEX frontend-only release ${COMMIT_SHA}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/voltex-exchange/deployments")"
+          if [ "$status" != 200 ] && [ "$status" != 201 ]; then
+            echo "::error::Cloudflare Pages deployment request refused (HTTP $status)."; exit 1
+          fi
+          node <<'NODE'
+          const fs = require('node:fs'), j=JSON.parse(fs.readFileSync('/tmp/voltex-new-deploy.json','utf8'));
+          if(!j.success || !j.result?.id) throw new Error('No Pages deployment ID returned');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'deployment_id='+j.result.id+'\n');
+          console.log('Cloudflare accepted deployment ID:', j.result.id);
+          NODE
+
+      - name: Wait for Cloudflare deployment to complete and verify commit
+        shell: bash
+        env:
+          DEPLOY_ID: ${{ steps.deploy.outputs.deployment_id }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            status="$(curl -sS -o /tmp/voltex-deployment-state.json -w '%{http_code}' \
+              --connect-timeout 10 --max-time 25 \
+              -H "Authorization: Bearer ${CF_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/voltex-exchange/deployments/${DEPLOY_ID}")"
+            if [ "$status" != 200 ]; then echo "::error::Cannot check Pages deployment; HTTP $status"; exit 1; fi
+            state="$(node <<'NODE'
+          const fs=require('node:fs'), j=JSON.parse(fs.readFileSync('/tmp/voltex-deployment-state.json','utf8'));
+          const d=j.result || {}, stage=d.latest_stage || {};
+          if(!j.success) throw Error('Invalid Cloudflare deployment response');
+          const commit=d.deployment_trigger?.metadata?.commit_hash;
+          if(commit && commit!==process.env.COMMIT_SHA) throw Error('Cloudflare deployment SHA mismatch');
+          console.log(stage.status==='success' && stage.name==='deploy' ? 'success' : ['failure','canceled'].includes(stage.status) ? 'failure' : 'pending');
+          NODE
+          )"
+            if [ "$state" = success ]; then
+              echo "VOLTEX frontend deployment succeeded for ${COMMIT_SHA}";
+              echo "### Pages deployment succeeded" >> "$GITHUB_STEP_SUMMARY"
+              echo "Deployed commit: ${COMMIT_SHA}" >> "$GITHUB_STEP_SUMMARY"
+              echo "Cloudflare deployment ID: ${DEPLOY_ID}" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if [ "$state" = failure ]; then echo "::error::Cloudflare Pages build failed; previous production stays available"; exit 1; fi
+            sleep 15
+          done
+          echo "::error::Cloudflare Pages still processing, inspect deployment ${DEPLOY_ID}"; exit 1
