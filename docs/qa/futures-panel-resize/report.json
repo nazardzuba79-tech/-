@@ -4,6 +4,9 @@
     "1920x1000: arrival — two whole rows of three on screen, the panel continues 140px below the edge and the page scrolls by exactly that with no scrollbar drawn (Bybit), handle present with a sane range",
     "1920x1000: wheel over the panel scrolls the page by 140px — all 3 rows on screen, the chart's height unchanged",
     "1920x1000: wheeling back up restores the arrival view",
+    "1920x1000: wheel over the order column moves the page first by 140px, the column unmoved, the chart up whole",
+    "1920x1000: then the column's own rest (83px) scrolls, the page stays at its end",
+    "1920x1000: wheeling up over the column returns the column and then the page to the arrival view",
     "1920x1000: drag up 200px — panel +200, chart −200, three rows visible, the page's scroll range unchanged",
     "1920x1000: the height survives a reload",
     "1920x1000: arrow keys move the edge by 24px steps",
@@ -14,6 +17,9 @@
     "1440x900: arrival — two whole rows of three on screen, the panel continues 140px below the edge and the page scrolls by exactly that with no scrollbar drawn (Bybit), handle present with a sane range",
     "1440x900: wheel over the panel scrolls the page by 140px — all 3 rows on screen, the chart's height unchanged",
     "1440x900: wheeling back up restores the arrival view",
+    "1440x900: wheel over the order column moves the page first by 140px, the column unmoved, the chart up whole",
+    "1440x900: then the column's own rest (183px) scrolls, the page stays at its end",
+    "1440x900: wheeling up over the column returns the column and then the page to the arrival view",
     "1440x900: drag up 200px — panel +200, chart −200, three rows visible, the page's scroll range unchanged",
     "1440x900: the height survives a reload",
     "1440x900: arrow keys move the edge by 24px steps",
@@ -24,6 +30,9 @@
     "1366x768: arrival — two whole rows of three on screen, the panel continues 140px below the edge and the page scrolls by exactly that with no scrollbar drawn (Bybit), handle present with a sane range",
     "1366x768: wheel over the panel scrolls the page by 140px — all 3 rows on screen, the chart's height unchanged",
     "1366x768: wheeling back up restores the arrival view",
+    "1366x768: wheel over the order column moves the page first by 140px, the column unmoved, the chart up whole",
+    "1366x768: then the column's own rest (315px) scrolls, the page stays at its end",
+    "1366x768: wheeling up over the column returns the column and then the page to the arrival view",
     "1366x768: drag up 200px — panel +72, chart −72, three rows visible, the page's scroll range unchanged",
     "1366x768: the height survives a reload",
     "1366x768: arrow keys move the edge by 24px steps",
@@ -49,14 +58,17 @@
   "screenshots": [
     "1920x1000-initial.png",
     "1920x1000-wheeled.png",
+    "1920x1000-column-wheeled.png",
     "1920x1000-dragged.png",
     "1920x1000-maxed.png",
     "1440x900-initial.png",
     "1440x900-wheeled.png",
+    "1440x900-column-wheeled.png",
     "1440x900-dragged.png",
     "1440x900-maxed.png",
     "1366x768-initial.png",
     "1366x768-wheeled.png",
+    "1366x768-column-wheeled.png",
     "1366x768-dragged.png",
     "1366x768-maxed.png",
     "resize-1920-tall.png",
@@ -67,6 +79,36 @@
     "1440-folded.png"
   ],
   "measurements": {
+    "1920x1000-column": {
+      "arrival": {
+        "x": 1766,
+        "y": 686,
+        "top": 0,
+        "room": 83,
+        "pageY": 0
+      },
+      "pageFirst": {
+        "x": 1766,
+        "y": 546,
+        "top": 0,
+        "room": 83,
+        "pageY": 140
+      },
+      "columnRest": {
+        "x": 1766,
+        "y": 546,
+        "top": 83,
+        "room": 83,
+        "pageY": 140
+      },
+      "back": {
+        "x": 1766,
+        "y": 686,
+        "top": 0,
+        "room": 83,
+        "pageY": 0
+      }
+    },
     "1920x1000": {
       "initial": {
         "pageScrollbar": "none",
@@ -164,6 +206,36 @@
       },
       "errors": []
     },
+    "1440x900-column": {
+      "arrival": {
+        "x": 1286,
+        "y": 626,
+        "top": 0,
+        "room": 183,
+        "pageY": 0
+      },
+      "pageFirst": {
+        "x": 1286,
+        "y": 486,
+        "top": 0,
+        "room": 183,
+        "pageY": 140
+      },
+      "columnRest": {
+        "x": 1286,
+        "y": 486,
+        "top": 183,
+        "room": 183,
+        "pageY": 140
+      },
+      "back": {
+        "x": 1286,
+        "y": 626,
+        "top": 0,
+        "room": 183,
+        "pageY": 0
+      }
+    },
     "1440x900": {
       "initial": {
         "pageScrollbar": "none",
@@ -260,6 +332,36 @@
         "height": 324
       },
       "errors": []
+    },
+    "1366x768-column": {
+      "arrival": {
+        "x": 1212,
+        "y": 546,
+        "top": 0,
+        "room": 315,
+        "pageY": 0
+      },
+      "pageFirst": {
+        "x": 1212,
+        "y": 406,
+        "top": 0,
+        "room": 315,
+        "pageY": 140
+      },
+      "columnRest": {
+        "x": 1212,
+        "y": 406,
+        "top": 315,
+        "room": 315,
+        "pageY": 140
+      },
+      "back": {
+        "x": 1212,
+        "y": 546,
+        "top": 0,
+        "room": 315,
+        "pageY": 0
+      }
     },
     "1366x768": {
       "initial": {

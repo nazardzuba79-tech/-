@@ -1,0 +1,925 @@
+{
+  "label": "phase0847-pr572-fixed",
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "origin": "http://127.0.0.1:4179",
+  "checks": [
+    {
+      "name": "position-label-press-and-drag-posts-nothing-and-keeps-its-controls",
+      "passed": true,
+      "evidence": {
+        "label": {
+          "x": 362,
+          "y": 395,
+          "w": 132,
+          "h": 22
+        },
+        "panned": 0,
+        "buttons": [
+          {
+            "label": "Выбрать позицию BTCUSDT",
+            "disabled": false
+          },
+          {
+            "label": "Количество 1 BTC",
+            "disabled": false
+          },
+          {
+            "label": "Разворот недоступен",
+            "disabled": true
+          },
+          {
+            "label": "Закрыть позицию BTCUSDT",
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "normal-drag-right-shows-older-bars",
+      "passed": true,
+      "evidence": {
+        "shifted": 35.56,
+        "nominal": 44.44,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "normal-drag-left-shows-newer-bars",
+      "passed": true,
+      "evidence": {
+        "shifted": -21.88,
+        "nominal": -27.35,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "normal-range-holds-through-candle-poll",
+      "passed": true,
+      "evidence": {
+        "held": 345.29914529914527,
+        "later": 345.29914529914527
+      }
+    },
+    {
+      "name": "normal-wheel-still-zooms",
+      "passed": true,
+      "evidence": {
+        "before": 5.85,
+        "after": 6.435,
+        "top": "canvas (press slid -30px off button.private-line-action«Разворот недоступен»)"
+      }
+    },
+    {
+      "name": "picking-drag-pans-and-posts-nothing",
+      "passed": true,
+      "evidence": {
+        "right": {
+          "shifted": 33.15,
+          "nominal": 41.44,
+          "top": "canvas"
+        },
+        "left": {
+          "shifted": -16.58,
+          "nominal": -20.72,
+          "top": "canvas"
+        }
+      }
+    },
+    {
+      "name": "picking-short-click-selects-a-completed-bar",
+      "passed": true,
+      "evidence": {
+        "entryReference": "{\"source\":\"BYBIT_LINEAR\",\"interval\":\"1h\",\"openTime\":1792371600000,\"pricePoint\":\"CLOSE\"}",
+        "bar": 1792371600
+      }
+    },
+    {
+      "name": "picking-jittery-click-under-threshold-still-selects",
+      "passed": true,
+      "evidence": {
+        "bar": 1792332000,
+        "entryReference": "{\"source\":\"BYBIT_LINEAR\",\"interval\":\"1h\",\"openTime\":1792332000000,\"pricePoint\":\"CLOSE\"}"
+      }
+    },
+    {
+      "name": "picking-drag-past-threshold-does-not-select",
+      "passed": true,
+      "evidence": {
+        "shifted": 0.52
+      }
+    },
+    {
+      "name": "picking-older-bars-load-on-the-way-back-and-one-of-them-can-be-picked",
+      "passed": true,
+      "evidence": {
+        "drags": 15,
+        "firstBar": {
+          "before": 1790812800,
+          "after": 1787068800
+        },
+        "picked": 1788825600,
+        "home": 1522
+      }
+    },
+    {
+      "name": "after-timeframe-change-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 35.56,
+        "nominal": 44.44,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "after-reload-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 35.56,
+        "nominal": 44.44,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "after-bottom-panel-resize-drag-pans",
+      "passed": true,
+      "evidence": {
+        "panelHeight": "357px",
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "press-at-the-bottom-of-the-price-pane-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "after-shrink-and-reload-the-panel-holds-and-the-chart-pans",
+      "passed": true,
+      "evidence": {
+        "tall": 452,
+        "small": 324,
+        "back": 452,
+        "pannedSmall": {
+          "shifted": 30.09,
+          "nominal": 37.61,
+          "top": "canvas (press slid -30px off button.private-line-quantity«Количество 1 BTC»)"
+        },
+        "pannedReloaded": {
+          "shifted": 33.63,
+          "nominal": 42.04,
+          "top": "canvas (press slid -30px off button.private-line-quantity«Количество 1 BTC»)"
+        }
+      }
+    },
+    {
+      "name": "locked-rectangle-over-the-plot-does-not-block-panning",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "ruler-under-lock-all-does-not-block-panning",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "unlocked-rectangle-moves-with-the-drag-as-on-tradingview",
+      "passed": true,
+      "evidence": {
+        "top": "polygon"
+      }
+    },
+    {
+      "name": "locked-drawing-is-still-selectable-on-its-outline",
+      "passed": true,
+      "evidence": {
+        "x": 456.8000030517578,
+        "y": 219.60000610351562
+      }
+    },
+    {
+      "name": "matrix-tool-cursor-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "matrix-tool-dot-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "matrix-tool-arrowcursor-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "matrix-tool-erase-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "matrix-tool-erase-removes-a-free-drawing-and-spares-a-locked-one",
+      "passed": true,
+      "evidence": {
+        "free": 0,
+        "locked": 1
+      }
+    },
+    {
+      "name": "matrix-drawing-rectangle-free",
+      "passed": true,
+      "evidence": {
+        "kind": "rectangle",
+        "locked": false,
+        "on": {
+          "top": "polygon",
+          "panned": 0,
+          "drawingMoved": true
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-rectangle-locked",
+      "passed": true,
+      "evidence": {
+        "kind": "rectangle",
+        "locked": true,
+        "on": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-ellipse-free",
+      "passed": true,
+      "evidence": {
+        "kind": "ellipse",
+        "locked": false,
+        "on": {
+          "top": "polygon",
+          "panned": 0,
+          "drawingMoved": true
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-ellipse-locked",
+      "passed": true,
+      "evidence": {
+        "kind": "ellipse",
+        "locked": true,
+        "on": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-ruler-free",
+      "passed": true,
+      "evidence": {
+        "kind": "ruler",
+        "locked": false,
+        "on": {
+          "top": "polygon",
+          "panned": 0,
+          "drawingMoved": true
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-ruler-locked",
+      "passed": true,
+      "evidence": {
+        "kind": "ruler",
+        "locked": true,
+        "on": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-long-free",
+      "passed": true,
+      "evidence": {
+        "kind": "long",
+        "locked": false,
+        "on": {
+          "top": "polygon",
+          "panned": 0,
+          "drawingMoved": true
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-long-locked",
+      "passed": true,
+      "evidence": {
+        "kind": "long",
+        "locked": true,
+        "on": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-fib-free",
+      "passed": true,
+      "evidence": {
+        "kind": "fib",
+        "locked": false,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-fib-locked",
+      "passed": true,
+      "evidence": {
+        "kind": "fib",
+        "locked": true,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-trendline-free",
+      "passed": true,
+      "evidence": {
+        "kind": "trendline",
+        "locked": false,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-trendline-locked",
+      "passed": true,
+      "evidence": {
+        "kind": "trendline",
+        "locked": true,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-horizontal-free",
+      "passed": true,
+      "evidence": {
+        "kind": "horizontal",
+        "locked": false,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-horizontal-locked",
+      "passed": true,
+      "evidence": {
+        "kind": "horizontal",
+        "locked": true,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-vertical-free",
+      "passed": true,
+      "evidence": {
+        "kind": "vertical",
+        "locked": false,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-vertical-locked",
+      "passed": true,
+      "evidence": {
+        "kind": "vertical",
+        "locked": true,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-text-free",
+      "passed": true,
+      "evidence": {
+        "kind": "text",
+        "locked": false,
+        "on": {
+          "top": "rect",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-drawing-text-locked",
+      "passed": true,
+      "evidence": {
+        "kind": "text",
+        "locked": true,
+        "on": {
+          "top": "rect",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    },
+    {
+      "name": "matrix-settings-logScale-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "matrix-settings-gridWatermarkNoVolumeNoTimeAxis-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "matrix-settings-rsiLowerPane-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 30.09,
+        "nominal": 37.61,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "matrix-settings-twoPaneLayout-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 75,
+        "nominal": 93.62,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "matrix-settings-compareEth-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 29.58,
+        "nominal": 36.97,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "matrix-settings-railCollapsed-drag-pans",
+      "passed": true,
+      "evidence": {
+        "shifted": 27.86,
+        "nominal": 34.83,
+        "top": "canvas"
+      }
+    },
+    {
+      "name": "no-trading-write-left-the-page-during-the-whole-run",
+      "passed": true,
+      "evidence": {
+        "tradingWrites": 0,
+        "nativeCommands": 0
+      }
+    }
+  ],
+  "errors": [],
+  "matrix": {
+    "tools": [
+      {
+        "tool": "cursor",
+        "shown": "cursor",
+        "shifted": 30.09,
+        "top": "canvas"
+      },
+      {
+        "tool": "dot",
+        "shown": "dot",
+        "shifted": 30.09,
+        "top": "canvas"
+      },
+      {
+        "tool": "arrowcursor",
+        "shown": "arrowcursor",
+        "shifted": 30.09,
+        "top": "canvas"
+      },
+      {
+        "tool": "erase",
+        "shown": "erase",
+        "shifted": 30.09,
+        "top": "canvas"
+      }
+    ],
+    "drawings": [
+      {
+        "kind": "rectangle",
+        "locked": false,
+        "on": {
+          "top": "polygon",
+          "panned": 0,
+          "drawingMoved": true
+        }
+      },
+      {
+        "kind": "rectangle",
+        "locked": true,
+        "on": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "ellipse",
+        "locked": false,
+        "on": {
+          "top": "polygon",
+          "panned": 0,
+          "drawingMoved": true
+        }
+      },
+      {
+        "kind": "ellipse",
+        "locked": true,
+        "on": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "ruler",
+        "locked": false,
+        "on": {
+          "top": "polygon",
+          "panned": 0,
+          "drawingMoved": true
+        }
+      },
+      {
+        "kind": "ruler",
+        "locked": true,
+        "on": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "long",
+        "locked": false,
+        "on": {
+          "top": "polygon",
+          "panned": 0,
+          "drawingMoved": true
+        }
+      },
+      {
+        "kind": "long",
+        "locked": true,
+        "on": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "fib",
+        "locked": false,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "fib",
+        "locked": true,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "trendline",
+        "locked": false,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "trendline",
+        "locked": true,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "horizontal",
+        "locked": false,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "horizontal",
+        "locked": true,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "vertical",
+        "locked": false,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "vertical",
+        "locked": true,
+        "on": {
+          "top": "polyline",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "text",
+        "locked": false,
+        "on": {
+          "top": "rect",
+          "panned": 0,
+          "drawingMoved": true
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      },
+      {
+        "kind": "text",
+        "locked": true,
+        "on": {
+          "top": "rect",
+          "panned": 0,
+          "drawingMoved": false
+        },
+        "beside": {
+          "top": "canvas",
+          "panned": 27.35,
+          "drawingMoved": false
+        }
+      }
+    ],
+    "settings": [
+      {
+        "setting": "logScale",
+        "applied": {
+          "panes": 2,
+          "priceScaleMode": 1,
+          "canvases": 11,
+          "railCollapsed": null
+        },
+        "shifted": 30.09,
+        "top": "canvas"
+      },
+      {
+        "setting": "gridWatermarkNoVolumeNoTimeAxis",
+        "applied": {
+          "panes": 1,
+          "priceScaleMode": 0,
+          "canvases": 7,
+          "railCollapsed": null
+        },
+        "shifted": 30.09,
+        "top": "canvas"
+      },
+      {
+        "setting": "rsiLowerPane",
+        "applied": {
+          "panes": 3,
+          "priceScaleMode": 0,
+          "canvases": 15,
+          "railCollapsed": null
+        },
+        "shifted": 30.09,
+        "top": "canvas",
+        "lowerPane": {
+          "shifted": 27.35,
+          "top": "canvas"
+        }
+      },
+      {
+        "setting": "twoPaneLayout",
+        "applied": {
+          "panes": 2,
+          "priceScaleMode": 0,
+          "canvases": 18,
+          "railCollapsed": null
+        },
+        "shifted": 75,
+        "top": "canvas"
+      },
+      {
+        "setting": "compareEth",
+        "applied": {
+          "panes": 1,
+          "priceScaleMode": 0,
+          "canvases": 7,
+          "railCollapsed": null
+        },
+        "shifted": 29.58,
+        "top": "canvas"
+      },
+      {
+        "setting": "railCollapsed",
+        "applied": {
+          "panes": 2,
+          "priceScaleMode": 0,
+          "canvases": 11,
+          "railCollapsed": "1"
+        },
+        "shifted": 27.86,
+        "top": "canvas"
+      }
+    ]
+  },
+  "summary": {
+    "checks": 49,
+    "failed": 0,
+    "skipped": 0
+  }
+}

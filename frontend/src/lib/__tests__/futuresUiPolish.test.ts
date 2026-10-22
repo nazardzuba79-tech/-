@@ -457,7 +457,12 @@ test.each([
     // two module helpers read it and the screen's room, the ceiling and the
     // measured height leave it out, and a window resize re-measures. Still
     // no order, position, balance, book, chart or execution wiring changed.
-    "35583a53b2ef2a97871aeab0873ab14fc953b3204f29a0eeca5a48419e25945b"
+    // Re-taken 2026-10-22 (owner's second Bybit recording): one import
+    // (`installPageFirstWheel`), one ref on the order column's div and one
+    // effect that installs the desktop wheel listener on it, so the wheel
+    // over the column moves the page first. No order, position, balance,
+    // book, chart or execution wiring changed.
+    "ddfa053511db9bed65dd36ed5a4198e063a9d54fe8636ec65e222faae10a462e"
   ],
   [
     "components/FuturesPairList.tsx",
