@@ -283,11 +283,15 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
   });
   await check('normal-wheel-still-zooms', async () => {
     const before = await readChart();
-    await page.mouse.move(before.box.x + before.box.w / 2, before.box.y + before.box.h / 2); await page.mouse.wheel(0, -300); await delay(400);
+    // The plot's centre, slid off the live position's label like every press (clearOfForeignUi): the label is a
+    // card over the chart, not the chart, and at some fixture phases it sits exactly there (CI 2026-10-22 08:47Z:
+    // barSpacing 5.85 → 5.85 on main f080fe6e and on PR #572 alike, the label under the pointer).
+    const spot = await clearOfForeignUi(before.box.x + before.box.w / 2, before.box.y + before.box.h / 2);
+    await page.mouse.move(spot.x, spot.y); await page.mouse.wheel(0, -300); await delay(400);
     const after = await readChart();
-    assert(after.barSpacing > before.barSpacing, `wheel up did not zoom in: barSpacing ${before.barSpacing} → ${after.barSpacing}`);
+    assert(after.barSpacing > before.barSpacing, `wheel up did not zoom in at ${spot.top}: barSpacing ${before.barSpacing} → ${after.barSpacing}`);
     await page.mouse.wheel(0, 300); await delay(400);
-    return { before: before.barSpacing, after: after.barSpacing };
+    return { before: before.barSpacing, after: after.barSpacing, top: spot.top };
   });
   await page.screenshot({ path: path.join(out, `${label}-normal.png`) });
 

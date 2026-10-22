@@ -251,3 +251,21 @@ clock moved: the merged harness 48/49 with the same message
 (`phase0600-text-anchor-moved-report.json`), this fix merged with #570's head
 `b720dd7e` 49/49.
 
+
+## PR #572: `normal-wheel-still-zooms` under the position label (2026-10-22)
+
+CI `chart-drag` on PR #572 `1c85dc28` (run started 08:47Z) failed 48/49:
+`normal-wheel-still-zooms: wheel up did not zoom in: barSpacing 5.85 → 5.85`.
+The check pointed the wheel at the plot's centre without the slide every press
+already has; at that fixture price phase the live position's label (a card over
+the chart, not the chart) sat exactly there, so the wheel never reached the
+chart. PR #572 changes only the order column's wheel.
+
+Reproduced with the fixture clock moved to the 08:47:08Z phase
+(`NATIVE_PREVIEW_CLOCK_QA=1`, `POST /qa/clock`): the old check gave 48/49 with
+the identical message on both `main` `f080fe6e` and PR #572 `1c85dc28`.
+**Fix (harness only):** the wheel point goes through `clearOfForeignUi` like the
+presses; the slide is named in the evidence. Same phase: 49/49
+(`phase0847-pr572-fixed-report.json`, «press slid −30px off … «Разворот
+недоступен»», barSpacing 5.85 → 6.435); real clock 49/49, no slide
+(`realclock-pr572-report.json`). The zoom assertion itself is unchanged.
