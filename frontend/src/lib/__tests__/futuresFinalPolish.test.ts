@@ -217,6 +217,9 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       effectivePanelHeight: (preference: number | null, max: number) => (preference === null ? null : Math.min(Math.max(preference, 184), Math.max(184, max))),
       maxPanelHeightFor: () => 640, accountExtensionPx: () => 0, FUTURES_PANEL_MIN_HEIGHT: 184, FUTURES_PANEL_MAX_HEIGHT_FALLBACK: 640, FUTURES_PANEL_KEY_STEP: 24, FUTURES_CHART_MIN_HEIGHT: 300, FUTURES_PANEL_PREFERENCE_CEILING: 1600,
     };
+    // The order column's page-first wheel needs a real column and page;
+    // futuresPageFirstWheel.test.ts covers it.
+    if (name === '../lib/futuresPageFirstWheel') return { installPageFirstWheel: () => () => {} };
     if (name === '../lib/useMediaQuery') return { MOBILE_TERMINAL_QUERY: '(max-width: 900px)', useMediaQuery: () => false };
     // The owner-only native demo is server-gated; an ordinary account keeps the public terminal.
     if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true, state: null, setHistoryDemand: () => {}, interaction: { selecting: null, onCancelSelection: overrides.cancelSelection ?? jest.fn() } }) };
