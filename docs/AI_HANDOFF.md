@@ -6556,3 +6556,14 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - `qa-futures-chart-drag.cjs` on the joint bundle: 48/48, nothing skipped — drag after the panel resize, the way back into history with an older pick, short/jittery click vs a 14px drag, no trading write during the whole run, the panel after a shrink to 1366×768 and a reload all PASS.
 - `qa-futures-panel-resize.cjs` on the joint bundle: 36/36 (552 → 324 → 552, preference kept).
 - No merge, no deploy; both PRs stay Draft for the owner's decision.
+
+### Claude — 2026-10-22 — Chart drag QA follow-up after the CTO's CI blocker: hit-target evidence for the pick and the position tool (test only)
+
+- **Context:** PR #569 merged into `main` (`9dd84308`) at head `6d16d2fb`, CI green there. The CTO's blocker on the earlier head `e3dcd460` (run 39641275336, 45/48): the short-click pick targeted a bar the picker refuses, and the position-tool presses met a real UI button (the floating position/P&L label) — those two cases did not test the intended gesture. Asked for: a verified unobstructed point with DOM hit-target evidence, no loosened checks, the known `isCandleHit` bottom-fifth rule not concealed.
+- **Change (`scripts/qa-futures-chart-drag.cjs` only, no product code):**
+  - a crosshair hook on every load records the series Lightweight Charts reports under the pointer;
+  - `candlePoint` walks from the requested bar to the nearest older one the picker's own rules accept — body above the lowest fifth of the pane (the volume area `isCandleHit` ignores by design), only the chart's canvas under the point, the candle series (not an indicator line) reported by the chart — and returns every skipped bar with its reason; the pick checks assert the picked bar is the one under the pointer and carry the skipped list as evidence;
+  - the position tool (free and locked) is pressed at the first of a 5×5 grid of points inside its painted profit zone that nothing foreign covers: the drawing's own hit polygon when free, the chart's canvas when locked; the rejected points and what covered them are recorded;
+  - `describeAt` names the element, class and label under any point.
+- **Verified locally:** the matrix on the `main` tree (PR #566 + #569 in): 48/48, nothing skipped; the short-click pick recorded one skipped bar («body in the lowest fifth of the pane»), the position tool pressed on `polygon` (free, moved) and on `canvas` (locked, panned 27 bars).
+- **Not done:** merge, deploy, product changes. The bottom-fifth rule itself is untouched and visible in the evidence.
