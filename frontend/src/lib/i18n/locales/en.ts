@@ -1974,6 +1974,7 @@ export const EN: Record<Key, string> = {
   'listing.marketLive': "Market open",
   'listing.dateUnconfirmed': "Listing date is not yet confirmed",
   'listing.awaitingStart': "Waiting for confirmation of the market launch",
+  'listing.countdownPaused': "Countdown to the listing is paused",
   'listing.untilListing': "Until listing",
   'listing.scheduledAt': "Listing date",
   'listing.loadFailed': "Could not load listing data. Please try again.",

@@ -27,7 +27,8 @@ export function assertSpotListing(pair: string, now = Date.now()): void {
   if (managed) {
     if (isHistoricalDemoAsset(managed)) throw new Error(HISTORICAL_DEMO_MESSAGE);
     if (!managed.isTradable) throw new Error(`${managed.name} is not available for trading.`);
-    if (now < managed.listingAt) throw new Error('Trading has not started yet');
+    // Unarmed = the pre-listing timer is not running (staged or paused): the market never opens by itself.
+    if (!managed.listingArmed || now < managed.listingAt) throw new Error('Trading has not started yet');
     return;
   }
   if (isTestAssetPairOrSymbol(pair)) throw new Error(TEST_ASSET_NOT_TRADABLE_MESSAGE);
@@ -49,8 +50,8 @@ export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSou
     const managed = managedListingForPair(pair);
     if (isAith(pair) && !managed) return null;
     if (!managed) return source.getTicker(pair);
-    // A historical model price never triggers a real conditional order.
-    if (isHistoricalDemoAsset(managed)) return null;
+    // A historical model price never triggers a real conditional order; neither does a market whose timer is not running.
+    if (isHistoricalDemoAsset(managed) || !managed.listingArmed) return null;
     const last = simulationFor(managed).priceAt(clock());
     return last === null ? null : { lastPrice: String(last) };
   } };
