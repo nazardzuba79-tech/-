@@ -51,3 +51,14 @@ jobs:
           console.log(out);
           if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,'## Pages production read-only preflight\n\n```json\n'+out+'\n```\n');
           NODE
+
+      - name: Fingerprint public deployed frontend assets
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          for host in https://voltextech.net https://voltex-exchange.pages.dev; do
+            html="$(curl -fsSL --connect-timeout 10 --max-time 25 -H 'Cache-Control: no-cache' "${host}/futures?qa_pages_readonly=20261022" || true)"
+            asset="$(printf '%s' "$html" | grep -oE 'assets/index-[^"]+\\.js' | head -n1 || true)"
+            echo "${host}: ${asset:-page unavailable or no JS asset}"
+          done
