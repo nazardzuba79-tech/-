@@ -157,34 +157,63 @@ function assertPanned(result, dx, what) {
   return { shifted: Math.round(result.shifted * 100) / 100, nominal: Math.round(result.nominal * 100) / 100, top: result.top };
 }
 /**
- * A completed bar to click, `offsetFromRight` bars before the right edge or
- * the nearest older one whose body sits in the upper three quarters of the
- * pane: the picker ignores the lowest fifth, where the volume bars live
- * (lib/chartTrading isCandleHit), so a bar that happens to sit there is not
- * a pick target.
+ * A completed bar to click: `offsetFromRight` bars before the right edge, or
+ * the nearest older one that the picker's own rules accept
+ * (lib/chartTrading isCandleHit): its body above the lowest fifth of the
+ * pane (the volume area, which the picker ignores by design), nothing but
+ * the chart's canvas under the point (a position label, a card or a menu
+ * takes the press instead), and the candle series — not an indicator line —
+ * reported under the pointer by the chart. Every skipped bar and its reason
+ * is returned as evidence; nothing is hidden by the choice.
  */
 async function candlePoint(offsetFromRight) {
-  return page.evaluate(([offset]) => {
+  const candidates = await page.evaluate(([offset]) => {
     const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart);
     const { chart, series } = host.__voltexChart;
     const r = chart.timeScale().getVisibleLogicalRange();
     const box = host.getBoundingClientRect();
     const paneHeight = chart.paneSize(0).height;
-    for (let index = Math.floor(r.to) - offset; index >= Math.ceil(r.from); index--) {
+    const out = [];
+    for (let index = Math.floor(r.to) - offset; index >= Math.ceil(r.from) && out.length < 12; index--) {
       const bar = series.dataByIndex(index);
       if (!bar || !('high' in bar)) continue;
       const y = series.priceToCoordinate((bar.high + bar.low) / 2);
-      if (y === null || y < paneHeight * 0.05 || y > paneHeight * 0.72) continue;
-      return { x: box.x + chart.timeScale().logicalToCoordinate(index), y: box.y + y, time: bar.time, index };
+      if (y === null) continue;
+      out.push({ index, time: bar.time, x: box.x + chart.timeScale().logicalToCoordinate(index), y: box.y + y, paneY: y, belowPickerLine: y >= paneHeight * 0.8 });
     }
-    return null;
+    return out;
   }, [offsetFromRight]);
+  const skipped = [];
+  for (const c of candidates) {
+    if (c.belowPickerLine) { skipped.push({ time: c.time, reason: 'body in the lowest fifth of the pane (the volume area the picker ignores)' }); continue; }
+    const under = await describeAt(c.x, c.y);
+    if (!/^canvas/.test(under[0] ?? '')) { skipped.push({ time: c.time, reason: `covered by ${under[0]}` }); continue; }
+    await page.mouse.move(c.x, c.y); await delay(120);
+    const hover = await page.evaluate(() => window.__voltexHover ?? null);
+    if (!hover || !hover.candle) { skipped.push({ time: c.time, reason: hover?.other ? 'an indicator line under the pointer' : 'the chart reports no candle under the pointer' }); continue; }
+    return { x: c.x, y: c.y, time: c.time, index: c.index, under: under[0], skipped };
+  }
+  return null;
 }
 async function settle() {
   await page.locator('.chart-surface').waitFor({ timeout: 30000 });
   await page.waitForSelector('[data-chart-state="candles"]', { timeout: 30000 });
   await delay(1500);
+  // Hit-test evidence from the chart itself: the series Lightweight Charts reports under the pointer.
+  await page.evaluate(() => {
+    const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart);
+    if (!host || host.__voltexHoverHook) return;
+    const { chart, series } = host.__voltexChart;
+    host.__voltexHoverHook = true;
+    chart.subscribeCrosshairMove((p) => { const hovered = p.hoveredInfo?.series ?? p.hoveredSeries; window.__voltexHover = { candle: hovered === series, other: !!hovered && hovered !== series, time: p.time ?? null, pane: p.paneIndex ?? null }; });
+  });
 }
+/** What the DOM puts under a point: the element, its class and label — evidence for every press. */
+const describeAt = (x, y) => page.evaluate(([x, y]) => document.elementsFromPoint(x, y).slice(0, 3).map((el) => {
+  const cls = typeof el.className === 'string' ? el.className.split(' ').filter(Boolean).slice(0, 2).join('.') : '';
+  const label = el.getAttribute('aria-label') || el.getAttribute('title') || (el.tagName === 'BUTTON' ? (el.textContent || '').trim().slice(0, 24) : '');
+  return `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}${el.getAttribute('data-drawing-hit') ? '[hit=' + el.getAttribute('data-drawing-hit') + ']' : ''}${label ? '«' + label + '»' : ''}`;
+}), [x, y]);
 async function disarm() {
   for (let i = 0; i < 3; i++) {
     const chart = await readChart();
@@ -308,25 +337,26 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
     return { right, left };
   });
   await check('picking-short-click-selects-a-completed-bar', async () => {
-    const pt = await candlePoint(15); assert(pt, 'no completed bar to click');
+    const pt = await candlePoint(15); assert(pt, 'no completed bar the picker accepts within the view');
     const before = commands.length;
     await page.mouse.move(pt.x, pt.y); await page.mouse.down(); await page.mouse.up();
     await page.locator('[data-entry-reference]').waitFor({ timeout: 5000 });
     const chart = await readChart();
     assert(!chart.picking, 'the picker stayed armed after a pick');
     assert.equal(commands.length - before, 0, 'a pick posted a command');
-    return { entryReference: chart.entryReference, bar: pt.time };
+    assert.equal(JSON.parse(chart.entryReference).openTime, pt.time * 1000, 'the picked bar is not the one under the pointer');
+    return { entryReference: chart.entryReference, bar: pt.time, under: pt.under, skipped: pt.skipped };
   });
   await page.screenshot({ path: path.join(out, `${label}-picked.png`) });
   await check('picking-jittery-click-under-threshold-still-selects', async () => {
     await armPicker();
-    const pt = await candlePoint(25); assert(pt, 'no completed bar to click');
+    const pt = await candlePoint(25); assert(pt, 'no completed bar the picker accepts within the view');
     // A hand is never perfectly still: 2px of drift inside the 5px threshold is still a click.
     await page.mouse.move(pt.x, pt.y); await page.mouse.down(); await page.mouse.move(pt.x + 2, pt.y + 2, { steps: 2 }); await page.mouse.up();
     await page.locator('[data-entry-reference]').waitFor({ timeout: 5000 });
     const chart = await readChart();
     assert(!chart.picking, 'the picker stayed armed after a jittery pick');
-    return { bar: pt.time, entryReference: chart.entryReference };
+    return { bar: pt.time, entryReference: chart.entryReference, under: pt.under, skipped: pt.skipped };
   });
   await check('picking-drag-past-threshold-does-not-select', async () => {
     await armPicker();
@@ -358,7 +388,7 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
     chart = await readChart();
     assert(chart.picking && chart.entryReference === null, 'the way back disarmed the picker or picked a bar');
     assert.equal(commands.length - before, 0, `the way back posted ${commands.length - before} command(s)`);
-    const pt = await candlePoint(30); assert(pt, 'no older bar to pick');
+    const pt = await candlePoint(30); assert(pt, 'no older bar the picker accepts within the view');
     await page.mouse.move(pt.x, pt.y); await page.mouse.down(); await page.mouse.up();
     await page.locator('[data-entry-reference]').waitFor({ timeout: 5000 });
     const picked = await readChart();
@@ -564,20 +594,34 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
     horizontal: { points: [{ time: cover.a.time, price: mid }], area: false }, vertical: { points: [{ time: midTime, price: cover.a.price }], area: false },
     text: { points: [{ time: midTime, price: textPrice }], text: 'QA', area: false },
   };
-  const pressPoint = (kind, spec) => page.evaluate(([kind, area, offset, zone]) => {
+  /** Inside a painted zone, the first of a 5×5 grid of points that nothing foreign covers: the drawing's own hit polygon (free) or the chart's canvas (locked). */
+  const unobstructedZonePoint = async (kind, locked) => {
+    const z = await page.evaluate((kind) => { const p = document.querySelector(`[data-drawing-kind="${kind}"] polygon`); const r = p?.getBoundingClientRect(); return r ? { x: r.x, y: r.y, w: r.width, h: r.height } : null; }, kind);
+    if (!z) return null;
+    const tried = [];
+    for (let i = 1; i <= 5; i++) for (let j = 1; j <= 5; j++) {
+      const x = z.x + (z.w * i) / 6, y = z.y + (z.h * j) / 6;
+      const under = await describeAt(x, y);
+      const top = under[0] ?? '';
+      const ok = locked ? /^canvas/.test(top) : /\[hit=body\]/.test(top) || await page.evaluate(([x, y, kind]) => !!document.elementsFromPoint(x, y)[0]?.closest(`[data-drawing-kind="${kind}"] [data-drawing-hit]`), [x, y, kind]);
+      if (ok) return { x, y, under: top, tried };
+      tried.push({ x: Math.round(x), y: Math.round(y), under: top });
+    }
+    return { x: null, y: null, under: null, tried };
+  };
+  const pressPoint = (kind, spec) => page.evaluate(([kind, area, offset]) => {
     const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart);
     const box = host.getBoundingClientRect();
     const g = document.querySelector(`[data-drawing-kind="${kind}"]`);
     if (!g) return null;
     const r = g.getBoundingClientRect();
-    if (zone) { const z = g.querySelector('polygon')?.getBoundingClientRect(); if (!z) return null; return { x: z.x + z.width / 2, y: z.y + z.height / 2 }; }
     if (area) return offset ? { x: box.x + box.width * offset[0], y: box.y + box.height * offset[1] } : { x: r.x + r.width / 2, y: r.y + r.height / 2 };
     // A line: its midpoint (for a horizontal line the plot's middle x, for a vertical one the plot's middle y).
     const onLine = { x: r.width > 4 ? r.x + r.width / 2 : r.x + r.width / 2, y: r.height > 4 ? r.y + r.height / 2 : r.y + r.height / 2 };
     if (kind === 'horizontal') onLine.x = box.x + box.width * 0.45;
     if (kind === 'vertical') onLine.y = box.y + box.height * 0.4;
     return { ...onLine, beside: { x: onLine.x + (kind === 'vertical' ? 24 : 0), y: onLine.y + (kind === 'vertical' ? 0 : 24) } };
-  }, [kind, spec.area, spec.offset ?? null, !!spec.zone]);
+  }, [kind, spec.area, spec.offset ?? null]);
   const press = async (x, y, dx = 200) => {
     // Only one drawing is on the chart here: slide along its line (across a vertical one), never off it.
     const dir = await page.evaluate(() => { const g = document.querySelector('[data-drawing-kind]'); const r = g?.getBoundingClientRect(); const kind = g?.getAttribute('data-drawing-kind');
@@ -593,10 +637,11 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
       const drawing = { kind, points: spec.points, ...(spec.text ? { text: spec.text } : {}), ...(locked ? { locked: true } : {}) };
       await page.evaluate(([key, value]) => localStorage.setItem(key, JSON.stringify({ version: 1, hidden: false, locked: false, drawings: [value] })), [DRAWINGS_KEY, drawing]);
       await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
-      const at = await pressPoint(kind, spec);
+      const at = spec.zone ? await unobstructedZonePoint(kind, locked) : await pressPoint(kind, spec);
       assert(at, `the ${kind} was not drawn`);
+      assert(at.x !== null, `no point inside the ${kind} zone is free of other elements: ${JSON.stringify(at.tried)}`);
       const on = await press(at.x, at.y);
-      const row = { kind, locked, on: { top: on.top, panned: Math.round(on.panned * 100) / 100, drawingMoved: on.drawingMoved } };
+      const row = { kind, locked, on: { top: on.top, panned: Math.round(on.panned * 100) / 100, drawingMoved: on.drawingMoved }, ...(at.tried?.length ? { obstructed: at.tried } : {}) };
       if (at.beside) { const beside = await press(at.beside.x, at.beside.y); row.beside = { top: beside.top, panned: Math.round(beside.panned * 100) / 100, drawingMoved: beside.drawingMoved }; }
       report.matrix.drawings.push(row);
       if (spec.area) {
