@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import {
-  clampPanelHeight, readStoredPanelHeight, writeStoredPanelHeight, maxPanelHeightFor, effectivePanelHeight,
+  clampPanelHeight, readStoredPanelHeight, writeStoredPanelHeight, maxPanelHeightFor, effectivePanelHeight, accountExtensionPx,
   FUTURES_PANEL_HEIGHT_KEY, FUTURES_PANEL_MIN_HEIGHT, FUTURES_PANEL_MAX_HEIGHT_FALLBACK, FUTURES_CHART_MIN_HEIGHT, FUTURES_PANEL_PREFERENCE_CEILING,
 } from '../useFuturesPanelHeight';
 
@@ -77,6 +77,15 @@ describe('effectivePanelHeight', () => {
   });
 });
 
+describe('accountExtensionPx', () => {
+  test('reads the computed custom property, anything unreadable or negative is 0', () => {
+    expect(accountExtensionPx('140px')).toBe(140);
+    expect(accountExtensionPx(' 140px ')).toBe(140);
+    expect(accountExtensionPx('0px')).toBe(0);
+    for (const bad of ['', '  ', 'auto', '-20px', null, undefined]) expect(accountExtensionPx(bad)).toBe(0);
+  });
+});
+
 describe('the page and the sheet', () => {
   const page = readFileSync(resolve(__dirname, '../../pages/FuturesPage.tsx'), 'utf8');
   const sheet = readFileSync(resolve(__dirname, '../../pages/trade-terminal/FuturesPanelResize.css'), 'utf8');
@@ -113,6 +122,35 @@ describe('the page and the sheet', () => {
     // Two whole position rows by default, and every tab's body scrolls inside the panel.
     expect(sheet).toContain('--futures-account-height: 252px;');
     expect(sheet).toContain('.bottom-content { overflow-x: hidden; overflow-y: auto; }');
+  });
+
+  test('Bybit\'s page scroll (owner, 2026-10-22): the panel continues below the screen\'s edge, the chart keeps its arrival height', () => {
+    const block = sheet.slice(sheet.indexOf("/* Bybit's page scroll"));
+    expect(block).toMatch(/^\/\* Bybit's page scroll[\s\S]*@media \(min-width: 901px\)/);
+    // The root is no longer fixed to the screen: it is the screen plus the continuation.
+    expect(block).toContain('--futures-account-extension: 140px;');
+    expect(block).toContain('min-height: calc(100vh + var(--futures-account-extension));');
+    expect(block).toMatch(/#archive-terminal-preview\.futures-terminal \{[^}]*height: auto;[^}]*overflow: visible;/);
+    // The panel's track carries the continuation, so the chart's 1fr is what it was; the terminal never shrinks under its tracks.
+    expect(block).toContain('grid-template-rows: var(--futures-ticker-height) minmax(300px, 1fr) calc(var(--futures-account-height) + var(--futures-account-extension));');
+    expect(block).toContain('min-height: calc(var(--futures-ticker-height) + 300px + var(--futures-account-height) + var(--futures-account-extension) + 16px);');
+    // Folded or empty: nothing below the edge.
+    expect(block).toMatch(/:has\(\.terminal\[data-account-compact=true\]\),\s*#archive-terminal-preview\.futures-terminal:has\(\.terminal \.bottom-panel \.futures-position-state\) \{\s*--futures-account-extension: 0px;/);
+    // The list hands vertical overscroll to the page; sideways it stays contained. No page scrollbar is drawn.
+    expect(block).toMatch(/\.futures-positions-scroll \{\s*overscroll-behavior-x: contain;\s*overscroll-behavior-y: auto;/);
+    expect(block).toContain('html:has(#archive-terminal-preview.futures-terminal) { scrollbar-width: none; }');
+    // The phone keeps its own stacked layout: the block is desktop-only.
+    expect(block.indexOf('@media (max-width: 900px)')).toBeGreaterThan(block.indexOf('scrollbar-width: none'));
+  });
+
+  test('the handle\'s ceiling and heights leave out the part below the edge, measured against the screen', () => {
+    expect(page).toContain("accountExtensionPx(getComputedStyle(terminal).getPropertyValue('--futures-account-extension'))");
+    expect(page).toMatch(/const terminalRoomOf = \(terminal: HTMLElement\) => \{[\s\S]*window\.innerHeight - \(box\.top \+ window\.scrollY\) - below[\s\S]*return Math\.min\(terminal\.clientHeight - accountExtensionOf\(terminal\), screenRoom\);/);
+    expect(page.match(/maxPanelHeightFor\(terminalRoomOf\(terminal\), tickerHeightOf\(terminal\), gridChromeOf\(terminal\)\)/g)).toHaveLength(2);
+    expect(page).not.toContain('maxPanelHeightFor(terminal.clientHeight');
+    expect(page).toContain('setPanelMeasured(Math.round(panel.getBoundingClientRect().height) - accountExtensionOf(terminal));');
+    expect(page).toContain("window.addEventListener('resize', measure);");
+    expect(page).toContain("window.removeEventListener('resize', measure);");
   });
 
   test('the label exists in every locale', () => {

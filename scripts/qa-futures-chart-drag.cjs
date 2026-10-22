@@ -401,28 +401,34 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
   await check('after-shrink-and-reload-the-panel-holds-and-the-chart-pans', async () => {
     const handle = page.locator('.bottom-panel .orders-resize-handle').first();
     if (!(await handle.count())) throw skip('the bottom panel handle (PR #566) is not in this bundle');
-    const panel = () => page.evaluate(() => ({
-      panel: Math.round(document.querySelector('.bottom-panel').getBoundingClientRect().height),
+    // The panel's part above the screen's edge: since the Bybit page scroll (owner, 2026-10-22) the panel
+    // continues below the edge by `--futures-account-extension` and the page scrolls by exactly that much.
+    const panel = () => page.evaluate(() => {
+      const extension = parseFloat(getComputedStyle(document.querySelector('.terminal')).getPropertyValue('--futures-account-extension')) || 0;
+      return {
+      extension,
+      panel: Math.round(document.querySelector('.bottom-panel').getBoundingClientRect().height) - extension,
       chart: Math.round(document.querySelector('.chart-area').getBoundingClientRect().height),
       overflow: document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight,
       limited: document.querySelector('.terminal').getAttribute('data-account-height-limited'),
       stored: Number(localStorage.getItem('voltex.futures.accountPanelHeight')) || null,
       ariaNow: Number(document.querySelector('.bottom-panel [role="separator"]').getAttribute('aria-valuenow')),
-    }));
+      };
+    });
     await handle.focus(); await page.keyboard.press('End'); await delay(400);
     const tall = await panel();
     await page.setViewportSize({ width: 1366, height: 768 }); await delay(700);
     const small = await panel();
-    assert(small.panel < tall.panel && small.overflow === 0 && small.chart >= 300 && small.stored === tall.panel && small.limited === 'true' && small.ariaNow === small.panel,
+    assert(small.panel < tall.panel && small.overflow === small.extension && small.chart >= 300 && small.stored === tall.panel && small.limited === 'true' && small.ariaNow === small.panel,
       `the panel did not adapt to 1366×768: ${JSON.stringify({ tall, small })}`);
     const pannedSmall = assertPanned(await drag(220), 220, 'drag at 1366×768 under the limited panel');
     await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
     const reloaded = await panel();
-    assert(reloaded.panel === small.panel && reloaded.overflow === 0 && reloaded.stored === tall.panel && reloaded.limited === 'true', `a reload at 1366×768 changed the panel: ${JSON.stringify({ small, reloaded })}`);
+    assert(reloaded.panel === small.panel && reloaded.overflow === reloaded.extension && reloaded.stored === tall.panel && reloaded.limited === 'true', `a reload at 1366×768 changed the panel: ${JSON.stringify({ small, reloaded })}`);
     const pannedReloaded = assertPanned(await drag(220), 220, 'drag after the reload at 1366×768');
     await page.setViewportSize({ width: 1440, height: 900 }); await delay(700);
     const back = await panel();
-    assert(back.panel > small.panel && back.overflow === 0, `the panel did not grow back at 1440×900: ${JSON.stringify({ small, back })}`);
+    assert(back.panel > small.panel && back.overflow === back.extension, `the panel did not grow back at 1440×900: ${JSON.stringify({ small, back })}`);
     await page.locator('.bottom-panel .orders-resize-handle').first().dblclick(); await delay(300);
     return { tall: tall.panel, small: small.panel, back: back.panel, pannedSmall, pannedReloaded };
   });
