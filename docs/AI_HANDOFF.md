@@ -6671,3 +6671,13 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Not run:** CI on the new head (pending at commit time), any production browser.
 - **Not done:** merge, deploy, production change.
 
+### Codex — 2026-10-22 — PR #568: verify the completed reconciliation and run historical-entry browser QA in CI
+
+- **Reviewed commit:** `4afef2dbb0cf6dfcf93f4c6c47c6f46d431bdedb`, the completed merge of previous PR head `ff7e92095c168325fb577981474f39f9f83263c9` with `main` `9b38337fcf7737b77d4302048380d480421b25a0`. No integration was assumed from an unfinished tool response; GitHub confirms both parents and the branch head.
+- **Preserved:** complete recursive-tree comparison found no file lost from either parent and no change to files identical in both parents. Both handoff histories, all seven locales (timer plus wake keys), the translation test, and the approved #566/#569 product changes remain. No trading math, engine, Worker, database or balance changes.
+- **Observed CI on that reviewed commit:** 28 successful workflow runs; 31 successful check jobs and the deployment job skipped. Chart-drag log records 49/49 checks and zero browser errors. Browser idle sleep includes the new failed-wake/retry controls. These are observations of existing runs, not newly claimed executions.
+- **Gap and narrow change:** no workflow invoked the existing `scripts/qa-historical-entry.cjs`. `.github/workflows/native-demo-qa.yml` now runs it after the other browser scenarios, using the already installed Chromium tooling at widths 1440 and 390. The script remains unchanged: real low-pane candle selection, negative controls, LONG/SHORT, Market/Limit, cancellation/partial close and final close are exercised against the disposable local fixture only. New reports go to `output/historical-entry-ci/` so the artifact cannot be mistaken for previously committed evidence. The workflow also triggers when this script changes.
+- **Material files changed in this follow-up:** only `.github/workflows/native-demo-qa.yml` and this handoff. Existing steps, assertions, fixtures and product code are unchanged; no test is skipped to obtain a pass.
+- **Pending at commit time:** CI on this follow-up SHA. Merge is authorized by the owner only after all final checks pass; use `[CF-Pages-Skip] [skip render]`. Production deployment, TYVN publication/timer/trading, Stocks and History20 integration remain outside this task.
+- **Next:** complete the CI gate, merge #568 without deployment, then compare #570 against the resulting code before deciding whether its QA additions are still useful.
+
