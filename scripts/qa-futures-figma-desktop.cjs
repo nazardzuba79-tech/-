@@ -43,7 +43,7 @@ const selectors = { header: '.global-header', ticker: '.ticker-bar', chart: '.ch
         const rect = n => { const r = n.getBoundingClientRect(); return { x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom }; };
         const parts = Object.fromEntries(Object.entries(selectors).map(([k,s]) => [k,rect(document.querySelector(s))]));
         const tabs = [...document.querySelectorAll('.order-family-tabs button')].map(n => ({ text:n.textContent, ...rect(n) }));
-        return { ...parts, tabs, overflow:document.documentElement.scrollWidth-innerWidth };
+        return { ...parts, tabs, overflow:document.documentElement.scrollWidth-innerWidth, pageScroll:document.documentElement.scrollHeight-innerHeight };
       }, selectors);
       const near = (a,b,why) => assert.ok(Math.abs(a-b)<1.5, `${width}: ${why}: ${a} vs ${b}`);
       near(geometry.header.height,48,'48px global header (Bybit header above Figma 19:103; owner 2026-10-10)');
@@ -51,6 +51,7 @@ const selectors = { header: '.global-header', ticker: '.ticker-bar', chart: '.ch
       // screens under 800px tall, where 56 would put the chart under the 60% floor below.
       near(geometry.ticker.height,height>=800?56:52,`${height>=800?56:52}px instrument bar (Bybit 56; 52 under 800px tall)`);
       near(geometry.bottom.height,160,'160px empty account panel');
+      near(geometry.pageScroll,0,'an empty account panel fits the screen: nothing continues below the edge');
       near(geometry.book.width,286,'Figma orderbook width');
       near(geometry.form.width,300,'Figma order ticket width');
       near(geometry.chart.y,geometry.book.y,'aligned chart/book');
@@ -80,7 +81,15 @@ const selectors = { header: '.global-header', ticker: '.ticker-bar', chart: '.ch
       await context.addCookies([{name:'qa_state',value:'filled',url:origin}]);
       await page.reload();
       await page.locator('.futures-positions-table tbody tr').first().waitFor();
-      near((await page.locator('.bottom-panel').boundingBox()).height,200,'200px populated account panel');
+      // PR #566 (owner, 2026-10-21): two whole position rows on arrival — 252px, not the 200px of FuturesFigmaDesktop. The 160px empty and 44px folded heights above are unchanged.
+      // Bybit page scroll (owner, 2026-10-22): the populated panel continues 140px below the screen's edge (`--futures-account-extension`);
+      // the 252px are its part above the edge, and the page scrolls by exactly the continuation.
+      const populated = await page.evaluate(() => ({ box: document.querySelector('.bottom-panel').getBoundingClientRect().height,
+        extension: parseFloat(getComputedStyle(document.querySelector('.terminal')).getPropertyValue('--futures-account-extension')) || 0,
+        pageScroll: document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight }));
+      near(populated.box - populated.extension,252,'252px populated account panel above the screen edge');
+      near(populated.extension,140,'the populated panel continues 140px below the edge');
+      near(populated.pageScroll,populated.extension,'the page scrolls by exactly the continuation');
       assert.equal(await page.locator('.futures-positions-table tbody tr').count(),3,'all fixture positions retained');
       await page.waitForFunction(() => /\d/.test(document.querySelector('.rb-row')?.textContent || ''));
       await page.screenshot({path:path.join(out,`populated-top-${width}.png`)});

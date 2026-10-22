@@ -236,3 +236,10 @@ export function useLanguage(): LanguageContextValue {
   if (!ctx) throw new Error('useLanguage must be used within a LanguageProvider');
   return ctx;
 }
+
+/** The provider's value, or null outside one. For the lifecycle notice, which
+ *  must also render in a bare document (its mounted test) with the default
+ *  language's literals. Product screens keep `useLanguage`. */
+export function useOptionalLanguage(): LanguageContextValue | null {
+  return useContext(LanguageContext);
+}

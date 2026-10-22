@@ -5,6 +5,7 @@ import ts from 'typescript';
 import * as activity from '../browserActivity';
 import { futuresAccountStore } from '../futuresAccountStore';
 import { api, getToken, setToken, clearToken } from '../api';
+import { RU } from '../i18n/locales/ru';
 
 jest.mock('../api', () => {
   let token: string | null = 'fixture-a';
@@ -38,6 +39,10 @@ function loadNotice() {
   const imports: Record<string, unknown> = {
     react: React, 'react/jsx-runtime': req('react/jsx-runtime'),
     '../lib/browserActivity': activity,
+    // Mounted bare, as main.tsx never does: the notice falls back to the default language's literals.
+    '../lib/i18n': { useOptionalLanguage: () => null },
+    '../lib/i18n/locales/ru': { RU },
+    './BrowserSleepNotice.css': {},
   };
   new Function('exports', 'require', code)(output, (name: string) => {
     if (!(name in imports)) throw new Error(`Unexpected import: ${name}`);
@@ -154,15 +159,68 @@ describe('a paused browser has no Continue UI and retains known account values',
     expect(document.querySelector('[role="status"]')).toBeNull(); expectNoControls();
   });
 
-  test('a real global refresh failure stays silent and keeps received data', async () => {
+  // A failed wake refuses every click, key and double click until a wake succeeds (lib/browserActivity).
+  // Owner, 2026-10-21: that state needs a visible reason and a retry path — this is the only phase with UI.
+  test('a failed session check shows one notice naming it, with retry and reload, and keeps received data', async () => {
     await mount();
     validate.mockRejectedValueOnce(new Error('Fixture validation outage'));
     await React.act(async () => { activity.sleepBrowser(); await activity.resumeBrowser(); });
     expect(activity.getBrowserPhase()).toBe('error');
-    expect(document.querySelector('[role="status"]')).toBeNull();
-    expect(document.getElementById('root')!.textContent).toBe('');
-    expect(document.querySelector('[data-browser-phase="error"]')?.hasAttribute('hidden')).toBe(true);
+    expect(activity.getBrowserResumeFailure()).toEqual({ kind: 'session', detail: 'Fixture validation outage' });
+    const notice = document.querySelector('[role="alert"][data-browser-notice]')!;
+    expect(notice).not.toBeNull();
+    expect(notice.getAttribute('data-browser-phase')).toBe('error');
+    expect(notice.getAttribute('data-browser-failure')).toBe('session');
+    expect(notice.hasAttribute('hidden')).toBe(false);
+    expect(notice.textContent).toContain(RU['browserSyncError']);
+    expect(notice.textContent).toContain(RU['browserResumeBlocked']);
+    expect(notice.textContent).toContain(`${RU['browserFailure.session']}: Fixture validation outage`);
+    const buttons = Array.from(document.querySelectorAll('button'), button => button.textContent);
+    expect(buttons).toEqual([RU['browserRetry'], RU['browserReload']]);
+    expect(RU['browserRetry']).toBe('Повторить попытку');
+    expect(document.querySelector('a, input')).toBeNull();
+    expect(futuresAccountStore.getState().balances.data).toEqual(OLD_BALANCES);
+    expect(futuresAccountStore.getState().positions.data).toEqual(OLD_POSITIONS);
+    // «Повторить попытку» is the same wake again: validation, then the sync barrier over the account reads.
+    const nextBalance = deferred<typeof NEW_BALANCES>();
+    balances.mockReturnValueOnce(nextBalance.promise);
+    await React.act(async () => {
+      document.querySelector<HTMLButtonElement>('.browser-resume-notice__retry')!.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+      await flush();
+    });
+    expect(validate).toHaveBeenCalledTimes(2);
+    expect(activity.getBrowserPhase()).toBe('syncing');
+    expect(document.querySelector('[data-browser-notice]')).toBeNull();
+    expect(document.querySelector('[data-browser-phase="syncing"]')?.hasAttribute('hidden')).toBe(true);
     expectNoControls();
+    await React.act(async () => { nextBalance.resolve(NEW_BALANCES); await flush(); });
+    await tick(200);
+    expect(activity.getBrowserPhase()).toBe('active');
+    expect(activity.getBrowserResumeFailure()).toBeNull();
+    expect(futuresAccountStore.getState().balances.data).toEqual(NEW_BALANCES);
+    expect(document.getElementById('root')!.textContent).toBe(''); expectNoControls();
+  });
+
+  test('a failed account read during the wake is named on the notice; sleeping, validating and syncing stay silent', async () => {
+    await mount();
+    const validation = deferred<void>();
+    validate.mockReturnValueOnce(validation.promise);
+    balances.mockRejectedValueOnce(new Error('Fixture balance outage'));
+    await React.act(async () => { activity.sleepBrowser(); await flush(); });
+    expect(document.querySelector('[data-browser-notice]')).toBeNull(); expectNoControls();
+    let waking!: Promise<void>;
+    await React.act(async () => { waking = activity.resumeBrowser(); await flush(); });
+    expect(activity.getBrowserPhase()).toBe('validating');
+    expect(document.querySelector('[data-browser-notice]')).toBeNull(); expectNoControls();
+    await React.act(async () => { validation.resolve(); await flush(); });
+    expect(activity.getBrowserPhase()).toBe('syncing');
+    expect(document.querySelector('[data-browser-notice]')).toBeNull(); expectNoControls();
+    await tick(200); await React.act(async () => { await waking; });
+    expect(activity.getBrowserPhase()).toBe('error');
+    expect(activity.getBrowserResumeFailure()).toEqual({ kind: 'read', detail: 'Fixture balance outage' });
+    const notice = document.querySelector('[role="alert"][data-browser-notice]')!;
+    expect(notice.getAttribute('data-browser-failure')).toBe('read');
+    expect(notice.textContent).toContain(`${RU['browserFailure.read']}: Fixture balance outage`);
     expect(futuresAccountStore.getState().balances.data).toEqual(OLD_BALANCES);
     expect(futuresAccountStore.getState().positions.data).toEqual(OLD_POSITIONS);
   });

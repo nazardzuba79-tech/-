@@ -452,7 +452,12 @@ test.each([
     // live ceiling, `panelShown`), the terminal flags
     // `data-account-height-limited`, the handle's ARIA value is the shown
     // height. Still no trading wiring changed.
-    "7baea15cd68298b92f574cc022d2dc4d427d0ffedd2ee94f1eb2cc54706a4111"
+    // Re-taken 2026-10-22 (owner, Bybit page scroll): the account panel
+    // continues below the screen's edge by `--futures-account-extension`;
+    // two module helpers read it and the screen's room, the ceiling and the
+    // measured height leave it out, and a window resize re-measures. Still
+    // no order, position, balance, book, chart or execution wiring changed.
+    "35583a53b2ef2a97871aeab0873ab14fc953b3204f29a0eeca5a48419e25945b"
   ],
   [
     "components/FuturesPairList.tsx",

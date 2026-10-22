@@ -1,10 +1,14 @@
 /* The account panel's top edge is a handle, as on Bybit (owner, 2026-10-21:
    «не можу як у байбіт перегорнути … щоб показати дві угоди разом, чи
    більше»). Dragging it, or the arrow keys on it, change the panel's height;
-   a double-click returns the stylesheet's height. The page itself never
-   scrolls: the panel grows into the chart's track and its own content scrolls.
-   The handle reuses the Spot terminal's `orders-resize-handle` (TradePage),
-   so the folded panel hides it through the existing TerminalAccountPanel rule.
+   a double-click returns the stylesheet's height. The handle reuses the Spot
+   terminal's `orders-resize-handle` (TradePage), so the folded panel hides it
+   through the existing TerminalAccountPanel rule.
+   The page scrolls as Bybit's does (owner, 2026-10-22, a Bybit screen
+   recording: «Вот як я мав на увазі»): the panel continues below the screen's
+   edge, so the wheel over it scrolls its list and then the page, the chart
+   moves up whole instead of shrinking, and more trades come into view. See
+   the second block below.
    Desktop only — a phone stacks the panel under the chart. */
 @media (min-width: 901px) {
   /* Two whole three-line position rows on arrival: the tab strip (44), the
@@ -32,8 +36,59 @@
   #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle:focus-visible { outline: none; background: #7d9ab133; }
   #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle[data-dragging='true'] { background: #7d9ab122; }
   /* Every tab's body scrolls inside the panel (the positions table keeps its
-     own two-axis scroller; the others gain a vertical one), never the page. */
+     own two-axis scroller; the others gain a vertical one). */
   #archive-terminal-preview.futures-terminal .bottom-content { overflow-x: hidden; overflow-y: auto; }
+}
+
+/* Bybit's page scroll (owner, 2026-10-22). On Bybit the trading page is taller
+   than the screen: the account panel's lower part sits below the edge, the
+   wheel over the panel first scrolls its list and then the page, the chart
+   and the order column move up whole, and three or four trades are on screen
+   together. Here the terminal keeps exactly the composition it had on arrival
+   (the chart's height, the panel's top, two whole rows) and the panel goes on
+   below the edge by `--futures-account-extension`: two more 68px three-line
+   position rows and the 4px track. The page scrolls by that much — more only
+   on a screen too short for the chart's 300px, the pair row and the panel,
+   which used to be clipped instead. Scrolling back up restores the arrival
+   view. The folded panel and the empty-account status still fit the screen:
+   nothing below them to show. */
+@media (min-width: 901px) {
+  #archive-terminal-preview.futures-terminal {
+    --futures-account-extension: 140px;
+    height: auto;
+    min-height: calc(100vh + var(--futures-account-extension));
+    overflow: visible;
+  }
+  #archive-terminal-preview.futures-terminal:has(.terminal[data-account-compact=true]),
+  #archive-terminal-preview.futures-terminal:has(.terminal .bottom-panel .futures-position-state) {
+    --futures-account-extension: 0px;
+  }
+  /* The terminal fills the rest of the root (the root's height is no longer
+     fixed, so a zero basis instead of `flex: 1`'s percentage), and never
+     shrinks under its three tracks: on a short screen the page grows. The
+     panel's track carries the extension, so the chart's `1fr` stays what it
+     was. The folded and status variants keep their own, more specific rows. */
+  #archive-terminal-preview.futures-terminal .terminal {
+    flex: 1 1 0px;
+    min-height: calc(var(--futures-ticker-height) + 300px + var(--futures-account-height) + var(--futures-account-extension) + 16px);
+    grid-template-rows: var(--futures-ticker-height) minmax(300px, 1fr) calc(var(--futures-account-height) + var(--futures-account-extension));
+  }
+  #archive-terminal-preview.futures-terminal .terminal[data-account-compact=true] {
+    min-height: calc(var(--futures-ticker-height) + 300px + 44px + 16px);
+  }
+  /* The positions list hands the wheel to the page at its end, as Bybit's
+     does; sideways it stays contained (no browser back-swipe off a wide
+     table). `ArchiveTerminalPreview.css` contained both axes. */
+  #archive-terminal-preview.futures-terminal .futures-positions-scroll {
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+  }
+  /* Bybit's page draws no scrollbar (the recording: the panels reach the
+     window's edge before and after the scroll). A classic Windows scrollbar
+     would take its width from the terminal the moment the page can scroll and
+     move every column; the wheel, the keys and the touchpad still scroll. */
+  html:has(#archive-terminal-preview.futures-terminal) { scrollbar-width: none; }
+  html:has(#archive-terminal-preview.futures-terminal)::-webkit-scrollbar { display: none; }
 }
 @media (max-width: 900px) {
   #archive-terminal-preview.futures-terminal .bottom-panel .orders-resize-handle { display: none; }

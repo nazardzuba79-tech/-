@@ -1,9 +1,9 @@
-import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, type ChartTradeOverlay } from '../chartTrading';
+import { chartEntryAnchor, chartEventBar, chartOverlayBottomFraction, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, type ChartTradeOverlay } from '../chartTrading';
 import type { Candle } from '../indicators';
 
 const openTime = Date.UTC(2026, 8, 14, 6);
 const candle: Candle = { time: openTime / 1000, open: 100, high: 115, low: 98, close: 110, volume: 10 };
-const hit = { x: 100, y: 120, candleX: 100, highY: 100, lowY: 160, paneWidth: 800, paneHeight: 600, barSpacing: 8, paneIndex: 0, dragged: false, indicatorHovered: false, indicatorPanelVisible: false };
+const hit = { x: 100, y: 120, candleX: 100, highY: 100, lowY: 160, paneWidth: 800, paneHeight: 600, barSpacing: 8, paneIndex: 0, dragged: false, indicatorHovered: false, overlayBottomFraction: 0 };
 
 describe('private real-candle selection', () => {
   it('keeps normalized contract, source, OHLC and separate open/close millisecond instants', () => {
@@ -26,11 +26,42 @@ describe('private real-candle selection', () => {
     expect(isCandleHit({ ...hit, y: 180 })).toBe(false);
     expect(isCandleHit({ ...hit, x: 106 })).toBe(false);
   });
-  it.each([{ dragged: true }, { paneIndex: 1 }, { indicatorHovered: true }, { x: 800 }, { y: 550 }, { candleX: null }, { y: -1 }])('rejects gesture, indicator, scale and empty hits %p', values => {
-    expect(isCandleHit({ ...hit, ...values })).toBe(false);
+  // The regression (owner, 2026-10-21, IOST/USDT 1h on production): an old completed candle drawn low on the
+  // price pane was refused while the same kind of candle higher up was accepted. Volume has had its own pane
+  // since 2026-09-30, so the price pane's bottom fifth is candles, not scales.
+  it.each([
+    { name: 'bottom fifth', y: 540, highY: 520, lowY: 560 },
+    { name: 'bottom tenth', y: 585, highY: 580, lowY: 595 },
+    { name: 'last pixel row', y: 599, highY: 590, lowY: 599 },
+  ])('accepts a completed candle drawn in the $name of the price pane with nothing overlaid there', values => {
+    expect(isCandleHit({ ...hit, ...values })).toBe(true);
   });
-  it('reserves the RSI/MACD lane even where it overlaps the candle series', () => {
-    expect(isCandleHit({ ...hit, y: 460, highY: 455, lowY: 470, indicatorPanelVisible: true })).toBe(false);
+  it.each([{ dragged: true }, { paneIndex: 1 }, { paneIndex: 2 }, { indicatorHovered: true }, { x: 800 }, { y: 600 }, { candleX: null }, { y: -1 }, { paneHeight: NaN }])('rejects gesture, separate pane, out-of-pane and empty hits %p', values => {
+    // Geometry that would hit the candle wherever it is drawn, so only the named condition refuses.
+    expect(isCandleHit({ ...hit, highY: -20, lowY: 700, ...values })).toBe(false);
+  });
+  it('reserves only the band an overlay still drawn in the price pane owns', () => {
+    // Spot/CFD oscillator band: the bottom quarter is the indicator's, the rows above it are the candles'.
+    expect(isCandleHit({ ...hit, y: 460, highY: 455, lowY: 470, overlayBottomFraction: 0.25 })).toBe(false);
+    expect(isCandleHit({ ...hit, y: 440, highY: 430, lowY: 450, overlayBottomFraction: 0.25 })).toBe(true);
+    // A volume histogram left in the price pane keeps its bottom fifth; nothing more.
+    expect(isCandleHit({ ...hit, y: 490, highY: 480, lowY: 500, overlayBottomFraction: 0.2 })).toBe(false);
+    expect(isCandleHit({ ...hit, y: 470, highY: 460, lowY: 479, overlayBottomFraction: 0.2 })).toBe(true);
+    // A nonsensical fraction cannot widen the area beyond the pane or close it entirely.
+    expect(isCandleHit({ ...hit, y: 599, highY: 590, lowY: 599, overlayBottomFraction: -1 })).toBe(true);
+    expect(isCandleHit({ ...hit, y: 599, highY: 590, lowY: 599, overlayBottomFraction: NaN })).toBe(true);
+    expect(isCandleHit({ ...hit, y: 0, highY: 0, lowY: 10, overlayBottomFraction: 1 })).toBe(false);
+  });
+  it('derives the overlay band from where the chart actually draws volume and oscillators', () => {
+    expect(chartOverlayBottomFraction({ volumeVisibleInPricePane: false, bandOscillators: false })).toBe(0);
+    // Visible volume in its own pane, oscillators in their own panes (Futures/CFD): the whole pane is candles.
+    expect(chartOverlayBottomFraction({ volumeVisibleInPricePane: false, volumeScaleTop: 0.12, bandOscillators: false })).toBe(0);
+    expect(chartOverlayBottomFraction({ volumeVisibleInPricePane: true, volumeScaleTop: 0.8, bandOscillators: false })).toBeCloseTo(0.2, 12);
+    expect(chartOverlayBottomFraction({ volumeVisibleInPricePane: true, volumeScaleTop: NaN, bandOscillators: false })).toBeCloseTo(0.2, 12);
+    expect(chartOverlayBottomFraction({ volumeVisibleInPricePane: true, volumeScaleTop: undefined, bandOscillators: false })).toBeCloseTo(0.2, 12);
+    expect(chartOverlayBottomFraction({ volumeVisibleInPricePane: false, bandOscillators: true })).toBeCloseTo(0.25, 12);
+    expect(chartOverlayBottomFraction({ volumeVisibleInPricePane: true, volumeScaleTop: 0.8, bandOscillators: true })).toBeCloseTo(0.25, 12);
+    expect(chartOverlayBottomFraction({ volumeVisibleInPricePane: true, volumeScaleTop: 7, bandOscillators: false })).toBe(0);
   });
 });
 

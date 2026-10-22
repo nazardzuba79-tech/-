@@ -1,13 +1,16 @@
-.browser-sleep-notice {
-  position: fixed; z-index: 2147483000; inset: auto 12px 12px;
-  width: fit-content; max-width: calc(100% - 24px); margin: 0 auto;
-  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
-  color: #f0f2f5; background: #20242b; border: 1px solid #505660;
-  border-radius: 8px; box-shadow: 0 4px 24px #0005;
-  font-size: 13px; line-height: 1.45;
+/* The failed-wake notice (components/BrowserSleepNotice): one compact card at
+   the bottom centre, above the terminal. The other phases render nothing visible. */
+.browser-resume-notice {
+  position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  z-index: 10000; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  width: max-content; max-width: min(640px, calc(100vw - 32px)); padding: 12px 14px; box-sizing: border-box;
+  background: #1b2130; color: #eaecef; border: 1px solid #f0b90b; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); font-size: 13px; line-height: 1.4;
 }
-.browser-sleep-notice button {
-  flex-shrink: 0; border: 0; border-radius: 5px; padding: 8px 10px;
-  color: #191b20; background: #efd075; font: inherit; cursor: pointer;
-}
-@media (max-width: 430px) { .browser-sleep-notice { align-items: stretch; flex-direction: column; gap: 6px; } }
+.browser-resume-notice__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.browser-resume-notice__detail { font-size: 11px; color: #a7b1c2; word-break: break-all; }
+.browser-resume-notice__actions { display: flex; gap: 8px; flex: 0 0 auto; }
+.browser-resume-notice button { font: inherit; cursor: pointer; border-radius: 6px; padding: 7px 12px; border: 1px solid transparent; }
+.browser-resume-notice__retry { background: #f0b90b; color: #111; font-weight: 600; }
+.browser-resume-notice__reload { background: transparent; color: #eaecef; border-color: #3a4256; }
+.browser-resume-notice button:focus-visible { outline: 2px solid #f0c964; outline-offset: 2px; }

@@ -4,7 +4,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } fr
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, API_BASE } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
-import { useFuturesPanelHeight, maxPanelHeightFor, FUTURES_PANEL_MIN_HEIGHT, FUTURES_PANEL_MAX_HEIGHT_FALLBACK, FUTURES_PANEL_KEY_STEP, effectivePanelHeight } from '../lib/useFuturesPanelHeight';
+import { useFuturesPanelHeight, maxPanelHeightFor, FUTURES_PANEL_MIN_HEIGHT, FUTURES_PANEL_MAX_HEIGHT_FALLBACK, FUTURES_PANEL_KEY_STEP, effectivePanelHeight, accountExtensionPx } from '../lib/useFuturesPanelHeight';
 import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
@@ -87,6 +87,20 @@ const gridChromeOf = (terminal: HTMLElement) => {
   const cs = getComputedStyle(terminal);
   const px = (v: string) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
   return px(cs.paddingTop) + px(cs.paddingBottom) + 2 * px(cs.rowGap || cs.gap);
+};
+/** How far the account panel continues below the screen's edge (the Bybit page scroll, FuturesPanelResize.css); 0 when folded or empty. */
+const accountExtensionOf = (terminal: HTMLElement) => accountExtensionPx(getComputedStyle(terminal).getPropertyValue('--futures-account-extension'));
+/** The terminal's height above that edge: what the chart, the pair row and the panel's visible part share.
+ *  Measured against the screen, not only the terminal's box: the box is no longer held to the screen (the page
+ *  scrolls), so a tall panel remembered on a large screen would otherwise keep a small window's terminal tall
+ *  and hold up its own ceiling. The screen's room is the height the terminal had when it was fixed to it: the
+ *  window minus what sits above the terminal and what the root keeps below it. */
+const terminalRoomOf = (terminal: HTMLElement) => {
+  const box = terminal.getBoundingClientRect();
+  const root = terminal.parentElement?.closest<HTMLElement>('#archive-terminal-preview');
+  const below = root ? Math.max(0, root.getBoundingClientRect().bottom - box.bottom) : 0;
+  const screenRoom = Math.floor(window.innerHeight - (box.top + window.scrollY) - below);
+  return Math.min(terminal.clientHeight - accountExtensionOf(terminal), screenRoom);
 };
 
 // Orders and their history share /futures/orders/me with different filters.
@@ -259,19 +273,23 @@ export function FuturesPage() {
   const [panelDragging, setPanelDragging] = useState(false);
   /* The ceiling is measured BEFORE the first paint (layout effect), so a
      height remembered on a large screen is already held inside a small
-     window's room when the grid first appears — never a frame of overflow
-     and page scroll — and re-measured on every terminal resize. */
+     window's room when the grid first appears — never a frame of a chart
+     squeezed under its 300px — and re-measured on every terminal resize.
+     Heights here are the panel's part above the screen's edge: the part
+     that continues below it (the Bybit page scroll) is not the trader's. */
   useLayoutEffect(() => {
     const terminal = terminalRef.current, panel = bottomPanelRef.current;
     if (!terminal || !panel || typeof ResizeObserver === 'undefined') return;
     const measure = () => {
-      setPanelMeasured(Math.round(panel.getBoundingClientRect().height));
-      setPanelMax(maxPanelHeightFor(terminal.clientHeight, tickerHeightOf(terminal), gridChromeOf(terminal)));
+      setPanelMeasured(Math.round(panel.getBoundingClientRect().height) - accountExtensionOf(terminal));
+      setPanelMax(maxPanelHeightFor(terminalRoomOf(terminal), tickerHeightOf(terminal), gridChromeOf(terminal)));
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(terminal); observer.observe(panel);
-    return () => observer.disconnect();
+    // A window that shrinks under a tall terminal need not resize the terminal itself any more.
+    window.addEventListener('resize', measure);
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
   }, []);
   /* What the grid gets: the remembered preference, held inside today's
      ceiling. The preference itself stays (localStorage) while a small
@@ -285,8 +303,8 @@ export function FuturesPage() {
     if (event.button !== 0) return;
     const terminal = terminalRef.current, panel = bottomPanelRef.current;
     const startY = event.clientY;
-    const startHeight = panelShown ?? Math.round(panel?.getBoundingClientRect().height ?? panelMeasured);
-    const max = terminal ? maxPanelHeightFor(terminal.clientHeight, tickerHeightOf(terminal), gridChromeOf(terminal)) : panelMax;
+    const startHeight = panelShown ?? (panel && terminal ? Math.round(panel.getBoundingClientRect().height) - accountExtensionOf(terminal) : panelMeasured);
+    const max = terminal ? maxPanelHeightFor(terminalRoomOf(terminal), tickerHeightOf(terminal), gridChromeOf(terminal)) : panelMax;
     event.currentTarget.setPointerCapture(event.pointerId);
     setPanelDragging(true);
     const move = (e: PointerEvent) => panelHeight.set(startHeight + startY - e.clientY, max);

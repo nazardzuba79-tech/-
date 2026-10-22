@@ -1,0 +1,26 @@
+{
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "scope": "real /futures terminal, isolated native engine, AKE/USDT fixture",
+  "checks": [
+    {
+      "name": "historical-entry-1440",
+      "passed": false,
+      "error": "AssertionError [ERR_ASSERTION]: The chart refused the completed 0.004 bar drawn at 93.7 % of the price pane's height (y 344.0 of 367)\n    at pickOldCandle (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:200:3)\n    at async tradeSide (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:263:23)\n    at async historicalEntry (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:429:47)\n    at async check (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:43:26)\n    at async main (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:450:96)"
+    },
+    {
+      "name": "historical-entry-390",
+      "passed": false,
+      "error": "AssertionError [ERR_ASSERTION]: The chart refused the completed 0.004 bar drawn at 93.6 % of the price pane's height (y 223.7 of 239)\n    at pickOldCandle (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:200:3)\n    at async tradeSide (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:263:23)\n    at async historicalEntry (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:429:47)\n    at async check (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:43:26)\n    at async main (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:450:96)"
+    }
+  ],
+  "errors": [],
+  "mode": "owner flow",
+  "inputs": {
+    "quantity": "1500000",
+    "leverage": 3,
+    "limitPrice": null
+  },
+  "passed": false,
+  "failure": "AssertionError [ERR_ASSERTION]: 2 QA checks failed; see report.json\n    at main (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-base/scripts/qa-historical-entry.cjs:452:3)"
+}

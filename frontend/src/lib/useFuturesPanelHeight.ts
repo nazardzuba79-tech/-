@@ -72,6 +72,18 @@ export function maxPanelHeightFor(terminalHeight: number, tickerHeight: number, 
   return Math.max(FUTURES_PANEL_MIN_HEIGHT, Number.isFinite(room) ? room : FUTURES_PANEL_MIN_HEIGHT);
 }
 
+/**
+ * How far the account panel goes on below the screen's edge
+ * (`--futures-account-extension` in FuturesPanelResize.css: the Bybit page
+ * scroll, owner 2026-10-22). The terminal's box includes it, so the ceiling is
+ * measured without it — otherwise the handle could hand the chart's room to
+ * the part of the panel that is below the edge. Anything unreadable is 0.
+ */
+export function accountExtensionPx(value: string | null | undefined): number {
+  const n = parseFloat(String(value ?? '').trim());
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+}
+
 export function useFuturesPanelHeight() {
   const [height, setHeightState] = useState<number | null>(() => readStoredPanelHeight());
   useEffect(() => { writeStoredPanelHeight(height); }, [height]);

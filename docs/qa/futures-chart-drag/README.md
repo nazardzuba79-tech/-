@@ -212,3 +212,51 @@ under it (`canvas`) and every bar skipped with its reason — this run skipped
 one bar for «body in the lowest fifth of the pane (the volume area the picker
 ignores)»; the position tool was pressed on its own hit `polygon` when free
 (moved) and on the chart's `canvas` when locked (panned ≈27 bars).
+
+## PR #568 integration gate: 20/48 explained (2026-10-22)
+
+The owner's integration candidate `94b22dff` (PR #568 on `main` `9dd84308`) failed
+this run at 17:48Z on 2026-10-21 with 20/48. Every failed drag named the live
+position's label as the element under the pointer: «Разворот недоступен»,
+«Количество 1 BTC», `div.private-position-line-label`.
+
+**Cause: the test, not the product.** The run seeds one BTC long at the fixture
+price of the moment it starts. That price is a sine of the server clock, so the
+label (`PrivatePositionLines`: a 198×22px card at 43 % of the pane width, on the
+entry price, its `pointerdown` stopped on purpose) lands at a different height
+on every run. In the minutes when it lands on the fixed press point
+(`fy 0.45`, the line kinds' midpoints), every press meets the label instead of
+the plot and nothing pans. PR #568 changes nothing in that path: its only chart
+change is the pick hit-test in `isCandleHit`, which a drag never reaches.
+
+Reproduced with the fixture clock moved forward (`NATIVE_PREVIEW_CLOCK_QA=1`,
+`POST /qa/clock`) to the same price phase:
+
+| tree | harness | result | file |
+| --- | --- | --- | --- |
+| `main` `9dd84308`, no PR #568 | as merged | **20/48**, the same failures with the same elements under the pointer | `phase1748-main-9dd84308-old-harness-report.json` |
+| `main` `9dd84308` | this fix | 49/49 | `phase1748-main-9dd84308-fixed-harness-report.json` |
+| PR #568 candidate `94b22dff` | this fix | 49/49 | `phase1748-pr568-94b22dff-report.json` |
+| PR #568 candidate `94b22dff`, real clock | this fix | 49/49, no press slid | `realclock-pr568-94b22dff-report.json` |
+
+**Fix (harness only, no product file):** a press that would land on such a
+control slides to the nearest clear spot, vertically for a plain drag and along
+the drawing's line in the drawing matrix. The slid press must meet the same kind
+of element the original point has under the label (the bare plot, a drawing's
+body, its line), so a press beside a drawing never becomes a press on it. The
+slide is written into the check's `top` («press slid −30px off …»). A new check,
+`position-label-press-and-drag-posts-nothing-and-keeps-its-controls`, presses
+and drags the label itself. It posts no command, sends no trading write, and
+leaves all four controls in place, with «Закрыть позицию» enabled. The label is
+not hidden, moved or disabled anywhere.
+
+**Follow-up, 2026-10-22 06:00Z (head `a2062e13`, 48/49).** At another price
+phase the label covered the matrix's text drawing itself. A text card is a
+point, so no press can slide along it, and «a press on a free text did
+nothing» named the label. The text drawing now goes a quarter of the price span
+away from the label when the label sits within 15 % of the span of its usual
+middle price; otherwise it stays at the middle as before. Same phase, fixture
+clock moved: the merged harness 48/49 with the same message
+(`phase0600-a2062e13-text-anchor-at-mid-report.json`), this fix 49/49
+(`phase0600-text-anchor-moved-report.json`), this fix merged with #570's head
+`b720dd7e` 49/49.

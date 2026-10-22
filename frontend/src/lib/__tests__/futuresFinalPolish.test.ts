@@ -215,7 +215,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/useFuturesPanelHeight') return {
       useFuturesPanelHeight: () => ({ height: null, set: () => {}, reset: () => {} }),
       effectivePanelHeight: (preference: number | null, max: number) => (preference === null ? null : Math.min(Math.max(preference, 184), Math.max(184, max))),
-      maxPanelHeightFor: () => 640, FUTURES_PANEL_MIN_HEIGHT: 184, FUTURES_PANEL_MAX_HEIGHT_FALLBACK: 640, FUTURES_PANEL_KEY_STEP: 24, FUTURES_CHART_MIN_HEIGHT: 300, FUTURES_PANEL_PREFERENCE_CEILING: 1600,
+      maxPanelHeightFor: () => 640, accountExtensionPx: () => 0, FUTURES_PANEL_MIN_HEIGHT: 184, FUTURES_PANEL_MAX_HEIGHT_FALLBACK: 640, FUTURES_PANEL_KEY_STEP: 24, FUTURES_CHART_MIN_HEIGHT: 300, FUTURES_PANEL_PREFERENCE_CEILING: 1600,
     };
     if (name === '../lib/useMediaQuery') return { MOBILE_TERMINAL_QUERY: '(max-width: 900px)', useMediaQuery: () => false };
     // The owner-only native demo is server-gated; an ordinary account keeps the public terminal.
