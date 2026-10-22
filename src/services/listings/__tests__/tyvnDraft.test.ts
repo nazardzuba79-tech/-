@@ -1,5 +1,5 @@
 /**
- * TERYVANE (TYVN/USDT), the candidate draft for the listing of 2026-10-26
+ * TERYVANE (TYVN/USDT), the candidate draft for the listing of 2026-10-27
  * 13:00 UTC = 16:00 Moscow (`config/test-markets/tyvn.draft.json`): the file
  * is a valid draft of the existing managed-listings system, its name and
  * ticker collide with nothing the repository knows, its price path comes from
@@ -21,7 +21,7 @@ import { DAY_MS, simulationFor } from '../../testMarkets/testMarketSimulation';
 const raw = JSON.parse(readFileSync(resolve(__dirname, '../../../../config/test-markets/tyvn.draft.json'), 'utf8'));
 const draft = parseListingConfig(raw);
 const saved = withStableProfile(draft, null, 7);
-const START = Date.parse('2026-10-26T13:00:00Z');
+const START = Date.parse('2026-10-27T13:00:00Z');
 const HOUR = 3_600_000;
 const listing = (state: 'staged' | 'running' | null): PublishedListing => ({
   id: 'tyvn-candidate', version: 1, publishedAt: new Date(START - 5 * DAY_MS).toISOString(), config: saved,
@@ -31,10 +31,10 @@ const listing = (state: 'staged' | 'running' | null): PublishedListing => ({
 afterEach(() => setManagedListingAssets([]));
 
 test('the file is the approved asset, exactly, and a valid draft of the listing system', () => {
-  expect(draft).toMatchObject({ symbol: 'TYVN', name: 'TERYVANE', initialPrice: '0.0250', listingAt: '2026-10-26T13:00:00Z', displayTimeZone: 'Europe/Moscow', tradable: false, seedMode: 'manual', seed: 'teryvane-20261026-v1' });
+  expect(draft).toMatchObject({ symbol: 'TYVN', name: 'TERYVANE', initialPrice: '0.0250', listingAt: '2026-10-27T13:00:00Z', displayTimeZone: 'Europe/Moscow', tradable: false, seedMode: 'manual', seed: 'teryvane-20261026-v1' });
   expect(listingSimulationConfig(draft)).toMatchObject({ pair: 'TYVN/USDT', symbol: 'TYVN', name: 'TERYVANE', initialPrice: 0.025, listingAt: START, isTradable: false, quote: 'USDT' });
   expect(START % 10_000).toBe(0); // scenario-controls-v2 requires a listing instant on a whole 10 s
-  expect(new Date(START).toISOString()).toBe('2026-10-26T13:00:00.000Z'); // Monday, 13:00 UTC = 16:00 Moscow (UTC+3)
+  expect(new Date(START).toISOString()).toBe('2026-10-27T13:00:00.000Z'); // Tuesday, 13:00 UTC = 16:00 Moscow (UTC+3)
   expect(new Date(START).getUTCDay()).toBe(1);
   // No supply field exists: the emission (100 000 000 TYVN) is documentation; ownerAllocation is a parameter and credits nothing by itself.
   expect(draft.ownerAllocation).toBe('100000000');

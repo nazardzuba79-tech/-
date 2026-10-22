@@ -1,10 +1,10 @@
-# TERYVANE (TYVN/USDT) — production finish plan, 26 October 2026
+# TERYVANE (TYVN/USDT) — production finish plan, 27 October 2026
 
 STATUS: API candidate prepared; NOT DEPLOYED. TYVN NOT PUBLISHED. TIMER OFF. NO BALANCES TOUCHED.
 
 ## Immutable listing specification
 
-- Name TERYVANE; pair TYVN/USDT; start 2026-10-26 13:00 UTC = 15:00 Kyiv (winter time) = 16:00 Moscow.
+- Name TERYVANE; pair TYVN/USDT; start 2026-10-27 13:00 UTC = 15:00 Kyiv (winter time) = 16:00 Moscow.
 - Initial price 0.0250 USDT; emission 100,000,000 TYVN (documentation, not minted or credited).
 - Seed teryvane-20261026-v1, movement FREQUENT_PULLBACKS: first day target 0.45625 USDT; absolute cap 2.33675 USDT; then range.
 - Demo trading flag false. No executable Spot orders before OR after listing. No fake fills/credits or owner allocations.
@@ -48,7 +48,7 @@ Do not build from an unverified image; do not run the new API image until the ef
 
 ## After API release: owner-controlled TYVN creation and timer
 
-1. Admin > Listings > Create listing from config/test-markets/tyvn.draft.json, with 26.10.2026 16:00 in Moscow zone, 0.0250, manual seed teryvane-20261026-v1, Spot trading OFF. Keep owner allocation as a parameter ONLY.
+1. Admin > Listings > Create listing from config/test-markets/tyvn.draft.json, with 27.10.2026 16:00 in Moscow zone, 0.0250, manual seed teryvane-20261026-v1, Spot trading OFF. Keep owner allocation as a parameter ONLY.
 2. Save DRAFT; verify private chart preview, initial 0.0250, 24h target 0.45625, cap 2.33675; check 1440 and 390 widths. Check ticker uniqueness, no production duplicate.
 3. On separate publication approval, Publish with 'Start timer after publication' UNCHECKED (staged). Confirm TYVN remains invisible at /market/listings, not available for orders, and AITH is unchanged.
 4. Only on separate timer-start approval, press Start Timer before the set instant. Verify public countdown at 13:00 UTC / 15:00 Kyiv / 16:00 Moscow; no executions.
