@@ -14,6 +14,9 @@
  *     the wheel over the panel brings every row on screen, the chart moves up
  *     whole (its height unchanged), wheeling back restores the arrival view;
  *     with more trades than fit, the list scrolls first and then the page;
+ *   - (owner, 2026-10-22, a second Bybit recording) the wheel over the order
+ *     column moves the page first, by the same continuation, and only then
+ *     the column's own rest; upwards the column returns first, then the page;
  *   - dragging the panel's top edge up shows more rows and shrinks the chart,
  *     the chart never drops under its 300px track, the page's scroll range
  *     stays the continuation (the drag never makes the page longer);
@@ -140,6 +143,28 @@ const check = (name, ok, detail) => { if (!ok) throw new Error(`${name}: ${JSON.
       const unwheeled = await measure(page);
       check(`${key}: wheeling back up restores the arrival view`,
         unwheeled.pageY === 0 && unwheeled.chart.top === initial.chart.top && unwheeled.chart.height === initial.chart.height && unwheeled.panel.top === initial.panel.top && unwheeled.visibleRows === initial.visibleRows, { initial: { chart: initial.chart, panel: initial.panel }, unwheeled });
+
+      // Wheel over the order column (owner's second Bybit recording): the page moves first, by the
+      // continuation, with the column itself unmoved; only then the column's own rest; wheeling up
+      // returns the column to its top first and then the page.
+      const column = () => page.evaluate(() => { const el = document.querySelector('.order-form-area'); const b = el.getBoundingClientRect();
+        return { x: Math.round(b.left + b.width / 2), y: Math.round(b.top + b.height * 0.6), top: el.scrollTop, room: el.scrollHeight - el.clientHeight, pageY: scrollY }; });
+      const col0 = await column();
+      await page.mouse.move(col0.x, col0.y);
+      for (let i = 0; i < 2; i++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(450); }
+      const col1 = await column();
+      const colShot = await measure(page);
+      await shot(page, `${key}-column-wheeled.png`);
+      check(`${key}: wheel over the order column moves the page first by ${initial.extension}px, the column unmoved, the chart up whole`,
+        col0.pageY === 0 && col0.top === 0 && col1.pageY === initial.extension && col1.top === 0 && colShot.chart.height === initial.chart.height && colShot.chart.top === initial.chart.top - initial.extension, { col0, col1 });
+      for (let i = 0; i < 3; i++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(250); }
+      const col2 = await column();
+      check(`${key}: then the column's own rest (${col0.room}px) scrolls, the page stays at its end`,
+        col2.pageY === initial.extension && col2.top === Math.min(col0.room, 360), { col0, col2 });
+      for (let i = 0; i < 8; i++) { await page.mouse.wheel(0, -120); await page.waitForTimeout(250); }
+      const col3 = await column();
+      check(`${key}: wheeling up over the column returns the column and then the page to the arrival view`, col3.top === 0 && col3.pageY === 0, { col3 });
+      report.measurements[`${key}-column`] = { arrival: col0, pageFirst: col1, columnRest: col2, back: col3 };
 
       // Drag the edge up by 200px: taller panel, shorter chart, all three rows visible, remembered after a reload.
       const y = initial.handle.box.top + Math.round(initial.handle.box.height / 2);

@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, API_BASE } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useFuturesPanelHeight, maxPanelHeightFor, FUTURES_PANEL_MIN_HEIGHT, FUTURES_PANEL_MAX_HEIGHT_FALLBACK, FUTURES_PANEL_KEY_STEP, effectivePanelHeight, accountExtensionPx } from '../lib/useFuturesPanelHeight';
+import { installPageFirstWheel } from '../lib/futuresPageFirstWheel';
 import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
@@ -290,6 +291,16 @@ export function FuturesPage() {
     // A window that shrinks under a tall terminal need not resize the terminal itself any more.
     window.addEventListener('resize', measure);
     return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
+  }, []);
+  /* Bybit's page scrolls as one piece: the wheel over the order column moves
+     the page first, then the column's own rest (futuresPageFirstWheel.ts).
+     Desktop only — on a phone the column is a tab of the page itself. */
+  const orderColumnRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const column = orderColumnRef.current;
+    if (!column || typeof window.matchMedia !== 'function') return;
+    const desktop = window.matchMedia('(min-width: 901px)');
+    return installPageFirstWheel(column, () => desktop.matches);
   }, []);
   /* What the grid gets: the remembered preference, held inside today's
      ceiling. The preference itself stays (localStorage) while a small
@@ -836,7 +847,7 @@ export function FuturesPage() {
             />
           </div>
 
-          <div id="mobile-futures-panel-trade" className="order-form-area">
+          <div id="mobile-futures-panel-trade" className="order-form-area" ref={orderColumnRef}>
             {compact ? null : archivePreview ? <div className="archive-trading-heading">
               <h2 className="reference-order-heading">{t('nav.trade')}</h2>
               <button type="button" className="archive-calculator-trigger" data-open-calculator="true" title={t('calc.title')} aria-label={t('calc.title')} onClick={() => setCalculatorOpen(true)}><Calculator size={19} /></button>
