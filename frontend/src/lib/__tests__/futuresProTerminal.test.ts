@@ -380,7 +380,7 @@ describe('the position overlay never invents a level', () => {
   const page = readSource(PAGE);
 
   it('does not draw a liquidation line in either real Futures or private simulation', () => {
-    const serverOverlay = chart.slice(chart.indexOf('THE POSITION OVERLAY'), chart.indexOf('Native price lines'));
+    const serverOverlay = chart.slice(chart.indexOf('THE POSITION OVERLAY'), chart.indexOf('Native price lines', chart.indexOf('THE POSITION OVERLAY')));
     const privateOverlay = chart.slice(chart.indexOf('for (const protectedTrade of relevant.filter'), chart.indexOf('// Near-live marks/position overlays'));
     expect(serverOverlay).toContain('if (raw === null) return;');
     expect(serverOverlay).toContain("add(position.takeProfit, 'TP'");
@@ -394,7 +394,7 @@ describe('the position overlay never invents a level', () => {
   });
 
   it('the estimate used by the order form is not consulted', () => {
-    const overlay = chart.slice(chart.indexOf('THE POSITION OVERLAY'), chart.indexOf('Native price lines'));
+    const overlay = chart.slice(chart.indexOf('THE POSITION OVERLAY'), chart.indexOf('Native price lines', chart.indexOf('THE POSITION OVERLAY')));
     expect(overlay).not.toContain('previewLiquidationPrice(');
   });
 
