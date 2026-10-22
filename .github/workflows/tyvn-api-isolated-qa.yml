@@ -27,6 +27,7 @@ jobs:
           git diff --name-only "$base" HEAD | while IFS= read -r f; do
             case "$f" in
               .github/workflows/tyvn-api-isolated-qa.yml|\
+              .github/workflows/admin-listings.yml|\
               config/test-markets/tyvn.draft.json|\
               src/api/routes/adminListings.ts|\
               src/api/routes/__tests__/adminListings.test.ts|\
