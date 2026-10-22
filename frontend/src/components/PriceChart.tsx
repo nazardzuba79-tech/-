@@ -212,23 +212,13 @@ export function PriceChart({
   candleLoader?: ChartCandleLoader;
   privateTrading?: ChartTradingInteraction;
   /**
-   * Open positions to draw on the price scale: entry, take profit, stop
-   * loss and the liquidation boundary.
+   * Server-confirmed open positions to draw on the price scale: entry,
+   * armed take profit and armed stop loss. The liquidation price remains
+   * in the positions table only (owner request, 2026-10-22); never draw
+   * its horizontal line or price-axis LIQ badge.
    *
-   * Every figure is the SERVER'S. `entryPrice` and `liquidationPrice` come
-   * off /futures/positions, and the two protection levels are the armed
-   * triggers the protection service holds — not an echo of anything typed
-   * into an editor. Nothing here is derived, and nothing is approximated:
-   * `previewLiquidationPrice` in lib/futuresMath is a form-time estimate
-   * and must never back a line a trader reads as their liquidation level.
-   *
-   * `liquidationPrice: null` is the engine saying NO PRICE IS REACHABLE
-   * with the account's current collateral. There is then no line, because
-   * a line drawn at some plausible number would be a boundary the engine
-   * does not recognize.
-   *
-   * Undefined where `privateTrading` already draws the same lines from the
-   * simulation transcript, so a position never gets two entry lines.
+   * Undefined where `privateTrading` draws its own entry and TP/SL
+   * from the simulation transcript, so a position never gets two entry lines.
    */
   positionLines?: ChartPositionLine[];
   /** 'logarithmic' for a market whose history spans orders of magnitude (a
@@ -1064,7 +1054,6 @@ export function PriceChart({
       };
       addLine(protectedTrade.takeProfit, 'TP', '#00c79a', LineStyle.Dashed);
       addLine(protectedTrade.stopLoss, 'SL', '#ff5278', LineStyle.Dashed);
-      addLine(protectedTrade.liquidationPrice, 'LIQ', '#d67ad8', LineStyle.Dotted);
     }
   }, [privateTrading, chartReady, candlesRevision, pair, interval, chartType]);
 
@@ -1176,26 +1165,14 @@ export function PriceChart({
   }, [drawingToolsOn, clearDrawings, locked]);
 
   /**
-   * THE POSITION OVERLAY: entry, take profit, stop loss, liquidation.
+   * THE POSITION OVERLAY: server-confirmed entry, armed take profit and
+   * armed stop loss. The liquidation boundary is still delivered to the
+   * positions table but deliberately never drawn on the chart (2026-10-22).
+   * Neither a saved liquidation price nor an order-form estimate can add a
+   * LIQ line or price-axis label.
    *
-   * Every one of these four is a figure the SERVER holds. Entry and the
-   * liquidation boundary arrive on /futures/positions; the two protection
-   * levels are the triggers `FuturesProtectionService` has armed, which is
-   * why a level typed into the positions editor and not yet saved draws
-   * nothing here. A line on a price scale reads as a commitment, and a
-   * commitment nobody made is the one thing this overlay must not draw.
-   *
-   * NO LIQUIDATION LINE WHEN THE PRICE IS NULL. `null` is the engine
-   * saying no liquidation price is reachable with the account's current
-   * collateral — a fully hedged Cross position, or one the whole balance
-   * backs. `previewLiquidationPrice` in lib/futuresMath could always
-   * produce SOME number, and that is exactly why it is not consulted: it
-   * is a form-time estimate for an order that does not exist yet, not the
-   * boundary this position will actually be closed at.
-   *
-   * One effect owns the whole lifecycle, same discipline as `horizontals`
-   * below: it removes every line it previously made and recreates them, so
-   * the chart objects and the data can never drift apart.
+   * The protection levels come from the armed server triggers, not an
+   * unsaved editor value. The effect owns the lifecycle of all price lines.
    */
   useEffect(() => {
     const visible = visibleSeriesFor(chartType);
@@ -1221,7 +1198,6 @@ export function PriceChart({
         position.side === 'LONG' ? '#13ad75' : '#f33b57', LineStyle.Solid);
       add(position.takeProfit, 'TP', '#00c79a', LineStyle.Dashed);
       add(position.stopLoss, 'SL', '#ff5278', LineStyle.Dashed);
-      add(position.liquidationPrice, 'LIQ', '#d67ad8', LineStyle.Dotted);
     }
     return () => {
       for (const line of positionLinesRef.current) positionLineOwnerRef.current?.removePriceLine(line);
