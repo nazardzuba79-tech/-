@@ -58,10 +58,10 @@ async function run(){
  const req=async(p,{method='GET',token=admin,body}={})=>{
    const response=await fetch(base+'/api/v1'+p,{method,
      headers:{...(token?{Authorization:'Bearer '+token}:{}),'Content-Type':'application/json'},
-     ...(body?{body:JSON.stringify(body)}:{})});
+     ...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(12000)});
    return {status:response.status,json:await response.json().catch(()=>({}))};
  };
- const catalogue=async()=>{const q=await fetch(port+'/market/listings');assert.equal(q.status,200);
+ const catalogue=async()=>{const q=await fetch(port+'/market/listings',{signal:AbortSignal.timeout(12000)});assert.equal(q.status,200);
     const j=await q.json();assert.ok(Array.isArray(j.assets));return j.assets};
  const template=JSON.parse(fs.readFileSync(path.join(root,'config/test-markets/tyvn.draft.json')));
  assert.equal(template.seed,'teryvane-20261026-v1');
