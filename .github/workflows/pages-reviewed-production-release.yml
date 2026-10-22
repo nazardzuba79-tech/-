@@ -87,6 +87,7 @@ jobs:
         run: |
           set -euo pipefail
           for i in $(seq 1 60); do
+            if [ "$i" -eq 1 ]; then echo "Watching approved Cloudflare Pages deployment"; fi
             status="$(curl -sS -o /tmp/voltex-deployment-state.json -w '%{http_code}' \
               --connect-timeout 10 --max-time 25 \
               -H "Authorization: Bearer ${CF_TOKEN}" \
@@ -103,9 +104,11 @@ jobs:
           )"
             if [ "$state" = success ]; then
               echo "VOLTEX frontend deployment succeeded for ${COMMIT_SHA}";
-              echo "### Pages deployment succeeded" >> "$GITHUB_STEP_SUMMARY"
-              echo "Deployed commit: ${COMMIT_SHA}" >> "$GITHUB_STEP_SUMMARY"
-              echo "Cloudflare deployment ID: ${DEPLOY_ID}" >> "$GITHUB_STEP_SUMMARY"
+              {
+                echo "### Pages deployment succeeded"
+                echo "Deployed commit: ${COMMIT_SHA}"
+                echo "Cloudflare deployment ID: ${DEPLOY_ID}"
+              } >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             if [ "$state" = failure ]; then echo "::error::Cloudflare Pages build failed; previous production stays available"; exit 1; fi
