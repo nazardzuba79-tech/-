@@ -6619,3 +6619,12 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - Why: on `4d803896` the `fixtures` job (admin-practicality) and the `verify` job (admin-scenario-lab) died at «Disposable browser tooling» before any test ran: Playwright 1.56.1 cannot install chromium on `ubuntu26.04-x64`, GitHub's current `ubuntu-latest`. The other workflows already carried the 1.63.0 pin (PR #566, now main).
 - No test, script, page, listing, timer or scenario changed; the timer stays off, nothing published. Verified locally only that no `1.56.1` pin remains; CI on `5c8076e4` is the proof and is reported separately.
 - No merge, no deploy.
+
+### Claude — 2026-10-22 — PR #562 CI: `spot.1440.data.window` caught the listings store's scheduled poll; the hover helper now holds pre-armed one-shot timers (CTO HOLD comment)
+
+- Commit `9d5b58c4` on `claude/voltex-mobile-audit-7rpjni-listing-20261026`: `scripts/qa-hover-interval-isolation.cjs`, `frontend/src/lib/__tests__/chartHoverIsolation.test.ts` (+4 checks, 11 total), `docs/qa/pr562-hover-listings-poll-20261022.md`.
+- Cause: `managedListingStore` polls with a self-rescheduling `setTimeout` (15 s with the fixture's versioned AITH row). The helper from PR #501 held only pre-armed intervals, so the poll at about 15.3 s counted as hover work when the window covered it. CI: `d1569d02` attempts 1 and 2 (15328.7 / 15343.2 ms) and PR #568 `2facb47b` (15303.9 ms).
+- Not #562's code: the store, `TradePage.tsx`, `browserActivity.ts`, the QA script and fixture are unchanged; the `testMarkets.ts` change is presentation only. Forcing the overlap fails on main `9dd84308` and on `d1569d02` alike; with the fix both pass, and the poll runs after the window.
+- Kept: zero requests / zero fetches / no new intervals during the hover; timers, frames, microtasks and intervals created during the hover still caught. No product change, no fixture change, no limit raised. The product does not pause the poll on hover.
+- Local checks run: `chartHoverIsolation` 11/11 (the two key new checks fail on the old helper); frontend `tsc -b` PASS; the forced-overlap runs above; the full `qa-chart-workspace.cjs` (CI arguments, this branch's production bundle, fetch timestamps added) with the fixed helper 222/222, nothing FATAL or NOT_RUN.
+- Not run locally: the other workflows of this PR (unchanged code). CI on the pushed head is the proof. Timer off, nothing published, TYVN `tradable: false`. No merge, no deploy.
