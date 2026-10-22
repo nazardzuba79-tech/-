@@ -72,7 +72,7 @@ jobs:
           src/services/listings/__tests__/tyvnDraft.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
           frontend/src/lib/__tests__/adminListingTimerCapability.test.ts
-      - name: Real API router -> local workerd timer contract, no browser
+      - name: Compile exact candidate API for local isolated browser harness\n        run: npm run build\n      - name: Real API router -> local workerd timer contract, no browser
         run: node scripts/qa-listing-timer-api.cjs
         env:
           QA_OUT: /tmp/tyvn-hybrid-results/timer-router
