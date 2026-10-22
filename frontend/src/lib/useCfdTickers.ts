@@ -28,6 +28,8 @@ function parseTickerPayload(value:unknown):CfdTickerRow[]|null{
 
 export function useCfdTickers(enabled = true){
   const[tickers,setTickers]=useState<CfdTickerRow[]>([]),[configured,setConfigured]=useState(true),[loadError,setLoadError]=useState(false);
+  // Set by the first readable snapshot. Until then an empty list is "not received yet", never "unavailable".
+  const[loaded,setLoaded]=useState(false);
   const reloadRef=useRef<()=>void>(()=>{});
   useEffect(()=>{
     if(!enabled){reloadRef.current=()=>{};return;}
@@ -46,7 +48,7 @@ export function useCfdTickers(enabled = true){
         const rows=res&&typeof res==='object'?parseTickerPayload(res.tickers):null;
         if(rows===null)throw new Error('Invalid CFD snapshot');
         delay=displayRefreshDelay(endpoint,SLOW_DISPLAY_REFRESH_MS);
-        setLoadError(false);if(typeof res.configured==='boolean')setConfigured(res.configured);
+        setLoadError(false);setLoaded(true);if(typeof res.configured==='boolean')setConfigured(res.configured);
         setTickers(rows.map(row=>({...row,status:row.price===null?'unavailable':row.marketClosed?'market_closed':'sampled',displayOnly:true,executionAllowed:false})));
       }catch{if(!cancelled){setLoadError(true);setTickers(old=>old.map(row=>({...row,status:'stale',stale:true})));}delay=60_000;}
       finally{inFlight=false;controller=null;schedule(delay);}
@@ -56,5 +58,5 @@ export function useCfdTickers(enabled = true){
     addBrowserActivityListener(visible);void load();
     return()=>{cancelled=true;controller?.abort();if(timer)clearTimeout(timer);removeBrowserActivityListener(visible);reloadRef.current=()=>{};};
   },[enabled]);
-  return{tickers,configured,loadError,reload:()=>reloadRef.current()};
+  return{tickers,configured,loadError,loaded,reload:()=>reloadRef.current()};
 }

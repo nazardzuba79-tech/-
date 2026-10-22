@@ -1,0 +1,180 @@
+{
+  "label": "after",
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "snapshotCapturedAt": 1792676429661,
+  "checks": [
+    {
+      "name": "1440: cold open shows loading rows, not «Торговля CFD временно недоступна», then the 13-instrument snapshot",
+      "passed": true,
+      "evidence": {
+        "loading": {
+          "messages": 0,
+          "placeholders": 7,
+          "busy": 2,
+          "states": [
+            "loading",
+            "loading"
+          ],
+          "rows": 0,
+          "status": [
+            "Обновление данных",
+            "Загрузка..."
+          ]
+        },
+        "loaded": {
+          "messages": 0,
+          "placeholders": 0,
+          "busy": 0,
+          "states": [
+            "rows",
+            "rows"
+          ],
+          "rows": 7,
+          "status": [
+            "Обновление данных"
+          ]
+        },
+        "first": "XAUUSD Gold Spot 4067.569 -1.13%"
+      }
+    },
+    {
+      "name": "1440: real unavailability still says «Торговля CFD временно недоступна»: HTTP 503 from the ticker route",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [
+          "unavailable",
+          "unavailable"
+        ],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "1440: real unavailability still says «Торговля CFD временно недоступна»: a snapshot with no instruments",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [
+          "unavailable",
+          "unavailable"
+        ],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "1440: real unavailability still says «Торговля CFD временно недоступна»: configured:false",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [
+          "unavailable",
+          "unavailable"
+        ],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "390: cold open shows loading rows, not «Торговля CFD временно недоступна», then the 13-instrument snapshot",
+      "passed": true,
+      "evidence": {
+        "loading": {
+          "messages": 0,
+          "placeholders": 7,
+          "busy": 2,
+          "states": [
+            "loading",
+            "loading"
+          ],
+          "rows": 0,
+          "status": [
+            "Обновление данных",
+            "Загрузка..."
+          ]
+        },
+        "loaded": {
+          "messages": 0,
+          "placeholders": 0,
+          "busy": 0,
+          "states": [
+            "rows",
+            "rows"
+          ],
+          "rows": 7,
+          "status": [
+            "Обновление данных"
+          ]
+        },
+        "first": "XAUUSD Gold Spot 4067.569 -1.13%"
+      }
+    },
+    {
+      "name": "390: real unavailability still says «Торговля CFD временно недоступна»: HTTP 503 from the ticker route",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [
+          "unavailable",
+          "unavailable"
+        ],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "390: real unavailability still says «Торговля CFD временно недоступна»: a snapshot with no instruments",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [
+          "unavailable",
+          "unavailable"
+        ],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "390: real unavailability still says «Торговля CFD временно недоступна»: configured:false",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [
+          "unavailable",
+          "unavailable"
+        ],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

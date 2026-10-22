@@ -35,9 +35,9 @@ function mount(file:string,options:any={}){
       new Function('require','exports',code)(()=>react,module);return module;
     }
     if(name.endsWith('/displaySnapshotCache'))return{displayRefreshDelay:()=>6*60*60*1000,SLOW_DISPLAY_REFRESH_MS:6*60*60*1000,readDisplayJson:(url:string)=>options.readDisplayJson?options.readDisplayJson(url):api.getCfdTickers()};
-    if(name==='react')return react;if(name.endsWith('/marketColumnSort'))return columnSort;if(name.endsWith('/api'))return{api,ApiError:Error,API_BASE:'/api/v1'};if(name.endsWith('/i18n'))return{useLanguage:()=>({t:(key:string)=>key,lang:'en'})};if(name.endsWith('/cfdPresentation'))return presentation;
+    if(name==='react')return react;if(name.endsWith('/marketColumnSort'))return columnSort;if(name.endsWith('/api'))return{api,ApiError:Error,API_BASE:'/api/v1'};if(name.endsWith('/i18n'))return{useLanguage:()=>({t:(key:string)=>key,lang:'en'}),localeOf:()=>'en-US'};if(name.endsWith('/cfdPresentation'))return presentation;
     if(name.endsWith('/priceChange'))return{parseChangePercentOrNull:(v:any)=>v==null?null:Number(v),parseChangePercent:Number};if(name.endsWith('/useCfdTickers'))return{useCfdTickers:()=>options.feed};if(name.endsWith('/krakenSocket'))return{krakenSocket:{subscribeBook:()=>()=>{}}};if(name.endsWith('/bookFreshness'))return bookFreshness;if(name.endsWith('/tradingMode'))return{rememberTradingMode:jest.fn()};if(name==='react-router-dom')return{useSearchParams:()=>[options.params]};if(name.endsWith('/TerminalMarketSwitch'))return{TerminalMarketSwitch:()=>null};if(name==='../lib/terminalMarketSwitch')return jest.requireActual('../terminalMarketSwitch');if(name.endsWith('.css'))return{};
-    if(name==='./Skeleton'){components.SkeletonRow??=()=>null;return{SkeletonRow:components.SkeletonRow};}
+    if(name==='./Skeleton'){components.SkeletonRow??=()=>null;components.Skeleton??=()=>null;return{SkeletonRow:components.SkeletonRow,Skeleton:components.Skeleton};}
     if(name.startsWith('./')||name.startsWith('../components/')){const label=name.split('/').pop()!;components[label]??=()=>null;return{[label]:components[label]};}
     if(name.endsWith('/sampledDepth'))return{readSpotDisplayBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
     if(name.endsWith('/spotPublicMarket'))return{readSpotPublicBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
@@ -151,6 +151,62 @@ test('ticker hook samples every six hours and keeps last good rows after a faile
 });
 
 test.each([{},null,'broken',{configured:true,tickers:null},{configured:true,tickers:{XAUUSD:'1'}}])('malformed ticker body fails safely: %p',async payload=>{const getCfdTickers=jest.fn().mockResolvedValue(payload);const hook=mount('lib/useCfdTickers.ts',{api:{getCfdTickers}});hook.render(true);await tick();const state=hook.render(true);expect(Array.isArray(state.tickers)).toBe(true);expect(state.loadError).toBe(true);});
+
+// 2026-10-22 (owner): the markets page announced «Торговля CFD временно недоступна» on every cold open, because
+// an empty list was read as an outage while the first snapshot was still in flight. The feed now says
+// whether a snapshot has arrived; only a real failure, no configured source or a received empty snapshot
+// is "unavailable".
+test('CFD ticker hook reports loaded only after the first readable snapshot',async()=>{
+ let resolve!:(v:any)=>void;const getCfdTickers=jest.fn(()=>new Promise(r=>{resolve=r;}));
+ const hook=mount('lib/useCfdTickers.ts',{api:{getCfdTickers}});
+ let state=hook.render(true);expect(state.loaded).toBe(false);expect(state.loadError).toBe(false);expect(state.tickers).toHaveLength(0);
+ await tick();state=hook.render(true);expect(state.loaded).toBe(false);
+ resolve({configured:true,tickers:rows});await tick();state=hook.render(true);
+ expect(state.loaded).toBe(true);expect(state.tickers).toHaveLength(13);
+ const broken=mount('lib/useCfdTickers.ts',{api:{getCfdTickers:jest.fn().mockResolvedValue({configured:true,tickers:null})}});
+ broken.render(true);await tick();const failed=broken.render(true);
+ expect(failed.loaded).toBe(false);expect(failed.loadError).toBe(true);expect(failed.tickers).toHaveLength(0);
+});
+
+describe('markets page CFD cards: loading is not an outage',()=>{
+ const feed=(over:any)=>({tickers:[],configured:true,loadError:false,loaded:false,reload:jest.fn(),...over});
+ const view=(state:any)=>{
+  const section=mount('components/CfdMarketsSection.tsx',{feed:feed(state)}),tree=section.render(),all=nodes(tree);
+  const loading=all.filter(n=>typeof n.type==='function'&&n.type.name==='CfdRowsLoading');
+  const placeholders=loading.flatMap(n=>nodes(n.type(n.props))).filter(n=>n.props?.['data-cfd-placeholder']==='');
+  const lists=all.filter(n=>n.props?.['data-cfd-state']).map(n=>n.props['data-cfd-state']);
+  const links=all.filter(n=>typeof n.props?.to==='string'&&n.props.to.startsWith('/trade?market=cfd')).map(n=>n.props.to);
+  return{text:text(tree),loading,placeholders,lists,links,busy:all.filter(n=>n.props?.['aria-busy']===true).length};
+ };
+ test('before the first snapshot: placeholder rows, no unavailable message',()=>{
+  const v=view({});
+  expect(v.text).not.toContain('trade.cfdUnavailable');
+  expect(v.lists).toEqual(['loading','loading']);expect(v.busy).toBe(2);
+  expect(v.loading.map(n=>n.props.count)).toEqual([3,4]);expect(v.placeholders).toHaveLength(7);
+  expect(v.loading.every(n=>n.props.label==='markets.loading')).toBe(true);
+  // One screen-reader announcement for the page: only the CFD card's placeholder carries the status line.
+  const statuses=v.loading.flatMap(n=>nodes(n.type(n.props))).filter(n=>n.props?.role==='status');
+  expect(statuses).toHaveLength(1);expect(text(statuses[0])).toBe('markets.loading');
+  expect(v.links).toHaveLength(0);
+ });
+ test('received quotes: the real rows, no placeholder and no message',()=>{
+  const v=view({tickers:rows,loaded:true});
+  expect(v.text).not.toContain('trade.cfdUnavailable');expect(v.loading).toHaveLength(0);expect(v.lists).toEqual(['rows','rows']);
+  expect(v.links.slice(0,3)).toEqual(['/trade?market=cfd&symbol=XAUUSD','/trade?market=cfd&symbol=XAGUSD','/trade?market=cfd&symbol=XPTUSD']);
+ });
+ test.each([
+  ['a read that failed with nothing received',{loadError:true}],
+  ['no configured quote source',{configured:false,loaded:true}],
+  ['a received snapshot without instruments',{loaded:true}],
+ ])('real unavailability still says so: %s',(_why,state)=>{
+  const v=view(state);
+  expect(v.text.split('trade.cfdUnavailable').length-1).toBe(2);expect(v.loading).toHaveLength(0);expect(v.lists).toEqual(['unavailable','unavailable']);expect(v.busy).toBe(0);
+ });
+ test('rows already shown survive a failed refresh instead of turning into the message',()=>{
+  const v=view({tickers:rows.map(r=>({...r,status:'stale',stale:true})),loaded:true,loadError:true});
+  expect(v.text).not.toContain('trade.cfdUnavailable');expect(v.lists).toEqual(['rows','rows']);
+ });
+});
 
 test('WTI and Brent identities stay distinct in visible data',()=>{const wti=rows.find(x=>x.symbol==='WTIUSD')!,brent=rows.find(x=>x.symbol==='XBRUSD')!;expect(wti.providerSymbol).toBe('USOIL');expect(brent.providerSymbol).toBe('UKOIL');expect(wti.providerSymbol).not.toBe(brent.providerSymbol);});
 

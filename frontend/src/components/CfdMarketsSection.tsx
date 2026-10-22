@@ -7,6 +7,7 @@ import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent, parseChangePercentOrNull } from '../lib/priceChange';
 import { useCfdTickers } from '../lib/useCfdTickers';
 import { CfdInstrumentIcon } from './CfdInstrumentIcon';
+import { Skeleton } from './Skeleton';
 
 const OVERVIEW_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'TRX/USDT', 'DOGE/USDT'];
 const TICKER_STRIP_PAIRS = [...OVERVIEW_PAIRS];
@@ -18,7 +19,13 @@ export function CfdMarketsSection({ id }: { id?: string }) {
   const [tickers, setTickers] = useState<Map<string, Ticker>>(new Map());
   const [history, setHistory] = useState<Map<string, number[]>>(new Map());
   const [popularTab, setPopularTab] = useState<'crypto' | 'cfd'>('cfd');
-  const { tickers: cfdTickers } = useCfdTickers();
+  const { tickers: cfdTickers, configured: cfdConfigured, loadError: cfdLoadError, loaded: cfdLoaded } = useCfdTickers();
+  // An empty list is unavailability only when the feed says so: no source configured, a read that
+  // failed with nothing received, or a received snapshot without a single instrument. Before the
+  // first snapshot arrives the rows are loading; the old check (length === 0) announced
+  // «Торговля CFD временно недоступна» on every cold open while the request was in flight.
+  const cfdState: 'rows' | 'loading' | 'unavailable' = cfdTickers.length > 0 ? 'rows'
+    : !cfdConfigured || cfdLoadError || cfdLoaded ? 'unavailable' : 'loading';
 
   useEffect(() => {
     function load() {
@@ -151,7 +158,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
 
             <article className="market-dashboard__card market-dashboard__cfd-card">
               <span className="market-dashboard__cfd-badge">CFD</span>
-              <div className="market-dashboard__cfd-list">
+              <div className="market-dashboard__cfd-list" data-cfd-state={cfdState} aria-busy={cfdState === 'loading' || undefined}>
                 {cfdTickers.slice(0, 3).map((tk) => {
                   const change = parseChangePercentOrNull(tk.changePercent24h, tk.symbol);
                   const positive = (change ?? 0) >= 0;
@@ -172,7 +179,8 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                     </Link>
                   );
                 })}
-                {cfdTickers.length === 0 && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
+                {cfdState === 'loading' && <CfdRowsLoading count={3} variant="cfd" label={t('markets.loading')} />}
+                {cfdState === 'unavailable' && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
               </div>
             </article>
           </div>
@@ -196,7 +204,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
               </Link>
             </div>
 
-            <div className="market-dashboard__popular-list">
+            <div className="market-dashboard__popular-list" data-cfd-state={popularTab === 'cfd' ? cfdState : undefined} aria-busy={(popularTab === 'cfd' && cfdState === 'loading') || undefined}>
               {popularTab === 'crypto' &&
                 OVERVIEW_PAIRS.slice(0, 4).map((pair) => {
                   const tk = tickers.get(pair);
@@ -241,11 +249,42 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                     </Link>
                   );
                 })}
-              {popularTab === 'cfd' && cfdTickers.length === 0 && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
+              {popularTab === 'cfd' && cfdState === 'loading' && <CfdRowsLoading count={4} variant="popular" label={t('markets.loading')} announce={false} />}
+              {popularTab === 'cfd' && cfdState === 'unavailable' && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
             </div>
           </article>
         </div>
       </section>
+    </>
+  );
+}
+
+/** Placeholder rows with the real rows' grid, so the card neither claims an outage nor jumps when the snapshot lands. */
+function CfdRowsLoading({ count, variant, label, announce = true }: { count: number; variant: 'cfd' | 'popular'; label: string; announce?: boolean }) {
+  return (
+    <>
+      {/* One announcement for the page: both cards load from the same request. */}
+      {announce && <span role="status" style={styles.srOnly}>{label}</span>}
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} aria-hidden="true" data-cfd-placeholder="" className={`market-dashboard__row market-dashboard__${variant}-row`}>
+          <Skeleton width={40} height={40} radius={20} />
+          <span className="market-dashboard__row-label">
+            <Skeleton width={72} height={14} />
+            <Skeleton width={104} height={11} style={{ marginTop: 6 }} />
+          </span>
+          {variant === 'cfd' ? (
+            <span className="market-dashboard__cfd-value">
+              <Skeleton width={84} height={14} />
+              <Skeleton width={52} height={11} style={{ marginTop: 6 }} />
+            </span>
+          ) : (
+            <>
+              <Skeleton width={96} height={14} />
+              <Skeleton width={56} height={14} />
+            </>
+          )}
+        </div>
+      ))}
     </>
   );
 }
@@ -294,4 +333,6 @@ const styles: Record<string, React.CSSProperties> = {
   tickerStrip: { display: 'flex', gap: 28, overflowX: 'auto', padding: '12px 20px', borderBottom: '1px solid var(--border)' },
   tickerStripItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0 },
   hint: { padding: 14, color: 'var(--text-secondary)', fontSize: 12 },
+  // Announced to assistive technology only; the shimmer rows carry the visual state.
+  srOnly: { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 },
 };

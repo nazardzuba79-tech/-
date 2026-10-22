@@ -1,0 +1,104 @@
+{
+  "label": "before-main",
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "snapshotCapturedAt": 1792676429661,
+  "checks": [
+    {
+      "name": "1440: cold open shows loading rows, not «Торговля CFD временно недоступна», then the 13-instrument snapshot",
+      "passed": false,
+      "error": "AssertionError [ERR_ASSERTION]: «Торговля CFD временно недоступна» shown while the snapshot was in flight ({\"messages\":2,\"placeholders\":0,\"busy\":0,\"states\":[],\"rows\":0,\"status\":[\"Обновление данных\"]})\n\n2 !== 0\n\n    at /tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/scripts/qa-cfd-markets-loading.cjs:87:18\n    at async scenario (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/scripts/qa-cfd-markets-loading.cjs:71:22)\n    at async check (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/scripts/qa-cfd-markets-loading.cjs:36:26)\n    at async /tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/scripts/qa-cfd-markets-loading.cjs:76:7"
+    },
+    {
+      "name": "1440: real unavailability still says «Торговля CFD временно недоступна»: HTTP 503 from the ticker route",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "1440: real unavailability still says «Торговля CFD временно недоступна»: a snapshot with no instruments",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "1440: real unavailability still says «Торговля CFD временно недоступна»: configured:false",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "390: cold open shows loading rows, not «Торговля CFD временно недоступна», then the 13-instrument snapshot",
+      "passed": false,
+      "error": "AssertionError [ERR_ASSERTION]: «Торговля CFD временно недоступна» shown while the snapshot was in flight ({\"messages\":2,\"placeholders\":0,\"busy\":0,\"states\":[],\"rows\":0,\"status\":[\"Обновление данных\"]})\n\n2 !== 0\n\n    at /tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/scripts/qa-cfd-markets-loading.cjs:87:18\n    at async scenario (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/scripts/qa-cfd-markets-loading.cjs:71:22)\n    at async check (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/scripts/qa-cfd-markets-loading.cjs:36:26)\n    at async /tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-cfd/scripts/qa-cfd-markets-loading.cjs:76:7"
+    },
+    {
+      "name": "390: real unavailability still says «Торговля CFD временно недоступна»: HTTP 503 from the ticker route",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "390: real unavailability still says «Торговля CFD временно недоступна»: a snapshot with no instruments",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    },
+    {
+      "name": "390: real unavailability still says «Торговля CFD временно недоступна»: configured:false",
+      "passed": true,
+      "evidence": {
+        "messages": 2,
+        "placeholders": 0,
+        "busy": 0,
+        "states": [],
+        "rows": 0,
+        "status": [
+          "Обновление данных"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "passed": false
+}
