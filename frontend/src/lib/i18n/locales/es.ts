@@ -1479,6 +1479,7 @@ export const ES: Record<Key, string> = {
   'futures.liqPrice': 'Precio de liquidación',
   'futures.colContracts': 'Contratos',
   'futures.allMarkets': 'Todos los mercados',
+  'futures.panelHeight': 'Altura del panel de posiciones',
   'futures.allPositions': 'Todas las posiciones de futuros',
   'futures.currentPositions': 'Posiciones actuales:',
   'futures.totalPnl': 'P&L total',

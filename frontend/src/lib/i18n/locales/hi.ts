@@ -1479,6 +1479,7 @@ export const HI: Record<Key, string> = {
   'futures.liqPrice': 'लिक्विडेशन प्राइस',
   'futures.colContracts': 'कॉन्ट्रैक्ट',
   'futures.allMarkets': 'सभी बाज़ार',
+  'futures.panelHeight': 'पोज़िशन पैनल की ऊँचाई',
   'futures.allPositions': 'सभी फ्यूचर्स पोज़िशन',
   'futures.currentPositions': 'वर्तमान पोज़िशन:',
   'futures.totalPnl': 'कुल P&L',
