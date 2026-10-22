@@ -1,0 +1,60 @@
+name: TYVN self-service twenty listings (disposable, no deploy)
+on:
+  push:
+    branches: [review/tyvn-selfservice-20-listings-qa-20261022]
+    paths:
+      - 'scripts/qa-listings-batch-20.cjs'
+      - '.github/workflows/tyvn-selfservice-20-qa.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tyvn-selfservice-20-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isolated-twenty:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      QA_OUT: /tmp/tyvn-20-evidence
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: nazardzuba79-tech/-
+          ref: 6f082a98d0c97c28215e6c5c8056b786d6fa6c99
+          path: .qa-api-candidate
+          persist-credentials: false
+      - name: Verify production-candidate identity and preserve scenario
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .qa-api-candidate rev-parse HEAD)" = 6f082a98d0c97c28215e6c5c8056b786d6fa6c99
+          cmp config/test-markets/tyvn.draft.json .qa-api-candidate/config/test-markets/tyvn.draft.json
+          rm -rf src
+          cp -a .qa-api-candidate/src ./src
+          cp .qa-api-candidate/tsconfig.json ./tsconfig.json
+          rm -rf .qa-api-candidate
+          node --check scripts/qa-listings-batch-20.cjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies (isolated runner, no migration)
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix workers/market-edge --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Twenty sequential new listing configurations, private staging and selective timer actions
+        run: node scripts/qa-listings-batch-20.cjs
+      - name: Upload synthetic evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tyvn-20-config-only-evidence
+          path: /tmp/tyvn-20-evidence/summary.json
+          if-no-files-found: warn
+          retention-days: 7
