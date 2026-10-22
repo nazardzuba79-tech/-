@@ -3,7 +3,7 @@ import { resolve } from 'path';
 import express from 'express';
 import request from 'supertest';
 import {
-  countdownParts, formatListingMoment, formatListingTime, formatTestCompact, formatTestPercent, formatTestPrice, formatTestPriceChange, isTestMarketPair, sinceListingPercent,
+  countdownParts, formatListingMoment, formatListingTime, formatTestAxisPrice, formatTestCompact, formatTestPercent, formatTestPrice, formatTestPriceChange, isTestMarketPair, sinceListingPercent,
   matchesTestAssetSearch, parseTestMarkets, testAssetTicker, TEST_ASSET_NOT_TRADABLE_MESSAGE, TEST_ASSET_STATUS_LABEL,
   withoutTestMarkets, withSimulationPreview, withTestMarketTickers, type TestAsset,
 } from '../testMarkets';
@@ -111,6 +111,20 @@ describe('formatting', () => {
     expect(formatTestPriceChange(0, 0.01)).toBe('0.000000');
     expect(formatTestPriceChange(5.2016, 5.5235)).toBe('+5.2016');
     expect(formatTestPriceChange(-0.0004, 0.0133)).toBe('-0.000400');
+  });
+  test('a price below 0.01 keeps at least four significant digits, down to the listing step (1e-10)', () => {
+    // A managed listing may start at 1e-8 with a 1e-10 step: six fixed decimals printed it as zero.
+    expect(formatTestPrice(0.0000001)).toBe('0.0000001000');
+    expect(formatTestPrice(0.00001234)).toBe('0.00001234');
+    expect(formatTestPrice(0.0001234)).toBe('0.0001234');
+    expect(formatTestPrice(0.001234)).toBe('0.001234');
+    expect(formatTestPrice(0.00000000512)).toBe('0.0000000051');
+    expect(formatTestAxisPrice(0.00001234)).toBe('0.00001234');
+    expect(formatTestAxisPrice(-0.00001234)).toBe('-0.00001234');
+    expect(formatTestAxisPrice(0)).toBe('0.000000');
+    expect(formatTestAxisPrice(0.013842967)).toBe('0.013843');
+    expect(formatTestPriceChange(-0.00000002, 0.0000005)).toBe('-0.0000000200');
+    expect(formatTestPriceChange(0, 0.00001234)).toBe('0.00000000');
   });
   test('countdown', () => {
     expect(countdownParts(((2 * 24 + 3) * 3600 + 4 * 60 + 5) * 1000 + 999)).toEqual({ days: 2, hours: 3, minutes: 4, seconds: 5, done: false });
