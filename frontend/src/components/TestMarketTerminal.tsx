@@ -59,7 +59,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
     const chart = <TerminalChart key={`${pair}:${asset.version ?? 0}`} pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
       tradingView={false} priceScaleMode="normal" priceFormatter={formatTestAxisPrice} chartSettings />;
     return <div className="managed-demo-chart">
-      <div className="managed-demo-status">{marketLabel}{error && <> · {t('listing.dataStale')}</>}</div>
+      {error && <span className="managed-demo-stale" role="status">{t('listing.dataStale')}</span>}
       {chart}
     </div>;
   }

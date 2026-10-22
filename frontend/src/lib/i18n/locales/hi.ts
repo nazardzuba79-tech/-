@@ -1939,6 +1939,7 @@ export const HI: Record<Key, string> = {
   'trade.assetPurchaseUnavailable': "इस परिसंपत्ति की खरीद उपलब्ध नहीं है।",
   'trade.assetOrderTypeUnavailable': "इस परिसंपत्ति के लिए यह ऑर्डर प्रकार उपलब्ध नहीं है।",
   'trade.assetNotTradingYet': 'इस एसेट में अभी ट्रेडिंग शुरू नहीं हुई है',
+  'trade.demoOrdersDisabled': "इस जोड़ी का चार्ट देखा जा सकता है। ऑर्डर देना बंद है।",
   'trade.statusUnavailable': "स्थिति पुष्ट नहीं है",
   'trade.orderTypeUnavailable': "ऑर्डर प्रकार पुष्ट नहीं है",
   'trade.status.REJECTED': "अस्वीकृत",

@@ -263,7 +263,7 @@ export function OrderForm({
       setError(message); toast.error(message); return;
     }
     if (notTradingYet) {
-      const message = t('trade.assetNotTradingYet');
+      const message = pair.toUpperCase() === 'AITH/USDT' ? t('trade.demoOrdersDisabled') : t('trade.assetNotTradingYet');
       setError(message);
       toast.error(message);
       return;
@@ -620,6 +620,10 @@ export function OrderForm({
             those. */}
         <div className="info-section">
           <div className="info-heading">{t('trade.marketInfo')}</div>
+          {notTradingYet && <div className="info-row" data-view-only-listing>
+            <span className="info-label">{t('listing.simulation')}</span>
+            <span className="info-value">{t('listing.tradingUnavailable')}</span>
+          </div>}
           <div className="info-row">
             <span className="info-label">{t('trade.lastPrice')}</span>
             <span className="info-value">

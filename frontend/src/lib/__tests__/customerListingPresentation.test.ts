@@ -84,10 +84,20 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
   });
   test.each([true, false])('live simulation remains identified, tradable=%s', isTradable => {
     const html = chart({ ...fixture, isTradable, status: 'Prisma SQL /internal/worker', state: { ...fixture.state, phase: 'live' } }, lang);
-    expect(html).toContain(t('listing.simulation'));
-    expect(html).toContain(t(isTradable ? 'listing.marketLive' : 'listing.tradingUnavailable'));
+    // A live Spot chart does not waste space with a full-width training status banner.
+    // The order form retains the read-only disclosure and refuses order submission.
+    expect(html).not.toContain('managed-demo-status');
+    expect(html).not.toContain(t('listing.simulation'));
+    expect(html).not.toContain(t('listing.tradingUnavailable'));
     expect(html).toContain('data-chart');
     expect(html).not.toMatch(/Prisma|SQL|worker|role="timer"/);
+  });
+  test('stale live quote carries a compact status, not a full-width banner', () => {
+    const html = chart({ ...fixture, state: { ...fixture.state, phase: 'live' } }, lang, true);
+    expect(html).toContain('managed-demo-stale');
+    expect(html).toContain(t('listing.dataStale'));
+    expect(html).not.toContain('managed-demo-status');
+    expect(html).toContain('data-chart');
   });
   test('unarmed listing never promises a date or start', () => {
     const html = chart({ ...fixture, listingArmed: false }, lang);

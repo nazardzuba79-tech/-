@@ -1939,6 +1939,7 @@ export const ES: Record<Key, string> = {
   'trade.assetPurchaseUnavailable': "La compra de este activo no está disponible.",
   'trade.assetOrderTypeUnavailable': "Este tipo de orden no está disponible para este activo.",
   'trade.assetNotTradingYet': 'Este activo todavía no se negocia',
+  'trade.demoOrdersDisabled': "Puedes ver el gráfico de este par. La colocación de órdenes está desactivada.",
   'trade.statusUnavailable': "Estado sin confirmar",
   'trade.orderTypeUnavailable': "Tipo de orden sin confirmar",
   'trade.status.REJECTED': "Rechazada",

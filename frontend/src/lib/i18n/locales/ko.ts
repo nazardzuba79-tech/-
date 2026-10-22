@@ -1939,6 +1939,7 @@ export const KO: Record<Key, string> = {
   'trade.assetPurchaseUnavailable': "이 자산은 구매할 수 없습니다.",
   'trade.assetOrderTypeUnavailable': "이 자산에서는 해당 주문 유형을 사용할 수 없습니다.",
   'trade.assetNotTradingYet': '이 자산은 아직 거래되지 않습니다',
+  'trade.demoOrdersDisabled': "이 거래쌍의 차트는 볼 수 있지만 주문은 제출할 수 없습니다.",
   'trade.statusUnavailable': "상태 미확인",
   'trade.orderTypeUnavailable': "주문 유형 미확인",
   'trade.status.REJECTED': "거절됨",

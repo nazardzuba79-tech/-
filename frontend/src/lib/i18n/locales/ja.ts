@@ -1939,6 +1939,7 @@ export const JA: Record<Key, string> = {
   'trade.assetPurchaseUnavailable': "この資産は購入できません。",
   'trade.assetOrderTypeUnavailable': "この資産では、この注文タイプをご利用いただけません。",
   'trade.assetNotTradingYet': 'この銘柄はまだ取引されていません',
+  'trade.demoOrdersDisabled': "このペアのチャートは閲覧できます。注文の発注は無効です。",
   'trade.statusUnavailable': "状態未確認",
   'trade.orderTypeUnavailable': "注文タイプ未確認",
   'trade.status.REJECTED': "拒否済み",

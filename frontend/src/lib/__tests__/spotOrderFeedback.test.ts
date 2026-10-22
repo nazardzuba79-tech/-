@@ -34,14 +34,14 @@ describe('actual OrderForm submit handler', () => {
   const source = fs.readFileSync(path.resolve(__dirname, '../../components/OrderForm.tsx'), 'utf8');
   const handler = source.slice(source.indexOf('  async function handleSubmit('), source.indexOf('  // Keep every order family reachable.'));
   const code = ts.transpileModule(handler, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
-  function fixture(response: unknown, notTradingYet = false) {
+  function fixture(response: unknown, notTradingYet = false, pair = 'BTC/USDT') {
     const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
     const bindings = { privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
       t: (key: string, values?: unknown) => key + (values ? JSON.stringify(values) : ''),
       spotOrderFeedback, positiveOrderNumber, submittingRef: { current: false },
       setError: jest.fn(), setSubmitting: jest.fn(), resetFields: jest.fn(), onPlaced: jest.fn(), setBalanceVersion: jest.fn(),
       quantity: '0.001', family: 'MARKET', type: 'MARKET', price: '', triggerPrice: '',
-      isConditional: false, execution: 'MARKET', side: 'SELL', pair: 'BTC/USDT', baseAsset: 'BTC',
+      isConditional: false, execution: 'MARKET', side: 'SELL', pair, baseAsset: pair.split('/')[0],
       ocoTakeProfitPrice: '', ocoStopTriggerPrice: '', ocoStopLimitPrice: '', ApiError: Error, notTradingYet };
     const submit = new Function(...Object.keys(bindings), code + '\nreturn handleSubmit;')(...Object.values(bindings));
     return { ...bindings, submit };
@@ -77,6 +77,15 @@ describe('actual OrderForm submit handler', () => {
     expect(f.api.placeOrder).not.toHaveBeenCalled();
     expect(f.onPlaced).not.toHaveBeenCalled();
     expect(f.submittingRef.current).toBe(false);
+  });
+  test('public AITH shows a chart but never submits a Spot order or claims one was placed', async () => {
+    const f = fixture({ order: { status: 'FILLED' }, trades: [{ quantity: '3' }] }, true, 'AITH/USDT');
+    await f.submit({ preventDefault() {} });
+    expect(f.setError).toHaveBeenLastCalledWith('trade.demoOrdersDisabled');
+    expect(f.toast.error).toHaveBeenCalledWith('trade.demoOrdersDisabled');
+    expect(f.api.placeOrder).not.toHaveBeenCalled();
+    expect(f.onPlaced).not.toHaveBeenCalled();
+    expect(f.toast.success).not.toHaveBeenCalled();
   });
   test('conditional Limit/Market controls expose their actual pressed state', () => {
     expect(source).toContain("aria-pressed={execution === 'LIMIT'}");

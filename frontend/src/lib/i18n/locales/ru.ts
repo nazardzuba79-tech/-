@@ -1998,6 +1998,7 @@ export const RU = {
   'trade.assetPurchaseUnavailable': "Покупка этого актива недоступна.",
   'trade.assetOrderTypeUnavailable': "Этот тип ордера для данного актива недоступен.",
   'trade.assetNotTradingYet': 'Этот актив пока не торгуется',
+  'trade.demoOrdersDisabled': "Для этой пары доступен просмотр графика. Размещение ордеров отключено.",
   'trade.statusUnavailable': "Статус не подтверждён",
   'trade.orderTypeUnavailable': "Тип ордера не подтверждён",
   'trade.status.REJECTED': "Отклонён",

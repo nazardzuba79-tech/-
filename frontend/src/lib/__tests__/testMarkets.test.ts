@@ -170,7 +170,7 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
   });
   test('prelisting and non-admin orders remain blocked; only the private live sale is admitted', () => {
     const submit = form.slice(form.indexOf('async function handleSubmit'), form.indexOf('api.placeOcoOrder'));
-    expect(submit.replace(/\r\n/g, '\n')).toContain("if (notTradingYet) {\n      const message = t('trade.assetNotTradingYet');\n      setError(message);\n      toast.error(message);\n      return;\n    }");
+    expect(submit.replace(/\r\n/g, '\n')).toContain("if (notTradingYet) {\n      const message = pair.toUpperCase() === 'AITH/USDT' ? t('trade.demoOrdersDisabled') : t('trade.assetNotTradingYet');\n      setError(message);\n      toast.error(message);\n      return;\n    }");
     // VTA is still gated exactly as before; NRX and a TRADABLE managed listing
     // (Admin → Listings) use the ordinary Spot path, refused server-side before listing.
     expect(form).toContain("const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !isManagedTradablePair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;");

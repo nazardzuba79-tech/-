@@ -1962,6 +1962,7 @@ export const ZH: Record<Key, string> = {
   'trade.assetPurchaseUnavailable': "暂不支持购买此资产。",
   'trade.assetOrderTypeUnavailable': "此资产不支持该订单类型。",
   'trade.assetNotTradingYet': '该资产尚未开放交易',
+  'trade.demoOrdersDisabled': "可以查看该交易对的图表，但无法提交订单。",
   'trade.statusUnavailable': "状态未确认",
   'trade.orderTypeUnavailable': "订单类型未确认",
   'trade.status.REJECTED': "已拒绝",

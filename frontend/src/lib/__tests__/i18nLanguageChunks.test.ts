@@ -315,6 +315,12 @@ describe('translation integrity', () => {
       expect(dicts[code]['copyPerformance.followersPnl']).toContain('P&L');
       expect(dicts[code]['copyPerformance.units']).toContain('USDT');
     }
+    // AITH's already-live chart uses an order-only refusal in every locale,
+    // not the pre-listing wording used by the upcoming VTA countdown.
+    for (const code of LOCALES) {
+      expect(dicts[code]['trade.demoOrdersDisabled']?.trim()).toBeTruthy();
+      expect(dicts[code]['trade.demoOrdersDisabled']).not.toBe('trade.demoOrdersDisabled');
+    }
     const previousVipCopy: Record<string, { label: string; title: string }> = {
       ru: { label: 'Super VIP', title: 'Статус Super VIP' },
       en: { label: 'Super VIP', title: 'Super VIP status' },
@@ -364,7 +370,7 @@ describe('translation integrity', () => {
           'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable',
           'markets.new', // Spot rail newest-listing sorter (2026-10-04), additive only.
           'deposit.transferCreditNote', // New manual-catalogue copy; preserve every existing dictionary byte.
-          'trade.assetNotTradingYet', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
+          'trade.assetNotTradingYet', 'trade.demoOrdersDisabled', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
           'listing.initialPrice', 'listing.startTime', 'listing.newListing',
           // Pre-listing timer (2026-10-20): the one line a paused countdown shows
           // instead of the ticking cells. `git diff --numstat` over the locales

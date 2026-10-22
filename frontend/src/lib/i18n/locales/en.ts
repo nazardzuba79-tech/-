@@ -1968,6 +1968,7 @@ export const EN: Record<Key, string> = {
   'trade.assetPurchaseUnavailable': "Purchasing this asset is unavailable.",
   'trade.assetOrderTypeUnavailable': "This order type is unavailable for this asset.",
   'trade.assetNotTradingYet': 'This asset is not trading yet',
+  'trade.demoOrdersDisabled': "You can view this pair's chart. Order placement is disabled.",
   'trade.statusUnavailable': "Status unconfirmed",
   'trade.orderTypeUnavailable': "Order type unconfirmed",
   'trade.status.REJECTED': "Rejected",
