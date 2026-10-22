@@ -71,7 +71,7 @@ async function run(){
  try{
   for(let i=1;i<=20;i++){
    const suffix=String(i).padStart(2,'0');
-   const symbol='QSL'+suffix,listingAt=new Date(Math.ceil((now+(3+i)*86400000)/1000)*1000).toISOString().replace('.000Z','Z');
+   const symbol='QSL'+suffix,listingAt=new Date(Math.ceil((now+(3+i)*86400000)/10000)*10000).toISOString().replace('.000Z','Z');
    const config={...template,symbol,name:'QA Self Service '+suffix,seed:'qa-20-listings-'+suffix+'-fixed-20261022',
        listingAt,ownerAllocation:'0',tradable:false};
    const created=await req('/admin/listings',{method:'POST',body:{config}});
