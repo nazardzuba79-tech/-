@@ -1,0 +1,75 @@
+name: TYVN read-only production public gate
+
+on:
+  push:
+    branches:
+      - review/tyvn-public-prod-gate-20261022
+    paths:
+      - .github/workflows/tyvn-prod-public-gate.yml
+
+permissions:
+  contents: read
+
+jobs:
+  public-preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Read-only public API/Worker and unpublished TYVN checks
+        shell: bash
+        env:
+          EXPECTED_PROD_API_SHA: 2e7acf158000404133db85723bac13695215e25c
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const expected = process.env.EXPECTED_PROD_API_SHA;
+          async function get(url) {
+            let last;
+            for (let i=0; i<3; i++) {
+              try {
+                const r=await fetch(url, {
+                  redirect: 'error', cache:'no-store',
+                  headers: { Accept:'application/json', 'Cache-Control':'no-cache' },
+                  signal:AbortSignal.timeout(16000)
+                });
+                const body=await r.text();
+                let payload=null;try{payload=JSON.parse(body)}catch{}
+                return {status:r.status,payload};
+              } catch(e) {
+                last=e;
+                await new Promise(resolve=>setTimeout(resolve,1000*(i+1)));
+              }
+            }
+            throw new Error('Read-only GET failed for '+new URL(url).host+new URL(url).pathname+': '+last?.name);
+          }
+          function assert(ok,message){if(!ok)throw new Error('BLOCKED: '+message)}
+          (async()=>{
+            const api=await get('https://api.voltextech.net/health');
+            console.log('production API /health status='+api.status+' revision='+String(api.payload?.commit??'null'));
+            assert(api.status===200&&api.payload?.status==='ok','API health unavailable');
+            assert(api.payload.commit===expected,'API revision drift; do not build against old base');
+
+            const admin=await get('https://api.voltextech.net/api/v1/admin/listings');
+            console.log('anonymous admin listings HTTP '+admin.status);
+            assert(admin.status===401,'Admin Listings does not reject anonymous request with 401');
+
+            const edge=await get('https://market.voltextech.net/health');
+            console.log('Worker /health status='+edge.status+' version='+String(edge.payload?.version??'null'));
+            assert(edge.status===200&&edge.payload?.ok===true&&edge.payload?.service==='voltex-market-edge','Worker health invalid');
+            assert(edge.payload.version==='public-display-edge-v10','Worker release changed; review first');
+
+            const catalogue=await get('https://market.voltextech.net/market/listings');
+            const entries=catalogue.payload?.assets;
+            console.log('market/listings HTTP '+catalogue.status+' entries='+String(Array.isArray(entries)?entries.length:'invalid'));
+            assert(catalogue.status===200&&Array.isArray(entries),'No valid public listings');
+            const listings=JSON.stringify(entries);
+            assert(listings.includes('AITH'),'AITH disappeared from public catalogue');
+            assert(!listings.includes('TYVN'),'TYVN already published — STOP');
+
+            const nrx=await get('https://market.voltextech.net/market/nrx');
+            console.log('NRX edge HTTP '+nrx.status);
+            assert(nrx.status===200,'NRX edge unavailable');
+
+            console.log('PASS: read-only public gate. No mutation, docker, backup, database or timer action.');
+          })().catch(e=>{console.error(e.message);process.exitCode=1;});
+          NODE
