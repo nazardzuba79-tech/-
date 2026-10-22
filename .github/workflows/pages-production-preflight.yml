@@ -67,7 +67,7 @@ jobs:
         if: always()
         uses: actions/checkout@v4
         with:
-          ref: bf224f43982309367f2d6bea31cb4fe8e998b11d
+          ref: 10b18edb90c1e89381f868fd62f874fe954d4b36
           persist-credentials: false
       - name: Validate release workflow expression contexts and YAML via actionlint
         if: always()
