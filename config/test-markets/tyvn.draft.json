@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "symbol": "TYVN",
+  "name": "TERYVANE",
+  "logo": null,
+  "initialPrice": "0.0250",
+  "listingAt": "2026-10-27T13:00:00Z",
+  "displayTimeZone": "Europe/Moscow",
+  "ownerAllocation": "100000000",
+  "seedMode": "manual",
+  "seed": "teryvane-20261026-v1",
+  "tradable": false,
+  "simulationProgram": {
+    "kind": "scenario-controls-v2",
+    "scenario": "AUTO",
+    "first24hGainPercent": "1725",
+    "maxPrice": "2.33675",
+    "stages": [
+      {
+        "type": "growth",
+        "durationHours": 24,
+        "targetPrice": "0.45625"
+      },
+      {
+        "type": "growth",
+        "durationHours": 144,
+        "targetPrice": "2.009605"
+      }
+    ],
+    "afterGrowth": "range",
+    "pullbacks": {
+      "frequency": "moderate",
+      "minDepthPercent": "2",
+      "maxDepthPercent": "8",
+      "durationMinutes": 45
+    },
+    "candles": {
+      "intensity": "medium",
+      "diversity": 0.65,
+      "pauseFrequency": "moderate"
+    },
+    "wicks": {
+      "length": "normal",
+      "longFrequency": "moderate"
+    }
+  }
+}

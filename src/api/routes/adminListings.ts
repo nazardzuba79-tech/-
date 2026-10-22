@@ -16,8 +16,8 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth, type AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import {
-  ListingValidationError, LISTING_SCHEMA_VERSION, generateSeed, listingPair, listingSimulationConfig, parseListingConfig,
-  type ListingConfig,
+  ListingValidationError, LISTING_COUNTDOWN_ACTIONS, LISTING_SCHEMA_VERSION, generateSeed, listingPair, listingSimulationConfig, parseListingConfig,
+  type ListingConfig, type ListingCountdownAction,
 } from '../../services/listings/listingConfig';
 import { ListingStoreError, type ListingStore } from '../../services/listings/store';
 import { managedListingRegistry, type ManagedListingRegistry } from '../../services/listings/registry';
@@ -185,17 +185,40 @@ export function adminListingsRouter(
 
   router.post('/admin/listings/:id/publish', ...guard, async (req: AuthedRequest, res) => {
     noStore(res);
-    const { draftRevision, publishKey } = (req.body ?? {}) as { draftRevision?: unknown; publishKey?: unknown };
+    const { draftRevision, publishKey, countdown } = (req.body ?? {}) as { draftRevision?: unknown; publishKey?: unknown; countdown?: unknown };
     if (!ID.test(req.params.id)) return res.status(404).json({ error: 'not_found' });
-    if (!Number.isSafeInteger(draftRevision) || typeof publishKey !== 'string' || !PUBLISH_KEY.test(publishKey)) {
+    if (!Number.isSafeInteger(draftRevision) || typeof publishKey !== 'string' || !PUBLISH_KEY.test(publishKey)
+      || (countdown !== undefined && countdown !== 'staged' && countdown !== 'running')) {
       return res.status(400).json({ error: 'INVALID_PUBLISH_REQUEST' });
     }
     try {
       const listing = (await store.list()).listings.find((item) => item.id === req.params.id);
       if (!listing) return res.status(404).json({ error: 'not_found' });
       ensureNotOnVenue(listing.draft, venue);
-      const result = await store.publish(req.params.id, draftRevision as number, publishKey, req.userId!);
+      const result = await store.publish(req.params.id, draftRevision as number, publishKey, req.userId!, countdown as 'staged' | 'running' | undefined);
       // Render's trading registry learns the new version on the next order/valuation.
+      registry.invalidate();
+      res.json(result);
+    } catch (error) { failure(res, error); }
+  });
+
+  /**
+   * The pre-listing timer: start, pause or stop the public countdown of a
+   * published listing. Operational state in the store, never a new version;
+   * the listing time stays where the publication put it. Nothing starts by
+   * itself: a passed date is refused (LISTING_TIME_PAST) until it is moved.
+   */
+  router.post('/admin/listings/:id/countdown', ...guard, async (req: AuthedRequest, res) => {
+    noStore(res);
+    const { action } = (req.body ?? {}) as { action?: unknown };
+    if (!ID.test(req.params.id)) return res.status(404).json({ error: 'not_found' });
+    if (typeof action !== 'string' || !LISTING_COUNTDOWN_ACTIONS.includes(action as ListingCountdownAction)) {
+      return res.status(400).json({ error: 'INVALID_COUNTDOWN_REQUEST' });
+    }
+    try {
+      if (!store.countdown) return res.status(503).json({ error: 'COUNTDOWN_UNAVAILABLE', message: 'The listing store does not support the timer yet' });
+      const result = await store.countdown(req.params.id, action as ListingCountdownAction, req.userId!);
+      // The Spot gate and the restricted-asset guards follow the timer on the next order/valuation.
       registry.invalidate();
       res.json(result);
     } catch (error) { failure(res, error); }

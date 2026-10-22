@@ -1,0 +1,79 @@
+name: TYVN isolated Hetzner API candidate QA
+on:
+  push:
+    branches:
+      - release/tyvn-api-isolated-20261022
+permissions:
+  contents: read
+jobs:
+  backend-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Reject unrelated changes and production release hazards
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=2e7acf158000404133db85723bac13695215e25c
+          git diff --exit-code "$base" HEAD -- package.json package-lock.json prisma Dockerfile render.yaml scripts/start-render-single-service.cjs
+          git diff --name-only "$base" HEAD | while IFS= read -r f; do
+            case "$f" in
+              .github/workflows/tyvn-api-isolated-qa.yml|\
+              .github/workflows/admin-listings.yml|\
+              docs/TYVN_RELEASE_20261027.md|\
+              scripts/tyvn-hetzner.Dockerfile|\
+              scripts/tyvn-hetzner-preflight.sh|\
+              config/test-markets/tyvn.draft.json|\
+              src/buildCommit.ts|\
+              src/__tests__/buildCommit.test.ts|\
+              src/api/routes/adminListings.ts|\
+              src/api/routes/__tests__/adminListings.test.ts|\
+              src/services/listings/listingConfig.ts|\
+              src/services/listings/listingPublic.ts|\
+              src/services/listings/registry.ts|\
+              src/services/listings/store.ts|\
+              src/services/listings/__tests__/listingCountdown.test.ts|\
+              src/services/listings/__tests__/tyvnDraft.test.ts|\
+              src/services/testMarkets/nrxSpot.ts) ;;
+              *) echo "Unexpected changed file: $f"; exit 1 ;;
+            esac
+          done
+          echo "Isolated API source overlay verified. No image switch or DB migration performed."
+      - name: Validate isolated release package syntax and boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/tyvn-hetzner-preflight.sh
+          grep -Fq 'ARG LIVE_IMAGE' scripts/tyvn-hetzner.Dockerfile
+          grep -Fq 'COPY src ./src' scripts/tyvn-hetzner.Dockerfile
+          if grep -Eq '^(COPY|ADD) +(prisma|\.env|package-lock)' scripts/tyvn-hetzner.Dockerfile; then exit 1; fi
+          grep -Fq '2026-10-27 13:00 UTC' docs/TYVN_RELEASE_20261027.md
+      - name: Backend dependencies (isolated free GitHub runner)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Generate Prisma client locally
+        run: npx prisma generate
+      - name: TypeScript production API build
+        run: npm run build
+      - name: TYVN / timer / Spot-gate regression suites
+        env:
+          NODE_ENV: test
+          JWT_SECRET: isolated-test-only-never-production-tyvn
+        run: |
+          npx jest --runInBand --runTestsByPath \
+            src/__tests__/buildCommit.test.ts \
+            src/services/listings/__tests__/listingCountdown.test.ts \
+            src/services/listings/__tests__/tyvnDraft.test.ts \
+            src/services/listings/__tests__/listingConfig.test.ts \
+            src/services/listings/__tests__/tradingGates.test.ts \
+            src/services/listings/__tests__/storeConfig.test.ts \
+            src/api/routes/__tests__/adminListings.test.ts
+      - name: No production deploy, DB writes, orders, balances, timer or listing actions
+        run: echo "QA-only source candidate. Production unchanged by this workflow."

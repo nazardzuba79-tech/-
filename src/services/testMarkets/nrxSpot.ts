@@ -25,7 +25,7 @@ export function assertSpotListing(pair: string, now = Date.now()): void {
   const managed = managedListingForPair(pair);
   if (managed) {
     if (!managed.isTradable) throw new Error(`${managed.name} is not available for trading.`);
-    if (now < managed.listingAt) throw new Error('Trading has not started yet');
+    if (!managed.listingArmed || now < managed.listingAt) throw new Error('Trading has not started yet');
     return;
   }
   if (isTestAssetPairOrSymbol(pair)) throw new Error(TEST_ASSET_NOT_TRADABLE_MESSAGE);
@@ -47,6 +47,8 @@ export function spotPriceSource(source: PriceSource, clock = Date.now): PriceSou
     const managed = managedListingForPair(pair);
     if (isAith(pair) && !managed) return null;
     if (!managed) return source.getTicker(pair);
+    // Unarmed managed listings cannot supply a model price for order triggers.
+    if (!managed.listingArmed) return null;
     const last = simulationFor(managed).priceAt(clock());
     return last === null ? null : { lastPrice: String(last) };
   } };
