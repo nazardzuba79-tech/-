@@ -6,3 +6,6 @@ Included in main:
 - LIQ horizontal chart overlay removed; liquidation price remains in Positions table (PR #573)
 - Frontend-only; no Hetzner/Render/Worker/DB changes
 Purpose: read-only proof that Cloudflare Pages served a build containing these reviewed frontend changes.
+Pages auto-deploy re-enabled by owner: 2026-10-22
+Release trigger: new main push after re-enabling production branch deployments.
+Review parent: 46072a565dca144a4f1b0e340327783cc5c67b41
