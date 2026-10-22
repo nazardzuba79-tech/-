@@ -98,12 +98,49 @@ const topElementAt = (x, y) => page.evaluate(([x, y]) => {
   const label = el.getAttribute('aria-label') || el.getAttribute('title') || (el.tagName === 'BUTTON' ? (el.textContent || '').trim().slice(0, 24) : '');
   return `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}${el.getAttribute('data-drawing-hit') ? '[hit=' + el.getAttribute('data-drawing-hit') + ']' : ''}${label ? '«' + label + '»' : ''}`;
 }, [x, y]);
+/**
+ * Controls that take a press on the plot and are never a pan: the live
+ * position's label and its buttons (PrivatePositionLines — a 198×22px card at
+ * 43 % of the pane width, on the entry price; its pointerdown is stopped on
+ * purpose), the chart tools menu, a drawing's toolbar or dialog. The seeded
+ * position's entry is the fixture price at the second the run starts, and that
+ * price follows a sine of the server clock: in the minutes when it maps onto
+ * a fixed press point every press met the label and nothing panned (CI
+ * 2026-10-21 17:48Z, 20/48; the same tree passed at 17:21Z, and clean main
+ * 9dd84308 gives the same 20/48 with the fixture clock moved to that phase).
+ * A press that would land on such a control slides to the nearest clear spot
+ * along `dir` — vertically for a plain drag, along the line for a drawing —
+ * and the slide is named with the check. A drawing is never avoided: several
+ * checks press on one on purpose. A dedicated check below presses the label.
+ */
+const FOREIGN_UI = /private-position-line|private-line-|chart-tools-|drawing-object-toolbar|drawing-settings|chart-menu/;
+const SLIDE_STEPS = [0, -30, 30, -60, 60, -90, 90, -120, 120, -150, 150];
+/** Every element under a point, top first, named as topElementAt names one. */
+const stackAt = (x, y) => page.evaluate(([x, y]) => document.elementsFromPoint(x, y).slice(0, 8).map((el) => {
+  const cls = typeof el.className === 'string' ? el.className.split(' ').filter(Boolean).slice(0, 2).join('.') : '';
+  const label = el.getAttribute('aria-label') || el.getAttribute('title') || (el.tagName === 'BUTTON' ? (el.textContent || '').trim().slice(0, 24) : '');
+  return `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}${el.getAttribute('data-drawing-hit') ? '[hit=' + el.getAttribute('data-drawing-hit') + ']' : ''}${label ? '«' + label + '»' : ''}`;
+}), [x, y]);
+/** What a press meets, without its classes or label: `canvas`, `polyline`, `path[hit=body]`. */
+const hitKind = (d) => (d ?? '').replace(/«.*$/, '').replace(/\.[^[]*/, '');
+async function clearOfForeignUi(x, y, dir = [0, 1]) {
+  // What the press would have met had the control not been there: the slid press must meet the same kind of thing
+  // (the bare plot, a drawing's body, its line), so sliding never turns a press beside a drawing into one on it.
+  const origin = await stackAt(Math.round(x), Math.round(y));
+  if (!FOREIGN_UI.test(origin[0] ?? '')) return { x: Math.round(x), y: Math.round(y), top: origin[0] ?? null };
+  const intended = hitKind(origin.find((d) => !FOREIGN_UI.test(d)));
+  for (const step of SLIDE_STEPS.slice(1)) {
+    const px = Math.round(x + dir[0] * step), py = Math.round(y + dir[1] * step);
+    const top = (await stackAt(px, py))[0] ?? null;
+    if (!FOREIGN_UI.test(top ?? '') && hitKind(top) === intended) return { x: px, y: py, top: `${top} (press slid ${step}px off ${origin[0]})` };
+  }
+  return { x: Math.round(x), y: Math.round(y), top: `${origin[0]} (no clear ${intended || 'spot'} within 150px)` };
+}
 /** Press, move by dx with the button held, release. Returns bars shifted (positive: older bars came into view). */
 async function drag(dx, fx = 0.5, fy = 0.45, steps = 10) {
   const before = await readChart();
   assert(before, 'chart instance not found');
-  const cx = before.box.x + Math.round(before.box.w * fx), cy = before.box.y + Math.round(before.box.h * fy);
-  const top = await topElementAt(cx, cy);
+  const { x: cx, y: cy, top } = await clearOfForeignUi(before.box.x + Math.round(before.box.w * fx), before.box.y + Math.round(before.box.h * fy));
   await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx + dx, cy, { steps }); await page.mouse.up();
   await delay(350);
   const after = await readChart();
@@ -215,6 +252,24 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
   await settle();
 
   // 1. Normal mode.
+  // The live position's label is a control, not plot: a press-and-drag that starts on it never trades and never
+  // loses its buttons (owner, 2026-10-21: no financial command on drag; do not remove trade controls).
+  await check('position-label-press-and-drag-posts-nothing-and-keeps-its-controls', async () => {
+    const label = page.locator('.private-position-line-label').first();
+    await label.waitFor({ state: 'attached', timeout: 10000 }).catch(() => {});
+    if (!(await label.count())) throw skip('the seeded position\'s entry is outside the visible price range at this moment');
+    const box = await label.boundingBox();
+    const qty = page.locator('.private-position-line-label .private-line-quantity').first(), qb = await qty.boundingBox();
+    const before = await readChart(), commandsBefore = commands.length, writesBefore = tradingWrites.length;
+    await page.mouse.move(qb.x + qb.width / 2, qb.y + qb.height / 2); await page.mouse.down(); await page.mouse.move(qb.x + qb.width / 2 + 220, qb.y + qb.height / 2, { steps: 10 }); await page.mouse.up(); await delay(350);
+    const after = await readChart();
+    const buttons = await page.locator('.private-position-line-label').first().locator('button').evaluateAll((els) => els.map((b) => ({ label: b.getAttribute('aria-label'), disabled: b.disabled })));
+    assert.equal(commands.length - commandsBefore, 0, 'a drag from the position label posted a command');
+    assert.equal(tradingWrites.length - writesBefore, 0, 'a drag from the position label sent a trading write');
+    assert.equal(buttons.length, 4, `the label lost a control: ${JSON.stringify(buttons)}`);
+    assert(buttons.some((b) => /^Закрыть позицию/.test(b.label ?? '') && !b.disabled), 'the close control is gone or disabled');
+    return { label: { x: Math.round(box.x), y: Math.round(box.y), w: Math.round(box.width), h: Math.round(box.height) }, panned: Math.round((before.from - after.from) * 100) / 100, buttons };
+  });
   await check('normal-drag-right-shows-older-bars', async () => assertPanned(await drag(260), 260, 'drag right'));
   await check('normal-drag-left-shows-newer-bars', async () => assertPanned(await drag(-160), -160, 'drag left'));
   await check('normal-range-holds-through-candle-poll', async () => {
@@ -468,13 +523,18 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
   await page.reload({ waitUntil: 'domcontentloaded' }); await settle();
   const cover = await coveringShape();
   const mid = (cover.a.price + cover.b.price) / 2, midTime = Math.round((cover.a.time + cover.b.time) / 2);
+  // A text card is a point: no press can slide along it. When the live position's label sits at its price
+  // (the entry follows the fixture clock, see clearOfForeignUi), the card goes a quarter of the span away from it.
+  const entry = await page.evaluate(() => Number(document.querySelector('.private-position-line-label')?.getAttribute('data-entry-price')) || null);
+  const span = cover.a.price - cover.b.price;
+  const textPrice = entry !== null && Math.abs(entry - mid) < span * 0.15 ? (entry >= mid ? mid - span * 0.25 : mid + span * 0.25) : mid;
   const KINDS = {
     rectangle: { points: [cover.a, cover.b], area: true }, ellipse: { points: [cover.a, cover.b], area: true },
     ruler: { points: [cover.a, cover.b], area: true, offset: [0.38, 0.3] }, // The position tool: entry at the middle, target at the top, stop at the bottom; pressed inside the profit zone, off the entry line and its cards.
     long: { points: [{ time: cover.a.time, price: mid }, { time: cover.b.time, price: cover.a.price }, { time: cover.b.time, price: cover.b.price }], area: true, zone: true },
     fib: { points: [cover.a, cover.b], area: false }, trendline: { points: [cover.a, cover.b], area: false },
     horizontal: { points: [{ time: cover.a.time, price: mid }], area: false }, vertical: { points: [{ time: midTime, price: cover.a.price }], area: false },
-    text: { points: [{ time: midTime, price: mid }], text: 'QA', area: false },
+    text: { points: [{ time: midTime, price: textPrice }], text: 'QA', area: false },
   };
   const pressPoint = (kind, spec) => page.evaluate(([kind, area, offset, zone]) => {
     const host = [...document.querySelectorAll('.chart-surface *')].find((el) => el.__voltexChart);
@@ -491,7 +551,11 @@ const storedPoints = () => page.evaluate((key) => { const raw = localStorage.get
     return { ...onLine, beside: { x: onLine.x + (kind === 'vertical' ? 24 : 0), y: onLine.y + (kind === 'vertical' ? 0 : 24) } };
   }, [kind, spec.area, spec.offset ?? null, !!spec.zone]);
   const press = async (x, y, dx = 200) => {
-    const before = await readChart(); const storedBefore = await storedPoints(); const top = await topElementAt(x, y);
+    // Only one drawing is on the chart here: slide along its line (across a vertical one), never off it.
+    const dir = await page.evaluate(() => { const g = document.querySelector('[data-drawing-kind]'); const r = g?.getBoundingClientRect(); const kind = g?.getAttribute('data-drawing-kind');
+      return kind === 'vertical' ? [0, 1] : kind === 'trendline' && r && r.width > 4 ? [r.width / Math.hypot(r.width, r.height), r.height / Math.hypot(r.width, r.height)] : [1, 0]; });
+    const spot = await clearOfForeignUi(x, y, dir); x = spot.x; y = spot.y;
+    const before = await readChart(); const storedBefore = await storedPoints(); const top = spot.top;
     await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + dx, y, { steps: 10 }); await page.mouse.up(); await delay(350);
     const after = await readChart();
     return { top, panned: before.from - after.from, drawingMoved: (await storedPoints()) !== storedBefore };

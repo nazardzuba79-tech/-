@@ -38,6 +38,19 @@ const qty = page => page.locator('.fo-qtyInputRow input');
 const priceField = page => page.locator('.fo-priceInputRow input');
 const button = (page, side) => page.locator(`.fo-submitPair .${side === 'LONG' ? 'buy' : 'sell'}`);
 const tabCount = async (page, tab) => (await page.locator(`#futures-tab-${tab} .reference-tab-count`).innerText()).trim();
+/** The order family control: tabs on a desktop, one select on a phone (OrderFamilyTabs compact). */
+async function selectedFamily(page) {
+  const select = page.locator('.fo-panel .order-family-select select');
+  if (await select.count()) return select.inputValue();
+  const active = page.locator('.fo-panel .order-family-tabs [role=tab][aria-selected=true]');
+  return (await active.count()) ? (await active.first().innerText()).trim() : null;
+}
+async function chooseFamily(page, index, family) {
+  const select = page.locator('.fo-panel .order-family-select select');
+  if (await select.count()) { await select.selectOption(family); return (await select.locator(`option[value=${family}]`).innerText()).trim(); }
+  const tab = page.locator('.fo-panel .order-family-tabs [role=tab]').nth(index);
+  await tab.click(); return (await tab.innerText()).trim();
+}
 
 async function check(name, fn) {
   try { const evidence = await fn(); report.checks.push({ name, passed: true, ...(evidence === undefined ? {} : { evidence }) }); return true; }
@@ -82,20 +95,21 @@ async function session(width) {
   assert(initial.initialized && initial.account, 'Fixture initialization was not confirmed');
   await context.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
   await context.routeWebSocket('**/*', socket => socket.close());
-  const drafts = [];
+  const drafts = [], evidence = {};
   const page = await context.newPage(); activePage = page; page.setDefaultTimeout(25000);
   page.on('pageerror', error => report.errors.push(error.message));
   page.on('dialog', dialog => dialog.accept());
   page.on('request', request => { if (request.url().endsWith('/native/commands') && request.method() === 'POST') drafts.push(request.postDataJSON()); });
-  await page.goto(origin + '/futures?pair=' + encodeURIComponent(PAIR)); await page.locator('.chart-surface').waitFor();
-  return { context, page, token, initial, drafts };
+  // owner, 2026-10-04: the phone opens on Trade, with the chart in its own workspace tab.
+  await page.goto(origin + '/futures?pair=' + encodeURIComponent(PAIR)); await page.locator('.chart-surface:visible, #mobile-futures-panel-trade:visible').first().waitFor();
+  return { context, page, token, initial, drafts, evidence };
 }
 async function workspace(page, name) {
   const tab = page.locator(`#mobile-futures-${name}`);
   if (await tab.isVisible() && await tab.getAttribute('aria-selected') !== 'true') await tab.click();
 }
 async function ready(s) {
-  await s.page.locator('.chart-surface').waitFor();
+  await s.page.locator('.chart-surface:visible, #mobile-futures-panel-trade:visible').first().waitFor();
   await s.page.waitForFunction(() => {
     const balance = document.querySelector('.futures-account-balance .mono')?.textContent?.trim();
     const limit = document.querySelector('.fo-priceInputRow input');
@@ -122,32 +136,110 @@ async function armChartPicker(p) {
   await p.locator('.chart-tools-menu').waitFor({ state: 'detached' });
   await p.locator('.chart-surface[data-chart-picking]').waitFor();
 }
-/** Click an OLD bar — one whose close is the flat 0.004 — the way a trader does, on the chart body. */
-async function pickOldCandle(p) {
+/** Frame the chart the way the owner sees it: the recent rise in view, so the old 0.004 bars are drawn
+ *  LOW on the price pane — in its bottom tenth with the chart's 6 % bottom margin. Done once, before any
+ *  click; nothing scrolls or zooms between a refused and an accepted click. */
+async function frameOldBars(p) {
   await p.waitForFunction(() => window.__nativeQaSeries?.data().length > 10);
   await p.locator('.chart-area').scrollIntoViewIfNeeded();
-  // Scroll back to the old bars, as a trader does: with the recent rise in
-  // view the 0.004 bars sit in the bottom fifth of the pane, which the chart
-  // reserves for its scales and never treats as a bar click.
   await p.evaluate(entry => {
     const c = window.__nativeQaChart, data = window.__nativeQaSeries.data();
     const old = data.map((x, i) => [x, i]).filter(([x]) => Math.abs(x.close - entry) < 1e-9).map(([, i]) => i);
-    const to = old[old.length - 1] - 2, from = Math.max(0, to - 60);
-    c.timeScale().setVisibleLogicalRange({ from, to });
+    c.timeScale().setVisibleLogicalRange({ from: Math.max(0, old[old.length - 1] - 40), to: data.length - 1 });
   }, ENTRY);
   await delay(300);
-  const points = await p.evaluate(entry => {
+}
+/** Where the chart draws things right now: the price pane, the 0.004 level inside it, the visible old bars,
+ *  the forming bar, and the volume pane below. Screen coordinates. */
+async function chartGeometry(p) {
+  return p.evaluate(entry => {
     const c = window.__nativeQaChart, series = window.__nativeQaSeries, r = c.chartElement().getBoundingClientRect();
-    return series.data().slice(0, -3).filter(x => typeof x.time === 'number' && x.open !== undefined && Math.abs(x.close - entry) < 1e-9)
-      .map(x => ({ time: x.time, close: x.close, x: c.timeScale().timeToCoordinate(x.time) })).filter(x => x.x !== null && x.x > 35 && x.x < r.width - 90)
-      .filter((_, i) => i % 5 === 0).map(x => ({ ...x, x: r.left + x.x, y: r.top + series.priceToCoordinate(entry) }));
+    const pane = c.paneSize(0), panes = c.panes().length, volume = panes > 1 ? c.paneSize(1) : null;
+    const y = series.priceToCoordinate(entry), data = series.data();
+    const bars = data.slice(0, -3).filter(x => typeof x.time === 'number' && x.open !== undefined && Math.abs(x.close - entry) < 1e-9)
+      .map(x => ({ time: x.time, x: c.timeScale().timeToCoordinate(x.time) })).filter(x => x.x !== null && x.x > 35 && x.x < r.width - 90);
+    const last = data[data.length - 1];
+    const forming = last && typeof last.time === 'number' ? { time: last.time, x: c.timeScale().timeToCoordinate(last.time), y: series.priceToCoordinate(last.close) } : null;
+    return { left: r.left, top: r.top, width: r.width, paneWidth: pane.width, paneHeight: pane.height, panes, volumePaneHeight: volume ? volume.height : 0,
+      entryY: y, entryFraction: y === null ? null : y / pane.height, bars, forming, barSpacing: c.timeScale().options().barSpacing };
   }, ENTRY);
-  assert(points.length, 'No 0.004 bar is visible on the chart');
-  for (const point of points) {
-    await p.mouse.click(point.x, point.y); await delay(120);
-    if (await p.evaluate(() => !document.querySelector('[data-chart-picking]'))) return point;
+}
+const stillPicking = p => p.evaluate(() => ({ picking: !!document.querySelector('[data-chart-picking]'), reference: document.querySelector('[data-entry-reference]')?.getAttribute('data-entry-reference') ?? null }));
+/** Clicks that must NEVER select a bar, with the picker armed and the old bars framed: empty space in the
+ *  price pane, the volume pane, the forming (incomplete) bar, and a drag that starts on a completed bar.
+ *  Each leaves the picker armed and the panel without an entry reference. */
+async function negativeControls(p) {
+  const g = await chartGeometry(p);
+  assert(g.bars.length, 'No 0.004 bar is visible on the chart');
+  const bar = g.bars[Math.floor(g.bars.length / 2)];
+  const results = [];
+  async function control(name, point, act) {
+    await act(); await delay(150);
+    const after = await stillPicking(p);
+    results.push({ name, point, picking: after.picking, reference: after.reference });
+    assert(after.picking && after.reference === null, `${name}: the chart created a selection (picking ${after.picking}, reference ${after.reference})`);
   }
-  throw Error('The chart did not accept a pick on any 0.004 bar');
+  // 1. Empty price-pane space above the flat old bars: the same column, a quarter of the pane up.
+  const empty = { x: g.left + bar.x, y: g.top + g.paneHeight * 0.3 };
+  await control('empty price-pane space', empty, () => p.mouse.click(empty.x, empty.y));
+  // 2. The volume pane: the same column, inside the pane under the candles.
+  assert(g.panes >= 2 && g.volumePaneHeight > 10, `No separate volume pane to click (panes ${g.panes}, height ${g.volumePaneHeight})`);
+  const volume = { x: g.left + bar.x, y: g.top + g.paneHeight + g.volumePaneHeight / 2 };
+  await control('volume pane', volume, () => p.mouse.click(volume.x, volume.y));
+  // 3. The forming bar: the newest one, still open, drawn at the current price near the top.
+  assert(g.forming && g.forming.x !== null && g.forming.y !== null, 'No forming bar on the chart');
+  const forming = { x: g.left + g.forming.x, y: g.top + g.forming.y };
+  await control('forming (incomplete) bar', forming, () => p.mouse.click(forming.x, forming.y));
+  // 4. A drag that starts exactly on a completed old bar: a pan, never a pick.
+  const drag = { x: g.left + bar.x, y: g.top + g.entryY };
+  await control('drag from a completed bar', drag, async () => {
+    await p.mouse.move(drag.x, drag.y); await p.mouse.down(); await p.mouse.move(drag.x + 30, drag.y, { steps: 6 }); await p.mouse.up();
+  });
+  return { paneHeight: g.paneHeight, entryFraction: g.entryFraction, controls: results };
+}
+/** Click an OLD bar — one whose close is the flat 0.004 — the way a trader does, on the chart body, WHERE THE
+ *  CHART DRAWS IT: in the bottom tenth of the price pane with the rise in view. That is the regression
+ *  (owner, 2026-10-21, IOST/USDT 1h on production): the chart refused every bar in the pane's bottom fifth,
+ *  a band it reserved for scales after the volume had already moved to its own pane. One click, no scroll. */
+async function pickOldCandle(p) {
+  await frameOldBars(p);
+  const g = await chartGeometry(p);
+  assert(g.bars.length, 'No 0.004 bar is visible on the chart');
+  assert(g.entryFraction !== null && g.entryFraction >= 0.8, `The 0.004 bars are not drawn in the bottom fifth of the price pane (y ${g.entryY} of ${g.paneHeight})`);
+  const bar = g.bars[Math.floor(g.bars.length / 2)];
+  const point = { x: g.left + bar.x, y: g.top + g.entryY, time: bar.time, paneHeight: g.paneHeight, fraction: g.entryFraction };
+  await p.mouse.click(point.x, point.y); await delay(150);
+  const after = await stillPicking(p);
+  assert(!after.picking, `The chart refused the completed 0.004 bar drawn at ${(g.entryFraction * 100).toFixed(1)} % of the price pane's height (y ${g.entryY.toFixed(1)} of ${g.paneHeight})`);
+  return point;
+}
+/** A lower-pane indicator (RSI) on the Futures terminal lives in a pane of its own. A click there, with the
+ *  picker armed and a bar already selected, must neither pick nor replace the selection. */
+async function indicatorPaneControl(p) {
+  await workspace(p, 'chart');
+  const toggleRsi = async () => {
+    await p.locator('.chart-indicators-trigger').click();
+    const item = p.locator('.chart-menu button').filter({ hasText: /RSI/ }).first();
+    await item.waitFor(); await item.click();
+    await p.keyboard.press('Escape'); await delay(300);
+  };
+  await toggleRsi();
+  await p.waitForFunction(() => window.__nativeQaChart.panes().length >= 3);
+  await armChartPicker(p);
+  await frameOldBars(p);
+  const g = await p.evaluate(() => { const c = window.__nativeQaChart, r = c.chartElement().getBoundingClientRect(); return { left: r.left, top: r.top, p0: c.paneSize(0).height, p1: c.paneSize(1).height, p2: c.paneSize(2).height, panes: c.panes().length }; });
+  const before = await stillPicking(p);
+  assert(before.picking, 'Picker not armed');
+  const bars = (await chartGeometry(p)).bars; assert(bars.length, 'No 0.004 bar is visible on the chart');
+  const point = { x: g.left + bars[Math.floor(bars.length / 2)].x, y: g.top + g.p0 + g.p1 + g.p2 / 2 };
+  await p.mouse.click(point.x, point.y); await delay(150);
+  const after = await stillPicking(p);
+  assert(after.picking && after.reference === before.reference, `A click in the indicator pane picked or changed the selection (picking ${after.picking}, reference ${before.reference} → ${after.reference})`);
+  await p.keyboard.press('Escape'); await delay(150);
+  assert(!(await stillPicking(p)).picking, 'Escape did not cancel the picker');
+  await toggleRsi();
+  await p.waitForFunction(() => window.__nativeQaChart.panes().length <= 2);
+  return { panes: g.panes, point, paneHeights: [g.p0, g.p1, g.p2], picking: after.picking, referenceBefore: before.reference, referenceAfter: after.reference };
 }
 async function setLeverage(p, value) {
   await workspace(p, 'trade');
@@ -177,7 +269,14 @@ async function tradeSide(s, width, side, counts) {
   const p = s.page, sign = side === 'LONG' ? 1 : -1;
   // 1. A bar. The selection survives a completed trade, so only the first side arms the picker.
   await workspace(p, 'trade');
-  if (!(await p.locator('[data-entry-reference]').count())) { await armChartPicker(p); await pickOldCandle(p); await workspace(p, 'trade'); }
+  if (!(await p.locator('[data-entry-reference]').count())) {
+    await armChartPicker(p); await frameOldBars(p);
+    s.evidence.controls = await negativeControls(p);
+    await p.screenshot({ path: path.join(out, `pick-refusals-${width}.png`) });
+    s.evidence.pick = await pickOldCandle(p);
+    await p.screenshot({ path: path.join(out, `pick-accepted-${width}.png`) });
+    await workspace(p, 'trade');
+  }
   try { await p.locator('[data-entry-reference]').waitFor({ timeout: 10000 }); }
   catch {
     const dump = await p.evaluate(() => ({ formAttrs: [...(document.querySelector('.fo-form')?.attributes ?? [])].map(a => `${a.name}=${a.value.slice(0, 40)}`), reduceOnly: document.querySelector('.fo-form input[type=checkbox]')?.checked, picking: !!document.querySelector('[data-chart-picking]'), toolsOn: !!document.querySelector('.chart-surface[data-drawing-tools]'), buttons: [...document.querySelectorAll('.fo-submitPair button')].map(b => `${b.textContent?.trim()}:${b.disabled ? 'off' : 'on'}`), price: document.querySelector('.fo-priceInputRow input')?.value, form: document.querySelector('.fo-form')?.innerText.slice(0, 160).replace(/\s+/g, ' ') }));
@@ -193,8 +292,8 @@ async function tradeSide(s, width, side, counts) {
   }
   let typedLimit = false;
   if (SERVER_ONLY && LIMIT_PRICE && (await priceField(p).getAttribute('readonly')) === null) { await priceField(p).fill(LIMIT_PRICE); typedLimit = true; }
-  const limitTab = p.locator('.fo-panel .order-family-tabs [role=tab]').first();
-  assert.equal(await limitTab.getAttribute('aria-selected'), 'true', 'LIMIT tab is not the selected tab');
+  const family = await selectedFamily(p);
+  assert(family === 'LIMIT' || family === (await p.locator('.fo-panel .order-family-tabs [role=tab]').first().innerText().catch(() => 'LIMIT')).trim(), `LIMIT is not the selected order family: ${family}`);
   // 2. Same quantity / leverage controls, same Open Long / Open Short button.
   await qty(p).fill(QUANTITY);
   await setLeverage(p, LEVERAGE);
@@ -298,6 +397,37 @@ async function tradeSide(s, width, side, counts) {
     closedAt: CURRENT, realizedGross: done.realizedGross, realizedNet: done.realizedPnl, positionsAfterClose: closed.state.positions.length };
 }
 
+/** The same selected bar through the «Рыночный» tab: the form sends type MARKET with the bar attached and no
+ *  price; the engine opens at the bar's price, exactly as from the LIMIT tab. Closed again at the near-live price. */
+async function marketTabEntry(s, width, counts) {
+  const p = s.page;
+  await workspace(p, 'trade');
+  const reference = JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference'));
+  const tabName = await chooseFamily(p, 1, 'MARKET');
+  await p.waitForFunction(() => !document.querySelector('.fo-priceInputRow input'));
+  await qty(p).fill(QUANTITY);
+  await p.waitForFunction(() => !document.querySelector('.fo-submitPair .buy')?.disabled);
+  await p.screenshot({ path: path.join(out, `market-tab-armed-${width}.png`), fullPage: width === 390 });
+  const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());
+  assert.equal(draft.type, 'MARKET'); assert.equal(draft.price, undefined, 'The Market tab sent a price'); assert.deepEqual(draft.candle, reference); assert.equal(draft.executionMode, 'HISTORICAL_DEMO');
+  assert.equal(state.positions.length, counts.positions + 1); assert.equal(activeOrders(state).length, counts.orders);
+  const position = state.positions.find(x => x.symbol === SYMBOL && x.side === 'LONG');
+  assert(position, 'No LONG AKE position from the Market tab');
+  assert.equal(Number(position.entryPrice), ENTRY, `Market-tab entry is ${position.entryPrice}, not the selected ${ENTRY}`);
+  assert(Math.abs(Number(position.markPrice) - CURRENT) < 1e-9);
+  assert.equal(position.executionMode, 'HISTORICAL_DEMO');
+  const order = state.orders.find(o => o.positionId === position.id || o.id === position.id);
+  assert(order && order.status === 'FILLED' && order.type === 'MARKET' && Number(order.historicalPrice) === ENTRY, `Market-tab order: ${JSON.stringify(order)}`);
+  await workspace(p, 'positions');
+  await p.locator('#futures-tab-positions').click();
+  const row = p.locator('.futures-position-row[data-side="LONG"]').filter({ hasText: 'AKE' }).first(); await row.waitFor();
+  const closed = await command(s, 'CLOSE', () => row.locator('.futures-position-close').nth(1).click());
+  assert.equal(closed.state.positions.filter(x => x.symbol === SYMBOL).length, 0, 'Market-tab position still open after close');
+  await workspace(p, 'trade'); await chooseFamily(p, 0, 'LIMIT');
+  await p.waitForFunction(() => !!document.querySelector('.fo-priceInputRow input'));
+  return { tab: tabName, submittedType: draft.type, price: draft.price ?? null, entry: position.entryPrice, mark: position.markPrice, orderType: order.type, historicalPrice: order.historicalPrice, positionsAfterClose: closed.state.positions.length };
+}
+
 async function historicalEntry(width) {
   const s = await session(width), p = s.page;
   try {
@@ -309,11 +439,21 @@ async function historicalEntry(width) {
     const sides = SERVER_ONLY ? ['LONG'] : ['LONG', 'SHORT'];
     const results = {};
     for (const side of sides) results[side] = await tradeSide(s, width, side, counts);
+    if (!SERVER_ONLY) {
+      results.MARKET_TAB = await marketTabEntry(s, width, counts);
+      // The phone keeps the indicator menus in the chart workspace's sheet; the separate-pane rule is one code
+      // path (paneIndex ≠ 0), exercised here on the desktop layout and in chartTrading.test.ts.
+      await workspace(p, 'chart');
+      if (await p.locator('.chart-indicators-trigger').isVisible()) {
+        results.indicatorPane = await indicatorPaneControl(p);
+        await p.screenshot({ path: path.join(out, `indicator-pane-control-${width}.png`) });
+      } else results.indicatorPane = { skipped: 'no visible indicator trigger in this layout; covered at 1440 and by the unit test' };
+    }
     // No liquidity dependency: the fixture quote holds ONE contract per side, every fill above was 1 500 000.
     const quote = await (await s.context.request.get(origin + '/api/v1/futures/mark-price/' + PAIR.replace('/', '-'))).json();
     assert(Math.abs(Number(quote.markPrice) - CURRENT) < 1e-9);
     assert.deepEqual(report.errors, [], 'Browser runtime errors');
-    return { width, ...results };
+    return { width, pick: s.evidence.pick, controls: s.evidence.controls, ...results };
   } finally { await s.context.close(); }
 }
 

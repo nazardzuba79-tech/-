@@ -80,7 +80,8 @@ const selectors = { header: '.global-header', ticker: '.ticker-bar', chart: '.ch
       await context.addCookies([{name:'qa_state',value:'filled',url:origin}]);
       await page.reload();
       await page.locator('.futures-positions-table tbody tr').first().waitFor();
-      near((await page.locator('.bottom-panel').boundingBox()).height,200,'200px populated account panel');
+      // PR #566 (owner, 2026-10-21): two whole position rows on arrival — 252px, not the 200px of FuturesFigmaDesktop. The 160px empty and 44px folded heights above are unchanged.
+      near((await page.locator('.bottom-panel').boundingBox()).height,252,'252px populated account panel');
       assert.equal(await page.locator('.futures-positions-table tbody tr').count(),3,'all fixture positions retained');
       await page.waitForFunction(() => /\d/.test(document.querySelector('.rb-row')?.textContent || ''));
       await page.screenshot({path:path.join(out,`populated-top-${width}.png`)});
