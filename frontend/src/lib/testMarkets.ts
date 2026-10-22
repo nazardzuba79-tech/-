@@ -60,16 +60,14 @@ export interface TestMarketsSnapshot {
 }
 
 /** Presentation only: the server owns execution permission and market phase.
- * Every asset in this catalogue is simulated, including tradable listings. */
+ * No market-wide notice («Учебный рынок · Торговля пока недоступна» and the like):
+ * owner, 2026-10-22, «забороняю такі надписи … інтерфейс має бути чистий». Only the
+ * listing's own schedule is shown. */
 export function testMarketPresentation(asset: TestAsset, now: number) {
   // A paused timer arrives unarmed (the market stays frozen) but keeps its date on the page.
   const paused = asset.managed === true && asset.countdown === 'paused' && asset.state.phase === 'pre-listing';
   const scheduled = (asset.listingArmed || paused) && Number.isFinite(Date.parse(asset.listingAt));
   return {
-    simulationKey: 'listing.simulation' as const,
-    availabilityKey: !asset.isTradable ? 'listing.tradingUnavailable' as const
-      : asset.state.phase === 'live' ? 'listing.marketLive' as const
-      : null,
     scheduleKey: !scheduled ? 'listing.dateUnconfirmed' as const
       : paused ? 'listing.countdownPaused' as const
       : asset.state.phase === 'pre-listing' && Date.parse(asset.listingAt) <= now

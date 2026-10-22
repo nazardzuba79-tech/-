@@ -172,11 +172,11 @@ describe('a paused browser has no Continue UI and retains known account values',
     expect(notice.getAttribute('data-browser-phase')).toBe('error');
     expect(notice.getAttribute('data-browser-failure')).toBe('session');
     expect(notice.hasAttribute('hidden')).toBe(false);
-    expect(notice.textContent).toContain(RU['browserSyncError']);
     expect(notice.textContent).toContain(RU['browserResumeBlocked']);
-    expect(notice.textContent).toContain(`${RU['browserFailure.session']}: Fixture validation outage`);
+    expect(notice.textContent).not.toContain('Fixture validation outage');
+    expect(notice.querySelector('code')).toBeNull();
     const buttons = Array.from(document.querySelectorAll('button'), button => button.textContent);
-    expect(buttons).toEqual([RU['browserRetry'], RU['browserReload']]);
+    expect(buttons).toEqual([RU['browserRetry']]);
     expect(RU['browserRetry']).toBe('Повторить попытку');
     expect(document.querySelector('a, input')).toBeNull();
     expect(futuresAccountStore.getState().balances.data).toEqual(OLD_BALANCES);
@@ -220,9 +220,39 @@ describe('a paused browser has no Continue UI and retains known account values',
     expect(activity.getBrowserResumeFailure()).toEqual({ kind: 'read', detail: 'Fixture balance outage' });
     const notice = document.querySelector('[role="alert"][data-browser-notice]')!;
     expect(notice.getAttribute('data-browser-failure')).toBe('read');
-    expect(notice.textContent).toContain(`${RU['browserFailure.read']}: Fixture balance outage`);
+    expect(notice.textContent).toContain(RU['browserResumeBlocked']);
+    expect(notice.textContent).not.toContain('Fixture balance outage');
+    expect(notice.querySelector('code')).toBeNull();
     expect(futuresAccountStore.getState().balances.data).toEqual(OLD_BALANCES);
     expect(futuresAccountStore.getState().positions.data).toEqual(OLD_POSITIONS);
+  });
+
+  test('a failing auxiliary Futures mark quote does not block the entire terminal after wake', async () => {
+    await mount();
+    const quoteUrl = 'https://api.fixture.invalid/api/v1/futures/mark-price/ARIA-USDT';
+    (globalThis.fetch as jest.Mock).mockImplementation(async (url: string) => {
+      if (String(url) !== quoteUrl) throw new Error('Unexpected network read');
+      return new Response('{"error":"fixture unavailable"}', { status: 503, headers: { 'Content-Type': 'application/json' } });
+    });
+    let status: number | null = null;
+    const onWake = () => {
+      if (activity.getBrowserPhase() !== 'syncing') return;
+      void activity.browserFetch(quoteUrl).then(response => { status = response.status; });
+    };
+    activity.addBrowserActivityListener(onWake);
+    try {
+      let waking!: Promise<void>;
+      await React.act(async () => { activity.sleepBrowser(); waking = activity.resumeBrowser(); await flush(); });
+      await tick(200);
+      await React.act(async () => { await waking; });
+      expect(status).toBe(503);
+      expect(activity.getBrowserPhase()).toBe('active');
+      expect(activity.getBrowserResumeFailure()).toBeNull();
+      expect(document.querySelector('[data-browser-notice]')).toBeNull();
+      expect(futuresAccountStore.getState().balances.data).toEqual(OLD_BALANCES);
+    } finally {
+      activity.removeBrowserActivityListener(onWake);
+    }
   });
 
   test('a cold application lifecycle fetches fresh values without a Continue control', async () => {

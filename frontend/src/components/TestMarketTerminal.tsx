@@ -38,7 +38,6 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
   const counting = preListing && asset?.listingArmed === true && Number.isFinite(listingAt);
   const now = useServerNow(clockOffsetMs, counting);
   const presentation = asset ? testMarketPresentation(asset, now) : null;
-  const marketLabel = presentation ? [t(presentation.simulationKey), presentation.availabilityKey && t(presentation.availabilityKey)].filter(Boolean).join(' · ') : null;
   const reachedRef = useRef(false);
   const left = counting ? listingAt - now : NaN;
 
@@ -59,7 +58,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
     const chart = <TerminalChart key={`${pair}:${asset.version ?? 0}`} pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
       tradingView={false} priceScaleMode="normal" priceFormatter={formatTestAxisPrice} chartSettings />;
     return <div className="managed-demo-chart">
-      <div className="managed-demo-status">{marketLabel}{error && <> · {t('listing.dataStale')}</>}</div>
+      {error && <div className="managed-demo-status" role="alert">{t('listing.dataStale')}</div>}
       {chart}
     </div>;
   }
@@ -81,7 +80,6 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
         <div className="vta-prelisting-mark"><CryptoIcon symbol={pair.split('/')[0]} size={64} /></div>
         <h2 className="vta-prelisting-name">{name}</h2>
         <div className="vta-prelisting-pair">{pair}</div>
-        {marketLabel && <div className="managed-demo-status">{marketLabel}</div>}
         {error && asset && <p role="alert">{t('listing.dataStale')}</p>}
         {asset ? (
           <>

@@ -64,6 +64,20 @@ function chart(asset: markets.TestAsset | null, lang: typeof LOCALES[number] = '
 beforeEach(() => jest.spyOn(Date, 'now').mockReturnValue(now));
 afterEach(() => jest.restoreAllMocks());
 
+/* Owner, 2026-10-22: «забороняю такі надписи … інтерфейс має бути чистий». The market notice
+   («Учебный рынок · Торговля пока недоступна» / «Рынок открыт») is gone from every listing view;
+   its former wording in each language must never reach the page again. */
+const FORMER_NOTICE = [
+  'Учебный рынок', 'Торговля пока недоступна', 'Рынок открыт',
+  'Practice market', 'Trading is currently unavailable', 'Market open',
+  'Mercado de práctica', 'Trading no disponible por ahora', 'Mercado abierto',
+  'अभ्यास बाज़ार', 'ट्रेडिंग अभी उपलब्ध नहीं है', 'बाज़ार खुला है',
+  '練習用市場', '現在取引できません', '市場は開始しています',
+  '연습용 시장', '현재 거래할 수 없습니다', '시장 개장',
+  '练习市场', '交易暂不可用', '市场已开放',
+];
+const expectNoNotice = (html: string) => { for (const text of FORMER_NOTICE) expect(html).not.toContain(text); };
+
 describe.each(LOCALES)('listing customer states in %s', lang => {
   const t = translate(lang);
   test('awaits market launch confirmation without promising trading permission', () => {
@@ -73,8 +87,8 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
     const parsed = markets.parseTestMarkets({ serverTime: now, assets: [fixture] })!.assets[0];
     expect(parsed).toMatchObject(fixture);
     const html = chart(parsed, lang);
-    expect(html).toContain(t('listing.simulation'));
-    expect(html).toContain(t('listing.tradingUnavailable'));
+    expectNoNotice(html);
+    expect(html).not.toContain('managed-demo-status');
     expect(html).toContain(t('listing.scheduledAt'));
     expect(html).toContain('role="timer"');
     expect(html).not.toContain(fixture.status);
@@ -82,10 +96,10 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
     expect(parsed.initialPrice).toBe(2);
     expect(parsed.isTradable).toBe(false);
   });
-  test.each([true, false])('live simulation remains identified, tradable=%s', isTradable => {
+  test.each([true, false])('a live market shows its chart with no notice above it, tradable=%s', isTradable => {
     const html = chart({ ...fixture, isTradable, status: 'Prisma SQL /internal/worker', state: { ...fixture.state, phase: 'live' } }, lang);
-    expect(html).toContain(t('listing.simulation'));
-    expect(html).toContain(t(isTradable ? 'listing.marketLive' : 'listing.tradingUnavailable'));
+    expectNoNotice(html);
+    expect(html).not.toContain('managed-demo-status');
     expect(html).toContain('data-chart');
     expect(html).not.toMatch(/Prisma|SQL|worker|role="timer"/);
   });
@@ -140,8 +154,7 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
         expect(html.includes(t('listing.awaitingStart'))).toBe(waiting);
         expect(html.includes('role="timer"')).toBe(phase === 'pre-listing' && delta < 0);
         expect(html.includes('data-chart')).toBe(phase === 'live');
-        expect(html.includes(t('listing.marketLive'))).toBe(phase === 'live' && isTradable);
-        expect(html.includes(t('listing.tradingUnavailable'))).toBe(!isTradable);
+        expectNoNotice(html);
         expect(html).not.toContain(raw.status);
         expect(JSON.stringify(raw)).toBe(original);
       }
@@ -152,6 +165,15 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
     expect(chart(null, lang)).toContain('role="alert"');
     expect(chart(null, lang, false, false)).toContain(t('trade.loading'));
     expect(chart(fixture, lang, true)).toContain(t('listing.dataStale'));
+    // On a live chart the stale-data alert keeps its own row; nothing else is written there.
+    const stale = chart({ ...fixture, state: { ...fixture.state, phase: 'live' } }, lang, true);
+    expect(stale).toContain(`<div class="managed-demo-status" role="alert">${t('listing.dataStale')}</div>`);
+    expectNoNotice(stale);
+    // Without that row the chart is the only child and must get the whole area (CI 2026-10-22: with the
+    // old two-row grid the chart fell into the `auto` row and stayed empty on a 390px phone).
+    const css = require('fs').readFileSync(require('path').resolve(__dirname, '../../components/TestMarketTerminal.css'), 'utf8');
+    expect(css).toMatch(/\.managed-demo-chart \{[^}]*grid-template-rows: minmax\(0, 1fr\);/);
+    expect(css).toMatch(/\.managed-demo-chart:has\(> \.managed-demo-status\) \{ grid-template-rows: auto minmax\(0, 1fr\); \}/);
   });
   test('Markets/search/favorites share the generic presentation', () => {
     const { TestMarketsStrip } = component('pages/markets-bolt/TestMarketsStrip.tsx', lang);
@@ -159,8 +181,8 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
       search, favoritesOnly, favorites, onToggleFavorite: () => {}, onOpen: () => {},
     }));
     const html = render('zqnew', true, new Set([fixture.pair]));
-    expect(html).toContain(t('listing.simulation'));
-    expect(html).toContain(t('listing.tradingUnavailable'));
+    expect(html).toContain(fixture.pair);
+    expectNoNotice(html);
     expect(html).not.toContain(fixture.status);
     expect(render('absent', false, new Set())).toBe('');
     expect(render('', true, new Set())).toBe('');

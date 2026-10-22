@@ -126,7 +126,7 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUT: /tmp/listings-qa-report/listing-timer
-      - name: TERYVANE (TYVN/USDT) 26.10.2026 draft — created through the real admin route on workerd, previewed, never published
+      - name: TERYVANE (TYVN/USDT) 27.10.2026 draft — created through the real admin route on workerd, previewed, never published
         run: node scripts/qa-listing-tyvn.cjs
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
