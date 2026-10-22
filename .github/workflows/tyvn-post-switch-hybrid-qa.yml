@@ -1,0 +1,105 @@
+name: TYVN post-switch hybrid (current UI + exact API #578, fixture only)
+
+on:
+  push:
+    branches: [review/tyvn-post-switch-hybrid-qa-20261022]
+    paths: [.github/workflows/tyvn-post-switch-hybrid-qa.yml]
+  pull_request:
+    paths: [.github/workflows/tyvn-post-switch-hybrid-qa.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  exact-source-isolated:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      JWT_SECRET: git-actions-only-not-production
+      NODE_ENV: test
+      VITE_MARKET_EDGE_URL: http://127.0.0.1:8787
+      QA_FRONTEND_DIST: .listings-qa-dist
+      QA_PLAYWRIGHT_MODULE: /tmp/tyvn-hybrid-browser/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c5b89261b3310a87a59829f30659ea313785cd09
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with:
+          repository: nazardzuba79-tech/-
+          ref: 6f082a98d0c97c28215e6c5c8056b786d6fa6c99
+          path: .qa-api-candidate
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Pin and replace only isolated runner's API source
+        shell: bash
+        run: |
+          set -euo pipefail
+          MAIN_SHA=c5b89261b3310a87a59829f30659ea313785cd09
+          API_SHA=6f082a98d0c97c28215e6c5c8056b786d6fa6c99
+          test "$(git rev-parse HEAD)" = "$MAIN_SHA"
+          test "$(git -C .qa-api-candidate rev-parse HEAD)" = "$API_SHA"
+          sha256sum .qa-api-candidate/config/test-markets/tyvn.draft.json config/test-markets/tyvn.draft.json
+          cmp config/test-markets/tyvn.draft.json .qa-api-candidate/config/test-markets/tyvn.draft.json
+          # This disposable runner must emulate the isolated API recipe, never
+          # keep newer main backend modules in the candidate overlay.
+          rm -rf src
+          cp -a .qa-api-candidate/src ./src
+          cp .qa-api-candidate/tsconfig.json ./tsconfig.json
+          rm -rf .qa-api-candidate
+          test -f src/api/routes/adminListings.ts
+          grep -Fq 'VOLTEX_RELEASE_SHA' src/buildCommit.ts
+          echo "ui_main=$MAIN_SHA / candidate_api=$API_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo 'No production endpoint or account was touched.'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix workers/market-edge --ignore-scripts --no-audit --no-fund
+      - name: Prisma client only (no migrate / database)
+        run: npx prisma generate
+      - name: Verify real candidate API and main frontend TypeScript
+        run: |
+          npx tsc --noEmit
+          cd frontend && npx tsc -b
+      - name: Isolated admin / TYVN / timer regression
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/services/listings/__tests__/listingCountdown.test.ts
+          src/services/listings/__tests__/tyvnDraft.test.ts
+          frontend/src/lib/__tests__/managedListings.test.ts
+          frontend/src/lib/__tests__/adminListingTimerCapability.test.ts
+      - name: Compile exact candidate API for local isolated browser harness
+        run: npm run build
+      - name: Real API router -> local workerd timer contract, no browser
+        run: node scripts/qa-listing-timer-api.cjs
+        env:
+          QA_OUT: /tmp/tyvn-hybrid-results/timer-router
+      - name: Browser tooling (disposable)
+        run: |
+          npm install --prefix /tmp/tyvn-hybrid-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/tyvn-hybrid-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Build actual main UI for local market edge
+        run: cd frontend && npx vite build --outDir ../.listings-qa-dist --emptyOutDir
+      - name: Code-free new listing and preview, no redeploy
+        run: node scripts/qa-admin-listings.cjs
+        env:
+          QA_OUTPUT: /tmp/tyvn-hybrid-results/admin-listings
+      - name: First publish staged, then start-stop (no production)
+        run: node scripts/qa-listing-publish-gate.cjs
+        env:
+          QA_OUT: /tmp/tyvn-hybrid-results/publish-gate
+      - name: Exact TYVN draft + private preview, never published
+        run: node scripts/qa-listing-tyvn.cjs
+        env:
+          QA_OUT: /tmp/tyvn-hybrid-results/tyvn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tyvn-hybrid-fixture-evidence
+          path: /tmp/tyvn-hybrid-results
+          retention-days: 7
+          if-no-files-found: ignore
