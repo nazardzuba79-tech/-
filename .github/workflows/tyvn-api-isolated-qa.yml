@@ -28,6 +28,9 @@ jobs:
             case "$f" in
               .github/workflows/tyvn-api-isolated-qa.yml|\
               .github/workflows/admin-listings.yml|\
+              docs/TYVN_RELEASE_20261026.md|\
+              scripts/tyvn-hetzner.Dockerfile|\
+              scripts/tyvn-hetzner-preflight.sh|\
               config/test-markets/tyvn.draft.json|\
               src/api/routes/adminListings.ts|\
               src/api/routes/__tests__/adminListings.test.ts|\
@@ -42,6 +45,15 @@ jobs:
             esac
           done
           echo "Isolated API source overlay verified. No image switch or DB migration performed."
+      - name: Validate isolated release package syntax and boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/tyvn-hetzner-preflight.sh
+          grep -Fq 'ARG LIVE_IMAGE' scripts/tyvn-hetzner.Dockerfile
+          grep -Fq 'COPY src ./src' scripts/tyvn-hetzner.Dockerfile
+          if grep -Eq '^(COPY|ADD) +(prisma|\.env|package-lock)' scripts/tyvn-hetzner.Dockerfile; then exit 1; fi
+          grep -Fq '2026-10-26 13:00 UTC' docs/TYVN_RELEASE_20261026.md
       - name: Backend dependencies (isolated free GitHub runner)
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Generate Prisma client locally
