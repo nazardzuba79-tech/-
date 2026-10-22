@@ -11,7 +11,7 @@ import { ListingMovementEditor } from './ListingMovementEditor';
 import { ListingCandlePreview } from './ListingCandlePreview';
 import { formatMovementPrice, historicalModelLabel, newListingMovement, rebaseListingMovement, validateListingMovement, type ListingMovement, type ListingProgram } from './listingMovementModel';
 import { useAdminCompact } from './useAdminCompact';
-import { listingTimerSupported } from './listingTimerCapability';
+import { listingPublicationAllowed, listingTimerSupported } from './listingTimerCapability';
 import './adminListings.css';
 
 const LOGO_MAX_BYTES = 64 * 1024;
@@ -193,6 +193,8 @@ export function AdminListingsPage() {
   // A historical continuation stays a saved draft with a private preview: the
   // server refuses to publish it (HISTORICAL_RIGHTS_UNVERIFIED), so does the form.
   const historicalMode = form.simulationProgram?.kind === 'scenario-controls-v2' && form.simulationProgram.afterGrowth === 'historical';
+  // A first publication through an API without the timer would be public at once: it is not sent (listingTimerCapability).
+  const publicationBlocked = Boolean(current && !listingPublicationAllowed(current, timerSupported));
   const historicalHours = historicalMode && form.simulationProgram?.kind === 'scenario-controls-v2'
     ? (form.simulationProgram.historical?.clips ?? []).reduce((hours, clip) => hours + clip.bars.length, 0) : 0;
   // Historical models saved with OTHER listings (draft or published version), for reuse in this one.
@@ -306,7 +308,7 @@ export function AdminListingsPage() {
   }
 
   function openPublish() {
-    if (!current || busy || !draftIsSaved) return;
+    if (!current || busy || !draftIsSaved || !listingPublicationAllowed(current, timerSupported)) return;
     if (current.draft.simulationProgram?.kind === 'scenario-controls-v2'
       && current.draft.simulationProgram.afterGrowth === 'historical') {
       setFormError('Историческое движение пока только для закрытого предпросмотра. Публикация требует проверки прав на источник и отдельного торгового счёта.');
@@ -319,12 +321,12 @@ export function AdminListingsPage() {
 
   async function confirmPublish() {
     if (!publishing || busy || !draftIsSaved || publishing.listing.id !== editing?.id
-      || publishing.listing.draftRevision !== editing.revision) return;
+      || publishing.listing.draftRevision !== editing.revision || !listingPublicationAllowed(publishing.listing, timerSupported)) return;
     setBusy(true);
     try {
       // The key was fixed when this confirmation opened: a retry is the same publish.
-      // Only an API that runs the timer keeps a «staged» publication hidden; another would publish it at once.
-      const staged = timerSupported && publishing.listing.activeVersion === null && !publishing.startTimer;
+      // A first publication reaches this line only through an API that runs the timer, which keeps «staged» hidden.
+      const staged = publishing.listing.activeVersion === null && !publishing.startTimer;
       const result = await adminListingsApi.publish(publishing.listing.id, publishing.listing.draftRevision, publishing.key, staged ? 'staged' : undefined);
       setEditing(previous => previous?.id === publishing.listing.id ? { ...previous, locked: true } : previous);
       setNotice(result.replayed ? `Уже опубликовано: версия ${result.version}.`
@@ -483,11 +485,12 @@ export function AdminListingsPage() {
           <div className="listing-actions-dock">
             {formError && <p role="alert" style={styles.errorBox} data-listing-error>{formError}</p>}
             {editing.id && !draftIsSaved && !logoReading && <p className="listing-hint" role="status" data-unsaved-draft>Настройки изменены — обновите предпросмотр. Сначала сохраните изменения черновика, чтобы открыть предпросмотр или опубликовать их.</p>}
+            {publicationBlocked && <p className="listing-hint" role="status" data-publish-needs-timer>Первая публикация закрыта: сервер API пока без таймера листинга и показал бы рынок на бирже сразу. Черновик и предпросмотр доступны.</p>}
             {historicalMode && <p className="listing-hint" role="status" data-historical-publish-gate>Историческая модель: сохранение черновика и предпросмотр доступны, публичный запуск заблокирован до подтверждения прав и полной изоляции симуляционных счетов.</p>}
             <div className="listing-buttons">
               <button type="submit" className="listing-primary" disabled={busy || logoReading} data-save-draft>Сохранить черновик</button>
               {editing.id && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
-              {current && <button type="button" disabled={busy || !draftIsSaved || historicalMode} onClick={openPublish} data-publish>Опубликовать</button>}
+              {current && <button type="button" disabled={busy || !draftIsSaved || historicalMode || publicationBlocked} onClick={openPublish} data-publish>Опубликовать</button>}
               <button type="button" onClick={() => { cancelLogoRead(); setEditing(null); setPublishing(null); invalidatePreview(); }}>Закрыть</button>
             </div>
           </div>
@@ -542,8 +545,8 @@ export function AdminListingsPage() {
             <p>{publishing.listing.draft.name} · начальная цена {publishing.listing.draft.initialPrice} USDT</p>
             <p>Листинг: {listingMoment(publishing.listing.draft.listingAt, publishing.listing.draft.displayTimeZone)}</p>
             <p data-publish-timer-line>Таймер на бирже: {listingTimerLine(publishing.listing.draft.listingAt)}</p>
-            {publishing.listing.activeVersion === null && !timerSupported ? (
-              <p className="listing-hint" role="alert" data-publish-timer-unsupported>Сервер API пока без таймера листинга: рынок и обратный отсчёт появятся на бирже сразу после публикации, скрыть или приостановить их будет нельзя.</p>
+            {!listingPublicationAllowed(publishing.listing, timerSupported) ? (
+              <p className="listing-hint" role="alert" data-publish-timer-unsupported>Первая публикация закрыта: сервер API пока без таймера листинга и показал бы рынок на бирже сразу.</p>
             ) : publishing.listing.activeVersion === null ? (
               <label className="listing-check"><input type="checkbox" checked={publishing.startTimer} disabled={busy}
                 onChange={(e) => setPublishing({ ...publishing, startTimer: e.target.checked })} data-field="publishStartTimer" /> Запустить таймер сразу после публикации
@@ -552,7 +555,7 @@ export function AdminListingsPage() {
             ) : <p className="listing-hint">Состояние таймера сохраняется: публикация новой версии его не запускает и не останавливает.</p>}
             <p className="listing-hint">Тикер, код варианта, начальная цена и настройки движения фиксируются. Баланс владельца не зачисляется.</p>
             <div className="listing-buttons">
-              <button type="button" className="listing-primary" disabled={busy || !draftIsSaved} onClick={() => void confirmPublish()} data-confirm-publish>Опубликовать</button>
+              <button type="button" className="listing-primary" disabled={busy || !draftIsSaved || !listingPublicationAllowed(publishing.listing, timerSupported)} onClick={() => void confirmPublish()} data-confirm-publish>Опубликовать</button>
               <button type="button" disabled={busy} onClick={() => setPublishing(null)}>Отмена</button>
             </div>
           </div>

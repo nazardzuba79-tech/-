@@ -355,10 +355,19 @@ describe('saved-draft actions in the mounted Listings admin', () => {
   let dom: any, root: any, host: HTMLElement, listing: any, extraListings: any[], fetchMock: jest.Mock;
   let previewGate: Promise<void> | null, previewRevision: number | null, publishFailures: number, serverTime: number | null;
   let malformedPublish: boolean;
+  // oldApi: the API deployed before the timer (2e7acf1) — it strips `countdown` from every answer, ignores
+  // «staged» (publishes at once) and has no timer route. storeEmpty: no listing yet until one is created.
+  let oldApi: boolean, storeEmpty: boolean;
   let globals: Map<string, PropertyDescriptor | undefined>;
   const modules = new Map<string, any>();
   const sessionListeners = new Set<() => void>();
   const json = (body: unknown, status = 200) => ({ ok: status < 400, status, json: async () => structuredClone(body) });
+  const withoutCountdown = ({ countdown: _stripped, ...rest }: any) => rest;
+  // What the Worker's public catalogue would show: published and not held back by a staged timer.
+  const publicPairs = () => (storeEmpty ? [] : [listing, ...extraListings])
+    .filter((item) => item.activeVersion !== null && item.countdown?.state !== 'staged').map((item) => `${item.symbol}/USDT`);
+  // A React handler called straight from its props: the path a stale or scripted call would take past `disabled`.
+  const reactProps = (element: Element) => (element as any)[Object.keys(element).find((key) => key.startsWith('__reactProps$'))!];
 
   function load(file: string): any {
     for (const suffix of ['', '.tsx', '.ts']) if (existsSync(file + suffix)) { file += suffix; break; }
@@ -381,7 +390,7 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     Object.assign(globalThis, values);
     host = document.getElementById('root')!;
     root = req('react-dom/client').createRoot(host);
-    modules.clear(); sessionListeners.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = []; malformedPublish = false; serverTime = null;
+    modules.clear(); sessionListeners.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = []; malformedPublish = false; serverTime = null; oldApi = false; storeEmpty = false;
     listing = {
       id: 'qax-1', symbol: 'QAX', draftRevision: 2, draftUpdatedAt: '2026-09-29T00:00:00Z', draftUpdatedBy: 'fixture-admin',
       // A timer-capable API returns the countdown key on every listing, null until a timer exists.
@@ -392,8 +401,16 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     };
     fetchMock = jest.fn(async (url: string, init: any = {}) => {
       const path = String(url);
-      if (path === '/api/v1/admin/listings') return json({ revision: String(listing.draftRevision), serverTime: serverTime ?? Date.now(), listings: [listing, ...extraListings] });
+      if (path === '/api/v1/admin/listings' && init.method === 'POST') {
+        const { config } = JSON.parse(init.body);
+        listing = { ...listing, symbol: config.symbol, draftRevision: 1, draft: { ...listing.draft, ...config }, activeVersion: null, active: null, versions: [], countdown: null };
+        storeEmpty = false;
+        return json({ id: listing.id, draftRevision: 1, draft: listing.draft }, 201);
+      }
+      if (path === '/api/v1/admin/listings') return json({ revision: String(listing.draftRevision), serverTime: serverTime ?? Date.now(),
+        listings: (storeEmpty ? [] : [listing, ...extraListings]).map((item) => (oldApi ? withoutCountdown(item) : item)) });
       if (path.endsWith('/countdown') && init.method === 'POST') {
+        if (oldApi) return json({ error: 'Not found' }, 404);
         const { action } = JSON.parse(init.body);
         const state = action === 'start' ? 'running' : action === 'pause' ? 'paused' : 'staged';
         listing = { ...listing, countdown: { state, updatedAt: 1, updatedBy: 'fixture-admin', ...(state === 'running' ? { startedAt: 1 } : {}) } };
@@ -415,11 +432,11 @@ describe('saved-draft actions in the mounted Listings admin', () => {
       if (path.endsWith('/publish') && init.method === 'POST') {
         if (malformedPublish) return json({ accepted: true });
         if (publishFailures > 0) { publishFailures -= 1; throw new Error('fixture connection lost'); }
-        const staged = JSON.parse(init.body).countdown === 'staged';
+        const staged = !oldApi && JSON.parse(init.body).countdown === 'staged';
         listing = { ...listing, activeVersion: 1, active: structuredClone(listing.draft),
           versions: [{ version: 1, publishedAt: '2026-09-29T01:00:00Z', publishedBy: 'fixture-admin' }],
-          countdown: staged ? { state: 'staged', updatedAt: 1, updatedBy: 'fixture-admin' } : null };
-        return json({ id: listing.id, version: 1, replayed: false, publishedAt: '2026-09-29T01:00:00Z', countdown: listing.countdown });
+          countdown: staged ? { state: 'staged', updatedAt: 1, updatedBy: 'fixture-admin' } : listing.countdown ?? null };
+        return json({ id: listing.id, version: 1, replayed: false, publishedAt: '2026-09-29T01:00:00Z', ...(oldApi ? {} : { countdown: listing.countdown }) });
       }
       return json({ error: `unexpected fixture request ${path}` }, 404);
     });
@@ -797,26 +814,87 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     expect(timerActions()).toEqual(['start']);
   });
 
-  // Owner, 2026-10-22: the API deployed before the timer (2e7acf1) drops «staged» and has no timer route
-  // (scripts/qa-listing-timer-api.cjs). Against it the page offers no hidden publication and no timer buttons.
-  test('an API without the timer: no «hidden» option, an honest warning, no staged flag', async () => {
+  // Owner, 2026-10-22 (PR #585): the API deployed before the timer (2e7acf1) drops «staged» and has no timer route
+  // (scripts/qa-listing-timer-api.cjs), so a first publication through it would be public at once. The page never sends one.
+  test('an API without the timer: no first publication — disabled, no dialog; rapid clicks, Enter and a direct call send no POST; draft and preview still work', async () => {
     serverTime = beforeListing;
-    delete listing.countdown;
+    oldApi = true;
     await mount();
+    expect(button('[data-publish]').disabled).toBe(true);
+    expect(host.querySelector('[data-publish-needs-timer]')?.textContent).toContain('Первая публикация закрыта');
+    await act(async () => { for (let i = 0; i < 5; i += 1) button('[data-publish]').click(); await flush(); });
+    await act(async () => { button('[data-publish]').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await flush(); });
+    await act(async () => { reactProps(button('[data-publish]')).onClick(); reactProps(button('[data-publish]')).onClick(); await flush(); });
+    expect(host.querySelector('[data-publish-dialog]')).toBeNull();
+    // Enter in the form submits it: that saves the draft, never publishes.
+    await act(async () => { Simulate.submit(host.querySelector('[data-listing-form]')!); await flush(); });
+    expect(calls('/draft')).toHaveLength(1);
+    await click('[data-preview]');
+    expect(calls('/preview?')).toHaveLength(1);
+    expect(host.querySelector('[data-listing-preview]')).not.toBeNull();
+    expect(button('[data-publish]').disabled).toBe(true);
+    expect(calls('/publish')).toHaveLength(0);
+    expect(listing.activeVersion).toBeNull();
+    expect(publicPairs()).toEqual([]);
+  });
+
+  test('an API without the timer: a listing that is already public may still be re-published — its visibility does not change, no timer field', async () => {
+    serverTime = beforeListing;
+    oldApi = true;
+    listing = publishedListing(null);
+    await mount();
+    expect(host.querySelector('[data-publish-needs-timer]')).toBeNull();
     await click('[data-publish]');
-    expect(host.querySelector('[data-field="publishStartTimer"]')).toBeNull();
-    expect(host.querySelector('[data-publish-timer-unsupported]')?.textContent).toContain('появятся на бирже сразу после публикации');
+    expect(host.querySelector('[data-publish-dialog]')?.textContent).toContain('Состояние таймера сохраняется');
     await click('[data-confirm-publish]');
+    expect(calls('/publish')).toHaveLength(1);
     expect('countdown' in JSON.parse(calls('/publish')[0][1].body)).toBe(false);
   });
 
   test('an API without the timer: a published listing shows its running state and no timer buttons (they would 404)', async () => {
     serverTime = beforeListing;
     listing = publishedListing(null);
-    delete listing.countdown;
+    oldApi = true;
     await mount();
     expect(timerBox()?.getAttribute('data-listing-timer')).toBe('running');
     expect(timerActions()).toEqual([]);
+  });
+
+  test('the API losing the timer between two list reads (a rollback) closes the first publication at the next read', async () => {
+    serverTime = beforeListing;
+    await mount();
+    expect(button('[data-publish]').disabled).toBe(false);
+    oldApi = true;
+    await act(async () => { Simulate.submit(host.querySelector('[data-listing-form]')!); await flush(); });
+    expect(button('[data-publish]').disabled).toBe(true);
+    expect(host.querySelector('[data-publish-needs-timer]')).not.toBeNull();
+    await act(async () => { reactProps(button('[data-publish]')).onClick(); await flush(); });
+    expect(host.querySelector('[data-publish-dialog]')).toBeNull();
+    expect(calls('/publish')).toHaveLength(0);
+    expect(publicPairs()).toEqual([]);
+  });
+
+  test('an empty store fails closed until its first draft is saved; on a timer-capable API that draft then publishes hidden («staged»)', async () => {
+    serverTime = beforeListing;
+    storeEmpty = true;
+    const { AdminListingsPage } = load(resolve(frontend, 'src/pages/admin/AdminListingsPage'));
+    const { MemoryRouter } = req('react-router-dom');
+    await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminListingsPage))); await flush(); });
+    await click('[data-create-listing]');
+    expect(host.querySelector('[data-publish]')).toBeNull();
+    await change('name', 'QA Example');
+    await change('symbol', 'QAX');
+    await change('initialPrice', '0.25');
+    await change('wallTime', '2026-10-01T15:00');
+    await act(async () => { Simulate.submit(host.querySelector('[data-listing-form]')!); await flush(); });
+    expect(host.querySelector('[data-listing-error]')).toBeNull();
+    expect(button('[data-publish]').disabled).toBe(false);
+    expect(host.querySelector('[data-publish-needs-timer]')).toBeNull();
+    await click('[data-publish]');
+    await change('publishStartTimer', false);
+    await click('[data-confirm-publish]');
+    expect(JSON.parse(calls('/publish')[0][1].body)).toMatchObject({ countdown: 'staged' });
+    expect(publicPairs()).toEqual([]);
   });
 
   test('publishing with the timer sends no timer field and shows the running countdown', async () => {

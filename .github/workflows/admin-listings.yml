@@ -28,6 +28,7 @@ on:
       - 'scripts/qa-admin-listings.cjs'
       - 'scripts/qa-listing-timer.cjs'
       - 'scripts/qa-listing-timer-api.cjs'
+      - 'scripts/qa-listing-publish-gate.cjs'
       - 'scripts/qa-listing-tyvn.cjs'
       - 'scripts/qa-aith-replacement.cjs'
       - 'scripts/qa-listing-controls.cjs'
@@ -125,6 +126,12 @@ jobs:
         run: node scripts/qa-listing-timer-api.cjs
         env:
           QA_OUT: /tmp/listings-qa-report/listing-timer-api
+      - name: First publication in the browser through the real admin router and the Worker — «staged» stays off the exchange until «Запустить таймер»
+        run: node scripts/qa-listing-publish-gate.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUT: /tmp/listings-qa-report/listing-publish-gate
       - name: Pre-listing timer — exchange card (running / paused / 13:00 UTC) and admin start / pause / stop, by server time
         run: node scripts/qa-listing-timer.cjs
         env:
