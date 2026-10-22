@@ -1,4 +1,5 @@
 import type { Key } from './i18n/locales/keys';
+import { customerErrorText } from './customerError';
 import { PrivateTradingError } from './privateTradingError';
 
 /**
@@ -52,6 +53,12 @@ const CODE_KEY: Record<string, Key> = {
   LIMIT_PRICE_REQUIRED: 'futures.orderError.limitPriceRequired',
   CONTRACT_LIMIT: 'futures.orderError.contractLimit',
   CLOSE_EXCEEDS_POSITION: 'futures.orderError.closeExceedsPosition',
+  // The real engine's market sweep found less resting size than the order
+  // (a quick close against a thin book), or the only resting size was the
+  // trader's own order. Both came back as a bare sentence before the
+  // 2026-10-13 audit and read as «Не удалось закрыть позицию».
+  INSUFFICIENT_LIQUIDITY: 'futures.orderError.insufficientLiquidity',
+  SELF_MATCH: 'futures.orderError.selfMatch',
   POSITION_NOT_OPEN: 'futures.orderError.positionNotOpen',
   POSITION_MISSING: 'futures.orderError.positionNotOpen',
   ORDER_NOT_OPEN: 'futures.orderError.orderNotOpen',
@@ -139,12 +146,8 @@ export function futuresOrderErrorMessage(error: unknown, t: Translate, fallback:
   if (!(error instanceof PrivateTradingError)) {
     const body = (error as { body?: Record<string, unknown> } | null)?.body;
     const code = body && typeof body.code === 'string' ? body.code : undefined;
-    if (code && CODE_KEY[code]) return t(CODE_KEY[code]);
-    if (code) console.warn('[futures] unmapped order error code', code);
-    else if (error instanceof Error && error.message) {
-      console.warn('[futures] order error without a code', error.message);
-    }
-    return fallback;
+    if (code && typeof CODE_KEY[code] === 'string') return t(CODE_KEY[code]);
+    return customerErrorText(error, t, fallback);
   }
 
   // A named contract limit is the most specific thing we can say, so it
@@ -153,10 +156,10 @@ export function futuresOrderErrorMessage(error: unknown, t: Translate, fallback:
   // order specifically — `limit` can.
   const limit = error.detail?.limit;
   const allowed = error.detail?.allowed;
-  if (limit && allowed !== undefined && LIMIT_KEY[limit]) return t(LIMIT_KEY[limit], { allowed });
+  if (limit && allowed !== undefined && typeof LIMIT_KEY[limit] === 'string') return t(LIMIT_KEY[limit], { allowed });
 
   const key = error.code ? CODE_KEY[error.code] : undefined;
-  if (key) return t(key);
+  if (typeof key === 'string') return t(key);
   // No code and a gateway status: the host answered for an API that was
   // restarting, after the command had already been retried under its key.
   if (!error.code && [502, 503, 504].includes(error.status)) return t('futures.orderError.serverUnavailable');
@@ -164,9 +167,7 @@ export function futuresOrderErrorMessage(error: unknown, t: Translate, fallback:
   // A code with no entry above is a gap in this table, not something to
   // show. The server's own sentence is not a safe substitute either: it is
   // written in one language for one audience, and on this transport it is
-  // whatever `data.error` happened to contain. Both go to the console, the
-  // trader gets the caller's localized line.
-  if (error.code) console.warn('[futures] unmapped order error code', error.code, error.detail);
-  else if (error.message) console.warn('[futures] order error without a code', error.message);
-  return fallback;
+  // whatever `data.error` happened to contain. The shared boundary records
+  // safe diagnostic metadata and returns a localized refusal.
+  return customerErrorText(error, t, fallback);
 }

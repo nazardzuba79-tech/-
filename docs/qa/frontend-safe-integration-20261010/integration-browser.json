@@ -1,0 +1,4621 @@
+{
+  "cases": [
+    {
+      "lang": "ru",
+      "width": 360,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6481,
+      "rawKeys": false,
+      "screenshot": "ru-360-home.png"
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6481,
+      "rawKeys": false,
+      "screenshot": "ru-320-home.png"
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6481,
+      "rawKeys": false,
+      "screenshot": "ru-390-home.png"
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 474,
+      "rawKeys": false,
+      "screenshot": "ru-360-login.png"
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 474,
+      "rawKeys": false,
+      "screenshot": "ru-390-login.png"
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 474,
+      "rawKeys": false,
+      "screenshot": "ru-320-login.png"
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 638,
+      "rawKeys": false,
+      "screenshot": "ru-360-register.png"
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 638,
+      "rawKeys": false,
+      "screenshot": "ru-320-register.png"
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 638,
+      "rawKeys": false,
+      "screenshot": "ru-390-register.png"
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 641,
+      "rawKeys": false,
+      "screenshot": "ru-360-trade.png"
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 641,
+      "rawKeys": false,
+      "screenshot": "ru-390-trade.png"
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 639,
+      "rawKeys": false,
+      "screenshot": "ru-320-trade.png"
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1504,
+      "rawKeys": false,
+      "screenshot": "ru-360-futures.png"
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1496,
+      "rawKeys": false,
+      "screenshot": "ru-390-futures.png"
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1501,
+      "rawKeys": false,
+      "screenshot": "ru-320-futures.png"
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 207,
+      "rawKeys": false,
+      "screenshot": "ru-390-cfd.png"
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 207,
+      "rawKeys": false,
+      "screenshot": "ru-360-cfd.png"
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 200,
+      "rawKeys": false,
+      "screenshot": "ru-320-cfd.png"
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1354,
+      "rawKeys": false,
+      "screenshot": "ru-390-wallet.png"
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1354,
+      "rawKeys": false,
+      "screenshot": "ru-360-wallet.png"
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1347,
+      "rawKeys": false,
+      "screenshot": "ru-320-wallet.png"
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4025,
+      "rawKeys": false,
+      "screenshot": "ru-390-card.png"
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4025,
+      "rawKeys": false,
+      "screenshot": "ru-360-card.png"
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4018,
+      "rawKeys": false,
+      "screenshot": "ru-320-card.png"
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6412,
+      "rawKeys": false,
+      "screenshot": "ru-430-home.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6683,
+      "rawKeys": false,
+      "screenshot": "ru-1366-home.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6752,
+      "rawKeys": false,
+      "screenshot": "ru-1440-home.png"
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 474,
+      "rawKeys": false,
+      "screenshot": "ru-430-login.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 482,
+      "rawKeys": false,
+      "screenshot": "ru-1366-login.png"
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 638,
+      "rawKeys": false,
+      "screenshot": "ru-430-register.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 482,
+      "rawKeys": false,
+      "screenshot": "ru-1440-login.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 646,
+      "rawKeys": false,
+      "screenshot": "ru-1366-register.png"
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 641,
+      "rawKeys": false,
+      "screenshot": "ru-430-trade.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 646,
+      "rawKeys": false,
+      "screenshot": "ru-1440-register.png"
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1008,
+      "rawKeys": false,
+      "screenshot": "ru-430-futures.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1520,
+      "rawKeys": false,
+      "screenshot": "ru-1366-trade.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1504,
+      "rawKeys": false,
+      "screenshot": "ru-1440-trade.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 2009,
+      "rawKeys": false,
+      "screenshot": "ru-1366-futures.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 2009,
+      "rawKeys": false,
+      "screenshot": "ru-1440-futures.png"
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 207,
+      "rawKeys": false,
+      "screenshot": "ru-430-cfd.png"
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1354,
+      "rawKeys": false,
+      "screenshot": "ru-430-wallet.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 651,
+      "rawKeys": false,
+      "screenshot": "ru-1440-cfd.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 651,
+      "rawKeys": false,
+      "screenshot": "ru-1366-cfd.png"
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4025,
+      "rawKeys": false,
+      "screenshot": "ru-430-card.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1451,
+      "rawKeys": false,
+      "screenshot": "ru-1366-wallet.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1451,
+      "rawKeys": false,
+      "screenshot": "ru-1440-wallet.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6752,
+      "rawKeys": false,
+      "screenshot": "ru-1920-home.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4191,
+      "rawKeys": false,
+      "screenshot": "ru-1366-card.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4191,
+      "rawKeys": false,
+      "screenshot": "ru-1440-card.png"
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6226,
+      "rawKeys": false,
+      "screenshot": "en-360-home.png"
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6226,
+      "rawKeys": false,
+      "screenshot": "en-320-home.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 482,
+      "rawKeys": false,
+      "screenshot": "ru-1920-login.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 646,
+      "rawKeys": false,
+      "screenshot": "ru-1920-register.png"
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 609,
+      "rawKeys": false,
+      "screenshot": "en-320-login.png"
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 609,
+      "rawKeys": false,
+      "screenshot": "en-360-login.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1604,
+      "rawKeys": false,
+      "screenshot": "ru-1920-trade.png"
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 750,
+      "rawKeys": false,
+      "screenshot": "en-360-register.png"
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 750,
+      "rawKeys": false,
+      "screenshot": "en-320-register.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 2101,
+      "rawKeys": false,
+      "screenshot": "ru-1920-futures.png"
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 616,
+      "rawKeys": false,
+      "screenshot": "en-360-trade.png"
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 614,
+      "rawKeys": false,
+      "screenshot": "en-320-trade.png"
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1417,
+      "rawKeys": false,
+      "screenshot": "en-360-futures.png"
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1406,
+      "rawKeys": false,
+      "screenshot": "en-320-futures.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 735,
+      "rawKeys": false,
+      "screenshot": "ru-1920-cfd.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1535,
+      "rawKeys": false,
+      "screenshot": "ru-1920-wallet.png"
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 193,
+      "rawKeys": false,
+      "screenshot": "en-320-cfd.png"
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 200,
+      "rawKeys": false,
+      "screenshot": "en-360-cfd.png"
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4275,
+      "rawKeys": false,
+      "screenshot": "ru-1920-card.png"
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1306,
+      "rawKeys": false,
+      "screenshot": "en-320-wallet.png"
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1313,
+      "rawKeys": false,
+      "screenshot": "en-360-wallet.png"
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 3950,
+      "rawKeys": false,
+      "screenshot": "en-360-card.png"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6226,
+      "rawKeys": false,
+      "screenshot": "en-390-home.png"
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 3943,
+      "rawKeys": false,
+      "screenshot": "en-320-card.png"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6233,
+      "rawKeys": false,
+      "screenshot": "en-430-home.png"
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6355,
+      "rawKeys": false,
+      "screenshot": "en-1366-home.png"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 609,
+      "rawKeys": false,
+      "screenshot": "en-390-login.png"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 750,
+      "rawKeys": false,
+      "screenshot": "en-390-register.png"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 609,
+      "rawKeys": false,
+      "screenshot": "en-430-login.png"
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 623,
+      "rawKeys": false,
+      "screenshot": "en-1366-login.png"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 750,
+      "rawKeys": false,
+      "screenshot": "en-430-register.png"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 616,
+      "rawKeys": false,
+      "screenshot": "en-390-trade.png"
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 764,
+      "rawKeys": false,
+      "screenshot": "en-1366-register.png"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1409,
+      "rawKeys": false,
+      "screenshot": "en-390-futures.png"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 616,
+      "rawKeys": false,
+      "screenshot": "en-430-trade.png"
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1456,
+      "rawKeys": false,
+      "screenshot": "en-1366-trade.png"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1409,
+      "rawKeys": false,
+      "screenshot": "en-430-futures.png"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 200,
+      "rawKeys": false,
+      "screenshot": "en-390-cfd.png"
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1885,
+      "rawKeys": false,
+      "screenshot": "en-1366-futures.png"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 200,
+      "rawKeys": false,
+      "screenshot": "en-430-cfd.png"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1313,
+      "rawKeys": false,
+      "screenshot": "en-390-wallet.png"
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 629,
+      "rawKeys": false,
+      "screenshot": "en-1366-cfd.png"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1313,
+      "rawKeys": false,
+      "screenshot": "en-430-wallet.png"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 3950,
+      "rawKeys": false,
+      "screenshot": "en-390-card.png"
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1413,
+      "rawKeys": false,
+      "screenshot": "en-1366-wallet.png"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 3950,
+      "rawKeys": false,
+      "screenshot": "en-430-card.png"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6496,
+      "rawKeys": false,
+      "screenshot": "en-1440-home.png"
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4094,
+      "rawKeys": false,
+      "screenshot": "en-1366-card.png"
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6496,
+      "rawKeys": false,
+      "screenshot": "en-1920-home.png"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 623,
+      "rawKeys": false,
+      "screenshot": "en-1440-login.png"
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4020,
+      "rawKeys": false,
+      "screenshot": "zh-320-home.png"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 764,
+      "rawKeys": false,
+      "screenshot": "en-1440-register.png"
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 221,
+      "rawKeys": false,
+      "screenshot": "zh-320-login.png"
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 623,
+      "rawKeys": false,
+      "screenshot": "en-1920-login.png"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1456,
+      "rawKeys": false,
+      "screenshot": "en-1440-trade.png"
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 275,
+      "rawKeys": false,
+      "screenshot": "zh-320-register.png"
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 764,
+      "rawKeys": false,
+      "screenshot": "en-1920-register.png"
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 463,
+      "rawKeys": false,
+      "screenshot": "zh-320-trade.png"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1885,
+      "rawKeys": false,
+      "screenshot": "en-1440-futures.png"
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1536,
+      "rawKeys": false,
+      "screenshot": "en-1920-trade.png"
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 960,
+      "rawKeys": false,
+      "screenshot": "zh-320-futures.png"
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1963,
+      "rawKeys": false,
+      "screenshot": "en-1920-futures.png"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 629,
+      "rawKeys": false,
+      "screenshot": "en-1440-cfd.png"
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 709,
+      "rawKeys": false,
+      "screenshot": "en-1920-cfd.png"
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 137,
+      "rawKeys": false,
+      "screenshot": "zh-320-cfd.png"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1413,
+      "rawKeys": false,
+      "screenshot": "en-1440-wallet.png"
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1494,
+      "rawKeys": false,
+      "screenshot": "en-1920-wallet.png"
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 955,
+      "rawKeys": false,
+      "screenshot": "zh-320-wallet.png"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4094,
+      "rawKeys": false,
+      "screenshot": "en-1440-card.png"
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4175,
+      "rawKeys": false,
+      "screenshot": "en-1920-card.png"
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2028,
+      "rawKeys": false,
+      "screenshot": "zh-320-card.png"
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4020,
+      "rawKeys": false,
+      "screenshot": "zh-360-home.png"
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4027,
+      "rawKeys": false,
+      "screenshot": "zh-430-home.png"
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4020,
+      "rawKeys": false,
+      "screenshot": "zh-390-home.png"
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 221,
+      "rawKeys": false,
+      "screenshot": "zh-360-login.png"
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 275,
+      "rawKeys": false,
+      "screenshot": "zh-360-register.png"
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 221,
+      "rawKeys": false,
+      "screenshot": "zh-430-login.png"
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 221,
+      "rawKeys": false,
+      "screenshot": "zh-390-login.png"
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 465,
+      "rawKeys": false,
+      "screenshot": "zh-360-trade.png"
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 275,
+      "rawKeys": false,
+      "screenshot": "zh-430-register.png"
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 275,
+      "rawKeys": false,
+      "screenshot": "zh-390-register.png"
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 971,
+      "rawKeys": false,
+      "screenshot": "zh-360-futures.png"
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 465,
+      "rawKeys": false,
+      "screenshot": "zh-430-trade.png"
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 465,
+      "rawKeys": false,
+      "screenshot": "zh-390-trade.png"
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 963,
+      "rawKeys": false,
+      "screenshot": "zh-430-futures.png"
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 963,
+      "rawKeys": false,
+      "screenshot": "zh-390-futures.png"
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 144,
+      "rawKeys": false,
+      "screenshot": "zh-360-cfd.png"
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 144,
+      "rawKeys": false,
+      "screenshot": "zh-430-cfd.png"
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 962,
+      "rawKeys": false,
+      "screenshot": "zh-360-wallet.png"
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 144,
+      "rawKeys": false,
+      "screenshot": "zh-390-cfd.png"
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2035,
+      "rawKeys": false,
+      "screenshot": "zh-360-card.png"
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 962,
+      "rawKeys": false,
+      "screenshot": "zh-430-wallet.png"
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 962,
+      "rawKeys": false,
+      "screenshot": "zh-390-wallet.png"
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2035,
+      "rawKeys": false,
+      "screenshot": "zh-430-card.png"
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2035,
+      "rawKeys": false,
+      "screenshot": "zh-390-card.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4184,
+      "rawKeys": false,
+      "screenshot": "zh-1366-home.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4216,
+      "rawKeys": false,
+      "screenshot": "zh-1440-home.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4216,
+      "rawKeys": false,
+      "screenshot": "zh-1920-home.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 235,
+      "rawKeys": false,
+      "screenshot": "zh-1366-login.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 235,
+      "rawKeys": false,
+      "screenshot": "zh-1440-login.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 289,
+      "rawKeys": false,
+      "screenshot": "zh-1366-register.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 289,
+      "rawKeys": false,
+      "screenshot": "zh-1440-register.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 235,
+      "rawKeys": false,
+      "screenshot": "zh-1920-login.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1213,
+      "rawKeys": false,
+      "screenshot": "zh-1366-trade.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1213,
+      "rawKeys": false,
+      "screenshot": "zh-1440-trade.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 289,
+      "rawKeys": false,
+      "screenshot": "zh-1920-register.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1374,
+      "rawKeys": false,
+      "screenshot": "zh-1366-futures.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1260,
+      "rawKeys": false,
+      "screenshot": "zh-1920-trade.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1374,
+      "rawKeys": false,
+      "screenshot": "zh-1440-futures.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1417,
+      "rawKeys": false,
+      "screenshot": "zh-1920-futures.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 453,
+      "rawKeys": false,
+      "screenshot": "zh-1366-cfd.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 453,
+      "rawKeys": false,
+      "screenshot": "zh-1440-cfd.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1064,
+      "rawKeys": false,
+      "screenshot": "zh-1366-wallet.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 500,
+      "rawKeys": false,
+      "screenshot": "zh-1920-cfd.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1064,
+      "rawKeys": false,
+      "screenshot": "zh-1440-wallet.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2117,
+      "rawKeys": false,
+      "screenshot": "zh-1366-card.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1119,
+      "rawKeys": false,
+      "screenshot": "zh-1920-wallet.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2117,
+      "rawKeys": false,
+      "screenshot": "zh-1440-card.png"
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2172,
+      "rawKeys": false,
+      "screenshot": "zh-1920-card.png"
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6609,
+      "rawKeys": false,
+      "screenshot": "es-320-home.png"
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6609,
+      "rawKeys": false,
+      "screenshot": "es-360-home.png"
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 710,
+      "rawKeys": false,
+      "screenshot": "es-320-login.png"
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6685,
+      "rawKeys": false,
+      "screenshot": "es-390-home.png"
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 710,
+      "rawKeys": false,
+      "screenshot": "es-360-login.png"
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 852,
+      "rawKeys": false,
+      "screenshot": "es-320-register.png"
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 852,
+      "rawKeys": false,
+      "screenshot": "es-360-register.png"
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 710,
+      "rawKeys": false,
+      "screenshot": "es-390-login.png"
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 677,
+      "rawKeys": false,
+      "screenshot": "es-320-trade.png"
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 679,
+      "rawKeys": false,
+      "screenshot": "es-360-trade.png"
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 852,
+      "rawKeys": false,
+      "screenshot": "es-390-register.png"
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1591,
+      "rawKeys": false,
+      "screenshot": "es-320-futures.png"
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1602,
+      "rawKeys": false,
+      "screenshot": "es-360-futures.png"
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 679,
+      "rawKeys": false,
+      "screenshot": "es-390-trade.png"
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1594,
+      "rawKeys": false,
+      "screenshot": "es-390-futures.png"
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 221,
+      "rawKeys": false,
+      "screenshot": "es-360-cfd.png"
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 214,
+      "rawKeys": false,
+      "screenshot": "es-320-cfd.png"
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1391,
+      "rawKeys": false,
+      "screenshot": "es-360-wallet.png"
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1384,
+      "rawKeys": false,
+      "screenshot": "es-320-wallet.png"
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 221,
+      "rawKeys": false,
+      "screenshot": "es-390-cfd.png"
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4429,
+      "rawKeys": false,
+      "screenshot": "es-360-card.png"
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4422,
+      "rawKeys": false,
+      "screenshot": "es-320-card.png"
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1391,
+      "rawKeys": false,
+      "screenshot": "es-390-wallet.png"
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4429,
+      "rawKeys": false,
+      "screenshot": "es-390-card.png"
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6906,
+      "rawKeys": false,
+      "screenshot": "es-1366-home.png"
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6692,
+      "rawKeys": false,
+      "screenshot": "es-430-home.png"
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6977,
+      "rawKeys": false,
+      "screenshot": "es-1440-home.png"
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 724,
+      "rawKeys": false,
+      "screenshot": "es-1366-login.png"
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 710,
+      "rawKeys": false,
+      "screenshot": "es-430-login.png"
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 852,
+      "rawKeys": false,
+      "screenshot": "es-430-register.png"
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 866,
+      "rawKeys": false,
+      "screenshot": "es-1366-register.png"
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 724,
+      "rawKeys": false,
+      "screenshot": "es-1440-login.png"
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 679,
+      "rawKeys": false,
+      "screenshot": "es-430-trade.png"
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1560,
+      "rawKeys": false,
+      "screenshot": "es-1366-trade.png"
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 866,
+      "rawKeys": false,
+      "screenshot": "es-1440-register.png"
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1560,
+      "rawKeys": false,
+      "screenshot": "es-1440-trade.png"
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1586,
+      "rawKeys": false,
+      "screenshot": "es-430-futures.png"
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 2105,
+      "rawKeys": false,
+      "screenshot": "es-1366-futures.png"
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 2105,
+      "rawKeys": false,
+      "screenshot": "es-1440-futures.png"
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 221,
+      "rawKeys": false,
+      "screenshot": "es-430-cfd.png"
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 699,
+      "rawKeys": false,
+      "screenshot": "es-1366-cfd.png"
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 699,
+      "rawKeys": false,
+      "screenshot": "es-1440-cfd.png"
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1391,
+      "rawKeys": false,
+      "screenshot": "es-430-wallet.png"
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1489,
+      "rawKeys": false,
+      "screenshot": "es-1366-wallet.png"
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1489,
+      "rawKeys": false,
+      "screenshot": "es-1440-wallet.png"
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4429,
+      "rawKeys": false,
+      "screenshot": "es-430-card.png"
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4597,
+      "rawKeys": false,
+      "screenshot": "es-1366-card.png"
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4597,
+      "rawKeys": false,
+      "screenshot": "es-1440-card.png"
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6357,
+      "rawKeys": false,
+      "screenshot": "hi-320-home.png"
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6977,
+      "rawKeys": false,
+      "screenshot": "es-1920-home.png"
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6357,
+      "rawKeys": false,
+      "screenshot": "hi-360-home.png"
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 630,
+      "rawKeys": false,
+      "screenshot": "hi-320-login.png"
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 724,
+      "rawKeys": false,
+      "screenshot": "es-1920-login.png"
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 630,
+      "rawKeys": false,
+      "screenshot": "hi-360-login.png"
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 737,
+      "rawKeys": false,
+      "screenshot": "hi-320-register.png"
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 866,
+      "rawKeys": false,
+      "screenshot": "es-1920-register.png"
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 737,
+      "rawKeys": false,
+      "screenshot": "hi-360-register.png"
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 643,
+      "rawKeys": false,
+      "screenshot": "hi-320-trade.png"
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 645,
+      "rawKeys": false,
+      "screenshot": "hi-360-trade.png"
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1646,
+      "rawKeys": false,
+      "screenshot": "es-1920-trade.png"
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1440,
+      "rawKeys": false,
+      "screenshot": "hi-320-futures.png"
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1451,
+      "rawKeys": false,
+      "screenshot": "hi-360-futures.png"
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 2195,
+      "rawKeys": false,
+      "screenshot": "es-1920-futures.png"
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 215,
+      "rawKeys": false,
+      "screenshot": "hi-320-cfd.png"
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 785,
+      "rawKeys": false,
+      "screenshot": "es-1920-cfd.png"
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 222,
+      "rawKeys": false,
+      "screenshot": "hi-360-cfd.png"
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1322,
+      "rawKeys": false,
+      "screenshot": "hi-320-wallet.png"
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1573,
+      "rawKeys": false,
+      "screenshot": "es-1920-wallet.png"
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1329,
+      "rawKeys": false,
+      "screenshot": "hi-360-wallet.png"
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 3939,
+      "rawKeys": false,
+      "screenshot": "hi-320-card.png"
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4681,
+      "rawKeys": false,
+      "screenshot": "es-1920-card.png"
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 3946,
+      "rawKeys": false,
+      "screenshot": "hi-360-card.png"
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6357,
+      "rawKeys": false,
+      "screenshot": "hi-390-home.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6482,
+      "rawKeys": false,
+      "screenshot": "hi-1366-home.png"
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 630,
+      "rawKeys": false,
+      "screenshot": "hi-390-login.png"
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6364,
+      "rawKeys": false,
+      "screenshot": "hi-430-home.png"
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 737,
+      "rawKeys": false,
+      "screenshot": "hi-390-register.png"
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 630,
+      "rawKeys": false,
+      "screenshot": "hi-430-login.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 644,
+      "rawKeys": false,
+      "screenshot": "hi-1366-login.png"
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 645,
+      "rawKeys": false,
+      "screenshot": "hi-390-trade.png"
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 737,
+      "rawKeys": false,
+      "screenshot": "hi-430-register.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 751,
+      "rawKeys": false,
+      "screenshot": "hi-1366-register.png"
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1443,
+      "rawKeys": false,
+      "screenshot": "hi-390-futures.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1493,
+      "rawKeys": false,
+      "screenshot": "hi-1366-trade.png"
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 645,
+      "rawKeys": false,
+      "screenshot": "hi-430-trade.png"
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 222,
+      "rawKeys": false,
+      "screenshot": "hi-390-cfd.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1917,
+      "rawKeys": false,
+      "screenshot": "hi-1366-futures.png"
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1443,
+      "rawKeys": false,
+      "screenshot": "hi-430-futures.png"
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1329,
+      "rawKeys": false,
+      "screenshot": "hi-390-wallet.png"
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 222,
+      "rawKeys": false,
+      "screenshot": "hi-430-cfd.png"
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 3946,
+      "rawKeys": false,
+      "screenshot": "hi-390-card.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 647,
+      "rawKeys": false,
+      "screenshot": "hi-1366-cfd.png"
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1329,
+      "rawKeys": false,
+      "screenshot": "hi-430-wallet.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6631,
+      "rawKeys": false,
+      "screenshot": "hi-1440-home.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1424,
+      "rawKeys": false,
+      "screenshot": "hi-1366-wallet.png"
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 3946,
+      "rawKeys": false,
+      "screenshot": "hi-430-card.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4073,
+      "rawKeys": false,
+      "screenshot": "hi-1366-card.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 644,
+      "rawKeys": false,
+      "screenshot": "hi-1440-login.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 6631,
+      "rawKeys": false,
+      "screenshot": "hi-1920-home.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 751,
+      "rawKeys": false,
+      "screenshot": "hi-1440-register.png"
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4506,
+      "rawKeys": false,
+      "screenshot": "ja-320-home.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1493,
+      "rawKeys": false,
+      "screenshot": "hi-1440-trade.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 644,
+      "rawKeys": false,
+      "screenshot": "hi-1920-login.png"
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 323,
+      "rawKeys": false,
+      "screenshot": "ja-320-login.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1917,
+      "rawKeys": false,
+      "screenshot": "hi-1440-futures.png"
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 395,
+      "rawKeys": false,
+      "screenshot": "ja-320-register.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 751,
+      "rawKeys": false,
+      "screenshot": "hi-1920-register.png"
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 495,
+      "rawKeys": false,
+      "screenshot": "ja-320-trade.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1581,
+      "rawKeys": false,
+      "screenshot": "hi-1920-trade.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 647,
+      "rawKeys": false,
+      "screenshot": "hi-1440-cfd.png"
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1044,
+      "rawKeys": false,
+      "screenshot": "ja-320-futures.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 2009,
+      "rawKeys": false,
+      "screenshot": "hi-1920-futures.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1424,
+      "rawKeys": false,
+      "screenshot": "hi-1440-wallet.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4073,
+      "rawKeys": false,
+      "screenshot": "hi-1440-card.png"
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 157,
+      "rawKeys": false,
+      "screenshot": "ja-320-cfd.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 735,
+      "rawKeys": false,
+      "screenshot": "hi-1920-cfd.png"
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 983,
+      "rawKeys": false,
+      "screenshot": "ja-320-wallet.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1513,
+      "rawKeys": false,
+      "screenshot": "hi-1920-wallet.png"
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4506,
+      "rawKeys": false,
+      "screenshot": "ja-360-home.png"
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2437,
+      "rawKeys": false,
+      "screenshot": "ja-320-card.png"
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 4162,
+      "rawKeys": false,
+      "screenshot": "hi-1920-card.png"
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 323,
+      "rawKeys": false,
+      "screenshot": "ja-360-login.png"
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 395,
+      "rawKeys": false,
+      "screenshot": "ja-360-register.png"
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4506,
+      "rawKeys": false,
+      "screenshot": "ja-390-home.png"
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4513,
+      "rawKeys": false,
+      "screenshot": "ja-430-home.png"
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 497,
+      "rawKeys": false,
+      "screenshot": "ja-360-trade.png"
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 323,
+      "rawKeys": false,
+      "screenshot": "ja-390-login.png"
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 323,
+      "rawKeys": false,
+      "screenshot": "ja-430-login.png"
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1055,
+      "rawKeys": false,
+      "screenshot": "ja-360-futures.png"
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 395,
+      "rawKeys": false,
+      "screenshot": "ja-390-register.png"
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 395,
+      "rawKeys": false,
+      "screenshot": "ja-430-register.png"
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 497,
+      "rawKeys": false,
+      "screenshot": "ja-390-trade.png"
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 497,
+      "rawKeys": false,
+      "screenshot": "ja-430-trade.png"
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 164,
+      "rawKeys": false,
+      "screenshot": "ja-360-cfd.png"
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1047,
+      "rawKeys": false,
+      "screenshot": "ja-390-futures.png"
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1047,
+      "rawKeys": false,
+      "screenshot": "ja-430-futures.png"
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 990,
+      "rawKeys": false,
+      "screenshot": "ja-360-wallet.png"
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2444,
+      "rawKeys": false,
+      "screenshot": "ja-360-card.png"
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 164,
+      "rawKeys": false,
+      "screenshot": "ja-390-cfd.png"
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 164,
+      "rawKeys": false,
+      "screenshot": "ja-430-cfd.png"
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 990,
+      "rawKeys": false,
+      "screenshot": "ja-390-wallet.png"
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 990,
+      "rawKeys": false,
+      "screenshot": "ja-430-wallet.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4678,
+      "rawKeys": false,
+      "screenshot": "ja-1366-home.png"
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2444,
+      "rawKeys": false,
+      "screenshot": "ja-390-card.png"
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2444,
+      "rawKeys": false,
+      "screenshot": "ja-430-card.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 337,
+      "rawKeys": false,
+      "screenshot": "ja-1366-login.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4719,
+      "rawKeys": false,
+      "screenshot": "ja-1440-home.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4643,
+      "rawKeys": false,
+      "screenshot": "ja-1920-home.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 409,
+      "rawKeys": false,
+      "screenshot": "ja-1366-register.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 337,
+      "rawKeys": false,
+      "screenshot": "ja-1440-login.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1273,
+      "rawKeys": false,
+      "screenshot": "ja-1366-trade.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 337,
+      "rawKeys": false,
+      "screenshot": "ja-1920-login.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 409,
+      "rawKeys": false,
+      "screenshot": "ja-1440-register.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 409,
+      "rawKeys": false,
+      "screenshot": "ja-1920-register.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1457,
+      "rawKeys": false,
+      "screenshot": "ja-1366-futures.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1273,
+      "rawKeys": false,
+      "screenshot": "ja-1440-trade.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1329,
+      "rawKeys": false,
+      "screenshot": "ja-1920-trade.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 508,
+      "rawKeys": false,
+      "screenshot": "ja-1366-cfd.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1509,
+      "rawKeys": false,
+      "screenshot": "ja-1920-futures.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1457,
+      "rawKeys": false,
+      "screenshot": "ja-1440-futures.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1089,
+      "rawKeys": false,
+      "screenshot": "ja-1366-wallet.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2539,
+      "rawKeys": false,
+      "screenshot": "ja-1366-card.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 508,
+      "rawKeys": false,
+      "screenshot": "ja-1440-cfd.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 564,
+      "rawKeys": false,
+      "screenshot": "ja-1920-cfd.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1089,
+      "rawKeys": false,
+      "screenshot": "ja-1440-wallet.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1153,
+      "rawKeys": false,
+      "screenshot": "ja-1920-wallet.png"
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4534,
+      "rawKeys": false,
+      "screenshot": "ko-320-home.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2539,
+      "rawKeys": false,
+      "screenshot": "ja-1440-card.png"
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2603,
+      "rawKeys": false,
+      "screenshot": "ja-1920-card.png"
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 331,
+      "rawKeys": false,
+      "screenshot": "ko-320-login.png"
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 398,
+      "rawKeys": false,
+      "screenshot": "ko-320-register.png"
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4534,
+      "rawKeys": false,
+      "screenshot": "ko-360-home.png"
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4534,
+      "rawKeys": false,
+      "screenshot": "ko-390-home.png"
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 483,
+      "rawKeys": false,
+      "screenshot": "ko-320-trade.png"
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 331,
+      "rawKeys": false,
+      "screenshot": "ko-360-login.png"
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 331,
+      "rawKeys": false,
+      "screenshot": "ko-390-login.png"
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1024,
+      "rawKeys": false,
+      "screenshot": "ko-320-futures.png"
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 398,
+      "rawKeys": false,
+      "screenshot": "ko-360-register.png"
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 398,
+      "rawKeys": false,
+      "screenshot": "ko-390-register.png"
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 140,
+      "rawKeys": false,
+      "screenshot": "ko-320-cfd.png"
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 485,
+      "rawKeys": false,
+      "screenshot": "ko-360-trade.png"
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 485,
+      "rawKeys": false,
+      "screenshot": "ko-390-trade.png"
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1027,
+      "rawKeys": false,
+      "screenshot": "ko-390-futures.png"
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1003,
+      "rawKeys": false,
+      "screenshot": "ko-320-wallet.png"
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1035,
+      "rawKeys": false,
+      "screenshot": "ko-360-futures.png"
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2511,
+      "rawKeys": false,
+      "screenshot": "ko-320-card.png"
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 147,
+      "rawKeys": false,
+      "screenshot": "ko-390-cfd.png"
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 147,
+      "rawKeys": false,
+      "screenshot": "ko-360-cfd.png"
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4541,
+      "rawKeys": false,
+      "screenshot": "ko-430-home.png"
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1010,
+      "rawKeys": false,
+      "screenshot": "ko-390-wallet.png"
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1010,
+      "rawKeys": false,
+      "screenshot": "ko-360-wallet.png"
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2518,
+      "rawKeys": false,
+      "screenshot": "ko-390-card.png"
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 331,
+      "rawKeys": false,
+      "screenshot": "ko-430-login.png"
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2518,
+      "rawKeys": false,
+      "screenshot": "ko-360-card.png"
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 398,
+      "rawKeys": false,
+      "screenshot": "ko-430-register.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4702,
+      "rawKeys": false,
+      "screenshot": "ko-1366-home.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4740,
+      "rawKeys": false,
+      "screenshot": "ko-1440-home.png"
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 485,
+      "rawKeys": false,
+      "screenshot": "ko-430-trade.png"
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1027,
+      "rawKeys": false,
+      "screenshot": "ko-430-futures.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 345,
+      "rawKeys": false,
+      "screenshot": "ko-1366-login.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 345,
+      "rawKeys": false,
+      "screenshot": "ko-1440-login.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 412,
+      "rawKeys": false,
+      "screenshot": "ko-1366-register.png"
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 147,
+      "rawKeys": false,
+      "screenshot": "ko-430-cfd.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 412,
+      "rawKeys": false,
+      "screenshot": "ko-1440-register.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1253,
+      "rawKeys": false,
+      "screenshot": "ko-1366-trade.png"
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1010,
+      "rawKeys": false,
+      "screenshot": "ko-430-wallet.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1253,
+      "rawKeys": false,
+      "screenshot": "ko-1440-trade.png"
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2518,
+      "rawKeys": false,
+      "screenshot": "ko-430-card.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1445,
+      "rawKeys": false,
+      "screenshot": "ko-1366-futures.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1445,
+      "rawKeys": false,
+      "screenshot": "ko-1440-futures.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "route": "/",
+      "overflow": 0,
+      "textLength": 4740,
+      "rawKeys": false,
+      "screenshot": "ko-1920-home.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 485,
+      "rawKeys": false,
+      "screenshot": "ko-1440-cfd.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 485,
+      "rawKeys": false,
+      "screenshot": "ko-1366-cfd.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1112,
+      "rawKeys": false,
+      "screenshot": "ko-1366-wallet.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1112,
+      "rawKeys": false,
+      "screenshot": "ko-1440-wallet.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "route": "/login",
+      "overflow": 0,
+      "textLength": 345,
+      "rawKeys": false,
+      "screenshot": "ko-1920-login.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2619,
+      "rawKeys": false,
+      "screenshot": "ko-1366-card.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2619,
+      "rawKeys": false,
+      "screenshot": "ko-1440-card.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "route": "/register",
+      "overflow": 0,
+      "textLength": 412,
+      "rawKeys": false,
+      "screenshot": "ko-1920-register.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "route": "/trade?pair=BTC%2FUSDT",
+      "overflow": 0,
+      "textLength": 1306,
+      "rawKeys": false,
+      "screenshot": "ko-1920-trade.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "route": "/futures",
+      "overflow": 0,
+      "textLength": 1494,
+      "rawKeys": false,
+      "screenshot": "ko-1920-futures.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "route": "/trade?market=cfd",
+      "overflow": 0,
+      "textLength": 538,
+      "rawKeys": false,
+      "screenshot": "ko-1920-cfd.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "route": "/wallet",
+      "overflow": 0,
+      "textLength": 1172,
+      "rawKeys": false,
+      "screenshot": "ko-1920-wallet.png"
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "route": "/card",
+      "overflow": 0,
+      "textLength": 2679,
+      "rawKeys": false,
+      "screenshot": "ko-1920-card.png"
+    }
+  ],
+  "navigation": [
+    {
+      "lang": "ru",
+      "width": 390,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 390,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "from": "/",
+      "target": "/card",
+      "to": "/login?next=%2Fcard",
+      "creditCard": true
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "from": "/futures",
+      "target": "/card",
+      "to": "/card",
+      "creditCard": true
+    }
+  ],
+  "failures": [],
+  "pageErrors": [],
+  "blockedExternal": [
+    "https://fonts.googleapis.com",
+    "https://cdn.jsdelivr.net"
+  ],
+  "writes": [
+    {
+      "lang": "ru",
+      "width": 390,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ru",
+      "width": 360,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ru",
+      "width": 320,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ru",
+      "width": 430,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ru",
+      "width": 1366,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ru",
+      "width": 1440,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ru",
+      "width": 1920,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "en",
+      "width": 360,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "en",
+      "width": 1366,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "en",
+      "width": 1920,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "zh",
+      "width": 320,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "zh",
+      "width": 360,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "zh",
+      "width": 430,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "zh",
+      "width": 390,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "zh",
+      "width": 1366,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "zh",
+      "width": 1440,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "zh",
+      "width": 1920,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "es",
+      "width": 360,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "es",
+      "width": 320,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "es",
+      "width": 390,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "es",
+      "width": 430,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "es",
+      "width": 1366,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "es",
+      "width": 1440,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "hi",
+      "width": 320,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "es",
+      "width": 1920,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "hi",
+      "width": 360,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "hi",
+      "width": 390,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "hi",
+      "width": 430,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "hi",
+      "width": 1366,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "hi",
+      "width": 1440,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ja",
+      "width": 320,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "hi",
+      "width": 1920,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ja",
+      "width": 360,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ja",
+      "width": 390,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ja",
+      "width": 430,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ja",
+      "width": 1366,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ja",
+      "width": 1920,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ja",
+      "width": 1440,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ko",
+      "width": 320,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ko",
+      "width": 390,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ko",
+      "width": 360,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ko",
+      "width": 430,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ko",
+      "width": 1366,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ko",
+      "width": 1440,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    },
+    {
+      "lang": "ko",
+      "width": 1920,
+      "path": "/api/v1/wallet/portfolio-snapshot",
+      "method": "POST"
+    }
+  ],
+  "fixtureWrites": []
+}

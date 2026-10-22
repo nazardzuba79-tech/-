@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import type { PublishedListing } from './listingConfig';
+import { isHistoricalDemoConfig } from './simulationContour';
 
 /** One allocation per listing, ever. The receipt id is the idempotency key. */
 export const allocationReceiptId = (listingId: string) => `listing-owner-allocation:${listingId}`;
@@ -18,6 +19,7 @@ export const allocationReceiptId = (listingId: string) => `listing-owner-allocat
  */
 export async function allocateListingOwner(db: PrismaClient, listing: PublishedListing, ownerId: string) {
   if (!ownerId.trim()) throw new Error('Explicit verified owner ID required');
+  if (isHistoricalDemoConfig(listing.config)) throw new Error('A historical simulation has no inventory to allocate');
   const asset = listing.config.symbol;
   const quantity = new BigNumber(listing.config.ownerAllocation);
   if (!quantity.isFinite() || quantity.lte(0)) throw new Error('This listing has no owner allocation to credit');

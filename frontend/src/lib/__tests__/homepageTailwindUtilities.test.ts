@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, existsSync } from 'fs';
-import { resolve, join } from 'path';
+import { resolve, join, relative } from 'path';
 import { lazyPageImports } from '../../../test-utils/sourceContracts';
 
 /**
@@ -145,7 +145,7 @@ describe('the homepage does not borrow another route\'s stylesheet', () => {
           // stops meaning what it says.
           const src = readFileSync(full, 'utf8');
           if (src.match(new RegExp(`import\\s+['"][^'"]*[/']${needle.replace('.', '\\.')}['"]`))) {
-            found.push(full.slice(full.indexOf('src/')));
+            found.push(relative(frontend, full).replace(/\\/g, '/'));
           }
         }
       };

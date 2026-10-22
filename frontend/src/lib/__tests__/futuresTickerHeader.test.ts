@@ -18,6 +18,77 @@ const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replace
 const source = read('frontend/src/components/FuturesTickerBar.tsx');
 const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 
+// KYC additional materials (2026-10-15): the review-stage types, two
+// optional fields on the KYC reads and two admin calls are additions only
+// (`git diff` over api.ts: +66/-0). Each block must occur exactly once and is
+// removed by its exact text, so every Futures/Spot method stays byte-pinned.
+const KYC_MATERIALS_API_ADDITIONS: readonly string[] = [
+  "export type KycReviewStage =\n  | 'NOT_STARTED' | 'UNDER_REVIEW' | 'DOCUMENT_REQUIRED' | 'SELFIE_REQUIRED' | 'DOCUMENT_AND_SELFIE_REQUIRED'\n  | 'MATERIALS_RECEIVED' | 'RE_REVIEW' | 'APPROVED' | 'REJECTED';\nexport type KycMaterialKind = 'DOCUMENT' | 'SELFIE' | 'DOCUMENT_AND_SELFIE';\nexport type KycDocumentReason = 'BLURRY' | 'UNREADABLE' | 'CROPPED' | 'LOW_LIGHT' | 'OTHER';\n\n/** What the user sees about an open request: the ask and the reason, nothing internal. */\nexport interface KycMaterialRequestView {\n  id: string;\n  kind: KycMaterialKind;\n  documentReason: KycDocumentReason | null;\n  documentReasonText: string | null;\n  selfieComment: string | null;\n  documentRequested: boolean;\n  selfieRequested: boolean;\n  documentReceived: boolean;\n  selfieReceived: boolean;\n  createdAt: string;\n}\n\n/** The admin's view of one request, newest first in a submission's history. */\nexport interface AdminKycMaterialRequest {\n  id: string;\n  kind: KycMaterialKind;\n  status: 'OPEN' | 'RECEIVED' | 'CLOSED';\n  documentReason: KycDocumentReason | null;\n  documentReasonText: string | null;\n  selfieComment: string | null;\n  requestedBy: string;\n  createdAt: string;\n  document: { receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null } | null;\n  selfie: {\n    receivedAt: string | null; messageId: string | null; mimeType: string | null; sizeBytes: number | null;\n    consentAt: string | null; consentVersion: string | null;\n  } | null;\n  acknowledgedAt: string | null;\n  closedAt: string | null;\n  closedOutcome: 'APPROVED' | 'REJECTED' | 'SUPERSEDED' | null;\n}\n\n",
+  "      /** The finer stage of the latest submission; kycStatus stays PENDING while materials are requested. */\n      reviewStage?: KycReviewStage;\n      /** The admin's open request for a new document photo and/or a selfie, if any. */\n      materialRequest?: KycMaterialRequestView | null;\n",
+  "          // Paged admin reads only (/admin/clients/page); absent from the legacy list.\n          reviewStage?: KycReviewStage;\n          activeMaterialRequestId?: string | null;\n          materialRequests?: AdminKycMaterialRequest[];\n",
+  "  // Admin: ask for a new document photo and/or a selfie without rejecting.\n  // `clientRequestId` makes a repeated click (or a retry) the same request.\n  requestKycMaterials: (submissionId: string, body: {\n    clientRequestId: string;\n    kind: KycMaterialKind;\n    documentReason?: KycDocumentReason;\n    documentReasonText?: string;\n    selfieComment?: string;\n  }) =>\n    request<{ materialRequest: AdminKycMaterialRequest; reviewStage: KycReviewStage }>(`/kyc/${encodeURIComponent(submissionId)}/material-requests`, {\n      method: 'POST',\n      body: JSON.stringify(body),\n    }),\n\n  // Admin: the received materials were opened — «Материалы получены» → «Повторная проверка».\n  acknowledgeKycMaterials: (materialRequestId: string) =>\n    request<{ acknowledged: boolean }>(`/kyc/material-requests/${encodeURIComponent(materialRequestId)}/acknowledge`, { method: 'POST' }),\n\n",
+];
+
+function stripKycMaterialsApi(text: string): string {
+  return KYC_MATERIALS_API_ADDITIONS.reduce((out, block) => out.replace(block, ''), text);
+}
+
+/**
+ * The financial-API fingerprint of frontend/src/lib/api.ts: every approved
+ * additive change is removed by its exact text, then the whole file must hash
+ * to the original pin. Shared by the pin test and its negative checks.
+ */
+function normalizeApiTs(text: string): string {
+  return stripKycMaterialsApi(text)
+    // Reuse the identical authenticated transport in the lazy OTC module.
+    .replace('export async function request<T>', 'async function request<T>')
+    // Remembered-device auth (2026-10-03, admin accounts only) adds logout and
+    // a sessions-response flag. Normalize only those exact auth-only additions
+    // so this guard keeps pinning Futures/Spot API.
+    .replace("  /** Ends this session on the server as well; the caller clears the token. */\n  logout: () => request<{ status: 'ok' }>('/auth/logout', { method: 'POST' }),\n\n", '')
+    .replace("current: boolean; remembered?: boolean }[]", "current: boolean }[]")
+    // Withdrawal requests (2026-09-30): the POST result names `balanceHeld`,
+    // one read of what can be withdrawn, and the admin list's `balanceHeld`.
+    // Removed here by exact text; every Futures/Spot method stays byte-pinned.
+    .replace("status: string; balanceHeld: boolean }>(\n      '/withdrawals',", "status: string }>(\n      '/withdrawals',")
+    .replace("\n  /** What the caller can withdraw, per asset, exactly as the server checks it.\n   * TRADING = the Cross trading account; SPOT = the spot ledger, with\n   * `futures` naming what would have to be transferred first. */\n  getWithdrawalOptions: () =>\n    request<{\n      source: 'TRADING' | 'SPOT';\n      assets: { asset: string; available: string }[];\n      futures: { asset: string; available: string }[];\n    }>('/withdrawals/options'),\n", '')
+    .replace("        rejectionReason: string | null;\n        balanceHeld: boolean;\n        createdAt: string;", "        rejectionReason: string | null;\n        createdAt: string;")
+    // NRX public reads alone use Cloudflare; byte-pin all existing transports,
+    // especially index/funding/internal OI and every account write, as before.
+    .replace("import { fetchNrxPublic, isNrxPair } from './nrxMarket';\n", '')
+    .replace(/\(isNrxPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
+    // Managed listings (Admin → Listings) are edge-served like NRX: the same four
+    // public reads, routed by isEdgeMarketPair (NRX or a published listing).
+    .replace("import { fetchNrxPublic, isEdgeMarketPair } from './nrxMarket';\n", '')
+    .replace(/\(isEdgeMarketPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
+    // Private VTA adds only these two methods and response types. Continue
+    // fingerprinting every pre-existing Futures/Spot method unchanged.
+    .replace("export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }\nexport interface VtaDemoSnapshot {\n  balances: { asset: string; available: string; locked: string }[];\n  sales: (VtaSaleReceipt & { createdAt: string })[];\n}\n\n", '')
+    .replace("  getVtaDemo: () => request<VtaDemoSnapshot>('/demo/vta'),\n  sellVtaDemo: (requestId: string, quantity: string) => request<VtaSaleReceipt>('/demo/vta/sell', {\n    method: 'POST', body: JSON.stringify({ requestId, quantity }),\n  }),\n", '')
+    // Idle sleep adds transport scheduling and session isolation only. Remove
+    // these exact additions to retain the existing financial API fingerprint.
+    .replace("import { browserFetch as fetch } from './browserActivity';\n", '')
+    .replace("if (typeof window !== 'undefined') window.addEventListener('storage', event => {\n  if (event.key === TOKEN_KEY || event.key === null) notifySessionChange();\n});\n", '')
+    .replace("  if (getToken() !== token) throw new DOMException('Session changed', 'AbortError');\n", '')
+    .replace('        userId: string | null;\n        userEmail: string | null;', '        userId: string;\n        userEmail: string;')
+    .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
+    "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
+    'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
+).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '')
+    // Admin KYC email delivery (2026-09-25, reshaped 2026-09-26 for the KYC edge) — one admin-only method, no Futures/Spot read touched.
+    .replace("  // Admin: where new KYC documents are emailed (by the KYC edge, not this API).\n  getKycDelivery: () => request<{ mode: 'EDGE_EMAIL'; configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),\n\n", '')
+    // KYC edge (2026-09-26): the Render document upload left api.ts for lib/kycEdge.ts. Restore the removed KYC-only method by name.
+    .replace("  // KYC verification. The document itself is uploaded by lib/kycEdge.ts to\n  // the Cloudflare KYC edge, never to this API.\n  getMyKyc: () =>", "  // KYC verification\n  submitKyc: (fields: {\n    country: string;\n    fullName: string;\n    dateOfBirth: string;\n    documentType: 'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE';\n    document: File;\n  }) => {\n    const form = new FormData();\n    form.append('country', fields.country);\n    form.append('fullName', fields.fullName);\n    form.append('dateOfBirth', fields.dateOfBirth);\n    form.append('documentType', fields.documentType);\n    form.append('document', fields.document);\n    return requestForm<{ id: string; status: string }>('/kyc/submit', form);\n  },\n\n  getMyKyc: () =>")
+    // Admin bandwidth optimization (2026-09-25): one compact admin-only
+    // recent-deposit read. It does not touch any Futures/Spot method.
+    .replace("  // Compact helper for the Users page. Returns only one recent deposit\n  // badge row per user from the rolling last 24h — not full deposit history.\n  getAdminRecentDepositsByUser: () =>\n    request<\n      {\n        userId: string;\n        amount: string;\n        asset: string;\n        createdAt: string;\n      }[]\n    >('/admin/deposits/recent-by-user'),\n\n", '')
+    // Support became a form posting to the support Worker (2026-09-26): the
+    // live-chat methods and their types were removed. Restore their exact
+    // text here so every Futures/Spot method stays byte-pinned.
+    .replace("  // --- Admin panel (/admin)", "  // Live-chat support widget\n  startSupportConversation: (name: string, email: string, subject: SupportSubject, message: string) =>\n    request<SupportConversation & { messages: SupportMessage[] }>('/support/conversations', {\n      method: 'POST',\n      body: JSON.stringify({ name, email, subject, message }),\n    }),\n\n  getMySupportConversation: () =>\n    request<{ conversation: (SupportConversation & { messages: SupportMessage[] }) | null }>(\n      '/support/conversations/mine'\n    ),\n\n  getSupportConversation: (id: string) =>\n    request<{ conversation: SupportConversation; messages: SupportMessage[] }>(`/support/conversations/${id}`),\n\n  getSupportConversationStatus: (id: string) =>\n    request<{ unreadByUser: boolean }>(`/support/conversations/${id}/status`),\n\n  sendSupportMessage: (id: string, body: string) =>\n    request<SupportMessage>(`/support/conversations/${id}/messages`, {\n      method: 'POST',\n      body: JSON.stringify({ body }),\n    }),\n\n  markSupportConversationRead: (id: string) => request<void>(`/support/conversations/${id}/read`, { method: 'POST' }),\n\n" + "  // --- Admin panel (/admin)")
+    .replace("};\n\nfunction pairToSlug(", "};\n\n" + "export type SupportSubject = 'TECHNICAL' | 'KYC' | 'CARD' | 'OTHER';\n\nexport interface SupportMessage {\n  id: string;\n  sender: 'USER' | 'ADMIN';\n  body: string;\n  createdAt: string;\n}\n\nexport interface SupportConversation {\n  id: string;\n  userId: string | null;\n  guestName: string;\n  guestEmail: string;\n  subject: SupportSubject;\n  unreadByUser: boolean;\n  createdAt: string;\n  updatedAt: string;\n}\n\n" + "function pairToSlug(");
+}
+
 // Baselines re-taken at the Market Data Gateway migration (see
 // docs/MARKET_DATA_ARCHITECTURE.md). What changed in these three files is
 // exactly one thing: the 24h REFERENCE spot figures (last/change/high/low/
@@ -29,7 +100,7 @@ const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 // are still read from the futures services, per symbol, exactly as before.
 // No external venue's derivatives metric is read here, and the seven-block
 // header hierarchy is untouched.
-test('VOLTEX derivatives reads (mark, index, funding) stay on the futures services', () => {
+test('VOLTEX derivatives reads (mark, index, funding) stay VOLTEX\'s own', () => {
   // The per-symbol VOLTEX loop, isolated from the separate external
   // market-stats effect beside it.
   const voltexLoop = source.slice(
@@ -39,13 +110,15 @@ test('VOLTEX derivatives reads (mark, index, funding) stay on the futures servic
   // The VOLTEX financial reads are still here, still per symbol.
   expect(source).toContain('useFuturesMark(symbol)');
   expect(read('frontend/src/lib/useFuturesMark.ts')).toContain('api.getFuturesMarkPrice(symbol)');
-  expect(voltexLoop).toContain('.getFuturesFundingRate(symbol, 1)');
+  // Funding is VOLTEX's fixed rates by side from its own /futures/config
+  // (the rates every position settles at), so nothing polls for it — and
+  // neither the settled-record read nor a provider's live rate is used.
+  expect(source).toContain('voltexFundingRates(futuresConfig)');
+  expect(source).not.toContain('getFuturesFundingRate');
   // Financial display freshness is bounded by what can actually change:
-  // mark/index keep 4s, settled funding is one visible-minute read, and
-  // hidden tabs make neither request until visibility returns.
+  // mark/index keep their shared read; hidden tabs make no request until
+  // visibility returns.
   expect(read('frontend/src/lib/useFuturesMark.ts')).toContain('30_000, true');
-  expect(voltexLoop).toContain('60_000, true');
-  expect(voltexLoop).toContain('fundingReader.stop()');
   // And no external venue's data may enter this loop or substitute for
   // one of its figures.
   expect(voltexLoop).not.toMatch(/binance|bybit|okx|deribit|bitget|MarketStats/i);
@@ -88,19 +161,25 @@ test('market-data reads use perpetual references and preserve financial inputs',
   const reads = source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('));
   // What the re-take is allowed to have changed, pinned so the digest
   // cannot be advanced again for something else without deleting these.
-  expect(reads).toContain('useFuturesConfig().config?.fundingIntervalHours ?? null');
+  expect(reads).toContain('const futuresConfig = useFuturesConfig().config;');
+  expect(reads).toContain('futuresConfig?.fundingIntervalHours ?? null');
   expect(reads).not.toContain('getFuturesConfig');
   // The caption's read, pinned by name so this re-take is bounded to it.
   expect(reads).toContain("useAssetMetadata([baseAsset])[baseAsset.toUpperCase()]?.name ?? null");
   // And it must stay display-only: no price, size or money enters here.
   expect(reads).not.toMatch(/assetMetadata[^;]*(price|balance|position|margin)/i);
   // What it is not allowed to have changed.
-  for (const read of ['useFuturesMark', 'getFuturesFundingRate']) {
+  for (const read of ['useFuturesMark', 'voltexFundingRates(futuresConfig)']) {
     expect(reads).toContain(read);
   }
+  expect(reads).not.toContain('getFuturesFundingRate');
   // Previous digest, before the caption's read: 27318636…a152e.
   // Retaken only for shared mark reads and visibility-aware read scheduling.
-  expect(hash(reads)).toBe('45ca07c99985789e9f7c301b41ad1cd8bee6721a2897e5d3d5c282452e9eee3c');
+  // Retaken 2026-10-16 for VOLTEX funding V2 (previous 45ca07c9…9eee3c):
+  // the settled-record funding poll (getFuturesFundingRate, one visible
+  // minute) is replaced by VOLTEX's fixed rates by side from the same shared
+  // /futures/config read, asserted by name above. Mark/index reads unchanged.
+  expect(hash(reads)).toBe('1cf80b0fc54545841fed49fb274cc34c7c18c59512d96a3372297e6b2b1c25c8');
 });
 test('funding countdown arithmetic is unchanged and only its scheduler gains browser sleep', () => {
   const countdown = source.slice(source.indexOf('const NextFundingCountdown'));
@@ -120,8 +199,40 @@ test.each([
   // The browser regression exercises the session-switch guard with a real 401.
   // Admin Users password column: one additive nullable field in getAdminUsers'
   // response type. Futures/Spot methods and their transport stay unchanged.
-  ['frontend/src/lib/api.ts', '1d94b9b20fa84c9cf560fec948cc01c60fda3bbf0f4a11fd1d8321d1c5d78eb1'],
-  ['src/api/routes/futures.ts', '3eff9ba113edc85e3b44dd88cb876cd88e09ce99412353ed85221bdadbd2bc19'],
+  // API lifecycle audit: optional AbortSignals on GETs only; mutation transports are unchanged.
+  // Re-taken 2026-10-13 (full audit): `getMyOrders` takes an optional
+  // `{ fresh }` and goes through `readSpotOrders` (lib/readCoalescer) so the
+  // chart and the open-orders panel share one request per tick, and its row
+  // type is named `SpotOrderRecord`. Every futures read this suite protects
+  // — mark price, open interest, funding rate, the book route, `request()`,
+  // the Authorization header, `handleUnauthorized` — is untouched.
+  // 2026-10-14: exact source re-reviewed after account-scoped Spot order
+  // coalescing and a post-session-response guard. Financial writes and
+  // Futures/Spot trading endpoints are unchanged; keep the byte-pin active.
+  // Re-taken 2026-10-16 for VOLTEX funding V2 (previous adae38b5…ed6b8d2):
+  // types only — `getFuturesConfig` gains the optional `fundingCashflow`, and
+  // the positions/history rows gain the optional `fundingNet` with their
+  // `realizedPnl` documented as including settled funding. No request,
+  // route, transport or auth line changed.
+  ['frontend/src/lib/api.ts', 'e163d3511b852f72b394b175f030578be1c16ef6eea412cf43b0de36048930ce'],
+  // 2026-09-30: reviewed Express 4 async-error containment. All fourteen
+  // handler bodies are byte-identical to f62d28da; only asyncRoute and the
+  // local wrapped auth binding changed. Pin the complete reviewed file;
+  // request failures are exercised by futuresAsyncErrors.test.ts.
+  // OTC prerequisite: only /transfer delegates to guarded atomic wallet deltas;
+  // all other route handlers, authentication, margin and response contracts stay pinned.
+  // Re-taken 2026-10-13 (full audit): the three `catch` blocks that answered
+  // a refused order, quick close or transfer with `{ error: err.message }`
+  // now answer `futuresRefusalBody(err)` — the same sentence plus a code for
+  // the two known engine refusals (thin book, self-match). One import, no
+  // route added, no read touched.
+  // Re-taken 2026-10-16 for VOLTEX funding V2 (previous 35a60abf…787fb5):
+  // /futures/config adds `fundingCashflow` (config/voltexFunding), and
+  // /futures/positions and /futures/positions/history add the funding each
+  // position settled — one grouped FundingPayment read — into `realizedPnl`
+  // and as `fundingNet`. No order, close, transfer, margin or auth handler
+  // changed; covered by futuresProtection.test.ts.
+  ['src/api/routes/futures.ts', '3db9e99effe204f478d8a2c06a2bfa8571064c8adb401bffe14169f3779610a4'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
   // getAnalyticsOverview and its response types. Every futures method,
@@ -219,6 +330,13 @@ test.each([
   // still trips it.
   const normalized = path === 'frontend/src/components/TickerBar.tsx'
     ? read(path)
+      // 2026-10-04 phone instrument row: the four secondary 24h figures fold
+      // behind a «24h +» disclosure (display state only). Remove exactly that
+      // state, its attribute and its button; every read and handler stays pinned.
+      .replace("import { useState } from 'react';\n", '')
+      .replace("  // Phones show pair, change and price; the four 24h figures fold behind\n  // \u00ab24h +\u00bb (the same disclosure the Futures header uses) instead of\n  // wrapping into a wall of numbers above the order form.\n  const [mobileDetails, setMobileDetails] = useState(false);\n", '')
+      .replace('<div className="ticker-bar" data-mobile-details={mobileDetails}>', '<div className="ticker-bar">')
+      .replace("      <button type=\"button\" className=\"spot-mobile-stats-toggle\" aria-expanded={mobileDetails} aria-label={t('trade.marketInfo')}\n        onClick={() => setMobileDetails(value => !value)}>24h <span aria-hidden=\"true\">{mobileDetails ? '\u2212' : '+'}</span></button>\n", '')
       // 2026-09-26 terminal design parity: Spot intentionally received only
       // the final Futures HEADER PRESENTATION (market-list affordance, icon,
       // pair/name stack). Normalize those display-only additions back to the
@@ -272,41 +390,7 @@ test.each([
   // Restore that exact line for this fingerprint of all existing API behavior.
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
-  const source = path === 'frontend/src/lib/api.ts' ? read(path)
-    // NRX public reads alone use Cloudflare; byte-pin all existing transports,
-    // especially index/funding/internal OI and every account write, as before.
-    .replace("import { fetchNrxPublic, isNrxPair } from './nrxMarket';\n", '')
-    .replace(/\(isNrxPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
-    // Managed listings (Admin → Listings) are edge-served like NRX: the same four
-    // public reads, routed by isEdgeMarketPair (NRX or a published listing).
-    .replace("import { fetchNrxPublic, isEdgeMarketPair } from './nrxMarket';\n", '')
-    .replace(/\(isEdgeMarketPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
-    // Private VTA adds only these two methods and response types. Continue
-    // fingerprinting every pre-existing Futures/Spot method unchanged.
-    .replace("export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }\nexport interface VtaDemoSnapshot {\n  balances: { asset: string; available: string; locked: string }[];\n  sales: (VtaSaleReceipt & { createdAt: string })[];\n}\n\n", '')
-    .replace("  getVtaDemo: () => request<VtaDemoSnapshot>('/demo/vta'),\n  sellVtaDemo: (requestId: string, quantity: string) => request<VtaSaleReceipt>('/demo/vta/sell', {\n    method: 'POST', body: JSON.stringify({ requestId, quantity }),\n  }),\n", '')
-    // Idle sleep adds transport scheduling and session isolation only. Remove
-    // these exact additions to retain the existing financial API fingerprint.
-    .replace("import { browserFetch as fetch } from './browserActivity';\n", '')
-    .replace("if (typeof window !== 'undefined') window.addEventListener('storage', event => {\n  if (event.key === TOKEN_KEY || event.key === null) notifySessionChange();\n});\n", '')
-    .replace("  if (getToken() !== token) throw new DOMException('Session changed', 'AbortError');\n", '')
-    .replace('        userId: string | null;\n        userEmail: string | null;', '        userId: string;\n        userEmail: string;')
-    .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
-    "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
-    'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
-  ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '')
-    // Admin KYC email delivery (2026-09-25, reshaped 2026-09-26 for the KYC edge) — one admin-only method, no Futures/Spot read touched.
-    .replace("  // Admin: where new KYC documents are emailed (by the KYC edge, not this API).\n  getKycDelivery: () => request<{ mode: 'EDGE_EMAIL'; configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),\n\n", '')
-    // KYC edge (2026-09-26): the Render document upload left api.ts for lib/kycEdge.ts. Restore the removed KYC-only method by name.
-    .replace("  // KYC verification. The document itself is uploaded by lib/kycEdge.ts to\n  // the Cloudflare KYC edge, never to this API.\n  getMyKyc: () =>", "  // KYC verification\n  submitKyc: (fields: {\n    country: string;\n    fullName: string;\n    dateOfBirth: string;\n    documentType: 'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE';\n    document: File;\n  }) => {\n    const form = new FormData();\n    form.append('country', fields.country);\n    form.append('fullName', fields.fullName);\n    form.append('dateOfBirth', fields.dateOfBirth);\n    form.append('documentType', fields.documentType);\n    form.append('document', fields.document);\n    return requestForm<{ id: string; status: string }>('/kyc/submit', form);\n  },\n\n  getMyKyc: () =>")
-    // Admin bandwidth optimization (2026-09-25): one compact admin-only
-    // recent-deposit read. It does not touch any Futures/Spot method.
-    .replace("  // Compact helper for the Users page. Returns only one recent deposit\n  // badge row per user from the rolling last 24h — not full deposit history.\n  getAdminRecentDepositsByUser: () =>\n    request<\n      {\n        userId: string;\n        amount: string;\n        asset: string;\n        createdAt: string;\n      }[]\n    >('/admin/deposits/recent-by-user'),\n\n", '')
-    // Support became a form posting to the support Worker (2026-09-26): the
-    // live-chat methods and their types were removed. Restore their exact
-    // text here so every Futures/Spot method stays byte-pinned.
-    .replace("  // --- Admin panel (/admin)", "  // Live-chat support widget\n  startSupportConversation: (name: string, email: string, subject: SupportSubject, message: string) =>\n    request<SupportConversation & { messages: SupportMessage[] }>('/support/conversations', {\n      method: 'POST',\n      body: JSON.stringify({ name, email, subject, message }),\n    }),\n\n  getMySupportConversation: () =>\n    request<{ conversation: (SupportConversation & { messages: SupportMessage[] }) | null }>(\n      '/support/conversations/mine'\n    ),\n\n  getSupportConversation: (id: string) =>\n    request<{ conversation: SupportConversation; messages: SupportMessage[] }>(`/support/conversations/${id}`),\n\n  getSupportConversationStatus: (id: string) =>\n    request<{ unreadByUser: boolean }>(`/support/conversations/${id}/status`),\n\n  sendSupportMessage: (id: string, body: string) =>\n    request<SupportMessage>(`/support/conversations/${id}/messages`, {\n      method: 'POST',\n      body: JSON.stringify({ body }),\n    }),\n\n  markSupportConversationRead: (id: string) => request<void>(`/support/conversations/${id}/read`, { method: 'POST' }),\n\n" + "  // --- Admin panel (/admin)")
-    .replace("};\n\nfunction pairToSlug(", "};\n\n" + "export type SupportSubject = 'TECHNICAL' | 'KYC' | 'CARD' | 'OTHER';\n\nexport interface SupportMessage {\n  id: string;\n  sender: 'USER' | 'ADMIN';\n  body: string;\n  createdAt: string;\n}\n\nexport interface SupportConversation {\n  id: string;\n  userId: string | null;\n  guestName: string;\n  guestEmail: string;\n  subject: SupportSubject;\n  unreadByUser: boolean;\n  createdAt: string;\n  updatedAt: string;\n}\n\n" + "function pairToSlug(") : normalized;
+  const source = path === 'frontend/src/lib/api.ts' ? normalizeApiTs(read(path)) : normalized;
   expect(hash(source)).toBe(expected);
 });
 
@@ -338,7 +422,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false, doc?: any
     },
   };
   const api = {
-    getFuturesConfig: jest.fn(async () => ({ fundingIntervalHours: 8 })),
+    getFuturesConfig: jest.fn(async () => ({ fundingIntervalHours: 8, fundingCashflow: { version: 'VOLTEX_FIXED_V2', long: '-0.0001', short: '0.0004' } })),
     getFuturesMarkPrice: jest.fn(async () => ({ markPrice: '72340.12', indexPrice: '71999.88' })),
     getFuturesFundingRate: jest.fn(async () => ({ history: [{ rate: '0.00003' }] })),
     getFuturesMarketStats: jest.fn(async () => marketStats),
@@ -432,6 +516,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false, doc?: any
     if (name === '../lib/formatNumber') return numbers;
     if (name === '../lib/priceChange') return changes;
     if (name === '../lib/terminalPresentation') return require('../terminalPresentation');
+    if (name === '../lib/contractDetails') return require('../contractDetails');
     return req(name);
   }, output);
   return { api, render(props: any = { symbol: 'BTC/USDT' }) {
@@ -536,7 +621,8 @@ test('visible metrics follow price, market, derivatives order, with the mark as 
   // Base volume still does not render, and no upstream venue is named.
   expect(text(tree)).not.toMatch(/volume24h|123,456/);
   expect(text(tree)).toContain('987.65M');
-  expect(text(blocks[6])).toContain('0.0030% / ');
+  // VOLTEX's fixed rates by side, from /futures/config — the rates positions settle at.
+  expect(text(blocks[6])).toContain('futures.long \u22120.01% · futures.short +0.04% / ');
   expect(nodes(blocks[6]).find(n => typeof n.type === 'function')?.props.intervalHours).toBe(8);
 });
 const oiStats = (value: Record<string, unknown>) =>
@@ -573,7 +659,8 @@ test.each([
 test('unavailable data stays unavailable rather than becoming fake zero', async () => {
   const component = mount({
     getFuturesMarketStats: async () => ({ available: false, reason: 'provider_unavailable' }),
-    getFuturesFundingRate: async () => ({ history: [] }),
+    // A config without funding rates (an older backend): the cell shows a dash, never a guess.
+    getFuturesConfig: async () => ({ fundingIntervalHours: 8 }),
   });
   component.render(); await flush();
   const tree = component.render();
@@ -798,4 +885,26 @@ describe('the instrument cluster is one node, and its caption is real', () => {
     // Unknown to the catalogue: nothing, not «BTC USDT» standing in for a name.
     expect(caption(mount().render({ symbol: 'BTC/USDT', archive: true }))).toBeNull();
   });
+});
+
+// Reviewer request on PR #530: the KYC normalisation removes exactly the four
+// approved blocks, once each, and nothing else — a change to any protected read
+// or to the transport still trips the original pin.
+test('api.ts KYC additions are stripped exactly once; any other change still breaks the pin', () => {
+  const PIN = 'e163d3511b852f72b394b175f030578be1c16ef6eea412cf43b0de36048930ce'; // re-taken for funding V2, see the api.ts pin above
+  const api = read('frontend/src/lib/api.ts');
+  expect(KYC_MATERIALS_API_ADDITIONS).toHaveLength(4);
+  for (const block of KYC_MATERIALS_API_ADDITIONS) expect(api.split(block).length - 1).toBe(1);
+  expect(hash(normalizeApiTs(api))).toBe(PIN);
+  // Without the KYC strip the file no longer matches: the strip is doing real work.
+  expect(hash(normalizeApiTs(api.replace(KYC_MATERIALS_API_ADDITIONS[3], KYC_MATERIALS_API_ADDITIONS[3] + '\n')))).not.toBe(PIN);
+  for (const [from, to] of [
+    ['/futures/mark-price/', '/futures/mark-price-x/'],
+    ['/futures/open-interest/', '/futures/open-interest-x/'],
+    ['/futures/funding-rate/', '/futures/funding-rate-x/'],
+    ['Authorization', 'X-Authorization'],
+  ]) {
+    expect({ from, found: api.includes(from) }).toEqual({ from, found: true });
+    expect({ from, same: hash(normalizeApiTs(api.replace(from, to))) === PIN }).toEqual({ from, same: false });
+  }
 });

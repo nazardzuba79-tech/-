@@ -41,18 +41,25 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
     const page = await context.newPage();
     page.on('pageerror', e => report.errors.push(e.message));
     await page.goto(origin + '/futures');
+    // owner, 2026-10-04: phone opens on Trade — wait for the trade workspace it opens on.
+    if (width <= 900) await page.locator('#mobile-futures-panel-trade').waitFor(); else
     await page.locator('.chart-surface').waitFor();
     if (width <= 900) await page.locator('#mobile-futures-trade').click();
     // TP/SL is a checkbox beside «Только уменьшение» (owner, 2026-09-29).
     const toggle = page.locator('.fo-tpslToggle'), toggleBox = toggle.locator('input');
     await toggle.waitFor();
-    assert.equal(await toggle.evaluate(e => e.getBoundingClientRect().height), width > 900 ? 24 : 44);
+    // Desktop 28px since 2026-10-07 (Bybit 1:1: its TP/SL checkbox row); phones keep the 44px touch target.
+    assert.equal(await toggle.evaluate(e => e.getBoundingClientRect().height), width > 900 ? 28 : 44);
     assert.equal((await toggle.innerText()).trim(), 'TP / SL');
     assert(await toggle.getAttribute('title'), 'Protection explanation must remain available');
     assert.equal(await toggleBox.isChecked(), false);
     const available = page.locator('.fo-availRow');
+    // The ticket chrome can render before the initialized fixture account
+    // response. Wait for that response's positive margin, then keep the
+    // original assertion; a missing/zero account still fails within 10s.
+    await page.waitForFunction(() => Number(document.querySelector('.fo-availRow')?.getAttribute('data-available-margin')) > 0, null, { timeout: 10000 });
     assert(Number(await available.getAttribute('data-available-margin')) > 0, 'Available margin must be printed above the price');
-    assert.equal(await available.locator('.fo-availTransfer').count(), 1, 'Transfer «+» missing beside «Доступно»');
+    assert.equal(await available.locator('button').count(), 0, 'No «+» beside «Доступно» (owner, 2026-09-30)');
     assert.equal(await page.locator('.futures-terminal-status').count(), 0);
     assert(!/Мейкер|Тейкер/.test(await page.locator('.order-form-area').innerText()), 'Fee strip still rendered');
     await page.locator('.fo-qtyInputRow input').fill('0.012');
@@ -81,15 +88,22 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
       return { price: rect('.fo-priceField'), quantity: rect('.fo-qtyInputRow'), long: rect('.fo-submitPair .buy'), short: rect('.fo-submitPair .sell'), overflow: document.documentElement.scrollWidth - innerWidth };
     });
     assert.equal(geometry.overflow, 0, 'Horizontal page overflow');
-    const fieldHeight = width > 900 ? 44 : 48;
+    // Owner, 2026-10-03: compact desktop fields; retain the mobile field size.
+    // Desktop 42px since 2026-10-07 (Bybit 1:1: its price and quantity fields); phones keep 48.
+    const fieldHeight = width > 900 ? 42 : 48;
     assert.equal(geometry.price.height, fieldHeight); assert.equal(geometry.quantity.height, fieldHeight);
     assert(Math.abs(geometry.price.width - geometry.quantity.width) < 1);
     assert.equal(geometry.long.height, geometry.short.height);
-    assert(geometry.long.height >= 50);
+    // Desktop 38px pills since 2026-10-07 (Bybit 1:1); phones keep the released 52px.
+    assert(geometry.long.height >= (width > 900 ? 38 : 50));
     assert(Math.abs(geometry.long.width - geometry.short.width) < 1);
+    // owner, 2026-10-04: order type is one select on a phone — the same «Рыночный» / «Лимитный», chosen through it.
+    const familySelect = page.locator('.order-family-select select');
+    if (width <= 900) { await familySelect.selectOption('MARKET'); assert.equal((await familySelect.locator('option:checked').textContent()).trim(), 'Рыночный'); } else
     await page.locator('.order-family-tabs').getByText('Рыночный', { exact: true }).click();
     const marketHeight = await page.locator('.fo-priceField').evaluate(e => e.getBoundingClientRect().height);
     assert.equal(marketHeight, fieldHeight, 'Market price field must match quantity height');
+    if (width <= 900) { await familySelect.selectOption('LIMIT'); assert.equal((await familySelect.locator('option:checked').textContent()).trim(), 'Лимитный'); } else
     await page.locator('.order-family-tabs').getByText('Лимитный', { exact: true }).click();
     for (const side of ['buy', 'sell']) {
       const button = page.locator('.fo-submitPair .' + side);

@@ -33,24 +33,28 @@ const source = readFileSync(resolve(frontend, 'src/components/PriceChart.tsx'), 
 // The drawing layer is its own module. It is compiled the same way as the
 // chart, against the same real drawing helpers, so the chart's imports are
 // genuine; the layer component itself is never invoked by this harness.
-const layerSource = readFileSync(resolve(frontend, 'src/components/ChartDrawingLayer.tsx'), 'utf8');
-function drawingLayer() {
-  const compiled = ts.transpileModule(layerSource, { compilerOptions: {
+// Its object toolbar and settings dialog are sibling components, compiled the same way.
+function drawingLayer(file = 'ChartDrawingLayer') {
+  const compiled = ts.transpileModule(readFileSync(resolve(frontend, `src/components/${file}.tsx`), 'utf8'), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText;
   const layer: any = {};
   new Function('require', 'exports', compiled)((name: string) => {
     if (name === '../lib/chartDrawings') return drawings;
     if (name === '../lib/drawingGeometry') return drawingGeometry;
+    if (name === '../lib/drawingTemplates') return require('../drawingTemplates');
+    if (name === './DrawingObjectToolbar' || name === './DrawingSettingsDialog') return drawingLayer(name.slice(2));
     return (name.endsWith('/browserActivity') ? browserActivity : req(name));
   }, layer);
   return layer;
 }
 
 const ORDER = [{
-  id: 'o1', pair: 'BTC/USDT', side: 'SELL', type: 'STOP_LIMIT',
+  id: 'o1', pair: 'BTC/USDT', side: 'SELL', type: 'STOP_LIMIT', status: 'PENDING_TRIGGER',
   triggerPrice: '99000.00000000', price: '98900.00000000', ocoGroupId: null,
 }];
+/** One URL for the chart and the open-orders panel, so the API can answer both pollers with one request. */
+const OPEN_STATUSES = 'PENDING_TRIGGER,OPEN,PARTIALLY_FILLED';
 
 function mount(props: Record<string, unknown>, overrides: Record<string, any> = {}) {
   let index = 0;
@@ -58,7 +62,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
   let effects: (() => void)[] = [];
   const cleanups: (() => void)[] = [];
   const chartOptions: any[] = [];
-  const chartHarness: any = { series: [], hostEvents: new Map(), markers: [], priceLines: [], ranges: [] };
+  const chartHarness: any = { series: [], hostEvents: new Map(), markers: [], priceLines: [], ranges: [], primitives: [], priceShift: 0, writes: 0 };
 
   const getMyOrders = overrides.getMyOrders ?? jest.fn().mockResolvedValue(ORDER);
   const updateOrderTrigger = overrides.updateOrderTrigger ?? jest.fn().mockResolvedValue({});
@@ -69,7 +73,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     useState(initial: any) {
       const i = index++;
       if (!(i in hooks)) hooks[i] = typeof initial === 'function' ? initial() : initial;
-      return [hooks[i], (next: any) => { hooks[i] = typeof next === 'function' ? next(hooks[i]) : next; }];
+      return [hooks[i], (next: any) => { chartHarness.writes += 1; hooks[i] = typeof next === 'function' ? next(hooks[i]) : next; }];
     },
     useRef(initial: any) {
       const i = index++;
@@ -111,6 +115,21 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === '../lib/chartTrading') return chartTrading;
     if (name === './PrivatePositionLines') return { PrivatePositionLines: () => null };
     if (name === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
+    if (name === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
+    if (name === '../lib/chartSettings') return require('../chartSettings');
+    if (name === '../lib/chartIndicators') return require('../chartIndicators');
+    // Chart workspace (2026-10-13): the pure modules are real, the toolbar and panels are stubs.
+    if (name === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (name === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (name === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (name === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (name === '../lib/chartCompare') return require('../chartCompare');
+    if (name === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (name === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (name === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (name === '../lib/chartViewport') return require('../chartViewport');
+    if (name === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
+    if (name.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (children: unknown) => children };
     if (name.endsWith('.css')) return {};
@@ -146,10 +165,11 @@ function fakeCharts(chartOptions: any[] = [], harness: any) {
     applyOptions: () => {},
     options: () => ({ priceFormat: { type: 'price', precision: 2, minMove: 0.01 } }),
     setData: jest.fn(),
-    priceScale: () => ({ applyOptions: () => {} }),
-    // A linear, invertible mapping is all the overlay needs.
-    priceToCoordinate: (price: number) => 500 - price / 1000,
-    coordinateToPrice: (y: number) => (500 - y) * 1000,
+    priceScale: () => ({ applyOptions: () => {}, options: () => ({ scaleMargins: { top: 0.8, bottom: 0 } }) }),
+    // A linear, invertible mapping is all the overlay needs. `priceShift`
+    // stands for the chart rescaling on its own (axis drag, autoscale).
+    priceToCoordinate: (price: number) => 500 + (harness.priceShift ?? 0) - price / 1000,
+    coordinateToPrice: (y: number) => (500 + (harness.priceShift ?? 0) - y) * 1000,
     createPriceLine: (options: unknown) => { const line = { options, applyOptions: () => {} }; harness.priceLines.push(line); return line; },
     removePriceLine: (line: unknown) => { harness.priceLines = harness.priceLines.filter((item: unknown) => item !== line); },
   }; harness.series.push(result); return result; };
@@ -160,8 +180,9 @@ function fakeCharts(chartOptions: any[] = [], harness: any) {
     options: () => ({ barSpacing: 10 }),
     subscribeVisibleTimeRangeChange: () => {},
     unsubscribeVisibleTimeRangeChange: () => {},
-    subscribeVisibleLogicalRangeChange: (callback: unknown) => { harness.rangeChange = callback; },
-    unsubscribeVisibleLogicalRangeChange: () => { harness.rangeChange = undefined; },
+    // The chart subscribes more than once (the history pager and the price-scale clamp): every subscriber hears a range change.
+    subscribeVisibleLogicalRangeChange: (callback: unknown) => { (harness.rangeSubscribers ||= new Set()).add(callback); harness.rangeChange = (range: unknown) => { for (const fn of [...harness.rangeSubscribers]) (fn as (r: unknown) => void)(range); }; },
+    unsubscribeVisibleLogicalRangeChange: (callback: unknown) => { harness.rangeSubscribers?.delete(callback); if (!harness.rangeSubscribers?.size) harness.rangeChange = undefined; },
     coordinateToTime: () => 0,
     timeToCoordinate: () => 100,
     // The drawing layer's projection: logical bar ↔ x, and the plot width.
@@ -182,6 +203,11 @@ function fakeCharts(chartOptions: any[] = [], harness: any) {
     remove: () => {},
     applyOptions: () => {},
     paneSize: () => ({ width: 1100, height: 600 }),
+    // The chart calls a pane primitive's `updateAllViews` on its own paints.
+    panes: () => [{
+      attachPrimitive: (primitive: unknown) => { harness.primitives.push(primitive); },
+      detachPrimitive: (primitive: unknown) => { harness.primitives = harness.primitives.filter((item: unknown) => item !== primitive); },
+    }],
   };
   return {
     createChart: (_host: unknown, options: unknown) => { chartOptions.push(options); return chart; },
@@ -230,9 +256,13 @@ function windowStub() {
   };
 }
 
+/** 2026-10-13 (chart workspace): the toolbar hands its menus, timeframe
+ *  strip and end slots to ChartWorkspaceControls as props, so the walk
+ *  follows those slots as well as `children`. */
+const SLOTS = ['children', 'menus', 'start', 'end', 'settings'];
 function nodes(tree: any): any[] {
   if (Array.isArray(tree)) return tree.flatMap(nodes);
-  return tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
+  return tree && typeof tree === 'object' ? [tree, ...SLOTS.flatMap(slot => nodes(tree.props?.[slot]))] : [];
 }
 /** The conditional-order overlay is a dashed <line> stroked with the
  *  stop/take colours — nothing else on the chart uses those. */
@@ -250,20 +280,32 @@ describe('private chart native interaction and history', () => {
   const interaction = () => ({ enabled: true, selecting: 'entry', trades: [], onCandleSelect: jest.fn(), onCancelSelection: jest.fn(), onTradeSelect: jest.fn() });
   const event = (chart: ReturnType<typeof mount>, extra = {}) => ({ point: { x: 100, y: 428 }, time, paneIndex: 0, seriesData: new Map([[chart.chartHarness.series[0], candle]]), ...extra });
 
-  test('selects actual completed OHLC with viewport anchor; drag, empty, indicator and volume cannot select or fetch', async () => {
+  test('selects actual completed OHLC with viewport anchor, the bottom of the price pane included; drag, empty, other-pane and off-bar clicks cannot select or fetch', async () => {
     jest.setSystemTime(new Date('2026-09-14T12:00:00Z'));
     const state = interaction();
     const loader = jest.fn().mockResolvedValue({ candles: [candle] });
     const chart = mount({ ...FUTURES, privateTrading: state, candleLoader: loader });
     chart.render(); await flush(); chart.render();
+    // The volume has its own pane on the product (2026-09-30); series[3] is the volume histogram.
+    Object.assign(chart.chartHarness.series[3], { getPane: () => ({ paneIndex: () => 1 }) });
     chart.chartHarness.click(event(chart));
     expect(state.onCandleSelect).toHaveBeenCalledWith(expect.objectContaining({ symbol: 'BTCUSDT', source: 'BYBIT_LINEAR', openTime: time * 1000, closeTime: time * 1000 + 3600000, close: 73000, x: 100, y: 428 }));
-    const invalid = [event(chart, { point: { x: 100, y: 580 } }), event(chart, { point: { x: 100, y: 100 } }), event(chart, { seriesData: new Map() }), event(chart, { hoveredSeries: chart.chartHarness.series[3] })];
+    // The bar spans y 425…432: below it, above it, over no bar at all, a series of ANOTHER pane under the pointer, a click in the volume pane.
+    const invalid = [event(chart, { point: { x: 100, y: 580 } }), event(chart, { point: { x: 100, y: 100 } }), event(chart, { seriesData: new Map() }), event(chart, { hoveredSeries: chart.chartHarness.series[3] }), event(chart, { paneIndex: 1 })];
     invalid.forEach(item => chart.chartHarness.click(item));
     chart.chartHarness.hostEvents.get('pointerdown')({ clientX: 100, clientY: 428, isPrimary: true });
     chart.chartHarness.hostEvents.get('pointermove')({ clientX: 140, clientY: 428 });
     chart.chartHarness.click(event(chart));
     expect(state.onCandleSelect).toHaveBeenCalledTimes(1);
+    // The regression (owner, 2026-10-21, IOST/USDT 1h): the same bar drawn in the bottom fifth of the
+    // price pane — y 575…582 of 600 — is a bar, not a scale, and a price-pane overlay under the pointer
+    // (the SMA along a flat run of old candles; series[1] stands in) does not take the pick from it.
+    chart.chartHarness.hostEvents.get('pointerdown')({ clientX: 100, clientY: 578, isPrimary: true });
+    chart.chartHarness.priceShift = 150;
+    chart.chartHarness.click(event(chart, { point: { x: 100, y: 578 }, hoveredSeries: chart.chartHarness.series[1] }));
+    expect(state.onCandleSelect).toHaveBeenCalledTimes(2);
+    expect(state.onCandleSelect).toHaveBeenLastCalledWith(expect.objectContaining({ close: 73000, x: 100, y: 578 }));
+    chart.chartHarness.priceShift = 0;
     expect(loader).toHaveBeenCalledTimes(1);
     chart.unmount();
   });
@@ -275,7 +317,7 @@ describe('private chart native interaction and history', () => {
     chart.render(); await flush(); chart.render();
     expect(chart.chartHarness.markers.map((marker: any) => marker.id)).toEqual(['private-trade:p1|entry', 'private-trade:p1|exit:0']);
     expect(chart.chartHarness.markers[0].time).toBe(time);
-    expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['', 'TP', 'SL', 'LIQ']);
+    expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['', 'TP', 'SL']);
     expect(chart.chartHarness.priceLines[0].options).toMatchObject({price:73000,color:'#13ad75',axisLabelVisible:true});
     chart.chartHarness.click(event(chart, { hoveredInfo: { objectId: 'private-trade:p1|entry' } }));
     expect(state.onTradeSelect).toHaveBeenCalledWith('p1');
@@ -366,6 +408,40 @@ afterEach(() => {
   }
 });
 
+describe('drawings follow the chart when it rescales on its own (owner, 2026-10-04)', () => {
+  test('a chart paint that moved the price scale repaints the overlay once; an unmoved paint does not', async () => {
+    const chart = mount(SPOT);
+    chart.render();
+    await flush();
+    expect(conditionalLines(chart.render())[0].props.y1).toBe(401);
+    const [watch] = chart.chartHarness.primitives;
+    expect(typeof watch?.updateAllViews).toBe('function');
+
+    // The chart paints a crosshair move: nothing moved, nothing renders.
+    let writes = chart.chartHarness.writes;
+    watch.updateAllViews();
+    expect(chart.chartHarness.writes).toBe(writes);
+
+    // The price axis is dragged: the chart rescales without React hearing of it.
+    chart.chartHarness.priceShift = 80;
+    writes = chart.chartHarness.writes;
+    watch.updateAllViews();
+    expect(chart.chartHarness.writes).toBe(writes + 1);
+    // Further paints of the same change ask once, not once per frame.
+    watch.updateAllViews();
+    expect(chart.chartHarness.writes).toBe(writes + 1);
+
+    // The repaint uses the new scale, and that scale is now the settled one.
+    expect(conditionalLines(chart.render())[0].props.y1).toBe(481);
+    writes = chart.chartHarness.writes;
+    watch.updateAllViews();
+    expect(chart.chartHarness.writes).toBe(writes);
+
+    chart.unmount();
+    expect(chart.chartHarness.primitives).toEqual([]);
+  });
+});
+
 // ── Futures: no spot conditional-order traffic at all ────────────────
 
 describe('clean terminal chart presentation preserves chart behavior', () => {
@@ -374,13 +450,14 @@ describe('clean terminal chart presentation preserves chart behavior', () => {
     const tree = chart.render();
     expect(chart.chartOptions[0].grid).toEqual({ vertLines: { visible: false }, horzLines: { visible: false } });
     expect(chart.chartOptions[0].crosshair.horzLine.color).toBe('#f0b90b');
-    // Spot keeps the flat toggle; Futures reaches the same state through its
-    // «Индикаторы» menu (ChartToolbarMenus), which receives it as a prop.
+    // Both terminals reach the state through the «Индикаторы» menu
+    // (ChartToolbarMenus), which receives it as a prop; the chart workspace
+    // (2026-10-13) gave Spot the same menus as Futures.
     const ma = nodes(tree).find(node => node.type === 'button' && node.key === 'ma');
     const menus = nodes(tree).find(node => Array.isArray(node.props?.indicators));
     const maOn = ma ? ma.props['aria-pressed'] : menus.props.indicators.find((i: any) => i.key === 'ma').active;
     expect(maOn).toBe(true);
-    expect(Boolean(menus)).toBe(props.market === 'futures');
+    expect(Boolean(menus)).toBe(true);
     chart.unmount();
   });
   test('collapsing the rail leaves conditional order lines and indicator settings intact and exits the active drawing tool', async () => {
@@ -394,7 +471,7 @@ describe('clean terminal chart presentation preserves chart behavior', () => {
     const tree = chart.render();
     expect(toolbar(tree).props.tool).toBe('cursor');
     expect(conditionalLines(tree)).toHaveLength(1);
-    expect(nodes(tree).find(node => node.type === 'button' && node.key === 'ma').props['aria-pressed']).toBe(true);
+    expect(nodes(tree).find(node => Array.isArray(node.props?.indicators)).props.indicators.find((i: any) => i.key === 'ma').active).toBe(true);
     expect(chart.updateOrderTrigger).not.toHaveBeenCalled();
     chart.unmount();
   });
@@ -470,7 +547,7 @@ describe('spot behaviour is unchanged', () => {
     chart.render();
     await flush();
     expect(chart.getMyOrders).toHaveBeenCalledTimes(1);
-    expect(chart.getMyOrders).toHaveBeenCalledWith('PENDING_TRIGGER');
+    expect(chart.getMyOrders).toHaveBeenCalledWith(OPEN_STATUSES);
   });
 
   test('F. the 4-second cadence is unchanged', async () => {
@@ -490,7 +567,7 @@ describe('spot behaviour is unchanged', () => {
   test('G. pair filtering is unchanged — only this pair draws a line', async () => {
     const getMyOrders = jest.fn().mockResolvedValue([
       ...ORDER,
-      { id: 'o2', pair: 'ETH/USDT', side: 'BUY', type: 'TAKE_PROFIT_LIMIT', triggerPrice: '4000', price: '4010', ocoGroupId: null },
+      { id: 'o2', pair: 'ETH/USDT', side: 'BUY', type: 'TAKE_PROFIT_LIMIT', status: 'PENDING_TRIGGER', triggerPrice: '4000', price: '4010', ocoGroupId: null },
     ]);
     const chart = mount(SPOT, { getMyOrders });
     chart.render();
@@ -502,7 +579,7 @@ describe('spot behaviour is unchanged', () => {
   test('G2. changing pair re-requests and re-filters', async () => {
     const getMyOrders = jest.fn().mockResolvedValue([
       ...ORDER,
-      { id: 'o2', pair: 'ETH/USDT', side: 'BUY', type: 'TAKE_PROFIT_LIMIT', triggerPrice: '4000', price: '4010', ocoGroupId: null },
+      { id: 'o2', pair: 'ETH/USDT', side: 'BUY', type: 'TAKE_PROFIT_LIMIT', status: 'PENDING_TRIGGER', triggerPrice: '4000', price: '4010', ocoGroupId: null },
     ]);
     const chart = mount(SPOT, { getMyOrders });
     chart.render();
@@ -561,7 +638,20 @@ describe('spot behaviour is unchanged', () => {
     await handlers.get('mouseup')!({ clientY: 200 });
     await flush();
 
-    expect(chart.getMyOrders).toHaveBeenCalledWith('PENDING_TRIGGER');
+    // A read after the trader's own change must see the server's state, never a sibling poller's in-flight answer.
+    expect(chart.getMyOrders).toHaveBeenCalledWith(OPEN_STATUSES, { fresh: true });
+  });
+
+  test('G3. the chart draws trigger orders only — an OPEN limit in the same payload is the panel\'s, not a line', async () => {
+    const getMyOrders = jest.fn().mockResolvedValue([
+      ...ORDER,
+      { id: 'o3', pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', status: 'OPEN', triggerPrice: null, price: '90000', ocoGroupId: null },
+      { id: 'o4', pair: 'BTC/USDT', side: 'BUY', type: 'STOP_LIMIT', status: 'PARTIALLY_FILLED', triggerPrice: '95000', price: '95100', ocoGroupId: null },
+    ]);
+    const chart = mount(SPOT, { getMyOrders });
+    chart.render();
+    await flush();
+    expect(conditionalLines(chart.render())).toHaveLength(1);
   });
 
   test.each(['sleep', 'unmount', 'pair-change'])('an unfinished conditional-order drag is cancelled on %s without a later PATCH', async boundary => {
@@ -648,8 +738,12 @@ describe('the change is a removal, not a replacement', () => {
   test('no futures conditional-order endpoint was invented', () => {
     expect(source).not.toContain('getMyFuturesOrders');
     expect(source).not.toContain('futures/orders');
-    // The only conditional-order reads are the spot ones, both gated.
-    expect(source.match(/getMyOrders\('PENDING_TRIGGER'\)/g)).toHaveLength(2);
+    // The only conditional-order reads are the spot ones, both gated — the
+    // poll, and the fresh read after a drag — on the status set the panel
+    // shares, filtered to the trigger orders.
+    expect(source.match(/getMyOrders\('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED'\)/g)).toHaveLength(1);
+    expect(source.match(/getMyOrders\('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED', \{ fresh: true \}\)/g)).toHaveLength(1);
+    expect(source.match(/o\.pair === pair && o\.status === 'PENDING_TRIGGER'/g)).toHaveLength(2);
   });
 
   test('both call sites still pass an explicit market', () => {

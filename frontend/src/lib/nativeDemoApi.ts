@@ -9,6 +9,11 @@ export interface NativePosition {
   id:string;symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;markPrice:string;lastPrice:string;leverage:string;
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
   unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
+  /**
+   * The same `netPnl` taken apart by the engine: `tradingPnl - feesPaid +
+   * fundingNet === netPnl`. Absent from a server older than the split.
+   */
+  tradingPnl?:string;feesPaid?:string;realizedGross?:string;openingFees?:string;closingFees?:string;
   protection:NativeProtection;
   pendingClose?:{reason:'STOP_LOSS'|'TAKE_PROFIT';quantity:string;triggerPrice:string;triggeredAt:number;actionId:string}|null;
   /**
@@ -149,6 +154,8 @@ export interface NativeCollateral{
  */
 export interface NativeWallet{
   initialized?:boolean;
+  /** Server-authoritative presentation tier. Test/ordinary accounts receive null. */
+  clientTier?:'SUPREME_VIP'|null;
   account:NativeAccountAggregate;
   ledger:AccountLedgerView;
   collateral:NativeCollateral;
@@ -168,6 +175,8 @@ export type NativeDraft=
  | {kind:'LEVERAGE';positionId:string;leverage:string}
  | {kind:'REFRESH'};
 export function createNativeDemoClient(base:string,token:()=>string|null,fetcher:typeof fetch=fetch){
+  /** The request as the failed-wake notice names it (lib/browserActivity getBrowserResumeFailure). */
+  const label=(path:string,body?:unknown)=>`${body===undefined?'GET':'POST'} ${base.replace(/\/$/,'')}/private-trading${path}`;
   async function request<T>(path:string,body?:unknown,signal?:AbortSignal,optionalProbe=false):Promise<T>{
     const bearer=token();if(!bearer)throw new PrivateTradingError('Войдите в аккаунт',401);
     if(body===undefined)await waitUntilActive(signal);
@@ -193,12 +202,12 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
       void trackBrowserRead(task.catch(error=>{
         if(error instanceof PrivateTradingError&&error.status===403&&error.code==='private_access_denied')return;
         throw error;
-      })).catch(()=>{});
+      }),true,label('/access')).catch(()=>{});
       return task;
     },
     state:(signal?:AbortSignal)=>request<NativeState>('/native/state',undefined,signal),
     live:(signal?:AbortSignal)=>request<NativeState>('/native/live',undefined,signal),
-    activate:async(signal?:AbortSignal)=>{await waitUntilActive(signal);return trackBrowserRead(request<{ok:true}>('/native/execution-session',{},signal));},
+    activate:async(signal?:AbortSignal)=>{await waitUntilActive(signal);return trackBrowserRead(request<{ok:true}>('/native/execution-session',{},signal),true,label('/native/execution-session',{}));},
     history:<K extends keyof NativeHistoryItems>(kind:K,revision:number,options:{symbol?:string;cursor?:string;signal?:AbortSignal}={})=>{
       const params=new URLSearchParams({kind,revision:String(revision),limit:'50'});
       if(options.symbol)params.set('symbol',options.symbol);
@@ -229,7 +238,7 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
       if(error instanceof PrivateTradingError&&((error.status===403&&error.code==='private_access_denied')
         ||(error.status===409&&error.code==='initialize_demo')))return null;
       throw error;
-    })),
+    }),true,label('/native/wallet')),
     setCollateral:(asset:string,enabled:boolean,idempotencyKey:string)=>request<NativeWallet>('/native/collateral-preference',{asset,enabled,idempotencyKey}),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
     command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,
@@ -245,7 +254,7 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
      * touches no repository, issues no command and creates no revision,
      * which is why it takes no idempotency key.
      */
-    quote:async(input:NativeQuoteInput,signal?:AbortSignal)=>{await waitUntilActive(signal);return trackBrowserRead(request<NativeQuoteResult>('/native/quote',input,signal));},
+    quote:async(input:NativeQuoteInput,signal?:AbortSignal)=>{await waitUntilActive(signal);return trackBrowserRead(request<NativeQuoteResult>('/native/quote',input,signal),true,label('/native/quote',input));},
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),
     getCard:(id:string)=>{const m=/^native:(\d+):(native-[a-zA-Z0-9-]+)$/.exec(id);if(!m)throw new PrivateTradingError('Карточка не найдена',404);return request<PrivateResultCard>(`/native/cards/${m[1]}/${m[2]}`);},
   };

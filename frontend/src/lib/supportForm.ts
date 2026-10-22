@@ -2,10 +2,11 @@
  * THE SUPPORT FORM, AS DATA AND ONE REQUEST.
  *
  * Support is a form, not a chat: name, email, topic, message → one POST to
- * the voltex-support-edge Cloudflare Worker (workers/support-edge), which
+ * the authenticated API, which enforces the email blacklist and relays to
+ * the voltex-support-edge Cloudflare Worker (workers/support-edge). The Worker
  * sends one text/plain email to the owner with the user's address as
  * Reply-To. The owner answers from their mailbox. Nothing is stored,
- * nothing is polled, and neither the Render API nor the database is involved.
+ * nothing is polled; account identity and policy are checked on submission.
  *
  * The browser never sees or chooses the recipient: the Worker fixes it, and
  * the Email Routing binding is locked to that one address.
@@ -50,7 +51,7 @@ export function invalidSupportFields(input: SupportFormInput): SupportField[] {
 
 export type SupportSendOutcome =
   | { status: 'sent' }
-  | { status: 'failed'; reason: 'invalid' | 'rate_limited' | 'not_configured' | 'delivery_failed' | 'network' | 'unexpected' };
+  | { status: 'failed'; reason: 'invalid' | 'rate_limited' | 'not_configured' | 'delivery_failed' | 'network' | 'unexpected' | 'unauthorized' | 'blocked' };
 
 type FetchLike = (url: string, init: RequestInit) => Promise<Pick<Response, 'ok' | 'status' | 'json'>>;
 
@@ -62,16 +63,17 @@ type FetchLike = (url: string, init: RequestInit) => Promise<Pick<Response, 'ok'
  */
 export async function sendSupportRequest(
   input: SupportFormInput,
-  opts: { endpoint: string; fetchImpl?: FetchLike; timeoutMs?: number },
+  opts: { endpoint: string; token?: string | null; fetchImpl?: FetchLike; timeoutMs?: number },
 ): Promise<SupportSendOutcome> {
+  if (!opts.token) return { status: 'failed', reason: 'unauthorized' };
   const doFetch: FetchLike = opts.fetchImpl ?? ((url, init) => fetch(url, init));
   const controller = typeof AbortController === 'undefined' ? null : new AbortController();
   const timer = controller ? setTimeout(() => controller.abort(), opts.timeoutMs ?? 20_000) : null;
   try {
     const res = await doFetch(opts.endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // No cookies or tokens: the form needs none, and the Worker reads none.
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${opts.token}` },
+      // Bearer authentication is verified by the API before any email is sent.
       credentials: 'omit',
       cache: 'no-store',
       signal: controller?.signal,
@@ -86,6 +88,8 @@ export async function sendSupportRequest(
     const body = (await res.json().catch(() => null)) as { ok?: unknown } | null;
     if (res.ok && body?.ok === true) return { status: 'sent' };
     if (res.status === 400 || res.status === 413 || res.status === 415) return { status: 'failed', reason: 'invalid' };
+    if (res.status === 401) return { status: 'failed', reason: 'unauthorized' };
+    if (res.status === 403) return { status: 'failed', reason: 'blocked' };
     if (res.status === 429) return { status: 'failed', reason: 'rate_limited' };
     if (res.status === 503) return { status: 'failed', reason: 'not_configured' };
     if (res.status === 502) return { status: 'failed', reason: 'delivery_failed' };

@@ -9,10 +9,18 @@ export function CountrySelect({
   value,
   onChange,
   placeholder,
+  id,
+  labelledBy,
+  triggerClassName,
 }: {
   value: string;
   onChange: (code: string) => void;
   placeholder: string;
+  /** With `labelledBy`, the trigger is named by its visible label and announces the chosen country. */
+  id?: string;
+  labelledBy?: string;
+  /** A caller's own field styling (the KYC form's). Without it the trigger keeps its original look. */
+  triggerClassName?: string;
 }) {
   const { lang, t } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -44,7 +52,15 @@ export function CountrySelect({
 
   return (
     <div ref={containerRef} style={styles.container}>
-      <button type="button" onClick={() => setOpen((o) => !o)} style={styles.trigger} aria-expanded={open}>
+      <button
+        type="button"
+        id={id}
+        onClick={() => setOpen((o) => !o)}
+        style={triggerClassName ? styles.triggerLayout : styles.trigger}
+        className={triggerClassName}
+        aria-expanded={open}
+        aria-labelledby={labelledBy && id ? `${labelledBy} ${id}` : labelledBy}
+      >
         <span style={{ color: value ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
           {value ? getCountryName(value, lang) : placeholder}
         </span>
@@ -94,6 +110,7 @@ function ChevronIcon() {
 
 const styles: Record<string, React.CSSProperties> = {
   container: { position: 'relative' },
+  triggerLayout: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 8, textAlign: 'left' },
   trigger: {
     display: 'flex',
     alignItems: 'center',

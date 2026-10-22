@@ -37,6 +37,10 @@ app.get('/api/v1/private-trading/native/wallet', (_, res) => res.status(404).jso
 // Existing Wallet page effect, unrelated to Deposit. Preserve and report it;
 // this fixture acknowledges without persisting anything.
 app.post('/api/v1/wallet/portfolio-snapshot', (_, res) => res.json({ recorded: false }));
+// Deposit «Копировали адрес» journal (2026-10-01): one note per successful
+// address copy, none for memo. The fixture records it without persisting.
+const copyNotes = [];
+app.post('/api/v1/deposit-address-copies', (req, res) => { copyNotes.push(req.body); res.status(201).json({ id: 'qa-copy-note', receivedAt: new Date().toISOString(), duplicate: false }); });
 app.get('/api/v1/market/external/rankings', (_, res) => res.json({ source: 'synthetic', rankings: [] }));
 app.get('/api/v1/support/conversations/mine', (_, res) => res.json({ conversation: null, messages: [] }));
 app.get('/api/v1/admin/alerts/summary', (_, res) => res.json({ depositId: null, withdrawalId: null, kycId: null }));
@@ -61,22 +65,48 @@ async function main() {
     page.on('console', msg => { if (msg.type() === 'error' && !msg.text().includes('Failed to load resource')) { report.pageErrors.push(msg.text()); console.error('BROWSER:', msg.text()); } });
     const screenshot = async name => { await page.waitForTimeout(500); await page.screenshot({ path: path.join(out, name), fullPage: true });
       const layout = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth })); report.layouts.push({ name, ...layout }); assert.ok(layout.documentWidth <= layout.width, name + ' overflows'); };
+    const catalogueWrites = () => featureRequests().filter(r => r.method !== 'GET').length;
+    const prepareChange = async (button = 'Сохранить') => {
+      const previous = { writes: storage.writes, requests: catalogueWrites() };
+      await page.getByRole('button', { name: button, exact: true }).click();
+      const review = page.getByRole('dialog', { name: 'Проверить изменение адреса', exact: true });
+      await review.waitFor(); await review.getByText('Ревизия каталога', { exact: true }).waitFor();
+      assert.equal(storage.writes, previous.writes, 'preparing a review never writes storage');
+      assert.equal(catalogueWrites(), previous.requests, 'preparing a review never sends a mutation');
+      return { review, previous };
+    };
+    const confirmChange = async (button = 'Сохранить') => {
+      const { review, previous } = await prepareChange(button);
+      await review.getByRole('button', { name: 'Подтвердить изменение', exact: true }).click();
+      await page.getByRole('dialog').waitFor({ state: 'hidden' });
+      assert.equal(storage.writes, previous.writes + 1, 'explicit confirmation writes exactly once');
+      assert.equal(catalogueWrites(), previous.requests + 1, 'explicit confirmation sends exactly one mutation');
+    };
     let before = snap(); await page.goto(origin + '/admin/wallets'); await page.locator('.catalogue-network').first().waitFor();
     report.requests.adminColdOpen = delta(before); assert.equal(report.requests.adminColdOpen.featureRequests, 1); assert.equal(report.requests.adminColdOpen.storeReads, 1);
     await page.getByRole('button', { name: /^USDT / }).click(); await screenshot('admin-desktop.png');
     await page.setViewportSize({ width: 390, height: 844 }); await screenshot('admin-mobile.png');
     await page.getByRole('button', { name: /^SOL / }).click(); await page.getByRole('button', { name: 'Изменить', exact: true }).click();
     await page.getByLabel('Адрес пополнения', { exact: true }).fill(sol); await page.getByLabel('Показывать клиентам').check();
-    await screenshot('admin-editor-mobile.png'); await page.getByRole('button', { name: 'Сохранить', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' });
+    await screenshot('admin-editor-mobile.png');
+    const cancelled = await prepareChange(); await screenshot('admin-confirmation-mobile.png');
+    await cancelled.review.getByRole('button', { name: 'Отмена', exact: true }).click();
+    await page.getByRole('dialog').waitFor({ state: 'hidden' });
+    assert.equal(storage.writes, cancelled.previous.writes, 'cancelling a reviewed save writes nothing');
+    assert.equal(catalogueWrites(), cancelled.previous.requests, 'cancelling a reviewed save sends no mutation');
+    report.checks.push('save review + cancel: zero catalogue mutations');
+    await page.getByRole('button', { name: 'Изменить', exact: true }).click();
+    await page.getByLabel('Адрес пополнения', { exact: true }).fill(sol); await page.getByLabel('Показывать клиентам').check();
+    await confirmChange();
     await page.reload(); await page.getByRole('button', { name: /^SOL / }).click(); await page.getByText(sol, { exact: true }).waitFor(); report.checks.push('add + persisted across full reload');
     await page.getByRole('button', { name: 'Изменить', exact: true }).click(); await page.getByLabel('Адрес пополнения', { exact: true }).fill('B'.repeat(44));
-    await page.getByRole('button', { name: 'Сохранить', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' });
+    await confirmChange();
     await page.getByText('B'.repeat(44), { exact: true }).waitFor(); report.checks.push('edit');
     await page.getByRole('button', { name: 'Изменить', exact: true }).click(); await page.getByLabel('Показывать клиентам').uncheck();
-    await page.getByRole('button', { name: 'Сохранить', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' }); report.checks.push('disable');
+    await confirmChange(); report.checks.push('disable');
     await page.getByRole('button', { name: /^XRP / }).click(); await page.getByRole('button', { name: 'Изменить', exact: true }).click();
     await page.getByLabel('Адрес пополнения', { exact: true }).fill(xrp); await page.getByLabel('Memo / Tag', { exact: true }).fill('123456'); await page.getByLabel('Показывать клиентам').check();
-    await page.getByRole('button', { name: 'Сохранить', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' }); report.checks.push('memo');
+    await confirmChange(); report.checks.push('memo');
     // Real one-minute idle measurement, separate from unrelated existing shell.
     before = snap(); await page.waitForTimeout(idleMs); report.requests.adminIdle60s = delta(before);
     assert.equal(report.requests.adminIdle60s.featureRequests, 0); assert.equal(report.requests.adminIdle60s.storeReads, 0);
@@ -93,6 +123,10 @@ async function main() {
     await pick('deposit-asset', 'XRP'); await page.getByText('123456', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Копировать адрес', exact: true }).click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), xrp);
     await page.getByRole('button', { name: 'Копировать memo', exact: true }).click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '123456');
+    for (let i = 0; i < 50 && !copyNotes.length; i++) await page.waitForTimeout(100);
+    assert.equal(copyNotes.length, 1, 'one copy note for the address, none for memo');
+    assert.deepEqual({ ...copyNotes[0], eventId: undefined, clientCopiedAt: undefined }, { eventId: undefined, clientCopiedAt: undefined, asset: 'XRP', network: 'xrp', destinationId: 'ripple:xrp', address: xrp, memo: '123456', source: 'wallet' });
+    report.copyNotes = copyNotes;
     report.requests.selectAndCopy = delta(before); assert.equal(report.requests.selectAndCopy.featureRequests, 0); assert.equal(report.requests.selectAndCopy.storeWrites, 0);
     await page.getByRole('button', { name: /^Актив / }).click(); const offered = await page.getByRole('option').locator('strong').allTextContents();
     assert.ok(!offered.includes('SOL')); assert.ok(!offered.includes('USDC')); await page.keyboard.press('Escape'); report.checks.push('disabled/unconfigured excluded; address + memo copy');
@@ -107,7 +141,14 @@ async function main() {
     await page.keyboard.press('Escape'); report.checks.push('reopen revalidates changed catalogue');
     await page.goto(origin + '/admin/wallets'); await page.getByRole('button', { name: /^USDT / }).click();
     await page.locator('.catalogue-network').filter({ hasText: 'Ethereum' }).getByRole('button', { name: 'Изменить', exact: true }).click();
-    await page.getByRole('button', { name: 'Очистить адрес', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' });
+    const cancelledClear = await prepareChange('Очистить адрес');
+    await page.keyboard.press('Escape'); await page.getByRole('dialog').waitFor({ state: 'hidden' });
+    assert.equal(storage.writes, cancelledClear.previous.writes, 'Escape cancels clear without storage writes');
+    assert.equal(catalogueWrites(), cancelledClear.previous.requests, 'Escape cancels clear without a mutation request');
+    assert.ok((await catalogue.publicCatalogue()).entries.some(e => e.asset === 'USDT' && e.networkId === 'ethereum'));
+    report.checks.push('clear review + Escape: zero mutations; public address retained');
+    await page.locator('.catalogue-network').filter({ hasText: 'Ethereum' }).getByRole('button', { name: 'Изменить', exact: true }).click();
+    await confirmChange('Очистить адрес');
     assert.ok(!(await catalogue.publicCatalogue()).entries.some(e => e.asset === 'USDT' && e.networkId === 'ethereum'));
     report.checks.push('clear address overrides legacy baseline');
     report.featureRequests = featureRequests(); report.totalApiRequests = apiRequests;

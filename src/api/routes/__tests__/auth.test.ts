@@ -2,6 +2,7 @@ process.env.JWT_SECRET = 'test-secret-at-least-this-long';
 process.env.REGISTRATION_OPEN = 'true';
 process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
 
+import { createHash } from 'crypto';
 import request from 'supertest';
 import express from 'express';
 import bcrypt from 'bcrypt';
@@ -20,7 +21,7 @@ function makePrismaMock(overrides: Partial<any> = {}) {
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       ...overrides.user,
     },
-    auditLog: { create: jest.fn() },
+    auditLog: { create: jest.fn(), findFirst: jest.fn().mockResolvedValue(null) },
     session: {
       create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'session-1', ...data })),
       ...overrides.session,
@@ -65,6 +66,43 @@ describe('auth routes', () => {
   });
   afterAll(() => {
     process.env = OLD_ENV;
+  });
+
+  it.each(['blocked@example.invalid', ' BLOCKED@EXAMPLE.INVALID ', 'second@example.invalid'])('denies configured email %s before any account or session access', async (email) => {
+    const blockedHashes = ['blocked@example.invalid', 'second@example.invalid'].map(v => createHash('sha256').update(v).digest('hex'));
+    const prisma = makePrismaMock();
+    const app = buildApp(prisma);
+    prisma.auditLog.findFirst.mockImplementation(async ({ where }: any) => blockedHashes.includes(where.metadata.equals) ? { action: 'CONTACT_EMAIL_BLOCKED' } : null);
+    // An email-only request also permits safe production verification with no password.
+    for (const body of [{ email }, { email, password: 'Correcthorsebattery' }]) {
+      const res = await request(app).post('/api/v1/auth/register').send(body);
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ error: 'Registration failed' });
+    }
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.session.create).not.toHaveBeenCalled();
+    const normal = await request(app).post('/api/v1/auth/register').send({ email: 'other@example.invalid', password: 'Correcthorsebattery' });
+    expect(normal.status).toBe(201);
+  });
+
+
+  it('blocks correct-password login and a pending 2FA challenge, then permits new login after unspam', async () => {
+    const password='Correcthorsebattery';
+    const secret=speakeasy.generateSecret({length:20}).base32;
+    const user={id:'user-1',email:'blocked@example.invalid',passwordHash:await bcrypt.hash(password,4),role:'USER',twoFactorEnabled:false,twoFactorSecret:secret};
+    const prisma=makePrismaMock({user:{findUnique:jest.fn().mockResolvedValue(user)}});
+    prisma.auditLog.findFirst.mockResolvedValue({action:'CONTACT_EMAIL_BLOCKED'});
+    const app=buildApp(prisma);
+    expect((await request(app).post('/api/v1/auth/login').send({email:user.email,password})).status).toBe(403);
+    user.twoFactorEnabled=true;
+    const pendingToken=jwt.sign({sub:user.id,purpose:'pending_2fa'},process.env.JWT_SECRET!);
+    expect((await request(app).post('/api/v1/auth/login/2fa').send({pendingToken,code:speakeasy.totp({secret,encoding:'base32'})})).status).toBe(403);
+    expect(prisma.session.create).not.toHaveBeenCalled();
+    prisma.auditLog.findFirst.mockResolvedValue({action:'CONTACT_EMAIL_UNBLOCKED'});
+    user.twoFactorEnabled=false;
+    expect((await request(app).post('/api/v1/auth/login').send({email:user.email,password})).status).toBe(200);
+    expect(prisma.session.create).toHaveBeenCalledTimes(1);
   });
 
   it('registers a new user and returns a real session token straight away', async () => {
@@ -638,6 +676,94 @@ describe('auth routes', () => {
 
     expect(verify.status).toBe(404);
     expect(resend.status).toBe(404);
+  });
+
+  describe('remembered devices — admin account only', () => {
+    const HOUR = 3600;
+    async function loginUser(extra: any = {}) {
+      const passwordHash = await bcrypt.hash('Correcthorsebattery', 12);
+      return { id: 'user-1', email: 'alice@team.com', role: 'USER', passwordHash, country: 'UA', ...extra };
+    }
+    const lifetime = (token: string) => {
+      const { iat, exp } = jwt.decode(token) as { iat: number; exp: number };
+      return exp - iat;
+    };
+    const login = (app: any, body: any = {}) => request(app).post('/api/v1/auth/login')
+      .send({ email: 'alice@team.com', password: 'Correcthorsebattery', ...body });
+
+    it('keeps an ordinary account to 12 hours and an ordinary Session row', async () => {
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(await loginUser()) } });
+      const res = await login(buildApp(prisma));
+      expect(res.status).toBe(200);
+      expect(lifetime(res.body.token)).toBe(12 * HOUR);
+      expect(prisma.session.create.mock.calls[0][0].data.remembered).toBeUndefined();
+    });
+
+    it('ignores a remember flag sent for an ordinary account (the old checkbox)', async () => {
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(await loginUser()) } });
+      const res = await login(buildApp(prisma), { remember: true });
+      expect(res.status).toBe(200);
+      expect(lifetime(res.body.token)).toBe(12 * HOUR);
+      expect(prisma.session.create.mock.calls[0][0].data.remembered).toBeUndefined();
+    });
+
+    it('remembers the admin account\'s device for 90 days without any checkbox', async () => {
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(await loginUser({ role: 'ADMIN' })) } });
+      const res = await login(buildApp(prisma));
+      expect(res.status).toBe(200);
+      expect(lifetime(res.body.token)).toBe(90 * 24 * HOUR);
+      expect(decodeSession(res.body.token).sid).toBe('session-1');
+      expect(prisma.session.create.mock.calls[0][0].data.remembered).toBe(true);
+    });
+
+    it('still refuses a wrong admin password', async () => {
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(await loginUser({ role: 'ADMIN' })) } });
+      const res = await login(buildApp(prisma), { password: 'Wrongpassword1' });
+      expect(res.status).toBe(401);
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
+
+    it.each([['ADMIN', 90 * 24 * HOUR, true], ['USER', 12 * HOUR, undefined]])(
+      'decides on the role again after 2FA (%s)', async (role, seconds, remembered) => {
+        const { base32 } = speakeasy.generateSecret({ length: 20 });
+        const user = await loginUser({ role, twoFactorEnabled: true, twoFactorSecret: base32, twoFactorBackupCodes: [] });
+        const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(user) } });
+        const app = buildApp(prisma);
+        const first = await login(app, { remember: true });
+        expect((jwt.decode(first.body.pendingToken) as any).rem).toBeUndefined();
+        const code = speakeasy.totp({ secret: base32, encoding: 'base32' });
+        const res = await request(app).post('/api/v1/auth/login/2fa').send({ pendingToken: first.body.pendingToken, code, remember: true });
+        expect(res.status).toBe(200);
+        expect(lifetime(res.body.token)).toBe(seconds);
+        expect(prisma.session.create.mock.calls[0][0].data.remembered).toBe(remembered);
+      });
+  });
+
+  describe('POST /auth/logout', () => {
+    const sessionRow = { id: 'session-9', userId: 'user-1', revokedAt: null, lastSeenAt: new Date(), remembered: true };
+    const token = () => jwt.sign({ sub: 'user-1', sid: 'session-9' }, process.env.JWT_SECRET!);
+
+    it('revokes this session on the server, not only in the browser', async () => {
+      const prisma = makePrismaMock({ session: {
+        // An admin's remembered session: authorization read, then its owner read.
+        findUnique: jest.fn().mockImplementation(async ({ select }: any) =>
+          (select?.createdAt ? { createdAt: new Date(), user: { role: 'ADMIN' } } : { ...sessionRow, user: { email: 'admin@example.invalid' } })),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      } });
+      const res = await request(buildApp(prisma)).post('/api/v1/auth/logout').set('Authorization', `Bearer ${token()}`);
+      expect(res.status).toBe(200);
+      expect(prisma.session.updateMany).toHaveBeenCalledWith({
+        where: { id: 'session-9', userId: 'user-1', revokedAt: null }, data: { revokedAt: expect.any(Date) },
+      });
+      expect(prisma.auditLog.create.mock.calls[0][0].data.action).toBe('SESSION_REVOKED');
+    });
+
+    it('needs a live session to call', async () => {
+      const prisma = makePrismaMock({ session: { findUnique: jest.fn().mockResolvedValue({ ...sessionRow, revokedAt: new Date() }), updateMany: jest.fn() } });
+      const res = await request(buildApp(prisma)).post('/api/v1/auth/logout').set('Authorization', `Bearer ${token()}`);
+      expect(res.status).toBe(401);
+      expect(prisma.session.updateMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('2FA-enabled login', () => {

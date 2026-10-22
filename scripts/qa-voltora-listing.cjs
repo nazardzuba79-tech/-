@@ -127,6 +127,11 @@ function testAssets(now) {
       await form.locator('.order-form-tab.sell').click();
       await form.locator('button[type="submit"]').click();
       await page.getByText('Этот тип ордера для данного актива недоступен.', { exact: true }).first().waitFor();
+      // owner, 2026-10-04: order type is one select on a phone — the same «Рынок» family, chosen through it.
+      if (mobile) {
+        await form.locator('.order-type-select select').selectOption('MARKET');
+        assert.equal((await form.locator('.order-type-select select option:checked').textContent()).trim(), 'Рынок', `market order type @${width}`);
+      } else
       await form.getByRole('button', { name: 'Рынок', exact: true }).click();
       await form.locator('button[type="submit"]').click();
       await page.getByText(REFUSAL, { exact: true }).first().waitFor();
@@ -138,7 +143,7 @@ function testAssets(now) {
 
       await page.screenshot({ path: path.join(out, `voltora-${width}.png`), fullPage: !mobile });
 
-      // Markets: the listing row names its start, with no badge.
+      // Markets: the confirmed listing date is distinct from trading permission.
       await page.goto(origin + '/markets', { waitUntil: 'domcontentloaded' });
       const row = page.locator('.test-market-row[data-pair="VTA/USDT"]');
       await row.waitFor({ state: 'visible', timeout: 15000 });
@@ -146,8 +151,10 @@ function testAssets(now) {
       // Validate its actual UTC day/month/time, not a hard-coded September.
       const date = new Date(fixtureListingAt);
       const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-      const expectedStart = `Начало торгов: ${date.getUTCDate()} ${months[date.getUTCMonth()]} в ${String(date.getUTCHours()).padStart(2,'0')}:${String(date.getUTCMinutes()).padStart(2,'0')} UTC`;
+      const expectedStart = `Дата листинга: ${date.getUTCDate()} ${months[date.getUTCMonth()]} в ${String(date.getUTCHours()).padStart(2,'0')}:${String(date.getUTCMinutes()).padStart(2,'0')} UTC`;
       assert.ok((await row.innerText()).includes(expectedStart), `markets row start time @${width}: expected ${expectedStart}`);
+      assert.ok((await row.innerText()).includes('Учебный рынок'), `simulation disclosure @${width}`);
+      assert.ok((await row.innerText()).includes('Торговля пока недоступна'), `trading refusal @${width}`);
       assert.doesNotMatch(await row.innerText(), TECHNICAL, `technical wording on the markets row @${width}`);
       // The row itself stays inside the viewport (the rest of the Markets
       // page is not what this script checks).

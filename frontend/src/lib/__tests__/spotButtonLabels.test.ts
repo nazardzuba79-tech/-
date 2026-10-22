@@ -38,6 +38,7 @@ const t = (lang: (typeof LOCALES)[number]) => (key: string, params?: Record<stri
 // feeds the button text — which is the point: the labels depend on the
 // side and the dictionary, and on nothing else.
 const stubs = (lang: (typeof LOCALES)[number]) => ({
+  '../lib/balanceInvalidation': { onSpendableBalancesChanged: () => () => {} },
   '../lib/api': { api: {} },
   '../lib/vtaSaleIntent': {},
   '../lib/useVtaSpotAccount': { useVtaSpotAccount: () => ({ snapshot: null, failed: false, loading: false }) },
@@ -53,6 +54,8 @@ const stubs = (lang: (typeof LOCALES)[number]) => ({
   '../lib/spotOrderEntry': { positiveOrderNumber: () => null, orderFundingPrice: () => null, balancePercentageQuantity: () => '' },
   '../lib/spotOrderFeedback': { spotOrderFeedback: () => null },
   '../lib/testMarkets': { isTestMarketPair, isManagedTradablePair },
+  // Desktop width: the order families stay the tab strip this suite reads.
+  '../lib/useMediaQuery': { MOBILE_TERMINAL_QUERY: '(max-width: 900px)', useMediaQuery: () => false },
 });
 
 function renderSpotForm(pair: string, lang: (typeof LOCALES)[number] = 'ru') {

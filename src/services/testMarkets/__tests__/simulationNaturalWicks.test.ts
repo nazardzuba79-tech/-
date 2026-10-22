@@ -325,7 +325,7 @@ describe('existing impulses and simulations retain their contracts', () => {
     expect(sha(new TestMarketSimulation(revisedAsset()).recentTrades(L + 26 * HOUR_MS + 37_000, 200)))
       .toBe('b65fc0ea7fa5197486d4e2795a55da3d04dcceca04c0f5fb9f82fedd9001461d');
     // NRX's base engine; its post-listing wave structure is pinned in simulationWaves.test.ts.
-    const { marketStructure: _waves, ...nrxBase } = NEURIX;
+    const { marketStructure: _waves, scheduledScenario: _schedule, ...nrxBase } = NEURIX;
     const nrx = new TestMarketSimulation(nrxBase);
     expect(sha(nrx.candles5m(NEURIX.listingAt + 3 * DAY_MS - 1)))
       .toBe('747a97405c9d23e806e5a340ac9e11f729ab3210db7c882160bbcce6f490bba8');

@@ -17,7 +17,7 @@ function evaluate(file: string, imports: Record<string, unknown> = {}, suffix = 
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   } }).outputText;
   const output: Record<string, any> = {};
-  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : imports[name] ?? req(name));
+  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : name.endsWith('/balanceInvalidation') ? { onSpendableBalancesChanged: () => () => {} } : imports[name] ?? req(name));
   return output;
 }
 // Read the actual seven dictionaries. No copy/number formatter is recreated.
@@ -277,7 +277,8 @@ test('Wallet entry wires all ledger actions to the original modal state and keep
     expect(ledger).toContain(`${callback}={() => setModal('${modal}')}`);
   }
   expect(source).toContain("searchParams.get('action')");
-  expect(source).toContain('<WithdrawModal open={modal === \'withdraw\'} onClose={() => setModal(null)} onSubmitted={refresh} />');
+  // The withdraw panel can hand over to the transfer when the funds sit on futures.
+  expect(source).toContain('<WithdrawModal open={modal === \'withdraw\'} onClose={() => setModal(null)} onSubmitted={refresh} onTransfer={() => setModal(\'transfer\')} />');
   expect(source).toContain('<TransferModal open={modal === \'transfer\'} onClose={() => setModal(null)} onSubmitted={refresh} />');
 });
 
@@ -623,17 +624,33 @@ function restoreApprovedHistoryTypography(source: string): string {
   return source;
 }
 
+// The withdraw panel was rebuilt on 2026-09-30 (owner: withdrawal must work
+// from every button and go to the admin queue). Its old whole-file pin is
+// replaced by what it must keep doing.
+test('withdraw panel reads what can be withdrawn from the server and never from a presentation profile', () => {
+  const source = read(wallet + 'WithdrawModal.tsx');
+  expect(source).toContain('api.getWithdrawalOptions()');
+  expect(source).toContain('api.requestWithdrawal(request)');
+  expect(source).not.toMatch(/getBalances|getWalletOverview|presentation|nativeDemoApi/);
+  // The amount sent is the typed decimal, never a float round-trip.
+  expect(source).toMatch(/const request = \{ asset, network: network\.code, toAddress: address\.trim\(\), amount: plain \}/);
+  // The 60-minute promise is shown before sending and after.
+  expect(source).toContain("t('withdraw.eta')");
+  expect(source).toContain("t('withdraw.doneEta')");
+  // Nothing is submitted while the address fails its network's check.
+  expect(source).toMatch(/const canSubmit = !!row && !!network && verdict === 'ok'/);
+});
+
 // Keep exact guards for the unchanged financial formatting/modal boundaries.
 // The five old whole-file pins superseded by approved account-read, catalogue,
 // managed-listing and auth changes now have explicit behavior checks below.
 test.each([
   [wallet + 'format.ts', '2ffab4fe344b95d04379ac3a85663ffde5a94cf5fbe171a80973c67494d846a0'],
-  [wallet + 'WithdrawModal.tsx', '15873a49ea88eaefc7025d70b7eabb676b994d6511687327ef3a6196c7ec302b'],
   [wallet + 'TransferModal.tsx', '27eb01d9c3404b3134e9fbfe7622b4f6c2e69ffbd40d3e6824f919c8c7f856b3'],
   [wallet + 'ui.tsx', '304d71b9ab5a64d3d92c301bb42a9faf277647c840e38e923014e513a7b50f33'],
   [wallet + 'TransactionHistory.tsx', 'b9b0b0c274bef595780cf7b748685b6486a72765af6af575a170f307a5b999b3'],
   ['src/services/PortfolioPerformanceEngine.ts', '7df2bd63857e0f710d020caaabcdc7b42f3269d8949ae03e908251562ab523b6'],
-  ['src/api/routes/portfolio.ts', 'e943dce097247b01f5d001770c816faa5be4b024755724b8da2b90822f05f016'],
+  ['src/api/routes/portfolio.ts', '3b4708bd2376dfd12d359645f866853f00f36a8967d104c1fec775f31dfdd051'],
 ])('preserves unchanged financial/data/format/modal source %s exactly', (file, hash) => {
   const source = file === wallet + 'TransactionHistory.tsx' ? restoreApprovedHistoryTypography(read(file)) : read(file);
   expect(createHash('sha256').update(source).digest('hex')).toBe(hash);
@@ -667,7 +684,7 @@ test('the wallet hook passes through economic and collateral equity separately a
   expect(view.rows[0]).toMatchObject({ total: 2.25, walletBalance: 2, available: 1.5, locked: .75,
     valueUsd: null, priceUsd: null, priced: false, collateralEnabled: false, collateralToggleable: true });
   expect(reads).toHaveLength(3);
-  expect(reads.every(read => read.staleMs === 120000 && typeof read.reset === 'function')).toBe(true);
+  expect(reads.every(read => read.staleMs === 30000 && typeof read.reset === 'function')).toBe(true);
   expect(JSON.stringify(native)).toBe(before);
 });
 
@@ -682,7 +699,8 @@ test('the current deposit entry point forwards explicit asset selection and neve
   expect(DepositModal({ open: false, onClose, initialAsset: 'BTC' })).toBeNull();
   const open = DepositModal({ open: true, onClose, initialAsset: 'BTC' });
   expect(open.type).toBe(Dialog);
-  expect(open.props).toEqual({ onClose, initialAsset: 'BTC' });
+  // The Wallet names itself as the source of a «Копировали адрес» note.
+  expect(open.props).toEqual({ onClose, initialAsset: 'BTC', source: 'wallet' });
   expect(onClose).not.toHaveBeenCalled();
 });
 
@@ -694,8 +712,8 @@ test('wallet API reads keep their shared authenticated transport and snapshots c
   expect(ts.isObjectLiteralExpression(declaration.initializer!)).toBe(true);
   const methods = (declaration.initializer as ts.ObjectLiteralExpression).properties;
   const method = (name: string) => methods.find(node => node.name?.getText(ast) === name)!.getText(ast);
-  expect(method('getWalletOverview')).toMatch(/request<[\s\S]*?>\('\/wallet\/overview'\)/);
-  expect(method('getWalletPerformance')).toMatch(/request<[\s\S]*?>\('\/wallet\/performance'\)/);
+  expect(method('getWalletOverview')).toMatch(/request<[\s\S]*?>\('\/wallet\/overview', \{ signal \}\)/);
+  expect(method('getWalletPerformance')).toMatch(/request<[\s\S]*?>\('\/wallet\/performance', \{ signal \}\)/);
   expect(api).toContain('Authorization: `Bearer ${token}`');
   expect(method('recordPortfolioSnapshot')).toMatch(/JSON\.stringify\(\{ totalValueUsd \}\)/);
   expect(method('recordPortfolioSnapshot')).not.toMatch(/parseFloat|Number\(|Math\.|\*|\/\//);
@@ -720,7 +738,7 @@ test('the portfolio service values only the requested account balances and leave
 
 test('authenticated wallet access rechecks session revocation on each read and rejects a pending login', async () => {
   const verify = jest.fn((): any => ({ sub: 'fixture-owner', sid: 'fixture-session' }));
-  const { requireAuth } = evaluate('src/api/middleware/auth.ts', { jsonwebtoken: { default: { verify } } });
+  const { requireAuth } = evaluate('src/api/middleware/auth.ts', { jsonwebtoken: { default: { verify } }, '../../services/ContactEmailPolicy': { isBlockedContactEmail: async () => false, isRevokedContactToken: async () => false } });
   const findUnique = jest.fn(async (): Promise<any> => ({ id: 'fixture-session', userId: 'fixture-owner', revokedAt: null, lastSeenAt: new Date() }));
   const update = jest.fn();
   const gate = requireAuth({ session: { findUnique, update } });

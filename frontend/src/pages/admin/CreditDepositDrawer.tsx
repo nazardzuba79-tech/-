@@ -44,26 +44,55 @@ export function CreditDepositDrawer({ userId, chain, asset, email, onClose, onDo
   onClose: () => void;
   onDone: (result: { status: 'CREDITED'; totalAmount: string; asset: string }) => void;
 }) {
-  const [preview, setPreview] = useState<PackagePreview | null>(null);
+  // A preview belongs to the package it was read for. Another package named
+  // while it loads (another user, network or asset) never shows — or confirms
+  // — the earlier one's transfers under the new name.
+  const identity = `${userId}|${chain}|${asset}`;
+  const shown = useRef(identity);
+  shown.current = identity;
+  const [loaded, setLoaded] = useState<{ identity: string; preview: PackagePreview } | null>(null);
+  const preview = loaded?.identity === identity ? loaded.preview : null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  // No answer reached us: the credit may have committed. The next press
+  // re-sends with the same key, which the server answers with the first
+  // result rather than a second credit.
+  const [outcomeUnknown, setOutcomeUnknown] = useState(false);
   const inFlight = useRef(false);
   const key = useRef(newIdempotencyKey());
 
   const load = useCallback(() => {
+    const requested = `${userId}|${chain}|${asset}`;
     setLoadError(false);
     adminDepositApi.preview({ userId, chain, asset })
-      .then((next) => { setPreview(next); key.current = newIdempotencyKey(); })
-      .catch(() => setLoadError(true));
+      .then((next) => {
+        if (shown.current !== requested) return;
+        setLoaded({ identity: requested, preview: next }); key.current = newIdempotencyKey(); setOutcomeUnknown(false);
+      })
+      .catch(() => { if (shown.current === requested) setLoadError(true); });
   }, [userId, chain, asset]);
   useEffect(load, [load]);
+  useEffect(() => { setError(null); setOutcomeUnknown(false); }, [identity]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busy) onClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [busy, onClose]);
+  // Focus moves into the drawer and returns to the opening button; the page
+  // behind does not scroll while it is open.
+  const panel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    panel.current?.focus({ preventScroll: true });
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = overflow;
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
+    };
+  }, []);
 
   async function confirm() {
     if (!preview || inFlight.current || !preview.minimumReached) return;
@@ -77,9 +106,17 @@ export function CreditDepositDrawer({ userId, chain, asset, email, onClose, onDo
       onDone({ status: result.status, totalAmount: result.totalAmount, asset: result.asset });
     } catch (err) {
       const e = err instanceof AdminDepositApiError ? err : null;
-      setError(e?.message ?? 'Не удалось зачислить пакет. Ничего не зачислено.');
+      // No answer of the server's own (network cut, timeout, a gateway 502/504,
+      // a 500 after the commit): unknown, not «nothing credited».
+      if (!e || (e.status >= 500 && !e.code)) {
+        setOutcomeUnknown(true);
+        setError('Ответ сервера не получен — зачисление могло пройти. Нажмите «Проверить результат»: повтор с тем же ключом не зачислит пакет второй раз.');
+        return;
+      }
+      setOutcomeUnknown(false);
+      setError(e.message);
       // A changed package is shown again for a fresh review, never swapped silently.
-      if (e?.code === 'PACKAGE_CHANGED' || e?.code === 'ALREADY_CREDITED') load();
+      if (e.code === 'PACKAGE_CHANGED' || e.code === 'ALREADY_CREDITED') load();
     } finally {
       inFlight.current = false;
       setBusy(false);
@@ -90,12 +127,12 @@ export function CreditDepositDrawer({ userId, chain, asset, email, onClose, onDo
   return (
     <>
       <div style={styles.drawerOverlay} onClick={() => { if (!busy) onClose(); }} />
-      <aside role="dialog" aria-modal="true" aria-labelledby="credit-package-title" data-credit-drawer={`${userId}|${chain}|${asset}`} style={styles.drawerPanel}>
-        <div style={styles.drawerHeader}>
+      <aside ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="credit-package-title" data-credit-drawer={`${userId}|${chain}|${asset}`} className="admin-drawer-panel" style={styles.drawerPanel}>
+        <div className="admin-drawer-header" style={styles.drawerHeader}>
           <strong id="credit-package-title" style={{ fontSize: 15 }}>Зачисление пакета</strong>
           <button type="button" aria-label="Закрыть" disabled={busy} onClick={onClose} style={styles.actionsMenuBtn}>✕</button>
         </div>
-        <div style={styles.drawerBody}>
+        <div className="admin-drawer-body" style={styles.drawerBody}>
           <Field label="Пользователь" value={email} />
           <Field label="User ID" value={userId} mono />
           <Field label="Актив / сеть" value={`${asset} / ${chain === 'tron' ? 'TRC20' : chain}`} />
@@ -141,10 +178,10 @@ export function CreditDepositDrawer({ userId, chain, asset, email, onClose, onDo
           )}
           {error && <div role="alert" style={styles.errorBox}>{error}</div>}
         </div>
-        <div style={{ ...styles.drawerFooter, gridTemplateColumns: '1fr 1fr' }}>
+        <div className="admin-drawer-footer" style={{ ...styles.drawerFooter, gridTemplateColumns: '1fr 1fr' }}>
           <button type="button" data-cancel-credit disabled={busy} onClick={onClose} style={styles.neutralBtn}>Отмена</button>
           <button type="button" data-confirm-credit disabled={busy || !p || !p.minimumReached || p.transfers.length === 0} onClick={confirm} style={styles.approveBtn}>
-            {busy ? 'Зачисление…' : 'Подтвердить зачисление'}
+            {busy ? 'Зачисление…' : outcomeUnknown ? 'Проверить результат' : 'Подтвердить зачисление'}
           </button>
         </div>
       </aside>

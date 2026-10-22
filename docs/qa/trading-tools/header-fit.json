@@ -1,0 +1,164 @@
+{
+  "generatedAt": "2026-10-01T06:29:15.934Z",
+  "sourceCommit": "750926c53b0b7807596acee821dd68f7e18910f8",
+  "fixture": "scripts/qa-futures-pair-persistence.cjs",
+  "passed": true,
+  "environment": {
+    "platform": "win32",
+    "node": "v24.21.0"
+  },
+  "boundaries": [
+    "Built frontend served on localhost only; synthetic admin/account/market responses and positions. No production authentication, database, account, order or balance writes.",
+    "Original Futures fixture assertions unchanged. An output-only launcher substitutes the installed Playwright path on Windows and denies all non-local HTTP and WebSocket requests before page creation.",
+    "The recorded run is read-only UI navigation, contract restoration and header measurement."
+  ],
+  "blockedExternalRequests": 170,
+  "blockedExternalResources": [
+    "http https://fonts.googleapis.com/css2",
+    "http https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/ake.png",
+    "websocket wss://stream.bybit.com/v5/public/linear",
+    "http https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    "http https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    "http https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/gone.png",
+    "http https://market.voltextech.net/market/nrx",
+    "http https://market.voltextech.net/market/listings",
+    "http https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/sol.png"
+  ],
+  "viewports": [
+    {
+      "viewport": "1440x900",
+      "marketsHeader": {
+        "admin": null,
+        "wallet": {
+          "left": 1054,
+          "right": 1134,
+          "top": 18,
+          "bottom": 50,
+          "width": 80,
+          "height": 32,
+          "background": "linear-gradient(rgb(55, 48, 31), rgb(41, 35, 26))",
+          "color": "rgb(236, 220, 180)",
+          "boxShadow": "rgb(74, 63, 40) 0px 0px 0px 1px inset",
+          "borderRadius": "6px",
+          "display": "flex"
+        },
+        "deposit": {
+          "left": 1142,
+          "right": 1222,
+          "top": 16,
+          "bottom": 51,
+          "width": 80,
+          "height": 34,
+          "background": "linear-gradient(rgb(243, 206, 113), rgb(240, 201, 100))",
+          "color": "rgb(11, 14, 17)",
+          "boxShadow": "rgba(240, 201, 100, 0.18) 0px 2px 8px 0px",
+          "borderRadius": "6px",
+          "display": "flex"
+        },
+        "bar": {
+          "left": 0,
+          "right": 1440,
+          "top": 0,
+          "bottom": 68,
+          "width": 1440,
+          "height": 68,
+          "background": "rgb(26, 27, 32)",
+          "color": "rgb(61, 67, 77)",
+          "boxShadow": "none",
+          "borderRadius": "0px",
+          "display": "flex"
+        },
+        "clusterOrder": [
+          "nav-wallet-link",
+          "deposit-button",
+          "language-control",
+          "top-nav-profile-wrap"
+        ],
+        "adminInDrawer": true,
+        "navFit": {
+          "clipped": 0,
+          "slack": 125,
+          "visible": [
+            "Рынки",
+            "Торговля",
+            "Фьючерсы",
+            "Banking & Earn",
+            "Копитрейдинг",
+            "Crypto Card",
+            "OTC",
+            "Торговые боты"
+          ]
+        },
+        "clipped": []
+      },
+      "knownPreexistingChartTeardown": 3,
+      "pageErrors": [
+        "[pick-then-refresh] Error: Object is disposed",
+        "[click-AKE] Error: Object is disposed",
+        "[click-BTC] Error: Object is disposed"
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "marketsHeader": {
+        "admin": null,
+        "wallet": {
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0,
+          "width": 0,
+          "height": 0,
+          "background": "linear-gradient(rgb(55, 48, 31), rgb(41, 35, 26))",
+          "color": "rgb(236, 220, 180)",
+          "boxShadow": "rgb(74, 63, 40) 0px 0px 0px 1px inset",
+          "borderRadius": "6px",
+          "display": "none"
+        },
+        "deposit": {
+          "left": 214,
+          "right": 286,
+          "top": 12,
+          "bottom": 43,
+          "width": 72,
+          "height": 31,
+          "background": "linear-gradient(rgb(243, 206, 113), rgb(240, 201, 100))",
+          "color": "rgb(11, 14, 17)",
+          "boxShadow": "rgba(240, 201, 100, 0.18) 0px 2px 8px 0px",
+          "borderRadius": "6px",
+          "display": "flex"
+        },
+        "bar": {
+          "left": 0,
+          "right": 390,
+          "top": 0,
+          "bottom": 56,
+          "width": 390,
+          "height": 56,
+          "background": "rgb(26, 27, 32)",
+          "color": "rgb(61, 67, 77)",
+          "boxShadow": "none",
+          "borderRadius": "0px",
+          "display": "flex"
+        },
+        "clusterOrder": [
+          "nav-wallet-link",
+          "deposit-button",
+          "language-control",
+          "top-nav-profile-wrap"
+        ],
+        "adminInDrawer": true,
+        "navFit": null,
+        "clipped": []
+      },
+      "knownPreexistingChartTeardown": 1,
+      "pageErrors": [
+        "[pick-then-refresh] Error: Object is disposed"
+      ]
+    }
+  ],
+  "limitations": [
+    "Headless Chromium fixtures; physical devices and Safari/Firefox not checked.",
+    "Existing fixture classifies the listed Object is disposed chart teardown errors as known pre-existing; they are retained rather than suppressed."
+  ]
+}

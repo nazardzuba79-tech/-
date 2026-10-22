@@ -15,6 +15,7 @@ import type { CyclicImpulseConfig } from './simulationCycles';
 import type { NaturalWickConfig } from './simulationNaturalWicks';
 import type { AccumulationPhaseConfig } from './simulationAccumulation';
 import type { MarketStructureConfig } from './simulationWaves';
+import type { ScheduledScenarioConfig } from './simulationSchedule';
 
 export interface TestAssetConfig {
   /** Base asset ticker, e.g. VTA. */
@@ -62,6 +63,8 @@ export interface TestAssetConfig {
    * phases with the SAME block totals. Hours before `from` keep the base path.
    */
   marketStructure?: MarketStructureConfig;
+  /** NRX-only forward scenario. Earlier canonical ticks retain the original history. */
+  scheduledScenario?: ScheduledScenarioConfig;
 }
 
 export const VOLTORA: TestAssetConfig = {
@@ -144,5 +147,7 @@ export function testAssetForSymbol(symbol: string | null | undefined): TestAsset
 
 /** Restricted-asset guard (VTA, NRX and every published managed listing). Only ordinary Spot admits listed NRX and tradable managed listings. */
 export function isTestAssetPairOrSymbol(value: string | null | undefined): boolean {
+  // AITH remains restricted even while its publication is unavailable or changing generations.
+  if (value && ['AITH', 'AITH/USDT'].includes(normalizePair(value))) return true;
   return testAssetForPair(value) !== null || testAssetForSymbol(value) !== null;
 }

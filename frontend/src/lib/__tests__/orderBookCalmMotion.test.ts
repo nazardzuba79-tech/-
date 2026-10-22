@@ -191,8 +191,8 @@ describe('depth bars are muted and settle between publishes', () => {
 });
 
 /**
- * None of the above may touch what the panel is allowed to say, or how the
- * book itself is maintained. The visual work stops at the DOM.
+ * Freshness remains an internal data contract, while transport copy stays
+ * out of the customer-facing ladder.
  */
 describe('the data contract is untouched', () => {
   /**
@@ -204,12 +204,14 @@ describe('the data contract is untouched', () => {
    * ladder; a book that HAD data and stopped, and a book that is gone, are
    * still named, because those are facts a trader needs.
    */
-  it('still tells stale and unavailable apart, and still names them', () => {
-    expect(code).toContain("t('trade.bookStale')");
-    expect(code).toContain("t('trade.bookUnavailable')");
-    // `status` is still the three-valued thing it was; nothing collapsed it.
-    expect(code).toContain("status === 'stale'");
-    expect(code).toContain("status === 'unavailable'");
+  it('still tells stale and unavailable apart internally, without customer-facing transport copy', () => {
+    expect(code).not.toContain("t('trade.bookStale')");
+    expect(code).not.toContain("t('trade.bookUnavailable')");
+    expect(code).not.toContain('className="rb-feed"');
+    // Freshness is still represented in the rendered contract for QA.
+    expect(code).toContain('data-book-state={status}');
+    expect(code).toContain('data-stale=');
+    expect(code).toContain('data-sampled-book=');
   });
 
   it('draws a placeholder ladder while waiting instead of an alarm or a blank', () => {
@@ -222,8 +224,9 @@ describe('the data contract is untouched', () => {
     const fn = code.slice(code.indexOf('const placeholders ='), code.indexOf('const rows = ('));
     expect(fn).toContain('—');
     expect(fn).not.toMatch(/\b0\b/);
-    // Nothing is announced before there has ever been a book.
-    expect(code).toContain("status === 'stale' && !waiting");
+    // Nothing is announced for connection freshness at all.
+    expect(code).not.toContain("t('trade.bookStale')");
+    expect(code).not.toContain("t('trade.bookUnavailable')");
   });
 
   it('does not average, interpolate or invent a level anywhere in the panel', () => {

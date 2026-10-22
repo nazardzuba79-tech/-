@@ -73,11 +73,13 @@ describe('the header no longer sources market stats from the wrong market', () =
 });
 
 describe('VOLTEX financial values in the header are untouched', () => {
-  it('still reads mark price, index and the settled funding rate from the futures services', () => {
+  it('still reads mark price and index from the futures services, and funding from VOLTEX\'s own config', () => {
     expect(barCode).toContain('useFuturesMark(symbol)');
     const markCode = read('src/lib/useFuturesMark.ts');
     expect(markCode).toContain('api.getFuturesMarkPrice(symbol)');
-    expect(barCode).toContain('.getFuturesFundingRate(symbol, 1)');
+    // The fixed VOLTEX rates every position settles at (GET /futures/config), not a settled-record poll.
+    expect(barCode).toContain('voltexFundingRates(futuresConfig)');
+    expect(barCode).not.toContain('getFuturesFundingRate');
     expect(markCode).toContain('markPrice: number(result.markPrice)');
     expect(markCode).toContain('indexPrice: number(result.indexPrice)');
   });

@@ -40,3 +40,83 @@
   flex: 0 0 auto;
   max-width: 55%;
 }
+
+/* Compact Spot market rail: pair identity stays readable at the normal
+   258px width. Seven-day performance belongs on the full Markets page, not
+   in this narrow execution rail. The header's left slot is now the
+   «Новые» sorter; Price and 24h remain aligned with their row columns.
+   Published/test listings have real listingAt timestamps and are promoted
+   newest-first only when that sorter is active. */
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-section { container: spot-markets / inline-size; }
+.trade-terminal.trade-terminal.market-reference.spot-terminal :is(.pairs-sort, .pairs-list) {
+  --spot-mk-star: 12px;
+  --spot-mk-icon: 20px;
+  --spot-mk-price: 62px;
+  --spot-mk-change: 54px;
+  --spot-mk-gap: 4px;
+}
+@container spot-markets (min-width: 300px) {
+  .trade-terminal.trade-terminal.market-reference.spot-terminal :is(.pairs-sort, .pairs-list) {
+    --spot-mk-star: 14px;
+    --spot-mk-icon: 20px;
+    --spot-mk-price: 68px;
+    --spot-mk-change: 58px;
+  }
+}
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-sort {
+  grid-template-columns: minmax(0, 1fr) var(--spot-mk-price) var(--spot-mk-change);
+  gap: var(--spot-mk-gap);
+}
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-sort button {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-sort .pairs-newest-sort {
+  justify-content: flex-start;
+  padding-left: calc(var(--spot-mk-star) + var(--spot-mk-gap) + var(--spot-mk-icon) + var(--spot-mk-gap));
+  color: var(--text-secondary);
+}
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-sort .pairs-newest-sort[aria-pressed="true"] {
+  color: var(--accent-yellow);
+}
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row {
+  grid-template-columns: var(--spot-mk-star) minmax(0, 1fr);
+  gap: var(--spot-mk-gap);
+}
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-select {
+  grid-template-columns: var(--spot-mk-icon) minmax(50px, 1fr) var(--spot-mk-price) var(--spot-mk-change);
+  gap: var(--spot-mk-gap);
+}
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row :is(.p-price, .p-change) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A fitting ticker must never lose letters just because its quote suffix
+   appears during search. Long names may still ellipsize inside their own
+   track, never over the price. */
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-name { overflow: hidden; }
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-name .p-base {
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-name .p-quote { flex-shrink: 100; }
+.trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-change[data-compact] {
+  font-size: 10px;
+  letter-spacing: -.2px;
+}
+@container spot-markets (max-width: 299.98px) {
+  .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-sort button { font-size: 10.5px; }
+  .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-base,
+  .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-price { font-size: 11.5px; }
+  .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-change { font-size: 11px; }
+  .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row :is(.p-price, .p-change)[data-compact] {
+    font-size: 9.5px;
+    letter-spacing: -.2px;
+  }
+}

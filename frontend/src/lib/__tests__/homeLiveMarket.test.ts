@@ -422,6 +422,57 @@ const everyStatus = (m: any) => [m.tickersStatus, m.hero.bookStatus, m.hero.cand
 /** Every provider held open: nothing has answered yet. */
 const pending = () => Object.fromEntries(PROVIDERS.map(name => [name, jest.fn().mockReturnValue(new Promise(() => {}))]));
 
+test.each([...PROVIDERS, 'loadConfig'] as const)('a transient %s failure retries after one minute without reloading healthy sections', async failedProvider => {
+  const providers: Record<string, jest.Mock> = {
+    getExternalTickers: jest.fn().mockResolvedValue(tickers()),
+    getExternalOrderBook: jest.fn().mockResolvedValue(book),
+    getExternalCandles: jest.fn().mockResolvedValue({ pair: 'BTC/USDT', interval: '15m', candles: [candle] }),
+    getExternalTrades: jest.fn().mockResolvedValue({ pair: 'BTC/USDT', trades: [trade] }),
+    getExternalRankings: jest.fn().mockResolvedValue({ rankings: [ranking] }),
+    getGlobalMarket: jest.fn().mockResolvedValue(globalMarket),
+    getCfdTickers: jest.fn().mockResolvedValue(cfdResponse),
+    loadConfig: jest.fn().mockResolvedValue({ symbols: ['BTC/USDT'] }),
+  };
+  providers[failedProvider].mockRejectedValueOnce(new Error('temporary outage'));
+  const h = mount(providers, { loadConfig: providers.loadConfig });
+  await flush();
+  expect(providerCalls(h)).toEqual(oneProviderCall);
+  expect(everyStatus(h.render())).toContain('error');
+  // Visibility events must not turn the failure into an immediate retry loop.
+  h.visibility(true); h.visibility(false);
+  h.tick(59_999);
+  await flush();
+  expect(providerCalls(h)).toEqual(oneProviderCall);
+  h.tick(1);
+  await flush();
+  const heroProviders = ['getExternalOrderBook', 'getExternalCandles', 'getExternalTrades'];
+  const retried = heroProviders.includes(failedProvider) ? heroProviders : [failedProvider];
+  expect(providerCalls(h)).toEqual({ ...oneProviderCall, ...Object.fromEntries(retried.map(name => [name, 2])) });
+  expect(everyStatus(h.render())).toEqual(Array(8).fill('ok'));
+  h.tick(60_000);
+  await flush();
+  // Successful recovery resumes the six-hour cadence.
+  expect(providerCalls(h)).toEqual({ ...oneProviderCall, ...Object.fromEntries(retried.map(name => [name, 2])) });
+  h.unmount();
+});
+
+test('a failed homepage section owns no hidden retry timer and retries once on a due visible return', async () => {
+  const tickersCall = jest.fn().mockResolvedValue(tickers()).mockRejectedValueOnce(new Error('temporary outage'));
+  const h = mount({ getExternalTickers: tickersCall });
+  await flush();
+  h.visibility(true);
+  expect(h.timeouts.size).toBe(0);
+  h.tick(120_000);
+  await flush();
+  expect(tickersCall).toHaveBeenCalledTimes(1);
+  h.visibility(false);
+  await flush();
+  expect(tickersCall).toHaveBeenCalledTimes(2);
+  expect(h.render().tickersStatus).toBe('ok');
+  h.unmount();
+  expect(h.timeouts.size).toBe(0);
+});
+
 /** A first visit at `clock` on which every section was confirmed by a real
  * response, written to storage by the hook itself — no hand-made record. */
 async function confirmedVisit(clock = T0) {
@@ -439,7 +490,7 @@ async function confirmedVisit(clock = T0) {
 
 test('a snapshot under six hours old paints every section at once and asks no provider for anything until it expires', async () => {
   const storage = await confirmedVisit(T0);
-  const h = mount({}, { storage, clock: T0 + HOUR });
+  const h = mount({ getGlobalMarket: jest.fn().mockResolvedValue(globalMarket) }, { storage, clock: T0 + HOUR });
   const painted = h.render();
   expect(everyStatus(painted)).toEqual(Array(8).fill('ok'));
   expect(painted.tickers[0]).toMatchObject({ pair: 'BTC/USDT', price: 64123.45, change: -1.27, quoteVolume: 81573125 });
@@ -642,7 +693,7 @@ test('a hidden tab paints its snapshot and asks no provider for anything until i
 
 test('an offscreen hero keeps its cached terminal and defers only its own reads past expiry', async () => {
   const storage = await confirmedVisit(T0);
-  const h = mount({}, { storage, clock: T0 + HOUR });
+  const h = mount({ getGlobalMarket: jest.fn().mockResolvedValue(globalMarket) }, { storage, clock: T0 + HOUR });
   h.observers[0].callback([{ isIntersecting: false }]);
   h.tick(SIX_HOURS - HOUR);
   await flush();

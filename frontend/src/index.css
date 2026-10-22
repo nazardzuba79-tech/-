@@ -863,6 +863,58 @@ body {
     display: none;
   }
 }
+/* 320–359px: the wordmark ran under the deposit key. The mark stays, the
+   letters go; the terminals already do the same from 429px down. The home
+   header does the same (its own row was wider than the screen and the menu
+   key sat past the right edge). Both rules live here because home.css is
+   byte-frozen by cryptoCardVisualConsistency/cryptoCardProductionPromotion. */
+@media (max-width: 359px) {
+  .global-header .header-brand > span > span {
+    display: none;
+  }
+}
+/* The home header shows the mark alone below 430px, as the terminal header
+   already does (owner, 2026-10-04): with the wordmark the row «VOLTEX ·
+   Вход · Начать торговлю · menu» is 370px at 360 (the menu key loses 10px)
+   and in Spanish 412px at 360–411 (the menu key is off-screen, the CTA cut).
+   The labels are the product's words and the menu holds no sign-in entry, so
+   the wordmark is the one thing with room to give. */
+@media (max-width: 429px) {
+  .home-brand > span > span {
+    display: none;
+  }
+}
+/* 320–359px, /card: the section titles keep a 3rem+ floor from their
+   clamp(), and one word («Приватность» is 300px at 49.6px) was wider than
+   the column, so the whole page scrolled sideways by 19px. A smaller floor
+   on the narrowest phones, and a word may still wrap rather than push the
+   page. Hosted here because crypto-card.css is byte-frozen by
+   cryptoCardProductionPromotion. */
+@media (max-width: 359px) {
+  .crypto-card-page h2 {
+    font-size: 2.6rem;
+    overflow-wrap: anywhere;
+  }
+}
+/* 768–1023px, /card: the «Информация» tile (md:row-span-1, md:min-h-0) is
+   sized by the grid row alone and came out ~200px tall, so its top label and
+   the bottom block («Решения на фактах» + two rows of chips) met in the
+   middle. A floor keeps the two apart; from 1024px the row is tall enough.
+   Hosted here because the section and crypto-card.css are byte-frozen. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .crypto-card-page article.md\:vc-row-span-1.md\:vc-min-h-0 {
+    min-height: 260px;
+  }
+}
+/* /card hero, every width: the artwork SVG keeps overflow: visible and a
+   viewBox that starts 440 units into the photo, so its <image> reaches
+   across the copy column and sat on top of the two hero links — at 1440px
+   «Узнать больше» took no clicks at all (2026-10-13 audit). The scene is
+   decorative; it takes no pointer events, the links under it do. Hosted
+   here because crypto-card.css and WatchCardVisual are byte-frozen. */
+.crypto-card-page .vc-card-hero-artwork svg {
+  pointer-events: none;
+}
 @media (max-width: 420px) {
   .global-header {
     padding: 0 10px;
@@ -2011,6 +2063,10 @@ a:hover > .nav-card-icon {
   .bottom-nav {
     display: grid !important;
   }
+  /* Large OS text: a label that no longer fits its column is cut with «…»
+     rather than drawn over its neighbour (the icon above still names it). */
+  .bottom-nav a { min-width: 0; }
+  .bottom-nav a > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Dashboard's fixed 2fr/1fr and 4-column grids would otherwise overflow
      horizontally on a phone-width screen — collapse to a single column. */
   .dash-grid-2-1,
@@ -2262,7 +2318,7 @@ a:hover > .nav-card-icon {
 
 /* Use the existing full navigation drawer before desktop links collide
    with the account actions. */
-@media (max-width: 1439px) {
+@media (max-width: 1530px) {
   .global-header .main-nav,
   .global-header .brand-separator { display: none; }
   .global-header .mobile-menu { display: grid; }
@@ -2276,15 +2332,8 @@ a:hover > .nav-card-icon {
 @media (max-width: 1024px) {
   .trade-terminal.terminal-studio .nav-mobile-menu { top:56px; max-height:calc(100dvh - 56px); }
 }
-/* Without the admin link the eight product links still meet the account
-   cluster between 1440 and 1530: at 1440 «Crypto Card» and «OTC» end at
-   991px while «Кошелёк» starts at 912px (measured on the fixture, owner's
-   1440 screenshot 2026-09-23). The two secondary links step out for that
-   band, as they already do below 1050 on every other page; the full row is
-   back from 1531px, where it fits with room to spare. */
-@media (min-width: 1440px) and (max-width: 1530px) {
-  .trade-terminal.terminal-studio .global-header .nav-item.nav-secondary { display: none; }
-}
+/* The full drawer also covers 1440–1530px: keep Crypto-Card and OTC
+   reachable instead of hiding their links without a navigation alternative. */
 
 /* Owner's Futures reference: header styling stays in the eager shell. */
 :is(.futures-reference,.market-reference) > .global-header { background:#1a1b20; border-bottom:1px solid #2c2e35; box-shadow:none; }
@@ -2476,11 +2525,13 @@ a:hover > .nav-card-icon {
 }
 
 /* The new top-level bot tab must fit without clipping OTC or squeezing
-   account controls. Keep the approved type size; reclaim link spacing on laptops. */
+   account controls. Use compact laptop labels and spacing for the expanded product navigation. */
 @media (min-width: 1440px) and (max-width: 1679px) {
   .global-header .main-nav { gap:0; }
-  .global-header .main-nav .nav-item { padding-inline:6px; }
-  .global-header .brand-separator { margin-inline:12px; }
+  .global-header, :is(.futures-reference,.market-reference) > .global-header { padding-inline:12px; }
+  .global-header .main-nav .nav-item { padding-inline:2px; font-size:12.5px; }
+  .global-header .main-nav .header-disclosure-toggle { width:18px; }
+  .global-header .brand-separator { margin-inline:8px; }
 }
 
 /* Bot Studio desktop header: match the approved 68px face; retain mobile density. */

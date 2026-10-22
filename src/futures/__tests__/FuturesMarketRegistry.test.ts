@@ -169,6 +169,44 @@ describe('FuturesMarketRegistry', () => {
     expect(await registry.refresh()).toContain('GONE/USDT');
   });
 
+  it.each(['rejected', 'empty'] as const)('recovers held contracts on a cold start with a %s ticker feed', async (mode) => {
+    const { registry, prisma } = makeRegistry(
+      async () => {
+        if (mode === 'rejected') throw new Error('Ticker feed unavailable');
+        return [];
+      },
+      { positions: ['XRP/USDT'], orders: ['DOGE/USDT'] },
+      universeOf(['UNHELD/USDT'])
+    );
+    const listed = await registry.refresh();
+    expect(listed).toEqual([...CORE_FUTURES_SYMBOLS, 'XRP/USDT', 'DOGE/USDT']);
+    expect(registry.has('XRP/USDT')).toBe(true);
+    expect(registry.has('DOGE/USDT')).toBe(true);
+    // Recovery adds only already-held contracts, never unpriced discoveries.
+    expect(registry.has('UNHELD/USDT')).toBe(false);
+    expect(await registry.refresh()).toEqual(listed);
+    expect(prisma.futuresPosition.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.futuresOrder.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a failed cold-start database recovery while the ticker feed is still unavailable', async () => {
+    const { registry, prisma } = makeRegistry([], { positions: ['XRP/USDT'], orders: ['DOGE/USDT'] });
+    prisma.futuresPosition.findMany.mockRejectedValueOnce(new Error('Database temporarily unavailable'));
+    expect(await registry.refresh()).toEqual(CORE_FUTURES_SYMBOLS);
+    expect(await registry.refresh()).toEqual([...CORE_FUTURES_SYMBOLS, 'XRP/USDT', 'DOGE/USDT']);
+    expect(prisma.futuresPosition.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.futuresOrder.findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns to ordinary listing rules after cold-start recovery and closed exposure', async () => {
+    const { registry, marketData, prisma } = makeRegistry([], { positions: ['XRP/USDT'] });
+    expect(await registry.refresh()).toContain('XRP/USDT');
+    marketData.getTickers.mockResolvedValue([ticker('BTC/USDT', '100000', BIG), ticker('DOGE/USDT', '1', BIG)]);
+    prisma.futuresPosition.findMany.mockResolvedValue([]);
+    expect(await registry.refresh()).toEqual([...CORE_FUTURES_SYMBOLS, 'DOGE/USDT']);
+    expect(prisma.futuresPosition.findMany).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps the previous listing when the ticker feed fails', async () => {
     const { registry, marketData } = makeRegistry([
       ticker('BTC/USDT', '100000', BIG),

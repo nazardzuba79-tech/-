@@ -8,6 +8,55 @@
       "passed": true,
       "evidence": {
         "width": 1440,
+        "pick": {
+          "x": 380.5625,
+          "y": 559.98,
+          "time": 1792504800,
+          "paneHeight": 367,
+          "fraction": 0.937275204359673
+        },
+        "controls": {
+          "paneHeight": 367,
+          "entryFraction": 0.937275204359673,
+          "controls": [
+            {
+              "name": "empty price-pane space",
+              "point": {
+                "x": 380.5625,
+                "y": 326.1
+              },
+              "picking": true,
+              "reference": null
+            },
+            {
+              "name": "volume pane",
+              "point": {
+                "x": 380.5625,
+                "y": 629
+              },
+              "picking": true,
+              "reference": null
+            },
+            {
+              "name": "forming (incomplete) bar",
+              "point": {
+                "x": 737.8541666666666,
+                "y": 252.7
+              },
+              "picking": true,
+              "reference": null
+            },
+            {
+              "name": "drag from a completed bar",
+              "point": {
+                "x": 380.5625,
+                "y": 559.98
+              },
+              "picking": true,
+              "reference": null
+            }
+          ]
+        },
         "LONG": {
           "side": "LONG",
           "submittedType": "LIMIT",
@@ -41,6 +90,31 @@
           "realizedGross": "-74700",
           "realizedNet": "-74747.685",
           "positionsAfterClose": 0
+        },
+        "MARKET_TAB": {
+          "tab": "Рыночный",
+          "submittedType": "MARKET",
+          "price": null,
+          "entry": "0.004",
+          "mark": "0.0538",
+          "orderType": "MARKET",
+          "historicalPrice": "0.0040",
+          "positionsAfterClose": 0
+        },
+        "indicatorPane": {
+          "panes": 3,
+          "point": {
+            "x": 380.5625,
+            "y": 629.5
+          },
+          "paneHeights": [
+            295,
+            74,
+            89
+          ],
+          "picking": true,
+          "referenceBefore": null,
+          "referenceAfter": null
         }
       }
     },
@@ -49,6 +123,55 @@
       "passed": true,
       "evidence": {
         "width": 390,
+        "pick": {
+          "x": 142.9375,
+          "y": 615.66,
+          "time": 1792508400,
+          "paneHeight": 239,
+          "fraction": 0.93581589958159
+        },
+        "controls": {
+          "paneHeight": 239,
+          "entryFraction": 0.93581589958159,
+          "controls": [
+            {
+              "name": "empty price-pane space",
+              "point": {
+                "x": 142.9375,
+                "y": 463.7
+              },
+              "picking": true,
+              "reference": null
+            },
+            {
+              "name": "volume pane",
+              "point": {
+                "x": 142.9375,
+                "y": 661
+              },
+              "picking": true,
+              "reference": null
+            },
+            {
+              "name": "forming (incomplete) bar",
+              "point": {
+                "x": 289.9375,
+                "y": 415.90000000000003
+              },
+              "picking": true,
+              "reference": null
+            },
+            {
+              "name": "drag from a completed bar",
+              "point": {
+                "x": 142.9375,
+                "y": 615.66
+              },
+              "picking": true,
+              "reference": null
+            }
+          ]
+        },
         "LONG": {
           "side": "LONG",
           "submittedType": "LIMIT",
@@ -82,6 +205,19 @@
           "realizedGross": "-74700",
           "realizedNet": "-74747.685",
           "positionsAfterClose": 0
+        },
+        "MARKET_TAB": {
+          "tab": "Рыночный",
+          "submittedType": "MARKET",
+          "price": null,
+          "entry": "0.004",
+          "mark": "0.0538",
+          "orderType": "MARKET",
+          "historicalPrice": "0.0040",
+          "positionsAfterClose": 0
+        },
+        "indicatorPane": {
+          "skipped": "no visible indicator trigger in this layout; covered at 1440 and by the unit test"
         }
       }
     }

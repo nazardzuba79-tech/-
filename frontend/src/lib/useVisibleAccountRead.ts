@@ -4,7 +4,7 @@ import { createVisibleRead } from './visibleRead';
 
 /** Lifetime/session guard shared by low-frequency authenticated display reads. */
 export function useVisibleAccountRead<T>(options: {
-  load: () => Promise<T>; accept: (value: T) => void; reset: () => void;
+  load: (signal: AbortSignal) => Promise<T>; accept: (value: T) => void; reset: () => void;
   fail?: () => void; staleMs: number; poll?: boolean; refreshOnWake?: boolean;
 }) {
   const latest = useRef(options); latest.current = options;
@@ -17,11 +17,11 @@ export function useVisibleAccountRead<T>(options: {
       reader.current?.stop();
       const token = getToken();
       if (!token) { reader.current = null; return; }
-      reader.current = createVisibleRead(async () => {
+      reader.current = createVisibleRead(async signal => {
         if (!token) return;
         const version = revision.current;
         try {
-          const next = await latest.current.load();
+          const next = await latest.current.load(signal);
           if (generation === epoch && getToken() === token && version === revision.current) latest.current.accept(next);
         } catch (error) {
           if (generation === epoch && getToken() === token && version === revision.current) latest.current.fail?.();

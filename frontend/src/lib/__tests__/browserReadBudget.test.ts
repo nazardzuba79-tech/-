@@ -13,17 +13,25 @@ beforeEach(() => {
 afterEach(() => { jest.useRealTimers(); Reflect.deleteProperty(globalThis, 'document'); });
 function visibility(hidden: boolean) { doc.hidden = hidden; doc.dispatchEvent(new Event('visibilitychange')); }
 
-test('Wallet has one opening read, zero hourly timers, 120s successful-age visibility and manual refresh', async () => {
+test('Wallet can refresh every 30s while visible and still owns zero hidden timers', async () => {
   const read = jest.fn(async () => {});
-  const reader = createVisibleRead(read, 120_000);
-  await flush(); expect(read).toHaveBeenCalledTimes(1); expect(jest.getTimerCount()).toBe(0);
-  jest.advanceTimersByTime(119_999); visibility(true); visibility(false); await flush();
-  expect(read).toHaveBeenCalledTimes(1);
-  jest.advanceTimersByTime(2); visibility(true); visibility(false); await flush();
+  const reader = createVisibleRead(read, 30_000, true);
+  await flush(); expect(read).toHaveBeenCalledTimes(1);
+  jest.advanceTimersByTime(29_999); await flush(); expect(read).toHaveBeenCalledTimes(1);
+  jest.advanceTimersByTime(1); await flush(); expect(read).toHaveBeenCalledTimes(2);
+
+  visibility(true);
+  expect(jest.getTimerCount()).toBe(0);
+  jest.advanceTimersByTime(3_600_000); await flush();
   expect(read).toHaveBeenCalledTimes(2);
-  jest.advanceTimersByTime(3_600_000); await flush(); expect(read).toHaveBeenCalledTimes(2);
-  await reader.refresh(); expect(read).toHaveBeenCalledTimes(3);
-  reader.stop();
+
+  visibility(false); await flush();
+  expect(read).toHaveBeenCalledTimes(3);
+  jest.advanceTimersByTime(30_000); await flush();
+  expect(read).toHaveBeenCalledTimes(4);
+
+  await reader.refresh(); expect(read).toHaveBeenCalledTimes(5);
+  reader.stop(); expect(jest.getTimerCount()).toBe(0);
 });
 
 test.each([['Admin Users', 3_600_000], ['Admin Alerts', 3_600_000], ['Mark', 30_000]])('%s: one reader, correct cadence, zero hidden timers, fresh return costs nothing', async (_name, ms) => {

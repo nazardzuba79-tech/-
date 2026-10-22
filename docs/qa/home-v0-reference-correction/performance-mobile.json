@@ -1,0 +1,290 @@
+{
+  "fixtureOnly": true,
+  "renderer": "Chromium software WebGL (SwiftShader), not physical GPU telemetry",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "warmSampleSeconds": 6,
+  "rows": [
+    {
+      "variant": "baseline",
+      "coldReadyMs": 1095,
+      "lcpMs": 1200,
+      "lcpCandidates": [
+        {
+          "time": 1200,
+          "element": "P.description",
+          "url": ""
+        }
+      ],
+      "cls": 0.00003784901780721169,
+      "pageFps": 59.86132127240047,
+      "sceneFps": 21.450306789276834,
+      "taskSeconds": 0.8254289999999997,
+      "scriptSeconds": 0.08592199999999997,
+      "heapBytes": 10138056,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 87.19999999925494,
+          "duration": 66
+        },
+        {
+          "start": 154.09999999776483,
+          "duration": 233
+        },
+        {
+          "start": 1191.199999999255,
+          "duration": 185
+        },
+        {
+          "start": 1412.8999999985099,
+          "duration": 230
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 164,
+        "textures": 11,
+        "geometries": 9
+      }
+    },
+    {
+      "variant": "updated",
+      "coldReadyMs": 1457,
+      "lcpMs": 488,
+      "lcpCandidates": [
+        {
+          "time": 424,
+          "element": "P.description",
+          "url": ""
+        },
+        {
+          "time": 488,
+          "element": "IMG.art",
+          "url": "http://127.0.0.1:5445/hero/v0-reference-clean.png"
+        }
+      ],
+      "cls": 0.00017884267216306449,
+      "pageFps": 60.15087567708297,
+      "sceneFps": 21.434980558960508,
+      "taskSeconds": 0.7355029999999998,
+      "scriptSeconds": 0.084319,
+      "heapBytes": 9736416,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 74.30000000074506,
+          "duration": 95
+        },
+        {
+          "start": 170,
+          "duration": 241
+        },
+        {
+          "start": 493.9000000022352,
+          "duration": 131
+        },
+        {
+          "start": 673,
+          "duration": 179
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 177,
+        "textures": 10,
+        "geometries": 3
+      }
+    },
+    {
+      "variant": "updated",
+      "coldReadyMs": 1440,
+      "lcpMs": 460,
+      "lcpCandidates": [
+        {
+          "time": 392,
+          "element": "P.description",
+          "url": ""
+        },
+        {
+          "time": 460,
+          "element": "IMG.art",
+          "url": "http://127.0.0.1:5445/hero/v0-reference-clean.png"
+        }
+      ],
+      "cls": 0.0001788426721630645,
+      "pageFps": 59.85634477256072,
+      "sceneFps": 21.781058792237374,
+      "taskSeconds": 0.7495559999999999,
+      "scriptSeconds": 0.08404900000000001,
+      "heapBytes": 12297160,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 63.5,
+          "duration": 82
+        },
+        {
+          "start": 146,
+          "duration": 234
+        },
+        {
+          "start": 532.5999999977648,
+          "duration": 138
+        },
+        {
+          "start": 705.3999999985099,
+          "duration": 134
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 181,
+        "textures": 10,
+        "geometries": 3
+      }
+    },
+    {
+      "variant": "baseline",
+      "coldReadyMs": 1279,
+      "lcpMs": 400,
+      "lcpCandidates": [
+        {
+          "time": 400,
+          "element": "P.description",
+          "url": ""
+        }
+      ],
+      "cls": 0.00003784901780721169,
+      "pageFps": 59.508967901704985,
+      "sceneFps": 22.93921109060136,
+      "taskSeconds": 0.8756450000000002,
+      "scriptSeconds": 0.08926699999999999,
+      "heapBytes": 9814804,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 60.899999998509884,
+          "duration": 66
+        },
+        {
+          "start": 127.89999999850988,
+          "duration": 256
+        },
+        {
+          "start": 521.1999999992549,
+          "duration": 171
+        },
+        {
+          "start": 726.8999999985099,
+          "duration": 196
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 180,
+        "textures": 11,
+        "geometries": 9
+      }
+    },
+    {
+      "variant": "baseline",
+      "coldReadyMs": 1578,
+      "lcpMs": 400,
+      "lcpCandidates": [
+        {
+          "time": 400,
+          "element": "P.description",
+          "url": ""
+        }
+      ],
+      "cls": 0.00003784901780721169,
+      "pageFps": 59.865303068096786,
+      "sceneFps": 21.451733599401347,
+      "taskSeconds": 0.7970669999999997,
+      "scriptSeconds": 0.082533,
+      "heapBytes": 9539440,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 64.59999999776483,
+          "duration": 64
+        },
+        {
+          "start": 129.09999999776483,
+          "duration": 257
+        },
+        {
+          "start": 474,
+          "duration": 164
+        },
+        {
+          "start": 704.3999999985099,
+          "duration": 247
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 178,
+        "textures": 11,
+        "geometries": 9
+      }
+    },
+    {
+      "variant": "updated",
+      "coldReadyMs": 1427,
+      "lcpMs": 472,
+      "lcpCandidates": [
+        {
+          "time": 408,
+          "element": "P.description",
+          "url": ""
+        },
+        {
+          "time": 472,
+          "element": "IMG.art",
+          "url": "http://127.0.0.1:5445/hero/v0-reference-clean.png"
+        }
+      ],
+      "cls": 0.00017884267216306449,
+      "pageFps": 59.69305465487954,
+      "sceneFps": 21.948421210150695,
+      "taskSeconds": 0.6061570000000001,
+      "scriptSeconds": 0.07063900000000004,
+      "heapBytes": 9551232,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 65.39999999850988,
+          "duration": 86
+        },
+        {
+          "start": 152,
+          "duration": 245
+        },
+        {
+          "start": 475.5,
+          "duration": 123
+        },
+        {
+          "start": 643.6999999992549,
+          "duration": 176
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 182,
+        "textures": 10,
+        "geometries": 3
+      }
+    }
+  ]
+}

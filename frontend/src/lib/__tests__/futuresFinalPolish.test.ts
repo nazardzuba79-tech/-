@@ -76,6 +76,10 @@ function mount(file: string, overrides: Record<string, any> = {}) {
         effects.push(() => { previous?.cleanup?.(); hooks[i].cleanup = fn(); });
       }
     },
+    // The page measures the account panel's ceiling before the first paint
+    // (useFuturesPanelHeight); this harness has no paint, so a layout effect
+    // is an effect like any other here.
+    useLayoutEffect(fn: any, deps: any[]) { return react.useEffect(fn, deps); },
   };
   // The futures account resources now come from ONE shared store
   // (lib/futuresAccountStore) rather than each component's own
@@ -198,6 +202,25 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === './SpotOrdersView') return { SpotAssetsView: () => null };
     if (name === '../lib/futuresDepth') return { setFuturesDepthFallbackBase: () => {}, subscribeFuturesDepth: (symbol: string, callback: any) => overrides.socket.subscribeBook(symbol, callback) };
     if (name === '../lib/tradingMode') return { rememberTradingMode: jest.fn() };
+    // Phone header switch and breakpoint (2026-10-04). The switch is a pure
+    // pair of links rendered through Nav (stubbed here); this harness drives
+    // the page at desktop width, so the breakpoint hook answers false.
+    if (name === '../components/TerminalMarketSwitch') return { TerminalMarketSwitch: () => null };
+    if (name === '../lib/terminalMarketSwitch') return jest.requireActual('../terminalMarketSwitch');
+    // The account panel's draggable edge (2026-10-21). This harness drives
+    // the page's hooks through its own `react` object, so the hook is
+    // stubbed like `useMediaQuery` above: no remembered height, the
+    // stylesheet's geometry, the handle rendered inert. The hook's own
+    // behaviour is covered by futuresPanelHeight.test.ts.
+    if (name === '../lib/useFuturesPanelHeight') return {
+      useFuturesPanelHeight: () => ({ height: null, set: () => {}, reset: () => {} }),
+      effectivePanelHeight: (preference: number | null, max: number) => (preference === null ? null : Math.min(Math.max(preference, 184), Math.max(184, max))),
+      maxPanelHeightFor: () => 640, accountExtensionPx: () => 0, FUTURES_PANEL_MIN_HEIGHT: 184, FUTURES_PANEL_MAX_HEIGHT_FALLBACK: 640, FUTURES_PANEL_KEY_STEP: 24, FUTURES_CHART_MIN_HEIGHT: 300, FUTURES_PANEL_PREFERENCE_CEILING: 1600,
+    };
+    // The order column's page-first wheel needs a real column and page;
+    // futuresPageFirstWheel.test.ts covers it.
+    if (name === '../lib/futuresPageFirstWheel') return { installPageFirstWheel: () => () => {} };
+    if (name === '../lib/useMediaQuery') return { MOBILE_TERMINAL_QUERY: '(max-width: 900px)', useMediaQuery: () => false };
     // The owner-only native demo is server-gated; an ordinary account keeps the public terminal.
     if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true, state: null, setHistoryDemand: () => {}, interaction: { selecting: null, onCancelSelection: overrides.cancelSelection ?? jest.fn() } }) };
     if (name === './private-trading/NativeDemoControls') {
@@ -230,6 +253,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       const component = components[label] ?? (components[label] = () => null);
       return { [label]: component };
     }
+    if (name.endsWith('/balanceInvalidation')) return { onSpendableBalancesChanged: () => () => {} };
     return req(name);
   }, output, { setTimeout, clearTimeout, setInterval, clearInterval, confirm: overrides.confirm ?? jest.fn(() => false),
     scrollY: overrides.scrollY ?? 0, scrollTo: overrides.scrollTo ?? jest.fn(),
@@ -617,8 +641,10 @@ describe('mobile Futures workspace handoffs', () => {
     let tree = page.render();
     const originals = ['TerminalChart', 'FuturesReferenceBook', 'FuturesOrderForm', 'FuturesCalculator']
       .map(name => ({ name, type: part(tree, name)?.type, key: part(tree, name)?.key }));
-    expect(active(tree)).toBe('chart');
-    for (const tab of ['trade', 'positions', 'chart']) {
+    // A phone opens on the trading workspace (owner, 2026-10-04); every
+    // other workspace is one tap away and keeps the same instances.
+    expect(active(tree)).toBe('trade');
+    for (const tab of ['chart', 'positions', 'trade']) {
       select(tree, tab); tree = page.render();
       expect(active(tree)).toBe(tab);
       for (const original of originals) {
@@ -669,9 +695,11 @@ describe('mobile Futures workspace handoffs', () => {
   test('each workspace restores its scroll, and desktop price picks do not scroll the page', () => {
     const scrollTo = jest.fn();
     const { page, select } = workspace({ scrollY: 250, scrollTo });
-    let tree = page.render(); select(tree, 'trade'); tree = page.render();
+    // Opens on Trade: leaving it remembers its 250px, the chart starts at 0,
+    // and coming back restores the trader's place in the ticket.
+    let tree = page.render(); select(tree, 'chart'); tree = page.render();
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
-    select(tree, 'chart');
+    select(tree, 'trade');
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 250, behavior: 'instant' });
     const desktop = workspace({ scrollTo, matchMedia: (query: string) => ({ matches: query.includes('min-width'), addEventListener() {}, removeEventListener() {} }) });
     const calls = scrollTo.mock.calls.length;

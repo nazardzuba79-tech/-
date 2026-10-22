@@ -139,7 +139,16 @@ export class DerivPublicStreamQuoteSource implements CfdQuoteSource {
   }
   stop(): void {
     this.stopped=true; if(this.reconnectTimer) clearTimeout(this.reconnectTimer); this.reconnectTimer=null;
-    const socket=this.socket; this.socket=null; if(socket){try{socket.removeAllListeners();socket.close();}catch{}}
+    const socket=this.socket; this.socket=null;
+    if(socket){
+      // ws emits an asynchronous error when close() aborts a pending handshake.
+      // Keep our error listener: its stopped/stale-socket guard makes that event
+      // terminal without reconnecting or terminating a replacement connection.
+      socket.removeAllListeners('open');
+      socket.removeAllListeners('message');
+      socket.removeAllListeners('close');
+      try{socket.close();}catch{}
+    }
   }
   private connect(): void {
     if(this.stopped||this.socket)return;
@@ -167,7 +176,8 @@ export class DerivPublicStreamQuoteSource implements CfdQuoteSource {
       const d=discoverDerivSymbols(raw.active_symbols);this.discovered.clear();this.providerToVoltex.clear();
       for(const row of d.mapped){this.discovered.set(row.voltexSymbol,row);this.providerToVoltex.set(row.providerSymbol,row.voltexSymbol);}
       this.missing=d.missing;this.ambiguous=d.ambiguous;this.lastDiscoveryAt=this.now();
-      for(const row of d.mapped){try{this.socket?.send(JSON.stringify({ticks:row.providerSymbol,subscribe:1,req_id:`tick:${row.voltexSymbol}`}));}catch{this.lastError='subscribe_send';}}
+      // Deriv requires integer request IDs; 1 is reserved for discovery.
+      for(const [index,row] of d.mapped.entries()){try{this.socket?.send(JSON.stringify({ticks:row.providerSymbol,subscribe:1,req_id:index+2}));}catch{this.lastError='subscribe_send';}}
       return;
     }
     if(raw?.msg_type!=='tick'||!raw.tick||typeof raw.tick!=='object')return;

@@ -9,6 +9,8 @@ const DIRECT_TICKER_URLS = [
 const EDGE_TICKER_URL = 'https://market.voltextech.net/market/display/futures-tickers';
 const REFRESH_MS = 300_000;
 const RETRY_MS = 60_000;
+/** One provider attempt; three in a row stay inside the wake barrier's 30 s. */
+const ATTEMPT_MS = 8_000;
 
 type Listener = (rows: ReadonlyMap<string, LiveQuote>) => void;
 
@@ -121,9 +123,20 @@ function productionSite(): boolean {
 }
 
 async function fetchJson(url: string, signal: AbortSignal): Promise<any> {
-  const response = await fetch(url, { signal, credentials: 'omit', headers: { Accept: 'application/json' } });
-  if (!response.ok) throw new Error(`ticker_http_${response.status}`);
-  return response.json();
+  // Bounded per attempt: a host that neither answers nor refuses (a blocked
+  // region, a dropped route) must not hold the wake barrier to its deadline.
+  const attempt = new AbortController();
+  const abort = () => attempt.abort();
+  signal.addEventListener('abort', abort, { once: true });
+  const timer = setTimeout(abort, ATTEMPT_MS);
+  try {
+    const response = await fetch(url, { signal: attempt.signal, credentials: 'omit', headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`ticker_http_${response.status}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener('abort', abort);
+  }
 }
 
 class DirectFuturesReferenceStore {
@@ -180,6 +193,11 @@ class DirectFuturesReferenceStore {
     const controller = new AbortController();
     this.controller = controller;
     try {
+      // Tracked so the wake waits for it, but never a wake failure: this is a
+      // display reference the page keeps stale values for and retries on its
+      // own. On 2026-10-21 production's edge fallback answered 503
+      // market_data_unavailable; with the direct hosts unreachable too, that
+      // alone put every wake into `error` and refused all input.
       await trackBrowserRead((async () => {
       let payload: any = null;
       if (!productionSite()) {
@@ -205,7 +223,7 @@ class DirectFuturesReferenceStore {
       }
       if (!controller.signal.aborted) this.emit();
       this.schedule(REFRESH_MS);
-      })());
+      })(), false, 'futures reference tickers');
     } catch {
       if (!controller.signal.aborted) this.schedule(RETRY_MS);
     } finally {

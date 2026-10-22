@@ -43,7 +43,7 @@ export function depositMinimumEquivalent(config: DepositConfig, asset: string, l
  * from here; `depositMinimumRule.test.ts` fails the moment the two differ.
  * Nothing here decides a credit: the server re-prices at credit time.
  */
-export const DEPOSIT_MINIMUM_USD = 300;
+export const DEPOSIT_MINIMUM_USD = 500;
 export const DEPOSIT_USD_PEGGED = ['USDT', 'USDC', 'USD', 'DAI'] as const;
 export const DEPOSIT_PRICE_MAX_AGE_MS = 2 * 60_000;
 
@@ -56,7 +56,7 @@ export interface DepositMinimumView {
   /** The server's fixed one-to-one minimum for a USD-pegged asset; null otherwise. */
   equivalent: number | null;
   pegged: boolean;
-  /** «≈ 0.003 BTC»: the minimum in a non-pegged asset from a live price, or null. */
+  /** The minimum in a non-pegged asset from a live price, or null. */
   estimate: number | null;
   /** The moment `estimate` stops being current (ms since epoch), or null. */
   estimateExpiresAt: number | null;
@@ -65,8 +65,8 @@ export interface DepositMinimumView {
 /**
  * What the deposit window says about the minimum for one asset.
  *
- * Owner, 2026-09-29: «Минимальное пополнение — 300 USDT или эквивалент в BTC
- * (≈ 0,003 BTC)». The estimate is shown only from a price that is live — not
+ * Minimum: 500 USD or its cryptocurrency equivalent. The estimate is shown
+ * only from a price that is live — not
  * a warm-cache or stale-served snapshot — and no older than the server's own
  * bound for pricing a deposit; `estimateExpiresAt` lets the window take it
  * down the moment it ages out, even if nothing else re-renders (the two gaps

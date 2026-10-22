@@ -17,15 +17,17 @@ const source = readFileSync(resolve(frontend, 'src/components/PriceChart.tsx'), 
 // The drawing layer is its own module. It is compiled the same way as the
 // chart, against the same real drawing helpers, so the chart's imports are
 // genuine; the layer component itself is never invoked by this harness.
-const layerSource = readFileSync(resolve(frontend, 'src/components/ChartDrawingLayer.tsx'), 'utf8');
-function drawingLayer() {
-  const compiled = ts.transpileModule(layerSource, { compilerOptions: {
+// Its object toolbar and settings dialog are sibling components, compiled the same way.
+function drawingLayer(file = 'ChartDrawingLayer') {
+  const compiled = ts.transpileModule(readFileSync(resolve(frontend, `src/components/${file}.tsx`), 'utf8'), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText;
   const layer: any = {};
   new Function('require', 'exports', compiled)((name: string) => {
     if (name === '../lib/chartDrawings') return drawings;
     if (name === '../lib/drawingGeometry') return drawingGeometry;
+    if (name === '../lib/drawingTemplates') return require('../drawingTemplates');
+    if (name === './DrawingObjectToolbar' || name === './DrawingSettingsDialog') return drawingLayer(name.slice(2));
     return (name.endsWith('/browserActivity') ? browserActivity : req(name));
   }, layer);
   return layer;
@@ -60,12 +62,15 @@ function fakeCharts(chartOptions: any[], harness: any) {
       removePriceLine: () => {} }; harness.series.push(r); return r; };
   const timeScale = { fitContent: () => {}, setVisibleLogicalRange: (r: unknown) => { harness.ranges.push(r); }, getVisibleLogicalRange: () => ({ from: 100, to: 200 }),
     options: () => ({ barSpacing: 10 }), subscribeVisibleTimeRangeChange: () => {}, unsubscribeVisibleTimeRangeChange: () => {},
-    subscribeVisibleLogicalRangeChange: (c: unknown) => { harness.rangeChange = c; }, unsubscribeVisibleLogicalRangeChange: () => { harness.rangeChange = undefined; },
+    // More than one subscriber (the history pager and the price-scale clamp): every one hears a range change.
+    subscribeVisibleLogicalRangeChange: (c: unknown) => { (harness.rangeSubscribers ||= new Set()).add(c); harness.rangeChange = (range: unknown) => { for (const fn of [...harness.rangeSubscribers]) (fn as (r: unknown) => void)(range); }; },
+    unsubscribeVisibleLogicalRangeChange: (c: unknown) => { harness.rangeSubscribers?.delete(c); if (!harness.rangeSubscribers?.size) harness.rangeChange = undefined; },
     coordinateToTime: () => 0, timeToCoordinate: () => 100, applyOptions: () => {},
     coordinateToLogical: () => 0, logicalToCoordinate: () => 100, width: () => 1000 };
   const chart = { addSeries: () => series(), priceScale: () => ({ applyOptions: () => {} }), timeScale: () => timeScale,
     subscribeClick: () => {}, unsubscribeClick: () => {}, subscribeCrosshairMove: () => {}, unsubscribeCrosshairMove: () => {},
-    resize: () => {}, remove: () => {}, applyOptions: () => {}, paneSize: () => ({ width: 1100, height: 600 }) };
+    resize: () => {}, remove: () => {}, applyOptions: () => {}, paneSize: () => ({ width: 1100, height: 600 }),
+    panes: () => [{ attachPrimitive: () => {}, detachPrimitive: () => {} }] };
   return { createChart: (_h: unknown, o: unknown) => { chartOptions.push(o); return chart; },
     createSeriesMarkers: (_s: unknown, m: unknown[]) => { harness.markers = m; return { setMarkers: (n: unknown[]) => { harness.markers = n; }, detach: () => {} }; },
     ColorType: { Solid: 'solid' }, LineStyle: { Solid: 0, Dotted: 1, Dashed: 2, LargeDashed: 3, SparseDotted: 4 },
@@ -102,6 +107,21 @@ function mount(props: Record<string, unknown>) {
     if (name === '../lib/chartTrading') return chartTrading;
     if (name === './PrivatePositionLines') return { PrivatePositionLines: () => null };
     if (name === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
+    if (name === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
+    if (name === '../lib/chartSettings') return require('../chartSettings');
+    if (name === '../lib/chartIndicators') return require('../chartIndicators');
+    // Chart workspace (2026-10-13): the pure modules are real, the toolbar and panels are stubs.
+    if (name === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (name === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (name === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (name === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (name === '../lib/chartCompare') return require('../chartCompare');
+    if (name === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (name === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (name === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (name === '../lib/chartViewport') return require('../chartViewport');
+    if (name === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
+    if (name.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (c: unknown) => c };
     if (name.endsWith('.css')) return {};
@@ -330,14 +350,25 @@ describe('futures chart never goes blank on a loader or binding change', () => {
 
   // 10
   test('an interval switch wipes first, so only the new interval is shown', async () => {
-    const hourly = jest.fn().mockResolvedValue({ candles: CANDLES });
-    const quarter = jest.fn().mockResolvedValue({ candles: [bar(4), bar(5)] });
-    const chart = mount({ ...FUTURES, candleLoader: hourly });
-    chart.render();
+    const loader = jest.fn((_pair: string, requestedInterval: string) => Promise.resolve({
+      candles: requestedInterval === '15m' ? [bar(4), bar(5)] : CANDLES,
+    }));
+    const chart = mount({ ...FUTURES, candleLoader: loader });
+    const tree = chart.render();
     await flushAll();
     expect(lastPaint(chart)).toHaveLength(3);
-    chart.render({ interval: '15m', candleLoader: quarter });
+
+    // Drive the component's real interval state. Passing an `interval` prop
+    // is not an interval switch: PriceChart owns this state internally.
+    // The chart workspace (2026-10-13) draws the timeframe strip in a
+    // component this harness stubs, so its callback is driven directly.
+    const strip = nodes(tree).find(node => typeof node.props?.onTimeframe === 'function');
+    expect(strip).toBeTruthy();
+    strip.props.onTimeframe('15m');
+    chart.render();
     await flushAll();
+
+    expect(loader.mock.calls.at(-1)?.[1]).toBe('15m');
     expect(paintedCounts(chart)).toContain(0);
     expect(lastPaint(chart)).toHaveLength(2);
     chart.unmount();
@@ -377,6 +408,44 @@ describe('futures chart never goes blank on a loader or binding change', () => {
     expect(chart.chartHarness.series[0].setData.mock.calls.length).toBe(settled);
     expect(loader).toHaveBeenCalledTimes(1);
     chart.unmount();
+  });
+
+  // 13 — Ordinary Futures must page backward on demand. This used to exist
+  // only in private replay, so a public 4h chart stopped at its initial batch.
+  test('ordinary Futures scroll-back loads older candles and preserves them through tail refreshes', async () => {
+    jest.useFakeTimers();
+    try {
+      const older = [{ ...bar(0), time: CANDLES[0].time - 3600 }];
+      const loader = jest.fn()
+        .mockResolvedValueOnce({ candles: CANDLES })
+        .mockResolvedValueOnce({ candles: older })
+        .mockResolvedValue({ candles: CANDLES });
+      const chart = mount({ ...FUTURES, candleLoader: loader });
+      chart.render();
+      await flushAll();
+      expect(lastPaint(chart)).toHaveLength(3);
+      expect(typeof chart.chartHarness.rangeChange).toBe('function');
+
+      chart.chartHarness.rangeChange({ from: 20, to: 100 });
+      await jest.advanceTimersByTimeAsync(180);
+      await flushAll();
+
+      expect(loader).toHaveBeenCalledTimes(2);
+      expect(loader.mock.calls[1][4]).toBe(CANDLES[0].time * 1000 - 1);
+      expect(lastPaint(chart)).toHaveLength(4);
+      expect(lastPaint(chart)[0].time).toBe(older[0].time);
+
+      // The normal 5s tail refresh must merge the newest batch, not throw
+      // away everything the user loaded by scrolling left.
+      await jest.advanceTimersByTimeAsync(5_000);
+      await flushAll();
+      expect(loader).toHaveBeenCalledTimes(3);
+      expect(lastPaint(chart)).toHaveLength(4);
+      expect(lastPaint(chart)[0].time).toBe(older[0].time);
+      chart.unmount();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   // 14 — A control the customer cannot press is not error recovery. The

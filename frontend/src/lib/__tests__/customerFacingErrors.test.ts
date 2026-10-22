@@ -130,7 +130,7 @@ describe('1. injected server junk never reaches the customer', () => {
   it('an unmapped failure is reported to the console, not silently dropped', () => {
     const report = jest.fn();
     customerErrorText(new FakeApiError('kaboom in the widget factory', 500), t, FALLBACK, { report });
-    expect(report).toHaveBeenCalledWith(expect.objectContaining({ message: 'kaboom in the widget factory', status: 500 }));
+    expect(report).toHaveBeenCalledWith({ message: 'Unmapped server failure', status: 500 });
   });
 });
 
@@ -138,6 +138,10 @@ describe('2. real business refusals keep their meaning', () => {
   const cases: { label: string; error: unknown; must: RegExp; mustNot?: RegExp }[] = [
     { label: 'not enough of a named asset', error: new FakeApiError('Insufficient BTC balance', 400), must: /Недостаточно BTC/ },
     { label: 'not enough to transfer', error: new FakeApiError('Insufficient USDT balance to transfer', 400), must: /Недостаточно USDT для перевода/ },
+    // Spot ticket, 2026-10-13 audit: a limit order larger than the free balance came back as the generic
+    // «Не удалось разместить ордер» because WalletMutation's sentence was not in the table.
+    { label: 'not enough free balance for a Spot order', error: new FakeApiError('Insufficient USDT balance or reserved funds', 400), must: /Недостаточно USDT/, mustNot: /reserved|Не удалось/ },
+    { label: 'not enough free margin for a Futures order', error: new FakeApiError('Insufficient USDT margin balance or reserved funds', 400), must: /Недостаточно USDT/, mustNot: /reserved|margin/ },
     { label: 'an amount at or below zero', error: new FakeApiError('Amount must be greater than zero', 400), must: /больше нуля/ },
     { label: 'an order that can no longer be cancelled', error: new FakeApiError('Order not found or not cancellable', 404), must: /нельзя отменить/ },
     { label: 'an order that is no longer working', error: new FakeApiError('Order not found or no longer pending', 404), must: /не активен/ },
@@ -277,7 +281,7 @@ describe('6. no customer-facing screen renders a server message directly', () =>
    * who need the server's own words, and issue #144 says so explicitly.
    */
   const SRC = resolve(__dirname, '../..');
-  const BOUNDARY = ['lib/customerError.ts', 'lib/futuresOrderErrors.ts', 'lib/privateTradingApi.ts'];
+  const BOUNDARY = ['lib/customerError.ts', 'lib/futuresOrderErrors.ts', 'lib/privateTradingApi.ts', 'pages/otc/cashApi.ts'];
   const READS_MESSAGE = /\b(?:err|error|e)\.message\b/;
 
   const walk = (dir: string): string[] =>

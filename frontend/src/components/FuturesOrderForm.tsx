@@ -1,4 +1,5 @@
 import { useState, useEffect, useId, useRef, FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
@@ -74,24 +75,30 @@ export function FuturesOrderForm({
   symbol,
   onPlaced,
   onOpenTransfer,
-  onTransfer,
   pickedPrice,
   pickedPriceSequence,
   executionEnabled = true,
   closeTicket,
   calculatorDraft,
-  onOpenCalculator,
   lastPrice = null,
   archive = false,
+  compact = false,
+  accountSlot = null,
 }: {
   archive?: boolean;
+  /** A phone: the order families become one select (OrderFamilyTabs). */
+  compact?: boolean;
+  /**
+   * Where the account block and the leverage tiers render on a phone: under
+   * the positions, so the trade buttons are followed by the positions and
+   * not by a screen of account figures. The SAME elements, moved by a
+   * portal — never a second copy. Null renders them here, as on desktop.
+   */
+  accountSlot?: HTMLElement | null;
   onOpenCalculator?: () => void;
   symbol: string;
   onPlaced: () => void;
   onOpenTransfer?: () => void;
-  /** The «+» beside «Доступно» on the compact ticket: move money into this
-   *  account. The page decides where that goes; without it no «+» renders. */
-  onTransfer?: () => void;
   /** A level clicked in the order book — fills the price field, the same
    *  affordance the spot terminal's form has. */
   pickedPrice?: string | null;
@@ -876,7 +883,7 @@ export function FuturesOrderForm({
 
   return (
     <div className="fo-panel">
-      <OrderFamilyTabs value={family} archive={archive} onChange={next => {
+      <OrderFamilyTabs value={family} archive={archive} compact={compact} onChange={next => {
         setFamily(next);
         if (next === 'LIMIT' || next === 'MARKET') setType(next);
         setPercent(0); setError(null);
@@ -932,10 +939,6 @@ export function FuturesOrderForm({
               ? `${formatAmount(availableMargin!)} ${quoteAsset}`
               : account.balances.loading ? <span className="fo-availPending" aria-hidden="true" /> : '—'}
           </span>
-          {onTransfer && <button type="button" className="fo-availTransfer" onClick={onTransfer}
-            aria-label={t('futures.transferAction')} title={t('futures.transferAction')}>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M5 1.5v7M1.5 5h7" /></svg>
-          </button>}
         </div>}
         {family === 'LIMIT' ? (
           <label className="fo-label fo-field fo-priceField">
@@ -1241,18 +1244,14 @@ export function FuturesOrderForm({
           </button>
         </div>
       </form>
-      {archive && onOpenCalculator && <div className="archive-calculator-slot">
-        <button type="button" className="archive-calculator-trigger" onClick={onOpenCalculator}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M8 6h8M8 10h2m4 0h2M8 14h2m4 0h2M8 18h2m4 0h2" /></svg>
-          {t('calc.title')}
-        </button>
-      </div>}
 
       {/* The compact account summary sits directly under the order buttons,
           and it is the ONE place the account's margin figures are stated —
           which is why "Доступная маржа" no longer rides along in the
           quantity field's label, where it could stretch that field
           relative to the price field beside it. */}
+      {(() => {
+        const accountBlock = <>
       <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />
 
       {config && (
@@ -1284,6 +1283,9 @@ export function FuturesOrderForm({
           </table>
         </details>
       )}
+        </>;
+        return accountSlot ? createPortal(<div className="fo-account-slot-content">{accountBlock}</div>, accountSlot) : accountBlock;
+      })()}
     </div>
   );
 }

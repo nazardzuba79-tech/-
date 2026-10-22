@@ -1,0 +1,64 @@
+name: Futures chart drag
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/components/ChartDrawingLayer.tsx'
+      - 'frontend/src/components/TerminalChart.tsx'
+      - 'frontend/src/components/TradingViewRulerLayer.tsx'
+      - 'frontend/src/components/TerminalChart.css'
+      - 'frontend/src/components/DrawingTools.css'
+      - 'frontend/src/pages/FuturesPage.tsx'
+      - 'frontend/src/pages/trade-terminal/**'
+      - 'frontend/src/lib/drawingGeometry.ts'
+      - 'frontend/src/lib/chartDrawings.ts'
+      - 'frontend/src/lib/__tests__/lockedDrawingPan.test.ts'
+      - 'scripts/qa-futures-chart-drag.cjs'
+      - 'scripts/serve-native-demo-review.cjs'
+      - '.github/workflows/futures-chart-drag.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: futures-chart-drag-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  chart-drag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend TypeScript (the isolated review server runs the built engine)
+        run: npm run build
+      - name: Production frontend TypeScript and bundle
+        run: npm run build --prefix frontend
+        env:
+          VITE_API_URL: /api/v1
+      - name: A locked drawing keeps its outline and gives up its body
+        run: npx jest --runInBand frontend/src/lib/__tests__/lockedDrawingPan.test.ts frontend/src/lib/__tests__/chartDrawings.test.ts frontend/src/lib/__tests__/drawingObjectSettings.test.ts
+      - name: Disposable browser tooling
+        run: |
+          npm install --prefix /tmp/chart-drag-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/chart-drag-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Left-button drag pans the real chart (normal, picking, timeframe, reload, bottom panel, locked drawings)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/chart-drag-browser/node_modules/playwright
+        run: node scripts/qa-futures-chart-drag.cjs --label ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: futures-chart-drag-${{ github.sha }}
+          path: docs/qa/futures-chart-drag/ci-*
+          retention-days: 7
+          if-no-files-found: warn

@@ -2,7 +2,11 @@ import { browserFallbackFetch as fetch, trackBrowserRead } from './browserActivi
 import type { Candle } from './indicators';
 import { subscribeFuturesKline, type FuturesKlineUpdate } from './futuresDepth';
 
-const intervals: Record<string, string> = { '5m':'5', '15m':'15', '1h':'60', '4h':'240', '1d':'D', '1w':'W' };
+/** Every Bybit kline code the public endpoint and the market edge carry
+ *  (2026-10-13, chart workspace): the chart asks for all of them as they are. */
+const intervals: Record<string, string> = {
+  '1m':'1', '3m':'3', '5m':'5', '15m':'15', '30m':'30', '1h':'60', '2h':'120', '4h':'240', '6h':'360', '12h':'720', '1d':'D', '1w':'W', '1M':'M',
+};
 const REST_CACHE_MS=60_000, STREAM_STALE_MS=90_000, STREAM_IDLE_MS=30_000;
 type Cached={candles:Candle[];fetchedAt:number};
 type Stream={latest:Candle|null;lastUpdate:number;stop:()=>void;idle:ReturnType<typeof setTimeout>|null};

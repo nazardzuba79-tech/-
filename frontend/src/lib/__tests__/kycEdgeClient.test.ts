@@ -121,7 +121,12 @@ describe('submitKycToEdge — browser → Cloudflare, never Render', () => {
     await submitKycToEdge({ requestId: 'r-2', country: 'UA', fullName: 'Synthetic Person', dateOfBirth: '1990-01-01', documentType: 'PASSPORT', document: jpegFile(10) },
       jest.fn().mockResolvedValue(new Response(JSON.stringify({ status: 'PENDING', submissionId: 's-2', confirmed: false, receipt }), { status: 202 })));
     const stored = storage.getItem('voltex_kyc_receipt')!;
-    expect(stored).not.toMatch(/Synthetic|1990/);
+    // A whole-string /1990/ check is unsound: the valid numeric `at` timestamp
+    // can contain those digits by chance. A strict key/value contract is stronger:
+    // no identity, birth date, document type, image or file can enter storage.
+    expect(JSON.parse(stored)).toEqual({ submissionId: 's-2', receipt, at: expect.any(Number) });
+    expect(stored).not.toContain('Synthetic Person');
+    expect(stored).not.toContain('1990-01-01');
     expect(readKycReceipt()).toMatchObject({ submissionId: 's-2', receipt });
 
     const confirmFetch = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }));
@@ -148,6 +153,88 @@ describe('submitKycToEdge — browser → Cloudflare, never Render', () => {
   });
 });
 
+describe('additional materials — a new document photo or a selfie, same road', () => {
+  const REQUEST = '6f1d2c3b-4a5e-4f60-8172-93a4b5c6d7e8';
+
+  it('posts one part to /v1/materials with the session token; consent fields only for a selfie', async () => {
+    const { submitKycMaterialToEdge, KYC_SELFIE_CONSENT_VERSION } = loadKycEdge('synthetic.jwt.token');
+    const ok = () => new Response(JSON.stringify({ status: 'RECEIVED', part: 'DOCUMENT', deliveryId: 'd-1', confirmed: true }), { status: 201 });
+    const fetchImpl = jest.fn().mockImplementation(async () => ok());
+    await submitKycMaterialToEdge({ requestId: 'r-1', materialRequestId: REQUEST, part: 'DOCUMENT', file: jpegFile(10) }, fetchImpl);
+    let [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe(`${EDGE}/v1/materials`);
+    expect(url).not.toMatch(/\/api\/v1/);
+    expect(init.headers).toEqual({ Authorization: 'Bearer synthetic.jwt.token' });
+    expect(init.credentials).toBe('omit');
+    expect([...(init.body as any).keys()].sort()).toEqual(['file', 'materialRequestId', 'part', 'requestId']);
+
+    await submitKycMaterialToEdge({ requestId: 'r-2', materialRequestId: REQUEST, part: 'SELFIE', file: jpegFile(10), selfieConsent: true }, fetchImpl);
+    [url, init] = fetchImpl.mock.calls[1];
+    const form = init.body as FormData;
+    expect([...(form as any).keys()].sort()).toEqual(['consentVersion', 'file', 'materialRequestId', 'part', 'requestId', 'selfieConsent']);
+    expect(form.get('selfieConsent')).toBe('true');
+    expect(form.get('consentVersion')).toBe(KYC_SELFIE_CONSENT_VERSION);
+
+    // No consent ticked → no consent fields; the edge refuses (kyc_selfie_consent_required).
+    await submitKycMaterialToEdge({ requestId: 'r-3', materialRequestId: REQUEST, part: 'SELFIE', file: jpegFile(10), selfieConsent: false }, fetchImpl);
+    expect([...(fetchImpl.mock.calls[2][1].body as any).keys()]).not.toContain('selfieConsent');
+    expect(storage.map.size).toBe(0);
+  });
+
+  it('delivered but not recorded → only the sealed receipt is kept (no file, no identity) and retried', async () => {
+    const { submitKycMaterialToEdge, readKycMaterialReceipts, retryKycMaterialReceipts } = loadKycEdge();
+    const receipt = 'B'.repeat(120);
+    await submitKycMaterialToEdge({ requestId: 'r-4', materialRequestId: REQUEST, part: 'SELFIE', file: jpegFile(10), selfieConsent: true },
+      jest.fn().mockResolvedValue(new Response(JSON.stringify({ status: 'RECEIVED', part: 'SELFIE', deliveryId: 'd-4', confirmed: false, receipt }), { status: 202 })));
+    expect(JSON.parse(storage.getItem('voltex_kyc_material_receipts')!)).toEqual([{ materialRequestId: REQUEST, part: 'SELFIE', deliveryId: 'd-4', receipt, at: expect.any(Number) }]);
+    expect(readKycMaterialReceipts()).toHaveLength(1);
+
+    const down = jest.fn().mockRejectedValue(new TypeError('offline'));
+    expect(await retryKycMaterialReceipts(down)).toBe(1);
+    const confirm = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+    expect(await retryKycMaterialReceipts(confirm)).toBe(0);
+    expect(confirm.mock.calls[0][0]).toBe(`${EDGE}/v1/confirm`);
+    expect(JSON.parse(confirm.mock.calls[0][1].body)).toEqual({ receipt });
+    expect(storage.getItem('voltex_kyc_material_receipts')).toBeNull();
+  });
+
+  it('a refusal surfaces with its code, and every material code has wording in the dictionary', async () => {
+    const { submitKycMaterialToEdge, KYC_ERROR_KEYS } = loadKycEdge();
+    await expect(submitKycMaterialToEdge({ requestId: 'r-5', materialRequestId: REQUEST, part: 'DOCUMENT', file: jpegFile(10) },
+      jest.fn().mockResolvedValue(new Response(JSON.stringify({ code: 'kyc_material_request_closed' }), { status: 409 }))))
+      .rejects.toMatchObject({ status: 409, body: { code: 'kyc_material_request_closed' } });
+    for (const code of ['kyc_selfie_consent_required', 'kyc_material_request_closed', 'kyc_material_request_not_found', 'kyc_material_not_requested', 'kyc_material_already_received']) {
+      expect({ code, known: KYC_ERROR_KEYS[code] in RU }).toEqual({ code, known: true });
+    }
+  });
+
+  it('quality floor: unreadable and too-small images are refused with their size; PDFs and unmeasurable browsers pass to the admin', async () => {
+    const { checkKycImage } = loadKycEdge();
+    const measure = (width: number, height: number) => async () => ({ width, height });
+    await expect(checkKycImage(jpegFile(10), 'DOCUMENT', measure(4000, 3000))).resolves.toEqual({ width: 4000, height: 3000 });
+    await expect(checkKycImage(jpegFile(10), 'DOCUMENT', measure(600, 1000))).resolves.toEqual({ width: 600, height: 1000 });
+    await expect(checkKycImage(jpegFile(10), 'DOCUMENT', measure(900, 700))).rejects.toMatchObject({ code: 'kyc_image_too_small', size: { width: 900, height: 700 } });
+    await expect(checkKycImage(jpegFile(10), 'SELFIE', measure(640, 480))).resolves.toEqual({ width: 640, height: 480 });
+    await expect(checkKycImage(jpegFile(10), 'SELFIE', measure(320, 240))).rejects.toMatchObject({ code: 'kyc_image_too_small' });
+    await expect(checkKycImage(jpegFile(10), 'SELFIE', async () => { throw new Error('decode'); })).rejects.toMatchObject({ code: 'kyc_image_unreadable' });
+    await expect(checkKycImage(jpegFile(10), 'SELFIE', async () => null)).resolves.toBeNull();
+    const pdf = new File([new Uint8Array(10)], 'scan.pdf', { type: 'application/pdf' });
+    await expect(checkKycImage(pdf, 'DOCUMENT', async () => { throw new Error('never measured'); })).resolves.toBeNull();
+  });
+
+  it('the panel asks for consent, offers file and camera, and never claims an automatic verdict', () => {
+    const panel = readFileSync(resolve(frontend, 'src/pages/settings-arctic/KycMaterialsPanel.tsx'), 'utf8');
+    for (const needle of ["t('kycMaterials.takeSelfie')", "'kycMaterials.choosePhoto'", "t('kycMaterials.useCamera')", "t('kycMaterials.submit')",
+      "t('kycMaterials.consent')", 'capture="user"', "facingMode: 'user'", 'submitKycMaterialToEdge(', 'getTracks().forEach((track) => track.stop())']) {
+      expect({ needle, present: panel.includes(needle) }).toEqual({ needle, present: true });
+    }
+    expect(panel).toMatch(/disabled=\{[^}]*\(isSelfie && !consent\)/);
+    expect(RU['kycMaterials.checksNote']).toMatch(/администратор/);
+    expect(RU['kycMaterials.consent']).toMatch(/Автоматическое распознавание лиц не используется/);
+    expect(RU['kycMaterials.selfieInstructions']).toMatch(/Держать документ в руках не нужно/);
+  });
+});
+
 describe('no document bytes go to the VOLTEX API', () => {
   const read = (p: string) => readFileSync(resolve(frontend, p), 'utf8');
 
@@ -159,7 +246,10 @@ describe('no document bytes go to the VOLTEX API', () => {
   });
 
   it('the user form keeps its fields and the same submit button', () => {
-    const form = read('src/pages/settings-arctic/VerificationSection.tsx');
+    // The file input lives in the upload zone component the form renders.
+    const section = read('src/pages/settings-arctic/VerificationSection.tsx');
+    expect(section).toMatch(/<KycUpload[\s\S]*?onFile=\{handleFile\}/);
+    const form = section + read('src/pages/settings-arctic/KycUpload.tsx');
     for (const needle of ['<CountrySelect', "t('settings.fullName')", "t('settings.dateOfBirth')", "t('settings.documentType')", 'type="file"', 'accept="image/jpeg,image/png,application/pdf"', "t('settings.sendForReview')"]) {
       expect({ needle, present: form.includes(needle) }).toEqual({ needle, present: true });
     }

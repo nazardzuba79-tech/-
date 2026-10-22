@@ -1,6 +1,8 @@
 /* Admin → Listings. Light admin theme tokens (see adminStyles). */
 .admin-listings { display: grid; gap: 14px; min-width: 0; }
-.listing-toolbar { display: flex; justify-content: flex-start; }
+.listing-toolbar { display: flex; justify-content: flex-start; flex-wrap: wrap; align-items: end; gap: 10px; }
+.listing-toolbar label { display: grid; gap: 5px; font-size: 12px; min-width: 0; max-width: 100%; }
+.listing-toolbar input, .listing-toolbar select { min-height: 38px; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text-primary); padding: 6px 10px; }
 .listing-primary { min-height: 38px; padding: 0 16px; border: none; border-radius: 8px; background: var(--admin-brand); color: var(--admin-brand-on); font-weight: 700; font-size: 13px; cursor: pointer; }
 .admin-listings button:not(.listing-primary):not(.admin-inline-retry) { min-height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text-primary); font-weight: 600; font-size: 13px; cursor: pointer; }
 .listing-muted { color: var(--text-tertiary); font-size: 13px; margin: 0; }
@@ -20,6 +22,16 @@
 .listing-status-changed { color: var(--accent); }
 .listing-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .listing-actions a { display: inline-flex; align-items: center; min-height: 34px; padding: 0 12px; border-radius: 8px; color: var(--admin-brand); font-weight: 700; font-size: 13px; text-decoration: none; }
+/* The pre-listing timer of a published listing: status, the UTC / МСК line and its start / pause / stop buttons, on a full-width line of the row. */
+.listing-timer { grid-column: 1 / -1; display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, .03); box-shadow: inset 0 0 0 1px var(--border); font-size: 12px; }
+.listing-timer small { color: var(--text-tertiary); overflow-wrap: anywhere; }
+.listing-timer-running b { color: var(--buy); }
+.listing-timer-paused b { color: var(--accent); }
+.listing-timer-staged b { color: var(--text-secondary); }
+.listing-timer-open b { color: var(--text-secondary); }
+.listing-timer-overdue { box-shadow: inset 0 0 0 1px var(--sell); }
+.listing-timer-overdue b { color: var(--sell); }
+.listing-timer-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .listing-form { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); min-width: 0; }
 .listing-form h2 { margin: 0; font-size: 16px; }
 .listing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
@@ -33,6 +45,9 @@
 .listing-logo > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .listing-logo img { border-radius: 50%; object-fit: cover; }
 .listing-logo input[type=file] { max-width: 100%; font-size: 12px; }
+.listing-logo .listing-file-button { position: relative; display: inline-flex; align-items: center; min-height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text-primary); cursor: pointer; }
+.listing-file-button input[type=file] { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+.listing-file-button:focus-within { outline: 2px solid var(--admin-brand); outline-offset: 2px; }
 .listing-check { display: grid !important; grid-template-columns: auto 1fr; align-items: start; column-gap: 8px; }
 .listing-check small { grid-column: 2; }
 .listing-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -48,12 +63,108 @@
 .listing-preview-grid .bid span:first-child { color: var(--buy); }
 .listing-preview-grid .ask span:first-child { color: var(--sell); }
 .listing-versions { font-size: 12px; color: var(--text-secondary); display: grid; gap: 2px; }
-.listing-dialog-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 17, 21, 0.45); }
-.listing-dialog { width: 100%; max-width: 440px; display: grid; gap: 8px; padding: 18px; border-radius: 12px; background: #fff; color: #101828; box-sizing: border-box; }
+.listing-dialog-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: rgba(15, 17, 21, 0.45); }
+/* Bounded to the visible viewport: a short or landscape phone scrolls the text, the title and the buttons stay reachable. */
+.listing-dialog { width: 100%; max-width: 440px; max-height: calc(100dvh - 32px); max-height: calc(var(--admin-viewport-height, 100dvh) - 32px); overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 8px; padding: 18px; border-radius: 12px; background: #fff; color: #101828; box-sizing: border-box; outline: none; }
 .listing-dialog h2 { margin: 0; font-size: 16px; }
 .listing-dialog p { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.listing-movement { min-width: 0; margin: 4px 0 0; padding: 20px; border: 1px solid var(--border); border-radius: 12px; display: grid; gap: 18px; background: #fbfcfe; }
+.listing-movement legend { padding: 0 8px; font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.listing-movement h3 { margin: 18px 0 10px; font-size: 14px; }
+.listing-movement h4 { margin: 0 0 12px; font-size: 13px; }
+.listing-movement strong { color: var(--text-primary); font-size: 13px; font-variant-numeric: tabular-nums; }
+.listing-movement .listing-grid { align-items: start; gap: 18px 22px; }
+.listing-wide { grid-column: 1 / -1; }
+.listing-scenario-choice { display: flex; align-items: center; gap: 14px; }
+.listing-scenario-choice > label { flex: 1; min-width: 0; display: grid; gap: 6px; font-size: 12px; font-weight: 600; }
+.listing-scenario-choice select { width: 100%; min-height: 40px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text-primary); padding: 0 10px; }
+.listing-scenario-choice small { color: var(--text-tertiary); font-weight: 400; }
+.listing-scenario-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.admin-listings .listing-scenario-cards button { display: flex; align-items: start; gap: 12px; text-align: left; padding: 13px; min-width: 0; height: auto; background: white; }
+.listing-scenario-cards button[aria-pressed=true] { border-color: var(--admin-brand) !important; box-shadow: inset 0 0 0 1px var(--admin-brand); background: var(--admin-brand-dim) !important; }
+.listing-scenario-cards button > span:last-child { display: grid; gap: 4px; }
+.listing-scenario-cards small { color: var(--text-secondary); font-size: 11px; font-weight: 400; line-height: 1.5; }
+.listing-scenario-number { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 7px; background: #f1f3f8; color: var(--admin-brand); font-size: 11px; }
+.listing-scenario-cards > p { grid-column: 1 / -1; }
+.listing-input-unit { display: grid; grid-template-columns: minmax(0, 1fr) 90px; gap: 6px; }
+.listing-settings-details { border-top: 1px solid var(--border); padding-top: 15px; min-width: 0; }
+.listing-settings-details summary { font-size: 14px; font-weight: 700; cursor: pointer; }
+.listing-settings-details summary span { font-size: 11px; font-weight: 400; color: var(--text-tertiary); margin-left: 8px; }
+.listing-settings-details[open] > .listing-hint { margin: 12px 0; }
+.listing-stages { display: grid; gap: 10px; margin: 12px 0; }
+.listing-stage { padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.listing-stage > button { margin-top: 10px; }
+.listing-stage-time { display: grid; gap: 7px; font-size: 11px; color: var(--text-secondary); align-self: center; overflow-wrap: anywhere; }
+.listing-candle-scroll { width: 100%; min-width: 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 9px; background: #fff; }
+.listing-candle-scroll svg { display: block; }
+.listing-preview { min-width: 0; }
+.listing-preview-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 12px; background: #fff; border-radius: 8px; }
+.listing-preview-metrics dt { font-size: 11px; color: var(--text-tertiary); }
+.listing-preview-metrics dd { margin: 5px 0 0; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.listing-form :disabled { cursor: not-allowed; opacity: .65; }
 @media (max-width: 720px) {
   .listing-row { grid-template-columns: minmax(0, 1fr); }
   .listing-actions { justify-content: flex-start; }
   .listing-grid, .listing-preview-grid { grid-template-columns: minmax(0, 1fr); }
+  .listing-movement { padding: 14px 10px; }
+  .listing-scenario-choice { align-items: stretch; flex-direction: column; }
+  .listing-scenario-cards { grid-template-columns: minmax(0, 1fr); }
+  .listing-preview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .listing-settings-details summary span { display: block; margin: 4px 0 0; }
 }
+
+/* Phone form (AdminListingsPage, ≤767px): section jumps on top, the actions in one block with
+ * the error and the unsaved-draft note, compact inner padding. «Сохранить черновик» and
+ * «Опубликовать» stay separate buttons with the same handlers and confirmation. The block is
+ * not pinned: the support launcher (z-index 998) would sit on a bar at the bottom; the 88px
+ * at the end of the admin page (adminConsole.css) lets the last button scroll clear of it. */
+.listing-section-nav { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; margin: -4px 0 0; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.admin-listings .listing-section-nav button { flex: none; min-height: 36px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; }
+#listing-section-main, #listing-section-movement, #listing-section-stages, #listing-section-advanced, #listing-section-preview { scroll-margin-top: 12px; }
+.listing-form-compact { padding: 12px; }
+.listing-form-compact .listing-movement { padding: 12px 10px; gap: 14px; }
+.listing-form-compact .listing-movement .listing-grid { gap: 12px 14px; }
+.listing-form-compact .listing-stage { padding: 10px; }
+.listing-actions-dock { display: grid; gap: 14px; min-width: 0; }
+.listing-form-compact .listing-actions-dock { gap: 8px; }
+.listing-form-compact .listing-actions-dock > p { margin: 0; }
+.listing-form-compact .listing-buttons button { min-height: 44px; flex: 1 1 auto; }
+.listing-form-compact .listing-buttons .listing-primary { flex: 1 1 100%; }
+
+/* Draft-only historic movement picker: contained, readable on laptop and phone. */
+.listing-historical-editor { display:grid; gap:12px; min-width:0; padding:14px; border:1px solid var(--border); border-radius:9px; background:#f4f7fb; }
+.listing-historical-editor h3 { margin:0; font-size:14px; color:var(--text-primary); }
+.listing-historical-editor input[type=file] { width:100%; max-width:100%; min-width:0; font-size:12px; }
+.listing-historical-editor [data-historical-clips] { display:grid; gap:7px; }
+.listing-historical-clip { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 16px; padding:9px 11px; border:1px solid var(--border); border-radius:7px; background:var(--panel); font-size:12px; overflow-wrap:anywhere; }
+.listing-historical-clip strong { display:inline; }
+.listing-historical-editor [role=alert] { color:#a42b3e; font-size:12px; }
+
+
+/* Offline historical preset library: no extra layout panels or horizontal overflow. */
+.listing-history-library { display:grid; gap:12px; min-width:0; padding:14px; border:1px solid var(--border); background:var(--panel); border-radius:9px; }
+.listing-history-library h4 { margin:0; color:var(--text-primary); font-size:14px; }
+.listing-history-presets { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; min-width:0; }
+.listing-history-preset { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px; border:1px solid var(--border); border-radius:8px; background:#f9fafb; min-width:0; }
+.listing-history-preset > span { display:grid; gap:4px; min-width:0; }
+.listing-history-preset strong { font-size:12px; font-weight:600; color:var(--text-primary); overflow-wrap:anywhere; }
+.listing-history-preset small { font-size:11px; color:var(--text-tertiary); line-height:1.35; }
+.listing-history-preset button, .listing-history-library .listing-buttons button { flex:none; min-height:34px; }
+.listing-history-archive-list { display:grid; gap:6px; min-width:0; }
+.listing-history-library input[type=file] { max-width:100%; width:100%; min-width:0; font-size:12px; }
+@media(max-width:900px) {
+  .listing-history-presets { grid-template-columns:minmax(0,1fr); }
+}
+@media(max-width:390px) {
+  .listing-history-preset { align-items:flex-start; }
+}
+
+/* Historical model: what runs after the stages, and what it will do (no new panels or colours). */
+.listing-historical-active { display:grid; gap:4px; padding:10px 12px; border:1px solid var(--border); border-left:3px solid #2f6fd6; border-radius:7px; background:var(--panel); font-size:12px; line-height:1.4; overflow-wrap:anywhere; }
+.listing-historical-active strong { color:var(--text-primary); font-size:13px; }
+.listing-historical-active span { color:var(--text-tertiary); }
+.listing-historical-plan { display:grid; gap:6px; min-width:0; }
+.listing-historical-plan ol { margin:0; padding-left:20px; display:grid; gap:4px; font-size:12px; line-height:1.45; overflow-wrap:anywhere; }
+.listing-historical-plan p { margin:0; }
+.listing-ident small.listing-model { display:block; color:#2f6fd6; overflow-wrap:anywhere; }
+[data-historical-returned] { display:block; margin-top:6px; font-size:12px; font-weight:500; color:var(--text-primary); }

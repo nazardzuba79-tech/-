@@ -14,12 +14,14 @@ function parseTickerPayload(value:unknown):CfdTickerRow[]|null{
   if(!Array.isArray(value))return null;const rows:CfdTickerRow[]=[];
   for(const entry of value){if(!entry||typeof entry!=='object')continue;const raw=entry as Record<string,unknown>;const symbol=typeof raw.symbol==='string'?raw.symbol.trim():'';if(!symbol)continue;
     const price=numericString(raw.price);if(price===null&&raw.price!==null)continue;const change=numericString(raw.changePercent24h);
+    // Bid and ask only as a sane pair (bid ≤ ask, both positive); one without the other is not a quote.
+    const bid=numericString(raw.bid),ask=numericString(raw.ask),pair=bid!==null&&ask!==null&&Number(bid)>0&&Number(ask)>=Number(bid);
     rows.push({symbol,name:typeof raw.name==='string'&&raw.name.trim()?raw.name:symbol,price,status:typeof raw.status==='string'?raw.status:'unavailable',
       stale:raw.stale===true,marketClosed:raw.marketClosed===true,displayOnly:true,executionAllowed:false,
       provider:typeof raw.provider==='string'?raw.provider:undefined,providerSymbol:typeof raw.providerSymbol==='string'?raw.providerSymbol:undefined,
       providerTimestamp:typeof raw.providerTimestamp==='number'?raw.providerTimestamp:null,fetchedAt:typeof raw.fetchedAt==='number'?raw.fetchedAt:null,
       asOf:typeof raw.asOf==='number'?raw.asOf:null,maxQuoteAgeMs:typeof raw.maxQuoteAgeMs==='number'?raw.maxQuoteAgeMs:undefined,
-      ...(change===null?{}:{changePercent24h:change})});
+      ...(change===null?{}:{changePercent24h:change}),...(pair?{bid,ask}:{})});
   }
   return value.length>0&&rows.length===0?null:ageCfdTickerRows(rows);
 }
@@ -30,14 +32,16 @@ export function useCfdTickers(enabled = true){
   useEffect(()=>{
     if(!enabled){reloadRef.current=()=>{};return;}
     let cancelled=false,inFlight=false;let lastAttempt=-Infinity;
+    let controller:AbortController|null=null;
     let timer:ReturnType<typeof setTimeout>|null=null;
     const schedule=(ms:number)=>{if(timer)clearTimeout(timer);timer=null;if(!cancelled&&!isBrowserInactive())timer=setTimeout(()=>void load(),ms);};
     async function load(){
       if(cancelled||isBrowserInactive()||inFlight)return;
       inFlight=true;lastAttempt=Date.now();let delay=POLL_MS;
+      const requestController=new AbortController();controller=requestController;
       try{
         const endpoint=production()?MARKET_EDGE_BASE+'/cfd/display/tickers?v=9':`${API_BASE.replace(/\/$/,'')}/cfd/display/tickers`;
-        const res=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(endpoint,SLOW_DISPLAY_REFRESH_MS);
+        const res=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(endpoint,SLOW_DISPLAY_REFRESH_MS,requestController.signal);
         if(cancelled)return;
         const rows=res&&typeof res==='object'?parseTickerPayload(res.tickers):null;
         if(rows===null)throw new Error('Invalid CFD snapshot');
@@ -45,12 +49,12 @@ export function useCfdTickers(enabled = true){
         setLoadError(false);if(typeof res.configured==='boolean')setConfigured(res.configured);
         setTickers(rows.map(row=>({...row,status:row.price===null?'unavailable':row.marketClosed?'market_closed':'sampled',displayOnly:true,executionAllowed:false})));
       }catch{if(!cancelled){setLoadError(true);setTickers(old=>old.map(row=>({...row,status:'stale',stale:true})));}delay=60_000;}
-      finally{inFlight=false;schedule(delay);}
+      finally{inFlight=false;controller=null;schedule(delay);}
     }
     const visible=()=>{if(isBrowserInactive()){if(timer)clearTimeout(timer);timer=null;}else void load();};
     reloadRef.current=()=>void load();
     addBrowserActivityListener(visible);void load();
-    return()=>{cancelled=true;if(timer)clearTimeout(timer);removeBrowserActivityListener(visible);reloadRef.current=()=>{};};
+    return()=>{cancelled=true;controller?.abort();if(timer)clearTimeout(timer);removeBrowserActivityListener(visible);reloadRef.current=()=>{};};
   },[enabled]);
   return{tickers,configured,loadError,reload:()=>reloadRef.current()};
 }

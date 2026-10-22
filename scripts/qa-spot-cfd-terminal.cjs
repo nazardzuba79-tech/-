@@ -31,8 +31,17 @@ const dist = path.resolve(__dirname, '../frontend/dist');
 const fs = require('node:fs');
 const OUT = path.resolve(process.env.QA_OUT || 'docs/qa/spot-cfd-terminal');
 const PAIRS = ['BTC/USDT','ETH/USDT','SOL/USDT'];
-const CANDLES=Array.from({length:120},(_,i)=>({time:Math.floor(Date.now()/1000)-(120-i)*60,open:84800,high:84950,low:84700,close:84890,volume:12}));
+const CANDLES=Array.from({length:120},(_,i)=>{const open=83800+i*9+Math.sin(i/8)*140,close=open+Math.sin(i*2)*35;return{time:Math.floor(Date.now()/1000)-(120-i)*60,open,high:Math.max(open,close)+20,low:Math.min(open,close)-20,close,volume:12+(i%7)*3};});
 const app = express();
+app.use((q,r,next) => ['GET','HEAD'].includes(q.method) ? next() : r.status(405).json({error:'Read-only fixture'}));
+// Current display endpoints; fixtures only, never proxy a production service.
+const rows = PAIRS.map(pair => ({pair,symbol:pair,providerSymbol:pair.replace('/',''),marketType:'linear_perpetual',baseAsset:pair.split('/')[0],quoteAsset:'USDT',lastPrice:84890.1,high24h:85954.6,low24h:83535,changePercent24h:1.25,quoteVolume24h:3.19e9,volume24h:15000,receivedAt:Date.now(),fetchedAt:Date.now(),stale:false}));
+const display = (value,refreshMs=60000) => ({...value,_display:{mode:'snapshot',capturedAt:Date.now(),refreshMs}});
+app.get(['/api/v1/market/display','/api/v1/market/display/futures-tickers'],(_q,r)=>r.json(display({version:1,type:'snapshot',epoch:'fixture',revision:1,status:'live',rows})));
+app.get('/api/v1/market/display/spot-snapshot',(_q,r)=>r.json(display({tickers:{available:true,source:'fixture',fetchedAt:Date.now(),stale:false,value:rows},overview:{available:false},sentiment:{available:false}})));
+app.get(['/api/v1/market/display/spot-book/:symbol','/api/v1/market/display/futures-book/:symbol'],(q,r)=>r.json(display({available:true,symbol:q.params.symbol,timestamp:Date.now(),fetchedAt:Date.now(),stale:false,bids:[{price:'84880',quantity:'1.2'}],asks:[{price:'84892',quantity:'0.9'}]})));
+app.get('/api/v1/cfd/display/tickers',(_q,r)=>r.json(display({configured:true,tickers:[{symbol:'XAUUSD',name:'Gold',price:'2650.3',changePercent24h:'0.4',status:'sampled',stale:false,displayOnly:true,executionAllowed:false,fetchedAt:Date.now(),asOf:Date.now(),providerTimestamp:Date.now(),maxQuoteAgeMs:21600000}]},21600000)));
+app.get('/api/v1/cfd/display/candles/:symbol',(q,r)=>r.json(display({symbol:q.params.symbol,interval:q.query.interval,fetchedAt:Date.now(),bars:CANDLES.map(c=>({...c,openTime:c.time*1000,open:c.open/32,high:c.high/32,low:c.low/32,close:c.close/32}))},21600000)));
 app.get('/api/v1/me', (_q,r)=>r.json({id:'qa',displayName:'QA',email:'qa@example.invalid',kycStatus:'NOT_STARTED',isAdmin:false,role:'USER'}));
 app.get('/api/v1/futures/config',(_q,r)=>r.json({symbols:PAIRS,minLeverage:1,maxLeverage:100,leverageStep:1,fundingIntervalHours:8,highLeverageWarningThreshold:25,leverageTiers:[{notionalCap:null,maxLeverage:100,maintenanceMarginRate:0.005,maintenanceAmount:0}]}));
 app.get('/api/v1/market/universe',(_q,r)=>r.json({available:true,value:{instruments:PAIRS.map(p=>({symbol:p,providerSymbol:p.replace('/',''),marketType:'linear_perpetual',baseAsset:p.split('/')[0],quoteAsset:'USDT',settleAsset:'USDT',status:'Trading',fundingIntervalMinutes:480}))}}));
@@ -56,7 +65,7 @@ app.get('/api/v1/market/snapshot',(_q,r)=>r.json({pairs:PAIRS.map(p=>({pair:p,la
 app.get('/api/v1/market/assets/icons',(_q,r)=>r.json({icons:{}}));
 app.get('/api/v1/market/external/rankings',(_q,r)=>r.json({gainers:[],losers:[]}));
 app.get('/api/v1/market/external/orderbook/:p',(_q,r)=>r.json({bids:[[84880,1.2],[84879,0.8],[84878,2.1]],asks:[[84892,0.9],[84893,1.5],[84894,1.1]],fetchedAt:Date.now()}));
-app.get(['/api/v1/market/external/candles/:p','/api/v1/market/futures/candles/:p','/api/v1/cfd/candles/:s','/api/v1/private-trading/candles'],(_q,r)=>r.json({candles:CANDLES}));
+app.get(['/api/v1/market/external/candles/:p','/api/v1/market/futures/candles/:p','/api/v1/cfd/candles/:s','/api/v1/private-trading/candles'],(q,r)=>r.json({pair:(q.params.p||'BTC-USDT').replace('-','/'),interval:q.query.interval,candles:CANDLES}));
 app.get('/api/v1/cfd/config',(_q,r)=>r.json({configured:true,instruments:[{symbol:'XAUUSD',displayName:'Gold',category:'metals',minQuantity:0.01,quantityStep:0.01,leverage:20}]}));
 app.get('/api/v1/cfd/tickers',(_q,r)=>r.json({tickers:[{symbol:'XAUUSD',bid:2650.1,ask:2650.6,last:2650.3,changePercent:0.4,high24h:2662,low24h:2640}]}));
 app.get(['/api/v1/orders/me','/api/v1/futures/orders/me'],(_q,r)=>r.json([]));
@@ -68,11 +77,13 @@ app.use(express.static(dist,{index:false}));
 app.get('*',(_q,r)=>r.sendFile(path.join(dist,'index.html')));
 
 
-const DESKTOP = [[1920,1080],[1440,900],[1366,768]];
+const DESKTOP = [[1920,1080],[1600,900],[1440,900],[1366,768]];
 const MOBILE = [[320,740],[360,800],[390,844],[430,932]];
 const TERMINALS = [['futures','/futures'],['spot','/trade'],['cfd','/trade?market=cfd']];
 const TOKENS = ['--bg-primary','--bg-secondary','--bg-tertiary','--border-color','--text-primary',
   '--text-secondary','--accent-yellow','--color-buy','--color-sell','--panel','--font-family'];
+// The owner now extended the released Graphite finish to Spot and CFD.
+const FUTURES_ONLY_TOKENS = new Set();
 
 const READ = (tokenNames) => {
   const root = document.querySelector('.trade-terminal');
@@ -98,6 +109,12 @@ const READ = (tokenNames) => {
   }
   return {
     classes: root.className,
+    finish: {
+      ground: getComputedStyle(root.querySelector('.terminal')).backgroundColor,
+      gap: getComputedStyle(root.querySelector('.main-grid,.cfd-workspace')).gap,
+      panel: getComputedStyle(root.querySelector('.chart-area,.cfd-chart-area')).backgroundColor,
+      radius: getComputedStyle(root.querySelector('.chart-area,.cfd-chart-area')).borderRadius,
+    },
     tokens: Object.fromEntries(tokenNames.map(n => [n, cs.getPropertyValue(n).trim()])),
     strip: sc ? { h: Math.round(strip.getBoundingClientRect().height), bg: sc.backgroundColor,
       border: sc.borderBottomColor, pad: sc.padding } : null,
@@ -150,6 +167,21 @@ const READ = (tokenNames) => {
       // which Intl rejects outright. Without this the harness would report a
       // RangeError from its own environment as if the page had thrown it.
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, locale: 'en-US' });
+      await ctx.route('**/*', route => {
+        const request = route.request();
+        if (new URL(request.url()).origin !== origin || !['GET','HEAD'].includes(request.method())) return route.abort();
+        return route.continue();
+      });
+      await ctx.routeWebSocket('**/*', socket => socket.close());
+      await ctx.addInitScript(() => {
+        const original = window.fetch.bind(window);
+        window.fetch = (input, options) => {
+          const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url,location.origin);
+          if (url.origin === 'https://market.voltextech.net') return original('/api/v1'+url.pathname+url.search,options);
+          if (url.origin !== location.origin) return Promise.reject(new Error('External network blocked in fixture'));
+          return original(input,options);
+        };
+      });
       await ctx.addInitScript(() => { try { localStorage.setItem('exchange_token','local-qa'); localStorage.setItem('exchange_lang','ru'); } catch {} });
       const page = await ctx.newPage();
       const errs = [];
@@ -251,8 +283,11 @@ const READ = (tokenNames) => {
       /* The primary action is the one control a trader must never miss:
          at least 50px on desktop and 52px on phones (the released Futures
          ticket and TerminalMobileParity.css), fully inside the viewport. */
-      if (!mobile && name !== 'futures' && (!m.desktopCta?.visible || m.desktopCta.height < 50)) {
-        findings.push(`${name} @${key}: primary action missing or under 50px ${JSON.stringify(m.desktopCta)}`);
+      // 2026-10-07 (Spot/CFD in the released Futures look): the desktop primary
+      // action is Futures' 38px pill, as qa-order-panel-refinement pins it there.
+      // Phones keep the 52px touch target below.
+      if (!mobile && name !== 'futures' && (!m.desktopCta?.visible || m.desktopCta.height < 38)) {
+        findings.push(`${name} @${key}: primary action missing or under 38px ${JSON.stringify(m.desktopCta)}`);
       }
       if (mobile && name !== 'futures' && (m.tradeWorkspace?.ctaHeight ?? 0) < 52) {
         findings.push(`${name} @${key}: primary action on the Trade tab missing or under 52px (${m.tradeWorkspace?.ctaHeight ?? 0}px)`);
@@ -270,7 +305,9 @@ const READ = (tokenNames) => {
     const { futures, spot, cfd } = report.widths[key];
     for (const [n, v] of [['spot', spot], ['cfd', cfd]]) {
       if (!futures || !v || futures.missing || v.missing) continue;
-      const bad = TOKENS.filter(t => futures.tokens[t] !== v.tokens[t]);
+      const finish = TOKENS.filter(t => FUTURES_ONLY_TOKENS.has(t) && futures.tokens[t] !== v.tokens[t]);
+      if (finish.length) (report.futuresOnlyFinish ||= []).push(`${n} @${key}: ${finish.join(', ')}`);
+      const bad = TOKENS.filter(t => !FUTURES_ONLY_TOKENS.has(t) && futures.tokens[t] !== v.tokens[t]);
       if (bad.length) {
         if (mobile) findings.push(`${n} @${key}: ${bad.length} token(s) differ from Futures - ${bad.join(', ')}`);
         else (report.preExisting ||= []).push(`${n} @${key}: desktop token drift on current main - ${bad.join(', ')}`);
@@ -278,6 +315,13 @@ const READ = (tokenNames) => {
       if (v.strip && futures.strip && v.strip.bg !== futures.strip.bg) {
         findings.push(`${n} @${key}: strip background ${v.strip.bg} != Futures ${futures.strip.bg}`);
       }
+      if (v.tokens['--font-family'] !== futures.tokens['--font-family']) findings.push(`${n} @${key}: Graphite font mismatch`);
+      if (!mobile && (v.finish.ground !== 'rgb(0, 0, 0)' || v.finish.panel !== futures.finish.panel || v.finish.radius !== futures.finish.radius || v.finish.gap !== '4px')) {
+        findings.push(`${n} @${key}: tile finish differs: ${JSON.stringify(v.finish)}`);
+      }
+    }
+    if (spot?.strip && cfd?.strip && spot.strip.bg !== cfd.strip.bg) {
+      findings.push(`spot/cfd @${key}: strip backgrounds differ (${spot.strip.bg} vs ${cfd.strip.bg})`);
     }
   }
 
@@ -294,7 +338,7 @@ const READ = (tokenNames) => {
   report.status = findings.length ? 'FAIL' : 'PASS';
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify({ status: report.status, findings,
-    futuresDrift: report.futuresDrift, preExisting: report.preExisting,
+    futuresDrift: report.futuresDrift, preExisting: report.preExisting, futuresOnlyFinish: report.futuresOnlyFinish,
     summary: Object.fromEntries(Object.entries(report.widths).map(([k, v]) =>
       [k, Object.fromEntries(Object.entries(v).map(([n, m]) =>
         [n, m.missing ? 'MISSING' : `strip=${m.strip ? m.strip.h + 'px' : 'n/a'} ovf=${m.overflowX} lap=${m.overlaps.length}`]))])) }, null, 2));

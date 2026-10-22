@@ -4,6 +4,7 @@ import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { adminWithdrawalsRouter } from '../adminWithdrawals';
+import { walletDelegate } from '../../../test-utils/walletDelegate';
 
 function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
@@ -25,22 +26,29 @@ function adminPrisma(overrides: any = {}) {
 }
 
 function withTransaction(prisma: any, opts: { balance?: any; withdrawal?: any } = {}) {
-  const balanceState = opts.balance ? { ...opts.balance } : null;
+  const rows = new Map(opts.balance ? [['user-1:USDT', { ...opts.balance }]] : []);
+  let withdrawal = opts.withdrawal ? { ...opts.withdrawal } : null;
   const tx = {
-    balance: {
-      findUnique: jest.fn().mockImplementation(() => Promise.resolve(balanceState)),
-      update: jest.fn().mockImplementation(({ data }: any) => {
-        if (balanceState) Object.assign(balanceState, data);
-        return Promise.resolve(balanceState);
+    balance: walletDelegate(rows),
+    withdrawal: {
+      findUnique: jest.fn(async ({ where }: any) => withdrawal?.id === where.id ? { ...withdrawal } : null),
+      update: jest.fn(async ({ where, data }: any) => {
+        if (withdrawal?.id !== where.id) throw new Error('Missing withdrawal fixture');
+        Object.assign(withdrawal, data); return { ...withdrawal };
       }),
     },
-    withdrawal: {
-      findUnique: jest.fn().mockResolvedValue(opts.withdrawal ?? null),
-      update: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ ...opts.withdrawal, ...data })),
-    },
+    $queryRaw: jest.fn().mockResolvedValue([]), // Actual row-lock semantics covered by disposable PostgreSQL tests.
     auditLog: { create: jest.fn() },
   };
-  prisma.$transaction = jest.fn(async (fn: any) => fn(tx));
+  prisma.rows = rows;
+  prisma.$transaction = jest.fn(async (fn: any) => {
+    const before = new Map([...rows].map(([key, row]) => [key, { ...row }]));
+    const previousWithdrawal = withdrawal ? { ...withdrawal } : null;
+    try { return await fn(tx); } catch (error) {
+      rows.clear(); before.forEach((row, key) => rows.set(key, row));
+      withdrawal = previousWithdrawal; throw error;
+    }
+  });
   return prisma;
 }
 
@@ -105,6 +113,7 @@ describe('admin withdrawals routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ status: 'APPROVED' });
+      expect(prisma.rows.get('user-1:USDT')).toEqual({ available: '60', locked: '40' });
     });
   });
 
@@ -142,6 +151,7 @@ describe('admin withdrawals routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ status: 'SENT', txHash: 'abc123' });
+      expect(prisma.rows.get('user-1:USDT')).toEqual({ available: '60', locked: '0' });
     });
   });
 
@@ -159,6 +169,11 @@ describe('admin withdrawals routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ status: 'REJECTED' });
+      expect(prisma.rows.get('user-1:USDT')).toEqual({ available: '100', locked: '0' });
+      const retry = await request(app).post('/api/v1/admin/withdrawals/w1/reject')
+        .set('Authorization', authHeader('admin-1')).send({ reason: 'duplicate refund forbidden' });
+      expect(retry.status).toBe(400);
+      expect(prisma.rows.get('user-1:USDT')).toEqual({ available: '100', locked: '0' });
     });
   });
 });

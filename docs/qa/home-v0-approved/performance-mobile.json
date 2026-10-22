@@ -1,0 +1,209 @@
+{
+  "fixtureOnly": true,
+  "renderer": "Chromium software WebGL (SwiftShader), not physical GPU telemetry",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "warmSampleSeconds": 6,
+  "rows": [
+    {
+      "variant": "baseline",
+      "coldReadyMs": 769,
+      "lcpMs": 160,
+      "lcpCandidates": [
+        {
+          "time": 160,
+          "element": "P.description",
+          "url": ""
+        }
+      ],
+      "cls": 0,
+      "pageFps": 59.983716331847084,
+      "sceneFps": 0,
+      "taskSeconds": 0.06465499999999996,
+      "scriptSeconds": 0.011064000000000004,
+      "heapBytes": 6996496,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 64.29999999701977,
+          "duration": 85
+        }
+      ],
+      "renderer": null
+    },
+    {
+      "variant": "updated",
+      "coldReadyMs": 1042,
+      "lcpMs": 244,
+      "lcpCandidates": [
+        {
+          "time": 244,
+          "element": "P.description",
+          "url": ""
+        }
+      ],
+      "cls": 0.00008602958597325722,
+      "pageFps": 60.00166209590294,
+      "sceneFps": 23.26934264107039,
+      "taskSeconds": 0.751994,
+      "scriptSeconds": 0.07294599999999998,
+      "heapBytes": 12408372,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 91.30000000074506,
+          "duration": 145
+        },
+        {
+          "start": 351.80000000074506,
+          "duration": 131
+        },
+        {
+          "start": 520.1999999992549,
+          "duration": 261
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 178,
+        "textures": 11,
+        "geometries": 9
+      }
+    },
+    {
+      "variant": "updated",
+      "coldReadyMs": 981,
+      "lcpMs": 252,
+      "lcpCandidates": [
+        {
+          "time": 252,
+          "element": "P.description",
+          "url": ""
+        }
+      ],
+      "cls": 0.00008602958597325722,
+      "pageFps": 59.98471303709103,
+      "sceneFps": 22.930444318887986,
+      "taskSeconds": 0.743118,
+      "scriptSeconds": 0.071562,
+      "heapBytes": 10665244,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 92.90000000223517,
+          "duration": 151
+        },
+        {
+          "start": 330.80000000074506,
+          "duration": 96
+        },
+        {
+          "start": 442.19999999925494,
+          "duration": 215
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 177,
+        "textures": 11,
+        "geometries": 9
+      }
+    },
+    {
+      "variant": "baseline",
+      "coldReadyMs": 881,
+      "lcpMs": 248,
+      "lcpCandidates": [
+        {
+          "time": 248,
+          "element": "P.description",
+          "url": ""
+        }
+      ],
+      "cls": 0,
+      "pageFps": 60.02860088462457,
+      "sceneFps": 0,
+      "taskSeconds": 0.07336999999999999,
+      "scriptSeconds": 0.012527999999999997,
+      "heapBytes": 6692252,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 91,
+          "duration": 147
+        }
+      ],
+      "renderer": null
+    },
+    {
+      "variant": "baseline",
+      "coldReadyMs": 885,
+      "lcpMs": 244,
+      "lcpCandidates": [
+        {
+          "time": 244,
+          "element": "P.description",
+          "url": ""
+        }
+      ],
+      "cls": 0,
+      "pageFps": 59.95802937944184,
+      "sceneFps": 0,
+      "taskSeconds": 0.08598899999999998,
+      "scriptSeconds": 0.015251,
+      "heapBytes": 6981236,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 89.59999999776483,
+          "duration": 145
+        }
+      ],
+      "renderer": null
+    },
+    {
+      "variant": "updated",
+      "coldReadyMs": 1211,
+      "lcpMs": 228,
+      "lcpCandidates": [
+        {
+          "time": 228,
+          "element": "P.description",
+          "url": ""
+        }
+      ],
+      "cls": 0.00008602958597325722,
+      "pageFps": 59.9250936329588,
+      "sceneFps": 21.806075738660006,
+      "taskSeconds": 0.729576,
+      "scriptSeconds": 0.072042,
+      "heapBytes": 9079656,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 99.19999999925494,
+          "duration": 120
+        },
+        {
+          "start": 306.0999999977648,
+          "duration": 106
+        },
+        {
+          "start": 440.5,
+          "duration": 231
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 178,
+        "textures": 11,
+        "geometries": 9
+      }
+    }
+  ]
+}

@@ -109,6 +109,8 @@ async function session(width) {
   page.on('pageerror', e => report.errors.push(String(e.message)));
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) report.errors.push(`console: ${m.text()}`); });
   await page.goto(`${origin}/futures?pair=${encodeURIComponent(PAIR)}`);
+  // owner, 2026-10-04: phone opens on Trade — bring the chart forward first, where the phone used to open.
+  if (width <= 900) await page.locator('#mobile-futures-chart').click();
   await page.locator('.chart-surface').waitFor();
   return { context, page, token, position, external };
 }

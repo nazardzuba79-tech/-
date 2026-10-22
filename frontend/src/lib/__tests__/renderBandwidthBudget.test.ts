@@ -13,7 +13,12 @@ describe('Render free-tier bandwidth guardrails', () => {
   test('Futures display candles stay on the public market edge, including native-bound accounts', () => {
     const terminal = read('frontend/src/components/TerminalChart.tsx');
     const page = read('frontend/src/pages/FuturesPage.tsx');
-    expect(terminal).toContain('getFuturesCandles');
+    // Chart workspace follow-up (2026-10-14): the terminal takes its loaders from the one table in
+    // lib/chartCandleLoaders, which binds Futures to getFuturesCandles; lib/chartCapabilities hands
+    // a Futures chart that loader unless the page bound its own (the native replay), as before.
+    expect(terminal).toContain('CHART_CANDLE_LOADERS');
+    expect(read('frontend/src/lib/chartCandleLoaders.ts')).toContain('futures: getFuturesCandles');
+    expect(read('frontend/src/lib/chartCapabilities.ts')).toContain("if (market === 'futures') return own ?? loaders.futures;");
     expect(page).not.toContain('candleLoader={nativeExecution?native.loader:undefined}');
     expect(page).not.toContain('candleLoader={nativeExecution ? native.loader : undefined}');
   });
@@ -26,27 +31,33 @@ describe('Render free-tier bandwidth guardrails', () => {
 
     expect(nav).not.toContain('useAdminAlertSound');
     expect(layout).not.toContain('setAdminAlertSoundEnabled');
-    expect(users).toContain('getAdminRecentDepositsByUser()');
+    expect(layout).not.toContain('useAdminAlertSound');
+    expect(layout).toContain('useAdminWorkSummary');
+    expect(users).toContain('getAdminUsersPage(query, signal)');
+    expect(users).not.toContain('getAdminRecentDepositsByUser');
     expect(users).not.toContain('getAdminDeposits()');
 
-    // The deposit page reads the stored registry (one DB-only request) and
-    // never the full history. Provider discovery happens only on an explicit
-    // click; the queue re-read is visible-only.
+    // The deposit page reads the stored registry, never the full history.
+    // The existing server-gated daily open trigger is separate from queue
+    // refresh; no provider feed or manual watcher starts from the mount effect.
     expect(deposits).not.toContain('api.getAdminDeposits(');
-    const mountStart = deposits.indexOf('useEffect(() =>');
-    const mountEnd = deposits.indexOf('}, [reload]);', mountStart);
+    const mountStart = deposits.indexOf('mounted.current = true;');
+    const mountEnd = deposits.indexOf('}, [reload, changed, cancelRead, session]);', mountStart);
     expect(mountStart).toBeGreaterThanOrEqual(0);
     expect(mountEnd).toBeGreaterThan(mountStart);
     const mount = deposits.slice(mountStart, mountEnd);
     expect(mount).not.toContain('getAdminIncomingDepositFeed');
     expect(mount).not.toContain('runWatcher');
-    expect(mount).toContain('!isBrowserInactive()');
+    expect(mount).toContain('if (document.hidden) cancelRead()');
+    expect(mount).toContain('Date.now() - lastAttempt.current >= FOCUS_FRESHNESS_MS');
+    expect(mount).toContain('pendingOpen.abort(); cancelRead()');
     expect(deposits).not.toContain('setInterval');
   });
 
   test('production CFD display stays on Cloudflare and never falls back to Render', () => {
     const tickers = read('frontend/src/lib/useCfdTickers.ts');
-    const chart = read('frontend/src/components/CfdChart.tsx');
+    // 2026-10-15: CFD candles come from lib/cfdCandles (the chart is the shared terminal chart).
+    const chart = read('frontend/src/lib/cfdCandles.ts');
     expect(tickers).toContain('MARKET_EDGE_BASE');
     expect(tickers).not.toContain('fallbackEndpoint');
     expect(tickers).not.toContain('fillMissingQuotes');

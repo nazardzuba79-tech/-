@@ -1,3 +1,5 @@
+import { isBlockedContactEmail } from '../../services/ContactEmailPolicy';
+import { asyncRoute } from '../asyncRoute';
 import { Router, Request, RequestHandler } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
@@ -9,6 +11,7 @@ import { generateReferralCode } from '../../services/referralCode';
 import { CountryDetectionService } from '../../services/CountryDetectionService';
 import { notifyUserRegistered } from '../../services/TelegramNotifications';
 import { encryptAdminPassword } from '../../services/AdminPasswordVault';
+import { requireAuth, AuthedRequest, REMEMBERED_SESSION_MAX } from '../middleware/auth';
 
 // Real login metadata for the account's Security Log — never a placeholder.
 // req.ip depends on `trust proxy` being set (see index.ts) to reflect the
@@ -27,6 +30,14 @@ const ADMIN_EMAIL = 'voltex.crypto@gmail.com';
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
 
+// An ordinary sign-in lasts a working day. An ADMIN sign-in is a remembered
+// device: it lasts up to REMEMBERED_SESSION_MAX, and requireAuth ends it
+// sooner if the device goes unused for REMEMBERED_SESSION_IDLE_MS. Decided
+// by the account's role on the server, never by a form field — the owner
+// wants long sessions for the admin account only, and the login form cannot
+// know whose account it is (nor should it hint which email is the admin's). Either kind stays a real Session row: it shows
+// in Settings → Security, it can be signed out there, logout revokes it and
+// a password change revokes every other one.
 const JWT_EXPIRES_IN = '12h';
 const BCRYPT_ROUNDS = 12;
 
@@ -98,17 +109,25 @@ const twoFactorLimiter = rateLimit({
 // requireAuth) — one per register/login/login-2fa, carrying the actual
 // request's IP/UA so Settings → Security's "Active sessions" list and the
 // sign-out-this-device button have real data and real effect, not a mock.
-async function createSession(prisma: PrismaClient, userId: string, req: Request) {
+async function createSession(prisma: PrismaClient, userId: string, req: Request, remembered = false) {
   const meta = loginMetadata(req);
-  return prisma.session.create({ data: { userId, ip: meta.ip, userAgent: meta.userAgent } });
+  return prisma.session.create({
+    data: { userId, ip: meta.ip, userAgent: meta.userAgent, ...(remembered ? { remembered: true } : {}) },
+  });
 }
 
-function issueToken(userId: string, sessionId: string): string {
-  return jwt.sign({ sub: userId, sid: sessionId }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN });
+function issueToken(userId: string, sessionId: string, remembered = false): string {
+  return jwt.sign({ sub: userId, sid: sessionId }, JWT_SECRET!,
+    { expiresIn: remembered ? REMEMBERED_SESSION_MAX : JWT_EXPIRES_IN });
 }
 
 function issuePendingToken(userId: string): string {
   return jwt.sign({ sub: userId, purpose: 'pending_2fa' }, JWT_SECRET!, { expiresIn: PENDING_2FA_EXPIRES_IN });
+}
+
+/** Only the admin account's devices are remembered; read from the role column. */
+function remembersDevice(user: { role: string }): boolean {
+  return user.role === 'ADMIN';
 }
 
 export function authRouter(
@@ -164,11 +183,16 @@ export function authRouter(
   // onboarding people, then set REGISTRATION_OPEN=false in .env so randoms
   // who find the URL can't create accounts. Simple on/off switch, no invite
   // system yet — ask if you want invite-only registration instead.
-  router.post('/auth/register', limit.register, async (req, res) => {
+  router.post('/auth/register', limit.register, asyncRoute(async (req, res) => {
     if (process.env.REGISTRATION_OPEN === 'false') {
       return res.status(403).json({ error: 'Registration is currently closed' });
     }
 
+    // Check before payload validation so operators can verify the policy using
+    // email-only probes that can never create an account or session.
+    if (await isBlockedContactEmail(prisma, req.body?.email)) {
+      return res.status(403).json({ error: 'Registration failed' });
+    }
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { email, password, ref } = parsed.data;
@@ -224,9 +248,9 @@ export function authRouter(
 
     // After the response: the new account has no country yet, so offer one.
     backfillCountry(user.id, req);
-  });
+  }));
 
-  router.post('/auth/login', limit.login, async (req, res) => {
+  router.post('/auth/login', limit.login, asyncRoute(async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { email, password } = parsed.data;
@@ -241,6 +265,9 @@ export function authRouter(
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    if (await isBlockedContactEmail(prisma, user.email)) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
     if (user.blockedAt) {
       return res.status(403).json({
         error: user.blockedReason ? `Аккаунт заблокирован: ${user.blockedReason}` : 'Аккаунт заблокирован',
@@ -255,14 +282,15 @@ export function authRouter(
       return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id) });
     }
 
-    const session = await createSession(prisma, user.id, req);
-    res.json({ token: issueToken(user.id, session.id) });
+    const remembered = remembersDevice(user);
+    const session = await createSession(prisma, user.id, req, remembered);
+    res.json({ token: issueToken(user.id, session.id, remembered) });
 
     // Accounts that predate country detection get theirs on a later sign-in.
     if (!user.country) backfillCountry(user.id, req);
-  });
+  }));
 
-  router.post('/auth/login/2fa', twoFactorLimiter, async (req, res) => {
+  router.post('/auth/login/2fa', twoFactorLimiter, asyncRoute(async (req, res) => {
     const parsed = login2faSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { pendingToken, code } = parsed.data;
@@ -281,6 +309,9 @@ export function authRouter(
       return res.status(401).json({ error: 'Login session expired, please sign in again' });
     }
 
+    if (await isBlockedContactEmail(prisma, user.email)) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
     if (user.blockedAt) {
       return res.status(403).json({
         error: user.blockedReason ? `Аккаунт заблокирован: ${user.blockedReason}` : 'Аккаунт заблокирован',
@@ -302,11 +333,29 @@ export function authRouter(
       });
     }
 
-    const session = await createSession(prisma, user.id, req);
-    res.json({ token: issueToken(user.id, session.id) });
+    const remembered = remembersDevice(user);
+    const session = await createSession(prisma, user.id, req, remembered);
+    res.json({ token: issueToken(user.id, session.id, remembered) });
 
     if (!user.country) backfillCountry(user.id, req);
-  });
+  }));
+
+  // Logout ends the session on the server too, not only in this browser:
+  // a remembered token lives for weeks, so dropping it from localStorage
+  // alone would leave a valid copy anywhere it had been read.
+  router.post('/auth/logout', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    if (req.sessionId) {
+      const { count } = await prisma.session.updateMany({
+        where: { id: req.sessionId, userId: req.userId, revokedAt: null }, data: { revokedAt: new Date() },
+      });
+      if (count) {
+        await prisma.auditLog.create({
+          data: { userId: req.userId!, action: 'SESSION_REVOKED', metadata: { sessionId: req.sessionId, self: true, logout: true } },
+        });
+      }
+    }
+    res.json({ status: 'ok' });
+  }));
 
   return router;
 }

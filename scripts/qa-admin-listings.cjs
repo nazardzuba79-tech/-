@@ -80,6 +80,7 @@ const accounts = { 'qa-admin': { role: 'ADMIN', email: 'listing.admin@example.in
 const prisma = {
   user: { findUnique: async ({ where: { id } }) => (accounts[id] ? { id, role: accounts[id].role } : null) },
   session: { findUnique: async () => null, update: async () => null },
+  ...Object.fromEntries(['order', 'trade', 'futuresOrder', 'futuresPosition', 'balance'].map(name => [name, { count: async () => 0 }])),
 };
 const tokens = { admin: jwt.sign({ sub: 'qa-admin' }, process.env.JWT_SECRET), user: jwt.sign({ sub: 'qa-user' }, process.env.JWT_SECRET) };
 const connected = new CloudflareListingStore(EDGE, STORE_TOKEN);
@@ -159,7 +160,7 @@ async function run() {
   await startEdge();
   const server = await new Promise((resolve) => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
   origin = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(process.env.QA_CHROMIUM_PATH ? { executablePath: process.env.QA_CHROMIUM_PATH } : {});
   const edgeRequests = [];
   const newPage = async (who, width, label = who) => {
     const context = await browser.newContext({ viewport: { width, height: width < 500 ? 844 : 1000 }, locale: 'ru-RU' });
@@ -178,10 +179,15 @@ async function run() {
   const noOverflow = async (page, name) => {
     const layout = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth }));
     report.layouts.push({ name, ...layout });
+    if (layout.documentWidth > layout.width) console.error('overflow elements', await page.evaluate(() => [...document.querySelectorAll('body *')].map(el => ({ tag: el.tagName, class: el.className, right: el.getBoundingClientRect().right, width: el.getBoundingClientRect().width })).filter(el => el.right > innerWidth + 1 && el.width > 0).slice(0, 20)));
     assert.ok(layout.documentWidth <= layout.width, `${name} overflows horizontally`);
   };
 
   try {
+    if (process.env.QA_AITH_REPLACEMENT === '1') {
+      await require('./qa-aith-replacement.cjs')({ root, render, connected, registry, prisma, newPage, origin, shot, noOverflow, report, check });
+      return;
+    }
     /* 0. Before the rollout is finished the page says "not connected" — never a success — and Create is disabled. */
     for (const [state, text] of [['unset', /хранилище Cloudflare не настроено/], ['mismatch', /ключ хранилища на сервере и в Cloudflare не совпадает/]]) {
       storeState = state;
@@ -223,9 +229,18 @@ async function run() {
     // Leave one complete discovery interval for the already-open, future-only
     // Markets tab below before this first listing switches to live.
     const listingAt = Math.ceil((Date.now() + 150_000) / 60_000) * 60_000;
+    // Existing executable listings retain their original controls/history.
+    // New UI drafts use the non-executable bounded program and are exercised
+    // end-to-end separately by qa-listing-controls.cjs. Seed this legacy
+    // fixture via the real API; do not weaken its Spot gate assertions below.
+    const legacyCreated = await render('/admin/listings', { method: 'POST', body: { config: {
+      symbol, name: 'QA Orbit', logo: null, initialPrice: '0.42', listingAt: new Date(listingAt).toISOString(),
+      displayTimeZone: 'UTC', ownerAllocation: '0', seedMode: 'auto', tradable: true,
+    } } });
+    assert.equal(legacyCreated.status, 201);
     const admin = await newPage('admin', 1440);
     await admin.goto(`${origin}/admin/listings`);
-    await admin.locator('[data-create-listing]').click();
+    await admin.locator(`[data-edit-listing="${symbol}"]`).click();
     await admin.fill('[data-field="name"]', 'QA Orbit');
     await admin.fill('[data-field="symbol"]', symbol);
     await admin.fill('[data-field="initialPrice"]', '0.42');
@@ -247,7 +262,7 @@ async function run() {
     assert.equal(listing.draft.tradable, true);
     const seed = listing.draft.seed;
     assert.match(seed, /^[a-z0-9-]{8,}$/);
-    check(`admin created ${symbol}/USDT from the form: Kyiv wall time stored as the UTC instant, logo kept, automatic seed ${seed}, not published`);
+    check(`legacy ${symbol}/USDT preserved by the form: Kyiv wall time stored as the UTC instant, logo kept, automatic seed ${seed}, not published; creation used the real API`);
 
     /* 3. The draft is invisible to everyone else, including by URL tricks. */
     assert.equal((await edgeJson('/market/listings')).body.assets.length, 0);
@@ -427,22 +442,31 @@ async function run() {
     check('a second listing (QDL, +3 days, not tradable) publishes alongside; a ticker already on the venue (BTC) is refused');
 
     /* 9. The opening: pre-listing → live at the configured instant, from the same config. */
+    let launchReloads = 0;
+    markets.on('framenavigated', frame => { if (frame === markets.mainFrame()) launchReloads++; });
     const wait = listingAt - Date.now() + 2500;
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    await markets.reload();
     await markets.locator('[data-test-market] canvas, [data-test-market] svg').first().waitFor({ timeout: 20000 });
     await markets.locator('.nrx-book-tabs, .orderbook').first().waitFor({ timeout: 20000 });
     const live = (await edgeJson('/market/listings')).body.assets.find((a) => a.symbol === symbol);
     assert.equal(live.state.phase, 'live'); assert.ok(live.state.lastPrice > 0);
     await shot(markets, 'trade-live-1440.png');
-    await mobile.reload();
     await mobile.waitForTimeout(2500);
     await shot(mobile, 'trade-live-390.png');
     await noOverflow(mobile, 'trade-live-390');
     await registry.ensureFresh();
     assert.doesNotThrow(() => assertSpotListing(`${symbol}/USDT`, Date.now()));
+    assert.equal(launchReloads, 0, 'The open terminal must discover launch without a reload');
+    for (const width of [1920, 1440, 1366, 390]) {
+      await admin.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+      await noOverflow(admin, `listings-audit-${width}`);
+      await shot(admin, `listings-audit-${width}.png`);
+      await markets.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+      await noOverflow(markets, `trade-audit-${width}`);
+      await shot(markets, `trade-audit-${width}.png`);
+    }
     assert.throws(() => assertSpotListing('QDL/USDT', Date.now() + 4 * 86_400_000), /not available/);
-    check(`opening passed: catalogue phase live at ${live.state.lastPrice}; the terminal shows chart and book after reload; Render Spot gate open for QRB, closed for non-tradable QDL`);
+    check(`opening passed without reload: catalogue phase live at ${live.state.lastPrice}; chart/book visible; Render Spot gate open for QRB, closed for non-tradable QDL; admin/trade fit 1920/1440/1366/390`);
 
     /* 10. One canonical history: the public edge, the admin Preview at the same instant, and a restarted Worker agree. */
     const edgeCandles = async () => (await edgeJson(`/market/test-assets/${symbol}-USDT/candles?interval=5m`)).body;

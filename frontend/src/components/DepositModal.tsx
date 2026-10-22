@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDepositWallets, useDepositSelection } from '../lib/useDepositOptions';
 import { MANUAL_DEPOSIT_CATALOGUE } from '../lib/depositCatalogue';
 import { useLanguage } from '../lib/i18n';
 import { DepositCatalogueDialog } from './DepositCatalogueDialog';
+import type { DepositCopySource } from '../lib/depositCopyLog';
 
 /**
  * Deposit is now purely "here's the address" — no tx-hash entry. An admin
@@ -15,11 +16,19 @@ import { DepositCatalogueDialog } from './DepositCatalogueDialog';
  * of them is what the user has to reach. Each card names the exact assets
  * that chain will credit, because the address alone does not say that.
  */
-export function DepositModal({ onClose }: { onClose: () => void }) {
-  return MANUAL_DEPOSIT_CATALOGUE ? <DepositCatalogueDialog onClose={onClose}/> : <LegacyDepositModal onClose={onClose}/>;
+export function DepositModal({ onClose, source = 'header', initialAsset, tone = 'light' }: { onClose: () => void; source?: DepositCopySource; initialAsset?: string; tone?: 'light' | 'terminal' }) {
+  return MANUAL_DEPOSIT_CATALOGUE ? <DepositCatalogueDialog onClose={onClose} source={source} initialAsset={initialAsset} tone={tone}/> : <LegacyDepositModal onClose={onClose}/>;
 }
 
 function LegacyDepositModal({ onClose }: { onClose: () => void }) {
+  // Escape closes the dialog, as the overlay click and «✕» do. The
+  // catalogue dialog and the wallet page's modal already listen; this one
+  // (2026-10-13 audit) could only be left by pointer.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.stopPropagation(); onClose(); } };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
   const { t } = useLanguage();
   const CHAIN_LABEL: Record<string, string> = {
     bitcoin: t('deposit.chain.bitcoin'),
@@ -55,7 +64,7 @@ function LegacyDepositModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div style={styles.overlay} onClick={onClose}>
-      <div className="modal-liquid-glass" style={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-liquid-glass" style={styles.modal} role="dialog" aria-modal="true" aria-label={t('deposit.title')} onClick={(e) => e.stopPropagation()}>
         <div style={styles.headerRow}>
           <h2 style={styles.title}>{t('deposit.title')}</h2>
           <button onClick={onClose} style={styles.closeBtn} aria-label={t('deposit.close')}>

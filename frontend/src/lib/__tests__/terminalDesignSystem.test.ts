@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 /**
@@ -32,8 +32,11 @@ it('the palette is declared once, and both terminals read that one block', () =>
   // buy #0ecb81 (the green the terminal shipped with). The accent stays
   // VOLTEX gold. Still one block, still read by all three terminals —
   // which is the property pinned here.
-  for (const token of ['--bg-primary:#0b0e11', '--accent-yellow:#f0b90b',
-    '--color-buy:#0ecb81', '--color-sell:#f6465d', '--panel:#181a20', '--border-color:#2b3139']) {
+  // 2026-10-07 (owner: Bybit 1:1): Bybit's dark theme read off its live page —
+  // page #000000, panel #101014, divider #222227, gold #f0b90b (owner kept the brand accent where Bybit has orange), buy
+  // #06c167, sell #f63649. Still one block, still read by all three.
+  for (const token of ['--bg-primary:#000000', '--accent-yellow:#f0b90b',
+    '--color-buy:#06c167', '--color-sell:#f63649', '--panel:#101014', '--border-color:#222227']) {
     expect(css).toContain(token);
   }
   // …and the copy it replaced is gone, so there is nothing to drift against.
@@ -142,7 +145,7 @@ it('the shared sheet styles, and never lays out, the shells it does not own', ()
   expect(layout).toEqual([]);
 });
 
-it('Spot and CFD carry the Futures TradingView surface, value for value', () => {
+it('Spot and CFD retain the shared surface while Futures-only colours stay local', () => {
   // Owner, 2026-09-25: «Внидряй цей дезайн і на спот, і на CFD» — the
   // surface approved on Futures (#258). Pinned against the Futures sheet
   // itself, so the three terminals cannot drift apart in either direction.
@@ -176,24 +179,30 @@ it('Spot and CFD carry the Futures TradingView surface, value for value', () => 
   // Both charts paint nothing of their own and take the Futures chart tokens.
   const futuresChart = block(archive, '#archive-terminal-preview .terminal-chart-shell');
   const spotCfdChart = block(css, `${P} :is(.terminal-chart-shell, .cfd-chart)`);
-  for (const token of ['--voltex-plot-background: rgba(0,0,0,0)', '--voltex-candle-up: #ffffff',
-    '--voltex-candle-down: #ff9800', '--voltex-axis-text: #ffffff', '--voltex-axis-border: rgba(0,0,0,0)']) {
+  for (const token of ['--voltex-plot-background: rgba(0,0,0,0)', '--voltex-axis-text: #ffffff', '--voltex-axis-border: rgba(0,0,0,0)']) {
     expect(futuresChart).toContain(token);
     expect(spotCfdChart).toContain(token);
   }
+  // 2026-10-03 Futures presentation brief preserves white / gold, with
+  // the viewer's saved settings over it. Spot and CFD remain unchanged.
+  expect(futuresChart).toContain('--voltex-candle-up: #f4f6f8');
+  expect(futuresChart).toContain('--voltex-candle-down: #f0b90b');
+  expect(spotCfdChart).toContain('--voltex-candle-up: #ffffff');
+  expect(spotCfdChart).toContain('--voltex-candle-down: #ff9800');
   // «Синій колір ні, обєм залишаємо як і зараз є на біржі»: the CFD volume
-  // takes exactly the colours PriceChart already draws on Spot and Futures.
+  // takes exactly the colours PriceChart draws on Spot (and on any chart
+  // without the settings).
   const priceChart = read('src/components/PriceChart.tsx');
-  expect(priceChart).toContain("'rgba(234,236,239,0.5)' : 'rgba(247,166,0,0.5)'");
+  expect(priceChart).toContain("['rgba(234,236,239,0.5)', 'rgba(247,166,0,0.5)']");
   expect(spotCfdChart).toContain('--voltex-volume-up: rgba(234,236,239,0.5)');
   expect(spotCfdChart).toContain('--voltex-volume-down: rgba(247,166,0,0.5)');
 
-  // The header captions take the Futures caption grey.
-  // The later of the sheet's rules for the captions is the one that wins.
+  // Only Futures gets the brighter caption grey in the 2026-10-03 brief.
+  // The shared Spot/CFD sheet retains its existing colour unchanged.
   const captionRules = archive.split('#archive-terminal-preview .ticker-bar .label {').slice(1).map(r => r.slice(0, r.indexOf('}')));
   const futuresCaption = captionRules[captionRules.length - 1]?.match(/color:\s*(#[0-9a-f]{6})/i)?.[1];
-  expect(futuresCaption).toBe('#71757a');
-  expect(css).toContain(`${P} :is(.ticker-bar .label, .cfd-ticker-metric > span:first-child) { color: ${futuresCaption}; font-weight: 400; }`);
+  expect(futuresCaption).toBe('#959ba5');
+  expect(css).toContain(`${P} :is(.ticker-bar .label, .cfd-ticker-metric > span:first-child) { color: #71757a; font-weight: 400; }`);
 
   // Fields stay visible on the gradient, as on the Futures ticket.
   expect(css).toMatch(/:is\(\.order-form-area \.input-group, \.pairs-section input, \.cfd-input, \.cfd-instruments-area input\) \{\s*background: rgba\(255,255,255,\.06\) !important; border: 1px solid rgba\(255,255,255,\.13\) !important;/);
@@ -201,15 +210,15 @@ it('Spot and CFD carry the Futures TradingView surface, value for value', () => 
   expect(css).toMatch(/\.cfd-bottom-panel \.cfd-tabs\) \{\s*background: #101014 !important;/);
 });
 
-it('the CFD chart reads its paint from the stylesheet, with its old colours as fallbacks', () => {
-  const chart = read('src/components/CfdChart.tsx');
-  for (const [token, fallback] of [['--voltex-candle-up', '#12c98d'], ['--voltex-candle-down', '#ef5350'],
-    ['--voltex-axis-border', '#2b2e36'], ['--voltex-axis-text', '#aeb9c4'], ['--voltex-plot-background', '#101014'],
-    ['--voltex-volume-up', 'rgba(18,201,141,.28)'], ['--voltex-volume-down', 'rgba(239,83,80,.28)']]) {
-    expect(chart).toContain(`token('${token}','${fallback}')`);
+// 2026-10-15 (CFD Chart Workspace): CfdChart.tsx is gone. The CFD chart is the
+// shared terminal chart, inside the same .terminal-chart-shell, so it reads the
+// same paint tokens the block above declares for Spot and Futures.
+it('the CFD chart is the shared terminal chart and reads its paint from the stylesheet', () => {
+  expect(existsSync(resolve(frontend, 'src/components/CfdChart.tsx'))).toBe(false);
+  expect(read('src/pages/TradePage.tsx')).toContain('<PriceChart pair={selectedCfdSymbol} market="cfd" chrome="terminal"');
+  expect(read('src/components/TerminalChart.tsx')).toContain('className={`terminal-chart-shell');
+  const chart = read('src/components/PriceChart.tsx');
+  for (const token of ['--voltex-candle-up', '--voltex-candle-down', '--voltex-axis-border', '--voltex-axis-text', '--voltex-plot-background']) {
+    expect(chart).toContain(`token('${token}'`);
   }
-  // No literal paint left behind the tokens.
-  expect(chart).toContain('upColor:up,downColor:down,borderVisible:false,wickUpColor:up,wickDownColor:down');
-  expect(chart).toContain('color:bar.close>=bar.open?volumeUpRef.current:volumeDownRef.current');
-  expect(chart).not.toContain("borderColor:'#2b2e36'");
 });

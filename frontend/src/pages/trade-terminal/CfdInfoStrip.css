@@ -1,0 +1,22 @@
+/* CFD information strip: the extra figures on the CFD ticker bar (day change,
+   day range, session status, optional 52-week range and nearest release).
+   Scoped to the CFD terminal; Spot and Futures do not load it. Desktop keeps
+   the bar's single flex row. On phones the mobile sheet already lays the bar
+   out as a two-column grid (identity | price, status hidden); the strip adds
+   its second row there: day change left, day range right. */
+.trade-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-metric > :last-child{white-space:nowrap}
+.trade-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-change{min-width:0}
+.trade-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-range{letter-spacing:-.01em}
+.trade-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-event-link{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.trade-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-event-link:hover{color:var(--accent)}
+@media(max-width:900px){
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-metric.cfd-ticker-day-change{grid-column:1;grid-row:2;text-align:left}
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-metric.cfd-ticker-day-range{grid-column:2;grid-row:2;text-align:right}
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-metric.cfd-ticker-week-range{grid-column:1 / -1}
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-metric.cfd-ticker-event{grid-column:1 / -1}
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-change{font-size:12px}
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-range{font-size:12px}
+}
+@media(max-width:359px){
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-change,.trade-terminal.vx-terminal.cfd-terminal .cfd-info-strip .cfd-ticker-range{font-size:11px;letter-spacing:-.02em}
+}

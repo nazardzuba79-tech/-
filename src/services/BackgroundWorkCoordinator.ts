@@ -9,6 +9,18 @@ export interface SleepingWatcher {
   nudge(): void;
 }
 
+const NOT_WORK = Symbol('voltex.writeCreatesNoBackgroundWork');
+
+/**
+ * Marks THIS response as a write that creates no background work (it only
+ * appends a note no loop reads), so it does not re-check the sleeping loops.
+ * Set by the route itself, on the server; nothing a client sends can set it.
+ * Every other write keeps the re-check.
+ */
+export function markWriteWithoutBackgroundWork(res: Response): void {
+  res.locals[NOT_WORK as unknown as string] = true;
+}
+
 export interface BackgroundWorkCoordinatorOptions {
   activityCooldownMs?: number;
   reconcileAfterFundingMs?: number;
@@ -30,7 +42,10 @@ export interface BackgroundWorkCoordinatorOptions {
  *    HEAD / OPTIONS, answered below 400) re-checks every sleeping loop,
  *    at most once per `activityCooldownMs`, with one trailing re-check for
  *    requests inside that window. Every way work is created in this backend
- *    is such a request, and the database is awake for it anyway.
+ *    is such a request, and the database is awake for it anyway. The one
+ *    exception is a route that marks its own response with
+ *    markWriteWithoutBackgroundWork (today: the deposit-address copy note,
+ *    which no loop reads).
  *
  *  - SCHEDULE. One re-check every funding boundary (00:00 / 08:00 / 16:00
  *    UTC) plus `reconcileAfterFundingMs`: the funding settlement has just
@@ -108,7 +123,7 @@ export class BackgroundWorkCoordinator {
         // After the response: nothing here may reach the request, or crash
         // the process from an event listener.
         res.once('finish', () => {
-          if (res.statusCode >= 400) return;
+          if (res.statusCode >= 400 || res.locals[NOT_WORK as unknown as string] === true) return;
           try { this.activity(); } catch (err) { console.error('[background] activity re-check failed', err); }
         });
       }

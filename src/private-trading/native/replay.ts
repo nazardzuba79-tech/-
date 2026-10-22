@@ -2,6 +2,7 @@ import BigNumber from 'bignumber.js';
 import { createHash } from 'crypto';
 import { amount, decimal } from '../math';
 import type { Candle } from '../types';
+import type { NativeFundingSchedule } from './fundingModel';
 import { closeDemoPosition, consumeObservedBook, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState, ExternalCollateral,
   emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, executeObservedBook, fillDemoOrder, markDemoAccount, setDemoCollateral,
   NATIVE_DEMO_MODEL, placeDemoOrder, protectDemoPosition, registerDemoInstrument, setDemoLeverage, settleDemoFunding, cancelDemoOrder } from './engine';
@@ -98,6 +99,12 @@ export interface ReplayInput {
   latest?:Record<string,{mark:string;last:string;time:number}>;
   /** Resolution rule; the default is age-tiered relative to `asOf`. */
   resolution?:(cursor:number,asOf:number)=>ReplayResolution & {eraEnd:number};
+  /**
+   * Funding terms by settlement instant (fundingModel.ts). Absent = the
+   * legacy custom model for every boundary, which is what every journal was
+   * written under until a later version was pinned.
+   */
+  funding?:NativeFundingSchedule;
 }
 export interface ReplayResult { snapshot:DemoState; checkpoint:NativeCheckpoint; observed:null|Record<string,{mark:string;last:string}> }
 interface Tick {time:number;symbol:string;mark:string;last:string;boundary:boolean}
@@ -314,7 +321,7 @@ export function checkCoverage(bars:ReplayBar[],request:BarRequest){
   if(expected!==request.end)throw new DemoEngineError('HISTORY_GAP');
   return sorted;
 }
-function processGroups(s:DemoState,ticks:Tick[],commands:NativeInstruction[]){
+function processGroups(s:DemoState,ticks:Tick[],commands:NativeInstruction[],schedule:NativeFundingSchedule|undefined){
   const groups=new Map<number,Tick[]>();for(const t of ticks){const g=groups.get(t.time)??[];g.push(t);groups.set(t.time,g);}
   for(const c of commands)if(!groups.has(c.at))groups.set(c.at,[]);
   let cursor=0;
@@ -333,7 +340,7 @@ function processGroups(s:DemoState,ticks:Tick[],commands:NativeInstruction[]){
       const selected=funding?group:group.filter(t=>historical.has(t.symbol));
       markDemoAccount(s,Object.fromEntries(selected.map(t=>[t.symbol,{mark:t.mark,last:t.last}])),time,!funding);
       if(funding){
-        settleDemoFunding(s,time);
+        settleDemoFunding(s,time,schedule);
         s.marks=liveMarks;
         for(const {p,mark,last} of livePositions){p.markPrice=mark;p.lastPrice=last;}
       }
@@ -413,12 +420,12 @@ export function* nativeReplay(input:ReplayInput):Generator<BarRequest,ReplayResu
       const bars=checkCoverage(yield request,request);
       for(const b of bars)ticks.push(...path(b,symbol).filter(t=>t.time>=cursor));
     }
-    processGroups(s,ticks,inWindow);
+    processGroups(s,ticks,inWindow,input.funding);
     cursor=end;
   }
   let checkpoint:NativeCheckpoint={time:until,digest:instructionDigest(commands,until),state:structuredClone(s)};
   // Instructions inside the still-forming minute are re-applied on every replay until their minute closes.
-  processGroups(s,[],pending.slice(next));
+  processGroups(s,[],pending.slice(next),input.funding);
   if(input.checkpoint?.commandCount!==undefined)checkpoint=liveCheckpoint(s,commands)??checkpoint;
   const observed=input.latest?applyLatestQuotes(s,input.latest,input.asOf):null;
   demoAccount(s);
@@ -455,7 +462,7 @@ export function replayNativeDemoWithBars(input:ReplayInput&{bars:Record<string,R
   return step.value;
 }
 /** Backwards-compatible full replay used by fixtures: returns the projected snapshot. */
-export function replayNativeDemo(input:{deposit:string;instructions:NativeInstruction[];bars:Record<string,ReplayBar[]>;asOf:number;latest?:Record<string,{mark:string;last:string;time:number}>}):DemoState{
+export function replayNativeDemo(input:{deposit:string;instructions:NativeInstruction[];bars:Record<string,ReplayBar[]>;asOf:number;latest?:Record<string,{mark:string;last:string;time:number}>;funding?:NativeFundingSchedule}):DemoState{
   return replayNativeDemoWithBars(input).snapshot;
 }
 /**

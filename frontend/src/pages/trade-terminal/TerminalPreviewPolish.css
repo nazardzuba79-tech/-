@@ -18,7 +18,10 @@
   --preview-buy: #16825f;
   --preview-sell: #b83e50;
   --text-primary: #ffffff;
-  --text-secondary: #b7bdc6;
+  /* 2026-10-07: secondary text and the accent follow the shared terminal
+   * tokens (VoltexTerminalSystem.css) so the Spot/CFD phone layouts carry the
+   * same palette as Futures; qa-spot-cfd-terminal compares them per token. */
+  --text-secondary: #6a6e73;
   --text-tertiary: #909baa;
   --accent: #f0b90b;
   --accent-yellow: #f0b90b;
@@ -213,6 +216,17 @@
   :is(.order-form-tab.buy.active, .cfd-sideTab.buy.active) { background: #193b30; color: #91dbbe; }
 :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
   :is(.order-form-tab.sell.active, .cfd-sideTab.sell.active) { background: #44252e; color: #f1adb7; }
+/* Spot uses the terminal's standard trade colours for both selected side and CTA. */
+:is(#archive-terminal-preview, .vx-terminal).spot-terminal[data-premium-terminal-preview] {
+  --preview-buy: var(--color-buy);
+  --preview-sell: var(--color-sell);
+}
+:is(#archive-terminal-preview, .vx-terminal).spot-terminal[data-premium-terminal-preview] .order-form-tab.buy.active {
+  background: var(--preview-buy); border-color: var(--preview-buy); color: #fff;
+}
+:is(#archive-terminal-preview, .vx-terminal).spot-terminal[data-premium-terminal-preview] .order-form-tab.sell.active {
+  background: var(--preview-sell); border-color: var(--preview-sell); color: #fff;
+}
 :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .archive-tool-dialog {
   background: var(--preview-panel);
   border: 1px solid var(--preview-line);

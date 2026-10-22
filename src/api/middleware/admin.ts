@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthedRequest } from './auth';
+import { asyncRoute } from '../asyncRoute';
 
 /**
  * Only the account(s) with role=ADMIN in the database can reach anything
@@ -16,7 +17,7 @@ import { AuthedRequest } from './auth';
  * takes effect on the very next request, not just at login time.
  */
 export function requireAdmin(prisma: PrismaClient) {
-  return async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  return asyncRoute(async (req: AuthedRequest, res: Response, next: NextFunction) => {
     if (!req.userId) return res.status(401).json({ error: 'Missing bearer token' });
 
     const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { role: true } });
@@ -24,5 +25,5 @@ export function requireAdmin(prisma: PrismaClient) {
       return res.status(403).json({ error: 'Admin access required' });
     }
     next();
-  };
+  });
 }

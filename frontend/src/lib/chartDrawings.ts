@@ -177,11 +177,28 @@ export const DRAWING_TEXT_KINDS: readonly DrawingKind[] = ['text', 'note', 'call
 export const FREEHAND_KINDS: readonly DrawingKind[] = ['brush', 'highlighter'];
 
 export type DrawingDash = 'solid' | 'dashed' | 'dotted';
-export interface DrawingStyle { color: string; width: number; dash: DrawingDash; fill?: string }
+
+/** What a measurement label reports: TradingView's «Информация» checklist. */
+export interface MeasureInfo { price: boolean; percent: boolean; ticks: boolean; bars: boolean; time: boolean; volume: boolean }
+/** The ruler's label as the owner settled it (price and %, bars and time, volume); ticks are TradingView's extra. */
+export const DEFAULT_MEASURE_INFO: MeasureInfo = { price: true, percent: true, ticks: false, bars: true, time: true, volume: true };
+export const MEASURE_INFO_KEYS = ['price', 'percent', 'ticks', 'bars', 'time', 'volume'] as const;
+
+export interface DrawingStyle {
+  color: string; width: number; dash: DrawingDash; fill?: string;
+  /** Background («Фон»): switched off, or its opacity 0–1. */
+  fillOff?: true; fillOpacity?: number;
+  /** Label («Метка»): text colour, font size, and its background colour or none. */
+  textColor?: string; fontSize?: number; labelBg?: string; labelBgOff?: true;
+  /** The trader's own text under a measurement (Text tab). */
+  bold?: true; italic?: true;
+  /** A measurement's lines; absent means DEFAULT_MEASURE_INFO. */
+  info?: MeasureInfo;
+}
 
 /** TradingView's own defaults: its blue for lines and measurements, purple
  *  for shapes, green / red for the position tools and arrow marks. */
-const TV_BLUE = '#2962ff';
+export const TV_BLUE = '#2962ff';
 export const DEFAULT_DRAWING_STYLES: Record<DrawingKind, DrawingStyle> = {
   trendline: { color: TV_BLUE, width: 2, dash: 'solid' }, rayline: { color: TV_BLUE, width: 2, dash: 'solid' },
   infoline: { color: TV_BLUE, width: 2, dash: 'solid' }, extended: { color: TV_BLUE, width: 2, dash: 'solid' },
@@ -221,6 +238,8 @@ export const DRAWING_PALETTE = [
 ] as const;
 export const DRAWING_WIDTHS = [1, 2, 3, 4] as const;
 
+export const DRAWING_FONT_SIZES = [10, 11, 12, 14, 16, 20, 24] as const;
+
 export function sanitizeDrawingStyle(value: unknown): DrawingStyle | undefined {
   if (!value || typeof value !== 'object') return undefined;
   const v = value as Record<string, unknown>;
@@ -229,6 +248,18 @@ export function sanitizeDrawingStyle(value: unknown): DrawingStyle | undefined {
   const dash = v.dash === 'dashed' || v.dash === 'dotted' ? v.dash : 'solid';
   const style: DrawingStyle = { color: v.color as string, width: Math.max(1, Math.min(24, Math.round(v.width))), dash };
   if (hex(v.fill)) style.fill = v.fill as string;
+  if (v.fillOff === true) style.fillOff = true;
+  if (typeof v.fillOpacity === 'number' && Number.isFinite(v.fillOpacity)) style.fillOpacity = Math.max(0, Math.min(1, Math.round(v.fillOpacity * 100) / 100));
+  if (hex(v.textColor)) style.textColor = v.textColor as string;
+  if (typeof v.fontSize === 'number' && Number.isFinite(v.fontSize)) style.fontSize = Math.max(8, Math.min(32, Math.round(v.fontSize)));
+  if (hex(v.labelBg)) style.labelBg = v.labelBg as string;
+  if (v.labelBgOff === true) style.labelBgOff = true;
+  if (v.bold === true) style.bold = true;
+  if (v.italic === true) style.italic = true;
+  if (v.info && typeof v.info === 'object') {
+    const info = v.info as Record<string, unknown>;
+    style.info = Object.fromEntries(MEASURE_INFO_KEYS.map((key) => [key, info[key] === true])) as unknown as MeasureInfo;
+  }
   return style;
 }
 
@@ -268,8 +299,30 @@ export function formatDrawingVolume(value: number): string {
   return value.toFixed(abs >= 100 ? 0 : 2);
 }
 
-const BAR_WORD: Record<string, string> = { ru: 'столбцы', en: 'bars', es: 'barras', zh: '根K线', ja: '本', ko: '봉', hi: 'बार' };
-const VOLUME_WORD: Record<string, string> = { ru: 'Объем', en: 'Vol', es: 'Vol', zh: '成交量', ja: '出来高', ko: '거래량', hi: 'वॉल्यूम' };
+const BAR_WORD: Record<string, string> = { es: 'barras', zh: '根K线', ja: '本', ko: '봉', hi: 'बार' };
+const VOLUME_WORD: Record<string, string> = { ru: 'Объём', en: 'Vol', es: 'Vol', zh: '成交量', ja: '出来高', ko: '거래량', hi: 'वॉल्यूम' };
+
+/** «1 бар», «3 бара», «12 баров»; «1 bar», «3 bars» — TradingView's wording. */
+export function drawingBarsText(bars: number, lang = 'en'): string {
+  const n = Math.abs(Math.trunc(bars));
+  if (lang === 'ru') {
+    const mod10 = n % 10, mod100 = n % 100;
+    const word = mod10 === 1 && mod100 !== 11 ? 'бар' : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'бара' : 'баров';
+    return `${bars} ${word}`;
+  }
+  if (lang === 'en') return `${bars} ${n === 1 ? 'bar' : 'bars'}`;
+  return `${bars} ${BAR_WORD[lang] ?? (n === 1 ? 'bar' : 'bars')}`;
+}
+
+/** The raw price move, signed, as TradingView prints it before the percent. */
+export function formatDrawingPriceDiff(value: number, lang = 'en'): string {
+  if (!Number.isFinite(value)) return '—';
+  const abs = Math.abs(value);
+  const text = abs >= 1
+    ? abs.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { minimumFractionDigits: 2, maximumFractionDigits: abs >= 100 ? 2 : 4, useGrouping: true })
+    : abs.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { maximumSignificantDigits: 4, useGrouping: false });
+  return `${value > 0 ? '+' : value < 0 ? '-' : ''}${text}`;
+}
 
 export interface DrawingRange {
   priceDiff: number; pct: number | null; ticks: number | null;
@@ -283,23 +336,39 @@ export function drawingRange(a: DrawingPoint, b: DrawingPoint, candles: readonly
   const inRange = candles.filter((c) => c.time >= lo && c.time < hi && Number.isFinite(c.volume));
   const volume = inRange.length ? inRange.reduce((sum, c) => sum + (c.volume ?? 0), 0) : null;
   const ticks = minMove && minMove > 0 && Number.isFinite(measured.priceDiff) ? Math.round(measured.priceDiff / minMove) : null;
-  return { priceDiff: measured.priceDiff, pct: measured.pct, ticks, bars: measured.bars, seconds: hi - lo, volume };
+  // TradingView measures time in whole bars: anchors sit on bars, so «1 bar» on
+  // a daily chart is 1d, never the 17h between a click and a candle's open.
+  const seconds = intervalSeconds > 0 ? measured.bars * intervalSeconds : hi - lo;
+  return { priceDiff: measured.priceDiff, pct: measured.pct, ticks, bars: measured.bars, seconds, volume };
 }
 
 /**
- * The label lines: «+7.91%» / «6 столбцы, 6ч 45мин» / «Объем 435.06M».
- * TradingView also prints the raw price difference and the tick count
- * («0.08128 (7.91%) 8,128»); the owner took both off (2026-09-26: «ці дані
- * лишні … значення цих цифр не знає») — the move reads as a percentage.
+ * The label lines, as TradingView and Bybit print them:
+ * «+0.08128 (+7,91%)» / «6 баров, 6ч» / «Объём 435.06M».
+ * The price move is back beside the percent (owner, 2026-10-04: «зроби її
+ * нормальною як у байбіт і трейдінгвю»); the tick count stays off
+ * (owner, 2026-09-26: «значення цих цифр не знає»).
  */
-export function drawingRangeLines(range: DrawingRange, lang = 'en', parts: { price?: boolean; date?: boolean } = { price: true, date: true }): string[] {
+export function drawingRangeLines(range: DrawingRange, lang = 'en', parts: { price?: boolean; date?: boolean } = { price: true, date: true }, info: MeasureInfo = DEFAULT_MEASURE_INFO): string[] {
   const lines: string[] = [];
-  if (parts.price !== false) {
-    lines.push(range.pct === null ? '—' : `${range.pct > 0 ? '+' : ''}${range.pct.toFixed(2)}%`);
+  if (parts.price !== false && (info.price || info.percent || info.ticks)) {
+    const percent = range.pct;
+    const pctText = percent === null || !Number.isFinite(percent) ? '—'
+      : `${percent > 0 ? '+' : ''}${percent.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}%`;
+    // A zero/negative starting price has no percentage, but its finite price
+    // move is still measurable. Keep that value and mark only the % unavailable.
+    const head = !info.price ? (info.percent ? (pctText === '—' ? '—%' : pctText) : '')
+      : !Number.isFinite(range.priceDiff) ? (info.percent ? pctText : '—')
+      : info.percent ? `${formatDrawingPriceDiff(range.priceDiff, lang)} (${pctText === '—' ? '—%' : pctText})` : formatDrawingPriceDiff(range.priceDiff, lang);
+    // TradingView prints the move in ticks after it: «18 940,04 (11 872,45%) 1 894 004».
+    const ticks = info.ticks && range.ticks !== null ? range.ticks.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { useGrouping: true }) : '';
+    const line = [head, ticks].filter(Boolean).join(' ');
+    if (line) lines.push(line);
   }
   if (parts.date !== false) {
-    lines.push(`${range.bars} ${BAR_WORD[lang] ?? BAR_WORD.en}, ${formatDrawingDuration(range.seconds, lang)}`);
-    if (range.volume !== null) lines.push(`${VOLUME_WORD[lang] ?? VOLUME_WORD.en} ${formatDrawingVolume(range.volume)}`);
+    const when = [info.bars ? drawingBarsText(range.bars, lang) : '', info.time ? formatDrawingDuration(range.seconds, lang) : ''].filter(Boolean).join(', ');
+    if (when) lines.push(when);
+    if (info.volume && range.volume !== null) lines.push(`${VOLUME_WORD[lang] ?? VOLUME_WORD.en} ${formatDrawingVolume(range.volume)}`);
   }
   return lines;
 }
@@ -324,10 +393,10 @@ export function positionMetrics(kind: 'long' | 'short', entry: number, target: n
 
 // ── Persistence ─────────────────────────────────────────────────────
 
-/** Which product a drawing belongs to. Spot and Futures keep separate
- *  sets even for the same ticker: they are different instruments and a
- *  perpetual's levels are not a spot chart's levels. */
-export type DrawingMarket = 'spot' | 'futures';
+/** Which product a drawing belongs to. Spot, Futures and CFD keep
+ *  separate sets even for the same ticker: they are different instruments
+ *  and a perpetual's levels are not a spot chart's levels. */
+export type DrawingMarket = 'spot' | 'futures' | 'cfd';
 
 /**
  * One saved drawing.
@@ -345,6 +414,30 @@ export interface StoredDrawing {
   style?: DrawingStyle;
   /** This one object is locked: it can be selected, not moved, edited or erased. */
   locked?: boolean;
+  /** A ruler whose end is the latest candle, re-measured as the price moves
+   *  (owner, 2026-10-04: «лінійка сама … розгортається до поточної ціни»). */
+  followLast?: true;
+  /** Timeframe units it shows on («Видимость»); absent means all of them. */
+  intervals?: DrawingIntervals;
+}
+
+export const DRAWING_INTERVAL_UNITS = ['minutes', 'hours', 'days', 'weeks', 'months'] as const;
+export type DrawingIntervalUnit = typeof DRAWING_INTERVAL_UNITS[number];
+export type DrawingIntervals = Record<DrawingIntervalUnit, boolean>;
+
+/** The unit a chart interval belongs to: 1m–30m minutes, 1h–12h hours, 1D days, 1W weeks, 1M months. */
+export function drawingIntervalUnit(intervalSeconds: number): DrawingIntervalUnit {
+  if (intervalSeconds < 3600) return 'minutes';
+  if (intervalSeconds < 86400) return 'hours';
+  if (intervalSeconds < 604800) return 'days';
+  if (intervalSeconds < 2419200) return 'weeks';
+  return 'months';
+}
+
+/** Whether a drawing shows on a chart of this interval (unknown interval: always). */
+export function drawingVisibleOn(drawing: Pick<StoredDrawing, 'intervals'>, intervalSeconds: number | undefined): boolean {
+  if (!drawing.intervals || !intervalSeconds || !(intervalSeconds > 0)) return true;
+  return drawing.intervals[drawingIntervalUnit(intervalSeconds)] !== false;
 }
 
 export interface StoredDrawingState {
@@ -424,6 +517,13 @@ export function parseStoredDrawings(raw: string | null): StoredDrawingState {
     const style = sanitizeDrawingStyle(d.style);
     if (style) drawing.style = style;
     if (d.locked === true) drawing.locked = true;
+    if (d.followLast === true && LIVE_END_KINDS.includes(kind)) drawing.followLast = true;
+    if (d.intervals && typeof d.intervals === 'object') {
+      const units = d.intervals as Record<string, unknown>;
+      const intervals = Object.fromEntries(DRAWING_INTERVAL_UNITS.map((unit) => [unit, units[unit] !== false])) as DrawingIntervals;
+      // All on is the same as none: store only a real restriction.
+      if (DRAWING_INTERVAL_UNITS.some((unit) => !intervals[unit])) drawing.intervals = intervals;
+    }
     drawings.push(drawing);
     if (drawings.length >= MAX_STORED_DRAWINGS) break;
   }
@@ -443,6 +543,51 @@ export function serializeDrawings(state: Omit<StoredDrawingState, 'version'>): s
     locked: state.locked,
   });
 }
+
+// ── Exact prices and a live end, for the ruler ──────────────────────
+
+/** Kinds whose end can be the latest price. */
+export const LIVE_END_KINDS: readonly DrawingKind[] = ['ruler'];
+
+/** The points a drawing is painted and measured with: a live-ended ruler ends at the latest candle. */
+export function livePoints(drawing: Pick<StoredDrawing, 'points' | 'followLast'>, live: DrawingPoint | null | undefined): DrawingPoint[] {
+  return drawing.followLast && live ? [drawing.points[0], live] : drawing.points;
+}
+
+/** The drawing with its live end written down as a fixed point — where a manual edit of that end starts. */
+export function settleLiveEnd<T extends StoredDrawing>(drawing: T, live: DrawingPoint | null | undefined): T {
+  if (!drawing.followLast) return drawing;
+  const { followLast: _following, ...rest } = drawing;
+  return { ...rest, points: livePoints(drawing, live).map((p) => ({ ...p })) } as T;
+}
+
+/** A price the trader typed: digits with one dot or comma, above zero. «0,81» and «0.81» both read 0.81. */
+export function parseDrawingPrice(text: string): number | null {
+  const s = text.trim().replace(',', '.');
+  if (!/^(\d+(\.\d+)?|\.\d+)$/.test(s)) return null;
+  const value = Number(s);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/** A price as the settings field shows it: exact, without float noise or grouping. */
+export function drawingPriceInput(price: number): string {
+  return Number.isFinite(price) ? String(Number(price.toPrecision(12))) : '';
+}
+
+/**
+ * The ruler's exact prices from its settings: the start price, and either a
+ * fixed end price or the latest price. Times stay where the trader put them;
+ * a live end sits on the latest candle.
+ */
+export function applyRulerPrices<T extends StoredDrawing>(drawing: T, prices: { from: number; to: number; followLast: boolean }, live: DrawingPoint | null | undefined): T {
+  const settled = settleLiveEnd(drawing, live);
+  const start = { ...settled.points[0], price: prices.from };
+  if (prices.followLast) return { ...settled, points: [start, settled.points[1]], followLast: true };
+  return { ...settled, points: [start, { ...settled.points[1], price: prices.to }] };
+}
+
+/** Pixels within which a dragged ruler edge lands exactly on the latest price. */
+export const LIVE_SNAP_PX = 6;
 
 // ── Hit testing, for the per-drawing eraser ─────────────────────────
 

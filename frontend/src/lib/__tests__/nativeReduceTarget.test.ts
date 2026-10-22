@@ -119,6 +119,8 @@ function executionHook() {
     if (id === './nativeFuturesAdapter') return { nativeAccountState: () => null };
     if (id === './nativeReduceTarget') return { nativeOrderDraft };
     if (id === './privateTradingError') return { PrivateTradingError };
+    // Pure fill arithmetic for the «Позиция закрыта» card; no I/O.
+    if (id === './futuresCloseFill') return require('../futuresCloseFill');
     throw new Error(`Unexpected runtime import: ${id}`);
   });
   return exports.useNativeFuturesExecution;
@@ -161,6 +163,19 @@ describe('execution resolves against current state, not a stale render', () => {
     await expect(executionHook()(native,null).closePosition(p.id)).rejects.toMatchObject({code:'quote_stale'});
     expect(native.execute).toHaveBeenCalledTimes(1);
     expect(native.execute).toHaveBeenCalledWith({kind:'CLOSE',positionId:p.id});
+  });
+  test('a close resolves with the fills it added: only its own CLOSE events, volume-weighted', async () => {
+    // «Позиция закрыта» card: the price is what THIS close filled at. An
+    // earlier partial close of the same position stays out of it.
+    const p = { ...position('target', 'CROSS', '0.5'), executionMode: 'HISTORICAL_DEMO' as const };
+    const event = (id: string, price: string, quantity: string) => ({ id, kind: 'CLOSE', time: 1, positionId: p.id, orderId: null, symbol: p.symbol, quantity, price, fee: '0', cashflow: '0', pricing: 'BOOK' });
+    let state: { initialized: boolean; positions: NativePosition[]; events: ReturnType<typeof event>[] } = { initialized: true, positions: [p], events: [event('earlier', '50000', '0.1')] };
+    const native = { ...controller([p], [p]), getState: () => state };
+    native.execute.mockImplementationOnce(async () => {
+      state = { ...state, positions: [], events: [...state.events, event('fill-1', '60000', '0.2'), event('fill-2', '60100', '0.3')] };
+      return state as never;
+    });
+    await expect(executionHook()(native, null).closePosition(p.id)).resolves.toEqual({ quantity: '0.5', averagePrice: '60060' });
   });
   test('a removed explicit target refuses even while the rendered state still contains it', async () => {
     const p = position('target', 'ISOLATED'), neighbour = position('neighbour', 'CROSS');

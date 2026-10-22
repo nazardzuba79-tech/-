@@ -14,7 +14,7 @@ function authHeader(userId: string) {
 
 function buildApp(prisma: any) {
   // Route fixtures model the persisted sessions issued by the current login flow.
-  prisma = { session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: where.id.replace('test-session:', ''), revokedAt: null, lastSeenAt: new Date() })) }, ...prisma };
+  prisma = { session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: where.id.replace('test-session:', ''), revokedAt: null, lastSeenAt: new Date() })), updateMany: jest.fn().mockResolvedValue({ count: 0 }) }, ...prisma };
   const app = express();
   // Mirrors src/index.ts's parser order — the avatar route's wider body
   // limit only applies because it is mounted ahead of the global parser,
@@ -103,6 +103,49 @@ describe('account routes', () => {
       const encrypted = data.adminPasswordVault.upsert.update.encryptedPassword;
       expect(data.adminPasswordVault.upsert.create.encryptedPassword).toBe(encrypted);
       expect(decryptAdminPassword(encrypted, 'alice@team.com')).toBe('newlongenoughpassword');
+    });
+
+    it('signs every other device out, remembered ones included, and keeps this one', async () => {
+      const currentHash = await bcrypt.hash('Correcthorsebattery', 12);
+      const updateMany = jest.fn().mockResolvedValue({ count: 2 });
+      const prisma = {
+        user: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'alice@team.com', role: 'ADMIN', passwordHash: currentHash }),
+          update: jest.fn().mockResolvedValue({}),
+        },
+        session: {
+          findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: 'user-1', revokedAt: null, lastSeenAt: new Date() })),
+          updateMany,
+        },
+        auditLog: { create: jest.fn() },
+      } as any;
+      const res = await request(buildApp(prisma))
+        .patch('/api/v1/me/password')
+        .set('Authorization', authHeader('user-1'))
+        .send({ currentPassword: 'Correcthorsebattery', newPassword: 'Newlongenoughpassword' });
+
+      expect(res.status).toBe(200);
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', revokedAt: null, id: { not: 'test-session:user-1' } },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+
+    it('does not sign anyone out when the current password is wrong', async () => {
+      const currentHash = await bcrypt.hash('Correcthorsebattery', 12);
+      const updateMany = jest.fn();
+      const prisma = {
+        user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', passwordHash: currentHash }), update: jest.fn() },
+        session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: 'user-1', revokedAt: null, lastSeenAt: new Date() })), updateMany },
+        auditLog: { create: jest.fn() },
+      } as any;
+      const res = await request(buildApp(prisma))
+        .patch('/api/v1/me/password')
+        .set('Authorization', authHeader('user-1'))
+        .send({ currentPassword: 'wrongpassword', newPassword: 'Newlongenoughpassword' });
+
+      expect(res.status).toBe(401);
+      expect(updateMany).not.toHaveBeenCalled();
     });
 
     it('rejects an incorrect current password', async () => {

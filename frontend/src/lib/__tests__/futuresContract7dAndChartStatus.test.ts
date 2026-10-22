@@ -38,6 +38,15 @@ describe('the chart stops narrating its own history', () => {
     ]) expect(chart).not.toContain(phrase);
   });
 
+  it('pages ordinary Futures history on scroll without a fixed 10k public cap', () => {
+    expect(chart).toContain("const historyEnabled = privateMode || (market === 'futures' && !!candleLoader)");
+    expect(chart).toContain('if (historyEnabled) chartRef.current?.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange)');
+    expect(chart).toContain('(privateMode && candlesRef.current.length >= 10000)');
+    expect(chart).not.toContain('historyLoading || historyEnd || !candlesRef.current.length || candlesRef.current.length >= 10000');
+    expect(chart).toContain('mergeChartCandles(candlesRef.current, res.candles, privateMode ? 10000 : Number.MAX_SAFE_INTEGER)');
+    expect(chart).toContain('mergeChartCandles(res.candles, candlesRef.current, privateMode ? 10000 : Number.MAX_SAFE_INTEGER)');
+  });
+
   it('keeps no internal history-availability state to render', () => {
     // The state existed only to feed that strip; `historyEnd`/`historyLoading`
     // still carry the control flow, which is not a customer-facing thing.

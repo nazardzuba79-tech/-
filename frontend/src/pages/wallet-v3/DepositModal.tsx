@@ -16,7 +16,7 @@ import { DepositCatalogueDialog } from '../../components/DepositCatalogueDialog'
  * address is ever constructed client-side.
  */
 export function DepositModal({ open, onClose, initialAsset }: { open: boolean; onClose: () => void; initialAsset?: string }) {
-  if (MANUAL_DEPOSIT_CATALOGUE) return open ? <DepositCatalogueDialog onClose={onClose} initialAsset={initialAsset}/> : null;
+  if (MANUAL_DEPOSIT_CATALOGUE) return open ? <DepositCatalogueDialog onClose={onClose} initialAsset={initialAsset} source="wallet"/> : null;
   return <LegacyDepositModal open={open} onClose={onClose}/>;
 }
 

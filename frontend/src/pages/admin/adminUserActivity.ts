@@ -1,4 +1,5 @@
 import { browserFetch as fetch } from '../../lib/browserActivity';
+import { DEPOSIT_MINIMUM_USD } from '../../lib/depositMinimum';
 import { useState } from 'react';
 import { useVisibleAccountRead } from '../../lib/useVisibleAccountRead';
 import { API_BASE, getToken } from '../../lib/api';
@@ -67,7 +68,7 @@ export async function getAdminUserActivity(signal?: AbortSignal): Promise<AdminU
     totalUsers,
     newUsers24h,
     pendingKyc,
-    minDepositUsd: Number(body.minDepositUsd) || 300,
+    minDepositUsd: Number(body.minDepositUsd) || DEPOSIT_MINIMUM_USD,
     packages: body.packages,
     counts: { UNATTRIBUTED, AWAITING_CONFIRMATIONS, AWAITING_TOPUP, READY, NEEDS_REVIEW },
     awaitingConfirmationsByUser: body.awaitingConfirmationsByUser && typeof body.awaitingConfirmationsByUser === 'object' ? body.awaitingConfirmationsByUser : {},
@@ -96,10 +97,15 @@ export function useAdminUserActivity(
   const [failed, setFailed] = useState(false);
   const [receivedAt, setReceivedAt] = useState<number | null>(null);
   const refresh = useVisibleAccountRead({
-    load: () => {
+    load: signal => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
-      return load(controller.signal).finally(() => clearTimeout(timer));
+      const abort = () => { controller.abort(); clearTimeout(timer); };
+      signal.addEventListener('abort', abort, { once: true });
+      if (signal.aborted) abort();
+      return load(controller.signal).finally(() => {
+        clearTimeout(timer); signal.removeEventListener('abort', abort);
+      });
     },
     staleMs: ADMIN_ACTIVITY_POLL_MS, poll: true, refreshOnWake: false,
     accept: next => { setActivity(next); setFailed(false); setReceivedAt(Date.now()); },

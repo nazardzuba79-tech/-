@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 import { v4 as uuidv4 } from 'uuid';
 import { FuturesPositionService } from '../FuturesPositionService';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
@@ -41,20 +42,7 @@ function makeFakePrisma(opts?: {
     user: {
       findUnique: jest.fn(async () => ({ id: 'u', createdAt: userCreatedAt })),
     },
-    futuresBalance: {
-      findUnique: jest.fn(async ({ where: { userId_asset: { userId, asset } } }: any) => {
-        const b = balances.get(`${userId}:${asset}`);
-        return b ? { ...b } : null;
-      }),
-      update: jest.fn(async ({ where: { userId_asset: { userId, asset } }, data }: any) => {
-        balances.set(`${userId}:${asset}`, { available: data.available, locked: data.locked });
-      }),
-      upsert: jest.fn(async ({ where: { userId_asset: { userId, asset } }, create }: any) => {
-        const key = `${userId}:${asset}`;
-        if (!balances.has(key)) balances.set(key, { available: create.available, locked: create.locked });
-        return { ...balances.get(key)! };
-      }),
-    },
+    futuresBalance: walletDelegate(balances),
     futuresOrder: {
       create: jest.fn(async ({ data }: any) => {
         orders.set(data.id, { createdAt: new Date(), updatedAt: new Date(), ...data });
@@ -998,7 +986,9 @@ describe('a bucket whose stop is mid-close admits no new exposure', () => {
     const engine = new MatchingEngine();
     const state = makeFakePrisma({
       balances: {
-        'taker:USDT': { available: '1000000', locked: '0' },
+        // Seed the actual collateral owned by the seeded positions.
+        'taker:USDT': { available: '1000000', locked: (opts.positions ?? []).filter(p => p.userId === 'taker' && p.status === 'OPEN')
+          .reduce((sum, p) => sum.plus(p.initialMargin), new BigNumber(0)).toFixed() },
         'other:USDT': { available: '1000000', locked: '0' },
         'maker:USDT': { available: '1000000', locked: '0' },
         'bidder:USDT': { available: '1000000', locked: '0' },

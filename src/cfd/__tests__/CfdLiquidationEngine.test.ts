@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 import { CfdLiquidationEngine } from '../CfdLiquidationEngine';
 import { CfdMarketDataService } from '../../services/CfdMarketDataService';
 
@@ -7,6 +8,7 @@ function makeFakePrisma(positions: any[], balances: Record<string, { available: 
   const balanceMap = new Map(Object.entries(balances));
 
   const tx = {
+    $queryRaw: jest.fn(async () => []),
     cfdPosition: {
       findUnique: jest.fn(async ({ where: { id } }: any) => (positionMap.has(id) ? { ...positionMap.get(id) } : null)),
       update: jest.fn(async ({ where: { id }, data }: any) => {
@@ -14,15 +16,7 @@ function makeFakePrisma(positions: any[], balances: Record<string, { available: 
         return { ...positionMap.get(id) };
       }),
     },
-    futuresBalance: {
-      findUnique: jest.fn(async ({ where: { userId_asset: { userId, asset } } }: any) => {
-        const b = balanceMap.get(`${userId}:${asset}`);
-        return b ? { ...b } : null;
-      }),
-      update: jest.fn(async ({ where: { userId_asset: { userId, asset } }, data }: any) => {
-        balanceMap.set(`${userId}:${asset}`, { available: data.available ?? balanceMap.get(`${userId}:${asset}`)!.available, locked: data.locked });
-      }),
-    },
+    futuresBalance: walletDelegate(balanceMap),
   };
 
   return {

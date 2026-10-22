@@ -1,0 +1,38 @@
+[
+  {
+    "width": 320,
+    "fontSize": "23px",
+    "lineHeight": "32.2px",
+    "errorHeight": 64.375,
+    "textHeight": 64.375,
+    "textWithinError": true,
+    "overflow": 0
+  },
+  {
+    "width": 360,
+    "fontSize": "23px",
+    "lineHeight": "32.2px",
+    "errorHeight": 64.375,
+    "textHeight": 64.375,
+    "textWithinError": true,
+    "overflow": 0
+  },
+  {
+    "width": 390,
+    "fontSize": "23px",
+    "lineHeight": "32.2px",
+    "errorHeight": 64.375,
+    "textHeight": 64.375,
+    "textWithinError": true,
+    "overflow": 0
+  },
+  {
+    "width": 430,
+    "fontSize": "23px",
+    "lineHeight": "32.2px",
+    "errorHeight": 64.375,
+    "textHeight": 64.375,
+    "textWithinError": true,
+    "overflow": 0
+  }
+]

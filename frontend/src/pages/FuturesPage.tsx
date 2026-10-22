@@ -1,9 +1,11 @@
 import { useNativeDemo } from './private-trading/useNativeDemo';
 import { NativeDemoDialogs } from './private-trading/NativeDemoControls';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, API_BASE } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { useFuturesPanelHeight, maxPanelHeightFor, FUTURES_PANEL_MIN_HEIGHT, FUTURES_PANEL_MAX_HEIGHT_FALLBACK, FUTURES_PANEL_KEY_STEP, effectivePanelHeight, accountExtensionPx } from '../lib/useFuturesPanelHeight';
+import { installPageFirstWheel } from '../lib/futuresPageFirstWheel';
 import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
@@ -41,6 +43,9 @@ import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { discoverFuturesSymbols, type FuturesUniverse } from '../lib/futuresDiscovery';
 import { readFuturesSymbolCache, writeFuturesSymbolCache } from '../lib/terminalWarmCache';
 import { initialFuturesPair, resolveListedFuturesPair, writeLastFuturesPair } from '../lib/futuresPairRoute';
+import { TerminalMarketSwitch } from '../components/TerminalMarketSwitch';
+import { resolveSwitchedPair, switchedFrom } from '../lib/terminalMarketSwitch';
+import { MOBILE_TERMINAL_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/FuturesTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
@@ -56,12 +61,48 @@ import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/ArchiveTerminalPreview.css';
 import './trade-terminal/FuturesMobile.css';
 import './trade-terminal/FuturesOrderPanelRefinement.css';
+import './trade-terminal/TerminalGraphite.css';
+import './trade-terminal/TerminalCalm.css';
+// The phone header and trading workspace; TerminalPanelTiles (desktop tiles,
+// phone tone tokens only) stays the last sheet.
+import './trade-terminal/TerminalMobileHeader.css';
+import './trade-terminal/FuturesMobileCompact.css';
+// Bybit 1:1 geometry, type and colour (owner, 2026-10-07); TerminalPanelTiles stays last.
+import './trade-terminal/FuturesBybitParity.css';
+import './trade-terminal/FuturesFigmaDesktop.css';
+import './trade-terminal/FuturesMobileLargeText.css';
+// The account panel's draggable top edge (owner, 2026-10-21); TerminalPanelTiles stays last.
+import './trade-terminal/FuturesPanelResize.css';
+import './trade-terminal/TerminalPanelTiles.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
 // Returning visitors paint the last real discovered universe immediately
 // from localStorage and then reconcile it with the same network calls that
 // already existed — no extra request is introduced.
 const CORE_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
+
+/** The pair row's height inside the terminal grid (the account panel's ceiling leaves it alone). */
+const tickerHeightOf = (terminal: HTMLElement) => terminal.querySelector<HTMLElement>('.ticker-bar')?.offsetHeight ?? 56;
+/** The grid's own padding and its two row gaps: what the three tracks cannot use. */
+const gridChromeOf = (terminal: HTMLElement) => {
+  const cs = getComputedStyle(terminal);
+  const px = (v: string) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+  return px(cs.paddingTop) + px(cs.paddingBottom) + 2 * px(cs.rowGap || cs.gap);
+};
+/** How far the account panel continues below the screen's edge (the Bybit page scroll, FuturesPanelResize.css); 0 when folded or empty. */
+const accountExtensionOf = (terminal: HTMLElement) => accountExtensionPx(getComputedStyle(terminal).getPropertyValue('--futures-account-extension'));
+/** The terminal's height above that edge: what the chart, the pair row and the panel's visible part share.
+ *  Measured against the screen, not only the terminal's box: the box is no longer held to the screen (the page
+ *  scrolls), so a tall panel remembered on a large screen would otherwise keep a small window's terminal tall
+ *  and hold up its own ceiling. The screen's room is the height the terminal had when it was fixed to it: the
+ *  window minus what sits above the terminal and what the root keeps below it. */
+const terminalRoomOf = (terminal: HTMLElement) => {
+  const box = terminal.getBoundingClientRect();
+  const root = terminal.parentElement?.closest<HTMLElement>('#archive-terminal-preview');
+  const below = root ? Math.max(0, root.getBoundingClientRect().bottom - box.bottom) : 0;
+  const screenRoom = Math.floor(window.innerHeight - (box.top + window.scrollY) - below);
+  return Math.min(terminal.clientHeight - accountExtensionOf(terminal), screenRoom);
+};
 
 // Orders and their history share /futures/orders/me with different filters.
 type BottomTab = 'orders' | 'positions' | 'orderHistory' | 'positionHistory' | 'assets';
@@ -117,9 +158,11 @@ export function FuturesPage() {
     setSymbol(next);
     writeLastFuturesPair(next);
     setSearchParams((current) => {
-      if (current.get('pair') === next) return current;
+      if (current.get('pair') === next && !current.has('from')) return current;
       const params = new URLSearchParams(current);
       params.set('pair', next);
+      // A pending «Фьючерсы» hand-over (`?from=`) is answered by any selection.
+      params.delete('from');
       return params;
     }, { replace: true });
   }, [setSearchParams]);
@@ -182,7 +225,13 @@ export function FuturesPage() {
   const visibleAccount = nativeExecution?.account ?? account;
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
-  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'positions'>('chart');
+  // A phone opens on the trading workspace — book, ticket, then positions —
+  // not on a full-screen chart the trader has to scroll past (owner,
+  // 2026-10-04). The chart stays one tab away and keeps its state.
+  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'positions'>('trade');
+  const compact = useMediaQuery(MOBILE_TERMINAL_QUERY);
+  /** Phone only: the account block and contract facts sit under the positions. */
+  const [accountSlot, setAccountSlot] = useState<HTMLDivElement | null>(null);
   const [mobileChartTab, setMobileChartTab] = useState<'chart' | 'book'>('chart');
   const mobileScroll = useRef<Record<string, number>>({});
   const mobileTabsRef = useRef<HTMLDivElement>(null);
@@ -212,6 +261,74 @@ export function FuturesPage() {
     window.requestAnimationFrame(() => window.scrollTo({ top: resetScroll ? 0 : mobileScroll.current[next] ?? 0, behavior: 'instant' }));
   }, [mobileTab]);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
+  /* The account panel's height on desktop: the trader drags its top edge
+     (Bybit), the arrow keys move it, a double-click gives the stylesheet's
+     height back. `null` = the stylesheet's own geometry. The measured values
+     feed the handle's ARIA range and the drag's start/ceiling; nothing else
+     reads them. */
+  const panelHeight = useFuturesPanelHeight();
+  const terminalRef = useRef<HTMLDivElement | null>(null);
+  const bottomPanelRef = useRef<HTMLDivElement | null>(null);
+  const [panelMeasured, setPanelMeasured] = useState<number>(FUTURES_PANEL_MIN_HEIGHT);
+  const [panelMax, setPanelMax] = useState<number>(FUTURES_PANEL_MAX_HEIGHT_FALLBACK);
+  const [panelDragging, setPanelDragging] = useState(false);
+  /* The ceiling is measured BEFORE the first paint (layout effect), so a
+     height remembered on a large screen is already held inside a small
+     window's room when the grid first appears — never a frame of a chart
+     squeezed under its 300px — and re-measured on every terminal resize.
+     Heights here are the panel's part above the screen's edge: the part
+     that continues below it (the Bybit page scroll) is not the trader's. */
+  useLayoutEffect(() => {
+    const terminal = terminalRef.current, panel = bottomPanelRef.current;
+    if (!terminal || !panel || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      setPanelMeasured(Math.round(panel.getBoundingClientRect().height) - accountExtensionOf(terminal));
+      setPanelMax(maxPanelHeightFor(terminalRoomOf(terminal), tickerHeightOf(terminal), gridChromeOf(terminal)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(terminal); observer.observe(panel);
+    // A window that shrinks under a tall terminal need not resize the terminal itself any more.
+    window.addEventListener('resize', measure);
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
+  }, []);
+  /* Bybit's page scrolls as one piece: the wheel over the order column moves
+     the page first, then the column's own rest (futuresPageFirstWheel.ts).
+     Desktop only — on a phone the column is a tab of the page itself. */
+  const orderColumnRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const column = orderColumnRef.current;
+    if (!column || typeof window.matchMedia !== 'function') return;
+    const desktop = window.matchMedia('(min-width: 901px)');
+    return installPageFirstWheel(column, () => desktop.matches);
+  }, []);
+  /* What the grid gets: the remembered preference, held inside today's
+     ceiling. The preference itself stays (localStorage) while a small
+     window limits it, so the large screen gets its height back. */
+  const panelShown = effectivePanelHeight(panelHeight.height, panelMax);
+  const panelLimited = panelShown !== null && panelHeight.height !== null && panelShown < panelHeight.height;
+  const resizePanelBy = useCallback((delta: number) => {
+    panelHeight.set((panelShown ?? panelMeasured) + delta, panelMax);
+  }, [panelHeight, panelShown, panelMeasured, panelMax]);
+  const startPanelResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    const terminal = terminalRef.current, panel = bottomPanelRef.current;
+    const startY = event.clientY;
+    const startHeight = panelShown ?? (panel && terminal ? Math.round(panel.getBoundingClientRect().height) - accountExtensionOf(terminal) : panelMeasured);
+    const max = terminal ? maxPanelHeightFor(terminalRoomOf(terminal), tickerHeightOf(terminal), gridChromeOf(terminal)) : panelMax;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setPanelDragging(true);
+    const move = (e: PointerEvent) => panelHeight.set(startHeight + startY - e.clientY, max);
+    const stop = () => {
+      setPanelDragging(false);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+  }, [panelHeight, panelShown, panelMeasured, panelMax]);
   const accountPanel = useCompactAccountPanel(
     (bottomTab === 'orders' || bottomTab === 'positions')
       && isVerifiedEmptyAccountResource(visibleAccount.orders)
@@ -236,7 +353,10 @@ export function FuturesPage() {
    * it, and it is not persisted anywhere — it is the state of a toolbar.
    */
   const [chartTrading, setChartTrading] = useState(false);
-  useEffect(()=>{native.setHistoryDemand({positions:bottomTab==='positionHistory',orders:bottomTab==='orderHistory',chart:chartTrading});},[bottomTab,chartTrading,native.setHistoryDemand]);
+  // A «Позиция закрыта» card on the Positions tab reads its result from the
+  // closed row, so the native history is wanted while it is shown, too.
+  const [closeCardHistory, setCloseCardHistory] = useState(false);
+  useEffect(()=>{native.setHistoryDemand({positions:bottomTab==='positionHistory'||closeCardHistory,orders:bottomTab==='orderHistory',chart:chartTrading});},[bottomTab,chartTrading,closeCardHistory,native.setHistoryDemand]);
   /**
    * Where the chart tool menu is open, or `null` for closed.
    *
@@ -395,11 +515,43 @@ export function FuturesPage() {
   // leaves the address without it. Writing it back once is what makes the
   // NEXT refresh keep that contract too, and it is a replace, so no history
   // entry is added for simply opening the terminal.
+  // A pending «Фьючерсы» hand-over (`?from=`) is left for its resolver below,
+  // which writes the contract back itself — seeding here would answer it
+  // with the remembered contract before the venue's list is read.
   useEffect(() => {
-    if (!searchParams.get('pair')) selectSymbol(symbol);
+    if (!searchParams.get('pair') && !searchParams.has('from')) selectSymbol(symbol);
     // Mount only: afterwards `selectSymbol` is the one that keeps them in step.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * «Фьючерсы» from a Spot pair this browser could not vouch for arrives as
+   * `?from=PAIR`. The contract on screen stays what it was until the venue's
+   * own list answers: a listed pair is then selected, an unlisted one opens
+   * the market chooser with a note — a Spot-only coin never becomes an
+   * invented perpetual. See lib/terminalMarketSwitch.
+   */
+  const switchedFromSpot = switchedFrom(searchParams.get('from'));
+  const [switchNote, setSwitchNote] = useState<string | null>(null);
+  // Declared before the resolver so a note set in the same pass survives.
+  useEffect(() => { setSwitchNote(null); }, [symbol]);
+  useEffect(() => {
+    if (!switchedFromSpot) return;
+    const settled = Boolean(universe?.available);
+    const listed = settled ? discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe!) : symbols;
+    const verdict = resolveSwitchedPair(switchedFromSpot, new Set(listed), settled);
+    if (verdict === 'wait') return;
+    if (verdict === 'select') { selectSymbol(switchedFromSpot); return; }
+    setSearchParams(current => {
+      const params = new URLSearchParams(current);
+      params.delete('from');
+      if (!params.get('pair')) params.set('pair', symbolRef.current);
+      return params;
+    }, { replace: true });
+    setSwitchNote(switchedFromSpot);
+    if (window.matchMedia('(min-width: 1025px)').matches) setChooserOpen(true);
+    else if (marketDialogRef.current && !marketDialogRef.current.open) { marketDialogRef.current.showModal(); pairListRef.current?.focusSearch(); }
+  }, [switchedFromSpot, symbols, universe, futuresConfig, setSearchParams, selectSymbol]);
 
   // Landing here is itself the signal that futures is this user's current
   // trading mode — see lib/tradingMode.
@@ -438,8 +590,8 @@ export function FuturesPage() {
    * already drawing them from somewhere else.
    *
    * `privateTrading` gives the chart the simulation transcript, which
-   * already puts an entry line on every open trade and TP/SL/LIQ on the
-   * selected one. Handing it this list as well would draw a second entry
+   * already puts an entry line on every open trade and TP/SL on the
+   * selected one. LIQ is displayed only in the positions table. Handing it this list as well would draw a second entry
    * line over the first for the same position — the duplicate the brief
    * explicitly rules out. So this is the REAL engine's equivalent of that
    * path, not a second copy of it.
@@ -504,6 +656,7 @@ export function FuturesPage() {
         active="/futures"
         rightExtra={archivePreview ? <>{!nativeExecution && <PrivateTradingEntry/>}<ArchiveAccountActivity positions={visibleAccount.positions.data?.length ?? null} orders={visibleAccount.orders.data?.length ?? null} /></> : nativeExecution ? undefined : <PrivateTradingEntry/>}
         quoteAsset={archivePreview ? symbol.split('/')[1] : undefined}
+        terminalSwitch={<TerminalMarketSwitch current="futures" pair={symbol} />}
         onTickerSelect={handleTickerSelect}
         staticTicker
         tickerSymbols={symbols}
@@ -513,8 +666,13 @@ export function FuturesPage() {
 
       <FuturesExecutionProvider value={execution}>
       <FuturesAccountSourceContext.Provider value={execution.account}>
-      <div className="terminal" data-account-compact={accountPanel.compact} data-mobile-tab={mobileTab} data-mobile-chart={mobileChartTab}>
-        <FuturesTickerBar archive={archivePreview} symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} onOpenCalculator={archivePreview ? undefined : () => setCalculatorOpen(true)} />
+      <div className="terminal" ref={terminalRef} data-account-compact={accountPanel.compact} data-mobile-tab={mobileTab} data-mobile-chart={mobileChartTab}
+        data-account-height={panelHeight.height !== null ? 'user' : undefined}
+        data-account-height-limited={panelLimited ? 'true' : undefined}
+        style={panelShown !== null ? ({ '--futures-account-height': `${panelShown}px` } as React.CSSProperties) : undefined}>
+        {/* On a phone the calculator rides in the instrument row: the
+            ticket's own heading row is not drawn there (see below). */}
+        <FuturesTickerBar archive={archivePreview} symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} onOpenCalculator={archivePreview && !compact ? undefined : () => setCalculatorOpen(true)} />
 
         <div className="futures-mobile-tabs" ref={mobileTabsRef} role="tablist" aria-label={t('nav.futures')}>
           {([['chart', 'futures.chart'], ['trade', 'nav.trade'], ['positions', 'futures.positions']] as const).map(([id, label]) =>
@@ -560,6 +718,7 @@ export function FuturesPage() {
               it — nothing below it moves while it is open. */}
           {desktopMarkets && chooserOpen && (
             <div className="futures-market-chooser" ref={chooserRef} role="dialog" aria-modal="false" aria-label={t('nav.markets')}>
+              {switchNote && <p className="terminal-switch-note" role="status">{t('terminal.noFuturesContract', { pair: switchNote })}</p>}
               <FuturesPairList
                 searchable
                 onDismiss={() => setChooserOpen(false)}
@@ -619,9 +778,9 @@ export function FuturesPage() {
                 setChartMenu({ x: event.clientX, y: event.clientY });
               } : undefined}
             >
-              <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
+              <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} onSelectPair={selectSymbol}
                 privateTrading={nativeExecution ? native.interaction : undefined}
-                positionLines={chartPositionLines} />
+                positionLines={chartPositionLines} chartSettings foldHeading={false} />
               {nativeExecution && <button
                 type="button"
                 /* Touch has no double click. This is a compact control that
@@ -681,13 +840,15 @@ export function FuturesPage() {
               onPickPrice={(value) => {
                 pickedSeq.current += 1;
                 setPickedPrice({ symbol, value, seq: pickedSeq.current });
-                selectMobileTab('trade', true);
+                // The book sits beside the ticket on a phone now: picking a
+                // level must not throw the trader back to the top.
+                selectMobileTab('trade');
               }}
             />
           </div>
 
-          <div id="mobile-futures-panel-trade" className="order-form-area">
-            {archivePreview ? <div className="archive-trading-heading">
+          <div id="mobile-futures-panel-trade" className="order-form-area" ref={orderColumnRef}>
+            {compact ? null : archivePreview ? <div className="archive-trading-heading">
               <h2 className="reference-order-heading">{t('nav.trade')}</h2>
               <button type="button" className="archive-calculator-trigger" data-open-calculator="true" title={t('calc.title')} aria-label={t('calc.title')} onClick={() => setCalculatorOpen(true)}><Calculator size={19} /></button>
             </div> : <h2 className="reference-order-heading">{t('nav.trade')}</h2>}
@@ -701,9 +862,6 @@ export function FuturesPage() {
               executionEnabled={nativeExecution ? true : (futuresConfig?.symbols.includes(symbol) ?? false)}
               onPlaced={handleOrderPlaced}
               onOpenTransfer={nativeExecution ? undefined : () => setShowTransfer(true)}
-              /* The «+» beside «Доступно»: the same destination the account
-                 panel's «Перевести» reaches on either engine. */
-              onTransfer={nativeExecution ? () => navigate('/wallet?action=transfer') : () => setShowTransfer(true)}
               pickedPrice={pickedPrice?.symbol === symbol ? pickedPrice.value : undefined}
               pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
               /* The LAST TRADED price, which is what the button beside the
@@ -716,14 +874,26 @@ export function FuturesPage() {
               lastPrice={tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null}
               calculatorDraft={calculatorDraft ?? undefined}
               onOpenCalculator={() => setCalculatorOpen(true)}
+              compact={compact}
+              accountSlot={compact ? accountSlot : null}
             />
             {/* The contract's facts under the ticket, on the design the owner
-               looks at. Read-only; the ticket above is untouched. */}
-            {archivePreview && <FuturesContractDetails symbol={symbol} />}
+               looks at. Read-only; the ticket above is untouched. A phone
+               shows the same block under the positions instead. */}
+            {archivePreview && !compact && <FuturesContractDetails symbol={symbol} />}
           </div>
         </div>
 
-        <div id="mobile-futures-panel-positions" className="bottom-panel" data-account-compact={accountPanel.compact}>
+        <div id="mobile-futures-panel-positions" className="bottom-panel" ref={bottomPanelRef} data-account-compact={accountPanel.compact}>
+          <div className="orders-resize-handle" role="separator" tabIndex={0} aria-label={t('futures.panelHeight')} title={t('futures.panelHeight')}
+            aria-orientation="horizontal" aria-valuemin={FUTURES_PANEL_MIN_HEIGHT} aria-valuemax={panelMax} aria-valuenow={panelShown ?? panelMeasured}
+            data-dragging={panelDragging || undefined} data-user-height={panelHeight.height ?? undefined} data-shown-height={panelShown ?? undefined}
+            onPointerDown={startPanelResize} onDoubleClick={panelHeight.reset}
+            onKeyDown={event => {
+              if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); resizePanelBy(event.key === 'ArrowUp' ? FUTURES_PANEL_KEY_STEP : -FUTURES_PANEL_KEY_STEP); }
+              else if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); panelHeight.set(event.key === 'End' ? panelMax : FUTURES_PANEL_MIN_HEIGHT, panelMax); }
+              else if (event.key === 'Escape') { event.preventDefault(); panelHeight.reset(); }
+            }} />
           <div className="terminal-account-header">
           <div className="bottom-tabs" role="tablist" aria-label={t('futures.positions')}>
             {BOTTOM_TABS.map((tab) => (
@@ -752,6 +922,7 @@ export function FuturesPage() {
             {bottomTab === 'positions' && (
               <FuturesPositionsPanel
                 archive={archivePreview}
+                mobile={compact}
                 symbolFilter={archivePreview && onlyCurrentPair ? symbol : undefined}
                 refreshKey={positionsRefreshKey}
                 tab="open"
@@ -764,6 +935,10 @@ export function FuturesPage() {
                    brought forward; `selectMobileTab` is a no-op on desktop,
                    where the chart is already visible. */
                 onSelectSymbol={(next) => { selectSymbol(next); selectMobileTab('chart', true); }}
+                /* «История позиций →» on the «Позиция закрыта» card opens
+                   this page's own Position History tab. */
+                onShowHistory={() => { setBottomTab('positionHistory'); accountPanel.reveal(); }}
+                onHistoryWanted={setCloseCardHistory}
                 onEditLeverage={nativeExecution?.ready ? (positionId) => {
                   const position = native.getState()?.positions.find(p => p.id === positionId && p.status === 'OPEN');
                   if (position && !native.busy) native.setDialog({ kind: 'leverage', position });
@@ -782,6 +957,13 @@ export function FuturesPage() {
             {bottomTab === 'assets' && <AssetsPanel wallet="futures" refreshKey={positionsRefreshKey} />}
           </div>
         </div>
+        {/* Phone: what used to follow the ticket — the account block, the
+            leverage tiers and the contract facts — follows the positions,
+            so the trade buttons lead straight into the trader's positions. */}
+        {compact && <div className="futures-mobile-extras">
+          <div className="futures-mobile-account-slot" ref={setAccountSlot} />
+          {archivePreview && <FuturesContractDetails symbol={symbol} />}
+        </div>}
       </div>
       </FuturesAccountSourceContext.Provider>
       </FuturesExecutionProvider>
@@ -792,9 +974,14 @@ export function FuturesPage() {
         <div className="reference-market-heading"><strong>{t('nav.markets')}</strong>
           <button type="button" aria-label={t('deposit.close')} onClick={() => marketDialogRef.current?.close()}>×</button>
         </div>
+        {switchNote && <p className="terminal-switch-note" role="status">{t('terminal.noFuturesContract', { pair: switchNote })}</p>}
         <div className="left-panel">
           <FuturesPairList ref={pairListRef} searchable onDismiss={() => marketDialogRef.current?.close()}
-            symbols={symbols} symbol={symbol} onChange={next => { selectSymbol(next); marketDialogRef.current?.close(); }} />
+            symbols={symbols} symbol={symbol} onChange={next => {
+              // The same pair closes the list too, and either way the trader
+              // lands on the trading workspace, not wherever the list was opened.
+              selectSymbol(next); marketDialogRef.current?.close(); selectMobileTab('trade');
+            }} />
         </div>
       </dialog>}
       {nativeExecution&&<NativeDemoDialogs controller={native}/>}

@@ -28,6 +28,7 @@ function buildApp(prisma: any, service: any) {
 
 function prismaFor(user: { role: string; email: string } | null) {
   return {
+    auditLog: { findFirst: jest.fn(async () => null) },
     user: { findUnique: jest.fn().mockResolvedValue(user ? { id: 'u1', ...user } : null) },
     session: { findUnique: jest.fn().mockResolvedValue({ revokedAt: null }) },
   } as any;

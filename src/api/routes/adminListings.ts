@@ -16,14 +16,16 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth, type AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import {
-  ListingValidationError, LISTING_SCHEMA_VERSION, generateSeed, listingPair, listingSimulationConfig, parseListingConfig,
-  type ListingConfig,
+  ListingValidationError, LISTING_COUNTDOWN_ACTIONS, LISTING_SCHEMA_VERSION, generateSeed, listingPair, listingSimulationConfig, parseListingConfig,
+  type ListingConfig, type ListingCountdownAction,
 } from '../../services/listings/listingConfig';
 import { ListingStoreError, type ListingStore } from '../../services/listings/store';
 import { managedListingRegistry, type ManagedListingRegistry } from '../../services/listings/registry';
 import { simulationFor } from '../../services/testMarkets/testMarketSimulation';
 import { testMarketDepth } from '../../services/testMarkets/testMarketDepth';
+import { AITH_PUBLICATION_PROTOCOL, isAith } from '../../shared/aithPublication';
 import { publicTestAsset, testMarketCandles, UnsupportedTestIntervalError } from '../../services/testMarkets/testMarketService';
+import { listingScenarioPreview } from '../../services/listings/listingPreview';
 
 /** Venue spot pairs a managed ticker must not shadow (e.g. a real `QAX/USDT`). */
 export interface VenueSpotPairs { hasSpotPair(pair: string): boolean }
@@ -68,16 +70,54 @@ export function adminListingsRouter(
   prisma: PrismaClient,
   store: ListingStore,
   venue: VenueSpotPairs | null,
-  registry: Pick<ManagedListingRegistry, 'invalidate' | 'ensureFresh'> = managedListingRegistry,
+  registry: Pick<ManagedListingRegistry, 'invalidate' | 'ensureFresh'> & Partial<Pick<ManagedListingRegistry, 'authoritative'>> = managedListingRegistry,
   clock: () => number = Date.now,
 ): Router {
   const router = Router();
   const guard = [requireAuth(prisma), requireAdmin(prisma)];
   const noStore = (res: Response) => res.set('Cache-Control', 'no-store');
+  // A small per-router LRU, populated only by explicit admin preview requests.
+  // Revision AND complete configuration are in the key; editing a draft can
+  // never show a previously generated, incorrectly labelled history.
+  const previewCache = new Map<string, ReturnType<typeof listingScenarioPreview>>();
 
   router.get('/admin/listings', ...guard, async (_req, res) => {
     noStore(res);
     try { res.json(await store.list()); } catch (error) { failure(res, error); }
+  });
+
+  router.get('/admin/listings/authority', ...guard, async (_req, res) => {
+    noStore(res);
+    try {
+      if (!registry.authoritative) return res.status(503).json({ error: 'authority_unavailable' });
+      const listings = await registry.authoritative();
+      res.json({ protocol: AITH_PUBLICATION_PROTOCOL, serverTime: clock(), listings: listings.map(item => ({ id: item.id, version: item.version, initialPrice: item.config.initialPrice, listingAt: item.config.listingAt, readLease: item.readLease })) });
+    } catch (error) { failure(res, error); }
+  });
+
+  router.post('/admin/listings/:id/replace-prelisting', ...guard, async (req: AuthedRequest, res) => {
+    noStore(res);
+    try {
+      if (!store.replacePrelisting || !registry.authoritative) return res.status(503).json({ error: 'replacement_protocol_unavailable' });
+      const listing = (await store.list()).listings.find(item => item.id === req.params.id);
+      if (!listing || !isAith(listing.symbol)) return res.status(422).json({ error: 'replacement_not_supported' });
+      // Read-only economic activity gate. AITH's independent trading guard prevents a racing order during the lease drain.
+      const counts = await Promise.all([
+        prisma.order.count({ where: { pair: { in: ['AITH/USDT', 'AITH-USDT', 'AITHUSDT'] } } }),
+        prisma.trade.count({ where: { pair: { in: ['AITH/USDT', 'AITH-USDT', 'AITHUSDT'] } } }),
+        prisma.futuresOrder.count({ where: { symbol: { in: ['AITH/USDT', 'AITH-USDT', 'AITHUSDT'] } } }),
+        prisma.futuresPosition.count({ where: { symbol: { in: ['AITH/USDT', 'AITH-USDT', 'AITHUSDT'] } } }),
+        prisma.balance.count({ where: { asset: 'AITH', OR: [{ available: { not: 0 } }, { locked: { not: 0 } }] } }),
+      ]);
+      if (counts.some(count => count !== 0)) return res.status(422).json({ error: 'HISTORY_LOCKED', message: 'AITH has economic activity; replacement is forbidden' });
+      const result = await store.replacePrelisting(req.params.id, req.body ?? {}, req.userId!);
+      registry.invalidate();
+      const current = await registry.authoritative();
+      if (result.phase === 'COMMITTED' && !current.some(item => item.id === listing.id && item.version === result.version)) {
+        return res.status(503).json({ error: 'replacement_committed_registry_unavailable', operationKey: result.operationKey });
+      }
+      res.json(result);
+    } catch (error) { failure(res, error); }
   });
 
   // Create: a new id; If-Match 0 makes a second submit of the same form a conflict, not a duplicate.
@@ -115,14 +155,25 @@ export function adminListingsRouter(
       const listing = (await store.list()).listings.find((item) => item.id === req.params.id);
       if (!listing) return res.status(404).json({ error: 'not_found' });
       const asset = listingSimulationConfig(listing.draft);
+      const horizon = typeof req.query.horizon === 'string' ? req.query.horizon : null;
       const requested = typeof req.query.at === 'string' ? Date.parse(req.query.at) : NaN;
-      const at = Number.isFinite(requested) ? requested : Math.max(clock(), asset.listingAt + 2 * 60 * 60_000);
       const interval = typeof req.query.interval === 'string' ? req.query.interval : '5m';
+      let scenario: ReturnType<typeof listingScenarioPreview> | undefined;
+      if (horizon !== null) {
+        const key = JSON.stringify([listing.id, listing.draftRevision, listing.draft, horizon, interval]);
+        scenario = previewCache.get(key);
+        if (scenario) previewCache.delete(key);
+        else scenario = listingScenarioPreview(listing.draft, interval, horizon);
+        previewCache.set(key, scenario);
+        if (previewCache.size > 12) previewCache.delete(previewCache.keys().next().value!);
+      }
+      const at = scenario?.scenarioSummary.to ?? (Number.isFinite(requested) ? requested : Math.max(clock(), asset.listingAt + 2 * 60 * 60_000));
       const simulation = simulationFor(asset);
       res.json({
         listingId: listing.id, draftRevision: listing.draftRevision, previewAt: at, serverTime: clock(),
         asset: { ...publicTestAsset(asset, at), logo: listing.draft.logo, displayTimeZone: listing.draft.displayTimeZone },
-        candles: testMarketCandles(asset, interval, at, 200),
+        candles: scenario?.candles ?? testMarketCandles(asset, interval, at, 200),
+        ...(scenario ? { scenarioSummary: scenario.scenarioSummary } : {}),
         book: testMarketDepth(simulation, at),
         trades: simulation.recentTrades(at, 30).map((trade) => ({ ...trade, time: trade.timestamp })),
       });
@@ -134,17 +185,40 @@ export function adminListingsRouter(
 
   router.post('/admin/listings/:id/publish', ...guard, async (req: AuthedRequest, res) => {
     noStore(res);
-    const { draftRevision, publishKey } = (req.body ?? {}) as { draftRevision?: unknown; publishKey?: unknown };
+    const { draftRevision, publishKey, countdown } = (req.body ?? {}) as { draftRevision?: unknown; publishKey?: unknown; countdown?: unknown };
     if (!ID.test(req.params.id)) return res.status(404).json({ error: 'not_found' });
-    if (!Number.isSafeInteger(draftRevision) || typeof publishKey !== 'string' || !PUBLISH_KEY.test(publishKey)) {
+    if (!Number.isSafeInteger(draftRevision) || typeof publishKey !== 'string' || !PUBLISH_KEY.test(publishKey)
+      || (countdown !== undefined && countdown !== 'staged' && countdown !== 'running')) {
       return res.status(400).json({ error: 'INVALID_PUBLISH_REQUEST' });
     }
     try {
       const listing = (await store.list()).listings.find((item) => item.id === req.params.id);
       if (!listing) return res.status(404).json({ error: 'not_found' });
       ensureNotOnVenue(listing.draft, venue);
-      const result = await store.publish(req.params.id, draftRevision as number, publishKey, req.userId!);
+      const result = await store.publish(req.params.id, draftRevision as number, publishKey, req.userId!, countdown as 'staged' | 'running' | undefined);
       // Render's trading registry learns the new version on the next order/valuation.
+      registry.invalidate();
+      res.json(result);
+    } catch (error) { failure(res, error); }
+  });
+
+  /**
+   * The pre-listing timer: start, pause or stop the public countdown of a
+   * published listing. Operational state in the store, never a new version;
+   * the listing time stays where the publication put it. Nothing starts by
+   * itself: a passed date is refused (LISTING_TIME_PAST) until it is moved.
+   */
+  router.post('/admin/listings/:id/countdown', ...guard, async (req: AuthedRequest, res) => {
+    noStore(res);
+    const { action } = (req.body ?? {}) as { action?: unknown };
+    if (!ID.test(req.params.id)) return res.status(404).json({ error: 'not_found' });
+    if (typeof action !== 'string' || !LISTING_COUNTDOWN_ACTIONS.includes(action as ListingCountdownAction)) {
+      return res.status(400).json({ error: 'INVALID_COUNTDOWN_REQUEST' });
+    }
+    try {
+      if (!store.countdown) return res.status(503).json({ error: 'COUNTDOWN_UNAVAILABLE', message: 'The listing store does not support the timer yet' });
+      const result = await store.countdown(req.params.id, action as ListingCountdownAction, req.userId!);
+      // The Spot gate and the restricted-asset guards follow the timer on the next order/valuation.
       registry.invalidate();
       res.json(result);
     } catch (error) { failure(res, error); }

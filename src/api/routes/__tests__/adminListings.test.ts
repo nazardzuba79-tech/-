@@ -8,6 +8,8 @@ import { ListingStoreError, CloudflareListingStore, type ListingStore } from '..
 import type { ListingConfig } from '../../../services/listings/listingConfig';
 import { listingSimulationConfig } from '../../../services/listings/listingConfig';
 import { testMarketCandles } from '../../../services/testMarkets/testMarketService';
+import { defaultScenarioControls } from '../../../shared/listingScenarioControls';
+import * as previewService from '../../../services/listings/listingPreview';
 
 const auth = (userId: string) => `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
 const prismaFor = (role: 'ADMIN' | 'USER') => ({ user: { findUnique: jest.fn().mockResolvedValue({ role }) } });
@@ -36,9 +38,14 @@ function fakeStore(): ListingStore & { drafts: Map<string, { draft: ListingConfi
       drafts.set(id, { draft, draftRevision: ifMatch + 1 });
       return { id, draftRevision: ifMatch + 1, draft };
     },
-    async publish(id, draftRevision, publishKey, actor) {
-      calls.push(`publish:${id}:${draftRevision}:${publishKey}:${actor}`);
-      return { id, version: 1, replayed: false, publishedAt: new Date().toISOString() };
+    async publish(id, draftRevision, publishKey, actor, countdown) {
+      calls.push(`publish:${id}:${draftRevision}:${publishKey}:${actor}${countdown ? `:${countdown}` : ''}`);
+      return { id, version: 1, replayed: false, publishedAt: new Date().toISOString(), countdown: countdown === 'staged' ? { state: 'staged', updatedAt: 1, updatedBy: actor } : null };
+    },
+    async countdown(id, action, actor) {
+      calls.push(`countdown:${id}:${action}:${actor}`);
+      const state = action === 'start' ? 'running' : action === 'pause' ? 'paused' : 'staged';
+      return { id, countdown: { state, updatedAt: 1, updatedBy: actor }, changed: true };
     },
   };
 }
@@ -133,6 +140,53 @@ describe('Admin → Listings routes', () => {
     expect(before.candles).toEqual([]);
   });
 
+  test('v2 form fields survive create, reload and edits; preview cache keys include saved revision and settings', async () => {
+    const { server, store, registry } = app();
+    const program = defaultScenarioControls('0.80', 'WAVES');
+    const body = form({ initialPrice: '0.80', tradable: false, ownerAllocation: '0', simulationProgram: program });
+    const created = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: body });
+    expect(created.status).toBe(201);
+    expect(created.body.draft.simulationProgram).toEqual(program);
+    const read = await request(server).get('/api/v1/admin/listings').set('Authorization', auth('admin-1'));
+    expect(read.body.listings[0].draft.simulationProgram).toEqual(program);
+    expect(read.body.listings[0].activeVersion).toBeNull();
+    const generate = jest.spyOn(previewService, 'listingScenarioPreview');
+    const url = `/api/v1/admin/listings/${created.body.id}/preview?horizon=first24h&interval=1h`;
+    const first = await request(server).get(url).set('Authorization', auth('admin-1'));
+    expect(first.status).toBe(200);
+    expect(first.body.scenarioSummary).toMatchObject({ first24hPrice: '14.6', maxPrice: '74.776' });
+    const repeat = await request(server).get(url).set('Authorization', auth('admin-1'));
+    expect(repeat.body.candles).toEqual(first.body.candles);
+    expect(generate).toHaveBeenCalledTimes(1);
+    const editedProgram = { ...program, scenario: 'LONG_WICKS' };
+    const edited = await request(server).put(`/api/v1/admin/listings/${created.body.id}/draft`).set('Authorization', auth('admin-1')).set('If-Match', '1')
+      .send({ config: { ...body, simulationProgram: editedProgram } });
+    expect(edited.status).toBe(200);
+    expect(edited.body.draft.simulationProgram).toEqual(editedProgram);
+    const refreshed = await request(server).get(url).set('Authorization', auth('admin-1'));
+    expect(refreshed.body.draftRevision).toBe(2);
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(refreshed.body.candles).not.toEqual(first.body.candles);
+    expect(store.calls.some(call => call.startsWith('publish:'))).toBe(false);
+    expect(registry.invalidate).not.toHaveBeenCalled();
+    generate.mockRestore();
+  });
+
+  test('invalid scenario targets are rejected before a store write; an excessive preview is a Russian 422', async () => {
+    const { server, store } = app();
+    const program = defaultScenarioControls('0.80');
+    const bad = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1'))
+      .send({ config: form({ initialPrice: '0.80', tradable: false, simulationProgram: { ...program, maxPrice: '10' } }) });
+    expect(bad.status).toBe(422);
+    expect(store.calls).toEqual([]);
+    const created = (await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1'))
+      .send({ config: form({ initialPrice: '0.80', tradable: false, simulationProgram: program }) })).body;
+    const preview = await request(server).get(`/api/v1/admin/listings/${created.id}/preview?horizon=growth&interval=1m`).set('Authorization', auth('admin-1'));
+    expect(preview.status).toBe(422);
+    expect(preview.body.error).toBe('PREVIEW_INTERVAL_TOO_FINE');
+    expect(preview.body.message).toContain('интервал свечей');
+  });
+
   test('publish needs a key and a draft revision; success invalidates the trading registry', async () => {
     const { server, store, registry } = app();
     const created = (await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: form() })).body;
@@ -142,6 +196,62 @@ describe('Admin → Listings routes', () => {
     expect(res.status).toBe(200);
     expect(store.calls).toContain(`publish:${created.id}:1:publish-key-00000001:admin-1`);
     expect(registry.invalidate).toHaveBeenCalledTimes(1);
+  });
+
+  test('publish forwards the «without the timer» choice; any other timer value is a 400 before the store', async () => {
+    const { server, store, registry } = app();
+    const created = (await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: form() })).body;
+    const bad = await request(server).post(`/api/v1/admin/listings/${created.id}/publish`).set('Authorization', auth('admin-1'))
+      .send({ draftRevision: 1, publishKey: 'publish-key-00000002', countdown: 'later' });
+    expect(bad.status).toBe(400);
+    const staged = await request(server).post(`/api/v1/admin/listings/${created.id}/publish`).set('Authorization', auth('admin-1'))
+      .send({ draftRevision: 1, publishKey: 'publish-key-00000002', countdown: 'staged' });
+    expect(staged.status).toBe(200);
+    expect(staged.body.countdown).toMatchObject({ state: 'staged' });
+    expect(store.calls).toContain(`publish:${created.id}:1:publish-key-00000002:admin-1:staged`);
+    expect(store.calls.some(call => call.includes(':later'))).toBe(false);
+    expect(registry.invalidate).toHaveBeenCalledTimes(1);
+  });
+
+  test('the timer: start, pause and stop reach the store with the admin as actor and refresh the trading registry; bad actions and customers never do', async () => {
+    const { server, store, registry } = app();
+    const created = (await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: form() })).body;
+    for (const action of ['start', 'pause', 'stop']) {
+      const res = await request(server).post(`/api/v1/admin/listings/${created.id}/countdown`).set('Authorization', auth('admin-1')).send({ action });
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ id: created.id, changed: true, countdown: { state: action === 'start' ? 'running' : action === 'pause' ? 'paused' : 'staged' } });
+      expect(res.headers['cache-control']).toBe('no-store');
+    }
+    expect(store.calls.filter(call => call.startsWith('countdown:'))).toEqual([
+      `countdown:${created.id}:start:admin-1`, `countdown:${created.id}:pause:admin-1`, `countdown:${created.id}:stop:admin-1`,
+    ]);
+    expect(registry.invalidate).toHaveBeenCalledTimes(3);
+    expect((await request(server).post(`/api/v1/admin/listings/${created.id}/countdown`).set('Authorization', auth('admin-1')).send({ action: 'restart' })).status).toBe(400);
+    expect((await request(server).post(`/api/v1/admin/listings/${created.id}/countdown`).set('Authorization', auth('admin-1')).send({})).status).toBe(400);
+    expect((await request(server).post('/api/v1/admin/listings/BAD ID/countdown').set('Authorization', auth('admin-1')).send({ action: 'start' })).status).toBe(404);
+    expect(store.calls.filter(call => call.startsWith('countdown:'))).toHaveLength(3);
+    const customer = app('USER');
+    expect((await request(customer.server).post(`/api/v1/admin/listings/${created.id}/countdown`).set('Authorization', auth('u1')).send({ action: 'start' })).status).toBe(403);
+    expect(customer.store.calls).toEqual([]);
+  });
+
+  test('the timer: the store\'s refusals keep their codes (a passed date, an opened market); a store without the timer is a 503', async () => {
+    const store = fakeStore();
+    store.countdown = async (_id, action) => {
+      throw new ListingStoreError(422, action === 'start' ? 'LISTING_TIME_PAST' : 'MARKET_OPEN', 'refused');
+    };
+    const { server } = app('ADMIN', store);
+    const created = (await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: form() })).body;
+    const past = await request(server).post(`/api/v1/admin/listings/${created.id}/countdown`).set('Authorization', auth('admin-1')).send({ action: 'start' });
+    expect([past.status, past.body.error]).toEqual([422, 'LISTING_TIME_PAST']);
+    const open = await request(server).post(`/api/v1/admin/listings/${created.id}/countdown`).set('Authorization', auth('admin-1')).send({ action: 'pause' });
+    expect([open.status, open.body.error]).toEqual([422, 'MARKET_OPEN']);
+    const legacy = fakeStore();
+    delete (legacy as Partial<ListingStore>).countdown;
+    const old = app('ADMIN', legacy);
+    const created2 = (await request(old.server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1')).send({ config: form() })).body;
+    const res = await request(old.server).post(`/api/v1/admin/listings/${created2.id}/countdown`).set('Authorization', auth('admin-1')).send({ action: 'start' });
+    expect([res.status, res.body.error]).toEqual([503, 'COUNTDOWN_UNAVAILABLE']);
   });
 
   test('store failures map to clear statuses; an outage is 503, never a success', async () => {

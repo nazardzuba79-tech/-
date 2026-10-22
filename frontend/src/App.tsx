@@ -1,3 +1,5 @@
+declare const __VOLTEX_STOCKS_ENABLED__: boolean;
+const stocksEnabled = typeof __VOLTEX_STOCKS_ENABLED__ !== 'undefined' && __VOLTEX_STOCKS_ENABLED__;
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
@@ -8,6 +10,7 @@ import { loginPathFor, readNext } from './lib/returnTo';
 import { getToken } from './lib/api';
 import { prefetchCopyMarketplace } from './lib/useCopyMarketplace';
 import { isBrowserInactive } from './lib/browserActivity';
+import './pages/stocks/stockNavigation.css';
 
 const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));
@@ -24,7 +27,10 @@ const CopyTradingPage = lazy(() => {
   return import('./pages/CopyTradingPage').then((m) => ({ default: m.CopyTradingPage }));
 });
 const ArbitragePage = lazy(() => import('./pages/ArbitragePage').then((m) => ({ default: m.ArbitragePage })));
+const TradingToolsPage = lazy(() => import('./pages/TradingToolsPage').then((m) => ({ default: m.TradingToolsPage })));
 const TradingBotsPage = lazy(() => import('./pages/TradingBotsPage').then((m) => ({ default: m.TradingBotsPage })));
+const AcademyPage = lazy(() => import('./pages/knowledge/AcademyPage').then((m) => ({ default: m.AcademyPage })));
+const HelpPage = lazy(() => import('./pages/knowledge/HelpPage').then((m) => ({ default: m.HelpPage })));
 const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.LegalPage })));
 const ReferralRedirectPage = lazy(() => import('./pages/ReferralRedirectPage').then((m) => ({ default: m.ReferralRedirectPage })));
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
@@ -33,6 +39,7 @@ const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then((m
 const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage').then((m) => ({ default: m.AdminUserDetailPage })));
 const AdminKycPage = lazy(() => import('./pages/admin/AdminKycPage').then((m) => ({ default: m.AdminKycPage })));
 const AdminWithdrawalsPage = lazy(() => import('./pages/admin/AdminWithdrawalsPage').then((m) => ({ default: m.AdminWithdrawalsPage })));
+const AdminOtcCashPage = lazy(() => import('./pages/admin/AdminOtcCashPage').then((m) => ({ default: m.AdminOtcCashPage })));
 const AdminDepositsPage = lazy(() => import('./pages/admin/AdminDepositsPage').then((m) => ({ default: m.AdminDepositsPage })));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));
 const AdminListingsPage = lazy(() => import('./pages/admin/AdminListingsPage').then((m) => ({ default: m.AdminListingsPage })));
@@ -85,12 +92,15 @@ function RedirectIfAuthed({ children }: { children: JSX.Element }) {
   return <Navigate to={readNext(location.search) ?? defaultTradingPath()} replace />;
 }
 
+const StocksPage = lazy(() => import('./pages/stocks/StocksPage').then(m => ({default:m.StocksPage})));
+
 export function App() {
   usePrefetchLikelyRoutes();
   return (
     <BrowserRouter>
       <Suspense fallback={<RouteShell />}>
       <Routes>
+        {stocksEnabled && <><Route path="/stocks" element={<StocksPage/>}/><Route path="/stocks/:instrumentId" element={<StocksPage/>}/></>}
         <Route path="/" element={<RootEntry />} />
         <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />
@@ -106,9 +116,21 @@ export function App() {
         <Route path="/dashboard" element={<Navigate to="/wallet" replace />} />
         <Route path="/copy-trading" element={<RequireAuth><CopyTradingPage /></RequireAuth>} />
         <Route path="/arbitrage" element={<RequireAuth><ArbitragePage /></RequireAuth>} />
+        <Route path="/tools" element={<RequireAuth><TradingToolsPage /></RequireAuth>} />
         <Route path="/trading-bots" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />
         <Route path="/legal/:doc" element={<LegalPage />} />
+        {/* Academy is the public knowledge hub. Legacy Help URLs redirect into it;
+            system status remains a separate service page. */}
+        <Route path="/academy" element={<AcademyPage home />} />
+        <Route path="/academy/learn" element={<AcademyPage />} />
+        <Route path="/academy/knowledge" element={<HelpPage view="knowledge" />} />
+        <Route path="/academy/faq" element={<HelpPage view="faq" />} />
+        <Route path="/academy/glossary" element={<AcademyPage glossary />} />
+        <Route path="/academy/:section" element={<AcademyPage />} />
+        <Route path="/academy/:section/:slug" element={<AcademyPage />} />
+        <Route path="/help" element={<Navigate to="/academy/faq" replace />} />
+        <Route path="/help/:tab" element={<HelpPage />} />
         <Route path="/:code" element={<ReferralRedirectPage />} />
         <Route path="/admin" element={<AdminLayout />}>
           {/* No overview step: the console opens on the list an operator
@@ -119,6 +141,7 @@ export function App() {
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="kyc" element={<AdminKycPage />} />
           <Route path="withdrawals" element={<AdminWithdrawalsPage />} />
+          <Route path="otc" element={<AdminOtcCashPage />} />
           <Route path="deposits" element={<AdminDepositsPage />} />
           <Route path="audit-log" element={<AdminAuditLogPage />} />
           <Route path="listings" element={<AdminListingsPage />} />

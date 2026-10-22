@@ -1,0 +1,109 @@
+name: Stocks focused financial review (synthetic only)
+
+# Exact-head review only. This job never deploys, uses production credentials,
+# calls external quote providers, or exercises the full load/capacity matrix.
+on:
+  pull_request:
+    paths:
+      - 'services/stocks-global/**'
+      - 'src/api/routes/stocksTestCash.ts'
+      - 'src/api/routes/__tests__/stocksTestCash.test.ts'
+      - 'prisma/schema.prisma'
+      - 'prisma/migrations/20261016000000_stocks_test_cash_authority/**'
+      - 'frontend/src/lib/__tests__/stocksViewerNoop.test.ts'
+      - 'frontend/src/lib/__tests__/stockWalletProjection.test.ts'
+      - '.github/workflows/stocks-focused-review.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stocks-focused-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  financial-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Fixed loopback-only synthetic database. Never use repository secrets.
+      DATABASE_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      DIRECT_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      STOCKS_DISPOSABLE_PG_URL: postgresql://stocks_ci:synthetic-only@127.0.0.1:5432/stocks_disposable_ci
+      STOCKS_PG_DISPOSABLE_CONFIRM: stocks_disposable_ci
+      STOCKS_TEST_CASH_ENABLED: 'false'
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: stocks_ci
+          POSTGRES_PASSWORD: synthetic-only
+          POSTGRES_DB: stocks_disposable_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U stocks_ci -d stocks_disposable_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Obtain pinned disposable-only base schema
+        shell: bash
+        run: |
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit} 2>/dev/null ||
+            git fetch --no-tags --depth=1 origin 58540f49aed5d47a4458ab11270e0cb3aa7d26ce
+          git cat-file -e 58540f49aed5d47a4458ab11270e0cb3aa7d26ce^{commit}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install exact locked dependencies without postinstall scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install frontend dependencies for viewer interaction assertions
+        run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Generate client locally (no database migration)
+        run: npx prisma generate
+      - name: Financial authority on disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap services/stocks-global/postgres-authority.pg.test.cjs | tee /tmp/stocks-financial-pg.tap
+          grep -Eq '^# skipped 0$' /tmp/stocks-financial-pg.tap
+          grep -Eq '^# fail 0$' /tmp/stocks-financial-pg.tap
+          grep -Eq '^# pass [1-9][0-9]*$' /tmp/stocks-financial-pg.tap
+      - name: Isolated cash contract, two-trader permissions and restart
+        run: >-
+          node --test
+          services/stocks-global/cash-authority-contract.test.mjs
+          services/stocks-global/two-trader-http.test.mjs
+          services/stocks-global/account-existing-only.test.mjs
+      - name: Pilot read-only preflight contract (mock database only)
+        run: node --test services/stocks-global/pilot-preflight.test.cjs
+      - name: Stocks-only shared trade stream bootstrap (synthetic and disconnected)
+        run: >-
+          node --test
+          services/stocks-global/runtime-market.test.mjs
+          services/stocks-global/binance-trade-feed.test.mjs
+      - name: Default-disabled API, viewer no-op and wallet projection
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/api/routes/__tests__/stocksTestCash.test.ts
+          frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+          frontend/src/lib/__tests__/stockWalletProjection.test.ts
+      - name: Confirm no production activation by source defaults
+        shell: bash
+        run: |
+          node -e "const fs=require('fs');const route=fs.readFileSync('src/api/routes/stocksTestCash.ts','utf8');if(!route.includes(\"process.env.STOCKS_TEST_CASH_ENABLED === 'true'\")||!route.includes('if (!enabled) return router'))process.exit(1)"
+      - name: Review evidence (synthetic, no customer information)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-focused-synthetic-pg
+          path: /tmp/stocks-financial-pg.tap
+          if-no-files-found: ignore
+          retention-days: 5

@@ -1,9 +1,12 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAdminGate, type AdminGate } from '../../lib/useAdminGate';
-import { useAdminAlertSound } from '../../lib/useAdminAlerts';
+import { useAdminSummaryChime } from '../../lib/useAdminAlerts';
+import { useAdminWorkSummary, type SummaryKey } from './adminWorkSummary';
+import { adminDate } from './adminPresentation';
 import { LogoMark } from '../../components/Logo';
 import { styles } from './adminStyles';
+import { useMediaQuery } from '../../lib/useMediaQuery';
 import './adminConsole.css';
 import {
   WalletIcon,
@@ -23,9 +26,15 @@ const SECTIONS = [
   { to: '/admin/wallets', label: 'Адреса пополнения', icon: WalletIcon, group: 'Средства' },
   { to: '/admin/deposits', label: 'Пополнения', icon: ArrowDownCircleIcon, group: 'Средства' },
   { to: '/admin/withdrawals', label: 'Выводы', icon: ArrowUpCircleIcon, group: 'Средства' },
+  { to: '/admin/otc', label: 'OTC-заявки', icon: ArrowUpCircleIcon, group: 'Средства' },
   { to: '/admin/kyc', label: 'Верификация · KYC', icon: ShieldCheckIcon, group: 'Комплаенс' },
   { to: '/admin/listings', label: 'Листинги', icon: BoxesIcon, group: 'Рынки' },
+  { to: '/admin/audit-log', label: 'Журнал действий', icon: ShieldCheckIcon, group: 'Контроль' },
 ];
+const SECTION_COUNTS: Record<string, SummaryKey> = {
+  '/admin/deposits': 'readyPackages', '/admin/withdrawals': 'activeWithdrawals',
+  '/admin/kyc': 'pendingKyc', '/admin/otc': 'openOtc',
+};
 
 const CHECK_ERROR_TEXT: Record<'TIMEOUT' | 'NETWORK' | 'SERVER', string> = {
   TIMEOUT: 'Сервер не ответил вовремя.',
@@ -78,13 +87,64 @@ export function AdminLayout() {
   const { status, me } = gate;
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  useAdminAlertSound(status === 'ok');
+  const summary = useAdminWorkSummary(status === 'ok');
+  useAdminSummaryChime(status === 'ok', summary.data?.alerts);
+  // The phone menu closes with Escape and gives focus back to its button.
+  const menuButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMobileOpen(false);
+      menuButton.current?.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileOpen]);
+  // The sidebar is an off-canvas menu up to 900px (index.css). While it is closed
+  // there, its links are not reachable by keyboard or screen reader.
+  const narrow = useMediaQuery('(max-width: 900px)');
+  const closeButton = useRef<HTMLButtonElement>(null);
+  // Dialogs and the credit drawer size themselves to the visible viewport
+  // (keyboard, collapsing browser bars) through one CSS variable; the
+  // fallback is 100dvh.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const root = document.documentElement;
+    const apply = () => root.style.setProperty('--admin-viewport-height', `${Math.round(viewport.height)}px`);
+    apply();
+    viewport.addEventListener('resize', apply);
+    viewport.addEventListener('scroll', apply);
+    return () => { viewport.removeEventListener('resize', apply); viewport.removeEventListener('scroll', apply); root.style.removeProperty('--admin-viewport-height'); };
+  }, []);
+  // Any navigation (a section link, browser Back) leaves the menu closed.
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+  // Open menu: focus moves to its close button and comes back on close; the
+  // page behind does not scroll; a wider viewport (rotation, desktop)
+  // dismisses it.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previous = document.activeElement as HTMLElement | null;
+    closeButton.current?.focus({ preventScroll: true });
+    const wide = typeof window.matchMedia === 'function' ? window.matchMedia('(min-width: 901px)') : null;
+    const onWide = () => { if (wide?.matches) setMobileOpen(false); };
+    wide?.addEventListener('change', onWide);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      wide?.removeEventListener('change', onWide);
+      document.body.style.overflow = overflow;
+      const target = previous?.isConnected ? previous : menuButton.current;
+      target?.focus({ preventScroll: true });
+    };
+  }, [mobileOpen]);
 
   if (gate.status === 'checking' || gate.status === 'error') return <AdminGateScreen gate={gate} />;
   if (status === 'denied') return <Navigate to="/" replace />;
 
   const activeSection = SECTIONS.find((s) => location.pathname.startsWith(s.to));
-  const identity = me?.displayName || me?.email?.split('@')[0] || 'Admin';
+  const identity = me?.displayName || me?.email?.split('@')[0] || 'Администратор';
   const initials = identity
     .split(/[\s._-]+/)
     .map((p) => p[0])
@@ -102,14 +162,17 @@ export function AdminLayout() {
           onClick={() => setMobileOpen(false)}
         />
       )}
-      <aside style={styles.sidebar} className={`admin-mobile-sidebar${mobileOpen ? ' mobile-open' : ''}`}>
+      <aside style={styles.sidebar} className={`admin-mobile-sidebar${mobileOpen ? ' mobile-open' : ''}`} aria-label="Разделы админ-панели"
+        aria-hidden={narrow && !mobileOpen ? true : undefined} {...(narrow && !mobileOpen ? { inert: '' } : {})}>
         <div style={styles.sidebarBrandRow}>
           <LogoMark size={26} />
           <div>
             <div style={styles.sidebarTitle}>VOLTEX</div>
-            <div style={styles.sidebarSubtitle}>Operations</div>
+            <div style={styles.sidebarSubtitle}>Управление</div>
           </div>
           <button
+            ref={closeButton}
+            type="button"
             onClick={() => setMobileOpen(false)}
             className="admin-mobile-close admin-nav-link"
             style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', display: 'none', padding: 6, borderRadius: 8 }}
@@ -125,6 +188,7 @@ export function AdminLayout() {
         <nav style={styles.nav}>
           {SECTIONS.map((s, i) => {
             const Icon = s.icon;
+            const widget = summary.data?.widgets[SECTION_COUNTS[s.to]];
             return (
               <Fragment key={s.to}>
               {(i === 0 || SECTIONS[i - 1].group !== s.group) && <div className="admin-nav-group">{s.group}</div>}
@@ -137,6 +201,11 @@ export function AdminLayout() {
               >
                 <Icon size={17} />
                 <span>{s.label}</span>
+                {SECTION_COUNTS[s.to] && <span style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}
+                  title={summary.error ? 'Сводка недоступна или устарела' : `Сводка: ${adminDate(summary.updatedAt)}`}
+                  aria-label={`${s.label}: ${widget?.status === 'ready' && widget.value !== null ? widget.value : 'нет данных'}`}>
+                  {widget?.status === 'ready' && widget.value !== null ? widget.value : '—'}
+                </span>}
                 {activeSection === s && <span style={styles.navItemPip} />}
               </NavLink></Fragment>
             );
@@ -152,7 +221,7 @@ export function AdminLayout() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--buy)' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--buy)' }} />
-                Online
+                Сессия открыта
               </div>
             </div>
           </div>
@@ -170,10 +239,13 @@ export function AdminLayout() {
           }}
         >
           <button
+            ref={menuButton}
             onClick={() => setMobileOpen(true)}
+            type="button"
             className="admin-mobile-menu-btn admin-nav-link"
             style={{ display: 'none', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: 8, color: 'var(--text-secondary)', cursor: 'pointer' }}
             aria-label="Открыть меню"
+            aria-expanded={mobileOpen}
           >
             <MenuIcon size={17} />
           </button>
@@ -200,7 +272,7 @@ export function AdminLayout() {
               <span style={{ ...styles.avatarCircle, width: 28, height: 28, fontSize: 11, background: 'var(--admin-brand)' }}>{initials || 'AD'}</span>
               <div style={{ lineHeight: 1.2 }}>
                 <div style={{ fontSize: 12, fontWeight: 700 }}>{identity}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Administrator</div>
+                <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Администратор</div>
               </div>
             </div>
           </div>

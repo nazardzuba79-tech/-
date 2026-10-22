@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { api } from '../lib/api';
+import { onSpendableBalancesChanged } from '../lib/balanceInvalidation';
 import { useLanguage } from '../lib/i18n';
 import { SpotAssetsView } from './SpotOrdersView';
 import { createSpotReadController, startVisibleReadPolling, type SpotReadController } from './spotOrderPresentation';
@@ -23,6 +24,7 @@ export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [failed, setFailed] = useState(false);
+  const readVersion = useRef(0);
   const reader = useRef<SpotReadController | null>(null);
   if (!reader.current) reader.current = createSpotReadController(() => api.getBalances(), {
     started: () => setRefreshing(true), accept: rows => { setBalances(rows); setFailed(false); }, reject: () => setFailed(true),
@@ -41,12 +43,18 @@ export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { 
   const load = useCallback((fresh = false) => {
     if (compact) return reader.current!.read(fresh);
     if (wallet === 'futures') return refreshFuturesAccount(['balances']);
+    const version = ++readVersion.current;
     setRefreshing(true);
     api.getBalances()
-      .then(rows => { setBalances(rows); setFailed(false); })
-      .catch(() => setFailed(true))
-      .finally(() => { setLoading(false); setRefreshing(false); });
+      .then(rows => { if (version === readVersion.current) { setBalances(rows); setFailed(false); } })
+      .catch(() => { if (version === readVersion.current) setFailed(true); })
+      .finally(() => { if (version === readVersion.current) { setLoading(false); setRefreshing(false); } });
   }, [compact, wallet]);
+  useEffect(() => onSpendableBalancesChanged(() => {
+    if (wallet !== 'spot') return;
+    setBalances([]); setLoading(true);
+    void load(true);
+  }), [wallet, load]);
 
   useEffect(() => {
     if (compact) reader.current!.resume();
@@ -58,7 +66,7 @@ export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { 
       return () => { if (compact) reader.current!.pause(); };
     }
     const stopPolling = startVisibleReadPolling(load, 4000);
-    return () => { stopPolling(); if (compact) reader.current!.pause(); };
+    return () => { stopPolling(); ++readVersion.current; if (compact) reader.current!.pause(); };
   }, [load, refreshKey, compact, isFutures]);
 
   const rows = isFutures ? futuresAccount.balances.data : balances;

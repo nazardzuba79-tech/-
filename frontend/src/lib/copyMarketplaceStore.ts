@@ -281,6 +281,7 @@ export class CopyMarketplaceStore {
   private listeners = new Set<() => void>();
   private pending: Promise<void> | null = null;
   private controller: AbortController | null = null;
+  private deadline: ReturnType<typeof setTimeout> | null = null;
   private generation = 0;
   private timer: number | null = null;
   private lastAttempt = -Infinity;
@@ -340,7 +341,7 @@ export class CopyMarketplaceStore {
     const previous = this.session;
     this.session = session;
     this.generation++;
-    this.controller?.abort(); this.controller = null; this.pending = null;
+    this.cancelRequest();
     this.lastAttempt = -Infinity;
     this.lastAttemptFailed = false;
     // Leaving a session takes its snapshot with it. A logout must not leave
@@ -374,7 +375,21 @@ export class CopyMarketplaceStore {
      * path already does.
      */
     this.state = session === null ? { ...empty(), settled: true } : this.hydrate(session);
-    if (session !== null && this.listeners.size) queueMicrotask(() => { void this.refresh(); });
+    if (session !== null && this.listeners.size) queueMicrotask(() => {
+      if (this.listeners.size) void this.refresh();
+    });
+  }
+
+  private cancelRequest() {
+    if (!this.controller) return;
+    this.generation++;
+    this.controller.abort();
+    this.controller = null;
+    this.pending = null;
+    if (this.deadline !== null) clearTimeout(this.deadline);
+    this.deadline = null;
+    this.lastAttempt = -Infinity;
+    this.state = { ...this.state, refreshing: false };
   }
 
   /**
@@ -465,6 +480,9 @@ export class CopyMarketplaceStore {
         if (this.timer !== null) browserClearInterval(this.timer);
         this.timer = null;
         if (typeof window !== 'undefined') window.removeEventListener('focus', this.onFocus);
+        // StrictMode's synchronous unsubscribe/resubscribe owns the same read.
+        // A real route exit releases it at the end of this turn, with no timer.
+        void Promise.resolve().then(() => { if (!this.listeners.size) this.cancelRequest(); });
       }
     };
   };
@@ -495,14 +513,20 @@ export class CopyMarketplaceStore {
     const controller = new AbortController(); this.controller = controller;
     let abandoned = false;
     const timeout = setTimeout(() => { abandoned = true; controller.abort(); }, 15_000);
+    this.deadline = timeout;
     this.emit({ ...this.state, refreshing: true });
-    this.pending = Promise.resolve().then(() => this.fetchSnapshot(controller.signal)).then(payload => {
+    this.pending = Promise.resolve().then(() => {
+      if (controller.signal.aborted) return;
+      return this.fetchSnapshot(controller.signal);
+    }).then(payload => {
       if (generation !== this.generation || this.getSession() !== this.session) {
         // This answer belongs to a session that has gone. Discarding it is
         // right; leaving the new session with nothing in flight is not —
         // `checkSession` has already cleared `lastAttempt`, so this asks
         // again for whoever is logged in now.
-        queueMicrotask(() => { void this.refresh(); });
+        if (generation === this.generation) queueMicrotask(() => {
+          if (this.listeners.size) void this.refresh();
+        });
         return;
       }
       if (!record(payload) || !date(payload.generatedAt)) throw new MarketplaceFailure('malformed_envelope');
@@ -545,7 +569,7 @@ export class CopyMarketplaceStore {
         diagnosis: { nazar: cause, ksenia: cause, identities: cause } });
     }).finally(() => {
       clearTimeout(timeout);
-      if (generation === this.generation) { this.pending = null; this.controller = null; }
+      if (generation === this.generation) { this.pending = null; this.controller = null; this.deadline = null; }
     });
     return this.pending;
   };

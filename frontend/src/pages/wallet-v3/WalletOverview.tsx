@@ -157,8 +157,8 @@ export function WalletOverview({
 
   /** Every held asset across both accounts, tagged with the account it sits in. */
   const assets = useMemo(() => {
-    const list: { symbol: string; account: string; quantity: number; valueUsd: number | null; priced: boolean }[] = [];
-    for (const r of rows) if (r.total > 0) list.push({ symbol: r.symbol, account: t('wallet.navUnified'), quantity: r.total, valueUsd: r.valueUsd, priced: r.priced });
+    const list: { symbol: string; account: string; quantity: number; valueUsd: number | null; priced: boolean; stockValueUSDT?: number | null; instrumentId?: string }[] = [];
+    for (const r of rows) if (r.total > 0) list.push({ symbol: r.symbol, account: r.stockPosition ? 'Акции' : t('wallet.navUnified'), quantity: r.total, valueUsd: r.valueUsd, priced: r.priced, stockValueUSDT: r.stockPosition?.valueUSDT, instrumentId: r.stockPosition?.instrumentId });
     if (cross && overview) {
       for (const b of overview.real.spot) {
         const q = Number(b.available) + Number(b.locked);
@@ -170,12 +170,12 @@ export function WalletOverview({
 
   const holdings = useMemo(() => {
     const bySymbol = new Map<string, number>();
-    for (const a of assets) if (a.valueUsd !== null && a.valueUsd > 0) bySymbol.set(a.symbol, (bySymbol.get(a.symbol) ?? 0) + a.valueUsd);
+    for (const a of assets) if (!a.instrumentId && a.valueUsd !== null && a.valueUsd > 0) bySymbol.set(a.symbol, (bySymbol.get(a.symbol) ?? 0) + a.valueUsd);
     return [...bySymbol].map(([symbol, valueUsd]) => ({ symbol, valueUsd }));
   }, [assets]);
   const unpriced = useMemo(() => {
     const names = new Set<string>(account?.unpricedAssets ?? []);
-    for (const a of assets) if (!a.priced) names.add(a.symbol);
+    for (const a of assets) if (!a.instrumentId && !a.priced) names.add(a.symbol);
     return [...names];
   }, [assets, account]);
 
@@ -201,7 +201,7 @@ export function WalletOverview({
           <div className="wallet-overview-total">
             <span className="num wallet-overview-amount">{hidden ? MASK : total === null ? EM_DASH : formatUsd(total, lang).replace('$', '')}</span>
             <span className="wallet-overview-unit">USD</span>
-            <TierBadge mode={account?.mode} />
+            <TierBadge tier={account?.clientTier} />
           </div>
 
           <p className="wallet-overview-btc num">≈ {hidden ? MASK : total === null ? EM_DASH : btc(total)} BTC</p>
@@ -284,7 +284,7 @@ export function WalletOverview({
               <ul className="wallet-asset-tab">
                 {assets.length === 0 && <li className="px-5 py-8 text-center text-[13px] text-ink-4">{loading ? t('wallet.loading') : t('wallet.noAssets')}</li>}
                 {assets.map((a) => (
-                  <li key={a.account + a.symbol} className="wallet-asset-tab-row" data-symbol={a.symbol}>
+                  <li key={a.account + (a.instrumentId ?? a.symbol)} className="wallet-asset-tab-row" data-symbol={a.symbol}>
                     <CryptoIcon symbol={a.symbol} size={30} />
                     <span className="min-w-0">
                       <span className="block text-[14px] font-semibold text-ink">{a.symbol}</span>
@@ -293,7 +293,7 @@ export function WalletOverview({
                     <span className="text-right">
                       <span className="num block text-[14px] font-semibold text-ink">{hidden ? MASK : formatAmount(a.quantity, lang, decimalsFor(a.symbol))}</span>
                       <span className="num block text-[11px] leading-4 text-ink-4">
-                        {hidden ? MASK : a.valueUsd === null ? t('wallet.noQuote') : `≈ ${formatUsd(a.valueUsd, lang).replace('$', '')} USD`}
+                        {hidden ? MASK : a.instrumentId ? (a.stockValueUSDT === null || a.stockValueUSDT === undefined ? t('wallet.noQuote') : `≈ ${formatAmount(a.stockValueUSDT, lang, 2)} USDT`) : a.valueUsd === null ? t('wallet.noQuote') : `≈ ${formatUsd(a.valueUsd, lang).replace('$', '')} USD`}
                       </span>
                     </span>
                   </li>

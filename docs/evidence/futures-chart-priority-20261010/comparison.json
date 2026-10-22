@@ -1,0 +1,302 @@
+{
+  "viewports": [
+    {
+      "width": 1440,
+      "viewportHeight": 900,
+      "before": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1128,
+          "height": 56
+        },
+        "chart": {
+          "x": 4,
+          "y": 112,
+          "width": 838,
+          "height": 435.89
+        },
+        "bottom": {
+          "x": 4,
+          "y": 551.89,
+          "width": 1128,
+          "height": 316.11
+        },
+        "book": {
+          "x": 846,
+          "y": 112,
+          "width": 286,
+          "height": 435.89
+        },
+        "form": {
+          "x": 1136,
+          "y": 52,
+          "width": 300,
+          "height": 816
+        },
+        "header": 48
+      },
+      "after": {
+        "ticker": {
+          "x": 4,
+          "y": 44,
+          "width": 1128,
+          "height": 48
+        },
+        "chart": {
+          "x": 4,
+          "y": 96,
+          "width": 838,
+          "height": 608
+        },
+        "bottom": {
+          "x": 4,
+          "y": 708,
+          "width": 1128,
+          "height": 160
+        },
+        "book": {
+          "x": 846,
+          "y": 96,
+          "width": 286,
+          "height": 608
+        },
+        "form": {
+          "x": 1136,
+          "y": 44,
+          "width": 300,
+          "height": 824
+        },
+        "header": 40
+      },
+      "chartHeightGain": 172.11
+    },
+    {
+      "width": 1707,
+      "viewportHeight": 900,
+      "before": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1395,
+          "height": 56
+        },
+        "chart": {
+          "x": 4,
+          "y": 112,
+          "width": 1105,
+          "height": 435.89
+        },
+        "bottom": {
+          "x": 4,
+          "y": 551.89,
+          "width": 1395,
+          "height": 316.11
+        },
+        "book": {
+          "x": 1113,
+          "y": 112,
+          "width": 286,
+          "height": 435.89
+        },
+        "form": {
+          "x": 1403,
+          "y": 52,
+          "width": 300,
+          "height": 816
+        },
+        "header": 48
+      },
+      "after": {
+        "ticker": {
+          "x": 4,
+          "y": 44,
+          "width": 1395,
+          "height": 48
+        },
+        "chart": {
+          "x": 4,
+          "y": 96,
+          "width": 1105,
+          "height": 608
+        },
+        "bottom": {
+          "x": 4,
+          "y": 708,
+          "width": 1395,
+          "height": 160
+        },
+        "book": {
+          "x": 1113,
+          "y": 96,
+          "width": 286,
+          "height": 608
+        },
+        "form": {
+          "x": 1403,
+          "y": 44,
+          "width": 300,
+          "height": 824
+        },
+        "header": 40
+      },
+      "chartHeightGain": 172.11
+    },
+    {
+      "width": 1366,
+      "viewportHeight": 768,
+      "before": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1054,
+          "height": 56
+        },
+        "chart": {
+          "x": 4,
+          "y": 112,
+          "width": 764,
+          "height": 359.38
+        },
+        "bottom": {
+          "x": 4,
+          "y": 475.38,
+          "width": 1054,
+          "height": 260.63
+        },
+        "book": {
+          "x": 772,
+          "y": 112,
+          "width": 286,
+          "height": 359.38
+        },
+        "form": {
+          "x": 1062,
+          "y": 52,
+          "width": 300,
+          "height": 684
+        },
+        "header": 48
+      },
+      "after": {
+        "ticker": {
+          "x": 4,
+          "y": 44,
+          "width": 1054,
+          "height": 48
+        },
+        "chart": {
+          "x": 4,
+          "y": 96,
+          "width": 764,
+          "height": 476
+        },
+        "bottom": {
+          "x": 4,
+          "y": 576,
+          "width": 1054,
+          "height": 160
+        },
+        "book": {
+          "x": 772,
+          "y": 96,
+          "width": 286,
+          "height": 476
+        },
+        "form": {
+          "x": 1062,
+          "y": 44,
+          "width": 300,
+          "height": 692
+        },
+        "header": 40
+      },
+      "chartHeightGain": 116.62
+    },
+    {
+      "width": 1920,
+      "viewportHeight": 1080,
+      "before": {
+        "ticker": {
+          "x": 4,
+          "y": 52,
+          "width": 1608,
+          "height": 56
+        },
+        "chart": {
+          "x": 4,
+          "y": 112,
+          "width": 1318,
+          "height": 540.22
+        },
+        "bottom": {
+          "x": 4,
+          "y": 656.22,
+          "width": 1608,
+          "height": 391.78
+        },
+        "book": {
+          "x": 1326,
+          "y": 112,
+          "width": 286,
+          "height": 540.22
+        },
+        "form": {
+          "x": 1616,
+          "y": 52,
+          "width": 300,
+          "height": 996
+        },
+        "header": 48
+      },
+      "after": {
+        "ticker": {
+          "x": 4,
+          "y": 44,
+          "width": 1608,
+          "height": 48
+        },
+        "chart": {
+          "x": 4,
+          "y": 96,
+          "width": 1318,
+          "height": 788
+        },
+        "bottom": {
+          "x": 4,
+          "y": 888,
+          "width": 1608,
+          "height": 160
+        },
+        "book": {
+          "x": 1326,
+          "y": 96,
+          "width": 286,
+          "height": 788
+        },
+        "form": {
+          "x": 1616,
+          "y": 44,
+          "width": 300,
+          "height": 1004
+        },
+        "header": 40
+      },
+      "chartHeightGain": 247.78
+    }
+  ],
+  "unchanged": {
+    "mobile390": {
+      "pixelIdentical": true,
+      "meanDifference": 0.0
+    },
+    "spot1440": {
+      "pixelIdentical": true,
+      "meanDifference": 0.0
+    },
+    "spot1707": {
+      "pixelIdentical": false,
+      "meanDifference": 0.005931573297102147
+    }
+  }
+}

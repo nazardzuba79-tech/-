@@ -1,3 +1,4 @@
+import * as aithPublication from '../../../../src/shared/aithPublication';
 import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -13,7 +14,7 @@ function evaluate(file: string, overrides: Record<string, unknown> = {}) {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const output: any = {};
-  new Function('require', 'exports', compiled)((name: string) => overrides[name] ?? (name.endsWith('/browserActivity') ? browserActivity : req(name)), output);
+  new Function('require', 'exports', compiled)((name: string) => overrides[name] ?? (name.endsWith('/browserActivity') ? browserActivity : (name === '../../../src/shared/aithPublication' ? aithPublication : req(name))), output);
   return output;
 }
 // priceChange asks lib/testMarkets whether a pair is a VOLTEX test market.

@@ -1,4 +1,5 @@
 import { PurchaseService, PurchaseError } from '../PurchaseService';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 
 function makePrismaMock(overrides: Partial<any> = {}) {
   const base = {
@@ -7,10 +8,7 @@ function makePrismaMock(overrides: Partial<any> = {}) {
         id: 'p1', name: 'Consulting hour', priceAmount: { toString: () => '50' }, priceAsset: 'USDT', active: true,
       }),
     },
-    balance: {
-      findUnique: jest.fn().mockResolvedValue({ available: { toString: () => '100' }, locked: { toString: () => '0' } }),
-      update: jest.fn(),
-    },
+    balance: walletDelegate(new Map([['user1:USDT', { available: '100', locked: '0' }]])),
     purchase: { create: jest.fn().mockResolvedValue({ id: 'purchase1', status: 'PENDING_FULFILLMENT' }) },
     auditLog: { create: jest.fn() },
     ...overrides,
@@ -25,18 +23,16 @@ describe('PurchaseService', () => {
 
     const purchase = await service.purchaseProduct('user1', 'p1');
 
-    expect(prisma.balance.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { available: '50' } }) // 100 - 50
+    expect(prisma.balance.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 'user1', asset: 'USDT', available: { gte: '50' } },
+        data: { available: { increment: '-50' }, locked: { increment: '0' } } })
     );
     expect(purchase.status).toBe('PENDING_FULFILLMENT');
   });
 
   it('rejects the purchase when balance is insufficient', async () => {
     const prisma = makePrismaMock({
-      balance: {
-        findUnique: jest.fn().mockResolvedValue({ available: { toString: () => '10' }, locked: { toString: () => '0' } }),
-        update: jest.fn(),
-      },
+      balance: walletDelegate(new Map([['user1:USDT', { available: '10', locked: '0' }]])),
     });
     const service = new PurchaseService(prisma);
 
@@ -65,7 +61,7 @@ describe('PurchaseService', () => {
   });
 
   it('treats a zero balance record (no prior deposit) as insufficient rather than throwing', async () => {
-    const prisma = makePrismaMock({ balance: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() } });
+    const prisma = makePrismaMock({ balance: walletDelegate(new Map()) });
     const service = new PurchaseService(prisma);
 
     await expect(service.purchaseProduct('user1', 'p1')).rejects.toThrow(PurchaseError);

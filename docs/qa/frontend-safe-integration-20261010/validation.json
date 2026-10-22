@@ -1,0 +1,809 @@
+{
+  "fixtureOnly": true,
+  "productionUnchanged": true,
+  "build": "PASS (existing >500 kB chunk advisory)",
+  "frontend": {
+    "suites": 235,
+    "tests": 4067,
+    "failed": 0,
+    "success": true
+  },
+  "auth": {
+    "result": "PASS",
+    "cases": 38,
+    "responsive": 12,
+    "behavior": [
+      "offline login rejection, visible localized error and retry",
+      "offline 2FA challenge/rejection/retry/back, no premature session",
+      "registration validity, offline rejection, visible error and retry"
+    ],
+    "errors": [],
+    "writes": []
+  },
+  "mobileAudit": {
+    "executed": 311,
+    "inapplicable": 60,
+    "failedSteps": [],
+    "overflows": [],
+    "pageErrors": [],
+    "writes": 0,
+    "unknown": [],
+    "visualSignals": "See README: scroll-layer detections and inherited desktop table overlap remain disclosed"
+  },
+  "desktop": {
+    "cases": [
+      {
+        "width": 1920,
+        "height": 1080,
+        "geometry": {
+          "header": {
+            "x": 0,
+            "y": 0,
+            "width": 1920,
+            "height": 40,
+            "right": 1920,
+            "bottom": 40
+          },
+          "ticker": {
+            "x": 4,
+            "y": 44,
+            "width": 1608,
+            "height": 48,
+            "right": 1612,
+            "bottom": 92
+          },
+          "chart": {
+            "x": 4,
+            "y": 96,
+            "width": 1318,
+            "height": 788,
+            "right": 1322,
+            "bottom": 884
+          },
+          "book": {
+            "x": 1326,
+            "y": 96,
+            "width": 286,
+            "height": 788,
+            "right": 1612,
+            "bottom": 884
+          },
+          "form": {
+            "x": 1616,
+            "y": 44,
+            "width": 300,
+            "height": 1004,
+            "right": 1916,
+            "bottom": 1048
+          },
+          "bottom": {
+            "x": 4,
+            "y": 888,
+            "width": 1608,
+            "height": 160,
+            "right": 1612,
+            "bottom": 1048
+          },
+          "workspace": {
+            "x": 0,
+            "y": 40,
+            "width": 1920,
+            "height": 1012,
+            "right": 1920,
+            "bottom": 1052
+          },
+          "heading": {
+            "x": 1616,
+            "y": 44,
+            "width": 300,
+            "height": 46,
+            "right": 1916,
+            "bottom": 90
+          },
+          "chartHeading": {
+            "x": 4,
+            "y": 96,
+            "width": 1318,
+            "height": 40,
+            "right": 1322,
+            "bottom": 136
+          },
+          "toolbar": {
+            "x": 4,
+            "y": 136,
+            "width": 1318,
+            "height": 40,
+            "right": 1322,
+            "bottom": 176
+          },
+          "bottomTabs": {
+            "x": 4,
+            "y": 888,
+            "width": 1608,
+            "height": 44,
+            "right": 1612,
+            "bottom": 932
+          },
+          "price": {
+            "x": 1628,
+            "y": 228,
+            "width": 276,
+            "height": 42,
+            "right": 1904,
+            "bottom": 270
+          },
+          "amount": {
+            "x": 1628,
+            "y": 290,
+            "width": 276,
+            "height": 42,
+            "right": 1904,
+            "bottom": 332
+          },
+          "buy": {
+            "x": 1628,
+            "y": 614.390625,
+            "width": 132,
+            "height": 42,
+            "right": 1760,
+            "bottom": 656.390625
+          },
+          "sell": {
+            "x": 1772,
+            "y": 614.390625,
+            "width": 132,
+            "height": 42,
+            "right": 1904,
+            "bottom": 656.390625
+          },
+          "tabs": [
+            {
+              "text": "Лимитный",
+              "x": 1628,
+              "y": 154,
+              "width": 68.515625,
+              "height": 42,
+              "right": 1696.515625,
+              "bottom": 196
+            },
+            {
+              "text": "Рыночный",
+              "x": 1709.8125,
+              "y": 154,
+              "width": 67.859375,
+              "height": 42,
+              "right": 1777.671875,
+              "bottom": 196
+            },
+            {
+              "text": "Стоп",
+              "x": 1790.953125,
+              "y": 154,
+              "width": 31.65625,
+              "height": 42,
+              "right": 1822.609375,
+              "bottom": 196
+            },
+            {
+              "text": "Take Profit",
+              "x": 1835.90625,
+              "y": 154,
+              "width": 68.09375,
+              "height": 42,
+              "right": 1904,
+              "bottom": 196
+            }
+          ],
+          "overflow": 0
+        }
+      },
+      {
+        "width": 1440,
+        "height": 900,
+        "geometry": {
+          "header": {
+            "x": 0,
+            "y": 0,
+            "width": 1440,
+            "height": 40,
+            "right": 1440,
+            "bottom": 40
+          },
+          "ticker": {
+            "x": 4,
+            "y": 44,
+            "width": 1128,
+            "height": 48,
+            "right": 1132,
+            "bottom": 92
+          },
+          "chart": {
+            "x": 4,
+            "y": 96,
+            "width": 838,
+            "height": 608,
+            "right": 842,
+            "bottom": 704
+          },
+          "book": {
+            "x": 846,
+            "y": 96,
+            "width": 286,
+            "height": 608,
+            "right": 1132,
+            "bottom": 704
+          },
+          "form": {
+            "x": 1136,
+            "y": 44,
+            "width": 300,
+            "height": 824,
+            "right": 1436,
+            "bottom": 868
+          },
+          "bottom": {
+            "x": 4,
+            "y": 708,
+            "width": 1128,
+            "height": 160,
+            "right": 1132,
+            "bottom": 868
+          },
+          "workspace": {
+            "x": 0,
+            "y": 40,
+            "width": 1440,
+            "height": 832,
+            "right": 1440,
+            "bottom": 872
+          },
+          "heading": {
+            "x": 1136,
+            "y": 44,
+            "width": 300,
+            "height": 46,
+            "right": 1436,
+            "bottom": 90
+          },
+          "chartHeading": {
+            "x": 4,
+            "y": 96,
+            "width": 838,
+            "height": 40,
+            "right": 842,
+            "bottom": 136
+          },
+          "toolbar": {
+            "x": 4,
+            "y": 136,
+            "width": 838,
+            "height": 40,
+            "right": 842,
+            "bottom": 176
+          },
+          "bottomTabs": {
+            "x": 4,
+            "y": 708,
+            "width": 1128,
+            "height": 44,
+            "right": 1132,
+            "bottom": 752
+          },
+          "price": {
+            "x": 1148,
+            "y": 228,
+            "width": 276,
+            "height": 42,
+            "right": 1424,
+            "bottom": 270
+          },
+          "amount": {
+            "x": 1148,
+            "y": 290,
+            "width": 276,
+            "height": 42,
+            "right": 1424,
+            "bottom": 332
+          },
+          "buy": {
+            "x": 1148,
+            "y": 614.390625,
+            "width": 132,
+            "height": 42,
+            "right": 1280,
+            "bottom": 656.390625
+          },
+          "sell": {
+            "x": 1292,
+            "y": 614.390625,
+            "width": 132,
+            "height": 42,
+            "right": 1424,
+            "bottom": 656.390625
+          },
+          "tabs": [
+            {
+              "text": "Лимитный",
+              "x": 1148,
+              "y": 154,
+              "width": 68.515625,
+              "height": 42,
+              "right": 1216.515625,
+              "bottom": 196
+            },
+            {
+              "text": "Рыночный",
+              "x": 1229.8125,
+              "y": 154,
+              "width": 67.859375,
+              "height": 42,
+              "right": 1297.671875,
+              "bottom": 196
+            },
+            {
+              "text": "Стоп",
+              "x": 1310.953125,
+              "y": 154,
+              "width": 31.65625,
+              "height": 42,
+              "right": 1342.609375,
+              "bottom": 196
+            },
+            {
+              "text": "Take Profit",
+              "x": 1355.90625,
+              "y": 154,
+              "width": 68.09375,
+              "height": 42,
+              "right": 1424,
+              "bottom": 196
+            }
+          ],
+          "overflow": 0
+        }
+      },
+      {
+        "width": 1707,
+        "height": 900,
+        "geometry": {
+          "header": {
+            "x": 0,
+            "y": 0,
+            "width": 1707,
+            "height": 40,
+            "right": 1707,
+            "bottom": 40
+          },
+          "ticker": {
+            "x": 4,
+            "y": 44,
+            "width": 1395,
+            "height": 48,
+            "right": 1399,
+            "bottom": 92
+          },
+          "chart": {
+            "x": 4,
+            "y": 96,
+            "width": 1105,
+            "height": 608,
+            "right": 1109,
+            "bottom": 704
+          },
+          "book": {
+            "x": 1113,
+            "y": 96,
+            "width": 286,
+            "height": 608,
+            "right": 1399,
+            "bottom": 704
+          },
+          "form": {
+            "x": 1403,
+            "y": 44,
+            "width": 300,
+            "height": 824,
+            "right": 1703,
+            "bottom": 868
+          },
+          "bottom": {
+            "x": 4,
+            "y": 708,
+            "width": 1395,
+            "height": 160,
+            "right": 1399,
+            "bottom": 868
+          },
+          "workspace": {
+            "x": 0,
+            "y": 40,
+            "width": 1707,
+            "height": 832,
+            "right": 1707,
+            "bottom": 872
+          },
+          "heading": {
+            "x": 1403,
+            "y": 44,
+            "width": 300,
+            "height": 46,
+            "right": 1703,
+            "bottom": 90
+          },
+          "chartHeading": {
+            "x": 4,
+            "y": 96,
+            "width": 1105,
+            "height": 40,
+            "right": 1109,
+            "bottom": 136
+          },
+          "toolbar": {
+            "x": 4,
+            "y": 136,
+            "width": 1105,
+            "height": 40,
+            "right": 1109,
+            "bottom": 176
+          },
+          "bottomTabs": {
+            "x": 4,
+            "y": 708,
+            "width": 1395,
+            "height": 44,
+            "right": 1399,
+            "bottom": 752
+          },
+          "price": {
+            "x": 1415,
+            "y": 228,
+            "width": 276,
+            "height": 42,
+            "right": 1691,
+            "bottom": 270
+          },
+          "amount": {
+            "x": 1415,
+            "y": 290,
+            "width": 276,
+            "height": 42,
+            "right": 1691,
+            "bottom": 332
+          },
+          "buy": {
+            "x": 1415,
+            "y": 614.390625,
+            "width": 132,
+            "height": 42,
+            "right": 1547,
+            "bottom": 656.390625
+          },
+          "sell": {
+            "x": 1559,
+            "y": 614.390625,
+            "width": 132,
+            "height": 42,
+            "right": 1691,
+            "bottom": 656.390625
+          },
+          "tabs": [
+            {
+              "text": "Лимитный",
+              "x": 1415,
+              "y": 154,
+              "width": 68.515625,
+              "height": 42,
+              "right": 1483.515625,
+              "bottom": 196
+            },
+            {
+              "text": "Рыночный",
+              "x": 1496.8125,
+              "y": 154,
+              "width": 67.859375,
+              "height": 42,
+              "right": 1564.671875,
+              "bottom": 196
+            },
+            {
+              "text": "Стоп",
+              "x": 1577.953125,
+              "y": 154,
+              "width": 31.65625,
+              "height": 42,
+              "right": 1609.609375,
+              "bottom": 196
+            },
+            {
+              "text": "Take Profit",
+              "x": 1622.90625,
+              "y": 154,
+              "width": 68.09375,
+              "height": 42,
+              "right": 1691,
+              "bottom": 196
+            }
+          ],
+          "overflow": 0
+        }
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "geometry": {
+          "header": {
+            "x": 0,
+            "y": 0,
+            "width": 1366,
+            "height": 40,
+            "right": 1366,
+            "bottom": 40
+          },
+          "ticker": {
+            "x": 4,
+            "y": 44,
+            "width": 1054,
+            "height": 48,
+            "right": 1058,
+            "bottom": 92
+          },
+          "chart": {
+            "x": 4,
+            "y": 96,
+            "width": 764,
+            "height": 476,
+            "right": 768,
+            "bottom": 572
+          },
+          "book": {
+            "x": 772,
+            "y": 96,
+            "width": 286,
+            "height": 476,
+            "right": 1058,
+            "bottom": 572
+          },
+          "form": {
+            "x": 1062,
+            "y": 44,
+            "width": 300,
+            "height": 692,
+            "right": 1362,
+            "bottom": 736
+          },
+          "bottom": {
+            "x": 4,
+            "y": 576,
+            "width": 1054,
+            "height": 160,
+            "right": 1058,
+            "bottom": 736
+          },
+          "workspace": {
+            "x": 0,
+            "y": 40,
+            "width": 1366,
+            "height": 700,
+            "right": 1366,
+            "bottom": 740
+          },
+          "heading": {
+            "x": 1062,
+            "y": 44,
+            "width": 300,
+            "height": 46,
+            "right": 1362,
+            "bottom": 90
+          },
+          "chartHeading": {
+            "x": 4,
+            "y": 96,
+            "width": 764,
+            "height": 40,
+            "right": 768,
+            "bottom": 136
+          },
+          "toolbar": {
+            "x": 4,
+            "y": 136,
+            "width": 764,
+            "height": 40,
+            "right": 768,
+            "bottom": 176
+          },
+          "bottomTabs": {
+            "x": 4,
+            "y": 576,
+            "width": 1054,
+            "height": 44,
+            "right": 1058,
+            "bottom": 620
+          },
+          "price": {
+            "x": 1074,
+            "y": 228,
+            "width": 276,
+            "height": 42,
+            "right": 1350,
+            "bottom": 270
+          },
+          "amount": {
+            "x": 1074,
+            "y": 290,
+            "width": 276,
+            "height": 42,
+            "right": 1350,
+            "bottom": 332
+          },
+          "buy": {
+            "x": 1074,
+            "y": 614.390625,
+            "width": 132,
+            "height": 42,
+            "right": 1206,
+            "bottom": 656.390625
+          },
+          "sell": {
+            "x": 1218,
+            "y": 614.390625,
+            "width": 132,
+            "height": 42,
+            "right": 1350,
+            "bottom": 656.390625
+          },
+          "tabs": [
+            {
+              "text": "Лимитный",
+              "x": 1074,
+              "y": 154,
+              "width": 68.515625,
+              "height": 42,
+              "right": 1142.515625,
+              "bottom": 196
+            },
+            {
+              "text": "Рыночный",
+              "x": 1155.8125,
+              "y": 154,
+              "width": 67.859375,
+              "height": 42,
+              "right": 1223.671875,
+              "bottom": 196
+            },
+            {
+              "text": "Стоп",
+              "x": 1236.953125,
+              "y": 154,
+              "width": 31.65625,
+              "height": 42,
+              "right": 1268.609375,
+              "bottom": 196
+            },
+            {
+              "text": "Take Profit",
+              "x": 1281.90625,
+              "y": 154,
+              "width": 68.09375,
+              "height": 42,
+              "right": 1350,
+              "bottom": 196
+            }
+          ],
+          "overflow": 0
+        }
+      }
+    ],
+    "errors": [],
+    "external": [],
+    "writes": [
+      {
+        "url": "http://127.0.0.1:4445/api/v1/private-trading/native/execution-session",
+        "method": "POST"
+      },
+      {
+        "url": "http://127.0.0.1:4445/api/v1/private-trading/native/execution-session",
+        "method": "POST"
+      },
+      {
+        "url": "http://127.0.0.1:4445/api/v1/private-trading/native/execution-session",
+        "method": "POST"
+      },
+      {
+        "url": "http://127.0.0.1:4445/api/v1/private-trading/native/execution-session",
+        "method": "POST"
+      },
+      {
+        "url": "http://127.0.0.1:4445/api/v1/private-trading/native/execution-session",
+        "method": "POST"
+      },
+      {
+        "url": "http://127.0.0.1:4445/api/v1/private-trading/native/execution-session",
+        "method": "POST"
+      },
+      {
+        "url": "http://127.0.0.1:4445/api/v1/private-trading/native/execution-session",
+        "method": "POST"
+      },
+      {
+        "url": "http://127.0.0.1:4445/api/v1/private-trading/native/execution-session",
+        "method": "POST"
+      }
+    ]
+  },
+  "publicationBlocked": "0% promotional claim requires owner tariff substantiation and publication approval",
+  "integration": {
+    "cases": 392,
+    "navigation": 98,
+    "failures": [],
+    "pageErrors": [],
+    "blockedSnapshotPostAttempts": 49,
+    "forwardedWrites": 0,
+    "languages": [
+      "ru",
+      "en",
+      "zh",
+      "es",
+      "hi",
+      "ja",
+      "ko"
+    ],
+    "widths": [
+      320,
+      360,
+      390,
+      430,
+      1366,
+      1440,
+      1920
+    ]
+  },
+  "walletFinal": {
+    "executed": 71,
+    "inapplicable": 6,
+    "failed": 0,
+    "errorWrap200Percent": [
+      {
+        "width": 320,
+        "fontSize": "23px",
+        "lineHeight": "32.2px",
+        "errorHeight": 64.375,
+        "textHeight": 64.375,
+        "textWithinError": true,
+        "overflow": 0
+      },
+      {
+        "width": 360,
+        "fontSize": "23px",
+        "lineHeight": "32.2px",
+        "errorHeight": 64.375,
+        "textHeight": 64.375,
+        "textWithinError": true,
+        "overflow": 0
+      },
+      {
+        "width": 390,
+        "fontSize": "23px",
+        "lineHeight": "32.2px",
+        "errorHeight": 64.375,
+        "textHeight": 64.375,
+        "textWithinError": true,
+        "overflow": 0
+      },
+      {
+        "width": 430,
+        "fontSize": "23px",
+        "lineHeight": "32.2px",
+        "errorHeight": 64.375,
+        "textHeight": 64.375,
+        "textWithinError": true,
+        "overflow": 0
+      }
+    ]
+  },
+  "sourceHeads": {
+    "main": "e7c6fea3532ea78ff1e3d8287dc592ba2b82641a",
+    "pr490": "db8f5f21a5b3bb0b8e6a60f590956d7043ebb73b",
+    "pr491": "1b3ae760de1df746604a1d108a8745836aa0d0e8",
+    "pr495": "246c00639ed6ac1f2b7fb5180c658055f5195322"
+  }
+}

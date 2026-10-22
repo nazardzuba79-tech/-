@@ -1,0 +1,7715 @@
+{
+  "version": 1,
+  "baselineCommit": "7d9ee6fc6bfe76badaac680313e9728e5abd3550",
+  "measuredCode": "Uncommitted read-API candidate in isolated review worktree; not production.",
+  "node": "v24.21.0",
+  "platform": "win32",
+  "architecture": "x64",
+  "postgres": "18.4 (embedded, independently verified)",
+  "generatedAt": "2026-10-03T10:25:05.947Z",
+  "totalMeasuredRequests": 3600,
+  "finalUniqueMeasuredRequests": 3420,
+  "supersededNote": "The initial summary-after (180 samples) predates three alert-cursor queries. Final table uses the supplement run for this overlapping scenario.",
+  "codeSha256": {
+    "src/api/routes/adminPagedReads.ts": "b4666971dd71fce69f5bf96f031964f3cc71b92ebebdb6aed9e040701bd89c1e",
+    "src/api/routes/adminDeposits.ts": "14d77a2193faa58fdcfb65bb4cc9cf2c2d818b40b18de62f6e05099a71f165e6",
+    "scripts/bench-admin-reads.cjs": "a5fe4cf8f04a61d28d592ffdef468bf9543a2284f1b8a17bc1ad6c8fb81ae12e"
+  },
+  "finalResults": [
+    {
+      "size": 40,
+      "scenario": "users-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 54.909599999999955,
+        "p95": 69.78609999999935,
+        "min": 50.177700000000186,
+        "max": 173.98410000000058
+      },
+      "sqlMs": {
+        "median": 14,
+        "p95": 15,
+        "min": 12,
+        "max": 15
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 22422,
+        "p95": 22422,
+        "min": 22422,
+        "max": 22422
+      },
+      "rows": 40,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "users-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 12.043700000000172,
+        "p95": 15.72189999999864,
+        "min": 9.081000000000131,
+        "max": 18.52599999999984
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 22422,
+        "p95": 22422,
+        "min": 22422,
+        "max": 22422
+      },
+      "rows": 40,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "users-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 54.609700000000885,
+        "p95": 60.91100000000006,
+        "min": 48.750599999999395,
+        "max": 155.01490000000013
+      },
+      "sqlMs": {
+        "median": 13,
+        "p95": 16,
+        "min": 10,
+        "max": 16
+      },
+      "sqlCount": {
+        "median": 7,
+        "p95": 7,
+        "min": 7,
+        "max": 7
+      },
+      "bytes": {
+        "median": 11300,
+        "p95": 11300,
+        "min": 11300,
+        "max": 11300
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "users-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 9.093200000001161,
+        "p95": 10.387500000000728,
+        "min": 8.031699999999546,
+        "max": 10.656800000000658
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 7,
+        "p95": 7,
+        "min": 7,
+        "max": 7
+      },
+      "bytes": {
+        "median": 11300,
+        "p95": 11300,
+        "min": 11300,
+        "max": 11300
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "users-last-login",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 51.26789999999892,
+        "p95": 60.69080000000031,
+        "min": 43.32959999999912,
+        "max": 159.88600000000042
+      },
+      "sqlMs": {
+        "median": 13,
+        "p95": 15,
+        "min": 9,
+        "max": 16
+      },
+      "sqlCount": {
+        "median": 8,
+        "p95": 8,
+        "min": 8,
+        "max": 8
+      },
+      "bytes": {
+        "median": 11309,
+        "p95": 11309,
+        "min": 11309,
+        "max": 11309
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "users-last-login",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 9.9992000000002,
+        "p95": 12.147699999999531,
+        "min": 9.170100000001185,
+        "max": 14.453600000000733
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 1,
+        "min": 0,
+        "max": 1
+      },
+      "sqlCount": {
+        "median": 8,
+        "p95": 8,
+        "min": 8,
+        "max": 8
+      },
+      "bytes": {
+        "median": 11309,
+        "p95": 11309,
+        "min": 11309,
+        "max": 11309
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "detail-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 67.53639999999905,
+        "p95": 184.95989999999983,
+        "min": 61.29070000000138,
+        "max": 188.96249999999964
+      },
+      "sqlMs": {
+        "median": 23,
+        "p95": 26,
+        "min": 18,
+        "max": 29
+      },
+      "sqlCount": {
+        "median": 11,
+        "p95": 11,
+        "min": 11,
+        "max": 11
+      },
+      "bytes": {
+        "median": 22828,
+        "p95": 22828,
+        "min": 22828,
+        "max": 22828
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "detail-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 12.690800000000309,
+        "p95": 14.206900000001042,
+        "min": 11.66990000000078,
+        "max": 14.720400000001973
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 11,
+        "p95": 11,
+        "min": 11,
+        "max": 11
+      },
+      "bytes": {
+        "median": 22828,
+        "p95": 22828,
+        "min": 22828,
+        "max": 22828
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "profile-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 47.890800000001036,
+        "p95": 160.53679999999804,
+        "min": 43.57440000000133,
+        "max": 165.72509999999966
+      },
+      "sqlMs": {
+        "median": 10,
+        "p95": 11,
+        "min": 9,
+        "max": 12
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 540,
+        "p95": 540,
+        "min": 540,
+        "max": 540
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "profile-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 6.247800000001007,
+        "p95": 7.954700000002049,
+        "min": 5.292800000002899,
+        "max": 8.128700000001118
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 540,
+        "p95": 540,
+        "min": 540,
+        "max": 540
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "history-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 45.806799999998475,
+        "p95": 162.03930000000037,
+        "min": 43.03139999999985,
+        "max": 164.8114999999998
+      },
+      "sqlMs": {
+        "median": 8,
+        "p95": 10,
+        "min": 7,
+        "max": 10
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 3429,
+        "p95": 3429,
+        "min": 3429,
+        "max": 3429
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "history-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 6.055599999999686,
+        "p95": 6.630900000000111,
+        "min": 5.49489999999787,
+        "max": 6.746199999997771
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 3429,
+        "p95": 3429,
+        "min": 3429,
+        "max": 3429
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "kyc-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 46.50489999999991,
+        "p95": 164.7455000000009,
+        "min": 40.86880000000019,
+        "max": 164.9318999999996
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 10,
+        "min": 6,
+        "max": 10
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 18616,
+        "p95": 18616,
+        "min": 18616,
+        "max": 18616
+      },
+      "rows": 41,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "kyc-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 8.146300000000338,
+        "p95": 9.941700000003038,
+        "min": 7.665199999999459,
+        "max": 10.215299999999843
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 18616,
+        "p95": 18616,
+        "min": 18616,
+        "max": 18616
+      },
+      "rows": 41,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "kyc-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 45.188899999997375,
+        "p95": 159.33799999999974,
+        "min": 40.91410000000178,
+        "max": 164.7375000000029
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 10,
+        "min": 5,
+        "max": 10
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 11263,
+        "p95": 11263,
+        "min": 11263,
+        "max": 11263
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "kyc-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 6.296099999999569,
+        "p95": 7.080699999998615,
+        "min": 5.611299999996845,
+        "max": 7.3188999999983935
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 11263,
+        "p95": 11263,
+        "min": 11263,
+        "max": 11263
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "audit-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 48.46759999999995,
+        "p95": 163.30119999999806,
+        "min": 41.733799999998155,
+        "max": 164.7482999999993
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 9,
+        "min": 6,
+        "max": 10
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 50756,
+        "p95": 50756,
+        "min": 50756,
+        "max": 50756
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "audit-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 8.626599999999598,
+        "p95": 12.420500000000175,
+        "min": 7.801000000003114,
+        "max": 13.072700000000623
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 1,
+        "min": 0,
+        "max": 1
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 50756,
+        "p95": 50756,
+        "min": 50756,
+        "max": 50756
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "audit-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 42.90190000000075,
+        "p95": 148.1303999999982,
+        "min": 33.78330000000278,
+        "max": 156.893799999998
+      },
+      "sqlMs": {
+        "median": 6,
+        "p95": 8,
+        "min": 4,
+        "max": 8
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5176,
+        "p95": 5176,
+        "min": 5176,
+        "max": 5176
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "audit-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 6.153599999997823,
+        "p95": 8.312600000001112,
+        "min": 5.383300000001327,
+        "max": 8.914899999999761
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5176,
+        "p95": 5176,
+        "min": 5176,
+        "max": 5176
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "activity-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 47.915500000002794,
+        "p95": 143.06349999999657,
+        "min": 34.89839999999822,
+        "max": 157.37769999999728
+      },
+      "sqlMs": {
+        "median": 8,
+        "p95": 11,
+        "min": 5,
+        "max": 11
+      },
+      "sqlCount": {
+        "median": 7,
+        "p95": 7,
+        "min": 7,
+        "max": 7
+      },
+      "bytes": {
+        "median": 315,
+        "p95": 315,
+        "min": 315,
+        "max": 315
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "activity-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 7.354800000000978,
+        "p95": 8.29840000000695,
+        "min": 6.908999999999651,
+        "max": 8.413799999994808
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 7,
+        "p95": 7,
+        "min": 7,
+        "max": 7
+      },
+      "bytes": {
+        "median": 315,
+        "p95": 315,
+        "min": 315,
+        "max": 315
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 40,
+      "scenario": "summary-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 62.941100000000006,
+        "p95": 177.1166000000003,
+        "min": 56.12209999999868,
+        "max": 177.1836000000003
+      },
+      "sqlMs": {
+        "median": 16,
+        "p95": 17,
+        "min": 11,
+        "max": 19
+      },
+      "sqlCount": {
+        "median": 13,
+        "p95": 13,
+        "min": 13,
+        "max": 13
+      },
+      "bytes": {
+        "median": 1173,
+        "p95": 1173,
+        "min": 1173,
+        "max": 1173
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "summary-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 10.210500000001048,
+        "p95": 10.897699999999531,
+        "min": 9.022399999999834,
+        "max": 11.081399999999121
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 13,
+        "p95": 13,
+        "min": 13,
+        "max": 13
+      },
+      "bytes": {
+        "median": 1173,
+        "p95": 1173,
+        "min": 1173,
+        "max": 1173
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "users-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 132.56259999999747,
+        "p95": 248.42949999999837,
+        "min": 117.11809999999969,
+        "max": 248.61889999999403
+      },
+      "sqlMs": {
+        "median": 32,
+        "p95": 37,
+        "min": 28,
+        "max": 37
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 561644,
+        "p95": 561644,
+        "min": 561644,
+        "max": 561644
+      },
+      "rows": 1000,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "users-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 79.39870000000519,
+        "p95": 98.68559999999707,
+        "min": 70.70360000000073,
+        "max": 104.07450000000244
+      },
+      "sqlMs": {
+        "median": 13,
+        "p95": 17,
+        "min": 12,
+        "max": 18
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 561644,
+        "p95": 561644,
+        "min": 561644,
+        "max": 561644
+      },
+      "rows": 1000,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "users-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 52.41730000000098,
+        "p95": 69.2647999999972,
+        "min": 49.70829999999842,
+        "max": 175.1952999999994
+      },
+      "sqlMs": {
+        "median": 15,
+        "p95": 16,
+        "min": 13,
+        "max": 17
+      },
+      "sqlCount": {
+        "median": 7,
+        "p95": 7,
+        "min": 7,
+        "max": 7
+      },
+      "bytes": {
+        "median": 11303,
+        "p95": 11303,
+        "min": 11303,
+        "max": 11303
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "users-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 9.986799999998766,
+        "p95": 11.047999999995227,
+        "min": 8.734400000001187,
+        "max": 13.68420000000333
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 1,
+        "min": 0,
+        "max": 1
+      },
+      "sqlCount": {
+        "median": 7,
+        "p95": 7,
+        "min": 7,
+        "max": 7
+      },
+      "bytes": {
+        "median": 11303,
+        "p95": 11303,
+        "min": 11303,
+        "max": 11303
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "users-last-login",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 62.252300000000105,
+        "p95": 181.71089999999822,
+        "min": 57.089899999999034,
+        "max": 183.08640000000014
+      },
+      "sqlMs": {
+        "median": 21,
+        "p95": 24,
+        "min": 18,
+        "max": 26
+      },
+      "sqlCount": {
+        "median": 8,
+        "p95": 8,
+        "min": 8,
+        "max": 8
+      },
+      "bytes": {
+        "median": 11333,
+        "p95": 11333,
+        "min": 11333,
+        "max": 11333
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "users-last-login",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 15.823499999998603,
+        "p95": 18.746899999998277,
+        "min": 14.49500000000262,
+        "max": 21.478699999999662
+      },
+      "sqlMs": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "sqlCount": {
+        "median": 8,
+        "p95": 8,
+        "min": 8,
+        "max": 8
+      },
+      "bytes": {
+        "median": 11333,
+        "p95": 11333,
+        "min": 11333,
+        "max": 11333
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "detail-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 69.70530000000144,
+        "p95": 187.7297000000035,
+        "min": 63.48709999999846,
+        "max": 188.5650999999998
+      },
+      "sqlMs": {
+        "median": 23,
+        "p95": 27,
+        "min": 20,
+        "max": 27
+      },
+      "sqlCount": {
+        "median": 11,
+        "p95": 11,
+        "min": 11,
+        "max": 11
+      },
+      "bytes": {
+        "median": 22828,
+        "p95": 22828,
+        "min": 22828,
+        "max": 22828
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "detail-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 13.476399999999558,
+        "p95": 18.030400000003283,
+        "min": 12.384600000004866,
+        "max": 18.544600000001083
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 11,
+        "p95": 11,
+        "min": 11,
+        "max": 11
+      },
+      "bytes": {
+        "median": 22828,
+        "p95": 22828,
+        "min": 22828,
+        "max": 22828
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "profile-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 35.592600000003586,
+        "p95": 149.19900000000052,
+        "min": 28.49869999999646,
+        "max": 158.3249999999971
+      },
+      "sqlMs": {
+        "median": 5,
+        "p95": 10,
+        "min": 5,
+        "max": 11
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 540,
+        "p95": 540,
+        "min": 540,
+        "max": 540
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "profile-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 8.746699999996054,
+        "p95": 10.755600000004051,
+        "min": 6.426399999996647,
+        "max": 11.027999999998428
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 540,
+        "p95": 540,
+        "min": 540,
+        "max": 540
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "history-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 41.75209999999788,
+        "p95": 161.5630999999994,
+        "min": 32.069400000000314,
+        "max": 162.40269999999873
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 9,
+        "min": 5,
+        "max": 11
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 3429,
+        "p95": 3429,
+        "min": 3429,
+        "max": 3429
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "history-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 7.1150999999954365,
+        "p95": 8.077499999999418,
+        "min": 6.079800000006799,
+        "max": 8.117500000000291
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 3429,
+        "p95": 3429,
+        "min": 3429,
+        "max": 3429
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "kyc-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 127.58669999999984,
+        "p95": 259.4467000000004,
+        "min": 116.50929999999789,
+        "max": 264.9279999999999
+      },
+      "sqlMs": {
+        "median": 19,
+        "p95": 23,
+        "min": 17,
+        "max": 23
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 462558,
+        "p95": 462558,
+        "min": 462558,
+        "max": 462558
+      },
+      "rows": 1001,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "kyc-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 97.22260000000824,
+        "p95": 120.5911000000051,
+        "min": 82.11800000000221,
+        "max": 125.56560000000172
+      },
+      "sqlMs": {
+        "median": 12,
+        "p95": 17,
+        "min": 10,
+        "max": 19
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 462558,
+        "p95": 462558,
+        "min": 462558,
+        "max": 462558
+      },
+      "rows": 1001,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "kyc-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 49.28049999999348,
+        "p95": 164.25440000000526,
+        "min": 44.48369999999704,
+        "max": 164.5106999999989
+      },
+      "sqlMs": {
+        "median": 8,
+        "p95": 9,
+        "min": 7,
+        "max": 10
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 11266,
+        "p95": 11266,
+        "min": 11266,
+        "max": 11266
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "kyc-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 9.683400000008987,
+        "p95": 10.742399999988265,
+        "min": 7.778300000005402,
+        "max": 11.093599999992875
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 1,
+        "min": 0,
+        "max": 1
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 11266,
+        "p95": 11266,
+        "min": 11266,
+        "max": 11266
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "audit-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 53.35620000000927,
+        "p95": 167.5668000000005,
+        "min": 41.63999999999942,
+        "max": 170.86659999999392
+      },
+      "sqlMs": {
+        "median": 10,
+        "p95": 11,
+        "min": 6,
+        "max": 12
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 50893,
+        "p95": 50893,
+        "min": 50893,
+        "max": 50893
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "audit-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 13.937799999999697,
+        "p95": 16.042900000000373,
+        "min": 11.355000000010477,
+        "max": 16.266799999997602
+      },
+      "sqlMs": {
+        "median": 2,
+        "p95": 2,
+        "min": 2,
+        "max": 2
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 50893,
+        "p95": 50893,
+        "min": 50893,
+        "max": 50893
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "audit-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 47.57269999998971,
+        "p95": 161.35029999999097,
+        "min": 31.445999999996275,
+        "max": 161.75049999999464
+      },
+      "sqlMs": {
+        "median": 10,
+        "p95": 11,
+        "min": 6,
+        "max": 11
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5201,
+        "p95": 5201,
+        "min": 5201,
+        "max": 5201
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "audit-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 8.908400000000256,
+        "p95": 9.7899000000034,
+        "min": 7.174499999993714,
+        "max": 10.590299999996205
+      },
+      "sqlMs": {
+        "median": 1,
+        "p95": 2,
+        "min": 1,
+        "max": 2
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5201,
+        "p95": 5201,
+        "min": 5201,
+        "max": 5201
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "activity-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 58.332299999994575,
+        "p95": 178.54700000000594,
+        "min": 52.236699999994016,
+        "max": 178.72390000001178
+      },
+      "sqlMs": {
+        "median": 13,
+        "p95": 16,
+        "min": 11,
+        "max": 18
+      },
+      "sqlCount": {
+        "median": 9,
+        "p95": 9,
+        "min": 9,
+        "max": 9
+      },
+      "bytes": {
+        "median": 5561,
+        "p95": 5561,
+        "min": 5561,
+        "max": 5561
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "activity-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 12.804100000008475,
+        "p95": 14.015100000004168,
+        "min": 12.258799999995972,
+        "max": 23.287800000005518
+      },
+      "sqlMs": {
+        "median": 2,
+        "p95": 2,
+        "min": 2,
+        "max": 2
+      },
+      "sqlCount": {
+        "median": 9,
+        "p95": 9,
+        "min": 9,
+        "max": 9
+      },
+      "bytes": {
+        "median": 5561,
+        "p95": 5561,
+        "min": 5561,
+        "max": 5561
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "summary-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 67.92180000000008,
+        "p95": 190.1165000000001,
+        "min": 62.85849999999846,
+        "max": 190.5525000000016
+      },
+      "sqlMs": {
+        "median": 22,
+        "p95": 28,
+        "min": 18,
+        "max": 29
+      },
+      "sqlCount": {
+        "median": 15,
+        "p95": 15,
+        "min": 15,
+        "max": 15
+      },
+      "bytes": {
+        "median": 1185,
+        "p95": 1185,
+        "min": 1185,
+        "max": 1185
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "summary-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 17.923500000000786,
+        "p95": 19.079200000000128,
+        "min": 16.127700000000914,
+        "max": 19.723699999998644
+      },
+      "sqlMs": {
+        "median": 2,
+        "p95": 4,
+        "min": 2,
+        "max": 4
+      },
+      "sqlCount": {
+        "median": 15,
+        "p95": 15,
+        "min": 15,
+        "max": 15
+      },
+      "bytes": {
+        "median": 1185,
+        "p95": 1185,
+        "min": 1185,
+        "max": 1185
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "users-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 911.1909999999916,
+        "p95": 1110.051700000011,
+        "min": 793.5823999999993,
+        "max": 1242.2703000000038
+      },
+      "sqlMs": {
+        "median": 176,
+        "p95": 209,
+        "min": 146,
+        "max": 209
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 5626395,
+        "p95": 5626395,
+        "min": 5626395,
+        "max": 5626395
+      },
+      "rows": 10000,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "users-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 821.7991000000038,
+        "p95": 1047.5047999999952,
+        "min": 724.2276000000129,
+        "max": 1055.432199999981
+      },
+      "sqlMs": {
+        "median": 160,
+        "p95": 210,
+        "min": 127,
+        "max": 236
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 7
+      },
+      "bytes": {
+        "median": 5626395,
+        "p95": 5626395,
+        "min": 5626395,
+        "max": 5626395
+      },
+      "rows": 10000,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "users-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 58.42249999998603,
+        "p95": 67.75419999999576,
+        "min": 55.01480000000447,
+        "max": 72.28560000000289
+      },
+      "sqlMs": {
+        "median": 20,
+        "p95": 23,
+        "min": 18,
+        "max": 24
+      },
+      "sqlCount": {
+        "median": 7,
+        "p95": 7,
+        "min": 7,
+        "max": 7
+      },
+      "bytes": {
+        "median": 11305,
+        "p95": 11305,
+        "min": 11305,
+        "max": 11305
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "users-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 16.700299999996787,
+        "p95": 19.74780000001192,
+        "min": 15.24989999999525,
+        "max": 20.863299999997253
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 9,
+        "min": 7,
+        "max": 9
+      },
+      "sqlCount": {
+        "median": 7,
+        "p95": 7,
+        "min": 7,
+        "max": 7
+      },
+      "bytes": {
+        "median": 11305,
+        "p95": 11305,
+        "min": 11305,
+        "max": 11305
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "users-last-login",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 116.96250000002328,
+        "p95": 224.7402000000002,
+        "min": 97.73170000000391,
+        "max": 235.3807000000088
+      },
+      "sqlMs": {
+        "median": 76,
+        "p95": 81,
+        "min": 60,
+        "max": 81
+      },
+      "sqlCount": {
+        "median": 8,
+        "p95": 8,
+        "min": 8,
+        "max": 8
+      },
+      "bytes": {
+        "median": 11355,
+        "p95": 11355,
+        "min": 11355,
+        "max": 11355
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "users-last-login",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 70.40109999998822,
+        "p95": 74.54769999999553,
+        "min": 38.38340000002063,
+        "max": 76.33030000000144
+      },
+      "sqlMs": {
+        "median": 59,
+        "p95": 61,
+        "min": 30,
+        "max": 61
+      },
+      "sqlCount": {
+        "median": 8,
+        "p95": 8,
+        "min": 8,
+        "max": 8
+      },
+      "bytes": {
+        "median": 11355,
+        "p95": 11355,
+        "min": 11355,
+        "max": 11355
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "detail-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 65.46210000000428,
+        "p95": 186.65039999998407,
+        "min": 59.548199999990175,
+        "max": 191.20960000000196
+      },
+      "sqlMs": {
+        "median": 22,
+        "p95": 29,
+        "min": 18,
+        "max": 29
+      },
+      "sqlCount": {
+        "median": 11,
+        "p95": 11,
+        "min": 11,
+        "max": 11
+      },
+      "bytes": {
+        "median": 22828,
+        "p95": 22828,
+        "min": 22828,
+        "max": 22828
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "detail-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 11.269400000019232,
+        "p95": 13.231999999989057,
+        "min": 10.771199999988312,
+        "max": 14.05240000001504
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 11,
+        "p95": 11,
+        "min": 11,
+        "max": 11
+      },
+      "bytes": {
+        "median": 22828,
+        "p95": 22828,
+        "min": 22828,
+        "max": 22828
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "profile-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 46.93170000001555,
+        "p95": 166.89000000001397,
+        "min": 41.08090000000084,
+        "max": 167.00920000000042
+      },
+      "sqlMs": {
+        "median": 10,
+        "p95": 12,
+        "min": 8,
+        "max": 13
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 540,
+        "p95": 540,
+        "min": 540,
+        "max": 540
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "profile-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.3606999999901745,
+        "p95": 6.08520000000135,
+        "min": 4.731499999994412,
+        "max": 6.268000000010943
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 540,
+        "p95": 540,
+        "min": 540,
+        "max": 540
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "history-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 44.56349999998929,
+        "p95": 149.10760000001756,
+        "min": 35.86220000000321,
+        "max": 152.1693999999843
+      },
+      "sqlMs": {
+        "median": 8,
+        "p95": 11,
+        "min": 6,
+        "max": 12
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 3429,
+        "p95": 3429,
+        "min": 3429,
+        "max": 3429
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "history-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.6705999999830965,
+        "p95": 8.43630000000121,
+        "min": 5.020699999993667,
+        "max": 10.285999999992782
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 3429,
+        "p95": 3429,
+        "min": 3429,
+        "max": 3429
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "kyc-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 1003.1283000000112,
+        "p95": 1154.260799999989,
+        "min": 818.66770000002,
+        "max": 1161.2436000000162
+      },
+      "sqlMs": {
+        "median": 135,
+        "p95": 172,
+        "min": 117,
+        "max": 174
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 4634059,
+        "p95": 4634059,
+        "min": 4634059,
+        "max": 4634059
+      },
+      "rows": 10001,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "kyc-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 832.7133000000031,
+        "p95": 926.6837999999989,
+        "min": 787.8770000000077,
+        "max": 949.9642000000167
+      },
+      "sqlMs": {
+        "median": 124,
+        "p95": 155,
+        "min": 114,
+        "max": 161
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 5
+      },
+      "bytes": {
+        "median": 4634059,
+        "p95": 4634059,
+        "min": 4634059,
+        "max": 4634059
+      },
+      "rows": 10001,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "kyc-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 52.64859999998589,
+        "p95": 173.0899999999965,
+        "min": 46.04190000001108,
+        "max": 185.37039999998524
+      },
+      "sqlMs": {
+        "median": 14,
+        "p95": 17,
+        "min": 12,
+        "max": 18
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 11268,
+        "p95": 11268,
+        "min": 11268,
+        "max": 11268
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "kyc-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 12.053799999994226,
+        "p95": 13.00669999999809,
+        "min": 11.262600000016391,
+        "max": 13.091799999994691
+      },
+      "sqlMs": {
+        "median": 5,
+        "p95": 6,
+        "min": 5,
+        "max": 6
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 11268,
+        "p95": 11268,
+        "min": 11268,
+        "max": 11268
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "audit-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 85.96250000002328,
+        "p95": 211.84700000000885,
+        "min": 76.324099999998,
+        "max": 315.26540000000386
+      },
+      "sqlMs": {
+        "median": 45,
+        "p95": 158,
+        "min": 39,
+        "max": 161
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 50893,
+        "p95": 50893,
+        "min": 50893,
+        "max": 50893
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "audit-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 50.97370000000228,
+        "p95": 166.7740000000049,
+        "min": 43.20650000000023,
+        "max": 166.84279999998398
+      },
+      "sqlMs": {
+        "median": 39,
+        "p95": 155,
+        "min": 34,
+        "max": 155
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 50893,
+        "p95": 50893,
+        "min": 50893,
+        "max": 50893
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "audit-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 92.19800000000396,
+        "p95": 212.20549999998184,
+        "min": 80.3344999999972,
+        "max": 217.2235000000219
+      },
+      "sqlMs": {
+        "median": 53,
+        "p95": 174,
+        "min": 47,
+        "max": 175
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5223,
+        "p95": 5223,
+        "min": 5223,
+        "max": 5223
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "audit-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 52.61280000000261,
+        "p95": 173.92970000000787,
+        "min": 48.4826999999932,
+        "max": 176.4360999999917
+      },
+      "sqlMs": {
+        "median": 45,
+        "p95": 166,
+        "min": 41,
+        "max": 168
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5223,
+        "p95": 5223,
+        "min": 5223,
+        "max": 5223
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "activity-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 93.06260000000475,
+        "p95": 210.39120000001276,
+        "min": 88.28269999998156,
+        "max": 212.5668000000005
+      },
+      "sqlMs": {
+        "median": 37,
+        "p95": 41,
+        "min": 35,
+        "max": 41
+      },
+      "sqlCount": {
+        "median": 9,
+        "p95": 9,
+        "min": 9,
+        "max": 9
+      },
+      "bytes": {
+        "median": 52725,
+        "p95": 52725,
+        "min": 52725,
+        "max": 52725
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "activity-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 48.63500000000931,
+        "p95": 51.905999999988126,
+        "min": 43.65249999999651,
+        "max": 54.23989999998594
+      },
+      "sqlMs": {
+        "median": 21,
+        "p95": 24,
+        "min": 18,
+        "max": 25
+      },
+      "sqlCount": {
+        "median": 9,
+        "p95": 9,
+        "min": 9,
+        "max": 9
+      },
+      "bytes": {
+        "median": 52725,
+        "p95": 52725,
+        "min": 52725,
+        "max": 52725
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "summary-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 127.48730000000069,
+        "p95": 145.97520000000077,
+        "min": 122.14190000000235,
+        "max": 244.78889999999956
+      },
+      "sqlMs": {
+        "median": 65,
+        "p95": 73,
+        "min": 62,
+        "max": 77
+      },
+      "sqlCount": {
+        "median": 15,
+        "p95": 15,
+        "min": 15,
+        "max": 15
+      },
+      "bytes": {
+        "median": 1189,
+        "p95": 1189,
+        "min": 1189,
+        "max": 1189
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "summary-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 70.2612999999983,
+        "p95": 85.35699999999633,
+        "min": 63.30750000000262,
+        "max": 89.59949999999662
+      },
+      "sqlMs": {
+        "median": 37,
+        "p95": 40,
+        "min": 30,
+        "max": 40
+      },
+      "sqlCount": {
+        "median": 15,
+        "p95": 15,
+        "min": 15,
+        "max": 15
+      },
+      "bytes": {
+        "median": 1189,
+        "p95": 1189,
+        "min": 1189,
+        "max": 1189
+      },
+      "rows": null,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "withdrawals-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 52.688500000000204,
+        "p95": 167.67249999999876,
+        "min": 46.23330000000169,
+        "max": 173.0609999999997
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 9,
+        "min": 6,
+        "max": 9
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 65356,
+        "p95": 65356,
+        "min": 65356,
+        "max": 65356
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "withdrawals-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 11.443699999999808,
+        "p95": 12.435699999999997,
+        "min": 10.909499999999753,
+        "max": 12.800999999999476
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 1
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 65356,
+        "p95": 65356,
+        "min": 65356,
+        "max": 65356
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "withdrawals-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 43.10859999999957,
+        "p95": 161.70219999999972,
+        "min": 38.378200000001016,
+        "max": 162.89110000000073
+      },
+      "sqlMs": {
+        "median": 6,
+        "p95": 9,
+        "min": 5,
+        "max": 9
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 6636,
+        "p95": 6636,
+        "min": 6636,
+        "max": 6636
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "withdrawals-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.644300000001749,
+        "p95": 8.819600000000719,
+        "min": 4.502199999998993,
+        "max": 8.922899999999572
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 6636,
+        "p95": 6636,
+        "min": 6636,
+        "max": 6636
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "futures-orders-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 43.73650000000271,
+        "p95": 164.58560000000034,
+        "min": 38.587399999996705,
+        "max": 170.38650000000234
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 8,
+        "min": 5,
+        "max": 17
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 831,
+        "p95": 831,
+        "min": 831,
+        "max": 831
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "futures-orders-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.832000000002154,
+        "p95": 8.520700000000943,
+        "min": 4.4703000000008615,
+        "max": 8.577399999998306
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 831,
+        "p95": 831,
+        "min": 831,
+        "max": 831
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "futures-positions-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 44.39820000000327,
+        "p95": 162.29599999999846,
+        "min": 39.85480000000098,
+        "max": 163.01859999999942
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 9,
+        "min": 5,
+        "max": 9
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 880,
+        "p95": 880,
+        "min": 880,
+        "max": 880
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "futures-positions-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.264800000000832,
+        "p95": 6.619799999996758,
+        "min": 4.533799999997427,
+        "max": 8.352100000000064
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 880,
+        "p95": 880,
+        "min": 880,
+        "max": 880
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "cfd-positions-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 40.13940000000002,
+        "p95": 161.25920000000042,
+        "min": 37.1221000000005,
+        "max": 163.78189999999813
+      },
+      "sqlMs": {
+        "median": 6,
+        "p95": 8,
+        "min": 5,
+        "max": 8
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 799,
+        "p95": 799,
+        "min": 799,
+        "max": 799
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "cfd-positions-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.256100000002334,
+        "p95": 5.83810000000085,
+        "min": 4.587099999997008,
+        "max": 5.8729999999995925
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 799,
+        "p95": 799,
+        "min": 799,
+        "max": 799
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "withdrawals-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 50.82800000000134,
+        "p95": 171.8071000000018,
+        "min": 47.453300000001036,
+        "max": 179.4891000000025
+      },
+      "sqlMs": {
+        "median": 10,
+        "p95": 12,
+        "min": 7,
+        "max": 13
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 65493,
+        "p95": 65493,
+        "min": 65493,
+        "max": 65493
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "withdrawals-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 13.996800000000803,
+        "p95": 19.193899999998393,
+        "min": 12.195299999999406,
+        "max": 20.59820000000036
+      },
+      "sqlMs": {
+        "median": 2,
+        "p95": 3,
+        "min": 2,
+        "max": 4
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 65493,
+        "p95": 65493,
+        "min": 65493,
+        "max": 65493
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "withdrawals-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 45.890699999996286,
+        "p95": 164.75160000000324,
+        "min": 42.01209999999992,
+        "max": 165.7908000000025
+      },
+      "sqlMs": {
+        "median": 9,
+        "p95": 12,
+        "min": 7,
+        "max": 12
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 6659,
+        "p95": 6659,
+        "min": 6659,
+        "max": 6659
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "withdrawals-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 8.073099999994156,
+        "p95": 10.273500000002969,
+        "min": 7.297200000000885,
+        "max": 10.74550000000454
+      },
+      "sqlMs": {
+        "median": 2,
+        "p95": 2,
+        "min": 1,
+        "max": 2
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 6659,
+        "p95": 6659,
+        "min": 6659,
+        "max": 6659
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "futures-orders-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 41.186399999998685,
+        "p95": 157.63440000000264,
+        "min": 38.09719999999652,
+        "max": 160.38059999999678
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 8,
+        "min": 5,
+        "max": 8
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 831,
+        "p95": 831,
+        "min": 831,
+        "max": 831
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "futures-orders-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.423900000001595,
+        "p95": 7.410600000002887,
+        "min": 4.465199999998731,
+        "max": 7.493100000006962
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 831,
+        "p95": 831,
+        "min": 831,
+        "max": 831
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "futures-positions-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 43.27599999999802,
+        "p95": 164.8990999999951,
+        "min": 37.27179999999498,
+        "max": 165.30460000000312
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 8,
+        "min": 5,
+        "max": 9
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 880,
+        "p95": 880,
+        "min": 880,
+        "max": 880
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "futures-positions-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 6.03530000000319,
+        "p95": 8.309900000000198,
+        "min": 5.198300000003655,
+        "max": 8.676800000001094
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 880,
+        "p95": 880,
+        "min": 880,
+        "max": 880
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "cfd-positions-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 42.36239999999816,
+        "p95": 160.8481000000029,
+        "min": 38.41219999999885,
+        "max": 161.33009999999922
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 9,
+        "min": 5,
+        "max": 9
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 799,
+        "p95": 799,
+        "min": 799,
+        "max": 799
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "cfd-positions-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.970000000001164,
+        "p95": 8.429299999996147,
+        "min": 5.354500000001281,
+        "max": 9.108500000002095
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 799,
+        "p95": 799,
+        "min": 799,
+        "max": 799
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "withdrawals-before",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 63.59219999999914,
+        "p95": 184.11179999999877,
+        "min": 60.269399999997404,
+        "max": 184.2373000000007
+      },
+      "sqlMs": {
+        "median": 24,
+        "p95": 28,
+        "min": 22,
+        "max": 29
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 65493,
+        "p95": 65493,
+        "min": 65493,
+        "max": 65493
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "withdrawals-before",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 27.319600000002538,
+        "p95": 32.2502999999997,
+        "min": 25.756600000007893,
+        "max": 32.83889999999519
+      },
+      "sqlMs": {
+        "median": 15,
+        "p95": 18,
+        "min": 14,
+        "max": 18
+      },
+      "sqlCount": {
+        "median": 4,
+        "p95": 4,
+        "min": 4,
+        "max": 4
+      },
+      "bytes": {
+        "median": 65493,
+        "p95": 65493,
+        "min": 65493,
+        "max": 65493
+      },
+      "rows": 200,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "withdrawals-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 62.64379999999073,
+        "p95": 172.7395000000106,
+        "min": 59.58650000000489,
+        "max": 183.07009999999718
+      },
+      "sqlMs": {
+        "median": 28,
+        "p95": 32,
+        "min": 26,
+        "max": 32
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 6681,
+        "p95": 6681,
+        "min": 6681,
+        "max": 6681
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "withdrawals-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 27.68070000001171,
+        "p95": 29.27610000000277,
+        "min": 24.707399999999325,
+        "max": 29.36469999999099
+      },
+      "sqlMs": {
+        "median": 20,
+        "p95": 21,
+        "min": 18,
+        "max": 21
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 6681,
+        "p95": 6681,
+        "min": 6681,
+        "max": 6681
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "futures-orders-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 43.429000000003725,
+        "p95": 156.88979999998992,
+        "min": 29.88189999999304,
+        "max": 160.2664999999979
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 9,
+        "min": 4,
+        "max": 10
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 831,
+        "p95": 831,
+        "min": 831,
+        "max": 831
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "futures-orders-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.576000000000931,
+        "p95": 7.013600000005681,
+        "min": 5.063699999998789,
+        "max": 7.8646999999909895
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 831,
+        "p95": 831,
+        "min": 831,
+        "max": 831
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "futures-positions-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 41.24689999999828,
+        "p95": 147.73570000000473,
+        "min": 37.86720000000787,
+        "max": 161.65939999998955
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 8,
+        "min": 5,
+        "max": 9
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 880,
+        "p95": 880,
+        "min": 880,
+        "max": 880
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "futures-positions-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.644499999994878,
+        "p95": 6.2053000000014435,
+        "min": 5.146000000007916,
+        "max": 6.23519999999553
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 880,
+        "p95": 880,
+        "min": 880,
+        "max": 880
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "cfd-positions-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 41.15819999999076,
+        "p95": 160.00280000000203,
+        "min": 37.634500000000116,
+        "max": 162.3069000000105
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 8,
+        "min": 5,
+        "max": 8
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 799,
+        "p95": 799,
+        "min": 799,
+        "max": 799
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "cfd-positions-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 5.162100000001374,
+        "p95": 7.4771999999939,
+        "min": 4.157000000006519,
+        "max": 8.606299999999464
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 799,
+        "p95": 799,
+        "min": 799,
+        "max": 799
+      },
+      "rows": 3,
+      "sourceRun": "admin-read-benchmark-supplement.json"
+    },
+    {
+      "size": 40,
+      "scenario": "kyc-date-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 47.01649999999972,
+        "p95": 164.23739999999998,
+        "min": 42.9375,
+        "max": 164.65120000000024
+      },
+      "sqlMs": {
+        "median": 7,
+        "p95": 11,
+        "min": 6,
+        "max": 11
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 11595,
+        "p95": 11595,
+        "min": 11595,
+        "max": 11595
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-kyc-date.json"
+    },
+    {
+      "size": 40,
+      "scenario": "kyc-date-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 7.7348000000001775,
+        "p95": 8.73450000000048,
+        "min": 7.0495000000009895,
+        "max": 8.820600000000923
+      },
+      "sqlMs": {
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 11595,
+        "p95": 11595,
+        "min": 11595,
+        "max": 11595
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-kyc-date.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "kyc-date-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 56.13670000000093,
+        "p95": 177.6841999999997,
+        "min": 51.83050000000003,
+        "max": 181.35590000000047
+      },
+      "sqlMs": {
+        "median": 19,
+        "p95": 24,
+        "min": 17,
+        "max": 25
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 11598,
+        "p95": 11598,
+        "min": 11598,
+        "max": 11598
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-kyc-date.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "kyc-date-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 19.07010000000082,
+        "p95": 21.004399999999805,
+        "min": 18.20720000000074,
+        "max": 27.163899999999558
+      },
+      "sqlMs": {
+        "median": 11,
+        "p95": 12,
+        "min": 11,
+        "max": 14
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 11598,
+        "p95": 11598,
+        "min": 11598,
+        "max": 11598
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-kyc-date.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "kyc-date-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 102.6242999999995,
+        "p95": 223.0650999999998,
+        "min": 68.25920000000042,
+        "max": 227.82710000000225
+      },
+      "sqlMs": {
+        "median": 64,
+        "p95": 69,
+        "min": 36,
+        "max": 77
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 11600,
+        "p95": 11600,
+        "min": 11600,
+        "max": 11600
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-kyc-date.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "kyc-date-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 61.96860000000015,
+        "p95": 66.13160000000062,
+        "min": 37.95369999999821,
+        "max": 68.49309999999969
+      },
+      "sqlMs": {
+        "median": 52,
+        "p95": 58,
+        "min": 31,
+        "max": 60
+      },
+      "sqlCount": {
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6
+      },
+      "bytes": {
+        "median": 11600,
+        "p95": 11600,
+        "min": 11600,
+        "max": 11600
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-kyc-date.json"
+    },
+    {
+      "size": 40,
+      "scenario": "audit-email-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 44.78449999999975,
+        "p95": 164.5668999999998,
+        "min": 29.95509999999922,
+        "max": 164.66440000000148
+      },
+      "sqlMs": {
+        "median": 9,
+        "p95": 11,
+        "min": 4,
+        "max": 12
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5165,
+        "p95": 5165,
+        "min": 5165,
+        "max": 5165
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-audit-search.json"
+    },
+    {
+      "size": 40,
+      "scenario": "audit-email-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 8.350099999999657,
+        "p95": 9.545200000000477,
+        "min": 7.093899999999849,
+        "max": 9.83509999999842
+      },
+      "sqlMs": {
+        "median": 2,
+        "p95": 2,
+        "min": 2,
+        "max": 2
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5165,
+        "p95": 5165,
+        "min": 5165,
+        "max": 5165
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-audit-search.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "audit-email-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 85.1288999999997,
+        "p95": 206.70709999999963,
+        "min": 80.32989999999882,
+        "max": 213.6944999999996
+      },
+      "sqlMs": {
+        "median": 47,
+        "p95": 51,
+        "min": 46,
+        "max": 52
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5165,
+        "p95": 5165,
+        "min": 5165,
+        "max": 5165
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-audit-search.json"
+    },
+    {
+      "size": 1000,
+      "scenario": "audit-email-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 31.97690000000148,
+        "p95": 51.327299999997194,
+        "min": 29.308600000000297,
+        "max": 51.71140000000014
+      },
+      "sqlMs": {
+        "median": 24,
+        "p95": 45,
+        "min": 23,
+        "max": 45
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5165,
+        "p95": 5165,
+        "min": 5165,
+        "max": 5165
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-audit-search.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "audit-email-after",
+      "mode": "cold",
+      "n": 30,
+      "httpMs": {
+        "median": 217.35220000000118,
+        "p95": 315.42720000000554,
+        "min": 137.06169999999838,
+        "max": 321.3294999999998
+      },
+      "sqlMs": {
+        "median": 179,
+        "p95": 211,
+        "min": 109,
+        "max": 218
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5165,
+        "p95": 5165,
+        "min": 5165,
+        "max": 5165
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-audit-search.json"
+    },
+    {
+      "size": 10000,
+      "scenario": "audit-email-after",
+      "mode": "warm",
+      "n": 30,
+      "httpMs": {
+        "median": 165.23189999999886,
+        "p95": 225.0179999999964,
+        "min": 113.46770000000106,
+        "max": 231.74899999999616
+      },
+      "sqlMs": {
+        "median": 157,
+        "p95": 217,
+        "min": 106,
+        "max": 223
+      },
+      "sqlCount": {
+        "median": 5,
+        "p95": 5,
+        "min": 5,
+        "max": 5
+      },
+      "bytes": {
+        "median": 5165,
+        "p95": 5165,
+        "min": 5165,
+        "max": 5165
+      },
+      "rows": 20,
+      "sourceRun": "admin-read-benchmark-audit-search.json"
+    }
+  ],
+  "sourceRuns": [
+    {
+      "name": "admin-read-benchmark.json",
+      "generatedAt": "2026-10-03T09:57:55.840Z",
+      "postgres": "18.4 (embedded, independently verified)",
+      "repetitions": 30,
+      "sizes": [
+        40,
+        1000,
+        10000
+      ],
+      "boundary": "Disposable 127.0.0.1 PostgreSQL with synthetic records only; no production URLs, users or financial writes.",
+      "modes": {
+        "cold": "Prisma connection disconnected before each measured HTTP request; database/OS cache is NOT flushed.",
+        "warm": "Same Prisma connection, one unmeasured warm-up before 30 requests."
+      },
+      "metrics": {
+        "httpMs": "End-to-end localhost HTTP including auth and JSON serialization, no frontend render",
+        "sqlMs": "Sum of Prisma query duration events (millisecond resolution)",
+        "bytes": "Uncompressed JSON bytes",
+        "rows": "Response items; DOM/React measurements are separate browser QA"
+      },
+      "results": [
+        {
+          "size": 40,
+          "scenario": "users-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 54.909599999999955,
+            "p95": 69.78609999999935,
+            "min": 50.177700000000186,
+            "max": 173.98410000000058
+          },
+          "sqlMs": {
+            "median": 14,
+            "p95": 15,
+            "min": 12,
+            "max": 15
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 22422,
+            "p95": 22422,
+            "min": 22422,
+            "max": 22422
+          },
+          "rows": 40
+        },
+        {
+          "size": 40,
+          "scenario": "users-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 12.043700000000172,
+            "p95": 15.72189999999864,
+            "min": 9.081000000000131,
+            "max": 18.52599999999984
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 22422,
+            "p95": 22422,
+            "min": 22422,
+            "max": 22422
+          },
+          "rows": 40
+        },
+        {
+          "size": 40,
+          "scenario": "users-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 54.609700000000885,
+            "p95": 60.91100000000006,
+            "min": 48.750599999999395,
+            "max": 155.01490000000013
+          },
+          "sqlMs": {
+            "median": 13,
+            "p95": 16,
+            "min": 10,
+            "max": 16
+          },
+          "sqlCount": {
+            "median": 7,
+            "p95": 7,
+            "min": 7,
+            "max": 7
+          },
+          "bytes": {
+            "median": 11300,
+            "p95": 11300,
+            "min": 11300,
+            "max": 11300
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "users-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 9.093200000001161,
+            "p95": 10.387500000000728,
+            "min": 8.031699999999546,
+            "max": 10.656800000000658
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 7,
+            "p95": 7,
+            "min": 7,
+            "max": 7
+          },
+          "bytes": {
+            "median": 11300,
+            "p95": 11300,
+            "min": 11300,
+            "max": 11300
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "users-last-login",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 51.26789999999892,
+            "p95": 60.69080000000031,
+            "min": 43.32959999999912,
+            "max": 159.88600000000042
+          },
+          "sqlMs": {
+            "median": 13,
+            "p95": 15,
+            "min": 9,
+            "max": 16
+          },
+          "sqlCount": {
+            "median": 8,
+            "p95": 8,
+            "min": 8,
+            "max": 8
+          },
+          "bytes": {
+            "median": 11309,
+            "p95": 11309,
+            "min": 11309,
+            "max": 11309
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "users-last-login",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 9.9992000000002,
+            "p95": 12.147699999999531,
+            "min": 9.170100000001185,
+            "max": 14.453600000000733
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 1,
+            "min": 0,
+            "max": 1
+          },
+          "sqlCount": {
+            "median": 8,
+            "p95": 8,
+            "min": 8,
+            "max": 8
+          },
+          "bytes": {
+            "median": 11309,
+            "p95": 11309,
+            "min": 11309,
+            "max": 11309
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "detail-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 67.53639999999905,
+            "p95": 184.95989999999983,
+            "min": 61.29070000000138,
+            "max": 188.96249999999964
+          },
+          "sqlMs": {
+            "median": 23,
+            "p95": 26,
+            "min": 18,
+            "max": 29
+          },
+          "sqlCount": {
+            "median": 11,
+            "p95": 11,
+            "min": 11,
+            "max": 11
+          },
+          "bytes": {
+            "median": 22828,
+            "p95": 22828,
+            "min": 22828,
+            "max": 22828
+          },
+          "rows": null
+        },
+        {
+          "size": 40,
+          "scenario": "detail-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 12.690800000000309,
+            "p95": 14.206900000001042,
+            "min": 11.66990000000078,
+            "max": 14.720400000001973
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 11,
+            "p95": 11,
+            "min": 11,
+            "max": 11
+          },
+          "bytes": {
+            "median": 22828,
+            "p95": 22828,
+            "min": 22828,
+            "max": 22828
+          },
+          "rows": null
+        },
+        {
+          "size": 40,
+          "scenario": "profile-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 47.890800000001036,
+            "p95": 160.53679999999804,
+            "min": 43.57440000000133,
+            "max": 165.72509999999966
+          },
+          "sqlMs": {
+            "median": 10,
+            "p95": 11,
+            "min": 9,
+            "max": 12
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 540,
+            "p95": 540,
+            "min": 540,
+            "max": 540
+          },
+          "rows": null
+        },
+        {
+          "size": 40,
+          "scenario": "profile-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 6.247800000001007,
+            "p95": 7.954700000002049,
+            "min": 5.292800000002899,
+            "max": 8.128700000001118
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 540,
+            "p95": 540,
+            "min": 540,
+            "max": 540
+          },
+          "rows": null
+        },
+        {
+          "size": 40,
+          "scenario": "history-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 45.806799999998475,
+            "p95": 162.03930000000037,
+            "min": 43.03139999999985,
+            "max": 164.8114999999998
+          },
+          "sqlMs": {
+            "median": 8,
+            "p95": 10,
+            "min": 7,
+            "max": 10
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 3429,
+            "p95": 3429,
+            "min": 3429,
+            "max": 3429
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "history-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 6.055599999999686,
+            "p95": 6.630900000000111,
+            "min": 5.49489999999787,
+            "max": 6.746199999997771
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 3429,
+            "p95": 3429,
+            "min": 3429,
+            "max": 3429
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "kyc-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 46.50489999999991,
+            "p95": 164.7455000000009,
+            "min": 40.86880000000019,
+            "max": 164.9318999999996
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 10,
+            "min": 6,
+            "max": 10
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 18616,
+            "p95": 18616,
+            "min": 18616,
+            "max": 18616
+          },
+          "rows": 41
+        },
+        {
+          "size": 40,
+          "scenario": "kyc-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 8.146300000000338,
+            "p95": 9.941700000003038,
+            "min": 7.665199999999459,
+            "max": 10.215299999999843
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 18616,
+            "p95": 18616,
+            "min": 18616,
+            "max": 18616
+          },
+          "rows": 41
+        },
+        {
+          "size": 40,
+          "scenario": "kyc-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 45.188899999997375,
+            "p95": 159.33799999999974,
+            "min": 40.91410000000178,
+            "max": 164.7375000000029
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 10,
+            "min": 5,
+            "max": 10
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 11263,
+            "p95": 11263,
+            "min": 11263,
+            "max": 11263
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "kyc-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 6.296099999999569,
+            "p95": 7.080699999998615,
+            "min": 5.611299999996845,
+            "max": 7.3188999999983935
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 11263,
+            "p95": 11263,
+            "min": 11263,
+            "max": 11263
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "audit-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 48.46759999999995,
+            "p95": 163.30119999999806,
+            "min": 41.733799999998155,
+            "max": 164.7482999999993
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 9,
+            "min": 6,
+            "max": 10
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 50756,
+            "p95": 50756,
+            "min": 50756,
+            "max": 50756
+          },
+          "rows": 200
+        },
+        {
+          "size": 40,
+          "scenario": "audit-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 8.626599999999598,
+            "p95": 12.420500000000175,
+            "min": 7.801000000003114,
+            "max": 13.072700000000623
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 1,
+            "min": 0,
+            "max": 1
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 50756,
+            "p95": 50756,
+            "min": 50756,
+            "max": 50756
+          },
+          "rows": 200
+        },
+        {
+          "size": 40,
+          "scenario": "audit-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 42.90190000000075,
+            "p95": 148.1303999999982,
+            "min": 33.78330000000278,
+            "max": 156.893799999998
+          },
+          "sqlMs": {
+            "median": 6,
+            "p95": 8,
+            "min": 4,
+            "max": 8
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5176,
+            "p95": 5176,
+            "min": 5176,
+            "max": 5176
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "audit-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 6.153599999997823,
+            "p95": 8.312600000001112,
+            "min": 5.383300000001327,
+            "max": 8.914899999999761
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5176,
+            "p95": 5176,
+            "min": 5176,
+            "max": 5176
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "activity-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 47.915500000002794,
+            "p95": 143.06349999999657,
+            "min": 34.89839999999822,
+            "max": 157.37769999999728
+          },
+          "sqlMs": {
+            "median": 8,
+            "p95": 11,
+            "min": 5,
+            "max": 11
+          },
+          "sqlCount": {
+            "median": 7,
+            "p95": 7,
+            "min": 7,
+            "max": 7
+          },
+          "bytes": {
+            "median": 315,
+            "p95": 315,
+            "min": 315,
+            "max": 315
+          },
+          "rows": null
+        },
+        {
+          "size": 40,
+          "scenario": "activity-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 7.354800000000978,
+            "p95": 8.29840000000695,
+            "min": 6.908999999999651,
+            "max": 8.413799999994808
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 7,
+            "p95": 7,
+            "min": 7,
+            "max": 7
+          },
+          "bytes": {
+            "median": 315,
+            "p95": 315,
+            "min": 315,
+            "max": 315
+          },
+          "rows": null
+        },
+        {
+          "size": 40,
+          "scenario": "summary-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 55.84990000000107,
+            "p95": 177.1695999999938,
+            "min": 50.99010000000271,
+            "max": 183.44640000000072
+          },
+          "sqlMs": {
+            "median": 14,
+            "p95": 18,
+            "min": 12,
+            "max": 18
+          },
+          "sqlCount": {
+            "median": 10,
+            "p95": 10,
+            "min": 10,
+            "max": 10
+          },
+          "bytes": {
+            "median": 1089,
+            "p95": 1089,
+            "min": 1089,
+            "max": 1089
+          },
+          "rows": null
+        },
+        {
+          "size": 40,
+          "scenario": "summary-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 8.61040000000503,
+            "p95": 10.320899999998801,
+            "min": 7.869599999998172,
+            "max": 11.004500000002736
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 10,
+            "p95": 10,
+            "min": 10,
+            "max": 10
+          },
+          "bytes": {
+            "median": 1089,
+            "p95": 1089,
+            "min": 1089,
+            "max": 1089
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "users-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 132.56259999999747,
+            "p95": 248.42949999999837,
+            "min": 117.11809999999969,
+            "max": 248.61889999999403
+          },
+          "sqlMs": {
+            "median": 32,
+            "p95": 37,
+            "min": 28,
+            "max": 37
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 561644,
+            "p95": 561644,
+            "min": 561644,
+            "max": 561644
+          },
+          "rows": 1000
+        },
+        {
+          "size": 1000,
+          "scenario": "users-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 79.39870000000519,
+            "p95": 98.68559999999707,
+            "min": 70.70360000000073,
+            "max": 104.07450000000244
+          },
+          "sqlMs": {
+            "median": 13,
+            "p95": 17,
+            "min": 12,
+            "max": 18
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 561644,
+            "p95": 561644,
+            "min": 561644,
+            "max": 561644
+          },
+          "rows": 1000
+        },
+        {
+          "size": 1000,
+          "scenario": "users-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 52.41730000000098,
+            "p95": 69.2647999999972,
+            "min": 49.70829999999842,
+            "max": 175.1952999999994
+          },
+          "sqlMs": {
+            "median": 15,
+            "p95": 16,
+            "min": 13,
+            "max": 17
+          },
+          "sqlCount": {
+            "median": 7,
+            "p95": 7,
+            "min": 7,
+            "max": 7
+          },
+          "bytes": {
+            "median": 11303,
+            "p95": 11303,
+            "min": 11303,
+            "max": 11303
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "users-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 9.986799999998766,
+            "p95": 11.047999999995227,
+            "min": 8.734400000001187,
+            "max": 13.68420000000333
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 1,
+            "min": 0,
+            "max": 1
+          },
+          "sqlCount": {
+            "median": 7,
+            "p95": 7,
+            "min": 7,
+            "max": 7
+          },
+          "bytes": {
+            "median": 11303,
+            "p95": 11303,
+            "min": 11303,
+            "max": 11303
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "users-last-login",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 62.252300000000105,
+            "p95": 181.71089999999822,
+            "min": 57.089899999999034,
+            "max": 183.08640000000014
+          },
+          "sqlMs": {
+            "median": 21,
+            "p95": 24,
+            "min": 18,
+            "max": 26
+          },
+          "sqlCount": {
+            "median": 8,
+            "p95": 8,
+            "min": 8,
+            "max": 8
+          },
+          "bytes": {
+            "median": 11333,
+            "p95": 11333,
+            "min": 11333,
+            "max": 11333
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "users-last-login",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 15.823499999998603,
+            "p95": 18.746899999998277,
+            "min": 14.49500000000262,
+            "max": 21.478699999999662
+          },
+          "sqlMs": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "sqlCount": {
+            "median": 8,
+            "p95": 8,
+            "min": 8,
+            "max": 8
+          },
+          "bytes": {
+            "median": 11333,
+            "p95": 11333,
+            "min": 11333,
+            "max": 11333
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "detail-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 69.70530000000144,
+            "p95": 187.7297000000035,
+            "min": 63.48709999999846,
+            "max": 188.5650999999998
+          },
+          "sqlMs": {
+            "median": 23,
+            "p95": 27,
+            "min": 20,
+            "max": 27
+          },
+          "sqlCount": {
+            "median": 11,
+            "p95": 11,
+            "min": 11,
+            "max": 11
+          },
+          "bytes": {
+            "median": 22828,
+            "p95": 22828,
+            "min": 22828,
+            "max": 22828
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "detail-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 13.476399999999558,
+            "p95": 18.030400000003283,
+            "min": 12.384600000004866,
+            "max": 18.544600000001083
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 11,
+            "p95": 11,
+            "min": 11,
+            "max": 11
+          },
+          "bytes": {
+            "median": 22828,
+            "p95": 22828,
+            "min": 22828,
+            "max": 22828
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "profile-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 35.592600000003586,
+            "p95": 149.19900000000052,
+            "min": 28.49869999999646,
+            "max": 158.3249999999971
+          },
+          "sqlMs": {
+            "median": 5,
+            "p95": 10,
+            "min": 5,
+            "max": 11
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 540,
+            "p95": 540,
+            "min": 540,
+            "max": 540
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "profile-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 8.746699999996054,
+            "p95": 10.755600000004051,
+            "min": 6.426399999996647,
+            "max": 11.027999999998428
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 540,
+            "p95": 540,
+            "min": 540,
+            "max": 540
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "history-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 41.75209999999788,
+            "p95": 161.5630999999994,
+            "min": 32.069400000000314,
+            "max": 162.40269999999873
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 9,
+            "min": 5,
+            "max": 11
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 3429,
+            "p95": 3429,
+            "min": 3429,
+            "max": 3429
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "history-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 7.1150999999954365,
+            "p95": 8.077499999999418,
+            "min": 6.079800000006799,
+            "max": 8.117500000000291
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 3429,
+            "p95": 3429,
+            "min": 3429,
+            "max": 3429
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "kyc-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 127.58669999999984,
+            "p95": 259.4467000000004,
+            "min": 116.50929999999789,
+            "max": 264.9279999999999
+          },
+          "sqlMs": {
+            "median": 19,
+            "p95": 23,
+            "min": 17,
+            "max": 23
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 462558,
+            "p95": 462558,
+            "min": 462558,
+            "max": 462558
+          },
+          "rows": 1001
+        },
+        {
+          "size": 1000,
+          "scenario": "kyc-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 97.22260000000824,
+            "p95": 120.5911000000051,
+            "min": 82.11800000000221,
+            "max": 125.56560000000172
+          },
+          "sqlMs": {
+            "median": 12,
+            "p95": 17,
+            "min": 10,
+            "max": 19
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 462558,
+            "p95": 462558,
+            "min": 462558,
+            "max": 462558
+          },
+          "rows": 1001
+        },
+        {
+          "size": 1000,
+          "scenario": "kyc-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 49.28049999999348,
+            "p95": 164.25440000000526,
+            "min": 44.48369999999704,
+            "max": 164.5106999999989
+          },
+          "sqlMs": {
+            "median": 8,
+            "p95": 9,
+            "min": 7,
+            "max": 10
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 11266,
+            "p95": 11266,
+            "min": 11266,
+            "max": 11266
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "kyc-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 9.683400000008987,
+            "p95": 10.742399999988265,
+            "min": 7.778300000005402,
+            "max": 11.093599999992875
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 1,
+            "min": 0,
+            "max": 1
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 11266,
+            "p95": 11266,
+            "min": 11266,
+            "max": 11266
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "audit-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 53.35620000000927,
+            "p95": 167.5668000000005,
+            "min": 41.63999999999942,
+            "max": 170.86659999999392
+          },
+          "sqlMs": {
+            "median": 10,
+            "p95": 11,
+            "min": 6,
+            "max": 12
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 50893,
+            "p95": 50893,
+            "min": 50893,
+            "max": 50893
+          },
+          "rows": 200
+        },
+        {
+          "size": 1000,
+          "scenario": "audit-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 13.937799999999697,
+            "p95": 16.042900000000373,
+            "min": 11.355000000010477,
+            "max": 16.266799999997602
+          },
+          "sqlMs": {
+            "median": 2,
+            "p95": 2,
+            "min": 2,
+            "max": 2
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 50893,
+            "p95": 50893,
+            "min": 50893,
+            "max": 50893
+          },
+          "rows": 200
+        },
+        {
+          "size": 1000,
+          "scenario": "audit-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 47.57269999998971,
+            "p95": 161.35029999999097,
+            "min": 31.445999999996275,
+            "max": 161.75049999999464
+          },
+          "sqlMs": {
+            "median": 10,
+            "p95": 11,
+            "min": 6,
+            "max": 11
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5201,
+            "p95": 5201,
+            "min": 5201,
+            "max": 5201
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "audit-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 8.908400000000256,
+            "p95": 9.7899000000034,
+            "min": 7.174499999993714,
+            "max": 10.590299999996205
+          },
+          "sqlMs": {
+            "median": 1,
+            "p95": 2,
+            "min": 1,
+            "max": 2
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5201,
+            "p95": 5201,
+            "min": 5201,
+            "max": 5201
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "activity-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 58.332299999994575,
+            "p95": 178.54700000000594,
+            "min": 52.236699999994016,
+            "max": 178.72390000001178
+          },
+          "sqlMs": {
+            "median": 13,
+            "p95": 16,
+            "min": 11,
+            "max": 18
+          },
+          "sqlCount": {
+            "median": 9,
+            "p95": 9,
+            "min": 9,
+            "max": 9
+          },
+          "bytes": {
+            "median": 5561,
+            "p95": 5561,
+            "min": 5561,
+            "max": 5561
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "activity-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 12.804100000008475,
+            "p95": 14.015100000004168,
+            "min": 12.258799999995972,
+            "max": 23.287800000005518
+          },
+          "sqlMs": {
+            "median": 2,
+            "p95": 2,
+            "min": 2,
+            "max": 2
+          },
+          "sqlCount": {
+            "median": 9,
+            "p95": 9,
+            "min": 9,
+            "max": 9
+          },
+          "bytes": {
+            "median": 5561,
+            "p95": 5561,
+            "min": 5561,
+            "max": 5561
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "summary-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 64.15879999999015,
+            "p95": 183.80590000000666,
+            "min": 57.438200000004144,
+            "max": 185.75370000000112
+          },
+          "sqlMs": {
+            "median": 18,
+            "p95": 23,
+            "min": 16,
+            "max": 23
+          },
+          "sqlCount": {
+            "median": 12,
+            "p95": 12,
+            "min": 12,
+            "max": 12
+          },
+          "bytes": {
+            "median": 1096,
+            "p95": 1096,
+            "min": 1096,
+            "max": 1096
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "summary-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 15.644100000004983,
+            "p95": 18.862699999997858,
+            "min": 14.015400000003865,
+            "max": 19.221300000004703
+          },
+          "sqlMs": {
+            "median": 2,
+            "p95": 2,
+            "min": 2,
+            "max": 2
+          },
+          "sqlCount": {
+            "median": 12,
+            "p95": 12,
+            "min": 12,
+            "max": 12
+          },
+          "bytes": {
+            "median": 1096,
+            "p95": 1096,
+            "min": 1096,
+            "max": 1096
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "users-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 911.1909999999916,
+            "p95": 1110.051700000011,
+            "min": 793.5823999999993,
+            "max": 1242.2703000000038
+          },
+          "sqlMs": {
+            "median": 176,
+            "p95": 209,
+            "min": 146,
+            "max": 209
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 5626395,
+            "p95": 5626395,
+            "min": 5626395,
+            "max": 5626395
+          },
+          "rows": 10000
+        },
+        {
+          "size": 10000,
+          "scenario": "users-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 821.7991000000038,
+            "p95": 1047.5047999999952,
+            "min": 724.2276000000129,
+            "max": 1055.432199999981
+          },
+          "sqlMs": {
+            "median": 160,
+            "p95": 210,
+            "min": 127,
+            "max": 236
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 7
+          },
+          "bytes": {
+            "median": 5626395,
+            "p95": 5626395,
+            "min": 5626395,
+            "max": 5626395
+          },
+          "rows": 10000
+        },
+        {
+          "size": 10000,
+          "scenario": "users-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 58.42249999998603,
+            "p95": 67.75419999999576,
+            "min": 55.01480000000447,
+            "max": 72.28560000000289
+          },
+          "sqlMs": {
+            "median": 20,
+            "p95": 23,
+            "min": 18,
+            "max": 24
+          },
+          "sqlCount": {
+            "median": 7,
+            "p95": 7,
+            "min": 7,
+            "max": 7
+          },
+          "bytes": {
+            "median": 11305,
+            "p95": 11305,
+            "min": 11305,
+            "max": 11305
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "users-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 16.700299999996787,
+            "p95": 19.74780000001192,
+            "min": 15.24989999999525,
+            "max": 20.863299999997253
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 9,
+            "min": 7,
+            "max": 9
+          },
+          "sqlCount": {
+            "median": 7,
+            "p95": 7,
+            "min": 7,
+            "max": 7
+          },
+          "bytes": {
+            "median": 11305,
+            "p95": 11305,
+            "min": 11305,
+            "max": 11305
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "users-last-login",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 116.96250000002328,
+            "p95": 224.7402000000002,
+            "min": 97.73170000000391,
+            "max": 235.3807000000088
+          },
+          "sqlMs": {
+            "median": 76,
+            "p95": 81,
+            "min": 60,
+            "max": 81
+          },
+          "sqlCount": {
+            "median": 8,
+            "p95": 8,
+            "min": 8,
+            "max": 8
+          },
+          "bytes": {
+            "median": 11355,
+            "p95": 11355,
+            "min": 11355,
+            "max": 11355
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "users-last-login",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 70.40109999998822,
+            "p95": 74.54769999999553,
+            "min": 38.38340000002063,
+            "max": 76.33030000000144
+          },
+          "sqlMs": {
+            "median": 59,
+            "p95": 61,
+            "min": 30,
+            "max": 61
+          },
+          "sqlCount": {
+            "median": 8,
+            "p95": 8,
+            "min": 8,
+            "max": 8
+          },
+          "bytes": {
+            "median": 11355,
+            "p95": 11355,
+            "min": 11355,
+            "max": 11355
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "detail-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 65.46210000000428,
+            "p95": 186.65039999998407,
+            "min": 59.548199999990175,
+            "max": 191.20960000000196
+          },
+          "sqlMs": {
+            "median": 22,
+            "p95": 29,
+            "min": 18,
+            "max": 29
+          },
+          "sqlCount": {
+            "median": 11,
+            "p95": 11,
+            "min": 11,
+            "max": 11
+          },
+          "bytes": {
+            "median": 22828,
+            "p95": 22828,
+            "min": 22828,
+            "max": 22828
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "detail-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 11.269400000019232,
+            "p95": 13.231999999989057,
+            "min": 10.771199999988312,
+            "max": 14.05240000001504
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 11,
+            "p95": 11,
+            "min": 11,
+            "max": 11
+          },
+          "bytes": {
+            "median": 22828,
+            "p95": 22828,
+            "min": 22828,
+            "max": 22828
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "profile-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 46.93170000001555,
+            "p95": 166.89000000001397,
+            "min": 41.08090000000084,
+            "max": 167.00920000000042
+          },
+          "sqlMs": {
+            "median": 10,
+            "p95": 12,
+            "min": 8,
+            "max": 13
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 540,
+            "p95": 540,
+            "min": 540,
+            "max": 540
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "profile-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.3606999999901745,
+            "p95": 6.08520000000135,
+            "min": 4.731499999994412,
+            "max": 6.268000000010943
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 540,
+            "p95": 540,
+            "min": 540,
+            "max": 540
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "history-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 44.56349999998929,
+            "p95": 149.10760000001756,
+            "min": 35.86220000000321,
+            "max": 152.1693999999843
+          },
+          "sqlMs": {
+            "median": 8,
+            "p95": 11,
+            "min": 6,
+            "max": 12
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 3429,
+            "p95": 3429,
+            "min": 3429,
+            "max": 3429
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "history-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.6705999999830965,
+            "p95": 8.43630000000121,
+            "min": 5.020699999993667,
+            "max": 10.285999999992782
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 3429,
+            "p95": 3429,
+            "min": 3429,
+            "max": 3429
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "kyc-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 1003.1283000000112,
+            "p95": 1154.260799999989,
+            "min": 818.66770000002,
+            "max": 1161.2436000000162
+          },
+          "sqlMs": {
+            "median": 135,
+            "p95": 172,
+            "min": 117,
+            "max": 174
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 4634059,
+            "p95": 4634059,
+            "min": 4634059,
+            "max": 4634059
+          },
+          "rows": 10001
+        },
+        {
+          "size": 10000,
+          "scenario": "kyc-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 832.7133000000031,
+            "p95": 926.6837999999989,
+            "min": 787.8770000000077,
+            "max": 949.9642000000167
+          },
+          "sqlMs": {
+            "median": 124,
+            "p95": 155,
+            "min": 114,
+            "max": 161
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 5
+          },
+          "bytes": {
+            "median": 4634059,
+            "p95": 4634059,
+            "min": 4634059,
+            "max": 4634059
+          },
+          "rows": 10001
+        },
+        {
+          "size": 10000,
+          "scenario": "kyc-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 52.64859999998589,
+            "p95": 173.0899999999965,
+            "min": 46.04190000001108,
+            "max": 185.37039999998524
+          },
+          "sqlMs": {
+            "median": 14,
+            "p95": 17,
+            "min": 12,
+            "max": 18
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 11268,
+            "p95": 11268,
+            "min": 11268,
+            "max": 11268
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "kyc-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 12.053799999994226,
+            "p95": 13.00669999999809,
+            "min": 11.262600000016391,
+            "max": 13.091799999994691
+          },
+          "sqlMs": {
+            "median": 5,
+            "p95": 6,
+            "min": 5,
+            "max": 6
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 11268,
+            "p95": 11268,
+            "min": 11268,
+            "max": 11268
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "audit-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 85.96250000002328,
+            "p95": 211.84700000000885,
+            "min": 76.324099999998,
+            "max": 315.26540000000386
+          },
+          "sqlMs": {
+            "median": 45,
+            "p95": 158,
+            "min": 39,
+            "max": 161
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 50893,
+            "p95": 50893,
+            "min": 50893,
+            "max": 50893
+          },
+          "rows": 200
+        },
+        {
+          "size": 10000,
+          "scenario": "audit-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 50.97370000000228,
+            "p95": 166.7740000000049,
+            "min": 43.20650000000023,
+            "max": 166.84279999998398
+          },
+          "sqlMs": {
+            "median": 39,
+            "p95": 155,
+            "min": 34,
+            "max": 155
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 50893,
+            "p95": 50893,
+            "min": 50893,
+            "max": 50893
+          },
+          "rows": 200
+        },
+        {
+          "size": 10000,
+          "scenario": "audit-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 92.19800000000396,
+            "p95": 212.20549999998184,
+            "min": 80.3344999999972,
+            "max": 217.2235000000219
+          },
+          "sqlMs": {
+            "median": 53,
+            "p95": 174,
+            "min": 47,
+            "max": 175
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5223,
+            "p95": 5223,
+            "min": 5223,
+            "max": 5223
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "audit-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 52.61280000000261,
+            "p95": 173.92970000000787,
+            "min": 48.4826999999932,
+            "max": 176.4360999999917
+          },
+          "sqlMs": {
+            "median": 45,
+            "p95": 166,
+            "min": 41,
+            "max": 168
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5223,
+            "p95": 5223,
+            "min": 5223,
+            "max": 5223
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "activity-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 93.06260000000475,
+            "p95": 210.39120000001276,
+            "min": 88.28269999998156,
+            "max": 212.5668000000005
+          },
+          "sqlMs": {
+            "median": 37,
+            "p95": 41,
+            "min": 35,
+            "max": 41
+          },
+          "sqlCount": {
+            "median": 9,
+            "p95": 9,
+            "min": 9,
+            "max": 9
+          },
+          "bytes": {
+            "median": 52725,
+            "p95": 52725,
+            "min": 52725,
+            "max": 52725
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "activity-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 48.63500000000931,
+            "p95": 51.905999999988126,
+            "min": 43.65249999999651,
+            "max": 54.23989999998594
+          },
+          "sqlMs": {
+            "median": 21,
+            "p95": 24,
+            "min": 18,
+            "max": 25
+          },
+          "sqlCount": {
+            "median": 9,
+            "p95": 9,
+            "min": 9,
+            "max": 9
+          },
+          "bytes": {
+            "median": 52725,
+            "p95": 52725,
+            "min": 52725,
+            "max": 52725
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "summary-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 98.4205999999831,
+            "p95": 220.78209999998217,
+            "min": 91.93799999999464,
+            "max": 221.94630000001052
+          },
+          "sqlMs": {
+            "median": 41,
+            "p95": 46,
+            "min": 39,
+            "max": 47
+          },
+          "sqlCount": {
+            "median": 12,
+            "p95": 12,
+            "min": 12,
+            "max": 12
+          },
+          "bytes": {
+            "median": 1100,
+            "p95": 1100,
+            "min": 1100,
+            "max": 1100
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "summary-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 46.73829999999725,
+            "p95": 51.93309999999474,
+            "min": 44.85910000000149,
+            "max": 52.056400000001304
+          },
+          "sqlMs": {
+            "median": 19,
+            "p95": 24,
+            "min": 18,
+            "max": 24
+          },
+          "sqlCount": {
+            "median": 12,
+            "p95": 12,
+            "min": 12,
+            "max": 12
+          },
+          "bytes": {
+            "median": 1100,
+            "p95": 1100,
+            "min": 1100,
+            "max": 1100
+          },
+          "rows": null
+        }
+      ],
+      "integrity": [
+        {
+          "size": 40,
+          "unchanged": true,
+          "totals": {
+            "users": 41,
+            "orders": 800,
+            "deposits": 320,
+            "available": "120014.814814694814814680",
+            "locked": "1455.000000000000000000",
+            "deposit_amount": "100120.000000000000000000",
+            "withdrawal_amount": "4000.000000000000000000",
+            "audit": 800
+          }
+        },
+        {
+          "size": 1000,
+          "unchanged": true,
+          "totals": {
+            "users": 1001,
+            "orders": 20000,
+            "deposits": 5140,
+            "available": "3000370.370367370370367000",
+            "locked": "36375.000000000000000000",
+            "deposit_amount": "2510120.000000000000000000",
+            "withdrawal_amount": "100000.000000000000000000",
+            "audit": 20000
+          }
+        },
+        {
+          "size": 10000,
+          "unchanged": true,
+          "totals": {
+            "users": 10001,
+            "orders": 200000,
+            "deposits": 50320,
+            "available": "30003703.703673703703670000",
+            "locked": "363750.000000000000000000",
+            "deposit_amount": "25100120.000000000000000000",
+            "withdrawal_amount": "1000000.000000000000000000",
+            "audit": 200000
+          }
+        }
+      ],
+      "completedAt": "2026-10-03T10:02:05.441Z",
+      "totalRequests": 2160
+    },
+    {
+      "name": "admin-read-benchmark-supplement.json",
+      "generatedAt": "2026-10-03T10:07:24.723Z",
+      "postgres": "18.4 (embedded, independently verified)",
+      "repetitions": 30,
+      "sizes": [
+        40,
+        1000,
+        10000
+      ],
+      "boundary": "Disposable 127.0.0.1 PostgreSQL with synthetic records only; no production URLs, users or financial writes.",
+      "modes": {
+        "cold": "Prisma connection disconnected before each measured HTTP request; database/OS cache is NOT flushed.",
+        "warm": "Same Prisma connection, one unmeasured warm-up before 30 requests."
+      },
+      "metrics": {
+        "httpMs": "End-to-end localhost HTTP including auth and JSON serialization, no frontend render",
+        "sqlMs": "Sum of Prisma query duration events (millisecond resolution)",
+        "bytes": "Uncompressed JSON bytes",
+        "rows": "Response items; DOM/React measurements are separate browser QA"
+      },
+      "results": [
+        {
+          "size": 40,
+          "scenario": "summary-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 62.941100000000006,
+            "p95": 177.1166000000003,
+            "min": 56.12209999999868,
+            "max": 177.1836000000003
+          },
+          "sqlMs": {
+            "median": 16,
+            "p95": 17,
+            "min": 11,
+            "max": 19
+          },
+          "sqlCount": {
+            "median": 13,
+            "p95": 13,
+            "min": 13,
+            "max": 13
+          },
+          "bytes": {
+            "median": 1173,
+            "p95": 1173,
+            "min": 1173,
+            "max": 1173
+          },
+          "rows": null
+        },
+        {
+          "size": 40,
+          "scenario": "summary-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 10.210500000001048,
+            "p95": 10.897699999999531,
+            "min": 9.022399999999834,
+            "max": 11.081399999999121
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 13,
+            "p95": 13,
+            "min": 13,
+            "max": 13
+          },
+          "bytes": {
+            "median": 1173,
+            "p95": 1173,
+            "min": 1173,
+            "max": 1173
+          },
+          "rows": null
+        },
+        {
+          "size": 40,
+          "scenario": "withdrawals-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 52.688500000000204,
+            "p95": 167.67249999999876,
+            "min": 46.23330000000169,
+            "max": 173.0609999999997
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 9,
+            "min": 6,
+            "max": 9
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 65356,
+            "p95": 65356,
+            "min": 65356,
+            "max": 65356
+          },
+          "rows": 200
+        },
+        {
+          "size": 40,
+          "scenario": "withdrawals-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 11.443699999999808,
+            "p95": 12.435699999999997,
+            "min": 10.909499999999753,
+            "max": 12.800999999999476
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 1
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 65356,
+            "p95": 65356,
+            "min": 65356,
+            "max": 65356
+          },
+          "rows": 200
+        },
+        {
+          "size": 40,
+          "scenario": "withdrawals-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 43.10859999999957,
+            "p95": 161.70219999999972,
+            "min": 38.378200000001016,
+            "max": 162.89110000000073
+          },
+          "sqlMs": {
+            "median": 6,
+            "p95": 9,
+            "min": 5,
+            "max": 9
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 6636,
+            "p95": 6636,
+            "min": 6636,
+            "max": 6636
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "withdrawals-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.644300000001749,
+            "p95": 8.819600000000719,
+            "min": 4.502199999998993,
+            "max": 8.922899999999572
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 6636,
+            "p95": 6636,
+            "min": 6636,
+            "max": 6636
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "futures-orders-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 43.73650000000271,
+            "p95": 164.58560000000034,
+            "min": 38.587399999996705,
+            "max": 170.38650000000234
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 8,
+            "min": 5,
+            "max": 17
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 831,
+            "p95": 831,
+            "min": 831,
+            "max": 831
+          },
+          "rows": 3
+        },
+        {
+          "size": 40,
+          "scenario": "futures-orders-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.832000000002154,
+            "p95": 8.520700000000943,
+            "min": 4.4703000000008615,
+            "max": 8.577399999998306
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 831,
+            "p95": 831,
+            "min": 831,
+            "max": 831
+          },
+          "rows": 3
+        },
+        {
+          "size": 40,
+          "scenario": "futures-positions-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 44.39820000000327,
+            "p95": 162.29599999999846,
+            "min": 39.85480000000098,
+            "max": 163.01859999999942
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 9,
+            "min": 5,
+            "max": 9
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 880,
+            "p95": 880,
+            "min": 880,
+            "max": 880
+          },
+          "rows": 3
+        },
+        {
+          "size": 40,
+          "scenario": "futures-positions-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.264800000000832,
+            "p95": 6.619799999996758,
+            "min": 4.533799999997427,
+            "max": 8.352100000000064
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 880,
+            "p95": 880,
+            "min": 880,
+            "max": 880
+          },
+          "rows": 3
+        },
+        {
+          "size": 40,
+          "scenario": "cfd-positions-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 40.13940000000002,
+            "p95": 161.25920000000042,
+            "min": 37.1221000000005,
+            "max": 163.78189999999813
+          },
+          "sqlMs": {
+            "median": 6,
+            "p95": 8,
+            "min": 5,
+            "max": 8
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 799,
+            "p95": 799,
+            "min": 799,
+            "max": 799
+          },
+          "rows": 3
+        },
+        {
+          "size": 40,
+          "scenario": "cfd-positions-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.256100000002334,
+            "p95": 5.83810000000085,
+            "min": 4.587099999997008,
+            "max": 5.8729999999995925
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 799,
+            "p95": 799,
+            "min": 799,
+            "max": 799
+          },
+          "rows": 3
+        },
+        {
+          "size": 1000,
+          "scenario": "summary-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 67.92180000000008,
+            "p95": 190.1165000000001,
+            "min": 62.85849999999846,
+            "max": 190.5525000000016
+          },
+          "sqlMs": {
+            "median": 22,
+            "p95": 28,
+            "min": 18,
+            "max": 29
+          },
+          "sqlCount": {
+            "median": 15,
+            "p95": 15,
+            "min": 15,
+            "max": 15
+          },
+          "bytes": {
+            "median": 1185,
+            "p95": 1185,
+            "min": 1185,
+            "max": 1185
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "summary-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 17.923500000000786,
+            "p95": 19.079200000000128,
+            "min": 16.127700000000914,
+            "max": 19.723699999998644
+          },
+          "sqlMs": {
+            "median": 2,
+            "p95": 4,
+            "min": 2,
+            "max": 4
+          },
+          "sqlCount": {
+            "median": 15,
+            "p95": 15,
+            "min": 15,
+            "max": 15
+          },
+          "bytes": {
+            "median": 1185,
+            "p95": 1185,
+            "min": 1185,
+            "max": 1185
+          },
+          "rows": null
+        },
+        {
+          "size": 1000,
+          "scenario": "withdrawals-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 50.82800000000134,
+            "p95": 171.8071000000018,
+            "min": 47.453300000001036,
+            "max": 179.4891000000025
+          },
+          "sqlMs": {
+            "median": 10,
+            "p95": 12,
+            "min": 7,
+            "max": 13
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 65493,
+            "p95": 65493,
+            "min": 65493,
+            "max": 65493
+          },
+          "rows": 200
+        },
+        {
+          "size": 1000,
+          "scenario": "withdrawals-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 13.996800000000803,
+            "p95": 19.193899999998393,
+            "min": 12.195299999999406,
+            "max": 20.59820000000036
+          },
+          "sqlMs": {
+            "median": 2,
+            "p95": 3,
+            "min": 2,
+            "max": 4
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 65493,
+            "p95": 65493,
+            "min": 65493,
+            "max": 65493
+          },
+          "rows": 200
+        },
+        {
+          "size": 1000,
+          "scenario": "withdrawals-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 45.890699999996286,
+            "p95": 164.75160000000324,
+            "min": 42.01209999999992,
+            "max": 165.7908000000025
+          },
+          "sqlMs": {
+            "median": 9,
+            "p95": 12,
+            "min": 7,
+            "max": 12
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 6659,
+            "p95": 6659,
+            "min": 6659,
+            "max": 6659
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "withdrawals-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 8.073099999994156,
+            "p95": 10.273500000002969,
+            "min": 7.297200000000885,
+            "max": 10.74550000000454
+          },
+          "sqlMs": {
+            "median": 2,
+            "p95": 2,
+            "min": 1,
+            "max": 2
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 6659,
+            "p95": 6659,
+            "min": 6659,
+            "max": 6659
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "futures-orders-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 41.186399999998685,
+            "p95": 157.63440000000264,
+            "min": 38.09719999999652,
+            "max": 160.38059999999678
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 8,
+            "min": 5,
+            "max": 8
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 831,
+            "p95": 831,
+            "min": 831,
+            "max": 831
+          },
+          "rows": 3
+        },
+        {
+          "size": 1000,
+          "scenario": "futures-orders-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.423900000001595,
+            "p95": 7.410600000002887,
+            "min": 4.465199999998731,
+            "max": 7.493100000006962
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 831,
+            "p95": 831,
+            "min": 831,
+            "max": 831
+          },
+          "rows": 3
+        },
+        {
+          "size": 1000,
+          "scenario": "futures-positions-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 43.27599999999802,
+            "p95": 164.8990999999951,
+            "min": 37.27179999999498,
+            "max": 165.30460000000312
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 8,
+            "min": 5,
+            "max": 9
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 880,
+            "p95": 880,
+            "min": 880,
+            "max": 880
+          },
+          "rows": 3
+        },
+        {
+          "size": 1000,
+          "scenario": "futures-positions-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 6.03530000000319,
+            "p95": 8.309900000000198,
+            "min": 5.198300000003655,
+            "max": 8.676800000001094
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 880,
+            "p95": 880,
+            "min": 880,
+            "max": 880
+          },
+          "rows": 3
+        },
+        {
+          "size": 1000,
+          "scenario": "cfd-positions-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 42.36239999999816,
+            "p95": 160.8481000000029,
+            "min": 38.41219999999885,
+            "max": 161.33009999999922
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 9,
+            "min": 5,
+            "max": 9
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 799,
+            "p95": 799,
+            "min": 799,
+            "max": 799
+          },
+          "rows": 3
+        },
+        {
+          "size": 1000,
+          "scenario": "cfd-positions-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.970000000001164,
+            "p95": 8.429299999996147,
+            "min": 5.354500000001281,
+            "max": 9.108500000002095
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 799,
+            "p95": 799,
+            "min": 799,
+            "max": 799
+          },
+          "rows": 3
+        },
+        {
+          "size": 10000,
+          "scenario": "summary-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 127.48730000000069,
+            "p95": 145.97520000000077,
+            "min": 122.14190000000235,
+            "max": 244.78889999999956
+          },
+          "sqlMs": {
+            "median": 65,
+            "p95": 73,
+            "min": 62,
+            "max": 77
+          },
+          "sqlCount": {
+            "median": 15,
+            "p95": 15,
+            "min": 15,
+            "max": 15
+          },
+          "bytes": {
+            "median": 1189,
+            "p95": 1189,
+            "min": 1189,
+            "max": 1189
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "summary-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 70.2612999999983,
+            "p95": 85.35699999999633,
+            "min": 63.30750000000262,
+            "max": 89.59949999999662
+          },
+          "sqlMs": {
+            "median": 37,
+            "p95": 40,
+            "min": 30,
+            "max": 40
+          },
+          "sqlCount": {
+            "median": 15,
+            "p95": 15,
+            "min": 15,
+            "max": 15
+          },
+          "bytes": {
+            "median": 1189,
+            "p95": 1189,
+            "min": 1189,
+            "max": 1189
+          },
+          "rows": null
+        },
+        {
+          "size": 10000,
+          "scenario": "withdrawals-before",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 63.59219999999914,
+            "p95": 184.11179999999877,
+            "min": 60.269399999997404,
+            "max": 184.2373000000007
+          },
+          "sqlMs": {
+            "median": 24,
+            "p95": 28,
+            "min": 22,
+            "max": 29
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 65493,
+            "p95": 65493,
+            "min": 65493,
+            "max": 65493
+          },
+          "rows": 200
+        },
+        {
+          "size": 10000,
+          "scenario": "withdrawals-before",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 27.319600000002538,
+            "p95": 32.2502999999997,
+            "min": 25.756600000007893,
+            "max": 32.83889999999519
+          },
+          "sqlMs": {
+            "median": 15,
+            "p95": 18,
+            "min": 14,
+            "max": 18
+          },
+          "sqlCount": {
+            "median": 4,
+            "p95": 4,
+            "min": 4,
+            "max": 4
+          },
+          "bytes": {
+            "median": 65493,
+            "p95": 65493,
+            "min": 65493,
+            "max": 65493
+          },
+          "rows": 200
+        },
+        {
+          "size": 10000,
+          "scenario": "withdrawals-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 62.64379999999073,
+            "p95": 172.7395000000106,
+            "min": 59.58650000000489,
+            "max": 183.07009999999718
+          },
+          "sqlMs": {
+            "median": 28,
+            "p95": 32,
+            "min": 26,
+            "max": 32
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 6681,
+            "p95": 6681,
+            "min": 6681,
+            "max": 6681
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "withdrawals-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 27.68070000001171,
+            "p95": 29.27610000000277,
+            "min": 24.707399999999325,
+            "max": 29.36469999999099
+          },
+          "sqlMs": {
+            "median": 20,
+            "p95": 21,
+            "min": 18,
+            "max": 21
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 6681,
+            "p95": 6681,
+            "min": 6681,
+            "max": 6681
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "futures-orders-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 43.429000000003725,
+            "p95": 156.88979999998992,
+            "min": 29.88189999999304,
+            "max": 160.2664999999979
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 9,
+            "min": 4,
+            "max": 10
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 831,
+            "p95": 831,
+            "min": 831,
+            "max": 831
+          },
+          "rows": 3
+        },
+        {
+          "size": 10000,
+          "scenario": "futures-orders-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.576000000000931,
+            "p95": 7.013600000005681,
+            "min": 5.063699999998789,
+            "max": 7.8646999999909895
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 831,
+            "p95": 831,
+            "min": 831,
+            "max": 831
+          },
+          "rows": 3
+        },
+        {
+          "size": 10000,
+          "scenario": "futures-positions-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 41.24689999999828,
+            "p95": 147.73570000000473,
+            "min": 37.86720000000787,
+            "max": 161.65939999998955
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 8,
+            "min": 5,
+            "max": 9
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 880,
+            "p95": 880,
+            "min": 880,
+            "max": 880
+          },
+          "rows": 3
+        },
+        {
+          "size": 10000,
+          "scenario": "futures-positions-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.644499999994878,
+            "p95": 6.2053000000014435,
+            "min": 5.146000000007916,
+            "max": 6.23519999999553
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 880,
+            "p95": 880,
+            "min": 880,
+            "max": 880
+          },
+          "rows": 3
+        },
+        {
+          "size": 10000,
+          "scenario": "cfd-positions-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 41.15819999999076,
+            "p95": 160.00280000000203,
+            "min": 37.634500000000116,
+            "max": 162.3069000000105
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 8,
+            "min": 5,
+            "max": 8
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 799,
+            "p95": 799,
+            "min": 799,
+            "max": 799
+          },
+          "rows": 3
+        },
+        {
+          "size": 10000,
+          "scenario": "cfd-positions-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 5.162100000001374,
+            "p95": 7.4771999999939,
+            "min": 4.157000000006519,
+            "max": 8.606299999999464
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 799,
+            "p95": 799,
+            "min": 799,
+            "max": 799
+          },
+          "rows": 3
+        }
+      ],
+      "integrity": [
+        {
+          "size": 40,
+          "unchanged": true,
+          "totals": {
+            "users": 41,
+            "orders": 800,
+            "deposits": 320,
+            "available": "120014.814814694814814680",
+            "locked": "1455.000000000000000000",
+            "deposit_amount": "100120.000000000000000000",
+            "withdrawal_amount": "4000.000000000000000000",
+            "audit": 800,
+            "futures_orders": 120,
+            "futures_positions": 120,
+            "cfd_positions": 120,
+            "futures_pnl": "0.000000000000000000",
+            "cfd_pnl": "0.000000000000000000"
+          }
+        },
+        {
+          "size": 1000,
+          "unchanged": true,
+          "totals": {
+            "users": 1001,
+            "orders": 20000,
+            "deposits": 5140,
+            "available": "3000370.370367370370367000",
+            "locked": "36375.000000000000000000",
+            "deposit_amount": "2510120.000000000000000000",
+            "withdrawal_amount": "100000.000000000000000000",
+            "audit": 20000,
+            "futures_orders": 3000,
+            "futures_positions": 3000,
+            "cfd_positions": 3000,
+            "futures_pnl": "0.000000000000000000",
+            "cfd_pnl": "0.000000000000000000"
+          }
+        },
+        {
+          "size": 10000,
+          "unchanged": true,
+          "totals": {
+            "users": 10001,
+            "orders": 200000,
+            "deposits": 50320,
+            "available": "30003703.703673703703670000",
+            "locked": "363750.000000000000000000",
+            "deposit_amount": "25100120.000000000000000000",
+            "withdrawal_amount": "1000000.000000000000000000",
+            "audit": 200000,
+            "futures_orders": 30000,
+            "futures_positions": 30000,
+            "cfd_positions": 30000,
+            "futures_pnl": "0.000000000000000000",
+            "cfd_pnl": "0.000000000000000000"
+          }
+        }
+      ],
+      "completedAt": "2026-10-03T10:08:40.421Z",
+      "totalRequests": 1080
+    },
+    {
+      "name": "admin-read-benchmark-kyc-date.json",
+      "generatedAt": "2026-10-03T10:13:41.229Z",
+      "postgres": "18.4 (embedded, independently verified)",
+      "repetitions": 30,
+      "sizes": [
+        40,
+        1000,
+        10000
+      ],
+      "boundary": "Disposable 127.0.0.1 PostgreSQL with synthetic records only; no production URLs, users or financial writes.",
+      "modes": {
+        "cold": "Prisma connection disconnected before each measured HTTP request; database/OS cache is NOT flushed.",
+        "warm": "Same Prisma connection, one unmeasured warm-up before 30 requests."
+      },
+      "metrics": {
+        "httpMs": "End-to-end localhost HTTP including auth and JSON serialization, no frontend render",
+        "sqlMs": "Sum of Prisma query duration events (millisecond resolution)",
+        "bytes": "Uncompressed JSON bytes",
+        "rows": "Response items; DOM/React measurements are separate browser QA"
+      },
+      "results": [
+        {
+          "size": 40,
+          "scenario": "kyc-date-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 47.01649999999972,
+            "p95": 164.23739999999998,
+            "min": 42.9375,
+            "max": 164.65120000000024
+          },
+          "sqlMs": {
+            "median": 7,
+            "p95": 11,
+            "min": 6,
+            "max": 11
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 11595,
+            "p95": 11595,
+            "min": 11595,
+            "max": 11595
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "kyc-date-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 7.7348000000001775,
+            "p95": 8.73450000000048,
+            "min": 7.0495000000009895,
+            "max": 8.820600000000923
+          },
+          "sqlMs": {
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 11595,
+            "p95": 11595,
+            "min": 11595,
+            "max": 11595
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "kyc-date-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 56.13670000000093,
+            "p95": 177.6841999999997,
+            "min": 51.83050000000003,
+            "max": 181.35590000000047
+          },
+          "sqlMs": {
+            "median": 19,
+            "p95": 24,
+            "min": 17,
+            "max": 25
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 11598,
+            "p95": 11598,
+            "min": 11598,
+            "max": 11598
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "kyc-date-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 19.07010000000082,
+            "p95": 21.004399999999805,
+            "min": 18.20720000000074,
+            "max": 27.163899999999558
+          },
+          "sqlMs": {
+            "median": 11,
+            "p95": 12,
+            "min": 11,
+            "max": 14
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 11598,
+            "p95": 11598,
+            "min": 11598,
+            "max": 11598
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "kyc-date-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 102.6242999999995,
+            "p95": 223.0650999999998,
+            "min": 68.25920000000042,
+            "max": 227.82710000000225
+          },
+          "sqlMs": {
+            "median": 64,
+            "p95": 69,
+            "min": 36,
+            "max": 77
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 11600,
+            "p95": 11600,
+            "min": 11600,
+            "max": 11600
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "kyc-date-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 61.96860000000015,
+            "p95": 66.13160000000062,
+            "min": 37.95369999999821,
+            "max": 68.49309999999969
+          },
+          "sqlMs": {
+            "median": 52,
+            "p95": 58,
+            "min": 31,
+            "max": 60
+          },
+          "sqlCount": {
+            "median": 6,
+            "p95": 6,
+            "min": 6,
+            "max": 6
+          },
+          "bytes": {
+            "median": 11600,
+            "p95": 11600,
+            "min": 11600,
+            "max": 11600
+          },
+          "rows": 20
+        }
+      ],
+      "integrity": [
+        {
+          "size": 40,
+          "unchanged": true,
+          "totals": {
+            "users": 41,
+            "orders": 800,
+            "deposits": 320,
+            "available": "120014.814814694814814680",
+            "locked": "1455.000000000000000000",
+            "deposit_amount": "100120.000000000000000000",
+            "withdrawal_amount": "4000.000000000000000000",
+            "audit": 800,
+            "futures_orders": 120,
+            "futures_positions": 120,
+            "cfd_positions": 120,
+            "futures_pnl": "0.000000000000000000",
+            "cfd_pnl": "0.000000000000000000"
+          }
+        },
+        {
+          "size": 1000,
+          "unchanged": true,
+          "totals": {
+            "users": 1001,
+            "orders": 20000,
+            "deposits": 5140,
+            "available": "3000370.370367370370367000",
+            "locked": "36375.000000000000000000",
+            "deposit_amount": "2510120.000000000000000000",
+            "withdrawal_amount": "100000.000000000000000000",
+            "audit": 20000,
+            "futures_orders": 3000,
+            "futures_positions": 3000,
+            "cfd_positions": 3000,
+            "futures_pnl": "0.000000000000000000",
+            "cfd_pnl": "0.000000000000000000"
+          }
+        },
+        {
+          "size": 10000,
+          "unchanged": true,
+          "totals": {
+            "users": 10001,
+            "orders": 200000,
+            "deposits": 50320,
+            "available": "30003703.703673703703670000",
+            "locked": "363750.000000000000000000",
+            "deposit_amount": "25100120.000000000000000000",
+            "withdrawal_amount": "1000000.000000000000000000",
+            "audit": 200000,
+            "futures_orders": 30000,
+            "futures_positions": 30000,
+            "cfd_positions": 30000,
+            "futures_pnl": "0.000000000000000000",
+            "cfd_pnl": "0.000000000000000000"
+          }
+        }
+      ],
+      "completedAt": "2026-10-03T10:14:16.507Z",
+      "totalRequests": 180
+    },
+    {
+      "name": "admin-read-benchmark-audit-search.json",
+      "generatedAt": "2026-10-03T10:22:06.073Z",
+      "postgres": "18.4 (embedded, independently verified)",
+      "repetitions": 30,
+      "sizes": [
+        40,
+        1000,
+        10000
+      ],
+      "boundary": "Disposable 127.0.0.1 PostgreSQL with synthetic records only; no production URLs, users or financial writes.",
+      "modes": {
+        "cold": "Prisma connection disconnected before each measured HTTP request; database/OS cache is NOT flushed.",
+        "warm": "Same Prisma connection, one unmeasured warm-up before 30 requests."
+      },
+      "metrics": {
+        "httpMs": "End-to-end localhost HTTP including auth and JSON serialization, no frontend render",
+        "sqlMs": "Sum of Prisma query duration events (millisecond resolution)",
+        "bytes": "Uncompressed JSON bytes",
+        "rows": "Response items; DOM/React measurements are separate browser QA"
+      },
+      "results": [
+        {
+          "size": 40,
+          "scenario": "audit-email-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 44.78449999999975,
+            "p95": 164.5668999999998,
+            "min": 29.95509999999922,
+            "max": 164.66440000000148
+          },
+          "sqlMs": {
+            "median": 9,
+            "p95": 11,
+            "min": 4,
+            "max": 12
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5165,
+            "p95": 5165,
+            "min": 5165,
+            "max": 5165
+          },
+          "rows": 20
+        },
+        {
+          "size": 40,
+          "scenario": "audit-email-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 8.350099999999657,
+            "p95": 9.545200000000477,
+            "min": 7.093899999999849,
+            "max": 9.83509999999842
+          },
+          "sqlMs": {
+            "median": 2,
+            "p95": 2,
+            "min": 2,
+            "max": 2
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5165,
+            "p95": 5165,
+            "min": 5165,
+            "max": 5165
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "audit-email-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 85.1288999999997,
+            "p95": 206.70709999999963,
+            "min": 80.32989999999882,
+            "max": 213.6944999999996
+          },
+          "sqlMs": {
+            "median": 47,
+            "p95": 51,
+            "min": 46,
+            "max": 52
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5165,
+            "p95": 5165,
+            "min": 5165,
+            "max": 5165
+          },
+          "rows": 20
+        },
+        {
+          "size": 1000,
+          "scenario": "audit-email-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 31.97690000000148,
+            "p95": 51.327299999997194,
+            "min": 29.308600000000297,
+            "max": 51.71140000000014
+          },
+          "sqlMs": {
+            "median": 24,
+            "p95": 45,
+            "min": 23,
+            "max": 45
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5165,
+            "p95": 5165,
+            "min": 5165,
+            "max": 5165
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "audit-email-after",
+          "mode": "cold",
+          "n": 30,
+          "httpMs": {
+            "median": 217.35220000000118,
+            "p95": 315.42720000000554,
+            "min": 137.06169999999838,
+            "max": 321.3294999999998
+          },
+          "sqlMs": {
+            "median": 179,
+            "p95": 211,
+            "min": 109,
+            "max": 218
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5165,
+            "p95": 5165,
+            "min": 5165,
+            "max": 5165
+          },
+          "rows": 20
+        },
+        {
+          "size": 10000,
+          "scenario": "audit-email-after",
+          "mode": "warm",
+          "n": 30,
+          "httpMs": {
+            "median": 165.23189999999886,
+            "p95": 225.0179999999964,
+            "min": 113.46770000000106,
+            "max": 231.74899999999616
+          },
+          "sqlMs": {
+            "median": 157,
+            "p95": 217,
+            "min": 106,
+            "max": 223
+          },
+          "sqlCount": {
+            "median": 5,
+            "p95": 5,
+            "min": 5,
+            "max": 5
+          },
+          "bytes": {
+            "median": 5165,
+            "p95": 5165,
+            "min": 5165,
+            "max": 5165
+          },
+          "rows": 20
+        }
+      ],
+      "integrity": [
+        {
+          "size": 40,
+          "unchanged": true,
+          "totals": {
+            "users": 41,
+            "orders": 800,
+            "deposits": 320,
+            "available": "120014.814814694814814680",
+            "locked": "1455.000000000000000000",
+            "deposit_amount": "100120.000000000000000000",
+            "withdrawal_amount": "4000.000000000000000000",
+            "audit": 800,
+            "futures_orders": 120,
+            "futures_positions": 120,
+            "cfd_positions": 120,
+            "futures_pnl": "0.000000000000000000",
+            "cfd_pnl": "0.000000000000000000"
+          }
+        },
+        {
+          "size": 1000,
+          "unchanged": true,
+          "totals": {
+            "users": 1001,
+            "orders": 20000,
+            "deposits": 5140,
+            "available": "3000370.370367370370367000",
+            "locked": "36375.000000000000000000",
+            "deposit_amount": "2510120.000000000000000000",
+            "withdrawal_amount": "100000.000000000000000000",
+            "audit": 20000,
+            "futures_orders": 3000,
+            "futures_positions": 3000,
+            "cfd_positions": 3000,
+            "futures_pnl": "0.000000000000000000",
+            "cfd_pnl": "0.000000000000000000"
+          }
+        },
+        {
+          "size": 10000,
+          "unchanged": true,
+          "totals": {
+            "users": 10001,
+            "orders": 200000,
+            "deposits": 50320,
+            "available": "30003703.703673703703670000",
+            "locked": "363750.000000000000000000",
+            "deposit_amount": "25100120.000000000000000000",
+            "withdrawal_amount": "1000000.000000000000000000",
+            "audit": 200000,
+            "futures_orders": 30000,
+            "futures_positions": 30000,
+            "cfd_positions": 30000,
+            "futures_pnl": "0.000000000000000000",
+            "cfd_pnl": "0.000000000000000000"
+          }
+        }
+      ],
+      "completedAt": "2026-10-03T10:22:51.093Z",
+      "totalRequests": 180
+    }
+  ]
+}

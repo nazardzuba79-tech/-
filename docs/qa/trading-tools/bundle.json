@@ -1,0 +1,48 @@
+{
+  "baseSha": "8abcde87e039030a6bed57732153603a49bf561f",
+  "implementationHead": "750926c53b0b7807596acee821dd68f7e18910f8",
+  "baseline": {
+    "entry": [
+      {
+        "file": "index-DIXxHs8d.js",
+        "bytes": 35807,
+        "gzip": 10156
+      },
+      {
+        "file": "index-LdNGoW32.js",
+        "bytes": 617085,
+        "gzip": 195833
+      }
+    ],
+    "tools": [],
+    "css": []
+  },
+  "review": {
+    "entry": [
+      {
+        "file": "index-BdPevyJf.js",
+        "bytes": 617457,
+        "gzip": 195943
+      },
+      {
+        "file": "index-DQUwR85y.js",
+        "bytes": 35807,
+        "gzip": 10156
+      }
+    ],
+    "tools": [
+      {
+        "file": "TradingToolsPage-od1YDN4N.js",
+        "bytes": 77315,
+        "gzip": 26511
+      }
+    ],
+    "css": [
+      {
+        "file": "TradingToolsPage-CVfnJYpI.css",
+        "bytes": 24661,
+        "gzip": 4510
+      }
+    ]
+  }
+}

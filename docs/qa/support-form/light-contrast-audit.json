@@ -1,0 +1,254 @@
+[
+  {
+    "width": 1440,
+    "url": "/",
+    "state": "initial",
+    "texts": 14,
+    "lowest": 5.38,
+    "typed": [
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 1440,
+    "url": "/",
+    "state": "typed",
+    "texts": 16,
+    "lowest": 5.38,
+    "typed": [
+      "typed:Напишите вопрос…=15.82",
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 1440,
+    "url": "/",
+    "state": "questions",
+    "texts": 34,
+    "lowest": 5.21,
+    "typed": [
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 1440,
+    "url": "/",
+    "state": "form",
+    "texts": 21,
+    "lowest": 5.38,
+    "typed": [
+      "typed:text=15.82",
+      "typed:email=15.82",
+      "typed:textarea=15.82"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 1440,
+    "url": "/academy",
+    "state": "initial",
+    "texts": 14,
+    "lowest": 5.38,
+    "typed": [
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 1440,
+    "url": "/academy",
+    "state": "typed",
+    "texts": 16,
+    "lowest": 5.38,
+    "typed": [
+      "typed:Напишите вопрос…=15.82",
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 1440,
+    "url": "/academy",
+    "state": "questions",
+    "texts": 34,
+    "lowest": 5.21,
+    "typed": [
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 1440,
+    "url": "/academy",
+    "state": "form",
+    "texts": 21,
+    "lowest": 5.38,
+    "typed": [
+      "typed:text=15.82",
+      "typed:email=15.82",
+      "typed:textarea=15.82"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 390,
+    "url": "/",
+    "state": "initial",
+    "texts": 14,
+    "lowest": 5.38,
+    "typed": [
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 390,
+    "url": "/",
+    "state": "typed",
+    "texts": 16,
+    "lowest": 5.38,
+    "typed": [
+      "typed:Напишите вопрос…=15.82",
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 390,
+    "url": "/",
+    "state": "questions",
+    "texts": 34,
+    "lowest": 5.21,
+    "typed": [
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 390,
+    "url": "/",
+    "state": "form",
+    "texts": 21,
+    "lowest": 5.38,
+    "typed": [
+      "typed:text=15.82",
+      "typed:email=15.82",
+      "typed:textarea=15.82"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 390,
+    "url": "/academy",
+    "state": "initial",
+    "texts": 14,
+    "lowest": 5.38,
+    "typed": [
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 390,
+    "url": "/academy",
+    "state": "typed",
+    "texts": 16,
+    "lowest": 5.38,
+    "typed": [
+      "typed:Напишите вопрос…=15.82",
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 390,
+    "url": "/academy",
+    "state": "questions",
+    "texts": 34,
+    "lowest": 5.21,
+    "typed": [
+      "placeholder=5.79"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  },
+  {
+    "width": 390,
+    "url": "/academy",
+    "state": "form",
+    "texts": 21,
+    "lowest": 5.38,
+    "typed": [
+      "typed:text=15.82",
+      "typed:email=15.82",
+      "typed:textarea=15.82"
+    ],
+    "low": [],
+    "light": [],
+    "scheme": "light only",
+    "inside": true,
+    "pageFits": true
+  }
+]

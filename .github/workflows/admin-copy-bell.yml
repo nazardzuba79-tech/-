@@ -1,0 +1,40 @@
+name: Admin deposit-copy bell
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/admin-copy-bell.yml'
+      - 'src/api/routes/adminUsers.ts'
+      - 'src/services/deposits/latestDepositCopiesForUsers.ts'
+      - 'src/api/routes/__tests__/adminDepositCopyBell.test.ts'
+      - 'frontend/src/pages/admin/AdminUsersPage.tsx'
+      - 'frontend/src/pages/admin/DepositCopyBell.tsx'
+      - 'frontend/src/lib/__tests__/adminDepositCopyBell.test.ts'
+permissions:
+  contents: read
+concurrency:
+  group: admin-copy-bell-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Copy bell, authorization and existing admin regressions (synthetic only)
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/api/routes/__tests__/adminDepositCopyBell.test.ts
+          src/api/routes/__tests__/adminUsers.test.ts
+          src/api/routes/__tests__/adminCustomers.test.ts
+          frontend/src/lib/__tests__/adminDepositCopyBell.test.ts
+          frontend/src/lib/__tests__/adminUsersActivity.test.ts
+      - run: npm run build
+      - run: npx tsc -b frontend

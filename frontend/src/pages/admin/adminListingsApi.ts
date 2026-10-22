@@ -1,5 +1,6 @@
 import { browserFetch as fetch } from '../../lib/browserActivity';
 import { API_BASE, getToken } from '../../lib/api';
+import type { ListingProgram } from './listingMovementModel';
 
 /** Admin → Listings calls (Render, ADMIN only; Render forwards to the Cloudflare store). */
 
@@ -17,10 +18,23 @@ export interface ListingConfig {
   tradable: boolean;
   /** Candle character, assigned by the store at creation (by creation order) and never changed. Absent on older listings. */
   simulationProfile?: 'CALM_TREND' | 'IMPULSE_TREND' | 'PULLBACK_TREND' | 'COMPRESSION_BREAKOUT';
+  wickModel?: 'NATURAL_V1';
+  simulationProgram?: ListingProgram;
 }
 
 /** What the form sends. The server fills schemaVersion and an automatic seed; the store assigns the profile. */
 export type ListingForm = Omit<ListingConfig, 'schemaVersion' | 'seed' | 'simulationProfile'> & { seed?: string };
+
+/**
+ * The pre-listing timer of a published listing (server state, never part of
+ * the configuration): `staged` = not public yet, `running` = countdown shown,
+ * `paused` = date shown without a countdown. It always counts to the listing
+ * time; starting it later never moves that time.
+ */
+export type ListingCountdownState = 'staged' | 'running' | 'paused';
+export type ListingCountdownAction = 'start' | 'pause' | 'stop';
+export interface ListingCountdown { state: ListingCountdownState; updatedAt: number; updatedBy: string; startedAt?: number }
+export const LISTING_COUNTDOWN_STATES: readonly ListingCountdownState[] = ['staged', 'running', 'paused'];
 
 export interface AdminListing {
   id: string;
@@ -32,6 +46,8 @@ export interface AdminListing {
   activeVersion: number | null;
   active: ListingConfig | null;
   versions: { version: number; publishedAt: string; publishedBy: string }[];
+  /** Null (or absent) until the listing has a timer: published before it existed, or never staged. */
+  countdown?: ListingCountdown | null;
 }
 
 export interface ListingPreview {
@@ -44,19 +60,33 @@ export interface ListingPreview {
   candles: { time: number; open: number; high: number; low: number; close: number; volume: number }[];
   book: { available: boolean; bids: { price: string; quantity: string }[]; asks: { price: string; quantity: string }[] };
   trades: { id: string; price: string; quantity: string; side: 'BUY' | 'SELL'; time: number }[];
+  scenarioSummary?: { horizon: 'first24h' | 'growth' | 'afterGrowth' | 'history'; interval: string; from: number; to: number; initialPrice: string; first24hPrice: string; maxPrice: string; observedHigh: number; observedLow?: number; candleLimit: number };
 }
 
 export class ListingApiError extends Error {
   constructor(message: string, readonly status: number, readonly code: string | null, readonly draftRevision: number | null = null) { super(message); }
 }
 
-async function call<T>(path: string, init: { method?: string; body?: unknown; ifMatch?: number } = {}): Promise<T> {
+const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
+const revision = (value: unknown) => Number.isSafeInteger(value) && Number(value) > 0;
+const instant = (value: unknown) => typeof value === 'string' && Number.isFinite(Date.parse(value));
+function configShape(value: unknown): boolean {
+  if (!object(value) || value.schemaVersion !== 1 || !instant(value.listingAt)
+    || !['symbol', 'name', 'initialPrice', 'displayTimeZone', 'ownerAllocation', 'seed'].every(key => typeof value[key] === 'string')
+    || !['auto', 'manual'].includes(String(value.seedMode)) || typeof value.tradable !== 'boolean'
+    || !(value.logo === null || typeof value.logo === 'string')) return false;
+  try { new Intl.DateTimeFormat('en', { timeZone: String(value.displayTimeZone) }); return true; }
+  catch { return false; }
+}
+
+async function call<T>(path: string, init: { method?: string; body?: unknown; ifMatch?: number; signal?: AbortSignal } = {}): Promise<T> {
   const token = getToken();
   if (!token) throw new ListingApiError('Сессия администратора недоступна', 401, null);
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      method: init.method ?? 'GET', cache: 'no-store', signal: AbortSignal.timeout(20_000),
+      method: init.method ?? 'GET', cache: 'no-store', signal: init.signal
+        ? AbortSignal.any([init.signal, AbortSignal.timeout(20_000)]) : AbortSignal.timeout(20_000),
       headers: { Authorization: `Bearer ${token}`, ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(init.ifMatch !== undefined ? { 'If-Match': String(init.ifMatch) } : {}) },
       ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
@@ -70,18 +100,48 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; if
     const message = typeof body?.message === 'string' ? body.message : `Ошибка запроса (${response.status})`;
     throw new ListingApiError(message, response.status, code, typeof body?.draftRevision === 'number' ? body.draftRevision : null);
   }
+  // A 2xx without a recognizable receipt is an UNKNOWN outcome, not success.
+  // Keep the caller's form/confirmation (and the same publish key) for recovery.
+  const countdownShape = (value: unknown) => value === null || value === undefined
+    || (object(value) && LISTING_COUNTDOWN_STATES.includes(value.state as ListingCountdownState) && typeof value.updatedAt === 'number');
+  let valid = object(body);
+  if (valid && path.endsWith('/publish')) {
+    valid = typeof body!.id === 'string' && path === `/admin/listings/${encodeURIComponent(body!.id)}/publish`
+      && revision(body!.version) && typeof body!.replayed === 'boolean' && instant(body!.publishedAt) && countdownShape(body!.countdown);
+  } else if (valid && path.endsWith('/countdown')) {
+    valid = typeof body!.id === 'string' && path === `/admin/listings/${encodeURIComponent(body!.id)}/countdown`
+      && object(body!.countdown) && countdownShape(body!.countdown) && typeof body!.changed === 'boolean';
+  } else if (valid && (init.method === 'POST' || init.method === 'PUT')) {
+    valid = typeof body!.id === 'string' && revision(body!.draftRevision) && configShape(body!.draft)
+      && (init.method === 'POST' || path === `/admin/listings/${encodeURIComponent(body!.id)}/draft`);
+  } else if (valid && path === '/admin/listings') {
+    valid = Array.isArray(body!.listings) && body!.listings.every(item => object(item) && typeof item.id === 'string'
+      && revision(item.draftRevision) && configShape(item.draft)
+      && (item.activeVersion === null ? item.active === null : revision(item.activeVersion) && configShape(item.active))
+      && countdownShape(item.countdown)
+      && Array.isArray(item.versions) && item.versions.every(version => object(version) && revision(version.version)
+        && instant(version.publishedAt) && typeof version.publishedBy === 'string'));
+  } else if (valid && path.includes('/preview?')) {
+    valid = typeof body!.listingId === 'string' && revision(body!.draftRevision) && object(body!.asset)
+      && object(body!.asset.state) && Array.isArray(body!.candles) && object(body!.book) && Array.isArray(body!.trades);
+  }
+  if (!valid) throw new ListingApiError('Нет подтверждения от сервера. Проверьте результат операции.', 0, 'UNKNOWN_RESPONSE');
   return body as T;
 }
 
 export const adminListingsApi = {
-  list: () => call<{ revision: string; serverTime: number; listings: AdminListing[] }>('/admin/listings'),
+  list: (signal?: AbortSignal) => call<{ revision: string; serverTime: number; listings: AdminListing[] }>('/admin/listings', { signal }),
   create: (config: ListingForm) => call<{ id: string; draftRevision: number; draft: ListingConfig }>('/admin/listings', { method: 'POST', body: { config } }),
   saveDraft: (id: string, config: ListingForm, draftRevision: number) =>
     call<{ id: string; draftRevision: number; draft: ListingConfig }>(`/admin/listings/${encodeURIComponent(id)}/draft`, { method: 'PUT', body: { config }, ifMatch: draftRevision }),
-  preview: (id: string, at: string | null, interval = '5m') =>
-    call<ListingPreview>(`/admin/listings/${encodeURIComponent(id)}/preview?${new URLSearchParams({ interval, ...(at ? { at } : {}) })}`),
-  publish: (id: string, draftRevision: number, publishKey: string) =>
-    call<{ id: string; version: number; replayed: boolean; publishedAt: string }>(`/admin/listings/${encodeURIComponent(id)}/publish`, { method: 'POST', body: { draftRevision, publishKey } }),
+  preview: (id: string, at: string | null, interval = '5m', horizon?: 'first24h' | 'growth' | 'afterGrowth' | 'history') =>
+    call<ListingPreview>(`/admin/listings/${encodeURIComponent(id)}/preview?${new URLSearchParams({ interval, ...(at ? { at } : {}), ...(horizon ? { horizon } : {}) })}`),
+  /** `countdown: 'staged'` publishes without starting the public timer; the admin starts it later with «Запустить таймер». */
+  publish: (id: string, draftRevision: number, publishKey: string, countdown?: 'staged' | 'running') =>
+    call<{ id: string; version: number; replayed: boolean; publishedAt: string; countdown?: ListingCountdown | null }>(
+      `/admin/listings/${encodeURIComponent(id)}/publish`, { method: 'POST', body: { draftRevision, publishKey, ...(countdown ? { countdown } : {}) } }),
+  countdown: (id: string, action: ListingCountdownAction) =>
+    call<{ id: string; countdown: ListingCountdown; changed: boolean }>(`/admin/listings/${encodeURIComponent(id)}/countdown`, { method: 'POST', body: { action } }),
 };
 
 /** One key per opened publish confirmation: a double click or a retry after a lost answer is the same publish. */

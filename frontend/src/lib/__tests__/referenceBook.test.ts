@@ -126,8 +126,9 @@ test('mark price: drawn under the flag when the design passes one, the spread ot
 test('the archive book takes the reference pitch and centre band, and the CSS reads the same numbers',async()=>{
  await act(async()=>root.render(React.createElement(Book,{pair:'BTC/USDT',bids,asks,onPickPrice:pick,archive:true})));
  const panel=host.querySelector('.reference-book') as HTMLElement;
- expect(panel.style.getPropertyValue('--book-row-height')).toBe('28px');
- expect(panel.style.getPropertyValue('--book-center-height')).toBe('48px');
+ // 2026-10-07: Bybit's measured pitch, 24px rows and a 40px centre band (was 28/48 off a scaled screenshot).
+ expect(panel.style.getPropertyValue('--book-row-height')).toBe('24px');
+ expect(panel.style.getPropertyValue('--book-center-height')).toBe('40px');
  // Without the flag the earlier pitch stands, so no other design moves.
  await act(async()=>root.render(React.createElement(Book,{pair:'BTC/USDT',bids,asks,onPickPrice:pick})));
  expect(panel.style.getPropertyValue('--book-row-height')).toBe(`${REFERENCE_ROW_HEIGHT}px`);

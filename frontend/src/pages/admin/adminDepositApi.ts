@@ -120,12 +120,13 @@ export class AdminDepositApiError extends Error {
   constructor(message: string, readonly status: number, readonly code: string | null) { super(message); }
 }
 
-async function call<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+async function call<T>(path: string, init: { method?: string; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
   const token = getToken();
   if (!token) throw new AdminDepositApiError('Admin session unavailable', 401, null);
   const response = await fetch(`${API_BASE}${path}`, {
     method: init.method ?? 'GET',
     cache: 'no-store',
+    signal: init.signal,
     headers: { Authorization: `Bearer ${token}`, ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
     ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
   });
@@ -139,7 +140,7 @@ async function call<T>(path: string, init: { method?: string; body?: unknown } =
 }
 
 export const adminDepositApi = {
-  queue: () => call<DepositQueue>('/admin/deposit-queue'),
+  queue: (signal?: AbortSignal) => call<DepositQueue>('/admin/deposit-queue', { signal }),
   attribute: (depositId: string, userId: string | null, reassign = false) =>
     call<{ depositId: string; userId: string | null; changed: boolean }>(`/admin/deposits/${encodeURIComponent(depositId)}/attribute`, { method: 'POST', body: { userId, reassign } }),
   ignore: (depositId: string, reason: IgnoreReason, note: string | null, confirmAssigned = false) =>

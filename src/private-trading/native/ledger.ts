@@ -39,7 +39,7 @@ export type LedgerSource =
   | 'LIQUIDATION_FEE'
   /** Price movement banked on the quantity that left the position. Fees are NOT inside this. */
   | 'REALIZED_PNL'
-  /** The custom VOLTEX funding cash-flow, debited or credited at settlement. */
+  /** The funding cash-flow of one 8h settlement, debited or credited, priced by the schedule version in force then. */
   | 'FUNDING'
   /** A loss (fees included) an isolated settlement realised beyond its post, covered by the simulation insurance model. */
   | 'SHORTFALL_COVER';
@@ -59,6 +59,9 @@ export interface LedgerEntry {
   amount: string;
   /** The wallet balance after this line. */
   balanceAfter: string;
+  /** FUNDING lines priced by a version after the original one: the signed per-side fraction and the version. Absent on legacy settlements. */
+  fundingRate?: string;
+  fundingModel?: string;
 }
 
 export interface AccountLedger {
@@ -114,6 +117,7 @@ export function accountLedger(state: DemoState): AccountLedger {
       positionId: event.positionId, symbol: event.symbol,
       quantity: event.quantity === '0' ? null : event.quantity, price: event.price,
       amount: out(value), balanceAfter: out(balance),
+      ...(event.fundingRate !== undefined ? { fundingRate: event.fundingRate, fundingModel: event.fundingModel } : {}),
     });
   };
 

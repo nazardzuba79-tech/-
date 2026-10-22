@@ -18,6 +18,12 @@ const published = (cfg = config(), version = 1): PublishedListing => ({ id: 'qax
 const get = (path: string, listings: PublishedListing[], now: number) => managedListingResponse(new Request(`https://market.local${path}`), listings, now, '1');
 
 describe('listing configuration', () => {
+  test.each(['2026-02-30T12:00:00Z', '2026-04-31T12:00Z', '2026-10-01T24:00:00Z'])('rejects normalized invalid UTC date %s', (listingAt) => {
+    expect(code(() => parseListingConfig(config({ listingAt })))).toBe('INVALID_CONFIG');
+  });
+  test('rejects a syntactically plausible but nonexistent IANA zone', () => {
+    expect(code(() => parseListingConfig(config({ displayTimeZone: 'Not/AZone' })))).toBe('INVALID_CONFIG');
+  });
   test('valid config parses; ticker is upper-cased; unknown fields are refused', () => {
     expect(parseListingConfig({ ...config(), symbol: 'qax' }).symbol).toBe('QAX');
     expect(code(() => parseListingConfig({ ...config(), extra: 1 }))).toBe('INVALID_CONFIG');

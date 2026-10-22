@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:listings": "node --test listings.integration.test.mjs",
+    "test:listings": "node --test listings.integration.test.mjs aith-replacement.integration.test.mjs",
     "test:smoke": "node --test smoke.integration.test.mjs"
   },
   "devDependencies": {

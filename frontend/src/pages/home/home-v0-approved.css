@@ -1,0 +1,70 @@
+/* Geometry measured on voltex-reference.png (1619x971). The real header/tape
+   replace the raster's y=0..60 and y=876..971 bands. Scoped to this Hero only. */
+.hs-root.v0-approved-hero .hero { min-height: 0; height: auto; aspect-ratio: 1619 / 816; display: block; overflow: hidden; }
+.hs-root.v0-approved-hero .art { inset: auto; left: 0; top: -7.352941%; width: 100%; height: auto; aspect-ratio: 1619 / 971; object-fit: fill; object-position: center; mask-image: none; }
+.hs-root.v0-approved-hero .shade { display: none; }
+.hs-root.v0-approved-hero .copy { position: absolute; left: 3.33539%; top: 19.4853%; width: 26.5596%; padding: 0; z-index: 3; }
+.hs-root.v0-approved-hero .eyebrow { font-size: .72vw; letter-spacing: .16em; margin: 0 0 1.5vw; gap: .8vw; color: #edc06e; }
+.hs-root.v0-approved-hero h1 { font-size: 4.85vw; font-weight: 700; letter-spacing: -.035em; line-height: .96; margin: 0 0 1.05vw; }
+.hs-root.v0-approved-hero h1, .hs-root.v0-approved-hero h1 span { overflow-wrap: anywhere; white-space: normal; }
+.hs-root.v0-approved-hero h1 span { color: #ffe7a6; }
+.hs-root.v0-approved-hero .subtitle { font-size: 1.25vw; line-height: 1.5; margin: 0 0 .8vw; max-width: none; color: #f0f2fa; }
+.hs-root.v0-approved-hero .description { max-width: 95%; font-family: Arial,sans-serif; font-size: 1.02vw; line-height: 1.65; color: #d8e2f0; }
+.hs-root.v0-approved-hero .actions { margin-top: 1.55vw; gap: .85vw; flex-wrap: nowrap; }
+.hs-root.v0-approved-hero .actions a { min-height: 0; padding: .95vw 1.38vw; font-size: .88vw; line-height: 1.35; gap: 1.25vw; max-width: 100%; border-radius: 7px; }
+.hs-root.v0-approved-hero .primary { background: linear-gradient(115deg,#f7c35f,#ffe69c); }
+.hs-root.v0-approved-hero .secondary { background: #051c32a0; border-color: #52718b65; }
+.hs-root.v0-approved-hero .product-shortcuts { display: flex; flex-wrap: nowrap; max-width: none; gap: .55vw; margin-top: 1vw; }
+.hs-root.v0-approved-hero .product-shortcuts>a, .hs-root.v0-approved-hero .product-shortcuts>a+a { flex: 0 1 auto; min-height: 0; padding: .67vw .65vw; font-size: .68vw; gap: .4vw; border-radius: 6px; }
+.hs-root.v0-approved-hero .product-shortcuts svg { width: 1vw; height: 1vw; }
+.hs-root.v0-approved-hero .reference-market-legend { display: flex; align-items: center; gap: 1.2vw; margin-top: 1.2vw; color: #e6bd72; font-size: .85vw; line-height: 1.4; }
+.hs-root.v0-approved-hero .reference-market-legend::before, .hs-root.v0-approved-hero .reference-market-legend::after { content: ''; width: 2vw; height: 1px; background: #b8924e; flex: 0 0 auto; }
+.v0-approved-hero .v0-coins { position: absolute; z-index: 2; left: 30.265596%; top: 2.45098%; width: 25.324274%; height: auto; aspect-ratio: 410 / 570; pointer-events: none; }
+.v0-coins-labels { position: absolute; inset: 0; width: 100%; height: 100%; }
+.v0-orbit-guides { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.v0-orbit-ring { fill: none; stroke: #dfb65c66; stroke-width: 1; }
+.v0-orbit-ring[data-ring="2"] { stroke: #7dc5ed66; }
+
+
+.v0-coin { position: absolute; aspect-ratio: 1; transform: translate(-50%, -50%); will-change: transform; }
+.v0-coin-face { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 50%; background: #0c2034; border: 1px solid #b69a60; box-shadow: 0 3px 9px #0007; }
+.v0-coin-face img { width: 53%; height: 53%; object-fit: contain; transform: translateY(-15%); }
+.v0-coin-symbol { position: absolute; bottom: 10%; left: 0; width: 100%; text-align: center; color: #e6edf6; font: 600 clamp(6px,.48vw,10px)/1 Arial,sans-serif; white-space: nowrap; }
+.v0-coin-btc .v0-coin-face { position: relative; background: conic-gradient(from 135deg,#ae6a1e,#fff0bd 17%,#c58c35 32%,#ffe4a0 49%,#985717 65%,#f6cd79 82%,#ae6a1e); border-color: #ffe7a4; box-shadow: inset 0 0 0 1px #fff4c999, 0 0 0 1px #b67a3280, 0 0 22px #f6bf584d, 0 8px 24px #0008; }
+.v0-coin-btc .v0-coin-face::before { content: ''; position: absolute; inset: 5%; border: 1px solid #ffe6ae99; border-radius: 50%; background: radial-gradient(ellipse at 30% 18%,#ffe8ad80,transparent 44%),linear-gradient(135deg,#71512f 0%,#b58a52 32%,#4b341d 53%,#98703b 75%,#3b2919 100%); box-shadow: inset 0 1px 4px #30190680; pointer-events: none; }
+.v0-coin-btc .v0-coin-face img { position: relative; width: 64%; height: 64%; transform: translateY(-14%); filter: drop-shadow(0 1px .5px #563510); }
+.v0-coin-btc .v0-quote { top: auto; bottom: 9%; padding: 0; border: 0; background: transparent; color: #decba3; flex-direction: column; gap: 0; font-size: clamp(7px,.57vw,11px); line-height: 1.15; }
+.v0-coin-btc .v0-quote strong { color: #fff3d8; }
+.v0-coin-oil .v0-coin-face { background: linear-gradient(145deg,#f2f5f8 0%,#cbd5df 60%,#9cabbc 100%); border-color: #e6d7b5; box-shadow: inset 0 1px 1px #fff9, 0 3px 9px #0007; }
+.v0-coin-oil .v0-coin-symbol { color: #182331; }
+.v0-coin-apple .v0-coin-face img { filter: invert(1); }
+.v0-coin-nvidia .v0-coin-face img { filter: invert(76%) sepia(82%) saturate(784%) hue-rotate(27deg) brightness(98%); }
+.v0-quote { position: absolute; top: 105%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: clamp(9px,.67vw,13px); line-height: 1.4; padding: 2px 6px; border: 1px solid #c7a36280; border-radius: 9px; color: #d4dfec; background: #071828ee; }
+.v0-quote strong { font-weight: 600; color: #f5deaa; }
+@media (max-width: 1100px) and (min-width: 901px) {
+  .hs-root.v0-approved-hero .eyebrow { font-size: 9px; }
+  .hs-root.v0-approved-hero .description { font-size: 12px; }
+  .hs-root.v0-approved-hero .product-shortcuts { flex-wrap: wrap; }
+  .hs-root.v0-approved-hero .product-shortcuts>a, .hs-root.v0-approved-hero .product-shortcuts>a+a { font-size: 10px; }
+}
+@media (max-width: 900px) {
+  .hs-root.v0-approved-hero .hero { aspect-ratio: auto; display: flex; flex-direction: column; padding-bottom: 0; background: #031326; }
+  .hs-root.v0-approved-hero .copy { position: relative; left: auto; top: auto; width: 100%; padding: 34px 22px 18px; order: 0; }
+  .hs-root.v0-approved-hero .eyebrow { font-size: 9px; margin-bottom: 20px; gap: 12px; }
+  .hs-root.v0-approved-hero h1 { font-size: clamp(42px,8vw,66px); margin-bottom: 20px; }
+  .hs-root.v0-approved-hero .subtitle { font-size: 21px; margin-bottom: 12px; }
+  .hs-root.v0-approved-hero .description { font-size: 15px; max-width: 580px; }
+  .hs-root.v0-approved-hero .actions { flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .hs-root.v0-approved-hero .actions a { padding: 14px 16px; font-size: 13px; gap: 15px; }
+  .hs-root.v0-approved-hero .product-shortcuts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 16px; max-width: 420px; }
+  .hs-root.v0-approved-hero .product-shortcuts>a, .hs-root.v0-approved-hero .product-shortcuts>a+a { padding: 10px 12px; font-size: 11px; gap: 8px; }
+  .hs-root.v0-approved-hero .product-shortcuts svg { width: 16px; height: 16px; }
+  .hs-root.v0-approved-hero .reference-market-legend { margin-top: 18px; font-size: 12px; gap: 12px; }
+  .hs-root.v0-approved-hero .reference-market-legend::before, .hs-root.v0-approved-hero .reference-market-legend::after { width: 18px; }
+  .v0-approved-hero .v0-coins { position: relative; order: 1; left: auto; top: auto; margin: 0 auto; width: min(95%,410px); height: auto; aspect-ratio: 410 / 430; }
+  .v0-coin-symbol { font-size: 8px; }
+  .v0-quote { font-size: 10px; flex-direction: column; gap: 0; top: 105%; padding: 2px 5px; }
+
+  .hs-root.v0-approved-hero .art { position: relative; inset: auto; width: 166%; height: auto; max-width: none; align-self: flex-end; order: 2; margin-top: -40px; margin-bottom: -10%; mask-image: linear-gradient(transparent,#000 14%); }
+}
+@media (max-width: 430px) { .hs-root.v0-approved-hero .copy { padding-inline: 18px; } }

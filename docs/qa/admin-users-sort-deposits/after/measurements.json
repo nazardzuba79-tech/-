@@ -1,0 +1,367 @@
+{
+ "checks": [
+  {
+   "name": "deposits 1920: no sideways scroll, no page error",
+   "ok": true,
+   "detail": {
+    "overflowX": false,
+    "errors": []
+   }
+  },
+  {
+   "name": "deposits 1920: one tools card, three tab groups, old paragraph gone",
+   "ok": true
+  },
+  {
+   "name": "deposits 1920: manual checks open on desktop, folded on a phone",
+   "ok": true
+  },
+  {
+   "name": "deposits 1440: no sideways scroll, no page error",
+   "ok": true,
+   "detail": {
+    "overflowX": false,
+    "errors": []
+   }
+  },
+  {
+   "name": "deposits 1440: one tools card, three tab groups, old paragraph gone",
+   "ok": true
+  },
+  {
+   "name": "deposits 1440: manual checks open on desktop, folded on a phone",
+   "ok": true
+  },
+  {
+   "name": "deposits 1440: queue tabs fit one row",
+   "ok": true,
+   "detail": 1
+  },
+  {
+   "name": "users 1440: «Регистрация» flips newest → oldest",
+   "ok": true,
+   "detail": {
+    "newest": [
+     "qa-user-1",
+     "qa-user-2",
+     "qa-user-3"
+    ],
+    "oldest": [
+     "qa-user-40",
+     "qa-user-39",
+     "qa-user-38"
+    ]
+   }
+  },
+  {
+   "name": "users 1440: «Последний вход» sorts recent first, a second click long ago first",
+   "ok": true,
+   "detail": {
+    "recent": [
+     "qa-user-1",
+     "qa-user-2",
+     "qa-user-3"
+    ],
+    "longAgo": [
+     "qa-user-40",
+     "qa-user-39",
+     "qa-user-38"
+    ]
+   }
+  },
+  {
+   "name": "users 1440: aria-sort follows the active header",
+   "ok": true,
+   "detail": [
+    "none",
+    "ascending"
+   ]
+  },
+  {
+   "name": "deposits 1366: no sideways scroll, no page error",
+   "ok": true,
+   "detail": {
+    "overflowX": false,
+    "errors": []
+   }
+  },
+  {
+   "name": "deposits 1366: one tools card, three tab groups, old paragraph gone",
+   "ok": true
+  },
+  {
+   "name": "deposits 1366: manual checks open on desktop, folded on a phone",
+   "ok": true
+  },
+  {
+   "name": "deposits 1024: no sideways scroll, no page error",
+   "ok": true,
+   "detail": {
+    "overflowX": false,
+    "errors": []
+   }
+  },
+  {
+   "name": "deposits 1024: one tools card, three tab groups, old paragraph gone",
+   "ok": true
+  },
+  {
+   "name": "deposits 1024: manual checks open on desktop, folded on a phone",
+   "ok": true
+  },
+  {
+   "name": "deposits 390: no sideways scroll, no page error",
+   "ok": true,
+   "detail": {
+    "overflowX": false,
+    "errors": []
+   }
+  },
+  {
+   "name": "deposits 390: one tools card, three tab groups, old paragraph gone",
+   "ok": true
+  },
+  {
+   "name": "deposits 390: manual checks open on desktop, folded on a phone",
+   "ok": true
+  },
+  {
+   "name": "users 390: the select orders oldest registrations first",
+   "ok": true,
+   "detail": {
+    "newest": [
+     "qa-user-1",
+     "qa-user-2",
+     "qa-user-3"
+    ],
+    "oldest": [
+     "qa-user-40",
+     "qa-user-39",
+     "qa-user-38"
+    ]
+   }
+  },
+  {
+   "name": "deposits 320: no sideways scroll, no page error",
+   "ok": true,
+   "detail": {
+    "overflowX": false,
+    "errors": []
+   }
+  },
+  {
+   "name": "deposits 320: one tools card, three tab groups, old paragraph gone",
+   "ok": true
+  },
+  {
+   "name": "deposits 320: manual checks open on desktop, folded on a phone",
+   "ok": true
+  }
+ ],
+ "report": [
+  {
+   "page": "deposits",
+   "w": 1920,
+   "overflowX": false,
+   "pageH": 1080,
+   "tools": {
+    "top": 196,
+    "h": 148,
+    "w": 1656
+   },
+   "tabs": {
+    "top": 360,
+    "h": 53,
+    "w": 1656
+   },
+   "tabRows": 1,
+   "groups": 3,
+   "card": {
+    "top": 425,
+    "h": 224,
+    "w": 405
+   },
+   "selected": "ready",
+   "manualOpen": true,
+   "oldHint": false,
+   "errors": []
+  },
+  {
+   "page": "deposits",
+   "w": 1440,
+   "overflowX": false,
+   "pageH": 900,
+   "tools": {
+    "top": 196,
+    "h": 148,
+    "w": 1176
+   },
+   "tabs": {
+    "top": 360,
+    "h": 53,
+    "w": 1176
+   },
+   "tabRows": 1,
+   "groups": 3,
+   "card": {
+    "top": 425,
+    "h": 224,
+    "w": 384
+   },
+   "selected": "ready",
+   "manualOpen": true,
+   "oldHint": false,
+   "errors": []
+  },
+  {
+   "page": "users-sort",
+   "w": 1440,
+   "newest": [
+    "qa-user-1",
+    "qa-user-2",
+    "qa-user-3"
+   ],
+   "oldest": [
+    "qa-user-40",
+    "qa-user-39",
+    "qa-user-38"
+   ],
+   "recent": [
+    "qa-user-1",
+    "qa-user-2",
+    "qa-user-3"
+   ],
+   "longAgo": [
+    "qa-user-40",
+    "qa-user-39",
+    "qa-user-38"
+   ],
+   "aria": [
+    "none",
+    "ascending"
+   ]
+  },
+  {
+   "page": "deposits",
+   "w": 1366,
+   "overflowX": false,
+   "pageH": 768,
+   "tools": {
+    "top": 196,
+    "h": 148,
+    "w": 1102
+   },
+   "tabs": {
+    "top": 360,
+    "h": 115,
+    "w": 1102
+   },
+   "tabRows": 2,
+   "groups": 3,
+   "card": {
+    "top": 487,
+    "h": 224,
+    "w": 359
+   },
+   "selected": "ready",
+   "manualOpen": true,
+   "oldHint": false,
+   "errors": []
+  },
+  {
+   "page": "deposits",
+   "w": 1024,
+   "overflowX": false,
+   "pageH": 877,
+   "tools": {
+    "top": 214,
+    "h": 272,
+    "w": 760
+   },
+   "tabs": {
+    "top": 502,
+    "h": 115,
+    "w": 760
+   },
+   "tabRows": 2,
+   "groups": 3,
+   "card": {
+    "top": 629,
+    "h": 224,
+    "w": 374
+   },
+   "selected": "ready",
+   "manualOpen": true,
+   "oldHint": false,
+   "errors": []
+  },
+  {
+   "page": "deposits",
+   "w": 390,
+   "overflowX": false,
+   "pageH": 960,
+   "tools": {
+    "top": 226,
+    "h": 266,
+    "w": 366
+   },
+   "tabs": {
+    "top": 508,
+    "h": 205,
+    "w": 366
+   },
+   "tabRows": 3,
+   "groups": 3,
+   "card": {
+    "top": 725,
+    "h": 224,
+    "w": 366
+   },
+   "selected": "ready",
+   "manualOpen": false,
+   "oldHint": false,
+   "errors": []
+  },
+  {
+   "page": "users-sort",
+   "w": 390,
+   "newest": [
+    "qa-user-1",
+    "qa-user-2",
+    "qa-user-3"
+   ],
+   "oldest": [
+    "qa-user-40",
+    "qa-user-39",
+    "qa-user-38"
+   ]
+  },
+  {
+   "page": "deposits",
+   "w": 320,
+   "overflowX": false,
+   "pageH": 1112,
+   "tools": {
+    "top": 244,
+    "h": 293,
+    "w": 296
+   },
+   "tabs": {
+    "top": 553,
+    "h": 279,
+    "w": 296
+   },
+   "tabRows": 3,
+   "groups": 3,
+   "card": {
+    "top": 844,
+    "h": 256,
+    "w": 296
+   },
+   "selected": "ready",
+   "manualOpen": false,
+   "oldHint": false,
+   "errors": []
+  }
+ ]
+}

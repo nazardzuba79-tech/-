@@ -21,11 +21,20 @@ describe('Spot/CFD mobile parity with Futures', () => {
 
   test('Spot has Futures-style Chart / Trade / Account workspaces without changing order logic', () => {
     const page = read('frontend/src/pages/TradePage.tsx');
-    expect(page).toContain("const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart')");
+    // A tradable pair opens on Trade (owner, 2026-10-04); an upcoming listing
+    // (countdown card), a display-only test market and CFD stay chart-first.
+    expect(page).toContain("const [mobileTabChoice, setMobileTab] = useState<'chart' | 'trade' | 'account' | null>(null)");
+    expect(page).toContain("const prelisting = testPair && testMarket.asset?.state.phase !== 'live';");
+    expect(page).toContain("const displayOnly = pair === 'AITH/USDT' || (testPair && testMarket.asset?.isTradable === false);");
+    expect(page).toContain("const mobileTab = mobileTabChoice ?? (marketType === 'cfd' || prelisting || displayOnly ? 'chart' : 'trade');");
     expect(page).toContain("const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart')");
     expect(page).toContain('data-mobile-market="spot"');
     expect(page).toContain("setMobilePane('book')");
     expect(page).toContain("setMobilePane('markets')");
+    expect(page).toContain("const selectSpotPair = useCallback((nextPair: string) => {");
+    expect(page).toContain("setMobileTab('trade')");
+    expect(page).toContain("params.set('pair', nextPair)");
+    expect(page).toContain('onChange={selectSpotPair}');
     expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced}');
     expect(page).toContain('<OrderBookPanel');
   });
@@ -37,7 +46,8 @@ describe('Spot/CFD mobile parity with Futures', () => {
     const cfd = page.slice(cfdStart, spotStart);
     expect(cfd).toContain('data-mobile-market="cfd"');
     expect(cfd).toContain('<CfdInstrumentList');
-    expect(cfd).toContain('<CfdChart');
+    // 2026-10-15: the CFD chart is the shared terminal chart (Chart Workspace).
+    expect(cfd).toContain('<PriceChart pair={selectedCfdSymbol} market="cfd"');
     expect(cfd).toContain('<CfdOrderForm');
     expect(cfd).toContain('<CfdPositionsPanel');
     expect(cfd).not.toContain('<OrderBookPanel');
@@ -50,7 +60,14 @@ describe('Spot/CFD mobile parity with Futures', () => {
     expect((page.match(/<OrderBookPanel\b/g) ?? []).length).toBe(1);
 
     const css = read('frontend/src/pages/trade-terminal/TerminalMobileParity.css');
+    const compact = read('frontend/src/pages/trade-terminal/SpotMobileCompact.css');
     expect(css).toContain('.terminal[data-mobile-tab=trade]');
+    expect(compact).toContain('.terminal[data-mobile-tab=trade] .main-grid');
+    // Book left (~40%), ticket right (~60%), as on the owner's references.
+    expect(compact).toContain('grid-template-columns:minmax(0,40fr) minmax(0,60fr)');
+    expect(compact).toContain('.orderbook-col-headers .ob-col:last-child');
+    expect(compact).toContain('.info-section');
+    expect(compact).toContain('display:none');
     expect(css).toContain('.terminal[data-mobile-tab=account]');
     expect(css).toContain('[data-mobile-pane=book]');
     expect(css).toContain('[data-mobile-pane=markets]');

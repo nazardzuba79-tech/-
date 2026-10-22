@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
+import { mutateFuturesBalance } from '../services/WalletMutation';
 import { v4 as uuidv4 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType, Trade } from '../matching-engine/types';
@@ -225,20 +226,7 @@ export class FuturesPositionService {
       const lockAmount = params.reduceOnly ? new BigNumber(0)
         : market ? market.reservedMargin : computeInitialMargin(estimatedNotional, params.leverage);
       if (lockAmount.isGreaterThan(0)) {
-        const balance = await tx.futuresBalance.findUnique({
-          where: { userId_asset: { userId: params.userId, asset: quote } },
-        });
-        const available = new BigNumber(balance?.available.toString() ?? '0');
-        if (available.isLessThan(lockAmount)) {
-          throw new Error(`Insufficient ${quote} margin balance`);
-        }
-        await tx.futuresBalance.update({
-          where: { userId_asset: { userId: params.userId, asset: quote } },
-          data: {
-            available: available.minus(lockAmount).toString(),
-            locked: new BigNumber(balance!.locked.toString()).plus(lockAmount).toString(),
-          },
-        });
+        await mutateFuturesBalance(tx, params.userId, quote, { available: lockAmount.negated(), locked: lockAmount }, true);
       }
 
       const orderId = uuidv4();
@@ -745,16 +733,6 @@ export class FuturesPositionService {
   }
 
   private async adjustBalance(tx: TxClient, userId: string, asset: string, delta: { available?: BigNumber; locked?: BigNumber }) {
-    const existing = await tx.futuresBalance.upsert({
-      where: { userId_asset: { userId, asset } },
-      create: { userId, asset, available: '0', locked: '0' },
-      update: {},
-    });
-    const available = new BigNumber(existing.available.toString()).plus(delta.available ?? 0);
-    const locked = new BigNumber(existing.locked.toString()).plus(delta.locked ?? 0);
-    await tx.futuresBalance.update({
-      where: { userId_asset: { userId, asset } },
-      data: { available: available.toString(), locked: locked.toString() },
-    });
+    await mutateFuturesBalance(tx, userId, asset, delta);
   }
 }

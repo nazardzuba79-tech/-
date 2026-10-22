@@ -1,4 +1,4 @@
-import { NEURIX } from '../neurix';
+import { NEURIX as CONFIGURED_NEURIX } from '../neurix';
 import { VOLTORA } from '../testAssetConfig';
 import { DAY_MS, HOUR_MS, TestMarketSimulation, aggregateCandles, simulationFor, type SimCandle } from '../testMarketSimulation';
 import { pauseInsideHour, waveHours, type WaveHour } from '../simulationWaves';
@@ -10,6 +10,9 @@ import { pauseInsideHour, waveHours, type WaveHour } from '../simulationWaves';
  * series, with the base engine's block and day anchors unchanged.
  */
 
+// Preserve the original wave algorithm's contract independently of the later
+// forward scenario, which intentionally replaces future absolute anchors.
+const NEURIX = { ...CONFIGURED_NEURIX, scheduledScenario: undefined };
 const L = NEURIX.listingAt;
 const M15 = 15 * 60_000;
 const { marketStructure: _waves, ...NRX_BASE } = NEURIX;

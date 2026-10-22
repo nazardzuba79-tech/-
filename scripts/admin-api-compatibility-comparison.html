@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VOLTEX Admin — до / після</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f4f6;color:#151922;font:14px system-ui,sans-serif}header{padding:20px 24px;background:#fff;border-bottom:1px solid #dfe3e9}h1{font-size:20px;margin:0 0 6px}p{margin:0;color:#586475}.controls{display:flex;gap:16px;flex-wrap:wrap;margin-top:18px}label{display:grid;gap:5px;font-size:12px;color:#586475}select{height:36px;background:#fff;border:1px solid #cbd2dc;border-radius:6px;padding:0 12px;color:#151922}.comparison{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px}figure{margin:0;min-width:0}figcaption{font-weight:650;margin-bottom:10px}img{display:block;width:100%;height:auto;background:#fff;border:1px solid #dfe3e9}.hint{padding:0 20px 20px;font-size:12px}a{color:#4856bc}@media(max-width:760px){.comparison{grid-template-columns:1fr}}
+</style>
+<header><h1>VOLTEX Admin: до / після</h1><p>Фактичні збірки. Однакові синтетичні дані та розміри екрана; production не використовується.</p>
+<div class="controls"><label>Сторінка<select id="page"><option value="users">Користувачі</option><option value="users-qa-user-1">Картка користувача</option><option value="deposits">Поповнення</option><option value="withdrawals">Виведення</option><option value="kyc">KYC</option><option value="otc">OTC</option><option value="wallets">Адреси поповнення</option><option value="audit-log">Журнал дій</option><option value="listings">Лістинги</option></select></label>
+<label>Розмір<select id="width"><option>1920</option><option>1440</option><option>1366</option><option>430</option><option>390</option><option>360</option></select></label>
+<label>Backend контракт<select id="mode"><option value="modern">Сучасні endpoints</option><option value="legacy">Старий API, нові endpoints → 404</option></select></label></div></header>
+<main class="comparison"><figure><figcaption>До — main d9b52648</figcaption><a id="before-link" target="_blank"><img id="before" alt="До змін"></a></figure><figure><figcaption>Після — кандидат на review</figcaption><a id="after-link" target="_blank"><img id="after" alt="Після змін"></a></figure></main>
+<p class="hint">Натисніть знімок, щоб відкрити оригінальний розмір. Сторонні шрифти заблоковані однаковою fixture CSP в обох збірках.</p>
+<script>
+const page=document.querySelector('#page'),width=document.querySelector('#width'),mode=document.querySelector('#mode');
+function render(){for(const variant of ['before','after']){const url=`/__qa/compatibility-evidence/${variant}/${mode.value}-${page.value}-${width.value}.png`;document.querySelector('#'+variant).src=url;document.querySelector('#'+variant+'-link').href=url}}
+for(const input of [page,width,mode])input.addEventListener('change',render);render();
+</script></html>

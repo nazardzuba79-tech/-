@@ -472,13 +472,11 @@ describe('spot and futures pair lists are unchanged', () => {
    * task found them.
    */
   const UNCHANGED: Record<string, string> = {
-    // The shared pair registry and favourites store.
-    'src/lib/pairList.ts': '4f9ea3cda06e73142565f2743914fe7858efe8efa5c2cf155ab653b509131a79',
-    // The spot terminal's pair list.
-    'src/components/PairListSidebar.tsx': '18ff998b1bd5b9dd97e6e49b53bbf8d1627c0ca209410ba9d59cbad4216d4625',
-    // FuturesPairList is guarded semantically below rather than by a byte
-    // hash: it may read ONE reference field (7d change) but still must not
-    // derive the executable market universe from the catalogue.
+    // pairList.ts and PairListSidebar.tsx were byte-pinned here until the
+    // Spot «7д %» column (owner, 2026-10-03). Like FuturesPairList they are
+    // now guarded semantically below: the Spot list may read ONE reference
+    // field (the 7d change, via lib/change7d) but its rows still come only
+    // from the live ticker feed, never from catalogue entries.
   };
 
   it('Futures reads only safe 7d reference data; the catalogue cannot define markets', () => {
@@ -507,6 +505,20 @@ describe('spot and futures pair lists are unchanged', () => {
       expect(source).not.toMatch(/tradingPairs\s*=\s*\[/);
       expect(source).not.toMatch(/tradingPairs\.push/);
     }
+  });
+
+  it('Spot rows still come from the ticker feed; New uses only shared listing metadata', () => {
+    const spot = code('src/components/PairListSidebar.tsx');
+    const pairs = code('src/lib/pairList.ts');
+    // The narrow Spot rail no longer reads catalogue 7d data. The only
+    // discovery metadata it uses is listingAt from the already-shared
+    // test-market store, so «Новые» cannot manufacture an executable pair.
+    expect(spot).toContain('setTickers(Array.from(tickerMap.values()))');
+    expect(spot).toContain('filterAndSortPairs(tickersForSort, {');
+    expect(spot).toContain('const { assets: listedAssets } = useTestMarkets();');
+    expect(spot).toContain('Date.parse(asset.listingAt)');
+    expect(spot).not.toMatch(/catalogueStore|useCatalogue|getAssetCatalogue|tradingPairs|useChange7d|pairChange7d/);
+    expect(pairs).not.toMatch(/catalogueStore|getAssetCatalogue|tradingPairs/);
   });
 
   it('leaves the pair-list modules byte-identical', () => {

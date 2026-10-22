@@ -110,6 +110,19 @@ export class FuturesMarketRegistry {
     }
   }
 
+  /** A restart has no previous listing in memory. Even when the price feed
+   *  is unavailable, recover contracts already held in the database once so
+   *  the listing gate cannot strand their positions or resting orders.
+   *  A failed database read remains unknown and is retried on the next
+   *  refresh; a successful one adds no recurring idle database reads. */
+  private async keepPreviousListing(): Promise<string[]> {
+    if (!this.inFlightKnown) {
+      const inFlight = await this.symbolsInFlight();
+      this.symbols = [...new Set([...this.symbols, ...inFlight])];
+    }
+    return this.symbols;
+  }
+
   /**
    * Canonical symbols that are genuinely Trading USDT-settled perpetuals
    * on the venue, or `null` when the universe has not loaded.
@@ -131,7 +144,7 @@ export class FuturesMarketRegistry {
     } catch (err) {
       // Keeps the previous set. Never falls back to "no markets".
       console.error('[FuturesMarketRegistry] Ticker refresh failed, keeping previous listing:', err);
-      return this.symbols;
+      return this.keepPreviousListing();
     }
 
     const volumeBySymbol = new Map<string, number>();
@@ -149,7 +162,7 @@ export class FuturesMarketRegistry {
 
     if (volumeBySymbol.size === 0) {
       console.error('[FuturesMarketRegistry] Ticker feed returned no usable pairs, keeping previous listing');
-      return this.symbols;
+      return this.keepPreviousListing();
     }
 
     // The real-perpetual restriction, applied only when the venue universe

@@ -13,12 +13,20 @@ on:
     paths:
       - 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'
       - 'frontend/src/pages/trade-terminal/FuturesOrderPanelRefinement.css'
+      - 'frontend/src/pages/trade-terminal/TerminalGraphite.css'
       - 'frontend/src/pages/FuturesPage.tsx'
       - 'frontend/src/pages/trade-terminal/VoltexTerminalSystem.css'
       - 'frontend/src/pages/trade-terminal/TerminalMobileParity.css'
+      - 'frontend/src/pages/trade-terminal/TerminalMobileHeader.css'
+      - 'frontend/src/pages/trade-terminal/SpotMobileCompact.css'
+      - 'frontend/src/pages/trade-terminal/FuturesMobileCompact.css'
+      - 'frontend/src/components/TerminalMarketSwitch.tsx'
+      - 'frontend/src/lib/terminalMarketSwitch.ts'
+      - 'frontend/src/lib/useMediaQuery.ts'
+      - 'frontend/src/lib/__tests__/mobileTradeDeposit.test.ts'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/lib/__tests__/terminalMobileParity.test.ts'
-      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/lib/cfdCandles.ts'
       - 'frontend/src/lib/__tests__/terminalDesignSystem.test.ts'
       - 'frontend/src/components/FuturesOrderForm.tsx'
       - 'frontend/src/components/FuturesPositionsPanel.tsx'
@@ -31,7 +39,16 @@ on:
       - 'frontend/src/lib/referenceBook.ts'
       - 'frontend/src/lib/__tests__/futuresVisualPolish.test.ts'
       - 'scripts/qa-futures-visual-polish.cjs'
+      - 'scripts/qa-futures-proportions.cjs'
       - 'scripts/qa-spot-cfd-terminal.cjs'
+      - 'scripts/qa-vta-presentation.cjs'
+      - 'scripts/qa-chart-ruler-label.cjs'
+      - 'scripts/qa-chart-ruler-timeframes.cjs'
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/lib/chartViewport.ts'
+      - 'frontend/src/components/ChartDrawingLayer.tsx'
+      - 'frontend/src/lib/chartDrawings.ts'
+      - 'frontend/src/lib/drawingGeometry.ts'
       - 'frontend/src/pages/trade-terminal/TerminalPreviewPolish.css'
       - 'frontend/src/components/TickerBar.tsx'
       - 'frontend/src/components/CfdTickerBar.tsx'
@@ -61,9 +78,11 @@ jobs:
       - name: Frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Brief guards
-        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/terminalDesignSystem.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/referenceBook.test.ts frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts frontend/src/lib/__tests__/futuresProTerminal.test.ts
+        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/terminalDesignSystem.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/referenceBook.test.ts frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts frontend/src/lib/__tests__/futuresProTerminal.test.ts frontend/src/lib/__tests__/mobileTradeDeposit.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
+      - name: Ruler math, presentation and trading preservation
+        run: npx jest --runInBand frontend/src/lib/__tests__/chartDrawings.test.ts frontend/src/lib/__tests__/rulerMeasure.test.ts frontend/src/lib/__tests__/rulerLabel.test.ts frontend/src/lib/__tests__/rulerPresentation.test.ts frontend/src/lib/__tests__/tradingViewRulerLayer.test.ts frontend/src/lib/__tests__/chartTrading.test.ts frontend/src/lib/__tests__/spotChartPriceFormat.test.ts
       - name: Disposable browser tooling
         run: |
           npm install --prefix /tmp/visual-polish-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
@@ -74,14 +93,34 @@ jobs:
           sudo ln -s /tmp/visual-polish-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
       - name: Futures browser QA at desktop and 320, 360, 390, 430 mobile widths
         run: node scripts/qa-futures-visual-polish.cjs --label ci
+      - name: Real Futures proportions, all desktop widths and mobile
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-futures-proportions.cjs --phase after --widths 1920,1664,1600,1550,1531,1440,1366,390 --out docs/qa/futures-proportions-ci
       - name: Spot and CFD mobile browser QA at 320, 360, 390, 430
         run: node scripts/qa-spot-cfd-terminal.cjs
+      - name: VTA source-specific connection and readable measurement card
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-vta-presentation.cjs
+      - name: NRX ruler labels, actual plot bounds, handles and live end
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-chart-ruler-label.cjs --label ci --widths 1440,1366,390
+      - name: A ruler between 4h bars stays on its candles, not the plot's left edge
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-chart-ruler-timeframes.cjs --label ci
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: futures-visual-polish-${{ github.sha }}
           path: |
             docs/qa/futures-visual-polish/ci-*
+            docs/qa/futures-proportions-ci/*
             docs/qa/spot-cfd-terminal/*
+            output/vta-presentation/*
+            output/chart-ruler-label/*
+            output/chart-ruler-timeframes/*
           retention-days: 7
           if-no-files-found: warn

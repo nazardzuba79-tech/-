@@ -34,7 +34,11 @@ import type { SyntheticCopyResponse } from './canonical/types';
  *     milliseconds instead of replaying history.
  *  2. When the published section belongs to an earlier UTC day, the
  *     request is answered with it at once and the day's append runs after
- *     the response. It is real, previously confirmed data; its
+ *     the response — started only once the response has been sent, because
+ *     started alongside it the synchronous replay took the container's CPU
+ *     and that response waited for it anyway. The same holds for a section
+ *     from an earlier build, after a deploy. It is real, previously
+ *     confirmed data; its
  *     `simulation.simulatedAt` says which day it is, and the client already
  *     marks a section older than today as stale. The next refresh carries
  *     the new day. Nothing is fabricated and no history is rewritten: the
@@ -52,6 +56,9 @@ import type { SyntheticCopyResponse } from './canonical/types';
  *     a few minutes after midnight UTC — just after the 00:00 funding
  *     settlement has woken the database anyway — so the first visitor of
  *     the day normally finds it already done.
+ *  6. Likewise, a process started by a deploy prepares its build's sections
+ *     once, shortly after start-up, so the first visitor after a deploy
+ *     normally finds them already done.
  */
 
 export type MarketplaceSection = SyntheticCopyResponse & Record<string, unknown>;
@@ -125,6 +132,17 @@ export interface MarketplaceSnapshotOptions {
   dailyRefresh?: boolean;
   /** Monotonic clock for measuring a refresh. */
   elapsed?: () => number;
+  /** Prepare both sections this many ms after the process starts, once, so
+   *  the first visitor after a deploy finds this build's section ready. */
+  warmOnStartMs?: number;
+}
+
+export interface SectionOptions {
+  /** Settles once the response carrying this answer has been sent. When the
+   *  answer is the confirmed previous section, the heavy refresh waits for
+   *  it: started together, the replay holds a small container's only CPU
+   *  and the response that did not need it waits anyway. */
+  answered?: PromiseLike<unknown>;
 }
 
 export const INLINE_REFRESH_BUDGET_MS = 10_000;
@@ -152,22 +170,32 @@ export class MarketplaceSnapshots {
     this.build = options.build !== undefined ? options.build : resolveBuildCommit(process.env);
     this.dailyRefresh = options.dailyRefresh ?? false;
     this.elapsed = options.elapsed ?? (() => Number(process.hrtime.bigint() / 1_000_000n));
+    if (options.warmOnStartMs !== undefined) {
+      const timer = setTimeout(() => { void this.warm(); }, options.warmOnStartMs);
+      timer.unref?.();
+    }
   }
 
   /** The strategy's section for the marketplace. See the header comment. */
-  async section(strategy: PerformanceStrategy): Promise<MarketplaceSection> {
+  async section(strategy: PerformanceStrategy, options: SectionOptions = {}): Promise<MarketplaceSection> {
     this.armDailyRefresh();
     const today = utcDay(this.now());
     const published = await this.published(strategy);
     if (published && this.isCurrent(published, today)) return published.section;
-    const refresh = this.refresh(strategy);
     // Nothing confirmed yet for this strategy anywhere: the authoritative
     // path is the only honest answer, once.
-    if (!published) return refresh;
-    refresh.catch(error => console.error(`[copy-trading] ${strategy} marketplace refresh failed: `
-      + (error instanceof Error ? error.message : 'unknown')));
+    if (!published) return this.refresh(strategy);
     const measured = this.lastRefreshMs.get(strategy);
-    if (measured === undefined || measured > this.inlineBudgetMs) return published.section;
+    const waits = measured !== undefined && measured <= this.inlineBudgetMs;
+    // Answering with the confirmed section: start the refresh only once that
+    // answer has been sent (2 in the header).
+    if (!waits && options.answered) {
+      const start = () => { void this.refreshInBackground(strategy); };
+      Promise.resolve(options.answered).then(start, start);
+      return published.section;
+    }
+    const refresh = this.refreshInBackground(strategy);
+    if (!waits) return published.section;
     // This process has done the day's work inside the budget before, so wait
     // for today's figures — but never past the budget: a refresh that is
     // slower today than it was yesterday answers with the confirmed previous
@@ -179,6 +207,27 @@ export class MarketplaceSnapshots {
       deadline.unref?.();
     });
     return Promise.race([refresh.catch(() => published.section), late]).finally(() => clearTimeout(deadline));
+  }
+
+  /** Prepare each section this build does not have yet, one at a time. */
+  async warm(): Promise<void> {
+    const today = utcDay(this.now());
+    for (const strategy of ['nazar', 'ksenia'] as const) {
+      try {
+        const published = await this.published(strategy);
+        if (!published || !this.isCurrent(published, today)) await this.refresh(strategy);
+      } catch (error) {
+        console.error(`[copy-trading] ${strategy} marketplace warm-up failed: `
+          + (error instanceof Error ? error.message : 'unknown'));
+      }
+    }
+  }
+
+  private refreshInBackground(strategy: PerformanceStrategy): Promise<MarketplaceSection> {
+    const refresh = this.refresh(strategy);
+    refresh.catch(error => console.error(`[copy-trading] ${strategy} marketplace refresh failed: `
+      + (error instanceof Error ? error.message : 'unknown')));
+    return refresh;
   }
 
   /** Stop the daily timer. For tests and shutdown. */

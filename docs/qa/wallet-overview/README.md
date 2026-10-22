@@ -5,7 +5,7 @@ Captured locally on 2026-09-17 with `scripts/qa-wallet-overview.cjs` against
 account model and the real performance engine on an in-memory fixture — no
 production data, no external service).
 
-- `overview-owner-1440.png` — the owner's Cross account: Super VIP mark, the
+- `overview-owner-1440.png` — the owner's Cross account: Supreme VIP mark, the
   two accounts (Funding marked as already counted), the distribution ring, the
   equity curve with profit by period, an empty deposits/withdrawals list.
 - `overview-ordinary-1440.png` — an ordinary account, the same design with its

@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
@@ -21,7 +22,7 @@ export function adminWalletsRouter(prisma: PrismaClient): Router {
   // Every chain this deployment could accept deposits on, with whichever
   // address currently applies (a saved override, or the env-var default) —
   // so the admin always sees exactly what users are shown.
-  router.get('/admin/wallets', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+  router.get('/admin/wallets', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
     const overrides = await treasuryWallets.list();
     const overrideByChain = new Map(overrides.map((o) => [o.chain, o]));
 
@@ -64,11 +65,11 @@ export function adminWalletsRouter(prisma: PrismaClient): Router {
     });
 
     res.json(result);
-  });
+  }));
 
   const upsertSchema = z.object({ address: z.string().trim().min(1).max(256) });
 
-  router.put('/admin/wallets/:chain', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.put('/admin/wallets/:chain', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const { chain } = req.params;
     if (!KNOWN_CHAINS.includes(chain)) {
       return res.status(404).json({ error: `Unknown chain: ${chain}` });
@@ -83,10 +84,10 @@ export function adminWalletsRouter(prisma: PrismaClient): Router {
     });
 
     res.json(row);
-  });
+  }));
 
   // Reverts the chain back to its env-var default address.
-  router.delete('/admin/wallets/:chain', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.delete('/admin/wallets/:chain', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const { chain } = req.params;
     await treasuryWallets.remove(chain);
     await prisma.auditLog.create({
@@ -94,7 +95,7 @@ export function adminWalletsRouter(prisma: PrismaClient): Router {
     });
 
     res.json({ ok: true });
-  });
+  }));
 
   return router;
 }

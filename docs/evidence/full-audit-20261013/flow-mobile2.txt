@@ -1,0 +1,19 @@
+PASS F1 Futures opens on the trade tab with the ticket visible — mark=83298.94
+PASS F1b no horizontal overflow — overflow=0
+PASS F1c bottom navigation present
+PASS F1d the order family is a native select on the phone
+PASS F2 a limit long placed from the phone ticket rests in the book — posts=[{"s":201,"m":"POST","p":"/api/v1/futures/orders"}] open=1 toast="Нет открытых позиций | ✓Ордер размещён"
+PASS F2b the «Открыть Лонг» button was reachable without scrolling the ticket off screen — long button initially in viewport
+PASS F3 positions tab opens
+PASS F3b open orders list shows the order — Последние 100 ордеров · Все контракты Обновить счёт 13.10.2026, 21:39:03 BTC/USDT 10x Лимит Купить 74,969 0.01 0 Открыт — Отменить
+PASS F4 cancel from the phone list removes it — open=0
+PASS F5 chart tab shows a chart that fills the width — {"x":0,"y":364,"width":334,"height":261.5}
+PASS F5b no overflow on the chart tab — overflow=0
+PASS F6 no page errors on the phone Futures flow
+PASS S1 Spot opens on the trade tab with the ticket — mkt=83341.4
+PASS S1b no horizontal overflow — overflow=0
+PASS S2 a limit buy placed from the phone ticket rests — posts=[{"s":201,"m":"POST","p":"/api/v1/orders"}] open=1 toast="✓Ордер размещён"
+PASS S3 the account tab lists the open order — 21:39:49 13.10.2026 BTC/USDT Лимит Купить 41,671 0.001 0 41.671 USDT — Открыт Отменить
+PASS S4 cancel from the phone list removes it — open=0
+PASS S5 chart tab shows a chart that fills the width — {"x":0,"y":400,"width":310,"height":226.5}
+PASS S6 no page errors on the phone Spot flow

@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 import { v4 as uuidv4 } from 'uuid';
 import { CfdPositionService } from '../CfdPositionService';
 import { CfdMarketDataService } from '../../services/CfdMarketDataService';
@@ -9,23 +10,9 @@ function makeFakePrisma(opts?: { balances?: Record<string, { available: string; 
   const userCreatedAt = opts?.userCreatedAt ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
   const tx = {
+    $queryRaw: jest.fn(async () => []),
     user: { findUnique: jest.fn(async () => ({ id: 'u', createdAt: userCreatedAt })) },
-    futuresBalance: {
-      findUnique: jest.fn(async ({ where: { userId_asset: { userId, asset } } }: any) => {
-        const b = balances.get(`${userId}:${asset}`);
-        return b ? { ...b } : null;
-      }),
-      update: jest.fn(async ({ where: { userId_asset: { userId, asset } }, data }: any) => {
-        const existing = balances.get(`${userId}:${asset}`) ?? { available: '0', locked: '0' };
-        balances.set(`${userId}:${asset}`, { available: data.available ?? existing.available, locked: data.locked ?? existing.locked });
-      }),
-      upsert: jest.fn(async ({ where: { userId_asset: { userId, asset } }, create, update }: any) => {
-        const key = `${userId}:${asset}`;
-        if (!balances.has(key)) balances.set(key, { available: create.available, locked: create.locked });
-        else balances.set(key, { available: update.available, locked: update.locked });
-        return { ...balances.get(key)! };
-      }),
-    },
+    futuresBalance: walletDelegate(balances),
     cfdPosition: {
       findFirst: jest.fn(async ({ where }: any) => {
         for (const p of positions.values()) {

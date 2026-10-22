@@ -1,0 +1,52 @@
+[
+  {
+    "cards": "block",
+    "client": 380,
+    "inputFill": "rgb(24, 35, 52)",
+    "inputFont": "16px",
+    "scroll": 380,
+    "sortBackground": "none",
+    "table": "none",
+    "width": 390
+  },
+  {
+    "cards": "block",
+    "client": 758,
+    "inputFill": "rgb(24, 35, 52)",
+    "inputFont": "16px",
+    "scroll": 758,
+    "sortBackground": "none",
+    "table": "none",
+    "width": 768
+  },
+  {
+    "cards": "none",
+    "client": 1356,
+    "inputFill": "rgb(24, 35, 52)",
+    "inputFont": "13px",
+    "scroll": 1356,
+    "sortBackground": "none",
+    "table": "block",
+    "width": 1366
+  },
+  {
+    "cards": "none",
+    "client": 1430,
+    "inputFill": "rgb(24, 35, 52)",
+    "inputFont": "13px",
+    "scroll": 1430,
+    "sortBackground": "none",
+    "table": "block",
+    "width": 1440
+  },
+  {
+    "cards": "none",
+    "client": 1910,
+    "inputFill": "rgb(24, 35, 52)",
+    "inputFont": "13px",
+    "scroll": 1910,
+    "sortBackground": "none",
+    "table": "block",
+    "width": 1920
+  }
+]

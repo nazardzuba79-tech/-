@@ -1,0 +1,100 @@
+{
+  "baselineSha": "1b045ab34c09e2b95931dd46c5f3a1c5f54ad1c4",
+  "baseline": {
+    "passed": 73,
+    "failed": 10
+  },
+  "branch": {
+    "passed": 73,
+    "failed": 10
+  },
+  "sameFailedNames": true,
+  "sameDiagnosticBodiesAfterWorktreeNormalization": false,
+  "unchangedTestFiles": [
+    {
+      "name": "homepageTailwindUtilities.test.ts",
+      "identical": true
+    },
+    {
+      "name": "marketUniverseScale.test.ts",
+      "identical": true
+    },
+    {
+      "name": "noProviderBranding.test.ts",
+      "identical": true
+    },
+    {
+      "name": "plainLanguage.test.ts",
+      "identical": true
+    },
+    {
+      "name": "registerWalletTailwindOwnership.test.ts",
+      "identical": true
+    },
+    {
+      "name": "sharedHeaderStylesheetOwnership.test.ts",
+      "identical": true
+    },
+    {
+      "name": "supportForm.test.ts",
+      "identical": true
+    }
+  ],
+  "failures": [
+    {
+      "suite": "homepageTailwindUtilities.test.ts",
+      "name": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 1\n\n  Array [\n-   \"src/pages/CardPage.tsx\",\n+   \"x\",\n  ]\n"
+    },
+    {
+      "suite": "marketUniverseScale.test.ts",
+      "name": "direct venue reads stay in the approved public-data adapters contains no upstream market API host outside its exact public adapter allowlist",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 7\n\n- Array []\n+ Array [\n+   \"src\\\\lib\\\\directFuturesReference.ts:6: api.bybit.com\",\n+   \"src\\\\lib\\\\directFuturesReference.ts:7: api.bytick.com\",\n+   \"src\\\\lib\\\\futuresCandles.ts:98: api.bybit.com\",\n+   \"src\\\\lib\\\\futuresCandles.ts:98: api.bytick.com\",\n+   \"src\\\\lib\\\\spotPublicMarket.ts:8: api.kraken.com\",\n+ ]\n"
+    },
+    {
+      "suite": "noProviderBranding.test.ts",
+      "name": "customer-facing components render no provider branding has no provider name in customer presentation code",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"src\\\\components\\\\TradingViewAdvancedChart.tsx:34: return `BYBIT:${compact}${market === 'futures' ? '.P' : ''}`;\",\n+ ]\n"
+    },
+    {
+      "suite": "plainLanguage.test.ts",
+      "name": "hardcoded component copy speaks about the product, not about the plumbing",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 7\n\n- Array []\n+ Array [\n+   \"frontend\\\\src\\\\lib\\\\customerError.ts: Этот аккаунт торгует только в симуляции\",\n+   \"frontend\\\\src\\\\pages\\\\admin\\\\AdminListingsPage.tsx: simulationProfile\",\n+   \"frontend\\\\src\\\\pages\\\\admin\\\\AdminListingsPage.tsx: simulationProfile\",\n+   \"frontend\\\\src\\\\pages\\\\admin\\\\AdminListingsPage.tsx: Симуляции новых рынков: создание, приватный предпросмотр и публикация — без изменения кода и деплоя.\",\n+   \"frontend\\\\src\\\\pages\\\\admin\\\\DeleteUserDialog.tsx: демо/тестовые данные;\",\n+ ]\n"
+    },
+    {
+      "suite": "registerWalletTailwindOwnership.test.ts",
+      "name": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 3\n+ Received  + 3\n\n  Array [\n-   \"src/pages/crypto-card-final/crypto-card.css\",\n-   \"src/pages/home/home-tailwind-utilities.css\",\n-   \"src/pages/settings-arctic/tailwind-utilities.css\",\n+   \"s\",\n+   \"s\",\n+   \"s\",\n  ]\n"
+    },
+    {
+      "suite": "sharedHeaderStylesheetOwnership.test.ts",
+      "name": "blanket route resets cannot move the shared authenticated header and none of them shifts a box without excluding the header",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 3\n\n- Array []\n+ Array [\n+   \"src\\\\index.css: .page-mesh > *\",\n+ ]\n"
+    },
+    {
+      "suite": "sharedHeaderStylesheetOwnership.test.ts",
+      "name": "blanket route resets cannot move the shared authenticated header finds the page-root resets this repo actually ships",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\nExpected: ArrayContaining [\"src/pages/auth-shell/auth-shell.css\", \"src/pages/copy-trading-bolt/CopyTradingBolt.css\", \"src/pages/crypto-card-final/crypto-card.css\", \"src/pages/home/home.css\", \"src/pages/markets-bolt/MarketsBolt.css\", \"src/pages/trade-terminal/TradeTerminal.css\", \"src/pages/wallet-v3/wallet.css\"]\nReceived: [\"src\\\\components\\\\DepositCatalogueDialog.css\", \"src\\\\index.css\", \"src\\\\mobile-review\\\\review.css\", \"src\\\\pages\\\\analytics\\\\analytics.css\", \"src\\\\pages\\\\auth-shell\\\\auth-shell.css\", \"src\\\\pages\\\\banking\\\\BankingPage.css\", \"src\\\\pages\\\\copy-trading-bolt\\\\CopyTradingBolt.css\", \"src\\\\pages\\\\crypto-card-final\\\\crypto-card.css\", \"src\\\\pages\\\\home\\\\hero-reference.css\", \"src\\\\pages\\\\home\\\\home-sapphire.css\", …]\n"
+    },
+    {
+      "suite": "sharedHeaderStylesheetOwnership.test.ts",
+      "name": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  -  1\n+ Received  + 14\n\n- Array []\n+ Array [\n+   \"src\\\\index.css: .main-nav\",\n+   \"src\\\\index.css: .mobile-menu\",\n+   \"src\\\\index.css: .nav-mobile-menu\",\n+   \"src\\\\index.css: .main-nav\",\n+   \"src\\\\index.css: .mobile-menu\",\n+   \"src\\\\index.css: .nav-mobile-menu.open\",\n+   \"src\\\\index.css: .global-header .main-nav\",\n+   \"src\\\\index.css: .global-header .mobile-menu\",\n+   \"src\\\\index.css: .global-header .nav-mobile-menu.open\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio .global-header .main-nav\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio .global-header .mobile-menu\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio .nav-mobile-menu.open\",\n+ ]\n"
+    },
+    {
+      "suite": "sharedHeaderStylesheetOwnership.test.ts",
+      "name": "the shared authenticated header does not depend on a lazy stylesheet only the audited auth and terminal scopes override a header class",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 15\n+ Received  + 71\n\n  Array [\n-   \"src/pages/auth-shell/auth-shell.css: .vx-auth-work .header-icon\",\n-   \"src/pages/auth-shell/auth-shell.css: .vx-auth-work .header-icon:hover\",\n-   \"src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header\",\n-   \"src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .deposit-button\",\n-   \"src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-actions\",\n-   \"src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-left\",\n-   \"src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .header-brand\",\n-   \"src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .header-extra-action\",\n-   \"src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header\",\n-   \"src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header .header-actions\",\n-   \"src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header .header-left\",\n-   \"src/pages/trade-terminal/TerminalMobileParity.css: .trade-terminal.vx-terminal .global-header\",\n-   \"src/pages/trade-terminal/TerminalPanelTiles.css: #archive-terminal-preview .global-header\",\n-   \"src/pages/trade-terminal/VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .global-header\",\n-   \"src/pages/trade-terminal/VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .header-brand\",\n+   \"src\\\\index.css: .brand-separator\",\n+   \"src\\\\index.css: .deposit-button\",\n+   \"src\\\\index.css: .deposit-button:active\",\n+   \"src\\\\index.css: .deposit-button:hover\",\n+   \"src\\\\index.css: .global-header\",\n+   \"src\\\\index.css: .global-header .brand-separator\",\n+   \"src\\\\index.css: .global-header .deposit-button\",\n+   \"src\\\\index.css: .global-header .header-actions > .nav-wallet-link.nav-active::after\",\n+   \"src\\\\index.css: .global-header .header-icon\",\n+   \"src\\\\index.css: .global-header .main-nav\",\n+   \"src\\\\index.css: .global-header .main-nav .nav-item\",\n+   \"src\\\\index.css: .global-header .mobile-menu\",\n+   \"src\\\\index.css: .global-header .nav-mobile-menu\",\n+   \"src\\\\index.css: .global-header .nav-mobile-menu.open\",\n+   \"src\\\\index.css: .global-header::before\",\n+   \"src\\\\index.css: .header-actions\",\n+   \"src\\\\index.css: .header-brand\",\n+   \"src\\\\index.css: .header-extra-action\",\n+   \"src\\\\index.css: .header-icon\",\n+   \"src\\\\index.css: .header-icon:hover\",\n+   \"src\\\\index.css: .header-left\",\n+   \"src\\\\index.css: .main-nav\",\n+   \"src\\\\index.css: .mobile-menu\",\n+   \"src\\\\index.css: .mobile-menu:hover\",\n+   \"src\\\\index.css: .nav-chevron\",\n+   \"src\\\\index.css: .nav-dropdown\",\n+   \"src\\\\index.css: .nav-item\",\n+   \"src\\\\index.css: .nav-item-wrap\",\n+   \"src\\\\index.css: .nav-item.nav-active\",\n+   \"src\\\\index.css: .nav-item.nav-active::after\",\n+   \"src\\\\index.css: .nav-item.nav-secondary\",\n+   \"src\\\\index.css: .nav-item.nav-secondary:hover\",\n+   \"src\\\\index.css: .nav-item:hover\",\n+   \"src\\\\index.css: .nav-item:hover .nav-chevron\",\n+   \"src\\\\index.css: .nav-mobile-menu\",\n+   \"src\\\\index.css: .nav-mobile-menu.open\",\n+   \"src\\\\index.css: .profile-control > .nav-chevron\",\n+   \"src\\\\index.css: .top-nav-profile-avatar\",\n+   \"src\\\\index.css: .top-nav-profile-btn\",\n+   \"src\\\\index.css: .top-nav-profile-menu\",\n+   \"src\\\\index.css: .top-nav-profile-wrap\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio .global-header .brand-separator\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio .global-header .main-nav\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio .global-header .mobile-menu\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio .global-header .nav-item.nav-secondary\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio .nav-mobile-menu\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio .nav-mobile-menu.open\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio > .global-header\",\n+   \"src\\\\index.css: .trade-terminal.terminal-studio > .global-header .header-brand\",\n+   \"src\\\\index.css: :is(.futures-reference,.market-reference) > .global-header\",\n+   \"src\\\\index.css: :is(.futures-reference,.market-reference) > .global-header .deposit-button\",\n+   \"src\\\\index.css: :is(.futures-reference,.market-reference) > .global-header .header-icon\",\n+   \"src\\\\index.css: :is(.futures-reference,.market-reference) > .global-header .nav-active\",\n+   \"src\\\\index.css: :is(.futures-reference,.market-reference) > .global-header .nav-active::after\",\n+   \"src\\\\index.css: :is(.futures-reference,.market-reference) > .global-header .nav-item\",\n+   \"src\\\\index.css: :is(.futures-reference,.market-reference) > .global-header::before\",\n+   \"src\\\\pages\\\\auth-shell\\\\auth-shell.css: .vx-auth-work .header-icon\",\n+   \"src\\\\pages\\\\auth-shell\\\\auth-shell.css: .vx-auth-work .header-icon:hover\",\n+   \"src\\\\pages\\\\trade-terminal\\\\ArchiveTerminalPreview.css: #archive-terminal-preview .global-header\",\n+   \"src\\\\pages\\\\trade-terminal\\\\ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .deposit-button\",\n+   \"src\\\\pages\\\\trade-terminal\\\\ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-actions\",\n+   \"src\\\\pages\\\\trade-terminal\\\\ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-left\",\n+   \"src\\\\pages\\\\trade-terminal\\\\ArchiveTerminalPreview.css: #archive-terminal-preview .header-brand\",\n+   \"src\\\\pages\\\\trade-terminal\\\\ArchiveTerminalPreview.css: #archive-terminal-preview .header-extra-action\",\n+   \"src\\\\pages\\\\trade-terminal\\\\FuturesMobile.css: #archive-terminal-preview .global-header\",\n+   \"src\\\\pages\\\\trade-terminal\\\\FuturesMobile.css: #archive-terminal-preview .global-header .header-actions\",\n+   \"src\\\\pages\\\\trade-terminal\\\\FuturesMobile.css: #archive-terminal-preview .global-header .header-left\",\n+   \"src\\\\pages\\\\trade-terminal\\\\TerminalMobileParity.css: .trade-terminal.vx-terminal .global-header\",\n+   \"src\\\\pages\\\\trade-terminal\\\\TerminalPanelTiles.css: #archive-terminal-preview .global-header\",\n+   \"src\\\\pages\\\\trade-terminal\\\\VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .global-header\",\n+   \"src\\\\pages\\\\trade-terminal\\\\VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .header-brand\",\n  ]\n"
+    },
+    {
+      "suite": "supportForm.test.ts",
+      "name": "mail secrets, SMTP settings and support recipient configuration stay out of frontend code",
+      "error": "Error: expect(received).toEqual(expected) // deep equality\n\n- Expected  - 1\n+ Received  + 1\n\n  Object {\n    \"f\": \"C:\\\\Users\\\\nazar\\\\Documents\\\\Codex\\\\2026-09-08\\\\files-pasted-by-the-user-voltex\\\\work\\\\WORKTREE\\\\frontend\\\\src\\\\pages\\\\admin\\\\DeleteUserDialog.tsx\",\n-   \"hit\": false,\n+   \"hit\": true,\n  }\n"
+    }
+  ],
+  "diagnosticDifference": "Only stylesheet discovery inventory adds the new scoped arbitrage.css; other nine normalized error bodies are identical. All ten assertions still fail on pristine main due to Windows separator handling.",
+  "sourceTreeUnmodified": true,
+  "baselineFrontendTypecheck": "PASS",
+  "baselineFrontendBuild": "PASS",
+  "buildWarning": "Existing Vite chunks >500 kB warning"
+}

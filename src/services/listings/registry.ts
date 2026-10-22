@@ -8,9 +8,10 @@
  * A caller never waits more than the given `waitMs` for it; a failed read
  * keeps the last good snapshot and is not retried before REFRESH_MS.
  */
-import { listingSimulationConfig, type PublishedListing } from './listingConfig';
+import { publishedListingAsset, type PublishedListing } from './listingConfig';
 import { setManagedListingAssets } from './managedSnapshot';
 import { listingStoreFromEnvironment, UnconfiguredListingStore, type ListingStore } from './store';
+import { aithLeaseDeadline, isAith, validAithLease } from '../../shared/aithPublication';
 
 export const REFRESH_MS = 60_000;
 
@@ -18,12 +19,20 @@ export class ManagedListingRegistry {
   private listings: PublishedListing[] = [];
   private attemptedAt: number | null = null;
   private inFlight: Promise<void> | null = null;
+  private aithValidUntil = 0;
 
   constructor(private readonly store: ListingStore, private readonly clock: () => number = Date.now) {}
 
   get configured(): boolean { return !(this.store instanceof UnconfiguredListingStore); }
 
-  snapshot(): readonly PublishedListing[] { return this.listings; }
+  snapshot(): readonly PublishedListing[] { return this.listings.filter(item => !isAith(item.config.symbol) || this.clock() < this.aithValidUntil); }
+
+  /** Administrative replacement verification always waits for a new authority read. */
+  async authoritative(): Promise<readonly PublishedListing[]> {
+    if (this.inFlight) await this.inFlight;
+    await this.refresh();
+    return this.snapshot();
+  }
 
   /** Forget the age of the snapshot (after a publish): the next caller re-reads. */
   invalidate(): void { this.attemptedAt = null; }
@@ -31,12 +40,22 @@ export class ManagedListingRegistry {
   private refresh(): Promise<void> {
     if (this.inFlight) return this.inFlight;
     this.attemptedAt = this.clock();
+    const startedAt = this.attemptedAt;
     this.inFlight = this.store.published()
       .then((published) => {
-        this.listings = published.listings;
-        setManagedListingAssets(published.listings.map((listing) => listingSimulationConfig(listing.config)));
+        const aith = published.listings.find(item => isAith(item.config.symbol));
+        this.aithValidUntil = aith?.readLease && validAithLease(aith.readLease, aith.version, aith.readLease.issuedAt)
+          ? aithLeaseDeadline(aith.readLease, startedAt) : 0;
+        this.listings = published.listings.filter(item => !isAith(item.config.symbol) || this.clock() < this.aithValidUntil);
+        // Staged and paused listings arrive unarmed: known (restricted) everywhere, open nowhere.
+        setManagedListingAssets(this.listings.map(publishedListingAsset), this.aithValidUntil);
       })
-      .catch(() => { /* keep the last good snapshot */ })
+      .catch(() => {
+        // AITH must never fall back to an unfenced publication; other markets retain their existing policy.
+        this.listings = this.listings.filter(item => !isAith(item.config.symbol));
+        this.aithValidUntil = 0;
+        setManagedListingAssets(this.listings.map(publishedListingAsset));
+      })
       .finally(() => { this.inFlight = null; });
     return this.inFlight;
   }
@@ -44,7 +63,8 @@ export class ManagedListingRegistry {
   /** Refresh if the snapshot is older than REFRESH_MS, waiting at most `waitMs`. */
   async ensureFresh(waitMs = 1_500): Promise<void> {
     if (!this.configured) return;
-    if (this.attemptedAt !== null && this.clock() - this.attemptedAt < REFRESH_MS && !this.inFlight) return;
+    const expiredAith = this.listings.some(item => isAith(item.config.symbol)) && this.clock() >= this.aithValidUntil;
+    if (!expiredAith && this.attemptedAt !== null && this.clock() - this.attemptedAt < REFRESH_MS && !this.inFlight) return;
     const refresh = this.refresh();
     if (waitMs <= 0) return;
     let timer: ReturnType<typeof setTimeout> | undefined;

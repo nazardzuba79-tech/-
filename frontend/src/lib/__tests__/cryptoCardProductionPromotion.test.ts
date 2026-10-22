@@ -17,8 +17,11 @@ const source = (file: string) => readFileSync(resolve(repository, file), 'utf8')
 // Owner-requested /card hero polish advances only its scoped RU copy, hook,
 // hero markup/composition and CSS. Shared/Homepage output is frozen separately
 // by cryptoCardVisualConsistency; no product data or other sections change.
+// Owner-requested fee clarification advances only FeesSection, its seven
+// dictionaries and the existing FAQ answer binding. All eligibility,
+// application, hero markup and unrelated-source fingerprints remain frozen.
 const approvedCardSources: Record<string, string> = {
-  "frontend/src/pages/crypto-card-final/CardApplication.tsx": "f4e475d2b609d19e8e12194fb13837b6026a9bfe759248e2a16690f60028d4d9",
+  "frontend/src/pages/crypto-card-final/CardApplication.tsx": "3e7e7df0b2d344e05813f97c7f473fa127d833ed1c59e7cabebb9b72373e85f7",
   "frontend/src/pages/crypto-card-final/cardApplicationState.ts": "526e909eb7b161ee41bffdf474e1412082ce991d20a6b43e9cb54c8ed1913042",
   "frontend/src/pages/crypto-card-final/crypto-card.css": "0d9ef53cf2c5886590c25c42a0463ed346adb9286bb69faeb18668b5fc8a344b",
   "frontend/src/pages/crypto-card-final/useCardCopy.ts": "15c6a83116b08528e6bbd471d655017fa91551bb6a47291269911050f612f015",
@@ -30,7 +33,7 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/ControlSecuritySection.tsx": "08973402bfa700cccf851a4406fd3d42da81843fb7189fd1b3319c4ca0245203",
   "frontend/src/pages/crypto-card-final/components/CurrencyMarks.tsx": "da410cf0811f2671e394a997546fc27889f3f5ae0cce7cc2e9101114debc0e38",
   "frontend/src/pages/crypto-card-final/components/FaqSection.tsx": "cf38dd5e7db1820e9cce6a66f71ae2c264f6737a25f12f97f1e42a0a82cda1e1",
-  "frontend/src/pages/crypto-card-final/components/FeesSection.tsx": "dde9bf2fdfa33bba88f1c08027edd2e722b507682f5ccf7ce87422e941fc0c0f",
+  "frontend/src/pages/crypto-card-final/components/FeesSection.tsx": "adbc8ce5d34a4a021c4f64d69359f0ee634ea62c12ece450706523df71e4987c",
   "frontend/src/pages/crypto-card-final/components/FinalCtaFooter.tsx": "64682b2e76f1251aae617614cb434979fbf501036f5765c8eb5826a575b22b12",
   "frontend/src/pages/crypto-card-final/components/GlobalUseSection.tsx": "4c525768116bd5300e2897665d70833625e4b050df2668d76f500888f83a18a6",
   "frontend/src/pages/crypto-card-final/components/Header.tsx": "6e3337f6e583b561937637baa54b0ee8b83134d5759a70e5ea0e3abec66eb2b0",
@@ -41,12 +44,13 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/SubscriptionsSection.tsx": "7c04ff3acdd5711ab31e971b6fc2736551a3c17a4dd09da06ee32828175a670b",
   "frontend/src/pages/crypto-card-final/components/VoltexCard.tsx": "9ad5f670186e370e1a5d0bf2c0ff21650017a59387d5e746e89361933367b19f",
   // Preserve concurrent production f183f77: Russia and all-ATM wording only.
-  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "11023b06c0035609e55d11909aabcd4cdbc7e0887cc3589c6397a55dacbdb721",
+  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "9ce9ccbcc0597433456163ed1f96724ae0ebc0558f43f5e26639d59a8c4bfdc1",
   "frontend/src/pages/crypto-card-final/data/cardCopy.ts": "10a568929e79f3819824c60b90edc7ca864d9897a2c64fe59c8e09570ee6a4fc",
+  // Owner-requested 2026-10-10: remove external-provider caveat from Card marketing; keep VOLTEX 0% fees.
   // Preserve owner copy cleanup already on starting main bd41a81.
-  "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "a6acb0f2e9fe5b36b485e1e637fb17ec34d1975729691ba2515f824c591bea62",
+  "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "3b62df09c68969fd09185095220c28e9471554a5371f211041fb5dfff0bbb4d1",
   "frontend/src/pages/crypto-card-final/data/currencies.ts": "bdaa4ad2d7dfb2343c6c9d8bfb0f3ec717c9dc929febba27f93d1948b12ceba7",
-  "frontend/src/pages/crypto-card-final/data/faq.ts": "02fdb896f64036d3e5e41a95955b6c175fb15d70e1a8b6bf502011cf56842b91",
+  "frontend/src/pages/crypto-card-final/data/faq.ts": "4e3ad7d15ffc829c3d98015fde68f4d491a8ca65584e2db35264c500736776d9",
   "frontend/src/pages/crypto-card-final/data/products.ts": "f60770553a97b8fc0784247d0380919327fa998661e62cffe88681d92bf45c29",
   "frontend/src/pages/crypto-card-final/data/services.ts": "05e4d374f148d62bd4e24f6e757077eb1245b45f77bc246718356239795e1862",
   "frontend/src/pages/CardPage.tsx": "a6fb72e68a9edc6860edc2f49de4d374efc32f917b0e5ad43059b9e8853cf285",
@@ -72,7 +76,10 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/copy-trading-bolt/FeaturedAvatarContext.tsx": "08d27c9108d4b5e0d0cd972cc1d7739ccba71c545bdb85bcc3ffebe5ddc633bd",
   "frontend/src/pages/copy-trading-bolt/KseniaReview.css": "fd12204a82592875691f06aa00400fa98ee3a75ea9257bd30dc825a435218134",
   "frontend/src/pages/copy-trading-bolt/TraderAvatarArt.tsx": "6fa00d21147656ac4ec0a56ee908bb1f1a05f777cbaf2044a7866c2bd11f51d7",
-  "frontend/src/pages/copy-trading-bolt/traderVisuals.ts": "c87ac8d078d4d9038a33b18ddded787630a93834a7444042cc7899723ae4e74a",
+  // Owner-approved PR #536: four initial avatars gain vector emblems and
+  // locked aliases gain stable mark/palette identities. Art-only baseline
+  // a94b5479; every other collateral/financial fingerprint stays unchanged.
+  "frontend/src/pages/copy-trading-bolt/traderVisuals.ts": "4a266d99fbd5a9367777489cf437cab264138b410abfc4ace641f4ad1e9ba1c4",
   "frontend/src/pages/copy-trading-bolt/useCopyLists.ts": "322cc598e49f4d64a3d058d0d8f232ddce43e5ce3e604bfd88de7cd9cac10480",
   "frontend/src/lib/dailyReturnChart.ts": "6f6e1c0394cc3c581dac03b6b2e7e2ffb4dd49fa85454135bf667c7dc82f6407",
   "frontend/src/lib/copyTradingMoney.ts": "1d29908f9517ed1f9de08965fc84cda4d39c29577dbba5dce62b50488d7da539"
@@ -140,11 +147,61 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
         text = text.replace(current, original);
       }
     }
+    if (file === 'frontend/src/pages/home/HomeFooter.tsx') {
+      // Authenticated-only Support removes the public contact entry. Restore only
+      // that markup for the historical card-design fingerprint comparison.
+      text = text.replace("import { Logo } from '../../components/Logo';\n\n", "import { Logo } from '../../components/Logo';\nimport { openSupportWidget } from '../../lib/supportWidget';\n");
+      const closedLinks = '              </ul>';
+      expect(text.split(closedLinks)).toHaveLength(2);
+      text = text.replace(closedLinks, "                {/* Contact isn't a route — it opens the support chat that is\n                    already mounted on every page, for signed-out visitors\n                    too. A link would have had nowhere honest to point. */}\n                {col.titleKey === 'home.footer.support' && (\n                  <li>\n                    <button\n                      type=\"button\"\n                      onClick={openSupportWidget}\n                      className=\"text-left text-[12px] text-home-muted transition-colors duration-150 hover:text-white\"\n                    >\n                      {t('home.footer.contact')}\n                    </button>\n                  </li>\n                )}\n" + closedLinks);
+      // Arbitrage moved under OTC. Restore the former product-link line only
+      // for this historical card-design fingerprint comparison.
+      const current = "      { labelKey: 'nav.copyTrading', to: '/copy-trading' },\n      { labelKey: 'nav.card', to: '/card' },";
+      const original = "      { labelKey: 'nav.copyTrading', to: '/copy-trading' },\n      { labelKey: 'nav.arbitrage', to: '/arbitrage' },\n      { labelKey: 'nav.card', to: '/card' },";
+      expect(text.split(current)).toHaveLength(2);
+      text = text.replace(current, original);
+    }
+    if (file === 'frontend/src/components/Footer.tsx' || file === 'frontend/src/pages/home/HomeFooter.tsx') {
+      // The new legal destination is the sole regulatory-page addition.
+      const licenceLink = file === 'frontend/src/components/Footer.tsx'
+        ? "          <Link to=\"/legal/licenses\" style={styles.link}>{t('licenses.title')}</Link>\n"
+        : "      { labelKey: 'licenses.title', to: '/legal/licenses' },\n";
+      expect(text.split(licenceLink)).toHaveLength(2);
+      text = text.replace(licenceLink, '');
+      // The knowledge hub adds footer links. Only these exact additions are
+      // undone here so the older card-design digest remains comparable; every
+      // other byte keeps the original digest.
+      const helpLinks: [string, string][] = file === 'frontend/src/components/Footer.tsx'
+        ? [["          <Link to=\"/academy\" style={styles.link}>\n            {t('nav.academy')}\n          </Link>\n          <Link to=\"/academy/faq\" style={styles.link}>\n            {t('help.tab.faq')}\n          </Link>\n", '']]
+        : [["    links: [\n      { labelKey: 'home.footer.helpCenter', to: '/academy/faq' },\n      { labelKey: 'nav.academy', to: '/academy' },\n    ],", "    links: [{ labelKey: 'home.footer.helpCenter', to: '/legal/support' }],"]];
+      for (const [current, original] of helpLinks) {
+        expect(text.split(current)).toHaveLength(2);
+        text = text.replace(current, original);
+      }
+    }
     expect({ file, sha256: digest(text) }).toEqual({ file, sha256: expected });
   }
   expect(source('frontend/src/App.tsx')).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
   expect(existsSync(resolve(repository, 'frontend/src/components/PrelaunchNotice.tsx'))).toBe(false);
   expect(existsSync(resolve(repository, 'frontend/src/components/prelaunchNotice.css'))).toBe(false);
+});
+
+test('CopyTradingPage preserves the approved base except the exact display-only demo provider wiring', () => {
+  // PR #536 authorizes exactly this import and wrapper around the existing
+  // avatar/content tree. Normalize those three required lines only, then
+  // compare all remaining bytes with fresh base 2e7acf15. This protects
+  // marketplace data, financial adapters, routing and eligibility unchanged.
+  let text = source('frontend/src/pages/CopyTradingPage.tsx');
+  const additions = [
+    "import { DemoRoiProvider } from './copy-trading-bolt/DemoRoiContext';\n",
+    '            <DemoRoiProvider nazar={synthetic} ksenia={ksenia}>\n',
+    '            </DemoRoiProvider>\n',
+  ];
+  for (const addition of additions) {
+    expect(text.split(addition)).toHaveLength(2);
+    text = text.replace(addition, '');
+  }
+  expect(digest(text)).toBe('920963c23a9da98710f0c4805455ddb7ba97eb9e4cababc6043d5b350d45f112');
 });
 
 test('the released currency section uses its translated balance-yield copy and unchanged currency assets', () => {
@@ -181,21 +238,44 @@ test('Card remains an authenticated standalone route, independent of Spot termin
   expect(trade).not.toMatch(/(?:getCardApplication|submitCardApplication)\s*\(/);
 });
 
-test('all 196 Card-related shared translations retain owner-approved English product branding', () => {
+test('Card product branding stays unchanged while only seven navigation labels are shortened', () => {
   // The seven dictionaries in language order, exactly as they appeared in
-  // the single file before the split — so the 196 entries below are the
-  // same 196 lines, in the same order, and the digest is UNCHANGED. That
-  // the hash still matches is the proof the split moved bytes without
-  // touching one of them.
+  // the single file before the split. The 189 Card entries stay in that order;
+  // only the approved short navigation labels are normalized below so the
+  // unchanged digest still protects every other Card-related string.
   const text = readAllLocales();
   expect(text).not.toMatch(/^\s*'card\./m);
   // Snapshot only the reviewed Card/Home/Auth/support entry points, across all
   // seven dictionaries. The complete Card product dictionaries remain byte-exact
   // in approvedCardSources above. An unrelated Trade error label must not force
   // replacement of a whole-file i18n hash or invalidate these Card guarantees.
-  const entries = text.split('\n').filter(line => /^\s*'(?:nav\.card|authShell\.(?:lead|(?:benefit\.)?card\.[^']+)|home\.(?:card\.[^']+|cta\.getCard|faq\.[qa]6)|support\.subject\.CARD)':/.test(line)).map(line => line.trim());
-  expect(entries).toHaveLength(196);
-  expect(digest(entries.join('\n'))).toBe('d691d191b62d83a8306b5c82132bde2f9833885d6bbb35a494bee2afc43876ce');
+  // The separately approved aircraft auth design changes authShell.lead.
+  // Exclude those seven hero paragraphs, while protecting every Card string.
+  // This digest is computed from the same filtered entries of trusted main
+  // c08127baa837b5288bd0febc1ce2dc20212044aa, before the auth redesign.
+  const entries = text.split('\n').filter(line => /^\s*'(?:nav\.card|authShell\.(?:benefit\.)?card\.[^']+|home\.(?:card\.[^']+|cta\.getCard|faq\.[qa]6)|support\.subject\.CARD)':/.test(line)).map(line => line.trim());
+  expect(entries).toHaveLength(189);
+  const shortLabels = Array(7).fill("'nav.card': 'Card',");
+  expect(entries.filter(line => line.startsWith("'nav.card':"))).toEqual(shortLabels);
+  // Restore only the exact owner-approved navigation wording for the old digest;
+  // all product, Home, Auth and support strings remain fully covered.
+  const restored = entries.map(line => shortLabels.includes(line) ? "'nav.card': 'Crypto Card'," : line);
+  expect(digest(restored.join('\n'))).toBe('b6548330beff12ac62e78ca35c4742f55e2872ad9c3bde3b0ed9e5880f17a6a4');
+});
+
+test('Card application shows server-backed eligibility progress without changing eligibility decisions', () => {
+  const application = source('frontend/src/pages/crypto-card-final/CardApplication.tsx');
+  expect(application).toContain('const action = ready ? cardApplicationAction(ready.data) : null;');
+  expect(application).toContain('eligibility.verificationApproved');
+  expect(application).toContain('eligibility.depositEligible');
+  expect(application).toContain('eligibility.tradingVolumeEligible');
+  expect(application).toContain('eligibility.qualifyingDepositUsd, 5000');
+  expect(application).toContain('eligibility.qualifyingTradingVolumeUsd, 50000');
+  expect(application).toContain('eligibility.depositValuationComplete');
+  expect(application).toContain('eligibility.tradingVolumeValuationComplete');
+  expect(application).toContain('const pct = done ? 100');
+  expect(application).toContain("done ? \`≥ \${usd(Math.max(0, current))}\` : '—'");
+  expect(application).toContain('// explain the server result to the customer; they never unlock the CTA.');
 });
 
 test('Card API uses normal authenticated backend requests without review or client eligibility branches', () => {

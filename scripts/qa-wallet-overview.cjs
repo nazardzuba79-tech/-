@@ -9,7 +9,7 @@
  *     the VoLtex Card tile linking to /card and no disabled item;
  *   - the headline total is the SAME figure the Unified Trading section
  *     prints, never a sum of the two accounts;
- *   - Super VIP is on the owner's Cross account and on nobody else's;
+ *   - Supreme VIP is on the owner's Cross account and on nobody else's;
  *   - profit by period comes from the real series, dash where it cannot;
  *   - the ordinary account gets the same layout with its own (small) real
  *     figures — and the empty-activity list is an empty state, not samples;
@@ -145,7 +145,7 @@ async function run() {
           check(`${tag}: the headline is the two accounts added once — Unified + Финансирование`, funding && unified && Math.abs(money(funding.value) + money(unified.value) - money(ov.total)) < 0.005, `${funding?.value} + ${unified?.value} = ${ov.total}`);
         }
         if (mode === 'owner') {
-          check(`${tag}: Super VIP is on the owner's Cross account`, ov.badge === 'Super VIP', String(ov.badge));
+          check(`${tag}: Supreme VIP is on the owner's Cross account`, ov.badge === 'Supreme VIP', String(ov.badge));
         } else {
           check(`${tag}: no tier badge on an ordinary account`, ov.badge === null, String(ov.badge));
         }

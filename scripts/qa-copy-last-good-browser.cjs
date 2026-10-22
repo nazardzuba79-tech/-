@@ -175,7 +175,12 @@ let server, browser;
   const service = new CopyPerformanceService(fixture.db, () => new Date(`${date}T12:00:00Z`));
   const app = express();
   const writes = [];
+  // Logout also ends the server session (remembered devices, 2026-10-03). It is
+  // a session write, not a financial one: answered here, counted, and allowed
+  // only during the logout phase. Any other write is still a finding.
+  const logouts = [];
   app.use((req, res, next) => {
+    if (req.method === 'POST' && req.path === '/api/v1/auth/logout') { logouts.push(phase); return res.json({ status: 'ok' }); }
     if (!['GET', 'HEAD'].includes(req.method)) { writes.push(`${req.method} ${req.path}`); return res.status(405).json({ error: 'Local QA is read-only' }); }
     res.setHeader('Cache-Control', 'no-store'); next();
   });
@@ -331,8 +336,10 @@ let server, browser;
   await page.locator('.back-button').click();
   await page.locator('.trader-card[data-trader-id="VX-KSENIA"]').waitFor();
   const navigateFrom = await page.evaluate(() => window.__copyQa.timeline.length);
-  const away = page.locator('a[href="/card"]').first();
-  if (await away.count()) await away.click(); else await page.goto(origin + '/card', { waitUntil: 'domcontentloaded' });
+  // Follow the real compact drawer at laptop widths; never target the
+  // hidden desktop duplicate or replace SPA navigation with page.goto.
+  if (!await page.locator('a[href="/card"]:visible').count()) await page.locator('.nav-burger').click();
+  await page.locator('a[href="/card"]:visible').first().click();
   await page.waitForURL('**/card');
   // A history URL changes before a lazy route has committed. Without waiting
   // for departure, the return locators can match the OLD cards and the later
@@ -343,8 +350,8 @@ let server, browser;
   await page.locator('.trader-card[data-trader-id="VX-001"]').waitFor({ state: 'detached', timeout: 30000 });
   await page.locator('.trader-card[data-trader-id="VX-KSENIA"]').waitFor({ state: 'detached', timeout: 30000 });
   const departed = { url: page.url(), cards: await page.locator('.trader-card[data-trader-id]').count() };
-  const backLink = page.locator('a[href="/copy-trading"]').first();
-  if (await backLink.count()) await backLink.click(); else await page.goto(origin + '/copy-trading', { waitUntil: 'domcontentloaded' });
+  if (!await page.locator('a[href="/copy-trading"]:visible').count()) await page.locator('.nav-burger').click();
+  await page.locator('a[href="/copy-trading"]:visible').first().click();
   await page.waitForURL('**/copy-trading');
   await page.locator('.trader-card[data-trader-id="VX-001"]').waitFor({ timeout: 30000 });
   await page.locator('.trader-card[data-trader-id="VX-KSENIA"]').waitFor({ timeout: 30000 });
@@ -454,6 +461,8 @@ let server, browser;
   if (Object.values(report.keysByPhase).some(entry => entry.keys.some(key => key.startsWith('unknown:')))) finding('A snapshot key belongs to no session this QA created: ' + JSON.stringify(report.keysByPhase));
   await contextA.close();
 
+  report.logoutRequests = logouts;
+  if (logouts.length !== 1 || logouts[0] !== 'logout') finding('Expected exactly one server logout, during logout: ' + JSON.stringify(logouts));
   report.readOnly = writes.length === 0; report.writes = writes;
   if (writes.length) finding('The QA server received write requests: ' + writes.join(', '));
   if (report.pageErrors.length) finding(`Page errors: ${report.pageErrors.join(' | ')}`);

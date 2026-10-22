@@ -7,8 +7,8 @@
  * Nothing here touches the chart, React or the DOM.
  */
 import {
-  dashArray, distanceToPolyline, drawingExtensions, drawingRange, drawingRangeLines, drawingRetracements,
-  drawingStyle, formatDrawingPrice, pointInPolygon, positionMetrics, readableTextOn,
+  DEFAULT_MEASURE_INFO, dashArray, distanceToPolyline, drawingExtensions, drawingRange, drawingRangeLines, drawingRetracements,
+  drawingStyle, formatDrawingPrice, livePoints, pointInPolygon, positionMetrics, readableTextOn, TV_BLUE,
   type DrawingPoint, type DrawingRange, type ScreenPoint, type StoredDrawing,
 } from './chartDrawings';
 
@@ -21,6 +21,10 @@ export interface DrawingView {
   height: number;
   lang: string;
   range(a: DrawingPoint, b: DrawingPoint): DrawingRange;
+  /** The latest candle as a point (its close): where a live-ended ruler ends. */
+  live?: DrawingPoint | null;
+  /** The chart's own price formatting, for the drag guide's price tag. */
+  formatPrice?(price: number): string;
 }
 
 export type Primitive =
@@ -28,9 +32,12 @@ export type Primitive =
   | { t: 'poly'; points: ScreenPoint[]; closed: boolean; stroke?: string; fill?: string; fillOpacity?: number; width: number; dash?: string; opacity?: number }
   | { t: 'ellipse'; cx: number; cy: number; rx: number; ry: number; stroke: string; fill?: string; fillOpacity?: number; width: number; dash?: string }
   | { t: 'text'; x: number; y: number; text: string; color: string; size: number; anchor: 'start' | 'middle' | 'end'; weight?: number }
-  | { t: 'label'; x: number; y: number; lines: string[]; bg: string; color: string; place: 'above' | 'below' | 'center' | 'right' | 'left'; size?: number };
+  | { t: 'label'; x: number; y: number; lines: string[]; bg: string; color: string; place: 'above' | 'below' | 'center' | 'right' | 'left'; size?: number; variant?: 'measurement'; accent?: string; maxWidth?: number;
+      /** The trader's own text line and how it is set (Text tab). */
+      note?: { line: number; bold?: boolean; italic?: boolean } };
 
-export interface DrawingAnchor { id: number | 'target' | 'stop' | 'width'; x: number; y: number }
+/** `edge0` / `edge1`: a ruler's top and bottom edge, moving only that anchor's price. */
+export interface DrawingAnchor { id: number | 'target' | 'stop' | 'width' | 'edge0' | 'edge1'; x: number; y: number }
 
 export interface DrawingGeometry {
   prims: Primitive[];
@@ -44,14 +51,51 @@ export interface DrawingGeometry {
 const LABEL_CHAR = 6.4;
 const LABEL_LINE = 15;
 
+/** Line pitch of a measurement card: 18px at its 12px default, growing with the font. */
+export const measurementLine = (size: number) => Math.round(size * 1.5);
+
 /** The rectangle a boxed label occupies, for painting and hit-testing alike. */
 export function labelBox(p: Extract<Primitive, { t: 'label' }>) {
   const size = p.size ?? 11;
-  const w = Math.max(...p.lines.map((l) => l.length)) * LABEL_CHAR * (size / 11) + 16;
-  const h = p.lines.length * LABEL_LINE * (size / 11) + 8;
+  const measured = p.variant === 'measurement';
+  const naturalWidth = Math.max(...p.lines.map((l) => l.length)) * LABEL_CHAR * (size / 11) + (measured ? 24 : 16);
+  const w = measured && p.maxWidth !== undefined ? Math.min(naturalWidth, p.maxWidth) : naturalWidth;
+  const h = measured ? p.lines.length * measurementLine(size) + 16 : p.lines.length * LABEL_LINE * (size / 11) + 8;
   const x = p.place === 'right' ? p.x + 8 : p.place === 'left' ? p.x - w - 8 : p.x - w / 2;
   const y = p.place === 'above' ? p.y - h - 6 : p.place === 'below' ? p.y + 6 : p.y - h / 2;
   return { x, y, w, h };
+}
+
+/** Dock the 40px object toolbar clear of the ruler result AND of every
+ *  anchor handle; never move the anchors. The first clear dock wins: the top
+ *  band, then under the result card, then under a handle it would have
+ *  covered (2026-10-14: on a 390px phone the dock under the card landed on
+ *  the end handle, which could no longer be dragged). */
+export function rulerToolbarTop(geometry: DrawingGeometry | undefined, height = 40): number {
+  const card = geometry?.prims.find((p) => p.t === 'label' && p.variant === 'measurement');
+  const box = card && card.t === 'label' ? labelBox(card) : null;
+  const gap = 8;
+  const clearOfCard = (top: number) => !box || box.y + box.h <= 0 || top + height <= box.y - gap || top >= box.y + box.h + gap;
+  const clearOfHandles = (top: number) => !geometry || geometry.anchors.every((a) => a.y + HIT_RADIUS <= top || a.y - HIT_RADIUS >= top + height);
+  const candidates = [gap, ...(box ? [box.y + box.h + gap] : []), ...(geometry?.anchors.map((a) => a.y + HIT_RADIUS + 2) ?? [])]
+    .filter((top) => top >= gap).sort((x, y) => x - y);
+  return candidates.find((top) => clearOfCard(top) && clearOfHandles(top)) ?? candidates.find(clearOfCard) ?? gap;
+}
+
+/**
+ * Where the floating toolbar goes for a selection the trader has not moved
+ * it for: TradingView's top band of the plot — centred, then at the right,
+ * then at the left — wherever it covers neither the drawing's label nor a
+ * handle; failing that, the first clear band below them (rulerToolbarTop).
+ */
+export function drawingToolbarPlacement(geometry: DrawingGeometry | undefined, plot: { width: number; height: number }, size: { w: number; h: number }) {
+  const gap = 8;
+  const avoid = [...(geometry?.boxes ?? []), ...(geometry?.anchors ?? []).map((a) => ({ x: a.x - HIT_RADIUS, y: a.y - HIT_RADIUS, w: HIT_RADIUS * 2, h: HIT_RADIUS * 2 }))];
+  const clear = (left: number, top: number) => avoid.every((b) => left + size.w + 4 <= b.x || left - 4 >= b.x + b.w || top + size.h + 4 <= b.y || top - 4 >= b.y + b.h);
+  const fit = (x: number) => Math.max(gap, Math.min(x, plot.width - size.w - gap));
+  const xs = [fit((plot.width - size.w) / 2), fit(plot.width - size.w - gap), fit(gap)];
+  for (const left of xs) if (clear(left, gap)) return { left, top: gap };
+  return { left: xs[0], top: rulerToolbarTop(geometry, size.h) };
 }
 
 function extendLine(a: ScreenPoint, b: ScreenPoint, view: DrawingView, back: boolean, forward: boolean): [ScreenPoint, ScreenPoint] {
@@ -76,7 +120,9 @@ const mid = (a: ScreenPoint, b: ScreenPoint) => ({ x: (a.x + b.x) / 2, y: (a.y +
  * Build a drawing's geometry. Returns null when an anchor cannot be placed
  * on screen (a price outside the scale's reach, or no chart yet).
  */
-export function drawingGeometry(drawing: StoredDrawing, view: DrawingView): DrawingGeometry | null {
+export function drawingGeometry(stored: StoredDrawing, view: DrawingView): DrawingGeometry | null {
+  // A live-ended ruler is painted, measured and hit-tested at the latest price.
+  const drawing = stored.followLast ? { ...stored, points: livePoints(stored, view.live) } : stored;
   const style = drawingStyle(drawing);
   const dash = dashArray(style.dash, style.width);
   const { color, width } = style;
@@ -107,10 +153,12 @@ export function drawingGeometry(drawing: StoredDrawing, view: DrawingView): Draw
     prims.push(prim);
     boxes.push(labelBox(prim));
   };
+  // «Фон» off leaves the area to click; only its paint goes. Its opacity is the trader's when set.
   const polyArea = (points: ScreenPoint[], f = fill, opacity = 0.2) => {
     if (!f) return;
-    prims.push({ t: 'poly', points, closed: true, fill: f, fillOpacity: opacity, width: 0 });
     areas.push(points);
+    if (style.fillOff) return;
+    prims.push({ t: 'poly', points, closed: true, fill: f, fillOpacity: style.fillOpacity ?? opacity, width: 0 });
   };
   const letters = (names: string[], up: boolean[]) => names.forEach((name, i) => {
     if (!pts[i] || !name) return;
@@ -295,24 +343,66 @@ export function drawingGeometry(drawing: StoredDrawing, view: DrawingView): Draw
       const [a, b] = pts;
       const range = view.range(drawing.points[0], drawing.points[1]);
       const down = range.priceDiff < 0;
-      const tone = kind === 'daterange' ? color : down ? '#f23645' : color;
+      // TradingView's measurement turns red on a fall; a colour the trader picked stays theirs.
+      const tone = kind === 'daterange' ? color : down && color === TV_BLUE ? '#f23645' : color;
+      const background = kind !== 'daterange' && down && (fill ?? TV_BLUE) === TV_BLUE ? '#f23645' : fill ?? tone;
       const x1 = Math.min(a.x, b.x), x2 = Math.max(a.x, b.x), y1 = Math.min(a.y, b.y), y2 = Math.max(a.y, b.y);
       const box = kind === 'pricerange' ? [{ x: x1, y: a.y }, { x: x2, y: a.y }, { x: x2, y: b.y }, { x: x1, y: b.y }]
         : kind === 'daterange' ? [{ x: a.x, y: y1 }, { x: b.x, y: y1 }, { x: b.x, y: y2 }, { x: a.x, y: y2 }]
         : [a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }];
-      polyArea(box, tone, 0.2);
+      polyArea(box, background, kind === 'ruler' ? 0.12 : 0.2);
       const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
       if (kind !== 'daterange') {
-        line({ x: cx, y: a.y }, { x: cx, y: b.y }, tone, 1);
-        prims.push({ t: 'poly', points: arrowHead({ x: cx, y: a.y }, { x: cx, y: b.y }, 8), closed: false, stroke: tone, width: 1 });
+        line({ x: cx, y: a.y }, { x: cx, y: b.y }, tone, width);
+        prims.push({ t: 'poly', points: arrowHead({ x: cx, y: a.y }, { x: cx, y: b.y }, 8), closed: false, stroke: tone, width });
       }
       if (kind !== 'pricerange') {
-        line({ x: a.x, y: cy }, { x: b.x, y: cy }, tone, 1);
-        prims.push({ t: 'poly', points: arrowHead({ x: a.x, y: cy }, { x: b.x, y: cy }, 8), closed: false, stroke: tone, width: 1 });
+        line({ x: a.x, y: cy }, { x: b.x, y: cy }, tone, width);
+        prims.push({ t: 'poly', points: arrowHead({ x: a.x, y: cy }, { x: b.x, y: cy }, 8), closed: false, stroke: tone, width });
       }
-      const lines = drawingRangeLines(range, view.lang, { price: kind !== 'daterange', date: kind !== 'pricerange' });
-      label({ x: cx, y: down ? y2 : y1, lines, bg: tone, color: readableTextOn(tone), place: down ? 'below' : 'above' });
+      const lines = drawingRangeLines(range, view.lang, { price: kind !== 'daterange', date: kind !== 'pricerange' }, style.info ?? DEFAULT_MEASURE_INFO);
+      // Split only the presentation when a long price/percentage pair cannot
+      // fit a phone plot. Keep every digit and both stored anchors unchanged.
+      const compact = kind === 'ruler';
+      const maxWidth = Math.max(24, view.width - 8);
+      if (compact && lines[0]?.length * LABEL_CHAR * ((style.fontSize ?? 12) / 11) + 24 > maxWidth) {
+        const separator = lines[0].indexOf(' (');
+        if (separator > 0) lines.splice(0, 1, lines[0].slice(0, separator), lines[0].slice(separator + 1));
+      }
+      // The trader's own words go last (Text tab), set bold or italic as chosen.
+      const own = drawing.text?.trim();
+      const note = own ? { line: lines.push(own) - 1, ...(style.bold ? { bold: true } : {}), ...(style.italic ? { italic: true } : {}) } : undefined;
+      // TradingView's label: filled with the measurement's colour, white text;
+      // «Фон метки» off leaves the text alone in that colour.
+      const labelBg = style.labelBgOff ? 'none' : style.labelBg ?? tone;
+      const rangeLabel: Extract<Primitive, { t: 'label' }> = {
+        t: 'label', x: cx, y: down ? y2 : y1, lines, bg: labelBg,
+        color: style.textColor ?? (style.labelBgOff ? tone : readableTextOn(labelBg)), size: style.fontSize ?? (compact ? 12 : 14), place: down ? 'below' : 'above',
+        ...(compact ? { variant: 'measurement' as const, accent: tone, maxWidth } : {}),
+        ...(note ? { note } : {}),
+      };
+      // Keep the larger card inside a small plot when its measurement is visible.
+      // Shift only the label; price/time anchors and the measured range stay intact.
+      if (lines.length && x2 >= 0 && x1 <= view.width && y2 >= 0 && y1 <= view.height) {
+        // Prefer the other side of an edge over clamping across its handle.
+        // Otherwise a top-edge ruler's endpoint/price line obscures its own text.
+        if (compact) {
+          const preferred = labelBox(rangeLabel);
+          if (rangeLabel.place === 'above' && preferred.y < 4
+            && rangeLabel.y + 6 + preferred.h <= view.height - 4) rangeLabel.place = 'below';
+          else if (rangeLabel.place === 'below' && preferred.y + preferred.h > view.height - 4
+            && rangeLabel.y - 6 - preferred.h >= 4) rangeLabel.place = 'above';
+        }
+        const box = labelBox(rangeLabel);
+        rangeLabel.x += Math.max(4, Math.min(box.x, view.width - box.w - 4)) - box.x;
+        rangeLabel.y += Math.max(4, Math.min(box.y, view.height - box.h - 4)) - box.y;
+      }
+      // Every «Информация» line switched off and no text: no label at all.
+      if (lines.length) label(rangeLabel);
       pointAnchors();
+      // A ruler's edges take a price-only handle each, mid-edge where the
+      // vertical arrow meets them: something to grab without a corner.
+      if (kind === 'ruler') anchors.push({ id: 'edge0', x: cx, y: a.y }, { id: 'edge1', x: cx, y: b.y });
       break;
     }
     case 'brush': case 'highlighter': {
@@ -411,6 +501,22 @@ const POSITION_WORDS: Record<string, { target: string; stop: string; ratio: stri
 
 export const HIT_RADIUS = 6;
 
+/**
+ * What the pointer can grab of a drawing. A locked object — its own lock or
+ * «Заблокировать рисунки» — keeps its lines, so a click still selects it and
+ * its toolbar can unlock it, but gives up its filled body and its label
+ * cards: a press inside a locked rectangle, a ruler's box or a position
+ * tool's zones and cards belongs to the chart, so the drag pans as on
+ * TradingView instead of dying on a shape that cannot move (owner,
+ * 2026-10-21: «графік не переміщується»). A drawing that is only a card
+ * (text, a note, a price label) keeps that card: it has no line to grab.
+ */
+export function hitGeometry(geometry: DrawingGeometry, frozen: boolean): Pick<DrawingGeometry, 'strokes' | 'areas' | 'boxes'> {
+  if (!frozen) return geometry;
+  const cardOnly = geometry.strokes.length === 0 && geometry.areas.length === 0;
+  return { strokes: geometry.strokes, areas: [], boxes: cardOnly ? geometry.boxes : [] };
+}
+
 /** How close the pointer is to this drawing: 0 inside an area or label, else the stroke distance. */
 export function geometryDistance(geometry: DrawingGeometry, p: ScreenPoint): number {
   for (const box of geometry.boxes) if (p.x >= box.x && p.x <= box.x + box.w && p.y >= box.y && p.y <= box.y + box.h) return 0;
@@ -433,7 +539,10 @@ export function anchorAt(geometry: DrawingGeometry, p: ScreenPoint, radius = 7):
  */
 export function moveAnchor(drawing: StoredDrawing, anchor: DrawingAnchor['id'], to: DrawingPoint): StoredDrawing {
   const points = drawing.points.map((p) => ({ ...p }));
-  if (anchor === 'target') points[1] = { ...points[1], price: to.price };
+  if (anchor === 'edge0' || anchor === 'edge1') {
+    const i = anchor === 'edge0' ? 0 : 1;
+    points[i] = { ...points[i], price: to.price };
+  } else if (anchor === 'target') points[1] = { ...points[1], price: to.price };
   else if (anchor === 'stop') points[2] = { ...points[2], price: to.price };
   else if (anchor === 'width') { points[1] = { ...points[1], time: to.time }; points[2] = { ...points[2], time: to.time }; }
   else if (drawing.kind === 'long' || drawing.kind === 'short') points[0] = { time: to.time, price: to.price };

@@ -15,8 +15,12 @@ import {
   LEVERAGE_TIERS,
   FUNDING_INTERVAL_HOURS,
 } from '../../config/futuresConfig';
+import { VOLTEX_FUNDING } from '../../config/voltexFunding';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 import { isSimulationOnlyUser } from '../../private-trading/access';
+import { asyncRoute } from '../asyncRoute';
+import { futuresRefusalBody } from '../../futures/refusalCode';
+import { transferWalletBalance } from '../../services/WalletTransferService';
 
 const placeOrderSchema = z
   .object({
@@ -105,6 +109,7 @@ export function futuresRouter(
   protectionService: FuturesProtectionService
 ): Router {
   const router = Router();
+  const authenticate = asyncRoute(requireAuthOrApiKey(prisma));
 
   router.get('/futures/config', (_req, res) => {
     res.json({
@@ -116,12 +121,16 @@ export function futuresRouter(
       // (funding lands on UTC multiples of it — see FundingRateService's
       // msUntilNextFundingBoundary). No risk or liquidation logic here.
       fundingIntervalHours: FUNDING_INTERVAL_HOURS,
+      // VOLTEX's own fixed funding per settlement, by side (signed fraction
+      // of position value: + credited, − debited) — the rates every account
+      // settles at (config/voltexFunding.ts). Display only.
+      fundingCashflow: { version: VOLTEX_FUNDING.version, long: VOLTEX_FUNDING.longCashflow, short: VOLTEX_FUNDING.shortCashflow },
       highLeverageWarningThreshold: HIGH_LEVERAGE_WARNING_THRESHOLD,
       leverageTiers: LEVERAGE_TIERS,
     });
   });
 
-  router.post('/futures/orders', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+  router.post('/futures/orders', authenticate, requireTradePermission, asyncRoute(async (req: ApiAuthedRequest, res) => {
     if (refuseSimulationOnly(req, res)) return;
     const parsed = placeOrderSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -154,18 +163,19 @@ export function futuresRouter(
         trades: result.trades.map((t) => ({ ...t, price: t.price.toString(), quantity: t.quantity.toString() })),
       });
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      // The engine's sentence, plus a code for the refusals the client can name.
+      res.status(400).json(futuresRefusalBody(err));
     }
-  });
+  }));
 
-  router.delete('/futures/orders/:orderId', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+  router.delete('/futures/orders/:orderId', authenticate, requireTradePermission, asyncRoute(async (req: ApiAuthedRequest, res) => {
     if (refuseSimulationOnly(req, res)) return;
     const cancelled = await positionService.cancelOrder(req.userId!, req.params.orderId);
     if (!cancelled) return res.status(404).json({ error: 'Order not found or not cancellable' });
     res.status(204).send();
-  });
+  }));
 
-  router.get('/futures/orders/me', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+  router.get('/futures/orders/me', authenticate, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const statusParam = req.query.status as string | undefined;
     const statuses = statusParam?.split(',').map((s) => s.trim()).filter(Boolean);
     const orders = await prisma.futuresOrder.findMany({
@@ -189,7 +199,7 @@ export function futuresRouter(
         createdAt: o.createdAt,
       }))
     );
-  });
+  }));
 
   router.get('/futures/orderbook/:symbol', (req, res) => {
     const snapshot = engine.getBook(symbolFromSlug(req.params.symbol)).snapshot();
@@ -201,7 +211,7 @@ export function futuresRouter(
     });
   });
 
-  router.get('/futures/mark-price/:symbol', async (req, res) => {
+  router.get('/futures/mark-price/:symbol', asyncRoute(async (req, res) => {
     const symbol = symbolFromSlug(req.params.symbol);
     const [markPrice, indexPrice] = await Promise.all([
       markPriceService.getMarkPrice(symbol),
@@ -209,9 +219,9 @@ export function futuresRouter(
     ]);
     if (!markPrice || !indexPrice) return res.status(502).json({ error: `No index price available for ${symbol}` });
     res.json({ symbol, markPrice: markPrice.toString(), indexPrice: indexPrice.toString() });
-  });
+  }));
 
-  router.get('/futures/funding-rate/:symbol', async (req, res) => {
+  router.get('/futures/funding-rate/:symbol', asyncRoute(async (req, res) => {
     const symbol = symbolFromSlug(req.params.symbol);
     const limit = Math.min(Number(req.query.limit) || 50, 200);
     const history = await prisma.fundingRateRecord.findMany({
@@ -228,7 +238,7 @@ export function futuresRouter(
         appliedAt: r.appliedAt,
       })),
     });
-  });
+  }));
 
   /**
    * Open interest: the total size of every position currently open on a
@@ -242,7 +252,7 @@ export function futuresRouter(
    * A contract nobody has traded yet honestly reports zero rather than
    * being hidden or filled in from somewhere else.
    */
-  router.get('/futures/open-interest/:symbol', async (req, res) => {
+  router.get('/futures/open-interest/:symbol', asyncRoute(async (req, res) => {
     const symbol = symbolFromSlug(req.params.symbol);
     const [aggregate, markPrice] = await Promise.all([
       prisma.futuresPosition.aggregate({
@@ -260,9 +270,16 @@ export function futuresRouter(
       // it with — never a fabricated stand-in.
       openInterestValue: markPrice ? size.times(markPrice).toString() : null,
     });
-  });
+  }));
 
-  router.get('/futures/positions', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+  /** Funding settled per position (FundingPayment, signed: + received, − paid), one grouped read. */
+  const fundingByPosition = async (ids: string[]): Promise<Map<string, BigNumber>> => {
+    if (!ids.length) return new Map();
+    const rows = await prisma.fundingPayment.groupBy({ by: ['positionId'], where: { positionId: { in: ids } }, _sum: { amount: true } });
+    return new Map(rows.map((r) => [r.positionId, new BigNumber(r._sum.amount?.toString() ?? '0')]));
+  };
+
+  router.get('/futures/positions', authenticate, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const positions = await prisma.futuresPosition.findMany({ where: { userId: req.userId, status: 'OPEN' } });
     const markPrices = new Map<string, BigNumber | null>();
     for (const symbol of new Set(positions.map((p) => p.symbol))) {
@@ -273,6 +290,7 @@ export function futuresRouter(
     // whole list, and the positions table the trader is already watching
     // shows real server state without any new timer anywhere.
     const protection = await protectionService.activeProtectionByPosition(positions.map((p) => p.id));
+    const funding = await fundingByPosition(positions.map((p) => p.id));
 
     res.json(
       positions.map((p) => {
@@ -294,12 +312,15 @@ export function futuresRouter(
           liquidationPrice: p.liquidationPrice.toString(),
           markPrice: markPrice?.toString() ?? null,
           unrealizedPnl: unrealizedPnl?.toString() ?? null,
-          // What this position has ALREADY banked — partial closes and
-          // anything else settled into it. Reported alongside the
-          // unrealized figure, never merged into it: they are different
-          // money, and adding them would double-count a partial close that
-          // is already out of the remaining size.
-          realizedPnl: p.realizedPnl.toString(),
+          // What this position has ALREADY banked — partial closes and the
+          // funding settled on it, each counted once (funding is in the
+          // wallet since its settlement and never re-applied at the close).
+          // Reported alongside the unrealized figure, never merged into it:
+          // they are different money, and adding them would double-count a
+          // partial close that is already out of the remaining size.
+          realizedPnl: new BigNumber(p.realizedPnl.toString()).plus(funding.get(p.id) ?? 0).toString(),
+          // The funding part of `realizedPnl`, on its own.
+          fundingNet: (funding.get(p.id) ?? new BigNumber(0)).toString(),
           roe: roe ? roe.times(100).toString() : null,
           openedAt: p.openedAt,
           // Real, persisted trigger state — never an echo of something the
@@ -309,14 +330,15 @@ export function futuresRouter(
         };
       })
     );
-  });
+  }));
 
-  router.get('/futures/positions/history', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+  router.get('/futures/positions/history', authenticate, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const positions = await prisma.futuresPosition.findMany({
       where: { userId: req.userId, status: { in: ['CLOSED', 'LIQUIDATED'] } },
       orderBy: { closedAt: 'desc' },
       take: 100,
     });
+    const funding = await fundingByPosition(positions.map((p) => p.id));
     res.json(
       positions.map((p) => ({
         id: p.id,
@@ -325,18 +347,22 @@ export function futuresRouter(
         leverage: p.leverage,
         marginType: p.marginType,
         entryPrice: p.entryPrice.toString(),
-        realizedPnl: p.realizedPnl.toString(),
+        // The trade's net result: price P&L of every close plus all the
+        // funding the position settled while it was open (real futures
+        // charge no trading fee). Each settlement counted once.
+        realizedPnl: new BigNumber(p.realizedPnl.toString()).plus(funding.get(p.id) ?? 0).toString(),
+        fundingNet: (funding.get(p.id) ?? new BigNumber(0)).toString(),
         status: p.status,
         openedAt: p.openedAt,
         closedAt: p.closedAt,
       }))
     );
-  });
+  }));
 
   // Quick-close: submits a reduceOnly MARKET order for the position's full
   // remaining size in the closing direction. Uses the same order-placement
   // path as everything else — no separate "force close" code path to trust.
-  router.post('/futures/positions/:positionId/close', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+  router.post('/futures/positions/:positionId/close', authenticate, requireTradePermission, asyncRoute(async (req: ApiAuthedRequest, res) => {
     if (refuseSimulationOnly(req, res)) return;
     const position = await prisma.futuresPosition.findUnique({ where: { id: req.params.positionId } });
     if (!position || position.userId !== req.userId || position.status !== 'OPEN') {
@@ -363,9 +389,10 @@ export function futuresRouter(
         trades: result.trades.map((t) => ({ ...t, price: t.price.toString(), quantity: t.quantity.toString() })),
       });
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      // The engine's sentence, plus a code for the refusals the client can name.
+      res.status(400).json(futuresRefusalBody(err));
     }
-  });
+  }));
 
   /**
    * Take Profit / Stop Loss on an OPEN futures position.
@@ -379,13 +406,13 @@ export function futuresRouter(
    * somebody else answers 404 exactly like one that does not exist, so
    * these routes cannot be used to discover another account's positions.
    */
-  router.get('/futures/positions/:positionId/protection', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+  router.get('/futures/positions/:positionId/protection', authenticate, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const protection = await protectionService.getProtection(req.userId!, req.params.positionId);
     if (!protection) return res.status(404).json({ error: 'Position not found' });
     res.json(protection);
-  });
+  }));
 
-  router.put('/futures/positions/:positionId/protection', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+  router.put('/futures/positions/:positionId/protection', authenticate, requireTradePermission, asyncRoute(async (req: ApiAuthedRequest, res) => {
     if (refuseSimulationOnly(req, res)) return;
     const parsed = protectionSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -399,9 +426,9 @@ export function futuresRouter(
     } catch (err: any) {
       return protectionError(res, err);
     }
-  });
+  }));
 
-  router.delete('/futures/positions/:positionId/protection', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+  router.delete('/futures/positions/:positionId/protection', authenticate, requireTradePermission, asyncRoute(async (req: ApiAuthedRequest, res) => {
     if (refuseSimulationOnly(req, res)) return;
     try {
       await protectionService.clearProtection(req.userId!, req.params.positionId);
@@ -409,17 +436,17 @@ export function futuresRouter(
     } catch (err: any) {
       return protectionError(res, err);
     }
-  });
+  }));
 
-  router.get('/futures/balances', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+  router.get('/futures/balances', authenticate, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const balances = await prisma.futuresBalance.findMany({ where: { userId: req.userId } });
     res.json(balances.map((b) => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })));
-  });
+  }));
 
   // Explicit spot<->futures transfer — margin never moves automatically;
   // the user always chooses when collateral crosses between the two
   // wallets (see FuturesBalance's schema comment on why they're separate).
-  router.post('/futures/transfer', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+  router.post('/futures/transfer', authenticate, asyncRoute(async (req: ApiAuthedRequest, res) => {
     if (refuseSimulationOnly(req, res)) return;
     const parsed = transferSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -428,45 +455,13 @@ export function futuresRouter(
     const transferAmount = new BigNumber(amount);
 
     try {
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const fromBalance =
-          direction === 'TO_FUTURES'
-            ? await tx.balance.findUnique({ where: { userId_asset: { userId, asset } } })
-            : await tx.futuresBalance.findUnique({ where: { userId_asset: { userId, asset } } });
-        const fromAvailable = new BigNumber(fromBalance?.available.toString() ?? '0');
-        if (fromAvailable.isLessThan(transferAmount)) {
-          throw new Error(`Insufficient ${asset} balance to transfer`);
-        }
-        const nextFromAvailable = fromAvailable.minus(transferAmount).toString();
-        if (direction === 'TO_FUTURES') {
-          await tx.balance.update({ where: { userId_asset: { userId, asset } }, data: { available: nextFromAvailable } });
-        } else {
-          await tx.futuresBalance.update({ where: { userId_asset: { userId, asset } }, data: { available: nextFromAvailable } });
-        }
-
-        if (direction === 'TO_FUTURES') {
-          const toBalance = await tx.futuresBalance.upsert({
-            where: { userId_asset: { userId, asset } },
-            create: { userId, asset, available: '0', locked: '0' },
-            update: {},
-          });
-          const toAvailable = new BigNumber(toBalance.available.toString()).plus(transferAmount);
-          await tx.futuresBalance.update({ where: { userId_asset: { userId, asset } }, data: { available: toAvailable.toString() } });
-        } else {
-          const toBalance = await tx.balance.upsert({
-            where: { userId_asset: { userId, asset } },
-            create: { userId, asset, available: '0', locked: '0' },
-            update: {},
-          });
-          const toAvailable = new BigNumber(toBalance.available.toString()).plus(transferAmount);
-          await tx.balance.update({ where: { userId_asset: { userId, asset } }, data: { available: toAvailable.toString() } });
-        }
-      });
+      await transferWalletBalance(prisma, userId, asset, transferAmount, direction);
       res.json({ status: 'ok' });
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      // The engine's sentence, plus a code for the refusals the client can name.
+      res.status(400).json(futuresRefusalBody(err));
     }
-  });
+  }));
 
   return router;
 }

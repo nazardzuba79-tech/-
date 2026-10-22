@@ -1,0 +1,1128 @@
+{
+  "source": "Python Decimal, precision 110; generated independently of TypeScript",
+  "relativeTolerance": "1e-80",
+  "cases": [
+    {
+      "name": "A Long",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "quantityMode": "quantity",
+        "entry": "60000",
+        "exit": "66000",
+        "quantity": "0.1",
+        "margin": "",
+        "leverage": "10",
+        "feeEntry": "0.05",
+        "feeExit": "0.05",
+        "slipEntry": "0",
+        "slipExit": "0",
+        "funding": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "0.1",
+        "entryExecution": "60000",
+        "exitExecution": "66000",
+        "notional": "6000",
+        "initialMargin": "600",
+        "purchaseCost": "6003",
+        "grossPnl": "600",
+        "feeOpen": "3",
+        "feeClose": "3.3",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "593.7",
+        "roi": "98.95",
+        "breakEvenExecution": "60060.030015007503751875937968984492246123061530765382691345672836418209104552276138069034517258629314657328664",
+        "breakEvenTarget": "60060.030015007503751875937968984492246123061530765382691345672836418209104552276138069034517258629314657328664"
+      }
+    },
+    {
+      "name": "A leverage 20",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "quantityMode": "quantity",
+        "entry": "60000",
+        "exit": "66000",
+        "quantity": "0.1",
+        "margin": "",
+        "leverage": "20",
+        "feeEntry": "0.05",
+        "feeExit": "0.05",
+        "slipEntry": "0",
+        "slipExit": "0",
+        "funding": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "0.1",
+        "entryExecution": "60000",
+        "exitExecution": "66000",
+        "notional": "6000",
+        "initialMargin": "300",
+        "purchaseCost": "6003",
+        "grossPnl": "600",
+        "feeOpen": "3",
+        "feeClose": "3.3",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "593.7",
+        "roi": "197.9",
+        "breakEvenExecution": "60060.030015007503751875937968984492246123061530765382691345672836418209104552276138069034517258629314657328664",
+        "breakEvenTarget": "60060.030015007503751875937968984492246123061530765382691345672836418209104552276138069034517258629314657328664"
+      }
+    },
+    {
+      "name": "B Short",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "short",
+        "quantityMode": "quantity",
+        "entry": "60000",
+        "exit": "54000",
+        "quantity": "0.1",
+        "margin": "",
+        "leverage": "10",
+        "feeEntry": "0.05",
+        "feeExit": "0.05",
+        "slipEntry": "0",
+        "slipExit": "0",
+        "funding": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "0.1",
+        "entryExecution": "60000",
+        "exitExecution": "54000",
+        "notional": "6000",
+        "initialMargin": "600",
+        "purchaseCost": "6003",
+        "grossPnl": "600",
+        "feeOpen": "3",
+        "feeClose": "2.7",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "594.3",
+        "roi": "99.05",
+        "breakEvenExecution": "59940.029985007496251874062968515742128935532233883058470764617691154422788605697151424287856071964017991004498",
+        "breakEvenTarget": "59940.029985007496251874062968515742128935532233883058470764617691154422788605697151424287856071964017991004498"
+      }
+    },
+    {
+      "name": "C adverse Long",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "quantityMode": "quantity",
+        "entry": "100",
+        "exit": "110",
+        "quantity": "10",
+        "margin": "",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeExit": "0.1",
+        "slipEntry": "1",
+        "slipExit": "1",
+        "funding": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "10",
+        "entryExecution": "101",
+        "exitExecution": "108.9",
+        "notional": "1010",
+        "initialMargin": "202",
+        "purchaseCost": "1011.01",
+        "grossPnl": "79",
+        "feeOpen": "1.01",
+        "feeClose": "1.089",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "76.901",
+        "roi": "38.069801980198019801980198019801980198019801980198019801980198019801980198019801980198019801980198019801980198",
+        "breakEvenExecution": "101.2022022022022022022022022022022022022022022022022022022022022022022022022022022022022022022022022022022022",
+        "breakEvenTarget": "102.22444666889111333555778000222444666889111333555778000222444666889111333555778000222444666889111333555778"
+      }
+    },
+    {
+      "name": "C adverse Short",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "short",
+        "quantityMode": "quantity",
+        "entry": "100",
+        "exit": "90",
+        "quantity": "10",
+        "margin": "",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeExit": "0.1",
+        "slipEntry": "1",
+        "slipExit": "1",
+        "funding": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "10",
+        "entryExecution": "99",
+        "exitExecution": "90.9",
+        "notional": "990",
+        "initialMargin": "198",
+        "purchaseCost": "990.99",
+        "grossPnl": "81",
+        "feeOpen": "0.99",
+        "feeClose": "0.909",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "79.101",
+        "roi": "39.95",
+        "breakEvenExecution": "98.802197802197802197802197802197802197802197802197802197802197802197802197802197802197802197802197802197802198",
+        "breakEvenTarget": "97.823958219997823958219997823958219997823958219997823958219997823958219997823958219997823958219997823958219998"
+      }
+    },
+    {
+      "name": "C losing Long",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "quantityMode": "quantity",
+        "entry": "100",
+        "exit": "90",
+        "quantity": "10",
+        "margin": "",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeExit": "0.1",
+        "slipEntry": "0",
+        "slipExit": "0",
+        "funding": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "10",
+        "entryExecution": "100",
+        "exitExecution": "90",
+        "notional": "1000",
+        "initialMargin": "200",
+        "purchaseCost": "1001",
+        "grossPnl": "-100",
+        "feeOpen": "1",
+        "feeClose": "0.9",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "-101.9",
+        "roi": "-50.95",
+        "breakEvenExecution": "100.2002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002",
+        "breakEvenTarget": "100.2002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002002"
+      }
+    },
+    {
+      "name": "C received funding",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "quantityMode": "quantity",
+        "entry": "100",
+        "exit": "90",
+        "quantity": "10",
+        "margin": "",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeExit": "0.1",
+        "slipEntry": "0",
+        "slipExit": "0",
+        "funding": "-2",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "10",
+        "entryExecution": "100",
+        "exitExecution": "90",
+        "notional": "1000",
+        "initialMargin": "200",
+        "purchaseCost": "1001",
+        "grossPnl": "-100",
+        "feeOpen": "1",
+        "feeClose": "0.9",
+        "funding": "-2",
+        "fixedCosts": "0",
+        "netPnl": "-99.9",
+        "roi": "-49.95",
+        "breakEvenExecution": "100",
+        "breakEvenTarget": "100"
+      }
+    },
+    {
+      "name": "Spot ignores hidden futures fields",
+      "mode": "pnl",
+      "input": {
+        "market": "spot",
+        "side": "short",
+        "quantityMode": "quantity",
+        "entry": "60000",
+        "exit": "66000",
+        "quantity": "0.1",
+        "margin": "",
+        "leverage": "99",
+        "feeEntry": "0.05",
+        "feeExit": "0.05",
+        "slipEntry": "0",
+        "slipExit": "0",
+        "funding": "-100",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "0.1",
+        "entryExecution": "60000",
+        "exitExecution": "66000",
+        "notional": "6000",
+        "initialMargin": "6000",
+        "purchaseCost": "6003",
+        "grossPnl": "600",
+        "feeOpen": "3",
+        "feeClose": "3.3",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "593.7",
+        "roi": "9.8900549725137431284357821089455272363818090954522738630684657671164417791104447776111944027986006996501749125",
+        "breakEvenExecution": "60060.030015007503751875937968984492246123061530765382691345672836418209104552276138069034517258629314657328664",
+        "breakEvenTarget": "60060.030015007503751875937968984492246123061530765382691345672836418209104552276138069034517258629314657328664"
+      }
+    },
+    {
+      "name": "Margin source",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "quantityMode": "margin",
+        "entry": "60000",
+        "exit": "66000",
+        "quantity": "",
+        "margin": "600",
+        "leverage": "10",
+        "feeEntry": "0.05",
+        "feeExit": "0.05",
+        "slipEntry": "0",
+        "slipExit": "0",
+        "funding": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "0.1",
+        "entryExecution": "60000",
+        "exitExecution": "66000",
+        "notional": "6000",
+        "initialMargin": "600",
+        "purchaseCost": "6003",
+        "grossPnl": "600",
+        "feeOpen": "3",
+        "feeClose": "3.3",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "593.7",
+        "roi": "98.95",
+        "breakEvenExecution": "60060.030015007503751875937968984492246123061530765382691345672836418209104552276138069034517258629314657328664",
+        "breakEvenTarget": "60060.030015007503751875937968984492246123061530765382691345672836418209104552276138069034517258629314657328664"
+      }
+    },
+    {
+      "name": "Small price large quantity",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "quantityMode": "quantity",
+        "entry": "0.0000000123",
+        "exit": "0.0000000246",
+        "quantity": "1000000000000",
+        "margin": "",
+        "leverage": "10",
+        "feeEntry": "0.05",
+        "feeExit": "0.05",
+        "slipEntry": "0",
+        "slipExit": "0",
+        "funding": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "1000000000000",
+        "entryExecution": "0.0000000123",
+        "exitExecution": "0.0000000246",
+        "notional": "12300",
+        "initialMargin": "1230",
+        "purchaseCost": "12306.15",
+        "grossPnl": "12300",
+        "feeOpen": "6.15",
+        "feeClose": "12.3",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "12281.55",
+        "roi": "998.5",
+        "breakEvenExecution": "0.000000012312306153076538269134567283641820910455227613806903451725862931465732866433216608304152076038019009504752376",
+        "breakEvenTarget": "0.000000012312306153076538269134567283641820910455227613806903451725862931465732866433216608304152076038019009504752376"
+      }
+    },
+    {
+      "name": "More than 15 significant figures",
+      "mode": "pnl",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "quantityMode": "quantity",
+        "entry": "123456789012345.123456789",
+        "exit": "123456789012346.123456789",
+        "quantity": "0.123456789012345678901234",
+        "margin": "",
+        "leverage": "10",
+        "feeEntry": "0.05",
+        "feeExit": "0.05",
+        "slipEntry": "0",
+        "slipExit": "0",
+        "funding": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "quantity": "0.123456789012345678901234",
+        "entryExecution": "123456789012345.123456789",
+        "exitExecution": "123456789012346.123456789",
+        "notional": "15241578753238.768177107556898340608901397777626",
+        "initialMargin": "1524157875323.8768177107556898340608901397777626",
+        "purchaseCost": "15249199542615.387561196110676789779205848476514813",
+        "grossPnl": "0.123456789012345678901234",
+        "feeOpen": "7620789376.619384088553778449170304450698888813",
+        "feeClose": "7620789376.619445816948284622009755067698888813",
+        "funding": "0",
+        "fixedCosts": "0",
+        "netPnl": "-15241578753.115373116489717392278825518397777626",
+        "roi": "-0.99999999999190404992713641291245231465278327485182291450720640409577407087930708447535998870416503915190324689",
+        "breakEvenExecution": "123580307560631.6118244296093046523261630815407703851925962981490745372686343171585792896448224112056028014007",
+        "breakEvenTarget": "123580307560631.6118244296093046523261630815407703851925962981490745372686343171585792896448224112056028014007"
+      }
+    },
+    {
+      "name": "D position no costs",
+      "mode": "position",
+      "input": {
+        "side": "long",
+        "capital": "10000",
+        "riskPercent": "1",
+        "entry": "100",
+        "stop": "95",
+        "leverage": "5",
+        "feeEntry": "0",
+        "feeStop": "0",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "fixedCosts": "0",
+        "budget": "",
+        "step": ""
+      },
+      "expected": {
+        "riskBudget": "100",
+        "lossPerUnit": "5",
+        "cashPerUnit": "20",
+        "qRisk": "20",
+        "qBudget": null,
+        "quantity": "20",
+        "notional": "2000",
+        "margin": "400",
+        "plannedLoss": "100",
+        "reserved": "400",
+        "actualRisk": "1"
+      }
+    },
+    {
+      "name": "E position step",
+      "mode": "position",
+      "input": {
+        "side": "long",
+        "capital": "10000",
+        "riskPercent": "1",
+        "entry": "100",
+        "stop": "95",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeStop": "0.1",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "fixedCosts": "0",
+        "budget": "",
+        "step": "0.01"
+      },
+      "expected": {
+        "riskBudget": "100",
+        "lossPerUnit": "5.195",
+        "cashPerUnit": "20.195",
+        "qRisk": "19.249278152069297401347449470644850818094321462945139557266602502406159769008662175168431183830606352261790183",
+        "qBudget": null,
+        "quantity": "19.24",
+        "notional": "1924",
+        "margin": "384.8",
+        "plannedLoss": "99.9518",
+        "reserved": "388.5518",
+        "actualRisk": "0.999518"
+      }
+    },
+    {
+      "name": "E budget cap",
+      "mode": "position",
+      "input": {
+        "side": "long",
+        "capital": "10000",
+        "riskPercent": "1",
+        "entry": "100",
+        "stop": "95",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeStop": "0.1",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "fixedCosts": "0",
+        "budget": "200",
+        "step": "0.01"
+      },
+      "expected": {
+        "riskBudget": "100",
+        "lossPerUnit": "5.195",
+        "cashPerUnit": "20.195",
+        "qRisk": "19.249278152069297401347449470644850818094321462945139557266602502406159769008662175168431183830606352261790183",
+        "qBudget": "9.9034414459024511017578608566476850705620203020549641000247586036147561277543946521416192126764050507551374103",
+        "quantity": "9.9",
+        "notional": "990",
+        "margin": "198",
+        "plannedLoss": "51.4305",
+        "reserved": "199.9305",
+        "actualRisk": "0.514305"
+      }
+    },
+    {
+      "name": "Position Short step 0.001",
+      "mode": "position",
+      "input": {
+        "side": "short",
+        "capital": "10000",
+        "riskPercent": "1",
+        "entry": "100",
+        "stop": "105",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeStop": "0.1",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "fixedCosts": "0",
+        "budget": "",
+        "step": "0.001"
+      },
+      "expected": {
+        "riskBudget": "100",
+        "lossPerUnit": "5.205",
+        "cashPerUnit": "20.205",
+        "qRisk": "19.21229586935638808837656099903938520653218059558117195004803073967339097022094140249759846301633045148895293",
+        "qBudget": null,
+        "quantity": "19.212",
+        "notional": "1921.2",
+        "margin": "384.24",
+        "plannedLoss": "99.99846",
+        "reserved": "388.17846",
+        "actualRisk": "0.9999846"
+      }
+    },
+    {
+      "name": "Position Short step 0.005",
+      "mode": "position",
+      "input": {
+        "side": "short",
+        "capital": "10000",
+        "riskPercent": "1",
+        "entry": "100",
+        "stop": "105",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeStop": "0.1",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "fixedCosts": "0",
+        "budget": "",
+        "step": "0.005"
+      },
+      "expected": {
+        "riskBudget": "100",
+        "lossPerUnit": "5.205",
+        "cashPerUnit": "20.205",
+        "qRisk": "19.21229586935638808837656099903938520653218059558117195004803073967339097022094140249759846301633045148895293",
+        "qBudget": null,
+        "quantity": "19.21",
+        "notional": "1921",
+        "margin": "384.2",
+        "plannedLoss": "99.98805",
+        "reserved": "388.13805",
+        "actualRisk": "0.9998805"
+      }
+    },
+    {
+      "name": "Position Short step 1",
+      "mode": "position",
+      "input": {
+        "side": "short",
+        "capital": "10000",
+        "riskPercent": "1",
+        "entry": "100",
+        "stop": "105",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeStop": "0.1",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "fixedCosts": "0",
+        "budget": "",
+        "step": "1"
+      },
+      "expected": {
+        "riskBudget": "100",
+        "lossPerUnit": "5.205",
+        "cashPerUnit": "20.205",
+        "qRisk": "19.21229586935638808837656099903938520653218059558117195004803073967339097022094140249759846301633045148895293",
+        "qBudget": null,
+        "quantity": "19",
+        "notional": "1900",
+        "margin": "380",
+        "plannedLoss": "98.895",
+        "reserved": "383.895",
+        "actualRisk": "0.98895"
+      }
+    },
+    {
+      "name": "Position Short step 10",
+      "mode": "position",
+      "input": {
+        "side": "short",
+        "capital": "10000",
+        "riskPercent": "1",
+        "entry": "100",
+        "stop": "105",
+        "leverage": "5",
+        "feeEntry": "0.1",
+        "feeStop": "0.1",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "fixedCosts": "0",
+        "budget": "",
+        "step": "10"
+      },
+      "expected": {
+        "riskBudget": "100",
+        "lossPerUnit": "5.205",
+        "cashPerUnit": "20.205",
+        "qRisk": "19.21229586935638808837656099903938520653218059558117195004803073967339097022094140249759846301633045148895293",
+        "qBudget": null,
+        "quantity": "10",
+        "notional": "1000",
+        "margin": "200",
+        "plannedLoss": "52.05",
+        "reserved": "202.05",
+        "actualRisk": "0.5205"
+      }
+    },
+    {
+      "name": "F Long",
+      "mode": "liquidation",
+      "input": {
+        "side": "long",
+        "entry": "100",
+        "quantity": "10",
+        "leverage": "10",
+        "maintenanceRate": "0.5",
+        "additionalMargin": "0",
+        "costs": "0"
+      },
+      "expected": {
+        "notional": "1000",
+        "initialMargin": "100",
+        "margin": "100",
+        "maintenanceMargin": "5",
+        "buffer": "95",
+        "liquidationPrice": "90.5",
+        "zeroMarginPrice": "90",
+        "distancePercent": "9.5"
+      }
+    },
+    {
+      "name": "F Short",
+      "mode": "liquidation",
+      "input": {
+        "side": "short",
+        "entry": "100",
+        "quantity": "10",
+        "leverage": "10",
+        "maintenanceRate": "0.5",
+        "additionalMargin": "0",
+        "costs": "0"
+      },
+      "expected": {
+        "notional": "1000",
+        "initialMargin": "100",
+        "margin": "100",
+        "maintenanceMargin": "5",
+        "buffer": "95",
+        "liquidationPrice": "109.5",
+        "zeroMarginPrice": "110",
+        "distancePercent": "9.5"
+      }
+    },
+    {
+      "name": "F Long extra margin",
+      "mode": "liquidation",
+      "input": {
+        "side": "long",
+        "entry": "100",
+        "quantity": "10",
+        "leverage": "10",
+        "maintenanceRate": "0.5",
+        "additionalMargin": "50",
+        "costs": "0"
+      },
+      "expected": {
+        "notional": "1000",
+        "initialMargin": "100",
+        "margin": "150",
+        "maintenanceMargin": "5",
+        "buffer": "145",
+        "liquidationPrice": "85.5",
+        "zeroMarginPrice": "85",
+        "distancePercent": "14.5"
+      }
+    },
+    {
+      "name": "F Short extra margin",
+      "mode": "liquidation",
+      "input": {
+        "side": "short",
+        "entry": "100",
+        "quantity": "10",
+        "leverage": "10",
+        "maintenanceRate": "0.5",
+        "additionalMargin": "50",
+        "costs": "0"
+      },
+      "expected": {
+        "notional": "1000",
+        "initialMargin": "100",
+        "margin": "150",
+        "maintenanceMargin": "5",
+        "buffer": "145",
+        "liquidationPrice": "114.5",
+        "zeroMarginPrice": "115",
+        "distancePercent": "14.5"
+      }
+    },
+    {
+      "name": "G zero costs",
+      "mode": "riskReward",
+      "input": {
+        "side": "long",
+        "entry": "100",
+        "stop": "95",
+        "target": "110",
+        "quantity": "1",
+        "feeEntry": "0",
+        "feeStop": "0",
+        "feeTarget": "0",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "slipTarget": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "risk": "5",
+        "reward": "10",
+        "ratio": "2",
+        "breakEvenWinRate": "33.333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333",
+        "stopPnl": "-5",
+        "targetPnl": "10"
+      }
+    },
+    {
+      "name": "G costs",
+      "mode": "riskReward",
+      "input": {
+        "side": "long",
+        "entry": "100",
+        "stop": "95",
+        "target": "110",
+        "quantity": "1",
+        "feeEntry": "0.1",
+        "feeStop": "0.1",
+        "feeTarget": "0.1",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "slipTarget": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "risk": "5.195",
+        "reward": "9.79",
+        "ratio": "1.8845043310875842155919153031761308950914340712223291626564003849855630413859480269489894128970163618864292589",
+        "breakEvenWinRate": "34.668001334668001334668001334668001334668001334668001334668001334668001334668001334668001334668001334668001335",
+        "stopPnl": "-5.195",
+        "targetPnl": "9.79"
+      }
+    },
+    {
+      "name": "G Short",
+      "mode": "riskReward",
+      "input": {
+        "side": "short",
+        "entry": "100",
+        "stop": "105",
+        "target": "90",
+        "quantity": "1",
+        "feeEntry": "0",
+        "feeStop": "0",
+        "feeTarget": "0",
+        "slipEntry": "0",
+        "slipStop": "0",
+        "slipTarget": "0",
+        "fixedCosts": "0"
+      },
+      "expected": {
+        "risk": "5",
+        "reward": "10",
+        "ratio": "2",
+        "breakEvenWinRate": "33.333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333",
+        "stopPnl": "-5",
+        "targetPnl": "10"
+      }
+    },
+    {
+      "name": "H bare average",
+      "mode": "dca",
+      "input": {
+        "rows": [
+          {
+            "mode": "quantity",
+            "price": "10000",
+            "quantity": "1",
+            "amount": "",
+            "fee": "0"
+          },
+          {
+            "mode": "quantity",
+            "price": "20000",
+            "quantity": "2",
+            "amount": "",
+            "fee": "0"
+          }
+        ]
+      },
+      "expected": {
+        "quantity": "3",
+        "purchaseSum": "50000",
+        "entryFees": "0",
+        "costBasis": "50000",
+        "averageBare": "16666.666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666667",
+        "averageCost": "16666.666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666667",
+        "exit": null,
+        "targetAverage": null
+      }
+    },
+    {
+      "name": "H fees and target",
+      "mode": "dca",
+      "input": {
+        "rows": [
+          {
+            "mode": "quantity",
+            "price": "10000",
+            "quantity": "1",
+            "amount": "",
+            "fee": "0.1"
+          },
+          {
+            "mode": "quantity",
+            "price": "20000",
+            "quantity": "2",
+            "amount": "",
+            "fee": "0.1"
+          }
+        ],
+        "exit": {
+          "price": "18000",
+          "fee": "0.1"
+        }
+      },
+      "expected": {
+        "quantity": "3",
+        "purchaseSum": "50000",
+        "entryFees": "50",
+        "costBasis": "50050",
+        "averageBare": "16666.666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666667",
+        "averageCost": "16683.333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333",
+        "exit": {
+          "valueBeforeExitFee": "54000",
+          "exitFee": "54",
+          "netAtTarget": "3896",
+          "breakEven": "16700.033366700033366700033366700033366700033366700033366700033366700033366700033366700033366700033366700033367"
+        },
+        "targetAverage": null
+      }
+    },
+    {
+      "name": "H target average",
+      "mode": "dca",
+      "input": {
+        "rows": [
+          {
+            "mode": "quantity",
+            "price": "10000",
+            "quantity": "1",
+            "amount": "",
+            "fee": "0"
+          },
+          {
+            "mode": "quantity",
+            "price": "20000",
+            "quantity": "2",
+            "amount": "",
+            "fee": "0"
+          }
+        ],
+        "targetAverage": {
+          "price": "10000",
+          "fee": "0",
+          "target": "15000"
+        }
+      },
+      "expected": {
+        "quantity": "3",
+        "purchaseSum": "50000",
+        "entryFees": "0",
+        "costBasis": "50000",
+        "averageBare": "16666.666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666667",
+        "averageCost": "16666.666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666667",
+        "exit": null,
+        "targetAverage": {
+          "quantity": "1",
+          "amountBeforeFee": "10000",
+          "totalNewCost": "10000",
+          "newQuantity": "4",
+          "newAverage": "15000"
+        }
+      }
+    },
+    {
+      "name": "DCA exact amount before fee",
+      "mode": "dca",
+      "input": {
+        "rows": [
+          {
+            "mode": "amount",
+            "price": "3",
+            "quantity": "",
+            "amount": "1",
+            "fee": "0.1"
+          }
+        ]
+      },
+      "expected": {
+        "quantity": "0.33333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333",
+        "purchaseSum": "1",
+        "entryFees": "0.001",
+        "costBasis": "1.001",
+        "averageBare": "3",
+        "averageCost": "3.003",
+        "exit": null,
+        "targetAverage": null
+      }
+    },
+    {
+      "name": "I fees",
+      "mode": "fees",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "inputMode": "notional",
+        "quantity": "",
+        "entry": "",
+        "exit": "",
+        "notionalEntry": "6000",
+        "notionalExit": "6600",
+        "includeExit": true,
+        "entryRole": "maker",
+        "exitRole": "taker",
+        "makerRate": "0.02",
+        "takerRate": "0.055"
+      },
+      "expected": {
+        "notionalEntry": "6000",
+        "notionalExit": "6600",
+        "feeOpen": "1.2",
+        "feeClose": "3.63",
+        "feesTotal": "4.83",
+        "combinations": {
+          "MM": "2.52",
+          "MT": "4.83",
+          "TM": "4.62",
+          "TT": "6.93"
+        },
+        "fundingCost": null,
+        "netCost": null
+      }
+    },
+    {
+      "name": "I Long funding",
+      "mode": "fees",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "inputMode": "notional",
+        "quantity": "",
+        "entry": "",
+        "exit": "",
+        "notionalEntry": "6000",
+        "notionalExit": "6600",
+        "includeExit": true,
+        "entryRole": "maker",
+        "exitRole": "taker",
+        "makerRate": "0.02",
+        "takerRate": "0.055",
+        "funding": {
+          "notional": "6000",
+          "rate": "0.01",
+          "periods": "3"
+        }
+      },
+      "expected": {
+        "notionalEntry": "6000",
+        "notionalExit": "6600",
+        "feeOpen": "1.2",
+        "feeClose": "3.63",
+        "feesTotal": "4.83",
+        "combinations": {
+          "MM": "2.52",
+          "MT": "4.83",
+          "TM": "4.62",
+          "TT": "6.93"
+        },
+        "fundingCost": "1.8",
+        "netCost": "6.63"
+      }
+    },
+    {
+      "name": "I Short funding",
+      "mode": "fees",
+      "input": {
+        "market": "futures",
+        "side": "short",
+        "inputMode": "notional",
+        "quantity": "",
+        "entry": "",
+        "exit": "",
+        "notionalEntry": "6000",
+        "notionalExit": "6600",
+        "includeExit": true,
+        "entryRole": "maker",
+        "exitRole": "taker",
+        "makerRate": "0.02",
+        "takerRate": "0.055",
+        "funding": {
+          "notional": "6000",
+          "rate": "0.01",
+          "periods": "3"
+        }
+      },
+      "expected": {
+        "notionalEntry": "6000",
+        "notionalExit": "6600",
+        "feeOpen": "1.2",
+        "feeClose": "3.63",
+        "feesTotal": "4.83",
+        "combinations": {
+          "MM": "2.52",
+          "MT": "4.83",
+          "TM": "4.62",
+          "TT": "6.93"
+        },
+        "fundingCost": "-1.8",
+        "netCost": "3.03"
+      }
+    },
+    {
+      "name": "Fees single leg",
+      "mode": "fees",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "inputMode": "notional",
+        "quantity": "",
+        "entry": "",
+        "exit": "",
+        "notionalEntry": "6000",
+        "notionalExit": "",
+        "includeExit": false,
+        "entryRole": "maker",
+        "exitRole": "taker",
+        "makerRate": "0.02",
+        "takerRate": "0.055"
+      },
+      "expected": {
+        "notionalEntry": "6000",
+        "notionalExit": null,
+        "feeOpen": "1.2",
+        "feeClose": null,
+        "feesTotal": "1.2",
+        "combinations": {
+          "MM": "1.2",
+          "MT": "1.2",
+          "TM": "3.3",
+          "TT": "3.3"
+        },
+        "fundingCost": null,
+        "netCost": null
+      }
+    },
+    {
+      "name": "Fees quantity input",
+      "mode": "fees",
+      "input": {
+        "market": "futures",
+        "side": "long",
+        "inputMode": "quantity",
+        "quantity": "0.1",
+        "entry": "60000",
+        "exit": "66000",
+        "notionalEntry": "",
+        "notionalExit": "",
+        "includeExit": true,
+        "entryRole": "maker",
+        "exitRole": "taker",
+        "makerRate": "0.02",
+        "takerRate": "0.055"
+      },
+      "expected": {
+        "notionalEntry": "6000",
+        "notionalExit": "6600",
+        "feeOpen": "1.2",
+        "feeClose": "3.63",
+        "feesTotal": "4.83",
+        "combinations": {
+          "MM": "2.52",
+          "MT": "4.83",
+          "TM": "4.62",
+          "TT": "6.93"
+        },
+        "fundingCost": null,
+        "netCost": null
+      }
+    }
+  ]
+}

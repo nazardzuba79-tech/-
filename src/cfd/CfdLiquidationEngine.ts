@@ -1,5 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
+import { mutateFuturesBalance } from '../services/WalletMutation';
+import { lockCfdAccount } from './lockCfdAccount';
 import { assertCfdFreshQuote, CfdQuoteUnavailable, type CfdQuote, type CfdQuoteSource } from '../services/marketData/cfd/CfdQuote';
 import { computeUnrealizedPnl, PositionSide } from '../futures/marginMath';
 import { LIQUIDATION_CHECK_INTERVAL_MS } from '../config/futuresConfig';
@@ -79,6 +81,9 @@ export class CfdLiquidationEngine {
 
   async liquidatePosition(positionId: string, quote: CfdQuote): Promise<boolean> {
     return this.prisma.$transaction(async (tx: TxClient) => {
+      const candidate = await tx.cfdPosition.findUnique({ where: { id: positionId } });
+      if (!candidate || candidate.status !== 'OPEN') return false;
+      await lockCfdAccount(tx, candidate.userId);
       const position = await tx.cfdPosition.findUnique({ where: { id: positionId } });
       if (!position || position.status !== 'OPEN') return false;
       const validateQuote = () => assertCfdFreshQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs);
@@ -96,13 +101,8 @@ export class CfdLiquidationEngine {
       // Liquidation forfeits the position's entire locked margin — the
       // trader gets nothing back, same as futures. Negative-balance
       // protection still applies: the loss stops at the margin locked.
-      const balance = await tx.futuresBalance.findUnique({ where: { userId_asset: { userId: position.userId, asset: MARGIN_ASSET } } });
-      const lockedNow = new BigNumber(balance?.locked.toString() ?? '0');
       validateQuote();
-      await tx.futuresBalance.update({
-        where: { userId_asset: { userId: position.userId, asset: MARGIN_ASSET } },
-        data: { locked: BigNumber.max(lockedNow.minus(initialMargin), 0).toString() },
-      });
+      await mutateFuturesBalance(tx, position.userId, MARGIN_ASSET, { locked: initialMargin.negated() });
 
       validateQuote();
       await tx.cfdPosition.update({

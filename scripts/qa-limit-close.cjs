@@ -94,7 +94,9 @@ async function session(width, side) {
   page.on('pageerror', e => report.errors.push(String(e)));
   page.on('request', r => { if (r.url().endsWith('/native/commands') && r.method() === 'POST') { const d = r.postDataJSON(); if (d && d.kind !== 'REFRESH') drafts.push(d); } });
   // The AKE terminal, so the order form's reduce-only gating and the dialog's contract rules are AKE's.
-  await page.goto(origin + '/futures?pair=' + encodeURIComponent('AKE/USDT')); await page.locator('.chart-surface').waitFor();
+  // owner, 2026-10-04: phone opens on Trade — bring the chart forward first, where the phone used to open.
+  if (page.viewportSize().width <= 900) { await page.goto(origin + '/futures?pair=' + encodeURIComponent('AKE/USDT')); await page.locator('#mobile-futures-chart').click(); await page.locator('.chart-surface').waitFor(); }
+  else { await page.goto(origin + '/futures?pair=' + encodeURIComponent('AKE/USDT')); await page.locator('.chart-surface').waitFor(); }
   return { context, page, token, drafts, target };
 }
 async function workspace(page, name) { const tab = page.locator(`#mobile-futures-${name}`); if (await tab.isVisible() && await tab.getAttribute('aria-selected') !== 'true') await tab.click(); }

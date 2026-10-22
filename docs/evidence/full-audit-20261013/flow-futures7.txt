@@ -1,0 +1,132 @@
+INFO after reset: A=0 B=0 positions
+PASS 1 Futures loads with the ticket and a mark price — mark=83278.05
+PASS 1b ticker names BTC/USDT — B BTC/USDT Бесср. Bitcoin — — Маркировочная цена 83,278.05 Макс. за 24ч — Мин. з
+PASS 2 leverage control opens its popover — button="10.00x
+▾"
+INFO leverage popover still open after confirm: false
+PASS 2b choosing 25x in the popover sets the leverage and the button shows it — 10.00x ▾ → 25.00x ▾ (input )
+PASS 2c the leverage popover closes (confirm or Escape)
+PASS 3 margin mode switches — Изолированная
+▾ → Кросс
+▾
+PASS 4 limit long rests in the futures book — open=[{"p":"74950","q":"0.01","st":"OPEN","lev":25}] toast="✓Ордер размещён"
+PASS 4b margin locked ≈ price×qty÷leverage — locked +29.98 vs 29.98 at 25x
+PASS 4c open orders tab lists it — Последние 100 ордеров · Все контракты Обновить счёт Время Пара Тип Сторона Цена Количество Исполнено Статус Только уменьшение Действие 13.10.2026, 21:32:35 BTC/
+PASS 5 cancel from the orders tab removes it and unlocks the margin — open=0 locked=0
+PASS 6a quantity 0 is refused without a 500 — posts=[] toast="" err=""
+PASS 6b quantity beyond the margin is refused with a clear localized message — posts=[] toast="" err="Вам не хватает средств: нужно 1499000.00 USDT, доступно 20001.60 USDT."
+PASS 7 account B rests a short limit (API) — 201 {"order":{"id":"37190b33-e67c-4ece-ba2c-4e83f2e209dd","userId":"3ade33ed-19f9-4a19-b138-6ee0b49e2326","pair":"BTC/USDT","side":"SELL","type"
+INFO entry TP/SL inputs: count=0 enabled=null toggle=0
+PASS 7b market long fills against B and opens a position — posts=[{"s":201,"m":"POST","p":"/api/v1/futures/orders"}] toast="✓Ордер размещён" pos=[{"side":"LONG","q":"0.01","entry":"83319.7","lev":25,"liq":"80320.1908"}]
+PASS 7c B holds the opposite short of the same size — [{"side":"SHORT","q":"0.01"}]
+PASS 7d positions tab shows entry, mark, liquidation and PnL — Все фьючерсные позиции Текущие позиции: 1 Совокупный P&L: -0.01 USDT Контракты К-во Начальная маржа Цена Входа Цена марк. Цена ликвид. Нереализованный P&L (ROI) Реализованный P&L TP/SL · Закрыть как BTCUSDT Бесср. Лонг И
+PASS 7e the row's TP/SL control opens the protection dialog
+PASS 7f saved TP/SL are stored on the position (API) and shown in the row — api tp=87442 sl=79114 (want 87442/79114) row="BTCUSDTБесср.ЛонгИзолированная25.00x0.010BTC33.33USDT83319.7083318.7080320.19-0.01USDT(-0.03%)≈-0.01USD0.00≈0.00USDTP87442SL79114ЛимитныйРын" calls=[{"s":200,"m":"PUT","p":"/api/v1/futures/positions/693fc4e5-b0e1-4fdc-bbc0-259334e96c4d/protection"}]
+INFO chart marker elements after the fill: 0
+PASS 8 «Лимитный» opens the limit-close dialog for that position
+PASS 8b quantity prefilled with the whole position; 25% and 50% give 0.0025 and 0.005 — 0.01 → 25%:0.0025 50%:0.005
+PASS 8c a reduce-only limit for 0.005 rests; the position stays 0.01 — [{"q":"0.005","ro":true,"p":"91606","st":"OPEN"}]
+PASS 9 B rests a reduce-only buy to absorb the close (API) — 201 {"order":{"id":"91923423-d551-4d6f-939e-1c3eb02bdf7c","userId":"3ade33ed-19f9-4a19-b138-6ee0b49e2326","pair":"BTC/USDT",
+PASS 9b «Рыночный» closes the whole position — posts=[{"s":200,"m":"POST","p":"/api/v1/futures/positions/693fc4e5-b0e1-4fdc-bbc0-259334e96c4d/close"}] open=0 toast="✓Лимитный ордер на закрытие размещён"
+PASS 9c position history shows the closed position with realized PnL — api=5 ui="Обновить счёт Рынок Сторона Цена входа Реализ. PnL Статус BTC/USDT 25x Лонг 83319.7 -0.83 CLOSED BTC/USDT 25x Лонг 83370.3 -0.83 CLOSED BTC/USDT 25x Лонг 83381."
+PASS 10 no page/console errors during the Futures flow
+PASS 11 no 5xx API responses (display-source 503s excluded: no market collector in this environment) — []
+INFO browser dialogs: confirm: Высокое плечо — высокий риск
+
+Ты выбрал плечо 25x. При таком плече небольшое дви | confirm: Высокое плечо — высокий риск
+
+Ты выбрал плечо 25x. При таком плече небольшое дви
+
+API calls:
+200 GET /api/v1/futures/config
+200 GET /api/v1/market/universe?type=linear_perpetual
+200 GET /api/v1/futures/funding-rate/BTC-USDT?limit=1
+503 GET /api/v1/market/display
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/display
+200 GET /api/v1/me
+200 GET /api/v1/market/external/rankings
+200 GET /api/v1/market/derivatives/BTC
+200 GET /api/v1/futures/mark-price/BTC-USDT
+200 GET /api/v1/market/assets/icons?symbols=BTC
+403 GET /api/v1/private-trading/access
+200 GET /api/v1/market/display/spot-snapshot
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+200 GET /api/v1/futures/positions
+200 GET /api/v1/futures/orders/me?status=OPEN,PARTIALLY_FILLED
+200 GET /api/v1/futures/balances
+403 GET /api/v1/private-trading/access
+403 GET /api/v1/private-trading/access
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+200 GET /api/v1/futures/mark-price/BTC-USDT
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+201 POST /api/v1/futures/orders
+200 GET /api/v1/futures/balances
+200 GET /api/v1/futures/positions
+200 GET /api/v1/futures/orders/me?status=OPEN,PARTIALLY_FILLED
+200 GET /api/v1/futures/balances
+200 GET /api/v1/futures/positions
+200 GET /api/v1/futures/positions
+204 DELETE /api/v1/futures/orders/6abacf9a-36bf-4ea8-b0b7-8de65e95e180
+200 GET /api/v1/futures/orders/me?status=OPEN,PARTIALLY_FILLED
+200 GET /api/v1/futures/balances
+200 GET /api/v1/futures/positions
+200 GET /api/v1/futures/balances
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+200 GET /api/v1/market/display/spot-snapshot
+503 GET /api/v1/market/display
+503 GET /api/v1/market/display
+200 GET /api/v1/futures/funding-rate/BTC-USDT?limit=1
+200 GET /api/v1/market/external/rankings
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+403 GET /api/v1/private-trading/access
+200 GET /api/v1/futures/positions
+403 GET /api/v1/private-trading/access
+403 GET /api/v1/private-trading/access
+200 GET /api/v1/market/derivatives/BTC
+200 GET /api/v1/futures/mark-price/BTC-USDT
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+200 GET /api/v1/futures/mark-price/BTC-USDT
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+200 GET /api/v1/futures/orders/me?status=OPEN,PARTIALLY_FILLED
+200 GET /api/v1/futures/balances
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+201 POST /api/v1/futures/orders
+200 GET /api/v1/futures/balances
+200 GET /api/v1/futures/orders/me?status=OPEN,PARTIALLY_FILLED
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+200 GET /api/v1/futures/orders/me?status=OPEN,PARTIALLY_FILLED
+200 GET /api/v1/futures/positions
+200 GET /api/v1/futures/balances
+200 PUT /api/v1/futures/positions/693fc4e5-b0e1-4fdc-bbc0-259334e96c4d/protection
+200 GET /api/v1/futures/positions
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+201 POST /api/v1/futures/orders
+200 GET /api/v1/futures/orders/me?status=OPEN,PARTIALLY_FILLED
+200 GET /api/v1/futures/balances
+200 GET /api/v1/futures/positions
+200 GET /api/v1/futures/balances
+200 GET /api/v1/futures/positions
+200 POST /api/v1/futures/positions/693fc4e5-b0e1-4fdc-bbc0-259334e96c4d/close
+200 GET /api/v1/futures/balances
+200 GET /api/v1/futures/positions
+200 GET /api/v1/futures/positions/history
+200 GET /api/v1/futures/balances
+200 GET /api/v1/futures/positions/history
+503 GET /api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520
+200 GET /api/v1/futures/positions/history
+
+Errors:

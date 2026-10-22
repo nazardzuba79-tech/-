@@ -5,13 +5,16 @@
  * read it. `registry.ts` keeps it fresh.
  */
 import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
+import { isAith } from '../../shared/aithPublication';
 
 let assets: readonly TestAssetConfig[] = Object.freeze([]);
+let aithValidUntil = 0;
 
-export function setManagedListingAssets(next: readonly TestAssetConfig[]): void {
+export function setManagedListingAssets(next: readonly TestAssetConfig[], validUntil = 0): void {
   assets = Object.freeze([...next]);
+  aithValidUntil = validUntil;
 }
 
 export function managedListingAssets(): readonly TestAssetConfig[] {
-  return assets;
+  return assets.filter(asset => !isAith(asset.symbol) || Date.now() < aithValidUntil);
 }

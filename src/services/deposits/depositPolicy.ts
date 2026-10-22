@@ -94,7 +94,7 @@ export async function valueInUsd(asset: string, amount: BigNumber, prices: Price
   return { usd: amount.times(price), policy: 'MARKET_PRICE', priceUsd: price, pricedAt, reason: null };
 }
 
-/** Exact, unrounded comparison: 299.999999 is below 300. */
+/** Exact, unrounded comparison: 499.999999 is below 500. */
 export function meetsMinimum(usd: BigNumber | null): boolean {
   return usd !== null && usd.isFinite() && usd.isGreaterThanOrEqualTo(MIN_DEPOSIT_USD);
 }

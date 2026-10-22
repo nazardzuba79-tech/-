@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowDownToLineIcon,
   ArrowLeftRightIcon,
+  ArrowUpFromLineIcon,
   ArrowUpRightIcon,
   ChevronDownIcon,
   EyeIcon,
@@ -96,6 +97,7 @@ export function PortfolioStrip({
   onToggleHidden,
   unavailable,
   onDeposit,
+  onWithdraw,
   onTransfer,
   onHistory,
 }: {
@@ -197,6 +199,10 @@ export function PortfolioStrip({
           <button type="button" onClick={onDeposit} className={ACTION_PRIMARY}>
             <ArrowDownToLineIcon className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
             {t('wallet.depositShort')}
+          </button>
+          <button type="button" onClick={onWithdraw} className={`${ACTION_SECONDARY} wallet-action-withdraw`}>
+            <ArrowUpFromLineIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
+            {t('wallet.withdraw')}
           </button>
           <button type="button" disabled aria-disabled="true" title={t('wallet.convertUnavailable')} className={`${ACTION_OFF} wallet-action-convert`}>
             <RepeatIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />

@@ -369,12 +369,12 @@ let server, browser;
     // Land on an unrelated page, hover the nav link to prefetch, then go.
     await page.goto(`${origin}/wallet`, { waitUntil: 'domcontentloaded' });
     await wait(1200);
-    const link = await page.$('a[href="/copy-trading"]');
-    if (link) { await link.hover().catch(() => {}); }
+    if (!await page.locator('a[href="/copy-trading"]:visible').count()) await page.locator('.nav-burger').click();
+    const link = page.locator('a[href="/copy-trading"]:visible').first();
+    await link.hover();
     await wait(1200);
     const callsAfterPrefetch = calls;
-    if (link) await link.click().catch(() => {});
-    else await page.goto(`${origin}/copy-trading`, { waitUntil: 'domcontentloaded' });
+    await link.click();
     await page.waitForSelector('.trader-card[data-trader-id="VX-001"]', { timeout: 15_000 }).catch(() => {});
     await wait(2500);
     report.failedPrefetchThenMount = {
@@ -484,6 +484,7 @@ let server, browser;
   }
   const prefetch = report.failedPrefetchThenMount;
   if (prefetch) {
+    if (prefetch.callsAfterPrefetch < 1) finding('failed-prefetch scenario never issued its prefetch request');
     if (prefetch.callsAfterMount <= prefetch.callsAfterPrefetch) {
       finding(`mounting after a failed prefetch put NO request on the wire (${prefetch.callsAfterPrefetch} → ${prefetch.callsAfterMount})`);
     }

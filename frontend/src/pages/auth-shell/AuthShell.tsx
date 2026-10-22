@@ -1,130 +1,134 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { CreditCardIcon, LayersIcon, PercentIcon, WalletCardsIcon } from 'lucide-react';
-import { Logo } from '../../components/Logo';
+import { ArrowUpRightIcon } from 'lucide-react';
+import { EU, CH, JP, US, CN, RU } from 'country-flag-icons/react/3x2';
+import { Logo, LogoMark } from '../../components/Logo';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
-import { HomeCryptoCard } from '../home/HomeCryptoCard';
-import { RegistrationCardVisual } from './RegistrationCardVisual';
-import { useLanguage, type Key } from '../../lib/i18n';
+import { useLanguage } from '../../lib/i18n';
+import { openSupportWidget } from '../../lib/supportWidget';
 import './auth-shell.css';
+import './auth-form-premium.css';
 
-/**
- * The shared VOLTEX authentication screen: a dark presentation column on
- * the left, a light auth workspace on the right, used by both /register
- * and /login so the two are one design rather than two.
- *
- * Everything on the left is presentation only — no status claim, no live
- * feed, no control. The one product artefact it shows is the approved
- * physical card render, reused through HomeCryptoCard rather than redrawn:
- * the card art on this screen is the same file the homepage and the Crypto
- * Card page serve.
- *
- * The right column is a slot. Each page supplies its own form; nothing
- * about submission, validation or error handling lives here.
- */
-
-/* Three marks of the same kind: flat geometric outlines, no glyphs inside
-   them, all rendered at one size and one stroke weight in the shell's own
-   gold tile. Lucide's Coins was tried here and rejected — it draws a small
-   "1" numeral inside the coin, which turns to noise at 17px and makes the
-   row read busier than its two neighbours. */
-const BENEFITS: { key: string; Icon: typeof PercentIcon; title: Key; text: Key }[] = [
-  { key: 'trading', Icon: PercentIcon, title: 'authShell.benefit.trading.title', text: 'authShell.benefit.trading.text' },
-  { key: 'clients', Icon: LayersIcon, title: 'authShell.benefit.clients.title', text: 'authShell.benefit.clients.text' },
-  { key: 'card', Icon: CreditCardIcon, title: 'authShell.benefit.card.title', text: 'authShell.benefit.card.text' },
-];
-
-export type AuthShellProps = {
-  /** "Уже есть аккаунт?" / "Нет аккаунта?" — the prompt beside the header link. */
-  switchPrompt: string;
-  /** The header link's label and destination (the other auth page). */
-  switchLabel: string;
-  switchTo: string;
-  cardVisual?: 'single' | 'registration';
-  children: ReactNode;
-};
-
-export function AuthShell({ switchPrompt, switchLabel, switchTo, children, cardVisual = 'single' }: AuthShellProps) {
+/** Decorative currency examples, not the complete list or a user count. */
+function AuthCommunity() {
   const { t } = useLanguage();
-
+  const [fiatCaption, cryptoCaption] = t('authShell.communitySubtitle').split(' · ');
+  const [cardAction, voltexFee] = t('authShell.communityTitle').split(' — ');
   return (
-    <div className="vx-auth">
-      <section className="vx-auth-brand">
+    <div className="vx-auth-extras">
+      <div className="vx-auth-community">
+        <div className="vx-auth-currency-sample">
+          <span className="vx-auth-currencies" aria-hidden="true">
+            <span className="vx-auth-currency" data-currency="EUR">
+              <EU aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="CHF">
+              <CH aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="JPY">
+              <JP aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="USD">
+              <US aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="CNY">
+              <CN aria-hidden="true" focusable="false" />
+            </span>
+            <span className="vx-auth-currency" data-currency="RUB">
+              <RU aria-hidden="true" focusable="false" />
+            </span>
+          </span>
+          <span className="vx-auth-currency-more">{t('authShell.moreCurrencies')}</span>
+        </div>
+        <div className="vx-auth-community-copy">
+          <strong>{cardAction}{' '}<span className="vx-auth-card-fee">{voltexFee}</span></strong>
+          <span><span className="vx-auth-currency-amount">{fiatCaption} ·</span>{' '}<span className="vx-auth-currency-amount">{cryptoCaption}</span></span>
+        </div>
+      </div>
+      <div className="vx-auth-card-caption">
+        <span className="vx-auth-card-number">01</span>
+        <span className="vx-auth-card-label">{t('authShell.cardCaption')}</span>
+        <span className="vx-auth-card-line" aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+
+/** Presentation only: the route forms retain their existing auth handlers. */
+export function AuthShell({ children }: { children: ReactNode }) {
+  const { t, lang } = useLanguage();
+  const useSelectedBanner = lang === 'ru';
+  return (
+    <div className={`vx-auth${useSelectedBanner ? ' vx-auth--banner' : ''}`}>
+      {useSelectedBanner ? (
+        <section className="vx-auth-brand vx-auth-brand-banner">
+          {/* The owner-selected raster already includes the logo and slogan.
+              Do not duplicate them with HTML or make the banner interactive. */}
+          <img className="vx-auth-banner" src="/auth/selected-cabin-banner.webp"
+            alt="VOLTEX. Копируйте сделки лучших трейдеров мира. Девушка в кресле самолёта с телефоном и картой."
+            width="919" height="941" {...{ fetchpriority: 'high' }} />
+          <AuthCommunity />
+        </section>
+      ) : (
+      <section className="vx-auth-brand vx-auth-brand-localized">
+        <picture>
+          <source media="(max-width: 760px)" srcSet="/auth/business-class-mobile.webp" />
+          <img className="vx-auth-photo" src="/auth/business-class-1440.webp"
+            srcSet="/auth/business-class-960.webp 960w, /auth/business-class-1440.webp 1440w"
+            sizes="50vw" alt="" width="1440" height="2160" {...{ fetchpriority: 'high' }} />
+        </picture>
         <div className="vx-auth-brand-inner">
           <header className="vx-auth-brand-head">
-            <Link to="/" aria-label={t('register.backHomeAria')}>
-              <Logo />
-            </Link>
+            <Link to="/" aria-label={t('register.backHomeAria')}><Logo /></Link>
           </header>
-
           <div className="vx-auth-hero">
-            {/* One sentence over three lines: the subject in warm white,
-                the qualifier it earns in gold. */}
-            <h1>
-              <span>{t('authShell.hero.line1')}</span>
-              <span className="vx-auth-hero-gold">{t('authShell.hero.line2')}</span>
-              <span className="vx-auth-hero-gold">{t('authShell.hero.line3')}</span>
-            </h1>
+            <h2>{t('authShell.hero.line1')}{' '}{t('authShell.hero.line2')}{' '}{t('authShell.hero.line3')}</h2>
             <p className="vx-auth-lead">{t('authShell.lead')}</p>
           </div>
-
-          <div className="vx-auth-benefits">
-            {BENEFITS.map(({ key, Icon, title, text }) => (
-              <div className="vx-auth-benefit" key={key}>
-                <span className="vx-auth-benefit-icon">
-                  <Icon size={17} strokeWidth={1.6} />
-                </span>
-                <div>
-                  <h2>{t(title)}</h2>
-                  <p>{t(text)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className={cardVisual === 'registration' ? 'vx-auth-card vx-auth-card-registration' : 'vx-auth-card'}>
-            {/* The approved card artwork, reused as-is — same component and
-                same render the homepage uses. Nothing here recolours,
-                masks or redraws it, and no card number is invented: the
-                art carries its own face. */}
-            <div className="vx-auth-card-art">
-              {cardVisual === 'registration' ? <RegistrationCardVisual /> : <HomeCryptoCard width={228} />}
-            </div>
-            <div className="vx-auth-card-copy">
-              <span className="vx-auth-card-kicker">
-                <WalletCardsIcon size={13} strokeWidth={1.8} />
-                {t('authShell.card.kicker')}
-              </span>
-              <h2>{t('authShell.card.title')}</h2>
-              <p>{t('authShell.card.text')}</p>
-              <p className="vx-auth-card-note">{t('authShell.card.note')}</p>
-            </div>
-          </div>
-
-          <footer className="vx-auth-privacy">{t('auth.privacyNote')}</footer>
+          <footer className="vx-auth-copyright">© {new Date().getFullYear()} VOLTEX</footer>
         </div>
+        <AuthCommunity />
       </section>
-
+      )}
       <section className="vx-auth-work">
         <header className="vx-auth-head">
-          <Link to="/" className="vx-auth-head-logo" aria-label={t('register.backHomeAria')}>
-            <Logo />
-          </Link>
-          <div className="vx-auth-switch">
-            <span>{switchPrompt}</span>
-            <Link to={switchTo}>{switchLabel}</Link>
-          </div>
+          {useSelectedBanner && (
+            <Link className="vx-auth-compact-logo" to="/" aria-label={t('register.backHomeAria')}><Logo /></Link>
+          )}
+          <span className="vx-auth-context">{t('authShell.context')}</span>
           <LanguageSwitcher variant="pill" />
         </header>
-
         {children}
-
-        <div className="vx-auth-foot">
-          <span>© {new Date().getFullYear()} VOLTEX</span>
-          <Link to="/legal/terms">{t('footer.terms')}</Link>
+        <AuthCommunity />
+        <footer className="vx-auth-foot">
           <Link to="/legal/privacy">{t('footer.privacy')}</Link>
-        </div>
+          <Link to="/legal/terms">{t('footer.terms')}</Link>
+        </footer>
       </section>
+    </div>
+  );
+}
+
+export function AuthFormIcon() {
+  return <div className="vx-auth-form-icon" aria-hidden="true"><LogoMark size={28} /></div>;
+}
+
+export function AuthTabs({ active }: { active: 'login' | 'register' }) {
+  const { t } = useLanguage();
+  return (
+    <nav className="vx-auth-tabs" aria-label={t('authShell.context')}>
+      <Link to={`/login${window.location.search}`} aria-current={active === 'login' ? 'page' : undefined}>{t('auth.login')}</Link>
+      <Link to={`/register${window.location.search}`} aria-current={active === 'register' ? 'page' : undefined}>{t('auth.register')}</Link>
+    </nav>
+  );
+}
+
+export function AuthSupport() {
+  const { t } = useLanguage();
+  return (
+    <div className="vx-auth-support">
+      <span>{t('authShell.supportHint')}</span>
+      <button type="button" onClick={openSupportWidget}>{t('authShell.supportLink')}<ArrowUpRightIcon size={13} /></button>
     </div>
   );
 }

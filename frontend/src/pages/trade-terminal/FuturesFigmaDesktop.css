@@ -1,0 +1,158 @@
+/* Figma 9gbmBfp0OSHTzLsnbBUnrZ / 19:103, measured 2026-10-10.
+ * Desktop geometry only. Keep the existing palette, controls and engines.
+ * Follow-up: prioritize the chart over the imported frame's tall idle account area.
+ * 48px header (40px in #494; raised 2026-10-10, FuturesBybitParity.css), 56px pair row (48px in #494;
+ * raised to Bybit's 56px 2026-10-11, 52px on screens under 800px tall), 160px empty / 200px populated account area;
+ * retain the measured 286px book, 300px ticket and 4px gutters.
+ * The mobile cascade and alternative terminal layouts are deliberately scoped out.
+ */
+@media (min-width: 901px) {
+  #archive-terminal-preview.futures-terminal .terminal {
+    /* Bybit / Figma 19:103 «Aside»: 55.99px. Owner 2026-10-11: «панель занадто
+       вузька, текст як би зажат, повинен бути як у байбіт». */
+    --futures-ticker-height: 56px;
+    --futures-account-height: 200px;
+    --reference-book-width: 286px;
+    grid-template-columns: minmax(0, 1fr) var(--reference-book-width) 300px;
+    grid-template-rows: var(--futures-ticker-height) minmax(300px, 1fr) var(--futures-account-height);
+    gap: 4px;
+    padding: 4px;
+  }
+
+  /* Existing empty/loading/error status markup; no account state or readers change. */
+  #archive-terminal-preview.futures-terminal .terminal:has(.bottom-panel .futures-position-state) {
+    --futures-account-height: 160px;
+  }
+
+  /* Preserve the existing user-controlled collapse, including mounted readers. */
+  #archive-terminal-preview.futures-terminal .terminal[data-account-compact=true] {
+    grid-template-rows: var(--futures-ticker-height) minmax(300px, 1fr) 44px;
+  }
+
+  #archive-terminal-preview.futures-terminal .ticker-bar {
+    height: var(--futures-ticker-height);
+    min-height: var(--futures-ticker-height);
+    padding-block: 0;
+    grid-template-columns: max-content minmax(0, 1fr);
+    overflow: hidden;
+  }
+  #archive-terminal-preview.futures-terminal .archive-ticker-metrics {
+    min-width: 0;
+    grid-template-columns: repeat(7, max-content);
+    grid-auto-flow: column;
+    gap: 16px;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  #archive-terminal-preview.futures-terminal .ticker-bar .futures-primary-price {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  #archive-terminal-preview.futures-terminal .bottom-panel:not([data-account-compact=true]) {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  /* The existing Limit/Market fields retain their floating-label behavior. */
+  #archive-terminal-preview.futures-terminal .fo-field {
+    --fo-field-height: 42px;
+  }
+  #archive-terminal-preview.futures-terminal .fo-submitPair button {
+    height: 42px;
+    min-height: 42px;
+  }
+  #archive-terminal-preview.futures-terminal .archive-trading-heading {
+    height: 46px;
+    min-height: 46px;
+  }
+
+  #archive-terminal-preview.futures-terminal .order-family-tabs {
+    gap: 6px;
+  }
+  #archive-terminal-preview.futures-terminal .order-family-tabs button {
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+}
+
+/* Short laptop screens (1366x768, 1280x720): 52px keeps the chart tile above
+   60% of the screen, the #494 chart-priority floor that the desktop guard
+   holds; a full 56px would leave 460px of 768 there. */
+@media (min-width: 901px) and (max-height: 799px) {
+  #archive-terminal-preview.futures-terminal .terminal {
+    --futures-ticker-height: 52px;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1599px) {
+  #archive-terminal-preview.futures-terminal .archive-ticker-metrics {
+    column-gap: 10px;
+  }
+  #archive-terminal-preview.futures-terminal .ticker-bar .futures-primary-price {
+    padding-right: 4px;
+  }
+  /* Wrap descriptive labels on laptops; never truncate market values. */
+  /* 2026-10-11: with the 56px row a wrapped label gets 14px lines instead of
+     12px (two lines of 12px type no longer touch); the item is 42px tall. */
+  #archive-terminal-preview.futures-terminal .ticker-bar .ticker-item {
+    grid-template-rows: 28px 14px;
+  }
+  #archive-terminal-preview.futures-terminal .ticker-bar .ticker-item > .label,
+  #archive-terminal-preview.futures-terminal .ticker-bar .ticker-item button .label {
+    max-width: 105px;
+    white-space: normal;
+    line-height: 14px;
+  }
+}
+
+/* Top zone, owner request 2026-10-11 («пустота над графиком», «текст залезает
+ * под панель», «разделение верхних блоков»). Measured on main 9226c30d at
+ * 1366/1440/1548/1707/1920; the outer rows already match Figma 19:103, so only
+ * the placement inside them changes, plus 4px from the «График» row.
+ */
+@media (min-width: 901px) {
+  /* The bar inherited a second, empty grid row and a 16px row gap from the
+     shared ticker: its content was centred in the top 43px of 48, so the stat
+     labels began 2.5px under the edge, right below the header. One row now. */
+  #archive-terminal-preview.futures-terminal .ticker-bar {
+    grid-template-rows: minmax(0, 1fr);
+    row-gap: 0;
+    /* The same 1px rule as the header closes the bar above the workspace. */
+    box-shadow: inset 0 -1px 0 #222227;
+  }
+
+  /* No divider between the pair and its price (owner 2026-10-11: «тут
+     перегородки не має бути»); the #508 one is removed. */
+
+  /* «График»: the label stood 8px above an 8px pad and its underline, a loose
+     band over the toolbar. Figma draws the 2px underline straight under the
+     22px label; the row's idle top pad goes from 16px to 12px, which gives the
+     plot 4px back. */
+  #archive-terminal-preview.futures-terminal .terminal-chart-heading {
+    height: 36px;
+    min-height: 36px;
+    padding-top: 12px;
+  }
+  #archive-terminal-preview.futures-terminal .terminal-chart-heading > span {
+    height: 22px;
+    padding-bottom: 0;
+  }
+  #archive-terminal-preview.futures-terminal .terminal-chart-heading > div {
+    height: 22px;
+  }
+
+  /* Indicator names read as lines under «BTC/USDT · 1h», as Figma and Bybit
+     print them, instead of a boxed chip 32px down the plot. */
+  #archive-terminal-preview.futures-terminal .terminal-chart-shell .voltex-indicator-legend {
+    top: 28px !important;
+    left: 12px !important;
+    gap: 2px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+}

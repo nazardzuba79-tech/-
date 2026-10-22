@@ -89,6 +89,8 @@ async function viewport(width) {
       }
     });
     await page.goto(`${origin}/futures?pair=AKE%2FUSDT`);
+    // owner, 2026-10-04: phone opens on Trade — wait for the trade workspace it opens on.
+    if (width < 500) await page.locator('#mobile-futures-panel-trade').waitFor(); else
     await page.locator('.chart-surface').waitFor();
     if (width < 500) await page.locator('#mobile-futures-trade').click();
     const price = page.locator('.fo-priceInputRow input');

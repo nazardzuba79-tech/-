@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { useToast } from '../lib/toast';
 import { SpotOrdersView } from './SpotOrdersView';
-import { cancelSpotOrders, spotOrderCancelIds, createSpotReadController, startVisibleReadPolling, type SpotReadController, type SpotOrderRow } from './spotOrderPresentation';
+import { cancelSpotOrders, spotOrderCancelIds, createSpotReadController, startVisibleReadPolling, SPOT_OPEN_ORDER_STATUSES, type SpotReadController, type SpotOrderRow } from './spotOrderPresentation';
 import './SpotOrders.css';
 import { customerErrorText } from '../lib/customerError';
 
@@ -37,7 +37,7 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, {
     const [cancelling, setCancelling] = useState(false);
     const cancelInFlight = useRef(false);
     const reader = useRef<SpotReadController | null>(null);
-    if (!reader.current) reader.current = createSpotReadController(() => api.getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED'), {
+    if (!reader.current) reader.current = createSpotReadController(fresh => api.getMyOrders(SPOT_OPEN_ORDER_STATUSES, { fresh }), {
       started: () => setRefreshing(true), accept: rows => { setOrders(rows); setFailed(false); }, reject: () => setFailed(true),
       settled: () => { setLoading(false); setRefreshing(false); },
     });

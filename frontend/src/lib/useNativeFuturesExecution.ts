@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { closeEventIds, closeFillFromEvents } from './futuresCloseFill';
 import type { FuturesExecution } from './futuresExecution';
 import { REAL_FUTURES_EXECUTION } from './futuresExecution';
 import { nativeAccountState } from './nativeFuturesAdapter';
@@ -101,43 +102,7 @@ export function useNativeFuturesExecution(
       };
     }
 
-    return {
-      engine: 'NATIVE' as const,
-      ready: true,
-      account,
-      // Trader chooses the real risk bucket; native opens on Cross by default.
-      marginType: null,
-      defaultMarginType: 'CROSS' as const,
-      candle: pickedCandle,
-      candlePrice,
-      historicalEntryPending,
-      contract,
-      account_aggregate: aggregate,
-      activation,
-      // The simulation engine carries TP/SL on the order itself
-      // (`DemoOrderInput.protection`), validates the levels against the
-      // order's own price and applies them to the position the fill creates.
-      entryProtection: true,
-      async placeOrder(params) {
-        // A position may close/change between the form's render and submit.
-        // Resolve against the controller's current authoritative transcript,
-        // never the older state captured when this execution object rendered.
-        const current = native.getState();
-        if (!current?.initialized) throw new PrivateTradingError('Торговый счёт ещё не загружен', 409);
-        // The reference displayed by the form is the reference it submits.
-        // A missing/mismatched reference cannot silently become a live order.
-        if (params.candle !== undefined && JSON.stringify(params.candle) !== JSON.stringify(pickedCandle)) {
-          throw new PrivateTradingError('Выберите точку входа на графике.', 409, 'HISTORICAL_ENTRY_REQUIRED');
-        }
-        const draft = nativeOrderDraft(current.positions, params, exitId, params.candle === undefined ? pickedCandle : params.candle);
-        // The server's refusal travels as the structured error it is (code,
-        // status, contract limit), so the terminal localizes the real reason.
-        try { await execute(draft); } catch (e) { throw failureOf(e, 'Операция не подтверждена'); }
-      },
-      async cancelOrder(orderId) {
-        try { await execute({ kind: 'CANCEL', orderId }); } catch (e) { throw failureOf(e, 'Ордер не отменён'); }
-      },
-      async closePosition(positionId) {
+    const closeUntilFlat = async (positionId: string): Promise<void> => {
         const first=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
         if(!first)throw new PrivateTradingError('Позиция уже закрыта или не найдена',409);
         if(first.executionMode==='HISTORICAL_DEMO'){
@@ -181,6 +146,50 @@ export function useNativeFuturesExecution(
           }
         }
         throw new PrivateTradingError('Позиция закрыта частично. Повторите закрытие оставшегося объёма.',409);
+    };
+
+    return {
+      engine: 'NATIVE' as const,
+      ready: true,
+      account,
+      // Trader chooses the real risk bucket; native opens on Cross by default.
+      marginType: null,
+      defaultMarginType: 'CROSS' as const,
+      candle: pickedCandle,
+      candlePrice,
+      historicalEntryPending,
+      contract,
+      account_aggregate: aggregate,
+      activation,
+      // The simulation engine carries TP/SL on the order itself
+      // (`DemoOrderInput.protection`), validates the levels against the
+      // order's own price and applies them to the position the fill creates.
+      entryProtection: true,
+      async placeOrder(params) {
+        // A position may close/change between the form's render and submit.
+        // Resolve against the controller's current authoritative transcript,
+        // never the older state captured when this execution object rendered.
+        const current = native.getState();
+        if (!current?.initialized) throw new PrivateTradingError('Торговый счёт ещё не загружен', 409);
+        // The reference displayed by the form is the reference it submits.
+        // A missing/mismatched reference cannot silently become a live order.
+        if (params.candle !== undefined && JSON.stringify(params.candle) !== JSON.stringify(pickedCandle)) {
+          throw new PrivateTradingError('Выберите точку входа на графике.', 409, 'HISTORICAL_ENTRY_REQUIRED');
+        }
+        const draft = nativeOrderDraft(current.positions, params, exitId, params.candle === undefined ? pickedCandle : params.candle);
+        // The server's refusal travels as the structured error it is (code,
+        // status, contract limit), so the terminal localizes the real reason.
+        try { await execute(draft); } catch (e) { throw failureOf(e, 'Операция не подтверждена'); }
+      },
+      async cancelOrder(orderId) {
+        try { await execute({ kind: 'CANCEL', orderId }); } catch (e) { throw failureOf(e, 'Ордер не отменён'); }
+      },
+      async closePosition(positionId) {
+        // Only the CLOSE fills this close adds are its fills: the journal
+        // may already hold earlier partial closes of the same position.
+        const before = closeEventIds(native.getState()?.events, positionId);
+        await closeUntilFlat(positionId);
+        return closeFillFromEvents(native.getState()?.events, positionId, before);
       },
       async setProtection(positionId, body) {
         try { await execute({ kind: 'PROTECTION', positionId, protection: { takeProfit: body.takeProfit, stopLoss: body.stopLoss } }); }

@@ -1,0 +1,52 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { plan, checkLedger, redact, MIGRATION } = require('./kyc-hetzner-prisma.cjs');
+const env = { VOLTEX_RUNTIME_MODE: 'production', VOLTEX_RELEASE_SHA: 'a'.repeat(40) };
+const approved = { ...env, KYC_APPROVED_RELEASE_SHA: env.VOLTEX_RELEASE_SHA, KYC_VERIFIED_BACKUP_SHA256: 'b'.repeat(64) };
+test('status is explicit and read-only', () => assert.equal(plan(['status'], env), 'status'));
+test('no implicit deploy or arbitrary Prisma command', () => {
+  for (const args of [[], ['resolve'], ['deploy', '--force'], ['reset']]) assert.throws(() => plan(args, approved));
+});
+test('requires production mode and exact SHA', () => {
+  assert.throws(() => plan(['status'], { ...env, VOLTEX_RUNTIME_MODE: 'verify' }));
+  assert.throws(() => plan(['status'], { ...env, VOLTEX_RELEASE_SHA: 'main' }));
+});
+test('deploy requires matching approval and backup receipt', () => {
+  assert.throws(() => plan(['deploy'], env));
+  assert.throws(() => plan(['deploy'], { ...approved, KYC_APPROVED_RELEASE_SHA: 'c'.repeat(40) }));
+  assert.throws(() => plan(['deploy'], { ...approved, KYC_VERIFIED_BACKUP_SHA256: '' }));
+  assert.equal(plan(['deploy'], approved), 'deploy');
+});
+const old = { migration_name: 'old', finished_at: new Date(), rolled_back_at: null };
+test('only exact KYC migration may be pending', () => {
+  assert.doesNotThrow(() => checkLedger([old], ['old', MIGRATION]));
+  assert.throws(() => checkLedger([old], ['old', 'another', MIGRATION]));
+  assert.throws(() => checkLedger([old], ['old']));
+  assert.throws(() => checkLedger([old], [MIGRATION]));
+});
+test('failed or already-applied KYC blocks retry', () => {
+  assert.throws(() => checkLedger([old, { migration_name: MIGRATION, finished_at: null, rolled_back_at: null }], ['old', MIGRATION]));
+  assert.throws(() => checkLedger([old, { ...old, migration_name: MIGRATION }], ['old', MIGRATION]));
+});
+test('redacts password, encoded password and connection URL', () => {
+  const pass = 'synthetic:p@ss'; const url = 'postgresql://user:synthetic%3Ap%40ss@db/test';
+  const clean = redact([pass, encodeURIComponent(pass), url, 'postgres://other:private@db/test'].join(' '), pass, url);
+  assert.doesNotMatch(clean, /synthetic|private|postgres/);
+});
+test('CLI failures do not print unchecked exception content', () => {
+  const { spawnSync } = require('node:child_process');
+  const result = spawnSync(process.execPath, [require.resolve('./kyc-hetzner-prisma.cjs'), 'status'], {
+    env: { ...process.env, VOLTEX_RUNTIME_MODE: 'synthetic-private-value' }, encoding: 'utf8',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Migration runner stopped/);
+  assert.doesNotMatch(result.stderr, /synthetic-private-value|Error:|at main/);
+});
+test('candidate keeps historical migration bytes from the pinned base', () => {
+  const fs = require('node:fs'); const path = require('node:path');
+  const recipe = fs.readFileSync(path.join(__dirname, 'kyc-hetzner.Dockerfile'), 'utf8');
+  assert.doesNotMatch(recipe, /^COPY(?: --\S+)* prisma\s/m);
+  assert.equal(recipe.split('\n').filter(line => line.startsWith('COPY') && line.includes(`prisma/migrations/${MIGRATION}`)).length, 2);
+  assert.match(recipe, /FROM sha256:594d20f45f48775be9698793c32de273744bb4c4d7c57f73c4a4087fb896aec1/);
+});

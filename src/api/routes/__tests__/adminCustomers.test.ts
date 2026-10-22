@@ -22,7 +22,7 @@ function fixture() {
     && (!w.email?.contains || u.email.toLowerCase().includes(w.email.contains.toLowerCase()));
   const deposit = (id: string, userId: string | null, confirmed = true, credited = false) => ({
     id, userId, user: users.find(u => u.id === userId) ?? null,
-    chain: 'tron', asset: 'USDT', txHash: id.padEnd(64, 'a'), amount: '400',
+    chain: 'tron', asset: 'USDT', txHash: id.padEnd(64, 'a'), amount: '500',
     status: credited ? 'CREDITED' : 'PENDING', confirmations: confirmed ? 30 : 0,
     verifiedAt: now, finalized: confirmed, verifyError: null, batchId: null, revision: 1,
     recipientAddress: 'test-only', blockTimestamp: null, createdAt: now,
@@ -78,7 +78,7 @@ test('customer KPIs and activity omit admin packages while the general deposit q
   const before = JSON.stringify(deposits);
   const res = await request(app).get('/api/v1/admin/user-activity').set('Authorization', auth());
   expect(res.status).toBe(200);
-  expect(res.body).toMatchObject({ totalUsers: 3, newUsers24h: 1, pendingKyc: 1 });
+  expect(res.body).toMatchObject({ totalUsers: 3, newUsers24h: 1, pendingKyc: 1, minDepositUsd: 500 });
   expect(prisma.user.count.mock.calls.map((c: any) => c[0].where.role)).toEqual(['USER', 'USER', 'USER']);
   expect(res.body.packages.map((p: any) => p.userId)).toEqual(['new']);
   expect(res.body.awaitingConfirmationsByUser).toEqual({ new: 1 });
@@ -92,6 +92,17 @@ test('customer KPIs and activity omit admin packages while the general deposit q
   expect(JSON.stringify(deposits)).toBe(before);
   expect(prisma.deposit.update).not.toHaveBeenCalled();
   expect(prisma.deposit.delete).not.toHaveBeenCalled();
+});
+
+test('customer activity keeps a confirmed 400 USDT package awaiting topup under the 500 minimum', async () => {
+  const { app, auth, deposits, prisma } = fixture();
+  deposits.find(deposit => deposit.id === 'customer-ready')!.amount = '400';
+  const res = await request(app).get('/api/v1/admin/user-activity').set('Authorization', auth());
+  expect(res.status).toBe(200);
+  expect(res.body.minDepositUsd).toBe(500);
+  expect(res.body.counts).toMatchObject({ READY: 0, AWAITING_TOPUP: 1, AWAITING_CONFIRMATIONS: 1 });
+  expect(res.body.packages.map((p: any) => p.userId)).toEqual(['new']);
+  expect(prisma.deposit.update).not.toHaveBeenCalled();
 });
 
 test('admin session remains valid after list/activity reads; no role, balance or audit mutations', async () => {

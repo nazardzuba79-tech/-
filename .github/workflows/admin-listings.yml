@@ -3,6 +3,11 @@ on:
   pull_request:
     paths:
       - 'src/services/listings/**'
+      - 'src/shared/listingScenarioControls.ts'
+      - 'src/shared/listingHistoricalReplay.ts'
+      - 'src/shared/aithPublication.ts'
+      - 'config/test-markets/aith.draft.json'
+      - 'config/test-markets/tyvn.draft.json'
       - 'src/services/testMarkets/**'
       - 'src/services/OrderService.ts'
       - 'src/services/WalletPortfolioService.ts'
@@ -21,6 +26,14 @@ on:
       - 'frontend/src/components/CryptoIcon.tsx'
       - 'frontend/vite.config.ts'
       - 'scripts/qa-admin-listings.cjs'
+      - 'scripts/qa-listing-timer.cjs'
+      - 'scripts/qa-listing-tyvn.cjs'
+      - 'scripts/qa-aith-replacement.cjs'
+      - 'scripts/qa-listing-controls.cjs'
+      - 'scripts/benchmark-historical-replay.cjs'
+      - 'scripts/qa-historical-archive-storage.cjs'
+      - 'frontend/src/lib/__tests__/listingMovement*.test.ts'
+      - 'frontend/src/lib/__tests__/listingHistoricalLibrary.test.ts'
       - 'scripts/smoke-market-edge-listings.mjs'
       - 'render.yaml'
       - 'scripts/allocate-listing-owner.cjs'
@@ -60,14 +73,28 @@ jobs:
           npx jest --runInBand --silent --runTestsByPath
           src/services/listings/__tests__/listingConfig.test.ts
           src/services/listings/__tests__/tradingGates.test.ts
+          src/services/listings/__tests__/listingCountdown.test.ts
+          src/services/listings/__tests__/tyvnDraft.test.ts
+          src/services/listings/__tests__/aithReplacement.test.ts
           src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
+          src/services/listings/__tests__/historicalDemoContour.pg.test.ts
           src/services/listings/__tests__/ownerAllocation.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
+          frontend/src/lib/__tests__/listingTimeSafety.test.ts
           frontend/src/lib/__tests__/testMarkets.test.ts
       - name: Durable Object store on real workerd (Miniflare)
         run: npm run test:listings --prefix workers/market-edge
+      - name: Saved scenario controls, bounds, legacy-history preservation and the historical demo contour
+        run: >-
+          npx jest --runInBand --silent
+          --testPathPattern='listingScenarioControls|listingMovement|listingPreview|cappedDemoListing|historicalMovement|listingHistoricalLibrary|historicalDemoContour'
+      - name: Historical replay CPU/RAM diagnostic (synthetic fixtures, not CX23)
+        run: |
+          mkdir -p /tmp/listings-qa-report
+          node --expose-gc scripts/benchmark-historical-replay.cjs > /tmp/listings-qa-report/historical-replay-benchmark.json
+          cat /tmp/listings-qa-report/historical-replay-benchmark.json
       - name: Post-deploy smoke script (configured / not configured / token mismatch) on real workerd
         run: npm run test:smoke --prefix workers/market-edge
       - name: Existing Worker contract
@@ -80,14 +107,44 @@ jobs:
           VITE_MARKET_EDGE_URL: http://127.0.0.1:8787
       - name: Install browser
         run: |
-          npm install --prefix /tmp/listings-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          npm install --prefix /tmp/listings-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/listings-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Historical archive integrity on real Chromium / IndexedDB
+        run: node scripts/qa-historical-archive-storage.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_OUTPUT: /tmp/listings-qa-report/historical-archive-storage
       - name: Create → Preview → Publish → open from Markets, no redeploy
         run: node scripts/qa-admin-listings.cjs
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
           QA_FRONTEND_DIST: .listings-qa-dist
           QA_OUTPUT: /tmp/listings-qa-report
+      - name: Pre-listing timer — exchange card (running / paused / 13:00 UTC) and admin start / pause / stop, by server time
+        run: node scripts/qa-listing-timer.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUT: /tmp/listings-qa-report/listing-timer
+      - name: TERYVANE (TYVN/USDT) 26.10.2026 draft — created through the real admin route on workerd, previewed, never published
+        run: node scripts/qa-listing-tyvn.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUT: /tmp/listings-qa-report/listing-tyvn
+      - name: Scenario controls desktop/mobile, saved preview and Worker restart
+        run: node scripts/qa-listing-controls.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report/scenario-controls
+      - name: AITH immutable replacement, lease drain and seven customer viewport sizes
+        run: node scripts/qa-admin-listings.cjs
+        env:
+          QA_AITH_REPLACEMENT: '1'
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report/aith-replacement
       - uses: actions/upload-artifact@v4
         if: always()
         with:

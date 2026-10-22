@@ -2,6 +2,14 @@ import { VtaSpotPanels } from '../components/VtaSpotPanels';
 import { NrxBookTabs } from '../components/NrxBookTabs';
 import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 
+/** The market list starts folded on desktops narrower than 1366px, where the
+ *  four-column grid cannot give the chart a readable plot. */
+const NARROW_DESKTOP_QUERY = '(min-width: 1025px) and (max-width: 1365px)';
+function startsWithMarketListFolded(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(NARROW_DESKTOP_QUERY).matches;
+}
+
 import { readSpotPublicBook } from '../lib/spotPublicMarket';
 import { SampledDataNote } from '../components/SampledDataNote';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -21,12 +29,12 @@ import { useCompactAccountPanel } from '../lib/useCompactAccountPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { CfdInstrumentList } from '../components/CfdInstrumentList';
 import { CfdTickerBar } from '../components/CfdTickerBar';
-import { resolveCfdSymbol } from '../lib/cfdPresentation';
+import { cfdChartPriceFormatter, resolveCfdSymbol } from '../lib/cfdPresentation';
 import './trade-terminal/CfdTerminal.css';
-import { CfdChart } from '../components/CfdChart';
 import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
+import { useCfdPracticePositionLines } from '../lib/useCfdPracticePositions';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import './trade-terminal/TradeTerminal.css';
@@ -42,12 +50,23 @@ import './trade-terminal/TerminalPremium.css';
 import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/TerminalMobileParity.css';
 import './trade-terminal/TerminalPreviewPolish.css';
+import './trade-terminal/SpotCfdGraphite.css';
+// The released Futures look (PR #469) on the Spot and CFD DOM: geometry, type
+// and palette only, scoped to .spot-terminal / .cfd-terminal (owner, 2026-10-07).
+import './trade-terminal/SpotCfdParity.css';
+// CFD workspace (2026-10-15): instrument bar figures, grouped market list, market-only ticket, positions.
+import './trade-terminal/CfdWorkspace.css';
+import './trade-terminal/SpotMobileCompact.css';
+import './trade-terminal/SpotMobilePhone.css';
+import './trade-terminal/TerminalMobileHeader.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
 import { isEdgeMarketPair } from '../lib/nrxMarket';
 import { useManagedListingDiscovery, useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
 import { useMarketData } from '../lib/useMarketData';
 import { TestMarketChart } from '../components/TestMarketTerminal';
+import { TerminalMarketSwitch } from '../components/TerminalMarketSwitch';
+import { resolveSwitchedPair, switchedFrom } from '../lib/terminalMarketSwitch';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -82,10 +101,10 @@ export function TradePage() {
   // the URL itself changes, so picking a pair in the sidebar — which
   // doesn't touch the URL — is never clobbered by it.
   useEffect(() => {
-    const next = searchParams.get('pair');
-    if (next && PAIR_PATTERN.test(next)) setPair(next);
-  }, [searchParams]);
+    if (requestedPair && PAIR_PATTERN.test(requestedPair)) setPair(requestedPair);
+  }, [requestedPair]);
   const [book, setBook] = useState<{ pair: string; bids: any[]; asks: any[]; asOf?: number | null }>({ pair, bids: [], asks: [] });
+  const [bookFeed, setBookFeed] = useState({ pair, healthy: false });
   // Effects run after render: never expose the previous instrument's depth
   // during that first new-pair render or initialize grouping from its prices.
   const visibleBook = book.pair === pair ? book : { bids: [], asks: [] };
@@ -103,9 +122,14 @@ export function TradePage() {
   // ticker bar) or the listings catalogue — so a managed listing never fetches venue candles or depth.
   const venueSnapshot = useMarketData(3000);
   const pairResolving = !isTestMarketPair(pair) && !managedCatalogue.loaded && !venueSnapshot.tickers.has(pair.toUpperCase());
-  const testMarket = useTestMarket(testPair ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
+  const testMarket = useTestMarket(testPair && searchParams.get('market') !== 'cfd' ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
-  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart');
+  // A phone opens a tradable pair on the trading workspace — book beside
+  // the ticket, open orders underneath — not on a full-screen chart (owner,
+  // 2026-10-04). An upcoming listing still opens on its chart, where its
+  // countdown card lives; CFD keeps its chart-first workspace. `null` means
+  // "not chosen yet": the default follows the pair until the trader picks.
+  const [mobileTabChoice, setMobileTab] = useState<'chart' | 'trade' | 'account' | null>(null);
   const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart');
   const mobileTabsRef = useRef<HTMLDivElement>(null);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
@@ -118,14 +142,28 @@ export function TradePage() {
   const openOrdersRef = useRef<OpenOrdersHandle>(null);
   const pairListRef = useRef<PairListHandle>(null);
   const [marketPanelWidth, setMarketPanelWidth] = useState(258);
-  const [marketPanelCollapsed, setMarketPanelCollapsed] = useState(false);
+  // Desktop below 1366px (1280×720 laptops, 1366px at 110–125 % zoom): the
+  // four columns left the plot 126–316px wide and pushed the toolbar's gear
+  // under the chart, so the market list starts folded there and the «Рынки»
+  // key brings it back (2026-10-13 audit). Phones and tablets (≤1024px) have
+  // their own stacked layout and keep it open.
+  const [marketPanelCollapsed, setMarketPanelCollapsed] = useState(() => startsWithMarketListFolded());
+  // Zooming or resizing across that edge folds or unfolds the list the same
+  // way; a toggle by hand stays until the next crossing.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const narrow = window.matchMedia(NARROW_DESKTOP_QUERY);
+    const onChange = (event: MediaQueryListEvent) => setMarketPanelCollapsed(event.matches);
+    narrow.addEventListener('change', onChange);
+    return () => narrow.removeEventListener('change', onChange);
+  }, []);
   const [orderBookCollapsed, setOrderBookCollapsed] = useState(false);
   const [ordersHeight, setOrdersHeight] = useState(172);
   const bookPairRef = useRef(pair);
   const bookGenerationRef = useRef(0);
   const bookRequestRef = useRef(0);
   const bookWsVersionRef = useRef(0);
-  const bookPendingRef = useRef<{ generation: number; request: number } | null>(null);
+  const bookPendingRef = useRef<{ generation: number; request: number; abort: () => void } | null>(null);
   /** The pair the ladder on screen belongs to, so a remount can tell a real
    *  market change from a re-render and keep last-good in the second case. */
   const bookShownPairRef = useRef<string | null>(null);
@@ -137,12 +175,19 @@ export function TradePage() {
   // useState initializer alone only ever fires once; without this effect,
   // switching "CFD" -> "Спот" from the nav updates the URL but leaves
   // marketType — and the whole page — stuck on whatever it started as.
-  const [marketType, setMarketType] = useState<MarketType>(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
+  const requestedMarketType: MarketType = searchParams.get('market') === 'cfd' ? 'cfd' : 'spot';
+  const [marketType, setMarketType] = useState<MarketType>(requestedMarketType);
   useEffect(() => {
-    setMarketType(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
-    setMobileTab('chart');
+    setMarketType(requestedMarketType);
+    setMobileTab(null);
     setMobilePane('chart');
-  }, [searchParams]);
+  }, [requestedMarketType]);
+  // A phone opens on Trade where there is something to trade (owner,
+  // 2026-10-04). The chart stays first for CFD, for a listing still counting
+  // down, and for a display-only test market whose ticket only refuses.
+  const prelisting = testPair && testMarket.asset?.state.phase !== 'live';
+  const displayOnly = pair === 'AITH/USDT' || (testPair && testMarket.asset?.isTradable === false);
+  const mobileTab = mobileTabChoice ?? (marketType === 'cfd' || prelisting || displayOnly ? 'chart' : 'trade');
   // Landing here is the signal that spot is this user's current trading
   // mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('spot'), []);
@@ -162,6 +207,8 @@ export function TradePage() {
   }, [searchParams]);
   const selectedCfdSymbol = resolveCfdSymbol(cfdSymbol, cfdTickers);
   const cfdTicker = cfdTickers.find((t) => t.symbol === selectedCfdSymbol);
+  // Practice entries on the chart: the fill price only (the practice has no liquidation engine, so no liquidation line).
+  const cfdPositionLines = useCfdPracticePositionLines(marketType === 'cfd');
   const selectCfdSymbol = (next: string) => {
     setCfdSymbol(next);
     setSearchParams(current => {
@@ -171,6 +218,28 @@ export function TradePage() {
       return params;
     }, { replace: true });
   };
+
+  /**
+   * «Спот» from a contract the shared snapshot did not list arrives as
+   * `?from=PAIR`: the pair on screen stays until the Spot snapshot and the
+   * listings catalogue answer, then the pair is selected, or the market list
+   * opens with a note. A perpetual-only contract never becomes an invented
+   * Spot pair. See lib/terminalMarketSwitch.
+   */
+  const switchedFromFutures = switchedFrom(searchParams.get('from'));
+  const [switchNote, setSwitchNote] = useState<string | null>(null);
+  useEffect(() => { setSwitchNote(null); }, [pair]);
+  useEffect(() => {
+    if (!switchedFromFutures || searchParams.get('market') === 'cfd') return;
+    const listed = { has: (candidate: string) => venueSnapshot.tickers.has(candidate) || isTestMarketPair(candidate) || (managedCatalogue.loaded && isManagedListingPair(candidate)) };
+    const verdict = resolveSwitchedPair(switchedFromFutures, listed, venueSnapshot.tickers.size > 0 && managedCatalogue.loaded);
+    if (verdict === 'wait') return;
+    if (verdict === 'select') { selectSpotPair(switchedFromFutures); return; }
+    setSearchParams(current => { const params = new URLSearchParams(current); params.delete('from'); return params; }, { replace: true });
+    setSwitchNote(switchedFromFutures);
+    openPairSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [switchedFromFutures, venueSnapshot.tickers, managedCatalogue.loaded]);
 
   // The visible order book mirrors Kraken's real depth for a live, populated
   // look — actual order matching always happens on our own internal book
@@ -183,17 +252,31 @@ export function TradePage() {
     // request settles; that old promise may not unlock the newer request.
     if (bookPendingRef.current?.generation === generation) return;
     const request = ++bookRequestRef.current;
-    const pending = { generation, request };
+    const controller = new AbortController();
+    let timedOut = false;
+    // Same twelve-second public-read deadline as PriceChart. A hung display
+    // request must release its lock so the next normal poll can recover.
+    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 12_000);
+    const pending = { generation, request, abort: () => { clearTimeout(timeout); controller.abort(); } };
     bookPendingRef.current = pending;
     const wsVersion = bookWsVersionRef.current;
-    readSpotPublicBook(pair)
+    readSpotPublicBook(pair, controller.signal)
       .then((res) => {
+        if (controller.signal.aborted) return;
         if (bookPairRef.current === pair && generation === bookGenerationRef.current && request === bookRequestRef.current && wsVersion === bookWsVersionRef.current) {
           setBook({ pair, bids: res.bids, asks: res.asks, asOf: res.asOf });
+          setBookFeed({ pair, healthy: res.status !== 'unavailable' });
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (controller.signal.aborted && !timedOut) return;
+        if (bookPairRef.current === pair && generation === bookGenerationRef.current && request === bookRequestRef.current && wsVersion === bookWsVersionRef.current) {
+          // Keep the last confirmed ladder and observation time visible.
+          setBookFeed({ pair, healthy: false });
+        }
+      })
       .finally(() => {
+        clearTimeout(timeout);
         if (bookPendingRef.current === pending) bookPendingRef.current = null;
       });
   }, [pair, marketType]);
@@ -208,9 +291,10 @@ export function TradePage() {
     if (marketType !== 'spot' || !bookLive || pairResolving) return;
     refreshBook();
     const timer=browserSetInterval(()=>{if(!isBrowserInactive())refreshBook();},testPair ? 10_000 : 60_000);
-    const visible=()=>{if(!isBrowserInactive())refreshBook();};
+    const stopRequest=()=>{bookGenerationRef.current++;const pending=bookPendingRef.current;bookPendingRef.current=null;pending?.abort();};
+    const visible=()=>{if(isBrowserInactive())stopRequest();else refreshBook();};
     addBrowserActivityListener(visible);
-    return()=>{bookGenerationRef.current+=1;browserClearInterval(timer);removeBrowserActivityListener(visible);};
+    return()=>{stopRequest();browserClearInterval(timer);removeBrowserActivityListener(visible);};
   }, [pair,marketType,refreshBook,bookLive,testPair,pairResolving]);
 
   function handleOrderPlaced() {
@@ -265,6 +349,23 @@ export function TradePage() {
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }, [accountPanel]);
 
+  const selectSpotPair = useCallback((nextPair: string) => {
+    setPair(nextPair);
+    setSearchParams(current => {
+      const params = new URLSearchParams(current);
+      params.delete('market');
+      params.delete('symbol');
+      params.delete('from');
+      params.set('pair', nextPair);
+      return params;
+    }, { replace: true });
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      setMobilePane('chart');
+      setMobileTab('trade');
+      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    }
+  }, [setSearchParams]);
+
   function openPairSearch() {
     setMarketPanelCollapsed(false);
     if (window.matchMedia('(max-width: 900px)').matches) {
@@ -276,7 +377,9 @@ export function TradePage() {
 
   const mobileTabs = (
     <div className="terminal-mobile-tabs" ref={mobileTabsRef} role="tablist" aria-label={t('nav.trade')}>
-      {([['chart', 'futures.chart'], ['trade', 'nav.trade'], ['account', 'trade.tabOpenOrders']] as const).map(([id, label]) => (
+      {/* «Ордера» / «Позиции», not «Открытые ордера»: the third tab's label
+          wrapped onto two lines at 390px and under (three equal columns). */}
+      {([['chart', 'futures.chart'], ['trade', 'nav.trade'], ['account', marketType === 'cfd' ? 'futures.positions' : 'trade.mobileTabOrders']] as const).map(([id, label]) => (
         <button type="button" role="tab" key={id} id={`mobile-trade-${id}`}
           aria-selected={mobileTab === id} tabIndex={mobileTab === id ? 0 : -1}
           onKeyDown={event => {
@@ -297,7 +400,7 @@ export function TradePage() {
     return (
       <div className="trade-terminal cfd-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
         <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
-        <ConnectionBanner />
+        <ConnectionBanner key={`cfd:${selectedCfdSymbol}`} connected={!cfdLoadError && cfdTicker?.price != null} />
         <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="cfd">
           <CfdTickerBar symbol={selectedCfdSymbol} ticker={cfdTicker} />
           {mobileTabs}
@@ -311,14 +414,17 @@ export function TradePage() {
                 tickers={cfdTickers} configured={cfdConfigured} loadError={cfdLoadError} onRetry={reloadCfd} />
             </aside>
             <section className="cfd-chart-area" aria-label={selectedCfdSymbol}>
-              <CfdChart symbol={selectedCfdSymbol} />
+              {/* Chart Workspace 2.0 (2026-10-15): the Spot/Futures chart with the CFD display source (lib/cfdCandles). */}
+              <PriceChart pair={selectedCfdSymbol} market="cfd" chrome="terminal" drawingTools compactTools chartSettings
+                onSelectPair={selectCfdSymbol} priceFormatter={cfdChartPriceFormatter(selectedCfdSymbol)} pairFormatter={cfdChartPriceFormatter}
+                positionLines={cfdPositionLines} />
             </section>
             <section className="cfd-form-area" aria-label={t('trade.market')}>
               <CfdOrderForm symbol={selectedCfdSymbol} ticker={cfdTicker} configured={cfdConfigured} onPlaced={handleOrderPlaced} />
             </section>
           </main>
           <div className="cfd-bottom-panel" data-mobile-account-panel>
-            <CfdPositionsPanel refreshKey={ordersRefreshKey} />
+            <CfdPositionsPanel refreshKey={ordersRefreshKey} tickers={cfdTickers} />
           </div>
         </div>
       </div>
@@ -328,8 +434,9 @@ export function TradePage() {
   const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />;
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
-      <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
-      <ConnectionBanner />
+      <Nav active="/trade" onTickerSelect={selectSpotPair} staticTicker tickerFitToWidth terminalSwitch={<TerminalMarketSwitch current="spot" pair={pair} />} />
+      {/* Each terminal reports its actual public feed, not an unused venue socket. */}
+      <ConnectionBanner key={pair} connected={testPair ? testMarket.loaded && !testMarket.error && !!testMarket.asset : bookFeed.pair === pair && bookFeed.healthy} />
 
       <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="spot">
         <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />
@@ -354,10 +461,11 @@ export function TradePage() {
           style={{ '--market-panel-width': `${marketPanelWidth}px` } as React.CSSProperties}
         >
           <div className="left-panel">
+            {switchNote && <p className="terminal-switch-note" role="status">{t('terminal.noSpotPair', { pair: switchNote })}</p>}
             <PairListSidebar
               ref={pairListRef}
               pair={pair}
-              onChange={setPair}
+              onChange={selectSpotPair}
               onCollapse={() => setMarketPanelCollapsed(true)}
               onResizeStart={handleMarketResizeStart}
               onResizeBy={(delta) => setMarketPanelWidth(width => Math.min(340, Math.max(240, width + delta)))}
@@ -367,10 +475,10 @@ export function TradePage() {
 
           <div className="chart-area" data-test-market={testPair || undefined}>
             {testPair
-              ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} />
+              ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} error={testMarket.error} />
               : pairResolving
                 ? <div className="chart-resolving" style={{ width: "100%", height: "100%" }} aria-busy="true" data-pair-resolving />
-                : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />}
+                : <PriceChart pair={pair} onSelectPair={selectSpotPair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />}
           </div>
 
           <div className="orderbook-area" data-sampled-book="true">

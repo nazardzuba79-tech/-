@@ -1,12 +1,12 @@
 import { useState, FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AlertTriangleIcon, ArrowRightIcon, Loader2Icon, LockKeyholeIcon } from 'lucide-react';
 import { api, setToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { defaultTradingPath } from '../lib/tradingMode';
 import { readNext } from '../lib/returnTo';
-import { openSupportWidget } from '../lib/supportWidget';
-import { AuthShell } from './auth-shell/AuthShell';
+
+import { AuthShell, AuthFormIcon, AuthTabs, AuthSupport } from './auth-shell/AuthShell';
 import { AuthField, AuthPasswordField } from './auth-shell/AuthFields';
 import { customerErrorText } from '../lib/customerError';
 
@@ -71,12 +71,9 @@ export function AuthPage() {
   }
 
   return (
-    <AuthShell
-      switchPrompt={t('auth.noAccount')}
-      switchLabel={t('auth.createAccount')}
-      switchTo={`/register${window.location.search}`}
-    >
+    <AuthShell>
       <div className="vx-auth-body vx-auth-enter">
+        <AuthFormIcon />
         {pendingToken ? (
           <>
             <div className="vx-auth-overline">{t('authShell.overline.twoFa')}</div>
@@ -132,6 +129,8 @@ export function AuthPage() {
             <h1>{t('auth.loginTitle')}</h1>
             <p className="vx-auth-sub">{t('auth.loginSubtitle')}</p>
 
+            <AuthTabs active="login" />
+
             <form onSubmit={handleSubmit} className="vx-auth-form">
               <AuthField id="login-email" label={t('auth.email')}>
                 <input
@@ -154,11 +153,7 @@ export function AuthPage() {
                 autoComplete="current-password"
                 required
                 aside={
-                  // There is no self-service reset endpoint, so this opens
-                  // the real support chat (mounted globally, and usable
-                  // signed-out) rather than linking to a page that would
-                  // have to be invented.
-                  <button type="button" onClick={openSupportWidget} className="vx-auth-forgot">
+                  <button type="button" onClick={() => setError('Поддержка доступна только после входа в аккаунт.')} className="vx-auth-forgot">
                     {t('auth.forgotPassword')}
                   </button>
                 }
@@ -178,12 +173,10 @@ export function AuthPage() {
               </button>
             </form>
 
-            <p className="vx-auth-alt">
-              {t('auth.noAccount')} <Link to={`/register${window.location.search}`}>{t('auth.createAccount')}</Link>
-            </p>
           </>
         )}
 
+        <AuthSupport />
         <p className="vx-auth-security">
           <LockKeyholeIcon size={14} strokeWidth={1.8} />
           {t('register.securityNote')}

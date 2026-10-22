@@ -1,0 +1,74 @@
+{
+  "generatedAt": "2026-10-14T14:19:58.376Z",
+  "git": {
+    "prHead": null,
+    "base": null,
+    "checkout": "fa76e844d69a2c924df5c820935387c43d28e3cb",
+    "ref": "claude/peaceful-volta-h5zw7g-chart-workspace-2",
+    "run": null
+  },
+  "files": [
+    {
+      "file": "after-transition-futures.BTC.1440.png",
+      "bytes": 173941,
+      "sha256": "42c207ee2a554c4f19c1656e9ab4284c231d19be41877553a960aea6a42e992a"
+    },
+    {
+      "file": "after-transition-phone.spot.AITH.390.png",
+      "bytes": 125063,
+      "sha256": "7b041f77932a3b13699373df57748dc16be7156baeb0de4ca1a6eb3f584e02a3"
+    },
+    {
+      "file": "after-transition-spot.AITH.1366.png",
+      "bytes": 205922,
+      "sha256": "34e8f3b6f7adda0936594491565e1be4b924e4ecb5ad9d5fb37ed29b1deb5311"
+    },
+    {
+      "file": "after-transition-spot.AITH.1440.png",
+      "bytes": 217729,
+      "sha256": "c1b7e21699680149c2042a70751fd32933a957834529a9bc05aac9e4a62cd353"
+    },
+    {
+      "file": "transition-futures.BTC.1440.webm",
+      "bytes": 1096978,
+      "sha256": "bba6e2b53c3238afbfe32110d6243f834cead486d856b027a0f8b5870bacb18e"
+    },
+    {
+      "file": "transition-futures.BTC.1440.zip",
+      "bytes": 313747,
+      "sha256": "776ebfa1cf49e24190c53ceff838d54bc7202c1507fcc954ffedee82e95eaa73"
+    },
+    {
+      "file": "transition-phone.spot.AITH.390.webm",
+      "bytes": 579015,
+      "sha256": "93f57b51eda6f251832ddb3893ba339048c6c011481132ddd2be70cc4c881589"
+    },
+    {
+      "file": "transition-phone.spot.AITH.390.zip",
+      "bytes": 248599,
+      "sha256": "a9344db06f1b2ab503f5e22d856b276cf1687c33abfa9c3af11adcc3019a547d"
+    },
+    {
+      "file": "transition-spot.AITH.1366.webm",
+      "bytes": 1430638,
+      "sha256": "08a2b654990f30d89c1ee41afdd032d4617907e839c8e2210a4e94c0f3b145eb"
+    },
+    {
+      "file": "transition-spot.AITH.1366.zip",
+      "bytes": 262657,
+      "sha256": "90ee79431fd0cc499a794ecd0a14d7b6ee40b3b9296889b1ea95031492132dfd"
+    },
+    {
+      "file": "transition-spot.AITH.1440.webm",
+      "bytes": 1391972,
+      "sha256": "3db3ce3243c4f9470903ccd1d35471d5083d84af90d99df92ca5e26079039828"
+    },
+    {
+      "file": "transition-spot.AITH.1440.zip",
+      "bytes": 264516,
+      "sha256": "b80974826f8546f8deae6328043c225c061377fa3388b1c7eb70f30123ef4b2c"
+    }
+  ],
+  "caseClashes": [],
+  "missingScreenshots": []
+}

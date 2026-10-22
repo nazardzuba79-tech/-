@@ -5,6 +5,48 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/// Opt-in Stocks test trading. Spendable USDT remains ONLY in DemoBalance.
+/// Ledger wallets.USDT omits cash; the repository derives it under row locks.
+model StocksTestAccount {
+  principalHash String @id
+  issuer String
+  subject String
+  userId String @unique
+  user User @relation(fields:[userId], references:[id], onDelete:Restrict)
+  receipts StocksTestReceipt[]
+  revision Int @default(0)
+  ledger Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([issuer, subject])
+}
+
+model StocksTestReceipt {
+  principalHash String
+  account StocksTestAccount @relation(fields:[principalHash], references:[principalHash], onDelete:Restrict)
+  intentId String
+  payloadHash String
+  revision Int
+  receipt Json
+  audit StocksTestAudit?
+  createdAt DateTime @default(now())
+  @@id([principalHash, intentId])
+}
+
+model StocksTestAudit {
+  principalHash String
+  intentId String
+  userId String
+  user User @relation(fields:[userId], references:[id], onDelete:Restrict)
+  receipt StocksTestReceipt @relation(fields:[principalHash,intentId], references:[principalHash,intentId], onDelete:Restrict)
+  sessionId String
+  kind String
+  revision Int
+  payloadHash String
+  createdAt DateTime @default(now())
+  @@id([principalHash, intentId])
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
@@ -20,6 +62,7 @@ datasource db {
 }
 
 model User {
+  otcCashRequests OtcCashRequest[]
   copyStrategyOwnerships CopyStrategyOwner[]
   privateTradingAccount PrivateTradingAccount?
   privateTradingLedger PrivateTradingLedger[]
@@ -126,6 +169,7 @@ model User {
   orders        Order[]
   deposits      Deposit[]
   withdrawals   Withdrawal[]
+  depositAddressCopies DepositAddressCopyEvent[]
   wallets       Wallet[]
   purchases     Purchase[]
   kycSubmissions KycSubmission[]
@@ -142,10 +186,121 @@ model User {
   futuresRiskAckAt DateTime?
   supportConversations SupportConversation[]
   demoBalances  DemoBalance[]
+  stocksTestAccount StocksTestAccount?
+  stocksTestAudit StocksTestAudit[]
   demoOrders    DemoOrder[]
   portfolioSnapshots PortfolioSnapshot[]
 
   @@index([email])
+}
+
+// OTC history is intentionally RESTRICT, never a cascading wallet deletion.
+// Closed requests also retain their owner until a separate reviewed retention
+// / anonymisation policy exists. No background worker consumes these tables.
+model OtcCashRequest {
+  id String @id @default(uuid())
+  number Int @unique @default(autoincrement())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  idempotencyKey String
+  fingerprint String
+  country String
+  cityId String
+  asset String
+  quantity Decimal @db.Decimal(36, 18)
+  fiat String
+  tier String
+  policyVersion String
+  status String @default("RESERVED")
+  version Int @default(1)
+  offerVersion Int @default(0)
+  acceptedOfferVersion Int?
+  acceptedAt DateTime?
+  cancelRequested Boolean @default(false)
+  pickupRevision Int @default(0)
+  payoutReference String? @unique
+  completedBy String?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reservation OtcCashReservation?
+  offers OtcCashOffer[]
+  messages OtcCashMessage[]
+  commands OtcCashCommand[]
+  ledger OtcCashLedger[]
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt, id])
+  @@index([status, createdAt, id])
+}
+
+model OtcCashReservation {
+  requestId String @id
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  asset String
+  quantity Decimal @db.Decimal(36, 18)
+  status String @default("HELD")
+  createdAt DateTime @default(now())
+  settledAt DateTime?
+}
+
+model OtcCashOffer {
+  id String @id @default(uuid())
+  requestId String
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  version Int
+  asset String
+  quantity Decimal @db.Decimal(36, 18)
+  fiat String
+  rate Decimal @db.Decimal(36, 18)
+  gross Decimal @db.Decimal(36, 18)
+  fee Decimal @db.Decimal(36, 18)
+  net Decimal @db.Decimal(36, 18)
+  cashPrecision Int
+  expiresAt DateTime
+  createdBy String
+  createdAt DateTime @default(now())
+  acceptedAt DateTime?
+  @@unique([requestId, version])
+}
+
+model OtcCashMessage {
+  id String @id @default(uuid())
+  requestId String
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  authorId String
+  sender String
+  kind String @default("TEXT")
+  text String @db.Text
+  idempotencyKey String
+  fingerprint String
+  createdAt DateTime @default(now())
+  @@unique([requestId, authorId, idempotencyKey])
+  @@index([requestId, createdAt, id])
+}
+
+model OtcCashCommand {
+  id String @id @default(uuid())
+  requestId String
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  idempotencyKey String
+  actorId String
+  fingerprint String
+  result Json
+  createdAt DateTime @default(now())
+  @@unique([requestId, idempotencyKey])
+}
+
+model OtcCashLedger {
+  id String @id @default(uuid())
+  requestId String
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  kind String
+  asset String
+  quantity Decimal @db.Decimal(36, 18)
+  availableAfter Decimal @db.Decimal(36, 18)
+  lockedAfter Decimal @db.Decimal(36, 18)
+  createdAt DateTime @default(now())
+  @@unique([requestId, kind])
 }
 
 model AdminPasswordVault {
@@ -408,6 +563,38 @@ model DepositClaim {
   @@index([chain, txHash])
 }
 
+/// A signed-in browser reported that it copied this deposit address with the
+/// dialog's «Скопировать адрес» button. That is all it means: not a payment,
+/// not a claim on any transfer, and no credit path reads it. The admin reads
+/// it in Пополнения → «Копировали адрес» to reconcile by hand.
+///
+/// `userId` comes from the verified session only. asset/network/address are
+/// the client's context, checked for shape against the deposit rail registry
+/// (no RPC). `receivedAt` is the server's clock; `clientCopiedAt` is the
+/// device's, untrusted, for display only. `eventId` is the client's retry key:
+/// one row per (user, eventId). Deleted with the account.
+model DepositAddressCopyEvent {
+  id              String    @id @default(uuid())
+  eventId         String
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset           String
+  network         String
+  /// The catalogue rail (`assetId:networkId`) or legacy chain the dialog showed.
+  destinationId   String?
+  addressSnapshot String
+  /// Only when the destination has a Memo/Tag: it tells two recipients apart.
+  memoSnapshot    String?
+  /// Where the dialog was opened: wallet | header | otc | support.
+  source          String
+  receivedAt      DateTime  @default(now())
+  clientCopiedAt  DateTime?
+
+  @@unique([userId, eventId])
+  @@index([receivedAt(sort: Desc), id(sort: Desc)])
+  @@index([userId, receivedAt(sort: Desc)])
+}
+
 /// Every treasury address a chain has used, so a transfer to a retired
 /// address stays verifiable and its checkpoint is kept.
 model TreasuryAddressHistory {
@@ -593,6 +780,12 @@ model Withdrawal {
   txHash             String?
   rejectionReason    String?
   performedByAdminId String?   // admin who approved/sent/rejected this
+  /// True when the request moved `amount` from the spot balance's available
+  /// to locked, as every request before 2026-09-30 did. False for a request
+  /// from a Cross trading account whose balance lives in the trading
+  /// simulation (the owner's and the configured test accounts): nothing was
+  /// held, so approving, sending or rejecting it touches no Balance row.
+  balanceHeld        Boolean   @default(true)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -682,9 +875,67 @@ model KycSubmission {
   reviewedBy        String?
   reviewedAt        DateTime?
   createdAt         DateTime  @default(now())
+  /// Additional materials the reviewing admin asked for (see KycMaterialRequest).
+  materialRequests  KycMaterialRequest[]
 
   @@index([userId])
   @@index([status])
+}
+
+/// An admin's request for additional KYC materials on a submission that is
+/// still under review — a new photo of the document, an ordinary selfie for a
+/// manual face comparison, or both — without rejecting the submission.
+///
+/// Same storage model as the submission itself: the files travel
+/// browser → Cloudflare KYC edge → admin mailbox and are never stored here.
+/// This row keeps only the request, what arrived (size, type, Message-ID),
+/// the selfie consent and who decided what, for the audit trail.
+///
+/// status: OPEN (something requested is still missing) → RECEIVED (everything
+/// requested arrived) → CLOSED (the admin decided, or replaced it with a new
+/// request: closedOutcome APPROVED | REJECTED | SUPERSEDED). The user's
+/// User.kycStatus stays PENDING throughout, so nothing gated on it changes.
+model KycMaterialRequest {
+  id                   String        @id @default(uuid())
+  submissionId         String
+  submission           KycSubmission @relation(fields: [submissionId], references: [id])
+  userId               String
+  /// DOCUMENT | SELFIE | DOCUMENT_AND_SELFIE
+  kind                 String
+  /// BLURRY | UNREADABLE | CROPPED | LOW_LIGHT | OTHER (document part only)
+  documentReason       String?
+  /// The admin's own wording, only for documentReason OTHER; shown to the user.
+  documentReasonText   String?
+  /// Optional admin note added to the selfie request; shown to the user.
+  selfieComment        String?
+  status               String        @default("OPEN")
+  requestedBy          String
+  /// The admin page's idempotency key: a repeated click returns the same row.
+  clientRequestId      String?       @unique
+  createdAt            DateTime      @default(now())
+  /// Server-derived id of the delivery that carried the part (one per attempt).
+  documentDeliveryId   String?
+  documentReceivedAt   DateTime?
+  documentMessageId    String?
+  documentMimeType     String?
+  documentSizeBytes    Int?
+  selfieDeliveryId     String?
+  selfieReceivedAt     DateTime?
+  selfieMessageId      String?
+  selfieMimeType       String?
+  selfieSizeBytes      Int?
+  /// The user's explicit consent to the selfie's collection and use for this check.
+  selfieConsentAt      DateTime?
+  selfieConsentVersion String?
+  /// First time an admin opened the received materials (MATERIALS_RECEIVED → RE_REVIEW).
+  acknowledgedAt       DateTime?
+  acknowledgedBy       String?
+  closedAt             DateTime?
+  closedBy             String?
+  closedOutcome        String?
+
+  @@index([submissionId])
+  @@index([userId, status])
 }
 
 /// A programmatic API key for connecting a trading bot/script (see
@@ -728,6 +979,9 @@ model Session {
   /// meaningful instead of frozen at login time.
   lastSeenAt DateTime  @default(now())
   revokedAt  DateTime?
+  /// A remembered device — set for ADMIN sign-ins only: the token lasts up to
+  /// 90 days, and requireAuth ends it after 30 days without use.
+  remembered Boolean   @default(false)
 
   @@index([userId])
 }
@@ -1292,4 +1546,18 @@ model NativeDemoRevision {
   createdAt   DateTime @default(now())
   @@id([userId, revision])
   @@unique([userId, requestKey])
+}
+
+/// Native demo funding versions, pinned once and never changed.
+/// A version's start is written by the first process that knows it (the
+/// first 8h settlement boundary after that process started), so a later
+/// deploy, restart or second instance reads the same instant and rates.
+/// Every settlement before `effectiveFrom` keeps the terms it was made under.
+/// Rates are signed fractions of position value per settlement, by side.
+model NativeFundingModel {
+  version       String   @id
+  longCashflow  String
+  shortCashflow String
+  effectiveFrom DateTime
+  createdAt     DateTime @default(now())
 }

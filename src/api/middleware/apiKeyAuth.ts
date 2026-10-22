@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthedRequest } from './auth';
 import { decryptApiSecret } from '../../services/ApiKeyService';
+import { asyncRoute } from '../asyncRoute';
 
 const TIMESTAMP_TOLERANCE_MS = 30_000;
 
@@ -26,7 +27,7 @@ export interface ApiAuthedRequest extends AuthedRequest {
  * bodyless request.
  */
 export function requireAuthOrApiKey(prisma: PrismaClient) {
-  return async (req: ApiAuthedRequest, res: Response, next: NextFunction) => {
+  return asyncRoute(async (req: ApiAuthedRequest, res: Response, next: NextFunction) => {
     const apiKeyHeader = req.header('X-API-KEY');
     if (!apiKeyHeader) {
       return requireAuth(prisma)(req, res, next);
@@ -75,7 +76,7 @@ export function requireAuthOrApiKey(prisma: PrismaClient) {
     req.apiKeyId = record.id;
     req.apiKeyCanTrade = record.canTrade;
     next();
-  };
+  });
 }
 
 /** Blocks a read-only API key from placing/cancelling orders. JWT-authenticated (browser) requests are always allowed. */

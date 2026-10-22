@@ -7,6 +7,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "lib": ["ES2021", "DOM"],
+    "jsx": "react-jsx",
     "rootDir": "."
   },
   "include": ["src/**/*.ts", "frontend/src/lib/**/*.ts", "jest.setup.ts"]

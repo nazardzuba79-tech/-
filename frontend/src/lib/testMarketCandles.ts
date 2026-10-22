@@ -2,7 +2,8 @@ import { API_BASE } from './api';
 import type { ChartCandleLoader } from './chartTrading';
 import type { Candle } from './indicators';
 import { fetchTestMarketJson } from './testMarketStore';
-import { testMarketSlug } from './testMarkets';
+import { managedListingVersion, testMarketSlug } from './testMarkets';
+import { isAith } from '../../../src/shared/aithPublication';
 
 /**
  * The chart's candle source for a test pair: the server's simulation,
@@ -15,10 +16,13 @@ const validCandle = (c: any): c is Candle =>
   && c.open > 0 && c.low > 0 && c.low <= Math.min(c.open, c.close) && c.high >= Math.max(c.open, c.close);
 
 export const testMarketCandleLoader: ChartCandleLoader = async (pair, interval, limit, signal) => {
+  const version = managedListingVersion(pair);
+  if (isAith(pair) && version === undefined) throw new Error('listing_authority_unavailable');
   const body = await fetchTestMarketJson(
-    `${API_BASE}/market/test-assets/${testMarketSlug(pair)}/candles?interval=${encodeURIComponent(interval)}&limit=${limit}`,
+    `${API_BASE}/market/test-assets/${testMarketSlug(pair)}/candles?interval=${encodeURIComponent(interval)}&limit=${limit}${isAith(pair) ? `&listingVersion=${version}` : ''}`,
     signal,
   ) as { candles?: unknown };
+  if (isAith(pair) && managedListingVersion(pair) !== version) throw new Error('listing_version_changed');
   if (!Array.isArray(body?.candles)) throw new Error('test_market_candles_shape');
   return { candles: body.candles.filter(validCandle) };
 };

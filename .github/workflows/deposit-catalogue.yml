@@ -78,7 +78,7 @@ jobs:
           VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
           VITE_API_URL: /api/v1
         run: npx vite build --outDir ../output/deposit-catalogue-frontend
-      - run: npm install --prefix output/qa-tools --no-save --package-lock=false playwright@1.58.2 jsqr@1.4.0 pngjs@7.0.0
+      - run: npm install --prefix output/qa-tools --no-save --package-lock=false playwright@1.63.0 jsqr@1.4.0 pngjs@7.0.0
       - run: node output/qa-tools/node_modules/playwright/cli.js install --with-deps chromium
       - name: Desktop, mobile and one-minute idle measurement
         env:

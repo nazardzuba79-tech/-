@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 import { LiquidationEngine } from '../LiquidationEngine';
 import { MarkPriceService } from '../MarkPriceService';
 
@@ -56,16 +57,7 @@ function makeFakePrisma(
         return { count: 1 };
       }),
     },
-    futuresBalance: {
-      upsert: jest.fn(async ({ where: { userId_asset: { userId, asset } }, create }: any) => {
-        const key = `${userId}:${asset}`;
-        if (!balanceMap.has(key)) balanceMap.set(key, { available: create.available, locked: create.locked });
-        return { ...balanceMap.get(key)! };
-      }),
-      update: jest.fn(async ({ where: { userId_asset: { userId, asset } }, data }: any) => {
-        balanceMap.set(`${userId}:${asset}`, { available: data.available, locked: data.locked });
-      }),
-    },
+    futuresBalance: walletDelegate(balanceMap),
     insuranceFund: {
       upsert: jest.fn(async ({ where: { asset }, create }: any) => {
         if (!insuranceFund.has(asset)) insuranceFund.set(asset, create.balance);

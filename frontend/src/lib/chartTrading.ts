@@ -1,4 +1,5 @@
 import type { Candle } from './indicators';
+import { isChartTimeframe, timeframeDurationMs } from './chartTimeframes';
 
 /** Public charts do not opt into this contract. All persisted values come from the private server. */
 export interface ChartTradeCandle {
@@ -72,8 +73,24 @@ export interface ChartTradingInteraction {
 }
 export type ChartCandleLoader = (pair: string, interval: string, limit: number, signal?: AbortSignal, endTime?: number) => Promise<{ candles: Candle[] }>;
 
-export const CHART_INTERVAL_MS: Record<string, number> = { '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000 };
+/** The intervals a candle may be SELECTED on for a trade: exactly the ones
+ *  the private server accepts (its PRIVATE_CHART_INTERVALS), with their
+ *  fixed lengths. Derived display timeframes (3m, 30m, 2h, 6h, 12h, 1M) are
+ *  deliberately absent: a trade is never anchored to a bar the venue does
+ *  not have. */
+export const CHART_INTERVAL_MS: Record<string, number> = { '1m': 60000, '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000 };
 export const chartSymbol = (pair: string) => pair.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/**
+ * The length of a DISPLAY bar in milliseconds: a trading interval's fixed
+ * length, or the workspace catalogue's for the rest (a calendar month is
+ * measured at the bar it belongs to). Null for a name nobody knows.
+ */
+export function chartIntervalMs(interval: string, barTimeSeconds?: number): number | null {
+  const fixed = CHART_INTERVAL_MS[interval];
+  if (fixed) return fixed;
+  return isChartTimeframe(interval) ? timeframeDurationMs(interval, barTimeSeconds) : null;
+}
 
 export function completeChartCandle(candle: Candle, symbol: string, interval: string, now = Date.now()): ChartTradeCandle | null {
   const duration = CHART_INTERVAL_MS[interval];
@@ -84,30 +101,63 @@ export function completeChartCandle(candle: Candle, symbol: string, interval: st
   return { symbol: chartSymbol(symbol), source: 'BYBIT_LINEAR', interval, openTime, closeTime: openTime + duration, open: candle.open, high: candle.high, low: candle.low, close: candle.close };
 }
 
-/** A native seriesData time is necessary but insufficient: LWC also supplies it over empty space. */
+/** Where PriceChart puts the top of an overlay that is still drawn INSIDE the price pane, as a fraction of that
+ *  pane's height: the Spot/CFD oscillator band under the candles (scaleMargins.top 0.75) and the hidden volume
+ *  histogram's parked scale (0.8). A visible volume lives in its own pane since 2026-09-30 and covers nothing here. */
+export const CHART_BAND_OVERLAY_TOP = 0.75;
+export const CHART_VOLUME_OVERLAY_TOP = 0.8;
+
+/**
+ * The share of the price pane, measured up from its bottom edge, that an overlay drawn in that same pane owns.
+ * 0 when the candles have the whole pane: volume in its own pane or hidden, oscillators in panes of their own
+ * (Futures/CFD terminal). Otherwise the band PriceChart hands the overlay's scale: a visible volume histogram
+ * left in the price pane, or the Spot/CFD oscillator band. This replaces the fixed bottom fifth that
+ * `isCandleHit` reserved after the volume had already moved out (the IOST/USDT 1h regression, 2026-10-21).
+ */
+export function chartOverlayBottomFraction(input: { volumeVisibleInPricePane: boolean; volumeScaleTop?: number | null; bandOscillators: boolean }): number {
+  let fraction = 0;
+  if (input.volumeVisibleInPricePane) {
+    const top = typeof input.volumeScaleTop === 'number' && Number.isFinite(input.volumeScaleTop)
+      ? Math.min(1, Math.max(0, input.volumeScaleTop)) : CHART_VOLUME_OVERLAY_TOP;
+    fraction = Math.max(fraction, 1 - top);
+  }
+  if (input.bandOscillators) fraction = Math.max(fraction, 1 - CHART_BAND_OVERLAY_TOP);
+  return fraction;
+}
+
+/** A native seriesData time is necessary but insufficient: LWC also supplies it over empty space.
+ *  The pick area is the price pane itself — `paneWidth` × `paneHeight` of the pane the candle series is drawn in —
+ *  less the band at its bottom that an overlay still drawn in that pane owns (`overlayBottomFraction`, see
+ *  chartOverlayBottomFraction). A completed candle is therefore selectable wherever the pane draws it, the bottom
+ *  edge included; the separate volume/indicator panes arrive as `paneIndex` ≠ 0 and never hit a candle.
+ *  `indicatorHovered` is a series of ANOTHER pane under the pointer; a price-pane overlay (SMA, EMA, bands) drawn
+ *  through the candle does not take the pick from it — the caller resolves that before asking. */
 export function isCandleHit(input: {
   x: number; y: number; candleX: number | null; highY: number | null; lowY: number | null;
   paneWidth: number; paneHeight: number; barSpacing: number; paneIndex?: number;
-  dragged: boolean; indicatorHovered: boolean; indicatorPanelVisible: boolean;
+  dragged: boolean; indicatorHovered: boolean; overlayBottomFraction: number;
 }): boolean {
   const { x, y, candleX, highY, lowY, paneWidth, paneHeight } = input;
   if (input.dragged || input.indicatorHovered || (input.paneIndex !== undefined && input.paneIndex !== 0)) return false;
-  if (candleX === null || highY === null || lowY === null || ![x, y, candleX, highY, lowY].every(Number.isFinite)) return false;
-  if (x < 0 || x >= paneWidth || y < 0 || y >= paneHeight * (input.indicatorPanelVisible ? 0.75 : 0.8)) return false;
+  if (candleX === null || highY === null || lowY === null || ![x, y, candleX, highY, lowY, paneWidth, paneHeight].every(Number.isFinite)) return false;
+  const overlay = Number.isFinite(input.overlayBottomFraction) ? Math.min(1, Math.max(0, input.overlayBottomFraction)) : 0;
+  if (x < 0 || x >= paneWidth || y < 0 || y >= paneHeight * (1 - overlay)) return false;
   return Math.abs(x - candleX) <= Math.max(3, Math.min(10, input.barSpacing / 2))
     && y >= Math.min(highY, lowY) - 5 && y <= Math.max(highY, lowY) + 5;
 }
 
 /** Resolve to an actually loaded bar, never synthesize or attach across a history gap. */
 export function chartEventBar(candles: Candle[], eventTimeMs: number, interval: string): number | null {
-  const duration = CHART_INTERVAL_MS[interval];
-  if (!duration || !Number.isFinite(eventTimeMs) || !candles.length) return null;
+  if (chartIntervalMs(interval) === null || !Number.isFinite(eventTimeMs) || !candles.length) return null;
   let left = 0, right = candles.length - 1, found = -1;
   while (left <= right) {
     const middle = (left + right) >> 1;
     if (candles[middle].time * 1000 <= eventTimeMs) { found = middle; left = middle + 1; } else right = middle - 1;
   }
-  if (found < 0 || eventTimeMs >= candles[found].time * 1000 + duration) return null;
+  if (found < 0) return null;
+  // The bar's own length: a derived month is as long as that month.
+  const duration = chartIntervalMs(interval, candles[found].time)!;
+  if (eventTimeMs >= candles[found].time * 1000 + duration) return null;
   return candles[found].time;
 }
 

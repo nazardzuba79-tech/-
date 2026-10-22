@@ -144,7 +144,7 @@ describe('2. the positions row carries the reference columns', () => {
   test('unrealized carries ROI under it, and realized is its OWN column', () => {
     expect(PANEL).toContain('futures-position-pnl');
     // The dedicated cell consumes both authoritative values together.
-    expect(PANEL).toContain('<FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset}>');
+    expect(PANEL).toContain('<FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset} approx={p.unrealizedPnl === null ? null : approxUsd(Number(p.unrealizedPnl), quoteAsset)}>');
     expect(PANEL).toContain('const realized = parseFloat(p.realizedPnl);');
     // The two are NEVER summed: adding them would double-count the fees and
     // funding already inside the realized figure, on a size that is no
@@ -157,7 +157,11 @@ describe('2. the positions row carries the reference columns', () => {
     expect(cell).toContain('className="futures-position-money"');
     expect(cell).toContain('className="futures-position-roi"');
     expect(PANEL).toContain('className="futures-position-realized"');
-    expect(PANEL.match(/data-unit=/g)!.length).toBe(1);
+    // Two places carry the unit attribute: the realized cell (unchanged)
+    // and `PnlPart`, the same markup reused by the native demo's four P&L
+    // breakdown columns (2026-10-16). The unit is still drawn only by CSS.
+    expect(PANEL.match(/data-unit=/g)!.length).toBe(2);
+    expect(PANEL).toContain('function PnlPart(');
     expect(ROW_PARITY_CSS).toContain("content: ' ' attr(data-unit);");
     // Signs and parentheses must not be synthesized a second time by CSS.
     expect(ROW_PARITY_CSS).not.toContain("content: '(+';");

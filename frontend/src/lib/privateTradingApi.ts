@@ -184,8 +184,8 @@ export function privateExplanation(value:string):string{
  * network failure.
  *
  * The recognisable business refusals keep their meaning and their wording;
- * everything else resolves to one honest sentence and the original goes to
- * the console. A refusal is never turned into a success, and an unavailable
+ * everything else resolves to one honest sentence with safe diagnostic
+ * metadata. A refusal is never turned into a success, and an unavailable
  * operation is never reported as working.
  */
 export function privateErrorText(error:unknown):string{
@@ -203,9 +203,9 @@ export function privateErrorText(error:unknown):string{
     if(/quote.*stale|stale.*quote|quote.*expired/i.test(error.message))return 'Котировка обновилась. Рассчитайте предпросмотр ещё раз.';
     if(/insufficient|balance|capital/i.test(error.message))return 'Недостаточно выделенных средств для этой операции.';
     if(/history.*gap|incomplete|unavailable/i.test(error.message))return 'Данные сейчас недоступны. Повторите запрос позже.';
-    if(error.message)console.warn('[private-trading] unmapped refusal',error.status,error.message);
+    if(error.message)console.warn('[private-trading] unmapped refusal',error.status);
     return 'Проверьте параметры операции и повторите запрос.';
   }
-  if(error instanceof Error&&error.message)console.warn('[private-trading] request failed',error.message);
+  if(error instanceof Error&&error.message)console.warn('[private-trading] request failed');
   return 'Не удалось связаться с сервером. Повторите запрос.';
 }

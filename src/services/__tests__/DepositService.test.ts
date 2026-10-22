@@ -148,11 +148,18 @@ describe('deposit policy', () => {
   const fresh = (price: string, ageMs = 0, stale = false) => ({ getTicker: jest.fn(), getTickerWithMeta: jest.fn().mockResolvedValue({ value: { lastPrice: price }, fetchedAt: Date.now() - ageMs, stale }) });
 
   it('USDT uses the explicit 1:1 minimum-evaluation policy; the minimum is exact', async () => {
-    const v = await valueInUsd('USDT', new BigNumber('299.999999'), { getTicker: jest.fn() });
+    const v = await valueInUsd('USDT', new BigNumber('499.999999'), { getTicker: jest.fn() });
     expect(v.policy).toBe('USD_PEGGED_POLICY');
     expect(meetsMinimum(v.usd)).toBe(false);
-    expect(meetsMinimum(new BigNumber('300'))).toBe(true);
+    expect(meetsMinimum(new BigNumber('300'))).toBe(false);
+    expect(meetsMinimum(new BigNumber('500'))).toBe(true);
     expect(meetsMinimum(null)).toBe(false);
+  });
+
+  it('applies the same exact 500 USD boundary to cryptocurrency equivalents', async () => {
+    expect(meetsMinimum((await valueInUsd('BTC', new BigNumber('0.005'), fresh('100000'))).usd)).toBe(true);
+    expect(meetsMinimum((await valueInUsd('BTC', new BigNumber('0.00499999'), fresh('100000'))).usd)).toBe(false);
+    expect(meetsMinimum((await valueInUsd('ETH', new BigNumber('0.2'), fresh('2500'))).usd)).toBe(true);
   });
 
   it('other assets need a fresh, non-stale price; otherwise review, never an assumed pass', async () => {

@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
@@ -13,7 +14,7 @@ import { REFERRAL_REWARD_PERCENT } from '../../config/limits';
 export function referralRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.get('/referral/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/referral/me', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -39,7 +40,7 @@ export function referralRouter(prisma: PrismaClient): Router {
       rewardsByAsset: rewardsByAsset.map((r) => ({ asset: r.asset, amount: r._sum.amount?.toString() ?? '0' })),
       recentRewards: recentRewards.map((r) => ({ ...r, amount: r.amount.toString() })),
     });
-  });
+  }));
 
   return router;
 }

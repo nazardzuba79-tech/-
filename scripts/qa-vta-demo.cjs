@@ -116,6 +116,14 @@ async function cleanCopy(page, label) {
  if(match)throw Error('Forbidden customer copy '+label+': '+match[0]);
  fs.writeFileSync(OUT+'/'+label+'.txt',text);
 }
+// owner, 2026-10-04: order type is one select on a phone — the same five families, picked by value and read back by their tab text.
+const SPOT_TYPES={'Лимит':'LIMIT','Рынок':'MARKET','Стоп':'STOP','Тейк-профит':'TAKE_PROFIT','OCO':'OCO'};
+const typeSelect=form=>form.locator('.order-type-select select');
+async function phoneType(form,label){
+ await typeSelect(form).selectOption(SPOT_TYPES[label]);
+ const shown=(await typeSelect(form).locator('option:checked').innerText()).trim();
+ if(shown!==label)throw Error('Phone order type shows '+shown+' instead of '+label);
+}
 async function marketDisplayQA(browser,origin,width) {
  const ctx=await browser.newContext({viewport:{width,height:1100},locale:'ru-RU'});
  await ctx.addInitScript(()=>{localStorage.setItem('exchange_token','fixture');localStorage.setItem('exchange_lang','ru');});
@@ -172,6 +180,8 @@ async function marketDisplayQA(browser,origin,width) {
  await form.locator('button[type="submit"]').click();
  await form.getByRole('alert').filter({hasText:'Этот тип ордера для данного актива недоступен.'}).waitFor();
  if(financialAttempts.length!==writes)throw Error('Book click LIMIT mutated finances');
+ // owner, 2026-10-04: order type is one select on a phone.
+ if(width<900)await phoneType(form,'Рынок');else
  await form.getByRole('button',{name:'Рынок',exact:true}).click();
  for(const value of [0,25,50,75,100]){
   await form.getByRole('button',{name:value+'%',exact:true}).click();
@@ -197,12 +207,20 @@ async function panelStates(page, width, expected) {
  if(width<900)await page.locator('#mobile-trade-trade').click();
  const form=page.locator('.order-form-area'), states={};
  await form.locator('input[type="number"][aria-label="Количество"]').waitFor();
+ // owner, 2026-10-04: order type is one select on a phone — its selected option is the default type, its options the five types.
+ if(width<900){
+  if(await form.locator('.order-form-tabs button[aria-pressed="true"]').innerText()!=='Купить'||(await typeSelect(form).locator('option:checked').innerText()).trim()!=='Лимит')throw Error('Default Spot selection changed');
+  const types=(await typeSelect(form).locator('option').allInnerTexts()).map(t=>t.trim());
+  if(JSON.stringify(types)!==JSON.stringify(Object.keys(SPOT_TYPES)))throw Error('Phone order types differ: '+types.join(' | '));
+ }else
  if(await form.locator('.order-form-tabs button[aria-pressed="true"]').innerText()!=='Купить'||await form.locator('.order-type-tabs').first().locator('[aria-pressed="true"]').innerText()!=='Лимит')throw Error('Default Spot selection changed');
  await page.screenshot({path:OUT+'/'+(expected?'vta':'ordinary')+'-default-'+width+'.png',fullPage:true});
+ if(width<900)await phoneType(form,'Рынок');else
  await form.locator('.order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
  await page.waitForFunction(()=>Number(document.querySelector('.order-form-area input[aria-label="Цена"]')?.value.replace('≈','').trim())>0);
  for(const side of ['Купить','Продать'])for(const type of ['Лимит','Рынок','Стоп','Тейк-профит','OCO']){
   await form.locator('.order-form-tabs').getByRole('button',{name:side,exact:true}).click();
+  if(width<900)await phoneType(form,type);else
   await form.locator('.order-type-tabs').first().getByRole('button',{name:type,exact:true}).click();
   const geometry=await form.evaluate(el=>{
    for(const node of [document.scrollingElement,...document.querySelectorAll("*")]){if(node && node.scrollTop)node.scrollTop=0;}
@@ -215,6 +233,8 @@ async function panelStates(page, width, expected) {
     return {tag:e.tagName,type:e.getAttribute('type'),pressed:e.getAttribute('aria-pressed'),x:Math.round(r.x-origin.x),y:Math.round(r.y-origin.y-hints.filter(h=>h.bottom<=r.y).reduce((sum,h)=>sum+h.height,0)),w:Math.round(r.width),h:Math.round(r.height),font:css.font,padding:css.padding,color:css.color,background:css.backgroundColor};
    });
   });
+  // owner, 2026-10-04: order type is one select on a phone — the select is held to the same parity as the tabs.
+  if(width<900)geometry.push(await typeSelect(form).evaluate(e=>{const r=e.getBoundingClientRect(),o=e.closest('.order-form-area').getBoundingClientRect(),css=getComputedStyle(e);return {tag:e.tagName,value:e.value,x:Math.round(r.x-o.x),y:Math.round(r.y-o.y),w:Math.round(r.width),h:Math.round(r.height),font:css.font,padding:css.padding,color:css.color,background:css.backgroundColor};}));
   const key=side+'/'+type;states[key]=geometry;
   if(expected){
    if(JSON.stringify(geometry)!==JSON.stringify(expected[key])){fs.writeFileSync(OUT+'/parity-failure-'+width+'.json',JSON.stringify({key,ordinary:expected[key],vta:geometry},null,2));throw Error('Standard form geometry differs: '+key+' '+width);}
@@ -229,6 +249,7 @@ async function panelStates(page, width, expected) {
   }
  }
  await form.locator('.order-form-tabs').getByRole('button',{name:'Купить',exact:true}).click();
+ if(width<900)await phoneType(form,'Лимит');else
  await form.locator('.order-type-tabs').first().getByRole('button',{name:'Лимит',exact:true}).click();
  return states;
 }
@@ -260,6 +281,8 @@ async function panelStates(page, width, expected) {
   await button.waitFor();
   if(!await form.locator('.order-form-tabs').getByRole('button',{name:'Купить',exact:true}).getAttribute('aria-pressed').then(x=>x==='true'))throw Error('VTA default side differs from Spot');
   await form.locator('.order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
+  // owner, 2026-10-04: order type is one select on a phone.
+  if(width<900)await phoneType(form,'Рынок');else
   await form.locator('.order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
   await quantity.fill('100'); const preListingWrites=saleRequests; await button.click();
   await form.getByRole('alert').filter({hasText:'Этот актив пока не торгуется'}).waitFor();
@@ -272,6 +295,8 @@ async function panelStates(page, width, expected) {
   if(width<900)await page.locator('#mobile-trade-trade').click();
   await form.locator('.order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.order-form-area .amount')?.textContent.includes('VTA') && document.querySelector('.order-form-area .amount')?.textContent.includes('4545'));
+  // owner, 2026-10-04: order type is one select on a phone.
+  if(width<900)await phoneType(form,'Рынок');else
   await form.locator('.order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
   await form.getByRole('button',{name:'100%',exact:true}).click();
   if(await quantity.inputValue()!==available)throw Error('100% lost decimal precision');
@@ -280,6 +305,8 @@ async function panelStates(page, width, expected) {
   const estimate=await form.getByLabel('Итого',{exact:true}).inputValue();
   if(Math.abs(Number(estimate)-Number(publicTestAsset(VOLTORA,simNow).state.lastPrice)*100)>0.011)throw Error('incorrect estimate');
   if(!await form.locator('.order-form-tabs').getByRole('button',{name:'Купить',exact:true}).isEnabled())throw Error('BUY tab must stay selectable');
+  // owner, 2026-10-04: order type is one select on a phone — LIMIT must stay selectable through it.
+  if(width<900){if(!await typeSelect(form).isEnabled()||await typeSelect(form).locator('option[value="LIMIT"]').isDisabled()||(await typeSelect(form).locator('option[value="LIMIT"]').innerText()).trim()!=='Лимит')throw Error('LIMIT tab must stay selectable');}else
   if(!await form.getByRole('button',{name:'Лимит',exact:true}).isEnabled())throw Error('LIMIT tab must stay selectable');
   if(width===1440 && await page.getByText('Не удалось загрузить график',{exact:true}).count())throw Error('VTA chart failed');
   await page.screenshot({path:OUT+'/vta-form-'+width+'.png',fullPage:true});

@@ -44,12 +44,115 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
   'yourAddress', 'changeAsset', 'changeNetwork', 'sendOnly', 'inNetwork', 'lossWarning', 'copyAddress',
   'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo',
   // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
-  'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote'].map(key => `deposit.ui.${key}`);
+  'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote',
+  'minimumLabel', 'minimumOtherValue',
+  // Mobile deposit sheet, 2026-10-04: a Memo / Tag is marked as required.
+  'memoRequired', 'memoHint'].map(key => `deposit.ui.${key}`);
+// Mobile terminal, 2026-10-04: «Спот / Фьючерсы» switch, its two notes and the compact order-type selector.
+const MOBILE_TERMINAL_KEYS = ['terminal.marketSwitch', 'terminal.noFuturesContract', 'terminal.noSpotPair', 'trade.orderType'];
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
+const shortCardLabels: Record<string, string> = { ru: 'Card', en: 'Card', zh: 'Card', es: 'Card', hi: 'Card', ja: 'Card', ko: 'Card' };
+const KYC_PROFILE_CARD_KEYS = ['kycStepDocumentShort', 'kycStepReview', 'kycStepFilled', 'kycStepNotFilled', 'kycStepAdded', 'kycStepNotAdded',
+  'kycStepNotSent', 'kycUploadTitle', 'kycUploadHint', 'kycChooseFile', 'kycReplaceFile', 'kycRemoveFile', 'kycPendingNoReupload',
+  'kycRejectedHint', 'kycSubmittedData', 'kycStartCta', 'kycResubmitCta', 'kycOpenStatus', 'cardShortcutTitle'].map(key => `settings.${key}`);
+const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 'Faq', 'Glossary'].map(name => `nav.menu${name}Desc`);
+// Customer wording audit (2026-10-07): additive labels only. Keep the old
+// dictionary digest intact; do not exempt entire listing/error namespaces.
+const CUSTOMER_PRESENTATION_KEYS = [
+  'trade.statusUnavailable', 'trade.orderTypeUnavailable', 'trade.status.REJECTED', 'trade.status.EXPIRED',
+  'futures.positionStatus.OPEN', 'futures.positionStatus.CLOSED', 'futures.positionStatus.LIQUIDATED',
+  'listing.simulation', 'listing.tradingUnavailable', 'listing.marketLive', 'listing.dateUnconfirmed',
+  'listing.awaitingStart', 'listing.untilListing', 'listing.scheduledAt', 'listing.loadFailed',
+  'listing.dataStale', 'listing.volume24h', 'serverError.forbidden', 'serverError.network', 'serverError.timeout',
+];
+// Aircraft authentication design approved 2026-10-05: eleven existing labels
+// change and nine presentation labels are added. Name only those exact keys;
+// password rules, errors, 2FA, legal and all other auth copy remain frozen.
+const APPROVED_AUTH_DESIGN_KEYS = [
+  'auth.email', 'auth.signIn', 'register.email',
+  'authShell.hero.line1', 'authShell.hero.line2', 'authShell.hero.line3', 'authShell.lead',
+  'authShell.overline.register', 'authShell.overline.login', 'auth.loginTitle', 'auth.loginSubtitle',
+  'authShell.registerTitle', 'authShell.registerSubtitle', 'authShell.context',
+  'authShell.communityCount', 'authShell.communityText', 'authShell.communityBadge',
+  'authShell.cardCaption', 'authShell.supportHint', 'authShell.supportLink',
+];
+// PR #466: two additive auth promotional labels. Only these exact additions
+// are omitted from the historical digest; existing numeric/other copy is not changed.
+const AUTH_COMMUNITY_KEYS = ['authShell.communityTitle', 'authShell.communitySubtitle'];
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('provides the twenty new customer state labels in every locale', () => {
+    expect(CUSTOMER_PRESENTATION_KEYS).toHaveLength(20);
+    for (const code of LOCALES) for (const key of CUSTOMER_PRESENTATION_KEYS) {
+      expect(dicts[code][key]?.trim()).toBeTruthy();
+      expect(dicts[code][key]).not.toBe(key);
+    }
+  });
+  it('localizes the exact two-line card copy and 22+/70+ fiat/crypto counts without an investor claim', () => {
+    const approvedCommunityCopy: Record<string, { title: string; subtitle: string }> = {
+      ru: { title: '0% комиссии за покупки — и снятие наличных', subtitle: '22+ фиатных валют · 70+ криптовалют' },
+      en: { title: '0% fees on purchases — and cash withdrawals', subtitle: '22+ fiat currencies · 70+ cryptocurrencies' },
+      zh: { title: '0% 手续费 — 购物及现金提取', subtitle: '22+ 种法定货币 · 70+ 种加密货币' },
+      es: { title: '0% de comisión en compras — y retiradas de efectivo', subtitle: '22+ monedas fiduciarias · 70+ criptomonedas' },
+      hi: { title: 'खरीदारी पर 0% शुल्क — नकद निकासी पर भी', subtitle: '22+ फ़िएट मुद्राएँ · 70+ क्रिप्टोकरेंसी' },
+      ja: { title: '手数料0% — お買い物と現金引き出し', subtitle: '22+ の法定通貨 · 70+種類の暗号資産' },
+      ko: { title: '수수료 0% — 구매 및 현금 인출', subtitle: '22+개 법정화폐 · 70+개 암호화폐' },
+    };
+    for (const code of LOCALES) {
+      const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
+      for (const key of AUTH_COMMUNITY_KEYS) {
+        expect(sourceKeys.filter(sourceKey => sourceKey === key)).toHaveLength(1);
+        expect(dicts[code][key]?.trim()).toBeTruthy();
+        expect(dicts[code][key]).not.toMatch(/1[.,]2|million|миллион|млн|万|백만|लाख|18\+|30\+/i);
+        expect(dicts[code][key]).not.toMatch(/[.!?。！？।]$/);
+      }
+      const feeParts = dicts[code]['authShell.communityTitle'].split(' — ');
+      expect(feeParts).toHaveLength(2);
+      expect(feeParts[0]).toContain('0%');
+      expect(feeParts[1]).not.toContain('VOLTEX');
+      expect(feeParts[1]).not.toContain('0%');
+      expect(dicts[code]['authShell.communityTitle'].match(/\d+%/g)).toEqual(['0%']);
+      expect(dicts[code]['authShell.communityTitle']).toBe(approvedCommunityCopy[code].title);
+      expect(dicts[code]['authShell.communitySubtitle']).toBe(approvedCommunityCopy[code].subtitle);
+      expect(dicts[code]['authShell.communitySubtitle'].match(/\d+\+?/g)).toEqual(['22+', '70+']);
+      expect(dicts[code]['authShell.communitySubtitle']).toContain(' · ');
+    }
+    for (const key of AUTH_COMMUNITY_KEYS) expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
+    expect(dicts.ru['authShell.communityTitle']).toBe('0% комиссии за покупки — и снятие наличных');
+    expect(dicts.ru['authShell.communitySubtitle']).toBe('22+ фиатных валют · 70+ криптовалют');
+  });
+  it('clarifies that the displayed currency flags are a partial selection in all seven languages', () => {
+    const approvedMoreCurrencies: Record<string, string> = {
+      ru: 'и другие валюты',
+      en: 'and more currencies',
+      zh: '及更多货币',
+      es: 'y otras monedas',
+      hi: 'और अन्य मुद्राएँ',
+      ja: 'その他の通貨にも対応',
+      ko: '그 외 다양한 통화',
+    };
+    for (const code of LOCALES) {
+      const sourceKeys = [...readLocale(code).matchAll(/^\s*'([^']+)':/gm)].map(match => match[1]);
+      expect(sourceKeys.filter(key => key === 'authShell.moreCurrencies')).toHaveLength(1);
+      expect(dicts[code]['authShell.moreCurrencies']).toBe(approvedMoreCurrencies[code]);
+    }
+  });
+  it('provides every shared menu description in all seven languages', () => {
+    for (const code of LOCALES) for (const key of menuDescriptionKeys) expect(dicts[code][key]?.trim()).toBeTruthy();
+  });
+  it('provides the approved auth design labels without removing validation, 2FA or legal copy', () => {
+    for (const code of LOCALES) for (const key of APPROVED_AUTH_DESIGN_KEYS) expect(dicts[code][key]?.trim()).toBeTruthy();
+    expect(dicts.ru['auth.email']).toBe('Электронная почта');
+    expect(dicts.ru['register.email']).toBe('Электронная почта');
+    expect(dicts.ru['auth.signIn']).toBe('Войти в аккаунт');
+    // The unchanged auth constraints remain covered by the historical byte
+    // digest below, rather than being exempted with a broad auth.* filter.
+    expect(APPROVED_AUTH_DESIGN_KEYS).not.toContain('auth.twoFaHint');
+    expect(APPROVED_AUTH_DESIGN_KEYS).not.toContain('register.legal.terms');
+    expect(APPROVED_AUTH_DESIGN_KEYS).not.toContain('register.req.length');
+  });
   it('localizes each decimal refusal in all seven languages', () => {
     for (const code of LOCALES) {
       expect(Object.keys(dicts[code]).filter(key => key.startsWith('futures.number')).sort()).toEqual([...decimalRefusalKeys].sort());
@@ -61,9 +164,11 @@ describe('translation integrity', () => {
     for (const code of LOCALES) {
       expect(Object.keys(dicts[code]).filter(key => key.startsWith('deposit.ui.')).sort()).toEqual([...depositUiKeys].sort());
       for (const key of depositUiKeys) expect(dicts[code][key].trim()).not.toBe('');
-      for (const key of ['yourAddress', 'networkHint', 'qrLabel']) expect(dicts[code][`deposit.ui.${key}`]).toContain('{asset}');
+      for (const key of ['yourAddress', 'networkHint', 'qrLabel', 'minimumOtherValue']) expect(dicts[code][`deposit.ui.${key}`]).toContain('{asset}');
+      expect(dicts[code]['deposit.ui.minimumOtherValue']).toContain('{amount}');
       expect(dicts[code]['deposit.ui.qrLabel']).toContain('{network}');
     }
+    expect(dicts.ru['deposit.ui.minimumLabel']).toBe('Минимальная сумма пополнения');
   });
   it('has all seven dictionaries, and each is non-trivial', () => {
     expect(Object.keys(dicts).sort()).toEqual([...LOCALES].sort());
@@ -149,13 +254,16 @@ describe('translation integrity', () => {
       // --numstat` over the locales directory reports `5 0` for every
       // language — additions only, not one deletion, so no existing string
       // was retyped.
-      "ru": "70f5b20a531b31fa",
-      "en": "f817d8dc7e0e9de1",
-      "zh": "9b8a64f07b8782a3",
-      "es": "4c1795cbfe0fa10c",
-      "hi": "28856d15d5bc8944",
-      "ja": "9af89252233dbf08",
-      "ko": "b9720e7a2161a1e4"
+      // Auth-only exclusions above applied to trusted pre-redesign main
+      // c08127baa837b5288bd0febc1ce2dc20212044aa using the same historical
+      // normalization below. These are NOT fingerprints of the edited files.
+      "ru": "4f4c8215ab910a41",
+      "en": "34a0c9bee48a1a29",
+      "zh": "24a649501eda9363",
+      "es": "e3f86ceba8afd235",
+      "hi": "c316b12cb92fa851",
+      "ja": "6c8ed7766ec7c998",
+      "ko": "7b25cde326cbbdbb"
 };
     // 2026-09-26, the TradingView-style drawing panel: its tool, group,
     // section and object-toolbar names. `git diff --numstat` over the
@@ -174,7 +282,20 @@ describe('translation integrity', () => {
           'draw.section.fib', 'draw.section.pitchforks', 'draw.section.chartPatterns', 'draw.section.elliott', 'draw.section.projection',
           'draw.section.measurers', 'draw.section.brushes', 'draw.section.arrows', 'draw.section.shapes', 'draw.section.text', 'draw.objectToolbar',
           'draw.lineColor', 'draw.fillColor', 'draw.lineWidth', 'draw.lineStyle', 'draw.editText', 'draw.lockObject', 'draw.unlockObject',
-          'draw.clone', 'draw.deleteObject', 'draw.dash.solid', 'draw.dash.dashed', 'draw.dash.dotted'];
+          'draw.clone', 'draw.deleteObject', 'draw.dash.solid', 'draw.dash.dashed', 'draw.dash.dotted',
+          // Ruler exact prices and its drag guide (owner, 2026-10-04): `git diff
+          // --numstat` over the locales reports `7 0` per language, additions only.
+          'draw.measureSettings', 'draw.priceFrom', 'draw.priceTo', 'draw.toCurrentPrice', 'draw.apply', 'draw.priceInvalid', 'draw.currentPrice',
+          // TradingView's object toolbar, «…» menu and settings dialog for drawings
+          // (owner, 2026-10-18): `git diff --numstat` over the locales reports
+          // `46 0` per language, additions only.
+          'draw.settings', 'draw.more', 'draw.moveToolbar', 'draw.templates', 'draw.template', 'draw.templateSave', 'draw.templateName',
+          'draw.templateDefault', 'draw.templateRemove', 'draw.templateFailed', 'draw.save', 'draw.textColor', 'draw.customColor', 'draw.opacity',
+          'draw.background', 'draw.color', 'draw.line', 'draw.label', 'draw.labelBackground', 'draw.fontSize', 'draw.bold', 'draw.italic',
+          'draw.textPlaceholder', 'draw.info', 'draw.info.price', 'draw.info.percent', 'draw.info.ticks', 'draw.info.bars', 'draw.info.time',
+          'draw.info.volume', 'draw.tab.style', 'draw.tab.text', 'draw.tab.coordinates', 'draw.tab.visibility', 'draw.vis.minutes', 'draw.vis.hours',
+          'draw.vis.days', 'draw.vis.weeks', 'draw.vis.months', 'draw.point', 'draw.price', 'draw.morePoints', 'draw.bringToFront', 'draw.sendToBack',
+          'draw.cancel', 'draw.ok'];
     for (const code of LOCALES) {
       for (const key of drawingPanelKeys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
     }
@@ -194,10 +315,30 @@ describe('translation integrity', () => {
       expect(dicts[code]['copyPerformance.followersPnl']).toContain('P&L');
       expect(dicts[code]['copyPerformance.units']).toContain('USDT');
     }
+    const previousVipCopy: Record<string, { label: string; title: string }> = {
+      ru: { label: 'Super VIP', title: 'Статус Super VIP' },
+      en: { label: 'Super VIP', title: 'Super VIP status' },
+      es: { label: 'Super VIP', title: 'Estado Super VIP' },
+      hi: { label: 'Super VIP', title: 'Super VIP स्थिति' },
+      ja: { label: 'Super VIP', title: 'Super VIP ステータス' },
+      ko: { label: 'Super VIP', title: 'Super VIP 등급' },
+      zh: { label: 'Super VIP', title: 'Super VIP 状态' },
+    };
+    const approvedVipCopy: Record<string, { label: string; title: string }> = {
+      ru: { label: 'Supreme VIP', title: 'Клиент Supreme VIP' },
+      en: { label: 'Supreme VIP', title: 'Supreme VIP status' },
+      es: { label: 'Supreme VIP', title: 'Estado Supreme VIP' },
+      hi: { label: 'Supreme VIP', title: 'Supreme VIP स्थिति' },
+      ja: { label: 'Supreme VIP', title: 'Supreme VIP ステータス' },
+      ko: { label: 'Supreme VIP', title: 'Supreme VIP 등급' },
+      zh: { label: 'Supreme VIP', title: 'Supreme VIP 状态' },
+    };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
+        if (key && APPROVED_AUTH_DESIGN_KEYS.includes(key)) return false;
+        if (key && AUTH_COMMUNITY_KEYS.includes(key)) return false;
         // Keys ADDED since the digests were taken are excluded by name
         // rather than by re-taking seven digests — that is what keeps the
         // guard meaningful: every OTHER byte of every dictionary still has
@@ -213,32 +354,172 @@ describe('translation integrity', () => {
         // `support.form*` are the support form's result lines and address hint
         // (2026-09-26: support became a form answered by email).
         const addedSinceDigest = ['browserSleeping', 'browserSyncing', 'browserSyncError', 'browserContinue',
-          'futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
+          // Failed-wake notice (2026-10-21): the retry/reload controls and the named failure, additions only.
+          'browserResumeBlocked', 'browserRetry', 'browserReload', 'browserFailure.session', 'browserFailure.read', 'browserFailure.timeout',
+          'futures.positionLimits', 'futures.allMarkets', 'futures.panelHeight', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
+          // Native demo P&L breakdown columns (2026-10-16): four new keys, additions only.
+          'futures.colTradingPnl', 'futures.colFunding', 'futures.colFees', 'futures.colNetPnl',
           'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable',
+          'markets.new', // Spot rail newest-listing sorter (2026-10-04), additive only.
           'deposit.transferCreditNote', // New manual-catalogue copy; preserve every existing dictionary byte.
           'trade.assetNotTradingYet', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
           'listing.initialPrice', 'listing.startTime', 'listing.newListing',
+          // Pre-listing timer (2026-10-20): the one line a paused countdown shows
+          // instead of the ticking cells. `git diff --numstat` over the locales
+          // reports `1 0` per language, additions only.
+          'listing.countdownPaused',
           'support.formSent', 'support.formSentHint', 'support.formFailed', 'support.formEmailHint', 'support.formCheck',
           // KYC edge (2026-09-26): the verification form's file-preparation
           // line and the edge's refusals; the existing KYC copy is unchanged.
-          'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed'];
+          'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed',
+          // «Позиция закрыта» card after a market close (2026-10-01, owner chose variant B).
+          'futures.closedTitle', 'futures.closedPrice', 'futures.closedDismiss',
+          // Remembered-device sign-in (2026-10-03): additive auth/session copy.
+          'settings.rememberedDevice',
+          // Verification form, Profile verification action and VOLTEX Card
+          // shortcut (owner bundle, 2026-10-04): `git diff --numstat` over the
+          // locales reports `19 0` per language, additions only.
+          ...KYC_PROFILE_CARD_KEYS,
+          // Mobile terminal (2026-10-04): `git diff --numstat` over the
+          // locales reports `6 0` per language, additions only.
+          ...MOBILE_TERMINAL_KEYS,
+          // Currency flag selection (2026-10-07): one additive label per language.
+          'authShell.moreCurrencies',
+          // Bybit 1:1 positions summary line (2026-10-07): `git diff --numstat` over the locales reports `3 0` per language.
+          'futures.allPositions', 'futures.currentPositions', 'futures.totalPnl',
+          // Mobile client audit (2026-10-09): the Spot/CFD terminal's third phone
+          // tab reads «Ордера» instead of the wrapping «Открытые ордера»;
+          // `git diff --numstat` over the locales reports `1 0` per language.
+          'trade.mobileTabOrders',
+          ...CUSTOMER_PRESENTATION_KEYS,
+          // Desktop Futures chart indicator catalogue (Issue #502, 2026-10-10):
+          // `git diff --numstat` over the locales reports `12 0` per language
+          // for these names; the settings dialog's `chart.settings.*` keys are
+          // already additive below.
+          ...['sma', 'ema', 'wma', 'vwap', 'atr', 'stochastic', 'stochrsi', 'obv', 'adx', 'supertrend', 'cci', 'williams'].map(name => `chart.indicator.${name}`),
+          // Futures refusal codes (2026-10-13 audit): the engine's thin-book
+          // and self-match refusals, which reached the trader as the generic
+          // «Не удалось закрыть позицию», named in every language. `git diff
+          // --numstat` over the locales reports `2 0` per language,
+          // additions only; asserted by name below.
+          'futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch'];
+        // `chart.settings.*` is the futures chart's settings dialog
+        // (2026-09-30); every line before it is unchanged.
+        if (key?.startsWith('chart.settings.')) return false;
+        // The stock-only additions (19 for the review module, 56 for its
+        // panel/overview UI, 4 for refresh/data errors) leave all older
+        // translations byte-identical.
+        if (key?.startsWith('stocks.')) return false;
+        // New regulatory-document UI keys; all pre-existing copy stays frozen.
+        if (key?.startsWith('licenses.')) return false;
+        // KYC additional materials (2026-10-15): the admin's request for a new
+        // document photo and/or a selfie. `git diff --numstat` over the locales
+        // reports `47 0` per language, additions only; asserted by name below.
+        if (key?.startsWith('kycMaterials.')) return false;
+        // Chart workspace (2026-10-13): the timeframe labels, the two-row
+        // toolbar, compare, layout, data window, analytics, templates and
+        // shortcuts, plus three more chart types. `git diff --numstat` over
+        // the locales reports additions only for every language.
+        if (key?.startsWith('chart.ws.') || key?.startsWith('chart.tf.')) return false;
+        if (key === 'chart.type.bars' || key === 'chart.type.hollow' || key === 'chart.type.heikin') return false;
+        // Chart workspace follow-up (2026-10-14): the legend's honest "not enough bars" line
+        // beside the `chart.ws.*` pane states; `git diff --numstat` over the locales reports
+        // `7 0` per language, additions only; asserted by name below.
+        if (key === 'chart.indicator.insufficient') return false;
+        // `otc.*` is the OTC page from the owner's OTC.zip (2026-09-30):
+        // `git diff --numstat` over the locales directory reports `63 0` for
+        // every language, additions only; asserted by name below.
+        if (key?.startsWith('otc.')) return false;
+        // `withdraw.*` is the withdrawal panel (2026-09-30): `git diff
+        // --numstat` over the locales reports `31 0` per language; asserted
+        // by name below. The older `wallet.withdraw*` lines are unchanged.
+        if (key?.startsWith('withdraw.')) return false;
+        // `academy.*`, `help.*`, `nav.academy` and `nav.help` are the Academy
+        // and Help pages (2026-10-01): `git diff --numstat` over the locales
+        // reports `56 0` per language, additions only. No key used either
+        // prefix before them.
+        if (key?.startsWith('academy.') || key?.startsWith('help.') || key === 'nav.academy' || key === 'nav.help') return false;
+        // Owner-approved header destinations, added without changing existing copy.
+        if (key === 'nav.tools' || key === 'nav.knowledgeCenter' || (key && menuDescriptionKeys.includes(key))) return false;
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
+      expect(Object.keys(dicts[code]).filter(key => key.startsWith('stocks.'))).toHaveLength(19 + 56 + 4 + 5 + 2);
+      for (const key of ['widgetDelayed', 'widgetOnly', 'widgetNotice', 'widgetLoadError', 'widgetUnavailable', 'tradingUnavailable', 'explore']) {
+        expect(dicts[code]['stocks.' + key]?.trim().length).toBeGreaterThan(0);
+      }
+      expect(Object.entries(dicts[code]).filter(([key]) => key.startsWith('stocks.')).every(([, value]) => value.trim().length > 0)).toBe(true);
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       // Added for the approved compact order-panel disclosure; older copy remains frozen.
       expect(dicts[code]['futures.positionLimits'].trim()).not.toBe('');
+      expect(dicts[code]['nav.tools'].trim()).not.toBe('');
+      expect(dicts[code]['nav.knowledgeCenter'].trim()).not.toBe('');
+      for (const key of Object.keys(dicts.ru).filter(key => key.startsWith('licenses.'))) {
+        expect({ code, key, translated: Boolean(dicts[code][key]?.trim()) }).toEqual({ code, key, translated: true });
+        if (code !== 'ru') expect(dicts[code][key]).not.toBe(dicts.ru[key]);
+      }
+      for (const key of Object.keys(dicts.ru).filter(key => key.startsWith('kycMaterials.'))) {
+        expect({ code, key, translated: Boolean(dicts[code][key]?.trim()) }).toEqual({ code, key, translated: true });
+        if (code !== 'ru') expect({ code, key, same: dicts[code][key] === dicts.ru[key] }).toEqual({ code, key, same: false });
+        // Placeholders survive translation exactly.
+        expect({ code, key, params: (dicts[code][key].match(/\{\w+\}/g) ?? []).sort() }).toEqual({ code, key, params: (dicts.ru[key].match(/\{\w+\}/g) ?? []).sort() });
+      }
+      expect(dicts[code]['settings.rememberedDevice'].trim()).not.toBe('');
+      for (const key of ['futures.orderError.insufficientLiquidity', 'futures.orderError.selfMatch']) {
+        expect({ code, key, text: dicts[code][key]?.trim() !== '' }).toEqual({ code, key, text: true });
+        if (code !== 'ru') expect({ code, key, translated: dicts[code][key] !== dicts.ru[key] }).toEqual({ code, key, translated: true });
+      }
+      expect(dicts[code]['nav.card']).toBe(shortCardLabels[code]);
+      expect(dicts[code]['wallet.superVip']).toBe(approvedVipCopy[code].label);
+      expect(dicts[code]['wallet.superVipTitle']).toBe(approvedVipCopy[code].title);
       // Russian `futures.colMark` was shortened to «Цена марк.» (like «Цена
       // ликвид.») so every positions heading fits on one line at 1600; the
       // digest is taken over the original wording, restored here by name.
       const restored = source.replace("'trade.cfdUnavailable': '" + cfdCopyAfter[code] + "'", "'trade.cfdUnavailable': '" + cfdCopyBefore[code] + "'")
+        // Reverse only the owner's exact short navigation label; product copy stays frozen.
+        .replace("'nav.card': '" + shortCardLabels[code] + "'", "'nav.card': 'Crypto Card'")
+        // Supreme VIP is the owner-approved Wallet label. Restore only those
+        // two exact values for the historical dictionary digest so unrelated
+        // translations remain byte-frozen.
+        .replace("'wallet.superVip': '" + approvedVipCopy[code].label + "'", "'wallet.superVip': '" + previousVipCopy[code].label + "'")
+        .replace("'wallet.superVipTitle': '" + approvedVipCopy[code].title + "'", "'wallet.superVipTitle': '" + previousVipCopy[code].title + "'")
         .replace(code === 'ru' ? "'futures.colMark': 'Цена марк.'" : '\u0000', "'futures.colMark': 'Цена маркировки'");
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
     }
+  });
+
+  it('carries the OTC page copy in every language, the Russian word for word from OTC.zip', () => {
+    const otcKeys = Object.keys(dicts.ru).filter(key => key.startsWith('otc.'));
+    expect(otcKeys.length).toBe(63);
+    for (const code of LOCALES) {
+      for (const key of otcKeys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
+      // The two placeholders the page fills must survive translation.
+      expect(dicts[code]['otc.minFrom']).toContain('{amount}');
+      expect(dicts[code]['otc.form.note']).toContain('{min}');
+      expect(dicts[code]['otc.private.perDeal']).toContain('{min}');
+    }
+    expect(dicts.ru['otc.heroTitle']).toBe('Институциональная OTC-торговля');
+    expect(dicts.ru['otc.form.submit']).toBe('Оставить заявку');
+    expect(dicts.ru['otc.cash.p1Text']).toBe('Выберите страну получения из справочника — точная доступность подтверждается менеджером по заявке.');
+    expect(new Set(LOCALES.map(code => dicts[code]['otc.heroTitle'])).size).toBe(LOCALES.length);
+  });
+
+  it('carries the withdrawal panel in every language, with its placeholders and the 60-minute promise', () => {
+    const keys = Object.keys(dicts.ru).filter(key => key.startsWith('withdraw.'));
+    expect(keys.length).toBe(31);
+    for (const code of LOCALES) {
+      for (const key of keys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
+      expect(dicts[code]['withdraw.amountTooMuch']).toContain('{amount}');
+      expect(dicts[code]['withdraw.amountTooMuch']).toContain('{asset}');
+      expect(dicts[code]['withdraw.addressWrongNetwork']).toContain('{network}');
+      expect(dicts[code]['withdraw.eta']).toContain('60');
+      expect(dicts[code]['withdraw.doneEta']).toContain('60');
+    }
+    expect(dicts.ru['withdraw.eta']).toBe('Вывод может занимать до 60 минут.');
   });
 
   it('localizes the neutral manual-catalogue note without changing legacy deposit copy', () => {
@@ -322,6 +603,25 @@ describe('translation integrity', () => {
     for (const key of FUTURES_PROSE) {
       const lines = LOCALES.map((code) => (dicts[code] as any)[key]);
       expect({ key, distinct: new Set(lines).size }).toEqual({ key, distinct: LOCALES.length });
+    }
+  });
+
+  it('carries the chart workspace follow-up states in every language, translated (2026-10-14)', () => {
+    // A pane's loading / no-history / failed / not-updating words, its retry key, the
+    // timeframe menu's one-line note on built intervals and the legend's "not enough bars"
+    // line. Prose, so seven identical strings would mean six were never translated.
+    const KEYS = ['chart.ws.tf.derivedNote', 'chart.ws.pane.loading', 'chart.ws.pane.empty', 'chart.ws.pane.error', 'chart.ws.pane.stale', 'chart.ws.pane.retry', 'chart.indicator.insufficient'];
+    for (const code of LOCALES) {
+      for (const key of KEYS) {
+        expect({ code, key, value: typeof (dicts[code] as any)[key] }).toEqual({ code, key, value: 'string' });
+        expect((dicts[code] as any)[key].trim().length).toBeGreaterThan(0);
+      }
+      expect((dicts[code] as any)['chart.ws.pane.stale']).toContain('{time}');
+      expect((dicts[code] as any)['chart.indicator.insufficient']).toContain('{n}');
+      expect((dicts[code] as any)['chart.indicator.insufficient']).toContain('{need}');
+    }
+    for (const key of ['chart.ws.pane.empty', 'chart.ws.pane.error', 'chart.ws.pane.stale', 'chart.indicator.insufficient', 'chart.ws.tf.derivedNote']) {
+      expect(new Set(LOCALES.map((code) => (dicts[code] as any)[key])).size).toBe(LOCALES.length);
     }
   });
 

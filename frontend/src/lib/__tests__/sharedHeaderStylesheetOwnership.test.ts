@@ -47,7 +47,7 @@ function stylesheets(): string[] {
   const out: string[] = [];
   const walk = (p: string) => {
     if (statSync(p).isDirectory()) for (const e of readdirSync(p)) walk(join(p, e));
-    else if (p.endsWith('.css')) out.push(relative(frontend, p));
+    else if (p.endsWith('.css')) out.push(relative(frontend, p).replace(/\\/g, '/'));
   };
   walk(resolve(frontend, 'src'));
   return out.sort();
@@ -235,7 +235,7 @@ describe('blanket route resets cannot move the shared authenticated header', () 
  */
 const HEADER_CLASSES = [
   'global-header', 'top-nav-bar', 'header-left', 'header-brand', 'brand-separator',
-  'main-nav', 'nav-desktop-links', 'nav-item', 'nav-item-wrap', 'nav-dropdown',
+  'main-nav', 'nav-desktop-links', 'nav-item',
   'nav-secondary', 'nav-chevron', 'nav-active',
   'header-actions', 'nav-desktop-right', 'deposit-button', 'header-extra-action',
   'top-nav-profile-wrap', 'top-nav-profile-btn', 'top-nav-profile-menu', 'top-nav-profile-admin',
@@ -247,6 +247,14 @@ describe('the shared authenticated header does not depend on a lazy stylesheet',
   it('every class it renders is a class Nav.tsx actually writes', () => {
     const nav = read('src/components/Nav.tsx');
     for (const cls of HEADER_CLASSES) expect(nav).toContain(cls);
+  });
+  it('Nav and Home share the same eagerly imported dropdown renderer', () => {
+    for (const file of ['src/components/Nav.tsx', 'src/pages/home/HomeHeader.tsx']) {
+      expect(read(file)).toContain('OTC_LINKS');
+      expect(read(file)).toContain('<HeaderDropdown');
+      expect(read(file)).not.toContain('className="nav-dropdown"');
+    }
+    expect(read('src/components/HeaderDropdown.tsx')).toContain("import './HeaderDropdown.css'");
   });
 
   it('and Nav imports no stylesheet of its own — index.css carries it', () => {
@@ -306,15 +314,38 @@ describe('the shared authenticated header does not depend on a lazy stylesheet',
       'src/pages/auth-shell/auth-shell.css: .vx-auth-work .header-icon',
       'src/pages/auth-shell/auth-shell.css: .vx-auth-work .header-icon:hover',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .brand-separator',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .deposit-button',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-actions',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-actions .header-icon',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-left',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .main-nav',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .main-nav .nav-item',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .header-brand',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .header-extra-action',
       'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header',
       'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header .header-actions',
       'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header .header-left',
+      'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header .nav-mobile-menu',
+      // Spot/CFD extension is also colour-only; exact declarations are pinned
+      // by spotCfdGraphite.test.ts, not an exemption for header geometry.
+      'src/pages/trade-terminal/SpotCfdGraphite.css: :is(#archive-terminal-preview, .vx-terminal).vx-terminal .global-header',
+      // 2026-10-04: the terminals' phone header (<=900px only, and only a
+      // header that carries data-terminal-header, which Nav sets when a
+      // terminal passes its «Спот / Фьючерсы» switch). It sizes the row,
+      // its touch targets and the drawer offset; the burger's `display`
+      // stays index.css's (see the next test).
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header]',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .deposit-button',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-brand',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-left',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .mobile-menu',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .nav-mobile-menu',
       'src/pages/trade-terminal/TerminalMobileParity.css: .trade-terminal.vx-terminal .global-header',
+      // 2026-09-30: the terminal tone paints the header's background (a
+      // token) inside the futures root; no geometry, no display.
+      'src/pages/trade-terminal/TerminalPanelTiles.css: #archive-terminal-preview .global-header',
       'src/pages/trade-terminal/VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .global-header',
       'src/pages/trade-terminal/VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .header-brand',
     ]);

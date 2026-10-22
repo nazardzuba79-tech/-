@@ -1,4 +1,5 @@
 import { BarChart3Icon, CircleDollarSignIcon, CreditCardIcon, LayoutGridIcon, ListOrderedIcon, MoonIcon, SunIcon, WalletIcon, ArrowRightIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Key, useLanguage } from '../../lib/i18n';
 import { WalletTheme } from './useWalletTheme';
@@ -80,9 +81,21 @@ export function WalletSideNav({
   onToggleTheme: () => void;
 }) {
   const { t } = useLanguage();
+  const navRef = useRef<HTMLElement>(null);
+  // Phone and tablet: the rail is a strip wider than the screen. The strip
+  // itself is scrolled so the active item is in view (the page is not —
+  // this never moves the window). Desktop's column never overflows, so the
+  // guard below makes this a no-op there.
+  useEffect(() => {
+    const nav = navRef.current;
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !active || nav.scrollWidth <= nav.clientWidth + 1) return;
+    const left = active.getBoundingClientRect().left - nav.getBoundingClientRect().left + nav.scrollLeft - (nav.clientWidth - active.offsetWidth) / 2;
+    nav.scrollTo({ left: Math.max(0, left) });
+  }, [section]);
 
   return (
-    <nav className="wallet-side-nav" aria-label={t('wallet.navSection')}>
+    <nav ref={navRef} className="wallet-side-nav" aria-label={t('wallet.navSection')}>
       {/* The approved design's brand block: the wordmark with its gold L,
           and the product line under it. Decorative for the sidebar only —
           the global header keeps the app's own logo. */}

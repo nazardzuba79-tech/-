@@ -4,10 +4,12 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import { isManagedListingPair, isManagedTradablePair, isTestMarketPair, managedListingLogo, managedListingTime, parseTestMarkets, registerManagedListings } from '../testMarkets';
 import * as testMarketHelpers from '../testMarkets';
+import * as aithPublication from '../../../../src/shared/aithPublication';
 import { isEdgeMarketPair, isEdgeMarketUrl, nrxPublicUrl } from '../nrxMarket';
 import * as nrxHelpers from '../nrxMarket';
 import { resolveMarketEdgeBase, MARKET_EDGE_BASE } from '../marketEdge';
 import { utcToZonedWallTime, zonedWallTimeToUtc, utcOffsetLabel } from '../../pages/admin/adminListingsTime';
+import { newListingMovement, movementPriceFromGain } from '../../pages/admin/listingMovementModel';
 
 const managed = (extra: Record<string, unknown> = {}) => ({
   pair: 'QAX/USDT', symbol: 'QAX', name: 'QA Example', quote: 'USDT', isTestAsset: true, isTradable: true, status: 'SPOT',
@@ -69,6 +71,30 @@ describe('managed listings in the frontend', () => {
     expect(utcOffsetLabel(Date.parse('2026-10-01T12:00:00Z'), 'Europe/Kyiv')).toBe('UTC+3');
     expect(managedListingTime('2026-10-01T12:00:00Z', 'Europe/Kyiv')).toBe('01.10.2026 · 15:00 Europe/Kyiv · 12:00 UTC');
   });
+
+  test('a listing entered in Moscow time reads UTC first, as NRX does: «26.10.2026 — 13:00 UTC / 16:00 МСК»', () => {
+    expect(managedListingTime('2026-10-26T13:00:00Z', 'Europe/Moscow')).toBe('26.10.2026 — 13:00 UTC / 16:00 МСК');
+    expect(managedListingTime('2026-10-26T13:00:00Z', 'Europe/Moscow', 'en-US')).toBe('10/26/2026 — 13:00 UTC / 16:00 МСК');
+    expect(managedListingTime('2026-10-26T13:00:00Z', 'UTC')).toBe('26.10.2026 · 13:00 UTC');
+    expect(zonedWallTimeToUtc('2026-10-26T16:00', 'Europe/Moscow')).toBe('2026-10-26T13:00:00Z');
+  });
+
+  test('the public timer state: paused keeps the date and loses the countdown; running counts; unarmed shows no date', () => {
+    const now = Date.parse('2026-10-01T11:00:00Z');
+    const paused = parseTestMarkets({ serverTime: 1, assets: [managed({ listingArmed: false, countdown: 'paused' })] })!.assets[0];
+    expect(paused.countdown).toBe('paused');
+    for (const at of [now, Date.parse('2026-10-01T12:00:00Z'), Date.parse('2026-10-02T12:00:00Z')]) {
+      expect(testMarketHelpers.testMarketPresentation(paused, at)).toMatchObject({ showCountdown: false, showDate: true, scheduleKey: 'listing.countdownPaused' });
+    }
+    const running = parseTestMarkets({ serverTime: 1, assets: [managed()] })!.assets[0];
+    expect(running.countdown).toBe('running');
+    expect(testMarketHelpers.testMarketPresentation(running, now)).toMatchObject({ showCountdown: true, showDate: true, scheduleKey: null });
+    expect(testMarketHelpers.testMarketPresentation(running, Date.parse('2026-10-01T12:00:00Z'))).toMatchObject({ showCountdown: false, showDate: true, scheduleKey: 'listing.awaitingStart' });
+    const unarmed = parseTestMarkets({ serverTime: 1, assets: [managed({ listingArmed: false })] })!.assets[0];
+    expect(testMarketHelpers.testMarketPresentation(unarmed, now)).toMatchObject({ showCountdown: false, showDate: false, scheduleKey: 'listing.dateUnconfirmed' });
+    // Unknown values never count: only the server's exact `paused` pauses.
+    expect(parseTestMarkets({ serverTime: 1, assets: [managed({ countdown: 'stopped' })] })!.assets[0].countdown).toBe('running');
+  });
 });
 
 describe('test-market list identity', () => {
@@ -106,6 +132,7 @@ function stores(read: (url: string) => Promise<unknown>) {
     if (name === './testMarkets') return testMarketHelpers;
     if (name === './nrxMarket') return { ...nrxHelpers, fetchNrxPublic: read };
     if (name === './browserActivity') return activity;
+    if (name === '../../../src/shared/aithPublication') return aithPublication;
     return req(name);
   }, output, document, async (url: string) => ({ ok: true, json: () => read(url) }));
   return { ...output, listeners, visibility(hidden: boolean) { document.hidden = hidden; for (const listener of listeners) listener(); },
@@ -115,6 +142,61 @@ function stores(read: (url: string) => Promise<unknown>) {
 describe('managed catalogue scheduling with the real store', () => {
   beforeEach(() => jest.useFakeTimers().setSystemTime(Date.parse('2026-09-29T00:00:00Z')));
   afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
+
+  const aith = (version = 1, initialPrice = .8) => managed({ pair: 'AITH/USDT', symbol: 'AITH', name: 'Aitheron AI', isTradable: false,
+    status: 'TEST · NOT TRADABLE', initialPrice, version,
+    readLease: { protocol: 'aith-prelisting-v1', generation: version, issuedAt: Date.now(), expiresAt: Date.now() + 45_000 } });
+
+  test('all assets retain machine status; presentation translates it without changing price or trading protections', () => {
+    const parsed = parseTestMarkets({ serverTime: Date.now(), assets: [aith(2, 2), managed({ isTradable: false, status: 'TEST · NOT TRADABLE' })] })!;
+    expect(parsed.assets[0]).toMatchObject({ initialPrice: 2, version: 2, status: 'TEST · NOT TRADABLE', isTestAsset: true, isTradable: false });
+    expect(parsed.assets[1].status).toBe('TEST · NOT TRADABLE');
+    expect(parseTestMarkets({ serverTime: Date.now() + 46_000, assets: [aith()] })!.assets).toEqual([]);
+    expect(parseTestMarkets({ serverTime: Date.now(), assets: [{ ...aith(), readLease: undefined }] })!.assets).toEqual([]);
+    expect(isManagedListingPair('AITH/USDT')).toBe(true);
+    expect(isManagedTradablePair('AITH/USDT')).toBe(false);
+  });
+
+  test('a hanging refresh cannot keep old AITH visible after its lease, including while hidden', async () => {
+    let hang = false;
+    const read = jest.fn(async () => hang ? new Promise(() => {}) : ({ serverTime: Date.now(), assets: [aith(), managed()] }));
+    const market = stores(read), store = market.managedListingStore;
+    const listener = jest.fn();
+    const off = store.subscribe(listener);
+    await settle();
+    expect(store.getState().assets).toHaveLength(2);
+    hang = true;
+    await jest.advanceTimersByTimeAsync(15_000);
+    jest.setSystemTime(Date.now() - 86400000); // Wall-clock rollback must not extend the read lease.
+    market.visibility(true);
+    await jest.advanceTimersByTimeAsync(29_000);
+    expect(store.getState().assets.map((x: any) => x.symbol)).toEqual(['QAX']);
+    expect(listener.mock.calls.at(-1)[0].assets.map((x: any) => x.symbol)).toEqual(['QAX']);
+    off();
+  });
+
+  test('failed authority removes only AITH, delayed replies do not extend leases, and version cannot regress', async () => {
+    let mode = 'v2';
+    let release: (value: unknown) => void = () => {};
+    const read = async () => {
+      if (mode === 'failure') throw new Error('offline');
+      if (mode === 'delay') return new Promise(resolve => { release = resolve; });
+      return { serverTime: Date.now(), assets: [aith(mode === 'v2' ? 2 : 1, mode === 'v2' ? 2 : .8), managed()] };
+    };
+    const store = stores(read).managedListingStore;
+    await store.refresh();
+    expect(store.getState().assets[0].initialPrice).toBe(2);
+    mode = 'v1'; await store.refresh();
+    expect(store.getState().assets.map((x: any) => x.symbol)).toEqual(['QAX']);
+    mode = 'v2'; await store.refresh();
+    mode = 'failure'; await store.refresh();
+    expect(store.getState().assets.map((x: any) => x.symbol)).toEqual(['QAX']);
+    mode = 'delay'; const request = store.refresh();
+    const captured = { serverTime: Date.now(), assets: [aith(2, 2)] };
+    await jest.advanceTimersByTimeAsync(46_000);
+    release(captured); await request;
+    expect(store.getState().assets).toEqual([]);
+  });
 
   test('a future-only catalogue discovers another listing on its regular minute cadence and stops after unsubscribe', async () => {
     const assets = [managed()];
@@ -271,9 +353,11 @@ describe('saved-draft actions in the mounted Listings admin', () => {
   const { act } = React;
   const { Simulate } = req('react-dom/test-utils');
   let dom: any, root: any, host: HTMLElement, listing: any, extraListings: any[], fetchMock: jest.Mock;
-  let previewGate: Promise<void> | null, previewRevision: number | null, publishFailures: number;
+  let previewGate: Promise<void> | null, previewRevision: number | null, publishFailures: number, serverTime: number | null;
+  let malformedPublish: boolean;
   let globals: Map<string, PropertyDescriptor | undefined>;
   const modules = new Map<string, any>();
+  const sessionListeners = new Set<() => void>();
   const json = (body: unknown, status = 200) => ({ ok: status < 400, status, json: async () => structuredClone(body) });
 
   function load(file: string): any {
@@ -282,7 +366,8 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     const output: any = {}; modules.set(file, output);
     new Function('exports', 'require', compile(file))(output, (name: string) => {
       if (name.endsWith('.css')) return {};
-      if (name === '../../lib/api') return { API_BASE: '/api/v1', getToken: () => 'fixture-admin-token' };
+      if (name === '../../lib/api') return { API_BASE: '/api/v1', getToken: () => 'fixture-admin-token',
+        onSessionChange: (listener: () => void) => { sessionListeners.add(listener); return () => { sessionListeners.delete(listener); }; } };
       return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
     });
     return output;
@@ -296,7 +381,7 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     Object.assign(globalThis, values);
     host = document.getElementById('root')!;
     root = req('react-dom/client').createRoot(host);
-    modules.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = [];
+    modules.clear(); sessionListeners.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = []; malformedPublish = false; serverTime = null;
     listing = {
       id: 'qax-1', symbol: 'QAX', draftRevision: 2, draftUpdatedAt: '2026-09-29T00:00:00Z', draftUpdatedBy: 'fixture-admin',
       activeVersion: null, active: null, versions: [],
@@ -306,7 +391,13 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     };
     fetchMock = jest.fn(async (url: string, init: any = {}) => {
       const path = String(url);
-      if (path === '/api/v1/admin/listings') return json({ revision: String(listing.draftRevision), serverTime: Date.now(), listings: [listing, ...extraListings] });
+      if (path === '/api/v1/admin/listings') return json({ revision: String(listing.draftRevision), serverTime: serverTime ?? Date.now(), listings: [listing, ...extraListings] });
+      if (path.endsWith('/countdown') && init.method === 'POST') {
+        const { action } = JSON.parse(init.body);
+        const state = action === 'start' ? 'running' : action === 'pause' ? 'paused' : 'staged';
+        listing = { ...listing, countdown: { state, updatedAt: 1, updatedBy: 'fixture-admin', ...(state === 'running' ? { startedAt: 1 } : {}) } };
+        return json({ id: listing.id, countdown: listing.countdown, changed: true });
+      }
       if (path.endsWith('/draft') && init.method === 'PUT') {
         const { config } = JSON.parse(init.body);
         listing = { ...listing, draftRevision: listing.draftRevision + 1, draft: { ...listing.draft, ...config } };
@@ -321,10 +412,13 @@ describe('saved-draft actions in the mounted Listings admin', () => {
           candles: [], book: { available: false, asks: [], bids: [] }, trades: [] });
       }
       if (path.endsWith('/publish') && init.method === 'POST') {
+        if (malformedPublish) return json({ accepted: true });
         if (publishFailures > 0) { publishFailures -= 1; throw new Error('fixture connection lost'); }
+        const staged = JSON.parse(init.body).countdown === 'staged';
         listing = { ...listing, activeVersion: 1, active: structuredClone(listing.draft),
-          versions: [{ version: 1, publishedAt: '2026-09-29T01:00:00Z', publishedBy: 'fixture-admin' }] };
-        return json({ id: listing.id, version: 1, replayed: false, publishedAt: '2026-09-29T01:00:00Z' });
+          versions: [{ version: 1, publishedAt: '2026-09-29T01:00:00Z', publishedBy: 'fixture-admin' }],
+          countdown: staged ? { state: 'staged', updatedAt: 1, updatedBy: 'fixture-admin' } : null };
+        return json({ id: listing.id, version: 1, replayed: false, publishedAt: '2026-09-29T01:00:00Z', countdown: listing.countdown });
       }
       return json({ error: `unexpected fixture request ${path}` }, 404);
     });
@@ -333,6 +427,7 @@ describe('saved-draft actions in the mounted Listings admin', () => {
 
   afterEach(async () => {
     await act(async () => root.unmount());
+    expect(sessionListeners.size).toBe(0);
     dom.window.close();
     for (const [key, descriptor] of globals) {
       if (descriptor) Object.defineProperty(globalThis, key, descriptor);
@@ -404,6 +499,41 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     expect(calls('/preview?')).toHaveLength(2);
   });
 
+  test.each(['-', 'Infinity', 'NaN'])('a transient invalid stage duration %s never crashes a dated movement form', async input => {
+    listing.draft.simulationProgram = newListingMovement(listing.draft.initialPrice);
+    await mount();
+    await change('stageDuration-0', input);
+    expect(host.querySelector('[data-listing-form]')).not.toBeNull();
+    expect(host.textContent).toContain('Проверьте длительность этапа');
+    await click('[data-save-draft]');
+    expect(host.querySelector('[data-listing-error]')?.textContent).toContain('Продолжительность');
+    expect(calls('/draft')).toHaveLength(0);
+  });
+
+  test('typing all initial-price digits uses an editing anchor and retains the exact day-one and maximum goals', async () => {
+    listing.draft.initialPrice = '1';
+    listing.draft.simulationProgram = newListingMovement('1');
+    await mount();
+    await act(async () => { Simulate.focus(host.querySelector('[data-field="initialPrice"]')); await flush(); });
+    const next = '0.8765432198';
+    for (let length = 1; length <= next.length; length++) await change('initialPrice', next.slice(0, length));
+    expect((host.querySelector('[data-field="stageTarget-0"]') as HTMLInputElement).value).toBe(movementPriceFromGain(next, '1725'));
+    expect((host.querySelector('[data-field="maxPrice"]') as HTMLInputElement).value).toBe(movementPriceFromGain(next, '9247'));
+    await click('[data-save-draft]');
+    expect(calls('/draft')).toHaveLength(1);
+    expect(host.querySelector('[data-listing-error]')).toBeNull();
+  });
+
+  test('successful publication immediately locks movement and history inputs without reopening the form', async () => {
+    listing.draft.simulationProgram = newListingMovement(listing.draft.initialPrice);
+    await mount();
+    expect((host.querySelector('[data-movement-editor]') as HTMLFieldSetElement).disabled).toBe(false);
+    await click('[data-publish]'); await click('[data-confirm-publish]');
+    expect((host.querySelector('[data-movement-editor]') as HTMLFieldSetElement).disabled).toBe(true);
+    expect((host.querySelector('[data-field="initialPrice"]') as HTMLInputElement).disabled).toBe(true);
+    expect((host.querySelector('[data-field="symbol"]') as HTMLInputElement).disabled).toBe(true);
+  });
+
   test('saving enables the new revision; publish still confirms it and retries with the same key and CAS revision', async () => {
     await mount();
     await change('initialPrice', '0.45');
@@ -429,6 +559,67 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     expect(requests[1]).toEqual(requests[0]);
     expect(host.querySelector('[data-publish-dialog]')).toBeNull();
     expect(calls('/allocation')).toHaveLength(0);
+  });
+
+  test('ticker and publication filters use current saved listings without network requests', async () => {
+    const active = { ...structuredClone(listing), id: 'qbx-1', symbol: 'QBX' };
+    active.draft.symbol = 'QBX'; active.active = structuredClone(active.draft); active.activeVersion = 1;
+    extraListings = [active];
+    await mount();
+    const before = fetchMock.mock.calls.length;
+    await change('listingSearch', 'qbx');
+    expect(host.querySelectorAll('[data-listing-row]')).toHaveLength(1);
+    expect(host.querySelector('[data-listing-row="QBX"]')).not.toBeNull();
+    await change('listingSearch', '');
+    await change('listingStatus', 'draft');
+    expect(host.querySelectorAll('[data-listing-row]')).toHaveLength(1);
+    expect(host.querySelector('[data-listing-row="QAX"]')).not.toBeNull();
+    await change('listingStatus', 'live');
+    expect(host.querySelector('[data-listing-row="QBX"]')).not.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(before);
+  });
+
+  test('unknown publish response retains confirmation and retry key without claiming success', async () => {
+    await mount();
+    await click('[data-publish]');
+    malformedPublish = true;
+    await click('[data-confirm-publish]');
+    expect(host.querySelector('[data-publish-dialog]')).not.toBeNull();
+    expect(host.textContent).not.toContain('Опубликовано:');
+    expect(host.textContent).toContain('Нет подтверждения от сервера');
+    malformedPublish = false;
+    await click('[data-confirm-publish]');
+    const requests = calls('/publish').map(([, init]) => JSON.parse(init.body));
+    expect(requests[1]).toEqual(requests[0]);
+  });
+
+  test('ambiguous preview time is not silently replaced by the default preview', async () => {
+    await mount();
+    await change('previewAt', '2026-10-25T03:30');
+    await click('[data-preview]');
+    expect(calls('/preview?')).toHaveLength(0);
+    expect(host.textContent).toContain('неоднозначно');
+  });
+
+  test('an incomplete save receipt preserves the draft and never reports saved', async () => {
+    await mount();
+    await change('name', 'Unsaved fixture name');
+    fetchMock.mockResolvedValueOnce(json({ id: listing.id, draftRevision: 3, draft: { symbol: 'QAX', seed: 'qax-fixed-seed' } }));
+    await click('[data-save-draft]');
+    expect(host.querySelector('[data-listing-notice]')).toBeNull();
+    expect(host.textContent).toContain('Нет подтверждения от сервера');
+    expect((host.querySelector('[data-field="name"]') as HTMLInputElement).value).toBe('Unsaved fixture name');
+    expect(button('[data-publish]').disabled).toBe(true);
+  });
+
+  test('a publish receipt for a different listing is not confirmation of this listing', async () => {
+    await mount();
+    await click('[data-publish]');
+    fetchMock.mockResolvedValueOnce(json({ id: 'another-listing', version: 1, replayed: false, publishedAt: '2026-10-01T12:00:00Z' }));
+    await click('[data-confirm-publish]');
+    expect(host.querySelector('[data-publish-dialog]')).not.toBeNull();
+    expect(host.textContent).toContain('Нет подтверждения от сервера');
+    expect(host.textContent).not.toContain('Опубликовано:');
   });
 
   test('a preview response arriving after edit and revert stays invalidated', async () => {
@@ -523,5 +714,110 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     expect(host.querySelector('[data-listing-preview]')).toBeNull();
     expect(button('[data-preview]').disabled).toBe(false);
     expect(button('[data-publish]').disabled).toBe(false);
+  });
+
+  const publishedListing = (countdown: Record<string, unknown> | null) => ({
+    ...listing, activeVersion: 1, active: structuredClone(listing.draft),
+    versions: [{ version: 1, publishedAt: '2026-09-29T01:00:00Z', publishedBy: 'fixture-admin' }], countdown,
+  });
+  const timerBox = () => host.querySelector<HTMLElement>('[data-listing-timer]');
+  const timerActions = () => Array.from(host.querySelectorAll('[data-timer-action]')).map(button => button.getAttribute('data-timer-action'));
+
+  // The fixture lists on 2026-10-01: the page reads the SERVER clock from the list, never the browser's, so the tests set it.
+  const beforeListing = Date.parse('2026-09-30T00:00:00Z');
+
+  test('the timer of a published listing: «Запустить таймер» shows the market; pause and stop follow; the listing date never moves', async () => {
+    serverTime = beforeListing;
+    listing = publishedListing({ state: 'staged', updatedAt: 1, updatedBy: 'fixture-admin' });
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('staged');
+    expect(timerBox()?.textContent).toContain('Таймер не запущен');
+    expect(host.querySelector('[data-listing-timer-line]')?.textContent).toContain('01.10.2026 — 12:00 UTC / 15:00 МСК');
+    expect(host.querySelector('.listing-when')?.textContent).toContain('Москва (UTC+3)');
+    expect(timerActions()).toEqual(['start']);
+    await click('[data-timer-action="start"]');
+    expect(JSON.parse(calls('/countdown')[0][1].body)).toEqual({ action: 'start' });
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('запущен: отсчёт до 01.10.2026 — 12:00 UTC / 15:00 МСК');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('running');
+    expect(timerActions()).toEqual(['pause', 'stop']);
+    await click('[data-timer-action="pause"]');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('paused');
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('приостановлен');
+    expect(timerActions()).toEqual(['start', 'stop']);
+    await click('[data-timer-action="stop"]');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('staged');
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('скрыт с биржи');
+    expect(calls('/countdown').map(([, init]) => JSON.parse(init.body).action)).toEqual(['start', 'pause', 'stop']);
+    expect(calls('/draft')).toHaveLength(0);
+    expect(calls('/publish')).toHaveLength(0);
+    expect(listing.active.listingAt).toBe('2026-10-01T12:00:00Z');
+  });
+
+  test('a listing published before the timer existed counts as running; a passed date with a timer that never ran is an alert, never a start', async () => {
+    serverTime = beforeListing;
+    listing = publishedListing(null);
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('running');
+    expect(timerActions()).toEqual(['pause', 'stop']);
+    await act(async () => root.unmount());
+    root = req('react-dom/client').createRoot(host);
+    // The server clock, not the browser's, says the date passed: the listing was never started, so nothing opened.
+    serverTime = Date.parse('2026-10-02T00:00:00Z');
+    listing = publishedListing({ state: 'staged', updatedAt: 1, updatedBy: 'fixture-admin' });
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('overdue');
+    expect(timerBox()?.getAttribute('role')).toBe('alert');
+    expect(timerBox()?.textContent).toContain('назначьте новую дату');
+    expect(timerBox()?.textContent).toContain('Ничего не запускается автоматически');
+    expect(timerActions()).toEqual([]);
+    // Opened the old way (running past its date): no timer controls at all.
+    await act(async () => root.unmount());
+    root = req('react-dom/client').createRoot(host);
+    listing = publishedListing({ state: 'running', updatedAt: 1, updatedBy: 'fixture-admin', startedAt: 1 });
+    await mount();
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('open');
+    expect(timerActions()).toEqual([]);
+    expect(calls('/countdown')).toHaveLength(0);
+  });
+
+  test('publishing without starting the timer sends countdown=staged and says the market stays hidden until «Запустить таймер»', async () => {
+    serverTime = beforeListing;
+    await mount();
+    await click('[data-publish]');
+    const box = host.querySelector<HTMLInputElement>('[data-field="publishStartTimer"]')!;
+    expect(box.checked).toBe(true);
+    expect(host.querySelector('[data-publish-timer-line]')?.textContent).toContain('01.10.2026 — 12:00 UTC / 15:00 МСК');
+    await change('publishStartTimer', false);
+    expect(host.querySelector('[data-publish-dialog]')?.textContent).toContain('останется скрытым');
+    await click('[data-confirm-publish]');
+    expect(JSON.parse(calls('/publish')[0][1].body)).toMatchObject({ countdown: 'staged' });
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('Таймер не запущен');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('staged');
+    expect(timerActions()).toEqual(['start']);
+  });
+
+  test('publishing with the timer sends no timer field and shows the running countdown', async () => {
+    serverTime = beforeListing;
+    await mount();
+    await click('[data-publish]');
+    await click('[data-confirm-publish]');
+    expect('countdown' in JSON.parse(calls('/publish')[0][1].body)).toBe(false);
+    expect(host.querySelector('[data-listing-notice]')?.textContent).toContain('Рынок появится');
+    expect(timerBox()?.getAttribute('data-listing-timer')).toBe('running');
+  });
+
+  test('the real laboratory makes no admin requests and clears its local examples on session change', async () => {
+    await mount();
+    const before = fetchMock.mock.calls.length;
+    await click('[data-open-scenario-lab]');
+    await click('[data-lab-start]');
+    expect(host.querySelector('[data-lab-scenario]')?.textContent).toBe('Спокойный тренд');
+    expect(window.sessionStorage.getItem('voltex.admin.scenario-lab.v1')).not.toBeNull();
+    await act(async () => { for (const listener of sessionListeners) listener(); await flush(); });
+    expect(host.querySelector('[data-scenario-lab]')).toBeNull();
+    expect(window.sessionStorage.getItem('voltex.admin.scenario-lab.v1')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(before);
+    expect(calls('/draft')).toHaveLength(0);
+    expect(calls('/publish')).toHaveLength(0);
   });
 });

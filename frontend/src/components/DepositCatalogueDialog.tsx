@@ -4,11 +4,13 @@ import { Check, ChevronDown, Copy, Info, QrCode, Search, X } from 'lucide-react'
 import QRCode from 'qrcode';
 import { localeOf, useLanguage } from '../lib/i18n';
 import { useDepositSelection, useDepositWallets } from '../lib/useDepositOptions';
+import { getToken } from '../lib/api';
 import { CryptoIcon } from './CryptoIcon';
 import { depositAssetMetadata } from '../lib/depositAssetMetadata';
 import { depositMinimumView, type HeldQuote } from '../lib/depositMinimum';
 import { marketDataStore } from '../lib/marketDataStore';
 import { orderDepositDestinations } from '../lib/depositOrder';
+import { reportDepositAddressCopy, type DepositCopySource } from '../lib/depositCopyLog';
 import './DepositCatalogueDialog.css';
 
 /** The asset's price as the page already holds it — read, never fetched or
@@ -21,8 +23,14 @@ function heldQuote(asset: string): HeldQuote | null {
 
 type Step = 'address' | 'qr';
 
-/** One address-only UI for both entrypoints. No trading/balance API is used. */
-export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () => void; initialAsset?: string }) {
+/**
+ * One address-only UI for every entrypoint. No trading/balance API is used.
+ *
+ * `tone` follows the page that opened it: the light Wallet keeps the light
+ * window, the graphite terminals get the same window in their own dark
+ * surface. Only colour tokens differ (DepositCatalogueDialog.css).
+ */
+export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header', tone = 'light' }: { onClose: () => void; initialAsset?: string; source?: DepositCopySource; tone?: 'light' | 'terminal' }) {
   const { t, lang } = useLanguage();
   const [retry, setRetry] = useState(0);
   const { loaded, wallets, error } = useDepositWallets(true, retry);
@@ -38,7 +46,7 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
   const assetTrigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
-  const ids = { asset: useId(), assetValue: useId(), menu: useId(), menuTitle: useId(), network: useId() };
+  const ids = { asset: useId(), assetValue: useId(), menu: useId(), menuTitle: useId() , network: useId() };
   const [copyState, setCopyState] = useState<{ field: string; ok: boolean } | null>(null);
   const copyGeneration = useRef(0);
   const panel = useRef<HTMLDivElement>(null);
@@ -105,14 +113,30 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
     if (!value) return;
     const key = destinationKey;
     const generation = ++copyGeneration.current;
+    // Capture the session before the asynchronous clipboard operation. A
+    // sign-in, sign-out or account switch during it must not relabel this copy.
+    let copySessionToken: string | null = null;
+    try { copySessionToken = getToken(); } catch { /* copying must still work */ }
+    // The destination this press copies, fixed before anything awaits: a coin
+    // switched while the clipboard works does not change what was copied.
+    const copied = field === 'address' && wallet ? {
+      asset, network: wallet.chain.split(':').pop() ?? wallet.chain, destinationId: wallet.chain,
+      address: value, memo: wallet.memo?.trim() || undefined, source,
+    } : null;
     setCopyState(null);
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
       await navigator.clipboard.writeText(value);
-      if (generation === copyGeneration.current && key === currentDestination.current) setCopyState({ field, ok: true });
     } catch {
       if (generation === copyGeneration.current && key === currentDestination.current) setCopyState({ field, ok: false });
+      return;
     }
+    if (generation === copyGeneration.current && key === currentDestination.current) setCopyState({ field, ok: true });
+    // Only a copied ADDRESS is noted, after the clipboard said yes. Do not
+    // gate on mount state: closing this dialog in the same session is safe.
+    try {
+      if (copied && copySessionToken && getToken() === copySessionToken) reportDepositAddressCopy(copied);
+    } catch { /* a missing note must never undo a successful clipboard copy */ }
   };
   const icon = (symbol: string, size: number) => {
     const item = depositAssetMetadata[symbol];
@@ -120,7 +144,7 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
       : <span className="dc-fallback" style={{ width: size, height: size }}>{symbol}</span>;
   };
 
-  return createPortal(<div ref={overlay} className="dc-overlay" onClick={event => { if (event.target !== event.currentTarget) return; if (menuOpen) closeMenu(false); else closeRef.current(); }}>
+  return createPortal(<div ref={overlay} className="dc-overlay" data-tone={tone} onClick={event => { if (event.target !== event.currentTarget) return; if (menuOpen) closeMenu(false); else closeRef.current(); }}>
     <div ref={panel} className="dc-dialog" role="dialog" aria-modal="true" aria-label={t('deposit.title')} tabIndex={-1}
       onKeyDown={event => {
         if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); if (menuOpen) closeMenu(); else if (step !== 'address') changeStep('address'); else closeRef.current(); }
@@ -132,7 +156,7 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
         }
       }}>
       <header className="dc-header">
-        <h2>{t('deposit.title')}</h2>
+        <h2>{t('wallet.deposit')}</h2>
         <button className="dc-icon-button dc-close" onClick={() => closeRef.current()} aria-label={t('deposit.close')}><X size={20}/></button>
       </header>
       <div className="dc-content">
@@ -203,14 +227,15 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
             </> : <div className="dc-network"><span><strong>{network}</strong></span><Check size={17} aria-hidden="true"/></div>}
           </div>
           {/* The rule before the address: seen before anything is copied. */}
-          {/* Two lines (owner, 2026-09-29): the minimum in the chosen coin's
-              terms, then one plain sentence. */}
           <section className="dc-minimum" data-testid="deposit-minimum">
-            <p className="dc-minimum-line"><strong>{minimum.pegged
-              ? t('deposit.ui.minimumPeggedLine', { amount: amount(minimum.usd), asset })
-              : t('deposit.ui.minimumOtherLine', { amount: amount(minimum.usd), asset })}</strong>
-              {minimum.estimate !== null && <span className="dc-minimum-estimate" data-testid="deposit-minimum-equivalent">{' '}{t('deposit.ui.minimumApprox', { amount: amount(minimum.estimate), asset })}</span>}</p>
-            <p className="dc-minimum-note">{t('deposit.ui.minimumNote')}</p>
+            <p className="dc-minimum-line">
+              <span className="dc-minimum-label">{t('deposit.ui.minimumLabel')}</span>
+              <span className="dc-minimum-value"><strong>{minimum.pegged
+                ? `${amount(minimum.usd)} ${asset}`
+                : t('deposit.ui.minimumOtherValue', { amount: amount(minimum.usd), asset })}</strong>
+                {minimum.estimate !== null && <span className="dc-minimum-estimate" data-testid="deposit-minimum-equivalent">{t('deposit.ui.minimumApprox', { amount: amount(minimum.estimate), asset })}</span>}
+              </span>
+            </p>
           </section>
           <p className="dc-warning"><Info size={17}/><span>{t('deposit.ui.sendOnly')} <strong>{asset}</strong> {t('deposit.ui.inNetwork')} <strong>{network}</strong>. {t('deposit.ui.lossWarning')}</span></p>
           <div className="dc-address-card">
@@ -222,11 +247,12 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
             <div className="dc-copy-row"><button className="dc-primary" onClick={() => void copy('address')}>
               {copyState?.field === 'address' && copyState.ok ? <Check size={19}/> : <Copy size={19}/>}
               {copyState?.field === 'address' && copyState.ok ? t('deposit.ui.copied') : t('deposit.ui.copyAddress')}
-            </button><button className="dc-qr-button" aria-label={t(step === 'qr' ? 'deposit.ui.hideQr' : 'deposit.ui.showQr')} onClick={() => changeStep(step === 'qr' ? 'address' : 'qr')}><QrCode size={22}/></button></div>
+            </button>{/* A secondary, labelled action: the QR is drawn only after this
+                press (owner, 2026-10-04: no half-screen QR on opening). */}<button className="dc-qr-button" aria-expanded={step === 'qr'} onClick={() => changeStep(step === 'qr' ? 'address' : 'qr')}><QrCode size={20} aria-hidden="true"/><span>{t(step === 'qr' ? 'deposit.ui.hideQr' : 'deposit.ui.showQr')}</span></button></div>
             {copyState?.field === 'address' && !copyState.ok && <p className="dc-copy-error" role="alert">{t('deposit.ui.copyError')}</p>}
             {copyState?.field === 'address' && copyState.ok && <span className="dc-sr-only" role="status">{t('deposit.ui.copied')}</span>}
           </div>
-          {wallet.memo?.trim() && <div className="dc-memo"><strong>{wallet.memoLabel || t('deposit.ui.memo')}</strong><p className="dc-address">{wallet.memo}</p><button className="dc-secondary" onClick={() => void copy('memo')}><Copy size={16}/>{t('deposit.ui.copyMemo')}</button>{copyState?.field === 'memo' && <p role={copyState.ok ? 'status' : 'alert'}>{t(copyState.ok ? 'deposit.ui.memoCopied' : 'deposit.ui.copyError')}</p>}</div>}
+          {wallet.memo?.trim() && <div className="dc-memo"><p className="dc-memo-head"><strong>{wallet.memoLabel || t('deposit.ui.memo')}</strong><span className="dc-memo-required">{t('deposit.ui.memoRequired')}</span></p><p className="dc-memo-hint">{t('deposit.ui.memoHint')}</p><p className="dc-address">{wallet.memo}</p><button className="dc-secondary" onClick={() => void copy('memo')}><Copy size={16}/>{t('deposit.ui.copyMemo')}</button>{copyState?.field === 'memo' && <p role={copyState.ok ? 'status' : 'alert'}>{t(copyState.ok ? 'deposit.ui.memoCopied' : 'deposit.ui.copyError')}</p>}</div>}
         </>}
       </div>
     </div>

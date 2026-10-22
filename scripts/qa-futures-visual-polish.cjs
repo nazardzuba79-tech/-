@@ -14,7 +14,8 @@
  *     · the order-type tabs are EXACTLY what main has — no duplicated
  *       «Лимитный», nothing added, nothing renamed;
  *     · the heading carries exactly one control, the Calculator, and it
- *       still opens the calculator;
+ *       still opens the calculator (on a phone the families are one select
+ *       and the Calculator is the instrument row's key — 2026-10-04);
  *     · nothing in the panel is clipped and the page does not scroll
  *       sideways;
  *     · an order placed through the panel POSTs a body byte-for-byte equal
@@ -195,8 +196,16 @@ const measure = (page) => page.evaluate(() => {
   }) : [];
   const priceField = document.querySelector('.fo-priceField .fo-fieldRow, .fo-field .fo-fieldRow');
   return {
-    tabs: [...document.querySelectorAll('.order-family-tabs button')].map(b => b.textContent.trim()),
-    activeTab: document.querySelector('.order-family-tabs button.active')?.textContent.trim() ?? null,
+    // A phone shows the same families as ONE select (owner, 2026-10-04);
+    // its options are read exactly as the tabs are, so the list is held to
+    // the same assertion either way.
+    tabs: document.querySelector('.order-family-select select')
+      ? [...document.querySelectorAll('.order-family-select select option')].map(o => o.textContent.trim())
+      : [...document.querySelectorAll('.order-family-tabs button')].map(b => b.textContent.trim()),
+    activeTab: document.querySelector('.order-family-select select')?.selectedOptions[0]?.textContent.trim()
+      ?? document.querySelector('.order-family-tabs button.active')?.textContent.trim() ?? null,
+    orderTypeControls: document.querySelectorAll('.order-family-select select, .order-family-tabs').length,
+    tickerCalculators: [...document.querySelectorAll('.ticker-bar [data-open-calculator]')].filter(b => b.getBoundingClientRect().width > 0).map(b => b.getAttribute('aria-label') || b.textContent.trim()),
     activeTabStyle: style(document.querySelector('.order-family-tabs button.active'), ['color', 'font-weight', 'border-bottom-width', 'box-shadow']),
     headingControls: heading ? [...heading.querySelectorAll('button, a, [role=button]')].map(b => ({
       label: b.getAttribute('aria-label') || b.textContent.trim(), calculator: b.hasAttribute('data-open-calculator') })) : null,
@@ -395,6 +404,7 @@ async function showOnMobile(page, which) {
 
       report[key] = { book: bookState.book, bookBox: bookState.bookBox, clippedBook: bookState.clippedBook,
         form: { tabs: formState.tabs, activeTab: formState.activeTab, activeTabStyle: formState.activeTabStyle,
+          orderTypeControls: formState.orderTypeControls, tickerCalculators: formState.tickerCalculators,
           headingControls: formState.headingControls, field: formState.field, fieldCaption: formState.fieldCaption,
           fieldInput: formState.fieldInput, selects: formState.selects, slider: formState.slider,
           buttons: formState.buttons, formBox: formState.formBox, formOverflowX: formState.formOverflowX },
@@ -408,9 +418,18 @@ async function showOnMobile(page, which) {
         // TRADING PANEL
         assert.deepEqual(r.form.tabs, ['Лимитный', 'Рыночный', 'Стоп', 'Take Profit'], `${key}: order tabs are ${r.form.tabs.join(' | ')}`);
         assert.equal(r.form.tabs.filter(t => t === 'Лимитный').length, 1, `${key}: «Лимитный» appears more than once`);
-        assert.ok(r.form.headingControls, `${key}: no trading heading`);
-        assert.equal(r.form.headingControls.length, 1, `${key}: the heading carries ${r.form.headingControls.length} controls: ${JSON.stringify(r.form.headingControls)}`);
-        assert.ok(r.form.headingControls[0].calculator, `${key}: the heading's one control is not the Calculator`);
+        assert.equal(r.form.orderTypeControls, 1, `${key}: ${r.form.orderTypeControls} order-type controls rendered`);
+        if (mobile) {
+          // Phone (owner, 2026-10-04): no heading row over the narrow ticket;
+          // the Calculator is the instrument row's one calculator key.
+          assert.equal(r.form.headingControls, null, `${key}: a trading heading is drawn over the phone ticket`);
+          assert.equal(r.form.tickerCalculators.length, 1, `${key}: the instrument row carries ${r.form.tickerCalculators.length} calculator keys`);
+        } else {
+          assert.ok(r.form.headingControls, `${key}: no trading heading`);
+          assert.equal(r.form.headingControls.length, 1, `${key}: the heading carries ${r.form.headingControls.length} controls: ${JSON.stringify(r.form.headingControls)}`);
+          assert.ok(r.form.headingControls[0].calculator, `${key}: the heading's one control is not the Calculator`);
+          assert.equal(r.form.tickerCalculators.length, 0, `${key}: a second calculator key in the instrument row`);
+        }
         assert.ok(r.calculator && r.calculator.opened, `${key}: the Calculator did not open`);
         assert.deepEqual(r.clippedForm, [], `${key}: clipped text in the trading panel: ${JSON.stringify(r.clippedForm)}`);
         assert.equal(r.overflowX, 0, `${key}: the page scrolls sideways by ${r.overflowX}px`);

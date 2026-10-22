@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { AdminUserDeletionService, UserDeletionError } from '../../services/AdminUserDeletionService';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -7,6 +8,10 @@ import { requireAdmin } from '../middleware/admin';
 import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services/BalanceAdjustmentService';
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
 import { decryptAdminPassword } from '../../services/AdminPasswordVault';
+import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
+import { adminPagedReadsRouter } from './adminPagedReads';
+import { adminBalanceAdjustmentsRouter } from './adminBalanceAdjustments';
+import { ADMIN_USER_HIDDEN, ADMIN_USER_UNHIDDEN, hiddenAdminUserMap, isAdminUserHidden } from '../../services/AdminUserVisibility';
 
 /**
  * Admin's customer list — the registration data,
@@ -16,20 +21,25 @@ import { decryptAdminPassword } from '../../services/AdminPasswordVault';
  */
 export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingService, deletion?: AdminUserDeletionService): Router {
   const router = Router();
+  router.use(adminPagedReadsRouter(prisma));
+  router.use(adminBalanceAdjustmentsRouter(prisma));
   const balanceAdjustments = new BalanceAdjustmentService(prisma);
 
-  router.get('/admin/users', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.get('/admin/users', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
 
     const [users, balances, lastLogins] = await Promise.all([
       prisma.user.findMany({
-        where: { role: 'USER', ...(search ? { email: { contains: search, mode: 'insensitive' as const } } : {}) },
+        where: { role: 'USER', ...(hiddenIds.length ? { id: { notIn: hiddenIds } } : {}), ...(search ? { email: { contains: search, mode: 'insensitive' as const } } : {}) },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.balance.findMany(),
       prisma.session.groupBy({ by: ['userId'], _max: { createdAt: true } }),
     ]);
 
+    // One read for all returned customers; no per-row requests and no new timer.
+    const copies = await latestDepositCopiesForUsers(prisma, users.map((u) => u.id));
     const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
     const passwordByUser = new Map<string, string>();
     if (ownerId && req.userId === ownerId && users.length > 0) {
@@ -70,18 +80,59 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
         createdAt: u.createdAt,
         registrationIp: null,
         lastLoginAt: lastLoginByUser.get(u.id) ?? null,
+        lastDepositCopy: copies.byUser.get(u.id) ?? null,
+        depositCopyLookupFailed: copies.failed,
         isBlocked: !!u.blockedAt,
         blockedAt: u.blockedAt,
         blockedReason: u.blockedReason,
         balances: (balancesByUser.get(u.id) ?? []).map((b) => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })),
       }))
     );
-  });
+  }));
 
-  // Full activity history for one client — deposits, withdrawals, orders,
-  // and purchases, plus every KYC submission (not just the latest one).
-  router.get('/admin/users/:id', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+  router.get('/admin/users/hidden', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
+    const hidden = await hiddenAdminUserMap(prisma);
+    const ids = [...hidden.keys()];
+    const existing = ids.length ? await prisma.user.findMany({
+      where: { role: 'USER', id: { in: ids } }, select: { id: true },
+    }) : [];
+    const existingIds = new Set(existing.map(user => user.id));
+    const rows = [...hidden.entries()].filter(([id]) => existingIds.has(id))
+      .sort((a, b) => b[1].getTime() - a[1].getTime() || b[0].localeCompare(a[0]))
+      .map(([id, hiddenAt]) => ({
+        id, email: 'Скрытый аккаунт', password: null, role: 'USER' as const, isAdmin: false,
+        kycStatus: 'NOT_STARTED' as const, createdAt: hiddenAt, registrationIp: null, lastLoginAt: null,
+        lastDepositCopy: null, depositCopyLookupFailed: false, isBlocked: false, blockedAt: null,
+        blockedReason: null, balances: [], adminHidden: true, hiddenAt,
+      }));
+    res.set('Cache-Control', 'private, no-store').json(rows);
+  }));
+
+  router.post('/admin/users/:id/hide', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, role: true } });
+    if (!user || user.role !== 'USER') return res.status(404).json({ error: 'User not found' });
+    if (!await isAdminUserHidden(prisma, user.id)) {
+      await prisma.auditLog.create({ data: { userId: user.id, action: ADMIN_USER_HIDDEN,
+        metadata: { performedByAdminId: req.userId!, hiddenFrom: 'ADMIN_USERS' } } });
+    }
+    res.set('Cache-Control', 'private, no-store').json({ ok: true, hidden: true });
+  }));
+
+  router.post('/admin/users/:id/unhide', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, role: true } });
+    if (!user || user.role !== 'USER') return res.status(404).json({ error: 'User not found' });
+    if (await isAdminUserHidden(prisma, user.id)) {
+      await prisma.auditLog.create({ data: { userId: user.id, action: ADMIN_USER_UNHIDDEN,
+        metadata: { performedByAdminId: req.userId!, restoredTo: 'ADMIN_USERS' } } });
+    }
+    res.set('Cache-Control', 'private, no-store').json({ ok: true, hidden: false });
+  }));
+
+  // Full activity history for one visible client. Hidden accounts intentionally
+  // do not expose email/login/balances through a direct admin URL.
+  router.get('/admin/users/:id', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     const { id } = req.params;
+    if (await isAdminUserHidden(prisma, id)) return res.status(404).json({ error: 'User hidden' });
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -168,7 +219,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
         documentSizeBytes: k.documentSizeBytes,
       })),
     });
-  });
+  }));
 
   const adjustBalanceSchema = z.object({
     asset: z.string().min(1).max(10),
@@ -239,7 +290,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
   // long-dormant accounts an admin decides to shut down without deleting
   // their history. Existing sessions still expire naturally rather than
   // being revoked mid-flight.
-  router.post('/admin/users/:id/block', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/users/:id/block', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const parsed = blockSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -255,9 +306,9 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       data: { userId: target.id, action: 'USER_BLOCKED', metadata: { reason: parsed.data.reason, performedByAdminId: req.userId } },
     });
     res.json({ ok: true });
-  });
+  }));
 
-  router.post('/admin/users/:id/unblock', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/users/:id/unblock', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const target = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!target) return res.status(404).json({ error: 'User not found' });
 
@@ -266,7 +317,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       data: { userId: target.id, action: 'USER_UNBLOCKED', metadata: { performedByAdminId: req.userId } },
     });
     res.json({ ok: true });
-  });
+  }));
 
   router.delete('/admin/users/:id', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     if (!deletion) return res.status(503).json({ error: 'Account deletion is not configured' });

@@ -1,3 +1,5 @@
+import { contactPolicyRouter } from './api/routes/contactPolicy';
+import { supportRequestRouter } from './api/routes/supportRequest';
 import { AccountDeletionGate } from './services/AccountDeletionGate';
 import { AdminUserDeletionService } from './services/AdminUserDeletionService';
 import 'dotenv/config';
@@ -18,8 +20,10 @@ import { TreasuryWalletService } from './services/TreasuryWalletService';
 import { adminWalletsRouter } from './api/routes/adminWallets';
 import { depositCatalogueRouter } from './api/routes/depositCatalogue';
 import { DepositCatalogue } from './services/depositCatalogue/service';
+import { depositAddressCopiesRouter, isDepositCopyEventRequest } from './api/routes/depositAddressCopies';
 import { catalogueStoreFromEnvironment } from './services/depositCatalogue/store';
 import { withdrawalsRouter } from './api/routes/withdrawals';
+import { otcCashRouter } from './api/routes/otcCash';
 import { adminWithdrawalsRouter } from './api/routes/adminWithdrawals';
 import { authRouter } from './api/routes/auth';
 import { candlesRouter } from './api/routes/candles';
@@ -64,12 +68,14 @@ import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoTradingRouter } from './api/routes/demoTrading';
+import { stocksTestCashRouter } from './api/routes/stocksTestCash';
 import { VtaDemoSales } from './services/testMarkets/VtaDemoSales';
 import { privateTradingRouter } from './api/routes/privateTrading';
 import { createNativeLimitPass } from './private-trading/native/limitPass';
 import { PrivateTradingService } from './private-trading/service';
 import { PrivateTradingStore } from './private-trading/store';
 import { PrivateTradingMarketData } from './private-trading/marketData';
+import { nativeWithdrawableRows } from './private-trading/native/withdrawable';
 import { portfolioRouter } from './api/routes/portfolio';
 import { WalletPortfolioService } from './services/WalletPortfolioService';
 import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
@@ -217,6 +223,8 @@ app.use(
     limit: 120,
     standardHeaders: true,
     legacyHeaders: false,
+    // The deposit-address copy note has its own, smaller limits.
+    skip: isDepositCopyEventRequest,
   })
 );
 // Every successful write re-checks the sleeping background loops (rate
@@ -250,6 +258,7 @@ app.get('/notifications/public-key', (_req, res) => {
 // Test markets first: they answer the shared Spot endpoints for test pairs
 // only (simulated, never tradable) and pass every other pair through.
 app.use('/api/v1', testMarketsRouter());
+app.use('/api/v1', stocksTestCashRouter(prisma));
 app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, marketDataService, marketUniverse));
 app.use('/api/v1', ordersRouter(prisma, engine, marketDataService, bestEffortWake(() => priceWatcherService.wake(), 'spot-conditional')));
 app.use('/api/v1', tradesRouter(prisma));
@@ -272,10 +281,14 @@ app.use('/api/v1', adminListingsRouter(prisma, listingStoreFromEnvironment(), {
 // One read at boot so the restricted-asset guards know published listings; afterwards
 // only on demand (orders, valuations), at most once a minute. Unconfigured = no request.
 void managedListingRegistry.ensureFresh(0);
+app.use('/api/v1', depositAddressCopiesRouter(prisma));
 app.use('/api/v1', depositCatalogueRouter(prisma, new DepositCatalogue(catalogueStoreFromEnvironment(), () => coinGeckoService.getRankings())));
-app.use('/api/v1', withdrawalsRouter(prisma));
+app.use('/api/v1', withdrawalsRouter(prisma, { tradingWallet: nativeWithdrawableRows(prisma, privateTradingService) }));
+app.use('/api/v1', otcCashRouter(prisma, marketDataService));
 app.use('/api/v1', adminWithdrawalsRouter(prisma));
 app.use('/api/v1', authRouter(prisma));
+app.use('/api/v1', contactPolicyRouter(prisma));
+app.use('/api/v1', supportRequestRouter(prisma));
 app.use('/api/v1', candlesRouter(prisma));
 app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
@@ -292,8 +305,8 @@ app.use('/api/v1', cardRouter(prisma, walletPortfolioService));
 app.use('/api/v1', apiKeysRouter(prisma));
 app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry, futuresProtectionService));
-// Support is a form handled by the voltex-support-edge Cloudflare Worker
-// (workers/support-edge): no support routes, timers or tables are used here.
+// Authenticated Support relays to the private-key-protected mail Worker.
+// No Support timers or new tables are needed.
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell'])));
 app.use('/api/v1', privateTradingRouter(prisma, privateTradingService, bestEffortWake(() => nativeLimitPass?.nudge(), 'native-limit-pass')));
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));

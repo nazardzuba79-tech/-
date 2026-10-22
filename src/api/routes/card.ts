@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
@@ -39,11 +40,11 @@ export function cardRouter(prisma: PrismaClient, prices: CardUsdPriceSource): Ro
   });
 
   // Read-only legacy history remains intact; it is never a card application.
-  router.get('/card/waitlist/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/card/waitlist/me', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ joined: user.cardWaitlistJoinedAt != null, joinedAt: user.cardWaitlistJoinedAt, kycStatus: user.kycStatus });
-  });
+  }));
 
   router.post('/card/waitlist/join', requireAuth(prisma), (_req, res) => {
     res.status(410).json({ error: 'CARD_APPLICATION_REQUIRED' });

@@ -16,7 +16,26 @@ import speakeasy from 'speakeasy';
 import { PrismaClient } from '@prisma/client';
 import { authRouter } from '../auth';
 import { accountRouter } from '../account';
+import { notifyUserRegistered } from '../../../services/TelegramNotifications';
 import legacyFixtures from '../../../services/__tests__/fixtures/bcrypt-5.1.1-compatibility.json';
+
+// Registration deliberately schedules delivery without awaiting it in production.
+// This suite tests real bcrypt/JWT/TOTP and routes, not the external delivery service.
+// Keep that boundary explicit: otherwise a network-disabled Alpine run leaves the
+// seven-second notification request alive after Jest has completed the test file.
+jest.mock('../../../services/TelegramNotifications', () => ({
+  notifyUserRegistered: jest.fn().mockResolvedValue(undefined),
+}));
+const notification = jest.mocked(notifyUserRegistered);
+let externalFetch: jest.SpyInstance;
+beforeEach(() => {
+  notification.mockClear();
+  externalFetch = jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('External HTTP forbidden in auth regression'));
+});
+afterEach(() => {
+  try { expect(externalFetch).not.toHaveBeenCalled(); }
+  finally { externalFetch.mockRestore(); }
+});
 
 jest.setTimeout(30_000);
 
@@ -88,8 +107,20 @@ function memoryStore(state: MemoryState = { users: new Map(), sessions: new Map(
         Object.assign(session, data);
         return structuredClone(session);
       },
+      // Logout and password change revoke by filter: this session or every other live one.
+      updateMany: async ({ where, data }: {
+        where: { id?: string | { not: string }; userId?: string; revokedAt?: null }; data: Partial<MemorySession>;
+      }) => {
+        const matches = [...state.sessions.values()].filter((session) =>
+          (where.userId === undefined || session.userId === where.userId)
+          && (where.revokedAt !== null || !session.revokedAt)
+          && (where.id === undefined || (typeof where.id === 'string' ? session.id === where.id : session.id !== where.id.not)));
+        for (const session of matches) Object.assign(session, data);
+        return { count: matches.length };
+      },
     },
     auditLog: {
+      findFirst: async () => null,
       create: async ({ data }: { data: Pick<MemoryAudit, 'userId' | 'action' | 'metadata'> }) => {
         const entry = { id: `fixture-audit-${state.nextId++}`, createdAt: new Date(), ...data };
         state.audit.push(structuredClone(entry));
@@ -132,6 +163,20 @@ function login(app: ReturnType<typeof buildApp>, suppliedPassword = password, su
 }
 
 describe('bcrypt real-route auth/security regression', () => {
+  it('isolates scheduled registration delivery without disabling the notification event', async () => {
+    const store = memoryStore();
+    const app = buildApp(store);
+    const token = await register(app);
+    const user = store.state.users.get(claims(token).sub!)!;
+    expect(notification).toHaveBeenCalledTimes(1);
+    expect(notification).toHaveBeenCalledWith({ id: user.id, email, role: 'USER', createdAt: user.createdAt });
+    await expect(notification.mock.results[0].value).resolves.toBeUndefined();
+    expect(externalFetch).not.toHaveBeenCalled();
+    const duplicate = await request(app).post('/api/v1/auth/register').send({ email, password });
+    expect(duplicate.status).toBe(400);
+    expect(notification).toHaveBeenCalledTimes(1);
+  });
+
   it('registers at unchanged cost 12 and issues a 12-hour persisted session accepted by protected /me', async () => {
     const store = memoryStore();
     const app = buildApp(store);
@@ -269,6 +314,8 @@ describe('bcrypt real-route auth/security regression', () => {
     expect(user.passwordHash).not.toBe(initialHash);
     expect(await bcrypt.compare(password, user.passwordHash)).toBe(false);
     expect(await bcrypt.compare('newvalidlowercasepassword', user.passwordHash)).toBe(true);
+    // The device that changed the password stays signed in.
+    expect((await request(app).get('/api/v1/me').auth(token, { type: 'bearer' })).status).toBe(200);
     const restored = memoryStore(structuredClone(store.state));
     const refreshedApp = buildApp(restored);
     expect((await login(refreshedApp, password)).status).toBe(401);

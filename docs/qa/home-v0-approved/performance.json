@@ -1,0 +1,239 @@
+{
+  "fixtureOnly": true,
+  "renderer": "Chromium software WebGL (SwiftShader), not physical GPU telemetry",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "warmSampleSeconds": 6,
+  "rows": [
+    {
+      "variant": "baseline",
+      "coldReadyMs": 778,
+      "lcpMs": 208,
+      "lcpCandidates": [
+        {
+          "time": 172,
+          "element": "H1.",
+          "url": ""
+        },
+        {
+          "time": 208,
+          "element": "IMG.art",
+          "url": "http://127.0.0.1:7664/hero/sapphire-refined.png"
+        }
+      ],
+      "cls": 0.00042021376291910805,
+      "pageFps": 60.00864390437769,
+      "sceneFps": 0,
+      "taskSeconds": 0.463987,
+      "scriptSeconds": 0.08028500000000001,
+      "heapBytes": 7754948,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 60.099999997764826,
+          "duration": 101
+        }
+      ],
+      "renderer": null
+    },
+    {
+      "variant": "updated",
+      "coldReadyMs": 1026,
+      "lcpMs": 316,
+      "lcpCandidates": [
+        {
+          "time": 276,
+          "element": "P.description",
+          "url": ""
+        },
+        {
+          "time": 316,
+          "element": "IMG.art",
+          "url": "http://127.0.0.1:7664/hero/sapphire-refined.png"
+        }
+      ],
+      "cls": 0.000008830296813378771,
+      "pageFps": 59.8921940507013,
+      "sceneFps": 23.12504159179856,
+      "taskSeconds": 1.2753299999999999,
+      "scriptSeconds": 0.12034299999999998,
+      "heapBytes": 9183236,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 97.10000000149012,
+          "duration": 157
+        },
+        {
+          "start": 341,
+          "duration": 128
+        },
+        {
+          "start": 495,
+          "duration": 310
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 176,
+        "textures": 15,
+        "geometries": 9
+      }
+    },
+    {
+      "variant": "updated",
+      "coldReadyMs": 1286,
+      "lcpMs": 328,
+      "lcpCandidates": [
+        {
+          "time": 284,
+          "element": "P.description",
+          "url": ""
+        },
+        {
+          "time": 328,
+          "element": "IMG.art",
+          "url": "http://127.0.0.1:7664/hero/sapphire-refined.png"
+        }
+      ],
+      "cls": 0.000008830296813378771,
+      "pageFps": 60.0026593976613,
+      "sceneFps": 21.940030583078368,
+      "taskSeconds": 1.2756720000000001,
+      "scriptSeconds": 0.15373699999999998,
+      "heapBytes": 9253024,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 90.70000000298023,
+          "duration": 170
+        },
+        {
+          "start": 340.1000000014901,
+          "duration": 136
+        },
+        {
+          "start": 510.5,
+          "duration": 231
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 177,
+        "textures": 15,
+        "geometries": 9
+      }
+    },
+    {
+      "variant": "baseline",
+      "coldReadyMs": 866,
+      "lcpMs": 308,
+      "lcpCandidates": [
+        {
+          "time": 264,
+          "element": "H1.",
+          "url": ""
+        },
+        {
+          "time": 308,
+          "element": "IMG.art",
+          "url": "http://127.0.0.1:7664/hero/sapphire-refined.png"
+        }
+      ],
+      "cls": 0.00026561482924002187,
+      "pageFps": 60.108561723696944,
+      "sceneFps": 0,
+      "taskSeconds": 0.4706560000000001,
+      "scriptSeconds": 0.07820500000000001,
+      "heapBytes": 6396428,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 97.79999999701977,
+          "duration": 152
+        }
+      ],
+      "renderer": null
+    },
+    {
+      "variant": "baseline",
+      "coldReadyMs": 966,
+      "lcpMs": 324,
+      "lcpCandidates": [
+        {
+          "time": 264,
+          "element": "H1.",
+          "url": ""
+        },
+        {
+          "time": 324,
+          "element": "IMG.art",
+          "url": "http://127.0.0.1:7664/hero/sapphire-refined.png"
+        }
+      ],
+      "cls": 0.00042021376291910805,
+      "pageFps": 59.891197657566444,
+      "sceneFps": 0,
+      "taskSeconds": 0.47089800000000004,
+      "scriptSeconds": 0.078928,
+      "heapBytes": 6493512,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 90.5,
+          "duration": 158
+        }
+      ],
+      "renderer": null
+    },
+    {
+      "variant": "updated",
+      "coldReadyMs": 1024,
+      "lcpMs": 328,
+      "lcpCandidates": [
+        {
+          "time": 288,
+          "element": "P.description",
+          "url": ""
+        },
+        {
+          "time": 328,
+          "element": "IMG.art",
+          "url": "http://127.0.0.1:7664/hero/sapphire-refined.png"
+        }
+      ],
+      "cls": 0.000008830296813378771,
+      "pageFps": 59.67122650136759,
+      "sceneFps": 23.602546415582726,
+      "taskSeconds": 1.34397,
+      "scriptSeconds": 0.138515,
+      "heapBytes": 9187300,
+      "warmLongTasks": [],
+      "coldLongTasks": [
+        {
+          "start": 95.5,
+          "duration": 167
+        },
+        {
+          "start": 352.69999999925494,
+          "duration": 116
+        },
+        {
+          "start": 486.3999999985099,
+          "duration": 246
+        }
+      ],
+      "renderer": {
+        "ready": "true",
+        "active": "true",
+        "frames": 180,
+        "textures": 15,
+        "geometries": 9
+      }
+    }
+  ]
+}

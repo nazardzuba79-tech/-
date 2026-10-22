@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import BigNumber from 'bignumber.js';
@@ -35,7 +36,7 @@ export function productsRouter(prisma: PrismaClient): Router {
   router.use(bankingRouter(prisma));
 
   // Public catalog — anyone can browse without logging in.
-  router.get('/products', async (_req, res) => {
+  router.get('/products', asyncRoute(async (_req, res) => {
     const products = await prisma.product.findMany({ where: { active: true }, orderBy: { createdAt: 'desc' } });
     res.json(
       products.map(
@@ -48,19 +49,19 @@ export function productsRouter(prisma: PrismaClient): Router {
         })
       )
     );
-  });
+  }));
 
-  router.post('/products', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+  router.post('/products', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     const parsed = createProductSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const product = await prisma.product.create({ data: parsed.data });
     res.status(201).json({ ...product, priceAmount: product.priceAmount.toString() });
-  });
+  }));
 
-  router.get('/admin/products', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+  router.get('/admin/products', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
     const products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(products.map((p) => ({ ...p, priceAmount: p.priceAmount.toString() })));
-  });
+  }));
 
   router.patch('/products/:id', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const parsed = updateProductSchema.safeParse(req.body);
@@ -74,10 +75,10 @@ export function productsRouter(prisma: PrismaClient): Router {
     }
   });
 
-  router.delete('/products/:id', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+  router.delete('/products/:id', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     await prisma.product.update({ where: { id: req.params.id }, data: { active: false } });
     res.status(204).send();
-  });
+  }));
 
   router.post('/purchases', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const schema = z.object({ productId: z.string().min(1) });
@@ -93,7 +94,7 @@ export function productsRouter(prisma: PrismaClient): Router {
     }
   });
 
-  router.get('/purchases/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/purchases/me', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const purchases = await prisma.purchase.findMany({
       where: { userId: req.userId },
       include: { product: { select: { name: true } } },
@@ -118,7 +119,7 @@ export function productsRouter(prisma: PrismaClient): Router {
         })
       )
     );
-  });
+  }));
 
   return router;
 }

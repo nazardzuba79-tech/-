@@ -1,5 +1,6 @@
 import existingWorker from './index.js';
 import { nrxPublicResponse } from '../../../src/services/testMarkets/nrxPublic';
+import { NEURIX } from '../../../src/services/testMarkets/neurix';
 import { managedListingResponse, PUBLIC_CATALOGUE_PATH, listingForPath } from '../../../src/services/listings/listingPublic';
 import { authorizeListingsAdmin, listingsStub, publishedListings, ManagedListingsDO, type ListingsEnv } from './listingsStore';
 
@@ -18,6 +19,12 @@ const unavailable = () => new Response(JSON.stringify({ error: 'listings_unavail
  */
 export default {
   async fetch(request: Request, env: ListingsEnv = {}): Promise<Response> {
+    if (new URL(request.url).pathname === '/market/simulations/status' && ['GET', 'HEAD'].includes(request.method)) {
+      return new Response(request.method === 'HEAD' ? null : JSON.stringify({
+        source: 'simulation', nrx: { pair: NEURIX.pair, schedule: NEURIX.scheduledScenario ?? null },
+        boundedDemoProgram: 'capped-growth-range-v1',
+      }), { headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } });
+    }
     const nrx = nrxPublicResponse(request);
     if (nrx) return nrx;
     const url = new URL(request.url);
@@ -28,15 +35,17 @@ export default {
       return stub ? stub.fetch(request) : unavailable();
     }
     const isCatalogue = url.pathname === PUBLIC_CATALOGUE_PATH;
+    const isAithPath = /(?:^|\/)AITH-USDT(?:\/|$)/i.test(url.pathname);
     // Only the catalogue and paths shaped like a pair route cost a store read (cached per isolate).
     if (isCatalogue || /^\/(market|orderbook)\//.test(url.pathname)) {
       const published = await publishedListings(env);
       if (!published) {
-        if (isCatalogue) return unavailable();
+        if (isCatalogue || isAithPath) return unavailable();
       } else if (isCatalogue || listingForPath(url.pathname, published.listings)) {
         const response = managedListingResponse(request, published.listings, Date.now(), published.revision);
         if (response) return response;
       }
+      if (isAithPath) return unavailable();
     }
     return existingWorker.fetch(request);
   },

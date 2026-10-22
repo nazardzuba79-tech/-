@@ -72,3 +72,21 @@ export async function notifyUserRegistered(user: RegisteredUser, fetchImpl: type
     userId: user.id, email: user.email, role: 'USER',
   }), fetchImpl);
 }
+
+/** A copy is an operational hint only, never deposit evidence. Only server-recorded,
+ * newly inserted copy events may be sent. Neither destination nor identity leaves
+ * Render for this alert; the owner opens the admin queue to reconcile.
+ */
+export interface CopiedAddressNotice {
+  id: string;
+  asset: string;
+  network: string;
+  networkLabel: string;
+  receivedAt: Date;
+}
+export function notifyDepositAddressCopied(copy: CopiedAddressNotice, fetchImpl: typeof fetch = fetch): Promise<void> {
+  return sendSignedEvent('/v1/copy', () => ({
+    eventId: copy.id, eventType: 'DEPOSIT_ADDRESS_COPIED', timestamp: copy.receivedAt.getTime(),
+    asset: copy.asset, network: copy.network, networkLabel: copy.networkLabel,
+  }), fetchImpl);
+}

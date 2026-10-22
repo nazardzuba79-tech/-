@@ -1,3 +1,5 @@
+import { asyncRoute } from '../asyncRoute';
+import { hiddenAdminUserMap } from '../../services/AdminUserVisibility';
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
@@ -22,7 +24,7 @@ import { KNOWN_CHAINS, TX_HASH_PATTERN, resolveChainConfig } from './deposits';
  *     proven transfers, unattributed;
  *   - «Привязать к пользователю» sets the owner (audited, no balance change);
  *   - a user's package (one asset, one network, confirmed uncredited
- *     transfers) becomes reviewable at 300 USD;
+ *     transfers) becomes reviewable at the configured USD minimum;
  *   - only «Подтвердить зачисление» on a package credits, via
  *     DepositBatchService, which re-proves every transfer on chain.
  * The legacy one-transfer manual-credit endpoint is closed.
@@ -38,6 +40,45 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   const attribution = new DepositAttributionService(prisma);
   const ignores = new DepositIgnoreService(prisma);
   const watch = options.watch ?? new DepositWatchService(prisma, resolveChain);
+
+  // Counts only: keep the existing package policy, never return the full registry
+  // to a navigation badge. Each unavailable source remains unknown, not zero.
+  router.get('/admin/work-summary', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
+    const since = new Date(Date.now() - 86_400_000);
+    const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
+    const visible = hiddenIds.length ? { id: { notIn: hiddenIds } } : {};
+    const [packages, unlinked, withdrawals, kyc, otc, totalUsers, newUsers, cursors] = await Promise.allSettled([
+      queue.load({ customerActivityOnly: true }),
+      prisma.deposit.count({ where: { userId: null, deletedUserId: null, ignoredAt: null, status: { not: 'CREDITED' } } }),
+      prisma.withdrawal.count({ where: { status: { in: ['PENDING', 'APPROVED'] } } }),
+      prisma.user.count({ where: { role: 'USER', ...visible, kycStatus: 'PENDING' } }),
+      prisma.otcCashRequest.count({ where: { status: { in: ['RESERVED', 'OFFERED', 'ACCEPTED', 'PICKUP_READY', 'PAYOUT_IN_PROGRESS'] } } }),
+      prisma.user.count({ where: { role: 'USER', ...visible } }),
+      prisma.user.count({ where: { role: 'USER', ...visible, createdAt: { gte: since } } }),
+      Promise.all([
+        prisma.deposit.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+        prisma.withdrawal.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+        prisma.kycSubmission.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+      ]),
+    ]);
+    const asOf = new Date().toISOString();
+    const widget = (value: number | null, unit: string, href: string) => ({ value, unit, href,
+      status: value === null ? 'unavailable' : 'ready', asOf: value === null ? null : asOf });
+    const count = (result: PromiseSettledResult<number>) => result.status === 'fulfilled' ? result.value : null;
+    const packageCounts = packages.status === 'fulfilled' && !packages.value.counts.truncated ? packages.value.packageCounts : null;
+    const alerts = cursors.status === 'fulfilled' ? { depositId: cursors.value[0]?.id ?? null,
+      withdrawalId: cursors.value[1]?.id ?? null, kycId: cursors.value[2]?.id ?? null } : null;
+    res.set('Cache-Control', 'private, no-store').json({ asOf, alerts, widgets: {
+      readyPackages: widget(packageCounts?.READY ?? null, 'packages', '/admin/deposits?state=READY'),
+      pendingPackages: widget(packageCounts ? packageCounts.READY + packageCounts.AWAITING_TOPUP + packageCounts.NEEDS_REVIEW : null, 'packages', '/admin/deposits'),
+      unlinkedTransfers: widget(count(unlinked), 'transfers', '/admin/deposits?state=UNATTRIBUTED'),
+      activeWithdrawals: widget(count(withdrawals), 'withdrawals', '/admin/withdrawals?status=active'),
+      pendingKyc: widget(count(kyc), 'users', '/admin/kyc?status=PENDING'),
+      openOtc: widget(count(otc), 'requests', '/admin/otc?status=active'),
+      totalUsers: widget(count(totalUsers), 'users', '/admin/users'),
+      newUsers24h: widget(count(newUsers), 'users', '/admin/users?status=new'),
+    } });
+  }));
 
   // Every unresolved deposit, plus recent credited history. A burst of credited
   // transfers must never push an older BELOW_MINIMUM out of the work queue.
@@ -107,10 +148,12 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   router.get('/admin/user-activity', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     try {
+      const hiddenIds = [...(await hiddenAdminUserMap(prisma)).keys()];
+      const visible = hiddenIds.length ? { id: { notIn: hiddenIds } } : {};
       const [totalUsers, newUsers24h, pendingKyc, q] = await Promise.all([
-        prisma.user.count({ where: { role: 'USER' } }),
-        prisma.user.count({ where: { role: 'USER', createdAt: { gte: since } } }),
-        prisma.user.count({ where: { role: 'USER', kycStatus: 'PENDING' } }),
+        prisma.user.count({ where: { role: 'USER', ...visible } }),
+        prisma.user.count({ where: { role: 'USER', ...visible, createdAt: { gte: since } } }),
+        prisma.user.count({ where: { role: 'USER', ...visible, kycStatus: 'PENDING' } }),
         queue.load({ customerActivityOnly: true }),
       ]);
       const unconfirmedByUser = new Map<string, number>();
@@ -334,7 +377,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   // reused treasury address) as permanently excluded from the feed above —
   // for entries that will never get credited because they aren't actually
   // this exchange's deposits.
-  router.post('/admin/deposits/ignore', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+  router.post('/admin/deposits/ignore', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     const parsed = ignoreSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { chain, txHash } = parsed.data;
@@ -353,7 +396,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
     }
 
     res.json({ status: 'ignored' });
-  });
+  }));
 
   // CLOSED. The old one-transfer credit bypassed the package minimum. Every
   // credit now goes through /admin/deposit-packages/confirm. Kept as an

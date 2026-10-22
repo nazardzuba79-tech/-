@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { asyncRoute } from '../asyncRoute';
 import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
@@ -44,9 +45,10 @@ const placeOcoOrderSchema = z.object({
  *  backoff, and indefinitely once that watcher sleeps. */
 export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, priceSource: PriceSource, onConditionalOrderCommitted: () => void = () => {}): Router {
   const router = Router();
+  const authenticate = asyncRoute(requireAuthOrApiKey(prisma));
   const orderService = new OrderService(prisma, engine, priceSource, onConditionalOrderCommitted);
 
-  router.post('/orders', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+  router.post('/orders', authenticate, requireTradePermission, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const parsed = placeOrderSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
@@ -79,12 +81,12 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
     } catch (err: any) {
       res.status(400).json({ error: err.message });
     }
-  });
+  }));
 
   // OCO: a take-profit leg and a stop leg placed together, sharing one
   // fund lock — whichever triggers first cancels the other (see
   // OrderService.placeOcoOrder / PriceWatcherService).
-  router.post('/orders/oco', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+  router.post('/orders/oco', authenticate, requireTradePermission, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const parsed = placeOcoOrderSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
@@ -105,12 +107,12 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
     } catch (err: any) {
       res.status(400).json({ error: err.message });
     }
-  });
+  }));
 
   // Own orders, newest first — powers the "Open Orders" panel on the trade
   // page. Not paginated: fine for a single user's order history on an
   // internal team exchange, revisit if that stops being true.
-  router.get('/orders/me', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+  router.get('/orders/me', authenticate, asyncRoute(async (req: ApiAuthedRequest, res) => {
     // Accepts a single status ("OPEN") or a comma-separated list
     // ("OPEN,PARTIALLY_FILLED") so the trade page can ask for "open orders"
     // and "order history" as two distinct queries instead of filtering
@@ -140,9 +142,9 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
         createdAt: o.createdAt,
       }))
     );
-  });
+  }));
 
-  router.get('/orderbook/:pair', async (req, res) => {
+  router.get('/orderbook/:pair', asyncRoute(async (req, res) => {
     const snapshot = engine.getBook(req.params.pair.toUpperCase()).snapshot();
     res.json({
       pair: snapshot.pair,
@@ -150,12 +152,12 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
       asks: snapshot.asks.map((l) => ({ price: l.price.toString(), quantity: l.quantity.toString(), orders: l.orderCount })),
       timestamp: snapshot.timestamp,
     });
-  });
+  }));
 
   // Moves a still-pending conditional order's trigger (and, for a
   // LIMIT-family one, execution) price — powers dragging a SL/TP line on
   // the chart.
-  router.patch('/orders/:orderId/trigger', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+  router.patch('/orders/:orderId/trigger', authenticate, requireTradePermission, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const parsed = z
       .object({ triggerPrice: priceString.optional(), price: priceString.optional() })
       .refine((v) => v.triggerPrice !== undefined || v.price !== undefined, 'at least one of triggerPrice/price is required')
@@ -173,15 +175,15 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
     } catch (err: any) {
       res.status(400).json({ error: err.message });
     }
-  });
+  }));
 
-  router.delete('/orders/:orderId', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+  router.delete('/orders/:orderId', authenticate, requireTradePermission, asyncRoute(async (req: ApiAuthedRequest, res) => {
     const cancelled = await orderService.cancelOrder(req.userId!, req.params.orderId);
     if (!cancelled) {
       return res.status(404).json({ error: 'Order not found or not cancellable' });
     }
     res.status(204).send();
-  });
+  }));
 
   return router;
 }

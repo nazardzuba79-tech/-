@@ -20,12 +20,15 @@ function load(file: string): any {
   new Function('exports', 'require', code)(exports, (name: string) => {
     if (name.endsWith('.css')) return {};
     if (name.endsWith('/depositCatalogue')) return { MANUAL_DEPOSIT_CATALOGUE: false };
+    if (name.endsWith('/adminUserActivity')) return { useAdminUserActivity: () => ({ activity: null, failed: false, receivedAt: null, refresh: async () => {} }) };
     if (name.endsWith('/adminReadApi')) return {
       getAdminGateMe: (signal?: AbortSignal) => api.getMe(signal),
       getAdminUsersAbortable: (signal?: AbortSignal) => api.getAdminUsers?.(undefined, signal),
+      adminRead: (path: string, signal?: AbortSignal) => { if (path === '/admin/work-summary') return api.getAdminWorkSummary(signal); throw new Error(`Unexpected read: ${path}`); },
     };
+    if (name.endsWith('/adminPagedApi')) return { getAdminUsersPage: (query: string, signal?: AbortSignal) => api.getAdminUsersPage(query, signal) };
     if (name.endsWith('/api')) return { api, getToken: () => token, onSessionChange: (listener: () => void) => { sessionListeners.add(listener); return () => sessionListeners.delete(listener); }, ApiError: class extends Error {} };
-    if (name.endsWith('/useAdminAlerts')) return { useAdminAlertSound: () => {}, isAdminAlertSoundEnabled: () => false, setAdminAlertSoundEnabled: jest.fn() };
+    if (name.endsWith('/useAdminAlerts')) return { useAdminAlertSound: () => {}, useAdminSummaryChime: () => {}, isAdminAlertSoundEnabled: () => false, setAdminAlertSoundEnabled: jest.fn() };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
   });
   return exports;
@@ -33,6 +36,9 @@ function load(file: string): any {
 beforeEach(() => {
   dom = new JSDOM('<!doctype html><div id="root"></div>', { pretendToBeVisual: true, url: 'http://localhost/admin' });
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, IS_REACT_ACT_ENVIRONMENT: true });
+  globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
+  globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
+  dom.window.scrollTo = jest.fn();
   dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
   host = document.getElementById('root')!;
@@ -40,11 +46,40 @@ beforeEach(() => {
   wallets = [{ chain: 'ethereum', nativeAsset: 'ETH', nativeDepositsSupported: true, tokens: ['USDT'], address: '0x' + 'a'.repeat(40), defaultAddress: '0x' + 'b'.repeat(40), isOverridden: true, envConfigured: true, updatedAt: null, updatedByAdminId: 'admin-1' }];
   token = 'test-only';
   api = { getAdminWallets: jest.fn(async () => wallets), setAdminWalletAddress: jest.fn(async (chain, address) => { wallets = wallets.map(w => w.chain === chain ? { ...w, address } : w); }), resetAdminWallet: jest.fn(async chain => { wallets = wallets.map(w => w.chain === chain ? { ...w, address: w.defaultAddress, isOverridden: false } : w); }), getMe: jest.fn(async () => ({ isAdmin: true, email: 'qa@example.invalid' })) };
+  api.getAdminWorkSummary = jest.fn(async () => ({ asOf: new Date().toISOString(), widgets: Object.fromEntries(
+    ['readyPackages', 'pendingPackages', 'unlinkedTransfers', 'activeWithdrawals', 'pendingKyc', 'openOtc', 'totalUsers', 'newUsers24h'].map(key => [key, { value: 0, unit: 'заявки', href: '/admin/users', status: 'ready', asOf: new Date().toISOString() }])) }));
   modules.clear();
   sessionListeners.clear();
 });
-afterEach(async () => { await act(async () => root.unmount()); dom.window.close(); });
+afterEach(async () => { await act(async () => root.unmount()); dom.window.close(); delete (globalThis as any).requestAnimationFrame; delete (globalThis as any).cancelAnimationFrame; });
 async function mountWallets() { const { AdminWalletsPage } = load(resolve(frontend, 'src/pages/admin/AdminWalletsPage')); await act(async () => { root.render(React.createElement(AdminWalletsPage)); await flush(); }); }
+
+test('leaving Admin Users aborts the paginated page and shared summary reads', async () => {
+  api.getAdminUsersPage = jest.fn(() => new Promise(() => {}));
+  api.getAdminWorkSummary = jest.fn(() => new Promise(() => {}));
+  const { AdminUsersPage } = load(resolve(frontend, 'src/pages/admin/AdminUsersPage'));
+  const { MemoryRouter } = req('react-router-dom');
+  await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminUsersPage))); await flush(); });
+  const usersSignal = api.getAdminUsersPage.mock.calls[0][1] as AbortSignal;
+  const summarySignal = api.getAdminWorkSummary.mock.calls[0][0] as AbortSignal;
+  await act(async () => { root.render(null); await flush(); });
+  expect(usersSignal?.aborted).toBe(true);
+  expect(summarySignal?.aborted).toBe(true);
+});
+
+test('leaving Admin Listings cancels its pending list read', async () => {
+  const originalFetch = globalThis.fetch;
+  const fetcher = jest.fn(() => new Promise<Response>(() => {}));
+  globalThis.fetch = fetcher;
+  try {
+    const { AdminListingsPage } = load(resolve(frontend, 'src/pages/admin/AdminListingsPage'));
+    const { MemoryRouter } = req('react-router-dom');
+    await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminListingsPage))); await flush(); });
+    const signal = (fetcher.mock.calls as unknown as [string, RequestInit][])[0][1].signal!;
+    await act(async () => { root.render(null); await flush(); });
+    expect(signal.aborted).toBe(true);
+  } finally { globalThis.fetch = originalFetch; }
+});
 async function mountDeposits() {
   const { AdminDepositsPage } = load(resolve(frontend, 'src/pages/admin/AdminDepositsPage'));
   const { MemoryRouter } = req('react-router-dom');
@@ -100,6 +135,36 @@ function mockDepositApi(q: any) {
 }
 const fetched = (suffix: string) => fetchMock.mock.calls.filter((c: any[]) => String(c[0]).includes(suffix));
 
+test('a late explicit deposit refresh cannot restart reads after leaving the page', async () => {
+  jest.useFakeTimers({ doNotFake: ['setImmediate'] });
+  try {
+    const q = queue();
+    mockDepositApi(q);
+    await mountDeposits();
+    let finish!: (value: any) => void;
+    fetchMock.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await click('Обновить');
+    const requests = fetched('/admin/deposit-queue').length;
+    await act(async () => { root.render(null); await flush(); });
+    await act(async () => { finish({ ok: true, json: async () => q }); await flush(); });
+    await act(async () => { jest.advanceTimersByTime(60_000); await flush(); });
+    expect(fetched('/admin/deposit-queue')).toHaveLength(requests);
+    expect(jest.getTimerCount()).toBe(0);
+  } finally { jest.useRealTimers(); }
+});
+
+test('leaving deposits aborts the queue without ever loading the whole client directory', async () => {
+  mockDepositApi(queue());
+  const delegate = fetchMock.getMockImplementation()!;
+  fetchMock.mockImplementation((url: string, init: any) => String(url).endsWith('/admin/deposit-queue') ? new Promise(() => {}) : delegate(url, init));
+  api.getAllClients = jest.fn(() => new Promise(() => {}));
+  await mountDeposits();
+  const queueSignal = fetched('/admin/deposit-queue')[0][1].signal;
+  expect(api.getAllClients).not.toHaveBeenCalled();
+  await act(async () => { root.render(null); await flush(); });
+  expect(queueSignal?.aborted).toBe(true);
+});
+
 test('accumulation cards: 15 + 20 awaits a top-up of 265 with crediting unavailable; a 300 package offers «Проверить и зачислить»', async () => {
   mockDepositApi(queue());
   await mountDeposits();
@@ -139,14 +204,15 @@ test('opening the page reads the stored queue and asks the server for the day\'s
     expect(fetched('/deposit-watch/run')).toHaveLength(0);
     expect(api.getAdminDeposits).not.toHaveBeenCalled();
     await act(async () => { jest.advanceTimersByTime(60_000); await flush(); await flush(); });
-    expect(fetched('/admin/deposit-queue')).toHaveLength(2);
+    expect(fetched('/admin/deposit-queue')).toHaveLength(1);
     visibility = 'hidden';
     await act(async () => { document.dispatchEvent(new dom.window.Event('visibilitychange')); await flush(); });
     await act(async () => { jest.advanceTimersByTime(60 * 60_000); await flush(); });
-    expect(fetched('/admin/deposit-queue')).toHaveLength(2);
+    expect(fetched('/admin/deposit-queue')).toHaveLength(1);
     expect(fetched('/deposit-watch/run')).toHaveLength(0);
     expect(fetched('/deposit-watch/open')).toHaveLength(1);
-    await click('Проверить ленты других сетей');
+    // Owner (2026-10-15): the button reads «Проверить другие сети» inside the check-tools card.
+    await click('Проверить другие сети');
     expect(api.getAdminIncomingDepositFeed).toHaveBeenCalledTimes(1);
   } finally { jest.useRealTimers(); }
 });
@@ -163,12 +229,39 @@ test('provider trouble is never shown as "no deposits": partial feed and watcher
   expect(watcher.textContent).toContain('есть очередь');
   expect(watcher.querySelector('[role="alert"]')!.textContent).toContain('HTTP 503');
   expect(watcher.textContent).toContain('Проверить новые поступления');
-  await click('Проверить ленты других сетей');
+  await click('Проверить другие сети');
   expect(host.textContent).toContain('загружены не полностью');
   expect(host.textContent).toContain('Это не значит, что переводов нет');
   // Unattributed transfers stay visible, with the client's claim as a hint only.
   await click('Непривязанные1');
   expect(host.querySelector('[data-deposit-section="unattributed"]')!.textContent).toContain('claimer@example.invalid');
+});
+// Owner (2026-10-15): «Пополнения» — one header with the refresh, one card for every check, the queue
+// grouped by what the admin does next, and no empty «—» lines or repeated schedule on the page.
+test('deposits read as header, one check-tools card and grouped queue tabs, without empty lines', async () => {
+  mockDepositApi(queue({ enabled: true, providerStatus: 'OK', lastSuccessAt: new Date().toISOString(), nextScheduledRunAt: new Date().toISOString() }));
+  await mountDeposits();
+  expect(host.textContent).not.toContain('Пакет становится доступным для проверки');
+  expect(host.querySelector('.dep-heading [data-deposit-refresh]')?.textContent).toBe('Обновить');
+  const tools = host.querySelector('section[aria-label="Проверка поступлений"]')!;
+  for (const hook of ['[data-watcher]', '[data-check-tx]', '[data-other-networks]', '[data-watcher-run]', '[data-watcher-toggle]']) expect(tools.querySelector(hook)).not.toBeNull();
+  const watcher = tools.querySelector('[data-watcher]')!;
+  expect(watcher.querySelector('[data-watcher-enabled]')!.textContent).toBe('Включена');
+  // OK provider, no cursors, nothing unverified: those lines are not printed as «—» / «0».
+  for (const absent of ['Провайдер', 'В норме', 'Отставание', 'ещё не запускалось', 'Не проверено']) expect(watcher.textContent).not.toContain(absent);
+  expect(watcher.querySelector('details [data-watcher-schedule]')!.textContent).toContain('Ночью 22:00–07:00 автоматическая проверка не выполняется');
+  expect(watcher.querySelector('details')!.hasAttribute('open')).toBe(false);
+  const groups = Array.from(host.querySelectorAll('[role="tablist"][aria-label="Очередь пополнений"] .dep-tab-group'));
+  expect(groups.map(g => g.querySelector('.dep-tab-group-label')!.textContent)).toEqual(['Нужно действие', 'Ожидание', 'Архив']);
+  expect(groups.map(g => Array.from(g.querySelectorAll('[role="tab"]')).map(t => t.getAttribute('data-deposit-tab')))).toEqual([['ready', 'unattributed', 'review'], ['topup', 'network'], ['credited', 'ignored']]);
+  expect(host.querySelector('[data-deposit-tab="ready"]')!.getAttribute('aria-selected')).toBe('true');
+  expect(host.querySelector('[data-deposit-tab="ready"]')!.hasAttribute('data-attention')).toBe(true);
+  expect(host.querySelector('[data-deposit-tab="review"]')!.hasAttribute('data-attention')).toBe(false);
+  // A ready package shows no «осталось 0» line, and its status is a chip.
+  const ready = host.querySelector('[data-package="ready|tron|USDT"]')!;
+  expect(ready.querySelector('[data-package-remaining]')).toBeNull();
+  expect(ready.textContent).not.toContain('Осталось доплатить');
+  expect(ready.querySelector('[data-package-status]')!.className).toContain('dep-chip-ok');
 });
 async function click(text: string) {
   const button = Array.from(host.querySelectorAll('button')).find(b => b.textContent === text)!;

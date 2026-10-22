@@ -14,8 +14,8 @@ const output: any = {};
 new Function('require', 'exports', ts.transpileModule(source, { compilerOptions: {
   jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS,
 } }).outputText)((name: string) => name.endsWith('.css') ? {} : name === '../lib/cardNumberFormat' ? format : req(name), output);
-const render = (amount: string | null, roi: string | null, asset = 'USDT') => renderToStaticMarkup(
-  React.createElement(output.FuturesUnrealizedPnl, { amount, roi, asset }));
+const render = (amount: string | null, roi: string | null, asset = 'USDT', approx?: string | null) => renderToStaticMarkup(
+  React.createElement(output.FuturesUnrealizedPnl, { amount, roi, asset, approx }));
 
 test.each([
   ['16136162', '33391.29', '+16,136,162.00', '(+33,391.29%)', 'profit'],
@@ -44,7 +44,24 @@ test('actual quote asset is supplied by the position, not globally assumed', () 
   expect(render('1', '2', 'USDC')).toContain('>USDC</span>');
   const panel = read('components/FuturesPositionsPanel.tsx');
   expect(panel).toContain("const quoteAsset = p.symbol.split('/')[1] ?? '';");
-  expect(panel).toContain('<FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset}>');
+  expect(panel).toContain('<FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset} approx={p.unrealizedPnl === null ? null : approxUsd(Number(p.unrealizedPnl), quoteAsset)}>');
+});
+// Owner, 2026-09-30, with a Bybit screenshot: «З низу дублювання в usd як у байбіт».
+test('draws the caller\'s «≈… USD» line under the ROI, and nothing when it has none', () => {
+  const html = render('3860.0118', '73.81', 'USDT', '≈3,860.01 USD');
+  expect(html).toMatch(/class="futures-position-roi">\(\+73\.81%\)<\/small><small class="futures-position-approx">≈3,860\.01 USD<\/small>/);
+  expect(render('1', '2', 'USDT', null)).not.toContain('futures-position-approx');
+  const panel = read('components/FuturesPositionsPanel.tsx');
+  // Dollars only for a dollar-stable quote, at two decimals, never «-0.00».
+  expect(panel).toContain("const USD_QUOTES = new Set(['USDT', 'USDC', 'USD']);");
+  expect(panel).toContain('return `≈${group(Math.abs(value) < 0.005 ? 0 : value, 2)} USD`;');
+  // Realized carries the same line, on the live (archive) terminal too.
+  expect(panel).toContain('const realizedApprox = approxUsd(realized, quoteAsset);');
+  expect(panel).toContain('{realizedApprox && <small className="futures-position-approx">{realizedApprox}</small>}');
+  expect(panel).not.toContain('!archive && Number.isFinite(realized)');
+  const css = read('components/FuturesUnrealizedPnl.css');
+  expect(css).toMatch(/\.futures-unrealized \.futures-position-approx \{\s+grid-column: 1; grid-row: 3;/);
+  expect(css).toContain('.futures-unrealized:has(.futures-position-approx) .archive-pnl-open { grid-row: 1 / 4; }');
 });
 test('engine values are passed through; presentation has no financial inputs/formulas', () => {
   const adapter = read('lib/nativeFuturesAdapter.ts');

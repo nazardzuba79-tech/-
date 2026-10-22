@@ -1,0 +1,327 @@
+{
+  "generatedAt": "2026-10-01T06:24:16.342Z",
+  "scope": "module-only",
+  "environment": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "browser": "151.0.7922.34"
+  },
+  "measured": true,
+  "calculatorRows": [
+    {
+      "action": "module/StrictMode/pnl/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/size/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/liquidation/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/risk-reward/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/dca/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/fees/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/pnl/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/size/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/liquidation/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/risk-reward/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/dca/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/fees/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/DCA-50-rows",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/DCA-repeating-quantity-achieved-target",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/PnL-Futures-Spot-Futures",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/negative-tiny-long-invalid-insufficient-budget",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/Fees-Futures-Spot-Futures-zero-cost-bars",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/clipboard-edit-mode-unmount",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/visible/12h-virtual-idle",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/hidden/12h-virtual-idle",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/3s-real-idle",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    }
+  ],
+  "integratedRows": [],
+  "responsive": [],
+  "limitations": [],
+  "isolatedInitial": {
+    "calculator": 0,
+    "shell": 0,
+    "timers": 0,
+    "copies": 0,
+    "static": 10
+  },
+  "calculatorStorageUnchanged": true,
+  "isolatedTransports": [],
+  "isolatedTimers": [],
+  "isolatedStaticRequests": [
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/__qa/module",
+      "type": "document",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/__qa/module.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/__qa/module.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    }
+  ],
+  "isolatedRequestInitiators": [
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/__qa/module",
+      "initiator": {
+        "type": "other",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/__qa/module.css",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/__qa/module.js",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    }
+  ],
+  "isolatedBlockedResources": []
+}

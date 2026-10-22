@@ -1,0 +1,25 @@
+PASS 1 a guest opening /wallet is sent to sign-in — /login?next=%2Fwallet
+PASS 1b a guest opening /trade is sent to sign-in — /login?next=%2Ftrade
+PASS 1c no page errors on the guest guards
+PASS 2 registering through the form creates a signed-in session — register=201 url=/futures?pair=BTC%2FUSDT token=true
+PASS 2b exactly one register request was sent
+PASS 2c logout clears the session and calls the server — token=null logout=200 url=/
+PASS 2d after logout the wallet is guarded again
+PASS 2e no page errors through registration and logout
+PASS 3 wrong password: localized refusal, no session, no English server text — login=401 text="Электронная почта Пароль Забыли пароль? Неверная почта или пароль. Войти в аккаунт"
+PASS 3b right password signs in — /futures?pair=BTC%2FUSDT
+PASS 3c a stale token leads to sign-in without a request storm — url=/login?next=%2Fwallet 401s=0 calls=0 token=null
+PASS 3d no page errors through sign-in
+PASS 4 wallet overview shows the account balances — USDT available=79760.357 figures=[24.3,79835.36,13.1,2026,21,12]
+PASS 4b the withdraw dialog opens
+PASS 4c an amount above the balance is refused with a clear message, never a 500 — posts=[] submitDisabled=true text="Вывод средств Со спотового счёта МОНЕТА USDT СЕТЬ TRON (TRC20) АДРЕС КОШЕЛЬКА СУММА Доступно к выводу: 79 760,36 USDT USDT Макс. Можно вывести не больше 79 760,"
+PASS 4d a valid withdrawal request is accepted and listed as pending — posts=[{"s":200,"m":"POST","p":"/api/v1/withdrawals"}] req={"st":"PENDING","a":"25","asset":"USDT"} list=[{"id":"bb4b19a8-bf9d-453f-8ad3-47e5c627c878","asset":"USDT","network":"TRC20","toAddress":"TJRabPrwbZy45sbavfcjinPJC18k text="Вывод средств Со спотового счёта Заявка на вывод принята Вывод может занимать до 60 минут. Статус за"
+PASS 4e exactly one withdrawal POST for one click (no double submit) — posts=1
+PASS 4f the requested amount is locked, not deducted twice — locked 75→100 available 79760.357→79735.357
+PASS 4g the deposit dialog opens and states that no network is configured (none in this environment) without errors — text="Пополнение ✕ Минимальная сумма пополнения — от 500 $ в эквиваленте. Пополнение пока недоступно: адреса кошельков ещё не подключены." errors=
+PASS 5 admin users search narrows the list to the matching account — rows=1
+PASS 5b the user detail page opens with balances — url=/admin/users/75e574eb-034e-49d6-b6e6-25cae78e6edb?returnTo=%2Fadmin%2Fusers%3Fsearch%3Dtrader-a%26page%3D1&tab=balances text="Админ-панель Пользователи A admin Администратор ← Все пользователи trader-a@audit.test 75e574eb-034e-49d6-b6e6-25cae78e6edb ⧉ Активен · KYC: Не начата Дополните"
+PASS 5c the withdrawals queue lists the pending request from account A — Админ-панель Выводы A admin Администратор Вывод криптовалюты Одобрение заявки не отправляет средства. TXID фиксирует действие оператора и не подтверждает транза
+PASS 5d no page errors on the admin pages
+PASS 6 every admin route answers 403 to an ordinary account — {"GET /admin/users":403,"POST /admin/withdrawals/x/approve":403,"POST /admin/deposits/manual-credit":403,"POST /products":403,"GET /admin/audit-log":403}
+PASS 6b and 401 to a guest — 401

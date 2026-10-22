@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
-import { openSupportWidget } from '../../lib/supportWidget';
+
 import { Key, useLanguage } from '../../lib/i18n';
 
 /**
@@ -22,7 +22,6 @@ const COLUMNS: { titleKey: Key; links: { labelKey: Key; to: string }[] }[] = [
       { labelKey: 'trade.spotTab', to: '/trade' },
       { labelKey: 'nav.futures', to: '/futures' },
       { labelKey: 'nav.copyTrading', to: '/copy-trading' },
-      { labelKey: 'nav.arbitrage', to: '/arbitrage' },
       { labelKey: 'nav.card', to: '/card' },
       { labelKey: 'nav.otc', to: '/otc' },
     ],
@@ -38,11 +37,15 @@ const COLUMNS: { titleKey: Key; links: { labelKey: Key; to: string }[] }[] = [
   },
   {
     titleKey: 'home.footer.support',
-    links: [{ labelKey: 'home.footer.helpCenter', to: '/legal/support' }],
+    links: [
+      { labelKey: 'home.footer.helpCenter', to: '/academy/faq' },
+      { labelKey: 'nav.academy', to: '/academy' },
+    ],
   },
   {
     titleKey: 'home.footer.legal',
     links: [
+      { labelKey: 'licenses.title', to: '/legal/licenses' },
       { labelKey: 'home.footer.terms', to: '/legal/terms' },
       { labelKey: 'home.footer.privacy', to: '/legal/privacy' },
       { labelKey: 'home.footer.risk', to: '/legal/risk' },
@@ -77,20 +80,6 @@ export function HomeFooter() {
                     </Link>
                   </li>
                 ))}
-                {/* Contact isn't a route — it opens the support chat that is
-                    already mounted on every page, for signed-out visitors
-                    too. A link would have had nowhere honest to point. */}
-                {col.titleKey === 'home.footer.support' && (
-                  <li>
-                    <button
-                      type="button"
-                      onClick={openSupportWidget}
-                      className="text-left text-[12px] text-home-muted transition-colors duration-150 hover:text-white"
-                    >
-                      {t('home.footer.contact')}
-                    </button>
-                  </li>
-                )}
               </ul>
             </div>
           ))}

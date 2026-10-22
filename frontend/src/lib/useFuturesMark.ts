@@ -18,7 +18,7 @@ export function subscribeFuturesMark(symbol: string, listener: (mark: Mark) => v
       const number = (value: string) => { const n = Number(value); return Number.isFinite(n) && n > 0 ? n : null; };
       next.value = { markPrice: number(result.markPrice), indexPrice: number(result.indexPrice) };
       next.listeners.forEach(notify => notify(next.value));
-    }, 30_000, true);
+    }, 30_000, true, true, false);
     next.stop = reader.stop; entries.set(symbol, next); entry = next;
   }
   entry.listeners.add(listener); listener(entry.value);

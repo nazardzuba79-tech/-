@@ -2,11 +2,27 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
+import * as demoRoi from '../src/lib/copyDemoRoi';
+import { languageModule } from './languageStub';
 
 const frontend = resolve(__dirname, '..');
 const req = createRequire(resolve(frontend, 'package.json'));
 const source = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
 const ast = ts.createSourceFile('components.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+
+/** Real display-only notice with its default inactive context for isolated
+ * card/profile fixtures. Active/expired providers are covered by
+ * copyPerformancePeriods; never substitute or modify financial readouts. */
+export function demoRoiModule() {
+  const exports: Record<string, any> = {};
+  const code = ts.transpileModule(readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/DemoRoiContext.tsx'), 'utf8'), {
+    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  const localRequire = (id: string) => id === '../../lib/copyDemoRoi' ? demoRoi
+    : id === '../../lib/i18n' ? languageModule('ru') : req(id);
+  new Function('require', 'exports', code)(localRequire, exports);
+  return exports;
+}
 
 /** Execute selected production components without importing unrelated account
  * transports. Every helper and JSX body comes from the current source tree;

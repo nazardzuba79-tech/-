@@ -45,13 +45,17 @@ function database(symbol = 'XAUUSD', afterBalanceWrite = () => {}) {
     $transaction: jest.fn(async (fn: any) => {
       const working = structuredClone(committed);
       const writeBalance = async ({ data, update }: any) => {
-        Object.assign(working.balance, data ?? update);
+        for (const [key, delta] of Object.entries(data ?? update)) {
+          (working.balance as any)[key] = new BigNumber((working.balance as any)[key]).plus((delta as any).increment).toFixed();
+        }
         events.push('balance');
         afterBalanceWrite();
+        return { count: 1 };
       };
       const tx = {
+        $queryRaw: jest.fn(async () => []),
         user: { findUnique: async () => ({ createdAt: new Date(at - 365 * 86400000) }) },
-        futuresBalance: { findUnique: async () => ({ ...working.balance }), update: writeBalance, upsert: writeBalance },
+        futuresBalance: { findUnique: async () => ({ ...working.balance }), update: writeBalance, updateMany: writeBalance, upsert: writeBalance },
         cfdPosition: {
           findUnique: async () => structuredClone(working.position),
           findFirst: async () => null,

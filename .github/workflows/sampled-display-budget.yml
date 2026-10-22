@@ -29,13 +29,17 @@ on:
       - 'frontend/src/lib/useLiveMarket.ts'
       - 'frontend/src/lib/liveMarketStore.ts'
       - 'frontend/src/lib/api.ts'
-      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/lib/cfdCandles.ts'
       - 'frontend/src/components/SampledDataNote.tsx'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/FuturesPage.tsx'
       - 'frontend/src/pages/home/**'
       - 'frontend/src/pages/trade-terminal/SampledDisplay.css'
       - '.github/workflows/sampled-display-budget.yml'
+      - 'frontend/src/lib/__tests__/cfdInfoStrip.test.ts'
+      - 'frontend/src/lib/useCfdDailySession.ts'
+      - 'frontend/src/lib/cfdInfoStrip.ts'
+      - 'src/cfd/__tests__/CfdDailySessionBudget.test.ts'
   push:
     branches: [main]
     paths:
@@ -52,7 +56,7 @@ on:
       - 'frontend/src/lib/__tests__/renderBandwidthBudget.test.ts'
       - 'frontend/src/lib/sampledDepth.ts'
       - 'frontend/src/lib/useCfdTickers.ts'
-      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/lib/cfdCandles.ts'
       - 'frontend/src/pages/home/useHeroStream.ts'
       - '.github/workflows/sampled-display-budget.yml'
 permissions:
@@ -93,6 +97,8 @@ jobs:
           frontend/src/lib/__tests__/homeMarketSnapshot.test.ts
           frontend/src/lib/__tests__/homeHeroStream.test.ts
           frontend/src/lib/__tests__/renderBandwidthBudget.test.ts
+          frontend/src/lib/__tests__/cfdInfoStrip.test.ts
+          src/cfd/__tests__/CfdDailySessionBudget.test.ts
       - name: Execution and collector remain independent
         run: >-
           npx jest --runInBand --silent --runTestsByPath

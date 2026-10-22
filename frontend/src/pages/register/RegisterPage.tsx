@@ -1,4 +1,3 @@
-import { useLanguage } from '../../lib/i18n';
 import { AuthShell } from '../auth-shell/AuthShell';
 import { RegisterPanel } from './RegisterPanel';
 
@@ -11,15 +10,8 @@ import { RegisterPanel } from './RegisterPanel';
  * form goes in the slot and where the header's switch link points.
  */
 export function RegisterPage() {
-  const { t } = useLanguage();
-
   return (
-    <AuthShell
-      cardVisual="registration"
-      switchPrompt={t('register.haveAccount')}
-      switchLabel={t('auth.login')}
-      switchTo={`/login${window.location.search}`}
-    >
+    <AuthShell>
       <RegisterPanel />
     </AuthShell>
   );

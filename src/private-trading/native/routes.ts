@@ -99,7 +99,7 @@ export function nativeReplyHasWork(reply:unknown):boolean{
  * `onWork` wakes the server-side limit pass after the COMMITTED command that
  * leaves it something to do, and after a session admission (which is what
  * lets a sleeping pass act for an account whose previous session expired). */
-export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=>OwnerSession,onWork:()=>void=()=>{}){
+export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=>OwnerSession,onWork:()=>void=()=>{},clientTier:'SUPREME_VIP'|null='SUPREME_VIP'){
   const r=Router();const wake=bestEffortWake(onWork,'native-limit-pass');const handle=(run:(req:Request,res:Response)=>Promise<unknown>)=>(req:Request,res:Response,next:NextFunction)=>void run(req,res).then(result=>res.json(result)).catch(next);
   r.get('/state',handle((_req,res)=>service.state(actor(res))));
   r.get('/live',handle((_req,res)=>service.live(actor(res))));
@@ -125,9 +125,10 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
     return result;
   }));
   r.get('/collateral',handle((_req,res)=>service.collateral(actor(res))));
-  r.post('/collateral-preference',handle((req,res)=>{
+  r.post('/collateral-preference',handle(async(req,res)=>{
     const input=z.object({asset:collateralAsset,enabled:z.boolean(),idempotencyKey:key}).strict().parse(req.body);
-    return service.setCollateralPreference(actor(res),input.asset,input.enabled,input.idempotencyKey);
+    const result=await service.setCollateralPreference(actor(res),input.asset,input.enabled,input.idempotencyKey);
+    return {...result,clientTier};
   }));
   // The Wallet page's ONE request: the same authoritative account the
   // terminal reads, together with the per-asset collateral it was computed
@@ -136,7 +137,7 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
   r.get('/wallet',handle(async(_req,res)=>{
     const result=await service.wallet(actor(res));
     if(!result)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
-    return result;
+    return {...result,clientTier};
   }));
   r.get('/contracts/:symbol',handle((req,res)=>service.contract(actor(res),z.string().regex(/^[A-Z0-9]{1,32}USDT$/).parse(req.params.symbol))));
   r.post('/initialize',handle((req,res)=>{const input=z.object({idempotencyKey:key,acceptedModel:z.literal(NATIVE_DEMO_MODEL.version)}).strict().parse(req.body);return service.initialize(actor(res),input.idempotencyKey);}));

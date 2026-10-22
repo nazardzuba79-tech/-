@@ -97,14 +97,22 @@ describe('shared drawing toolbar presentation and chart integration', () => {
   const tsx = (code: string) => ts.transpileModule(code, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  // The drawing layer is its own module, compiled against the same real helpers.
-  const layer: Record<string, any> = {};
-  new Function('require', 'exports', tsx(layerSource))((id: string) => {
-    if (id.endsWith('/browserActivity')) return browserActivity;
-    if (id === '../lib/chartDrawings') return drawings;
-    if (id === '../lib/drawingGeometry') return geometry;
-    return localRequire(id);
-  }, layer);
+  // The drawing layer is its own module, compiled against the same real helpers;
+  // so are its object toolbar and settings dialog.
+  const component = (file: string): Record<string, any> => {
+    const out: Record<string, any> = {};
+    const code = file === 'ChartDrawingLayer' ? layerSource : fs.readFileSync(path.resolve(__dirname, `../../components/${file}.tsx`), 'utf8');
+    new Function('require', 'exports', tsx(code))((id: string) => {
+      if (id.endsWith('/browserActivity')) return browserActivity;
+      if (id === '../lib/chartDrawings') return drawings;
+      if (id === '../lib/drawingGeometry') return geometry;
+      if (id === '../lib/drawingTemplates') return require('../drawingTemplates');
+      if (id === './DrawingObjectToolbar' || id === './DrawingSettingsDialog') return component(id.slice(2));
+      return localRequire(id);
+    }, out);
+    return out;
+  };
+  const layer = component('ChartDrawingLayer');
   const compiled = tsx(`${source}\nexport { DrawToolbar, DrawingDialog, drawingToolGroups };`);
   const exports: Record<string, any> = {};
   new Function('require', 'exports', compiled)((id: string) => {
@@ -115,6 +123,21 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === '../lib/chartTrading') return chartTrading;
     if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
+    if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
+    if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartIndicators') return require('../chartIndicators');
+    // Chart workspace (2026-10-13): pure modules are real, the panels are stubs.
+    if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (id === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (id === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (id === '../lib/chartCompare') return require('../chartCompare');
+    if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (id === '../lib/chartViewport') return require('../chartViewport');
+    if (id === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
+    if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
     if (id === './ChartDrawingLayer') return layer;
     if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
     return localRequire(id);
@@ -165,12 +188,14 @@ describe('shared drawing toolbar presentation and chart integration', () => {
   test('the object toolbar is TradingView\'s: a grip that moves it, colour bars under pencil and bucket', () => {
     const html = renderToStaticMarkup(React.createElement(layer.DrawingObjectToolbar, {
       drawing: { id: 1, kind: 'rectangle', points: [{ time: 0, price: 1 }, { time: 1, price: 2 }], style: { ...drawings.drawingStyle({ kind: 'rectangle' }), color: '#ffffff' } },
-      locked: false, t: (k: string) => k, onStyle: () => {}, onToggleLock: () => {}, onClone: () => {}, onDelete: () => {}, onClose: () => {},
+      locked: false, t: (k: string) => k, onStyle: () => {}, onToggleLock: () => {}, onClone: () => {}, onDelete: () => {}, onClose: () => {}, onSettings: () => {},
     }));
     expect(html.indexOf('data-object-action="drag"')).toBeLessThan(html.indexOf('data-object-action="color"'));
     expect(html).toMatch(/data-object-action="color"[^]*?drawing-object-swatch" style="background:#ffffff"/);
     expect(html).toContain('data-object-action="fill"');
-    for (const action of ['width', 'dash', 'lock', 'clone', 'delete']) expect(html).toContain(`data-object-action="${action}"`);
+    // Clone moved into «…» with TradingView's other object commands.
+    const actions = [...html.matchAll(/data-object-action="([^"]+)"/g)].map((m) => m[1]);
+    expect(actions).toEqual(['drag', 'templates', 'color', 'fill', 'width', 'dash', 'settings', 'lock', 'delete', 'more']);
     expect(css).toMatch(/\.drawing-object-grip \{[^}]*cursor: grab/);
   });
 
@@ -248,6 +273,20 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       if (id === '../lib/chartTrading') return chartTrading;
     if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
+    if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
+    if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartIndicators') return require('../chartIndicators');
+    if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (id === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (id === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (id === '../lib/chartCompare') return require('../chartCompare');
+    if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (id === '../lib/chartViewport') return require('../chartViewport');
+    if (id === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
+    if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, output);
@@ -285,20 +324,41 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(callbacks.onToggleLock).not.toHaveBeenCalled();
     expect(callbacks.onSelect).not.toHaveBeenCalled();
   });
-  test('the measure label is the move in percent — no raw price difference, no tick count (owner, 2026-09-26)', () => {
+  test('the measure label reads as on TradingView: price move (percent), bars and time, volume — no tick count', () => {
     const candles = [{ time: 0, volume: 1500 }, { time: 300, volume: 2500 }, { time: 600, volume: 1000 }, { time: 900, volume: 5 }];
     const range = drawings.drawingRange({ time: 0, price: 0.000001 }, { time: 900, price: 0.0000008 }, candles, 300, 0.0000001);
     const lines = drawings.drawingRangeLines(range, 'en');
-    // A tiny negative move still reads as negative.
-    expect(lines[0]).toBe('-20.00%');
+    // A tiny negative move still reads as negative; no tick count after it.
+    expect(lines[0]).toBe('-0.0000002 (-20.00%)');
     const up = drawings.drawingRange({ time: 0, price: 100 }, { time: 900, price: 117.44 }, candles, 300, 0.01);
-    expect(drawings.drawingRangeLines(up, 'ru')[0]).toBe('+17.44%');
+    expect(drawings.drawingRangeLines(up, 'ru')[0]).toBe('+17,44 (+17,44%)');
     expect(lines[1]).toBe('3 bars, 15m');
     // Volume of the bars inside the span only; the closing bar is not in it.
     expect(lines[2]).toBe('Vol 5.00K');
     expect(lines.join(' ')).not.toContain('Infinity');
-    expect(drawings.drawingRangeLines(range, 'ru')[1]).toBe('3 столбцы, 15мин');
+    expect(drawings.drawingRangeLines(range, 'ru')[1]).toBe('3 бара, 15мин');
+    expect(drawings.drawingRangeLines(range, 'ru')[2]).toBe('Объём 5.00K');
     expect(drawings.drawingRangeLines(range, 'en', { price: true, date: false })).toHaveLength(1);
+  });
+  test('bars are counted in Russian as TradingView does, and time is whole bars', () => {
+    expect(['1', '2', '4', '5', '11', '12', '21', '22', '25', '111'].map((n) => drawings.drawingBarsText(Number(n), 'ru')))
+      .toEqual(['1 бар', '2 бара', '4 бара', '5 баров', '11 баров', '12 баров', '21 бар', '22 бара', '25 баров', '111 баров']);
+    expect(drawings.drawingBarsText(1, 'en')).toBe('1 bar');
+    // Owner's NRX screenshot: a daily ruler from a click on listing day to today's
+    // candle read «1 столбцы, 17ч». One daily bar is one day.
+    const day = 86400;
+    const candles = [{ time: 0, volume: 10 }, { time: day, volume: 20 }];
+    const range = drawings.drawingRange({ time: 7 * 3600, price: 0.81 }, { time: day, price: 46.54 }, candles, day);
+    expect(drawings.drawingRangeLines(range, 'ru')[1]).toBe('1 бар, 1д');
+    expect(drawings.drawingRangeLines(range, 'ru')[0]).toBe('+45,73 (+5\u00a0645,68%)');
+  });
+  test('large measurement percentages group thousands without changing the measured return', () => {
+    const range = drawings.drawingRange({ time: 0, price: 1 }, { time: 3600, price: 194.2766 }, [], 3600);
+    expect(range.pct).toBeCloseTo(19327.66, 8);
+    expect(drawings.drawingRangeLines(range, 'ru')[0]).toBe('+193,28 (+19\u00a0327,66%)');
+    expect(drawings.drawingRangeLines(range, 'en')[0]).toBe('+193.28 (+19,327.66%)');
+    expect(drawings.drawingRangeLines({ ...range, pct: null }, 'ru')[0]).toBe('+193,28 (—%)');
+    expect(drawings.drawingRangeLines({ ...range, pct: Infinity }, 'ru')[0]).toBe('+193,28 (—%)');
   });
   test('Spot text dialog has an accessible label, safe plain input, real actions and no native modal', () => {
     const html = renderToStaticMarkup(React.createElement(exports.DrawingDialog,
@@ -322,7 +382,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(html).toContain('draw.deleteAllConfirm');
     expect(html).toContain('type="submit" class="danger"');
     expect(html).not.toContain('<input');
-    expect(source).toContain("setDrawDialog({ kind: 'clear' });\n      return;");
+    expect(source.replace(/\r\n/g, '\n')).toContain("setDrawDialog({ kind: 'clear' });\n      return;");
     expect(source).toContain('if (window.confirm(confirmClearRef.current)) clearDrawings()');
     for (const code of [source, layerSource]) expect(code).not.toContain('window.prompt');
     const clearBody = source.split('const clearDrawings = useCallback(() => {')[1].split('const clearAll =')[0];
@@ -354,6 +414,20 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       if (id === '../lib/chartTrading') return chartTrading;
     if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
     if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
+    if (id === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
+    if (id === '../lib/chartSettings') return require('../chartSettings');
+    if (id === '../lib/chartIndicators') return require('../chartIndicators');
+    if (id === '../lib/chartTimeframes') return require('../chartTimeframes');
+    if (id === '../lib/chartCandleSource') return require('../chartCandleSource');
+    if (id === '../lib/chartWorkspace') return require('../chartWorkspace');
+    if (id === '../lib/chartDerivedBars') return require('../chartDerivedBars');
+    if (id === '../lib/chartCompare') return require('../chartCompare');
+    if (id === '../lib/chartCandleStats') return require('../chartCandleStats');
+    if (id === '../lib/chartSnapshot') return require('../chartSnapshot');
+    if (id === '../lib/chartCapabilities') return require('../chartCapabilities');
+    if (id === '../lib/chartViewport') return require('../chartViewport');
+    if (id === '../lib/chartCandleLoaders') { const none = async () => ({ candles: [] }); return { CHART_CANDLE_LOADERS: { futures: none, spot: none, testMarket: none }, candleHistoryStart: () => undefined }; }
+    if (id.startsWith('./chart-workspace/')) return new Proxy({}, { get: () => () => null });
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, bindings);
@@ -634,16 +708,24 @@ describe('the rail is shared, and every button does something', () => {
     expect(futures).toMatch(/<PriceChart pair=\{symbol\} chrome="terminal" drawingTools market="futures" compactTools=\{studio\}/);
     expect(futures).not.toContain('DrawToolbar');
     expect(futures.match(/<PriceChart\b/g)).toHaveLength(1);
-    expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />');
+    // 2026-10-07: Spot's chart carries the viewer's chart settings like Futures (Spot/CFD parity).
+    // 2026-10-13 (chart workspace): both pages also hand the chart their
+    // instrument switch, so a second pane's «Торговать» moves the terminal.
+    expect(trade).toContain('<PriceChart pair={pair} onSelectPair={selectSpotPair} chrome="terminal" drawingTools market="spot" compactTools chartSettings />');
+    expect(futures).toContain('compactTools={studio} onSelectPair={selectSymbol}');
     // One implementation, not two: there is a single chart component and a
     // single rail, and both pages reach it through the same prop.
     expect(fs.existsSync(path.resolve(__dirname, '../../components/FuturesPriceChart.tsx'))).toBe(false);
     expect(fs.existsSync(path.resolve(__dirname, '../../components/FuturesDrawingTools.css'))).toBe(false);
   });
 
-  test('CFD is untouched by this overlay', () => {
-    const cfd = fs.readFileSync(path.resolve(__dirname, '../../components/CfdChart.tsx'), 'utf8');
-    expect(cfd).not.toMatch(/drawingTools|DrawToolbar|drawing-rail|chartDrawings/);
+  // 2026-10-15 (CFD Chart Workspace): CFD now reaches the same rail through the
+  // shared chart with its own drawing store (market "cfd"), not a second rail.
+  test('CFD reaches the same rail through the shared chart, with its own drawings', () => {
+    expect(fs.existsSync(path.resolve(__dirname, '../../components/CfdChart.tsx'))).toBe(false);
+    const page = fs.readFileSync(path.resolve(__dirname, '../../pages/TradePage.tsx'), 'utf8');
+    expect(page).toMatch(/<PriceChart pair=\{selectedCfdSymbol\} market="cfd" chrome="terminal" drawingTools/);
+    expect(fs.readFileSync(path.resolve(__dirname, '../chartDrawings.ts'), 'utf8')).toMatch(/DrawingMarket = [^;]*'cfd'/);
   });
 
   const layerCode = fs.readFileSync(path.resolve(__dirname, '../../components/ChartDrawingLayer.tsx'), 'utf8')
@@ -756,8 +838,13 @@ describe('every drawing kind paints and can be picked', () => {
   test('the ruler label reads the move in percent, then bars and time', () => {
     const g = geometry.drawingGeometry({ kind: 'ruler', points: [{ time: 0, price: 100 }, { time: 900, price: 110 }] }, linearView())!;
     const label = g.prims.find((p) => p.t === 'label') as Extract<geometry.Primitive, { t: 'label' }>;
-    expect(label.lines[0]).toBe('+10.00%');
+    expect(label.lines[0]).toBe('+10.00 (+10.00%)');
     expect(label.lines[1]).toBe('3 bars, 15m');
+    expect(label.size).toBe(12);
+    expect(label.variant).toBe('measurement');
+    const box = geometry.labelBox(label);
+    expect(box.w).toBeGreaterThan(geometry.labelBox({ ...label, size: 11 }).w);
+    expect(geometry.geometryDistance(g, { x: box.x + box.w - 1, y: box.y + 1 })).toBe(0);
   });
 });
 

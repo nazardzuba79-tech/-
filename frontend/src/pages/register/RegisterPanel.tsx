@@ -16,6 +16,7 @@ import { readNext } from '../../lib/returnTo';
 import { useLanguage } from '../../lib/i18n';
 import { REFERRAL_CODE_STORAGE_KEY } from '../ReferralRedirectPage';
 import { AuthField, AuthPasswordField } from '../auth-shell/AuthFields';
+import { AuthFormIcon, AuthTabs, AuthSupport } from '../auth-shell/AuthShell';
 import { customerErrorText } from '../../lib/customerError';
 
 /**
@@ -147,9 +148,11 @@ export function RegisterPanel() {
 
   return (
     <div className="vx-auth-body vx-auth-enter">
+      <AuthFormIcon />
       <div className="vx-auth-overline">{t('authShell.overline.register')}</div>
-      <h1>{t('register.title')}</h1>
-      <p className="vx-auth-sub">{t('register.subtitle')}</p>
+      <h1>{t('authShell.registerTitle')}</h1>
+      <p className="vx-auth-sub">{t('authShell.registerSubtitle')}</p>
+      <AuthTabs active="register" />
 
       <form onSubmit={handleSubmit} noValidate className="vx-auth-form">
         <AuthField id="reg-email" label={t('register.email')} error={errors.email}>
@@ -231,6 +234,7 @@ export function RegisterPanel() {
         {t('register.legal.suffix')}
       </p>
 
+      <AuthSupport />
       <p className="vx-auth-security">
         <LockKeyholeIcon size={14} strokeWidth={1.8} />
         {t('register.securityNote')}

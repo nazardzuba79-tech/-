@@ -1,0 +1,64 @@
+# Перевірка робочих сценаріїв адмінки
+
+Дата: 2026-10-03. Область: локальна review-гілка, синтетичні fixtures, Jest/React/JSDOM. Цей документ не підтверджує merge, deployment, production-стан чи exact-head CI. Production-запити та фінансові операції для цих перевірок не виконувалися.
+
+## Фактично виконано
+
+| Перевірка | Результат | Доказ |
+| --- | --- | --- |
+| Попередній повний frontend admin/deposit/KYC/bandwidth прогін | **366/366**, 30/30 suites | `output/admin-practicality/frontend-admin-full-regression-green.log` |
+| Після двох фінальних інтеграційних виправлень | **372/372**, 30/30 suites, 44,697 с | `output/admin-practicality/frontend-admin-stage4-final-regression.log` |
+| Фінальна узгоджена база з main `7cc6640d` — Admin + shared lifecycle union | **430/430**, 40/40 suites | `output/admin-practicality/final-rebased-frontend-regression.log` |
+| Фінальна backend bounded reads + balance recovery union | **79/79**, 8/8 suites | `output/admin-practicality/final-rebased-backend-regression.log` |
+| Фінальний built UI | **32 screenshots + 18/18 interactions**, 0 errors/overflow/external calls | `review-capture.log`, `review-interactions.log` |
+| Повтор після rebase: gate / deletion / KYC PG / KYC memory | **26 / 20 / 10 / 10**, усі PASS | `output/admin-practicality/review-*` |
+| TypeScript project build | **PASS**, exit 0 | `node frontend/node_modules/typescript/bin/tsc -b frontend` після останнього прогону |
+| Red-перевірка фінальних інтеграційних дефектів | **3 failed / 22 passed** до змін | `output/admin-practicality/admin-stage4-integration-red.log` |
+| Вузький regression після їх виправлення | **51/51**, 4/4 suites | `output/admin-practicality/admin-stage4-integration-green.log` |
+
+Повний набір: файли `frontend/src/lib/__tests__/`, імена яких відповідають `^(admin|deposit|kyc|renderBandwidthBudget).*\.test\.[tj]sx?$`; запуск через `node node_modules/jest/bin/jest.js <список файлів> --runInBand`. TypeScript-перевірка не замінює Vite build. Локальні логи зберігаються як артефакти перевірки, а не як вихідний код.
+
+## Матриця перевірених властивостей
+
+| Сценарій | Що перевіряє виконаний набір | Основні suites |
+| --- | --- | --- |
+| Користувачі | Серверна сторінка/пошук/сортування; debounce цілого запиту без проміжної старої сторінки; невідомі значення відрізняються від нуля; повні історії депозитів не завантажуються зі списком | `adminUsersActivity`, `adminConsoleInteractions`, `renderBandwidthBudget` |
+| Картка користувача | 500/offline/401/403/404, timeout, stale/retry, A→B з пізньою A, logout, lazy history, скасування; whitelist returnTo; URL-вкладка відкриває лише відповідну історію | `adminDetailRead` |
+| Withdrawals | Скасування/Escape/закриття до підтвердження — нуль мутацій; захист подвійного кліку; активні/оброблені черги, пошук/сторінки; невідомий результат звіряється незалежно від поточного фільтра | `adminQueueSafety` |
+| KYC | Loading/error/empty/stale розділено; дата останньої заявки, Kyiv/DST; помилка документа не означає його відсутність; підтвердження особи/заявки; session/late-response та URL cleanup | `adminQueueSafety`, `adminKycReviewSafety`, `adminQueueDates`, `kycEdgeClient` |
+| Депозити | Черга без окремого polling; hidden/unmount/session скасовують читання; timeout/retry; точний нуль не виводиться для невідомої/усіченої відповіді; пошук клієнтів лише при відкритті, порціями | `adminDepositsLifecycle` |
+| Зарахування пакета | Незмінні preview/token/склад/minimum та первісний idempotency key; cancel — нуль записів; подвійне підтвердження — один запит; amount не передається як довільне поле | `adminUsersActivity`, `depositMinimumRule`, наявні deposit suites |
+| Копіювання адреси | Відкриття деталей не підтверджує оплату й не виконує запис; Ignore лише явним кліком, однократно; помилка зберігає сигнал; новий сигнал не успадковує розкриття старого; посилання ведуть у контекст користувача | `adminDepositCopyBell`, `adminDepositCopyResolution`, `adminDepositCopies`, `depositCopyLog`, `depositCopySessionRace` |
+| Спотова ручна корекція | Окрема перевірка/підтвердження, точний decimal preview; pending/unknown; повтор із тим самим ключом та перевірка receipt; сесія/пізній 401 не скидає нову сесію | `adminAdjustmentRecoveryUi`, `adminAccountActionRecovery` |
+| Legacy дії аккаунта | Ціль/причина/сума для block/demo; cancel/double-click; невідомий результат заблокований після remount; timeout та logout; unblock не збирає причину, яку endpoint не зберігає | `adminAccountActionRecovery` |
+| Сводка/сповіщення | Один запит для кількох споживачів; 30-секундний дедлайн не відсувається focus; hidden/off-route — без polling; очищення приватного cache; timeout; session guard; первісний cursor не дзвенить | `adminSummaryLifecycle`, `adminSummaryChime`, `adminVisibleActivity` |
+| Оновлення після дії | Якщо дія завершується під час читання старої сводки, виконується рівно одне додаткове читання; стара відповідь не позначається свіжою; hidden invalidation чекає повернення; cleanup скасовує старе володіння | `adminSummaryLifecycle` |
+| Каталог адрес / OTC | Прийнятий save/clear не стає «невдалим записом» через помилку перечитування; stale не дозволяє повторний revision-dependent edit; повернення з OTC detail зберігає фільтр/сторінку | `adminCatalogueOtcRecovery` |
+| Журнал | Пошук/фільтри/сторінки, Kyiv/DST; malformed date не ігнорується; stale/error та пізні відповіді; маскування технічних metadata; повернення з картки | `adminAuditView`, `adminPresentation` |
+
+## Відтворені інтеграційні дефекти
+
+1. `refreshAdminSummary(true)` губив інвалідацію, якщо попередній запит ще виконувався. Стан до завершення дії міг залишитися позначеним «свіжим» на наступні 30 секунд. Відкладений promise довів відсутність follow-up; тепер інвалідації об'єднуються в одне додаткове читання, з очищенням при зміні життєвого циклу.
+2. При інвалідації в прихованій вкладці швидке повернення могло зберегти стару сводку через попередній freshness deadline. Тепер snapshot стає несвіжим без прихованого мережевого запиту, а повернення запускає читання.
+3. Розблокування вимагало текст причини, але існуючий `unblockUser(id)` його не передавав і audit endpoint не записував. Поле прибране тільки для розблокування; ціль і окреме підтвердження залишені. Backend/API не змінювалися для цього виправлення.
+
+## Межі й відомі обмеження
+
+- **Durable Spot ≠ legacy demo.** Новий спотовий endpoint має серверну квитанцію в AuditLog та ідемпотентність за первісним ключом. Старі test/demo/account-action endpoints не отримали такої гарантії: їх UI використовує пам'ять поточної вкладки для блокування невідомого повтору. Повна перезагрузка/нова сесія втрачає цей UI-lock; спочатку потрібно звірити журнал і фактичний стан, а не повторювати операцію.
+- Навіть для durable Spot форма незавершеної операції зберігається лише в пам'яті при переходах у вкладці. Автоматичного відновлення форми після повного reload/logout немає; серверна квитанція при цьому зберігається. Ідемпотентність не об'єднує незалежні операції з різними ключами.
+- `CreditDepositDrawer` зберігає вихідний ключ у відкритому екземплярі. Це не перевірка автоматичного відновлення незавершеного drawer після повної перезагрузки. При невідомому результаті треба використовувати його поточну кнопку перевірки й перевірений доменний стан.
+- Повний журнал KYC відкривається в картці; фільтр основної KYC-черги стосується останньої заявки користувача. Введений withdrawal TXID не є перевіркою мережевої фінальності; KYC delivery configuration не доводить отримання листа.
+- Queue endpoint депозитів залишається існуючим обмеженим registry, не новою повною серверною пагінацією всіх історичних переказів. Усічення позначається; точна порожнеча/нуль не вигадуються.
+- OTC і legacy адресні екрани зберігають чинні контракти. Тут не заявлено повне переписування їхнього transport lifecycle або фінансових переходів. Окрема робота з листингами/лабораторією не підміняється цим PR.
+- Ці React/JSDOM-перевірки не є доказом візуальної якості 1920/1440/1366/390, реальної доставки листа, production SQL latency або мережевої фінальності. Browser screenshots, keyboard/overflow, production Vite bundle та benchmark мають окремі звіти й артефакти; неперевірені тут сценарії не позначаються PASS.
+- Backend/isolated PostgreSQL прогони, required CI, PR head SHA, застосування індексів і готовність релізу підтверджуються окремо. Цей документ не дозволяє merge/deploy, міграцію production, зміну DNS або інфраструктури.
+
+Під час read-only review нових блокерів обліку в розглянутих компонентах не виявлено після двох вузьких інтеграційних виправлень вище. Це не повний незалежний аудит backend/усіх legacy маршрутів; перелічені обмеження залишаються явними.
+
+## Фінальний CI follow-up
+
+Незалежний review відтворив падіння журналу на JSON `null` у metadata: 1 failed / 12 passed до виправлення, 13/13 після. Чотири suites з перенесеним test-helper — 48/48. Повний Linux frontend на першому PR-head мав 3703/3703 assertion PASS, але gate правильно впав через helper без тестів у `__tests__`; helper перенесено в `frontend/test-utils` без виключення тестів. На Windows п’ять незмінених source-scanner assertion залежать від розділювача шляху; Linux CI їх проходить. Фінальний exact-head CI — у PR #408.
+
+Після CI звірено змінену поведінку з існуючими browser gates: catalogue11/11 (save Cancel/clear Escape — zero writes, обидва реальні 60s idle windows — zero catalogue requests); browser sleep16/16 + lifecycle53/53 (видима Admin-сводка обмежена, hidden без HTTP/stream, звичайні торгові сторінки сплять); OTC legacy320/390/768/1440 з нульовими external/unexpected запитами. Відсутні fixtures додано явно — request guards не послаблено. Зведена статистика на1920/1440/1366 тримає шість окремих одиниць в одному рядку; overflow/external requests тепер є blocking assertions screenshot CI.
+
+Повний Linux frontend на head `29ce4c8445c0f7118bb8702fb994bfbec75be9d0`: **3708/3708**, **215/215 suites**, без skipped. Остання правка browser deletion QA усуває підтверджену гонку самого тесту: він чекає конкретної відповіді debounced search і одного відфільтрованого рядка перед відкриттям дій. Повільна fixture-відповідь відтворила старий сценарій **3/3**; перевірка з PostgreSQL охоплює desktop1440/mobile390 та відсутність DELETE до явного підтвердження. Фінальний exact-head CI перевіряється окремо в PR #408.

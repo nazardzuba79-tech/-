@@ -39,11 +39,11 @@ const PORT = Number(arg('--port', '4361'));
 const OUT = path.resolve(arg('--out', path.join(ROOT, 'docs', 'qa', 'futures-pair-persistence')));
 const LABEL = arg('--label', 'after');
 const MEASURE_ONLY = process.env.QA_MEASURE_ONLY === '1';
-const WIDTHS = (arg('--widths', '1440x900,390x844')).split(',')
+const WIDTHS = (arg('--widths', '1600x900,1440x900,390x844')).split(',')
   .map(spec => { const [w, h] = spec.split('x').map(Number); return { width: w, height: h }; });
 
 const express = require('express');
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 
 /** Three listed perpetuals, so "restore" and "fall back" are different outcomes. */
 const SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'AKE/USDT'];
@@ -152,6 +152,18 @@ async function profileMenu(page) {
   await page.waitForSelector('.top-nav-profile-menu', { state: 'detached', timeout: 3000 }).catch(() => {});
   return entries;
 }
+/** The phone drawer's entries, in order (href or label), read by opening the
+ *  burger and closing it again. The phone terminal header has no profile
+ *  button; «Профиль», «Админка» and «Выйти» live here (owner, 2026-10-04). */
+async function drawerMenu(page) {
+  const burger = page.locator('.global-header .mobile-menu');
+  await burger.click();
+  await page.waitForSelector('.nav-mobile-menu.open', { timeout: 3000 });
+  const entries = await page.$$eval('.nav-mobile-menu.open a[href], .nav-mobile-menu.open > button', els => els.map(el => el.getAttribute('href') || el.textContent.trim()));
+  await burger.click();
+  await page.waitForSelector('.nav-mobile-menu.open', { state: 'detached', timeout: 3000 }).catch(() => {});
+  return entries;
+}
 const state = (page) => page.evaluate(() => {
   const text = (sel) => document.querySelector(sel)?.textContent?.trim() ?? null;
   const box = (sel) => {
@@ -208,7 +220,7 @@ const state = (page) => page.evaluate(() => {
         const nav = document.querySelector('.main-nav');
         const actions = document.querySelector('.header-actions');
         if (!nav || !actions || getComputedStyle(nav).display === 'none') return null;
-        const links = [...nav.querySelectorAll(':scope > a, :scope > .nav-item-wrap')]
+        const links = [...nav.querySelectorAll(':scope > a, :scope > .nav-item-wrap, :scope > .header-disclosure')]
           .filter(a => getComputedStyle(a).display !== 'none' && a.getBoundingClientRect().width > 0);
         const navRight = nav.getBoundingClientRect().right;
         const visible = links.filter(a => a.getBoundingClientRect().right <= navRight + 1);
@@ -380,6 +392,7 @@ const shot = (page, name) => page.screenshot({ path: path.join(OUT, `${LABEL}-${
         // THE SECTIONS STILL FIT. On main an admin header was 51px short at
         // this width and cut «Админка» in half under «Кошелёк»; nothing may
         // be clipped off the end now.
+        if (width >= 1531) {
         assert.ok(m.navFit, `${key}: /markets has no product nav to measure`);
         assert.equal(m.navFit.clipped, 0, `${key}: the product sections are cut off by ${m.navFit.clipped}px (${m.navFit.visible.join(' | ')})`);
         assert.ok(m.navFit.visible.includes('OTC'), `${key}: OTC fell off the header (${m.navFit.visible.join(' | ')})`);
@@ -389,6 +402,28 @@ const shot = (page, name) => page.screenshot({ path: path.join(OUT, `${LABEL}-${
         // it catches a real narrowing without tripping on rendering noise.
         assert.ok(m.navFit.slack >= 20,
           `${key}: the sections clear the account cluster by only ${m.navFit.slack}px — too fine to survive another font stack`);
+        } else {
+          // The compact tier must expose the entire product structure, not
+          // merely hide a row to make the geometry assertions disappear.
+          const burger = page.locator('.nav-burger');
+          assert.ok(await burger.isVisible(), `${key}: no compact navigation trigger`);
+          await burger.click();
+          const drawer = page.locator('.nav-mobile-menu.open');
+          await drawer.waitFor();
+          for (const href of ['/markets', '/trade', '/futures', '/banking', '/wallet', '/copy-trading', '/card', '/otc', '/trading-bots', '/academy']) {
+            const link = drawer.locator(`a[href="${href}"]`).first();
+            await link.scrollIntoViewIfNeeded();
+            assert.ok(await link.evaluate(el => {
+              const r = el.getBoundingClientRect();
+              return r.left >= 0 && r.right <= innerWidth && el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+            }), `${key}: compact navigation ${href} is clipped or blocked`);
+          }
+          const otc = drawer.locator('.header-disclosure').filter({has: page.locator('a[href="/otc"]')});
+          await otc.locator('button').click();
+          assert.deepEqual(await otc.locator('.header-disclosure-panel a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), ['/otc', '/arbitrage']);
+          await shot(page, `${key}-markets-drawer`);
+          await burger.click();
+        }
       }
 
       // ── 2. The contract name in a position opens that contract ─────────
@@ -468,15 +503,26 @@ const shot = (page, name) => page.screenshot({ path: path.join(OUT, `${LABEL}-${
       report[key]['header'] = header;
       const menu = await profileMenu(page);
       report[key]['profile-menu'] = menu;
+      // owner, 2026-10-04: the phone terminal header hides the profile button; its entries are read from the drawer.
+      const drawer = width <= 900 ? await drawerMenu(page) : null;
+      if (drawer) report[key]['drawer-menu'] = drawer;
       if (!MEASURE_ONLY) {
         assert.equal(header.clipped.length, 0, `${key}: header text is clipped: ${JSON.stringify(header.clipped)}`);
         assert.equal(onBtc.overflowX, 0, `${key}: the page scrolls sideways by ${onBtc.overflowX}px`);
         assert.ok(header.adminInDrawer, `${key}: the drawer lost its admin entry`);
         // Not in the row at any width; in the menu, between «Профиль» and «Выйти».
         assert.ok(!header.admin, `${key}: an admin chip is still in the header row`);
+        if (width <= 900) {
+          // owner, 2026-10-04: no profile button in the phone terminal header; «Профиль», «Админка», «Выйти» are in the drawer.
+          assert.equal(await page.locator('.top-nav-profile-btn').isVisible(), false, `${key}: a profile button is visible in the phone terminal header`);
+          assert.ok(drawer.includes('/settings'), `${key}: the drawer reads ${JSON.stringify(drawer)}`);
+          assert.ok(drawer.includes('/admin'), `${key}: the drawer reads ${JSON.stringify(drawer)}`);
+          assert.ok(drawer.includes('Выйти'), `${key}: the drawer has no logout button: ${JSON.stringify(drawer)}`);
+        } else { // desktop: unchanged
         assert.ok(menu, `${key}: no profile menu to open`);
         assert.deepEqual(menu.slice(0, 2), ['/settings', '/admin'], `${key}: the profile menu reads ${JSON.stringify(menu)}`);
         assert.equal(menu.length, 3, `${key}: the profile menu reads ${JSON.stringify(menu)}`);
+        }
         if (width > 900) {
           assert.ok(header.wallet, `${key}: no wallet link in the header`);
           const order = header.clusterOrder;

@@ -1,0 +1,61 @@
+/* KYC additional materials in the admin: request form, history, comparison. */
+.kyc-mat-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.kyc-mat-heading { font-size: 14px; margin: 0; }
+.kyc-mat-muted { color: var(--text-secondary); font-size: 12px; }
+.kyc-mat-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.kyc-mat-stage { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--panel-alt); border: 1px solid var(--border); }
+.kyc-mat-stage[data-attention] { background: #f59e0b1f; border-color: #f59e0b66; color: var(--text-primary); }
+
+.kyc-mat-form, .kyc-mat-history { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-alt); }
+.kyc-mat-kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; border: 0; padding: 0; margin: 0; }
+.kyc-mat-kind { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); font-size: 13px; cursor: pointer; }
+.kyc-mat-kind[data-checked] { border-color: var(--accent, #3b82f6); box-shadow: 0 0 0 2px #3b82f633; }
+.kyc-mat-kind input { margin: 0; flex: none; }
+.kyc-mat-preview { display: flex; flex-direction: column; gap: 8px; }
+.kyc-mat-preview-title { margin: 0; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.kyc-mat-preview-card { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 8px; border: 1px dashed #f59e0b88; background: #f59e0b12; font-size: 13px; line-height: 1.5; }
+.kyc-mat-preview-card p { margin: 0; }
+.kyc-mat-preview-chip { align-self: flex-start; font-size: 11.5px; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; background: var(--panel); }
+.kyc-mat-warning { margin: 0; font-size: 12.5px; padding: 8px 10px; border-radius: 8px; background: #f59e0b1a; }
+.kyc-mat-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.kyc-mat-actions button { min-height: 40px; }
+
+.kyc-mat-history ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.kyc-mat-history-item { display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); font-size: 13px; overflow-wrap: anywhere; }
+.kyc-mat-history-item[data-active] { border-color: #f59e0b88; }
+.kyc-mat-history-item ul { margin: 2px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.kyc-mat-history-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.kyc-mat-state { font-size: 12px; font-weight: 600; }
+.kyc-mat-state[data-state="received"] { color: var(--buy); }
+.kyc-mat-state[data-state="closed"] { color: var(--text-secondary); }
+
+.kyc-compare { width: min(1400px, calc(100vw - 16px)); height: calc(100dvh - 16px); max-height: none; max-width: none; margin: auto; padding: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text-primary); }
+.kyc-compare[open] { display: flex; flex-direction: column; }
+.kyc-compare::backdrop { background: #101828b0; }
+.kyc-compare-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.kyc-compare-header h2 { font-size: 16px; margin: 0; }
+.kyc-compare-note { margin: 0; padding: 8px 14px; font-size: 12px; color: var(--text-secondary); }
+.kyc-compare-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 0 14px 10px; }
+.kyc-compare-pane { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-alt); overflow: hidden; }
+.kyc-compare-pane[data-max] { position: fixed; inset: 0; z-index: 20; border-radius: 0; background: var(--panel); }
+.kyc-compare-pane:fullscreen { background: var(--panel); }
+.kyc-compare-pane-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.kyc-compare-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.kyc-compare-tools button { min-width: 40px; min-height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text-primary); font-size: 13px; cursor: pointer; }
+.kyc-compare-tools button:disabled { opacity: .45; cursor: not-allowed; }
+.kyc-compare-stage { position: relative; flex: 1; min-height: 240px; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; background: repeating-conic-gradient(#00000008 0% 25%, transparent 0% 50%) 50% / 20px 20px; }
+.kyc-compare-stage:active { cursor: grabbing; }
+.kyc-compare-stage img { max-width: 100%; max-height: 100%; object-fit: contain; transform-origin: center; user-select: none; transition: transform .08s linear; }
+.kyc-compare-empty { padding: 16px; text-align: center; max-width: 360px; line-height: 1.5; }
+.kyc-compare-pdf { width: 100%; height: 100%; border: 0; background: #fff; }
+.kyc-compare-footer { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--border); }
+.kyc-compare-footer button { min-height: 44px; }
+
+@media (max-width: 899px) {
+  .kyc-mat-kinds { grid-template-columns: minmax(0, 1fr); }
+  .kyc-compare { width: 100vw; height: 100dvh; border-radius: 0; border: 0; }
+  .kyc-compare-grid { grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(300px, 1fr); overflow-y: auto; padding: 0 8px 8px; }
+  .kyc-compare-note { padding: 6px 8px; }
+  .kyc-compare-footer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 8px; }
+  .kyc-compare-footer button { width: 100%; }
+}

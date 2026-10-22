@@ -1,0 +1,26 @@
+# Toolbar passes after the click on «1» (Spot AITH 1440, CPU ×1)
+# Intermediate build: the width-restart rule only (no natural strip width, «Ещё» guessed at 44 px, relabel after paint).
+# fixed = strip + menus + end widths used by the fold; the strip is squeezed while keys share the row, so fixed grows 325 → 407 → 445 → 475 px over four passes and the row paints a different key set each time.
+
+ 144 ms  compute {"ev":"layout-effect","dense":3,"measured":true}
+ 151 ms  compute {"ev":"reset","width":588,"dense":3}
+ 156 ms  compute {"ev":"labels-reset"}
+ 158 ms  compute {"ev":"layout-effect","dense":0,"measured":true}
+ 164 ms  compute {"ev":"partial","width":588,"missing":["compare","layout","tools","presets","goto","scale","snapshot"]}
+ 168 ms  PAINT   {"keys":"fullscreen more","dense":null,"more":"7"}
+ 171 ms  compute {"ev":"row-ro","width":588}
+ 172 ms  compute {"ev":"partial","width":588,"missing":["compare","layout","tools","presets","goto","scale","snapshot"]}
+ 172 ms  compute {"ev":"strip-ro"}
+ 172 ms  compute {"ev":"partial","width":588,"missing":["compare","layout","tools","presets","goto","scale","snapshot"]}
+ 204 ms  compute {"ev":"layout-effect","dense":0,"measured":false}
+ 211 ms  compute {"ev":"fold","width":588,"dense":0,"fixed":325,"moreWidth":48,"total":564,"hidden":"layout tools presets goto snapshot","w":"fullscreen=32,compare=114,layout=95,tools=138,presets=112,goto=32,scale=32,snapshot=32"}
+ 211 ms  compute {"ev":"layout-effect","dense":0,"measured":true}
+ 214 ms  compute {"ev":"fold","width":588,"dense":0,"fixed":407,"moreWidth":59,"total":564,"hidden":"compare fullscreen tools scale presets goto snapshot","w":"fullscreen=32,compare=114,layout=95,tools=138,presets=112,goto=32,scale=32,snapshot=32"}
+ 221 ms  PAINT   {"keys":"layout more","dense":null,"more":"7"}
+ 227 ms  compute {"ev":"row-ro","width":588}
+ 227 ms  compute {"ev":"fold","width":588,"dense":0,"fixed":445,"moreWidth":59,"total":564,"hidden":"compare layout tools scale presets goto snapshot","w":"fullscreen=32,compare=114,layout=95,tools=138,presets=112,goto=32,scale=32,snapshot=32"}
+ 227 ms  compute {"ev":"strip-ro"}
+ 227 ms  compute {"ev":"fold","width":588,"dense":0,"fixed":445,"moreWidth":59,"total":564,"hidden":"compare layout tools scale presets goto snapshot","w":"fullscreen=32,compare=114,layout=95,tools=138,presets=112,goto=32,scale=32,snapshot=32"}
+ 255 ms  compute {"ev":"strip-ro"}
+ 255 ms  PAINT   {"keys":"fullscreen more","dense":null,"more":"7"}
+ 256 ms  compute {"ev":"fold","width":588,"dense":0,"fixed":475,"moreWidth":59,"total":564,"hidden":"compare layout fullscreen tools scale presets goto snapshot","w":"fullscreen=32,compare=114,layout=95,tools=138,presets=112,goto=32,scale=32,snapshot=32"}

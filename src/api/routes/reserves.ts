@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { asyncRoute } from '../asyncRoute';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { getReserves } from '../../services/ReservesService';
@@ -12,10 +13,10 @@ import { getReserves } from '../../services/ReservesService';
 export function reservesRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.get('/reserves', requireAuth(prisma), async (_req, res) => {
+  router.get('/reserves', requireAuth(prisma), asyncRoute(async (_req, res) => {
     const rows = await getReserves(prisma);
     res.json(rows);
-  });
+  }));
 
   return router;
 }

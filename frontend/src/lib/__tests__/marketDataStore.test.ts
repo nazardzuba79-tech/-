@@ -102,7 +102,7 @@ describe('marketDataStore', () => {
     // The headline number: 100 components mounting together cost VOLTEX
     // one HTTP request, not 100.
     expect(getMarketSnapshot).toHaveBeenCalledTimes(1);
-    expect(getMarketSnapshot).toHaveBeenCalledWith('/api/v1/market/display/spot-snapshot', DISPLAY_REFRESH_MS);
+    expect(getMarketSnapshot).toHaveBeenCalledWith('/api/v1/market/display/spot-snapshot', DISPLAY_REFRESH_MS, expect.any(AbortSignal));
     expect(marketDataStore._timerCount).toBe(1);
     expect(marketDataStore._subscriberCount).toBe(100);
 
@@ -257,6 +257,41 @@ describe('marketDataStore', () => {
     // market disappeared".
     expect(state!.tickers.get('BTC/USDT')!.lastPrice).toBe('50000');
     off();
+  });
+
+  it('marks retained unavailable sections stale without replacing their observation time or values', async () => {
+    await marketDataStore.refresh();
+    const before = marketDataStore.getState();
+    getMarketSnapshot.mockResolvedValueOnce(snapshot({
+      tickers: { available: false, reason: 'provider_unavailable' },
+      overview: { available: false, reason: 'provider_unavailable' },
+    }));
+    await marketDataStore.refresh();
+    const after = marketDataStore.getState();
+    expect(after.tickers).toBe(before.tickers);
+    expect(after.overview).toBe(before.overview);
+    expect(after.tickersMeta).toEqual({ ...before.tickersMeta, stale: true });
+    expect(after.overviewMeta).toEqual({ ...before.overviewMeta, stale: true });
+
+    await marketDataStore.refresh();
+    expect(marketDataStore.getState().tickersMeta?.stale).toBe(false);
+    expect(marketDataStore.getState().overviewMeta?.stale).toBe(false);
+  });
+
+  it('marks last-good metadata stale after a transport failure and clears it only on a new valid section', async () => {
+    await marketDataStore.refresh();
+    const before = marketDataStore.getState();
+    getMarketSnapshot.mockRejectedValueOnce(new Error('offline'));
+    await marketDataStore.refresh();
+    const after = marketDataStore.getState();
+    expect(after.status).toBe('error');
+    expect(after.tickers).toBe(before.tickers);
+    expect(after.overview).toBe(before.overview);
+    expect(after.tickersMeta).toEqual({ ...before.tickersMeta, stale: true });
+    expect(after.overviewMeta).toEqual({ ...before.overviewMeta, stale: true });
+    await marketDataStore.refresh();
+    expect(marketDataStore.getState().status).toBe('ready');
+    expect(marketDataStore.getState().tickersMeta?.stale).toBe(false);
   });
 
   it('gives a late subscriber the current snapshot immediately', async () => {

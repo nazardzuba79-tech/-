@@ -1,0 +1,198 @@
+/* Presentation-only refinement of the existing, functional auth forms. */
+.vx-auth .vx-auth-work {
+  --bg: #fff;
+  --panel: #fff;
+  --panel-alt: #f5f5f3;
+  --border: #dedfe2;
+  --text-primary: #0b332e;
+  --text-secondary: #6f7485;
+  --text-tertiary: #6f7485;
+  --accent: #91601e;
+  --h-text: #0b332e;
+  --h-text-2: #6f7485;
+  --h-hover: #f5f5f3;
+  padding: 26px clamp(32px, 3.1vw, 60px) 28px;
+  background: #fff;
+  color: #0b332e;
+}
+
+.vx-auth .vx-auth-head { min-height: 42px; }
+.vx-auth .vx-auth-context { color: #6f7485; font-size: 11px; }
+.vx-auth .vx-auth-body { max-width: 520px; padding: 16px 0 28px; }
+.vx-auth .vx-auth-form-icon {
+  --text-primary: #0b332e;
+  --bg: #fff;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 14px;
+  border: 1px solid #d9d9d4;
+  border-radius: 50%;
+  background: #fff;
+  color: #0b332e;
+}
+.vx-auth .vx-auth-form-icon svg { width: 40px; height: 40px; }
+.vx-auth .vx-auth-overline {
+  margin-bottom: 8px;
+  color: #6f7485;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.vx-auth .vx-auth-body h1 {
+  margin-bottom: 14px;
+  color: #0b332e;
+  font-size: clamp(36px, 3.1vw, 54px);
+  font-weight: 550;
+  line-height: 1.12;
+  letter-spacing: -.045em;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.vx-auth .vx-auth-sub {
+  max-width: 390px;
+  margin: 0 auto;
+  color: #6f7485;
+  font-size: 17px;
+  line-height: 1.5;
+  text-align: center;
+  text-wrap: pretty;
+}
+.vx-auth .vx-auth-tabs {
+  gap: 0;
+  margin: 28px 0 25px;
+  padding: 0;
+  border: 1px solid #e0e0dd;
+  border-radius: 8px;
+  background: #f3f3f1;
+}
+.vx-auth .vx-auth-tabs a {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 8px;
+  border-radius: 7px;
+  color: #666c7d;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.vx-auth .vx-auth-tabs a[aria-current='page'] {
+  background: #fff;
+  color: #162720;
+  font-weight: 600;
+  box-shadow: 0 1px 0 #b58b3f, 0 1px 5px #18251c0a;
+}
+.vx-auth .vx-auth-tabs a[aria-current='page']::after { content: none; }
+.vx-auth .vx-auth-label { color: #162c29; font-size: 15px; }
+.vx-auth .vx-auth-input {
+  height: 60px;
+  padding-right: 19px;
+  padding-left: 19px;
+  border-color: #dedfe5;
+  border-radius: 8px;
+  background: #fff;
+  color: #162c29;
+  font-size: 16px;
+}
+.vx-auth .vx-auth-input::placeholder { color: #767d8d; }
+.vx-auth .vx-auth-input:focus { border-color: #a78343; box-shadow: 0 0 0 3px #b8994c26; }
+.vx-auth .vx-auth-input.vx-auth-input-warn { border-color: #cfa39c; }
+.vx-auth .vx-auth-input.vx-auth-input-error { border-color: #c0453c; }
+.vx-auth .vx-auth-input.vx-auth-input-error:focus { box-shadow: 0 0 0 3px #c0453c21; }
+.vx-auth .vx-auth-password .vx-auth-input { padding-right: 53px; }
+.vx-auth .vx-auth-field + .vx-auth-field { margin-top: 21px; }
+.vx-auth .vx-auth-forgot { color: #91601e; font-size: 13px; }
+.vx-auth .vx-auth-forgot:hover { color: #6d4313; }
+.vx-auth .vx-auth-label-row { flex-wrap: wrap; gap: 0 10px; }
+.vx-auth .vx-auth-toggle { right: 7px; color: #6b7283; }
+.vx-auth .vx-auth-toggle svg { width: 22px; height: 22px; }
+.vx-auth .vx-auth-toggle:hover { color: #0b332e; background: #f5f5f3; }
+.vx-auth .vx-auth-submit {
+  position: relative;
+  justify-content: center;
+  min-height: 60px;
+  margin-top: 24px;
+  padding: 13px 48px;
+  border: 1px solid #d7b656;
+  border-radius: 8px;
+  background: linear-gradient(110deg, #f5db8b, #edcb6a);
+  color: #171b17;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 3px 8px #6651190c;
+}
+.vx-auth .vx-auth-submit > svg:not(.vx-auth-spin) {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  width: 23px;
+  height: 23px;
+  transform: translateY(-50%);
+}
+.vx-auth .vx-auth-submit:hover:not(:disabled) { background: linear-gradient(110deg, #f1d17b, #e6bf54); }
+.vx-auth .vx-auth-submit:disabled {
+  border-color: #dfd4b1;
+  background: #eee6cd;
+  color: #79735f;
+  box-shadow: none;
+}
+/* Keep registration gold while its existing validation disables submission. */
+.vx-auth .vx-auth-form:has(#reg-email) .vx-auth-submit:disabled {
+  border-color: #d7b656;
+  background: linear-gradient(110deg, #f5db8b, #edcb6a);
+  color: #171b17;
+  box-shadow: 0 3px 8px #6651190c;
+}
+.vx-auth .vx-auth-support {
+  flex-wrap: wrap;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-color: #dedfe5;
+  color: #6f7485;
+  font-size: 13px;
+}
+.vx-auth .vx-auth-support a, .vx-auth .vx-auth-support button { color: #91601e; font-size: 13px; font-weight: 500; }
+.vx-auth .vx-auth-support a:hover, .vx-auth .vx-auth-support button:hover { color: #6d4313; }
+.vx-auth .vx-auth-security { justify-content: flex-start; margin-top: 22px; color: #737b8c; font-size: 11px; line-height: 1.5; }
+.vx-auth .vx-auth-security svg { flex-basis: 14px; width: 14px; height: 14px; }
+.vx-auth .vx-auth-legal, .vx-auth .vx-auth-alt { color: #6f7485; }
+.vx-auth .vx-auth-legal a, .vx-auth .vx-auth-alt a { color: #91601e; }
+.vx-auth .vx-auth-foot { color: #737b8c; font-size: 11px; }
+
+@media (max-width: 1100px) and (min-width: 761px) {
+  .vx-auth .vx-auth-work { padding-right: 26px; padding-left: 26px; }
+  .vx-auth .vx-auth-body h1 { font-size: 36px; }
+  .vx-auth .vx-auth-sub { font-size: 15px; }
+}
+
+@media (max-width: 760px) {
+  .vx-auth .vx-auth-work { padding: 20px 26px 24px; }
+  .vx-auth .vx-auth-body { margin: 0 auto; padding: 23px 0; }
+  .vx-auth .vx-auth-form-icon { display: none; }
+  .vx-auth .vx-auth-overline { font-size: 10px; letter-spacing: .11em; }
+  .vx-auth .vx-auth-body h1 { font-size: 34px; }
+  .vx-auth .vx-auth-sub { max-width: 340px; font-size: 15px; }
+  .vx-auth .vx-auth-tabs { margin-top: 24px; margin-bottom: 23px; }
+  .vx-auth .vx-auth-input { height: 55px; }
+  .vx-auth .vx-auth-label { font-size: 14px; }
+  .vx-auth .vx-auth-submit { min-height: 58px; font-size: 15px; }
+  .vx-auth .vx-auth-support { gap: 8px 12px; font-size: 12px; }
+  .vx-auth .vx-auth-support a, .vx-auth .vx-auth-support button { font-size: 12px; }
+}
+
+@media (max-width: 360px) {
+  .vx-auth .vx-auth-work { padding-right: 22px; padding-left: 22px; }
+  .vx-auth .vx-auth-context { font-size: 10px; letter-spacing: .12em; }
+  .vx-auth .vx-auth-body h1 { font-size: 30px; }
+  .vx-auth .vx-auth-sub { font-size: 14px; }
+  .vx-auth .vx-auth-tabs a { font-size: 14px; }
+  .vx-auth .vx-auth-forgot { font-size: 12px; }
+}

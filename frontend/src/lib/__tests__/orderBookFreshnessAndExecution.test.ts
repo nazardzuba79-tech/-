@@ -180,10 +180,12 @@ describe('4. coming back to the tab is quiet', () => {
     expect(banner).not.toContain('const SHOW_AFTER_MS = 2000;');
   });
 
-  it('still reports a connection that is genuinely still down', () => {
-    // The grace delays the message; it must not delete it.
+  it('still detects a connection that is genuinely still down, but keeps the customer UI silent', () => {
+    // The transport state is still detected for diagnostics; no visible copy is rendered.
     expect(banner).toContain('setShow(true)');
-    expect(banner).toContain("t('connection.lost')");
+    expect(banner).toContain('data-connection-state');
+    expect(banner).not.toContain("t('connection.lost')");
+    expect(banner).not.toContain('role="status"');
   });
 });
 

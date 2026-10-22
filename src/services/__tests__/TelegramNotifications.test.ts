@@ -1,5 +1,5 @@
 import { createPublicKey, verify } from 'crypto';
-import { notificationPublicKey, notifyDeposit, notifyUserRegistered } from '../TelegramNotifications';
+import { notificationPublicKey, notifyDeposit, notifyUserRegistered, notifyDepositAddressCopied } from '../TelegramNotifications';
 
 const transfer = { id: 'synthetic-deposit', amount: { toString: () => '15' }, createdAt: new Date() };
 const original = process.env.JWT_SECRET;
@@ -61,4 +61,18 @@ test.each(['timeout', 'http', 'missing-key', 'invalid-date'])('registration %s i
   await expect(notifyUserRegistered({ ...registered, createdAt: mode === 'invalid-date' ? undefined as any : registered.createdAt }, mock)).resolves.toBeUndefined();
   expect(mock).toHaveBeenCalledTimes(['missing-key', 'invalid-date'].includes(mode) ? 0 : 1);
   expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret-token|private@|synthetic-user|synthetic@example/);
+});
+
+const copied = { id: 'synthetic-copy-event', asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)', receivedAt: new Date() };
+test('recorded deposit-address copy signs only coin and network; no wallet, identity, time in Telegram', async () => {
+  const mock = jest.fn(async () => Response.json({ status: 'SENT' }));
+  await notifyDepositAddressCopied({ ...copied, address: 'NEVER_SEND', email: 'NEVER_SEND', userId: 'NEVER_SEND' } as any, mock as typeof fetch);
+  expect(mock).toHaveBeenCalledTimes(1);
+  const [url, init] = mock.mock.calls[0] as any;
+  expect(url).toBe('https://notify.voltextech.net/v1/copy');
+  expect(JSON.parse(init.body)).toEqual({ eventId: copied.id, eventType: 'DEPOSIT_ADDRESS_COPIED',
+    timestamp: copied.receivedAt.getTime(), asset: 'USDT', network: 'tron', networkLabel: 'TRON (TRC-20)' });
+  const key = createPublicKey({ key: { kty: 'OKP', crv: 'Ed25519', x: notificationPublicKey()! }, format: 'jwk' });
+  expect(verify(null, Buffer.from(`voltex-notifications-v1\n${init.headers['x-voltex-timestamp']}\n/v1/copy\n${init.body}`), key,
+    Buffer.from(init.headers['x-voltex-signature'], 'base64url'))).toBe(true);
 });

@@ -148,6 +148,7 @@ export function SecuritySection({
                       <p className="flex flex-wrap items-center gap-2 text-[13px] font-medium text-foreground">
                         {summarizeUserAgent(s.userAgent) ?? t('settings.securityLog.unknown')}
                         {s.current && <StatusBadge tone="brand">{t('settings.thisDevice')}</StatusBadge>}
+                        {s.remembered && <StatusBadge tone="neutral">{t('settings.rememberedDevice')}</StatusBadge>}
                       </p>
                       <p className="mt-0.5 text-[11.5px] text-muted-foreground">
                         {s.ip ?? t('settings.securityLog.unknown')} · {t('settings.lastSeen', { date: new Date(s.lastSeenAt).toLocaleString(localeOf(lang)) })}

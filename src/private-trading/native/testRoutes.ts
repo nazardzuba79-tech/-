@@ -39,7 +39,7 @@ export function nativeTestAccountRoutes(prisma: PrismaClient, service: PrivateTr
   r.get('/access', handle(async () => ({ allowed: true, mode: 'PRIVATE_SIMULATION', nativeAvailable: true, simulationOnly: true })));
   r.get('/native/wallet', handle(async (_req, res) => {
     const current = await native!.wallet(actor(res));
-    return current ? { ...current, initialized: true } : pendingNativeWallet(native!, actor(res));
+    return current ? { ...current, initialized: true, clientTier: null } : { ...(await pendingNativeWallet(native!, actor(res))), clientTier: null };
   }));
   // Charts contain public data only. Do not give testers the legacy owner
   // engine merely so the existing native chart loader can read candles.
@@ -60,7 +60,7 @@ export function nativeTestAccountRoutes(prisma: PrismaClient, service: PrivateTr
       return result;
     } finally { req.removeListener('aborted', disconnect); res.removeListener('close', disconnect); }
   }));
-  if (native) r.use('/native', nativeDemoRoutes(native, actor, onNativeWork));
+  if (native) r.use('/native', nativeDemoRoutes(native, actor, onNativeWork, null));
   // No fall-through into allocate, previews or any other legacy owner tool.
   r.use((_req, _res, next) => next(new PrivateTradingError('private_access_denied', 'Режим недоступен', 403)));
   return r;

@@ -1,5 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
+import { mutateFuturesBalance } from '../services/WalletMutation';
+import { lockCfdAccount } from './lockCfdAccount';
 import { assertCfdFreshQuote, assertCfdOpenQuote, type CfdQuoteSource } from '../services/marketData/cfd/CfdQuote';
 import { computeInitialMargin, computeLiquidationPrice, computeUnrealizedPnl, PositionSide } from '../futures/marginMath';
 import { MIN_LEVERAGE, MAX_LEVERAGE, getLeverageTier } from '../config/futuresConfig';
@@ -63,6 +65,7 @@ export class CfdPositionService {
     }
 
     const opened = await this.prisma.$transaction(async (tx: TxClient) => {
+      await lockCfdAccount(tx, params.userId);
       const user = await tx.user.findUnique({ where: { id: params.userId } });
       if (!user) throw new Error('User not found');
       const accountAgeDays = (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24);
@@ -78,20 +81,8 @@ export class CfdPositionService {
       }
 
       const addedMargin = computeInitialMargin(notional, params.leverage);
-      const balance = await tx.futuresBalance.findUnique({ where: { userId_asset: { userId: params.userId, asset: MARGIN_ASSET } } });
-      const available = new BigNumber(balance?.available.toString() ?? '0');
-      if (available.isLessThan(addedMargin)) {
-        throw new Error(`Insufficient ${MARGIN_ASSET} margin balance`);
-      }
       validateQuote();
-      await tx.futuresBalance.upsert({
-        where: { userId_asset: { userId: params.userId, asset: MARGIN_ASSET } },
-        create: { userId: params.userId, asset: MARGIN_ASSET, available: available.minus(addedMargin).toString(), locked: addedMargin.toString() },
-        update: {
-          available: available.minus(addedMargin).toString(),
-          locked: new BigNumber(balance!.locked.toString()).plus(addedMargin).toString(),
-        },
-      });
+      await mutateFuturesBalance(tx, params.userId, MARGIN_ASSET, { available: addedMargin.negated(), locked: addedMargin }, true);
 
       validateQuote();
       if (existing) {
@@ -139,6 +130,7 @@ export class CfdPositionService {
 
   async close(params: { userId: string; positionId: string }) {
     return this.prisma.$transaction(async (tx: TxClient) => {
+      await lockCfdAccount(tx, params.userId);
       const position = await tx.cfdPosition.findUnique({ where: { id: params.positionId } });
       if (!position || position.userId !== params.userId) throw new Error('Position not found');
       if (position.status !== 'OPEN') throw new Error('Position is not open');
@@ -156,17 +148,8 @@ export class CfdPositionService {
       // retail CFD brokers are legally required to give.
       const marginBalance = BigNumber.max(initialMargin.plus(realizedPnl), 0);
 
-      const balance = await tx.futuresBalance.findUnique({ where: { userId_asset: { userId: params.userId, asset: MARGIN_ASSET } } });
-      const lockedNow = new BigNumber(balance?.locked.toString() ?? '0');
-      const availableNow = new BigNumber(balance?.available.toString() ?? '0');
       validateQuote();
-      await tx.futuresBalance.update({
-        where: { userId_asset: { userId: params.userId, asset: MARGIN_ASSET } },
-        data: {
-          available: availableNow.plus(marginBalance).toString(),
-          locked: BigNumber.max(lockedNow.minus(initialMargin), 0).toString(),
-        },
-      });
+      await mutateFuturesBalance(tx, params.userId, MARGIN_ASSET, { available: marginBalance, locked: initialMargin.negated() });
 
       validateQuote();
       return tx.cfdPosition.update({

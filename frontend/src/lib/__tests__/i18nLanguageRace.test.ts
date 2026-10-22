@@ -333,3 +333,49 @@ describe('the guard does not break normal behaviour', () => {
     app.cleanup();
   });
 });
+
+describe('the document speaks the language on screen', () => {
+  const html = { lang: 'ru' };
+  const previous = (globalThis as { document?: unknown }).document;
+  beforeEach(() => { html.lang = 'ru'; (globalThis as { document?: unknown }).document = { documentElement: html }; });
+  afterEach(() => { (globalThis as { document?: unknown }).document = previous; });
+
+  it('html lang follows the COMMITTED language, not the stored preference (2026-10-13: every locale rendered under lang="ru")', async () => {
+    const app = mount(null);
+    expect(html.lang).toBe('ru');
+    app.select('en');
+    // Chosen, stored, but the dictionary is still in flight: the page is still Russian.
+    expect(app.stored).toBe('en');
+    expect(html.lang).toBe('ru');
+    await app.finish('en');
+    expect(app.lang).toBe('en');
+    expect(html.lang).toBe('en');
+    app.cleanup();
+  });
+
+  it('a stale dictionary cannot flip the attribute back', async () => {
+    const app = mount(null);
+    app.select('en');
+    app.select('ja');
+    await app.finish('ja');
+    expect(html.lang).toBe('ja');
+    await app.finish('en');
+    expect(app.lang).toBe('ja');
+    expect(html.lang).toBe('ja');
+    app.cleanup();
+  });
+
+  it('a stored language is applied once its dictionary lands, and a failed chunk leaves the Russian fallback honest', async () => {
+    const stored = mount('zh');
+    expect(html.lang).toBe('ru'); // shell: nothing committed yet
+    await stored.finish('zh');
+    expect(html.lang).toBe('zh');
+    stored.cleanup();
+    html.lang = 'ru';
+    const failing = mount('ko');
+    await failing.fail('ko');
+    expect(failing.lang).toBe('ru');
+    expect(html.lang).toBe('ru');
+    failing.cleanup();
+  });
+});

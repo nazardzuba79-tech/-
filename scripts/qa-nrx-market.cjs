@@ -12,6 +12,14 @@ const root = path.resolve(__dirname, '..'), out = path.join(root, 'docs/qa/nrx-m
 const app = express(); app.use(express.static(path.join(root, 'frontend/dist'), { index: false }));
 app.get('*', (_req, res) => res.sendFile(path.join(root, 'frontend/dist/index.html')));
 const prohibited = /\b(?:demo|simulation|simulated|synthetic|preview|sandbox|not tradable)\b|тестов|симуляц|демонстрацион/i;
+// Chart workspace (2026-10-14): quick timeframe keys carry `data-cw-tf` and a localised label («5м»);
+// a phone strip keeps five of them (then three) and the rest sit in the «▾» menu, as a trader reaches them.
+async function pickTimeframe(page, tf) {
+  const quick = page.locator(`.chart-area [data-cw-tf="${tf}"]`);
+  if (await quick.count()) return quick.first().click();
+  await page.locator('.chart-area [data-cw-feature="timeframes"]').first().click();
+  await page.locator(`[data-cw-tf-option="${tf}"]`).first().click();
+}
 async function screenshot(page, name) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -63,7 +71,7 @@ async function screenshot(page, name) {
           overview: { available: false, reason: 'fixture' }, sentiment: { available: false, reason: 'fixture' },
         });
         if (p === '/api/v1/me') return json({ id: 'owner-fixture', email: 'owner@example.invalid', role: 'ADMIN', isAdmin: true, kycStatus: 'APPROVED' });
-        if (p === '/api/v1/balances') return json([{ asset: 'NRX', available: '31250', locked: '0' }, { asset: 'USDT', available: '1000', locked: '0' }]);
+        if (p === '/api/v1/balances') return json([{ asset: 'NRX', available: '6250', locked: '0' }, { asset: 'USDT', available: '1000', locked: '0' }]);
         if (p === '/api/v1/market/external/tickers') return json({ tickers: [{ pair: 'BTC/USDT', lastPrice: '65000', bidPrice: '64999', askPrice: '65001', high24h: '66000', low24h: '64000', volume24h: '100', quoteVolume24h: '6500000', changePercent24h: '1.2' }] });
         if (p === '/api/v1/market/external/symbols') return json({ symbols: ['BTC/USDT'] });
         if (p === '/api/v1/market/pairs') return json([{ pair: 'BTC/USDT', base: 'BTC', quote: 'USDT' }]);
@@ -105,9 +113,11 @@ async function screenshot(page, name) {
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.locator('.chart-area canvas').first().waitFor({ state: 'attached' });
       await page.waitForFunction(() => Number(document.querySelector('.ticker-bar .value.price')?.textContent?.replace(/,/g, '')) > .8, undefined, { timeout: 15000 });
+      // owner, 2026-10-04: phone opens on Trade once the market is live — bring the chart forward first.
+      if (width <= 900) await page.locator('#mobile-trade-chart').click();
       await Promise.all([
         page.waitForResponse(response => response.url().includes('NRX-USDT/candles?interval=5m')),
-        page.locator('.chart-area').getByRole('button', { name: '5m', exact: true }).click(),
+        pickTimeframe(page, '5m'),
       ]);
       await screenshot(page, `after-${width}.png`);
 

@@ -274,8 +274,9 @@ let server, browser, failed = false;
     // must still put a real request on the wire.
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     mode = 'offline';
-    const link = page.locator('a[href="/copy-trading"]').first();
-    await link.hover({ timeout: 5_000 }).catch(() => {});
+    if (!await page.locator('a[href="/copy-trading"]:visible').count()) await page.locator('.nav-burger').click();
+    const link = page.locator('a[href="/copy-trading"]:visible').first();
+    await link.hover({ timeout: 5_000 });
     await wait(1_200);
     mode = 'ok';
     let marketplaceCalls = 0;

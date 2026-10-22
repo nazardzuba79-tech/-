@@ -1,4 +1,4 @@
-import { NEURIX } from '../neurix';
+import { NEURIX, NRX_BALANCE_SELLOFF_SCENARIO } from '../neurix';
 import { nrxPublicResponse } from '../nrxPublic';
 import { publicTestAsset, testMarketCandles } from '../testMarketService';
 import { simulationFor, TestMarketSimulation, HOUR_MS } from '../testMarketSimulation';
@@ -36,8 +36,8 @@ test('NRX identity, listing boundary and 0.80 initial price; VTA unchanged', asy
   expect(VOLTORA.listingAt).toBe(Date.parse('2026-09-28T15:00:00Z'));
 });
 
-test('same VTA engine and relative growth rules without copying the math', () => {
-  const a = new TestMarketSimulation(NEURIX);
+test('original NRX wave engine keeps shared relative growth rules without copying the math', () => {
+  const a = new TestMarketSimulation({ ...NEURIX, scheduledScenario: undefined });
   const b = new TestMarketSimulation({ ...VOLTORA, seed: NEURIX.seed, listingAt: listing, initialPrice: .8 });
   // NRX's wave structure re-arranges the hours INSIDE each block, so the shared
   // growth rule is the block and day anchors: the listing, 48h and every day after.
@@ -94,4 +94,36 @@ test('Spot conditional price uses canonical NRX only; ordinary venue prices and 
   expect(() => assertSpotListing('NRX/USDT', listing)).not.toThrow();
   expect(() => assertSpotListing('VTA/USDT', listing)).toThrow('not available');
   expect(isTestAssetPairOrSymbol('NRX')).toBe(true); // still excluded from withdrawals/Futures collateral
+});
+
+test('NRX preserves live history, then runs balance → -60% selloff → balance', () => {
+  expect(NEURIX.scheduledScenario).toEqual(NRX_BALANCE_SELLOFF_SCENARIO);
+  const sim = simulationFor(NEURIX);
+  const baseline = new TestMarketSimulation({ ...NEURIX, scheduledScenario: undefined });
+  for (const [at, price] of [
+    ['2026-10-03T14:00:00Z', 1.4877408],
+    ['2026-10-03T21:00:00Z', 2.7420778],
+    ['2026-10-04T13:00:00Z', 45.828573],
+    ['2026-10-05T04:22:59.506Z', 241.09443],
+  ] as const) {
+    expect(sim.priceAt(Date.parse(at))).toBe(price);
+    expect(sim.priceAt(Date.parse(at))).toBe(baseline.priceAt(Date.parse(at)));
+  }
+
+  const from = NRX_BALANCE_SELLOFF_SCENARIO.from;
+  const anchor = baseline.priceAt(from)!;
+  expect(sim.priceAt(from)).toBe(anchor);
+  expect(sim.priceAt(NRX_BALANCE_SELLOFF_SCENARIO.rangeEndAt)).toBeCloseTo(anchor, 8);
+  const terminal = anchor * (1 - NRX_BALANCE_SELLOFF_SCENARIO.selloffFraction);
+  expect(Math.abs(sim.priceAt(NRX_BALANCE_SELLOFF_SCENARIO.selloffEndAt)! - terminal)).toBeLessThanOrEqual(anchor * 1e-8);
+  const later = sim.priceAt(NRX_BALANCE_SELLOFF_SCENARIO.selloffEndAt + 24 * HOUR_MS)!;
+  expect(later).toBeGreaterThan(terminal * .5);
+  expect(later).toBeLessThan(terminal * 1.6);
+
+  expect(publicTestAsset(NEURIX, Date.parse('2026-10-05T04:22:59.506Z')).state).toMatchObject({
+    lastPrice: 241.09443, openPrice24h: 7.7160454, high24h: 273.75376, low24h: 6.2710392,
+  });
+  expect(testMarketCandles(NEURIX, '4h', Date.parse('2026-10-05T04:22:59.506Z'), 12)[0]).toEqual({
+    time: 1791028800, open: .8, high: 2.1389475, low: .75115033, close: 1.9657949, volume: 2538378.4403,
+  });
 });
