@@ -102,8 +102,9 @@ async function scenario(width){
   const notice=page.locator('[data-browser-notice]');await notice.waitFor();
   assert.equal(await notice.getAttribute('data-browser-failure'),'read');
   const noticeText=(await notice.innerText()).replace(/\s+/g,' ');
-  assert.ok(/execution-session/.test(noticeText)&&/503/.test(noticeText),'notice does not name the failed request: '+noticeText);
-  assert.equal((await notice.locator('button').allInnerTexts()).join('|'),'Повторить попытку|Обновить страницу');
+  assert.ok(/Действия недоступны/.test(noticeText),'a blocked wake must remain recoverable');
+  assert.ok(!/execution-session|TypeError|Failed to fetch|HTTP|503|https?:\/\/|GET /.test(noticeText),'technical details leaked: '+noticeText);
+  assert.equal((await notice.locator('button').allInnerTexts()).join('|'),'Повторить попытку');
   await page.screenshot({path:path.join(out,'wake-failed-'+width+'.png')});
   if(width===1440){
     // A double click on the chart opens nothing while the wake has failed (it used to open a menu whose controls were refused).
@@ -120,7 +121,7 @@ async function scenario(width){
   assert.equal(await page.locator('[data-browser-notice]').count(),0);
   assert.deepEqual(financial,[],'a wake or retry sent a financial command');
   assert.equal(await qty.inputValue(),'0.25');
-  checks.push({width,name:'failed native wake: visible notice names the request, dblclick refused, retry recovers, no command replay',pass:true});
+  checks.push({width,name:'failed native wake: safe unobtrusive retry, dblclick refused, no command replay',pass:true});
   // A position closed elsewhere while this tab sleeps must disappear on return.
   await page.evaluate(()=>window.__readBudget.hidden(true));
   await command({kind:'CLOSE',positionId:restored.positions[0].id,quantity:'1'});
