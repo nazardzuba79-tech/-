@@ -10,7 +10,7 @@ describe('/health reports which revision is answering', () => {
   it('uses the reviewed Hetzner release SHA rather than stale platform metadata', () => {
     const reviewed = 'a'.repeat(40);
     expect(resolveBuildCommit({ VOLTEX_RELEASE_SHA: reviewed, RENDER_GIT_COMMIT: 'older', GIT_COMMIT: 'older-too' })).toBe(reviewed);
-    expect(resolveBuildCommit({ VOLTEX_RELEASE_SHA: ` ${reviewed}\\n` })).toBe(reviewed);
+    expect(resolveBuildCommit({ VOLTEX_RELEASE_SHA: ` ${reviewed}\n` })).toBe(reviewed);
     expect(resolveBuildCommit({ VOLTEX_RELEASE_SHA: 'invalid', RENDER_GIT_COMMIT: 'older' })).toBeNull();
     expect(resolveBuildCommit({ VOLTEX_RELEASE_SHA: '', RENDER_GIT_COMMIT: 'older' })).toBeNull();
   });
