@@ -1,0 +1,8 @@
+VOLTEX frontend release verification marker
+Date: 2026-10-22
+Review base: 9dd7a293dfa370955c86cfe876735937c5d93fde
+Included in main:
+- Futures bottom panel and Bybit-style wheel scroll (PR #566, #571, #572)
+- LIQ horizontal chart overlay removed; liquidation price remains in Positions table (PR #573)
+- Frontend-only; no Hetzner/Render/Worker/DB changes
+Purpose: read-only proof that Cloudflare Pages served a build containing these reviewed frontend changes.
