@@ -1,0 +1,43 @@
+{
+  "scope": "Production bundle in Chromium; every response is a fixture (no Render, no Worker, no venue). Synthetic ticker QTM; listing 2026-10-26T13:00:00Z.",
+  "cases": [
+    "trade 1440: running countdown 5 d 03 h to 26.10.2026 — 13:00 UTC / 16:00 МСК with the viewer's clock 6 h wrong; identical after a reload",
+    "trade 1440: paused — «Отсчёт до листинга приостановлен», the date 26.10.2026 — 13:00 UTC / 16:00 МСК stays, no counter",
+    "trade 1440: the last seconds show 00:00:00:02; at 13:00:00 UTC the server's phase is live and the chart appears",
+    "admin 1440: before the start — «Таймер не запущен», «Запустить таймер», the market absent from the exchange",
+    "admin 1440: «Запустить таймер» → «Таймер запущен», the exchange lists QTM/USDT with 26.10.2026 — 13:00 UTC / 16:00 МСК",
+    "admin 1440: pause and stop, no draft or publish request (writes to anything else: 0)",
+    "admin 1440: a passed date with a timer that never ran — alert «назначьте новую дату», no start button",
+    "trade 390: running countdown 5 d 03 h to 26.10.2026 — 13:00 UTC / 16:00 МСК with the viewer's clock 6 h wrong; identical after a reload",
+    "trade 390: paused — «Отсчёт до листинга приостановлен», the date 26.10.2026 — 13:00 UTC / 16:00 МСК stays, no counter",
+    "trade 390: the last seconds show 00:00:00:02; at 13:00:00 UTC the server's phase is live and the chart appears",
+    "admin 390: before the start — «Таймер не запущен», «Запустить таймер», the market absent from the exchange",
+    "admin 390: «Запустить таймер» → «Таймер запущен», the exchange lists QTM/USDT with 26.10.2026 — 13:00 UTC / 16:00 МСК",
+    "admin 390: pause and stop, no draft or publish request (writes to anything else: 0)",
+    "admin 390: a passed date with a timer that never ran — alert «назначьте новую дату», no start button"
+  ],
+  "screenshots": [
+    "trade-running-1440.png",
+    "trade-paused-1440.png",
+    "trade-last-second-1440.png",
+    "trade-live-1300utc-1440.png",
+    "admin-before-start-1440.png",
+    "markets-before-start-1440.png",
+    "admin-after-start-1440.png",
+    "markets-after-start-1440.png",
+    "admin-paused-1440.png",
+    "admin-overdue-1440.png",
+    "trade-running-390.png",
+    "trade-paused-390.png",
+    "trade-last-second-390.png",
+    "trade-live-1300utc-390.png",
+    "admin-before-start-390.png",
+    "markets-before-start-390.png",
+    "admin-after-start-390.png",
+    "markets-after-start-390.png",
+    "admin-paused-390.png",
+    "admin-overdue-390.png"
+  ],
+  "pageErrors": [],
+  "writes": 0
+}

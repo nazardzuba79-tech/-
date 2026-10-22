@@ -50,7 +50,8 @@ before(async () => {
   const path = await mkdtemp(join(tmpdir(), 'voltex-listings-sqlite-'));
   options = { ...convertV4MiniflareOptions({ durableObjectsPersist: path, workers: [{ name: 'market-edge', modules: true,
     script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-01',
-    bindings: { LISTINGS_STORE_TOKEN: token, LISTINGS_PUBLIC_CACHE_MS: '0' },
+    // The timer tests below watch a listing date pass: the lead is lowered to the 5 s floor (production keeps 60 s).
+    bindings: { LISTINGS_STORE_TOKEN: token, LISTINGS_PUBLIC_CACHE_MS: '0', LISTINGS_MIN_LEAD_MS: '5000' },
     durableObjects: { LISTINGS: { className: 'ManagedListingsDO', useSQLite: true } },
     outboundService: () => { outbound++; throw new Error('Unexpected external request'); },
   }] }), isolatedResourcePersistencePath: path, resourcePersistencePath: path, telemetry: { enabled: false } };
@@ -376,4 +377,133 @@ test('real public workerd candles match the saved private preview after publicat
   assert.deepEqual(served.candles, preview.candles);
   assert.ok(served.candles.every(candle => candle.high <= 74.776));
   assert.equal(outbound, outboundBefore);
+});
+
+/* ---- The pre-listing timer: staged → running → paused → stopped by server time; the listing date never moves with it. ---- */
+const countdown = (id, action) => admin(`/internal/listings/${id}/countdown`, { method: 'POST', body: { action } });
+const publishWith = (id, draftRevision, publishKey, extra) => admin(`/internal/listings/${id}/publish`, { method: 'POST', body: { draftRevision, publishKey, ...extra } });
+const internalPublished = async () => (await (await admin('/internal/listings/published')).json()).listings;
+const adminListing = async (id) => (await (await admin('/internal/listings')).json()).listings.find((l) => l.id === id);
+const catalogueAsset = async (pair) => (await catalogue()).assets.find((a) => a.pair === pair) ?? null;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+test('timer: a first publication with countdown=staged is validated and stored, but not public; Render knows it unarmed', async () => {
+  // The previous test left a Worker with a frozen clock; the timer is about the real server clock.
+  await mf.dispose();
+  mf = new Miniflare(options);
+  const draft = await (await saveDraft('qtm', config({ symbol: 'QTM', name: 'QA Timer', seed: 'qtm-20261026-synthetic', listingAt: iso(5 * 86_400_000), displayTimeZone: 'Europe/Moscow' }), 0)).json();
+  const first = await publishWith('qtm', draft.draftRevision, 'publish-key-0000000t01', { countdown: 'staged' });
+  assert.equal(first.status, 200, JSON.stringify([draft, await first.clone().text()]));
+  const receipt = await first.json();
+  assert.deepEqual([receipt.version, receipt.replayed, receipt.countdown.state], [1, false, 'staged']);
+  // Not public: not in the catalogue, no pair path answers listing data.
+  assert.equal(await catalogueAsset('QTM/USDT'), null);
+  for (const path of ['/market/test-assets/QTM-USDT', '/market/test-assets/QTM-USDT/candles', '/market/ticker/QTM-USDT']) {
+    const r = await pub(path);
+    assert.notEqual(r.status, 200, path);
+    assert.ok(!(await r.text()).includes('QA Timer'), path);
+  }
+  // Render's registry sees it with its timer state, so the ticker is restricted everywhere and the gate stays closed.
+  const internal = (await internalPublished()).find((l) => l.id === 'qtm');
+  assert.equal(internal.countdown.state, 'staged');
+  assert.equal(internal.config.seed, 'qtm-20261026-synthetic');
+  assert.equal((await adminListing('qtm')).countdown.state, 'staged');
+  // The same publish key again is the same publication, still staged.
+  const again = await (await publishWith('qtm', draft.draftRevision, 'publish-key-0000000t01', { countdown: 'staged' })).json();
+  assert.deepEqual([again.version, again.replayed, again.countdown.state], [1, true, 'staged']);
+  // A listing published before the timer existed has no timer state and is public at once.
+  assert.equal((await adminListing('qax')).countdown, null);
+  assert.ok(!('countdown' in (await internalPublished()).find((l) => l.id === 'qax')));
+  assert.deepEqual([(await catalogueAsset('QAX/USDT')).listingArmed, (await catalogueAsset('QAX/USDT')).countdown], [true, 'running']);
+});
+
+test('timer: start shows the countdown publicly and is idempotent; pause keeps the date without a countdown; stop hides the market again', async () => {
+  const revisionBefore = (await catalogue()).revision;
+  const startResponse = await countdown('qtm', 'start');
+  assert.equal(startResponse.status, 200, await startResponse.clone().text());
+  const started = await startResponse.json();
+  assert.deepEqual([started.changed, started.countdown.state, typeof started.countdown.startedAt], [true, 'running', 'number']);
+  const running = await catalogueAsset('QTM/USDT');
+  assert.ok(running, 'public after start');
+  assert.deepEqual([running.listingArmed, running.countdown, running.state.phase, running.displayTimeZone], [true, 'running', 'pre-listing', 'Europe/Moscow']);
+  assert.equal((await pub('/market/test-assets/QTM-USDT')).status, 200);
+  assert.notEqual((await catalogue()).revision, revisionBefore);
+  // A double click: the same state, nothing bumped.
+  const revisionAfterStart = (await catalogue()).revision;
+  const twice = await (await countdown('qtm', 'start')).json();
+  assert.deepEqual([twice.changed, twice.countdown.startedAt], [false, started.countdown.startedAt]);
+  assert.equal((await catalogue()).revision, revisionAfterStart);
+
+  const paused = await (await countdown('qtm', 'pause')).json();
+  assert.deepEqual([paused.changed, paused.countdown.state, paused.countdown.startedAt], [true, 'paused', started.countdown.startedAt]);
+  const shown = await catalogueAsset('QTM/USDT');
+  assert.deepEqual([shown.listingArmed, shown.countdown, shown.state.phase, shown.state.lastPrice], [false, 'paused', 'pre-listing', null]);
+  assert.equal(shown.listingAt, running.listingAt, 'the date never moves with the timer');
+  assert.equal((await pub('/market/ticker/QTM-USDT')).status, 404);
+  assert.equal((await (await pub('/market/display/spot-book/QTM-USDT')).json()).available, false);
+
+  const stopped = await (await countdown('qtm', 'stop')).json();
+  assert.deepEqual([stopped.changed, stopped.countdown.state], [true, 'staged']);
+  assert.equal(await catalogueAsset('QTM/USDT'), null);
+  assert.equal((await internalPublished()).find((l) => l.id === 'qtm').countdown.state, 'staged');
+  // Started again: the countdown is back, to the same date.
+  assert.equal((await (await countdown('qtm', 'start')).json()).countdown.state, 'running');
+  assert.equal((await catalogueAsset('QTM/USDT')).listingAt, running.listingAt);
+});
+
+test('timer: a passed date never activates anything — start is refused until the date is moved; an opened market keeps no timer', async () => {
+  // Two listings 6 s ahead: one staged (timer never started), one published the old way (running).
+  const staged = await (await saveDraft('qtp', config({ symbol: 'QTP', name: 'QA Timer Passed', seed: 'qtp-20261026-synthetic', listingAt: iso(6_000) }), 0)).json();
+  assert.equal((await publishWith('qtp', staged.draftRevision, 'publish-key-0000000t02', { countdown: 'staged' })).status, 200);
+  const open = await (await saveDraft('qto', config({ symbol: 'QTO', name: 'QA Timer Open', seed: 'qto-20261026-synthetic', listingAt: iso(6_000) }), 0)).json();
+  assert.equal((await publish('qto', open.draftRevision, 'publish-key-0000000t03')).status, 200);
+  await sleep(8_000);
+  // The staged one: nothing opened, nothing is public, and starting is refused with the reason.
+  const refused = await countdown('qtp', 'start');
+  assert.equal(refused.status, 422);
+  assert.equal((await refused.json()).error, 'LISTING_TIME_PAST');
+  assert.equal(await catalogueAsset('QTP/USDT'), null);
+  assert.equal((await internalPublished()).find((l) => l.id === 'qtp').countdown.state, 'staged');
+  // Its date may still move (the market never opened), published as version 2; then the timer starts.
+  const listing = await adminListing('qtp');
+  const moved = await saveDraft('qtp', config({ symbol: 'QTP', name: 'QA Timer Passed', seed: 'qtp-20261026-synthetic', listingAt: iso(3_600_000) }), listing.draftRevision);
+  assert.equal(moved.status, 200);
+  const republished = await (await publishWith('qtp', (await moved.json()).draftRevision, 'publish-key-0000000t04', {})).json();
+  assert.deepEqual([republished.version, republished.countdown.state], [2, 'staged']);
+  assert.equal((await (await countdown('qtp', 'start')).json()).countdown.state, 'running');
+  assert.equal((await catalogueAsset('QTP/USDT')).state.phase, 'pre-listing');
+  // The old-way one opened at its time: live publicly, its timer cannot be paused or stopped, its date is locked.
+  assert.equal((await catalogueAsset('QTO/USDT')).state.phase, 'live');
+  for (const action of ['pause', 'stop']) {
+    const r = await countdown('qto', action);
+    assert.equal(r.status, 422);
+    assert.equal((await r.json()).error, 'MARKET_OPEN');
+  }
+  const opened = await adminListing('qto');
+  const locked = await saveDraft('qto', config({ symbol: 'QTO', name: 'QA Timer Open', seed: 'qto-20261026-synthetic', listingAt: iso(3_600_000) }), opened.draftRevision);
+  assert.equal(locked.status, 200);
+  const lockedPublish = await publish('qto', (await locked.json()).draftRevision, 'publish-key-0000000t05');
+  assert.equal(lockedPublish.status, 422);
+  assert.equal((await lockedPublish.json()).error, 'HISTORY_LOCKED');
+});
+
+test('timer: refusals — an unknown action, a draft that was never published, an unknown listing', async () => {
+  assert.equal((await countdown('qtm', 'restart')).status, 400);
+  await saveDraft('qtd', config({ symbol: 'QTD', name: 'QA Timer Draft', seed: 'qtd-20261026-synthetic' }), 0);
+  const draft = await countdown('qtd', 'start');
+  assert.equal(draft.status, 422);
+  assert.equal((await draft.json()).error, 'NOT_PUBLISHED');
+  assert.equal((await countdown('nope', 'start')).status, 404);
+  assert.equal((await publishWith('qtd', 1, 'publish-key-0000000t06', { countdown: 'later' })).status, 400);
+  assert.equal(await catalogueAsset('QTD/USDT'), null);
+});
+
+test('timer: a whole workerd restart keeps every timer state, and the public catalogue is the same afterwards', async () => {
+  const before = Object.fromEntries((await internalPublished()).map((l) => [l.id, l.countdown ?? null]));
+  const publicBefore = (await catalogue()).assets.map((a) => [a.pair, a.listingArmed, a.countdown]).sort();
+  await mf.dispose();
+  mf = new Miniflare(options);
+  assert.deepEqual(Object.fromEntries((await internalPublished()).map((l) => [l.id, l.countdown ?? null])), before);
+  assert.deepEqual((await catalogue()).assets.map((a) => [a.pair, a.listingArmed, a.countdown]).sort(), publicBefore);
+  assert.deepEqual([before.qtm.state, before.qtp.state, before.qto], ['running', 'running', null]);
 });

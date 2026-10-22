@@ -95,6 +95,26 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
     expect(html).not.toContain('role="timer"');
     expect(html).not.toContain('<dt>' + t('listing.scheduledAt') + '</dt>');
   });
+  test('a paused timer keeps the date and the price, hides the countdown, and never says the launch is awaited', () => {
+    expect(t('listing.countdownPaused')).not.toBe('listing.countdownPaused');
+    for (const time of [now, Date.parse(fixture.listingAt), Date.parse(fixture.listingAt) + 86_400_000]) {
+      jest.spyOn(Date, 'now').mockReturnValue(time);
+      const raw = { ...fixture, listingArmed: false, countdown: 'paused' as const, state: { ...fixture.state, serverTime: time } };
+      const parsed = markets.parseTestMarkets({ serverTime: time, assets: [raw] })!.assets[0];
+      expect(parsed.countdown).toBe('paused');
+      const html = chart(parsed, lang);
+      expect(html).toContain(t('listing.countdownPaused'));
+      expect(html).toContain('data-countdown="paused"');
+      expect(html).toContain('<dt>' + t('listing.scheduledAt') + '</dt>');
+      expect(html).toContain('<dt>' + t('listing.initialPrice') + '</dt>');
+      expect(html).not.toContain('role="timer"');
+      expect(html).not.toContain(t('listing.awaitingStart'));
+      expect(html).not.toContain(t('listing.dateUnconfirmed'));
+      expect(html).not.toContain('listing.');
+    }
+    // A running timer carries the marker too, so QA can tell the two cards apart.
+    expect(chart(fixture, lang)).toContain('data-countdown="running"');
+  });
   describe.each(['ZQNEW', 'AITH'])('countdown boundary for %s', symbol => {
     test.each([true, false])('server phase owns the transition; tradable=%s', isTradable => {
       for (const delta of [-1, 0, 1]) for (const phase of ['pre-listing', 'live'] as const) {

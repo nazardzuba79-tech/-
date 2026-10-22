@@ -47,6 +47,8 @@ export interface TestAsset {
   managed?: boolean;
   logo?: string | null;
   displayTimeZone?: string;
+  /** The public pre-listing timer: `paused` shows the date without a countdown; the server keeps the market frozen. */
+  countdown?: 'running' | 'paused';
   version?: number;
   readLease?: ListingReadLease;
   leaseDeadline?: number;
@@ -60,17 +62,20 @@ export interface TestMarketsSnapshot {
 /** Presentation only: the server owns execution permission and market phase.
  * Every asset in this catalogue is simulated, including tradable listings. */
 export function testMarketPresentation(asset: TestAsset, now: number) {
-  const scheduled = asset.listingArmed && Number.isFinite(Date.parse(asset.listingAt));
+  // A paused timer arrives unarmed (the market stays frozen) but keeps its date on the page.
+  const paused = asset.managed === true && asset.countdown === 'paused' && asset.state.phase === 'pre-listing';
+  const scheduled = (asset.listingArmed || paused) && Number.isFinite(Date.parse(asset.listingAt));
   return {
     simulationKey: 'listing.simulation' as const,
     availabilityKey: !asset.isTradable ? 'listing.tradingUnavailable' as const
       : asset.state.phase === 'live' ? 'listing.marketLive' as const
       : null,
     scheduleKey: !scheduled ? 'listing.dateUnconfirmed' as const
+      : paused ? 'listing.countdownPaused' as const
       : asset.state.phase === 'pre-listing' && Date.parse(asset.listingAt) <= now
         ? 'listing.awaitingStart' as const : null,
     showDate: scheduled,
-    showCountdown: scheduled && asset.state.phase === 'pre-listing' && Date.parse(asset.listingAt) > now,
+    showCountdown: scheduled && !paused && asset.state.phase === 'pre-listing' && Date.parse(asset.listingAt) > now,
   };
 }
 
@@ -158,6 +163,7 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
         ...(isAith(raw.pair) ? { readLease: raw.readLease } : {}),
         logo: typeof raw.logo === 'string' && /^data:image\/(png|jpeg|webp|svg\+xml);base64,/.test(raw.logo) ? raw.logo : null,
         displayTimeZone: typeof raw.displayTimeZone === 'string' ? raw.displayTimeZone : 'UTC',
+        countdown: raw.countdown === 'paused' ? 'paused' as const : 'running' as const,
       } : {}),
     });
   }
@@ -316,7 +322,9 @@ export function testMarketSlug(pair: string): string {
 
 /**
  * A managed listing's opening moment with its time zone spelled out, plus UTC:
- * «01.10.2026 · 15:00 Europe/Kyiv · 12:00 UTC». An unknown zone falls back to UTC only.
+ * «01.10.2026 · 15:00 Europe/Kyiv · 12:00 UTC». A listing entered in Moscow
+ * time reads like NRX's, UTC first: «26.10.2026 — 13:00 UTC / 16:00 МСК».
+ * An unknown zone falls back to UTC only.
  */
 export function managedListingTime(value: string, timeZone: string, locale = 'ru-RU'): string {
   const date = new Date(value);
@@ -326,6 +334,10 @@ export function managedListingTime(value: string, timeZone: string, locale = 'ru
   }).format(date).replace(',', ' ·');
   try {
     if (timeZone === 'UTC') return `${part('UTC', true)} UTC`;
+    if (timeZone === 'Europe/Moscow') {
+      const day = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(date);
+      return `${day} — ${part('UTC', false)} UTC / ${part('Europe/Moscow', false)} МСК`;
+    }
     return `${part(timeZone, true)} ${timeZone} · ${part('UTC', false)} UTC`;
   } catch {
     return `${part('UTC', true)} UTC`;

@@ -2010,6 +2010,7 @@ export const RU = {
   'listing.marketLive': "Рынок открыт",
   'listing.dateUnconfirmed': "Дата листинга ещё не подтверждена",
   'listing.awaitingStart': "Ожидаем подтверждения запуска рынка",
+  'listing.countdownPaused': "Отсчёт до листинга приостановлен",
   'listing.untilListing': "До листинга",
   'listing.scheduledAt': "Дата листинга",
   'listing.loadFailed': "Не удалось загрузить данные листинга. Попробуйте ещё раз.",
