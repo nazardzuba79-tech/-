@@ -62,3 +62,14 @@ jobs:
             asset="$(printf '%s' "$html" | grep -oE 'assets/index-[^"]+[.]js' | head -n1 || true)"
             echo "${host}: ${asset:-page unavailable or no JS asset}"
           done
+
+      - name: Checkout exact production-release workflow candidate
+        if: always()
+        uses: actions/checkout@v4
+        with:
+          ref: bf224f43982309367f2d6bea31cb4fe8e998b11d
+          persist-credentials: false
+      - name: Validate release workflow expression contexts and YAML via actionlint
+        if: always()
+        shell: bash
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/pages-reviewed-production-release.yml
