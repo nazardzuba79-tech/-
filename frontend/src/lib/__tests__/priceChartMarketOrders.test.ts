@@ -317,7 +317,7 @@ describe('private chart native interaction and history', () => {
     chart.render(); await flush(); chart.render();
     expect(chart.chartHarness.markers.map((marker: any) => marker.id)).toEqual(['private-trade:p1|entry', 'private-trade:p1|exit:0']);
     expect(chart.chartHarness.markers[0].time).toBe(time);
-    expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['', 'TP', 'SL', 'LIQ']);
+    expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['', 'TP', 'SL']);
     expect(chart.chartHarness.priceLines[0].options).toMatchObject({price:73000,color:'#13ad75',axisLabelVisible:true});
     chart.chartHarness.click(event(chart, { hoveredInfo: { objectId: 'private-trade:p1|entry' } }));
     expect(state.onTradeSelect).toHaveBeenCalledWith('p1');
