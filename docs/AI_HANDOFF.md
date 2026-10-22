@@ -6612,3 +6612,10 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - `qa-futures-chart-drag.cjs` on the joint bundle: 48/48, nothing skipped — drag after the panel resize, the way back into history with an older pick, short/jittery click vs a 14px drag, no trading write during the whole run, the panel after a shrink to 1366×768 and a reload all PASS.
 - `qa-futures-panel-resize.cjs` on the joint bundle: 36/36 (552 → 324 → 552, preference kept).
 - No merge, no deploy; both PRs stay Draft for the owner's decision.
+
+### Claude — 2026-10-22 — PR #562 CI: the remaining eight workflows install Playwright 1.63.0 (runner image, not code)
+
+- Commit `5c8076e4` on `claude/voltex-mobile-audit-7rpjni-listing-20261026`, after the documentation-only main merge `4d803896`: `.github/workflows/{about-page,admin-gate,admin-listings,admin-practicality,admin-scenario-lab,admin-user-deletion,knowledge-mobile-support,otc-cash-review}.yml` — `playwright@1.56.1` → `playwright@1.63.0`, one line each.
+- Why: on `4d803896` the `fixtures` job (admin-practicality) and the `verify` job (admin-scenario-lab) died at «Disposable browser tooling» before any test ran: Playwright 1.56.1 cannot install chromium on `ubuntu26.04-x64`, GitHub's current `ubuntu-latest`. The other workflows already carried the 1.63.0 pin (PR #566, now main).
+- No test, script, page, listing, timer or scenario changed; the timer stays off, nothing published. Verified locally only that no `1.56.1` pin remains; CI on `5c8076e4` is the proof and is reported separately.
+- No merge, no deploy.
