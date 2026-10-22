@@ -50,7 +50,6 @@ import { formatSyntheticHistoryDate, formatSyntheticTradePrice, formatSyntheticT
 import { dailyReturnChart } from '../../lib/dailyReturnChart';
 import { publicSignedUsdt, publicUsdtNumber } from '../../lib/copyTradingMoney';
 import { demoChartData, selectDemoPerformance } from './demoPerformance';
-import { DemoRoiNotice } from './DemoRoiContext';
 import { getTraderVisual } from './traderVisuals';
 import { TraderAvatarArt } from './TraderAvatarArt';
 import { isModeledResponse, isModeledTraderData, isModeledAggregate, preserveModeledSource } from '../../lib/modeledCopyData';
@@ -320,7 +319,6 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         </div>
         <MiniPerformanceChart trader={trader} period={period} synthetic={synthetic} />
       </div>
-      <DemoRoiNotice traderId={trader.id} period={period} />
       <div className="card-stats">
         {isNazara || trader.id === 'VX-KSENIA' ? <>
           <div><span>Win Rate <small>{trader.id === 'VX-KSENIA' ? 'ALL' : period}</small></span><strong><LiveMetric value={winRate == null ? '—' : `${numberLabel(winRate, 1)}%`} /></strong></div>
@@ -822,7 +820,6 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} data-period={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{t(periodLabelKey(item))}</button>)}</div>
       </nav>
 
-      <DemoRoiNotice traderId={trader.id} period={period} />
       {!detailsReady ? <div className="profile-detail-loading" role="status" aria-live="polite"><span>Загрузка аналитики…</span></div> : activeTab === 'statistics' ? <>
         <div className="profile-analytics-workspace">
           <aside><MetricsPanel metrics={metrics} period={period} facts={facts} /><TradingProfilePanel trader={trader} metrics={strategyData ?? metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} strategyMainMarkets={liveSynthetic?.mainMarkets} /></aside>

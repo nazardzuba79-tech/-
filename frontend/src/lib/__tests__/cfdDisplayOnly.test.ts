@@ -76,8 +76,10 @@ test('customer CFD layout stays compact without verbose practice or per-row stat
   const positions=read('components/CfdPositionsPanel.tsx');
   const ticker=read('components/CfdTickerBar.tsx');
   const instruments=read('components/CfdInstrumentList.tsx');
-  expect(order).toContain('>SIM</span>');
-  expect(order).not.toContain('>{copy.practice}</span>');
+  // Owner, 2026-10-22: no «SIM» / practice badge at all («такі надписи всюди видалити … і схожих»).
+  expect(order).not.toContain('>SIM</span>');
+  expect(order).not.toContain('terminal-practice-label');
+  expect(order).not.toContain('copy.practice');
   expect(positions).not.toContain('cfd-practice-mode');
   expect(positions).toContain('getCfdPaperState');
   expect(ticker).not.toContain('cfd-product-badge');

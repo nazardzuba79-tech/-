@@ -1928,7 +1928,6 @@ export const RU = {
   'serverError.unavailable': 'Сервис временно недоступен. Повторите чуть позже.',
   'serverError.checkFields': 'Проверьте заполненные поля.',
   'serverError.notFound': 'Данные не найдены.',
-  'serverError.practiceOnly': 'Этот аккаунт работает только в тренировочном режиме.',
   'serverError.cardNotEligible': 'Карта пока недоступна для этого аккаунта.',
   'serverError.cardApplicationRequired': 'Сначала отправьте заявку на карту.',
   'serverError.cardApplicationExists': 'Заявка на карту уже отправлена.',

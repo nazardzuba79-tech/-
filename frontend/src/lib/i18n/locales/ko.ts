@@ -1869,7 +1869,6 @@ export const KO: Record<Key, string> = {
   'serverError.unavailable': '서비스를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.',
   'serverError.checkFields': '입력한 항목을 확인하세요.',
   'serverError.notFound': '데이터를 찾을 수 없습니다.',
-  'serverError.practiceOnly': '이 계정은 연습 모드에서만 사용할 수 있습니다.',
   'serverError.cardNotEligible': '이 계정에서는 아직 카드를 이용할 수 없습니다.',
   'serverError.cardApplicationRequired': '먼저 카드 신청을 보내세요.',
   'serverError.cardApplicationExists': '카드 신청이 이미 전송되었습니다.',

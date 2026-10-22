@@ -1869,7 +1869,6 @@ export const HI: Record<Key, string> = {
   'serverError.unavailable': 'सेवा फ़िलहाल उपलब्ध नहीं है। थोड़ी देर बाद कोशिश करें।',
   'serverError.checkFields': 'भरे गए फ़ील्ड जाँच लें।',
   'serverError.notFound': 'डेटा नहीं मिला।',
-  'serverError.practiceOnly': 'यह खाता केवल अभ्यास मोड में काम करता है।',
   'serverError.cardNotEligible': 'इस खाते के लिए कार्ड अभी उपलब्ध नहीं है।',
   'serverError.cardApplicationRequired': 'पहले कार्ड का आवेदन भेजें।',
   'serverError.cardApplicationExists': 'कार्ड का आवेदन पहले ही भेजा जा चुका है।',

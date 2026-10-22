@@ -109,7 +109,7 @@ const PHRASE_KEY: Record<string, Key> = {
   'Internal server error': 'serverError.unavailable',
   'Операция временно недоступна': 'serverError.unavailable',
   'Проверьте параметры запроса': 'serverError.checkFields',
-  'Этот аккаунт торгует только в симуляции': 'serverError.practiceOnly',
+  'Этот аккаунт торгует только в симуляции': 'serverError.forbidden',
 };
 
 /**

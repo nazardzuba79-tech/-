@@ -1898,7 +1898,6 @@ export const EN: Record<Key, string> = {
   'serverError.unavailable': 'The service is temporarily unavailable. Please try again shortly.',
   'serverError.checkFields': 'Check the fields you filled in.',
   'serverError.notFound': 'Not found.',
-  'serverError.practiceOnly': 'This account works in practice mode only.',
   'serverError.cardNotEligible': 'The card is not available for this account yet.',
   'serverError.cardApplicationRequired': 'Send a card application first.',
   'serverError.cardApplicationExists': 'A card application has already been sent.',

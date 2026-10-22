@@ -1869,7 +1869,6 @@ export const ES: Record<Key, string> = {
   'serverError.unavailable': 'El servicio no está disponible por ahora. Vuelve a intentarlo en breve.',
   'serverError.checkFields': 'Revisa los campos que has rellenado.',
   'serverError.notFound': 'No se han encontrado los datos.',
-  'serverError.practiceOnly': 'Esta cuenta funciona solo en modo de práctica.',
   'serverError.cardNotEligible': 'La tarjeta aún no está disponible para esta cuenta.',
   'serverError.cardApplicationRequired': 'Envía primero la solicitud de tarjeta.',
   'serverError.cardApplicationExists': 'Ya se ha enviado una solicitud de tarjeta.',

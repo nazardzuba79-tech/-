@@ -1892,7 +1892,6 @@ export const ZH: Record<Key, string> = {
   'serverError.unavailable': '服务暂时不可用，请稍后重试。',
   'serverError.checkFields': '请检查已填写的内容。',
   'serverError.notFound': '未找到数据。',
-  'serverError.practiceOnly': '该账户仅可用于练习模式。',
   'serverError.cardNotEligible': '该账户暂时无法申请卡片。',
   'serverError.cardApplicationRequired': '请先提交卡片申请。',
   'serverError.cardApplicationExists': '卡片申请已提交。',

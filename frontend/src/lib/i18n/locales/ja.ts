@@ -1869,7 +1869,6 @@ export const JA: Record<Key, string> = {
   'serverError.unavailable': 'サービスは一時的に利用できません。少し後にお試しください。',
   'serverError.checkFields': '入力した項目をご確認ください。',
   'serverError.notFound': 'データが見つかりません。',
-  'serverError.practiceOnly': 'このアカウントは練習モードでのみ利用できます。',
   'serverError.cardNotEligible': 'このアカウントではまだカードをご利用いただけません。',
   'serverError.cardApplicationRequired': '先にカードの申し込みを送信してください。',
   'serverError.cardApplicationExists': 'カードの申し込みはすでに送信されています。',
