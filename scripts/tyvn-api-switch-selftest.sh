@@ -81,4 +81,31 @@ services:
 EOF
 check --overlay "$tmp/r3/compose.tyvn-api.yaml" --sha "$new" >/dev/null && fail 'db change accepted'
 check --overlay "$tmp/r1/compose.tyvn-api.yaml" --sha "$old" >/dev/null && fail 'SHA mismatch accepted'
-echo 'SELFTEST PASS: overlay = image + VOLTEX_RELEASE_SHA only; extra port / other service / wrong SHA / bad input BLOCKED; no secret printed.'
+
+# 4. Image checks through a stand-in `docker image inspect` (everything else goes to the real CLI):
+#    the new image must start exactly like the running one, release SHA / revision aside.
+real_docker="$(command -v docker)"
+mkdir -p "$tmp/bin" "$tmp/images"
+printf '#!/usr/bin/env bash\nif [ "$1" = image ] && [ "$2" = inspect ]; then\n  f="%s/$(printf %%s "$3" | tr /: __).json"\n  [ -f "$f" ] && exec cat "$f"\n  echo "Error: No such image" >&2; exit 1\nfi\nexec %q "$@"\n' "$tmp/images" "$real_docker" >"$tmp/bin/docker"
+chmod +x "$tmp/bin/docker"
+running="sha256:$(printf 'synthetic-running-image' | sha256sum | cut -c1-64)"
+fixture() { printf '%s' "$1" | tr '/:' '__'; }
+image() { # id user node_env sha
+  printf '[{"Id":"%s","Config":{"User":"%s","Entrypoint":["node","/opt/operations/runtime-bootstrap.cjs"],"Cmd":[],"WorkingDir":"/app","ExposedPorts":{"3000/tcp":{}},"Env":["PATH=/usr/local/bin:/usr/bin","NODE_ENV=%s","VOLTEX_RELEASE_SHA=%s"],"Labels":{"org.opencontainers.image.revision":"%s"}}}]' "$1" "$2" "$3" "$4" "$4"
+}
+image "$running" 1000 production "$old" >"$tmp/images/$(fixture voltex-api:kyc).json"
+withimages() { PATH="$tmp/bin:$PATH" python3 "$tool" check --running-image "$running" --compose-files "$files" --project voltex-cutover --project-dir "$tmp" --env-file "$tmp/.env" --overlay "$tmp/r1/compose.tyvn-api.yaml" --sha "$new"; }
+image "$id" 1000 production "$new" >"$tmp/images/$(fixture "$id").json"
+out="$(withimages)" || fail "identical runtime blocked: $out"
+grep -Fq 'New image runs like the old one' <<<"$out" || fail 'runtime equality not reported'
+grep -Fq "rollback image $running present" <<<"$out" || fail 'rollback image not confirmed'
+image "$id" 0 production "$new" >"$tmp/images/$(fixture "$id").json"
+out="$(withimages)" && fail 'root user accepted'
+grep -Fq 'start differently from the running one: User' <<<"$out" || fail "user change not named: $out"
+image "$id" 1000 development "$new" >"$tmp/images/$(fixture "$id").json"
+out="$(withimages)" && fail 'ENV change accepted'
+grep -Fq 'env.NODE_ENV' <<<"$out" || fail "ENV change not named: $out"
+! grep -Fq development <<<"$out" || fail 'ENV value printed'
+image "$id" 1000 production "$old" >"$tmp/images/$(fixture "$id").json"
+withimages >/dev/null && fail 'image with the old revision accepted'
+echo 'SELFTEST PASS: overlay = image + VOLTEX_RELEASE_SHA only; extra port / other service / wrong SHA / bad input BLOCKED; the new image must start like the running one (user / ENV change BLOCKED, values not printed); no secret printed.'

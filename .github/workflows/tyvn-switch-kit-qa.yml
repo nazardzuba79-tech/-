@@ -6,13 +6,17 @@ on:
     paths:
       - 'scripts/tyvn-api-switch.py'
       - 'scripts/tyvn-api-switch-selftest.sh'
+      - 'scripts/tyvn-release-verify.py'
       - 'docs/TYVN_API_SWITCH_20261027.md'
+      - 'docs/TYVN_SERVER_AGENT_RUNBOOK.md'
       - '.github/workflows/tyvn-switch-kit-qa.yml'
   pull_request:
     paths:
       - 'scripts/tyvn-api-switch.py'
       - 'scripts/tyvn-api-switch-selftest.sh'
+      - 'scripts/tyvn-release-verify.py'
       - 'docs/TYVN_API_SWITCH_20261027.md'
+      - 'docs/TYVN_SERVER_AGENT_RUNBOOK.md'
       - '.github/workflows/tyvn-switch-kit-qa.yml'
 permissions:
   contents: read
@@ -25,7 +29,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Python compile
-        run: python3 -m py_compile scripts/tyvn-api-switch.py
+        run: python3 -m py_compile scripts/tyvn-api-switch.py scripts/tyvn-release-verify.py
       - name: Shell syntax
         run: bash -n scripts/tyvn-api-switch-selftest.sh
       - name: Offline Compose allowlist and rejection self-test
@@ -39,4 +43,8 @@ jobs:
           assert "['up', '-d', '--no-deps', '--no-build', '--pull', 'never', SERVICE]" in code
           assert "run(with_overlay + up)" not in code
           assert "run(base + up)" not in code
+          verify=Path('scripts/tyvn-release-verify.py').read_text()
+          # The before/after evidence script only reads: no method other than GET, no credentials.
+          assert "urllib.request.Request(url, headers=" in verify and "method=" not in verify and "data=" not in verify
+          assert "Authorization" not in verify and "Cookie" not in verify
           PY

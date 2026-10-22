@@ -16,13 +16,16 @@ touches PostgreSQL. It writes one small overlay file (no secrets) and checks it:
            differ. Only key paths are printed — never a value, except the image
            reference and the release SHA, which are not secret. Then checks the
            new image (exists, revision label and VOLTEX_RELEASE_SHA == --sha,
-           differs from the running image) and the rollback (the running image
-           still exists; the running config's image resolves to it). Prints the
-           switch and rollback commands; does not run them.
+           differs from the running image), that the new image runs exactly like
+           the old one (user, entrypoint, command, working dir, ports, volumes,
+           every ENV value and label except the release SHA / revision — only the
+           names of differing fields are printed), and the rollback (the running
+           image still exists; the running config's image resolves to it). Prints
+           the switch and rollback commands; does not run them.
 
-  --compose-files/--project/--project-dir/--env-file and --no-docker replace the
-  container discovery and the image checks for an offline self-test only
-  (scripts/tyvn-api-switch-selftest.sh).
+  --compose-files/--project/--project-dir/--env-file, --running-image and
+  --no-docker replace the container discovery and the image checks for an
+  offline self-test only (scripts/tyvn-api-switch-selftest.sh).
 
 Exit 0 = READY TO SWITCH (still needs the owner's separate approval), 2 = BLOCKED.
 """
@@ -102,7 +105,7 @@ def write_overlay(args):
 
 def discover(args):
     if args.compose_files:
-        return args.project, args.project_dir, args.compose_files.split(','), (args.env_file or []), None
+        return args.project, args.project_dir, args.compose_files.split(','), (args.env_file or []), args.running_image
     ids = run(['docker', 'ps', '-q', '--filter', f'label=com.docker.compose.service={SERVICE}']).split()
     if len(ids) != 1:
         blocked(f'expected exactly one running {SERVICE} container, got {len(ids)}')
@@ -116,11 +119,29 @@ def discover(args):
             files.split(','), env_files, info['Image'])
 
 
+RELEASE_ONLY = {'env': 'VOLTEX_RELEASE_SHA', 'labels': 'org.opencontainers.image.revision'}
+
+
 def image_facts(reference):
     data = json.loads(run(['docker', 'image', 'inspect', reference]))[0]
-    env = dict(item.split('=', 1) for item in (data['Config'].get('Env') or []) if '=' in item)
-    return {'id': data['Id'], 'revision': (data['Config'].get('Labels') or {}).get('org.opencontainers.image.revision'),
-            'release_sha': env.get('VOLTEX_RELEASE_SHA')}
+    config = data['Config']
+    env = dict(item.split('=', 1) for item in (config.get('Env') or []) if '=' in item)
+    labels = config.get('Labels') or {}
+    runtime = {key: config.get(key) for key in ('User', 'Entrypoint', 'Cmd', 'WorkingDir', 'ExposedPorts', 'Volumes', 'StopSignal', 'Healthcheck')}
+    runtime['env'] = {k: v for k, v in env.items() if k != RELEASE_ONLY['env']}
+    runtime['labels'] = {k: v for k, v in labels.items() if k != RELEASE_ONLY['labels']}
+    return {'id': data['Id'], 'revision': labels.get(RELEASE_ONLY['labels']), 'release_sha': env.get(RELEASE_ONLY['env']), 'runtime': runtime}
+
+
+def runtime_differences(old, new):
+    """Names (never values) of what would make the new image start differently from the old one."""
+    out = []
+    for key in sorted(set(old) | set(new)):
+        if key in ('env', 'labels'):
+            out += [f'{key}.{name}' for name in sorted(set(old[key]) | set(new[key])) if old[key].get(name) != new[key].get(name)]
+        elif old.get(key) != new.get(key):
+            out.append(key)
+    return out
 
 
 def check(args):
@@ -155,6 +176,10 @@ def check(args):
             blocked('the new image revision label / VOLTEX_RELEASE_SHA is not --sha')
         if new['id'] == running_image:
             blocked('the new image is the running image')
+        differs = runtime_differences(old['runtime'], new['runtime'])
+        if differs:
+            blocked('the new image would start differently from the running one: ' + ', '.join(differs))
+        print('New image runs like the old one: same user, entrypoint, command, working dir, ports, volumes, ENV and labels (release SHA aside).')
         if old['id'] != running_image:
             blocked(f'the running config image resolves to {old["id"]}, not the running {running_image}: '
                     'a rollback by the old config would start a different image')
@@ -181,6 +206,7 @@ def main():
     c.add_argument('--project', default='voltex-cutover')
     c.add_argument('--project-dir', default='.')
     c.add_argument('--env-file', action='append')
+    c.add_argument('--running-image')
     c.add_argument('--no-docker', action='store_true')
     args = parser.parse_args()
     if args.command == 'check' and args.no_docker and not args.compose_files:
