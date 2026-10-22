@@ -39,10 +39,11 @@ jobs:
           DEST="$RUNNER_TEMP/tyvn-archive/tyvn-api-source.tar"
           git archive --format=tar --output="$DEST" "$RELEASE" src tsconfig.json scripts/tyvn-hetzner.Dockerfile
           test "$(git get-tar-commit-id < "$DEST")" = "$RELEASE"
-          tar -tf "$DEST" | grep -Fxq 'tsconfig.json'
-          tar -tf "$DEST" | grep -Fxq 'scripts/tyvn-hetzner.Dockerfile'
-          tar -tf "$DEST" | grep -Fxq 'src/buildCommit.ts'
-          if tar -tf "$DEST" | grep -Ei '(^|/)(\.env($|\.|/)|[^/]*\.(pem|key|p12|pfx)$)'; then
+          tar -tf "$DEST" > "$RUNNER_TEMP/tyvn-archive/files.txt"
+          grep -Fxq 'tsconfig.json' "$RUNNER_TEMP/tyvn-archive/files.txt"
+          grep -Fxq 'scripts/tyvn-hetzner.Dockerfile' "$RUNNER_TEMP/tyvn-archive/files.txt"
+          grep -Fxq 'src/buildCommit.ts' "$RUNNER_TEMP/tyvn-archive/files.txt"
+          if grep -Ei '(^|/)(\.env($|\.|/)|[^/]*\.(pem|key|p12|pfx)$)' "$RUNNER_TEMP/tyvn-archive/files.txt"; then
             echo 'ERROR: source archive contains an environment or key file'; exit 1
           fi
           cd "$RUNNER_TEMP/tyvn-archive"
