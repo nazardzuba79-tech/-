@@ -169,6 +169,11 @@ describe.each(LOCALES)('listing customer states in %s', lang => {
     const stale = chart({ ...fixture, state: { ...fixture.state, phase: 'live' } }, lang, true);
     expect(stale).toContain(`<div class="managed-demo-status" role="alert">${t('listing.dataStale')}</div>`);
     expectNoNotice(stale);
+    // Without that row the chart is the only child and must get the whole area (CI 2026-10-22: with the
+    // old two-row grid the chart fell into the `auto` row and stayed empty on a 390px phone).
+    const css = require('fs').readFileSync(require('path').resolve(__dirname, '../../components/TestMarketTerminal.css'), 'utf8');
+    expect(css).toMatch(/\.managed-demo-chart \{[^}]*grid-template-rows: minmax\(0, 1fr\);/);
+    expect(css).toMatch(/\.managed-demo-chart:has\(> \.managed-demo-status\) \{ grid-template-rows: auto minmax\(0, 1fr\); \}/);
   });
   test('Markets/search/favorites share the generic presentation', () => {
     const { TestMarketsStrip } = component('pages/markets-bolt/TestMarketsStrip.tsx', lang);
