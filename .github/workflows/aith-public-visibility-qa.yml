@@ -1,0 +1,44 @@
+name: AITH public visibility read-only audit
+on:
+  push:
+    branches: [review/aith-public-visibility-qa-20261022]
+    paths: [.github/workflows/aith-public-visibility-qa.yml]
+permissions:
+  contents: read
+jobs:
+  public-guest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Public AITH catalog and chart reads without credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const base='https://market.voltextech.net';
+          async function read(label,url){
+            const t=Date.now(),response=await fetch(url,{headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(12000)});
+            let data={};try{data=await response.json()}catch{}
+            const a=(data?.assets||[]).find(x=>x.symbol==='AITH'||x.pair==='AITH/USDT');
+            const item=a||data?.asset||data;
+            const lease=item?.readLease;
+            const row={label,status:response.status,ms:Date.now()-t,serverTime:data?.serverTime??null,
+              symbols:Array.isArray(data?.assets)?data.assets.map(x=>x.symbol):undefined,
+              aithPresent:!!a,
+              pair:item?.pair??null,phase:item?.state?.phase??null,
+              price:item?.state?.lastPrice??null,
+              isTradable:item?.isTradable??null,
+              listingArmed:item?.listingArmed??null,
+              version:item?.version??null,
+              lease:{present:!!lease,issuedAt:lease?.issuedAt??null,expiresAt:lease?.expiresAt??null},
+              candles:Array.isArray(data?.candles)?data.candles.length:undefined};
+            console.log('PUBLIC_AITH='+JSON.stringify(row));
+          }
+          (async()=>{
+            await read('catalogue-1',base+'/market/listings');
+            await read('pair',base+'/market/test-assets/AITH-USDT');
+            await read('candles',base+'/market/test-assets/AITH-USDT/candles?interval=4h&limit=15');
+            await new Promise(r=>setTimeout(r,1250));
+            await read('catalogue-2',base+'/market/listings?guest=1');
+          })().catch(e=>{console.error('Probe failed:',e instanceof Error?e.name:'unknown');process.exitCode=1});
+          NODE
