@@ -214,3 +214,24 @@ describe('demo Spot for admin-credited USER accounts (Issue #592)', () => {
     expect((await request(server).get('/api/v1/demo/vta').set('Authorization', authHeader('tester'))).status).toBe(403);
   });
 });
+
+describe('demo order request ID (Issue #592 review)', () => {
+  const body = { pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '100', quantity: '1' };
+  const order = { id: 'o1', price: { toString: () => '100' }, originalQuantity: { toString: () => '1' }, remainingQuantity: { toString: () => '1' }, status: 'OPEN' };
+  it('passes a UUID request ID through; a replay answers 200 with the same order; a conflict is 409; a malformed ID is 400', async () => {
+    const demoTrading = { placeOrder: jest.fn()
+      .mockResolvedValueOnce({ order, trades: [] })
+      .mockResolvedValueOnce({ order, trades: [], replayed: true })
+      .mockRejectedValueOnce(new DemoTradingError('This request was already used for a different order', 'REQUEST_CONFLICT')) };
+    const app = buildApp(adminPrisma('ADMIN'), demoTrading);
+    const requestId = '6b0f6f1e-8c1d-4c7a-9d0e-1f2a3b4c5d6e';
+    const send = (extra: object) => request(app).post('/api/v1/demo/orders').set('Authorization', authHeader('admin-1')).send({ ...body, ...extra });
+    expect((await send({ requestId })).status).toBe(201);
+    const replay = await send({ requestId });
+    expect(replay.status).toBe(200); expect(replay.body.order.id).toBe('o1');
+    expect((await send({ requestId, price: '101' })).status).toBe(409);
+    expect((await send({ requestId: 'not-a-uuid' })).status).toBe(400);
+    expect(demoTrading.placeOrder).toHaveBeenCalledTimes(3);
+    expect(demoTrading.placeOrder).toHaveBeenNthCalledWith(1, expect.objectContaining({ userId: 'admin-1', requestId }));
+  });
+});

@@ -56,8 +56,11 @@ test('an admitted account: LIMIT and MARKET on the demo ledger only, with the or
   expect(form).toContain(".filter(f => !demoLedger || f.id === 'LIMIT' || f.id === 'MARKET')");
   expect(form).toContain("if (demoLedger && family !== 'LIMIT' && family !== 'MARKET') setFamily('LIMIT');");
   const branch = form.slice(form.indexOf('} else if (demoLedger) {'), form.indexOf("} else if (family === 'OCO') {"));
-  expect(branch).toContain('api.placeDemoOrder({');
+  expect(branch).toContain('api.placeDemoSpotOrder({ ...terms, requestId: demoPending.current.requestId })');
   expect(branch).toContain('feedback = spotOrderFeedback(result);');
+  // Same terms after an unknown outcome reuse the request ID; a definite 4xx answer releases it.
+  expect(branch).toContain("if (demoPending.current?.terms !== key) demoPending.current = { terms: key, requestId: crypto.randomUUID() };");
+  expect(branch).toContain('if (error instanceof ApiError && error.status < 500) demoPending.current = null;');
   expect(branch).not.toMatch(/api\.placeOrder\(|placeOcoOrder/);
 });
 

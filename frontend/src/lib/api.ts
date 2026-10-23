@@ -777,6 +777,10 @@ export const api = {
   // admin-credited account trades the demo ledger too (see lib/demoSpot).
   getDemoSpotAccess: () => request<{ enabled: boolean; admitted: boolean }>('/demo/spot/access'),
 
+  /** `requestId` makes a retry after a lost response return the same order. */
+  placeDemoSpotOrder: (params: { pair: string; side: 'BUY' | 'SELL'; type: 'LIMIT' | 'MARKET'; price?: string; quantity: string; requestId: string }) =>
+    request('/demo/orders', { method: 'POST', body: JSON.stringify(params) }),
+
   getDemoOrderHistory: () =>
     request<
       {

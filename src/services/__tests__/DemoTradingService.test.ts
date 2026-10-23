@@ -63,10 +63,11 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
     },
     demoTrade: {
       create: jest.fn(async ({ data }: any) => {
-        trades.push(data);
+        trades.push({ executedAt: new Date(), ...data }); // the column default, as in PostgreSQL
       }),
-      findMany: jest.fn(async ({ where }: any) => trades.filter(row => row.pair === where.pair && where.OR.some((clause: any) =>
-        Object.entries(clause).some(([key, value]: any) => value.in.includes(row[key]))))),
+      findMany: jest.fn(async ({ where }: any) => trades.filter(row => row.pair === where.pair && (where.OR
+        ? where.OR.some((clause: any) => Object.entries(clause).some(([key, value]: any) => value.in.includes(row[key])))
+        : row.takerOrderId === where.takerOrderId))),
     },
     auditLog: {
       create: jest.fn(async ({ data }: any) => {
@@ -220,6 +221,28 @@ describe('DemoTradingService', () => {
       expect(order.status).toBe('CANCELLED'); expect(order.remainingQuantity.toFixed()).toBe('0.6');
       expect(bal(balances, 'taker', 'USDT')).toEqual({ available: new BigNumber(960), locked: new BigNumber(0) });
       expect(bal(balances, 'taker', 'BTC').available.toFixed()).toBe('0.4');
+    });
+
+    it('a client request ID makes a retry return the committed order: one order, one reserve', async () => {
+      const { prisma, balances, orders } = makeFakePrisma({ 'maker:BTC': { available: '1', locked: '0' }, 'taker:USDT': { available: '1000', locked: '0' } });
+      const service = new DemoTradingService(prisma, new MatchingEngine());
+      await service.placeOrder(limit('maker', 'SELL', 100, 0.5));
+      const requestId = '6b0f6f1e-8c1d-4c7a-9d0e-1f2a3b4c5d6e';
+      const first = await service.placeOrder({ ...limit('taker', 'BUY', 100, 1), requestId });
+      expect(first.trades.map(t => t.quantity.toFixed())).toEqual(['0.5']);
+      const again = await service.placeOrder({ ...limit('taker', 'BUY', 100, 1), requestId });
+      expect('replayed' in again).toBe(true);
+      expect(again.order.id).toBe(first.order.id);
+      expect(again.order.remainingQuantity.toFixed()).toBe('0.5');
+      expect(again.trades.map(t => [t.price.toFixed(), t.quantity.toFixed()])).toEqual([['100', '0.5']]);
+      expect([...orders.values()].filter(o => o.userId === 'taker')).toHaveLength(1);
+      expect(bal(balances, 'taker', 'USDT')).toEqual({ available: new BigNumber(900), locked: new BigNumber(50) });
+      // The same ID with other terms is a conflict, never a second order.
+      await expect(service.placeOrder({ ...limit('taker', 'BUY', 101, 1), requestId })).rejects.toMatchObject({ code: 'REQUEST_CONFLICT' });
+      // Another account's identical ID is its own order.
+      await service.topUp({ userId: 'other', asset: 'USDT', amount: '100', performedByAdminId: 'admin' });
+      const other = await service.placeOrder({ ...limit('other', 'BUY', 90, 1), requestId });
+      expect(other.order.id).not.toBe(first.order.id);
     });
 
     it('a stale legacy maker (fills not reflected in its row) stops trading on that pair instead of refunding twice', async () => {

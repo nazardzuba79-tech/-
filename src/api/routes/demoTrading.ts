@@ -18,6 +18,8 @@ const placeOrderSchema = z
     type: z.enum(['LIMIT', 'MARKET']).default('LIMIT'),
     price: priceString.optional(),
     quantity: priceString,
+    // Optional client request ID: a retry after a lost response returns the same order.
+    requestId: z.string().uuid().optional(),
   })
   .refine((v) => v.type !== 'LIMIT' || v.price !== undefined, { message: 'price is required for a LIMIT order', path: ['price'] });
 
@@ -102,7 +104,7 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
   router.post('/demo/orders', requireAuth(prisma), demoSpot, asyncRoute(async (req: AuthedRequest, res) => {
     const parsed = placeOrderSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    const { pair, side, type, price, quantity } = parsed.data;
+    const { pair, side, type, price, quantity, requestId } = parsed.data;
     if (res.locals.demoSpotRole === 'trader' && !(await isSpotPair(pair).catch(() => false))) {
       return res.status(400).json({ error: 'Unsupported trading pair', code: 'PAIR_NOT_SUPPORTED' });
     }
@@ -115,8 +117,10 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
         type,
         price: price ? new BigNumber(price) : undefined,
         quantity: new BigNumber(quantity),
+        ...(requestId ? { requestId } : {}),
       });
-      res.status(201).json({
+      // A replayed request ID answers with the order its first attempt committed.
+      res.status('replayed' in result ? 200 : 201).json({
         order: {
           ...result.order,
           price: result.order.price?.toString() ?? null,
@@ -126,7 +130,7 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
         trades: result.trades.map((t) => ({ ...t, price: t.price.toString(), quantity: t.quantity.toString() })),
       });
     } catch (err) {
-      if (err instanceof DemoTradingError) return res.status(400).json({ error: err.message, code: err.code });
+      if (err instanceof DemoTradingError) return res.status(err.code === 'REQUEST_CONFLICT' ? 409 : 400).json({ error: err.message, code: err.code });
       throw err;
     }
   }));

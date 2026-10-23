@@ -17,17 +17,29 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
   const expectOff = process.env.DEMO_QA_EXPECT_OFF === '1';
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
   const report = { build: expectOff ? 'production bundle, VITE_DEMO_SPOT_ENABLED unset' : 'production bundle, VITE_DEMO_SPOT_ENABLED=true', groups: [], screenshots: [] };
-  async function open(who, width) {
+  async function open(who, width, { dropFirstDemoOrder = false } = {}) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, locale: 'ru-RU' });
     const bearer = await token(who);
     await context.addInitScript(([value]) => { localStorage.setItem('exchange_token', value); localStorage.setItem('exchange_lang', 'ru'); }, [bearer]);
     const page = await context.newPage();
-    const calls = [], errors = [];
+    const calls = [], errors = [], accessAnswers = [], demoOrderBodies = [];
+    let dropped = false;
     page.on('pageerror', e => errors.push(e.message));
+    page.on('response', async response => {
+      if (new URL(response.url()).pathname === '/api/v1/demo/spot/access') accessAnswers.push(await response.json().catch(() => null));
+    });
     await page.route('**/*', async route => {
       const request = route.request(), url = new URL(request.url()), p = url.pathname;
       if (url.origin === origin && !p.startsWith('/api/v1/')) return route.continue();
-      if (url.origin === origin && REAL.some(rx => rx.test(p))) { calls.push(`${request.method()} ${p}`); return route.continue(); }
+      if (url.origin === origin && REAL.some(rx => rx.test(p))) {
+        calls.push(`${request.method()} ${p}`);
+        if (request.method() === 'POST' && p === '/api/v1/demo/orders') demoOrderBodies.push(request.postDataJSON());
+        // A lost response: the server commits the order, the browser never hears back.
+        if (dropFirstDemoOrder && !dropped && request.method() === 'POST' && p === '/api/v1/demo/orders') {
+          dropped = true; await route.fetch(); return route.abort('failed');
+        }
+        return route.continue();
+      }
       const reply = body => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
       if (url.origin !== origin) return route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"external network disabled in QA"}' });
       if (request.method() !== 'GET') { calls.push(`UNEXPECTED ${request.method()} ${p}`); return route.fulfill({ status: 403, body: '{}' }); }
@@ -51,7 +63,7 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
     const mobile = width < 900;
     if (mobile) await page.locator('#mobile-trade-trade').click();
     await page.locator('form.order-form-content').waitFor();
-    return { page, context, calls, errors, mobile };
+    return { page, context, calls, errors, mobile, accessAnswers, demoOrderBodies };
   }
   const form = page => page.locator('form.order-form-content');
   async function limitOrder(page, price, quantity) {
@@ -138,6 +150,26 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
         await context.close();
       }
     }
+    // 2b. Uncertain outcome: the first response is lost after the commit; pressing Buy again
+    //     with the same terms reuses the request ID and gets the SAME order — never a second one.
+    {
+      const { page, context, calls, errors, demoOrderBodies } = await open('tester', 1440, { dropFirstDemoOrder: true });
+      await traderReady(page);
+      const before = await demoBal('tester', 'USDT');
+      await limitOrder(page, 85000, 0.0001); await settle(page);
+      assert.equal(await prisma.demoOrder.count({ where: { userId: 'tester', price: '85000' } }), 1, 'the first attempt committed');
+      await form(page).locator('button[type="submit"]').click(); await settle(page);
+      assert.equal(demoOrderBodies.length, 2);
+      assert.equal(demoOrderBodies[0].requestId, demoOrderBodies[1].requestId, 'the retry reuses the request ID');
+      assert.equal(await prisma.demoOrder.count({ where: { userId: 'tester', price: '85000' } }), 1, 'still one order');
+      assert.equal(Number((await demoBal('tester', 'USDT')).locked) - Number(before.locked), 8.5, 'reserved once');
+      assert.equal(await page.locator('.toast-item', { hasText: 'Ордер размещён' }).count() > 0, true);
+      const row = await prisma.demoOrder.findFirst({ where: { userId: 'tester', price: '85000', status: 'OPEN' } });
+      assert.equal((await fetch(origin + '/api/v1/demo/orders/' + row.id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + await token('tester') } })).status, 204);
+      assert.deepEqual(calls.filter(c => /^(POST|DELETE) \/api\/v1\/orders/.test(c)), []);
+      assert.deepEqual(errors, []);
+      await context.close();
+    }
     // 3. MARKET against resting demo depth; history and assets from the demo ledger (desktop).
     {
       const { page, context, calls, errors } = await open('tester', 1440);
@@ -167,9 +199,9 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
     // 5. Frontend flag alone activates nothing: server flag off → the ordinary ledger, no demo order.
     {
       setEnabled(false);
-      const { page, context, calls, errors, mobile } = await open('tester', 1440);
+      const { page, context, calls, errors, mobile, accessAnswers } = await open('tester', 1440);
       assert.equal(await settledFamilies(page, mobile, 5), 5);
-      assert.ok(calls.includes('GET /api/v1/demo/spot/access'));
+      assert.deepEqual(accessAnswers, [{ enabled: false, admitted: false }], 'the server answered: off');
       await limitOrder(page, 90000, 0.0001); await settle(page);
       assert.deepEqual(posts(calls), ['POST /api/v1/orders'], 'server flag off: ordinary /orders (refused: no Balance)');
       assert.deepEqual(errors, []);
@@ -179,6 +211,7 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
     report.groups.push(
       'no admin credit (1440, 390): Buy clickable; no order request, toast or error line; balance 0.00; no demo ledger read',
       'admitted tester (1440, 390): LIMIT + MARKET only; LIMIT reserves exactly on the demo ledger; cancel from the open-orders row restores it; never the real ledger',
+      'lost response after commit (1440): pressing Buy again reuses the request ID and returns the same order — one order, one reserve',
       'MARKET fills resting demo depth; history shows the FILLED order; assets from the demo ledger; over-balance shows «Недостаточно USDT», nothing placed',
       'server flag off with the build flag on: five ordinary families, Buy goes to /orders (the frontend flag alone activates nothing)');
     return report;

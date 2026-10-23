@@ -56,6 +56,9 @@ export function OrderForm({
   // The demo ledger replaces the ordinary one; an account without an admin
   // credit ('silent') sends nothing at all.
   const demoLedger = demo !== 'off' && !privateVta;
+  // While a demo order's outcome is unknown (network error, 5xx), the same
+  // terms keep the same request ID, so pressing Buy again cannot place twice.
+  const demoPending = useRef<{ terms: string; requestId: string } | null>(null);
   const vtaPending = useRef<{ requestId: string; quantity: string } | null>(null);
   const [vtaUnconfirmed, setVtaUnconfirmed] = useState(false);
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
@@ -316,14 +319,18 @@ export function OrderForm({
         await vta.refresh();
         if (getToken() !== session) return;
       } else if (demoLedger) {
-        const result = await api.placeDemoOrder({
-          pair,
-          side,
-          type: family === 'MARKET' ? 'MARKET' : 'LIMIT',
-          price: family === 'MARKET' ? undefined : price,
-          quantity,
-        });
-        feedback = spotOrderFeedback(result);
+        const terms = { pair, side, type: family === 'MARKET' ? 'MARKET' as const : 'LIMIT' as const, price: family === 'MARKET' ? undefined : price, quantity };
+        const key = JSON.stringify(terms);
+        if (demoPending.current?.terms !== key) demoPending.current = { terms: key, requestId: crypto.randomUUID() };
+        try {
+          const result = await api.placeDemoSpotOrder({ ...terms, requestId: demoPending.current.requestId });
+          demoPending.current = null;
+          feedback = spotOrderFeedback(result);
+        } catch (error) {
+          // A definite answer (4xx) settles the request; anything else keeps its ID for the retry.
+          if (error instanceof ApiError && error.status < 500) demoPending.current = null;
+          throw error;
+        }
       } else if (family === 'OCO') {
         await api.placeOcoOrder({
           pair,

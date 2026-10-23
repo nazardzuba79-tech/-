@@ -1,6 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType, OrderBookSnapshot } from '../matching-engine/types';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
@@ -9,7 +9,7 @@ import { DEMO_SPOT_LEDGER, SpotBookTransaction } from './SpotBookTransaction';
 type TxClient = Prisma.TransactionClient;
 
 /** Machine-readable reason for a refusal; the message keeps the real Spot wording. */
-export type DemoTradingErrorCode = 'INVALID_ORDER' | 'INSUFFICIENT_BALANCE' | 'NO_LIQUIDITY';
+export type DemoTradingErrorCode = 'INVALID_ORDER' | 'INSUFFICIENT_BALANCE' | 'NO_LIQUIDITY' | 'REQUEST_CONFLICT';
 
 export class DemoTradingError extends Error {
   constructor(message: string, readonly code: DemoTradingErrorCode = 'INVALID_ORDER') { super(message); }
@@ -24,6 +24,11 @@ function exactDemoDelta(value: BigNumber): string {
 }
 
 const ACTIVE = ['OPEN', 'PARTIALLY_FILLED'];
+
+/** One order per (account, client request): a retried request after a lost
+ * response finds the order its first attempt committed instead of a second one.
+ * Same derivation as VtaDemoSales. Another account's request ID never collides. */
+export const demoOrderId = (userId: string, requestId: string) => uuidv5(`voltex:demo-spot-order:${userId}:${requestId}`, uuidv5.URL);
 
 /**
  * A stripped-down mirror of OrderService (LIMIT/MARKET only — no
@@ -97,6 +102,8 @@ export class DemoTradingService {
     type: OrderType;
     price?: BigNumber; // required for LIMIT
     quantity: BigNumber;
+    /** Optional client request ID (UUID): makes a retry return the same order. */
+    requestId?: string;
   }) {
     if (isTestAssetPairOrSymbol(params.pair)) throw new DemoTradingError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const [base, quote] = params.pair.split('/');
@@ -110,7 +117,15 @@ export class DemoTradingService {
 
     const lockAsset = params.side === 'BUY' ? quote : base;
 
+    const orderId = params.requestId ? demoOrderId(params.userId, params.requestId) : uuidv4();
+
     return SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
+      // Under the book lock: a request ID that already committed is answered
+      // from its order, never placed (or reserved) a second time.
+      if (params.requestId) {
+        const existing = await tx.demoOrder.findUnique({ where: { id: orderId } });
+        if (existing) return this.replay(tx, existing, params);
+      }
       const staged = await session.book(params.pair);
       let lockAmount: BigNumber;
       if (params.type === 'LIMIT') {
@@ -125,7 +140,6 @@ export class DemoTradingService {
       }
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
 
-      const orderId = uuidv4();
       let createdAt = Date.now();
       for (const side of ['BUY', 'SELL'] as const) for (const resting of staged.getBook(params.pair).getBook(side)) {
         createdAt = Math.max(createdAt, resting.createdAt + 1);
@@ -161,6 +175,30 @@ export class DemoTradingService {
 
       return this.matchAndSettle(tx, staged, order, base, quote, lockAsset, lockAmount, params.price ?? null);
     }, DEMO_SPOT_LEDGER);
+  }
+
+  /** The committed outcome of an earlier attempt with the same request ID. */
+  private async replay(tx: TxClient, row: {
+    id: string; userId: string; pair: string; side: string; type: string; price: { toString(): string } | null;
+    originalQuantity: { toString(): string }; remainingQuantity: { toString(): string }; status: string; createdAt: Date; updatedAt: Date;
+  }, params: { userId: string; pair: string; side: OrderSide; type: OrderType; price?: BigNumber; quantity: BigNumber }) {
+    const same = row.userId === params.userId && row.pair === params.pair && row.side === params.side && row.type === params.type
+      && new BigNumber(row.originalQuantity.toString()).eq(params.quantity)
+      && (params.type === 'MARKET' ? row.price === null : row.price !== null && new BigNumber(row.price.toString()).eq(params.price!));
+    if (!same) throw new DemoTradingError('This request was already used for a different order', 'REQUEST_CONFLICT');
+    const trades = await tx.demoTrade.findMany({ where: { pair: row.pair, takerOrderId: row.id }, orderBy: [{ executedAt: 'asc' }, { id: 'asc' }] });
+    const order: Order = {
+      id: row.id, userId: row.userId, pair: row.pair, side: row.side as OrderSide, type: row.type as OrderType,
+      price: row.price ? new BigNumber(row.price.toString()) : null,
+      originalQuantity: new BigNumber(row.originalQuantity.toString()), remainingQuantity: new BigNumber(row.remainingQuantity.toString()),
+      status: row.status as Order['status'], createdAt: row.createdAt.getTime(), updatedAt: row.updatedAt.getTime(),
+    };
+    return {
+      order, replayed: true as const,
+      trades: trades.map(t => ({ id: t.id, pair: t.pair, takerOrderId: t.takerOrderId, makerOrderId: t.makerOrderId, takerUserId: t.takerUserId,
+        makerUserId: t.makerUserId, price: new BigNumber(t.price.toString()), quantity: new BigNumber(t.quantity.toString()),
+        side: t.side as OrderSide, executedAt: t.executedAt.getTime() })),
+    };
   }
 
   async cancelOrder(userId: string, orderId: string) {

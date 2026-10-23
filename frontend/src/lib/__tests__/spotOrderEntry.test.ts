@@ -103,9 +103,10 @@ test('parent wiring keeps plain matching APIs, pair-keyed reset and genuine fund
   expect(form).toContain('await api.placeOcoOrder({'); expect(form).toContain('await api.placeOrder({');
   // The demo ledger is reached only through the gated branch (Issue #592):
   // TradePage passes `demo` only when both switches admit the account.
-  expect(form.split('placeDemoOrder').length - 1).toBe(1);
+  expect(form.split('placeDemoSpotOrder').length - 1).toBe(1); expect(form).not.toContain('placeDemoOrder');
   expect(form).toContain("const demoLedger = demo !== 'off' && !privateVta;");
-  expect(form).toContain('} else if (demoLedger) {\n        const result = await api.placeDemoOrder({');
+  expect(form).toContain('} else if (demoLedger) {');
+  expect(form).toContain('const result = await api.placeDemoSpotOrder({ ...terms, requestId: demoPending.current.requestId });');
   expect(form).toContain("if (demoLedger && demo !== 'trader') return;");
   expect(form).toContain("demo = 'off',"); expect(form).not.toContain('kycStatus');
   expect(form).toContain('if (submittingRef.current) return');

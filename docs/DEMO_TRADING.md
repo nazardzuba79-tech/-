@@ -47,6 +47,13 @@ refunding twice (fail closed) — see *Activation*.
 fills keep the rest reserved, cancel releases exactly the remainder. MARKET fills only resting demo depth (2% buffer,
 the rest refunded); with none it is refused (`NO_LIQUIDITY`) — never an invented fill or price.
 
+**Uncertain outcome / retries:** every terminal order carries a client `requestId` (UUID). The order ID is derived
+from (account, requestId), checked under the book lock and unique in the table, so a retry after a lost response —
+or several at once — returns the order the first attempt committed (HTTP 200) and reserves nothing again; the same
+ID with other terms is refused (409 `REQUEST_CONFLICT`). The terminal keeps the ID while the outcome is unknown
+(network error, 5xx) and releases it on any definite answer. Without a `requestId` (old clients) behaviour is as
+before.
+
 **Terminal (frontend, `VITE_DEMO_SPOT_ENABLED`, default off):** the ordinary Spot terminal on ordinary pairs:
 - admitted account: balances, orders, open orders, history and assets from the demo ledger; LIMIT/MARKET tabs only;
   insufficient funds shows the existing «Недостаточно USDT на балансе.»;
@@ -59,6 +66,12 @@ the rest refunded); with none it is refused (`NO_LIQUIDITY`) — never an invent
 `GET /withdrawals/options` lists nothing and `POST /withdrawals` answers 403 `DEMO_FUNDS_NOT_WITHDRAWABLE` before
 anything is written. **This is a behaviour change on merge** (not flag-gated, by design: it closes a demo→cash-out
 path). Accounts without a Cross wallet are unchanged.
+
+This guard does not read `DEMO_SPOT_ENABLED` (verified in both states on PostgreSQL). It applies only to an account
+whose native Cross wallet is opened — the pinned owner (`PRIVATE_TRADING_ENABLED` + `PRIVATE_TRADING_OWNER_ID`) or
+an ID in `PRIVATE_TRADING_TEST_USER_IDS`; a configured tester without an opened wallet and every ordinary account
+keep the `Balance` request path (verified with a Balance-funded tester). **Rollback:** revert the
+`src/api/routes/withdrawals.ts` change and redeploy the API; no data migration — refused requests wrote nothing.
 
 ## Activation (separately approved) and rollback
 
@@ -74,7 +87,8 @@ path). Accounts without a Cross wallet are unchanged.
    ```
 3. API: `DEMO_SPOT_ENABLED=true`, restart only the API. Check: `GET /api/v1/demo/spot/access` → `{enabled:true}`;
    an uncredited test account → `admitted:false` and `POST /demo/orders` 403.
-4. Admin credits a tester through **demo top-up** (not «adjust balance»).
+4. Admin credits testers **only through demo top-up** (not «adjust balance» / balance adjustments). A Balance credit
+   is withdrawable by request (BLOCKER 1), so activation is NO-GO unless the owner confirms this rule.
 5. Frontend build with `VITE_DEMO_SPOT_ENABLED=true`, published only after step 3.
 
 **Rollback:** unset `DEMO_SPOT_ENABLED`, restart the API → testers are refused at once (403), the admin sandbox and
@@ -95,8 +109,8 @@ every demo balance/order stay; republish the frontend without the flag. No datab
    depth from its own demo funds). Paper fills against the real Kraken book would be a new fill/pricing policy.
 4. **Futures for credited USERs:** unchanged — the existing native mechanism (`PRIVATE_TRADING_TEST_USER_IDS`).
 5. **Wallet page** shows `Balance`; demo balances are shown in the terminal's assets tab.
-6. **Replay:** an identical authenticated POST is a second order (as on real Spot; no client order id). A replay after
-   logout/revocation is refused.
+6. **Replay without a request ID** (old clients only): an identical POST is a second order, as on real Spot. The
+   terminal always sends one. A replay after logout/revocation is refused.
 7. **Stocks** silent no-op is Issue #558's separate work; Wallet Conversion #591 stays Draft/OFF (it converts
    `Balance` only and never reads `DemoBalance`).
 

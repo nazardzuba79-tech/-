@@ -15,7 +15,8 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'demo-trading-fixture-secret-
 // ordersRouter loads the API-key module; a fixture value, never a real key.
 process.env.API_KEY_ENCRYPTION_SECRET = process.env.API_KEY_ENCRYPTION_SECRET || require('crypto').randomBytes(32).toString('hex');
 const TRADER = '00000000-0000-4000-8000-0000000005c2'; // a configured native test account (Cross trading wallet)
-process.env.PRIVATE_TRADING_TEST_USER_IDS = TRADER;
+const TRADER2 = '00000000-0000-4000-8000-0000000005c3'; // configured too, but its Cross wallet is not opened
+process.env.PRIVATE_TRADING_TEST_USER_IDS = `${TRADER},${TRADER2}`;
 require('ts-node/register/transpile-only');
 const { PrismaClient } = require('@prisma/client');
 const BigNumber = require('bignumber.js');
@@ -56,9 +57,9 @@ async function main() {
     for (const name of fs.readdirSync(path.join(root, 'prisma/migrations')).sort()) {
       const file = path.join(root, 'prisma/migrations', name, 'migration.sql'); if (fs.existsSync(file)) await sql.query(fs.readFileSync(file, 'utf8'));
     }
-    const people = { admin: 'ADMIN', unfunded: 'USER', funded: 'USER', tester: 'USER', maker: 'USER', blocked: 'USER', [TRADER]: 'USER' };
+    const people = { admin: 'ADMIN', unfunded: 'USER', funded: 'USER', tester: 'USER', maker: 'USER', blocked: 'USER', [TRADER]: 'USER', [TRADER2]: 'USER' };
     for (const [id, role] of Object.entries(people)) {
-      await sql.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode",role,"kycStatus","createdAt","updatedAt") VALUES ($1,$2,'fixture',$1,$3,'APPROVED',now(),now())`, [id, `${id.slice(0, 12)}@example.invalid`, role]);
+      await sql.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode",role,"kycStatus","createdAt","updatedAt") VALUES ($1,$2,'fixture',$1,$3,'APPROVED',now(),now())`, [id, `${id.replace(/[^a-z0-9]/gi, "")}@example.invalid`, role]);
     }
     const url = `postgresql://postgres@127.0.0.1:${port}/voltex_demo_trading_fixture?connection_limit=16&sslmode=disable`;
     prisma = new PrismaClient({ datasources: { db: { url } } });
@@ -100,7 +101,9 @@ async function main() {
     const limit = (side, price, quantity, pair = 'BTC/USDT') => ({ pair, side, type: 'LIMIT', price: String(price), quantity: String(quantity) });
 
     // ── Owner/admin credits, as today: two different admin operations ──────────────
-    await adjust.adjustOnce({ userId: 'funded', asset: 'USDT', amount: '100', reason: 'synthetic Balance credit', performedByAdminId: 'admin', idempotencyKey: randomUUID() });
+    for (const who of ['funded', TRADER2]) {
+      await adjust.adjustOnce({ userId: who, asset: 'USDT', amount: '100', reason: 'synthetic Balance credit', performedByAdminId: 'admin', idempotencyKey: randomUUID() });
+    }
     for (const [who, asset, amount] of [['tester', 'USDT', '50'], ['maker', 'BTC', '0.01'], ['blocked', 'USDT', '50'], [TRADER, 'USDT', '100']]) {
       await demo.topUp({ userId: who, asset, amount, performedByAdminId: 'admin', note: 'synthetic demo credit' });
     }
@@ -168,7 +171,27 @@ async function main() {
       assert.deepEqual(cancels.map(r => r.status).sort(), [204, 404]);
       assert.deepEqual(await demoBal('tester', 'USDT'), { available: '50', locked: '0' });
     });
-    await check('replay: an identical POST is a second order (as on real Spot); after the session is revoked it is refused', async () => {
+    await check('request ID: a retry after a lost response returns the same order; duplicates and other terms cannot place twice', async () => {
+      const requestId = randomUUID(), body = { ...limit('BUY', 80000, 0.0001), requestId };
+      const first = await api('POST', '/demo/orders', 'tester', body);
+      assert.equal(first.status, 201);
+      // The response is "lost": the client retries the same request ID, several times at once.
+      const retries = await Promise.all(Array.from({ length: 5 }, () => api('POST', '/demo/orders', 'tester', body)));
+      assert.deepEqual(retries.map(r => r.status), [200, 200, 200, 200, 200]);
+      assert(retries.every(r => r.body.order.id === first.body.order.id));
+      assert.equal(await prisma.demoOrder.count({ where: { userId: 'tester', price: '80000' } }), 1);
+      assert.deepEqual(await demoBal('tester', 'USDT'), { available: '42', locked: '8' }); // reserved once
+      const conflict = await api('POST', '/demo/orders', 'tester', { ...body, quantity: '0.0002' });
+      assert.equal(conflict.status, 409); assert.equal(conflict.body.code, 'REQUEST_CONFLICT');
+      // Concurrent first attempts with one ID: exactly one order.
+      const fresh = { ...limit('BUY', 70000, 0.0001), requestId: randomUUID() };
+      const racing = await Promise.all(Array.from({ length: 4 }, () => api('POST', '/demo/orders', 'tester', fresh)));
+      assert.deepEqual(racing.map(r => r.status).sort(), [200, 200, 200, 201]);
+      assert.equal(await prisma.demoOrder.count({ where: { userId: 'tester', price: '70000' } }), 1);
+      for (const id of [first.body.order.id, racing[0].body.order.id]) assert.equal((await api('DELETE', '/demo/orders/' + id, 'tester')).status, 204);
+      assert.deepEqual(await demoBal('tester', 'USDT'), { available: '50', locked: '0' });
+    });
+    await check('replay without a request ID: an identical POST is a second order (as on real Spot); after the session is revoked it is refused', async () => {
       const body = limit('BUY', 90000, 0.0001);
       const [first, second] = [await api('POST', '/demo/orders', 'tester', body), await api('POST', '/demo/orders', 'tester', body)];
       assert.equal(first.status, 201); assert.equal(second.status, 201); assert.notEqual(first.body.order.id, second.body.order.id);
@@ -257,6 +280,20 @@ async function main() {
     });
     await check('the real Spot ledger is untouched by demo trading (orders, trades, every Balance row)', async () => {
       assert.deepEqual(await realState(), realBefore);
+    });
+    await check('withdrawals ignore DEMO_SPOT_ENABLED: Balance-funded accounts (incl. a configured tester without a Cross wallet) request as before; the demo-valued Cross wallet never can', async () => {
+      for (const flag of [true, false]) {
+        enabled = flag;
+        for (const who of ['funded', TRADER2]) {
+          const r = await api('POST', '/withdrawals', who, { asset: 'USDT', network: 'TRC20', toAddress: 'TQAFIXTURE', amount: '1' });
+          assert.equal(r.status, 200, `${who} flag=${flag}`); assert.equal(r.body.status, 'PENDING'); assert.equal(r.body.balanceHeld, true);
+        }
+        assert.equal((await api('GET', '/withdrawals/options', TRADER2)).body.source, 'SPOT');
+        const native = await api('POST', '/withdrawals', TRADER, { asset: 'USDT', network: 'TRC20', toAddress: 'TQAFIXTURE', amount: '1' });
+        assert.equal(native.status, 403, `native flag=${flag}`);
+      }
+      enabled = true;
+      assert.equal(await prisma.withdrawal.count({ where: { userId: TRADER } }), 0);
     });
     await check('rollback: unsetting DEMO_SPOT_ENABLED refuses testers at once; the admin sandbox and the ledger stay', async () => {
       enabled = false;
