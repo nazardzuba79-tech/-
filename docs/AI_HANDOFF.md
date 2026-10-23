@@ -6844,3 +6844,10 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - read-only production SQL checks;
   - exact-head CI;
   - release with both flags OFF first.
+
+## 2026-10-23 — Claude (session 01QYDaBP) — PR #596: demo-funds withdrawal guard behind its own switch (owner: no hidden change with features off)
+- **Problem (confirmed, RED first):** #596 refused withdrawal requests of demo-valued Cross accounts (owner / native testers) unconditionally, so a merge with every demo flag off changed main's withdrawal flow (the disposable-PostgreSQL check got 403 where main records an unheld `PENDING`).
+- **Done:** `demoWithdrawalGuardEnabled()` in `src/services/demoSpotAccess.ts` — `DEMO_WITHDRAWAL_GUARD_ENABLED=true`, forced on by `DEMO_SPOT_ENABLED=true` (cannot be switched off then). Off: `withdrawals.ts` is main's file plus the guard branch; `WithdrawalService` unchanged in behaviour. On: options list nothing and `POST /withdrawals` 403 `DEMO_FUNDS_NOT_WITHDRAWABLE` for demo-valued accounts; `requestUnheldWithdrawal`, `approveWithdrawal` and `markSent` refuse unheld (`balanceHeld=false`) requests — also PENDING/APPROVED ones filed before — with `DemoFundsNotWithdrawableError` (admin routes 403); `rejectWithdrawal` still works; nothing is cancelled automatically; `Balance`-held requests never affected. Docs: mode table, a fourth read-only pre-activation query (existing unheld PENDING/APPROVED), activation sets both switches, rollback keeps the guard switch on.
+- **Verified locally:** backend `tsc`; withdrawals/WithdrawalService/adminWithdrawals/demo suites incl. both modes and existing PENDING/APPROVED; CI Jest list 16 suites / 327 tests; disposable PostgreSQL 26/26 with the new mode check (off = main, on by switch, forced by Demo Spot, reject allowed, off again = SENT allowed, Balance-held unchanged in every mode, demo balances untouched) and the four doc queries.
+- **Preserved:** the other session's ledger rule, tester-credit hint, #596 order/idempotency work; withdrawals of ordinary accounts untouched.
+- **Open:** #599 must also force the guard when `DEMO_LIQUIDITY_ENABLED` is on (done in its merge of this head).

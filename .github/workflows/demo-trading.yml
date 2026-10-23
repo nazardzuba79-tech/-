@@ -10,6 +10,7 @@ on:
       - 'src/services/WithdrawalService.ts'
       - 'src/api/routes/demoTrading.ts'
       - 'src/api/routes/withdrawals.ts'
+      - 'src/api/routes/adminWithdrawals.ts'
       - 'src/api/routes/orders.ts'
       - 'src/api/routes/balances.ts'
       - 'src/index.ts'
@@ -60,6 +61,7 @@ jobs:
           src/services/__tests__/DemoTradingService.test.ts
           src/api/routes/__tests__/demoTrading.test.ts
           src/api/routes/__tests__/withdrawals.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
           src/services/__tests__/WithdrawalService.test.ts
           src/services/__tests__/OrderService.test.ts
           src/api/routes/__tests__/orders.test.ts

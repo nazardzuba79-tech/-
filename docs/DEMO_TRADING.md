@@ -14,7 +14,7 @@ frontend.** No migration, deploy, flag, balance or production write is part of t
 | USER with an admin **demo-topup** credit (DemoBalance) → `POST /orders` | 400 (Balance is empty) |
 | Same USER → `POST /demo/orders` | 403 `Admin access required` |
 | USER with an admin Balance credit → `POST /withdrawals` | 200 `PENDING`, amount locked (**see BLOCKER 1**) |
-| Owner / configured native tester (Cross trading wallet, valued from DemoBalance) → `POST /withdrawals` | main: recorded as an unheld `PENDING` request against demo funds. **Fixed here: 403.** |
+| Owner / configured native tester (Cross trading wallet, valued from DemoBalance) → `POST /withdrawals` | main: recorded as an unheld `PENDING` request against demo funds, approvable and payable by hand. **Here:** the same with every flag off; refused while the demo-funds guard is on (below). |
 
 ## What this change does
 
@@ -80,24 +80,30 @@ and the read-only queries in *Activation* list who keeps the ordinary ledger and
 - test markets, listings and VTA keep their own paths; no «demo»/«unavailable» wording is added;
 - the frontend flag alone activates nothing: with the server flag off the terminal stays on the ordinary ledger.
 
-**Withdrawals:** a Cross trading account (owner / `PRIVATE_TRADING_TEST_USER_IDS`) is valued from DemoBalance, so
-`GET /withdrawals/options` lists nothing and `POST /withdrawals` answers 403 `DEMO_FUNDS_NOT_WITHDRAWABLE` before
-anything is written. **This is a behaviour change on merge** (not flag-gated, by design: it closes a demo→cash-out
-path). Accounts without a Cross wallet are unchanged.
+**Withdrawals — the demo-funds guard (`demoWithdrawalGuardEnabled`, `src/services/demoSpotAccess.ts`).** A Cross
+trading account (the pinned owner — `PRIVATE_TRADING_ENABLED` + `PRIVATE_TRADING_OWNER_ID` — or an ID in
+`PRIVATE_TRADING_TEST_USER_IDS`, once its native wallet is opened) is valued from demo funds. On main it can file an
+**unheld** request (`balanceHeld: false`) that an admin approves and pays by hand.
 
-This guard does not read `DEMO_SPOT_ENABLED` (verified in both states on PostgreSQL). It applies only to an account
-whose native Cross wallet is opened — the pinned owner (`PRIVATE_TRADING_ENABLED` + `PRIVATE_TRADING_OWNER_ID`) or
-an ID in `PRIVATE_TRADING_TEST_USER_IDS`; a configured tester without an opened wallet and every ordinary account
-keep the `Balance` request path (verified with a Balance-funded tester). **Rollback:** revert the
-`src/api/routes/withdrawals.ts` change and redeploy the API; no data migration — refused requests wrote nothing.
+| Mode | Demo-valued Cross account | Existing unheld PENDING / APPROVED | `Balance`-held requests |
+| --- | --- | --- | --- |
+| **Off** — the default, every demo flag unset | exactly as on main: options net of earlier claims, `POST` records an unheld `PENDING` | approve / mark sent / reject as on main | unchanged |
+| **On** — `DEMO_WITHDRAWAL_GUARD_ENABLED=true`, **or forced** by `DEMO_SPOT_ENABLED=true` (it cannot be switched off then) | `GET /withdrawals/options` lists nothing; `POST /withdrawals` 403 `DEMO_FUNDS_NOT_WITHDRAWABLE`, nothing written | **not approvable, not markable as sent** (admin routes 403, same code); **rejectable**; nothing is cancelled or rewritten automatically | unchanged |
+
+So a merge changes nothing for anyone: the guard comes on only with Demo Spot or its own switch. While it is on, no
+demo-valued amount — including what Demo Spot trading changed — can become an approved or paid withdrawal. Verified
+on PostgreSQL in all three modes, with a PENDING and an APPROVED unheld request filed before the guard came on, and
+with Balance-funded accounts (an ordinary one and a configured tester without an opened Cross wallet) in every mode.
+Values other than the exact string `true` leave the switch off. The switch is read per request: no restart is
+needed to turn it on, only for the environment change itself.
 
 ## Activation (separately approved) and rollback
 
 Each step needs the owner's separate approval; nothing here is done by this PR. All queries are read-only.
 
-1. Owner approval of this code (including the withdrawal guard, which applies on merge) and of the BLOCKER
-   decisions below. Merge, then deploy the API **with `DEMO_SPOT_ENABLED` unset** and the frontend **without**
-   `VITE_DEMO_SPOT_ENABLED`: behaviour stays as today (the default-OFF browser check).
+1. Owner approval of this code and of the BLOCKER decisions below. Merge, then deploy the API **with
+   `DEMO_SPOT_ENABLED` and `DEMO_WITHDRAWAL_GUARD_ENABLED` unset** and the frontend **without**
+   `VITE_DEMO_SPOT_ENABLED`: behaviour stays exactly as today, withdrawals included (the default-OFF checks).
 2. Read-only checks on production, results to the owner:
    - legacy demo rows (each listed pair refuses demo trading until reconciled by an approved data change):
      ```sql
@@ -130,13 +136,23 @@ Each step needs the owner's separate approval; nothing here is done by this PR. 
        AND NOT EXISTS (SELECT 1 FROM "AuditLog" a WHERE a."userId" = u.id AND a.action = 'DEMO_BALANCE_ADJUSTED')
      ORDER BY u.id, b.asset;
      ```
+   - existing **unheld** (demo-valued) withdrawal requests: once the guard is on they can only be rejected, never
+     approved or paid. The owner decides on each before step 4 (nothing is changed automatically):
+     ```sql
+     -- Unheld (demo-valued) requests the demo-funds guard will hold: PENDING/APPROVED become reject-only.
+     SELECT w.id, w."userId", w.asset, w.amount, w.status, w."createdAt"
+     FROM "Withdrawal" w
+     WHERE w."balanceHeld" = false AND w.status IN ('PENDING', 'APPROVED')
+     ORDER BY w."createdAt", w.id;
+     ```
 3. **Owner decision (2026-10-23): new testers are credited only through «Тестовое начисление» (demo top-up)**, never
    through the Spot balance adjustment, which credits a balance the user can request to withdraw (BLOCKER 1).
    Accounts credited earlier on `Balance` are **neither moved nor disabled**: they keep the ordinary terminal and
    ledger, and their `Balance` stays requestable for withdrawal exactly as today. This rule applies to new credits
    only; it does not reclassify old balances. The admin's Spot adjustment dialog states the rule in one line.
    Every step from here is still separately approved.
-4. API: set `DEMO_SPOT_ENABLED=true`, restart only the API. Smoke checks with the owner's test accounts, no order:
+4. API: set `DEMO_WITHDRAWAL_GUARD_ENABLED=true` **and** `DEMO_SPOT_ENABLED=true`, restart only the API. The guard
+   is forced on by Demo Spot anyway; setting its own switch keeps it on through a later rollback of Demo Spot. Smoke checks with the owner's test accounts, no order:
    `GET /api/v1/demo/spot/access` → a demo-credited tester without ordinary funds `{enabled:true, admitted:true,
    ledger:'demo'}`, an existing Balance tester `ledger:'spot'`, an uncredited account `ledger:'none'` and
    `POST /demo/orders` 403.
@@ -147,9 +163,11 @@ Each step needs the owner's separate approval; nothing here is done by this PR. 
 6. Watch for a day: `AuditLog` demo credits, `DemoOrder`/`Order` counts of the testers, `Withdrawal` rows of demo
    (Cross) accounts must stay empty.
 
-**Rollback:** unset `DEMO_SPOT_ENABLED`, restart the API → the demo routes refuse testers at once (403), the terminal
-falls back to the ordinary ledger for everyone, the admin sandbox and every demo balance/order stay; republish the
-frontend without the flag. No database restore; the request ID is optional, so an older frontend keeps working.
+**Rollback:** unset `DEMO_SPOT_ENABLED` (**keep `DEMO_WITHDRAWAL_GUARD_ENABLED=true`**, so demo funds traded
+meanwhile never become payable), restart the API → the demo routes refuse testers at once (403), the terminal falls
+back to the ordinary ledger for everyone, the admin sandbox and every demo balance/order stay; republish the frontend
+without the flag. No database restore; the request ID is optional, so an older frontend keeps working. Only if Demo
+Spot was never switched on can the guard switch be removed too, which restores main's withdrawal flow exactly.
 
 ## BLOCKED / open — concrete reasons
 
