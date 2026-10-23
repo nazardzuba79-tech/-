@@ -6,12 +6,14 @@ import { voltexContent } from './contentPlugin';
 // Deposit catalogue activation is chosen at build time and never falls back
 // at runtime, so a malformed origin must stop the build rather than ship a
 // Deposit dialog that silently reads Render (or nothing).
+const hostedStocks = process.env.VITE_STOCKS_CATALOGUE_VISIBLE === 'true';
+if (hostedStocks && ['VITE_STOCKS_GLOBAL_SIMULATOR','VITE_STOCKS_SIMULATOR','VITE_STOCKS_WIDGET_PREVIEW'].some(key => process.env[key] === 'true')) throw new Error('Hosted Stocks cannot include local fixtures or widget preview');
 const depositEdge = process.env.VITE_DEPOSIT_CATALOGUE_URL;
 if (process.env.VITE_STOCKS_GLOBAL_SIMULATOR === 'true' && process.env.VITE_STOCKS_ENABLED !== 'true') throw new Error('Local global Stocks simulator requires Stocks enabled');
 if (process.env.VITE_STOCKS_SIMULATOR === 'true' && (process.env.VITE_STOCKS_ENABLED !== 'true' || process.env.VITE_STOCKS_WIDGET_PREVIEW !== 'true')) {
   throw new Error('Local Stocks simulator requires the Stocks route and official widget preview');
 }
-if (process.env.VITE_STOCKS_ENABLED === 'true' && process.env.VITE_STOCKS_WIDGET_PREVIEW !== 'true') {
+if (!hostedStocks && process.env.VITE_STOCKS_ENABLED === 'true' && process.env.VITE_STOCKS_WIDGET_PREVIEW !== 'true') {
   const stockOrigin = new URL(process.env.VITE_STOCKS_ORIGIN ?? '');
   if ((stockOrigin.protocol !== 'https:' && !(stockOrigin.protocol === 'http:' && stockOrigin.hostname === '127.0.0.1')) || stockOrigin.username || stockOrigin.password || stockOrigin.search || stockOrigin.hash) throw new Error('Stocks requires a dedicated https origin (loopback allowed for QA)');
 }
@@ -29,6 +31,7 @@ export default defineConfig({
   // A compile-time constant rather than import.meta, so modules that read it
   // stay importable from the CommonJS Jest suites.
   define: {
+    __VOLTEX_STOCKS_CATALOGUE_VISIBLE__: hostedStocks,
     __VOLTEX_STOCKS_GLOBAL_SIMULATOR__: process.env.VITE_STOCKS_GLOBAL_SIMULATOR === 'true',
     __VOLTEX_STOCKS_SIMULATOR__: process.env.VITE_STOCKS_SIMULATOR === 'true',
     __VOLTEX_STOCKS_WIDGET_PREVIEW__: process.env.VITE_STOCKS_WIDGET_PREVIEW === 'true',

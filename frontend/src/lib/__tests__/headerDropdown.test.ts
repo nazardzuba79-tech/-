@@ -17,6 +17,7 @@ const expected = {
 
 describe('shared header dropdown presentation and navigation', () => {
   let dom: any, root: any, dropdown: any, onNavigate: jest.Mock, location: any;
+  let loadHostedGate: (enabled: boolean) => void;
   const originalFetch = globalThis.fetch;
   beforeEach(() => {
     dom = new JSDOM('<div id="root"></div><button id="outside">Outside</button>', { url: 'http://localhost', pretendToBeVisual: true });
@@ -29,10 +30,13 @@ describe('shared header dropdown presentation and navigation', () => {
         Link: ({ to, children, onClick, ...props }: any) => React.createElement('a', { ...props, href: to, onClick: (e: any) => { e.preventDefault(); onClick?.(); } }, children) },
       '../lib/i18n': { useLanguage: () => ({ t: (key: string) => key }) }, './HeaderDropdown.css': {},
     };
-    dropdown = {};
-    new Function('exports', 'require', ts.transpileModule(source, { compilerOptions: {
-      module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
-    } }).outputText)(dropdown, (name: string) => { if (!(name in imports)) throw new Error(name); return imports[name]; });
+    loadHostedGate = enabled => {
+      dropdown = {};
+      new Function('exports', 'require', '__VOLTEX_STOCKS_CATALOGUE_VISIBLE__', ts.transpileModule(source, { compilerOptions: {
+        module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
+      } }).outputText)(dropdown, (name: string) => { if (!(name in imports)) throw new Error(name); return imports[name]; }, enabled);
+    };
+    loadHostedGate(false);
     root = createRoot(document.getElementById('root'));
   });
   afterEach(async () => {
@@ -49,6 +53,13 @@ describe('shared header dropdown presentation and navigation', () => {
   }
   const toggle = () => document.querySelector('.header-disclosure-toggle') as HTMLButtonElement;
   async function open() { await React.act(async () => toggle().click()); }
+
+  test.each([false,true])('hosted catalogue adds Stocks to the existing menu only when enabled, mobile=%s',async mobile=>{
+    expect(dropdown.TRADING_LINKS.some((item:any)=>item.to==='/stocks')).toBe(false);
+    loadHostedGate(true);await mount('TRADING_LINKS',mobile);await open();
+    expect(document.querySelectorAll('.header-disclosure-panel a[href="/stocks"]')).toHaveLength(1);
+    expect(dropdown.TRADING_LINKS.map((item:any)=>item.to)).toEqual([...expected.TRADING_LINKS,'/stocks']);
+  });
 
   for (const [group, hrefs] of Object.entries(expected)) for (const mobile of [false, true]) {
     test(`${group} has the same routes, SVG icons and descriptions on ${mobile ? 'mobile' : 'desktop'}`, async () => {

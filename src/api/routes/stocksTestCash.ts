@@ -1,31 +1,57 @@
 import { Router } from 'express';
 import type { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, createPublicKey, createSecretKey } from 'crypto';
 import { resolve } from 'path';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 
-interface Config { enabled?: boolean; orderExecutionEnabled?: boolean; issuer?: string; principals?: Array<{issuer:string;subject:string}>; gatewayKey?: string; secret?: string }
+interface Config { catalogueEnabled?: boolean; enabled?: boolean; orderExecutionEnabled?: boolean; issuer?: string; principals?: Array<{issuer:string;subject:string}>; gatewayKey?: string; secret?: string }
 interface Actor { issuer:string;subject:string;userId:string;sessionId:string;expiresAt:number }
 interface Authority { execute(actor:Actor,type:string,input?:unknown,options?:{signal?:AbortSignal;occurrenceId?:string}):Promise<any>; metrics():unknown }
 export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, injected?: Authority): Router {
   const router = Router(), enabled = config.enabled ?? process.env.STOCKS_TEST_CASH_ENABLED === 'true';
-  if (!enabled) return router;
+  const catalogueEnabled = config.catalogueEnabled ?? process.env.STOCKS_CATALOGUE_ENABLED === 'true';
   // Visibility and wallet reads never grant stock order execution. Owner-approved trading
   // requires a second explicit server gate, independent of the catalogue gate (default OFF).
   const orderExecutionEnabled = config.orderExecutionEnabled ?? process.env.STOCKS_ORDER_EXECUTION_ENABLED === 'true';
+  if (!enabled && !catalogueEnabled) return router;
   const issuer = config.issuer ?? process.env.STOCKS_IDENTITY_ISSUER;
   const gatewayKey = config.gatewayKey ?? process.env.STOCKS_TEST_CASH_GATEWAY_KEY;
   const secret = config.secret ?? process.env.JWT_SECRET;
   const principals = config.principals ?? JSON.parse(process.env.STOCKS_TRADE_PRINCIPALS ?? 'null');
   if (!issuer || !secret || !gatewayKey || gatewayKey.length < 32 || !Array.isArray(principals) || principals.length !== 2) throw Error('STOCKS_AUTHORITY_CONFIG_INVALID');
-  // Node24 is the pinned local integration runtime (native require(ESM)).
+  // Node 22.23.3 supports this synchronous require(ESM) path.
   // This lazy load is never reached by the default, disabled API surface.
   const authority: Authority = injected ?? require(resolve(__dirname, '../../../services/stocks-global/postgres-authority.mjs')).openPostgresAuthority(prisma, { issuer, tradePrincipals: principals });
-  const auth = requireAuth(prisma);
+  // A release readiness assertion is offered only by the real PostgreSQL path.
+  // No account creation, balance read/write, session decision or cached grant.
+  if (!injected) {
+    const { releasePrincipals, principalsDigest } = require(resolve(__dirname, '../../../services/stocks-global/release-config.mjs'));
+    const bindings = releasePrincipals(issuer, principals);
+    router.get('/stocks-test-cash/readiness', async (req, res) => {
+      res.set('Cache-Control', 'no-store');
+      const provided = Buffer.from(String(req.headers['x-stocks-authority-key'] ?? ''));
+      const expected = Buffer.from(gatewayKey);
+      if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+        res.status(401).json({ error: 'AUTH_REQUIRED' }); return;
+      }
+      try {
+        const users = await prisma.user.findMany({ where: { id: { in: bindings.map((p: {subject:string}) => p.subject) }, blockedAt: null }, select: { id: true } });
+        if (users.length !== 2) throw Error('BINDINGS_UNVERIFIED');
+        // Resolve the required schema without reading private rows.
+        await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAccount" WHERE false');
+        await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestReceipt" WHERE false');
+        await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAudit" WHERE false');
+        res.json({ version: 1, authority: 'postgres', tradingEnabled: enabled, issuer, principalsDigest: principalsDigest(bindings) });
+      } catch { res.status(503).json({ error: 'STOCKS_AUTHORITY_UNREADY' }); }
+    });
+  }
+  // Normalize the immutable key once; signature/expiry checks still run on every request.
+  const verificationKey = (() => { try { return createPublicKey(secret); } catch { return createSecretKey(Buffer.from(secret)); } })();
+  const auth = requireAuth(prisma, { prepareVerificationKey: true });
   const actor = (req: AuthedRequest): Actor => {
     if (!req.userId || !req.sessionId) throw Object.assign(Error('AUTH_REQUIRED'), { code: 'AUTH_REQUIRED' });
-    const payload = jwt.verify(req.headers.authorization!.slice(7), secret) as jwt.JwtPayload;
+    const payload = jwt.verify(req.headers.authorization!.slice(7), verificationKey) as jwt.JwtPayload;
     if (payload.sub !== req.userId || payload.sid !== req.sessionId || !Number.isSafeInteger(payload.exp)) throw Object.assign(Error('AUTH_REQUIRED'), { code: 'AUTH_REQUIRED' });
     return { issuer, subject: req.userId, userId: req.userId, sessionId: req.sessionId, expiresAt: payload.exp! * 1000 };
   };
@@ -35,6 +61,12 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
     res.status(status).json({ error: code });
   };
   router.get('/stocks-test-cash/identity', auth, (req: AuthedRequest, res) => { try { const value = actor(req); res.set('Cache-Control','no-store').json({ issuer: value.issuer, subject: value.subject }); } catch (error) { failure(res,error); } });
+  // Catalogue/identity access never grants a financial capability. Off means no
+  // wallet or command route, even for an allowed principal or forged gateway call.
+  if (!enabled) {
+    router.all(['/stocks-test-cash/wallet','/stocks-test-cash/command'], auth, (_req, res) => { res.status(403).json({ error: 'STOCKS_TRADING_DISABLED' }); });
+    return router;
+  }
   // This is a read of the same authority, available only to the two bindings.
   // No role promotion or change to Funding/real Wallet routes is involved.
   router.get('/stocks-test-cash/wallet', auth, async (req: AuthedRequest, res) => { try { const value=await authority.execute(actor(req),'readView'); res.set('Cache-Control','no-store').json({ asset:'USDT',...value.wallets.USDT,authorityCash:value.authorityCash }); } catch (error) { failure(res,error); } });

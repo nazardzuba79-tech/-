@@ -1,0 +1,34 @@
+{
+  "app": "133cb85a95003c229829b1ecef3d8d0e6308db95",
+  "base": "98c577d4241ce527f7bfca3b78dd7bb78255e300",
+  "tree": "40a894fdc8eac87177fb3a30bdf13ca30a7308a2",
+  "runtime": [
+    "src/index.ts",
+    "src/api/middleware/stocksAuthorityIngress.ts",
+    "services/stocks-global/authority-adapter.mjs",
+    "services/stocks-global/server.mjs"
+  ],
+  "files": {
+    ".github/workflows/stocks-positive-pg-tls.yml": "7d78589f3a2507b3dec7b81274d09d3ce6a34d0a25bc8043a97a27a09a8191c6",
+    "docs/AI_HANDOFF.md": "8d17be47cf4e1e02b13db271b1185247be9ee53f7a15f2dc850c8b4014aa23b0",
+    "docs/STOCKS_PRIVATE_AUTHORITY_QUOTA_20261020.md": "8ef55c8bd2e59070de1541aac0d224f4e5f1ff7dbcf3ae91c311380647087774",
+    "review/stocks-pg-tls-98c577d4/README.md": "cd68ce8c8d0cebd025fc9e72bc2a5e842cad6b320c4a8fce85c637614fb610f0",
+    "review/stocks-pg-tls-98c577d4/auth-boundary-investigation.md": "dc35c39d197d70321d0c1e8df3a346acfe66d3cd038e214c3af905891093fa7a",
+    "review/stocks-pg-tls-98c577d4/auth-trace.cjs": "0475c60eac73b38410bf68cdcffb863b75ce574ea6e2472220f673b86566b068",
+    "review/stocks-pg-tls-98c577d4/auth-trace.test.cjs": "0ca3d298f129c278aa7acea305779cf907ebb94c06c622546a1b2b2abf68ccc7",
+    "review/stocks-pg-tls-98c577d4/diagnostics.cjs": "c94a60a29d9ad099eba006cefd4cb1d961b81e430157ac8e00052c73e8024854",
+    "review/stocks-pg-tls-98c577d4/diagnostics.test.cjs": "3253e3dac50c53f4b8cdff6e02ccae7961fec9f4fff60dc417e87deedd483b95",
+    "review/stocks-pg-tls-98c577d4/fixture.cjs": "c1359458ed2f47ea506f1aa075bc336ad17a5749343cb3ee38ad6eb4dc090591",
+    "review/stocks-pg-tls-98c577d4/fixture.test.cjs": "ff9a1fb1b6f458cf064a93e7b64698a5c002551ea0fcbfaee930be0dfeece8ac",
+    "review/stocks-pg-tls-98c577d4/run.cjs": "c3014bfdabb7003ecedb1e0da17695486f6196681952e86a7a2331a4e4bf6d2e",
+    "review/stocks-pg-tls-98c577d4/setup-guards.test.cjs": "69a162c6ce0227130d1ebe08ca07cbb0382136d0513f27f74fccd6fa44c38d47",
+    "review/stocks-pg-tls-98c577d4/source-guard.cjs": "dc6d28069becffb82c694310fc9b82dcbccbd8db5d67659da56d7685a987966b",
+    "review/stocks-pg-tls-98c577d4/startup-preflight.md": "ec685dc052466fb2f6baae1f29529428bf554fde918f9cc62897c9ad33a34509",
+    "services/stocks-global/authority-adapter.mjs": "9770d8e39b289d988d10985ba8e484be8fd678e9f3aafe997312a2d257b07252",
+    "services/stocks-global/authority-rate-limit.test.mjs": "233c3c3e6bcf65ee8c688e6d427be535b88bc459641b4711e92acf1abd4596b1",
+    "services/stocks-global/server.mjs": "7f5b6fc7a40d1ec7168130255869059de73887977ced505193fb9eb74dae6b5f",
+    "src/api/middleware/__tests__/stocksAuthorityIngress.test.ts": "68321c9eb045efac25dd5d038c6498a1a060fae0379822ce760cb8f075155e58",
+    "src/api/middleware/stocksAuthorityIngress.ts": "5e2b0f62e89dd6a891e3cd23d783e75cb9b321eaf4047b183c3eb4bfa28a0e87",
+    "src/index.ts": "0df1b26cd5651533f6bb6075e5cbf24cf55395e1a851d8f9ac14654c0f2ee743"
+  }
+}
