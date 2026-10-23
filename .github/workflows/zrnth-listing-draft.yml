@@ -1,0 +1,50 @@
+name: ZRNTH November 3 listing candidate QA
+
+on:
+  pull_request:
+    paths:
+      - 'config/test-markets/zrnth-20261103.draft.json'
+      - 'src/services/listings/__tests__/zrnthDraft.test.ts'
+      - 'docs/ZRNTH_LISTING_20261103.md'
+      - '.github/workflows/zrnth-listing-draft.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  zrnth-candidate:
+    if: github.event.pull_request.draft == true && github.head_ref == 'review/zrnth-20261103-listing-draft' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install test dependencies only
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify next listing candidate and previous TYVN scenario regression
+        run: |
+          npx jest --runInBand --silent --runTestsByPath \
+            src/services/listings/__tests__/zrnthDraft.test.ts \
+            src/services/listings/__tests__/tyvnDraft.test.ts \
+            src/services/listings/__tests__/listingCountdown.test.ts \
+            src/services/listings/__tests__/listingScenarioControls.test.ts
+      - name: Confirm public configuration cannot place orders or allocate funds
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs'), assert = require('assert/strict');
+          const c = JSON.parse(fs.readFileSync('config/test-markets/zrnth-20261103.draft.json','utf8'));
+          assert.equal(c.tradable, false);
+          assert.equal(c.ownerAllocation, '0');
+          assert.equal(c.symbol, 'ZRNTH');
+          assert.equal(c.listingAt, '2026-11-03T13:00:00Z');
+          assert.equal(c.simulationProgram.kind,'scenario-controls-v2');
+          assert.notEqual(c.simulationProgram.afterGrowth,'historical');
+          assert(c.logo.startsWith('data:image/svg+xml;base64,'));
+          console.log('ZRNTH candidate no trading, no automatic credit, no publication or deployment');
+          NODE
