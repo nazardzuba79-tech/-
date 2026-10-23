@@ -529,7 +529,8 @@ async function main() {
       const rows = await page.evaluate(() => [...document.querySelectorAll('.cfd-position-content tbody tr[data-cfd-position]')].map(r => r.textContent.replace(/\s+/g, ' ').trim()));
       check(`${P}.open-long-and-short`, rows.length === 2 && rows.some(r => /Long|Лонг|Покуп/i.test(r)) && rows.some(r => /Short|Шорт|Продаж/i.test(r)), { rows, preview });
       // Close half of the long, then the rest.
-      const longRow = page.locator('.cfd-position-content tbody tr[data-cfd-position]').filter({ hasText: /0\.2/ }).first();
+      // Pick the long by its side cell: a number like /0\.2/ also matches the short's margin (e.g. 40.25 USD at XAUUSD ≈ 4,025).
+      const longRow = page.locator('.cfd-position-content tbody tr[data-cfd-position]').filter({ hasText: /Long|Лонг|Покуп/i }).first();
       await longRow.locator('.cfd-partialBtn').click(); await page.waitForTimeout(200);
       const prefilled = await page.locator('.cfd-partial-form input').inputValue();
       await page.locator('.cfd-partial-form input').fill('5'); await page.locator('.cfd-partialSubmit').click(); await page.waitForTimeout(200);
