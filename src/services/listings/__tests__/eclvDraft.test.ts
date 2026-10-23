@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { parseListingConfig, withStableProfile, checkPublishable, listingSimulationConfig, publishedListingAsset, nextListingCountdown, RESERVED_LISTING_SYMBOLS, LOGO_MAX_BYTES } from '../listingConfig';
 import { exactPriceFromGain, validateScenarioControls } from '../../../shared/listingScenarioControls';
-import { DAY_MS, simulationFor } from '../../testMarkets/testMarketSimulation';
+import { DAY_MS, simulationFor, aggregateCandles, SIM_INTERVALS } from '../../testMarkets/testMarketSimulation';
 
 const raw = JSON.parse(readFileSync(resolve(__dirname, '../../../../config/test-markets/eclv-20261103.draft.json'), 'utf8'));
 const draft = parseListingConfig(raw);
@@ -74,6 +74,35 @@ test('the chart is the same whatever creation ordinal production assigns, and 5m
   expect(candles[0].open).toBeCloseTo(.014, 10);
   expect(Math.max(...candles.map(c => c.high))).toBeLessThanOrEqual(.518);
   expect(Math.min(...candles.map(c => c.low))).toBeGreaterThan(0);
+});
+
+test('phases: each stage ends on its target, rises and falls inside, day one keeps the approved deep fall; 1m/5m/1h tell one history', () => {
+  const program = saved.simulationProgram!;
+  if (program.kind !== 'scenario-controls-v2') throw new Error('expected v2');
+  const sim = simulationFor(publishedListingAsset(listing));
+  const end = program.stages.reduce((n, s) => n + s.durationHours, 0);
+  const hourly = aggregateCandles(sim.candles5m(AT + end * HOUR, AT), SIM_INTERVALS['1h']);
+  let hours = 0;
+  for (const stage of program.stages) {
+    const segment = hourly.slice(hours, hours + stage.durationHours);
+    hours += stage.durationHours;
+    expect(sim.priceAt(AT + hours * HOUR)).toBeCloseTo(Number(stage.targetPrice), 9);
+    expect(segment.some(c => c.close > c.open) && segment.some(c => c.close < c.open)).toBe(true);
+    expect(Math.max(...segment.map(c => c.high))).toBeLessThanOrEqual(.518);
+  }
+  // DEEP_RECOVERY as approved: inside day one the price falls by more than 60 % from its high before closing at 0.1092.
+  let high = 0, drawdown = 0;
+  for (const c of hourly.slice(0, 24)) { high = Math.max(high, c.high); drawdown = Math.max(drawdown, 1 - c.low / high); }
+  expect(drawdown).toBeGreaterThan(.6);
+  // 1m candles: continuous, within bounds, and every five of them are exactly their 5m candle.
+  const minutes = sim.candles1m(AT + 3 * HOUR, AT), fives = sim.candles5m(AT + 3 * HOUR, AT);
+  for (let i = 1; i < minutes.length; i++) expect(minutes[i].open).toBe(minutes[i - 1].close);
+  expect(minutes.every(c => c.low > 0 && c.high <= .518)).toBe(true);
+  for (let i = 0; i < 36; i++) {
+    const group = minutes.slice(i * 5, i * 5 + 5);
+    expect([group[0].open, Math.max(...group.map(c => c.high)), Math.min(...group.map(c => c.low)), group[4].close])
+      .toEqual([fives[i].open, fives[i].high, fives[i].low, fives[i].close]);
+  }
 });
 
 test('draft is publishable only before start, timer requires a separate owner action', () => {
