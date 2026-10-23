@@ -43,7 +43,7 @@ async function fixture(t){
       if(quoteGate){const gate=quoteGate;quoteGate=null;gate.enter();await gate.wait;}
       return{instrumentId:ID,provider:'bybit',nativeCurrency:'USDT',bid:price,ask:price,timestamp:time,receivedAt:time,verified:true,marketOpen:true,eventId:'auth-lifetime-fixture-'+time,capacity:'1.00000000',prices:{USDT:{buy:price,sell:price}},fx:{}};
     },history:async()=>({candles:[]})};
-  const app=await createServer({port:0,accountsPath:path,tradePrincipals:[ALICE,BOB],accountDiagnostics:true,now:()=>time,hub,
+  const app=await createServer({ financialEnabled: true,port:0,accountsPath:path,tradePrincipals:[ALICE,BOB],accountDiagnostics:true,now:()=>time,hub,
     accountWorkerOptions:{testHooks:{commitControl:control.buffer}},
     authenticate:async(req,{signal}={})=>{
       const name=req.headers['x-fixture-session'],state=auth.get(name);if(!state)throw new SimError('AUTH_REQUIRED');state.calls++;

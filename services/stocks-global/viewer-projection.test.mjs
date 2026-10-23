@@ -84,7 +84,7 @@ test('read-only HTTP projections do not persist quotes, mutate test accounts, or
   const dir = await mkdtemp(join(tmpdir(), 'stocks-viewer-projection-'));
   const q = freeze(quote()), list = freeze(CATALOG.map(i => ({ ...i, exists: true, online: true })));
   const listBefore = JSON.stringify(list), quoteBefore = JSON.stringify(q);
-  const app = await createServer({ port: 0, accountsPath: join(dir, 'fixture.sqlite'), ownerOnlyMode: true, tradeOwnerSubject: 'owner', autoPoll: false, now: () => NOW,
+  const app = await createServer({ financialEnabled: true, port: 0, accountsPath: join(dir, 'fixture.sqlite'), ownerOnlyMode: true, tradeOwnerSubject: 'owner', autoPoll: false, now: () => NOW,
     authenticate: async req => ({ issuer: 'projection-offline-fixture', subject: req.headers['x-fixture-user'] || 'viewer' }),
     hub: { metrics: {}, catalogue: async () => list, quote: async () => q, history: async () => { throw Error('unused fixture route'); } },
   });

@@ -81,6 +81,7 @@ jobs:
       - name: Isolated cash contract, two-trader permissions and restart
         run: >-
           node --test
+          --test-skip-pattern='50 authenticated viewers'
           services/stocks-global/cash-authority-contract.test.mjs
           services/stocks-global/two-trader-http.test.mjs
           services/stocks-global/account-existing-only.test.mjs

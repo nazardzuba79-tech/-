@@ -20,7 +20,7 @@ Viewing Stocks and trading Stocks are distinct permissions:
 
 - **Visibility**: only `VITE_STOCKS_ENABLED=true` + `VITE_STOCKS_HOSTED_PILOT=true`, explicit FUTURE frontend build, default OFF.
 - **PG access**: `STOCKS_TEST_CASH_ENABLED=true` only after the two existing privately verified owner/Ksenia accounts, actual DemoBalance USDT, PostgreSQL, gateway/auth and valid data rights are confirmed; default OFF.
-- **Order execution**: separate `STOCKS_ORDER_EXECUTION_ENABLED=true`, introduced in stacked PR #593, default OFF and server-validated. A UI flag alone cannot enable financial mutation. Viewers' buttons remain active and completely silent, without any POST, through existing `mayTrade()` and `account.canTrade` checks.
+- **Order execution**: independent `VITE_STOCKS_ORDER_EXECUTION_ENABLED` (frontend) and `STOCKS_ORDER_EXECUTION_ENABLED` (API and gateway), all default OFF and strict literal `true` only. `GlobalStocks` separates read permission from execution; even stale `account.canTrade=true` cannot create intents, POST or a submit notice while OFF. The gateway's constructor `financialEnabled=false` rejects every financial POST with 403 before binding an account, observing a quote, parsing commands or checking CSRF. Its read/background paths cannot run matching while OFF. Isolated execution fixtures opt in explicitly; existing PostgreSQL authority tests remain intact.
 
 No fake prices or external venue orders. Do not consider frontend route rendering as acceptance of 2-trader execution or market-data licensing.
 
@@ -32,4 +32,4 @@ No fake prices or external venue orders. Do not consider frontend route renderin
 4. Use a separately approved frontend pilot deploy and no-cache asset validation. Test guest/login, logged-in viewer catalogue/terminal with no accepted order, forbidden direct POST (403), session change and two permitted traders in isolated staging. Production account trading needs a separate authorization.
 5. Rollback frontend flags OFF to hide Stocks without touching balances or orders; independently leave both backend financial switches OFF. Never restore production DB over newer transactions.
 
-This review branch changes only normal route/nav composition, one pure host policy and its tests, Vite build contracts. **No production release, migrations, accounts, balances, orders, TYVN/ECLAVO timers, API/Worker changes or new paid resource.**
+This review branch changes route composition, frontend/gateway execution gates, isolated tests and QA-clock alignment. See [integration and acceptance evidence](STOCKS_611_FINAL_REVIEW.md) for exact scope and unresolved release blockers. **No production release, migrations, accounts, balances, orders, TYVN/ECLAVO timers, API/Worker changes or new paid resource.**

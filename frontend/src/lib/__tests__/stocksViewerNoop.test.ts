@@ -9,10 +9,13 @@ const React = req('react'), { createRoot } = req('react-dom/client'), { JSDOM } 
 const ID = 'BYBIT:AAPLXUSDT';
 const languageLocales = { ru: 'ru-RU', en: 'en-US', es: 'es-ES', zh: 'zh-CN', hi: 'hi-IN', ja: 'ja-JP', ko: 'ko-KR' } as const;
 let language: keyof typeof languageLocales = 'ru';
+// Execution tests opt in explicitly; the shipped build remains OFF.
+let executionEnabled = true;
 const compile = (file: string, imports: Record<string, unknown> = {}) => {
   // Vite replaces this build-time constant; the test exercises the USDT review build.
   const input = readFileSync(resolve(frontend, file), 'utf8')
-    .replace("import.meta.env.VITE_STOCKS_OWNER_USDT_ONLY", "'true'");
+    .replace("import.meta.env.VITE_STOCKS_OWNER_USDT_ONLY", "'true'")
+    .replace("import.meta.env.VITE_STOCKS_ORDER_EXECUTION_ENABLED", JSON.stringify(executionEnabled ? 'true' : 'false'));
   const source = ts.transpileModule(input, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -47,7 +50,7 @@ function state(canTrade?: boolean, id = 'fixture-alice') {
 }
 
 describe('GlobalStocks session-bound trading and silent viewer submit', () => {
-  let dom: any, root: any, Terminal: any, credential: string | null;
+  let dom: any, root: any, Terminal: any, terminalImports: Record<string, unknown>, credential: string | null;
   let listeners: Set<() => void>, pendingState: Array<(body: any) => void>;
   let writes: Array<{ url: string; init: RequestInit; finish: (status: number, body: any) => void }>;
   let fetchMock: jest.Mock;
@@ -65,7 +68,7 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
     if (body) await flush(() => pendingState.shift()!(body));
   };
   beforeEach(() => {
-    language = 'ru';
+    language = 'ru'; executionEnabled = true;
     jest.useFakeTimers(); root = undefined; credential = 'fixture-alice-session'; listeners = new Set(); pendingState = []; writes = [];
     dom = new JSDOM('<div id="root"></div>', { url: 'http://127.0.0.1:4438/stocks/' + encodeURIComponent(ID), pretendToBeVisual: true });
     priorGlobals = new Map(globals.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
@@ -91,7 +94,7 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
       signal() { return this.controller.signal; }
     }
     class RequestError extends Error { constructor(public code: string) { super(code); } }
-    Terminal = compile('src/pages/stocks/global/GlobalStocks.tsx', {
+    terminalImports = {
       react: React, 'react/jsx-runtime': req('react/jsx-runtime'), 'bignumber.js': { default: req('bignumber.js') },
       'react-router-dom': { useParams: () => ({ instrumentId: ID }), useNavigate: () => jest.fn() },
       './useStocksText': { useStocksText: () => ({ s: stockTranslator(language), lang: language, locale: languageLocales[language] }) },
@@ -123,12 +126,45 @@ describe('GlobalStocks session-bound trading and silent viewer submit', () => {
         DesktopAllocation: ({ onChange }: { onChange: (s: string) => void }) => React.createElement('div', null,
           ...['0.25', 'not-a-number', ''].map(value => React.createElement('button', { key: value, type: 'button',
             onClick: () => onChange(value) }, 'amount:' + value))) },
-    }).default;
+    };
+    Terminal = compile('src/pages/stocks/global/GlobalStocks.tsx', terminalImports).default;
     root = createRoot(document.getElementById('root'));
   });
   afterEach(async () => {
     if (root) await flush(() => root.unmount()); dom.window.close(); jest.useRealTimers(); globalThis.fetch = originalFetch;
     for (const key of globals) { const old = priorGlobals.get(key); if (old) Object.defineProperty(globalThis, key, old); else delete (globalThis as any)[key]; }
+  });
+
+  test.each([
+    { id: 'fixture-viewer', permission: false },
+    { id: 'fixture-alice', permission: true },
+    { id: 'fixture-bob', permission: true },
+  ])('execution OFF ignores even stale canTrade=true for $id without storage or financial POST', async ({ id, permission }) => {
+    executionEnabled = false;
+    Terminal = compile('src/pages/stocks/global/GlobalStocks.tsx', terminalImports).default;
+    await draw(state(permission, id));
+    const stored = { local: { ...localStorage }, session: { ...sessionStorage } };
+    const accounts = document.querySelector('.vxg-wallets')!.textContent;
+    for (const side of ['Купить', 'Продать']) {
+      await flush(() => Array.from(document.querySelectorAll<HTMLButtonElement>('.vxg-sides button')).find(b => b.textContent === side)!.click());
+      for (const type of ['Market', 'Limit']) {
+        await flush(() => Array.from(document.querySelectorAll<HTMLButtonElement>('.vxg-order-types button')).find(b => b.textContent === type)!.click());
+        for (const value of ['0.25', 'not-a-number', '']) {
+          await flush(() => button('amount:' + value).click());
+          const fields = amounts(), messages = notices();
+          const primary = document.querySelector<HTMLButtonElement>('.vxg-submit')!;
+          expect(primary.disabled).toBe(false);
+          await flush(() => { for (let n = 0; n < 5; n++) { primary.click(); submit(); } });
+          expect(writes).toHaveLength(0); expect(amounts()).toEqual(fields); expect(notices()).toEqual(messages);
+          expect({ local: { ...localStorage }, session: { ...sessionStorage } }).toEqual(stored);
+        }
+      }
+    }
+    for (const text of ['Обновить котировку', 'Установить баланс', 'Отменить']) {
+      const action = button(text); if (action) await flush(() => action.click());
+    }
+    expect(writes).toHaveLength(0);
+    expect(document.querySelector('.vxg-wallets')!.textContent).toBe(accounts);
   });
 
   test.each([false, undefined])('viewer or missing permission (%s) silently ignores valid, invalid and repeated submit', async permission => {

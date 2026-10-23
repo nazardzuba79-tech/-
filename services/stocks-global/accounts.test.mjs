@@ -78,7 +78,7 @@ test('authenticated HTTP separates all account routes, rejects account selectors
   await new Promise(r=>authority.listen(0,'127.0.0.1',r));
   const authenticate=identityResolver({endpoint:`http://127.0.0.1:${authority.address().port}/api/v1/me`,issuer:'fixture-only'});
   const hub={metrics:{},catalogue:async()=>CATALOG,history:async()=>({candles:[]}),quote:async()=>{quoteReads++;return quote;}};
-  const app=await createServer({port:0,accountsPath:join(d,'paper.sqlite'),authenticate,hub,now:()=>now,autoPoll:false});
+  const app=await createServer({ financialEnabled: true,port:0,accountsPath:join(d,'paper.sqlite'),authenticate,hub,now:()=>now,autoPoll:false});
   const base=`http://127.0.0.1:${app.port}/__stocks_global/`,auth={alice:'fixture-token-alice-123',bob:'fixture-token-bob-12345'};
   const get=(user,path='state')=>fetch(base+path,{headers:{Authorization:'Bearer '+auth[user]}});
   let a,b;const post=(user,token,path,body,extra={})=>fetch(base+path,{method:'POST',headers:{Authorization:'Bearer '+auth[user],'X-Stocks-Token':token,'Content-Type':'application/json',...extra},body:JSON.stringify(body)});

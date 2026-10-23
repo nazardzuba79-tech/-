@@ -68,7 +68,7 @@ async function seed(path, legacy = false) {
 async function serverFixture(t, { legacy = false } = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'stocks-wallet-fx-')), path = join(dir, 'paper.sqlite');
   const f = fixture(); await seed(path, legacy);
-  const options = { port: 0, accountsPath: path, ownerOnlyMode: true, tradeOwnerSubject: 'alice',
+  const options = { financialEnabled: true, port: 0, accountsPath: path, ownerOnlyMode: true, tradeOwnerSubject: 'alice',
     now: () => f.state.now, autoPoll: false, hub: f.hub,
     authenticate: async req => principal(req.headers.authorization === 'Bearer fixture-bob' ? 'bob' : 'alice') };
   let app = await createServer(options);
