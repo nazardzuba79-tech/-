@@ -18,7 +18,8 @@ The existing PostgreSQL authority reads and transacts the **same DemoBalance
 USDT** as Demo Spot. Both allowlisted principals must already be privately
 verified immutable User IDs, with existing authority bindings and balances.
 Missing bindings/cash fail closed. Other signed-in users can read the catalogue,
-but cannot trade or view another account. Logout/revocation and existing
+but cannot trade or view another account: their Buy/Sell stays clickable and is a
+silent no-op (no request, no message; owner policy 2026-10-23). Logout/revocation and existing
 pre-COMMIT fences remain authoritative.
 
 ## Separate gates (all existing builds remain off)
@@ -28,6 +29,7 @@ pre-COMMIT fences remain authoritative.
 | Frontend visibility | `VITE_STOCKS_CATALOGUE_VISIBLE=true` | Same-app authenticated menu/catalogue/terminal. Does not authorize finance. |
 | API catalogue identity | `STOCKS_CATALOGUE_ENABLED=true` | PG readiness and normal session identity only. |
 | Financial authority | `STOCKS_TEST_CASH_ENABLED=true` | Existing two-principal PG authority operations; requires explicit separate approval. |
+| Order execution (PR #593) | `STOCKS_ORDER_EXECUTION_ENABLED=true` | Second server gate on `/stocks-test-cash/command`, off unless exactly `true`; with it off both bound traders get 403 `ACCOUNT_TRADING_DISABLED` before the authority runs. Requires the financial gate as well. |
 | Market data | `STOCKS_MARKET_DATA_ENABLED=true` | Explicit provider activation only after data rights/feed readiness. Default unavailable with no provider requests or prices/candles. |
 
 Hosted frontend: use normal same-origin `VITE_API_URL=/api/v1`. Do not set

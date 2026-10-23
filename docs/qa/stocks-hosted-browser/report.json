@@ -1,0 +1,32 @@
+{
+  "scope": "disposable PostgreSQL + same-app hosted Stocks bundle, synthetic only",
+  "checks": [
+    "guest: /stocks goes to the ordinary login with the return path; the Stocks API answers 401",
+    "viewer 1440: ordinary login, «Акции» from the menu, catalogue → terminal; BUY/SELL × Market/Limit click and Enter are silent",
+    "viewer 390: ordinary login, «Акции» from the menu, catalogue → terminal; BUY/SELL × Market/Limit click and Enter are silent",
+    "trader 1 1440: MARKET BUY and SELL fill against the existing DemoBalance; a LIMIT rests and is cancelled",
+    "trader 2 1440: MARKET BUY and SELL fill against the existing DemoBalance; a LIMIT rests and is cancelled",
+    "trader 1 390: MARKET BUY and SELL fill against the existing DemoBalance; a LIMIT rests and is cancelled",
+    "logout closes the terminal: the next visit asks for the login again",
+    "no page error; nothing left the two local origins except the bundle's web-font stylesheet (blocked)"
+  ],
+  "failures": [],
+  "screenshots": [
+    "guest-login-1440.png",
+    "viewer-terminal-1440.png",
+    "viewer-silent-1440.png",
+    "viewer-terminal-390.png",
+    "viewer-silent-390.png",
+    "trader-1-bought-1440.png",
+    "trader-1-limit-cancelled-1440.png",
+    "trader-2-bought-1440.png",
+    "trader-2-limit-cancelled-1440.png",
+    "trader-1-bought-390.png",
+    "trader-1-limit-cancelled-390.png"
+  ],
+  "outbound": 30,
+  "outboundHosts": {
+    "fonts.googleapis.com": 30
+  },
+  "pageErrors": []
+}

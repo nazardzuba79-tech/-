@@ -5,10 +5,10 @@ import jwt from 'jsonwebtoken';
 import { stocksTestCashRouter } from '../stocksTestCash';
 const issuer='synthetic-api-unit',key='synthetic-api-internal-key-000000000000';
 const principals=[{issuer,subject:'synthetic-a'},{issuer,subject:'synthetic-b'}];
-function fixture(enabled=true,verificationSecret=process.env.JWT_SECRET!,routerFactory=stocksTestCashRouter,catalogueEnabled=false,orderExecutionEnabled:boolean|undefined=true){
+function fixture(enabled=true,verificationSecret=process.env.JWT_SECRET!,routerFactory=stocksTestCashRouter,catalogueEnabled=false,orderExecutionEnabled:boolean|null=true){
   const prisma:any={user:{findUnique:jest.fn(async({where}:any)=>({id:where.id}))},session:{findUnique:jest.fn(async({where}:any)=>({id:where.id,userId:where.id.replace('session-',''),revokedAt:null,lastSeenAt:new Date(),remembered:false,user:{email:'synthetic@example.invalid'}})),update:jest.fn()},auditLog:{findFirst:jest.fn(async()=>null)}};
   const authority={execute:jest.fn(async(actor:any,type:string)=>{if(!principals.some(p=>p.subject===actor.subject))throw Object.assign(Error('AUTH_REQUIRED'),{code:'AUTH_REQUIRED'});return type==='readView'?{wallets:{USDT:{cash:'731.25000000',reserved:'0.00000000',available:'731.25000000'}}}:{id:'synthetic-result'};}),metrics:()=>({unitFixture:true})};
-  const config={enabled,catalogueEnabled,orderExecutionEnabled,issuer,principals,gatewayKey:key,secret:verificationSecret};
+  const config={enabled,catalogueEnabled,orderExecutionEnabled:orderExecutionEnabled??undefined,issuer,principals,gatewayKey:key,secret:verificationSecret};
   const app=express();app.use(express.json());app.use('/api/v1',routerFactory(prisma,config,authority));
   const token=(subject='synthetic-a',sid=true)=>jwt.sign({sub:subject,...(sid?{sid:'session-'+subject}:{})},process.env.JWT_SECRET!,{expiresIn:'1h'});
   return{app,authority,prisma,token,config};
@@ -138,7 +138,7 @@ test('default auth keeps its original string-key verification path',async()=>{
  }finally{verify.mockRestore();}
 });
 
-// PR #593: the second server gate. Unset (the production default) refuses every command for both bound traders
+// PR #593: the second server gate (`null` here = no explicit config, so the environment decides). Unset (the production default) refuses every command for both bound traders
 // before the authority runs; only the exact value 'true' opens it.
 test('second gate: with STOCKS_ORDER_EXECUTION_ENABLED unset both bound traders are refused before the authority',async()=>{
   const previous=process.env.STOCKS_ORDER_EXECUTION_ENABLED;
@@ -146,13 +146,13 @@ test('second gate: with STOCKS_ORDER_EXECUTION_ENABLED unset both bound traders 
     for(const value of [undefined,'false','TRUE','1']){
       if(value===undefined)delete process.env.STOCKS_ORDER_EXECUTION_ENABLED;else process.env.STOCKS_ORDER_EXECUTION_ENABLED=value;
       for(const user of ['synthetic-a','synthetic-b']){
-        const f=fixture(true,undefined,undefined,false,undefined);
+        const f=fixture(true,undefined,undefined,false,null);
         const res=await request(f.app).post('/api/v1/stocks-test-cash/command').set('Authorization','Bearer '+f.token(user)).set('x-stocks-authority-key',key).send({type:'ensure'});
         expect(res.status).toBe(403);expect(res.body.error).toBe('ACCOUNT_TRADING_DISABLED');expect(f.authority.execute).not.toHaveBeenCalled();
       }
     }
     process.env.STOCKS_ORDER_EXECUTION_ENABLED='true';
-    const f=fixture(true,undefined,undefined,false,undefined);
+    const f=fixture(true,undefined,undefined,false,null);
     expect((await request(f.app).post('/api/v1/stocks-test-cash/command').set('Authorization','Bearer '+f.token('synthetic-b')).set('x-stocks-authority-key',key).send({type:'ensure'})).status).toBe(200);
   }finally{if(previous===undefined)delete process.env.STOCKS_ORDER_EXECUTION_ENABLED;else process.env.STOCKS_ORDER_EXECUTION_ENABLED=previous;}
 });

@@ -112,7 +112,8 @@ test('compiled catalogue-only API permits authenticated identity/readiness but n
   }
   // Enabling finance still does not let a forged viewer reach a transaction.
   const enabledApp = express(); enabledApp.use(express.json());
-  enabledApp.use('/api/v1', stocksTestCashRouter(fakeDb, {...cfg, enabled:true}));
+  // Both server gates on (finance and #593's order execution): the viewer is still refused by the authority itself.
+  enabledApp.use('/api/v1', stocksTestCashRouter(fakeDb, {...cfg, enabled:true, orderExecutionEnabled:true}));
   const forged = jwt.sign({sub:'fixture-viewer',sid:'session-fixture-viewer',isOwner:true},process.env.JWT_SECRET,{expiresIn:'1h'});
   const denied = await request(enabledApp).post(base+'/command').set('Authorization','Bearer '+forged)
     .set('x-stocks-authority-key',config.gatewayKey).send({type:'ensure'});

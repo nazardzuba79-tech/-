@@ -35,7 +35,7 @@ async function fixture(options: { enabled?: boolean; finance?: boolean; cap?: nu
   const app = express(); app.set('trust proxy', 1); app.use(express.json()); app.use(ingress.middleware);
   app.get('/public-probe', (_req, res) => res.json({ ok: true }));
   app.use('/api/v1', stocksTestCashRouter(prisma, {
-    catalogueEnabled: true, enabled: options.finance !== false, issuer, gatewayKey: key,
+    catalogueEnabled: true, enabled: options.finance !== false, orderExecutionEnabled: true, issuer, gatewayKey: key,
     principals, secret: process.env.JWT_SECRET,
   }, authority));
   const privateServer = await ingress.listen(app);
