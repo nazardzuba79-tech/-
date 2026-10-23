@@ -1,20 +1,20 @@
-/** ZORYNTHA (ZRNTH) scheduled November 3 2026: inert draft only. */
+/** ECLAVO (ECLV) scheduled November 3 2026: inert draft only. */
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { parseListingConfig, withStableProfile, checkPublishable, listingSimulationConfig, publishedListingAsset, nextListingCountdown, RESERVED_LISTING_SYMBOLS } from '../listingConfig';
 import { exactPriceFromGain, validateScenarioControls } from '../../../shared/listingScenarioControls';
 import { DAY_MS, simulationFor } from '../../testMarkets/testMarketSimulation';
 
-const raw = JSON.parse(readFileSync(resolve(__dirname, '../../../../config/test-markets/zrnth-20261103.draft.json'), 'utf8'));
+const raw = JSON.parse(readFileSync(resolve(__dirname, '../../../../config/test-markets/eclv-20261103.draft.json'), 'utf8'));
 const draft = parseListingConfig(raw);
 const saved = withStableProfile(draft, null, 8);
 const AT = Date.parse('2026-11-03T13:00:00Z');
 const HOUR = 3_600_000;
-const listing = { id:'zrnth-candidate-only', version:1, publishedAt:new Date(AT-5*DAY_MS).toISOString(),
+const listing = { id:'eclv-candidate-only', version:1, publishedAt:new Date(AT-5*DAY_MS).toISOString(),
   config:saved, countdown:{state:'running' as const,updatedAt:AT-5*DAY_MS,updatedBy:'fixture'} };
 
 test('candidate is valid, nontrading, UTC-correct, and has an actual compact branded logo', () => {
-  expect(draft).toMatchObject({ symbol:'ZRNTH',name:'ZORYNTHA',initialPrice:'0.0140',
+  expect(draft).toMatchObject({ symbol:'ECLV',name:'ECLAVO',initialPrice:'0.0140',
     listingAt:'2026-11-03T13:00:00Z',displayTimeZone:'Europe/Kyiv',
     seed:'zoryntha-20261103-v1',seedMode:'manual',ownerAllocation:'0',tradable:false });
   expect(RESERVED_LISTING_SYMBOLS.has(draft.symbol)).toBe(false);
@@ -22,7 +22,7 @@ test('candidate is valid, nontrading, UTC-correct, and has an actual compact bra
   expect(draft.logo!.length).toBeLessThan(9000);
   expect(new Date(AT).getUTCDay()).toBe(2);
   expect(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(AT))).toBe('15:00');
-  expect(listingSimulationConfig(draft)).toMatchObject({pair:'ZRNTH/USDT',initialPrice:.014,isTradable:false});
+  expect(listingSimulationConfig(draft)).toMatchObject({pair:'ECLV/USDT',initialPrice:.014,isTradable:false});
 });
 
 test('deterministic deep-recovery program and mathematically consistent bounds', () => {
