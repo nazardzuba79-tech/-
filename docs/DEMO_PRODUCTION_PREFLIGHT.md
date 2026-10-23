@@ -30,3 +30,7 @@ The script produces `MANUAL_REVIEW_REQUIRED` even when all counts are zero. Coun
 `node --test scripts/demo-production-preflight-readonly.test.cjs`
 
 It tests the read-only transaction and redacted aggregator with simulated database responses, **not** a live production PostgreSQL read.
+
+## Additional real PostgreSQL proof (disposable database only)
+
+The PR workflow also starts a new GitHub-hosted PostgreSQL 16 fixture named `demo_preflight_fixture` using hard-coded synthetic data; `scripts/demo-production-preflight-fixture.cjs` **refuses any non-loopback/non-fixture URL**. It runs the same four queries, verifies 2 malformed orders / 1 dual-ledger account / 1 ordinary legacy account / 2 pending Cross claims, and proves the audit did not modify fixture rows. This demonstrates SQL compatibility on PostgreSQL, **not** the actual data on Hetzner.
