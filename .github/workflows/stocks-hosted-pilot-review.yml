@@ -1,5 +1,17 @@
 name: Stocks hosted private pilot (QA-only)
 on:
+  push:
+    branches:
+      - review/stocks-hosted-private-pilot-20261023
+    paths:
+      - frontend/src/App.tsx
+      - frontend/src/pages/stocks/StocksPage.tsx
+      - frontend/src/pages/stocks/stockHostPolicy.ts
+      - frontend/src/lib/__tests__/stocksOriginalRouting.test.ts
+      - frontend/src/lib/__tests__/stocksHostedPilot.test.ts
+      - frontend/vite.config.ts
+      - docs/STOCKS_HOSTED_PILOT_REVIEW.md
+      - .github/workflows/stocks-hosted-pilot-review.yml
   pull_request:
     paths:
       - frontend/src/App.tsx
@@ -14,7 +26,7 @@ permissions:
   contents: read
 jobs:
   hosted-routing:
-    if: github.event.pull_request.draft == true
+    if: github.event_name == 'push' || github.event.pull_request.draft == true
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
