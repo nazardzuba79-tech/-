@@ -1,0 +1,26 @@
+name: Inactive API overlay UID1000 access gate
+on:
+  push:
+    branches:
+      - release/demo-off-api-20261023
+    paths:
+      - release/demo-off/Dockerfile
+      - scripts/package-demo-off-api.py
+      - scripts/test-demo-off-permissions.py
+      - .github/workflows/demo-off-overlay-permissions.yml
+permissions:
+  contents: read
+jobs:
+  overlay-file-modes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify packaging code syntax and UID1000 permissions contract
+        run: |
+          python3 -m py_compile scripts/package-demo-off-api.py scripts/test-demo-off-permissions.py
+          python3 scripts/test-demo-off-permissions.py
+      - name: Explicitly no production access, containers or deployment
+        run: echo "Static-only check — build & nonroot isolated runtime file smoke happen on the authorized operator host"
