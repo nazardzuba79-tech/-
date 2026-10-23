@@ -251,3 +251,18 @@ describe('demo order request ID (Issue #592 review)', () => {
     expect(demoTrading.placeOrder).toHaveBeenNthCalledWith(1, expect.objectContaining({ userId: 'admin-1', requestId }));
   });
 });
+
+describe('internal demo liquidity status (Issue #592, CTO 6361475787)', () => {
+  it('is admin-only and read-only; a USER or anonymous caller never sees the inventory', async () => {
+    const status = { enabled: true, accountId: 'lp', pairs: [{ pair: 'BTC/USDT', reference: 'OK' }] };
+    const demoTrading = { liquidityStatus: jest.fn().mockResolvedValue(status), placeOrder: jest.fn(), topUp: jest.fn() };
+    expect((await request(buildApp(adminPrisma(), demoTrading)).get('/api/v1/demo/liquidity')).status).toBe(401);
+    expect((await request(buildApp(adminPrisma('USER'), demoTrading)).get('/api/v1/demo/liquidity').set('Authorization', authHeader('customer'))).status).toBe(403);
+    expect(demoTrading.liquidityStatus).not.toHaveBeenCalled();
+    const res = await request(buildApp(adminPrisma(), demoTrading)).get('/api/v1/demo/liquidity').set('Authorization', authHeader('admin-1'));
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(status);
+    expect(demoTrading.placeOrder).not.toHaveBeenCalled();
+    expect(demoTrading.topUp).not.toHaveBeenCalled();
+  });
+});

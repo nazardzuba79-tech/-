@@ -6809,3 +6809,30 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Verified locally on the merged tree:** backend `tsc`, frontend `tsc -b`, ON and OFF `vite build`; CI Jest list 15 suites / 301 tests; disposable PostgreSQL 25/25 (adds: Balance tester LIMIT/MARKET/partial fill/SELL/restart with conservation and untouched demo ledger; «not enough»; `/orders` retries ×5 and racing ×4 → one order; filled MARKET replay → same fill; OCO ×4 → one pair; simulation SELL ×5 → one sale; docs SQL); browser 10/10 groups (1440 + 390) incl. Balance tester with request ID + reload + cancel, MARKET + history + «Недостаточно USDT», lost `/orders` response → one order, zero spent side silent on both ledgers; default-OFF build: no demo request, ordinary body without request ID. Full Jest results are in the PR comment for this commit.
 - **Not changed:** withdrawals, demo admission, Futures, AITH/NRX/TYVN/VTA/listings, Stocks (`frontend/src/pages/stocks/**`), balances, prod data. **Open:** BLOCKER 1 (Balance credits withdrawable by request) — activation stays NO-GO until the owner decides; accounts holding both credits cannot use the demo credit in the terminal (listed by the doc query).
 - **Follow-up (CTO 6361475787, MARKET liquidity), QA only — no product change:** disposable PostgreSQL check and browser group (1440 + 390) for a funded account on an empty SOL/USDT book, both ledgers: MARKET BUY → 400 `No liquidity…`, nothing reserved or written, form «Не удалось разместить ордер»; MARKET SELL → 201 `CANCELLED`, no trade, reserve returned, form «Ордер отменён без исполнения…»; with a resting bid from another funded tester the MARKET SELL fills at 100. Locally PostgreSQL 26/26, browser 11/11 groups. Documented as activation blocker 3 in `docs/DEMO_TRADING.md` with options (a) seed depth from allocated demo inventory, (b) a separate, owner-approved demo market-maker PR. Also found (not changed, unrelated): `CFD working terminal` fails on any head while XAUUSD ≈ 4,025 because `scripts/qa-cfd-workspace.cjs:532` selects the long row with `/0\.2/`, which matches the short row's 40.25 USD margin; one-line patch proposed on the PR (comment 6361602829).
+
+## 2026-10-23 — Claude — Internal demo liquidity (Issue #592, CTO 6361475787), stacked on PR #596
+- **Branch:** `claude/voltex-mobile-audit-7rpjni-demo-liquidity` from #596 head `d20200ca` (built on the other Claude session's `bf15d490`/`d20200ca`, not replacing them). Draft PR with base = #596's branch. Default OFF; nothing enabled, merged or deployed.
+- **Problem:** on an empty demo book, a funded tester's MARKET BUY gets `400 No liquidity…` and a MARKET SELL gets `CANCELLED` without a fill (measured by `d20200ca`).
+- **Done:** `src/services/DemoLiquidity.ts` + `DemoTradingService` options. When `DEMO_LIQUIDITY_ENABLED=true` and the configuration parses:
+  - **Quote:** a dedicated account's already-credited DemoBalance (admin «Тестовое начисление» only) gives one quote per taker inside the demo book transaction. Price: market-data reference ask + spread / bid − spread, 8 significant digits, rounded away from the taker.
+  - **Size:** available funds and a per-order cap.
+  - **Fail closed:** no quote on a stale, old, crossed, too wide or missing reference, an unlisted pair, a blocked/missing account, or self.
+  - **Never rests:** the unfilled part is removed before publish.
+  - **Settlement:** the account's funds are reserved conditionally (a concurrent spend rolls the whole order back), and a FILLED `DemoOrder` receipt is written.
+  - **Refused as inventory:** native Cross accounts; test/listing/VTA pairs.
+  - **Admin status:** `GET /demo/liquidity`, read-only.
+  - **Wiring:** `src/index.ts` reads the reference from `KrakenMarketDataService.getTickerWithMeta` (cache, no venue order).
+- **Preserved:** #596's ledger choice, request IDs, withdrawal guard, Demo Spot admission; ordinary Spot/OrderService, Futures, TYVN/AITH/NRX/VTA/listings, Stocks untouched.
+- **Verified locally:**
+  - backend `tsc`;
+  - unit `DemoLiquidity.test.ts` 32/32;
+  - demo/withdrawal/order/private-trading suites 143/143 (8 suites);
+  - disposable PostgreSQL `scripts/test-demo-liquidity-postgres.cjs` 15/15 + browser 4/4 groups (1440 + 390), conservation against audited top-ups after every step, 0 outbound;
+  - #596's own `test-demo-trading-postgres.cjs` with this service (liquidity off): 26/26 PG + 11/11 browser.
+- **CI:** `.github/workflows/demo-liquidity.yml` (pull_request only).
+- **Docs:** `docs/DEMO_LIQUIDITY.md` (design, config, 7-step integration plan, rollback, open decisions).
+- **Open:**
+  - spread/caps are the owner's choice;
+  - passive LIMIT orders fill only against testers (no resting quote, by design);
+  - inventory is not rebalanced automatically;
+  - activation needs separate owner approval after #596.
