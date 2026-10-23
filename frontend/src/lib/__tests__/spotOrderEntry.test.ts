@@ -100,13 +100,14 @@ test('parent wiring keeps plain matching APIs, pair-keyed reset and genuine fund
   const frontend = resolve(__dirname, '../../..');
   const form = readFileSync(resolve(frontend, 'src/components/OrderForm.tsx'), 'utf8');
   const page = readFileSync(resolve(frontend, 'src/pages/TradePage.tsx'), 'utf8');
-  expect(form).toContain('await api.placeOcoOrder({'); expect(form).toContain('await api.placeOrder({');
+  // Demo Spot off: the same plain matching calls as before (Issue #592 adds a request ID only when it is on).
+  expect(form).toContain('else await api.placeOcoOrder(terms);'); expect(form).toContain(': await api.placeOrder(terms);');
   // The demo ledger is reached only through the gated branch (Issue #592):
   // TradePage passes `demo` only when both switches admit the account.
   expect(form.split('placeDemoSpotOrder').length - 1).toBe(1); expect(form).not.toContain('placeDemoOrder');
-  expect(form).toContain("const demoLedger = demo !== 'off' && !privateVta;");
+  expect(form).toContain("const demoLedger = (demo === 'trader' || demo === 'silent') && !privateVta;");
   expect(form).toContain('} else if (demoLedger) {');
-  expect(form).toContain('const result = await api.placeDemoSpotOrder({ ...terms, requestId: demoPending.current.requestId });');
+  expect(form).toContain('feedback = spotOrderFeedback(await withRequestId(terms, requestId => api.placeDemoSpotOrder({ ...terms, requestId })));');
   expect(form).toContain("if (demoLedger && demo !== 'trader') return;");
   expect(form).toContain("demo = 'off',"); expect(form).not.toContain('kycStatus');
   expect(form).toContain('if (submittingRef.current) return');

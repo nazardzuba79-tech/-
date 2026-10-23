@@ -6,7 +6,7 @@ import { customerErrorText } from '../lib/customerError';
 import { SpotAssetsView, SpotOrdersView } from './SpotOrdersView';
 import { cancelSpotOrders, createSpotReadController, startVisibleReadPolling, type SpotOrderRow, type SpotReadController } from './spotOrderPresentation';
 import type { OpenOrdersHandle } from './OpenOrdersPanel';
-import type { DemoSpotMode } from '../lib/demoSpot';
+import type { DemoLedgerMode } from '../lib/demoSpot';
 import './SpotOrders.css';
 
 type DemoOrder = Awaited<ReturnType<typeof api.getDemoOpenOrders>>[number];
@@ -14,7 +14,7 @@ const row = (o: DemoOrder): SpotOrderRow => ({ ...o, triggerPrice: null, ocoGrou
 
 /** The same reader/poll pattern as the ordinary Spot panels. A 'silent'
  * account has nothing on the demo ledger, so nothing is requested. */
-function useDemoRows<T>(mode: Exclude<DemoSpotMode, 'off'>, request: () => Promise<T[]>, refreshKey: number) {
+function useDemoRows<T>(mode: DemoLedgerMode, request: () => Promise<T[]>, refreshKey: number) {
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(mode === 'trader');
   const [refreshing, setRefreshing] = useState(false);
@@ -36,7 +36,7 @@ function useDemoRows<T>(mode: Exclude<DemoSpotMode, 'off'>, request: () => Promi
 
 /** Open orders (or, with `history`, finished ones) on the demo ledger, in the ordinary Spot table. */
 export const DemoSpotOrders = forwardRef<OpenOrdersHandle, {
-  mode: Exclude<DemoSpotMode, 'off'>; pair: string; refreshKey: number; history?: boolean;
+  mode: DemoLedgerMode; pair: string; refreshKey: number; history?: boolean;
   onCount?: (n: number | null) => void; onAccountCount?: (n: number | null) => void;
 }>(function DemoSpotOrders({ mode, pair, refreshKey, history = false, onCount, onAccountCount }, ref) {
   const { t, lang } = useLanguage();
@@ -68,7 +68,7 @@ export const DemoSpotOrders = forwardRef<OpenOrdersHandle, {
 });
 
 /** Balances on the demo ledger, in the ordinary Spot assets table. */
-export function DemoSpotAssets({ mode, refreshKey }: { mode: Exclude<DemoSpotMode, 'off'>; refreshKey: number }) {
+export function DemoSpotAssets({ mode, refreshKey }: { mode: DemoLedgerMode; refreshKey: number }) {
   const { t } = useLanguage();
   const balances = useDemoRows(mode, () => api.getDemoBalances(), refreshKey);
   return <SpotAssetsView balances={balances.rows} loading={balances.loading} refreshing={balances.refreshing}

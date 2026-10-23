@@ -26,9 +26,9 @@ const { DemoTradingService } = require('../src/services/DemoTradingService');
 const { BalanceAdjustmentService } = require('../src/services/BalanceAdjustmentService');
 const { transferWalletBalance } = require('../src/services/WalletTransferService');
 const { ordersRouter } = require('../src/api/routes/orders');
+const { balancesRouter } = require('../src/api/routes/balances');
 const { demoTradingRouter } = require('../src/api/routes/demoTrading');
 const { withdrawalsRouter } = require('../src/api/routes/withdrawals');
-const { balancesRouter } = require('../src/api/routes/balances');
 
 function run(bin, args, stdio = 'pipe') { return spawnSync(bin, args, { cwd: root, encoding: 'utf8', stdio, timeout: 120000, windowsHide: true }); }
 function freePort() { return new Promise(resolve => { const server = net.createServer(); server.listen(0, '127.0.0.1', () => { const port = server.address().port; server.close(() => resolve(port)); }); }); }
@@ -58,7 +58,9 @@ async function main() {
     for (const name of fs.readdirSync(path.join(root, 'prisma/migrations')).sort()) {
       const file = path.join(root, 'prisma/migrations', name, 'migration.sql'); if (fs.existsSync(file)) await sql.query(fs.readFileSync(file, 'utf8'));
     }
-    const people = { admin: 'ADMIN', unfunded: 'USER', funded: 'USER', both: 'USER', tester: 'USER', maker: 'USER', blocked: 'USER', [TRADER]: 'USER', [TRADER2]: 'USER' };
+    // legacy/legacyMaker: testers an admin credited on the ordinary ledger (Balance) before Demo Spot.
+    const people = { admin: 'ADMIN', unfunded: 'USER', funded: 'USER', tester: 'USER', maker: 'USER', blocked: 'USER', legacy: 'USER', legacyMaker: 'USER',
+      legacySeller: 'USER', demoSeller: 'USER', both: 'USER', [TRADER]: 'USER', [TRADER2]: 'USER' };
     for (const [id, role] of Object.entries(people)) {
       await sql.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode",role,"kycStatus","createdAt","updatedAt") VALUES ($1,$2,'fixture',$1,$3,'APPROVED',now(),now())`, [id, `${id.replace(/[^a-z0-9]/gi, "")}@example.invalid`, role]);
     }
@@ -67,11 +69,12 @@ async function main() {
 
     let enabled = false;
     const spotPairs = new Set(['BTC/USDT', 'ETH/USDT', 'SOL/USDT']);
-    const realEngine = new MatchingEngine();
+    const priceSource = { getTicker: async () => ({ lastPrice: '100000' }) };
+    let orders = ordersRouter(prisma, new MatchingEngine(), priceSource); // swapped on "restart"
     let demo = new DemoTradingService(prisma, new MatchingEngine());
     const demoProxy = new Proxy({}, { get: (_target, key) => (...args) => demo[key](...args) }); // swapped on "restart"
     const app = express(); app.use(express.json());
-    app.use('/api/v1', ordersRouter(prisma, realEngine, { getTicker: async () => ({ lastPrice: '100000' }) }));
+    app.use('/api/v1', (req, res, next) => orders(req, res, next));
     app.use('/api/v1', balancesRouter(prisma));
     app.use('/api/v1', demoTradingRouter(prisma, demoProxy, undefined, { enabled: () => enabled, isSpotPair: async pair => spotPairs.has(pair) }));
     // The native Cross wallet is valued from DemoBalance (PrismaNativeRepository); this reader stands in for that valuation.
@@ -103,8 +106,8 @@ async function main() {
     const limit = (side, price, quantity, pair = 'BTC/USDT') => ({ pair, side, type: 'LIMIT', price: String(price), quantity: String(quantity) });
 
     // ── Owner/admin credits, as today: two different admin operations ──────────────
-    for (const who of ['funded', 'both', TRADER2]) {
-      await adjust.adjustOnce({ userId: who, asset: 'USDT', amount: '100', reason: 'synthetic Balance credit', performedByAdminId: 'admin', idempotencyKey: randomUUID() });
+    for (const [who, asset, amount] of [['funded', 'USDT', '100'], ['both', 'USDT', '100'], [TRADER2, 'USDT', '100'], [TRADER2, 'BTC', '0.001'], ['legacy', 'USDT', '1000'], ['legacyMaker', 'BTC', '0.01']]) {
+      await adjust.adjustOnce({ userId: who, asset, amount, reason: 'synthetic Balance credit', performedByAdminId: 'admin', idempotencyKey: randomUUID() });
     }
     for (const [who, asset, amount] of [['tester', 'USDT', '50'], ['maker', 'BTC', '0.01'], ['blocked', 'USDT', '50'], ['both', 'USDT', '50'], [TRADER, 'USDT', '100']]) {
       await demo.topUp({ userId: who, asset, amount, performedByAdminId: 'admin', note: 'synthetic demo credit' });
@@ -145,6 +148,9 @@ async function main() {
       // Funded earlier through an ordinary Balance adjustment: not silently disabled, no migration.
       assert.deepEqual(await access('funded'), { enabled: true, admitted: false, ledger: 'spot' });
       assert.deepEqual(await access('both'), { enabled: true, admitted: true, ledger: 'spot' });
+      // The other testers an admin funded on Balance keep it too; the owner/admin account follows the same rule.
+      for (const who of ['legacy', 'legacyMaker', TRADER2]) assert.deepEqual(await access(who), { enabled: true, admitted: false, ledger: 'spot' }, who);
+      assert.deepEqual(await access('admin'), { enabled: true, admitted: true, ledger: 'demo' });
       assert.equal((await api('GET', '/demo/spot/access')).status, 401);
       // With the Balance funds the ordinary order path works exactly as before.
       const real = await api('POST', '/orders', 'funded', limit('BUY', 100000, 0.0001));
@@ -313,10 +319,128 @@ async function main() {
       assert.deepEqual(await demoBal('tester', 'BTC'), { available: '0.00049', locked: '0' });
       enabled = true;
     });
+    // ── Accounts an admin credited on the ordinary ledger before Demo Spot (owner priority 6360408787) ──
+    const bal = async (who, asset) => { const b = await prisma.balance.findUnique({ where: { userId_asset: { userId: who, asset } } }); return { available: b ? b.available.toFixed() : '0', locked: b ? b.locked.toFixed() : '0' }; };
+    const demoLedger = async () => JSON.stringify({ balances: await prisma.demoBalance.findMany({ orderBy: [{ userId: 'asc' }, { asset: 'asc' }] }), orders: await prisma.demoOrder.count(), trades: await prisma.demoTrade.count() });
+    const legacyTotals = async () => Object.fromEntries(await Promise.all(['USDT', 'BTC'].map(async asset => [asset, (await prisma.balance.findMany({ where: { asset, userId: { in: ['legacy', 'legacyMaker'] } } }))
+      .reduce((sum, b) => sum.plus(b.available.toString()).plus(b.locked.toString()), new BigNumber(0)).toFixed()])));
+    const market = (side, quantity, extra = {}) => ({ pair: 'BTC/USDT', side, type: 'MARKET', quantity: String(quantity), ...extra });
+    await check('Demo Spot on: a Balance-credited tester trades the ordinary ledger exactly as before — LIMIT reserve/cancel, MARKET fill and partial fill, SELL, restart', async () => {
+      const demoBefore = await demoLedger();
+      assert.deepEqual(await bal('legacy', 'USDT'), { available: '1000', locked: '0' });
+      const buy = await api('POST', '/orders', 'legacy', limit('BUY', 100000, 0.0002));
+      assert.equal(buy.status, 201); assert.equal(buy.body.order.status, 'OPEN');
+      assert.deepEqual(await bal('legacy', 'USDT'), { available: '980', locked: '20' });
+      assert.equal((await api('DELETE', '/orders/' + buy.body.order.id, 'legacy')).status, 204);
+      assert.deepEqual(await bal('legacy', 'USDT'), { available: '1000', locked: '0' });
+      const ask = await api('POST', '/orders', 'legacyMaker', limit('SELL', 100000, 0.001));
+      assert.equal(ask.status, 201);
+      const fill = await api('POST', '/orders', 'legacy', market('BUY', 0.0004));
+      assert.equal(fill.status, 201); assert.equal(fill.body.order.status, 'FILLED'); assert.deepEqual(fill.body.trades.map(t => [t.price, t.quantity]), [['100000', '0.0004']]);
+      assert.deepEqual(await bal('legacy', 'USDT'), { available: '960', locked: '0' }); // 40 paid, the 2% buffer refunded
+      assert.deepEqual(await bal('legacy', 'BTC'), { available: '0.0004', locked: '0' });
+      // More than the resting depth: 0.0006 fills, the rest is cancelled and refunded.
+      const partial = await api('POST', '/orders', 'legacy', market('BUY', 0.001));
+      assert.equal(partial.status, 201); assert.equal(partial.body.order.status, 'CANCELLED'); assert.equal(partial.body.order.remainingQuantity, '0.0004');
+      assert.deepEqual(await bal('legacy', 'USDT'), { available: '900', locked: '0' });
+      assert.deepEqual(await bal('legacy', 'BTC'), { available: '0.001', locked: '0' });
+      assert.deepEqual(await bal('legacyMaker', 'USDT'), { available: '100', locked: '0' });
+      const sell = await api('POST', '/orders', 'legacy', limit('SELL', 200000, 0.001));
+      assert.equal(sell.status, 201); assert.deepEqual(await bal('legacy', 'BTC'), { available: '0', locked: '0.001' });
+      // Restart: a new engine, router and DB client trade the persisted ordinary book.
+      const restarted = new PrismaClient({ datasources: { db: { url } } });
+      orders = ordersRouter(restarted, new MatchingEngine(), priceSource);
+      try {
+        const bid = await api('POST', '/orders', 'legacyMaker', limit('BUY', 200000, 0.0005));
+        assert.equal(bid.status, 201); assert.equal(bid.body.order.status, 'FILLED');
+        assert.deepEqual(await bal('legacy', 'USDT'), { available: '1000', locked: '0' });
+        assert.equal((await api('DELETE', '/orders/' + sell.body.order.id, 'legacy')).status, 204);
+        assert.deepEqual(await bal('legacy', 'BTC'), { available: '0.0005', locked: '0' });
+      } finally { orders = ordersRouter(prisma, new MatchingEngine(), priceSource); await restarted.$disconnect(); }
+      // Conservation between the two testers; the demo ledger is untouched; nothing moved between ledgers.
+      assert.deepEqual(await legacyTotals(), { USDT: '1000', BTC: '0.01' });
+      assert.equal(await demoLedger(), demoBefore);
+      assert.equal(await prisma.demoBalance.count({ where: { userId: { in: ['legacy', 'legacyMaker'] } } }), 0);
+      assert.equal(await prisma.withdrawal.count({ where: { userId: { in: ['legacy', 'legacyMaker'] } } }), 0);
+    });
+    await check('Demo Spot on: more than the ordinary balance is refused («not enough»), nothing reserved or created', async () => {
+      const before = [await bal('legacy', 'USDT'), await prisma.order.count({ where: { userId: 'legacy' } })];
+      const over = await api('POST', '/orders', 'legacy', limit('BUY', 100000, 1));
+      assert.equal(over.status, 400); assert.equal(over.body.error, 'Insufficient USDT balance or reserved funds');
+      assert.deepEqual([await bal('legacy', 'USDT'), await prisma.order.count({ where: { userId: 'legacy' } })], before);
+    });
+    await check('ordinary /orders request ID: retries after a lost response and racing first attempts place one order and reserve once; other terms 409', async () => {
+      const requestId = randomUUID(), body = { ...limit('BUY', 80000, 0.0001), requestId };
+      const first = await api('POST', '/orders', 'legacy', body);
+      assert.equal(first.status, 201);
+      const retries = await Promise.all(Array.from({ length: 5 }, () => api('POST', '/orders', 'legacy', body)));
+      assert.deepEqual(retries.map(r => r.status), [200, 200, 200, 200, 200]);
+      assert(retries.every(r => r.body.order.id === first.body.order.id));
+      assert.equal(await prisma.order.count({ where: { userId: 'legacy', price: '80000' } }), 1);
+      assert.deepEqual(await bal('legacy', 'USDT'), { available: '992', locked: '8' });
+      const conflict = await api('POST', '/orders', 'legacy', { ...body, quantity: '0.0002' });
+      assert.equal(conflict.status, 409); assert.equal(conflict.body.code, 'REQUEST_CONFLICT');
+      // Another account's identical request ID is its own order.
+      const other = await api('POST', '/orders', 'legacyMaker', { ...limit('SELL', 300000, 0.0001), requestId });
+      assert.equal(other.status, 201); assert.notEqual(other.body.order.id, first.body.order.id);
+      const fresh = { ...limit('BUY', 70000, 0.0001), requestId: randomUUID() };
+      const racing = await Promise.all(Array.from({ length: 4 }, () => api('POST', '/orders', 'legacy', fresh)));
+      assert.deepEqual(racing.map(r => r.status).sort(), [200, 200, 200, 201]);
+      assert.equal(await prisma.order.count({ where: { userId: 'legacy', price: '70000' } }), 1);
+      for (const [who, id] of [['legacy', first.body.order.id], ['legacy', racing[0].body.order.id], ['legacyMaker', other.body.order.id]]) assert.equal((await api('DELETE', '/orders/' + id, who)).status, 204);
+      assert.deepEqual(await bal('legacy', 'USDT'), { available: '1000', locked: '0' });
+      // A filled MARKET order: the retry returns the same fill, never a second one.
+      assert.equal((await api('POST', '/orders', 'legacyMaker', limit('SELL', 100000, 0.0002))).status, 201);
+      const marketId = randomUUID();
+      const filled = await api('POST', '/orders', 'legacy', market('BUY', 0.0001, { requestId: marketId }));
+      assert.equal(filled.status, 201); assert.equal(filled.body.order.status, 'FILLED');
+      const again = await Promise.all(Array.from({ length: 3 }, () => api('POST', '/orders', 'legacy', market('BUY', 0.0001, { requestId: marketId }))));
+      assert.deepEqual(again.map(r => r.status), [200, 200, 200]);
+      // The same persisted trade (executedAt is the stored time; the first answer carried the engine's).
+      const fills = r => r.body.trades.map(t => [t.id, t.makerOrderId, t.price, t.quantity]);
+      assert(again.every(r => JSON.stringify(fills(r)) === JSON.stringify(fills(filled))));
+      assert.equal(await prisma.trade.count({ where: { takerOrderId: filled.body.order.id } }), 1);
+      assert.deepEqual(await bal('legacy', 'BTC'), { available: '0.0006', locked: '0' });
+      assert.deepEqual(await bal('legacy', 'USDT'), { available: '990', locked: '0' });
+      const rest = await prisma.order.findFirst({ where: { userId: 'legacyMaker', status: 'PARTIALLY_FILLED' } });
+      assert.equal((await api('DELETE', '/orders/' + rest.id, 'legacyMaker')).status, 204);
+      assert.deepEqual(await legacyTotals(), { USDT: '1000', BTC: '0.01' });
+    });
+    await check('ordinary OCO and the team MARKET SELL simulation: one request ID is one order, one reserve or one sale', async () => {
+      const requestId = randomUUID();
+      const oco = { pair: 'BTC/USDT', side: 'SELL', quantity: '0.0001', takeProfitPrice: '120000', stopTriggerPrice: '90000', stopLimitPrice: '89000', requestId };
+      const results = await Promise.all(Array.from({ length: 4 }, () => api('POST', '/orders/oco', 'legacy', oco)));
+      assert.deepEqual(results.map(r => r.status).sort(), [200, 200, 200, 201]);
+      assert(results.every(r => JSON.stringify(r.body) === JSON.stringify(results[0].body)));
+      assert.equal(await prisma.order.count({ where: { userId: 'legacy', ocoGroupId: results[0].body.ocoGroupId } }), 2);
+      assert.deepEqual(await bal('legacy', 'BTC'), { available: '0.0005', locked: '0.0001' });
+      assert.equal((await api('POST', '/orders/oco', 'legacy', { ...oco, stopLimitPrice: '88000' })).status, 409);
+      assert.equal((await api('DELETE', '/orders/' + results[0].body.takeProfitOrderId, 'legacy')).status, 204);
+      assert.deepEqual(await bal('legacy', 'BTC'), { available: '0.0006', locked: '0' });
+      // TRADER2: a configured team test account whose MARKET SELL settles by simulation (no book), five attempts at once.
+      const saleId = randomUUID(), before = [await bal(TRADER2, 'BTC'), await bal(TRADER2, 'USDT')];
+      const sales = await Promise.all(Array.from({ length: 5 }, () => api('POST', '/orders', TRADER2, market('SELL', 0.0002, { requestId: saleId }))));
+      assert.deepEqual(sales.map(r => r.status).sort(), [200, 200, 200, 200, 201]);
+      assert(sales.every(r => r.body.order.id === sales[0].body.order.id && r.body.order.status === 'FILLED'));
+      assert.equal(await prisma.order.count({ where: { userId: TRADER2 } }), 1);
+      assert.deepEqual(await bal(TRADER2, 'BTC'), { available: new BigNumber(before[0].available).minus('0.0002').toFixed(), locked: before[0].locked });
+      assert.deepEqual(await bal(TRADER2, 'USDT'), { available: new BigNumber(before[1].available).plus('20').toFixed(), locked: before[1].locked });
+      assert.equal(await prisma.demoBalance.count({ where: { userId: TRADER2 } }), 0);
+    });
+    await check('the read-only pre-activation SQL in docs/DEMO_TRADING.md runs and lists exactly what it should', async () => {
+      const blocks = [...fs.readFileSync(path.join(root, 'docs/DEMO_TRADING.md'), 'utf8').matchAll(/```sql\n([\s\S]*?)```/g)].map(m => m[1]);
+      assert.equal(blocks.length, 3);
+      for (const query of blocks) assert.match(query, /^(\s*--[^\n]*\n)*\s*SELECT [^;]*;\s*$/, 'one read-only SELECT');
+      const [stale, switching, keeping] = await Promise.all(blocks.map(query => sql.query(query).then(r => r.rows)));
+      assert.deepEqual(stale.map(r => r.id), ['legacy-maker']); // the inconsistent row the fail-closed check wrote
+      assert.deepEqual(switching.map(r => r.id), ['both']); // a demo credit AND ordinary funds: its terminal moves to the demo ledger
+      assert.deepEqual([...new Set(keeping.map(r => r.id))].sort(), ['funded', 'legacy', 'legacyMaker', TRADER2].sort()); // keep the ordinary ledger
+    });
     await check('no outbound network request was attempted by any demo path', async () => { assert.deepEqual(outbound, []); });
 
     if (process.env.DEMO_QA_BROWSER === '1') {
       const browser = await require('./qa-demo-trading.cjs').run({ origin, prisma, out, token, demoBal, setEnabled: value => { enabled = value; },
+        credit: (who, asset, amount) => adjust.adjustOnce({ userId: who, asset, amount, reason: 'synthetic Balance credit', performedByAdminId: 'admin', idempotencyKey: randomUUID() }),
         topUp: (who, asset, amount) => demo.topUp({ userId: who, asset, amount, performedByAdminId: 'admin', note: 'synthetic demo credit' }) });
       for (const group of browser.groups) console.log('PASS browser: ' + group);
     }

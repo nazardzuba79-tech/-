@@ -435,8 +435,10 @@ export function TradePage() {
   }
 
   // Demo Spot (Issue #592): off unless both the build and the server switch it on.
-  const demoLedger = demoMode !== 'off' && isDemoSpotPair(pair) ? demoMode : null;
-  const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} demo={demoLedger ?? 'off'} />;
+  // 'spot' (an account trading its ordinary Balance) keeps the ordinary panels.
+  const demoPair = demoMode !== 'off' && isDemoSpotPair(pair);
+  const demoLedger = demoPair && (demoMode === 'trader' || demoMode === 'silent') ? demoMode : null;
+  const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} demo={demoPair ? demoMode : 'off'} />;
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
       <Nav active="/trade" onTickerSelect={selectSpotPair} staticTicker tickerFitToWidth terminalSwitch={<TerminalMarketSwitch current="spot" pair={pair} />} />

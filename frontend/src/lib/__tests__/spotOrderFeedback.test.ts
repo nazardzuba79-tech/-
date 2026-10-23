@@ -44,7 +44,7 @@ describe('actual OrderForm submit handler', () => {
       isConditional: false, execution: 'MARKET', side: 'SELL', pair: 'BTC/USDT', baseAsset: 'BTC',
       ocoTakeProfitPrice: '', ocoStopTriggerPrice: '', ocoStopLimitPrice: '', ApiError: Error, notTradingYet, orderBlocked: notTradingYet,
       // Demo Spot (Issue #592) off: the ordinary ledger and api.placeOrder.
-      demoLedger: false, demo: 'off' };
+      demoLedger: false, demo: 'off', demoRequest: false };
     const submit = new Function(...Object.keys(bindings), code + '\nreturn handleSubmit;')(...Object.values(bindings));
     return { ...bindings, submit };
   }

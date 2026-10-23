@@ -713,6 +713,8 @@ export const api = {
     price?: string;
     triggerPrice?: string;
     quantity: string;
+    /** With Demo Spot on: a retry after a lost response returns the same order. */
+    requestId?: string;
   }) => request('/orders', { method: 'POST', body: JSON.stringify(params) }),
 
   placeOcoOrder: (params: {
@@ -722,6 +724,7 @@ export const api = {
     takeProfitPrice: string;
     stopTriggerPrice: string;
     stopLimitPrice: string;
+    requestId?: string;
   }) =>
     request<{ ocoGroupId: string; takeProfitOrderId: string; stopOrderId: string }>('/orders/oco', {
       method: 'POST',

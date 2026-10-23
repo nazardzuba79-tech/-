@@ -11,6 +11,7 @@ on:
       - 'src/api/routes/demoTrading.ts'
       - 'src/api/routes/withdrawals.ts'
       - 'src/api/routes/orders.ts'
+      - 'src/api/routes/balances.ts'
       - 'src/index.ts'
       - 'src/services/__tests__/DemoTradingService.test.ts'
       - 'src/api/routes/__tests__/demoTrading.test.ts'
@@ -22,6 +23,7 @@ on:
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/lib/__tests__/demoSpot.test.ts'
       - 'scripts/*demo-trading*.cjs'
+      - 'docs/DEMO_TRADING.md'
       - '.github/workflows/demo-trading.yml'
 permissions:
   contents: read

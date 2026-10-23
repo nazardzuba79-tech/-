@@ -15,15 +15,19 @@ export const DEMO_SPOT_BUILD = import.meta.env.VITE_DEMO_SPOT_ENABLED === 'true'
 
 /**
  * The server decides (`ledger`, see demoSpotAccess on the API):
- * 'off'    — the ordinary Spot ledger, exactly as before: the flag is off, or
- *            the account holds ordinary Balance funds (e.g. an earlier admin
- *            Balance adjustment), which keep trading as they did.
+ * 'off'    — the ordinary Spot ledger, exactly as before (the flag is off).
+ * 'spot'   — Demo Spot is on and the account holds ordinary Balance funds
+ *            (e.g. an earlier admin Balance adjustment): the ordinary terminal
+ *            and ledger, as before, plus a request ID on each order.
  * 'trader' — no ordinary funds, admitted to demo Spot: balances, orders and
  *            history come from the demo ledger.
  * 'silent' — neither (or the answer is not known yet): Buy/Sell stay
  *            clickable and send nothing — never a real order instead.
  */
-export type DemoSpotMode = 'off' | 'trader' | 'silent';
+export type DemoSpotMode = 'off' | 'trader' | 'spot' | 'silent';
+
+/** The modes in which the terminal shows the demo ledger. */
+export type DemoLedgerMode = Extract<DemoSpotMode, 'trader' | 'silent'>;
 
 /** Test markets, managed listings and VTA keep their own paths unchanged. */
 export function isDemoSpotPair(pair: string): boolean {
@@ -36,7 +40,7 @@ let cached: { token: string; mode: Promise<DemoSpotMode> } | null = null;
 function readMode(token: string): Promise<DemoSpotMode> {
   if (cached?.token === token) return cached.mode;
   const mode = api.getDemoSpotAccess()
-    .then(access => (!access.enabled || access.ledger === 'spot' ? 'off'
+    .then(access => (!access.enabled ? 'off' : access.ledger === 'spot' ? 'spot'
       : (access.ledger ?? (access.admitted ? 'demo' : 'none')) === 'demo' ? 'trader' : 'silent') as DemoSpotMode)
     .catch(() => { if (cached?.token === token) cached = null; return 'silent' as const; });
   cached = { token, mode };

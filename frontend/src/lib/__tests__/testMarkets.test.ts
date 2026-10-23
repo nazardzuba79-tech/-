@@ -172,9 +172,9 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
   const form = src('components/OrderForm.tsx');
   test('the standard ticker bar, book and order form; only the chart area is the listing card', () => {
     expect(page).toContain('<TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />');
-    expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} demo={demoLedger ?? \'off\'} />');
+    expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} demo={demoPair ? demoMode : \'off\'} />');
     // Demo Spot (Issue #592) never applies to a listing, test market or VTA.
-    expect(page).toContain("const demoLedger = demoMode !== 'off' && isDemoSpotPair(pair) ? demoMode : null;");
+    expect(page).toContain("const demoPair = demoMode !== 'off' && isDemoSpotPair(pair);");
     expect(page).not.toMatch(/TestMarketTickerBar|TestMarketBook|TestMarketOrderPanel/);
     expect(page).toContain("marketType !== 'spot' || isBrowserInactive()) return;");
     expect(page).toContain("const bookLive = !testPair || testMarket.asset?.state.phase === 'live';");
