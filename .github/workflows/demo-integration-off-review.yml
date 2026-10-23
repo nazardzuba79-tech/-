@@ -1,0 +1,39 @@
+name: VOLTEX combined financial integration — all flags OFF
+on:
+  pull_request:
+    paths:
+      - 'src/services/**'
+      - 'src/api/routes/**'
+      - 'scripts/*demo-*.cjs'
+      - 'frontend/src/**'
+      - '.github/workflows/demo-integration-off-review.yml'
+permissions:
+  contents: read
+jobs:
+  combined-flags-off:
+    if: github.event.pull_request.draft == true && github.head_ref == 'review/demo-spot-liquidity-integrated-off-20261023' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install and generate isolated test client
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Compile combined backend without enabling demo features
+        run: npm run build
+      - name: Default-OFF, withdrawal and demo liquidity integration regressions
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/services/__tests__/demoReleaseOff.test.ts
+          src/services/__tests__/DemoLiquidity.test.ts
+          src/api/routes/__tests__/demoTrading.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
+      - name: Confirm this workflow has no production credentials
+        run: echo "QA-only — no production URL, secrets, SSH, migrations, merge or deployment"
