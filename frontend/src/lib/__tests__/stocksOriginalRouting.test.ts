@@ -34,7 +34,7 @@ describe('Stocks original catalogue route boundary', () => {
     }, [kind, instrumentId]);
     return React.createElement('div', { 'data-view': kind, 'data-instrument': instrumentId || '' });
   };
-  const load = (enabled: boolean | undefined, widgetPreview = false) => {
+  const load = (enabled: boolean | undefined, widgetPreview = false, hostedPilot = false) => {
     const empty = () => null;
     const imports: Record<string, unknown> = {
       react: React, 'react/jsx-runtime': req('react/jsx-runtime'), 'react-router-dom': router,
@@ -50,11 +50,11 @@ describe('Stocks original catalogue route boundary', () => {
       './StocksOverview': { default: () => React.createElement(Boundary, { kind: 'legacy-overview' }) },
     };
     const output: any = {};
-    new Function('exports', 'require', '__VOLTEX_STOCKS_GLOBAL_SIMULATOR__', source)(output, (name: string) => {
+    new Function('exports', 'require', '__VOLTEX_STOCKS_GLOBAL_SIMULATOR__', '__VOLTEX_STOCKS_HOSTED_PILOT__', source)(output, (name: string) => {
       importsSeen.push(name);
       if (!(name in imports)) throw new Error(`Unexpected StocksPage dependency: ${name}`);
       return imports[name];
-    }, enabled);
+    }, enabled, hostedPilot);
     Page = output.StocksPage;
   };
   const Navigation = () => { navigate = router.useNavigate(); return null; };
@@ -128,6 +128,20 @@ describe('Stocks original catalogue route boundary', () => {
       expect(importsSeen).not.toContain('./global/GlobalStocks');
       expect(importsSeen).not.toContain('./global/GlobalStocksCatalogue');
     });
+
+  test.each(['https://voltextech.net/stocks', 'https://review.example.invalid/stocks', 'http://127.0.0.1:4438/stocks'])
+    ('explicit hosted pilot %s opens the PROFESSIONAL catalogue without legacy reads', async url => {
+      dom.reconfigure({ url }); load(false, false, true);
+      await render(); onlyView('global-catalogue');
+      expect(legacyReads).not.toHaveBeenCalled();
+      expect(importsSeen).not.toContain('./StocksTerminal');
+    });
+
+  test('explicit hosted pilot direct instrument opens GlobalStocks, not a stand-in terminal', async () => {
+    dom.reconfigure({ url: 'https://voltextech.net/stocks' }); load(false, false, true);
+    await render(terminalPath(AAPLX)); onlyView('global-terminal', AAPLX);
+    expect(legacyReads).not.toHaveBeenCalled();
+  });
 
   test('official-widget preview remains on the existing nonlocal path without invoking either market pipeline', async () => {
     dom.reconfigure({ url: 'https://preview.example.invalid/stocks' }); load(true, true);

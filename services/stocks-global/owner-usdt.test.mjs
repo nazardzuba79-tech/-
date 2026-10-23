@@ -32,7 +32,7 @@ test('owner-only mode cannot start with a missing or malformed trusted owner ID'
 test('only the trusted account may trade; USDC submissions and manual refresh bypasses are denied', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'stocks-owner-usdt-'));
   let quoteCalls = 0;
-  const app = await createServer({
+  const app = await createServer({ financialEnabled: true,
     port: 0, accountsPath: join(dir, 'owner.sqlite'), ownerOnlyMode: true, tradeOwnerSubject: 'alice',
     now: () => NOW, autoPoll: false,
     authenticate: async req => {

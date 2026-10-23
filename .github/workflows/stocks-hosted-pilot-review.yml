@@ -1,0 +1,94 @@
+name: Stocks hosted private pilot (QA-only)
+on:
+  push:
+    branches:
+      - review/stocks-hosted-private-pilot-20261023
+    paths:
+      - frontend/src/App.tsx
+      - frontend/src/pages/stocks/StocksPage.tsx
+      - frontend/src/pages/stocks/stockHostPolicy.ts
+      - frontend/src/pages/stocks/global/**
+      - frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+      - services/stocks-global/**
+      - scripts/qa-stocks-hosted-silent.cjs
+      - frontend/src/lib/__tests__/stocksOriginalRouting.test.ts
+      - frontend/src/lib/__tests__/stocksHostedPilot.test.ts
+      - frontend/vite.config.ts
+      - docs/STOCKS_HOSTED_PILOT_REVIEW.md
+      - .github/workflows/stocks-hosted-pilot-review.yml
+  pull_request:
+    paths:
+      - frontend/src/App.tsx
+      - frontend/src/pages/stocks/StocksPage.tsx
+      - frontend/src/pages/stocks/stockHostPolicy.ts
+      - frontend/src/pages/stocks/global/**
+      - frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+      - services/stocks-global/**
+      - scripts/qa-stocks-hosted-silent.cjs
+      - frontend/src/lib/__tests__/stocksOriginalRouting.test.ts
+      - frontend/src/lib/__tests__/stocksHostedPilot.test.ts
+      - frontend/vite.config.ts
+      - docs/STOCKS_HOSTED_PILOT_REVIEW.md
+      - .github/workflows/stocks-hosted-pilot-review.yml
+permissions:
+  contents: read
+jobs:
+  hosted-routing:
+    if: github.event_name == 'push' || github.event.pull_request.draft == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without scripts
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Normal auth, hosted route, local simulator, and silent viewer contracts
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/stocksHostedPilot.test.ts
+          frontend/src/lib/__tests__/stocksOriginalRouting.test.ts
+          frontend/src/lib/__tests__/stockNavigation.test.ts
+          frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+      - name: Build frontend exactly default OFF
+        run: cd frontend && npm run build
+      - name: Independent execution-OFF gateway and forged HTTP requests
+        run: node --test services/stocks-global/execution-off.test.mjs
+      - name: Build opt-in hosted route without local simulator or fake market data
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_HOSTED_PILOT: 'true'
+        run: cd frontend && npm run build
+      - name: Install isolated browser dependency
+        run: |
+          npm install --prefix /tmp/stocks-hosted-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/stocks-hosted-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Actual hosted component, ordinary login UI, both stale admitted sessions, desktop and mobile
+        env:
+          PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/stocks-hosted-browser/node_modules/playwright
+        run: node scripts/qa-stocks-hosted-silent.cjs
+      - name: Browser evidence (synthetic only, no production acceptance)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-hosted-silent-browser
+          path: docs/qa/stocks-hosted-silent/
+          retention-days: 5
+      - name: Confirm bad simulator+hosted combination refuses compilation
+        env:
+          VITE_STOCKS_ENABLED: 'true'
+          VITE_STOCKS_HOSTED_PILOT: 'true'
+          VITE_STOCKS_GLOBAL_SIMULATOR: 'true'
+        run: |
+          if (cd frontend && npx vite build --outDir ../output/hosted-bad-mode); then
+            echo 'FAIL: synthetic local simulator was accepted with hosted pilot'; exit 1
+          fi
+      - name: No release/production authority
+        run: |
+          echo "Code-only: no market feed permissions, financial flags, credentials, migrations, or deployment"
