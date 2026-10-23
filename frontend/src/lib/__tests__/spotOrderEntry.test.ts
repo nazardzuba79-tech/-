@@ -101,7 +101,13 @@ test('parent wiring keeps plain matching APIs, pair-keyed reset and genuine fund
   const form = readFileSync(resolve(frontend, 'src/components/OrderForm.tsx'), 'utf8');
   const page = readFileSync(resolve(frontend, 'src/pages/TradePage.tsx'), 'utf8');
   expect(form).toContain('await api.placeOcoOrder({'); expect(form).toContain('await api.placeOrder({');
-  expect(form).not.toContain('placeDemoOrder'); expect(form).not.toContain('kycStatus');
+  // The demo ledger is reached only through the gated branch (Issue #592):
+  // TradePage passes `demo` only when both switches admit the account.
+  expect(form.split('placeDemoOrder').length - 1).toBe(1);
+  expect(form).toContain("const demoLedger = demo !== 'off' && !privateVta;");
+  expect(form).toContain('} else if (demoLedger) {\n        const result = await api.placeDemoOrder({');
+  expect(form).toContain("if (demoLedger && demo !== 'trader') return;");
+  expect(form).toContain("demo = 'off',"); expect(form).not.toContain('kycStatus');
   expect(form).toContain('if (submittingRef.current) return');
   expect(form).toContain('pickedPrice.pair !== pair');
   expect(form).toContain('setQuantity(balancePercentageQuantity(available.base, pct))');
@@ -119,7 +125,8 @@ test('actual balance reader keeps Retry busy through failure and recovery withou
     .mockResolvedValue([{ asset: 'BTC', available: '0.5' }, { asset: 'USDT', available: '100' }]);
   let poll!: () => void;
   let cleanup!: () => void;
-  const bindings = { privateVta: false, api: { getBalances }, useEffect: (fn: () => () => void) => { cleanup = fn(); },
+  // Demo Spot (Issue #592) off: the ordinary ledger's api.getBalances.
+  const bindings = { privateVta: false, demoLedger: false, demo: 'off', api: { getBalances }, useEffect: (fn: () => () => void) => { cleanup = fn(); },
     browserSetInterval: (fn: () => void) => { poll = fn; return 1; }, browserClearInterval: jest.fn(),
     baseAsset: 'BTC', quoteAsset: 'USDT', side: 'BUY', refreshKey: 0, balanceVersion: 0,
     setBalanceLoading: jest.fn(), setBalanceError: jest.fn(), setBalanceReady: jest.fn(), setAvailable: jest.fn() };

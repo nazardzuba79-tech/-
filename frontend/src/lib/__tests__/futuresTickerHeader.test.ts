@@ -40,6 +40,8 @@ function stripKycMaterialsApi(text: string): string {
  */
 function normalizeApiTs(text: string): string {
   return stripKycMaterialsApi(text)
+    // Demo Spot (Issue #592): two additive demo-ledger reads; no Futures/Spot method changes.
+    .replace("  // Demo Spot (Issue #592): with the server's DEMO_SPOT_ENABLED an\n  // admin-credited account trades the demo ledger too (see lib/demoSpot).\n  getDemoSpotAccess: () => request<{ enabled: boolean; admitted: boolean }>('/demo/spot/access'),\n\n  getDemoOrderHistory: () =>\n    request<\n      {\n        id: string;\n        pair: string;\n        side: 'BUY' | 'SELL';\n        type: 'LIMIT' | 'MARKET';\n        price: string | null;\n        originalQuantity: string;\n        remainingQuantity: string;\n        status: string;\n        createdAt: string;\n      }[]\n    >('/demo/orders/history'),\n\n", '')
     // Reuse the identical authenticated transport in the lazy OTC module.
     .replace('export async function request<T>', 'async function request<T>')
     // Remembered-device auth (2026-10-03, admin accounts only) adds logout and

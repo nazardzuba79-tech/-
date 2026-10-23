@@ -773,6 +773,25 @@ export const api = {
       }[]
     >('/demo/orders/open'),
 
+  // Demo Spot (Issue #592): with the server's DEMO_SPOT_ENABLED an
+  // admin-credited account trades the demo ledger too (see lib/demoSpot).
+  getDemoSpotAccess: () => request<{ enabled: boolean; admitted: boolean }>('/demo/spot/access'),
+
+  getDemoOrderHistory: () =>
+    request<
+      {
+        id: string;
+        pair: string;
+        side: 'BUY' | 'SELL';
+        type: 'LIMIT' | 'MARKET';
+        price: string | null;
+        originalQuantity: string;
+        remainingQuantity: string;
+        status: string;
+        createdAt: string;
+      }[]
+    >('/demo/orders/history'),
+
   cancelDemoOrder: (orderId: string) => request(`/demo/orders/${orderId}`, { method: 'DELETE' }),
 
   getDemoTrades: (pair: string) =>

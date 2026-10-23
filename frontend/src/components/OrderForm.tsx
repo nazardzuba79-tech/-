@@ -15,6 +15,7 @@ import { spotOrderFeedback, type SpotOrderFeedback } from '../lib/spotOrderFeedb
 import { customerErrorText } from '../lib/customerError';
 import { isManagedTradablePair, isTestMarketPair } from '../lib/testMarkets';
 import { MOBILE_TERMINAL_QUERY, useMediaQuery } from '../lib/useMediaQuery';
+import type { DemoSpotMode } from '../lib/demoSpot';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -35,11 +36,15 @@ export function OrderForm({
   onPlaced,
   pickedPrice,
   refreshKey = 0,
+  demo = 'off',
 }: {
   pair: string;
   onPlaced: () => void;
   pickedPrice?: PickedPrice | null;
   refreshKey?: number;
+  /** Demo Spot (lib/demoSpot): which ledger this account trades on this
+   * pair. TradePage passes 'off' for test markets, listings and VTA. */
+  demo?: DemoSpotMode;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -48,6 +53,9 @@ export function OrderForm({
   const [baseAsset, quoteAsset] = pair.split('/');
   const privateVta = pair.toUpperCase() === 'VTA/USDT';
   const vta = useVtaSpotAccount(privateVta);
+  // The demo ledger replaces the ordinary one; an account without an admin
+  // credit ('silent') sends nothing at all.
+  const demoLedger = demo !== 'off' && !privateVta;
   const vtaPending = useRef<{ requestId: string; quantity: string } | null>(null);
   const [vtaUnconfirmed, setVtaUnconfirmed] = useState(false);
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
@@ -160,6 +168,11 @@ export function OrderForm({
     setExecution('LIMIT');
   }, [pickedPrice, pair, privateVta]);
 
+  // The demo ledger matches LIMIT and MARKET orders only.
+  useEffect(() => {
+    if (demoLedger && family !== 'LIMIT' && family !== 'MARKET') setFamily('LIMIT');
+  }, [demoLedger, family]);
+
   useEffect(() => {
     let cancelled = false;
     if (privateVta) return;
@@ -168,8 +181,7 @@ export function OrderForm({
       if (pending) return;
       pending = true;
       setBalanceLoading(true);
-      await api
-      .getBalances()
+      await (demoLedger ? (demo === 'trader' ? api.getDemoBalances() : Promise.resolve([])) : api.getBalances())
       .then((balances) => {
         if (cancelled) return;
         const base = balances.find((b) => b.asset === baseAsset);
@@ -184,7 +196,7 @@ export function OrderForm({
     void load();
     const timer = browserSetInterval(load, 4000);
     return () => { cancelled = true; browserClearInterval(timer); };
-  }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion, privateVta]);
+  }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion, privateVta, demoLedger, demo]);
 
   const { ticker: referenceTicker } = useMarketTicker(pair, 5000);
 
@@ -262,6 +274,8 @@ export function OrderForm({
     setError(null);
     // The button is disabled for these; no «not trading yet» line or toast (owner, 2026-10-22).
     if (orderBlocked) return;
+    // No admin demo credit: Buy/Sell stay clickable and nothing is sent or shown (Issue #592).
+    if (demoLedger && demo !== 'trader') return;
     const requiredValues = [quantity, ...(family === 'OCO' ? [ocoTakeProfitPrice, ocoStopTriggerPrice, ocoStopLimitPrice] : [
       ...(family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? [price] : []),
       ...(isConditional ? [triggerPrice] : []),
@@ -301,6 +315,15 @@ export function OrderForm({
         if (getToken() !== session) return;
         await vta.refresh();
         if (getToken() !== session) return;
+      } else if (demoLedger) {
+        const result = await api.placeDemoOrder({
+          pair,
+          side,
+          type: family === 'MARKET' ? 'MARKET' : 'LIMIT',
+          price: family === 'MARKET' ? undefined : price,
+          quantity,
+        });
+        feedback = spotOrderFeedback(result);
       } else if (family === 'OCO') {
         await api.placeOcoOrder({
           pair,
@@ -358,7 +381,7 @@ export function OrderForm({
     { id: 'STOP', label: t('trade.stopOrder') },
     { id: 'TAKE_PROFIT', label: t('trade.takeProfitOrder') },
     { id: 'OCO', label: t('trade.ocoOrder') },
-  ];
+  ].filter(f => !demoLedger || f.id === 'LIMIT' || f.id === 'MARKET') as { id: OrderFamily; label: string }[];
 
   const lastPriceLabel = t('trade.lastPriceBtn');
   const sideClass = side === 'BUY' ? 'buy' : 'sell';

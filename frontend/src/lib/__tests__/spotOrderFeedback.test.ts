@@ -42,7 +42,9 @@ describe('actual OrderForm submit handler', () => {
       setError: jest.fn(), setSubmitting: jest.fn(), resetFields: jest.fn(), onPlaced: jest.fn(), setBalanceVersion: jest.fn(),
       quantity: '0.001', family: 'MARKET', type: 'MARKET', price: '', triggerPrice: '',
       isConditional: false, execution: 'MARKET', side: 'SELL', pair: 'BTC/USDT', baseAsset: 'BTC',
-      ocoTakeProfitPrice: '', ocoStopTriggerPrice: '', ocoStopLimitPrice: '', ApiError: Error, notTradingYet, orderBlocked: notTradingYet };
+      ocoTakeProfitPrice: '', ocoStopTriggerPrice: '', ocoStopLimitPrice: '', ApiError: Error, notTradingYet, orderBlocked: notTradingYet,
+      // Demo Spot (Issue #592) off: the ordinary ledger and api.placeOrder.
+      demoLedger: false, demo: 'off' };
     const submit = new Function(...Object.keys(bindings), code + '\nreturn handleSubmit;')(...Object.values(bindings));
     return { ...bindings, submit };
   }
