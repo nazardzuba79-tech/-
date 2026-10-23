@@ -100,7 +100,7 @@ export function App() {
     <BrowserRouter>
       <Suspense fallback={<RouteShell />}>
       <Routes>
-        {stocksEnabled && <><Route path="/stocks" element={<StocksPage/>}/><Route path="/stocks/:instrumentId" element={<StocksPage/>}/></>}
+        {stocksEnabled && <><Route path="/stocks" element={<RequireAuth><StocksPage /></RequireAuth>}/><Route path="/stocks/:instrumentId" element={<RequireAuth><StocksPage /></RequireAuth>}/></>}
         <Route path="/" element={<RootEntry />} />
         <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />
