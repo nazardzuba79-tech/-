@@ -99,6 +99,21 @@ describe('Stocks original catalogue route boundary', () => {
     expect(importsSeen).not.toContain('./StocksTerminal');
   });
 
+  // From #611: the hosted gate behaves the same on any origin, including direct entry to an instrument.
+  test.each(['https://voltextech.net/stocks', 'https://review.example.invalid/stocks', 'http://127.0.0.1:4438/stocks'])
+    ('explicit hosted gate on %s opens the professional catalogue without legacy reads', async url => {
+      dom.reconfigure({ url }); load(false, false, true);
+      await render(); onlyView('global-catalogue');
+      expect(legacyReads).not.toHaveBeenCalled();
+      expect(importsSeen).not.toContain('./StocksTerminal');
+    });
+
+  test('explicit hosted gate: a direct instrument URL opens GlobalStocks, not a stand-in terminal', async () => {
+    dom.reconfigure({ url: 'https://voltextech.net/stocks' }); load(false, false, true);
+    await render(terminalPath(AAPLX)); onlyView('global-terminal', AAPLX);
+    expect(legacyReads).not.toHaveBeenCalled();
+  });
+
   test.each([AAPLX, AAPLB, SBER])('direct canonical route preserves %s without mounting catalogue', async id => {
     await render(terminalPath(id)); onlyView('global-terminal', id);
     expect(importsSeen).toContain('./global/GlobalStocks');

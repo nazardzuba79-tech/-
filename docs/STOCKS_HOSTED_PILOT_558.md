@@ -6,6 +6,37 @@ The containing commit is the single integration candidate; delivery SHA and
 bundle digest are in the accompanying local `output/issue558/delivery.json`.
 No change to #556, production flags, real accounts, balances or infrastructure.
 
+## Current owner policy (Issue #558, 23 Oct 2026) — Stocks orders are a silent NO-OP for everyone
+
+Until a new explicit owner instruction, **no account executes a Stocks order**, including the owner, Ksenia
+and team testers. The catalogue/terminal may be visible behind its own gate; BUY/SELL (Market/Limit, click or
+Enter) stay clickable and do nothing: no request, no message, no draft change, no balance/position/history change.
+
+How this candidate enforces it, server-first:
+- `STOCKS_ORDER_EXECUTION_ENABLED` is OFF by default. With it off, the API's readiness proof reports
+  `tradingEnabled: false` (it is `STOCKS_TEST_CASH_ENABLED && STOCKS_ORDER_EXECUTION_ENABLED`); the release gateway
+  takes its trading switch from that proof alone, so it grants **nobody** `canTrade` and the terminal shows every
+  account, the two bound traders included, as a silent viewer. Before this change the readiness reported only the
+  test-cash gate, so a pilot with wallets on and execution off would have let the traders' clicks reach the API and
+  show its refusal.
+- A forged order is refused twice: by the gateway (no `canTrade`) and by the API's second gate (403
+  `ACCOUNT_TRADING_DISABLED`), also when sent with the gateway's own key.
+- The two-trader PostgreSQL capability and its acceptance stay in the code, reachable only with both server gates
+  explicitly ON in a disposable environment (`qa-stocks-hosted-browser.cjs` «gated acceptance» steps). Never set them
+  in production without that new owner decision.
+
+## Consolidated candidate (replaces the split #609 / #610 / #611)
+
+| Was | Now |
+| --- | --- |
+| #609 PG authority, authenticated gateway, hosted browser acceptance | kept |
+| #610 venue/market-data adapters, `DATA_RIGHTS_UNVERIFIED` | kept |
+| #611 `VITE_STOCKS_HOSTED_PILOT=true` + `VITE_STOCKS_ENABLED=true` | **one** flag: `VITE_STOCKS_CATALOGUE_VISIBLE=true`. A build that still sets `VITE_STOCKS_HOSTED_PILOT` (any value) stops with a message naming the new flag. |
+| #611 `RequireAuth` on `/stocks` routes | both routes always behind the ordinary VOLTEX login, as Spot/Futures |
+| #611 build refusals (simulator / widget preview / custom `VITE_STOCKS_ORIGIN` with hosted) | all three refuse the hosted build; checked by the `hosted-build-contract` CI job |
+| #611 `shouldMountGlobalStocks` + tests | ported (`stockHostPolicy.ts`, `stocksHostedPilot.test.ts`, `stocksOriginalRouting.test.ts`) |
+| #611 runbook `STOCKS_HOSTED_PILOT_REVIEW.md` | folded into this document (gates, release order, rollback) |
+
 ## Owner path after separately approved release
 
 Use the existing VOLTEX login, then **Trading → Stocks**. The menu and
@@ -29,14 +60,15 @@ pre-COMMIT fences remain authoritative.
 | Frontend visibility | `VITE_STOCKS_CATALOGUE_VISIBLE=true` | Same-app authenticated menu/catalogue/terminal. Does not authorize finance. |
 | API catalogue identity | `STOCKS_CATALOGUE_ENABLED=true` | PG readiness and normal session identity only. |
 | Financial authority | `STOCKS_TEST_CASH_ENABLED=true` | Existing two-principal PG authority operations; requires explicit separate approval. |
-| Order execution (PR #593) | `STOCKS_ORDER_EXECUTION_ENABLED=true` | Second server gate on `/stocks-test-cash/command`, off unless exactly `true`; with it off both bound traders get 403 `ACCOUNT_TRADING_DISABLED` before the authority runs. Requires the financial gate as well. |
+| Order execution (PR #593) | `STOCKS_ORDER_EXECUTION_ENABLED=true` | Second server gate on `/stocks-test-cash/command`, off unless exactly `true`; with it off both bound traders get 403 `ACCOUNT_TRADING_DISABLED` before the authority runs, and the readiness proof reports no trading, so the gateway grants nobody `canTrade` (silent viewers). Requires the financial gate as well. |
 | Market data | `STOCKS_MARKET_DATA_ENABLED=true` | Explicit provider activation only after data rights/feed readiness. Default unavailable with no provider requests or prices/candles. |
 | Extra venues (#561) | `STOCKS_VENUES_ENABLED=gate,mexc,…` **and** `STOCKS_VENUE_RIGHTS_CONFIRMED=<same list>` | Only with market data on. Each venue must also be in the operator's data-rights attestation, otherwise the API refuses to start (`DATA_RIGHTS_UNVERIFIED`). A venue left out gets no request; its rows stay hidden and its instruments answer `DATA_RIGHTS_UNVERIFIED`. The attestation records a confirmed licence; it is not one. |
 | Binance host (#561) | `STOCKS_BINANCE_HOST=data-api.binance.vision` | Optional: Binance's documented public market-data host (same paths). Any other value refuses to start. |
 
 Hosted frontend: use normal same-origin `VITE_API_URL=/api/v1`. Do not set
-`VITE_STOCKS_GLOBAL_SIMULATOR`, `VITE_STOCKS_SIMULATOR` or
-`VITE_STOCKS_WIDGET_PREVIEW`; a mixed hosted/fixture build is rejected.
+`VITE_STOCKS_GLOBAL_SIMULATOR`, `VITE_STOCKS_SIMULATOR`,
+`VITE_STOCKS_WIDGET_PREVIEW` or `VITE_STOCKS_ORIGIN`; a mixed hosted/fixture or
+cross-origin build is rejected.
 `VITE_STOCKS_ENABLED` is the older information/preview flag and is unnecessary
 for this hosted path. Hosted trading is USDT-only regardless of browser input.
 No existing production env/build file is changed by this candidate.

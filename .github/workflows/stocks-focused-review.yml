@@ -22,6 +22,10 @@ on:
       - 'scripts/qa/stocks-release-package*.cjs'
       - 'scripts/qa/stocks-ci-source-head.test.cjs'
       - 'scripts/qa/stocks-rc-50plus2/**'
+      - 'frontend/src/App.tsx'
+      - 'frontend/vite.config.ts'
+      - 'frontend/src/lib/__tests__/stocksHostedPilot.test.ts'
+      - 'frontend/src/lib/__tests__/stocksOriginalRouting.test.ts'
   workflow_dispatch: {}
 
 permissions:
@@ -333,3 +337,42 @@ jobs:
           name: stocks-hosted-browser
           path: /tmp/stocks-hosted-browser
           retention-days: 14
+
+  # From #611, on the one canonical flag: the default build hides Stocks, the hosted build compiles, and every
+  # contradictory combination (local simulator, foreign gateway origin, the discarded flag name) refuses to build.
+  hosted-build-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Normal login, hosted route, loopback-only simulator, silent viewer
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/stocksHostedPilot.test.ts
+          frontend/src/lib/__tests__/stocksOriginalRouting.test.ts
+          frontend/src/lib/__tests__/stockNavigation.test.ts
+          frontend/src/lib/__tests__/stocksViewerNoop.test.ts
+          frontend/src/lib/__tests__/headerDropdown.test.ts
+      - name: Default build (Stocks hidden)
+        run: cd frontend && npx vite build --outDir ../.stocks-default-dist --emptyOutDir
+      - name: Hosted build (canonical flag)
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+        run: cd frontend && npx vite build --outDir ../.stocks-hosted-dist --emptyOutDir
+      - name: Contradictory hosted builds are refused
+        shell: bash
+        run: |
+          set -u
+          refuse() { if (cd frontend && env "$@" npx vite build --outDir ../.stocks-refused-dist --emptyOutDir >/dev/null 2>&1); then echo "FAIL: accepted $*"; exit 1; fi; echo "refused: $*"; }
+          refuse VITE_STOCKS_CATALOGUE_VISIBLE=true VITE_STOCKS_ENABLED=true VITE_STOCKS_GLOBAL_SIMULATOR=true
+          refuse VITE_STOCKS_CATALOGUE_VISIBLE=true VITE_STOCKS_ORIGIN=https://stocks.example.invalid
+          refuse VITE_STOCKS_HOSTED_PILOT=true VITE_STOCKS_ENABLED=true

@@ -102,7 +102,8 @@ export function App() {
     <BrowserRouter>
       <Suspense fallback={<RouteShell />}>
       <Routes>
-        {stocksEnabled && <><Route path="/stocks" element={hostedStocks ? <RequireAuth><StocksPage/></RequireAuth> : <StocksPage/>}/><Route path="/stocks/:instrumentId" element={hostedStocks ? <RequireAuth><StocksPage/></RequireAuth> : <StocksPage/>}/></>}
+        {/* The ordinary VOLTEX login, as for Spot and Futures, on every Stocks build (#611). */}
+        {stocksEnabled && <><Route path="/stocks" element={<RequireAuth><StocksPage /></RequireAuth>}/><Route path="/stocks/:instrumentId" element={<RequireAuth><StocksPage /></RequireAuth>}/></>}
         <Route path="/" element={<RootEntry />} />
         <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />

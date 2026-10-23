@@ -6,8 +6,13 @@ import { voltexContent } from './contentPlugin';
 // Deposit catalogue activation is chosen at build time and never falls back
 // at runtime, so a malformed origin must stop the build rather than ship a
 // Deposit dialog that silently reads Render (or nothing).
+// One canonical hosted Stocks flag. #611's `VITE_STOCKS_HOSTED_PILOT` was folded into it: a build that
+// still sets the old name stops instead of silently shipping without (or with) Stocks.
+if (process.env.VITE_STOCKS_HOSTED_PILOT !== undefined) throw new Error('VITE_STOCKS_HOSTED_PILOT was replaced by VITE_STOCKS_CATALOGUE_VISIBLE=true');
 const hostedStocks = process.env.VITE_STOCKS_CATALOGUE_VISIBLE === 'true';
 if (hostedStocks && ['VITE_STOCKS_GLOBAL_SIMULATOR','VITE_STOCKS_SIMULATOR','VITE_STOCKS_WIDGET_PREVIEW'].some(key => process.env[key] === 'true')) throw new Error('Hosted Stocks cannot include local fixtures or widget preview');
+// Same-origin only: the hosted terminal talks to /__stocks_global/* on the app's own origin.
+if (hostedStocks && !!process.env.VITE_STOCKS_ORIGIN?.trim()) throw new Error('Hosted Stocks is same-origin; VITE_STOCKS_ORIGIN must not be set');
 const depositEdge = process.env.VITE_DEPOSIT_CATALOGUE_URL;
 if (process.env.VITE_STOCKS_GLOBAL_SIMULATOR === 'true' && process.env.VITE_STOCKS_ENABLED !== 'true') throw new Error('Local global Stocks simulator requires Stocks enabled');
 if (process.env.VITE_STOCKS_SIMULATOR === 'true' && (process.env.VITE_STOCKS_ENABLED !== 'true' || process.env.VITE_STOCKS_WIDGET_PREVIEW !== 'true')) {

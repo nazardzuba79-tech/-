@@ -13,9 +13,13 @@
  *     catalogue opens the professional terminal with candles;
  *   - a viewer's BUY/SELL × Market/Limit, clicked and with Enter, stays
  *     clickable and silent: no financial request, no message, draft kept;
- *   - each of the two bound traders places a MARKET BUY and SELL and a LIMIT
- *     that is cancelled, through the terminal; the existing DemoBalance moves
- *     by exactly the fills and returns after the SELL;
+ *   - owner policy (Issue #558, 23 Oct): with the server's order execution
+ *     gate OFF (the default), the two bound traders are silent too, and a
+ *     forged order to the gateway or the API is refused with nothing written;
+ *   - isolated acceptance only, both server gates explicitly ON (never in
+ *     production): each of the two bound traders places a MARKET BUY and SELL
+ *     and a LIMIT that is cancelled, through the terminal; the existing
+ *     DemoBalance moves by exactly the fills and returns after the SELL;
  *   - logout closes the terminal again.
  * No production account, secret, provider request or deployment.
  *
@@ -48,11 +52,11 @@ async function step(name, fn) {
 (async () => {
   assert(disposableUrl(), 'STOCKS_DISPOSABLE_PG_URL and STOCKS_PG_DISPOSABLE_CONFIRM are required');
   assert(fs.existsSync(path.join(dist, 'index.html')), `no bundle in ${dist}`);
-  const f = await fixture(t, { normalLogin: true, releaseRouter: true, wallClock: true, apiPort: API_PORT, gatewayPort: GATEWAY_PORT, dist });
-  // A third ordinary account with a password: logged in, not bound, never a trader.
-  const viewer = { email: `synthetic-stocks-viewer-${crypto.randomUUID()}@example.invalid` };
-  await f.db.user.create({ data: { id: 'synthetic-stocks-viewer-' + crypto.randomUUID(), email: viewer.email,
-    passwordHash: await require('bcrypt').hash(f.loginPassword, 4), referralCode: crypto.randomBytes(10).toString('hex'), role: 'USER' } });
+  // The bundle's API origin is fixed at build time, so the two server configurations run one after the
+  // other on the same ports: first the production default (order execution OFF), then the gated acceptance.
+  const hosted = { normalLogin: true, releaseRouter: true, wallClock: true, apiPort: API_PORT, gatewayPort: GATEWAY_PORT, dist };
+  const policyCleanups = [];
+  let f = await fixture({ after: fn => policyCleanups.push(fn) }, { ...hosted, orderExecutionEnabled: false });
   const browser = await chromium.launch(process.env.QA_CHROMIUM_PATH ? { executablePath: process.env.QA_CHROMIUM_PATH } : {});
   const terminal = '/stocks/' + encodeURIComponent(f.ID);
   const cash = async index => (await f.db.demoBalance.findUnique({ where: { userId_asset: { userId: f.users[index], asset: 'USDT' } } }));
@@ -104,7 +108,65 @@ async function step(name, fn) {
     return { status: response.status(), body: await response.json() };
   };
 
+  // Every BUY/SELL × Market/Limit, by click and by Enter, leaves no request, no message and the draft as typed.
+  const silentTicket = async (page, financial) => {
+    const before = await f.rows();
+    for (const side of ['Купить', 'Продать']) for (const type of ['Market', 'Limit']) {
+      await ticket(page, side, type);
+      if (type === 'Limit') await page.getByLabel('Цена', { exact: true }).fill('99');
+      await page.getByLabel('Количество', { exact: true }).fill('0.1');
+      const draft = await page.locator('.vxg-ticket form input').evaluateAll(inputs => inputs.map(i => i.value));
+      assert(await page.locator('.vxg-submit').isEnabled(), `${side} ${type} is not clickable`);
+      await page.locator('.vxg-submit').click();
+      await page.getByLabel('Количество', { exact: true }).press('Enter');
+      await pause(150);
+      assert.deepEqual(await page.locator('.vxg-ticket form input').evaluateAll(inputs => inputs.map(i => i.value)), draft, 'the draft changed');
+      assert.equal(await page.locator('.vxg-ticket .vxg-error, .vxg-ticket .vxg-success, [role="alert"], .toast').count(), 0, 'a message appeared');
+    }
+    assert.deepEqual(financial, [], 'a financial request left the page');
+    assert.deepEqual(await f.rows(), before, 'a row changed');
+    const viewed = await state(page);
+    assert.equal(viewed.status, 200); assert.equal(viewed.body.account.canTrade, false);
+  };
+
   try {
+    for (const [index, width] of [[0, 1440], [1, 390]]) {
+      await step(`policy ${width}: order execution OFF — bound trader ${index + 1} sees the terminal, BUY/SELL × Market/Limit click and Enter are silent, DemoBalance unchanged`, async () => {
+        const { context, page, financial } = await open(width);
+        await page.goto(base + terminal);
+        await login(page, `${f.users[index]}@example.invalid`);
+        await terminalReady(page);
+        const start = (await cash(index)).available.toString();
+        await silentTicket(page, financial);
+        assert.equal((await cash(index)).available.toString(), start);
+        await shot(page, `policy-trader-${index + 1}-silent-${width}.png`);
+        await context.close();
+      });
+    }
+    await step('policy: a forged order to the gateway and to the API itself is refused; nothing is reserved, written or received', async () => {
+      const before = await f.rows();
+      for (const index of [0, 1]) {
+        // With the session's own page token, so a refusal is about permission, not a missing header.
+        const read = await (await fetch(`${base}/__stocks_global/state?id=${encodeURIComponent(f.ID)}`, { headers: { authorization: 'Bearer ' + f.tokens[index] } })).json();
+        assert.equal(read.account.canTrade, false);
+        const gateway = await fetch(`${base}/__stocks_global/orders`, { method: 'POST', headers: { authorization: 'Bearer ' + f.tokens[index], 'content-type': 'application/json', 'x-stocks-token': read.token ?? '' },
+          body: JSON.stringify({ id: `forged-${index}-0001`, instrumentId: f.ID, currency: 'USDT', side: 'BUY', type: 'MARKET', quantity: '0.10000000' }) });
+        assert.notEqual(gateway.status, 200, 'the gateway accepted a forged order');
+        // Even with the gateway's own key — what a compromised gateway could send — the API's second gate refuses.
+        const api = await fetch(`${f.apiOrigin}/api/v1/stocks-test-cash/command`, { method: 'POST',
+          headers: { authorization: 'Bearer ' + f.tokens[index], 'x-stocks-authority-key': f.gatewayKey, 'content-type': 'application/json' },
+          body: JSON.stringify({ type: 'submitObserved', input: { id: `forged-api-${index}-0001` } }) });
+        assert.equal(api.status, 403); assert.equal((await api.json()).error, 'ACCOUNT_TRADING_DISABLED');
+      }
+      assert.deepEqual(await f.rows(), before);
+    });
+    for (const fn of policyCleanups.splice(0).reverse()) await fn();
+    f = await fixture(t, hosted);
+    // A third ordinary account with a password: logged in, not bound, never a trader.
+    const viewer = { email: `synthetic-stocks-viewer-${crypto.randomUUID()}@example.invalid` };
+    await f.db.user.create({ data: { id: 'synthetic-stocks-viewer-' + crypto.randomUUID(), email: viewer.email,
+      passwordHash: await require('bcrypt').hash(f.loginPassword, 4), referralCode: crypto.randomBytes(10).toString('hex'), role: 'USER' } });
+
     await step('guest: /stocks goes to the ordinary login with the return path; the Stocks API answers 401', async () => {
       const { context, page } = await open(1440);
       await page.goto(base + terminal);
@@ -140,30 +202,14 @@ async function step(name, fn) {
         await page.locator(`a[href="${terminal}"]`).first().click();
         await terminalReady(page);
         await shot(page, `viewer-terminal-${width}.png`);
-        const before = await f.rows();
-        for (const side of ['Купить', 'Продать']) for (const type of ['Market', 'Limit']) {
-          await ticket(page, side, type);
-          if (type === 'Limit') await page.getByLabel('Цена', { exact: true }).fill('99');
-          await page.getByLabel('Количество', { exact: true }).fill('0.1');
-          const draft = await page.locator('.vxg-ticket form input').evaluateAll(inputs => inputs.map(i => i.value));
-          assert(await page.locator('.vxg-submit').isEnabled(), `${side} ${type} is not clickable`);
-          await page.locator('.vxg-submit').click();
-          await page.getByLabel('Количество', { exact: true }).press('Enter');
-          await pause(150);
-          assert.deepEqual(await page.locator('.vxg-ticket form input').evaluateAll(inputs => inputs.map(i => i.value)), draft, 'the draft changed');
-          assert.equal(await page.locator('.vxg-ticket .vxg-error, .vxg-ticket .vxg-success, [role="alert"], .toast').count(), 0, 'a message appeared');
-        }
-        assert.deepEqual(financial, [], 'a financial request left the page');
-        assert.deepEqual(await f.rows(), before, 'a row changed');
-        const viewed = await state(page);
-        assert.equal(viewed.status, 200); assert.equal(viewed.body.account.canTrade, false);
+        await silentTicket(page, financial);
         await shot(page, `viewer-silent-${width}.png`);
         await context.close();
       });
     }
 
     for (const [index, width] of [[0, 1440], [1, 1440], [0, 390]]) {
-      await step(`trader ${index + 1} ${width}: MARKET BUY and SELL fill against the existing DemoBalance; a LIMIT rests and is cancelled`, async () => {
+      await step(`gated acceptance, both server gates ON — trader ${index + 1} ${width}: MARKET BUY and SELL fill against the existing DemoBalance; a LIMIT rests and is cancelled`, async () => {
         const { context, page, financial } = await open(width);
         await page.goto(base + terminal);
         await login(page, `${f.users[index]}@example.invalid`);
@@ -233,7 +279,7 @@ async function step(name, fn) {
     });
   } finally {
     await browser.close().catch(() => {});
-    for (const fn of cleanups.reverse()) await fn().catch(() => {});
+    for (const fn of [...policyCleanups.splice(0), ...cleanups].reverse()) await fn().catch(() => {});
     fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
     console.log(JSON.stringify({ checks: report.checks.length, failures: report.failures.length, screenshots: report.screenshots.length }));
     process.exitCode = report.failures.length ? 1 : 0;

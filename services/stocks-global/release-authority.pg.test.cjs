@@ -18,6 +18,7 @@ test('Node22 release starts only after compiled router verifies actual PostgreSQ
   assert.equal(response.headers.get('cache-control'), 'no-store');
   const proof = await response.json();
   assert.equal(proof.authority, 'postgres');
+  assert.equal(proof.tradingEnabled, true, 'both server gates are on in this fixture');
   assert.deepEqual(await f.rows(), before, 'readiness cannot bind, reserve or issue a receipt');
   await f.other.user.update({where:{id:f.users[1]},data:{blockedAt:new Date()}});
   response = await fetch(endpoint + '/readiness', {headers:{'x-stocks-authority-key':f.gatewayKey}});
@@ -58,4 +59,22 @@ test('Node22 release starts only after compiled router verifies actual PostgreSQ
     {headers:{Authorization:'Bearer '+f.tokens[0]}});
   assert.equal(response.status, 401);
   assert.deepEqual(await f.rows(), before);
+});
+
+test('readiness reports no trading while the order execution gate is OFF, so the gateway grants nobody canTrade', {
+  timeout: 30000, skip: disposableUrl() ? false : 'NOT_RUN: disposable PostgreSQL required',
+}, async t => {
+  const f = await fixture(t, { releaseRouter: true, orderExecutionEnabled: false });
+  const before = await f.rows();
+  const response = await fetch(f.apiOrigin + '/api/v1/stocks-test-cash/readiness', {headers:{'x-stocks-authority-key':f.gatewayKey}});
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).tradingEnabled, false);
+  for (const index of [0, 1]) {
+    const state = await f.request('state?id=' + encodeURIComponent(f.ID), { index });
+    assert.equal(state.status, 200);
+    assert.equal(state.data.account.canTrade, false, 'a bound trader must read as a viewer');
+    const forged = await f.request('orders', { index, body: { id: 'forged-' + index + '-0001', instrumentId: f.ID, currency: 'USDT', side: 'BUY', type: 'MARKET', quantity: '0.10000000' } });
+    assert.notEqual(forged.status, 200, 'a forged gateway order must be refused');
+  }
+  assert.deepEqual(await f.rows(), before, 'nothing was reserved, written or received');
 });

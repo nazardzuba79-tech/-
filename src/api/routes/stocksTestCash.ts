@@ -42,7 +42,9 @@ export function stocksTestCashRouter(prisma: PrismaClient, config: Config = {}, 
         await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAccount" WHERE false');
         await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestReceipt" WHERE false');
         await prisma.$queryRawUnsafe('SELECT "principalHash" FROM "StocksTestAudit" WHERE false');
-        res.json({ version: 1, authority: 'postgres', tradingEnabled: enabled, issuer, principalsDigest: principalsDigest(bindings) });
+        // «Trading» means order execution: the gateway grants canTrade from this alone, so test-cash
+        // wallets without the second gate leave every account a silent viewer (owner policy, #558).
+        res.json({ version: 1, authority: 'postgres', tradingEnabled: enabled && orderExecutionEnabled, issuer, principalsDigest: principalsDigest(bindings) });
       } catch { res.status(503).json({ error: 'STOCKS_AUTHORITY_UNREADY' }); }
     });
   }

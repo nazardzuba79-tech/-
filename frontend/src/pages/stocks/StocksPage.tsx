@@ -6,7 +6,7 @@ import { isStockCatalogue, useStocks, type StockCatalogue, type StockRead } from
 import { readFavorites, writeFavorites } from './stockModel';
 import './stocks.css';
 import { widgetCatalogue, widgetPreview } from './stockWidgetCatalogue';
-import { isStocksLocalPreviewHost } from './stockHostPolicy';
+import { shouldMountGlobalStocks } from './stockHostPolicy';
 
 // Each view is its own chunk: the overview never downloads the chart library,
 // and only the view on screen is mounted.
@@ -15,9 +15,10 @@ const StocksOverview = lazy(() => import('./StocksOverview'));
 declare const __VOLTEX_STOCKS_GLOBAL_SIMULATOR__: boolean;
 declare const __VOLTEX_STOCKS_CATALOGUE_VISIBLE__: boolean;
 const hostedStocks = typeof __VOLTEX_STOCKS_CATALOGUE_VISIBLE__ !== 'undefined' && __VOLTEX_STOCKS_CATALOGUE_VISIBLE__;
-const GlobalStocks = hostedStocks || (typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__)
+const localStocksSimulator = typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__;
+const GlobalStocks = hostedStocks || localStocksSimulator
   ? lazy(() => import('./global/GlobalStocks')) : null;
-const GlobalStocksCatalogue = hostedStocks || (typeof __VOLTEX_STOCKS_GLOBAL_SIMULATOR__ !== 'undefined' && __VOLTEX_STOCKS_GLOBAL_SIMULATOR__)
+const GlobalStocksCatalogue = hostedStocks || localStocksSimulator
   ? lazy(() => import('./global/GlobalStocksCatalogue')) : null;
 
 /**
@@ -29,7 +30,7 @@ const GlobalStocksCatalogue = hostedStocks || (typeof __VOLTEX_STOCKS_GLOBAL_SIM
 export function StocksPage() {
   const {t}=useLanguage();
   const { instrumentId } = useParams();
-  if (GlobalStocks && GlobalStocksCatalogue && (hostedStocks || isStocksLocalPreviewHost(typeof window === 'undefined' ? undefined : window.location.hostname))) return <Suspense fallback={<div>{t('stocks.loading')}</div>}>{instrumentId ? <GlobalStocks /> : <GlobalStocksCatalogue />}</Suspense>;
+  if (GlobalStocks && GlobalStocksCatalogue && shouldMountGlobalStocks(typeof window === 'undefined' ? undefined : window.location.hostname, localStocksSimulator, hostedStocks)) return <Suspense fallback={<div>{t('stocks.loading')}</div>}>{instrumentId ? <GlobalStocks /> : <GlobalStocksCatalogue />}</Suspense>;
   return widgetPreview ? <StocksLayout catalogue={widgetCatalogue} /> : <LegacyStocksPage />;
 }
 function LegacyStocksPage() {
