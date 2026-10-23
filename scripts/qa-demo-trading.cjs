@@ -141,8 +141,9 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
       const filled = await prisma.demoOrder.findFirst({ where: { userId: 'tester', type: 'MARKET', originalQuantity: '0.0005', status: 'FILLED' } });
       await page.locator(`[data-order-id="${filled.id}"]`).waitFor();
       await page.locator('#spot-tab-assets').click();
-      await page.locator('#spot-bottom-content table:visible').first().waitFor();
-      assert.match(await page.locator('#spot-bottom-content').innerText(), /BTC/);
+      // The table header renders before the demo balances arrive: wait for the BTC row itself.
+      await page.locator('#spot-bottom-content td.spot-order-pair', { hasText: /^BTC$/ }).first().waitFor({ timeout: 15000 });
+      assert.doesNotMatch(await page.locator('#spot-bottom-content').innerText(), /Загрузка/);
       // 4. More than the demo balance: «not enough» from the server, nothing placed.
       const count = await prisma.demoOrder.count({ where: { userId: 'tester' } });
       await limitOrder(page, 100000, 1); await settle(page);
