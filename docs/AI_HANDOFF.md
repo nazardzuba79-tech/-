@@ -6787,6 +6787,26 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Withdrawn:** option (B) of the previous entry (publish TYVN on the live API = public at once) — the owner forbids publishing TYVN on the old API, and the admin page no longer can. TYVN needs the separately approved #578 API switch first.
 - Unresolved: the server channel (option A) is unchanged; no merge, deploy, publication or timer start.
 
+
+### Codex — 2026-10-23 — TYVN approved third logo, frontend only
+- Owner requested actual production integration of the approved third TERYVANE/TYVN mark and expressly authorized a safe frontend publication.
+- Base main: `9265e99761e809595d993bcc0dcdef058f4ecd7d`. The canonical `integration/claude-codex` ref no longer exists (fresh fetch); a short-lived feature branch is based on current release main. No overlapping component edits after `642e542a`.
+- Material files: `frontend/src/components/TestMarketTerminal.tsx`, its CSS, and `frontend/public/brand/tyvn/teryvane-approved-variant-3.webp`.
+- Original approved variant 3: SHA256 `96072c4dfb27605c0ccab25d06945777d8c8114ddf97d76baf79617fb0e77926`. Lossless WebP: `c0cea4ef491e07442885db44a8f27b305d520b8ab6f867437033677b9b57e469`, 945520 bytes; all RGBA pixels verified equal. SVG viewBox frames the existing monogram only (no redraw); screen blend integrates the original dark background. Existing 84px desktop / 68px mobile logo slot stays fixed.
+- Only exact TYVN/USDT prelisting presentation selects this mark. Name, pair, timer, date, price, hooks, chart path, all other listing icons and all trading logic are preserved.
+- Local verification: frontend TypeScript + production build PASS; existing customerListingPresentation 161/161 PASS. Exact published commit SHA is the commit containing this entry (recorded in the PR).
+- Cloudflare Pages project is GitHub-backed, production `main`, previews None; current live deployment `e8a903f0-2b73-4f95-8a17-25d6e019dc50` at `787b4a0d48fdaf2c66b4d899253f093e3c76417a`. Its frontend tree equals base main. Review commit carries CF/Render skip markers; authorized release commit will publish only this frontend delta. GitHub deploy workflows have no matching Worker/API trigger for these changed paths.
+- Pending at commit time: PR CI, safe frontend release and actual authenticated production desktop/mobile/reload evidence. Rollback: previous Cloudflare Pages deployment; no backend/DB/Worker/listing state change is involved.
+
+
+### Codex — 2026-10-23 — TYVN miniature logo in terminal header and market rows
+- Owner expressly authorized actual frontend publication plus authenticated desktop/mobile/reload evidence. Base `8da7840ef88d99010ab5c9a4fe523bcbbcff5d21`, which contains the already deployed central logo. The shared integration ref remains absent; short-lived branch from release main.
+- `CryptoIcon.tsx`: local TYVN resolution uses the existing `/brand/tyvn/teryvane-approved-variant-3.webp`, framing the original monogram in an accessible SVG at the caller's existing dimensions (24px header / 20px list). No registry lookup for this listing; metadata-only external reference rows retain their canonical identity. BTC, VTA and NRX resolution unchanged. The central prelisting component/CSS/asset are byte-identical to base.
+- New `tyvnMiniatureLogo.test.ts`: exact header/list dimensions, approved asset, no registry lookup, reference ticker isolation and BTC/VTA/NRX identity. Local selected suites: 167/167 PASS (4 new icon checks, 161 customer presentation checks, 2 ticker identity checks). Frontend TypeScript + production build PASS.
+- An extra local NRX suite could not run because the no-lifecycle dependency install has no generated PrismaClient; this is a test-environment limitation, not a PASS. Existing GitHub CI generates its disposable Prisma client normally. No product backend change made.
+- Published commit SHA is the containing commit (recorded in the PR). Changed product file: CryptoIcon.tsx; plus focused test and this handoff. Previous central-logo production receipt: Issue #595 comment 6362589666.
+- Review uses CF/Render skip markers. Release via existing main-only Pages production auto-build after CI; rollback to successful Pages deployment `4e29e360-a243-468b-a7ee-d67a5c45b324`. No backend/Worker deploy trigger matches this delta. Pending at commit time: remote CI and actual production miniature evidence.
+
 ## 2026-10-23 — Claude — Issue #592: Demo Spot for admin-credited accounts (code only, default OFF)
 - Branch `claude/voltex-mobile-audit-7rpjni-demo-trading` from main `9265e997`; separate from Wallet Conversion #591 (left Draft/OFF, untouched here).
 - **Reproduced on a disposable PostgreSQL (main behaviour):** uncredited USER `/orders` 400; Balance credit (`adjust-balance`/`balance-adjustments`) trades the real Spot ledger; demo-topup credit (DemoBalance) gets 400 on `/orders` and 403 on admin-only `/demo/orders`; a Balance credit can be put into a `PENDING` withdrawal request; a Cross trading account (owner/`PRIVATE_TRADING_TEST_USER_IDS`) could request a withdrawal valued from DemoBalance.
@@ -6824,45 +6844,3 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - read-only production SQL checks;
   - exact-head CI;
   - release with both flags OFF first.
-
-## 2026-10-23 — Claude — Internal demo liquidity (Issue #592, CTO 6361475787), stacked on PR #596
-- **Branch:** `claude/voltex-mobile-audit-7rpjni-demo-liquidity` from #596 head `d20200ca` (built on the other Claude session's `bf15d490`/`d20200ca`, not replacing them). Draft PR with base = #596's branch. Default OFF; nothing enabled, merged or deployed.
-- **Problem:** on an empty demo book, a funded tester's MARKET BUY gets `400 No liquidity…` and a MARKET SELL gets `CANCELLED` without a fill (measured by `d20200ca`).
-- **Done:** `src/services/DemoLiquidity.ts` + `DemoTradingService` options. When `DEMO_LIQUIDITY_ENABLED=true` and the configuration parses:
-  - **Quote:** a dedicated account's already-credited DemoBalance (admin «Тестовое начисление» only) gives one quote per taker inside the demo book transaction. Price: market-data reference ask + spread / bid − spread, 8 significant digits, rounded away from the taker.
-  - **Size:** available funds and a per-order cap.
-  - **Fail closed:** no quote on a stale, old, crossed, too wide or missing reference, an unlisted pair, a blocked/missing account, or self.
-  - **Never rests:** the unfilled part is removed before publish.
-  - **Settlement:** the account's funds are reserved conditionally (a concurrent spend rolls the whole order back), and a FILLED `DemoOrder` receipt is written.
-  - **Refused as inventory:** native Cross accounts; test/listing/VTA pairs.
-  - **Admin status:** `GET /demo/liquidity`, read-only.
-  - **Wiring:** `src/index.ts` reads the reference from `KrakenMarketDataService.getTickerWithMeta` (cache, no venue order).
-- **Preserved:** #596's ledger choice, request IDs, withdrawal guard, Demo Spot admission; ordinary Spot/OrderService, Futures, TYVN/AITH/NRX/VTA/listings, Stocks untouched.
-- **Verified locally:**
-  - backend `tsc`;
-  - unit `DemoLiquidity.test.ts` 32/32;
-  - demo/withdrawal/order/private-trading suites 143/143 (8 suites);
-  - disposable PostgreSQL `scripts/test-demo-liquidity-postgres.cjs` 15/15 + browser 4/4 groups (1440 + 390), conservation against audited top-ups after every step, 0 outbound;
-  - #596's own `test-demo-trading-postgres.cjs` with this service (liquidity off): 26/26 PG + 11/11 browser.
-- **CI:** `.github/workflows/demo-liquidity.yml` (pull_request only).
-- **Docs:** `docs/DEMO_LIQUIDITY.md` (design, config, 7-step integration plan, rollback, open decisions).
-- **Open:**
-  - spread/caps are the owner's choice;
-  - passive LIMIT orders fill only against testers (no resting quote, by design);
-  - inventory is not rebalanced automatically;
-  - activation needs separate owner approval after #596.
-
-## 2026-10-23 — Claude — PR #599: liquidity account rule enforced on every quote (CTO 6362235524)
-- **Gap (reviewed on `84ae28f4`):** `stageLiquidity` checked only "exists and not blocked". The configuration refused native IDs, but nothing enforced role USER or "no ordinary Balance" at runtime.
-- **Done:**
-  - `liquidityAccountRefusal` (`src/services/DemoLiquidity.ts`), called inside the demo book transaction before any quote. It refuses `MISSING`, `BLOCKED`, `NOT_USER`, `NATIVE_ACCOUNT` (owner / `PRIVATE_TRADING_TEST_USER_IDS`, read at quote time) and `ORDINARY_FUNDS` (any `Balance` row with available or locked ≠ 0, any asset).
-  - All of the account's `Balance` rows are read `FOR SHARE`, so an in-flight credit to an existing row is waited for and then refuses the quote. The first version filtered `available > 0` inside the locking query, so it never waited; the new PG race check caught this before push.
-  - Admin status shows `account`.
-  - `docs/DEMO_LIQUIDITY.md`: the rule, a read-only operator preflight SQL, and a note that the quote is transient, not public depth.
-- **Tests:**
-  - unit 33/33 (adds ADMIN, ordinary Balance incl. a test asset, owner and native env);
-  - disposable PostgreSQL 15/15, 8 consecutive runs. The new account check covers: USER with demo funds only → fills; ADMIN, blocked, owner, native → no quote, nothing moved; real `BalanceAdjustmentService` credit → `ORDINARY_FUNDS`, back to zero → fills again; a credit held in an open transaction → the quote waits, then 400 `NO_LIQUIDITY`; no self-trade.
-  - browser 4/4 groups;
-  - related backend suites 144/144.
-- **Test-only flake fixed:** the 12-way concurrency check splits fills randomly between two buyers, so a later step could hit `INSUFFICIENT_BALANCE`. Seen once in 6 runs; the buyer is now topped up before the account check. 0 failures in the 8 runs since.
-- **Preserved:** quote pricing, fail-closed reference checks, conditional inventory reserve, request-ID idempotency, conservation, default OFF; #596 untouched by this commit.
