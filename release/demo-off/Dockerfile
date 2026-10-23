@@ -14,6 +14,31 @@ ENV DEMO_SPOT_ENABLED=false \
 LABEL org.opencontainers.image.revision=${RELEASE_SHA} \
       voltex.release.scope="demo-spot-liquidity-only" \
       voltex.release.migrations="none"
-COPY overlay/ /app/dist/
+# Set the file mode and owner in the image itself; host archive extraction may use 0600/root.
+# Each COPY targets a regular file (not directories), so directories retain executable/traverse bits.
+COPY --chown=1000:1000 --chmod=0644 overlay/api/routes/demoTrading.js /app/dist/api/routes/demoTrading.js
+COPY --chown=1000:1000 --chmod=0644 overlay/api/routes/demoTrading.js.map /app/dist/api/routes/demoTrading.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/api/routes/orders.js /app/dist/api/routes/orders.js
+COPY --chown=1000:1000 --chmod=0644 overlay/api/routes/orders.js.map /app/dist/api/routes/orders.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/api/routes/withdrawals.js /app/dist/api/routes/withdrawals.js
+COPY --chown=1000:1000 --chmod=0644 overlay/api/routes/withdrawals.js.map /app/dist/api/routes/withdrawals.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/api/routes/adminWithdrawals.js /app/dist/api/routes/adminWithdrawals.js
+COPY --chown=1000:1000 --chmod=0644 overlay/api/routes/adminWithdrawals.js.map /app/dist/api/routes/adminWithdrawals.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/index.js /app/dist/index.js
+COPY --chown=1000:1000 --chmod=0644 overlay/index.js.map /app/dist/index.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/services/AdminUserDeletionService.js /app/dist/services/AdminUserDeletionService.js
+COPY --chown=1000:1000 --chmod=0644 overlay/services/AdminUserDeletionService.js.map /app/dist/services/AdminUserDeletionService.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/services/DemoLiquidity.js /app/dist/services/DemoLiquidity.js
+COPY --chown=1000:1000 --chmod=0644 overlay/services/DemoLiquidity.js.map /app/dist/services/DemoLiquidity.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/services/DemoTradingService.js /app/dist/services/DemoTradingService.js
+COPY --chown=1000:1000 --chmod=0644 overlay/services/DemoTradingService.js.map /app/dist/services/DemoTradingService.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/services/OrderService.js /app/dist/services/OrderService.js
+COPY --chown=1000:1000 --chmod=0644 overlay/services/OrderService.js.map /app/dist/services/OrderService.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/services/SpotBookTransaction.js /app/dist/services/SpotBookTransaction.js
+COPY --chown=1000:1000 --chmod=0644 overlay/services/SpotBookTransaction.js.map /app/dist/services/SpotBookTransaction.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/services/demoSpotAccess.js /app/dist/services/demoSpotAccess.js
+COPY --chown=1000:1000 --chmod=0644 overlay/services/demoSpotAccess.js.map /app/dist/services/demoSpotAccess.js.map
+COPY --chown=1000:1000 --chmod=0644 overlay/services/WithdrawalService.js /app/dist/services/WithdrawalService.js
+COPY --chown=1000:1000 --chmod=0644 overlay/services/WithdrawalService.js.map /app/dist/services/WithdrawalService.js.map
 # Never inherit the repository's migration-running Dockerfile CMD.
 CMD ["node", "dist/index.js"]
