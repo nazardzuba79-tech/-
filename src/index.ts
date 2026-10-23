@@ -307,7 +307,7 @@ app.use('/api/v1', balancesRouter(prisma));
 // WALLET_CONVERSION_ENABLED=true (and a valid WALLET_CONVERSION_ASSETS, if set). Off by default.
 const walletConversion = walletConversionConfig(process.env);
 if (walletConversion.problem) console.warn(`[wallet-conversion] ${walletConversion.problem}`);
-app.use('/api/v1', walletActivityRouter(prisma, new WalletConversionService(prisma, new KrakenConversionPrices(marketDataService), Date.now, walletConversion.assets), walletConversion.enabled));
+app.use('/api/v1', walletActivityRouter(prisma, new WalletConversionService(prisma, new KrakenConversionPrices(marketDataService), Date.now, walletConversion.assets, walletConversion.limits), walletConversion.enabled));
 app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService, prisma));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
 app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService));

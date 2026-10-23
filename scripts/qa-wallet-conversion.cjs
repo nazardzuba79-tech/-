@@ -2,13 +2,19 @@
  * Only unrelated read endpoints are fixtures. Outbound network denied. No production. */
 const fs = require('fs'), path = require('path'), assert = require('node:assert/strict'), { createRequire } = require('module');
 const BigNumber = require('bignumber.js');
-exports.run = async ({ origin, token, prisma, user, out }) => {
+exports.run = async ({ origin, token, prisma, user, out, thinBook = {}, fund }) => {
   const qa = createRequire(path.resolve(__dirname, '..', process.env.WALLET_QA_DEPS || 'output/wallet-qa-deps/package.json'));
   const { chromium } = process.env.WALLET_PLAYWRIGHT_PATH ? require(process.env.WALLET_PLAYWRIGHT_PATH) : qa('playwright');
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage(), errors = [], unexpected = [], requests = [], checks = [], screenshots = [];
   page.on('pageerror', error => errors.push(String(error)));
+  // Status and refusal code of every conversion call, for the evidence report.
+  const responses = [];
+  page.on('response', async response => {
+    const url = new URL(response.url()); if (!url.pathname.startsWith('/api/v1/wallet/conversion/') || response.request().method() !== 'POST') return;
+    responses.push({ endpoint: url.pathname.replace('/api/v1', ''), status: response.status(), code: response.ok() ? null : await response.json().then(body => body.code, () => null) });
+  });
   await context.addInitScript(({ token }) => { localStorage.setItem('exchange_token', token); localStorage.setItem('exchange_lang', 'ru'); }, { token });
   let dropConfirm = false, activityFailed = false, assetsFailed = false;
   await context.route('**/*', async route => {
@@ -130,6 +136,34 @@ exports.run = async ({ origin, token, prisma, user, out }) => {
       await page.getByText('Показаны не все операции: часть истории не загрузилась. Обновите страницу', { exact: true }).waitFor();
       assert((await page.locator('tbody').last().innerText()).includes('USDT')); activityFailed = false;
     });
+    await check('limit and capacity refusals explain themselves at preview and at confirm; nothing is debited, nothing stays pending', async () => {
+      await page.getByRole('button', { name: 'Обзор', exact: true }).click();
+      await fund(user, 'USD', '1500'); await page.reload(); await page.getByRole('button', { name: 'Конвертация', exact: true }).first().waitFor();
+      const before = await snapshot(), confirms = requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length;
+      await open(); await select('conversion-from', 'USD'); await select('conversion-to', 'EUR');
+      await page.locator('#conversion-amount').fill('1000.01'); await page.getByRole('button', { name: 'Рассчитать', exact: true }).click();
+      await page.getByText('Сумма больше лимита одной конвертации. Введите меньшую сумму', { exact: true }).waitFor();
+      let file = path.join(out, 'conversion-limit-1440.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      thinBook['EUR:ask'] = '1'; // the EUR book near the touch holds 1 EUR
+      await page.locator('#conversion-amount').fill('10'); await page.getByRole('button', { name: 'Рассчитать', exact: true }).click();
+      const capacity = 'Сейчас эту сумму нельзя конвертировать в выбранный актив. Уменьшите сумму или выберите другой актив';
+      await page.getByText(capacity, { exact: true }).waitFor();
+      delete thinBook['EUR:ask'];
+      await page.getByRole('button', { name: 'Рассчитать', exact: true }).click(); await page.locator('[data-conversion-quote]').waitFor();
+      thinBook['EUR:ask'] = '1'; // the book thins between preview and confirm
+      await page.getByRole('dialog').getByRole('button', { name: 'Конвертация', exact: true }).click();
+      await page.getByText(capacity, { exact: true }).waitFor();
+      delete thinBook['EUR:ask'];
+      assert.equal(await page.getByRole('button', { name: 'Проверить результат' }).count(), 0);
+      assert.equal(await page.evaluate(() => sessionStorage.getItem('voltex:pending-wallet-conversion')), null);
+      assert.equal(requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length, confirms + 1);
+      assert(!/недоступн|not available|unavailable/i.test(await page.getByRole('dialog').innerText()));
+      await page.setViewportSize({ width: 390, height: 844 });
+      file = path.join(out, 'conversion-capacity-390.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.getByRole('dialog').getByRole('button', { name: 'Отмена', exact: true }).click();
+      assert.equal(await snapshot(), before);
+    });
     await check('quote feed failure cannot cause financial request', async () => {
       await page.getByRole('button', { name: 'Обзор', exact: true }).click(); assetsFailed = true;
       const count = requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length;
@@ -137,11 +171,11 @@ exports.run = async ({ origin, token, prisma, user, out }) => {
       assert.equal(requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length, count);
     });
     assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
-    const report = { build: 'production React bundle', conversionAndHistory: 'real routes / disposable PostgreSQL', unrelatedReads: 'fixtures', outboundNetwork: 'denied', checks, screenshots, errors, unexpected, requests, productionTouched: false };
+    const report = { build: 'production React bundle', conversionAndHistory: 'real routes / disposable PostgreSQL', unrelatedReads: 'fixtures', outboundNetwork: 'denied', checks, screenshots, errors, unexpected, requests, responses, productionTouched: false };
     fs.writeFileSync(path.join(out, 'browser-results.json'), JSON.stringify(report, null, 2));
   } catch (error) {
     await page.screenshot({ path: path.join(out, 'browser-failure.png'), fullPage: true });
-    fs.writeFileSync(path.join(out, 'browser-failure.json'), JSON.stringify({ error: String(error), errors, unexpected, requests, text: await page.locator('body').innerText() }, null, 2));
+    fs.writeFileSync(path.join(out, 'browser-failure.json'), JSON.stringify({ error: String(error), errors, unexpected, requests, responses, text: await page.locator('body').innerText() }, null, 2));
     throw error;
   } finally { await browser.close(); }
 };

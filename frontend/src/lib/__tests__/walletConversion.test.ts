@@ -29,8 +29,12 @@ describe('wallet conversion UI safety boundaries', () => {
     // An amount finer than the source asset keeps is refused before any request (the server refuses it too).
     expect(modal).toContain('(new BigNumber(amount).decimalPlaces() ?? 0) > source.scale');
     expect(modal).toMatch(/const valid = [^;]*!tooPrecise/);
-    // A blocked account reads as a refusal, never as an unknown outcome that invites a retry.
-    expect(modal).toMatch(/'ACCOUNT_BLOCKED'\]\.includes\(code\)/);
+    // A blocked account, a limit or a capacity refusal reads as a refusal with its own message,
+    // never as an unknown outcome that invites a retry.
+    expect(modal).toContain('...Object.keys(REFUSAL)].includes(code)');
+    for (const code of ['ACCOUNT_BLOCKED', 'INSUFFICIENT_BALANCE', 'LIMIT_EXCEEDED', 'DAILY_LIMIT_EXCEEDED', 'RESERVE_UNVERIFIED', 'RESERVE_EXHAUSTED', 'INSUFFICIENT_LIQUIDITY']) {
+      expect(modal).toMatch(new RegExp(`const REFUSAL[^;]*\\b${code}: 'wallet\\.conversion\\.`));
+    }
     expect(modal).not.toMatch(/parseFloat|parseInt|\bNumber\(amount\)|setInterval|setTimeout/);
   });
   test('persist pending ID before sending; recovery uses receipt and SAME ID, no automatic retry', () => {
@@ -53,14 +57,15 @@ describe('wallet conversion UI safety boundaries', () => {
     const dictionaries = readDictionaries();
     for (const dict of Object.values(dictionaries)) {
       for (const key of ['wallet.conversion.title', 'wallet.conversion.unknown', 'wallet.conversion.check', 'wallet.conversion.retry', 'wallet.conversion.pay',
-        'wallet.conversion.quoteFailed', 'wallet.conversion.denied', 'wallet.txCredit', 'wallet.txDebit', 'wallet.txPartial']) expect(dict[key]).toBeTruthy();
+        'wallet.conversion.quoteFailed', 'wallet.conversion.denied', 'wallet.conversion.limit', 'wallet.conversion.dailyLimit', 'wallet.conversion.capacity',
+        'wallet.txCredit', 'wallet.txDebit', 'wallet.txPartial']) expect(dict[key]).toBeTruthy();
       expect(dict['wallet.conversion.subtitle']).toContain('0%');
       expect(dict['wallet.conversion.places']).toContain('{asset}'); expect(dict['wallet.conversion.places']).toContain('{places}');
       expect(dict['wallet.conversion.unavailable']).toBeUndefined();
     }
     // Errors say what happened and what to do — never that the product is «unavailable».
     for (const [lang, word] of [['en', /unavailable/i], ['ru', /недоступн/i], ['es', /disponible/i], ['zh', /不可用/], ['ja', /できません。後で/], ['ko', /수 없습니다\. 나중/], ['hi', /उपलब्ध नहीं/]] as const) {
-      for (const key of ['wallet.conversion.quoteFailed', 'wallet.txPartial']) expect(dictionaries[lang][key]).not.toMatch(word);
+      for (const key of ['wallet.conversion.quoteFailed', 'wallet.conversion.limit', 'wallet.conversion.dailyLimit', 'wallet.conversion.capacity', 'wallet.txPartial']) expect(dictionaries[lang][key]).not.toMatch(word);
     }
   });
 });

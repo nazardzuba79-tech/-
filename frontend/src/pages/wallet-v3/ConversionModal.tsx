@@ -2,10 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import BigNumber from 'bignumber.js';
 import { api, ApiError, WalletConversionQuote, WalletConversionReceipt } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
+import type { Key } from '../../lib/i18n';
 import { FieldError, Modal, PrimaryButton, SecondaryButton, Select, SummaryRow, TextInput } from './ui';
 
 const PENDING_KEY = 'voltex:pending-wallet-conversion';
 const DECIMAL = /^(?:0|[1-9]\d{0,17})(?:\.\d{1,18})?$/;
+// Definite server refusals (nothing was debited) with a message of their own; every other code keeps the generic one.
+const REFUSAL: Record<string, Key> = {
+  INSUFFICIENT_BALANCE: 'wallet.conversion.insufficient', ACCOUNT_BLOCKED: 'wallet.conversion.denied',
+  LIMIT_EXCEEDED: 'wallet.conversion.limit', DAILY_LIMIT_EXCEEDED: 'wallet.conversion.dailyLimit',
+  RESERVE_UNVERIFIED: 'wallet.conversion.capacity', RESERVE_EXHAUSTED: 'wallet.conversion.capacity', INSUFFICIENT_LIQUIDITY: 'wallet.conversion.capacity',
+};
 type Asset = { asset: string; kind: 'fiat' | 'crypto'; scale: number; available: string };
 function readPending() { try { return sessionStorage.getItem(PENDING_KEY); } catch { return null; } }
 function clearPending() { try { sessionStorage.removeItem(PENDING_KEY); } catch { /* durable server receipt remains authoritative */ } }
@@ -55,7 +62,7 @@ export function ConversionModal({ open, onClose, onSubmitted }: { open: boolean;
     catch (err) {
       if (revision !== generation.current) return;
       const code = err instanceof ApiError ? String(err.body.code) : '';
-      setError(t(code === 'INSUFFICIENT_BALANCE' ? 'wallet.conversion.insufficient' : code === 'ACCOUNT_BLOCKED' ? 'wallet.conversion.denied' : 'wallet.conversion.quoteFailed'));
+      setError(t(REFUSAL[code] ?? 'wallet.conversion.quoteFailed'));
     }
     finally { locked.current = false; setBusy(false); }
   }
@@ -69,10 +76,10 @@ export function ConversionModal({ open, onClose, onSubmitted }: { open: boolean;
     try { applied(await api.confirmConversion(id)); }
     catch (err) {
       const code = err instanceof ApiError ? String(err.body.code) : '';
-      if (['QUOTE_EXPIRED', 'QUOTE_CHANGED', 'INSUFFICIENT_BALANCE', 'QUOTE_NOT_FOUND', 'UNSUPPORTED_ASSET', 'INVALID_CONVERSION', 'ACCOUNT_BLOCKED'].includes(code)) {
+      if (['QUOTE_EXPIRED', 'QUOTE_CHANGED', 'QUOTE_NOT_FOUND', 'UNSUPPORTED_ASSET', 'INVALID_CONVERSION', ...Object.keys(REFUSAL)].includes(code)) {
         // A definite refusal from the server: nothing was debited, the pending ID is released.
         clearPending(); setPending(null); setQuote(null);
-        setError(t(code === 'INSUFFICIENT_BALANCE' ? 'wallet.conversion.insufficient' : code === 'ACCOUNT_BLOCKED' ? 'wallet.conversion.denied' : 'wallet.conversion.refreshQuote'));
+        setError(t(REFUSAL[code] ?? 'wallet.conversion.refreshQuote'));
       } else setError(t('wallet.conversion.unknown'));
     } finally { locked.current = false; setBusy(false); }
   }

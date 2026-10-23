@@ -6,7 +6,8 @@ Owner decision: **0% VOLTEX fee**. An internal conversion of existing **availabl
 destination. **Default OFF on the server and in the frontend.** No migration, deploy or production write.
 
 Sources: Codex #478 (`fa81df84`) → reconciliation #543 (`d800233c`) → this candidate, rebuilt on
-main `9265e997` (2026-10-23) with the review fixes below.
+main `9265e997` (2026-10-23) with the review fixes below, then merged with main `6a2355fb` and given the
+fail-closed financial limits (*Limits, reserves, liquidity*).
 
 ## Price: market bid / ask, never the last trade
 
@@ -19,8 +20,38 @@ main `9265e997` (2026-10-23) with the review fixes below.
   book, never a 1:1 assumption. `/USDT` mirror pairs are ignored.
 - Feed older than 15 s, from the future, missing or invalid: fail closed (`PRICE_UNAVAILABLE`, 503).
   No automatic repricing: if the bid or ask moved before confirmation, `QUOTE_CHANGED`.
-- The cache timestamp is feed freshness, not an executable depth guarantee: this is a top-of-book
-  conversion, not slippage-protected size (see *Risks*: size limits).
+- The cache timestamp is feed freshness, not an executable depth guarantee; size is bounded separately by
+  the limits and the book-depth check below.
+
+## Limits, reserves, liquidity (all fail closed, checked at quote AND inside the confirmation)
+
+| Control | Setting (API env) | Default | Refusal |
+|---|---|---|---|
+| One conversion, valued at the source's market bid | `WALLET_CONVERSION_MAX_USD` | `1000` | `LIMIT_EXCEEDED` |
+| One account, rolling 24 h of committed conversions (same valuation) | `WALLET_CONVERSION_DAILY_USD` | `5000` | `DAILY_LIMIT_EXCEEDED` |
+| Operator-verified reserve per destination asset (`ASSET:amount,…`) | `WALLET_CONVERSION_RESERVES` | **empty** | `RESERVE_UNVERIFIED` / `RESERVE_EXHAUSTED` |
+| Kraken book depth within 0.5 % of the touch covers both legs | — | always | `INSUFFICIENT_LIQUIDITY` |
+
+- **No reserve, no credit.** An asset without a configured reserve is never credited, so the default
+  configuration converts nothing. With a reserve, the net amount conversions have created in that asset
+  (credited minus debited, all accounts, from the `WALLET_CONVERTED` receipts) plus this conversion must stay
+  within it. USD is a destination like any other and needs its own reserve. The figure is the operator's
+  attestation of funds set aside for conversions — the code does not and cannot prove custody; the owner
+  sets it only from a verified treasury balance.
+- **No unbacked obligations under concurrency.** The confirmation takes the per-account lock, then one
+  global conversion lock, re-checks the daily sum and the reserve against committed receipts, and commits the
+  receipt in the same transaction (fixed lock order, no deadlock). PostgreSQL test: 8 accounts converting into
+  BTC at once with room for 2.5 conversions → exactly 2 credited, the rest `RESERVE_EXHAUSTED`; selling BTC
+  back frees the room. Daily limit: 6 concurrent confirms of quotes that each fit alone → exactly 2.
+- **Liquidity:** the source must be sellable into the bids and the destination buyable from the asks within
+  0.5 % of the best price (direct `ASSET/USD` book, at most 15 s old). Unknown, stale or empty depth refuses;
+  an inverse fiat book (USD/JPY, USD/CHF, USD/CAD) has no direct depth and therefore fails closed. A book that
+  thins between quote and confirmation refuses the confirmation; an already committed receipt is still
+  returned (lost-response recovery is unchanged).
+- Malformed limits or reserves (zero, negative, exponent, a reserve for a non-admitted asset, more decimals
+  than the asset keeps, a single limit above the daily one) keep conversion **off** and log why.
+- The customer sees what to do in seven languages — a smaller amount, later, or another asset — never an
+  «unavailable» note; a refusal at confirmation releases the pending state (nothing was debited).
 
 ## Admission and precision (server-side)
 
@@ -63,13 +94,16 @@ appear in customer history.
 
 1. Owner approval of this code, of the asset list, and of the withdrawal policy for owner-issued balances
    (see *Which ledger this is* and *Risks*).
-2. API: set `WALLET_CONVERSION_ENABLED=true` (and, if needed, `WALLET_CONVERSION_ASSETS`) on the API
+2. API: set `WALLET_CONVERSION_ENABLED=true`, the owner-approved `WALLET_CONVERSION_RESERVES` (from a
+   verified treasury balance; without it nothing converts) and, if the defaults are not wanted,
+   `WALLET_CONVERSION_MAX_USD` / `WALLET_CONVERSION_DAILY_USD` / `WALLET_CONVERSION_ASSETS` on the API
    container and restart **only the API**. Check: `POST /api/v1/wallet/conversion/quote` without a token
    → 401; with an owner test session and a tiny amount → a quote; the logs show no
    `[wallet-conversion] … invalid` line.
 3. Frontend: a build with `VITE_WALLET_CONVERSION_ENABLED=true`, published only after step 2 is verified.
    The frontend flag alone activates nothing: without the server flag every `/wallet/conversion/*` is 404.
-4. Monitor `AuditLog` actions `WALLET_CONVERSION_QUOTED` / `WALLET_CONVERTED` and the treasury positions.
+4. Monitor `AuditLog` actions `WALLET_CONVERSION_QUOTED` / `WALLET_CONVERTED`, the net exposure per asset
+   (same sum the reserve check uses) against the treasury, and lower a reserve before treasury funds move.
 
 **Rollback:** unset `WALLET_CONVERSION_ENABLED` and restart the API → all conversion routes 404 at once
 (history stays readable); then republish the frontend without the flag. Applied conversions remain on the
@@ -101,11 +135,11 @@ issued by the owner/admin to the team and approved testers, and registration gra
 
 ## Risks and open decisions (not code defects; production NO-GO until decided)
 
-- **Hypothetical liabilities:** only if real deposits and cash-out operate does a conversion carry a real
-  obligation (e.g. USD → BTC would then be BTC the treasury must hold), which would need inventory limits,
-  exposure monitoring and hedging before activation. Under the current demo-only policy these are not
-  established VOLTEX liabilities.
-- **Size limits:** no per-conversion or per-user daily caps exist; top-of-book pricing does not cover size.
+- **Liabilities:** if real deposits and cash-out operate, a conversion creates a real obligation (USD → BTC
+  is BTC the treasury must hold). The reserve caps that obligation per asset at the operator-verified figure;
+  hedging, and keeping the figure true when treasury funds move, remain operational duties outside the code.
+- **Owner decisions before activation:** the reserve figures per asset, whether the default limits
+  (1000 USD per conversion, 5000 USD per account per 24 h) fit, and the withdrawal policy above.
 - **Feed coverage:** EUR (and any fiat) needs an actual Kraken book; if absent, the asset is simply not offered.
 - **Quote rows:** each preview writes one `AuditLog` row (rate-limited to 20/min/user); retention is unchanged.
 

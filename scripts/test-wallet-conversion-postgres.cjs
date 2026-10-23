@@ -9,7 +9,7 @@ process.env.JWT_SECRET = 'isolated-wallet-conversion-fixture-only';
 process.env.EMAIL_VERIFICATION_SECRET = 'isolated-wallet-conversion-fixture-only';
 require('ts-node/register/transpile-only');
 const { PrismaClient } = require('@prisma/client');
-const { WalletConversionService, parseConversionAssets, DEFAULT_CONVERSION_ASSETS } = require('../src/services/WalletConversionService');
+const { WalletConversionService, parseConversionAssets, parseConversionReserves, walletConversionConfig, DEFAULT_CONVERSION_ASSETS } = require('../src/services/WalletConversionService');
 const { WithdrawalService } = require('../src/services/WithdrawalService');
 const { BalanceAdjustmentService } = require('../src/services/BalanceAdjustmentService');
 const { mutateSpotBalance } = require('../src/services/WalletMutation');
@@ -51,12 +51,26 @@ async function main() {
     const user = 'qa-wallet-user'; let now = Date.now(), failFeed = false, eurPrice = '1.25';
     // USD per unit, [bid, ask]. USDT carries a real spread; SOL is priced by the feed but is NOT on the admission list.
     const book = () => ({ USD: ['1', '1'], EUR: [eurPrice, eurPrice], BTC: ['60000', '60000'], USDT: ['0.997', '0.998'], SOL: ['150', '150.1'] });
+    // Book depth near the touch, per 'ASSET:side' (null = unknown); anything not listed is deep.
+    const thinBook = {};
     const prices = { read: async () => {
       if (failFeed) throw new Error('fixture outage');
       const entries = Object.entries(book());
       return { fetchedAt: now, bid: new Map(entries.map(([asset, [bid]]) => [asset, bid])), ask: new Map(entries.map(([asset, [, ask]]) => [asset, ask])) };
-    } };
-    const conversion = new WalletConversionService(prisma, prices, () => now);
+    }, depth: async (asset, side) => `${asset}:${side}` in thinBook ? thinBook[`${asset}:${side}`] : '1000000000' };
+    // Synthetic operator-verified reserves, ample for the checks that are not about them.
+    const admitted = parseConversionAssets(DEFAULT_CONVERSION_ASSETS);
+    const limits = (reserves, maxUsd = '1000', dailyUsd = '5000', assets = admitted) => ({ maxUsd: new BigNumber(maxUsd), dailyUsd: new BigNumber(dailyUsd), reserves: parseConversionReserves(reserves, assets) });
+    const AMPLE = 'USD:1000000,EUR:1000000,USDT:1000000,USDC:1000000,BTC:100,ETH:1000';
+    const conversion = new WalletConversionService(prisma, prices, () => now, admitted, limits(AMPLE));
+    const fund = async (id, asset, amount) => {
+      await sql.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode",role,"kycStatus","createdAt","updatedAt") VALUES ($1,$2,'fixture',$1,'USER','APPROVED',now(),now()) ON CONFLICT (id) DO NOTHING`, [id, `${id}@example.invalid`]);
+      await adjust.adjustOnce({ userId: id, asset, amount, reason: 'limits fixture', performedByAdminId: 'qa-wallet-admin', idempotencyKey: randomUUID() });
+    };
+    const balanceOf = async (id, asset) => (await prisma.balance.findUnique({ where: { userId_asset: { userId: id, asset } } }))?.available.toString() ?? '0';
+    // Net amount of an asset all conversions have created: credited minus debited.
+    const exposure = async asset => new BigNumber((await sql.query(`SELECT (COALESCE(SUM(CASE WHEN metadata->>'toAsset' = $1 THEN (metadata->>'toAmount')::numeric END), 0)
+      - COALESCE(SUM(CASE WHEN metadata->>'fromAsset' = $1 THEN (metadata->>'fromAmount')::numeric END), 0))::text AS v FROM "AuditLog" WHERE action = 'WALLET_CONVERTED'`, [asset])).rows[0].v);
     const snapshot = async () => (await prisma.balance.findMany({ where: { userId: user }, orderBy: { asset: 'asc' } })).map(r => ({ asset: r.asset, available: r.available.toString(), locked: r.locked.toString() }));
     await prisma.balance.create({ data: { userId: user, asset: 'USD', available: '0', locked: '7' } });
     const adjust = new BalanceAdjustmentService(prisma);
@@ -66,7 +80,10 @@ async function main() {
     app.use((req, res, next) => { if (req.headers['x-fixture-drop-response'] === 'yes') res.json = () => { res.socket.destroy(); return res; }; next(); });
     // Opt-in fixture remains disposable. Second mount verifies API default OFF.
     app.use('/__wallet_default_off', walletActivityRouter(prisma, conversion));
-    app.use('/api/v1', walletActivityRouter(prisma, conversion, true));
+    // Delegating mount: the browser phase gets a fresh API instance (as after a restart), so the
+    // per-user write limit it meets is its own, not the budget the direct checks above used up.
+    let liveApi = walletActivityRouter(prisma, conversion, true);
+    app.use('/api/v1', (req, res, next) => liveApi(req, res, next));
     if (process.env.WALLET_QA_BROWSER === '1') {
       app.use('/api', (_, res) => res.status(404).json({ code: 'UNEXPECTED_FIXTURE_ROUTE' }));
       // WALLET_QA_DIST: another built bundle, e.g. the default-OFF production-style build.
@@ -172,7 +189,7 @@ async function main() {
       const before = await snapshot();
       const restarted = new PrismaClient({ datasources: { db: { url: `postgresql://postgres@127.0.0.1:${port}/voltex_wallet_conversion_fixture?connection_limit=4&sslmode=disable` } } });
       try {
-        const fresh = new WalletConversionService(restarted, { read: async () => { throw new Error('feed down after restart'); } }, () => now);
+        const fresh = new WalletConversionService(restarted, { read: async () => { throw new Error('feed down after restart'); }, depth: async () => { throw new Error('feed down after restart'); } }, () => now, admitted, limits(AMPLE));
         assert.deepEqual(await fresh.status(user, q.quoteId), first);
         assert.deepEqual(await fresh.confirm(user, q.quoteId), first);
         assert.equal(await fresh.status('qa-wallet-other', q.quoteId), null);
@@ -222,7 +239,8 @@ async function main() {
     await check('admission: a feed-priced asset off the list is refused at quote AND at confirm (list changed by a restart)', async () => {
       const before = await snapshot();
       await assert.rejects(conversion.quote(user, 'USD', 'SOL', '1'), { code: 'UNSUPPORTED_ASSET' });
-      const wider = new WalletConversionService(prisma, prices, () => now, parseConversionAssets(DEFAULT_CONVERSION_ASSETS + ',SOL:9'));
+      const widerAssets = parseConversionAssets(DEFAULT_CONVERSION_ASSETS + ',SOL:9');
+      const wider = new WalletConversionService(prisma, prices, () => now, widerAssets, limits(AMPLE + ',SOL:1000', '1000', '5000', widerAssets));
       const q = await wider.quote(user, 'USD', 'SOL', '1.5');
       await assert.rejects(conversion.confirm(user, q.quoteId), { code: 'UNSUPPORTED_ASSET' });
       assert.deepEqual(await snapshot(), before);
@@ -283,7 +301,85 @@ async function main() {
       assert.equal(await prisma.balance.count({ where: { userId: unfunded } }), 0);
       assert.equal(await prisma.auditLog.count({ where: { userId: unfunded } }), 0);
     });
-    if (process.env.WALLET_QA_BROWSER === '1') await require('./qa-wallet-conversion.cjs').run({ origin, token: jwt.sign({ sub: user }, process.env.JWT_SECRET), prisma, user, out });
+
+    await check('default limits: with no operator-verified reserve configured, every destination is refused before any write', async () => {
+      const defaults = walletConversionConfig({ WALLET_CONVERSION_ENABLED: 'true' });
+      assert.equal(defaults.limits.reserves.size, 0);
+      const unconfigured = new WalletConversionService(prisma, prices, () => now, defaults.assets, defaults.limits);
+      const before = await snapshot(), quotes = await prisma.auditLog.count({ where: { userId: user } });
+      for (const [fromAsset, toAsset] of [['USD', 'EUR'], ['USD', 'BTC'], ['USD', 'USDT'], ['EUR', 'USD']]) {
+        await assert.rejects(unconfigured.quote(user, fromAsset, toAsset, '1'), { code: 'RESERVE_UNVERIFIED' });
+      }
+      assert.deepEqual(await snapshot(), before);
+      assert.equal(await prisma.auditLog.count({ where: { userId: user } }), quotes);
+    });
+    await check('single-conversion limit: refused at quote, and at confirm when the limit was lowered after the quote; nothing moves', async () => {
+      const big = 'qa-wallet-limit'; await fund(big, 'USD', '3000');
+      const result = await api('/wallet/conversion/quote', { fromAsset: 'USD', toAsset: 'EUR', amount: '1000.01' }, big);
+      assert.equal(result.status, 409); assert.equal(result.body.code, 'LIMIT_EXCEEDED');
+      const q = await conversion.quote(big, 'USD', 'EUR', '600');
+      const lowered = new WalletConversionService(prisma, prices, () => now, admitted, limits(AMPLE, '500'));
+      await assert.rejects(lowered.confirm(big, q.quoteId), { code: 'LIMIT_EXCEEDED' });
+      assert.equal(await balanceOf(big, 'USD'), '3000'); assert.equal(await balanceOf(big, 'EUR'), '0');
+      assert.equal(await conversion.status(big, q.quoteId), null);
+    });
+    await check('daily limit: rolling 24 hours, and it holds under concurrent confirms of quotes that each fit alone', async () => {
+      const daily = 'qa-wallet-daily'; await fund(daily, 'USD', '1000');
+      // Earlier receipts written the way Prisma writes them: 25 h ago no longer counts, 23 h ago still does.
+      for (const [hours, amount] of [[25, '900'], [23, '50']]) {
+        await prisma.auditLog.create({ data: { id: `conversion:${randomUUID()}`, userId: daily, action: 'WALLET_CONVERTED', createdAt: new Date(now - hours * 3_600_000),
+          metadata: { fromAsset: 'USD', toAsset: 'EUR', fromAmount: amount, toAmount: '0', fromPriceUsd: '1', toPriceUsd: '1.25' } } });
+      }
+      const capped = new WalletConversionService(prisma, prices, () => now, admitted, limits(AMPLE, '100', '250'));
+      const quotes = await Promise.all(Array.from({ length: 6 }, () => capped.quote(daily, 'USD', 'EUR', '100')));
+      const results = await Promise.allSettled(quotes.map(q => capped.confirm(daily, q.quoteId)));
+      assert.equal(results.filter(r => r.status === 'fulfilled').length, 2);
+      for (const r of results.filter(r => r.status === 'rejected')) assert.equal(r.reason.code, 'DAILY_LIMIT_EXCEEDED');
+      assert.equal(await balanceOf(daily, 'USD'), '800'); assert.equal(await balanceOf(daily, 'EUR'), '160');
+      await assert.rejects(capped.quote(daily, 'USD', 'EUR', '1'), { code: 'DAILY_LIMIT_EXCEEDED' }); // 50 + 200 = 250 used
+      // Another account is not counted against this one.
+      const other = 'qa-wallet-daily-2'; await fund(other, 'USD', '200');
+      const own = await capped.quote(other, 'USD', 'EUR', '100'); await capped.confirm(other, own.quoteId);
+      assert.equal(await balanceOf(other, 'EUR'), '80');
+    });
+    await check('reserve: many accounts converting into BTC at once can never jointly exceed its verified reserve', async () => {
+      const users = Array.from({ length: 8 }, (_, i) => `qa-wallet-reserve-${i}`);
+      for (const id of users) await fund(id, 'USD', '100');
+      const reserve = (await exposure('BTC')).plus('0.001'); // room for exactly 2.5 conversions of 0.0004 BTC
+      const capped = new WalletConversionService(prisma, prices, () => now, admitted, limits(`${AMPLE.replace('BTC:100', 'BTC:' + reserve.toFixed())}`));
+      const quotes = await Promise.all(users.map(id => capped.quote(id, 'USD', 'BTC', '24')));
+      assert(quotes.every(q => q.toAmount === '0.0004'));
+      const results = await Promise.allSettled(quotes.map((q, i) => capped.confirm(users[i], q.quoteId)));
+      assert.equal(results.filter(r => r.status === 'fulfilled').length, 2);
+      for (const r of results.filter(r => r.status === 'rejected')) assert.equal(r.reason.code, 'RESERVE_EXHAUSTED');
+      assert((await exposure('BTC')).lte(reserve));
+      assert.equal((await exposure('BTC')).toFixed(), reserve.minus('0.0002').toFixed());
+      const credited = (await Promise.all(users.map(id => balanceOf(id, 'BTC')))).filter(v => v !== '0');
+      assert.deepEqual(credited, ['0.0004', '0.0004']);
+      // Selling BTC back frees the same reserve for others.
+      const winner = users[results.findIndex(r => r.status === 'fulfilled')];
+      const back = await capped.quote(winner, 'BTC', 'USD', '0.0004'); await capped.confirm(winner, back.quoteId);
+      const loser = users[results.findIndex(r => r.status === 'rejected')];
+      const again = await capped.quote(loser, 'USD', 'BTC', '24'); await capped.confirm(loser, again.quoteId);
+      assert.equal(await balanceOf(loser, 'BTC'), '0.0004');
+    });
+    await check('liquidity: a thin book refuses the quote, and a book that thins after the quote refuses the confirm; nothing moves', async () => {
+      const thin = 'qa-wallet-thin'; await fund(thin, 'USD', '500');
+      thinBook['BTC:ask'] = '0.001';
+      await assert.rejects(conversion.quote(thin, 'USD', 'BTC', '120'), { code: 'INSUFFICIENT_LIQUIDITY' }); // 0.002 BTC wanted
+      const q = await conversion.quote(thin, 'USD', 'BTC', '60');
+      thinBook['BTC:ask'] = '0.0005';
+      await assert.rejects(conversion.confirm(thin, q.quoteId), { code: 'INSUFFICIENT_LIQUIDITY' });
+      thinBook['BTC:ask'] = null; // depth unknown
+      await assert.rejects(conversion.confirm(thin, q.quoteId), { code: 'INSUFFICIENT_LIQUIDITY' });
+      delete thinBook['BTC:ask'];
+      assert.equal(await balanceOf(thin, 'USD'), '500'); assert.equal(await balanceOf(thin, 'BTC'), '0');
+      const ok = await conversion.confirm(thin, q.quoteId); assert.equal(ok.toAmount, '0.001');
+      // A receipt once committed is returned even when the book later empties (lost-response recovery).
+      thinBook['BTC:ask'] = null; assert.deepEqual(await conversion.confirm(thin, q.quoteId), ok); delete thinBook['BTC:ask'];
+    });
+    if (process.env.WALLET_QA_BROWSER === '1') liveApi = walletActivityRouter(prisma, conversion, true);
+    if (process.env.WALLET_QA_BROWSER === '1') await require('./qa-wallet-conversion.cjs').run({ origin, token: jwt.sign({ sub: user }, process.env.JWT_SECRET), prisma, user, out, thinBook, fund });
     const report = { database: 'disposable loopback PostgreSQL', passed: checks, checks: checks.length, fee: '0', finalBalances: await snapshot(), productionTouched: false };
     fs.writeFileSync(path.join(out, 'postgres-results.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report, null, 2));
   } finally {
