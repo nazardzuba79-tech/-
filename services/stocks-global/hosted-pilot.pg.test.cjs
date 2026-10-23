@@ -49,6 +49,7 @@ test('catalogue-only PG identity authenticates normal login while all financial 
   const forged=await fetch(f.apiOrigin+'/api/v1/stocks-test-cash/command',{method:'POST',headers:{
     authorization:'Bearer '+token,'x-stocks-authority-key':f.gatewayKey,'content-type':'application/json'},body:JSON.stringify({type:'ensure'})});
   assert.equal(forged.status,403);assert.equal((await forged.json()).error,'STOCKS_TRADING_DISABLED');
+  // The gateway's execution gate (#611) refuses before any token, body or authority work.
   const denied=await f.request('orders',{token,body:{gatewayToken:state.data.token,id:'forged-order'}});
-  assert.equal(denied.status,401);assert.deepEqual(await f.rows(),before);
+  assert.equal(denied.status,403);assert.equal(denied.data.error,'ACCOUNT_TRADING_DISABLED');assert.deepEqual(await f.rows(),before);
 });

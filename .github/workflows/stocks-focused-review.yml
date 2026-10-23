@@ -16,6 +16,7 @@ on:
       - 'frontend/src/pages/stocks/StockOrderPanel.tsx'
       - '.github/workflows/stocks-focused-review.yml'
       - 'scripts/qa-stocks-hosted-browser.cjs'
+      - 'scripts/qa-stocks-hosted-silent.cjs'
       - 'frontend/src/pages/stocks/**'
       - '.github/workflows/stocks-legacy-unsupported.yml'
       - 'scripts/qa/stocks-migration-review*.cjs'
@@ -316,11 +317,18 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate
-      - name: Hosted bundle (catalogue visible; API on the fixture port)
+      - name: Hosted bundle (catalogue visible; API on the fixture port; execution gate OFF as shipped)
         run: cd frontend && npx vite build --outDir ../.stocks-hosted-dist --emptyOutDir
         env:
           VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
           VITE_API_URL: http://127.0.0.1:4791/api/v1
+      # Isolated acceptance only: the frontend execution gate (#611) ON, used solely with both server gates ON.
+      - name: Hosted bundle with the frontend execution gate ON (disposable acceptance only)
+        run: cd frontend && npx vite build --outDir ../.stocks-hosted-execution-dist --emptyOutDir
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+          VITE_API_URL: http://127.0.0.1:4791/api/v1
+          VITE_STOCKS_ORDER_EXECUTION_ENABLED: 'true'
       - name: Install browser
         run: |
           npm install --prefix /tmp/stocks-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
@@ -330,6 +338,7 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/stocks-qa/node_modules/playwright
           QA_STOCKS_DIST: .stocks-hosted-dist
+          QA_STOCKS_EXECUTION_DIST: .stocks-hosted-execution-dist
           QA_OUT: /tmp/stocks-hosted-browser
       - uses: actions/upload-artifact@v4
         if: always()
@@ -342,7 +351,7 @@ jobs:
   # contradictory combination (local simulator, foreign gateway origin, the discarded flag name) refuses to build.
   hosted-build-contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -362,6 +371,8 @@ jobs:
           frontend/src/lib/__tests__/stockNavigation.test.ts
           frontend/src/lib/__tests__/stocksViewerNoop.test.ts
           frontend/src/lib/__tests__/headerDropdown.test.ts
+      - name: Gateway execution OFF by default; forged financial requests 403 before any ledger work (#611)
+        run: node --test services/stocks-global/execution-off.test.mjs
       - name: Default build (Stocks hidden)
         run: cd frontend && npx vite build --outDir ../.stocks-default-dist --emptyOutDir
       - name: Hosted build (canonical flag)
@@ -376,3 +387,25 @@ jobs:
           refuse VITE_STOCKS_CATALOGUE_VISIBLE=true VITE_STOCKS_ENABLED=true VITE_STOCKS_GLOBAL_SIMULATOR=true
           refuse VITE_STOCKS_CATALOGUE_VISIBLE=true VITE_STOCKS_ORIGIN=https://stocks.example.invalid
           refuse VITE_STOCKS_HOSTED_PILOT=true VITE_STOCKS_ENABLED=true
+      # From #611: the shipped hosted bundle (frontend execution gate OFF) against the real gateway with its
+      # default OFF, including two sessions that carry stale canTrade=true. Synthetic sessions and quotes only.
+      - name: Hosted bundle in frontend/dist for the silent-path check
+        env:
+          VITE_STOCKS_CATALOGUE_VISIBLE: 'true'
+        run: cd frontend && npx vite build --emptyOutDir
+      - name: Install isolated browser dependency
+        run: |
+          npm install --prefix /tmp/stocks-hosted-silent --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/stocks-hosted-silent/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Viewer and both stale canTrade sessions silent at 1440 and 390 (normal login UI)
+        env:
+          PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/stocks-hosted-silent/node_modules/playwright
+        run: node scripts/qa-stocks-hosted-silent.cjs
+      - name: Silent-path evidence (synthetic only)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stocks-hosted-silent-browser
+          path: docs/qa/stocks-hosted-silent
+          if-no-files-found: ignore
+          retention-days: 5

@@ -25,6 +25,9 @@ const API='/__stocks_global/';
 declare const __VOLTEX_STOCKS_CATALOGUE_VISIBLE__: boolean;
 const hostedStocks = typeof __VOLTEX_STOCKS_CATALOGUE_VISIBLE__ !== 'undefined' && __VOLTEX_STOCKS_CATALOGUE_VISIBLE__;
 const STOCKS_USDT_ONLY = hostedStocks || import.meta.env.VITE_STOCKS_OWNER_USDT_ONLY === 'true';
+// Owner policy #558: permission metadata never activates execution. A future
+// reviewed demo pilot requires this explicit build gate AND the server gate (#611).
+const STOCKS_ORDER_EXECUTION_ENABLED = import.meta.env.VITE_STOCKS_ORDER_EXECUTION_ENABLED === 'true';
 const fmt=(v:string|number|null|undefined,d=6)=>v==null?'—':new BigNumber(v).toFixed(d).replace(/\.?0+$/,'')||'0';
 const valid=(s:string)=>/^\d+(\.\d{1,8})?$/.test(s)&&new BigNumber(s).gt(0);
 
@@ -58,7 +61,8 @@ export default function GlobalStocks(){
   // never turn the next credential into an order, even before React rerenders.
   const acceptedAccount=useRef<{id?:string;revision:number;canTrade:boolean;existingOnly:boolean;current:()=>boolean}|null>(null);
   const renderedAccount=acceptedAccount.current;
-  const mayTrade=()=>!!getToken()&&renderedAccount!==null&&renderedAccount===acceptedAccount.current&&renderedAccount.canTrade&&renderedAccount.current();
+  const mayReadAccount=()=>!!getToken()&&renderedAccount!==null&&renderedAccount===acceptedAccount.current&&renderedAccount.canTrade&&renderedAccount.current();
+  const mayTrade=()=>STOCKS_ORDER_EXECUTION_ENABLED&&mayReadAccount();
   const accept=useCallback((s:State,current:()=>boolean)=>{
     if(!current())return;
     const old=acceptedAccount.current;
@@ -93,7 +97,7 @@ export default function GlobalStocks(){
   useEffect(()=>{const stop=startVisibleStockPolling(()=>void poll(),3000);return()=>{acceptedAccount.current=null;demand.current.close();session.current.invalidate();reads.current.reset();stop();};},[poll]);
   useEffect(()=>{const hidden=()=>{if(document.hidden){demand.current.close();circuit.current.cancelRecovery();}};document.addEventListener('visibilitychange',hidden);return()=>{document.removeEventListener('visibilitychange',hidden);circuit.current.reset(false);};},[]);
   const act=async(path:string,body:unknown)=>{if(!mayTrade()||(path==='balances'&&acceptedAccount.current?.existingOnly))return null;if(gate.current||circuit.current.paused)return null;const request=session.current.capture();gate.current=true;setBusy(true);setError('');setMessage(null);try{const r=await fetch(API+path,{method:'POST',credentials:'omit',headers:{...request.headers,...demand.current.headers(),'Content-Type':'application/json','X-Stocks-Token':token.current},body:JSON.stringify(body),signal:path==='refresh'&&demand.current.signal()?AbortSignal.any([demand.current.signal()!,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)});const s=await r.json();if(!request.current())return null;if(r.status===401){request.reject(clearToken);token.current='';setState(null);setConnected(false);setAuthRequired(true);}if(!r.ok){if(pause(s.error,s.retryAfterMs))return null;throw new StockRequestError(s.error);}accept(s,request.current);pause(s.errors?.[selected.current]);return s;}catch(e){if(request.current())setError(e instanceof StockRequestError?e.code:'LOCAL_SERVICE_ERROR');return null;}finally{gate.current=false;setBusy(false);}};
-  const visibleAccount=mayTrade()?state:null;
+  const visibleAccount=mayReadAccount()?state:null;
   const asset=state?.catalogue.find(a=>a.id===id),q=state?.quotes[id],price=type==='LIMIT'?limit:q?.prices[currency]?.[side==='BUY'?'buy':'sell']||'',ready=connected&&q?.status[currency]==='READY'&&now-q.receivedAt<30000&&now-q.timestamp<((asset?.delaySeconds||0)+60)*1000;
   const positions=Object.values(visibleAccount?.positions||{}).filter(p=>Number(p.quantity)>0&&(!STOCKS_USDT_ONLY||p.currency==='USDT')),open=visibleAccount?.orders.filter(o=>['OPEN','PARTIAL'].includes(o.status)&&(!STOCKS_USDT_ONLY||o.currency==='USDT'))||[],position=visibleAccount?.positions[id+'|'+currency],available=side==='BUY'?visibleAccount?.wallets[currency].available:visibleAccount?position?.available||'0':undefined;
   const total=valid(price)&&valid(quantity)?new BigNumber(price).times(quantity).toFixed(8,side==='BUY'?BigNumber.ROUND_CEIL:BigNumber.ROUND_FLOOR):null;

@@ -30,7 +30,7 @@ function fixtureHub({ gate } = {}) {
 }
 async function httpFixture(t, options) {
   const dir = await mkdtemp(join(tmpdir(), 'stocks-history-cancel-')), f = fixtureHub(options);
-  const app = await createServer({ port: 0, accountsPath: join(dir, 'fixture.sqlite'), now: () => NOW, autoPoll: false, authenticate: async () => ({ issuer: 'history-cancellation-fixture', subject: 'reader' }), hub: f.hub });
+  const app = await createServer({ financialEnabled: true, port: 0, accountsPath: join(dir, 'fixture.sqlite'), now: () => NOW, autoPoll: false, authenticate: async () => ({ issuer: 'history-cancellation-fixture', subject: 'reader' }), hub: f.hub });
   const sockets = new Set();
   app.server.on('connection', socket => { sockets.add(socket); socket.once('close', () => sockets.delete(socket)); });
   t.after(async () => { for (const socket of sockets) socket.destroy(); await app.close(); await rm(dir, { recursive: true, force: true }); });

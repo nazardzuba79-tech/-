@@ -24,7 +24,9 @@
  * No production account, secret, provider request or deployment.
  *
  *   QA_STOCKS_DIST=<vite build with VITE_STOCKS_CATALOGUE_VISIBLE=true and
- *     VITE_API_URL=http://127.0.0.1:4791/api/v1> STOCKS_DISPOSABLE_PG_URL=…
+ *     VITE_API_URL=http://127.0.0.1:4791/api/v1>
+ *   QA_STOCKS_EXECUTION_DIST=<the same plus VITE_STOCKS_ORDER_EXECUTION_ENABLED=true>
+ *   STOCKS_DISPOSABLE_PG_URL=…
  *   STOCKS_PG_DISPOSABLE_CONFIRM=… node scripts/qa-stocks-hosted-browser.cjs
  */
 const assert = require('node:assert/strict');
@@ -36,6 +38,9 @@ const { fixture, disposableUrl } = require('../services/stocks-global/testing/di
 const API_PORT = 4791, GATEWAY_PORT = 4792;
 const base = `http://127.0.0.1:${GATEWAY_PORT}`;
 const dist = path.resolve(process.env.QA_STOCKS_DIST || 'frontend/dist');
+// The gated acceptance needs the separate frontend execution gate too (#611): a second bundle built with
+// VITE_STOCKS_ORDER_EXECUTION_ENABLED=true. The policy steps always run on the default bundle (gate OFF).
+const executionDist = path.resolve(process.env.QA_STOCKS_EXECUTION_DIST || dist);
 const out = path.resolve(process.env.QA_OUT || 'output/stocks-hosted-browser');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 fs.mkdirSync(out, { recursive: true });
@@ -51,7 +56,7 @@ async function step(name, fn) {
 
 (async () => {
   assert(disposableUrl(), 'STOCKS_DISPOSABLE_PG_URL and STOCKS_PG_DISPOSABLE_CONFIRM are required');
-  assert(fs.existsSync(path.join(dist, 'index.html')), `no bundle in ${dist}`);
+  for (const bundle of [dist, executionDist]) assert(fs.existsSync(path.join(bundle, 'index.html')), `no bundle in ${bundle}`);
   // The bundle's API origin is fixed at build time, so the two server configurations run one after the
   // other on the same ports: first the production default (order execution OFF), then the gated acceptance.
   const hosted = { normalLogin: true, releaseRouter: true, wallClock: true, apiPort: API_PORT, gatewayPort: GATEWAY_PORT, dist };
@@ -161,12 +166,13 @@ async function step(name, fn) {
       assert.deepEqual(await f.rows(), before);
     });
     for (const fn of policyCleanups.splice(0).reverse()) await fn();
-    f = await fixture(t, hosted);
+    f = await fixture(t, { ...hosted, dist: executionDist });
     // A third ordinary account with a password: logged in, not bound, never a trader.
     const viewer = { email: `synthetic-stocks-viewer-${crypto.randomUUID()}@example.invalid` };
     await f.db.user.create({ data: { id: 'synthetic-stocks-viewer-' + crypto.randomUUID(), email: viewer.email,
       passwordHash: await require('bcrypt').hash(f.loginPassword, 4), referralCode: crypto.randomBytes(10).toString('hex'), role: 'USER' } });
 
+    // Everything below runs on the execution bundle with both server gates ON (isolated acceptance only).
     await step('guest: /stocks goes to the ordinary login with the return path; the Stocks API answers 401', async () => {
       const { context, page } = await open(1440);
       await page.goto(base + terminal);

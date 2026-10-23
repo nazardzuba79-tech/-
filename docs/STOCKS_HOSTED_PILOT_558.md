@@ -19,8 +19,16 @@ How this candidate enforces it, server-first:
   account, the two bound traders included, as a silent viewer. Before this change the readiness reported only the
   test-cash gate, so a pilot with wallets on and execution off would have let the traders' clicks reach the API and
   show its refusal.
-- A forged order is refused twice: by the gateway (no `canTrade`) and by the API's second gate (403
-  `ACCOUNT_TRADING_DISABLED`), also when sent with the gateway's own key.
+- Defense in depth from Codex's #611 patch (`d362fb80`), ported unchanged in intent:
+  - the gateway's `createServer` defaults `financialEnabled` to **false** (only explicit isolated fixtures opt
+    in; the local CLI only with exactly `STOCKS_ORDER_EXECUTION_ENABLED=true`); with it off every financial POST
+    is refused with 403 `ACCOUNT_TRADING_DISABLED` before any body, token, account or authority work, and no
+    financial GET observation or background matching runs;
+  - `GlobalStocks` has its own build gate `VITE_STOCKS_ORDER_EXECUTION_ENABLED` (default OFF): account data the
+    server permits may be shown (`mayReadAccount`), but no order, cancel, balance or refresh request is sent unless
+    this gate is also on — so even a stale or forged `canTrade=true` stays silent.
+- A forged order is refused at every layer: frontend (no request), gateway (403 `ACCOUNT_TRADING_DISABLED`) and the
+  API's second gate (403 `ACCOUNT_TRADING_DISABLED`), also when sent with the gateway's own key.
 - The two-trader PostgreSQL capability and its acceptance stay in the code, reachable only with both server gates
   explicitly ON in a disposable environment (`qa-stocks-hosted-browser.cjs` «gated acceptance» steps). Never set them
   in production without that new owner decision.
@@ -36,6 +44,7 @@ How this candidate enforces it, server-first:
 | #611 build refusals (simulator / widget preview / custom `VITE_STOCKS_ORIGIN` with hosted) | all three refuse the hosted build; checked by the `hosted-build-contract` CI job |
 | #611 `shouldMountGlobalStocks` + tests | ported (`stockHostPolicy.ts`, `stocksHostedPilot.test.ts`, `stocksOriginalRouting.test.ts`) |
 | #611 runbook `STOCKS_HOSTED_PILOT_REVIEW.md` | folded into this document (gates, release order, rollback) |
+| #611 execution patch `d362fb80` (gateway default OFF, early 403, OFF read/background guards, `VITE_STOCKS_ORDER_EXECUTION_ENABLED`, `execution-off.test.mjs`, PG OFF test, `qa-stocks-hosted-silent.cjs`) | ported; the visibility flag stays `VITE_STOCKS_CATALOGUE_VISIBLE` (owner coordination, #613); the Futures funding QA-clock fix stays out (different scope; `native` is green here) |
 
 ## Owner path after separately approved release
 
@@ -60,6 +69,7 @@ pre-COMMIT fences remain authoritative.
 | Frontend visibility | `VITE_STOCKS_CATALOGUE_VISIBLE=true` | Same-app authenticated menu/catalogue/terminal. Does not authorize finance. |
 | API catalogue identity | `STOCKS_CATALOGUE_ENABLED=true` | PG readiness and normal session identity only. |
 | Financial authority | `STOCKS_TEST_CASH_ENABLED=true` | Existing two-principal PG authority operations; requires explicit separate approval. |
+| Frontend execution (#611) | `VITE_STOCKS_ORDER_EXECUTION_ENABLED=true` | Build gate in `GlobalStocks`; without it no order/cancel/balance/refresh request is ever sent. Never set for a hosted build without a new owner decision. |
 | Order execution (PR #593) | `STOCKS_ORDER_EXECUTION_ENABLED=true` | Second server gate on `/stocks-test-cash/command`, off unless exactly `true`; with it off both bound traders get 403 `ACCOUNT_TRADING_DISABLED` before the authority runs, and the readiness proof reports no trading, so the gateway grants nobody `canTrade` (silent viewers). Requires the financial gate as well. |
 | Market data | `STOCKS_MARKET_DATA_ENABLED=true` | Explicit provider activation only after data rights/feed readiness. Default unavailable with no provider requests or prices/candles. |
 | Extra venues (#561) | `STOCKS_VENUES_ENABLED=gate,mexc,…` **and** `STOCKS_VENUE_RIGHTS_CONFIRMED=<same list>` | Only with market data on. Each venue must also be in the operator's data-rights attestation, otherwise the API refuses to start (`DATA_RIGHTS_UNVERIFIED`). A venue left out gets no request; its rows stay hidden and its instruments answer `DATA_RIGHTS_UNVERIFIED`. The attestation records a confirmed licence; it is not one. |

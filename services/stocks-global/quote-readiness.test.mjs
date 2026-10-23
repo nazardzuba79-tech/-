@@ -51,7 +51,7 @@ async function fixture(t, { quoteAgeMs = 0 } = {}) {
       { id: 'fixture-readiness-' + i, balances: { USDT: String((i + 1) * 100), USDC: '0' } }, at));
   }
   repo.close();
-  const app = await createServer({ port: 0, accountsPath: path, tradePrincipals: traders,
+  const app = await createServer({ financialEnabled: true, port: 0, accountsPath: path, tradePrincipals: traders,
     now: () => time, autoPoll: true, accountDiagnostics: true,
     authenticate: async req => {
       const subject = req.headers['x-fixture-subject'];

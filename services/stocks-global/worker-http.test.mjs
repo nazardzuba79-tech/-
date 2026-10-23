@@ -16,7 +16,7 @@ async function fixture(t, { historyError, maxPending } = {}) {
   const control = new Int32Array(new SharedArrayBuffer(5 * Int32Array.BYTES_PER_ELEMENT));
   const history = { instrumentId: ID, interval: '15m', currency: 'USDT', provider: 'bybit', delaySeconds: 0, candles: [], receivedAt: NOW };
   let authCalls = 0;
-  const app = await createServer({ port: 0, accountsPath: join(dir, 'accounts.sqlite'), now: () => NOW, autoPoll: false,
+  const app = await createServer({ financialEnabled: true, port: 0, accountsPath: join(dir, 'accounts.sqlite'), now: () => NOW, autoPoll: false,
     accountWorkerOptions: { ...(maxPending === undefined ? {} : { maxPending }), testHooks: { commitControl: control.buffer } },
     authenticate: async req => {
       authCalls++;

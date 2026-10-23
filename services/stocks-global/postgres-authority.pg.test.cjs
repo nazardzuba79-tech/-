@@ -6,6 +6,23 @@ const until=async callback=>{const end=Date.now()+5000;while(!await callback()){
 const deferred=()=>{let resolve;const promise=new Promise(done=>resolve=done);return{promise,resolve};};
 function pg(name,fn){test('real PostgreSQL: '+name,{timeout:20000,skip:available?false:'NOT_RUN: no confirmed disposable local PostgreSQL URL; SQLite/mock is not acceptance'},fn);}
 
+pg('gateway execution OFF preserves all cash, account, receipt and audit rows for both admitted sessions and a viewer',async t=>{
+  // Keep the API authority gate ON inside this isolated test: the separate
+  // gateway gate must reject commands independently, before any PG authority call.
+  const f=await fixture(t,{financialEnabled:false,orderExecutionEnabled:true}),viewer=await f.newViewer('execution-off');
+  const before=await f.rows();
+  for(const token of [...f.tokens,viewer.token]){
+    const state=await f.request('state?id='+encodeURIComponent(f.ID),{token});
+    assert.equal(state.status,200);assert.equal(state.data.account.canTrade,false);
+    for(const type of ['MARKET','LIMIT'])for(const side of ['BUY','SELL']){
+      const result=await f.request('orders',{token,body:{gatewayToken:state.data.token,...order('pg-default-off-'+type+side,{type,side})}});
+      assert.equal(result.status,403);assert.equal(result.data.error,'ACCOUNT_TRADING_DISABLED');
+    }
+    for(const route of ['cancel','balances','refresh'])assert.equal((await f.request(route,{token,body:{gatewayToken:state.data.token}})).status,403);
+  }
+  assert.deepEqual(await f.rows(),before);
+});
+
 pg('Market/Limit/partial sell/cancel/PnL and account isolation use existing DemoBalance',async t=>{
   const f=await fixture(t),token=await f.ready();const baseline=await f.db.demoBalance.findUnique({where:{userId_asset:{userId:f.users[0],asset:'USDT'}}});
   const bought=await f.request('orders',{body:{gatewayToken:token,...order('pg-market-buy-000001',{type:'MARKET'})}});assert.equal(bought.status,200,JSON.stringify(bought));assert.equal(bought.data.wallets.USDT.cash,'721.25000000');
