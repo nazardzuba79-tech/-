@@ -77,7 +77,14 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs, error = fa
     <section className="vta-prelisting" aria-label={`${name} ${pair}`} data-state={asset ? 'pre-listing' : 'loading'}
       data-countdown={asset?.managed ? asset.countdown ?? 'running' : undefined}>
       <div className="vta-prelisting-card">
-        <div className="vta-prelisting-mark"><CryptoIcon symbol={pair.split('/')[0]} size={64} /></div>
+        <div className={`vta-prelisting-mark${pair === 'TYVN/USDT' ? ' vta-prelisting-mark--tyvn' : ''}`}>
+          {pair === 'TYVN/USDT' ? (
+            <svg className="vta-prelisting-tyvn-logo" viewBox="275 75 705 760" aria-hidden="true" focusable="false">
+              {/* Frame the approved original monogram; keep the name below as accessible text. */}
+              <image href="/brand/tyvn/teryvane-approved-variant-3.webp" width="1254" height="1254" />
+            </svg>
+          ) : <CryptoIcon symbol={pair.split('/')[0]} size={64} />}
+        </div>
         <h2 className="vta-prelisting-name">{name}</h2>
         <div className="vta-prelisting-pair">{pair}</div>
         {error && asset && <p role="alert">{t('listing.dataStale')}</p>}

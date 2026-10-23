@@ -6787,6 +6787,17 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Withdrawn:** option (B) of the previous entry (publish TYVN on the live API = public at once) — the owner forbids publishing TYVN on the old API, and the admin page no longer can. TYVN needs the separately approved #578 API switch first.
 - Unresolved: the server channel (option A) is unchanged; no merge, deploy, publication or timer start.
 
+
+### Codex — 2026-10-23 — TYVN approved third logo, frontend only
+- Owner requested actual production integration of the approved third TERYVANE/TYVN mark and expressly authorized a safe frontend publication.
+- Base main: `9265e99761e809595d993bcc0dcdef058f4ecd7d`. The canonical `integration/claude-codex` ref no longer exists (fresh fetch); a short-lived feature branch is based on current release main. No overlapping component edits after `642e542a`.
+- Material files: `frontend/src/components/TestMarketTerminal.tsx`, its CSS, and `frontend/public/brand/tyvn/teryvane-approved-variant-3.webp`.
+- Original approved variant 3: SHA256 `96072c4dfb27605c0ccab25d06945777d8c8114ddf97d76baf79617fb0e77926`. Lossless WebP: `c0cea4ef491e07442885db44a8f27b305d520b8ab6f867437033677b9b57e469`, 945520 bytes; all RGBA pixels verified equal. SVG viewBox frames the existing monogram only (no redraw); screen blend integrates the original dark background. Existing 84px desktop / 68px mobile logo slot stays fixed.
+- Only exact TYVN/USDT prelisting presentation selects this mark. Name, pair, timer, date, price, hooks, chart path, all other listing icons and all trading logic are preserved.
+- Local verification: frontend TypeScript + production build PASS; existing customerListingPresentation 161/161 PASS. Exact published commit SHA is the commit containing this entry (recorded in the PR).
+- Cloudflare Pages project is GitHub-backed, production `main`, previews None; current live deployment `e8a903f0-2b73-4f95-8a17-25d6e019dc50` at `787b4a0d48fdaf2c66b4d899253f093e3c76417a`. Its frontend tree equals base main. Review commit carries CF/Render skip markers; authorized release commit will publish only this frontend delta. GitHub deploy workflows have no matching Worker/API trigger for these changed paths.
+- Pending at commit time: PR CI, safe frontend release and actual authenticated production desktop/mobile/reload evidence. Rollback: previous Cloudflare Pages deployment; no backend/DB/Worker/listing state change is involved.
+
 ## 2026-10-23 — Claude — Issue #592: Demo Spot for admin-credited accounts (code only, default OFF)
 - Branch `claude/voltex-mobile-audit-7rpjni-demo-trading` from main `9265e997`; separate from Wallet Conversion #591 (left Draft/OFF, untouched here).
 - **Reproduced on a disposable PostgreSQL (main behaviour):** uncredited USER `/orders` 400; Balance credit (`adjust-balance`/`balance-adjustments`) trades the real Spot ledger; demo-topup credit (DemoBalance) gets 400 on `/orders` and 403 on admin-only `/demo/orders`; a Balance credit can be put into a `PENDING` withdrawal request; a Cross trading account (owner/`PRIVATE_TRADING_TEST_USER_IDS`) could request a withdrawal valued from DemoBalance.
