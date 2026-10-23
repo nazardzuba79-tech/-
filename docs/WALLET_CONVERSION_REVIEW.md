@@ -20,7 +20,7 @@ main `9265e997` (2026-10-23) with the review fixes below.
 - Feed older than 15 s, from the future, missing or invalid: fail closed (`PRICE_UNAVAILABLE`, 503).
   No automatic repricing: if the bid or ask moved before confirmation, `QUOTE_CHANGED`.
 - The cache timestamp is feed freshness, not an executable depth guarantee: this is a top-of-book
-  conversion, not slippage-protected size. See *Risks* — liquidity is an activation prerequisite.
+  conversion, not slippage-protected size (see *Risks*: size limits).
 
 ## Admission and precision (server-side)
 
@@ -61,7 +61,8 @@ appear in customer history.
 
 ## Activation (both switches, separately approved) and rollback
 
-1. Owner approval of this code, of the asset list, and of the liquidity/treasury policy (see *Risks*).
+1. Owner approval of this code, of the asset list, and of the withdrawal policy for owner-issued balances
+   (see *Which ledger this is* and *Risks*).
 2. API: set `WALLET_CONVERSION_ENABLED=true` (and, if needed, `WALLET_CONVERSION_ASSETS`) on the API
    container and restart **only the API**. Check: `POST /api/v1/wallet/conversion/quote` without a token
    → 401; with an owner test session and a tiny amount → a quote; the logs show no
@@ -75,11 +76,32 @@ appear in customer history.
 ledger with their receipts; nothing is reversed automatically, and no database restore is ever part of a
 rollback.
 
+## Which ledger this is (code on main `9265e997`) and the owner's demo-only policy
+
+Owner statement of 2026-10-23 (Issue #558): VOLTEX currently holds **no real customer funds**; balances are
+issued by the owner/admin to the team and approved testers, and registration grants nothing. The table name
+`Balance` does not mean real money. What the code does, separately from that policy:
+
+- **Where issued funds live.** An owner/admin credit (`BalanceAdjustmentService` → `mutateSpotBalance`) is a
+  `Balance` row; Spot orders reserve and spend the same rows (`OrderService`). Other writers of `Balance`:
+  confirmed deposits (`DepositBatchService`), banking rewards (`src/banking/service.ts`), listing owner
+  allocation. `DemoBalance` is a separate ledger that conversion never reads or writes.
+- **Registration** creates no `Balance` (no balance write in `src/api/routes/auth.ts`); an account without
+  issued funds is refused before any write (PostgreSQL check *account without owner/admin-issued funds*).
+- **Withdrawals** (`WithdrawalService.requestWithdrawal`): any positive non-test `Balance` can be put into a
+  request; the amount is locked and an admin reviews it and sends by hand, recording the txHash. Nothing is
+  paid automatically.
+- **Conversion adds no cash-out path.** It changes which asset an already-issued balance is held in, at
+  bid/ask, so its market value can only go down; the result is subject to exactly the same manual request
+  as the source was. Whether owner-issued balances should be requestable for withdrawal at all is a
+  question about `WithdrawalService` on main, outside this PR, for the owner to decide.
+
 ## Risks and open decisions (not code defects; production NO-GO until decided)
 
-- **Liquidity / treasury:** settlement is internal accounting. Converting USD into BTC creates a BTC
-  obligation the treasury must actually hold (withdrawals). There is no inventory limit, exposure
-  monitoring or hedging procedure yet — an owner policy decision, not invented here.
+- **Hypothetical liabilities:** only if real deposits and cash-out operate does a conversion carry a real
+  obligation (e.g. USD → BTC would then be BTC the treasury must hold), which would need inventory limits,
+  exposure monitoring and hedging before activation. Under the current demo-only policy these are not
+  established VOLTEX liabilities.
 - **Size limits:** no per-conversion or per-user daily caps exist; top-of-book pricing does not cover size.
 - **Feed coverage:** EUR (and any fiat) needs an actual Kraken book; if absent, the asset is simply not offered.
 - **Quote rows:** each preview writes one `AuditLog` row (rate-limited to 20/min/user); retention is unchanged.

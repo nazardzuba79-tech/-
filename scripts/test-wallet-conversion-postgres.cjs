@@ -271,6 +271,18 @@ async function main() {
       assert(converted.length + withdrawn > 0 && spent.lte(100), `spent ${spent.toFixed()} of 100`);
       assert.equal(await prisma.auditLog.count({ where: { userId: user, action: 'WALLET_CONVERTED', id: { in: quotes.map(q => 'conversion:' + q.quoteId) } } }), converted.length);
     });
+    await check('an account without owner/admin-issued funds converts nothing: refused before any write, nothing granted', async () => {
+      const unfunded = 'qa-wallet-unfunded';
+      await sql.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode",role,"kycStatus","createdAt","updatedAt") VALUES ('${unfunded}','unfunded@example.invalid','fixture','${unfunded}','USER','APPROVED',now(),now())`);
+      const listed = await api('/wallet/conversion/assets', undefined, unfunded);
+      assert.equal(listed.status, 200); assert(listed.body.length > 0 && listed.body.every(a => a.available === '0'));
+      for (const [fromAsset, toAsset] of [['USD', 'EUR'], ['USDT', 'BTC'], ['BTC', 'USD']]) {
+        const refused = await api('/wallet/conversion/quote', { fromAsset, toAsset, amount: '1' }, unfunded);
+        assert.equal(refused.status, 409); assert.equal(refused.body.code, 'INSUFFICIENT_BALANCE');
+      }
+      assert.equal(await prisma.balance.count({ where: { userId: unfunded } }), 0);
+      assert.equal(await prisma.auditLog.count({ where: { userId: unfunded } }), 0);
+    });
     if (process.env.WALLET_QA_BROWSER === '1') await require('./qa-wallet-conversion.cjs').run({ origin, token: jwt.sign({ sub: user }, process.env.JWT_SECRET), prisma, user, out });
     const report = { database: 'disposable loopback PostgreSQL', passed: checks, checks: checks.length, fee: '0', finalBalances: await snapshot(), productionTouched: false };
     fs.writeFileSync(path.join(out, 'postgres-results.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report, null, 2));
