@@ -1,7 +1,7 @@
 /** ECLAVO (ECLV) scheduled November 3 2026: inert draft only. */
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { parseListingConfig, withStableProfile, checkPublishable, listingSimulationConfig, publishedListingAsset, nextListingCountdown, RESERVED_LISTING_SYMBOLS } from '../listingConfig';
+import { parseListingConfig, withStableProfile, checkPublishable, listingSimulationConfig, publishedListingAsset, nextListingCountdown, RESERVED_LISTING_SYMBOLS, LOGO_MAX_BYTES } from '../listingConfig';
 import { exactPriceFromGain, validateScenarioControls } from '../../../shared/listingScenarioControls';
 import { DAY_MS, simulationFor } from '../../testMarkets/testMarketSimulation';
 
@@ -44,6 +44,34 @@ test('deterministic deep-recovery program and mathematically consistent bounds',
     expect(price).toBeGreaterThan(0);
     expect(price).toBeLessThanOrEqual(.518);
   }
+});
+
+test('the logo file is the config logo byte for byte, so «Выбрать файл» reproduces the same data URL', () => {
+  const svg = readFileSync(resolve(__dirname, '../../../../config/test-markets/eclv-20261103.logo.svg'));
+  expect(draft.logo).toBe(`data:image/svg+xml;base64,${svg.toString('base64')}`);
+  expect(svg.length).toBeLessThan(LOGO_MAX_BYTES);
+});
+
+test('every value can be entered in Admin → Listings exactly (no hidden or unreachable setting)', () => {
+  const program = saved.simulationProgram!;
+  if (program.kind !== 'scenario-controls-v2') throw new Error('expected v2');
+  // «Разнообразие размеров свечей» is a range input with step 0.05; any other value snaps on the page.
+  expect(Math.round(program.candles.diversity * 20) / 20).toBe(program.candles.diversity);
+  expect(Number.isInteger(program.pullbacks.durationMinutes)).toBe(true);
+  expect(program.stages.every(s => Number.isInteger(s.durationHours))).toBe(true);
+  expect(program.stages.length).toBeLessThanOrEqual(12); // «Добавить этап» stops at 12
+  expect(program.afterGrowth).toBe('range');
+  expect(program.historical).toBeUndefined();
+});
+
+test('the chart is the same whatever creation ordinal production assigns, and 5m highs never pass 0.518', () => {
+  const at = (ordinal: number | null) => simulationFor(publishedListingAsset({ ...listing, config: withStableProfile(draft, null, ordinal) }));
+  const reference = JSON.stringify(at(8).candles5m(AT + 3 * DAY_MS, AT));
+  for (const ordinal of [null, 1, 2, 3, 4, 9]) expect(JSON.stringify(at(ordinal).candles5m(AT + 3 * DAY_MS, AT))).toBe(reference);
+  const candles = simulationFor(publishedListingAsset(listing)).candles5m(AT + 12 * DAY_MS, AT);
+  expect(candles[0].open).toBeCloseTo(.014, 10);
+  expect(Math.max(...candles.map(c => c.high))).toBeLessThanOrEqual(.518);
+  expect(Math.min(...candles.map(c => c.low))).toBeGreaterThan(0);
 });
 
 test('draft is publishable only before start, timer requires a separate owner action', () => {

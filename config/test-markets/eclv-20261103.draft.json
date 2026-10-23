@@ -51,7 +51,7 @@
     },
     "candles": {
       "intensity": "high",
-      "diversity": 0.83,
+      "diversity": 0.85,
       "pauseFrequency": "moderate"
     },
     "wicks": {
