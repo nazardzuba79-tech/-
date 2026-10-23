@@ -42,13 +42,24 @@ manifest = {'baseApi':base,'releaseSha':sha,'mergedMain':claude,'previousCandida
             'protectedSourceUnchanged':True,'migrationFilesIncluded':0,'files':[]}
 with tarfile.open(archive,'w',format=tarfile.PAX_FORMAT) as tar:
     recipe=(root/'release/demo-off/Dockerfile').read_bytes()
+    copy_lines = [line for line in recipe.decode('utf-8').splitlines() if line.startswith('COPY ')]
+    expected_copy_lines = [
+        'COPY --chown=1000:1000 --chmod=0644 overlay/'+name+ext+' /app/dist/'+name+ext
+        for name in runtime for ext in ['.js', '.js.map']
+    ]
+    assert copy_lines == expected_copy_lines, 'Missing UID1000 readable per-file COPY; refusing to package'
     info=tarfile.TarInfo('Dockerfile');info.size=len(recipe);info.mode=0o644;tar.addfile(info,io.BytesIO(recipe))
+    # Include parent directories explicitly so unpacking is portable across Windows/Linux.
+    for directory in ['overlay', 'overlay/api', 'overlay/api/routes', 'overlay/services']:
+        info = tarfile.TarInfo(directory+'/')
+        info.type=tarfile.DIRTYPE;info.mode=0o755;info.uid=1000;info.gid=1000
+        tar.addfile(info)
     for name in runtime:
         for extension in ['.js','.js.map']:
             p=root/'dist'/(name+extension); payload=p.read_bytes()
             target='overlay/'+name+extension
-            info=tarfile.TarInfo(target);info.size=len(payload);info.mode=0o644;tar.addfile(info,io.BytesIO(payload))
-            manifest['files'].append({'path':target,'sha256':hashlib.sha256(payload).hexdigest(),'bytes':len(payload)})
+            info=tarfile.TarInfo(target);info.size=len(payload);info.mode=0o644;info.uid=1000;info.gid=1000;tar.addfile(info,io.BytesIO(payload))
+            manifest['files'].append({'path':target,'sha256':hashlib.sha256(payload).hexdigest(),'bytes':len(payload),'uid':1000,'gid':1000,'mode':'0644'})
 manifest['archive']=archive.name
 manifest['archiveSha256']=hashlib.sha256(archive.read_bytes()).hexdigest()
 manifest['archiveBytes']=archive.stat().st_size
