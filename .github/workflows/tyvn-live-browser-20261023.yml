@@ -19,7 +19,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/tyvn-browser"
           npm install --prefix "$RUNNER_TEMP/tyvn-browser" --no-audit --no-fund --ignore-scripts playwright@1.63.0
-          "$RUNNER_TEMP/tyvn-browser/node_modules/.bin/playwright" install --with-deps chromium
+          test -x /usr/bin/google-chrome || test -x /usr/bin/google-chrome-stable || { echo "::error::Chrome missing on runner"; exit 1; }
       - name: GET-only production browser verification, desktop and phone
         shell: bash
         run: |
@@ -36,7 +36,7 @@ jobs:
             assert(entry[0].countdown==='running'&&entry[0].isTradable===false,'TYVN timer or trading safety incorrect');
             assert(Date.parse(entry[0].listingAt)===Date.parse('2026-10-27T13:00:00Z'),'TYVN launch date incorrect');
             checks.push('edge TYVN unique running tradable:false 2026-10-27 13:00 UTC');
-            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const browser=await chromium.launch({headless:true,executablePath:require('node:fs').existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':'/usr/bin/google-chrome-stable',args:['--no-sandbox']});
             try{
               for(const width of [1440,390]){
                 const context=await browser.newContext({viewport:{width,height:width===390?844:900},locale:'ru-RU',serviceWorkers:'block'});
