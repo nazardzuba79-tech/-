@@ -16,7 +16,7 @@ export const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 export interface WalletConversionQuote {
   quoteId: string; fromAsset: string; toAsset: string; fromAmount: string; toAmount: string;
-  fromPriceUsd: string; toPriceUsd: string; fee: '0'; source: 'kraken'; fetchedAt: number; expiresAt: number;
+  fromPriceUsd: string; toPriceUsd: string; fee: '0'; source: 'kraken'; pricing: 'bid-ask'; fetchedAt: number; expiresAt: number;
 }
 export interface WalletConversionReceipt extends WalletConversionQuote { status: 'APPLIED'; operationId: string; createdAt: string }
 
@@ -881,7 +881,7 @@ export const api = {
     ),
 
   getWalletActivity: () => request<{ id: string; kind: 'adjustment' | 'conversion'; asset: string; amount: string; toAsset?: string; toAmount?: string; createdAt: string }[]>('/wallet/activity'),
-  getConversionAssets: () => request<{ asset: string; kind: 'fiat' | 'crypto'; available: string }[]>('/wallet/conversion/assets'),
+  getConversionAssets: () => request<{ asset: string; kind: 'fiat' | 'crypto'; scale: number; available: string }[]>('/wallet/conversion/assets'),
   quoteConversion: (params: { fromAsset: string; toAsset: string; amount: string }) => request<WalletConversionQuote>('/wallet/conversion/quote', { method: 'POST', body: JSON.stringify(params) }),
   confirmConversion: (quoteId: string) => request<WalletConversionReceipt>('/wallet/conversion/confirm', { method: 'POST', body: JSON.stringify({ quoteId }) }),
   getConversionReceipt: (quoteId: string) => request<WalletConversionReceipt | null>(`/wallet/conversion/receipt/${encodeURIComponent(quoteId)}`),

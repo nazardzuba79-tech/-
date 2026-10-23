@@ -49,15 +49,50 @@ exports.run = async ({ origin, token, prisma, user, out }) => {
   const select = async (id, symbol) => { await page.locator('#' + id).click(); await page.getByRole('option', { name: new RegExp('^' + symbol + ' ·') }).click(); };
   const snapshot = async () => JSON.stringify(await prisma.balance.findMany({ where: { userId: user }, orderBy: { asset: 'asc' } }));
   try {
+    if (process.env.WALLET_QA_EXPECT_OFF === '1') {
+      // A production-style build (no VITE_WALLET_CONVERSION_ENABLED): Convert is inert and asks the server nothing.
+      await check('default-OFF build: Convert inactive, no dialog, no conversion request, no «unavailable» note', async () => {
+        await page.goto(origin + '/wallet');
+        const buttons = page.getByRole('button', { name: 'Конвертация', exact: true });
+        await buttons.first().waitFor();
+        assert((await buttons.count()) >= 1);
+        for (let i = 0; i < await buttons.count(); i += 1) {
+          assert(await buttons.nth(i).isDisabled());
+          assert.equal(await buttons.nth(i).getAttribute('title'), null);
+          await buttons.nth(i).click({ force: true });
+        }
+        await page.waitForTimeout(500);
+        assert.equal(await page.locator('[role="dialog"]').count(), 0);
+        assert.deepEqual(requests.filter(r => r.endpoint.startsWith('/wallet/conversion')), []);
+        assert(!/недоступн|not available|unavailable/i.test(await page.locator('body').innerText()));
+        const file = path.join(out, 'conversion-off-1440.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      });
+      assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
+      fs.writeFileSync(path.join(out, 'browser-off-results.json'), JSON.stringify({ build: 'production React bundle, conversion flag unset', checks, screenshots, errors, unexpected, requests, productionTouched: false }, null, 2));
+      return;
+    }
     await page.goto(origin + '/wallet'); await page.getByRole('button', { name: 'Конвертация', exact: true }).first().waitFor();
     await check('preview and invalid amount never mutate; zero-fee fiat confirmation reaches real PostgreSQL', async () => {
       await open(); await select('conversion-from', 'USD'); await select('conversion-to', 'EUR');
       await page.locator('#conversion-amount').fill('-1'); assert(await page.getByRole('button', { name: 'Рассчитать', exact: true }).isDisabled());
+      // A tenth of a cent is not an amount of USD: refused in the form, before any request.
+      const quotesSent = requests.filter(r => r.endpoint === '/wallet/conversion/quote').length;
+      await page.locator('#conversion-amount').fill('2.555'); assert(await page.getByRole('button', { name: 'Рассчитать', exact: true }).isDisabled());
+      await page.getByText('Для USD — не более 2 знаков после запятой', { exact: true }).waitFor();
+      assert.equal(requests.filter(r => r.endpoint === '/wallet/conversion/quote').length, quotesSent);
       const before = await snapshot(); await page.locator('#conversion-amount').fill('2.5'); await page.getByRole('button', { name: 'Рассчитать', exact: true }).click();
-      await page.locator('[data-conversion-quote]').waitFor(); assert.equal(await snapshot(), before); assert((await page.locator('[data-conversion-quote]').innerText()).includes('0%'));
+      await page.locator('[data-conversion-quote]').waitFor(); assert.equal(await snapshot(), before);
+      const summary = await page.locator('[data-conversion-quote]').innerText();
+      // Both legs before confirmation: what leaves (2.5 USD) and what arrives (2 EUR at 1.25), the market rate, 0% fee.
+      for (const text of ['Спишется', '2.5 USD', 'Получите', '2 EUR', '1 USD = 0.8 EUR', '0%']) assert(summary.includes(text), `quote summary lacks «${text}»: ${summary}`);
       const file = path.join(out, 'conversion-preview-1440.png'); await page.screenshot({ path: file, fullPage: true }); screenshots.push(file);
+      const reads = () => requests.filter(r => r.endpoint === '/wallet/overview').length;
+      const readsBefore = reads();
       await page.getByRole('dialog').getByRole('button', { name: 'Конвертация', exact: true }).click();
       await page.getByText('Конвертация выполнена', { exact: true }).waitFor(); assert.notEqual(await snapshot(), before);
+      // Balances refresh by themselves after success: the wallet re-reads its overview, no manual reload.
+      for (let i = 0; i < 50 && reads() === readsBefore; i += 1) await page.waitForTimeout(100);
+      assert(reads() > readsBefore, 'the wallet did not re-read its balances after the conversion');
       await page.getByRole('dialog').getByRole('button', { name: 'Закрыть', exact: true }).last().click();
     });
     await check('fiat to crypto, ambiguous delivery and page reload recover receipt without a second debit', async () => {
@@ -92,13 +127,13 @@ exports.run = async ({ origin, token, prisma, user, out }) => {
       assert(!(await page.locator('tbody').last().innerText()).includes('500'));
       await page.evaluate(() => localStorage.setItem('exchange_hide_balance', '0'));
       activityFailed = true; await page.reload(); await page.getByRole('button', { name: 'Orders', exact: true }).click();
-      await page.getByText('Часть истории недоступна. Показаны только загруженные операции', { exact: true }).waitFor();
+      await page.getByText('Показаны не все операции: часть истории не загрузилась. Обновите страницу', { exact: true }).waitFor();
       assert((await page.locator('tbody').last().innerText()).includes('USDT')); activityFailed = false;
     });
     await check('quote feed failure cannot cause financial request', async () => {
       await page.getByRole('button', { name: 'Обзор', exact: true }).click(); assetsFailed = true;
       const count = requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length;
-      await open(); await page.getByText('Котировка недоступна. Попробуйте позже', { exact: true }).waitFor();
+      await open(); await page.getByText('Не удалось рассчитать обмен. Попробуйте ещё раз', { exact: true }).waitFor();
       assert.equal(requests.filter(r => r.endpoint === '/wallet/conversion/confirm').length, count);
     });
     assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);

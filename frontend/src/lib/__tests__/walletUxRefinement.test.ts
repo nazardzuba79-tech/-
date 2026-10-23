@@ -646,6 +646,9 @@ test.each([
   [wallet + 'format.ts', '2ffab4fe344b95d04379ac3a85663ffde5a94cf5fbe171a80973c67494d846a0'],
   [wallet + 'TransferModal.tsx', '27eb01d9c3404b3134e9fbfe7622b4f6c2e69ffbd40d3e6824f919c8c7f856b3'],
   [wallet + 'ui.tsx', '304d71b9ab5a64d3d92c301bb42a9faf277647c840e38e923014e513a7b50f33'],
+  // Re-pinned 2026-10-23 for the reviewed Wallet Conversion history (adjustment/conversion rows, string decimals):
+  // the whole file now, as the typography reversal above no longer applies to its changed rows.
+  [wallet + 'TransactionHistory.tsx', 'e043298701b504be26441b88e75e7b5bbcaf3df4d800bd9cd61d0a600a24b277'],
   ['src/services/PortfolioPerformanceEngine.ts', '7df2bd63857e0f710d020caaabcdc7b42f3269d8949ae03e908251562ab523b6'],
   ['src/api/routes/portfolio.ts', '3b4708bd2376dfd12d359645f866853f00f36a8967d104c1fec775f31dfdd051'],
 ])('preserves unchanged financial/data/format/modal source %s exactly', (file, hash) => {

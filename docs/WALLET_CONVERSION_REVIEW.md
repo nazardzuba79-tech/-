@@ -1,116 +1,101 @@
-# Funded wallet conversion and customer activity — review only
+# Wallet Conversion — integration candidate, financial review, activation
 
-Owner decision: **0% commission**, automatic last market trade price. This is
-an internal conversion of existing **available Funding/Spot Balance**, not a
-bank/card payout, blockchain transfer or external venue order. Existing manual
-balance credits and confirmed deposits land in this same ledger. Locked funds,
-DemoBalance, synthetic/managed listing assets and native simulation funds are
-not admission sources. No migration, production write, merge or deploy performed.
+Owner decision: **0% VOLTEX fee**. An internal conversion of existing **available Funding/Spot
+`Balance`**, not a bank/card payout, blockchain transfer or external venue order. Locked funds,
+`DemoBalance`, synthetic/managed listing assets and native simulation funds are never a source or a
+destination. **Default OFF on the server and in the frontend.** No migration, deploy or production write.
 
-## Price and admission
+Sources: Codex #478 (`fa81df84`) → reconciliation #543 (`d800233c`) → this candidate, rebuilt on
+main `9265e997` (2026-10-23) with the review fixes below.
 
-- Reuse the existing Kraken spot feed and freshness metadata, no new provider,
-  credentials, polling, cron or network client. Use actual USD pairs, inverse
-  fiat pairs where available; USD is the numeraire. Ignore `/USDT` mirror aliases.
-- Stablecoins require their actual USD market quote; do not assume a 1:1 peg.
-- Quote age at most 15 seconds; stale, future, missing or invalid quotes fail
-  closed. No automatic repricing: if either price changes before confirmation,
-  the user must calculate and explicitly confirm a new preview.
-- Supported assets are discovered from this feed. Do not promise every fiat or
-  crypto currency in the Login banner. Unpriced assets cannot be converted.
-- Exact decimal strings, isolated decimal context, destination rounded down
-  once to the existing ledger's 18 places. Fee exactly zero. No global financial
-  formula change; old crypto/stablecoin portfolio valuation policy stays intact.
+## Price: market bid / ask, never the last trade
 
-Price semantics: [official ticker API](https://docs.kraken.com/api-reference/market-data/get-ticker-information)
-(`c[0]` last trade), [spot pairs](https://docs.kraken.com/api-reference/market-data/get-tradable-asset-pairs).
-The cache timestamp describes feed freshness, not guaranteed recent trading in
-every instrument. This is a last-trade conversion as requested, not executable
-bid/ask depth or slippage assurance.
+- Existing Kraken spot feed and its freshness metadata (no new provider, credential, poller or cron).
+  The quote **sells the source at the market's best bid and buys the destination at its best ask**
+  (USD per unit; inverse fiat pairs such as USD/CHF are inverted side-correctly). A 0% fee therefore
+  never removes the market spread, and a round trip can never return more than it started with
+  (unit and PostgreSQL tests: USD→USDT→USD 5 → 5.01002 → 4.99).
+- A crossed book (bid above ask) or one wider than 2% is not admitted. Stablecoins use their real USD
+  book, never a 1:1 assumption. `/USDT` mirror pairs are ignored.
+- Feed older than 15 s, from the future, missing or invalid: fail closed (`PRICE_UNAVAILABLE`, 503).
+  No automatic repricing: if the bid or ask moved before confirmation, `QUOTE_CHANGED`.
+- The cache timestamp is feed freshness, not an executable depth guarantee: this is a top-of-book
+  conversion, not slippage-protected size. See *Risks* — liquidity is an activation prerequisite.
 
-## Settlement and recovery
+## Admission and precision (server-side)
 
-Quote preview is server-owned and bound to user/intent/prices in AuditLog; it
-does **not** reserve or move funds. Explicit confirmation serializes conversion
-attempts per user with a transaction advisory lock, performs conditional atomic
-source debit and destination credit through existing WalletMutation, then writes
-one durable `WALLET_CONVERTED` receipt in that same transaction. Existing other
-writers retain their conditional atomic updates. Any failure rolls back both legs.
+- Only assets on `WALLET_CONVERSION_ASSETS` convert — default `USD:2,EUR:2,USDT:6,USDC:6,BTC:8,ETH:18`
+  (`ASSET:decimal places`). A Kraken price alone is not enough (the feed lists hundreds of instruments
+  the wallet does not support). Test/managed listing symbols (VTA, NRX, AITH, published listings) can
+  never be configured or converted. A malformed list keeps conversion off and logs why.
+- An amount with more decimals than the source keeps is refused (`0.001 USD`, 9 BTC decimals). The result
+  is rounded **down once** to the destination's places (never up); a result that rounds to zero is refused.
+- An admin-blocked account (`User.blockedAt`) is refused at quote and again inside the confirmation
+  transaction — also with a session issued before the block (403 `ACCOUNT_BLOCKED`).
 
-The unique receipt `conversion:<quote UUID>` makes retries idempotent. Customer
-receipt reads are owner-filtered and work during price outages. The UI stores
-only the pending opaque UUID before sending; storage failure prevents submission.
-Timeout is **unknown**, not failure: new conversion is blocked, with explicit
-receipt lookup or retry of the same UUID. No automatic retry. A null receipt
-alone does not prove the original request failed.
+## Settlement, idempotency, recovery
 
-Quote and confirm POSTs are authenticated and rate-limited (20/minute/user).
-Legacy/revoked sessions and pending-2FA tokens use unchanged requireAuth.
+- The quote is server-owned in `AuditLog` (`WALLET_CONVERSION_QUOTED`), bound to user, assets, amounts and
+  both prices; it reserves nothing. The browser sends only the quote ID (strict schema): it cannot change
+  an amount, price or asset.
+- Confirmation: per-user `pg_advisory_xact_lock`, re-check of receipt, expiry, admission, block and
+  prices, then the conditional source debit and the destination credit through the existing
+  `mutateSpotBalance`, and one `WALLET_CONVERTED` receipt with the unique ID `conversion:<quote UUID>` —
+  all in **one** PostgreSQL transaction. Any failure (receipt insert, destination write, block) rolls back
+  both legs. Other writers (orders, withdrawals, transfers, admin adjustments) keep their conditional
+  atomic updates; a race can never overdraw (PostgreSQL test with 10 conversions + 3 withdrawals).
+- Retries with the same quote ID return the same receipt; a lost response is recovered from
+  `GET …/receipt/:quoteId` (also with the feed down, also from a new service instance). The UI stores the
+  pending ID **before** sending, never auto-retries, and blocks a new conversion until the outcome is known.
+- A deadlock or serialization abort with another writer rolls the whole transaction back; the client sees
+  an unknown outcome and retries the SAME ID safely.
 
-## Activity
+## Interface
 
-Existing deposit, withdrawal and fill history remains. An additive owner-filtered
-read shows real `BALANCE_ADJUSTED` credits/debits and durable conversions once;
-no Demo, quote previews, admin identity/reason or fabricated historical entries.
-Each source is bounded; the existing UI displays its most recent 50 results.
-Partial source outage is explicitly shown and does not erase loaded deposits.
-Seven languages, decimal formatting and hidden-balance privacy are preserved.
+Wallet → Конвертация (overview and portfolio strip), seven languages. Before confirmation the user sees
+what is debited, what is received, the effective rate (bid/ask), 0% fee and how the rate is formed. Amounts
+finer than the asset's places are refused in the form. Errors say what happened and what to do (no
+«unavailable» wording). After success the balances re-read by themselves and the history shows the
+conversion once (debit and credit legs). Admin reasons/identities, Demo activity and quote previews never
+appear in customer history.
+
+## Activation (both switches, separately approved) and rollback
+
+1. Owner approval of this code, of the asset list, and of the liquidity/treasury policy (see *Risks*).
+2. API: set `WALLET_CONVERSION_ENABLED=true` (and, if needed, `WALLET_CONVERSION_ASSETS`) on the API
+   container and restart **only the API**. Check: `POST /api/v1/wallet/conversion/quote` without a token
+   → 401; with an owner test session and a tiny amount → a quote; the logs show no
+   `[wallet-conversion] … invalid` line.
+3. Frontend: a build with `VITE_WALLET_CONVERSION_ENABLED=true`, published only after step 2 is verified.
+   The frontend flag alone activates nothing: without the server flag every `/wallet/conversion/*` is 404.
+4. Monitor `AuditLog` actions `WALLET_CONVERSION_QUOTED` / `WALLET_CONVERTED` and the treasury positions.
+
+**Rollback:** unset `WALLET_CONVERSION_ENABLED` and restart the API → all conversion routes 404 at once
+(history stays readable); then republish the frontend without the flag. Applied conversions remain on the
+ledger with their receipts; nothing is reversed automatically, and no database restore is ever part of a
+rollback.
+
+## Risks and open decisions (not code defects; production NO-GO until decided)
+
+- **Liquidity / treasury:** settlement is internal accounting. Converting USD into BTC creates a BTC
+  obligation the treasury must actually hold (withdrawals). There is no inventory limit, exposure
+  monitoring or hedging procedure yet — an owner policy decision, not invented here.
+- **Size limits:** no per-conversion or per-user daily caps exist; top-of-book pricing does not cover size.
+- **Feed coverage:** EUR (and any fiat) needs an actual Kraken book; if absent, the asset is simply not offered.
+- **Quote rows:** each preview writes one `AuditLog` row (rate-limited to 20/min/user); retention is unchanged.
 
 ## Reproduce QA (disposable only)
 
 ```sh
-npm ci --ignore-scripts
-npm ci --ignore-scripts --prefix frontend
-npx prisma generate
-npm run build
-npm run build --prefix frontend
+npm ci --ignore-scripts && npm ci --ignore-scripts --prefix frontend && npx prisma generate
 npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts pg@8.23.1 playwright@1.58.2
-output/wallet-qa-deps/node_modules/.bin/playwright install chromium
-WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 node scripts/test-wallet-conversion-postgres.cjs
+npx jest --runInBand --runTestsByPath src/services/__tests__/WalletConversionService.test.ts frontend/src/lib/__tests__/walletConversion.test.ts
+WALLET_QA_PG_BIN="$(pg_config --bindir)" node scripts/test-wallet-conversion-postgres.cjs   # PostgreSQL only
+(cd frontend && VITE_WALLET_CONVERSION_ENABLED=true npx vite build) && WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 node scripts/test-wallet-conversion-postgres.cjs
+(cd frontend && npx vite build --outDir ../.wallet-off-dist) && WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 WALLET_QA_EXPECT_OFF=1 WALLET_QA_DIST=.wallet-off-dist node scripts/test-wallet-conversion-postgres.cjs
 ```
 
-Linux uses the installed PostgreSQL client/server tools (`pg_config`, `initdb`,
-`pg_ctl`), but not any existing server or cluster. CI verifies those tools first;
-the fixture also puts Unix sockets inside its own temporary directory.
-Windows: additionally install `@embedded-postgres/windows-x64@18.4.0-beta.17`
-in the QA-only prefix and omit `WALLET_QA_PG_BIN`. The runner
-ignores DATABASE_URL, creates a fresh loopback-only temporary PostgreSQL cluster
-and dedicated fixture DB, applies repository migrations **only there**, stops it
-in `finally`, and never starts production index/watchers. Browser uses the real
-production React bundle and real conversion/activity routes on that disposable
-DB; unrelated read endpoints and credited deposit display rows are fixtures.
-External browser network is denied. Reports/screenshots are ignored local QA
-output and CI artifacts, not production delivery evidence.
-
-Acceptance covers concurrency/replay, overspend, reserved funds, precision,
-both directions, price failure/expiry/change, audit and destination failure
-rollback, other-user/auth denials, lost-response recovery, owner-only activity,
-responsive 1920/1440/1366/430/390/360/320 and partial history outage.
-
-## Rollout boundary
-
-This PR requires a coordinated backend + frontend release and final owner
-approval. Until the new backend is present, conversion must remain unavailable
-(no fabricated success), while ordinary deposit history continues with a partial
-activity warning. Before any later rollout recheck exact main/head/CI, financial
-review, database schema compatibility and actual active financial writers.
-Existing migration/operational release procedures still apply. No server access,
-settings changes, production migration/audit, real financial QA or automatic
-rollout is authorized by this implementation task. OTC policy remains unchanged.
-
-## Feature activation — explicit opt-in, default OFF
-
-This feature debits and credits the **real** Funding/Spot `Balance` ledger.
-`WALLET_CONVERSION_ENABLED=true` must be set explicitly on the deployed API;
-without it, all `/wallet/conversion/*` paths return 404, with neither quote
-creation nor balance writes. Existing read-only `/wallet/activity` remains
-available. The frontend independently requires a **build-time**
-`VITE_WALLET_CONVERSION_ENABLED=true`. Without that flag the existing Convert
-buttons remain visible but disabled and the ConversionModal is not mounted.
-
-Neither flag implies or authorizes the other. The GitHub Action enables the
-frontend flag only for its **disposable PostgreSQL/browser acceptance build**
-(not deployable production output) and separately tests the default-OFF API
-with real PostgreSQL. Production use requires another explicit owner-approved
-coordinated backend/frontend release, independent financial review and
-pricing/liquidity/rights clearance. No activation or deployment in this Draft.
+The runner ignores `DATABASE_URL`, starts a new loopback-only temporary PostgreSQL cluster with its own
+socket directory, applies the repository migrations **only there**, and stops it in `finally`. The browser
+uses the real production React bundle and the real conversion/activity routes on that database; unrelated
+reads are fixtures; outbound network is denied. Nothing touches production.

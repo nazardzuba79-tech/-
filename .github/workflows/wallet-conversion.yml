@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'src/services/WalletConversionService.ts'
+      - 'src/services/WithdrawalService.ts'
       - 'src/services/WalletPortfolioService.ts'
       - 'src/services/WalletMutation.ts'
       - 'src/services/BalanceAdjustmentService.ts'
@@ -71,6 +72,16 @@ jobs:
       - name: Real disposable PostgreSQL and network-denied browser acceptance
         env:
           WALLET_QA_BROWSER: '1'
+        run: node scripts/test-wallet-conversion-postgres.cjs
+      # The same checks against a production-style build WITHOUT the flag: Convert stays inert and asks nothing.
+      - name: Frontend build without the conversion flag (default OFF)
+        run: npx vite build --outDir ../.wallet-off-dist --emptyOutDir
+        working-directory: frontend
+      - name: Default-OFF build in the browser on the same disposable PostgreSQL
+        env:
+          WALLET_QA_BROWSER: '1'
+          WALLET_QA_EXPECT_OFF: '1'
+          WALLET_QA_DIST: .wallet-off-dist
         run: node scripts/test-wallet-conversion-postgres.cjs
       - uses: actions/upload-artifact@v4
         if: always()

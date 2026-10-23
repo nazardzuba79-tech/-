@@ -15,11 +15,22 @@ describe('wallet conversion UI safety boundaries', () => {
     expect(walletPage).toContain('{WALLET_CONVERSION_ENABLED && <ConversionModal');
     expect(overview).toContain('disabled={!onConvert}');
     expect(strip).toContain('disabled={!onConvert}');
+    // Switched off, the button is simply inactive: no «not available» note (owner, 2026-10-22, PR #582).
+    for (const source of [overview, strip, walletPage]) expect(source).not.toMatch(/convertUnavailable|title=\{!onConvert/);
   });
   test('quote and confirmation are separate explicit actions; zero fee and decimal strings', () => {
     expect(modal).toContain('api.quoteConversion({ fromAsset: from, toAsset: to, amount })');
     expect(modal).toContain('api.confirmConversion(id)');
     expect(modal).toContain('wallet.conversion.fee'); expect(modal).toContain('0%');
+    // Debit and credit are both shown before confirmation; the rate is the market rate of the two USD prices.
+    expect(modal).toContain("label={t('wallet.conversion.pay')} value={`${quote.fromAmount} ${quote.fromAsset}`}");
+    expect(modal).toContain("label={t('wallet.conversion.receive')} value={`${quote.toAmount} ${quote.toAsset}`}");
+    expect(modal).toContain('new BigNumber(quote.fromPriceUsd).div(quote.toPriceUsd)');
+    // An amount finer than the source asset keeps is refused before any request (the server refuses it too).
+    expect(modal).toContain('(new BigNumber(amount).decimalPlaces() ?? 0) > source.scale');
+    expect(modal).toMatch(/const valid = [^;]*!tooPrecise/);
+    // A blocked account reads as a refusal, never as an unknown outcome that invites a retry.
+    expect(modal).toMatch(/'ACCOUNT_BLOCKED'\]\.includes\(code\)/);
     expect(modal).not.toMatch(/parseFloat|parseInt|\bNumber\(amount\)|setInterval|setTimeout/);
   });
   test('persist pending ID before sending; recovery uses receipt and SAME ID, no automatic retry', () => {
@@ -41,8 +52,15 @@ describe('wallet conversion UI safety boundaries', () => {
   test('all seven languages explain zero-fee funding conversion and ambiguous outcomes', () => {
     const dictionaries = readDictionaries();
     for (const dict of Object.values(dictionaries)) {
-      for (const key of ['wallet.conversion.title', 'wallet.conversion.unknown', 'wallet.conversion.check', 'wallet.conversion.retry', 'wallet.txCredit', 'wallet.txDebit', 'wallet.txPartial']) expect(dict[key]).toBeTruthy();
+      for (const key of ['wallet.conversion.title', 'wallet.conversion.unknown', 'wallet.conversion.check', 'wallet.conversion.retry', 'wallet.conversion.pay',
+        'wallet.conversion.quoteFailed', 'wallet.conversion.denied', 'wallet.txCredit', 'wallet.txDebit', 'wallet.txPartial']) expect(dict[key]).toBeTruthy();
       expect(dict['wallet.conversion.subtitle']).toContain('0%');
+      expect(dict['wallet.conversion.places']).toContain('{asset}'); expect(dict['wallet.conversion.places']).toContain('{places}');
+      expect(dict['wallet.conversion.unavailable']).toBeUndefined();
+    }
+    // Errors say what happened and what to do — never that the product is «unavailable».
+    for (const [lang, word] of [['en', /unavailable/i], ['ru', /недоступн/i], ['es', /disponible/i], ['zh', /不可用/], ['ja', /できません。後で/], ['ko', /수 없습니다\. 나중/], ['hi', /उपलब्ध नहीं/]] as const) {
+      for (const key of ['wallet.conversion.quoteFailed', 'wallet.txPartial']) expect(dictionaries[lang][key]).not.toMatch(word);
     }
   });
 });
