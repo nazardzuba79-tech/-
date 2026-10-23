@@ -1,0 +1,59 @@
+name: TYVN current public visibility (GET-only)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/tyvn-live-visibility-20261023.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  public-get-only:
+    if: github.event.pull_request.draft == true && github.head_ref == 'review/tyvn-live-visibility-20261023'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Read current API and Worker public state without credentials or writes
+        shell: bash
+        run: |
+          node <<'NODE'
+          const urls = {
+            apiHealth: 'https://api.voltextech.net/health',
+            listings: 'https://market.voltextech.net/market/listings',
+            tyvnPublic: 'https://market.voltextech.net/market/test-assets/TYVN-USDT',
+          };
+          async function read(name, url) {
+            try {
+              const response = await fetch(url, {
+                method: 'GET',
+                headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
+                signal: AbortSignal.timeout(12000),
+              });
+              let json = null;
+              try { json = await response.json(); } catch { /* report HTTP without leaking body */ }
+              return { name, status: response.status, json };
+            } catch (error) { return { name, status: 'NETWORK_ERROR', error: String(error.cause?.code || error.name || 'UNKNOWN') }; }
+          }
+          (async () => {
+            const [health, catalogue, asset] = await Promise.all(Object.entries(urls).map(([name, url]) => read(name, url)));
+            const records = Array.isArray(catalogue.json?.assets) ? catalogue.json.assets : null;
+            const tyvn = records?.filter(a => a?.symbol === 'TYVN' || a?.pair === 'TYVN/USDT') ?? [];
+            const aith = records?.some(a => a?.symbol === 'AITH' || a?.pair === 'AITH/USDT') ?? null;
+            const publicStatus = tyvn.length ? 'PRESENT' : records ? 'ABSENT' : 'UNKNOWN';
+            const out = {
+              api: { status: health.status, commit: health.json?.commit ?? null, error: health.error },
+              worker: { status: catalogue.status, revision: catalogue.json?.revision ?? null,
+                totalPublic: records?.length ?? null, AITH: aith, TYVN: publicStatus, error: catalogue.error },
+              tyvn: tyvn.map(a => ({ pair: a.pair, listingAt: a.listingAt, countdown: a.countdown,
+                listingArmed: a.listingArmed, tradable: a.isTradable ?? a.tradable ?? null, phase: a.state?.phase ?? null })),
+              tyvnEndpoint: { status: asset.status, symbol: asset.json?.symbol ?? null,
+                countdown: asset.json?.countdown ?? null, error: asset.error },
+            };
+            console.log('TYVN_READ_ONLY_RECEIPT ' + JSON.stringify(out));
+            if (publicStatus !== 'PRESENT' || asset.status !== 200) {
+              console.error('TYVN is NOT confirmed visible through the actual production public edge. Do not assume the timer is active.');
+              process.exitCode = 1;
+            }
+          })().catch(error => { console.error(error?.message ?? error); process.exitCode = 1; });
+          NODE
