@@ -6,6 +6,7 @@ FROM ${BASE_IMAGE}
 ARG RELEASE_SHA
 ENV DEMO_SPOT_ENABLED=false \
     DEMO_LIQUIDITY_ENABLED=false \
+    DEMO_WITHDRAWAL_GUARD_ENABLED=false \
     VOLTEX_RELEASE_SHA=${RELEASE_SHA}
 LABEL org.opencontainers.image.revision=${RELEASE_SHA} \
       voltex.release.scope="demo-spot-liquidity-only" \

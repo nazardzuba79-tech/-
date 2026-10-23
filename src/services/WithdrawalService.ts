@@ -2,8 +2,20 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
+import { demoWithdrawalGuardEnabled } from './demoSpotAccess';
 
 export class WithdrawalRequestError extends Error {}
+
+/** The demo-funds guard refuses an unheld (demo-valued) request's approval or payout (see demoWithdrawalGuardEnabled). */
+export class DemoFundsNotWithdrawableError extends WithdrawalRequestError {
+  readonly code = 'DEMO_FUNDS_NOT_WITHDRAWABLE';
+  constructor() { super('Demo funds are not withdrawable'); }
+}
+
+export interface WithdrawalServiceOptions {
+  /** Whether the demo-funds guard is on; read per call (default: demoWithdrawalGuardEnabled()). */
+  demoFundsGuard?: () => boolean;
+}
 
 export interface WithdrawalResult {
   id: string;
@@ -38,7 +50,15 @@ export const UNHELD_CLAIMING_STATUSES = ['PENDING', 'APPROVED', 'SENT'];
  * lock: see requestUnheldWithdrawal.
  */
 export class WithdrawalService {
-  constructor(private prisma: PrismaClient) {}
+  private readonly demoFundsGuard: () => boolean;
+  constructor(private prisma: PrismaClient, options: WithdrawalServiceOptions = {}) {
+    this.demoFundsGuard = options.demoFundsGuard ?? (() => demoWithdrawalGuardEnabled());
+  }
+
+  /** With the demo-funds guard on, an unheld request (valued from demo funds) is never approved or paid. */
+  private refuseDemoFunds(withdrawal: { balanceHeld: boolean | null }) {
+    if (withdrawal.balanceHeld === false && this.demoFundsGuard()) throw new DemoFundsNotWithdrawableError();
+  }
 
   async requestWithdrawal(params: {
     userId: string;
@@ -113,6 +133,8 @@ export class WithdrawalService {
     amount: string;
     available: string;
   }): Promise<WithdrawalResult> {
+    // Demo-valued: with the demo-funds guard on, nothing is filed (the route refuses first as well).
+    if (this.demoFundsGuard()) throw new DemoFundsNotWithdrawableError();
     if (isTestAssetPairOrSymbol(params.asset)) throw new WithdrawalRequestError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const amount = new BigNumber(params.amount);
     if (!amount.isFinite() || amount.isLessThanOrEqualTo(0)) {
@@ -172,6 +194,7 @@ export class WithdrawalService {
   async approveWithdrawal(params: { withdrawalId: string; performedByAdminId: string }): Promise<WithdrawalResult> {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['PENDING']);
+      this.refuseDemoFunds(withdrawal);
 
       const updated = await tx.withdrawal.update({
         where: { id: withdrawal.id },
@@ -196,6 +219,7 @@ export class WithdrawalService {
   async markSent(params: { withdrawalId: string; performedByAdminId: string; txHash: string }): Promise<WithdrawalResult> {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['APPROVED']);
+      this.refuseDemoFunds(withdrawal);
 
       // An unheld request moved nothing, so there is no lock to release.
       if (withdrawal.balanceHeld !== false) {

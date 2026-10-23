@@ -7,4 +7,5 @@ services:
       VOLTEX_RELEASE_SHA: ${DEMO_RELEASE_SHA:?Exact reviewed release commit required}
       DEMO_SPOT_ENABLED: "false"
       DEMO_LIQUIDITY_ENABLED: "false"
+      DEMO_WITHDRAWAL_GUARD_ENABLED: "false"
     command: ["node", "dist/index.js"]

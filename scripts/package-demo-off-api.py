@@ -8,11 +8,11 @@ import tarfile
 
 root = pathlib.Path(__file__).resolve().parents[1]
 base = '6f082a98d0c97c28215e6c5c8056b786d6fa6c99'
-claude = 'fe4a5f2c5373469f405920f7596ba56104316d69'
+claude = 'a93b2d3c1f5a8816e0135a5ba6ab6e555d9b342f'
 runtime = [
-    'api/routes/demoTrading', 'api/routes/orders', 'api/routes/withdrawals', 'index',
+    'api/routes/demoTrading', 'api/routes/orders', 'api/routes/withdrawals', 'api/routes/adminWithdrawals', 'index',
     'services/AdminUserDeletionService', 'services/DemoLiquidity', 'services/DemoTradingService',
-    'services/OrderService', 'services/SpotBookTransaction', 'services/demoSpotAccess',
+    'services/OrderService', 'services/SpotBookTransaction', 'services/demoSpotAccess', 'services/WithdrawalService',
 ]
 def git(*args):
     return subprocess.check_output(['git', *args], cwd=root)
@@ -29,7 +29,7 @@ out = root/'output'/'demo-off-release'; out.mkdir(parents=True,exist_ok=True)
 archive = out/('api-overlay-'+sha+'.tar')
 manifest = {'baseApi':base,'releaseSha':sha,'claudeHead':claude,
             'baseImage':'sha256:b81b093eb9529db8b68a9aa3c668eb4f3282764741cd03efb431cdfe5b96d012',
-            'flags':{'DEMO_SPOT_ENABLED':'false','DEMO_LIQUIDITY_ENABLED':'false','VITE_DEMO_SPOT_ENABLED':'false'},
+            'flags':{'DEMO_SPOT_ENABLED':'false','DEMO_LIQUIDITY_ENABLED':'false','DEMO_WITHDRAWAL_GUARD_ENABLED':'false','VITE_DEMO_SPOT_ENABLED':'false'},
             'protectedSourceUnchanged':True,'migrationFilesIncluded':0,'files':[]}
 with tarfile.open(archive,'w',format=tarfile.PAX_FORMAT) as tar:
     recipe=(root/'release/demo-off/Dockerfile').read_bytes()

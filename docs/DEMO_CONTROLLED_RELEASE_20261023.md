@@ -3,8 +3,8 @@
 ## Immutable inputs
 
 - Main reviewed: `f7aa444851060d19aaad46d56a9ec2d1895f9129`.
-- #596: `319e5bf6277faef215409a3fd8d183cdbe884cf5`, 36/36 successful check runs.
-- #599: `fe4a5f2c5373469f405920f7596ba56104316d69`, 17/17 successful check runs; stacked on the exact #596 head.
+- #596: `2f2f19a8685bf774efb64512b74d6262bc746fa7`, final guard-switch update; exact-head CI must finish.
+- #599: `a93b2d3c1f5a8816e0135a5ba6ab6e555d9b342f`, stacked on the exact updated #596 head; exact-head CI must finish. Earlier `319e5bf6` / `fe4a5f2c` checks were 36/36 and 17/17, NOT evidence for these new heads.
 - Production API/base: `6f082a98d0c97c28215e6c5c8056b786d6fa6c99`.
 - Production/rollback image: `sha256:b81b093eb9529db8b68a9aa3c668eb4f3282764741cd03efb431cdfe5b96d012`.
 - Read-only #604 tool: `bb66b7bf46bb67b4426c9c81f1e3b02d3d3c37ca`; script SHA256 `e5e2bae146f5761e1e7463bac45d93982da2b4d490c299999ba62f87feb0f8e1`.
@@ -24,9 +24,13 @@ Private identities and balances were saved with Windows DPAPI CurrentUser encryp
 
 Owner must approve keeping both dual-ledger accounts on their ordinary terminal while ordinary funds exist. Demo balances are not moved, reset or reclassified. Existing ordinary Balance funds remain potentially withdrawable under the existing ordinary policy.
 
-## Financial change that is NOT flag-gated
+## Financial guard: updated by Claude during this preparation
 
-#596 makes a native Cross wallet backed by DemoBalance return an empty withdrawal asset list and reject NEW withdrawal requests with `403 DEMO_FUNDS_NOT_WITHDRAWABLE`, even with Demo Spot OFF. The opened native ADMIN account above is potentially affected. Existing claims are not cancelled; the actual preflight found none pending/approved. This policy needs explicit owner approval before release. Disabling demo flags does NOT undo this policy; API-image rollback does.
+The final #596 update removes the earlier always-on Cross-withdrawal policy. `DEMO_WITHDRAWAL_GUARD_ENABLED` is OFF by default. The initial release pins it false together with Demo Spot/Liquidity and the frontend flag, preserving the current Cross request/approval flow.
+
+The guard is enabled by its own flag OR by `DEMO_SPOT_ENABLED=true`; it cannot be disabled while Demo Spot is active. With it ON, demo-valued Cross wallets show no withdrawable assets, new unheld requests are refused, and existing unheld PENDING/APPROVED requests cannot be approved or marked sent (only rejected). Held ordinary Balance requests are unaffected. No existing request is automatically rewritten or cancelled. This activation policy needs owner approval; the actual read-only preflight found no old unheld pending/approved claims.
+
+CRITICAL: after Demo Spot has ever been enabled, pin the independent guard TRUE through any rollback of Demo Spot or Liquidity. Do NOT revert to a pre-guard API image then: it would restore the old demo-valued payout path. Post-activation rollback must stay on a guard-capable API; no DB restoration or ledger rewriting.
 
 Ordinary `/orders` and `/orders/oco` gain optional account-scoped request-ID replay safety, and SpotBookTransaction is generalized with its ordinary default preserved. Those are reviewed real-Spot code changes, not a claim that flags OFF make every byte of API behavior identical.
 
@@ -44,15 +48,15 @@ Ordinary `/orders` and `/orders/oco` gain optional account-scoped request-ID rep
 
 Do not deploy full main as the API: relative to the live API, it also contains Stocks/Futures/native funding/history changes and TWO extra migrations. Those are outside this task. Do not use the root Dockerfile: its CMD runs `prisma migrate deploy` automatically.
 
-This release branch starts at the exact live API commit and carries only the #596/#599 API delta. The nine Demo/ordinary-service modules are exact #599 source; `src/index.ts` applies only demo wiring and deliberately retains the production Stocks/Futures wiring. The production schema, migrations, dependency locks, private trading, Futures, listings, test markets and TYVN config remain byte-identical to the production base. Frontend is NOT copied into this API branch.
+This release branch starts at the exact live API commit and carries only the #596/#599 API delta. The eleven Demo/ordinary-service/router modules are exact final #599 source; `src/index.ts` applies only demo wiring and deliberately retains the production Stocks/Futures wiring. The production schema, migrations, dependency locks, private trading, Futures, listings, test markets and TYVN config remain byte-identical to the production base. Frontend is NOT copied into this API branch.
 
 Prepared files:
 
-- `release/demo-off/Dockerfile`: inherit exact production image; copy ONLY the ten changed runtime JS modules plus their maps, never the whole `dist`; no network/install/schema operation; direct Node CMD; both flags explicitly false.
-- `release/demo-off/compose.template.yaml`: override ONLY `api-production` image, exact release SHA and the two false flags. All existing Compose files, mounts, secrets, healthcheck, network and DB stay in place.
-- `scripts/package-demo-off-api.py`: requires committed source, compares the nine service/router modules with exact #599 source, verifies all protected source trees are unchanged, compiles and creates a SHA256-manifested minimal context. No SSH, DB connection or deployment. The archive contains Dockerfile + 20 emitted JS/map files, no secrets, schema or migration.
+- `release/demo-off/Dockerfile`: inherit exact production image; copy ONLY the twelve changed runtime JS modules plus their maps, never the whole `dist`; no network/install/schema operation; direct Node CMD; all three server flags explicitly false.
+- `release/demo-off/compose.template.yaml`: override ONLY `api-production` image, exact release SHA and the three false flags. All existing Compose files, mounts, secrets, healthcheck, network and DB stay in place.
+- `scripts/package-demo-off-api.py`: requires committed source, compares the eleven service/router modules with exact final #599 source, verifies all protected source trees are unchanged, compiles and creates a SHA256-manifested minimal context. No SSH, DB connection or deployment. The archive contains Dockerfile + 24 emitted JS/map files, no secrets, schema or migration.
 
-After an explicitly approved, committed source is fixed, build an INACTIVE image using `--network=none --pull=false`, exact base image and exact `RELEASE_SHA`. Compare image config (entrypoint/user/workdir/mount assumptions), Prisma schema/client and protected modules with current production. Render Compose to private memory and verify its ONLY changes are the agreed API image/release SHA/false flags/direct Node command. No `up` at preparation time.
+After an explicitly approved, committed source is fixed, build an INACTIVE image using `--network=none --pull=false`, exact base image and exact `RELEASE_SHA`. Compare image config (entrypoint/user/workdir/mount assumptions), Prisma schema/client and protected modules with current production. Render Compose to private memory and verify its ONLY changes are the agreed API image/release SHA/three false flags/direct Node command. No `up` at preparation time.
 
 Immediately before an approved switch, use the existing backup mechanism and independent restore check; preserve the current image/Compose chain as rollback. Reconfirm only the relevant data safety gates. Update `api-production` only, no dependencies/build/pull/migrations. Verify API commit/health, DB readiness and unchanged DB container. Run synthetic default-OFF admission/authorization/withdrawal regression without real orders or financial writes. A real finance smoke requires a separate synthetic-account approval. Failure stops release and rolls back ONLY API image/config, never restores the production DB over new operations.
 
@@ -63,17 +67,19 @@ Frontend publication is a separately approved last step from the reviewed merged
 1. Owner approves tester identities and their intended ledger. A demo-topup audit grants demo admission; it does not turn an ordinary funded account into a demo-only account. No existing funds are cleared to force eligibility.
 2. Choose a dedicated unblocked USER for liquidity: not ADMIN, not owner/native tester, no ordinary Balance available/reserved. None is created or funded by this preparation.
 3. Approve pairs, inventory and pricing terms: defaults 10 bps spread, 1000 quote units per order, quote age <=10 seconds, reference spread <=100 bps. This is an internal backed counterparty, NOT external venue execution and NOT a guarantee that every MARKET fills.
-4. Credit approved accounts only through existing demo-topup. Turn on server Demo Spot/Liquidity and frontend flag only after approved inventory is present and admin read-only liquidity status is OK.
+4. Credit approved accounts only through existing demo-topup. Set the independent withdrawal guard TRUE first and verify new demo-valued requests and approval/sent paths are refused. Only then turn on Demo Spot/Liquidity and frontend flag after approved inventory is present and admin read-only liquidity status is OK.
 5. Exact-head CI already proves synthetic MARKET BUY/SELL, denied unauthenticated/blocked/unfunded access, retries/concurrency, no minting/cash-out and 1440/390 browsers. Repeat activation smoke only on approved synthetic accounts: backed BUY/SELL, stale/empty inventory fail closed, ordinary ledger unchanged. Never issue external orders or real withdrawals.
-6. Rollback activation by switching flags OFF (API restart/frontend release require approval); inventory and receipts stay intact. This does not revert the separately approved Cross-withdrawal policy.
+6. Rollback activation by switching Demo Spot/Liquidity/frontend OFF, but KEEP `DEMO_WITHDRAWAL_GUARD_ENABLED=true` and a guard-capable API. Inventory and receipts stay intact; no payouts of traded demo funds and no DB restore.
 
 ## Current decision
 
 - Production SQL/preparation: executed read-only; runtime unchanged.
-- Source stack and CI: PASS on recorded PR heads.
+- Source stack: compatible; final exact-head CI is required on the updated heads above.
 - Code-only merge: WAITING FOR OWNER REVIEW and Pages auto-build isolation.
 - Production release / activation: NOT RUN. No merge, deploy, migration, balance change or order was performed.
 
 ## Local restricted-API validation
 
 Backend TypeScript compile PASS using the unchanged production Prisma schema/client. Selected regression: 9 suites / 146 tests PASS (DemoLiquidity, DemoTradingService, demo route, ordinary orders service/route, withdrawal service/route, simulation-only isolation and deletion gate). The first test command included a nonexistent `AdminUserDeletionService.test.ts` path; that invocation was NOT a full PASS. Its 8 actual suites / 144 assertions passed, then the corrected final suite list above passed. #604 mock safety tests also passed 3/3. Exact PR CI additionally ran isolated PostgreSQL and network-denied desktop/mobile tests; those remote results are not claimed as tests of a new production deployment.
+
+After incorporating the FINAL Claude guard update, backend TypeScript compiled again and the expanded final regression passed **10 suites / 173 tests**, including admin withdrawal approval/sent safety, service-level guards, guard OFF preservation, explicit guard ON, and forced guard with Demo Spot ON. Both updated PR heads still need their own final exact-head CI reconciliation; no old green head substitutes for it.
