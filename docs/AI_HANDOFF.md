@@ -6873,3 +6873,12 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - Verified inside `qa-listing-eclv`, now 23/23: preflight clean; create once, equal to the form-made draft; repeat sends no POST; stop on a ZRNTH draft; token never printed.
 - **Live check (public, read-only, 15:46 UTC):** production `market/listings` revision 6 = AITH/USDT (live) + TYVN/USDT (timer running); no ECLV/ZRNTH/ECLAVO/ZORYNTHA. Kraken public pairs (1463): no ECLV/ZRNTH. Drafts and staged listings need an admin session: not checked here (no credentials in this session).
 - **Verified locally:** backend `tsc`; 8 listing suites / 163 tests; `qa-listing-eclv` 23/23. Not done: nothing created, staged, published or started on production; TYVN and finance untouched.
+
+## 2026-10-23 — Claude (session 01EmV3Pt) — PR #602 ECLAVO: phase and timeframe checks (owner queue, priority 1)
+- **Started from** #602 head `2cc2613d` (other Claude session 01QYDaBP: Moscow display, single-draft import tool; exact-head CI 8/8). Config, seed `eclavo-20261103-v1`, DEEP_RECOVERY program, date, opening price, logo and import tool unchanged.
+- **Added (tests and QA only, no product or config change):**
+  - `eclvDraft.test.ts`: every stage ends exactly on its target (0.1092 at 24 h and 48 h, 0.315 at 144 h, 0.2142 at 180 h, 0.435 at 252 h); each stage has rising and falling hourly candles and stays ≤ 0.518; day one keeps the approved >60 % intraday fall; 1m candles are continuous and every five equal their 5m candle.
+  - `qa-listing-eclv.cjs`: at +24 h on desktop the «1m», «5m» and «1h» timeframes are switched through the real workspace controls; each loads its own candles spaced by the interval, within (0, 0.518], closing at 0.1092 (1m 520 / 5m 289 / 1h 25 candles).
+- **Verified locally:** `eclvDraft.test.ts` 7/7; browser QA 24/24 (real Worker in workerd, production bundle, 1440/390), 0 page errors, 0 outbound.
+- **Read-only production check (public):** `market.voltextech.net/market/listings` revision 6 lists only AITH and TYVN; no ECLV/ZRNTH. `api.voltextech.net/api/v1/admin/listings` answers 401 without an admin session.
+- **Blocked (owner/operator):** the production Admin Listings preflight and the one private Draft (`node scripts/eclv-draft-import.cjs` then `--create`) need an admin session token; this session has none. Nothing created, published or started.

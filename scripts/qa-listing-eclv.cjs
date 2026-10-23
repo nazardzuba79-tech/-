@@ -483,6 +483,39 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       }
     }
 
+    await step('after the opening 1440, +24 h: «1m», «5m» and «1h» each load their own candles, spaced by the interval, within (0, 0.518], the last close 0.1092', async () => {
+      const at = AT + DAY, offset = at - Date.now();
+      const page = await newPage(A.origin, 1440, 'user', { offset, now: () => Date.now() + offset });
+      const served = {};
+      page.on('response', async (r) => {
+        const match = /ECLV-USDT\/candles\?interval=([0-9a-z]+)/i.exec(r.url());
+        if (match) served[match[1]] = await r.json().catch(() => null);
+      });
+      await page.goto(`${A.origin}/trade?pair=ECLV%2FUSDT`);
+      const chart = page.locator('.managed-demo-chart');
+      await chart.locator('canvas').first().waitFor({ timeout: 30000 });
+      report.intervals = {};
+      for (const [tf, ms] of [['1m', 60_000], ['5m', 300_000], ['1h', 3_600_000]]) {
+        delete served[tf];
+        // Desktop Spot shows the workspace strip (quick timeframes) with the rest in its timeframe menu.
+        const quick = chart.locator(`[data-cw-tf="${tf}"]`);
+        if ((await quick.count()) && (await quick.first().isVisible())) await quick.first().click();
+        else { await chart.locator('[data-cw-feature="timeframes"]').first().click(); await page.locator(`[data-cw-tf-option="${tf}"]`).click(); }
+        for (let waited = 0; !served[tf] && waited < 15000; waited += 250) await page.waitForTimeout(250);
+        const candles = served[tf] && served[tf].candles;
+        assert.ok(candles && candles.length > 1, `no ${tf} candles were served`);
+        const step = candles[1].time - candles[0].time;
+        assert.ok(step === ms || step === ms / 1000, `${tf} spacing ${step}`);
+        for (let i = 1; i < candles.length; i++) assert.equal(candles[i].time - candles[i - 1].time, step, `${tf} gap at ${i}`);
+        assert.ok(candles.every((c) => c.low > 0 && c.high <= 0.518), `${tf} out of (0, 0.518]`);
+        assert.ok(Math.abs(candles.at(-1).close - 0.1092) < 1e-9, `${tf} last close ${candles.at(-1).close}`);
+        assert.equal(await chart.locator(`[data-cw-tf="${tf}"][aria-pressed="true"], [data-cw-tf-plan][aria-pressed="true"]`).count() > 0, true, `${tf} is not shown as selected`);
+        report.intervals[tf] = { candles: candles.length, high: Math.max(...candles.map((c) => c.high)), low: Math.min(...candles.map((c) => c.low)) };
+        await shot(page, `exchange-open-plus-24h-${tf}-1440.png`);
+      }
+      await page.context().close();
+    });
+
     await step('after every step: no page error, the Worker never called out, only the local Worker A was published and started', async () => {
       assert.deepEqual(report.pageErrors, []);
       assert.equal(report.outbound, 0);
