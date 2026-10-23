@@ -55,7 +55,19 @@ jobs:
                     if(await chartTab.count())await chartTab.click();
                   }
                   const panel=page.locator('.vta-prelisting[data-countdown="running"]');
-                  await panel.waitFor({timeout:25000});
+                  try{await panel.waitFor({timeout:11000});}
+                  catch(error){
+                    const visible=(await page.locator('body').innerText().catch(()=>'' )).slice(0,1100);
+                    await page.screenshot({path:'tyvn-browser-evidence/failure-'+width+'.png',fullPage:false}).catch(()=>{});
+                    console.log('TYVN_BROWSER_DIAGNOSTIC '+JSON.stringify({
+                      width,finalUrl:page.url(),title:await page.title(),visible,
+                      searchCount:await page.locator('.pairs-search input').count(),
+                      preListingCount:await page.locator('.vta-prelisting').count(),
+                      testMarketCount:await page.locator('.vta-countdown').count(),
+                      writes:writes.length,jsErrors:errors.slice(-3)
+                    }));
+                    throw error;
+                  }
                   const timer=panel.locator('.vta-countdown[role="timer"]');
                   await timer.waitFor({timeout:12000});
                   const txt=await panel.innerText();
