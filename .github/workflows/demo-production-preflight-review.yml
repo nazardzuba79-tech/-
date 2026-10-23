@@ -1,0 +1,28 @@
+name: Demo production audit script safety (no production connection)
+on:
+  pull_request:
+    paths:
+      - 'scripts/demo-production-preflight-readonly.cjs'
+      - 'scripts/demo-production-preflight-readonly.test.cjs'
+      - 'docs/DEMO_PRODUCTION_PREFLIGHT.md'
+      - '.github/workflows/demo-production-preflight-review.yml'
+permissions:
+  contents: read
+jobs:
+  review-auditor-only:
+    if: github.event.pull_request.draft == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse syntax
+        run: |
+          node --check scripts/demo-production-preflight-readonly.cjs
+          node --check scripts/demo-production-preflight-readonly.test.cjs
+      - name: Test read-only aggregate behavior without database credentials
+        run: node --test scripts/demo-production-preflight-readonly.test.cjs
