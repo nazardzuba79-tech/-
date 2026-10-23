@@ -130,9 +130,12 @@ Each step needs the owner's separate approval; nothing here is done by this PR. 
        AND NOT EXISTS (SELECT 1 FROM "AuditLog" a WHERE a."userId" = u.id AND a.action = 'DEMO_BALANCE_ADJUSTED')
      ORDER BY u.id, b.asset;
      ```
-3. From then on the admin credits **new** testers only through demo top-up (not «adjust balance» / balance
-   adjustments): a Balance credit is withdrawable by request (BLOCKER 1). Activation is NO-GO unless the owner
-   confirms this rule.
+3. **Owner decision (2026-10-23): new testers are credited only through «Тестовое начисление» (demo top-up)**, never
+   through the Spot balance adjustment, which credits a balance the user can request to withdraw (BLOCKER 1).
+   Accounts credited earlier on `Balance` are **neither moved nor disabled**: they keep the ordinary terminal and
+   ledger, and their `Balance` stays requestable for withdrawal exactly as today. This rule applies to new credits
+   only; it does not reclassify old balances. The admin's Spot adjustment dialog states the rule in one line.
+   Every step from here is still separately approved.
 4. API: set `DEMO_SPOT_ENABLED=true`, restart only the API. Smoke checks with the owner's test accounts, no order:
    `GET /api/v1/demo/spot/access` → a demo-credited tester without ordinary funds `{enabled:true, admitted:true,
    ledger:'demo'}`, an existing Balance tester `ledger:'spot'`, an uncredited account `ledger:'none'` and
@@ -157,8 +160,13 @@ frontend without the flag. No database restore; the request ID is optional, so a
    default-off gate capping each asset's requestable amount at *credited deposits − non-rejected withdrawals* of
    that asset (conservative, testable, no migration; withholds trading gains); (c) a provenance column (migration).
    No global withdrawal change was made.
-2. **Admin UI:** the two credit forms (Balance vs demo) are easy to confuse; clearer labels/confirmation are a
-   separate admin change.
+   **Decided by the owner (2026-10-23): (a), as a rule for new credits** — see *Activation* step 3. Old Balance
+   accounts keep their withdrawable balances; nothing is migrated, faked or disabled.
+2. **Admin UI:** the two credit forms (Balance vs demo) were easy to confuse. The Spot adjustment dialog now says
+   «Тестовым пользователям средства начисляйте через «Тестовое начисление». Средства спотового счёта пользователь
+   может запросить к выводу.» (`frontend/src/pages/admin/AdminBalanceAdjustment.tsx`; the test is
+   `adminTesterCreditPolicy.test.ts`). It is a statement, not a hard block: the Spot adjustment is still needed for
+   real corrections.
 3. **Liquidity (activation blocker, CTO 6361475787):** the demo book holds only testers' orders, and funds alone do
    not make a MARKET order fill. Measured on a disposable PostgreSQL and in the browser (1440, 390), **identically
    on both ledgers** (demo and ordinary `/orders`, a funded account, pair with an empty book):
@@ -176,6 +184,9 @@ frontend without the flag. No database restore; the request ID is optional, so a
    quoting a fresh server-owned reference with spread/size caps, fail-closed on stale quotes, conservation and no
    cash-out — a new financial module, to be proposed as its own scoped PR, not added here. Until one is chosen,
    MARKET orders work only where depth exists.
+   **(b) is now proposed in stacked Draft PR #599** (`docs/DEMO_LIQUIDITY.md`). The quotes are backed only by a
+   dedicated account's demo-credited inventory, never rest, and fail closed on a stale reference. It is default OFF
+   and needs its own approval.
 4. **Futures for credited USERs:** unchanged — the existing native mechanism (`PRIVATE_TRADING_TEST_USER_IDS`).
 5. **Wallet page** shows `Balance`; demo balances are shown in the terminal's assets tab.
 6. **Replay without a request ID** (default build and API-key clients): an identical POST is a second order, as on
