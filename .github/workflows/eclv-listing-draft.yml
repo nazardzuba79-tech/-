@@ -7,6 +7,7 @@ on:
       - 'config/test-markets/eclv-20261103.logo.svg'
       - 'src/services/listings/__tests__/eclvDraft.test.ts'
       - 'scripts/qa-listing-eclv.cjs'
+      - 'scripts/eclv-draft-import.cjs'
       - 'docs/ECLV_LISTING_20261103.md'
       - '.github/workflows/eclv-listing-draft.yml'
 

@@ -15,13 +15,15 @@ const listing = { id:'eclv-candidate-only', version:1, publishedAt:new Date(AT-5
 
 test('candidate is valid, nontrading, UTC-correct, and has an actual compact branded logo', () => {
   expect(draft).toMatchObject({ symbol:'ECLV',name:'ECLAVO',initialPrice:'0.0140',
-    listingAt:'2026-11-03T13:00:00Z',displayTimeZone:'Europe/Kyiv',
+    listingAt:'2026-11-03T13:00:00Z',displayTimeZone:'Europe/Moscow',
     seed:'eclavo-20261103-v1',seedMode:'manual',ownerAllocation:'0',tradable:false });
   expect(RESERVED_LISTING_SYMBOLS.has(draft.symbol)).toBe(false);
   expect(draft.logo).toMatch(/^data:image\/svg\+xml;base64,/);
   expect(draft.logo!.length).toBeLessThan(9000);
   expect(new Date(AT).getUTCDay()).toBe(2);
-  expect(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(AT))).toBe('15:00');
+  // One instant, 13:00 UTC: shown as 16:00 Moscow (the display zone, as TYVN) and 15:00 Kyiv.
+  const clock = (timeZone: string) => new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(AT));
+  expect([clock('UTC'), clock('Europe/Moscow'), clock('Europe/Kyiv')]).toEqual(['13:00', '16:00', '15:00']);
   expect(listingSimulationConfig(draft)).toMatchObject({pair:'ECLV/USDT',initialPrice:.014,isTradable:false});
 });
 

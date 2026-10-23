@@ -7,8 +7,8 @@ This is a **candidate config and QA**, NOT a published listing, chain token, ven
 | Field | Value | Note |
 | --- | --- | --- |
 | Name / ticker / pair | **ECLAVO** / `ECLV` / `ECLV/USDT` | Provisional identity: confirm uniqueness again on the live Admin Listings before creating it. |
-| Listing | `2026-11-03T13:00:00Z` | Tuesday 13:00 UTC = **15:00 Kyiv** (UTC+2, winter) = 16:00 Moscow. The owner gave the date; 13:00 UTC mirrors TYVN and is still a proposal. |
-| Display zone | `Europe/Kyiv` | The exchange prints «03.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC» (the existing format for Kyiv; TYVN, entered in Moscow, prints «… — 13:00 UTC / 16:00 МСК»). Display only: the instant does not depend on it. |
+| Listing | `2026-11-03T13:00:00Z` | Tuesday 13:00 UTC = **16:00 Moscow** (UTC+3) = 15:00 Kyiv (UTC+2, winter). Same UTC hour as TYVN; owner-approved 23.10 together with the Moscow display. |
+| Display zone | `Europe/Moscow` (owner, 23.10), as TYVN | The exchange prints «**03.11.2026 — 13:00 UTC / 16:00 МСК**» on the countdown card and the Markets row. Display only: the instant 13:00 UTC is unchanged. |
 | Initial price | `0.0140` USDT | The exchange shows «0.014000 USDT». |
 | Trading / allocation | `tradable: false`, `ownerAllocation: "0"` | A non-executable demo scenario: the Spot gate refuses every order before and after the opening; nothing is credited. |
 | Seed | `eclavo-20261103-v1`, **manual** | Entered once; never regenerated (see «No duplicates, no new seed»). |
@@ -31,7 +31,7 @@ This is a designed synthetic trajectory; it is **not historical BTC/ETH data** a
 - First 24 h: `0.0140 × (1 + 680/100) = 0.1092`. Verified on the simulation and on the exchange page at 13:00 UTC on 4 Nov: last price 0.1092, «24ч» +680.00 %.
 - **0.518 is a ceiling, not a target.** `0.0140 × (1 + 3600/100) = 0.518`; no tick, candle or wick passes it (every 1 m candle of 31 days checked). The highest price actually reached in those 31 days is **≈ 0.4528** (about +3134 %, on day 21). After hour 252 the market ranges between ≈ 0.33 and ≈ 0.45, wicks included.
 - Fine settings: pullbacks often, 5–15 %, 70 min; candles high intensity, size diversity 0.85, moderate pauses; pronounced wicks, long wicks often.
-- **What the chart really does inside each growth stage (owner decision).** DEEP_RECOVERY gives every growth/recovery stage a deep fall before the stage target. On day one the price rises to ≈ 0.073 by about 23:00 UTC, falls to ≈ 0.0244 by about 04:15 UTC (**−66.7 % from that peak**), then climbs to 0.1092 at 13:00 UTC. The day-one range is 0.0115–0.1186, and the first ~2 h dip to −17.9 % below the opening price. TYVN's deepest day-one fall is −22.6 % for comparison. The 5–15 % setting only adds smaller dips on top. If this is not wanted, choose another scenario before creating the draft. After publication the scenario is locked.
+- **What the chart really does inside each growth stage (owner: keep, 23.10).** DEEP_RECOVERY gives every growth/recovery stage a deep fall before the stage target. On day one the price rises to ≈ 0.073 by about 23:00 UTC, falls to ≈ 0.0244 by about 04:15 UTC (**−66.7 % from that peak**), then climbs to 0.1092 at 13:00 UTC. The day-one range is 0.0115–0.1186, and the first ~2 h dip to −17.9 % below the opening price. TYVN's deepest day-one fall is −22.6 % for comparison. The 5–15 % setting only adds smaller dips on top. The owner kept this scenario on 23.10. After publication it is locked.
 - The chart does not depend on which creation number production assigns (simulation profile): identical candles for every ordinal (tested).
 
 ## Logo
@@ -45,7 +45,7 @@ Both paths were run on a local Worker and stored **the same draft**, equal to `c
 **A. The form (as for TYVN).** Admin → Listings → «Создать листинг», in this order:
 
 1. «Название» `ECLAVO`, «Тикер» `ECLV`, «Начальная цена, USDT» `0.0140`, «Количество токенов для владельца» `0`.
-2. «Часовой пояс» «Киев», «Дата и время листинга» **03.11.2026 15:00**. The line under it must read «= 03.11.2026 13:00 Всемирное время (UTC) · 15:00 Киев (UTC+2) · 16:00 Москва (UTC+3)».
+2. «Часовой пояс» «Москва», «Дата и время листинга» **03.11.2026 16:00**. The line under it must read «= 03.11.2026 13:00 Всемирное время (UTC) · 15:00 Киев (UTC+2) · 16:00 Москва (UTC+3)».
 3. «Код варианта» → «Вручную» → `eclavo-20261103-v1`.
 4. «Логотип» → «Выбрать файл» → `eclv-20261103.logo.svg`.
 5. «Сценарий движения» → «Глубокий откат и восстановление». It presets the fine settings, which step 9 then replaces.
@@ -65,27 +65,30 @@ Both paths were run on a local Worker and stored **the same draft**, equal to `c
    - тени «Выраженные», длинные тени «Часто».
 10. «Спотовая торговля после листинга» stays off (locked for a demo scenario). Then «Сохранить черновик» → «Предпросмотр». The first 24 h must start at 0.014 and end at 0.1092; maximum 0,518 USDT.
 
-**B. The JSON (exact, no typing).** `POST /api/v1/admin/listings` with body `{"config": <the file without schemaVersion>}`, from an admin session. It is the same call the form makes.
+**B. The JSON (exact, no typing): `scripts/eclv-draft-import.cjs`.** It sends the same request as the form, `POST /api/v1/admin/listings` with `{"config": <the file without schemaVersion>}`. It never publishes, starts a timer, edits or deletes. The admin session token is read from the environment and never printed.
+- `VOLTEX_API=https://api.voltextech.net VOLTEX_MARKET=https://market.voltextech.net VOLTEX_ADMIN_TOKEN=<admin token> node scripts/eclv-draft-import.cjs` is a **read-only preflight**. It lists every listing in the store and any ECLV or ZRNTH row with its state, shows whether the seed is used elsewhere, the public catalogue and the hours left. It exits 0 when clean and 2 on anything to resolve.
+- The same command with `--create` (owner's go only) creates **one** private draft. It stops without sending anything if ECLV already exists (a same configuration is reported as already imported), if ZRNTH exists, or if the seed is used elsewhere. It then checks that the stored draft equals the file, seed included.
 
 **No duplicates, no new seed** (enforced by the store, verified):
 - A second ECLV is refused **409 `DUPLICATE_TICKER`**, whether the seed is manual, automatic or different. One ECLV row exists, whatever is pressed twice.
 - The manual seed is stored as entered. Later saves keep it and the profile. A save from a stale page is 409 (`revision_conflict`).
 - After publication the ticker, seed, initial price and movement are locked (`HISTORY_LOCKED`). The preview of the saved draft is exactly what the exchange will show.
-- Before step A/B, open Admin → Listings and confirm there is no ECLV row (and no old ZRNTH draft) already. If an ECLV draft exists, edit that one instead of creating another.
+- Before step A/B: the tool's preflight (or a look at Admin → Listings) must show no ECLV and no old ZRNTH row. If an ECLV draft exists, edit that one instead of creating another.
+- **Live check 23.10 15:46 UTC (public, read-only):** the production catalogue `market.voltextech.net/market/listings` (revision 6) lists only AITH/USDT (live) and TYVN/USDT (timer running, Europe/Moscow): no ECLV, ZRNTH, ECLAVO or ZORYNTHA. Kraken's public pair list (1463 pairs) has no ECLV or ZRNTH. Unpublished drafts and staged listings are visible only to an admin session (the preflight above); this session has no admin credentials, so that part is still open.
 
 ## Publication path (each step needs the owner's separate go)
 
-1. Owner approves name/ticker, 13:00 UTC, the price path (including the day-one −66.7 % fall) and the logo.
-2. Admin → Listings: confirm no ECLV/ZRNTH row; TYVN untouched.
+1. Owner approves name/ticker and the logo. Done 23.10: DEEP_RECOVERY kept with its parameters (including the day-one −66.7 % fall), 13:00 UTC, Moscow display.
+2. Run the preflight (`node scripts/eclv-draft-import.cjs`, read-only): no ECLV/ZRNTH row; TYVN untouched.
 3. Create the draft (A or B), «Предпросмотр»: first 24 h 0.014 → 0.1092, «Рост» horizon up to 0.435, nothing above 0.518.
 4. «Опубликовать» with «Запустить таймер сразу после публикации» **unticked** → the row reads «Таймер не запущен»; the exchange shows nothing; Render knows the ticker, every order is refused.
-5. Only on the owner's command: «Запустить таймер» → within seconds the exchange shows the ECLAVO card, the countdown, «03.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC», «0.014000 USDT»; Markets and the Spot rail list ECLV/USDT. Before the instant, «Приостановить» / «Остановить и скрыть» hide it, and the date does not change.
+5. Only on the owner's command: «Запустить таймер» → within seconds the exchange shows the ECLAVO card, the countdown, «03.11.2026 — 13:00 UTC / 16:00 МСК», «0.014000 USDT»; Markets and the Spot rail list ECLV/USDT. Before the instant, «Приостановить» / «Остановить и скрыть» hide it, and the date does not change.
 6. At 13:00:00 UTC on 3 Nov the chart replaces the countdown by the server clock. No scheduler, deploy or restart. Watch the real transition; do not claim it before the date.
 
 ## Local QA (disposable, no production)
 
 - `npx jest --runTestsByPath src/services/listings/__tests__/eclvDraft.test.ts`: values, logo file = data URL, every value enterable in the form (diversity on the 0.05 slider step), the program and exact boundaries, profile-independent candles, 12 days of 5 m candles ≤ 0.518, publish/timer rules.
-- `VITE_MARKET_EDGE_URL=http://127.0.0.1:8787 npx vite build --outDir <dir>` (in `frontend/`), then `QA_FRONTEND_DIST=<dir> node scripts/qa-listing-eclv.cjs`. It runs the real Worker in workerd, this checkout's admin router and the production bundle in Chromium: form and API import, duplicates/seed, preview, a staged publish and timer start **on the local Worker only**, the exchange card at 1440/390, Spot search and the 20/24 px logo, Markets, and the chart 30 min / 24 h / 7 days after the opening. The after-opening chart is computed by the Worker's own response code at a simulated server time, without moving any clock. Output: PNG + `report.json`. It publishes before the date, so it only makes sense before 3 Nov 2026.
+- `VITE_MARKET_EDGE_URL=http://127.0.0.1:8787 npx vite build --outDir <dir>` (in `frontend/`), then `QA_FRONTEND_DIST=<dir> node scripts/qa-listing-eclv.cjs`. It runs the real Worker in workerd, this checkout's admin router and the production bundle in Chromium: form import and the import tool (preflight, one create, repeat sends nothing, stop on ZRNTH), duplicates/seed, preview, a staged publish and timer start **on the local Worker only**, the exchange card at 1440/390, Spot search and the 20/24 px logo, Markets, and the chart 30 min / 24 h / 7 days after the opening. The after-opening chart is computed by the Worker's own response code at a simulated server time, without moving any clock. Output: PNG + `report.json`. It publishes before the date, so it only makes sense before 3 Nov 2026.
 - CI: `.github/workflows/eclv-listing-draft.yml` runs both on Draft and ready PRs.
 
 **Separate integration constraints:** Demo Spot #596 and Demo Liquidity #599 are merged code-only with every flag off. This listing has no link to them or to any balance. Never claim a synthetic plot represents a real asset or live third-party trading.

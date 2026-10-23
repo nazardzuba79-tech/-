@@ -1,6 +1,6 @@
 'use strict';
 /**
- * ECLAVO (ECLV/USDT), the candidate listing of 2026-11-03 13:00 UTC = 15:00 Kyiv,
+ * ECLAVO (ECLV/USDT), the candidate listing of 2026-11-03 13:00 UTC = 16:00 Moscow,
  * end to end in a local, disposable copy of the managed-listings system.
  *
  * Real pieces: the market-edge Worker bundle in workerd (Miniflare, SQLite
@@ -49,6 +49,7 @@ const { CloudflareListingStore } = require('../src/services/listings/store');
 const { ManagedListingRegistry } = require('../src/services/listings/registry');
 const { managedListingResponse } = require('../src/services/listings/listingPublic');
 const { assertSpotListing } = require('../src/services/testMarkets/nrxSpot');
+const { execFile } = require('node:child_process');
 
 const dist = path.resolve(process.env.QA_FRONTEND_DIST || 'frontend/dist');
 const output = path.resolve(process.env.QA_OUT || 'docs/qa/listing-eclv');
@@ -59,7 +60,7 @@ const STORE_TOKEN = 'synthetic-local-only-listings-secret-0602';
 const file = JSON.parse(fs.readFileSync(path.join(root, 'config/test-markets/eclv-20261103.draft.json'), 'utf8'));
 const logoPath = path.join(root, 'config/test-markets/eclv-20261103.logo.svg');
 const AT = Date.parse(file.listingAt), HOUR = 3_600_000, DAY = 24 * HOUR;
-const DATE_LINE = '03.11.2026 · 15:00 Europe/Kyiv · 13:00 UTC';
+const DATE_LINE = '03.11.2026 — 13:00 UTC / 16:00 МСК';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.json': 'application/json' };
 fs.mkdirSync(output, { recursive: true });
 
@@ -179,8 +180,8 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       await page.fill('[data-field="symbol"]', file.symbol);
       await page.fill('[data-field="initialPrice"]', file.initialPrice);
       await page.fill('[data-field="ownerAllocation"]', file.ownerAllocation);
-      await page.selectOption('[data-field="timeZone"]', 'Europe/Kyiv');
-      await page.fill('[data-field="wallTime"]', '2026-11-03T15:00');
+      await page.selectOption('[data-field="timeZone"]', 'Europe/Moscow');
+      await page.fill('[data-field="wallTime"]', '2026-11-03T16:00');
       assert.match(await page.locator('[data-listing-utc]').innerText(), /03\.11\.2026 13:00 Всемирное время \(UTC\)/);
       await page.locator('.listing-seed label', { hasText: 'Вручную' }).locator('input').check();
       await page.fill('[data-field="seed"]', file.seed);
@@ -224,15 +225,38 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       assert.ok(viaForm.simulationProfile && viaForm.wickModel === 'NATURAL_V1');
     });
 
-    /* 1b. Import through the admin API with the same JSON (worker B, a fresh store). */
-    await step('API import: POST /admin/listings {config: <file>} → 201, the same draft as the form', async () => {
-      const { schemaVersion: _schema, ...config } = file;
-      const created = await B.api('/admin/listings', { method: 'POST', body: { config } });
-      assert.equal(created.status, 201, JSON.stringify(created.body));
-      viaApi = created.body.draft;
+    /* 1b. The single-draft import tool with the same JSON (worker B, a fresh store): preflight, one create, a repeat sends nothing. */
+    // Asynchronous: the local Render B answers the tool from this very process.
+    const importTool = (args = []) => new Promise((resolve) => {
+      execFile(process.execPath, [path.join(root, 'scripts/eclv-draft-import.cjs'), ...args], { encoding: 'utf8', timeout: 60000,
+        env: { PATH: process.env.PATH, VOLTEX_API: B.origin, VOLTEX_MARKET: EDGE_B, VOLTEX_ADMIN_TOKEN: tokens.admin } }, (error, stdout, stderr) => {
+        assert.ok(!stdout.includes(tokens.admin) && !stderr.includes(tokens.admin), 'the tool never prints the token');
+        resolve({ code: error ? (typeof error.code === 'number' ? error.code : -1) : 0, out: `${stdout}${stderr}` });
+      });
+    });
+    const posts = () => report.renderCalls.filter((call) => call === 'B POST /admin/listings').length;
+    await step('import tool: the preflight is read-only and clean; --create makes ONE draft equal to the file and to the form-made one; a repeat --create sends nothing', async () => {
+      const preflight = await importTool();
+      assert.equal(preflight.code, 0, preflight.out);
+      assert.match(preflight.out, /PREFLIGHT: OK — no ECLV \/ ZRNTH/);
+      assert.equal(posts(), 0, 'the preflight wrote nothing');
+      const created = await importTool(['--create']);
+      assert.equal(created.code, 0, created.out);
+      assert.match(created.out, /CREATED one private draft eclv-[0-9a-f]{8}/);
+      assert.equal(posts(), 1);
+      const listed = (await B.api('/admin/listings')).body.listings;
+      assert.equal(listed.length, 1);
+      viaApi = listed[0].draft;
       assert.deepEqual(comparable(viaApi), file);
-      assert.deepEqual(viaApi, viaForm, 'form and API store the same configuration (same first-creation profile)');
-      report.draft = { id: created.body.id, scenario: viaApi.simulationProgram.scenario, simulationProfile: viaApi.simulationProfile, wickModel: viaApi.wickModel, seed: viaApi.seed };
+      assert.deepEqual(viaApi, viaForm, 'tool and form store the same configuration (same first-creation profile)');
+      assert.equal(listed[0].activeVersion, null, 'never published');
+      assert.equal(listed[0].countdown ?? null, null, 'no timer');
+      const again = await importTool(['--create']);
+      assert.equal(again.code, 0, again.out);
+      assert.match(again.out, /NOT CREATED: already imported as eclv-[0-9a-f]{8}; nothing sent/);
+      assert.equal(posts(), 1, 'a repeat sends no second POST');
+      report.importTool = { preflight: preflight.out.trim().split('\n'), create: created.out.trim().split('\n'), repeat: again.out.trim().split('\n').at(-1) };
+      report.draft = { id: listed[0].id, scenario: viaApi.simulationProgram.scenario, simulationProfile: viaApi.simulationProfile, wickModel: viaApi.wickModel, seed: viaApi.seed };
     });
 
     await step('no duplicates, no new seed: a second ECLV is 409 DUPLICATE_TICKER (manual or automatic seed); saves keep the seed and profile; a stale save is 409', async () => {
@@ -251,6 +275,19 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       assert.equal(stale.status, 409);
       const formAgain = await A.api('/admin/listings', { method: 'POST', body: { config } });
       assert.deepEqual([formAgain.status, formAgain.body.error], [409, 'DUPLICATE_TICKER']);
+    });
+
+    await step('import tool stops on the old candidate: with a ZRNTH draft in the store the preflight and --create refuse and send nothing', async () => {
+      const { schemaVersion: _schema, ...config } = file;
+      const zrnth = await B.api('/admin/listings', { method: 'POST', body: { config: { ...config, symbol: 'ZRNTH', name: 'ZORYNTHA', seed: 'zoryntha-20261103-v1' } } });
+      assert.equal(zrnth.status, 201, JSON.stringify(zrnth.body));
+      const before = posts();
+      for (const args of [[], ['--create']]) {
+        const run = await importTool(args);
+        assert.equal(run.code, 2, run.out);
+        assert.match(run.out, /old candidate ZRNTH: zrnth-[0-9a-f]{8} — draft \(never published\)/);
+      }
+      assert.equal(posts(), before, 'nothing sent');
     });
 
     /* 2. The private preview of the draft. */
@@ -292,7 +329,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
         await page.locator('[data-edit-listing="ECLV"]').click();
         await page.locator('[data-listing-form]').waitFor();
         assert.deepEqual(await Promise.all(['symbol', 'name', 'initialPrice', 'wallTime', 'timeZone', 'seed'].map((f) => page.inputValue(`[data-field="${f}"]`))),
-          ['ECLV', 'ECLAVO', '0.0140', '2026-11-03T15:00', 'Europe/Kyiv', 'eclavo-20261103-v1']);
+          ['ECLV', 'ECLAVO', '0.0140', '2026-11-03T16:00', 'Europe/Moscow', 'eclavo-20261103-v1']);
         await page.locator('[data-preview]').click();
         await page.locator('[data-listing-preview]').waitFor({ timeout: 30000 });
         await page.locator('[data-preview-summary]').scrollIntoViewIfNeeded();
@@ -318,7 +355,7 @@ const edgeJson = async (base, p) => { const r = await fetch(`${base}${p}`, { cac
       await page.locator('[data-timer-action="start"]').click();
       await page.locator('[data-listing-timer="running"]').waitFor({ timeout: 15000 });
       const assets = (await edgeJson(EDGE, '/market/listings')).body.assets;
-      assert.deepEqual(assets.map((a) => [a.pair, a.countdown, a.state.phase, a.initialPrice, a.displayTimeZone, a.isTradable]), [['ECLV/USDT', 'running', 'pre-listing', 0.014, 'Europe/Kyiv', false]]);
+      assert.deepEqual(assets.map((a) => [a.pair, a.countdown, a.state.phase, a.initialPrice, a.displayTimeZone, a.isTradable]), [['ECLV/USDT', 'running', 'pre-listing', 0.014, 'Europe/Moscow', false]]);
       assert.equal(assets[0].logo, file.logo);
       await A.registry.ensureFresh(3000);
       assert.throws(() => assertSpotListing('ECLV/USDT'), 'tradable:false refuses every order');
