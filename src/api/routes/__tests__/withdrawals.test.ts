@@ -134,44 +134,29 @@ describe('withdrawals routes', () => {
     afterAll(() => { if (previous === undefined) delete process.env.PRIVATE_TRADING_TEST_USER_IDS; else process.env.PRIVATE_TRADING_TEST_USER_IDS = previous; });
     const wallet = (rows: { asset: string; available: string }[] | null) => ({ tradingWallet: jest.fn().mockResolvedValue(rows) });
 
-    it('records the request without touching any Balance row', async () => {
-      const prisma = makePrisma({ balance: { available: '0', locked: '0' } });
+    // Issue #592: a Cross trading account is valued from the native demo
+    // ledger. Demo funds never become a cash-out request, so every request is
+    // refused before anything is written — however much the account shows.
+    it.each([
+      ['within what the account shows', { asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '1200' }, {}],
+      ['beyond earlier requests', { asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '1200' }, { claimed: '4000' }],
+      ['in an asset the account does not hold', { asset: 'BTC', network: 'Bitcoin', toAddress: 'bc1qxyz', amount: '0.1' }, {}],
+    ])('refuses a request %s; no Withdrawal or Balance row is written', async (_label, body, seed) => {
+      const prisma = makePrisma({ balance: { available: '5000', locked: '0' }, ...seed });
       const options = wallet([{ asset: 'USDT', available: '5000' }]);
       const res = await request(buildApp(prisma, options))
         .post('/api/v1/withdrawals')
         .set('Authorization', authHeader(TRADER))
-        .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '1200' });
+        .send(body);
 
-      expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({ status: 'PENDING', amount: '1200', balanceHeld: false });
-      expect(prisma.tx.withdrawal.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ balanceHeld: false }) }));
-      expect(prisma.tx.balance.findUnique).not.toHaveBeenCalled();
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ error: 'Demo funds are not withdrawable', code: 'DEMO_FUNDS_NOT_WITHDRAWABLE' });
+      expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
       expect(prisma.tx.balance.update).not.toHaveBeenCalled();
       expect(prisma.tx.balance.updateMany).not.toHaveBeenCalled();
       expect(prisma.tx.balance.upsert).not.toHaveBeenCalled();
       // The account's own identity reaches the reader, never one from the body.
       expect(options.tradingWallet).toHaveBeenCalledWith(expect.objectContaining({ userId: TRADER, sessionId: `test-session:${TRADER}` }));
-    });
-
-    it('refuses more than the account can withdraw once earlier requests are counted', async () => {
-      const prisma = makePrisma({ claimed: '4000' });
-      const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }])))
-        .post('/api/v1/withdrawals')
-        .set('Authorization', authHeader(TRADER))
-        .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '1200' });
-
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Insufficient USDT balance');
-      expect(prisma.tx.withdrawal.create).not.toHaveBeenCalled();
-    });
-
-    it('refuses an asset the account does not hold', async () => {
-      const res = await request(buildApp(makePrisma(), wallet([{ asset: 'USDT', available: '5000' }])))
-        .post('/api/v1/withdrawals')
-        .set('Authorization', authHeader(TRADER))
-        .send({ asset: 'BTC', network: 'Bitcoin', toAddress: 'bc1qxyz', amount: '0.1' });
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Insufficient BTC balance');
     });
 
     it('answers 503, not a guess, when the account cannot be valued', async () => {
@@ -193,13 +178,13 @@ describe('withdrawals routes', () => {
       expect(res.status).toBe(401);
     });
 
-    it('lists what is withdrawable, net of earlier requests', async () => {
+    it('lists nothing as withdrawable from a demo-valued account', async () => {
       const prisma = makePrisma({ claimed: '1000' });
       const res = await request(buildApp(prisma, wallet([{ asset: 'USDT', available: '5000' }, { asset: 'BTC', available: '0' }])))
         .get('/api/v1/withdrawals/options')
         .set('Authorization', authHeader(TRADER));
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ source: 'TRADING', assets: [{ asset: 'USDT', available: '4000' }], futures: [] });
+      expect(res.body).toEqual({ source: 'TRADING', assets: [], futures: [] });
     });
 
     it('falls back to the spot ledger while the trading account is not opened', async () => {
