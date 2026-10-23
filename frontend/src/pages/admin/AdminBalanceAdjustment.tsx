@@ -41,6 +41,8 @@ export function AdminBalanceAdjustment({ profile, onClose, onChanged }: { profil
   return <AdminModal title="Корректировка спотового баланса" onClose={onClose} busy={busy}>
     <div className="admin-modal-body">
     <p><strong>{profile.email}</strong></p><CopyValue value={profile.id} label="ID пользователя" full /><p>Счёт: Спот. Резерв и тестовый счёт не изменяются.</p>
+    {/* Owner policy 2026-10-23 (#596): new testers are credited through «Тестовое начисление» only. */}
+    <p className="admin-muted" data-tester-credit-policy>Тестовым пользователям средства начисляйте через «Тестовое начисление». Средства спотового счёта пользователь может запросить к выводу.</p>
     {phase === 'edit' && <form className="admin-form-grid" onSubmit={event => { event.preventDefault(); if (after === null || after.startsWith('-') || !reason.trim()) { setError('Проверьте сумму, доступный баланс и обязательную причину.'); return; } setIntent({ asset: canonicalAsset, amount: amount.trim(), reason: reason.trim(), idempotencyKey: crypto.randomUUID() }); setError(''); setPhase('confirm'); }}>
       <label>Актив<input required maxLength={10} value={asset} onChange={e => setAsset(e.target.value.toUpperCase())} /></label>
       <label>Сумма со знаком + / −<input required inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="10 или -10" /></label>

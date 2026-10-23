@@ -67,7 +67,9 @@ import { FuturesProtectionService } from './futures/FuturesProtectionService';
 import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
 import { DemoTradingService } from './services/DemoTradingService';
+import { demoLiquidityConfig, marketReference } from './services/DemoLiquidity';
 import { demoTradingRouter } from './api/routes/demoTrading';
+import { isTestAssetPairOrSymbol } from './services/testMarkets/testAssetConfig';
 import { stocksTestCashRouter } from './api/routes/stocksTestCash';
 import { VtaDemoSales } from './services/testMarkets/VtaDemoSales';
 import { privateTradingRouter } from './api/routes/privateTrading';
@@ -152,7 +154,14 @@ const spotOrderService = accountDeletionGate.guard(new OrderService(prisma, engi
 const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, marketDataService);
 
 const demoEngine = new MatchingEngine();
-const demoTradingService = accountDeletionGate.guard(new DemoTradingService(prisma, demoEngine), ['placeOrder', 'cancelOrder', 'topUp']);
+// Internal demo liquidity: off unless DEMO_LIQUIDITY_ENABLED=true and its configuration parses
+// (docs/DEMO_LIQUIDITY.md). Its reference is the market-data cache; nothing is sent to a venue.
+const demoLiquidity = demoLiquidityConfig();
+if (demoLiquidity.problem) console.warn(`[demo-liquidity] off: ${demoLiquidity.problem}`);
+const demoTradingService = accountDeletionGate.guard(new DemoTradingService(prisma, demoEngine, {
+  liquidity: demoLiquidity.config ? { config: demoLiquidity.config, reference: marketReference(marketDataService) } : null,
+  liquidityProblem: demoLiquidity.problem,
+}), ['placeOrder', 'cancelOrder', 'topUp']);
 const adminUserDeletion = new AdminUserDeletionService(prisma, accountDeletionGate, { spot: engine, futures: futuresEngine, demo: demoEngine });
 const privateTradingService = new PrivateTradingService(new PrivateTradingStore(prisma),
   process.env.MARKET_DATA_COLLECTOR_URL && process.env.MARKET_DATA_COLLECTOR_TOKEN
@@ -307,7 +316,11 @@ app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry, futuresProtectionService));
 // Authenticated Support relays to the private-key-protected mail Worker.
 // No Support timers or new tables are needed.
-app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell'])));
+// Demo Spot for admin-credited USER accounts: off unless DEMO_SPOT_ENABLED=true.
+// A pair is admitted only when the real market feed lists it (the terminal's pair set).
+app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell']), {
+  isSpotPair: async pair => !isTestAssetPairOrSymbol(pair) && (await marketDataService.getTicker(pair)) !== null,
+}));
 app.use('/api/v1', privateTradingRouter(prisma, privateTradingService, bestEffortWake(() => nativeLimitPass?.nudge(), 'native-limit-pass')));
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
