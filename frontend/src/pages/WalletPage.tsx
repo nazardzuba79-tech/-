@@ -10,6 +10,7 @@ import { TransactionHistory } from './wallet-v3/TransactionHistory';
 import { DepositModal } from './wallet-v3/DepositModal';
 import { WithdrawModal } from './wallet-v3/WithdrawModal';
 import { TransferModal } from './wallet-v3/TransferModal';
+import { ConversionModal } from './wallet-v3/ConversionModal';
 import { WalletOverview } from './wallet-v3/WalletOverview';
 import { FundingView } from './wallet-v3/FundingView';
 import { PerformancePeriod, useWalletData } from './wallet-v3/useWalletData';
@@ -18,6 +19,8 @@ import { useStockPortfolio } from './wallet-v3/useStockPortfolio';
 import './wallet-v3/wallet.css';
 
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
+// Missing/false build flag keeps the existing Convert buttons disabled.
+const WALLET_CONVERSION_ENABLED = import.meta.env.VITE_WALLET_CONVERSION_ENABLED === 'true';
 
 function loadFlag(key: string): boolean {
   try {
@@ -35,7 +38,7 @@ function saveFlag(key: string, value: boolean) {
   }
 }
 
-type ActiveModal = 'deposit' | 'withdraw' | 'transfer' | null;
+type ActiveModal = 'deposit' | 'withdraw' | 'transfer' | 'convert' | null;
 
 /**
  * The Wallet workspace.
@@ -81,6 +84,7 @@ export function WalletPage() {
   const [hidden, setHidden] = useState(() => loadFlag(HIDE_BALANCE_KEY));
   const [section, setSection] = useState<WalletSection>('overview');
   const [period, setPeriod] = useState<PerformancePeriod>('7d');
+  const [activityVersion, setActivityVersion] = useState(0);
   const { theme, toggleTheme } = useWalletTheme();
   const historyRef = useRef<HTMLDivElement>(null);
   const [stockRefreshKey, setStockRefreshKey] = useState(0);
@@ -140,7 +144,7 @@ export function WalletPage() {
 
           <div className="wallet-content min-w-0">
             <div className="flex justify-end mb-2">
-              <button type="button" className="wallet-btn wallet-btn-secondary" onClick={() => { refresh(); setStockRefreshKey(k => k + 1); }}>{t('wallet.refreshAccount')}</button>
+              <button type="button" className="wallet-btn wallet-btn-secondary" onClick={() => { refresh(); setStockRefreshKey(k => k + 1); setActivityVersion(v => v + 1); }}>{t('wallet.refreshAccount')}</button>
             </div>
             {section === 'overview' && (
               <WalletOverview
@@ -157,6 +161,7 @@ export function WalletPage() {
                 onDeposit={() => setModal('deposit')}
                 onWithdraw={() => setModal('withdraw')}
                 onTransfer={() => setModal('transfer')}
+                onConvert={WALLET_CONVERSION_ENABLED ? () => setModal('convert') : undefined}
                 onHistory={() => setSection('orders')}
                 onOpenUnified={() => setSection('unified')}
                 onOpenFunding={() => setSection('funding')}
@@ -190,6 +195,7 @@ export function WalletPage() {
                   onDeposit={() => setModal('deposit')}
                   onWithdraw={() => setModal('withdraw')}
                   onTransfer={() => setModal('transfer')}
+                  onConvert={WALLET_CONVERSION_ENABLED ? () => setModal('convert') : undefined}
                   onHistory={() => setSection('orders')}
                 />
 
@@ -229,7 +235,7 @@ export function WalletPage() {
 
             {section === 'orders' && (
               <div ref={historyRef} className="wallet-history-host">
-                <TransactionHistory hidden={hidden} />
+                <TransactionHistory hidden={hidden} refreshKey={activityVersion} />
               </div>
             )}
           </div>
@@ -239,6 +245,7 @@ export function WalletPage() {
       <DepositModal open={modal === 'deposit'} onClose={() => setModal(null)} />
       <WithdrawModal open={modal === 'withdraw'} onClose={() => setModal(null)} onSubmitted={refresh} onTransfer={() => setModal('transfer')} />
       <TransferModal open={modal === 'transfer'} onClose={() => setModal(null)} onSubmitted={refresh} />
+      {WALLET_CONVERSION_ENABLED && <ConversionModal open={modal === 'convert'} onClose={() => setModal(null)} onSubmitted={() => { refresh(); setActivityVersion(v => v + 1); }} />}
     </div>
   );
 }

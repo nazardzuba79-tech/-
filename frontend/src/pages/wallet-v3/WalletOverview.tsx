@@ -97,6 +97,7 @@ export function WalletOverview({
   onDeposit,
   onWithdraw,
   onTransfer,
+  onConvert,
   onHistory,
   onOpenUnified,
   onOpenFunding,
@@ -115,6 +116,7 @@ export function WalletOverview({
   onDeposit: () => void;
   onWithdraw: () => void;
   onTransfer: () => void;
+  onConvert?: () => void;
   onHistory: () => void;
   onOpenUnified: () => void;
   onOpenFunding: () => void;
@@ -228,7 +230,8 @@ export function WalletOverview({
             <ArrowLeftRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.transfer')}
           </button>
-          <button type="button" disabled aria-disabled="true" className={ACTION_OFF}>
+          <button type="button" onClick={onConvert} disabled={!onConvert} aria-disabled={!onConvert}
+            className={onConvert ? `${ACTION_SECONDARY} wallet-action-convert` : ACTION_OFF}>
             <RepeatIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.convert')}
           </button>

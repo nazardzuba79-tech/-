@@ -64,6 +64,18 @@ function serviceFor(prisma: any, opts: { cfdConfigured?: boolean } = {}) {
 }
 
 describe('wallet overview — every account sees its own real ledger', () => {
+  it('values converted fiat via USD spot pairs without changing crypto valuation or stablecoin display policy', async () => {
+    const { service, marketData, cfdData } = serviceFor(prismaStub());
+    marketData.getTickers.mockResolvedValue([
+      ...TICKERS, { pair: 'EUR/USD', lastPrice: '1.25' }, { pair: 'GBP/USD', lastPrice: '1.3' },
+      { pair: 'USD/JPY', lastPrice: '150' }, { pair: 'BTC/USD', lastPrice: '1' },
+    ]);
+    const prices = await service.pricesFor(['EUR', 'GBP', 'JPY', 'BTC', 'USDT', 'ZZZ']);
+    expect(prices.get('EUR')).toBe(1.25); expect(prices.get('GBP')).toBe(1.3);
+    expect(prices.get('JPY')).toBeCloseTo(1 / 150); expect(prices.get('BTC')).toBe(106400);
+    expect(prices.get('USDT')).toBe(1); expect(prices.get('ZZZ')).toBe(null);
+    expect(cfdData.getTickers).not.toHaveBeenCalled();
+  });
   it('shows an ordinary account its own real ledger, untouched', async () => {
     const { service } = serviceFor(prismaStub());
     const o = await service.overview(NORMAL_USER);
