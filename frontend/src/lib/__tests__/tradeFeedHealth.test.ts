@@ -61,6 +61,8 @@ beforeEach(() => {
       if (name.endsWith('/i18n')) return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
       if (name.endsWith('/bookFreshness')) return freshness;
       if (name.endsWith('/testMarkets')) return testMarkets;
+      // Demo Spot (Issue #592) is off: the ordinary Spot ledger, as before.
+      if (name.endsWith('/demoSpot')) return { useDemoSpotMode: () => 'off', isDemoSpotPair: () => true };
       if (name.endsWith('/testMarketStore')) return evaluate('lib/testMarketStore.ts');
       if (name.endsWith('/nrxMarket')) return {
         NRX_EDGE_BASE: 'https://fixture.invalid', isNrxPair: (pair: string) => pair === 'NRX/USDT',

@@ -1,4 +1,4 @@
-import { WithdrawalService, WithdrawalRequestError } from '../WithdrawalService';
+import { WithdrawalService, WithdrawalRequestError, DemoFundsNotWithdrawableError } from '../WithdrawalService';
 import { walletDelegate } from '../../test-utils/walletDelegate';
 
 function makePrisma(opts: {
@@ -250,6 +250,74 @@ describe('WithdrawalService', () => {
       await new WithdrawalService(prisma).rejectWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin', reason: 'test' });
       expect(prisma.balance.update).not.toHaveBeenCalled();
       expect(prisma.withdrawal.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'REJECTED' }) }));
+    });
+  });
+
+  // Issue #592: the demo-funds guard. Off (the default), everything above is main's behaviour. On, an unheld
+  // (demo-valued) request — new, or PENDING/APPROVED from before — is never approved or paid, only rejectable.
+  describe('demo-funds guard on unheld requests', () => {
+    const unheld = (status: string) => ({ id: 'w1', userId: 'u1', asset: 'USDT', amount: '300', status, balanceHeld: false });
+    const held = (status: string) => ({ id: 'w2', userId: 'u1', asset: 'USDT', amount: '40', status, balanceHeld: true });
+    const service = (prisma: any, on: boolean) => new WithdrawalService(prisma, { demoFundsGuard: () => on });
+
+    it('guard on: a new unheld request is refused before anything is read or written', async () => {
+      const prisma = makePrisma({});
+      await expect(service(prisma, true).requestUnheldWithdrawal({ userId: 'u1', asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '1', available: '1000' }))
+        .rejects.toBeInstanceOf(DemoFundsNotWithdrawableError);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.withdrawal.create).not.toHaveBeenCalled();
+    });
+
+    it('guard on: an existing PENDING unheld request cannot be approved; it stays PENDING, no audit row', async () => {
+      const prisma = makePrisma({ withdrawal: unheld('PENDING') });
+      const error = await service(prisma, true).approveWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin' }).catch(e => e);
+      expect(error).toBeInstanceOf(DemoFundsNotWithdrawableError); expect(error.code).toBe('DEMO_FUNDS_NOT_WITHDRAWABLE');
+      expect(prisma.withdrawal.update).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it('guard on: an existing APPROVED unheld request cannot be marked sent', async () => {
+      const prisma = makePrisma({ withdrawal: unheld('APPROVED') });
+      await expect(service(prisma, true).markSent({ withdrawalId: 'w1', performedByAdminId: 'admin', txHash: '0xabc' })).rejects.toBeInstanceOf(DemoFundsNotWithdrawableError);
+      expect(prisma.withdrawal.update).not.toHaveBeenCalled();
+      expect(prisma.balance.updateMany).not.toHaveBeenCalled();
+    });
+
+    it.each(['PENDING', 'APPROVED'])('guard on: an existing %s unheld request can still be rejected (nothing to give back)', async status => {
+      const prisma = makePrisma({ withdrawal: unheld(status) });
+      await expect(service(prisma, true).rejectWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin', reason: 'demo funds' })).resolves.toMatchObject({ status: 'REJECTED' });
+      expect(prisma.balance.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('guard on: held (Balance) requests are approved, sent and rejected exactly as before', async () => {
+      const approve = makePrisma({ balance: { available: '0', locked: '40' }, withdrawal: held('PENDING') });
+      await expect(service(approve, true).approveWithdrawal({ withdrawalId: 'w2', performedByAdminId: 'admin' })).resolves.toMatchObject({ status: 'APPROVED' });
+      const sent = makePrisma({ balance: { available: '0', locked: '40' }, withdrawal: held('APPROVED') });
+      await expect(service(sent, true).markSent({ withdrawalId: 'w2', performedByAdminId: 'admin', txHash: '0xdef' })).resolves.toMatchObject({ status: 'SENT' });
+      expect(sent.balance.updateMany).toHaveBeenCalled();
+    });
+
+    it('guard off: unheld PENDING → APPROVED → SENT exactly as on main', async () => {
+      const pending = makePrisma({ withdrawal: unheld('PENDING') });
+      await expect(service(pending, false).approveWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin' })).resolves.toMatchObject({ status: 'APPROVED' });
+      const approved = makePrisma({ withdrawal: unheld('APPROVED') });
+      await expect(service(approved, false).markSent({ withdrawalId: 'w1', performedByAdminId: 'admin', txHash: '0xabc' })).resolves.toMatchObject({ status: 'SENT' });
+    });
+
+    it('default: read from the environment per call — off unless DEMO_WITHDRAWAL_GUARD_ENABLED or DEMO_SPOT_ENABLED is "true"', async () => {
+      const saved = { spot: process.env.DEMO_SPOT_ENABLED, guard: process.env.DEMO_WITHDRAWAL_GUARD_ENABLED };
+      try {
+        delete process.env.DEMO_SPOT_ENABLED; delete process.env.DEMO_WITHDRAWAL_GUARD_ENABLED;
+        await expect(new WithdrawalService(makePrisma({ withdrawal: unheld('PENDING') })).approveWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin' })).resolves.toMatchObject({ status: 'APPROVED' });
+        for (const env of [{ DEMO_WITHDRAWAL_GUARD_ENABLED: 'true' }, { DEMO_SPOT_ENABLED: 'true', DEMO_WITHDRAWAL_GUARD_ENABLED: 'false' }]) {
+          delete process.env.DEMO_SPOT_ENABLED; delete process.env.DEMO_WITHDRAWAL_GUARD_ENABLED; Object.assign(process.env, env);
+          await expect(new WithdrawalService(makePrisma({ withdrawal: unheld('PENDING') })).approveWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin' })).rejects.toBeInstanceOf(DemoFundsNotWithdrawableError);
+        }
+      } finally {
+        for (const [key, value] of [['DEMO_SPOT_ENABLED', saved.spot], ['DEMO_WITHDRAWAL_GUARD_ENABLED', saved.guard]] as const) {
+          if (value === undefined) delete process.env[key]; else process.env[key] = value;
+        }
+      }
     });
   });
 });

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
-import { OrderService, PriceSource } from '../../services/OrderService';
+import { OrderRequestConflict, OrderService, PriceSource } from '../../services/OrderService';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 
 const CONDITIONAL_TYPES = ['STOP_LIMIT', 'STOP_MARKET', 'TAKE_PROFIT_LIMIT', 'TAKE_PROFIT_MARKET'];
@@ -20,6 +20,8 @@ const placeOrderSchema = z
     price: priceString.optional(),
     triggerPrice: priceString.optional(),
     quantity: priceString,
+    // Optional client request ID: a retry after a lost response returns the same order.
+    requestId: z.string().uuid().optional(),
   })
   .refine((v) => !LIMIT_FAMILY.includes(v.type) || v.price !== undefined, {
     message: 'price is required for this order type',
@@ -37,6 +39,7 @@ const placeOcoOrderSchema = z.object({
   takeProfitPrice: priceString,
   stopTriggerPrice: priceString,
   stopLimitPrice: priceString,
+  requestId: z.string().uuid().optional(),
 });
 
 /** `onConditionalOrderCommitted` wakes the price watcher once a stop /
@@ -53,7 +56,7 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
-    const { pair, side, type, price, triggerPrice, quantity } = parsed.data;
+    const { pair, side, type, price, triggerPrice, quantity, requestId } = parsed.data;
 
     try {
       const result = await orderService.placeOrder({
@@ -64,8 +67,10 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
         price: price ? new BigNumber(price) : undefined,
         triggerPrice: triggerPrice ? new BigNumber(triggerPrice) : undefined,
         quantity: new BigNumber(quantity),
+        ...(requestId ? { requestId } : {}),
       });
-      res.status(201).json({
+      // A replayed request ID answers with the order its first attempt committed.
+      res.status('replayed' in result ? 200 : 201).json({
         order: {
           ...result.order,
           price: result.order.price?.toString(),
@@ -79,7 +84,7 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
       })),
       });
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      res.status(err instanceof OrderRequestConflict ? 409 : 400).json({ error: err.message, ...(err instanceof OrderRequestConflict ? { code: 'REQUEST_CONFLICT' } : {}) });
     }
   }));
 
@@ -91,7 +96,7 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
-    const { pair, side, quantity, takeProfitPrice, stopTriggerPrice, stopLimitPrice } = parsed.data;
+    const { pair, side, quantity, takeProfitPrice, stopTriggerPrice, stopLimitPrice, requestId } = parsed.data;
 
     try {
       const result = await orderService.placeOcoOrder({
@@ -102,10 +107,15 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
         takeProfitPrice: new BigNumber(takeProfitPrice),
         stopTriggerPrice: new BigNumber(stopTriggerPrice),
         stopLimitPrice: new BigNumber(stopLimitPrice),
+        ...(requestId ? { requestId } : {}),
       });
+      if ('replayed' in result) {
+        const { replayed: _replayed, ...pair } = result;
+        return res.status(200).json(pair);
+      }
       res.status(201).json(result);
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      res.status(err instanceof OrderRequestConflict ? 409 : 400).json({ error: err.message, ...(err instanceof OrderRequestConflict ? { code: 'REQUEST_CONFLICT' } : {}) });
     }
   }));
 
