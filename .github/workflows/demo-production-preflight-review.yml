@@ -4,6 +4,7 @@ on:
     paths:
       - 'scripts/demo-production-preflight-readonly.cjs'
       - 'scripts/demo-production-preflight-readonly.test.cjs'
+      - 'scripts/demo-production-preflight-fixture.cjs'
       - 'docs/DEMO_PRODUCTION_PREFLIGHT.md'
       - '.github/workflows/demo-production-preflight-review.yml'
 permissions:
@@ -12,7 +13,20 @@ jobs:
   review-auditor-only:
     if: github.event.pull_request.draft == true
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: disposable
+          POSTGRES_DB: demo_preflight_fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d demo_preflight_fixture"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,3 +40,11 @@ jobs:
           node --check scripts/demo-production-preflight-readonly.test.cjs
       - name: Test read-only aggregate behavior without database credentials
         run: node --test scripts/demo-production-preflight-readonly.test.cjs
+      - name: Install existing app dependencies for disposable PostgreSQL
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Run real PostgreSQL syntax and invariants on synthetic fixture only
+        env:
+          DEMO_PREFLIGHT_DATABASE_URL: postgresql://postgres:disposable@127.0.0.1:5432/demo_preflight_fixture
+        run: node scripts/demo-production-preflight-fixture.cjs
