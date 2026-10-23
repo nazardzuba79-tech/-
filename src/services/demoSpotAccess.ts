@@ -32,13 +32,13 @@ export const demoSpotEnabled = (env: NodeJS.ProcessEnv = process.env) => env.DEM
  *
  * Off by default: with every demo feature off, withdrawals behave exactly as on
  * main. Its own switch is `DEMO_WITHDRAWAL_GUARD_ENABLED=true`, and it is
- * forced on — it cannot be switched off — while `DEMO_SPOT_ENABLED` is on,
- * because Demo Spot lets demo funds change by trading: demo funds traded here
- * never become a payable claim. Requests that hold `Balance` are never
- * affected.
+ * forced on — it cannot be switched off — while `DEMO_SPOT_ENABLED` or
+ * `DEMO_LIQUIDITY_ENABLED` is on, because both let demo funds change by
+ * trading: demo funds traded here never become a payable claim. Requests that
+ * hold `Balance` are never affected.
  */
 export const demoWithdrawalGuardEnabled = (env: NodeJS.ProcessEnv = process.env) =>
-  env.DEMO_WITHDRAWAL_GUARD_ENABLED === 'true' || demoSpotEnabled(env);
+  env.DEMO_WITHDRAWAL_GUARD_ENABLED === 'true' || demoSpotEnabled(env) || env.DEMO_LIQUIDITY_ENABLED === 'true';
 
 export async function demoSpotRole(
   db: PrismaClient | Prisma.TransactionClient, userId: string, enabled = demoSpotEnabled(),

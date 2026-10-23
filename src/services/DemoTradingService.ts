@@ -5,6 +5,7 @@ import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType, OrderBookSnapshot } from '../matching-engine/types';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 import { DEMO_SPOT_LEDGER, SpotBookTransaction } from './SpotBookTransaction';
+import { checkReference, DemoLiquidity, DemoReferenceQuote, liquidityAccountRefusal, liquidityOrderId, liquidityQuote } from './DemoLiquidity';
 
 type TxClient = Prisma.TransactionClient;
 
@@ -24,11 +25,18 @@ function exactDemoDelta(value: BigNumber): string {
 }
 
 const ACTIVE = ['OPEN', 'PARTIALLY_FILLED'];
+const NO_LIQUIDITY_MESSAGE = 'No liquidity available for this market order';
 
 /** One order per (account, client request): a retried request after a lost
  * response finds the order its first attempt committed instead of a second one.
  * Same derivation as VtaDemoSales. Another account's request ID never collides. */
 export const demoOrderId = (userId: string, requestId: string) => uuidv5(`voltex:demo-spot-order:${userId}:${requestId}`, uuidv5.URL);
+
+export interface DemoTradingOptions {
+  liquidity?: DemoLiquidity | null;
+  /** Why configured liquidity stayed off (shown to the admin), if it did. */
+  liquidityProblem?: string;
+}
 
 /**
  * A stripped-down mirror of OrderService (LIMIT/MARKET only — no
@@ -39,8 +47,9 @@ export const demoOrderId = (userId: string, requestId: string) => uuidv5(`voltex
  * than a flag on the real tables: nothing here can ever reach a real
  * user's balance, order, or the reserves calculation.
  *
- * A MARKET order fills only against resting DemoOrder liquidity in this
- * same demo book — deliberately not priced off the real Kraken mirror, so
+ * Without internal liquidity (the default), a MARKET order fills only
+ * against resting DemoOrder liquidity in this same demo book — never priced
+ * off the real Kraken mirror, so
  * the sandbox behaves exactly like a brand-new, empty exchange: you have
  * to place LIMIT orders to build depth before a MARKET order has anything
  * to fill against, which is the point of using this to watch how a book
@@ -52,9 +61,18 @@ export const demoOrderId = (userId: string, requestId: string) => uuidv5(`voltex
  * in-memory projection only after PostgreSQL reports the commit. Makers'
  * remaining quantities are persisted, so a restart or a rolled-back
  * transaction can never leave a filled order cancellable or a lost one locked.
+ *
+ * With internal liquidity configured (DemoLiquidity, off by default), a
+ * designated account's already-credited demo funds also answer a taker on its
+ * listed pairs, at the server's market reference plus a spread — inside the
+ * same transaction, never resting, never more than that account holds. That
+ * reference is read from the market-data cache; no order goes to any venue.
  */
 export class DemoTradingService {
-  constructor(private prisma: PrismaClient, private engine: MatchingEngine) {}
+  private readonly liquidity: DemoLiquidity | null;
+  constructor(private prisma: PrismaClient, private engine: MatchingEngine, private options: DemoTradingOptions = {}) {
+    this.liquidity = options.liquidity ?? null;
+  }
 
   async getBalances(userId: string) {
     return this.prisma.demoBalance.findMany({ where: { userId }, orderBy: { asset: 'asc' } });
@@ -118,6 +136,8 @@ export class DemoTradingService {
     const lockAsset = params.side === 'BUY' ? quote : base;
 
     const orderId = params.requestId ? demoOrderId(params.userId, params.requestId) : uuidv4();
+    // Read before the book lock: the lock is never held across a market-data read.
+    const reference = await this.liquidityReference(params.userId, params.pair);
 
     return SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
       // Under the book lock: a request ID that already committed is answered
@@ -127,6 +147,7 @@ export class DemoTradingService {
         if (existing) return this.replay(tx, existing, params);
       }
       const staged = await session.book(params.pair);
+      const liquidity = reference ? await this.stageLiquidity(tx, staged, orderId, params.pair, params.side, base, quote, reference) : null;
       let lockAmount: BigNumber;
       if (params.type === 'LIMIT') {
         lockAmount = params.side === 'BUY' ? params.price!.times(params.quantity) : params.quantity;
@@ -135,7 +156,7 @@ export class DemoTradingService {
       } else {
         // Committed depth, read under the book lock: no invented fill price.
         const bestAsk = staged.getBook(params.pair).bestAsk()?.price;
-        if (!bestAsk) throw new DemoTradingError('No liquidity available for this market order', 'NO_LIQUIDITY');
+        if (!bestAsk) throw new DemoTradingError(NO_LIQUIDITY_MESSAGE, 'NO_LIQUIDITY');
         lockAmount = params.quantity.times(bestAsk).times(1.02); // same 2% slippage buffer as real MARKET orders
       }
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
@@ -173,8 +194,60 @@ export class DemoTradingService {
         updatedAt: Date.now(),
       };
 
-      return this.matchAndSettle(tx, staged, order, base, quote, lockAsset, lockAmount, params.price ?? null);
+      const result = await this.matchAndSettle(tx, staged, order, base, quote, lockAsset, lockAmount, params.price ?? null, liquidity);
+      // A liquidity quote answers this taker only: whatever it did not fill never rests.
+      if (liquidity) staged.cancelOrder(params.pair, liquidity.id);
+      return result;
     }, DEMO_SPOT_LEDGER);
+  }
+
+  /** The market reference for an internal liquidity quote, or null when none may be offered. */
+  private async liquidityReference(userId: string, pair: string): Promise<DemoReferenceQuote | null> {
+    const lp = this.liquidity;
+    if (!lp || userId === lp.config.accountId || !lp.config.pairs.has(pair)) return null;
+    return lp.reference(pair).catch(() => null);
+  }
+
+  /** Puts the liquidity account's one quote for this taker into the staged
+   * book, sized from its committed available funds read under the book lock. */
+  private async stageLiquidity(tx: TxClient, staged: MatchingEngine, takerOrderId: string, pair: string, takerSide: OrderSide,
+    base: string, quote: string, reference: DemoReferenceQuote): Promise<Order | null> {
+    const { config } = this.liquidity!;
+    // An unblocked USER with no ordinary Balance, checked on committed rows under this lock (fail closed).
+    if (await liquidityAccountRefusal(tx, config.accountId, true)) return null;
+    const rows = await tx.demoBalance.findMany({ where: { userId: config.accountId, asset: { in: [base, quote] } } });
+    const available = (asset: string) => new BigNumber(rows.find(row => row.asset === asset)?.available.toString() ?? 0);
+    const offer = liquidityQuote(config, reference, takerSide, { base: available(base), quote: available(quote) });
+    if (!offer) return null;
+    // Resting testers keep priority at an equal price.
+    let createdAt = Date.now();
+    for (const side of ['BUY', 'SELL'] as const) for (const resting of staged.getBook(pair).getBook(side)) {
+      createdAt = Math.max(createdAt, resting.createdAt + 1);
+    }
+    const order: Order = { id: liquidityOrderId(takerOrderId), userId: config.accountId, pair, side: offer.side, type: 'LIMIT',
+      price: offer.price, originalQuantity: offer.quantity, remainingQuantity: offer.quantity, status: 'OPEN', createdAt, updatedAt: createdAt };
+    staged.loadRestingOrder(order);
+    return order;
+  }
+
+  /** Read-only state for the admin: configuration, inventory and whether each pair's reference may be quoted now. */
+  async liquidityStatus() {
+    if (!this.liquidity) return { enabled: false, problem: this.options.liquidityProblem ?? null };
+    const { config, reference } = this.liquidity;
+    const inventory = await this.prisma.demoBalance.findMany({ where: { userId: config.accountId }, orderBy: { asset: 'asc' } });
+    const account = (await liquidityAccountRefusal(this.prisma, config.accountId)) ?? 'OK';
+    const pairs = [];
+    for (const pair of config.pairs) {
+      const current = await reference(pair).catch(() => null), now = Date.now();
+      const checked = checkReference(config, current, now);
+      pairs.push({ pair, reference: checked.ok ? 'OK' : checked.reason, bid: current?.bid ?? null, ask: current?.ask ?? null,
+        ageMs: current ? now - current.fetchedAt : null });
+    }
+    return {
+      enabled: true, accountId: config.accountId, account, spreadBps: config.spreadBps, maxOrderQuote: config.maxOrderQuote.toFixed(),
+      maxQuoteAgeMs: config.maxQuoteAgeMs, maxReferenceSpreadBps: config.maxReferenceSpreadBps,
+      inventory: inventory.map(b => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })), pairs,
+    };
   }
 
   /** The committed outcome of an earlier attempt with the same request ID. */
@@ -235,7 +308,8 @@ export class DemoTradingService {
     quote: string,
     lockAsset: string,
     lockAmount: BigNumber,
-    limitPrice: BigNumber | null
+    limitPrice: BigNumber | null,
+    liquidity: Order | null = null
   ) {
     const makerRemaining = new Map<string, BigNumber>();
     for (const side of ['BUY', 'SELL'] as const) for (const maker of engine.getBook(order.pair).getBook(side)) {
@@ -260,9 +334,23 @@ export class DemoTradingService {
           side: trade.side,
         },
       });
+      if (trade.makerOrderId === liquidity?.id) {
+        // Reserve exactly what this fill takes from the liquidity account, conditionally: never overdrawn.
+        const funds = liquidity.side === 'SELL' ? { asset: base, amount: trade.quantity } : { asset: quote, amount: trade.price.times(trade.quantity) };
+        try { await this.lockFunds(tx, liquidity.userId, funds.asset, funds.amount); }
+        catch (error) { throw error instanceof DemoTradingError ? new DemoTradingError(NO_LIQUIDITY_MESSAGE, 'NO_LIQUIDITY') : error; }
+      }
       await this.settleTrade(tx, trade, base, quote);
     }
     for (const id of changedMakers) {
+      if (id === liquidity?.id) {
+        // Its receipt: the executed part of the quote, already filled.
+        const filled = liquidity.originalQuantity.minus(makerRemaining.get(id)!);
+        await tx.demoOrder.create({ data: { id, userId: liquidity.userId, pair: order.pair, side: liquidity.side, type: 'LIMIT',
+          price: liquidity.price!.toString(), originalQuantity: filled.toFixed(), remainingQuantity: '0', status: 'FILLED',
+          createdAt: new Date(liquidity.createdAt) } });
+        continue;
+      }
       const remaining = makerRemaining.get(id)!;
       await tx.demoOrder.update({ where: { id }, data: {
         remainingQuantity: remaining.toFixed(), status: remaining.isZero() ? 'FILLED' : 'PARTIALLY_FILLED',

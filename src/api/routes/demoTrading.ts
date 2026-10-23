@@ -75,6 +75,11 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
     });
   }));
 
+  // Internal demo liquidity (off by default): configuration, inventory, reference freshness. Admin only, read only.
+  router.get('/demo/liquidity', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
+    res.json(await demoTrading.liquidityStatus());
+  }));
+
   router.get('/demo/vta', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res, next) => {
     try { res.json(await vtaDemo.snapshot(req.userId!)); } catch (error) {
       if (error instanceof VtaDemoError) return res.status(error.status).json({ error: error.message });

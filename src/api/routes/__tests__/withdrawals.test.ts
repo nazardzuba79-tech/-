@@ -252,10 +252,10 @@ describe('withdrawals routes', () => {
 // default, so every case above is main's behaviour unchanged; on, a demo-valued Cross account files nothing.
 describe('demo-funds withdrawal guard', () => {
   const TRADER = '00000000-0000-4000-8000-000000000001';
-  const saved = { ids: process.env.PRIVATE_TRADING_TEST_USER_IDS, spot: process.env.DEMO_SPOT_ENABLED, guard: process.env.DEMO_WITHDRAWAL_GUARD_ENABLED };
+  const saved = { ids: process.env.PRIVATE_TRADING_TEST_USER_IDS, spot: process.env.DEMO_SPOT_ENABLED, guard: process.env.DEMO_WITHDRAWAL_GUARD_ENABLED, liquidity: process.env.DEMO_LIQUIDITY_ENABLED };
   const restore = (key: string, value: string | undefined) => { if (value === undefined) delete process.env[key]; else process.env[key] = value; };
   beforeAll(() => { process.env.PRIVATE_TRADING_TEST_USER_IDS = TRADER; });
-  afterEach(() => { restore('DEMO_SPOT_ENABLED', saved.spot); restore('DEMO_WITHDRAWAL_GUARD_ENABLED', saved.guard); });
+  afterEach(() => { restore('DEMO_SPOT_ENABLED', saved.spot); restore('DEMO_WITHDRAWAL_GUARD_ENABLED', saved.guard); restore('DEMO_LIQUIDITY_ENABLED', saved.liquidity); });
   afterAll(() => restore('PRIVATE_TRADING_TEST_USER_IDS', saved.ids));
   const wallet = () => ({ tradingWallet: jest.fn().mockResolvedValue([{ asset: 'USDT', available: '5000' }]) });
   const body = { asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '1200' };
@@ -264,6 +264,8 @@ describe('demo-funds withdrawal guard', () => {
     ['DEMO_WITHDRAWAL_GUARD_ENABLED=true', { DEMO_WITHDRAWAL_GUARD_ENABLED: 'true' }],
     ['DEMO_SPOT_ENABLED=true (forced on)', { DEMO_SPOT_ENABLED: 'true' }],
     ['DEMO_SPOT_ENABLED=true with the guard switch set to false (cannot be switched off)', { DEMO_SPOT_ENABLED: 'true', DEMO_WITHDRAWAL_GUARD_ENABLED: 'false' }],
+    // Demo Liquidity (#599) changes demo funds by trading too, also for the admin sandbox with Demo Spot off.
+    ['DEMO_LIQUIDITY_ENABLED=true (forced on)', { DEMO_LIQUIDITY_ENABLED: 'true', DEMO_WITHDRAWAL_GUARD_ENABLED: 'false' }],
   ])('%s: a demo-valued account files nothing and lists nothing', async (_label, env) => {
     Object.assign(process.env, env);
     const prisma = makePrisma({ balance: { available: '5000', locked: '0' } });

@@ -67,6 +67,7 @@ import { FuturesProtectionService } from './futures/FuturesProtectionService';
 import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
 import { DemoTradingService } from './services/DemoTradingService';
+import { demoLiquidityConfig, marketReference } from './services/DemoLiquidity';
 import { demoTradingRouter } from './api/routes/demoTrading';
 import { isTestAssetPairOrSymbol } from './services/testMarkets/testAssetConfig';
 import { stocksTestCashRouter } from './api/routes/stocksTestCash';
@@ -153,7 +154,14 @@ const spotOrderService = accountDeletionGate.guard(new OrderService(prisma, engi
 const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, marketDataService);
 
 const demoEngine = new MatchingEngine();
-const demoTradingService = accountDeletionGate.guard(new DemoTradingService(prisma, demoEngine), ['placeOrder', 'cancelOrder', 'topUp']);
+// Internal demo liquidity: off unless DEMO_LIQUIDITY_ENABLED=true and its configuration parses
+// (docs/DEMO_LIQUIDITY.md). Its reference is the market-data cache; nothing is sent to a venue.
+const demoLiquidity = demoLiquidityConfig();
+if (demoLiquidity.problem) console.warn(`[demo-liquidity] off: ${demoLiquidity.problem}`);
+const demoTradingService = accountDeletionGate.guard(new DemoTradingService(prisma, demoEngine, {
+  liquidity: demoLiquidity.config ? { config: demoLiquidity.config, reference: marketReference(marketDataService) } : null,
+  liquidityProblem: demoLiquidity.problem,
+}), ['placeOrder', 'cancelOrder', 'topUp']);
 const adminUserDeletion = new AdminUserDeletionService(prisma, accountDeletionGate, { spot: engine, futures: futuresEngine, demo: demoEngine });
 const privateTradingService = new PrivateTradingService(new PrivateTradingStore(prisma),
   process.env.MARKET_DATA_COLLECTOR_URL && process.env.MARKET_DATA_COLLECTOR_TOKEN
