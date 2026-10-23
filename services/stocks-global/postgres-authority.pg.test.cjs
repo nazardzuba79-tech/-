@@ -185,3 +185,14 @@ pg('abort after observation activation leaves its real atomic COMMIT intact',asy
   const active=f.authority.execute(f.actors[0],'observe',quote,{signal:controller.signal,occurrenceId:'fixture-active-observation-commit'});await entered.promise;controller.abort();release.resolve();
   const result=await active;assert.ok(result.receipt);const after=await f.rows();assert.equal(after.cash[0].available.toFixed(8),'723.25000000');assert.equal(after.cash[0].locked.toFixed(8),'0.00000000');assert.equal(after.accounts[0].ledger.fills.length,1);assert.equal(after.receipts.length,2);assert.equal(after.audit.length,2);
 });
+
+pg('second server gate OFF (the production default): both bound traders are refused and nothing is reserved or written',async t=>{
+  const f=await fixture(t,{orderExecutionEnabled:false}),before=await f.rows(),refusals=[];
+  for(const index of [0,1]){
+    const token=(await f.request('state?id='+encodeURIComponent(f.ID),{index})).data?.token;
+    const placed=await f.request('orders',{index,body:{gatewayToken:token??'none',...order('pg-gate-off-market-0'+index,{type:'MARKET'})}});
+    assert.notEqual(placed.status,200,JSON.stringify(placed));refusals.push(placed.status);
+  }
+  assert.deepEqual(await f.rows(),before);
+  t.diagnostic('refusals '+refusals.join(','));
+});

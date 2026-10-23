@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { OrderFamilyTabs, type OrderFamily } from '../../components/OrderFamilyPresentation';
 import { useLanguage } from '../../lib/i18n';
 import type { StockInstrument } from '../../lib/stocks';
@@ -7,7 +7,6 @@ import './stockOrderPanel.css';
 /** Presentation only. No account hooks, quote extraction, sizing or submission. */
 export function StockOrderPanel({ instrument }: { instrument: StockInstrument }) {
   const { t } = useLanguage();
-  const notice = useId();
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [family, setFamily] = useState<OrderFamily>('LIMIT');
   const [price, setPrice] = useState('');
@@ -22,7 +21,7 @@ export function StockOrderPanel({ instrument }: { instrument: StockInstrument })
       </div>
       <OrderFamilyTabs value={family} onChange={setFamily} archive allowedFamilies={['LIMIT', 'MARKET']} />
       <div className="vxs-order-available"><span>{t('trade.available')}</span><span>— {instrument.currency}</span></div>
-      <form className="vxs-order-form" onSubmit={event => event.preventDefault()} aria-describedby={notice}>
+      <form className="vxs-order-form" onSubmit={event => { event.preventDefault(); event.stopPropagation(); }}>
         <label className="vxs-order-field"><span>{t('trade.price')}</span>
           <div><input aria-label={t('trade.price')} inputMode="decimal" autoComplete="off"
             value={family === 'MARKET' ? '' : price} placeholder={family === 'MARKET' ? t('futures.closeMarket') : '—'}
@@ -35,10 +34,9 @@ export function StockOrderPanel({ instrument }: { instrument: StockInstrument })
         <label className="vxs-order-field"><span>{t('trade.total')}</span>
           <div><input aria-label={t('trade.total')} readOnly value="" placeholder="—" /><span>{instrument.currency}</span></div>
         </label>
-        <button type="submit" className={`vxs-order-submit ${side.toLowerCase()}`} disabled aria-describedby={notice}>
+        <button type="submit" className={`vxs-order-submit ${side.toLowerCase()}`}>
           {t(side === 'BUY' ? 'trade.buy' : 'trade.sell')} {instrument.symbol}
         </button>
-        <p id={notice} className="vxs-order-notice">{t('stocks.tradingUnavailable')}</p>
       </form>
     </div>
   </section>;
