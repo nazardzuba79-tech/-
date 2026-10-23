@@ -719,6 +719,8 @@ export const api = {
     price?: string;
     triggerPrice?: string;
     quantity: string;
+    /** With Demo Spot on: a retry after a lost response returns the same order. */
+    requestId?: string;
   }) => request('/orders', { method: 'POST', body: JSON.stringify(params) }),
 
   placeOcoOrder: (params: {
@@ -728,6 +730,7 @@ export const api = {
     takeProfitPrice: string;
     stopTriggerPrice: string;
     stopLimitPrice: string;
+    requestId?: string;
   }) =>
     request<{ ocoGroupId: string; takeProfitOrderId: string; stopOrderId: string }>('/orders/oco', {
       method: 'POST',
@@ -778,6 +781,29 @@ export const api = {
         createdAt: string;
       }[]
     >('/demo/orders/open'),
+
+  // Demo Spot (Issue #592): with the server's DEMO_SPOT_ENABLED an
+  // admin-credited account trades the demo ledger too (see lib/demoSpot).
+  getDemoSpotAccess: () => request<{ enabled: boolean; admitted: boolean; ledger?: 'spot' | 'demo' | 'none' }>('/demo/spot/access'),
+
+  /** `requestId` makes a retry after a lost response return the same order. */
+  placeDemoSpotOrder: (params: { pair: string; side: 'BUY' | 'SELL'; type: 'LIMIT' | 'MARKET'; price?: string; quantity: string; requestId: string }) =>
+    request('/demo/orders', { method: 'POST', body: JSON.stringify(params) }),
+
+  getDemoOrderHistory: () =>
+    request<
+      {
+        id: string;
+        pair: string;
+        side: 'BUY' | 'SELL';
+        type: 'LIMIT' | 'MARKET';
+        price: string | null;
+        originalQuantity: string;
+        remainingQuantity: string;
+        status: string;
+        createdAt: string;
+      }[]
+    >('/demo/orders/history'),
 
   cancelDemoOrder: (orderId: string) => request(`/demo/orders/${orderId}`, { method: 'DELETE' }),
 

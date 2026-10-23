@@ -9,6 +9,7 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { isSimulationOnlyUser } from '../../private-trading/access';
 import { PrivateTradingError, type OwnerSession } from '../../private-trading/serviceTypes';
 import { isTestAssetPairOrSymbol } from '../../services/testMarkets/testAssetConfig';
+import { demoWithdrawalGuardEnabled } from '../../services/demoSpotAccess';
 
 const requestSchema = z.object({
   asset: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{1,20}$/),
@@ -29,13 +30,16 @@ export type TradingWalletReader = (actor: OwnerSession) => Promise<{ asset: stri
 
 export interface WithdrawalsRouterOptions {
   tradingWallet?: TradingWalletReader;
+  /** The demo-funds guard, read per request (default: demoWithdrawalGuardEnabled()). */
+  demoFundsGuard?: () => boolean;
 }
 
 const TRADING_UNAVAILABLE = 'Trading account balance is temporarily unavailable';
 
 export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRouterOptions = {}): Router {
   const router = Router();
-  const service = new WithdrawalService(prisma);
+  const demoFundsGuard = options.demoFundsGuard ?? (() => demoWithdrawalGuardEnabled());
+  const service = new WithdrawalService(prisma, { demoFundsGuard });
 
   /**
    * The caller's Cross trading account rows, or `null` for an account that
@@ -86,7 +90,8 @@ export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRout
    * What the caller can withdraw, per asset, as the server will check it.
    *
    * TRADING: a Cross trading account — its rows' `available`, less what its
-   * earlier unheld requests already claim. SPOT: the spot ledger's
+   * earlier unheld requests already claim; nothing while the demo-funds guard
+   * is on (its rows are valued from demo funds). SPOT: the spot ledger's
    * `available`; `futures` then lists what sits on the futures ledger and
    * would have to be transferred first. Assets with nothing withdrawable are
    * left out; test-market assets never appear.
@@ -101,6 +106,7 @@ export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRout
     const positive = (list: { asset: string; available: string }[]) =>
       list.filter((b) => !isTestAssetPairOrSymbol(b.asset) && new BigNumber(b.available).isGreaterThan(0));
 
+    if (rows && demoFundsGuard()) return res.json({ source: 'TRADING', assets: [], futures: [] });
     if (rows) {
       const assets = await Promise.all(rows.map(async (row) => {
         const claimed = await service.unheldClaimed(prisma, req.userId!, row.asset);
@@ -131,6 +137,9 @@ export function withdrawalsRouter(prisma: PrismaClient, options: WithdrawalsRout
     } catch (err) {
       return tradingFailure(res, err);
     }
+
+    // Demo-funds guard (Issue #592): a demo-valued account files no request; nothing is written.
+    if (rows && demoFundsGuard()) return res.status(403).json({ error: 'Demo funds are not withdrawable', code: 'DEMO_FUNDS_NOT_WITHDRAWABLE' });
 
     try {
       const result = rows

@@ -7,7 +7,10 @@ import { managedListingLogo } from '../lib/testMarkets';
 import voltoraLogo from '../assets/voltora-logo.svg';
 import neurixLogo from '../assets/neurix-logo.svg';
 
-const TEST_ASSET_ICONS: Readonly<Record<string, string>> = { VTA: voltoraLogo, NRX: neurixLogo };
+const TEST_ASSET_ICONS: Readonly<Record<string, string>> = {
+  VTA: voltoraLogo, NRX: neurixLogo,
+  TYVN: '/brand/tyvn/teryvane-approved-variant-3.webp',
+};
 
 /**
  * Icon resolution, in order:
@@ -173,6 +176,19 @@ export function CryptoIcon({
   }, [symbol, preferredUrl]);
 
   const usingFallback = !preferredUrl || preferredFailed;
+
+  // The approved artwork includes a wordmark. Frame only its original
+  // monogram at the caller's existing icon size; reference coins keep their
+  // canonical metadata identity rather than inheriting our listing's logo.
+  if (!metadataOnly && symbol.toUpperCase() === 'TYVN') {
+    return (
+      <svg className="crypto-icon-tyvn" role="img" aria-label={symbol}
+        width={size} height={size} viewBox="275 75 705 760" focusable="false"
+        style={{ display: 'block', flexShrink: 0, overflow: 'hidden', mixBlendMode: 'screen' }}>
+        <image href={TEST_ASSET_ICONS.TYVN} width="1254" height="1254" />
+      </svg>
+    );
+  }
 
   if (usingFallback && (fallbackFailed || metadataOnly || managedLogo !== undefined)) {
     return (
