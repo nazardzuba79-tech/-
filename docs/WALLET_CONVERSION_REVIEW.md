@@ -92,7 +92,7 @@ npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts pg@8.23.1 
 npx jest --runInBand --runTestsByPath src/services/__tests__/WalletConversionService.test.ts frontend/src/lib/__tests__/walletConversion.test.ts
 WALLET_QA_PG_BIN="$(pg_config --bindir)" node scripts/test-wallet-conversion-postgres.cjs   # PostgreSQL only
 (cd frontend && VITE_WALLET_CONVERSION_ENABLED=true npx vite build) && WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 node scripts/test-wallet-conversion-postgres.cjs
-(cd frontend && npx vite build --outDir ../.wallet-off-dist) && WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 WALLET_QA_EXPECT_OFF=1 WALLET_QA_DIST=.wallet-off-dist node scripts/test-wallet-conversion-postgres.cjs
+(cd frontend && npx vite build --outDir ../output/wallet-off-dist) && WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 WALLET_QA_EXPECT_OFF=1 WALLET_QA_DIST=output/wallet-off-dist node scripts/test-wallet-conversion-postgres.cjs
 ```
 
 The runner ignores `DATABASE_URL`, starts a new loopback-only temporary PostgreSQL cluster with its own
