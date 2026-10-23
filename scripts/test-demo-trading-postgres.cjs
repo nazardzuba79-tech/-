@@ -25,6 +25,7 @@ const { MatchingEngine } = require('../src/matching-engine/MatchingEngine');
 const { DemoTradingService } = require('../src/services/DemoTradingService');
 const { BalanceAdjustmentService } = require('../src/services/BalanceAdjustmentService');
 const { transferWalletBalance } = require('../src/services/WalletTransferService');
+const { WithdrawalService, DemoFundsNotWithdrawableError } = require('../src/services/WithdrawalService');
 const { ordersRouter } = require('../src/api/routes/orders');
 const { balancesRouter } = require('../src/api/routes/balances');
 const { demoTradingRouter } = require('../src/api/routes/demoTrading');
@@ -79,8 +80,12 @@ async function main() {
     app.use('/api/v1', balancesRouter(prisma));
     app.use('/api/v1', demoTradingRouter(prisma, demoProxy, undefined, { enabled: () => enabled, isSpotPair: async pair => spotPairs.has(pair) }));
     // The native Cross wallet is valued from DemoBalance (PrismaNativeRepository); this reader stands in for that valuation.
-    app.use('/api/v1', withdrawalsRouter(prisma, { tradingWallet: async actor => actor.userId === TRADER
+    // The demo-funds guard: its own switch, forced on while Demo Spot is on (demoWithdrawalGuardEnabled).
+    let guardSwitch = false;
+    const demoFundsGuard = () => guardSwitch || enabled;
+    app.use('/api/v1', withdrawalsRouter(prisma, { demoFundsGuard, tradingWallet: async actor => actor.userId === TRADER
       ? (await prisma.demoBalance.findMany({ where: { userId: actor.userId } })).map(b => ({ asset: b.asset, available: b.available.toString() })) : null }));
+    const adminWithdrawals = new WithdrawalService(prisma, { demoFundsGuard }); // what the admin routes call
     if (process.env.DEMO_QA_BROWSER === '1') {
       const dist = path.resolve(root, process.env.DEMO_QA_DIST || 'frontend/dist');
       app.use(express.static(dist, { index: false }));
@@ -298,19 +303,43 @@ async function main() {
     await check('the real Spot ledger is untouched by demo trading (orders, trades, every Balance row)', async () => {
       assert.deepEqual(await realState(), realBefore);
     });
-    await check('withdrawals ignore DEMO_SPOT_ENABLED: Balance-funded accounts (incl. a configured tester without a Cross wallet) request as before; the demo-valued Cross wallet never can', async () => {
-      for (const flag of [true, false]) {
-        enabled = flag;
-        for (const who of ['funded', TRADER2]) {
-          const r = await api('POST', '/withdrawals', who, { asset: 'USDT', network: 'TRC20', toAddress: 'TQAFIXTURE', amount: '1' });
-          assert.equal(r.status, 200, `${who} flag=${flag}`); assert.equal(r.body.status, 'PENDING'); assert.equal(r.body.balanceHeld, true);
-        }
-        assert.equal((await api('GET', '/withdrawals/options', TRADER2)).body.source, 'SPOT');
-        const native = await api('POST', '/withdrawals', TRADER, { asset: 'USDT', network: 'TRC20', toAddress: 'TQAFIXTURE', amount: '1' });
-        assert.equal(native.status, 403, `native flag=${flag}`);
+    let pendingUnheldId;
+    await check('withdrawal guard: off (default, every flag unset) = main exactly for the demo-valued Cross account; on (own switch, or forced by Demo Spot) nothing is filed and existing PENDING/APPROVED requests are neither approved nor sent, only rejectable; Balance requests unchanged in every mode', async () => {
+      const send = (who, amount = '1') => api('POST', '/withdrawals', who, { asset: 'USDT', network: 'TRC20', toAddress: 'TQAFIXTURE', amount });
+      const state = async () => JSON.stringify({ rows: await prisma.withdrawal.findMany({ where: { userId: TRADER }, orderBy: { createdAt: 'asc' }, select: { id: true, status: true, balanceHeld: true, amount: true } }),
+        audit: await prisma.auditLog.count({ where: { userId: TRADER, action: { startsWith: 'WITHDRAWAL_' } } }), demo: await prisma.demoBalance.findMany({ where: { userId: TRADER }, orderBy: { asset: 'asc' } }),
+        balance: await prisma.balance.count({ where: { userId: TRADER } }) });
+      const demoBefore = JSON.stringify(await prisma.demoBalance.findMany({ where: { userId: TRADER }, orderBy: { asset: 'asc' } }));
+      // Off: the old flow — an unheld PENDING request against the Cross valuation, net of earlier claims.
+      enabled = false; guardSwitch = false;
+      const first = await send(TRADER), second = await send(TRADER), third = await send(TRADER);
+      pendingUnheldId = third.body.id; // stays PENDING: the pre-activation query must list it
+      assert.equal(first.status, 200); assert.equal(first.body.status, 'PENDING'); assert.equal(first.body.balanceHeld, false);
+      assert.equal(second.status, 200);
+      assert.deepEqual((await api('GET', '/withdrawals/options', TRADER)).body, { source: 'TRADING', assets: [{ asset: 'USDT', available: '97' }], futures: [] });
+      assert.equal((await adminWithdrawals.approveWithdrawal({ withdrawalId: second.body.id, performedByAdminId: 'admin' })).status, 'APPROVED');
+      for (const who of ['funded', TRADER2]) { const r = await send(who); assert.equal(r.status, 200); assert.equal(r.body.balanceHeld, true); }
+      // On, by its own switch or forced by Demo Spot (the switch cannot turn it off then).
+      for (const [label, mode] of [['own switch', { guard: true, spot: false }], ['forced by DEMO_SPOT_ENABLED', { guard: false, spot: true }]]) {
+        guardSwitch = mode.guard; enabled = mode.spot;
+        const before = await state();
+        const refused = await send(TRADER);
+        assert.equal(refused.status, 403, label); assert.equal(refused.body.code, 'DEMO_FUNDS_NOT_WITHDRAWABLE');
+        assert.deepEqual((await api('GET', '/withdrawals/options', TRADER)).body, { source: 'TRADING', assets: [], futures: [] });
+        await assert.rejects(adminWithdrawals.approveWithdrawal({ withdrawalId: first.body.id, performedByAdminId: 'admin' }), DemoFundsNotWithdrawableError);
+        await assert.rejects(adminWithdrawals.markSent({ withdrawalId: second.body.id, performedByAdminId: 'admin', txHash: '0xfixture' }), DemoFundsNotWithdrawableError);
+        assert.equal(await state(), before, `${label}: nothing written, existing requests untouched`);
+        for (const who of ['funded', TRADER2]) { const r = await send(who); assert.equal(r.status, 200, `${who} ${label}`); assert.equal(r.body.balanceHeld, true); }
       }
+      // Rejecting an existing unheld request stays possible with the guard on; nothing is given back (nothing was held).
+      guardSwitch = true; enabled = false;
+      assert.equal((await adminWithdrawals.rejectWithdrawal({ withdrawalId: first.body.id, performedByAdminId: 'admin', reason: 'demo funds' })).status, 'REJECTED');
+      // Off again: the old flow resumes unchanged (an APPROVED request can be marked sent, as on main).
+      guardSwitch = false; enabled = false;
+      assert.equal((await adminWithdrawals.markSent({ withdrawalId: second.body.id, performedByAdminId: 'admin', txHash: '0xfixture' })).status, 'SENT');
+      assert.equal(JSON.stringify(await prisma.demoBalance.findMany({ where: { userId: TRADER }, orderBy: { asset: 'asc' } })), demoBefore, 'no request moves a demo balance');
+      assert.equal(await prisma.balance.count({ where: { userId: TRADER } }), 0, 'demo funds never reach Balance');
       enabled = true;
-      assert.equal(await prisma.withdrawal.count({ where: { userId: TRADER } }), 0);
     });
     await check('rollback: unsetting DEMO_SPOT_ENABLED refuses testers at once; the admin sandbox and the ledger stay', async () => {
       enabled = false;
@@ -430,9 +459,10 @@ async function main() {
     });
     await check('the read-only pre-activation SQL in docs/DEMO_TRADING.md runs and lists exactly what it should', async () => {
       const blocks = [...fs.readFileSync(path.join(root, 'docs/DEMO_TRADING.md'), 'utf8').matchAll(/```sql\n([\s\S]*?)```/g)].map(m => m[1]);
-      assert.equal(blocks.length, 3);
+      assert.equal(blocks.length, 4);
       for (const query of blocks) assert.match(query, /^(\s*--[^\n]*\n)*\s*SELECT [^;]*;\s*$/, 'one read-only SELECT');
-      const [stale, switching, keeping] = await Promise.all(blocks.map(query => sql.query(query).then(r => r.rows)));
+      const [stale, switching, keeping, unheld] = await Promise.all(blocks.map(query => sql.query(query).then(r => r.rows)));
+      assert.deepEqual(unheld.map(r => [r.id, r.status]), [[pendingUnheldId, 'PENDING']]); // REJECTED/SENT and Balance-held requests are not listed
       assert.deepEqual(stale.map(r => r.id), ['legacy-maker']); // the inconsistent row the fail-closed check wrote
       assert.deepEqual(switching.map(r => r.id), ['both']); // a demo credit AND ordinary funds: its terminal moves to the demo ledger
       assert.deepEqual([...new Set(keeping.map(r => r.id))].sort(), ['funded', 'legacy', 'legacyMaker', TRADER2].sort()); // keep the ordinary ledger

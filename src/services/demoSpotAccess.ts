@@ -20,6 +20,26 @@ export type DemoSpotRole = 'admin' | 'trader';
 
 export const demoSpotEnabled = (env: NodeJS.ProcessEnv = process.env) => env.DEMO_SPOT_ENABLED === 'true';
 
+/**
+ * The demo-funds withdrawal guard. A Cross trading account (the pinned owner,
+ * PRIVATE_TRADING_TEST_USER_IDS) is valued from the native demo ledger, and on
+ * main it may file an unheld withdrawal request (`balanceHeld: false`) that an
+ * admin then approves and pays by hand. With the guard on, such an account
+ * files nothing (`/withdrawals/options` lists nothing, `POST /withdrawals` is
+ * 403), and no unheld request — including PENDING/APPROVED ones filed before —
+ * can be approved or marked sent; it can still be rejected. Nothing is
+ * cancelled or rewritten automatically.
+ *
+ * Off by default: with every demo feature off, withdrawals behave exactly as on
+ * main. Its own switch is `DEMO_WITHDRAWAL_GUARD_ENABLED=true`, and it is
+ * forced on — it cannot be switched off — while `DEMO_SPOT_ENABLED` or
+ * `DEMO_LIQUIDITY_ENABLED` is on, because both let demo funds change by
+ * trading: demo funds traded here never become a payable claim. Requests that
+ * hold `Balance` are never affected.
+ */
+export const demoWithdrawalGuardEnabled = (env: NodeJS.ProcessEnv = process.env) =>
+  env.DEMO_WITHDRAWAL_GUARD_ENABLED === 'true' || demoSpotEnabled(env) || env.DEMO_LIQUIDITY_ENABLED === 'true';
+
 export async function demoSpotRole(
   db: PrismaClient | Prisma.TransactionClient, userId: string, enabled = demoSpotEnabled(),
 ): Promise<DemoSpotRole | null> {

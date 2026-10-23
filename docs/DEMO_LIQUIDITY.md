@@ -57,7 +57,10 @@ enabled by merging it.
 - Sends an order to Kraken or any venue.
 - Creates or emits funds: every demo unit stays traceable to an admin demo top-up, checked by the PG runner after
   every step.
-- Changes ordinary Spot, Futures, TYVN, AITH, NRX, VTA, listings, Stocks or the withdrawal rules.
+- Changes ordinary Spot, Futures, TYVN, AITH, NRX, VTA, listings or Stocks.
+- Lets demo funds become a withdrawal: while `DEMO_LIQUIDITY_ENABLED=true`, #596's demo-funds withdrawal guard is
+  **forced on** (`demoWithdrawalGuardEnabled`; it cannot be switched off then), also for the admin sandbox with Demo
+  Spot off. With liquidity off the guard follows #596 alone (its own switch, or Demo Spot).
 - Quotes test markets, managed listings or VTA: the configuration refuses them, and they have no market reference.
 - Uses a native Cross trading account (owner / `PRIVATE_TRADING_TEST_USER_IDS`) as inventory: the configuration
   refuses it, because that DemoBalance values a Cross wallet.
@@ -160,6 +163,7 @@ A USER gets 403.
 4. Admin credits that account through «Тестовое начисление» only — e.g. 0.05 BTC, 1 ETH, 5 000 USDT. This is the
    inventory limit for every quote.
 5. Set the environment variables and restart only the API:
+   - `DEMO_WITHDRAWAL_GUARD_ENABLED=true` (forced on by liquidity anyway; keeps it on through a rollback);
    - `DEMO_LIQUIDITY_ENABLED=true`;
    - `DEMO_LIQUIDITY_ACCOUNT_ID=<that id>`;
    - `DEMO_LIQUIDITY_PAIRS=BTC/USDT,ETH/USDT`;
@@ -183,7 +187,7 @@ On production this equality holds only if no other writer touches DemoBalance. T
 and VTA demo sales do. So compare the **liquidity account's** movement against its own receipts instead:
 `SELECT side, SUM(price*"originalQuantity"), SUM("originalQuantity") FROM "DemoOrder" WHERE "userId" = '<id>' GROUP BY side;`
 
-**Rollback:** unset `DEMO_LIQUIDITY_ENABLED` and restart only the API.
+**Rollback:** unset `DEMO_LIQUIDITY_ENABLED` (keep `DEMO_WITHDRAWAL_GUARD_ENABLED=true`) and restart only the API.
 - Quotes stop at once.
 - No order rests, so nothing is left to clean up.
 - Balances and receipts stay as they are.
