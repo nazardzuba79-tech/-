@@ -67,6 +67,16 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
   const familyCount = async (page, mobile) => mobile
     ? page.locator('.order-type-select select option').count()
     : page.locator('.order-type-tabs').first().locator('.order-type-tab').count();
+  // Until the server's access answer arrives the terminal stays fail-closed
+  // (LIMIT/MARKET, nothing sent): wait for the settled state before acting.
+  const settledFamilies = async (page, mobile, expected) => {
+    for (let i = 0; i < 150 && await familyCount(page, mobile) !== expected; i++) await page.waitForTimeout(100);
+    return familyCount(page, mobile);
+  };
+  const traderReady = page => page.waitForFunction(() => {
+    const text = document.querySelector('form.order-form-content .available-balance .amount')?.textContent ?? '';
+    return /USDT/.test(text) && !/^0\.00/.test(text.trim());
+  }, null, { timeout: 15000 });
   try {
     if (expectOff) {
       // Default build: the terminal never asks, and an order goes to the ordinary ledger as before.
@@ -108,7 +118,7 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
       {
         const { page, context, calls, errors, mobile } = await open('tester', width);
         assert.equal(await familyCount(page, mobile), 2);
-        await page.waitForFunction(() => /USDT/.test(document.querySelector('form.order-form-content .available-balance .amount')?.textContent ?? '') && !/^0\.00/.test(document.querySelector('form.order-form-content .available-balance .amount')?.textContent ?? ''));
+        await traderReady(page);
         const before = await demoBal('tester', 'USDT');
         await limitOrder(page, 90000, 0.0001); await settle(page);
         assert.deepEqual(posts(calls), ['POST /api/v1/demo/orders']);
@@ -131,6 +141,7 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
     // 3. MARKET against resting demo depth; history and assets from the demo ledger (desktop).
     {
       const { page, context, calls, errors } = await open('tester', 1440);
+      await traderReady(page);
       const btc = await demoBal('tester', 'BTC');
       await page.locator('.order-type-tab', { hasText: 'Рынок' }).first().click();
       await form(page).locator('input[aria-label="Количество"]:not([type="range"])').fill('0.0005');
@@ -157,7 +168,8 @@ async function run({ origin, out, token, setEnabled, topUp, demoBal, prisma }) {
     {
       setEnabled(false);
       const { page, context, calls, errors, mobile } = await open('tester', 1440);
-      assert.equal(await familyCount(page, mobile), 5);
+      assert.equal(await settledFamilies(page, mobile, 5), 5);
+      assert.ok(calls.includes('GET /api/v1/demo/spot/access'));
       await limitOrder(page, 90000, 0.0001); await settle(page);
       assert.deepEqual(posts(calls), ['POST /api/v1/orders'], 'server flag off: ordinary /orders (refused: no Balance)');
       assert.deepEqual(errors, []);
