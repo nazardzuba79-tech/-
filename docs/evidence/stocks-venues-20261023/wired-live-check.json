@@ -1,0 +1,38 @@
+{
+ "checkedAt": "2026-10-23T17:23:47.234Z",
+ "GATE:AAPLX_USDT": {
+  "bid": "346.21000000",
+  "ask": "346.28000000",
+  "last": "346.37000000",
+  "ageSec": 3,
+  "candles": 300,
+  "ascending": true,
+  "lastCandle": {
+   "time": 1792775700,
+   "open": 346.42,
+   "high": 346.42,
+   "low": 346.37,
+   "close": 346.37,
+   "volume": 0.098
+  }
+ },
+ "BINANCE:AAPLBUSDT": {
+  "bid": "346.62000000",
+  "ask": "346.62000000",
+  "last": "346.62000000",
+  "ageSec": 129,
+  "candles": 300,
+  "ascending": true,
+  "lastCandle": {
+   "time": 1792775700,
+   "open": 346.64,
+   "high": 346.64,
+   "low": 346.43,
+   "close": 346.62,
+   "volume": 11.331
+  }
+ },
+ "MEXC:AAPLXUSDT": {
+  "error": "DATA_RIGHTS_UNVERIFIED"
+ }
+}

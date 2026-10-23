@@ -31,6 +31,8 @@ pre-COMMIT fences remain authoritative.
 | Financial authority | `STOCKS_TEST_CASH_ENABLED=true` | Existing two-principal PG authority operations; requires explicit separate approval. |
 | Order execution (PR #593) | `STOCKS_ORDER_EXECUTION_ENABLED=true` | Second server gate on `/stocks-test-cash/command`, off unless exactly `true`; with it off both bound traders get 403 `ACCOUNT_TRADING_DISABLED` before the authority runs. Requires the financial gate as well. |
 | Market data | `STOCKS_MARKET_DATA_ENABLED=true` | Explicit provider activation only after data rights/feed readiness. Default unavailable with no provider requests or prices/candles. |
+| Extra venues (#561) | `STOCKS_VENUES_ENABLED=gate,mexc,…` **and** `STOCKS_VENUE_RIGHTS_CONFIRMED=<same list>` | Only with market data on. Each venue must also be in the operator's data-rights attestation, otherwise the API refuses to start (`DATA_RIGHTS_UNVERIFIED`). A venue left out gets no request; its rows stay hidden and its instruments answer `DATA_RIGHTS_UNVERIFIED`. The attestation records a confirmed licence; it is not one. |
+| Binance host (#561) | `STOCKS_BINANCE_HOST=data-api.binance.vision` | Optional: Binance's documented public market-data host (same paths). Any other value refuses to start. |
 
 Hosted frontend: use normal same-origin `VITE_API_URL=/api/v1`. Do not set
 `VITE_STOCKS_GLOBAL_SIMULATOR`, `VITE_STOCKS_SIMULATOR` or

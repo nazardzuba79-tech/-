@@ -9,9 +9,12 @@ import { check } from './engine.mjs';
  * two-trader authority-backed service. No connection opens without demand.
  * Operator MUST establish data rights before enabling any real provider.
  */
-export function createStocksRuntimeMarket({ enabled = 'false', authorityMode = false, feedOptions } = {}) {
+export function createStocksRuntimeMarket({ enabled = 'false', authorityMode = false, feedOptions, venues = [], binanceHost } = {}) {
   check(enabled === 'true' || enabled === 'false', 'AUTH_CONFIG_INVALID');
-  if (enabled === 'false') return new MarketHub();
+  // Per-venue adapters (venues.mjs) and the Binance public market-data host are
+  // passed through unchanged; MarketHub refuses unknown venues and hosts.
+  const sources = { venues, ...(binanceHost === undefined ? {} : { binanceHost }) };
+  if (enabled === 'false') return new MarketHub(sources);
   check(authorityMode === true, 'AUTH_CONFIG_INVALID');
-  return new BinanceStreamMarketHub({ enabled: true, ...(feedOptions === undefined ? {} : { feedOptions }) });
+  return new BinanceStreamMarketHub({ enabled: true, ...sources, ...(feedOptions === undefined ? {} : { feedOptions }) });
 }
