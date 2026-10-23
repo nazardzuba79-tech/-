@@ -68,6 +68,7 @@ import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoTradingRouter } from './api/routes/demoTrading';
+import { isTestAssetPairOrSymbol } from './services/testMarkets/testAssetConfig';
 import { stocksTestCashRouter } from './api/routes/stocksTestCash';
 import { VtaDemoSales } from './services/testMarkets/VtaDemoSales';
 import { privateTradingRouter } from './api/routes/privateTrading';
@@ -307,7 +308,11 @@ app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry, futuresProtectionService));
 // Authenticated Support relays to the private-key-protected mail Worker.
 // No Support timers or new tables are needed.
-app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell'])));
+// Demo Spot for admin-credited USER accounts: off unless DEMO_SPOT_ENABLED=true.
+// A pair is admitted only when the real market feed lists it (the terminal's pair set).
+app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell']), {
+  isSpotPair: async pair => !isTestAssetPairOrSymbol(pair) && (await marketDataService.getTicker(pair)) !== null,
+}));
 app.use('/api/v1', privateTradingRouter(prisma, privateTradingService, bestEffortWake(() => nativeLimitPass?.nudge(), 'native-limit-pass')));
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));

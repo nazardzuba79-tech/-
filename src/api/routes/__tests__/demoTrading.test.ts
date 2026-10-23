@@ -138,3 +138,79 @@ describe('demo trading routes', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('demo Spot for admin-credited USER accounts (Issue #592)', () => {
+  const order = { pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '100', quantity: '1' };
+  const placed = { order: { id: 'o1', price: { toString: () => '100' }, originalQuantity: { toString: () => '1' }, remainingQuantity: { toString: () => '1' }, status: 'OPEN' }, trades: [] };
+  function accounts(rows: Record<string, { role: 'ADMIN' | 'USER'; blockedAt?: Date | null; credited?: boolean }>) {
+    return {
+      user: { findUnique: jest.fn(async ({ where: { id } }: any) => rows[id] ? { id, role: rows[id].role, blockedAt: rows[id].blockedAt ?? null } : null) },
+      auditLog: { findFirst: jest.fn(async ({ where }: any) => rows[where.userId]?.credited && where.action === 'DEMO_BALANCE_ADJUSTED' ? { id: 'credit' } : null) },
+    };
+  }
+  const people = { admin: { role: 'ADMIN' as const }, tester: { role: 'USER' as const, credited: true }, unfunded: { role: 'USER' as const },
+    blocked: { role: 'USER' as const, credited: true, blockedAt: new Date() } };
+  function app(enabled: boolean, demoTrading: any = { placeOrder: jest.fn().mockResolvedValue(placed) }, isSpotPair = jest.fn(async (pair: string) => pair === 'BTC/USDT')) {
+    const server = express(); server.use(express.json());
+    server.use('/api/v1', demoTradingRouter(accounts(people) as any, demoTrading, {} as any, { enabled: () => enabled, isSpotPair }));
+    return { server, demoTrading, isSpotPair };
+  }
+  const post = (server: express.Express, who: string, body: object = order) => request(server).post('/api/v1/demo/orders').set('Authorization', authHeader(who)).send(body);
+
+  it('flag OFF: unchanged — every non-admin is refused exactly as before, the admin keeps the sandbox', async () => {
+    const { server, demoTrading } = app(false);
+    for (const who of ['tester', 'unfunded', 'blocked']) {
+      const res = await post(server, who);
+      expect(res.status).toBe(403); expect(res.body).toEqual({ error: 'Admin access required' });
+    }
+    expect((await post(server, 'admin')).status).toBe(201);
+    expect(demoTrading.placeOrder).toHaveBeenCalledTimes(1);
+    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('tester'))).body).toEqual({ enabled: false, admitted: false });
+  });
+
+  it('flag ON: an admin-credited USER trades on the demo ledger under their own identity', async () => {
+    const { server, demoTrading } = app(true);
+    const res = await post(server, 'tester', { ...order, userId: 'someone-else' });
+    expect(res.status).toBe(201);
+    expect(demoTrading.placeOrder).toHaveBeenCalledWith(expect.objectContaining({ userId: 'tester', pair: 'BTC/USDT' }));
+    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('tester'))).body).toEqual({ enabled: true, admitted: true });
+  });
+
+  it('flag ON: no admin credit, a blocked account or no session is refused before the ledger is reached', async () => {
+    const { server, demoTrading } = app(true);
+    for (const who of ['unfunded', 'blocked', 'ghost']) {
+      const res = await post(server, who);
+      expect([401, 403]).toContain(res.status);
+      if (res.status === 403) expect(res.body.code).toBe('DEMO_ACCESS_DENIED');
+    }
+    expect((await request(server).post('/api/v1/demo/orders').send(order)).status).toBe(401);
+    for (const path of ['/demo/balances', '/demo/orders/open', '/demo/orders/history']) {
+      expect((await request(server).get('/api/v1' + path).set('Authorization', authHeader('unfunded'))).status).toBe(403);
+    }
+    expect((await request(server).delete('/api/v1/demo/orders/o1').set('Authorization', authHeader('unfunded'))).status).toBe(403);
+    expect(demoTrading.placeOrder).not.toHaveBeenCalled();
+    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('unfunded'))).body).toEqual({ enabled: true, admitted: false });
+    expect((await request(server).get('/api/v1/demo/spot/access').set('Authorization', authHeader('blocked'))).body).toEqual({ enabled: true, admitted: false });
+  });
+
+  it('flag ON: a tester may trade only pairs the real Spot terminal lists; the admin sandbox is unchanged', async () => {
+    const { server, demoTrading, isSpotPair } = app(true);
+    const res = await post(server, 'tester', { ...order, pair: 'FAKE/USDT' });
+    expect(res.status).toBe(400); expect(res.body.code).toBe('PAIR_NOT_SUPPORTED');
+    expect(demoTrading.placeOrder).not.toHaveBeenCalled();
+    isSpotPair.mockClear();
+    expect((await post(server, 'admin', { ...order, pair: 'FAKE/USDT' })).status).toBe(201);
+    expect(isSpotPair).not.toHaveBeenCalled();
+  });
+
+  it('a refusal from the ledger keeps its code: the client can say «not enough funds» without guessing', async () => {
+    const { server } = app(true, { placeOrder: jest.fn().mockRejectedValue(new DemoTradingError('Insufficient USDT balance', 'INSUFFICIENT_BALANCE')) });
+    const res = await post(server, 'tester');
+    expect(res.status).toBe(400); expect(res.body).toEqual({ error: 'Insufficient USDT balance', code: 'INSUFFICIENT_BALANCE' });
+  });
+
+  it('VTA routes stay admin-only with the flag on', async () => {
+    const { server } = app(true);
+    expect((await request(server).get('/api/v1/demo/vta').set('Authorization', authHeader('tester'))).status).toBe(403);
+  });
+});

@@ -43,10 +43,14 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
         return { asset, ...balances.get(key)! };
       }),
     },
+    // SpotBookTransaction: advisory lock + transaction id inside, commit status outside.
+    $queryRaw: jest.fn(async () => [{ id: '1' }]),
     demoOrder: {
       create: jest.fn(async ({ data }: any) => {
-        orders.set(data.id, { createdAt: new Date(), ...data });
+        orders.set(data.id, { createdAt: new Date(), updatedAt: new Date(), ...data });
       }),
+      findMany: jest.fn(async ({ where }: any) => [...orders.values()].filter(row => row.pair === where.pair
+        && (!where.type || row.type === where.type) && where.status.in.includes(row.status)).map(row => ({ ...row }))),
       update: jest.fn(async ({ where: { id }, data }: any) => {
         Object.assign(orders.get(id), data);
       }),
@@ -61,6 +65,8 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
       create: jest.fn(async ({ data }: any) => {
         trades.push(data);
       }),
+      findMany: jest.fn(async ({ where }: any) => trades.filter(row => row.pair === where.pair && where.OR.some((clause: any) =>
+        Object.entries(clause).some(([key, value]: any) => value.in.includes(row[key]))))),
     },
     auditLog: {
       create: jest.fn(async ({ data }: any) => {
@@ -69,7 +75,15 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
     },
   };
 
-  const prisma = { $transaction: jest.fn(async (fn: any) => fn(tx)) } as any;
+  // A thrown transaction leaves no partial writes, like PostgreSQL.
+  const prisma = { demoOrder: tx.demoOrder, $queryRaw: jest.fn(async () => [{ status: 'committed' }]), $transaction: jest.fn(async (fn: any) => {
+    const saved = [balances, orders].map(map => structuredClone([...map.entries()]));
+    const tradeCount = trades.length;
+    try { return await fn(tx); } catch (error) {
+      [balances, orders].forEach((map: Map<string, any>, i) => { map.clear(); for (const [key, value] of saved[i]) map.set(key, value); });
+      trades.length = tradeCount; throw error;
+    }
+  }) } as any;
   return { prisma, balances, orders, trades, auditLogs, tx };
 }
 
@@ -102,7 +116,7 @@ describe('DemoTradingService', () => {
 
       await expect(
         service.placeOrder({ userId: 'taker', pair: 'BTC/USDT', side: 'BUY', type: 'MARKET', quantity: new BigNumber(1) })
-      ).rejects.toThrow('No demo liquidity available');
+      ).rejects.toMatchObject({ message: 'No liquidity available for this market order', code: 'NO_LIQUIDITY' });
     });
 
     it('rejects placing an order with insufficient demo balance', async () => {
@@ -113,6 +127,9 @@ describe('DemoTradingService', () => {
       await expect(
         service.placeOrder({ userId: 'taker', pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(60000), quantity: new BigNumber(1) })
       ).rejects.toThrow(DemoTradingError);
+      await expect(
+        service.placeOrder({ userId: 'taker', pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(60000), quantity: new BigNumber(1) })
+      ).rejects.toMatchObject({ message: 'Insufficient USDT balance', code: 'INSUFFICIENT_BALANCE' });
     });
 
     it('never touches a real Balance/Order table — the fake prisma has none and nothing throws looking for one', async () => {
@@ -150,6 +167,71 @@ describe('DemoTradingService', () => {
       const { order } = await service.placeOrder({ userId: 'maker', pair: 'BTC/USDT', side: 'SELL', type: 'LIMIT', price: new BigNumber(60000), quantity: new BigNumber(1) });
 
       expect(await service.cancelOrder('someone-else', order.id)).toBeNull();
+    });
+  });
+
+  describe('one transactional book (Issue #592)', () => {
+    const limit = (userId: string, side: 'BUY' | 'SELL', price: number, quantity: number) =>
+      ({ userId, pair: 'BTC/USDT', side, type: 'LIMIT' as const, price: new BigNumber(price), quantity: new BigNumber(quantity) });
+
+    it('persists the maker after a fill, so a filled maker can never be cancelled into a second refund', async () => {
+      const { prisma, balances, orders } = makeFakePrisma({ 'maker:BTC': { available: '2', locked: '0' }, 'taker:USDT': { available: '1000', locked: '0' } });
+      const service = new DemoTradingService(prisma, new MatchingEngine());
+      const { order: maker } = await service.placeOrder(limit('maker', 'SELL', 100, 2));
+      await service.placeOrder(limit('taker', 'BUY', 100, 0.5));
+      expect(orders.get(maker.id)).toMatchObject({ status: 'PARTIALLY_FILLED', remainingQuantity: '1.5' });
+      await service.placeOrder(limit('taker', 'BUY', 100, 1.5));
+      expect(orders.get(maker.id)).toMatchObject({ status: 'FILLED', remainingQuantity: '0' });
+      expect(await service.cancelOrder('maker', maker.id)).toBeNull();
+      expect(bal(balances, 'maker', 'BTC')).toEqual({ available: new BigNumber(0), locked: new BigNumber(0) });
+      expect(bal(balances, 'maker', 'USDT').available.toFixed()).toBe('200');
+    });
+
+    it('a resting order survives a restart: a new process loads it from the committed rows', async () => {
+      const { prisma, balances } = makeFakePrisma({ 'maker:BTC': { available: '1', locked: '0' }, 'taker:USDT': { available: '1000', locked: '0' } });
+      await new DemoTradingService(prisma, new MatchingEngine()).placeOrder(limit('maker', 'SELL', 100, 1));
+      const restarted = new DemoTradingService(prisma, new MatchingEngine());
+      expect((await restarted.getOrderBook('BTC/USDT')).asks).toHaveLength(1);
+      const { order, trades } = await restarted.placeOrder({ userId: 'taker', pair: 'BTC/USDT', side: 'BUY', type: 'MARKET', quantity: new BigNumber(1) });
+      expect(order.status).toBe('FILLED'); expect(trades).toHaveLength(1);
+      // MARKET BUY locked 1 × 100 × 1.02; everything beyond the fill is refunded.
+      expect(bal(balances, 'taker', 'USDT')).toEqual({ available: new BigNumber(900), locked: new BigNumber(0) });
+      expect(bal(balances, 'taker', 'BTC').available.toFixed()).toBe('1');
+    });
+
+    it('a failed transaction leaves the published book and every balance unchanged', async () => {
+      const engine = new MatchingEngine();
+      const { prisma, balances, orders, tx } = makeFakePrisma({ 'maker:BTC': { available: '1', locked: '0' }, 'taker:USDT': { available: '1000', locked: '0' } });
+      const service = new DemoTradingService(prisma, engine);
+      await service.placeOrder(limit('maker', 'SELL', 100, 1));
+      const before = { book: engine.getBook('BTC/USDT').snapshot(), balances: structuredClone([...balances]), orders: orders.size };
+      tx.demoTrade.create.mockRejectedValueOnce(new Error('isolated settlement failure'));
+      await expect(service.placeOrder(limit('taker', 'BUY', 100, 1))).rejects.toThrow('isolated settlement failure');
+      expect(engine.getBook('BTC/USDT').snapshot().asks).toEqual(before.book.asks);
+      expect([...balances]).toEqual(before.balances); expect(orders.size).toBe(before.orders);
+    });
+
+    it('a MARKET order fills only resting depth; the unfilled rest is cancelled and refunded, never invented', async () => {
+      const { prisma, balances } = makeFakePrisma({ 'maker:BTC': { available: '1', locked: '0' }, 'taker:USDT': { available: '1000', locked: '0' } });
+      const service = new DemoTradingService(prisma, new MatchingEngine());
+      await service.placeOrder(limit('maker', 'SELL', 100, 0.4));
+      const { order, trades } = await service.placeOrder({ userId: 'taker', pair: 'BTC/USDT', side: 'BUY', type: 'MARKET', quantity: new BigNumber(1) });
+      expect(trades.map(t => t.quantity.toFixed())).toEqual(['0.4']);
+      expect(order.status).toBe('CANCELLED'); expect(order.remainingQuantity.toFixed()).toBe('0.6');
+      expect(bal(balances, 'taker', 'USDT')).toEqual({ available: new BigNumber(960), locked: new BigNumber(0) });
+      expect(bal(balances, 'taker', 'BTC').available.toFixed()).toBe('0.4');
+    });
+
+    it('a stale legacy maker (fills not reflected in its row) stops trading on that pair instead of refunding twice', async () => {
+      const { prisma, orders, trades, balances } = makeFakePrisma({ 'taker:USDT': { available: '1000', locked: '0' } });
+      const at = new Date('2026-10-01T00:00:00Z');
+      orders.set('legacy', { id: 'legacy', userId: 'maker', pair: 'BTC/USDT', side: 'SELL', type: 'LIMIT', price: '100',
+        originalQuantity: '1', remainingQuantity: '1', status: 'OPEN', createdAt: at, updatedAt: at });
+      trades.push({ id: 't', pair: 'BTC/USDT', makerOrderId: 'legacy', takerOrderId: 'old', quantity: '0.5' });
+      const service = new DemoTradingService(prisma, new MatchingEngine());
+      await expect(service.placeOrder(limit('taker', 'BUY', 100, 1))).rejects.toThrow('manual reconciliation required');
+      await expect(service.cancelOrder('maker', 'legacy')).rejects.toThrow('manual reconciliation required');
+      expect(bal(balances, 'taker', 'USDT')).toEqual({ available: new BigNumber(1000), locked: new BigNumber(0) });
     });
   });
 
