@@ -1,0 +1,125 @@
+name: TYVN owner-approved publication and timer
+on:
+  pull_request:
+    paths: ['.github/workflows/tyvn-owner-publication.yml']
+permissions:
+  contents: read
+concurrency:
+  group: tyvn-single-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.event.pull_request.draft == true && github.head_ref == 'release/tyvn-owner-approved-20261023' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      STORE_TOKEN: \${{ secrets.LISTINGS_STORE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect, safely publish once, start once and verify public listing
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs'),crypto=require('node:crypto');
+          const origin='https://market.voltextech.net';
+          const config=JSON.parse(fs.readFileSync('config/test-markets/tyvn.draft.json','utf8'));
+          const token=process.env.STORE_TOKEN||'';
+          const ok=(v,name)=>{if(!v)throw Error(name);};
+          const match=c=>!!c && c.symbol===config.symbol && c.name===config.name
+            && c.seed===config.seed && c.initialPrice===config.initialPrice
+            && c.listingAt===config.listingAt && c.ownerAllocation===config.ownerAllocation
+            && c.tradable===false && JSON.stringify(c.simulationProgram)===JSON.stringify(config.simulationProgram);
+          async function call(path,method='GET',body,extra={},priv=true){
+            const r=await fetch(origin+path,{method,redirect:'error',signal:AbortSignal.timeout(12000),
+              headers:priv?{Authorization:'Bearer '+token,'Content-Type':'application/json',
+                'X-Voltex-Admin-Id':'owner-approved-tyvn-20261023',...extra}:{Accept:'application/json'},
+              ...(body===undefined?{}:{body:JSON.stringify(body)})});
+            let value=null;try{value=await r.json();}catch{}
+            return {status:r.status,value};
+          }
+          async function privateState(){
+            const r=await call('/internal/listings');
+            ok(r.status===200 && Array.isArray(r.value?.listings),'PRIVATE_LISTINGS_UNAVAILABLE_'+r.status);
+            return r.value.listings;
+          }
+          async function publicState(){
+            const r=await call('/market/listings','GET',undefined,{},false);
+            ok(r.status===200 && Array.isArray(r.value?.assets),'PUBLIC_LISTINGS_UNAVAILABLE_'+r.status);
+            return r.value.assets;
+          }
+          const show=(stage,row,extra={})=>console.log('TYVN_RELEASE '+JSON.stringify({
+            stage,activeVersion:row?.activeVersion??null,timer:row?.countdown?.state??null,...extra
+          }));
+          (async()=>{
+            ok(token.length>=32,'GITHUB_SECRET_LISTINGS_STORE_TOKEN_MISSING');
+            ok(config.symbol==='TYVN'&&config.name==='TERYVANE'
+              &&config.seed==='teryvane-20261026-v1'
+              &&config.initialPrice==='0.0250'
+              &&config.listingAt==='2026-10-27T13:00:00Z'
+              &&config.tradable===false
+              &&config.simulationProgram?.kind==='scenario-controls-v2'
+              &&config.simulationProgram?.first24hGainPercent==='1725'
+              &&config.simulationProgram?.maxPrice==='2.33675'
+              &&config.simulationProgram?.afterGrowth==='range','PINNED_CONFIG_MISMATCH');
+            ok(Date.now()+120000<Date.parse(config.listingAt),'LISTING_DATE_TOO_CLOSE');
+            const health=await fetch('https://api.voltextech.net/health',{signal:AbortSignal.timeout(12000)}).then(r=>r.json());
+            ok(health.commit==='6f082a98d0c97c28215e6c5c8056b786d6fa6c99','API_SHA_MISMATCH');
+            const edge=await call('/health','GET',undefined,{},false);
+            ok(edge.status===200 && edge.value?.service==='voltex-market-edge'
+              && edge.value?.version==='public-display-edge-v10','WORKER_MISMATCH');
+            let rows=await privateState();
+            const matches=rows.filter(x=>x.symbol==='TYVN'||x.draft?.symbol==='TYVN'||x.active?.symbol==='TYVN');
+            ok(matches.length<=1,'DUPLICATE_TYVN');
+            let row=matches[0];
+            const pub=await publicState();
+            ok(pub.some(a=>a.symbol==='AITH'||a.pair==='AITH/USDT'),'AITH_BASELINE_MISSING');
+            show('BEFORE',row,{public:pub.some(a=>a.symbol==='TYVN'||a.pair==='TYVN/USDT')});
+            if(row?.activeVersion!==null && row?.activeVersion!==undefined){
+              ok(match(row.active),'ACTIVE_CONFIG_MISMATCH');
+              if(row.countdown?.state==='running'){
+                ok(pub.some(a=>a.symbol==='TYVN'||a.pair==='TYVN/USDT'),'RUNNING_PRIVATE_PUBLIC_MISMATCH');
+              }else ok(['staged','paused'].includes(row.countdown?.state),'UNKNOWN_ACTIVE_TIMER');
+            }else{
+              if(!row){
+                const id=crypto.randomUUID();
+                const save=await call('/internal/listings/'+id+'/draft','PUT',{config},{'If-Match':'0'});
+                ok(save.status===200&&save.value?.draftRevision===1&&match(save.value?.draft),'CREATE_DRAFT_FAILED_'+save.status);
+                rows=await privateState();row=rows.find(x=>x.id===id);
+                ok(row?.symbol==='TYVN','CREATE_NOT_VISIBLE');
+                show('DRAFT_CREATED',row);
+              }
+              ok(match(row.draft)&&row.activeVersion===null,'DRAFT_CONFIG_MISMATCH');
+              const p=await call('/internal/listings/'+row.id+'/publish','POST',{
+                draftRevision:row.draftRevision,publishKey:crypto.randomUUID(),countdown:'staged'
+              });
+              ok(p.status===200&&p.value?.countdown?.state==='staged','PUBLISH_STAGED_FAILED_'+p.status);
+              row=(await privateState()).find(x=>x.id===row.id);
+              ok(row?.activeVersion===p.value.version && match(row.active) &&
+                row.countdown?.state==='staged','STAGED_VERIFY_FAILED');
+              show('STAGED',row);
+            }
+            if(row.countdown?.state!=='running'){
+              const start=await call('/internal/listings/'+row.id+'/countdown','POST',{action:'start'});
+              ok(start.status===200&&start.value?.countdown?.state==='running','START_FAILED_'+start.status);
+              show('TIMER_STARTED',row);
+            }
+            let shown=null;
+            for(let i=0;i<8;i++){
+              if(i)await new Promise(r=>setTimeout(r,3500));
+              const list=await publicState();
+              const a=list.find(x=>x.symbol==='TYVN'||x.pair==='TYVN/USDT');
+              if(a?.countdown==='running'&&a.listingAt===config.listingAt&&a.isTradable===false){
+                const endpoint=await call('/market/test-assets/TYVN-USDT','GET',undefined,{},false);
+                if(endpoint.status===200&&endpoint.value?.symbol==='TYVN'){shown=a;break;}
+              }
+            }
+            ok(shown,'PUBLIC_TYVN_NOT_VISIBLE');
+            row=(await privateState()).find(x=>x.symbol==='TYVN');
+            ok(row?.countdown?.state==='running'&&match(row.active),'FINAL_PRIVATE_STATE_INVALID');
+            show('PUBLIC_CONFIRMED',row,{pair:shown.pair,listingAt:shown.listingAt,tradable:shown.isTradable});
+          })().catch(e=>{console.error('TYVN_HALTED '+String(e.message).slice(0,150));process.exitCode=1;});
+          NODE
