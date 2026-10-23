@@ -6810,3 +6810,17 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 - **Not changed:** withdrawals, demo admission, Futures, AITH/NRX/TYVN/VTA/listings, Stocks (`frontend/src/pages/stocks/**`), balances, prod data. **Open:** BLOCKER 1 (Balance credits withdrawable by request) — activation stays NO-GO until the owner decides; accounts holding both credits cannot use the demo credit in the terminal (listed by the doc query).
 - **Follow-up (CTO 6361475787, MARKET liquidity), QA only — no product change:** disposable PostgreSQL check and browser group (1440 + 390) for a funded account on an empty SOL/USDT book, both ledgers: MARKET BUY → 400 `No liquidity…`, nothing reserved or written, form «Не удалось разместить ордер»; MARKET SELL → 201 `CANCELLED`, no trade, reserve returned, form «Ордер отменён без исполнения…»; with a resting bid from another funded tester the MARKET SELL fills at 100. Locally PostgreSQL 26/26, browser 11/11 groups. Documented as activation blocker 3 in `docs/DEMO_TRADING.md` with options (a) seed depth from allocated demo inventory, (b) a separate, owner-approved demo market-maker PR. Also found (not changed, unrelated): `CFD working terminal` fails on any head while XAUUSD ≈ 4,025 because `scripts/qa-cfd-workspace.cjs:532` selects the long row with `/0\.2/`, which matches the short row's 40.25 USD margin; one-line patch proposed on the PR (comment 6361602829).
 - **Ported (QA only):** the one-line CFD partial-close selector fix from the owner's Draft PR #598 (`scripts/qa-cfd-workspace.cjs`, byte-identical blob `b67c58d6`, so it no-ops when #598 merges): `CFD working terminal / validate` failed on `d20200ca` with the same price-dependent signature as on `main`. Locally `--only trade` 12/12.
+
+## 2026-10-23 — Claude — PR #596: owner credit policy recorded; admin hint
+- **Owner decision (this session's user, 2026-10-23):** new testers are credited only through «Тестовое начисление» (demo top-up). Old Balance-credited accounts are neither moved nor disabled; their `Balance` stays withdrawable by request as today.
+- **Done:**
+  - `docs/DEMO_TRADING.md`: activation step 3, BLOCKER 1 (decided: option (a) for new credits), BLOCKER 2 (admin hint), BLOCKER 3 (option (b) proposed in stacked Draft PR #599);
+  - one admin-only line in `AdminBalanceAdjustment.tsx` pointing test credits to «Тестовое начисление»;
+  - `frontend/src/lib/__tests__/adminTesterCreditPolicy.test.ts`.
+- **Preserved:** every earlier #596 commit (`7e82a2aa`, `bf15d490`, `d20200ca`, `aee5018e` from the other Claude session, incl. the #598 CFD QA port); no product logic change.
+- **Verified locally:** admin suites `adminTesterCreditPolicy`, `adminAdjustmentRecoveryUi` and `adminDetailRead` 62/62; `customerFacingErrors` 64/64.
+- **Open (CTO 6361440794), still to be done before activation:**
+  - owner acceptance of the unflagged Cross-wallet withdrawal refusal;
+  - read-only production SQL checks;
+  - exact-head CI;
+  - release with both flags OFF first.
