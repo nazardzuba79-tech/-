@@ -8,7 +8,9 @@ import tarfile
 
 root = pathlib.Path(__file__).resolve().parents[1]
 base = '6f082a98d0c97c28215e6c5c8056b786d6fa6c99'
-claude = 'a93b2d3c1f5a8816e0135a5ba6ab6e555d9b342f'
+claude = 'a7593324be9118cfda91ee8fc6bad0b6ff3acba9'
+previous = 'c86e47bfd8e19ced5527177eec07ac3adcb9a98a'
+identity = '18dd73224d5ad02407a8635e51354e46da7228f2'
 runtime = [
     'api/routes/demoTrading', 'api/routes/orders', 'api/routes/withdrawals', 'api/routes/adminWithdrawals', 'index',
     'services/AdminUserDeletionService', 'services/DemoLiquidity', 'services/DemoTradingService',
@@ -21,13 +23,20 @@ sha = git('rev-parse','HEAD').decode().strip()
 for name in runtime:
     if name != 'index':
         assert git('show',sha+':src/'+name+'.ts') == git('show',claude+':src/'+name+'.ts'), 'Claude source mismatch '+name
+# Retain only the previously reviewed demo wiring, never full-main Stocks/Futures wiring.
+assert git('show',sha+':src/index.ts') == git('show',previous+':src/index.ts'), 'Production bootstrap changed'
+for path in ['src/buildCommit.ts', 'src/__tests__/buildCommit.test.ts']:
+    assert git('show',sha+':'+path) == git('show',identity+':'+path), 'Release identity regression '+path
+allowed_source = {'src/'+name+'.ts' for name in runtime}
+changed_source = git('diff','--name-only',base,sha,'--','src').decode().splitlines()
+assert all(path in allowed_source or '/__tests__/' in path for path in changed_source), 'Unapproved production module changed'
 protected = ['prisma','package.json','package-lock.json','src/futures','src/private-trading',
              'src/services/listings','src/services/testMarkets','config/test-markets','frontend','src/buildCommit.ts']
 subprocess.run(['git','diff','--exit-code',base,sha,'--',*protected],cwd=root,check=True,stdout=subprocess.DEVNULL)
 subprocess.run(['C:/Program Files/nodejs/node.exe','node_modules/typescript/bin/tsc','--pretty','false'],cwd=root,check=True)
 out = root/'output'/'demo-off-release'; out.mkdir(parents=True,exist_ok=True)
 archive = out/('api-overlay-'+sha+'.tar')
-manifest = {'baseApi':base,'releaseSha':sha,'claudeHead':claude,
+manifest = {'baseApi':base,'releaseSha':sha,'mergedMain':claude,'previousCandidate':previous,'identityPr606':identity,
             'baseImage':'sha256:b81b093eb9529db8b68a9aa3c668eb4f3282764741cd03efb431cdfe5b96d012',
             'flags':{'DEMO_SPOT_ENABLED':'false','DEMO_LIQUIDITY_ENABLED':'false','DEMO_WITHDRAWAL_GUARD_ENABLED':'false','VITE_DEMO_SPOT_ENABLED':'false'},
             'protectedSourceUnchanged':True,'migrationFilesIncluded':0,'files':[]}

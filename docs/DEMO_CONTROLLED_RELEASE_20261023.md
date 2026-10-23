@@ -1,5 +1,52 @@
 # Demo Spot / Demo Liquidity: prepared release, NOT deployed
 
+## Updated inactive-image preparation — 23 October 2026
+
+This section supersedes the historical preparation gates below. The approved
+code-only sequence #596 -> #599 is merged at
+`a7593324be9118cfda91ee8fc6bad0b6ff3acba9`; exact-head CI passed 36/36 and 17/17.
+Integration QA #605 passed 38/38 checks including 81/81 financial tests.
+Do not repeat these merges or the production SQL audit.
+
+The restricted API candidate is based on the previously prepared
+`c86e47bfd8e19ced5527177eec07ac3adcb9a98a`, itself based on the current production
+API `6f082a98d0c97c28215e6c5c8056b786d6fa6c99`. All eleven non-bootstrap runtime
+modules match final merged main byte-for-byte; bootstrap retains the exact c86
+demo-only wiring rather than importing unrelated main changes. The production
+release identity source and regression match #606 exact head
+`18dd73224d5ad02407a8635e51354e46da7228f2`; they were already present in the live
+API and c86 candidate. Thus no identity downgrade or unrelated product update is
+needed. #606 integration into main is a separate code-only operation; this
+preparation does not merge it.
+
+`package-demo-off-api.py` verifies these immutable correspondences, all protected
+production source paths and dependency/schema preservation before packaging only
+twelve JS modules and their maps. Its manifest records the exact candidate
+commit and archive SHA-256. The inherited base layers retain every other runtime
+module, generated Prisma client, schema and migration. Three server flags are
+explicitly false. The CMD invokes Node directly, never migrations.
+
+The owner authorized building and inspecting an **inactive** image, not starting
+it. Build with `--network=none --pull=false` from the locally verified production
+base image. Any inspection container must remain created/stopped, network none,
+with no production mounts or credentials supplied, and be removed after file
+hash comparison. Never run `docker start`, `docker run`, Compose up, migrations
+or a production database test during this preparation.
+
+Rollback before any feature activation is the exact existing image
+`sha256:b81b093eb9529db8b68a9aa3c668eb4f3282764741cd03efb431cdfe5b96d012` and the
+unchanged active Compose chain / release SHA. A default-OFF candidate must keep
+all existing networks, mounts, healthcheck, secrets and services, changing only
+the agreed API image, release SHA, three false flags and direct Node command.
+After demo trading is separately activated, rollback must instead stay on a
+guard-capable API with `DEMO_WITHDRAWAL_GUARD_ENABLED=true`; never restore the
+production database over newer transactions.
+
+Final build/image/config/file-hash receipts are kept outside Git and their
+digests reported in Issue #592. Image inspection is not a running API smoke:
+runtime admission and public `/health` on the new image remain NOT_RUN until
+the owner separately authorizes switching only production API.
+
 ## Immutable inputs
 
 - Main reviewed: `f7aa444851060d19aaad46d56a9ec2d1895f9129`.
