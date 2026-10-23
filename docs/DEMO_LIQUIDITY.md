@@ -13,6 +13,19 @@ enabled by merging it.
 1. The owner picks one **dedicated liquidity account** and credits it through the ordinary admin
    «Тестовое начисление» (demo top-up, audited `DEMO_BALANCE_ADJUSTED`), e.g. some BTC/ETH and USDT. That
    DemoBalance is the whole inventory. The module never credits, mints or tops anything up.
+
+   **Account rule, enforced on every quote** (owner/CTO review 6362235524; `liquidityAccountRefusal`):
+   - the account must be an unblocked `USER` (not `ADMIN`);
+   - it must be neither the owner (`PRIVATE_TRADING_OWNER_ID`) nor a native tester (`PRIVATE_TRADING_TEST_USER_IDS`);
+   - it must hold **no ordinary `Balance` at all** — any asset, available or reserved.
+
+   The rule is checked inside the demo book transaction on committed rows, and every `Balance` row of the account
+   is read `FOR SHARE`:
+   - a credit in flight to an existing row is waited for, then seen, and the quote is refused;
+   - a credit creating a new row that commits after the check is ordered after that quote, and the next quote is
+     refused.
+
+   Configuration alone is never trusted for this rule.
 2. When a demo Spot order arrives on a listed pair, the server reads the **market reference** (bid/ask with the time
    the provider actually answered) from the existing market-data cache — before taking the book lock, never an
    order to any venue.
@@ -33,7 +46,8 @@ enabled by merging it.
 - the reference is missing, `stale`, older than 10 s, in the future, invalid, crossed, or wider than 1 % of mid;
 - the reference read fails;
 - the pair is not listed;
-- the liquidity account is missing or blocked;
+- the liquidity account is missing, blocked, not a `USER`, the owner or a native tester, or holds any ordinary
+  `Balance`;
 - the taker is the liquidity account itself;
 - the needed side of the inventory is empty.
 
@@ -67,6 +81,8 @@ shows it.
 
 **Admin status (read only):** `GET /api/v1/demo/liquidity` (ADMIN) returns:
 - the configuration;
+- `account`: `OK`, or why the account backs no quotes (`MISSING`, `BLOCKED`, `NOT_USER`, `NATIVE_ACCOUNT`,
+  `ORDINARY_FUNDS`);
 - the account's inventory;
 - per pair, whether the reference may be quoted right now (`OK` / `STALE` / `MISSING` / `CROSSED` / `TOO_WIDE` /
   `INVALID`) and its age.
@@ -86,11 +102,11 @@ A USER gets 403.
 
 ## Verification (all local, synthetic data)
 
-- **Unit:** `src/services/__tests__/DemoLiquidity.test.ts` — 32 tests:
+- **Unit:** `src/services/__tests__/DemoLiquidity.test.ts` — 33 tests:
   - configuration rules;
   - quote pricing and rounding;
   - inventory and cap sizing;
-  - every fail-closed case;
+  - every fail-closed case, including the account rule;
   - BUY/SELL, MARKET/LIMIT, priority, partial fill and refund;
   - insufficient funds, retries, and a rollback when inventory is spent concurrently.
 - **Route:** the admin status route is admin-only and read-only (`demoTrading.test.ts`).
@@ -106,7 +122,9 @@ A USER gets 403.
   - 12 parallel BUYs against 0.005 BTC → exactly 5 filled, 7 refused, never overdrawn;
   - priority of a better resting order;
   - restart;
-  - blocked account and no self-trade;
+  - the account rule: a USER funded only on the demo ledger quotes; ADMIN, blocked, owner, native tester and an
+    ordinary `Balance` credit each give no quote (with nothing moved); back to zero it quotes again; an ordinary
+    credit in flight during a quote is waited for and then refuses it; no self-trade;
   - the admin status route;
   - no cash-out (no `Balance`, `Withdrawal`, `Order` or `Trade` row);
   - zero outbound requests;
@@ -131,6 +149,14 @@ A USER gets 403.
    - not the owner;
    - not a native tester;
    - no ordinary `Balance`.
+
+   Operator preflight, read-only (the server enforces the same rule on every quote; this only confirms the choice):
+   ```sql
+   SELECT u.id, u.role, u."blockedAt",
+          (SELECT COUNT(*) FROM "Balance" b WHERE b."userId" = u.id AND (b.available <> 0 OR b.locked <> 0)) AS ordinary_rows
+   FROM "User" u WHERE u.id = '<liquidity account id>';
+   -- expected: role USER, blockedAt NULL, ordinary_rows 0
+   ```
 4. Admin credits that account through «Тестовое начисление» only — e.g. 0.05 BTC, 1 ETH, 5 000 USDT. This is the
    inventory limit for every quote.
 5. Set the environment variables and restart only the API:
@@ -139,7 +165,8 @@ A USER gets 403.
    - `DEMO_LIQUIDITY_PAIRS=BTC/USDT,ETH/USDT`;
    - optionally the spread and cap values.
 
-   Smoke check: `GET /api/v1/demo/liquidity` as admin → `enabled: true`, each pair `OK`, inventory as credited.
+   Smoke check: `GET /api/v1/demo/liquidity` as admin → `enabled: true`, `account: OK`, each pair `OK`,
+   inventory as credited.
 6. One admitted tester places a small MARKET BUY and SELL on desktop and phone. Compare the fill prices with
    reference ± spread, and check that the inventory moved by exactly the fills.
 7. Watch for a day: the admin status, the account's `DemoOrder` receipts, and the PG conservation query below.
@@ -172,5 +199,6 @@ and VTA demo sales do. So compare the **liquidity account's** movement against i
 3. **Inventory drift:** testers who buy more than they sell drain the BTC side, which then refuses BUYs
    (`NO_LIQUIDITY`, the existing refusal) until the admin tops it up again. There is no automatic rebalancing,
    by design.
-4. **Order book display:** the terminal still shows the market reference book, not the quote. Fills are near those
-   prices (± spread).
+4. **Order book display:** the terminal still shows the market reference book (display data). The internal quote
+   is transient: it exists only for one taker inside one transaction and is not published as firm, executable public
+   depth. Fills are near the displayed prices (± spread).

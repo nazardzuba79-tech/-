@@ -1,3 +1,4 @@
+import type { Prisma, PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { v5 as uuidv5 } from 'uuid';
 import { isTestAssetPairOrSymbol } from './testMarkets/testAssetConfig';
@@ -61,8 +62,7 @@ export function demoLiquidityConfig(env: NodeJS.ProcessEnv = process.env): { con
   const accountId = env.DEMO_LIQUIDITY_ACCOUNT_ID?.trim() ?? '';
   if (!UUID.test(accountId)) return off('DEMO_LIQUIDITY_ACCOUNT_ID must be an account UUID');
   // A native Cross wallet is valued from DemoBalance; its funds must not double as inventory.
-  const nativeIds = [env.PRIVATE_TRADING_OWNER_ID ?? '', ...(env.PRIVATE_TRADING_TEST_USER_IDS ?? '').split(',')].map(id => id.trim().toLowerCase());
-  if (nativeIds.includes(accountId.toLowerCase())) return off('DEMO_LIQUIDITY_ACCOUNT_ID must not be a native trading account');
+  if (nativeAccount(accountId, env)) return off('DEMO_LIQUIDITY_ACCOUNT_ID must not be a native trading account');
   const pairs = (env.DEMO_LIQUIDITY_PAIRS ?? '').split(',').map(pair => pair.trim().toUpperCase()).filter(Boolean);
   if (!pairs.length || pairs.length > 50) return off('DEMO_LIQUIDITY_PAIRS must list 1-50 pairs');
   const refused = pairs.find(pair => !PAIR.test(pair) || isTestAssetPairOrSymbol(pair) || pair.split('/').includes('VTA'));
@@ -134,3 +134,34 @@ export const marketReference = (marketData: { getTickerWithMeta(pair: string): P
     const cached = await marketData.getTickerWithMeta(pair);
     return cached.value ? { bid: cached.value.bidPrice, ask: cached.value.askPrice, fetchedAt: cached.fetchedAt, stale: cached.stale } : null;
   };
+
+export type LiquidityAccountRefusal = 'MISSING' | 'BLOCKED' | 'NOT_USER' | 'NATIVE_ACCOUNT' | 'ORDINARY_FUNDS';
+
+/** The owner and the configured native testers: a Cross wallet valued from DemoBalance, never inventory. */
+const nativeAccount = (accountId: string, env: NodeJS.ProcessEnv) =>
+  [env.PRIVATE_TRADING_OWNER_ID ?? '', ...(env.PRIVATE_TRADING_TEST_USER_IDS ?? '').split(',')]
+    .map(id => id.trim().toLowerCase()).includes(accountId.toLowerCase());
+
+/**
+ * The account may back quotes only while it is an unblocked USER, neither the
+ * owner nor a native tester, holding no ordinary `Balance` at all (any asset,
+ * available or reserved) — owner/CTO review 6362235524. Checked on committed
+ * rows on every quote, never inferred from configuration. With `lockRows`
+ * (inside the demo book transaction) all its existing Balance rows are read
+ * FOR SHARE, so a credit to one of them that is in flight is waited for and
+ * then seen; a credit creating a new row that commits after this read is
+ * ordered after the quote, and the next quote is refused.
+ */
+export async function liquidityAccountRefusal(db: PrismaClient | Prisma.TransactionClient, accountId: string, lockRows = false,
+  env: NodeJS.ProcessEnv = process.env): Promise<LiquidityAccountRefusal | null> {
+  const user = await db.user.findUnique({ where: { id: accountId }, select: { role: true, blockedAt: true } });
+  if (!user) return 'MISSING';
+  if (user.blockedAt) return 'BLOCKED';
+  if (user.role !== 'USER') return 'NOT_USER';
+  if (nativeAccount(accountId, env)) return 'NATIVE_ACCOUNT';
+  // Every row is locked, not only funded ones: a zero row with a credit in flight must be waited for, then re-read.
+  const rows = lockRows
+    ? await db.$queryRaw<{ available: { toString(): string }; locked: { toString(): string } }[]>`SELECT available, locked FROM "Balance" WHERE "userId" = ${accountId} FOR SHARE`
+    : await db.balance.findMany({ where: { userId: accountId }, select: { available: true, locked: true } });
+  return rows.some(row => !new BigNumber(row.available.toString()).isZero() || !new BigNumber(row.locked.toString()).isZero()) ? 'ORDINARY_FUNDS' : null;
+}

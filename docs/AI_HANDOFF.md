@@ -6851,3 +6851,18 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
   - passive LIMIT orders fill only against testers (no resting quote, by design);
   - inventory is not rebalanced automatically;
   - activation needs separate owner approval after #596.
+
+## 2026-10-23 — Claude — PR #599: liquidity account rule enforced on every quote (CTO 6362235524)
+- **Gap (reviewed on `84ae28f4`):** `stageLiquidity` checked only "exists and not blocked". The configuration refused native IDs, but nothing enforced role USER or "no ordinary Balance" at runtime.
+- **Done:**
+  - `liquidityAccountRefusal` (`src/services/DemoLiquidity.ts`), called inside the demo book transaction before any quote. It refuses `MISSING`, `BLOCKED`, `NOT_USER`, `NATIVE_ACCOUNT` (owner / `PRIVATE_TRADING_TEST_USER_IDS`, read at quote time) and `ORDINARY_FUNDS` (any `Balance` row with available or locked ≠ 0, any asset).
+  - All of the account's `Balance` rows are read `FOR SHARE`, so an in-flight credit to an existing row is waited for and then refuses the quote. The first version filtered `available > 0` inside the locking query, so it never waited; the new PG race check caught this before push.
+  - Admin status shows `account`.
+  - `docs/DEMO_LIQUIDITY.md`: the rule, a read-only operator preflight SQL, and a note that the quote is transient, not public depth.
+- **Tests:**
+  - unit 33/33 (adds ADMIN, ordinary Balance incl. a test asset, owner and native env);
+  - disposable PostgreSQL 15/15, 8 consecutive runs. The new account check covers: USER with demo funds only → fills; ADMIN, blocked, owner, native → no quote, nothing moved; real `BalanceAdjustmentService` credit → `ORDINARY_FUNDS`, back to zero → fills again; a credit held in an open transaction → the quote waits, then 400 `NO_LIQUIDITY`; no self-trade.
+  - browser 4/4 groups;
+  - related backend suites 144/144.
+- **Test-only flake fixed:** the 12-way concurrency check splits fills randomly between two buyers, so a later step could hit `INSUFFICIENT_BALANCE`. Seen once in 6 runs; the buyer is now topped up before the account check. 0 failures in the 8 runs since.
+- **Preserved:** quote pricing, fail-closed reference checks, conditional inventory reserve, request-ID idempotency, conservation, default OFF; #596 untouched by this commit.

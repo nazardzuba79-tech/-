@@ -5,7 +5,7 @@ import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType, OrderBookSnapshot } from '../matching-engine/types';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 import { DEMO_SPOT_LEDGER, SpotBookTransaction } from './SpotBookTransaction';
-import { checkReference, DemoLiquidity, DemoReferenceQuote, liquidityOrderId, liquidityQuote } from './DemoLiquidity';
+import { checkReference, DemoLiquidity, DemoReferenceQuote, liquidityAccountRefusal, liquidityOrderId, liquidityQuote } from './DemoLiquidity';
 
 type TxClient = Prisma.TransactionClient;
 
@@ -213,8 +213,8 @@ export class DemoTradingService {
   private async stageLiquidity(tx: TxClient, staged: MatchingEngine, takerOrderId: string, pair: string, takerSide: OrderSide,
     base: string, quote: string, reference: DemoReferenceQuote): Promise<Order | null> {
     const { config } = this.liquidity!;
-    const account = await tx.user.findUnique({ where: { id: config.accountId }, select: { blockedAt: true } });
-    if (!account || account.blockedAt) return null;
+    // An unblocked USER with no ordinary Balance, checked on committed rows under this lock (fail closed).
+    if (await liquidityAccountRefusal(tx, config.accountId, true)) return null;
     const rows = await tx.demoBalance.findMany({ where: { userId: config.accountId, asset: { in: [base, quote] } } });
     const available = (asset: string) => new BigNumber(rows.find(row => row.asset === asset)?.available.toString() ?? 0);
     const offer = liquidityQuote(config, reference, takerSide, { base: available(base), quote: available(quote) });
@@ -235,6 +235,7 @@ export class DemoTradingService {
     if (!this.liquidity) return { enabled: false, problem: this.options.liquidityProblem ?? null };
     const { config, reference } = this.liquidity;
     const inventory = await this.prisma.demoBalance.findMany({ where: { userId: config.accountId }, orderBy: { asset: 'asc' } });
+    const account = (await liquidityAccountRefusal(this.prisma, config.accountId)) ?? 'OK';
     const pairs = [];
     for (const pair of config.pairs) {
       const current = await reference(pair).catch(() => null), now = Date.now();
@@ -243,7 +244,7 @@ export class DemoTradingService {
         ageMs: current ? now - current.fetchedAt : null });
     }
     return {
-      enabled: true, accountId: config.accountId, spreadBps: config.spreadBps, maxOrderQuote: config.maxOrderQuote.toFixed(),
+      enabled: true, accountId: config.accountId, account, spreadBps: config.spreadBps, maxOrderQuote: config.maxOrderQuote.toFixed(),
       maxQuoteAgeMs: config.maxQuoteAgeMs, maxReferenceSpreadBps: config.maxReferenceSpreadBps,
       inventory: inventory.map(b => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })), pairs,
     };

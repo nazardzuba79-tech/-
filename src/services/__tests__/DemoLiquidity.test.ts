@@ -85,13 +85,15 @@ describe('checkReference / liquidityQuote', () => {
 });
 
 /** Fake Prisma with the demo tables, the account lookup and rollback, like DemoTradingService.test.ts. */
-function makeFakePrisma(seed: Record<string, { available: string; locked: string }>, users: Record<string, { blockedAt: Date | null }> = { [LP]: { blockedAt: null } }) {
+type FakeUser = { blockedAt: Date | null; role?: string };
+function makeFakePrisma(seed: Record<string, { available: string; locked: string }>, users: Record<string, FakeUser> = { [LP]: { blockedAt: null } },
+  ordinary: string[] = []) {
   const balances = new Map(Object.entries(seed));
   const orders = new Map<string, any>();
   const trades: any[] = [];
   const applyDelta = (current: string, change: any) => new BigNumber(current).plus(change.increment ?? new BigNumber(change.decrement ?? 0).negated()).toFixed();
   const tx: any = {
-    user: { findUnique: jest.fn(async ({ where: { id } }: any) => users[id] ?? null) },
+    user: { findUnique: jest.fn(async ({ where: { id } }: any) => (users[id] ? { role: 'USER', ...users[id] } : null)) },
     demoBalance: {
       findMany: jest.fn(async ({ where }: any) => [...balances.entries()].filter(([key]) => key.startsWith(`${where.userId}:`)
         && (!where.asset || where.asset.in.includes(key.split(':')[1]))).map(([key, value]) => ({ asset: key.split(':')[1], ...value }))),
@@ -108,7 +110,8 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
           : { available: create.available, locked: create.locked ?? '0' });
       }),
     },
-    $queryRaw: jest.fn(async () => [{ id: '1' }]),
+    // The book lock and transaction id; the liquidity account's ordinary Balance rows (read FOR SHARE).
+    $queryRaw: jest.fn(async (sql: TemplateStringsArray) => (sql.join('?').includes('FROM "Balance"') ? ordinary.map(() => ({ available: '1', locked: '0' })) : [{ id: '1' }])),
     demoOrder: {
       create: jest.fn(async ({ data }: any) => { if (orders.has(data.id)) throw new Error('duplicate key'); orders.set(data.id, { createdAt: new Date(), updatedAt: new Date(), ...data }); }),
       findMany: jest.fn(async ({ where }: any) => [...orders.values()].filter(row => row.pair === where.pair
@@ -142,8 +145,8 @@ const total = (balances: Map<string, { available: string; locked: string }>, ass
   .filter(([key]) => key.endsWith(`:${asset}`)).reduce((sum, [, b]) => sum.plus(b.available).plus(b.locked), new BigNumber(0)).toFixed();
 
 function service(seed: Record<string, { available: string; locked: string }>, reference: () => Promise<DemoReferenceQuote | null> = async () => fresh(),
-  extra: Partial<DemoLiquidityConfig> = {}, users?: Record<string, { blockedAt: Date | null }>) {
-  const fake = makeFakePrisma(seed, users);
+  extra: Partial<DemoLiquidityConfig> = {}, users?: Record<string, FakeUser>, ordinary: string[] = []) {
+  const fake = makeFakePrisma(seed, users, ordinary);
   const engine = new MatchingEngine();
   const source = jest.fn((_pair: string) => reference());
   const svc = new DemoTradingService(fake.prisma, engine, { liquidity: { config: { ...config(), ...extra }, reference: source } });
@@ -249,10 +252,34 @@ describe('DemoTradingService with internal liquidity', () => {
     await expect(self.svc.placeOrder({ userId: LP, pair: 'BTC/USDT', side: 'BUY', type: 'MARKET', quantity: new BigNumber('0.001') }))
       .rejects.toMatchObject({ code: 'NO_LIQUIDITY' });
     expect(self.source).not.toHaveBeenCalled();
-    for (const users of [{ [LP]: { blockedAt: new Date() } }, {}] as Record<string, { blockedAt: Date | null }>[]) {
+    for (const users of [{ [LP]: { blockedAt: new Date() } }, {}] as Record<string, FakeUser>[]) {
       const { svc } = service(funded, undefined, {}, users);
       await expect(svc.placeOrder({ userId: 'taker', pair: 'BTC/USDT', side: 'BUY', type: 'MARKET', quantity: new BigNumber('0.001') }))
         .rejects.toMatchObject({ code: 'NO_LIQUIDITY' });
+    }
+  });
+
+  it('only an unblocked USER that is neither the owner nor a native tester and holds no ordinary Balance backs quotes (CTO 6362235524)', async () => {
+    const buy = async (svc: DemoTradingService) => svc.placeOrder({ userId: 'taker', pair: 'BTC/USDT', side: 'BUY', type: 'MARKET', quantity: new BigNumber('0.001') });
+    // A dedicated USER funded only on the demo ledger: quotes.
+    expect((await buy(service(funded).svc)).order.status).toBe('FILLED');
+    // An ADMIN, an account holding any ordinary Balance, the owner or a native tester: no quote, nothing moves.
+    const refused = [
+      service(funded, undefined, {}, { [LP]: { blockedAt: null, role: 'ADMIN' } }),
+      service(funded, undefined, {}, undefined, ['USDT']), // any ordinary Balance row with funds, available or reserved
+      service(funded, undefined, {}, undefined, ['NRX']), // test assets included: no ordinary Balance at all
+    ];
+    for (const s of refused) {
+      const before = JSON.stringify([...s.balances.entries()]);
+      await expect(buy(s.svc)).rejects.toMatchObject({ code: 'NO_LIQUIDITY' });
+      expect(JSON.stringify([...s.balances.entries()])).toBe(before);
+      expect([...s.orders.values()].filter(o => o.userId === LP)).toHaveLength(0);
+    }
+    for (const key of ['PRIVATE_TRADING_OWNER_ID', 'PRIVATE_TRADING_TEST_USER_IDS']) {
+      const saved = process.env[key];
+      process.env[key] = LP;
+      try { await expect(buy(service(funded).svc)).rejects.toMatchObject({ code: 'NO_LIQUIDITY' }); }
+      finally { if (saved === undefined) delete process.env[key]; else process.env[key] = saved; }
     }
   });
 

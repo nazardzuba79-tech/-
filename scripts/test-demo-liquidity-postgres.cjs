@@ -22,6 +22,7 @@ const express = require('express'), jwt = require('jsonwebtoken');
 const { MatchingEngine } = require('../src/matching-engine/MatchingEngine');
 const { DemoTradingService } = require('../src/services/DemoTradingService');
 const { demoLiquidityConfig, liquidityOrderId } = require('../src/services/DemoLiquidity');
+const { BalanceAdjustmentService } = require('../src/services/BalanceAdjustmentService');
 const { demoTradingRouter } = require('../src/api/routes/demoTrading');
 const { balancesRouter } = require('../src/api/routes/balances');
 const { withdrawalsRouter } = require('../src/api/routes/withdrawals');
@@ -109,6 +110,7 @@ async function main() {
         for (const b of await prisma.demoBalance.findMany({ where: { asset } })) assert.ok(!b.available.isNegative() && !b.locked.isNegative(), `${b.userId} ${asset} never negative`);
       }
     };
+    const adjust = new BalanceAdjustmentService(prisma);
     const market = (side, quantity, pair = 'BTC/USDT', extra = {}) => ({ pair, side, type: 'MARKET', quantity: String(quantity), ...extra });
     const limit = (side, price, quantity, pair = 'BTC/USDT') => ({ pair, side, type: 'LIMIT', price: String(price), quantity: String(quantity) });
 
@@ -275,27 +277,84 @@ async function main() {
       await conserved();
     });
 
-    await check('a blocked liquidity account quotes nothing; the liquidity account never trades against itself', async () => {
+    await check('the liquidity account (CTO 6362235524): only an unblocked USER, not the owner or a native tester, with no ordinary Balance — checked on every quote, fail closed; never against itself', async () => {
+      const refusedWhile = async (label, expected) => {
+        const before = await snapshot(), receipts = await prisma.demoOrder.count({ where: { userId: LP } });
+        const buy = await api('POST', '/demo/orders', 'buyer', market('BUY', '0.001'));
+        assert.deepEqual([buy.status, buy.body.code], [400, 'NO_LIQUIDITY'], label);
+        const sell = await api('POST', '/demo/orders', 'seller', market('SELL', '0.001'));
+        assert.deepEqual([sell.status, sell.body.order.status, sell.body.trades.length], [201, 'CANCELLED', 0], label);
+        assert.equal(await snapshot(), before, label);
+        assert.equal(await prisma.demoOrder.count({ where: { userId: LP } }), receipts, label);
+        assert.equal((await api('GET', '/demo/liquidity', 'admin')).body.account, expected, label);
+      };
+      const quotes = async label => {
+        const r = await api('POST', '/demo/orders', 'buyer', market('BUY', '0.001'));
+        assert.deepEqual([r.status, r.body.code, r.body.order?.status, r.body.trades?.map(t => t.makerUserId)], [201, undefined, 'FILLED', [LP]], label);
+        assert.equal((await api('GET', '/demo/liquidity', 'admin')).body.account, 'OK', label);
+      };
+      // The buyer's remaining USDT depends on how the 12-way race above split its fills: fund it for these steps.
+      await topUp('buyer', 'USDT', '1000');
+      // (a) a dedicated USER funded only on the demo ledger quotes.
+      await quotes('USER with DemoBalance only');
+      // (b) an ADMIN account with DemoBalance: no quote.
+      await prisma.user.update({ where: { id: LP }, data: { role: 'ADMIN' } });
+      await refusedWhile('ADMIN', 'NOT_USER');
+      await prisma.user.update({ where: { id: LP }, data: { role: 'USER' } });
+      // (d) blocked: no quote.
       await prisma.user.update({ where: { id: LP }, data: { blockedAt: new Date() } });
-      const blocked = await api('POST', '/demo/orders', 'buyer', market('BUY', '0.001'));
-      assert.deepEqual([blocked.status, blocked.body.code], [400, 'NO_LIQUIDITY']);
+      await refusedWhile('blocked', 'BLOCKED');
       await prisma.user.update({ where: { id: LP }, data: { blockedAt: null } });
+      // The owner or a native tester (decided by server configuration at quote time, not only at startup): no quote.
+      for (const key of ['PRIVATE_TRADING_OWNER_ID', 'PRIVATE_TRADING_TEST_USER_IDS']) {
+        process.env[key] = LP;
+        try { await refusedWhile(key, 'NATIVE_ACCOUNT'); } finally { delete process.env[key]; }
+      }
+      // (c)+(e) an ordinary Balance credit through the real admin service turns quoting off at once; back to zero, it quotes again.
+      const credit = amount => adjust.adjustOnce({ userId: LP, asset: 'USDT', amount, reason: 'synthetic Balance credit', performedByAdminId: 'admin', idempotencyKey: randomUUID() });
+      await credit('10');
+      await refusedWhile('USER holding ordinary Balance and DemoBalance', 'ORDINARY_FUNDS');
+      await credit('-10');
+      await quotes('ordinary Balance back to zero');
+      // Race: an ordinary credit in flight on the account's Balance row while a quote is evaluated. The quote waits for it
+      // (the row is read FOR SHARE in the book transaction), then sees it and refuses — never quotes past it.
+      const writer = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'voltex_demo_liquidity_fixture' });
+      await writer.connect();
+      try {
+        await writer.query('BEGIN');
+        await writer.query(`UPDATE "Balance" SET available = available + 5 WHERE "userId" = $1 AND asset = 'USDT'`, [LP]);
+        const before = await snapshot();
+        let settled = false;
+        const pending = api('POST', '/demo/orders', 'buyer', market('BUY', '0.001')).then(r => { settled = true; return r; });
+        await new Promise(resolve => setTimeout(resolve, 800));
+        assert.equal(settled, false, 'the quote waits for the in-flight ordinary credit');
+        await writer.query('COMMIT');
+        const raced = await pending;
+        assert.deepEqual([raced.status, raced.body.code], [400, 'NO_LIQUIDITY'], 'after the credit commits the quote is refused');
+        assert.equal(await snapshot(), before);
+        evidence.accountRace = { waited: true, outcome: [raced.status, raced.body.code] };
+      } finally { await writer.query('ROLLBACK').catch(() => {}); await writer.end(); }
+      await credit('-5');
+      await quotes('after the raced credit is reversed');
+      // Never against itself.
       const self = await api('POST', '/demo/orders', LP, market('BUY', '0.001'));
       assert.deepEqual([self.status, self.body.code], [400, 'NO_LIQUIDITY']);
+      await conserved();
     });
 
     await check('admin status (read only): configuration, inventory and a fresh reference per pair; a USER is refused', async () => {
       const status = await api('GET', '/demo/liquidity', 'admin');
       assert.equal(status.status, 200);
-      assert.deepEqual([status.body.enabled, status.body.accountId, status.body.spreadBps, status.body.maxOrderQuote], [true, LP, 10, '500']);
+      assert.deepEqual([status.body.enabled, status.body.accountId, status.body.account, status.body.spreadBps, status.body.maxOrderQuote], [true, LP, 'OK', 10, '500']);
       assert.deepEqual(status.body.pairs.map(p => [p.pair, p.reference]), [['BTC/USDT', 'OK'], ['ETH/USDT', 'OK']]);
       assert.ok(status.body.inventory.some(b => b.asset === 'USDT'));
       assert.equal((await api('GET', '/demo/liquidity', 'buyer')).status, 403);
       evidence.status = status.body;
     });
 
-    await check('no cash-out: the liquidity account and the testers have no Balance row, no withdrawal, no real order or trade', async () => {
-      assert.equal(await prisma.balance.count(), 0);
+    await check('no cash-out: no ordinary Balance funds for the liquidity account or the testers, no withdrawal, no real order or trade', async () => {
+      // The only Balance row is the account-rule test's synthetic credit to the liquidity account, reversed to zero.
+      assert.deepEqual((await prisma.balance.findMany()).map(b => [b.userId, b.asset, b.available.toFixed(), b.locked.toFixed()]), [[LP, 'USDT', '0', '0']]);
       const w = await api('POST', '/withdrawals', LP, { asset: 'USDT', network: 'TRC20', toAddress: 'TQAFIXTURE', amount: '1' });
       assert.notEqual(w.status, 200); assert.notEqual(w.status, 201);
       assert.equal(await prisma.withdrawal.count(), 0);
