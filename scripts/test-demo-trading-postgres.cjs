@@ -60,7 +60,8 @@ async function main() {
     }
     // legacy/legacyMaker: testers an admin credited on the ordinary ledger (Balance) before Demo Spot.
     const people = { admin: 'ADMIN', unfunded: 'USER', funded: 'USER', tester: 'USER', maker: 'USER', blocked: 'USER', legacy: 'USER', legacyMaker: 'USER',
-      legacySeller: 'USER', demoSeller: 'USER', both: 'USER', [TRADER]: 'USER', [TRADER2]: 'USER' };
+      legacySeller: 'USER', demoSeller: 'USER', both: 'USER', demoFunded: 'USER', demoBidder: 'USER', spotFunded: 'USER', spotBidder: 'USER',
+      [TRADER]: 'USER', [TRADER2]: 'USER' };
     for (const [id, role] of Object.entries(people)) {
       await sql.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode",role,"kycStatus","createdAt","updatedAt") VALUES ($1,$2,'fixture',$1,$3,'APPROVED',now(),now())`, [id, `${id.replace(/[^a-z0-9]/gi, "")}@example.invalid`, role]);
     }
@@ -436,6 +437,33 @@ async function main() {
       assert.deepEqual(switching.map(r => r.id), ['both']); // a demo credit AND ordinary funds: its terminal moves to the demo ledger
       assert.deepEqual([...new Set(keeping.map(r => r.id))].sort(), ['funded', 'legacy', 'legacyMaker', TRADER2].sort()); // keep the ordinary ledger
     });
+    const marketDepth = {};
+    await check('MARKET with and without resting depth, both ledgers: an empty book refuses a BUY and cancels a SELL without a fill; depth fills at the resting price', async () => {
+      const ledgers = [
+        { name: 'demo', who: 'demoFunded', bidder: 'demoBidder', route: '/demo/orders', fund: (who, asset, amount) => demo.topUp({ userId: who, asset, amount, performedByAdminId: 'admin', note: 'synthetic demo credit' }),
+          bal: demoBal, orders: prisma.demoOrder, trades: prisma.demoTrade },
+        { name: 'ordinary', who: 'spotFunded', bidder: 'spotBidder', route: '/orders', fund: (who, asset, amount) => adjust.adjustOnce({ userId: who, asset, amount, reason: 'synthetic Balance credit', performedByAdminId: 'admin', idempotencyKey: randomUUID() }),
+          bal, orders: prisma.order, trades: prisma.trade },
+      ];
+      for (const l of ledgers) {
+        await l.fund(l.who, 'USDT', '100'); await l.fund(l.who, 'SOL', '1'); await l.fund(l.bidder, 'USDT', '100');
+        const state = async () => [await l.bal(l.who, 'USDT'), await l.bal(l.who, 'SOL')];
+        const before = await state();
+        const buy = await api('POST', l.route, l.who, { pair: 'SOL/USDT', side: 'BUY', type: 'MARKET', quantity: '0.1' });
+        assert.equal(buy.status, 400); assert.match(buy.body.error, /^No liquidity available for this market order/);
+        assert.equal(await l.orders.count({ where: { userId: l.who } }), 0);
+        const sell = await api('POST', l.route, l.who, { pair: 'SOL/USDT', side: 'SELL', type: 'MARKET', quantity: '0.1' });
+        assert.equal(sell.status, 201); assert.equal(sell.body.order.status, 'CANCELLED'); assert.deepEqual(sell.body.trades, []);
+        assert.deepEqual(await state(), before, 'nothing spent; the SELL reserve is returned');
+        assert.equal((await api('POST', l.route, l.bidder, { pair: 'SOL/USDT', side: 'BUY', type: 'LIMIT', price: '100', quantity: '0.2' })).status, 201);
+        const filled = await api('POST', l.route, l.who, { pair: 'SOL/USDT', side: 'SELL', type: 'MARKET', quantity: '0.1' });
+        assert.equal(filled.status, 201); assert.equal(filled.body.order.status, 'FILLED'); assert.deepEqual(filled.body.trades.map(t => [t.price, t.quantity]), [['100', '0.1']]);
+        assert.deepEqual(await state(), [{ available: '110', locked: '0' }, { available: '0.9', locked: '0' }]);
+        const rest = await l.orders.findFirst({ where: { userId: l.bidder, status: { in: ['OPEN', 'PARTIALLY_FILLED'] } } });
+        assert.equal((await api('DELETE', l.route + '/' + rest.id, l.bidder)).status, 204);
+        marketDepth[l.name] = { emptyBook: { buy: [buy.status, buy.body.error], sell: [sell.status, sell.body.order.status, sell.body.trades.length] }, withDepth: { sell: [filled.status, filled.body.order.status, filled.body.trades[0].price] } };
+      }
+    });
     await check('no outbound network request was attempted by any demo path', async () => { assert.deepEqual(outbound, []); });
 
     if (process.env.DEMO_QA_BROWSER === '1') {
@@ -444,9 +472,9 @@ async function main() {
         topUp: (who, asset, amount) => demo.topUp({ userId: who, asset, amount, performedByAdminId: 'admin', note: 'synthetic demo credit' }) });
       for (const group of browser.groups) console.log('PASS browser: ' + group);
     }
-    const report = { database: 'disposable loopback PostgreSQL', reproduction, passed: checks, checks: checks.length, outbound, productionTouched: false };
+    const report = { database: 'disposable loopback PostgreSQL', reproduction, marketDepth, passed: checks, checks: checks.length, outbound, productionTouched: false };
     fs.writeFileSync(path.join(out, 'postgres-results.json'), JSON.stringify(report, null, 2));
-    console.log(JSON.stringify({ reproduction, checks: checks.length, outbound: outbound.length }, null, 2));
+    console.log(JSON.stringify({ reproduction, marketDepth, checks: checks.length, outbound: outbound.length }, null, 2));
   } finally {
     globalThis.fetch = realFetch;
     if (server) await new Promise(resolve => server.close(resolve)); await prisma?.$disconnect(); await sql?.end().catch(() => {});

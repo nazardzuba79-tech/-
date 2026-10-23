@@ -159,8 +159,23 @@ frontend without the flag. No database restore; the request ID is optional, so a
    No global withdrawal change was made.
 2. **Admin UI:** the two credit forms (Balance vs demo) are easy to confuse; clearer labels/confirmation are a
    separate admin change.
-3. **Liquidity:** the demo book holds only testers' orders; MARKET needs resting LIMIT orders (the admin can provide
-   depth from its own demo funds). Paper fills against the real Kraken book would be a new fill/pricing policy.
+3. **Liquidity (activation blocker, CTO 6361475787):** the demo book holds only testers' orders, and funds alone do
+   not make a MARKET order fill. Measured on a disposable PostgreSQL and in the browser (1440, 390), **identically
+   on both ledgers** (demo and ordinary `/orders`, a funded account, pair with an empty book):
+   | Order | Empty book | With a resting order from another funded tester |
+   | --- | --- | --- |
+   | MARKET BUY | 400 `No liquidity available for this market order`; nothing reserved or written; the form shows «Не удалось разместить ордер» | fills at the resting price (covered on BTC/USDT) |
+   | MARKET SELL | 201 `CANCELLED`, no trade, the reserve returned in full; the form shows «Ордер отменён без исполнения: во внутреннем стакане недостаточно ликвидности.» | `FILLED` at the resting bid (SOL/USDT, 0.1 at 100) |
+   | LIMIT BUY/SELL | rests; reserve exact; cancel releases it | matches as usual |
+   (Unchanged exception on the ordinary ledger: the owner/admin and native test accounts' MARKET SELL settles by
+   the existing team simulation at the server price, without depth — `OrderService.sellTeamSpotSimulation`.)
+   No fill is ever invented. Two coherent ways to give testers working MARKET orders, both needing the owner:
+   (a) **seed LIMIT depth** deliberately from already allocated demo inventory (no code: a demo-credited account
+   without ordinary funds places resting bids/asks in the terminal; an account holding ordinary funds trades the
+   ordinary terminal, so it would need `POST /demo/orders` directly); or (b) an **internal demo market maker**
+   quoting a fresh server-owned reference with spread/size caps, fail-closed on stale quotes, conservation and no
+   cash-out — a new financial module, to be proposed as its own scoped PR, not added here. Until one is chosen,
+   MARKET orders work only where depth exists.
 4. **Futures for credited USERs:** unchanged — the existing native mechanism (`PRIVATE_TRADING_TEST_USER_IDS`).
 5. **Wallet page** shows `Balance`; demo balances are shown in the terminal's assets tab.
 6. **Replay without a request ID** (default build and API-key clients): an identical POST is a second order, as on

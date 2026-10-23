@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs'), path = require('path'), { createRequire } = require('module');
 const root = path.resolve(__dirname, '..');
 
-const PAIRS = ['BTC/USDT', 'ETH/USDT'];
+const PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 const CANDLES = Array.from({ length: 120 }, (_, i) => ({ time: Math.floor(Date.now() / 60000) * 60 - (120 - i) * 60, open: 99900, high: 100200, low: 99800, close: 100000, volume: 12 }));
 const REAL = [/^\/api\/v1\/demo\//, /^\/api\/v1\/orders(\/|$)/, /^\/api\/v1\/withdrawals/, /^\/api\/v1\/balances$/];
 
@@ -17,7 +17,7 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
   const expectOff = process.env.DEMO_QA_EXPECT_OFF === '1';
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
   const report = { build: expectOff ? 'production bundle, VITE_DEMO_SPOT_ENABLED unset' : 'production bundle, VITE_DEMO_SPOT_ENABLED=true', groups: [], screenshots: [] };
-  async function open(who, width, { dropFirstDemoOrder = false, dropFirstOrder = false } = {}) {
+  async function open(who, width, { dropFirstDemoOrder = false, dropFirstOrder = false, pair = 'BTC/USDT' } = {}) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, locale: 'ru-RU' });
     const bearer = await token(who);
     await context.addInitScript(([value]) => { localStorage.setItem('exchange_token', value); localStorage.setItem('exchange_lang', 'ru'); }, [bearer]);
@@ -60,7 +60,7 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
       if (p.includes('tickers')) return reply({ tickers: PAIRS.map(pair => ({ pair, lastPrice: 100000, high24h: 100200, low24h: 99000, changePercent: 1, quoteVolume24h: 1e6, volume24h: 100 })) });
       return reply([]);
     });
-    await page.goto(origin + '/trade?pair=BTC/USDT', { waitUntil: 'domcontentloaded' });
+    await page.goto(origin + '/trade?pair=' + pair, { waitUntil: 'domcontentloaded' });
     await page.locator('.spot-terminal').waitFor();
     const mobile = width < 900;
     if (mobile) await page.locator('#mobile-trade-trade').click();
@@ -77,6 +77,14 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
     await form(page).locator('button[type="submit"]').click();
   }
   const settle = page => page.waitForTimeout(1200);
+  async function marketOrder(page, side, quantity) {
+    await page.locator(`.order-form-tab.${side === 'BUY' ? 'buy' : 'sell'}:visible`).first().click();
+    const select = page.locator('.order-type-select select');
+    if (await select.count()) await select.selectOption('MARKET');
+    else await page.locator('.order-type-tab', { hasText: 'Рынок' }).first().click();
+    await form(page).locator('input[aria-label="Количество"]:not([type="range"])').fill(String(quantity));
+    await form(page).locator('button[type="submit"]').click();
+  }
   const posts = calls => calls.filter(c => c.startsWith('POST '));
   const familyCount = async (page, mobile) => mobile
     ? page.locator('.order-type-select select option').count()
@@ -341,6 +349,57 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
         assert.equal((await bearer('DELETE', (who === 'legacySeller' ? '/orders/' : '/demo/orders/') + open_.id, who)).status, 204);
       }
     }
+    // 10. MARKET with and without resting depth, both ledgers (CTO 6361475787). Nothing is invented:
+    //     an empty book refuses a BUY and cancels a SELL without a fill; resting depth fills it.
+    const ledgers = [
+      { who: 'demoFunded', bidder: 'demoBidder', fund: topUp, route: '/api/v1/demo/orders', api: '/demo/orders',
+        bal: demoBal, orders: prisma.demoOrder, trades: prisma.demoTrade },
+      { who: 'spotFunded', bidder: 'spotBidder', fund: credit, route: '/api/v1/orders', api: '/orders',
+        bal, orders: prisma.order, trades: prisma.trade },
+    ];
+    report.marketDepth = [];
+    for (const l of ledgers) {
+      await l.fund(l.who, 'USDT', '100'); await l.fund(l.who, 'SOL', '1'); await l.fund(l.bidder, 'USDT', '100');
+      for (const width of [1440, 390]) {
+        const { page, context, calls, errors } = await open(l.who, width, { pair: 'SOL/USDT' });
+        await traderReady(page);
+        const before = [await l.bal(l.who, 'USDT'), await l.bal(l.who, 'SOL')];
+        const ordersBefore = await l.orders.count({ where: { userId: l.who } });
+        // Empty book, MARKET BUY: refused before anything is reserved or written.
+        await marketOrder(page, 'BUY', 0.1); await settle(page);
+        const buyLine = await form(page).locator('[role="alert"]').first().innerText().catch(() => '');
+        assert.ok(buyLine.length > 0, 'the refusal is visible');
+        assert.equal(await l.orders.count({ where: { userId: l.who } }), ordersBefore, 'no order written');
+        assert.deepEqual([await l.bal(l.who, 'USDT'), await l.bal(l.who, 'SOL')], before, 'nothing reserved or spent');
+        // Empty book, MARKET SELL: accepted, nothing fills, the reserve is returned at once.
+        await marketOrder(page, 'SELL', 0.1); await settle(page);
+        const sellLine = await form(page).locator('[role="alert"]').first().innerText().catch(() => '');
+        const sold = await l.orders.findFirst({ where: { userId: l.who, side: 'SELL', type: 'MARKET' }, orderBy: { createdAt: 'desc' } });
+        assert.equal(sold.status, 'CANCELLED'); assert.equal(sold.remainingQuantity.toFixed(), '0.1');
+        assert.equal(await l.trades.count({ where: { takerOrderId: sold.id } }), 0, 'no fill invented');
+        assert.deepEqual([await l.bal(l.who, 'USDT'), await l.bal(l.who, 'SOL')], before, 'the SELL reserve is returned in full');
+        report.marketDepth.push({ ledger: l.api, width, emptyBook: { buy: buyLine, sell: sellLine, sellStatus: sold.status } });
+        if (width === 390) { await page.screenshot({ path: path.join(out, `market-empty-${l.who}-390.png`) }); report.screenshots.push(`market-empty-${l.who}-390.png`); }
+        if (width === 1440) {
+          // Resting depth from another funded tester: the MARKET SELL fills at the resting price.
+          const bid = await bearer('POST', l.api, l.bidder, { pair: 'SOL/USDT', side: 'BUY', type: 'LIMIT', price: '100', quantity: '0.2' });
+          assert.equal(bid.status, 201);
+          await marketOrder(page, 'SELL', 0.1); await settle(page);
+          const filled = await l.orders.findFirst({ where: { userId: l.who, side: 'SELL', type: 'MARKET' }, orderBy: { createdAt: 'desc' } });
+          assert.equal(filled.status, 'FILLED');
+          const fixed = value => Number(value).toFixed(8);
+          assert.deepEqual([await l.bal(l.who, 'USDT'), await l.bal(l.who, 'SOL')].map(b => fixed(b.available)), [fixed(Number(before[0].available) + 10), fixed(Number(before[1].available) - 0.1)]);
+          assert.equal(await page.locator('.toast-item', { hasText: 'Ордер размещён' }).count() > 0, true);
+          report.marketDepth.push({ ledger: l.api, width, withDepth: { sellStatus: filled.status, price: '100' } });
+          const rest = await l.orders.findFirst({ where: { userId: l.bidder, status: { in: ['OPEN', 'PARTIALLY_FILLED'] } } });
+          assert.equal((await bearer('DELETE', l.api + '/' + rest.id, l.bidder)).status, 204);
+          await page.screenshot({ path: path.join(out, `market-depth-${l.who}-1440.png`) }); report.screenshots.push(`market-depth-${l.who}-1440.png`);
+        }
+        assert.deepEqual(posts(calls).filter(c => c !== 'POST ' + l.route), [], 'only this account\'s own ledger');
+        assert.deepEqual(errors, []);
+        await context.close();
+      }
+    }
     // 5. Frontend flag alone activates nothing: server flag off → the ordinary ledger, no demo order.
     {
       setEnabled(false);
@@ -363,7 +422,8 @@ async function run({ origin, out, token, setEnabled, topUp, credit, demoBal, pri
       'Balance-credited tester, Demo Spot on (1440, 390): access ledger "spot"; five families; real balance; LIMIT on /orders with a request ID reserves exactly; reload keeps the open order; cancel restores; never the demo ledger',
       'Balance-credited tester (1440): MARKET fills resting ordinary depth; history shows it; above the balance «Недостаточно USDT», nothing placed',
       'lost /orders response after commit (1440): Buy again reuses the request ID — one order, one reserve',
-      'nothing on the spent side (1440, 390), both ledgers: Buy clickable, no request, toast or error line; Sell goes out on the account\'s own ledger');
+      'nothing on the spent side (1440, 390), both ledgers: Buy clickable, no request, toast or error line; Sell goes out on the account\'s own ledger',
+      'MARKET on an empty book (1440, 390), both ledgers: BUY refused visibly with nothing reserved or written; SELL cancelled without a fill, reserve returned; with resting depth (1440) the SELL fills at the resting price — no fill is invented');
     return report;
   } finally {
     await browser.close();
