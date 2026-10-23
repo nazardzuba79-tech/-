@@ -88,7 +88,7 @@ rollback.
 
 ```sh
 npm ci --ignore-scripts && npm ci --ignore-scripts --prefix frontend && npx prisma generate
-npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts pg@8.23.1 playwright@1.58.2
+npm install --prefix output/wallet-qa-deps --no-save --ignore-scripts pg@8.23.1 playwright@1.63.0
 npx jest --runInBand --runTestsByPath src/services/__tests__/WalletConversionService.test.ts frontend/src/lib/__tests__/walletConversion.test.ts
 WALLET_QA_PG_BIN="$(pg_config --bindir)" node scripts/test-wallet-conversion-postgres.cjs   # PostgreSQL only
 (cd frontend && VITE_WALLET_CONVERSION_ENABLED=true npx vite build) && WALLET_QA_PG_BIN="$(pg_config --bindir)" WALLET_QA_BROWSER=1 node scripts/test-wallet-conversion-postgres.cjs
