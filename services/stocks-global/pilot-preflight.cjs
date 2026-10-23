@@ -2,6 +2,7 @@
 // Read-only operator preflight. No password vault, account creation, binding,
 // balance edits, transaction retry, provider calls, migration or deployment.
 const MIGRATION = '20261016000000_stocks_test_cash_authority';
+const FUNDING_MIGRATION = '20261016170000_native_funding_model';
 
 function validatePrincipals(env) {
   if (env.STOCKS_PILOT_READONLY_ACK !== 'READ_ONLY') throw Error('READ_ONLY_ACK_REQUIRED');
@@ -30,14 +31,15 @@ async function inspectReadOnly(prisma, env) {
       tx.user.findMany({ where: { id: { in: ids } }, select: { id: true, blockedAt: true } }),
       tx.demoBalance.findMany({ where: { userId: { in: ids }, asset: 'USDT' }, select: { userId: true, available: true } }),
       tx.session.findMany({ where: { userId: { in: ids }, revokedAt: null }, select: { userId: true } }),
-      tx.$queryRawUnsafe('SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations" WHERE migration_name = $1', MIGRATION),
+      tx.$queryRawUnsafe('SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations" WHERE migration_name IN ($1,$2)', MIGRATION, FUNDING_MIGRATION),
     ]);
     const found = new Set(users.map(row => row.id));
     const unblocked = new Set(users.filter(row => row.blockedAt === null).map(row => row.id));
     const hasBalance = new Set(cash.map(row => row.userId));
     const funded = new Set(cash.filter(row => Number(row.available.toString()) > 0).map(row => row.userId));
     const hasSession = new Set(sessions.map(row => row.userId));
-    const migrationApplied = migrations.length === 1 && migrations[0].finished_at !== null && migrations[0].rolled_back_at === null;
+    const applied = name => migrations.filter(row => row.migration_name === name && row.finished_at !== null && row.rolled_back_at === null).length === 1;
+    const migrationApplied = applied(MIGRATION), fundingMigrationApplied = applied(FUNDING_MIGRATION);
     return {
       configuredPrincipals: 2,
       accountsFound: ids.filter(id => found.has(id)).length,
@@ -46,6 +48,7 @@ async function inspectReadOnly(prisma, env) {
       currentlyAvailableDemoUSDT: ids.filter(id => funded.has(id)).length,
       unrevokedSessionPresent: ids.filter(id => hasSession.has(id)).length,
       stocksMigrationApplied: migrationApplied,
+      fundingMigrationApplied,
     };
   }, { timeout: 3000, maxWait: 1000 });
   const passed = result.accountsFound === 2 &&
@@ -53,7 +56,8 @@ async function inspectReadOnly(prisma, env) {
     result.existingDemoUSDT === 2 &&
     result.currentlyAvailableDemoUSDT === 2 &&
     result.unrevokedSessionPresent === 2 &&
-    result.stocksMigrationApplied === true;
+    result.stocksMigrationApplied === true &&
+    result.fundingMigrationApplied === true;
   // Counts only. Never print IDs, names, emails, cash figures, credentials,
   // connection strings, JWTs or database/driver error messages.
   return { status: passed ? 'DB_PREFLIGHT_PASS_NOT_AUTHORIZATION' : 'BLOCKED',
