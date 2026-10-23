@@ -59,7 +59,9 @@ async function fixture(t,options={}){
   // Explicit setup links existing fixture cash. No login/read/command seeding.
   for(const actor of actors)await authority.bindExisting(actor);
   const demo=new DemoTradingService(db,new MatchingEngine());
-  const gatewayKey=crypto.randomBytes(32).toString('hex'),api=express();api.use((req,res,next)=>{if(options.gatewayPort){res.set('Access-Control-Allow-Origin','http://127.0.0.1:'+options.gatewayPort);res.set('Access-Control-Allow-Headers','Authorization, Content-Type');res.set('Access-Control-Allow-Methods','GET, POST, OPTIONS');if(req.method==='OPTIONS')return res.sendStatus(204);}next();});api.use(express.json({limit:'16kb'}));api.use('/api/v1',stocksTestCashRouter(db,{enabled:true,issuer,principals,gatewayKey,secret:process.env.JWT_SECRET},authority));
+  // The two-trader execution acceptance opts into the second server gate explicitly (production default OFF);
+  // `orderExecutionEnabled:false` exercises that default against the same real PostgreSQL authority.
+  const gatewayKey=crypto.randomBytes(32).toString('hex'),api=express();api.use((req,res,next)=>{if(options.gatewayPort){res.set('Access-Control-Allow-Origin','http://127.0.0.1:'+options.gatewayPort);res.set('Access-Control-Allow-Headers','Authorization, Content-Type');res.set('Access-Control-Allow-Methods','GET, POST, OPTIONS');if(req.method==='OPTIONS')return res.sendStatus(204);}next();});api.use(express.json({limit:'16kb'}));api.use('/api/v1',stocksTestCashRouter(db,{enabled:true,orderExecutionEnabled:options.orderExecutionEnabled??true,issuer,principals,gatewayKey,secret:process.env.JWT_SECRET},authority));
   const {requireAuth}=require('../../../src/api/middleware/auth.ts');
   api.get('/api/v1/me',requireAuth(db),async(req,res)=>{const user=await db.user.findUnique({where:{id:req.userId},select:{id:true,email:true,role:true}});res.json({...user,isAdmin:user.role==='ADMIN',displayName:user.id.startsWith('synthetic-stock-a')?'Synthetic Alpha':user.id.startsWith('synthetic-stock-b')?'Synthetic Beta':'Synthetic Viewer'});});
   api.use('/api/v1',require('../../../src/api/routes/demoTrading.ts').demoTradingRouter(db,demo));
