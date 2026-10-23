@@ -1,0 +1,178 @@
+name: TYVN production guest gate and isolated rollover QA
+
+on:
+  pull_request:
+    paths: ['.github/workflows/tyvn-live-browser-20261023.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  public-guest-gate:
+    if: github.event.pull_request.draft == true && github.head_ref == 'review/tyvn-live-browser-20261023'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Install GET-only Chrome observer
+        run: npm install --prefix "$RUNNER_TEMP/tyvn-browser" --ignore-scripts --no-audit --no-fund playwright@1.63.0
+      - name: Verify unique TYVN public listing, and expected login gate (not authenticated UI acceptance)
+        shell: bash
+        run: |
+          mkdir -p tyvn-browser-evidence
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const fs=require('node:fs');
+          const {chromium}=require(process.env.RUNNER_TEMP+'/tyvn-browser/node_modules/playwright');
+          (async()=>{
+            const response=await fetch('https://market.voltextech.net/market/listings',{signal:AbortSignal.timeout(15000)});
+            assert.equal(response.status,200);
+            const data=await response.json();
+            const tyvn=(data.assets??[]).filter(a=>a.pair==='TYVN/USDT');
+            assert.equal(tyvn.length,1);
+            assert.equal(tyvn[0].countdown,'running');
+            assert.equal(tyvn[0].isTradable,false);
+            assert.equal(tyvn[0].listingAt,'2026-10-27T13:00:00.000Z');
+            const exe=fs.existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':'/usr/bin/google-chrome-stable';
+            const browser=await chromium.launch({headless:true,executablePath:exe,args:['--no-sandbox']});
+            try{
+              for(const width of [1440,390]){
+                const context=await browser.newContext({viewport:{width,height:width===390?844:900},locale:'ru-RU',serviceWorkers:'block'});
+                const page=await context.newPage();const writes=[];
+                await page.route('**/*',route=>{
+                  const req=route.request(),url=new URL(req.url());
+                  if(!['GET','HEAD','OPTIONS'].includes(req.method())){writes.push(req.method());return route.abort();}
+                  if(!['voltextech.net','api.voltextech.net','market.voltextech.net'].includes(url.hostname))return route.abort();
+                  return route.continue();
+                });
+                try{
+                  await page.goto('https://voltextech.net/trade?pair=TYVN%2FUSDT',{waitUntil:'domcontentloaded',timeout:25000});
+                  await page.waitForURL(u=>u.pathname==='/login',{timeout:15000});
+                  const final=new URL(page.url());
+                  assert.equal(final.pathname,'/login');
+                  assert.equal(final.searchParams.get('next'),'/trade?pair=TYVN%2FUSDT');
+                  assert.equal(await page.locator('.vta-prelisting').count(),0);
+                  assert.equal(writes.length,0);
+                  await page.screenshot({path:'tyvn-browser-evidence/guest-'+width+'.png'});
+                  console.log('TYVN_GUEST_GATE_PASS '+JSON.stringify({width,finalPath:final.pathname,next:final.searchParams.get('next'),writes:0}));
+                }finally{await context.close();}
+              }
+            }finally{await browser.close();}
+            console.log('AUTHENTICATED_UI_NOT_TESTED: owner browser session required');
+          })().catch(e=>{console.error('TYVN_GUEST_GATE_FAIL '+e.message);process.exitCode=1;});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tyvn-guest-gate
+          path: tyvn-browser-evidence/
+          if-no-files-found: ignore
+          retention-days: 4
+
+  isolated-tyvn-rollover:
+    if: github.event.pull_request.draft == true && github.head_ref == 'review/tyvn-live-browser-20261023'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NODE_ENV: test
+      JWT_SECRET: git-actions-only-tyvn-fixture-no-production
+      VITE_MARKET_EDGE_URL: http://127.0.0.1:8787
+      QA_FRONTEND_DIST: .listings-qa-dist
+      QA_PLAYWRIGHT_MODULE: /tmp/tyvn-fixture-browser/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false, fetch-depth: 1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Dependencies and disposable-only Prisma client
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npm ci --prefix workers/market-edge --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+      - name: Existing TYVN scenario, timer and refusal regressions
+        run: npx jest --runInBand --silent --runTestsByPath src/services/listings/__tests__/tyvnDraft.test.ts src/services/listings/__tests__/listingCountdown.test.ts frontend/src/lib/__tests__/managedListings.test.ts frontend/src/lib/__tests__/testMarkets.test.ts
+      - name: Exact 27 October 13:00 UTC source-code rollover (read-only disposable fixture)
+        shell: bash
+        run: |
+          node <<'NODE'
+          'use strict';
+          const assert=require('node:assert/strict');
+          const fs=require('node:fs');
+          const path=require('node:path');
+          require('ts-node').register({transpileOnly:true,project:path.resolve('tsconfig.json')});
+          const {parseListingConfig,withStableProfile,publishedListingAsset}=require('./src/services/listings/listingConfig');
+          const {managedListingResponse}=require('./src/services/listings/listingPublic');
+          const {simulationFor}=require('./src/services/testMarkets/testMarketSimulation');
+          (async()=>{
+            const draft=JSON.parse(fs.readFileSync('config/test-markets/tyvn.draft.json','utf8'));
+            const cfg=withStableProfile(parseListingConfig(draft),null,7);
+            const START=Date.parse('2026-10-27T13:00:00Z');
+            assert.equal(cfg.listingAt,'2026-10-27T13:00:00Z');
+            assert.equal(cfg.tradable,false);
+            assert.equal(cfg.seed,'teryvane-20261026-v1');
+            assert.equal(cfg.initialPrice,'0.0250');
+            assert.equal(cfg.simulationProgram?.kind,'scenario-controls-v2');
+            assert.equal(cfg.simulationProgram?.afterGrowth,'range');
+            const listing={id:'tyvn-disposable-fixture',version:1,publishedAt:new Date(START-86400000).toISOString(),config:cfg,
+              countdown:{state:'running',updatedAt:START-86400000,updatedBy:'isolated-ci',startedAt:START-86400000}};
+            const read=async (p,now)=>{
+              const result=managedListingResponse(new Request('https://fixture.invalid'+p),[listing],now,'fixture');
+              assert(result,'missing routed response '+p);
+              assert.equal(result.status,200,p);
+              return result.json();
+            };
+            for(const t of [START-60000,START-1]){
+              const p=await read('/market/test-assets/TYVN-USDT',t);
+              assert.equal(p.state.phase,'pre-listing');
+              assert.equal(p.state.lastPrice,null);
+              assert.equal(p.isTradable,false);
+              for(const interval of ['1m','5m','1h']){
+                const r=await read('/market/test-assets/TYVN-USDT/candles?interval='+interval+'&limit=300',t);
+                assert.deepEqual(r.candles,[],interval+' leaked prelisting bars');
+              }
+            }
+            const opened=await read('/market/test-assets/TYVN-USDT',START);
+            assert.equal(opened.state.phase,'live');
+            assert.equal(opened.isTradable,false);
+            assert.equal(opened.initialPrice,0.025);
+            assert.equal(opened.state.lastPrice,0.025);
+            const stamp=START/1000;
+            for(const interval of ['1m','5m','1h']){
+              const r=await read('/market/test-assets/TYVN-USDT/candles?interval='+interval+'&limit=300',START+60000);
+              assert(r.candles.length>0,interval+' no opening candle');
+              assert.equal(r.candles[0].time,stamp,interval+' opening bucket time');
+              assert(Math.abs(r.candles[0].open-0.025)<1e-9,interval+' opening price');
+              assert(r.candles.every(c=>c.time>=stamp && c.low>0 && c.high<=2.33675),interval+' invalid candles');
+            }
+            const sim=simulationFor(publishedListingAsset(listing));
+            assert(Math.abs(sim.priceAt(START+86400000)-0.45625)<1e-9,'24-hour scenario target');
+            assert(sim.priceAt(START+168*3600000)<=2.33675,'scenario cap');
+            const future=await read('/market/test-assets/TYVN-USDT',START+5*60000);
+            assert.equal(future.state.phase,'live');
+            assert.equal(future.isTradable,false);
+            console.log('TYVN_DISPOSABLE_ROLLOVER_PASS '+JSON.stringify({utc:'2026-10-27T13:00:00Z',initialPrice:0.025,intervals:['1m','5m','1h'],day1Target:0.45625,cap:2.33675,orders:'never submitted',productionWrites:0}));
+          })().catch(e=>{console.error('TYVN_DISPOSABLE_ROLLOVER_FAIL '+e.stack);process.exitCode=1;});
+          NODE
+      - name: Build production-like frontend against disposable Worker
+        run: cd frontend && npx vite build --outDir ../.listings-qa-dist --emptyOutDir
+      - name: Install isolated Chromium
+        run: |
+          npm install --prefix /tmp/tyvn-fixture-browser --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/tyvn-fixture-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Real frontend bundle, authenticated synthetic session, TYVN desktop/mobile and Markets
+        run: node scripts/qa-listing-tyvn.cjs
+        env:
+          QA_OUT: /tmp/tyvn-fixture-evidence/tyvn
+      - name: Real frontend bundle, server-driven countdown-to-chart transition desktop/mobile
+        run: node scripts/qa-listing-timer.cjs
+        env:
+          QA_OUT: /tmp/tyvn-fixture-evidence/rollover-chart
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tyvn-isolated-rollover-and-browser
+          path: /tmp/tyvn-fixture-evidence/
+          if-no-files-found: ignore
+          retention-days: 4
