@@ -40,6 +40,10 @@ function stripKycMaterialsApi(text: string): string {
  */
 function normalizeApiTs(text: string): string {
   return stripKycMaterialsApi(text)
+    // Exclude only conversion additions from the existing Futures/Spot fingerprint.
+    .replace(/export interface WalletConversionQuote \{[\s\S]*?export interface WalletConversionReceipt[^\n]*\n\n/, '')
+    .replace(/^  getConversionReceipt:[^\n]*\n\n/m, '')
+    .replace(/^  (?:getWalletActivity|getConversionAssets|quoteConversion|confirmConversion):[^\n]*\n/gm, '')
     // Reuse the identical authenticated transport in the lazy OTC module.
     .replace('export async function request<T>', 'async function request<T>')
     // Remembered-device auth (2026-10-03, admin accounts only) adds logout and
