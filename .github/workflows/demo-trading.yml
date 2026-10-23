@@ -1,0 +1,109 @@
+name: Demo Spot for admin-credited accounts
+on:
+  pull_request:
+    paths:
+      - 'src/services/DemoTradingService.ts'
+      - 'src/services/SpotBookTransaction.ts'
+      - 'src/services/demoSpotAccess.ts'
+      - 'src/services/AdminUserDeletionService.ts'
+      - 'src/services/OrderService.ts'
+      - 'src/services/WithdrawalService.ts'
+      - 'src/api/routes/demoTrading.ts'
+      - 'src/api/routes/withdrawals.ts'
+      - 'src/api/routes/adminWithdrawals.ts'
+      - 'src/api/routes/orders.ts'
+      - 'src/api/routes/balances.ts'
+      - 'src/index.ts'
+      - 'src/services/__tests__/DemoTradingService.test.ts'
+      - 'src/api/routes/__tests__/demoTrading.test.ts'
+      - 'src/api/routes/__tests__/withdrawals.test.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/demoSpot.ts'
+      - 'frontend/src/components/OrderForm.tsx'
+      - 'frontend/src/components/DemoSpotPanels.tsx'
+      - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/lib/__tests__/demoSpot.test.ts'
+      - 'scripts/*demo-trading*.cjs'
+      - 'docs/DEMO_TRADING.md'
+      - '.github/workflows/demo-trading.yml'
+permissions:
+  contents: read
+jobs:
+  demo-trading:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: frontend
+      - run: npx prisma generate
+      - name: Backend build
+        run: npm run build
+      # The demo terminal is switched on only in this disposable QA build.
+      # It is never deployed; every real frontend build leaves it off.
+      - name: Frontend build (isolated QA, demo Spot on)
+        env:
+          VITE_DEMO_SPOT_ENABLED: 'true'
+        run: npm run build
+        working-directory: frontend
+      - name: Demo ledger, admission, withdrawal and Spot terminal regressions
+        run: >-
+          npm test -- --runInBand --json --outputFile=demo-trading-tests.json
+          --runTestsByPath
+          src/services/__tests__/DemoTradingService.test.ts
+          src/api/routes/__tests__/demoTrading.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
+          src/services/__tests__/WithdrawalService.test.ts
+          src/services/__tests__/OrderService.test.ts
+          src/api/routes/__tests__/orders.test.ts
+          src/private-trading/__tests__/simulationOnlyIsolation.test.ts
+          frontend/src/lib/__tests__/demoSpot.test.ts
+          frontend/src/lib/__tests__/spotOrderEntry.test.ts
+          frontend/src/lib/__tests__/spotOrderFeedback.test.ts
+          frontend/src/lib/__tests__/spotButtonLabels.test.ts
+          frontend/src/lib/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/tradeFeedHealth.test.ts
+          frontend/src/lib/__tests__/cfdTerminal.test.ts
+          frontend/src/lib/__tests__/futuresTickerHeader.test.ts
+      - name: Isolated QA tools only (not application dependencies)
+        run: |
+          npm install --prefix output/demo-qa-deps --no-save --ignore-scripts --no-audit --no-fund pg@8.23.1 playwright@1.63.0
+          output/demo-qa-deps/node_modules/.bin/playwright install --with-deps chromium
+      - name: Runner PostgreSQL tools (new temporary cluster only)
+        run: |
+          pg_config --version
+          test -x "$(pg_config --bindir)/initdb"
+          test -x "$(pg_config --bindir)/pg_ctl"
+          echo "DEMO_QA_PG_BIN=$(pg_config --bindir)" >> "$GITHUB_ENV"
+      - name: Disposable PostgreSQL reproduction, acceptance and network-denied browser QA
+        env:
+          DEMO_QA_BROWSER: '1'
+        run: node scripts/test-demo-trading-postgres.cjs
+      # The same database checks against a production-style build WITHOUT the flag.
+      - name: Frontend build without the demo flag (default OFF)
+        run: npx vite build --outDir ../output/demo-off-dist --emptyOutDir
+        working-directory: frontend
+      - name: Default-OFF build in the browser
+        env:
+          DEMO_QA_BROWSER: '1'
+          DEMO_QA_EXPECT_OFF: '1'
+          DEMO_QA_DIST: output/demo-off-dist
+        run: node scripts/test-demo-trading-postgres.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: demo-trading-evidence
+          path: |
+            demo-trading-tests.json
+            output/demo-trading/*.json
+            output/demo-trading/*.png
+            output/demo-trading/*.log
