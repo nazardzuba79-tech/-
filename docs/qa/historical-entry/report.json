@@ -11,7 +11,7 @@
         "pick": {
           "x": 380.5625,
           "y": 559.98,
-          "time": 1792504800,
+          "time": 1792681200,
           "paneHeight": 367,
           "fraction": 0.937275204359673
         },
@@ -126,7 +126,7 @@
         "pick": {
           "x": 142.9375,
           "y": 615.66,
-          "time": 1792508400,
+          "time": 1792684800,
           "paneHeight": 239,
           "fraction": 0.93581589958159
         },
@@ -228,6 +228,32 @@
     "quantity": "1500000",
     "leverage": 3,
     "limitPrice": null
+  },
+  "protection": {
+    "LONG-1440": {
+      "takeProfit": "0.06",
+      "stopLoss": "0.05",
+      "liquidationPrice": null,
+      "shown": "—"
+    },
+    "SHORT-1440": {
+      "takeProfit": "0.05",
+      "stopLoss": "0.06",
+      "liquidationPrice": "6.6506",
+      "shown": "6.6506"
+    },
+    "LONG-390": {
+      "takeProfit": "0.06",
+      "stopLoss": "0.05",
+      "liquidationPrice": null,
+      "shown": "—"
+    },
+    "SHORT-390": {
+      "takeProfit": "0.05",
+      "stopLoss": "0.06",
+      "liquidationPrice": "6.6506",
+      "shown": "6.6506"
+    }
   },
   "passed": true
 }

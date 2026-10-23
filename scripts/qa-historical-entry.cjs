@@ -377,6 +377,33 @@ async function tradeSide(s, width, side, counts) {
     await p.waitForFunction(() => /1,000,000/.test(document.querySelector('.futures-position-row')?.innerText || ''));
     await p.screenshot({ path: path.join(out, `partial-limit-close-${width}.png`), fullPage: width === 390 });
   }
+  // 6c. Issue #565: TP/SL arm on the historical position against the near-live price, the entry does not move, and the
+  // row shows the engine's liquidation price (on the right side of the mark), or a dash when none exists.
+  if (!SERVER_ONLY) {
+    await workspace(p, 'positions');
+    await p.locator('#futures-tab-positions').click();
+    await row.locator('.fut-tpslTrigger').click();
+    const [tp, sl] = side === 'LONG' ? ['0.06', '0.05'] : ['0.05', '0.06'];
+    await p.locator('.fut-tpslInput').nth(0).fill(tp);
+    await p.locator('.fut-tpslInput').nth(1).fill(sl);
+    const armed = await command(s, 'PROTECTION', () => p.locator('.fut-tpslSave').click());
+    const held = armed.state.positions.find(x => x.id === position.id);
+    assert.deepEqual([Number(held.protection.takeProfit), Number(held.protection.stopLoss)], [Number(tp), Number(sl)], `TP/SL did not arm on the historical ${side}`);
+    assert.equal(Number(held.entryPrice), ENTRY, 'Arming TP/SL moved the historical entry');
+    assert.equal(held.executionMode, 'HISTORICAL_DEMO');
+    await p.waitForFunction(() => !document.querySelector('.fut-tpslSave'));
+    const shown = (await cell(6)).replace(/,/g, '');
+    if (held.liquidationPrice === null) {
+      // The engine's estimate: no price above zero empties this cross account, so there is no liquidation price.
+      assert.equal(shown, '—', `No liquidation price exists, yet the row shows «${shown}»`);
+    } else {
+      const liquidation = Number(held.liquidationPrice), mark = Number(held.markPrice);
+      assert(liquidation > 0 && (side === 'LONG' ? liquidation <= mark : liquidation >= mark), `Liquidation ${held.liquidationPrice} is not on the ${side} side of the ${mark} mark`);
+      assert(Math.abs(Number(shown) - liquidation) / liquidation < 0.005, `Liquidation shown «${shown}» is not the engine's ${held.liquidationPrice}`);
+    }
+    report.protection = { ...(report.protection || {}), [`${side}-${width}`]: { takeProfit: held.protection.takeProfit, stopLoss: held.protection.stopLoss, liquidationPrice: held.liquidationPrice, shown } };
+    await p.screenshot({ path: path.join(out, `tpsl-${side.toLowerCase()}-${width}.png`), fullPage: width === 390 });
+  }
   // 7. Close at the current near-live price from the table (the "Рыночный" close), no book involved.
   const closed = await command(s, 'CLOSE', () => row.locator('.futures-position-close').nth(1).click());
   assert.equal(closed.draft.positionId, position.id); assert.equal(closed.draft.candle, undefined, 'A close reused the historical selection');
