@@ -33,8 +33,8 @@ test('four static SELECT-only aggregates use one read-only transaction and redac
   assert.equal(actions[1], 'SET TRANSACTION READ ONLY');
   assert.equal(actions.filter(sql => /SELECT/i.test(sql)).length, QUERIES.length);
   for (const sql of actions.slice(4)) {
-    assert.match(sql, /^\\s*(WITH|SELECT)/i);
-    assert.doesNotMatch(sql, /\\b(INSERT|DELETE|UPDATE|TRUNCATE|ALTER|DROP|CREATE)\\s+["A-Za-z]/i);
+    assert.match(sql, /^\s*(WITH|SELECT)/i);
+    assert.doesNotMatch(sql, /\b(INSERT|DELETE|UPDATE|TRUNCATE|ALTER|DROP|CREATE)\s+["A-Za-z]/i);
   }
   assert(!JSON.stringify(report).includes('@example'));
   assert(!JSON.stringify(report).includes('postgresql://'));
