@@ -6804,8 +6804,8 @@ Preserved candidate/worktrees/refs/evidence unchanged. No git merge/rebase/cherr
 ## 2026-10-23 — Claude — Wallet Conversion #591: owner demo-only policy (Issue #558, PR #591 review comment)
 - Read the PR #591 review comment (6359047262) and the Issue #558 owner override (6358905908): VOLTEX holds no real customer funds; balances are owner/admin-issued; registration grants nothing; no withdrawable balance may result.
 - **Ledger facts verified on main `9265e997`:**
-  - Issued funds are `Balance` rows (`BalanceAdjustmentService` → `mutateSpotBalance`). Spot orders, confirmed deposits, banking rewards and listing owner allocation write the same table.
-  - `DemoBalance` is separate and untouched by conversion.
+  - Two admin credit paths: `balance-adjustments`/`adjust-balance` → `Balance` (`BalanceAdjustmentService` → `mutateSpotBalance`; Spot orders, confirmed deposits, banking rewards and listing owner allocation use the same table) and `demo-topup` → `DemoBalance` (used only by the admin-only `/demo/orders`; reconciliation tracked in Issue #592).
+  - Conversion touches only `Balance`; `DemoBalance` is untouched.
   - `auth.ts` registration writes no balance.
   - `WithdrawalService.requestWithdrawal` accepts any positive non-test `Balance`: the amount is locked and an admin sends it by hand. This applies already before any conversion.
   - So conversion adds no cash-out path. Whether owner-issued balances may be requested for withdrawal at all is a `WithdrawalService` question on main, left to the owner and not changed here: it is a financial rule.

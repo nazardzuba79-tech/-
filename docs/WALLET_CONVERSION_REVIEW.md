@@ -82,10 +82,13 @@ Owner statement of 2026-10-23 (Issue #558): VOLTEX currently holds **no real cus
 issued by the owner/admin to the team and approved testers, and registration grants nothing. The table name
 `Balance` does not mean real money. What the code does, separately from that policy:
 
-- **Where issued funds live.** An owner/admin credit (`BalanceAdjustmentService` → `mutateSpotBalance`) is a
-  `Balance` row; Spot orders reserve and spend the same rows (`OrderService`). Other writers of `Balance`:
-  confirmed deposits (`DepositBatchService`), banking rewards (`src/banking/service.ts`), listing owner
-  allocation. `DemoBalance` is a separate ledger that conversion never reads or writes.
+- **Two admin credit paths.** `/admin/users/:id/balance-adjustments` (and the older `adjust-balance`) credit
+  `Balance` (`BalanceAdjustmentService` → `mutateSpotBalance`), the ledger standard Spot orders reserve and
+  spend (`OrderService`); confirmed deposits, banking rewards and listing owner allocation also write it.
+  `/admin/users/:id/demo-topup` credits `DemoBalance`, a separate ledger used by the admin-only
+  `/demo/orders`. Conversion reads and writes only `Balance` and never touches `DemoBalance`. Which ledger
+  owner-issued tester funds belong in, and how ordinary testers trade them, is being reconciled in
+  Issue #592; until then this PR stays Draft and OFF.
 - **Registration** creates no `Balance` (no balance write in `src/api/routes/auth.ts`); an account without
   issued funds is refused before any write (PostgreSQL check *account without owner/admin-issued funds*).
 - **Withdrawals** (`WithdrawalService.requestWithdrawal`): any positive non-test `Balance` can be put into a
