@@ -1,5 +1,7 @@
 declare const __VOLTEX_STOCKS_ENABLED__: boolean;
-const stocksEnabled = typeof __VOLTEX_STOCKS_ENABLED__ !== 'undefined' && __VOLTEX_STOCKS_ENABLED__;
+declare const __VOLTEX_STOCKS_CATALOGUE_VISIBLE__: boolean;
+const hostedStocks = typeof __VOLTEX_STOCKS_CATALOGUE_VISIBLE__ !== 'undefined' && __VOLTEX_STOCKS_CATALOGUE_VISIBLE__;
+const stocksEnabled = hostedStocks || (typeof __VOLTEX_STOCKS_ENABLED__ !== 'undefined' && __VOLTEX_STOCKS_ENABLED__);
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
@@ -100,7 +102,7 @@ export function App() {
     <BrowserRouter>
       <Suspense fallback={<RouteShell />}>
       <Routes>
-        {stocksEnabled && <><Route path="/stocks" element={<StocksPage/>}/><Route path="/stocks/:instrumentId" element={<StocksPage/>}/></>}
+        {stocksEnabled && <><Route path="/stocks" element={hostedStocks ? <RequireAuth><StocksPage/></RequireAuth> : <StocksPage/>}/><Route path="/stocks/:instrumentId" element={hostedStocks ? <RequireAuth><StocksPage/></RequireAuth> : <StocksPage/>}/></>}
         <Route path="/" element={<RootEntry />} />
         <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />

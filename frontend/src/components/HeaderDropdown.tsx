@@ -12,7 +12,9 @@ export interface HeaderDropdownItem {
 }
 
 declare const __VOLTEX_STOCKS_ENABLED__: boolean;
-const stocksEnabled = typeof __VOLTEX_STOCKS_ENABLED__ !== 'undefined' && __VOLTEX_STOCKS_ENABLED__;
+declare const __VOLTEX_STOCKS_CATALOGUE_VISIBLE__: boolean;
+const hostedStocks = typeof __VOLTEX_STOCKS_CATALOGUE_VISIBLE__ !== 'undefined' && __VOLTEX_STOCKS_CATALOGUE_VISIBLE__;
+const stocksEnabled = hostedStocks || (typeof __VOLTEX_STOCKS_ENABLED__ !== 'undefined' && __VOLTEX_STOCKS_ENABLED__);
 
 export const TRADING_LINKS: readonly HeaderDropdownItem[] = [
   { to: '/trade', label: 'trade.spotTab', icon: ArrowLeftRight, description: 'nav.tradeSpotDesc' },
