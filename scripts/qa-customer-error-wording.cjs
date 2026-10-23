@@ -3,7 +3,9 @@
  * misbehaves, on the real production bundle.
  *
  * The three states the audit names, on /futures, /wallet, /copy-trading,
- * /trade and /settings:
+ * /trade and /settings, and on every other customer route the issue lists
+ * (home, markets, Banking/Earn, card, arbitrage, OTC, analytics, bots,
+ * tools, dashboard, help, academy, sign-in and registration):
  *
  *   normal   — every request answered, so the page is in its ordinary shape
  *              and the vocabulary check runs against a full screen;
@@ -60,6 +62,9 @@ const BANNED = [
   ['the transport’s own boilerplate', /Request failed \(\d+\)/i],
   ['a runtime fault', /is not a function|Cannot read propert|undefined is not/i],
   ['a schema report', /String must contain|Expected \w+, received/],
+  // Implementation vocabulary in ordinary copy (a library or table name, a
+  // raw JavaScript value), not only in error paths.
+  ['developer jargon', /\bBigNumber\b|\bledger\b|\bundefined\b|\bNaN\b|\[object Object\]/],
 ];
 
 /** Wording that would claim something the server never confirmed. */
@@ -71,6 +76,21 @@ const ROUTES = [
   { path: '/copy-trading', label: 'copy-trading' },
   { path: '/trade', label: 'trade' },
   { path: '/settings', label: 'settings' },
+  { path: '/', label: 'home' },
+  { path: '/markets', label: 'markets' },
+  { path: '/banking', label: 'banking' },
+  { path: '/earn', label: 'earn' },
+  { path: '/card', label: 'card' },
+  { path: '/arbitrage', label: 'arbitrage' },
+  { path: '/otc', label: 'otc' },
+  { path: '/analytics', label: 'analytics' },
+  { path: '/trading-bots', label: 'trading-bots' },
+  { path: '/tools', label: 'tools' },
+  { path: '/dashboard', label: 'dashboard' },
+  { path: '/help', label: 'help' },
+  { path: '/academy', label: 'academy' },
+  { path: '/login', label: 'login' },
+  { path: '/register', label: 'register' },
 ];
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
@@ -146,18 +166,20 @@ function fixture(pathname, nulls) {
   };
   if (pathname.endsWith('/private-trading/candles')) return { candles: [] };
   if (pathname.endsWith('/copy-trading/marketplace')) return { strategies: [], traders: [] };
+  // Prices and values are numbers, as WalletPortfolioService sends them
+  // (strings here would be concatenated by the page, not added).
   if (pathname.endsWith('/wallet/overview')) return {
     real: {
       spot: [
-        { asset: 'BTC', available: '0.50000000', locked: '0', priceUsd: on ? '65000.00' : null, valueUsd: on ? '32500.00' : null },
+        { asset: 'BTC', available: '0.50000000', locked: '0', priceUsd: on ? 65000 : null, valueUsd: on ? 32500 : null },
         // The whole point of `partial`: a holding whose price is unknown.
         // It must read as unknown, never as a holding worth nothing.
-        { asset: 'EUR', available: '250.00', locked: '0', priceUsd: on ? '1.08' : null, valueUsd: on ? '270.00' : null },
+        { asset: 'EUR', available: '250.00', locked: '0', priceUsd: on ? 1.08 : null, valueUsd: on ? 270 : null },
       ],
-      futures: [{ asset: 'USDT', available: '50.00', locked: '0', priceUsd: '1.00', valueUsd: '50.00' }],
+      futures: [{ asset: 'USDT', available: '50.00', locked: '0', priceUsd: 1, valueUsd: 50 }],
       spotValueUsd: on ? 32770 : 32500, futuresValueUsd: 50, totalValueUsd: on ? 32820 : 32550,
     },
-    valuationComplete: on, unpricedAssets: on ? [] : ['EUR'], btcPriceUsd: on ? '65000.00' : null,
+    valuationComplete: on, unpricedAssets: on ? [] : ['EUR'], btcPriceUsd: on ? 65000 : null,
   };
   if (pathname.endsWith('/wallet/performance')) return {
     // No history yet is an honest answer, and the one this account has.
@@ -195,6 +217,46 @@ function fixture(pathname, nulls) {
       ],
       assetsValue: priced ? '32770.00' : '0', assetsEquityValue: priced ? '32770.00' : '0',
       assetsComplete: priced, unpricedAssets: priced ? [] : ['EUR'],
+    };
+  }
+  // Banking/Earn: the programmes as src/banking/config.ts defines them
+  // (monthlyRate is a fraction), an empty account and its referral facts.
+  // `partial` leaves every USD price and reference value unknown.
+  if (pathname.endsWith('/banking/config')) return {
+    programs: [
+      { id: 'MONTHLY_17_24M', name: 'Ежемесячные выплаты', monthlyRate: '0.12', termMonths: 12, minUsd: '2500', assets: ['USDT', 'BTC'], compound: false,
+        payoutFrequency: 'MONTHLY', lockRule: 'PRINCIPAL_RETURN_UNDEFINED', enabled: true, availableFrom: null, availableUntil: null },
+      { id: 'COMPOUND_21_12M', name: 'Накопление', monthlyRate: '0.17', termMonths: 24, minUsd: '2500', assets: ['USDT', 'BTC'], compound: true,
+        payoutFrequency: 'MATURITY', lockRule: 'PRINCIPAL_AND_REWARDS_LOCKED_TO_MATURITY', enabled: true, availableFrom: null, availableUntil: null },
+    ],
+    assets: [{ asset: 'USDT', priceUsd: on ? '1' : null, minimumAssetQty: on ? '2500' : null }, { asset: 'BTC', priceUsd: on ? '65000' : null, minimumAssetQty: on ? '0.03846154' : null }],
+    rewardCurrencyRule: 'Вознаграждение начисляется в активе размещения', usdValuesAreReferenceOnly: true,
+    cardYield: { annualRate: '6', asset: 'USDT', locked: false, availableCardBalance: on ? '0' : null, accruedReward: on ? '0' : null, dataStatus: on ? 'available' : 'unavailable' },
+  };
+  if (pathname.endsWith('/banking/state')) return {
+    placements: [], ledger: [], summary: { totalUsd: on ? '0' : null, accruedUsd: on ? '0' : null, activeCount: 0 },
+    cardYield: { annualRate: '6', asset: 'USDT', locked: false, availableCardBalance: on ? '0' : null, accruedReward: on ? '0' : null, dataStatus: on ? 'available' : 'unavailable' },
+  };
+  if (pathname.endsWith('/banking/referral')) return { referralCode: 'VXQA2026', referralPercent: 20, referredCount: 0, rewardsByAsset: [], recentRewards: [] };
+  // Card: an account that has not applied; `partial` cannot value its deposits.
+  if (pathname.endsWith('/card/application/me')) return {
+    eligibility: { verificationApproved: false, depositEligible: false, tradingVolumeEligible: false, eligible: false,
+      qualifyingDepositUsd: on ? 0 : null, qualifyingTradingVolumeUsd: on ? 0 : null, depositValuationComplete: on, tradingVolumeValuationComplete: on },
+    application: null,
+  };
+  // Analytics: two sections the gateway answered (figures unknown in
+  // `partial`), every other one honestly reported as not received.
+  if (pathname.endsWith('/analytics/overview')) {
+    const missing = { available: false, reason: 'provider_unavailable', detail: 'Данные не получены.' };
+    return {
+      generatedAt: Date.now(), contracts: PAIRS.map((p) => p.replace('/', '')), trackedAssets: ['BTC', 'ETH'], selectedAsset: 'BTC',
+      sections: {
+        marketOverview: gateway({ totalMarketCapUsd: on ? 2.4e12 : null, totalVolume24hUsd: on ? 9.1e10 : null, btcDominancePercent: on ? 54.2 : null, ethDominancePercent: on ? 17.1 : null, marketCapChangePercent24h: on ? 1.2 : null }, true),
+        sentiment: on ? gateway({ value: 62, classification: 'Greed', updatedAt: Date.now() }, true) : missing,
+        ...Object.fromEntries(['derivatives', 'externalOpenInterest', 'externalFunding', 'perpetualBasis', 'longShortPositioning', 'realizedVolatility',
+          'cryptoCorrelations', 'sectorRotation', 'liquidations', 'impliedVolatility', 'futuresTermStructure'].map((key) => [key, missing])),
+      },
+      unsupported: {},
     };
   }
   if (/\/(deposits|withdrawals)\/me$/.test(pathname)) return [];
