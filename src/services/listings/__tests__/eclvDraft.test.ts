@@ -16,7 +16,7 @@ const listing = { id:'eclv-candidate-only', version:1, publishedAt:new Date(AT-5
 test('candidate is valid, nontrading, UTC-correct, and has an actual compact branded logo', () => {
   expect(draft).toMatchObject({ symbol:'ECLV',name:'ECLAVO',initialPrice:'0.0140',
     listingAt:'2026-11-03T13:00:00Z',displayTimeZone:'Europe/Kyiv',
-    seed:'zoryntha-20261103-v1',seedMode:'manual',ownerAllocation:'0',tradable:false });
+    seed:'eclavo-20261103-v1',seedMode:'manual',ownerAllocation:'0',tradable:false });
   expect(RESERVED_LISTING_SYMBOLS.has(draft.symbol)).toBe(false);
   expect(draft.logo).toMatch(/^data:image\/svg\+xml;base64,/);
   expect(draft.logo!.length).toBeLessThan(9000);
