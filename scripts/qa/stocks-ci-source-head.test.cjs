@@ -153,5 +153,7 @@ test('supported PG zero-failure/zero-skip gates and genuine legacy exit remain i
   assert.equal(run, 'set -euo pipefail\nnode --test --test-reporter=tap services/stocks-global/two-trader-auth-lifetime.test.mjs | tee legacy-unsupported.tap\n');
   assert(legacyJob.steps.some(s => s.if === 'always()' && s.uses === 'actions/upload-artifact@v4'));
   const blob = cp.execFileSync('git', ['hash-object','services/stocks-global/two-trader-auth-lifetime.test.mjs'], {cwd:root,encoding:'utf8'}).trim();
-  assert.equal(blob, 'd1af5fc7353857d3e5ae60e03fc2c0c2f2c16034');
+  // d1af5fc7… plus only the explicit `financialEnabled: true` fixture opt-in required by the gateway's
+  // default-OFF finance (#611 d362fb80, identical blob there); no assertion changed.
+  assert.equal(blob, '5c6fa2ef169075061324e294041b0310b6780b9e');
 });

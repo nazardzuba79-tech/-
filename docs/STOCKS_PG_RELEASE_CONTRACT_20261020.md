@@ -45,8 +45,12 @@ The unchanged `two-trader-auth-lifetime.test.mjs` now runs in the independent
 `Stocks legacy SQLite unsupported control` workflow on Node 22.23.3. It retains
 its failing exit status, complete TAP artifact and explicit job summary.
 There is no expected-failure inversion, `continue-on-error`, assertion edit,
-skip, deletion or hidden failure. Its Git blob remains:
-`d1af5fc7353857d3e5ae60e03fc2c0c2f2c16034`.
+skip, deletion or hidden failure. Its Git blob was
+`d1af5fc7353857d3e5ae60e03fc2c0c2f2c16034`; since the gateway's finance became default OFF (#611 `d362fb80`,
+ported in #613) the only change is the explicit fixture opt-in `financialEnabled: true` on its `createServer`
+call, giving blob `5c6fa2ef169075061324e294041b0310b6780b9e` (identical to #611). No assertion changed and it
+still fails exactly as before: 6 pass, 1 fail «revocation at the worker pre-COMMIT barrier», expected 401,
+actual 200.
 
 This intentional red legacy check must not be presented as repaired or as
 part of the supported PG release contract. Remote branch protection was not
