@@ -108,8 +108,7 @@ async function cli() {
     return;
   }
   const { PrismaClient } = require('@prisma/client');
-  const prisma = new PrismaClient({ datasources: { db: { url: process.env.DEMO_PREFLIGHT_DATABASE_URL } },
-    log: ['error'] });
+  const prisma = new PrismaClient({ datasources: { db: { url: process.env.DEMO_PREFLIGHT_DATABASE_URL } } });
   try {
     const result = await audit(prisma);
     console.log('VOLTEX_DEMO_READONLY_PREFLIGHT ' + JSON.stringify(result));
